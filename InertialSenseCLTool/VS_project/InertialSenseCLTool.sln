@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26127.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InertialSenseCLTool", "InertialSenseCLTool.vcxproj", "{CAFCF6A5-564C-4B9A-82A3-35D94330373F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InertialSenseLib", "..\..\VS_project\InertialSenseLib\InertialSenseLib.vcxproj", "{B6DF5042-23C7-42D9-976B-D313E6EA092C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InertialSenseLib", "..\..\VS_project\InertialSenseLib.vcxproj", "{B6DF5042-23C7-42D9-976B-D313E6EA092C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
