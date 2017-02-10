@@ -1,0 +1,332 @@
+/*
+MIT LICENSE
+
+Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#ifndef CONSTANTS_H_
+#define CONSTANTS_H_
+
+#define DT_TO_HZ(dt)	(((dt) == (0.0)) ? (0) : (1.0/dt))
+
+#define C_IN2M          0.0254          // inches to meters 
+#define C_FT2M          0.3048          // (C_IN2M*12) feet to meters 
+#define C_M2FT          3.2808398950131233595800524934383   // (1.0/C_FT2M) 
+						
+#define C_YD2M          0.9144          // (C_FT2M*3) yards to meters 
+
+#define C_IN2M_F        0.0254f         // inches to meters 
+#define C_FT2M_F        0.3048f         // (C_IN2M*12) feet to meters 
+#define C_M2FT_F        3.2808398950131233595800524934383f    // (1.0/C_FT2M) 
+#define C_YD2M_F        0.9144f         // (C_FT2M*3) yards to meters 
+
+
+#define C_NMI2M         1852.0          // nautical miles to meters 
+#define C_MI2M          1609.344        // (C_FT2M*5280) miles to meters 
+
+#define C_NMI2M_F       1852.0f         // nautical miles to meters 
+#define C_MI2M_F        1609.344f       // (C_FT2M*5280) miles to meters 
+
+//////////////////////////////////////////////////////////////////////////
+// Acceleration / Force
+
+// Standard Gravity (at sea level)
+#define C_G_TO_MPS2     9.80665         // (m/s^2) standard gravity
+#define C_MPS2_TO_G     0.101971621297793
+#define C_G_TO_FTPS2    32.17404856     // (ft/s^2) standard gravity 
+
+#define C_G_TO_MPS2_F   9.80665f        // (m/s^2) standard gravity
+#define C_MPS2_TO_G_F   0.101971621297793f
+#define C_G_TO_FTPS2_F  32.17404856f    // (ft/s^2) standard gravity 
+
+
+//////////////////////////////////////////////////////////////////////////
+// Pressure
+
+// Standard Atmospheric Pressure (at sea level)
+                                        // standard atmospheric pressure
+#define C_P0N_M2        1.01325e5       // p0 in N/m^2
+#define C_P0N_M2_F      1.01325e5f      // p0 in N/m^2
+#define C_P0            14.692125       // (C_P0N_M2*1.450e-4)
+#define C_P0_F          14.692125f      // (C_P0N_M2*1.450e-4)
+
+#define C_P0_PA_F		101325f			// (Pa)		Sea level standard atmospheric pressure
+#define C_P0_KPA_F		101.325f		// (kPa)	Sea level standard atmospheric pressure
+#define C_P0_MBAR_F		1013.25f		// (mbar)	Sea level standard atmospheric pressure
+
+#define C_INV_P0_KPA_F	9.8692326671601283e-3f	// (1/kPa) Inverse of Sea level standard atmospheric pressure
+
+#define C_MBAR_TO_KPA_F	0.1f			// (kpa/mbar) absolute pressure
+#define C_KPA_TO_MBAR_F	10.0f			// (mbar/kpa) absolute pressure
+#define C_MBAR_TO_PA_F	100.0f			// (kpa/mbar) absolute pressure
+
+//////////////////////////////////////////////////////////////////////////
+// Temperature
+
+#define C_T0_F			288.15f			// (K) Sea level standard temperature
+
+//////////////////////////////////////////////////////////////////////////
+// Mass
+
+#define C_LBM2KG        0.45359237      // lb mass 
+#define C_KG2LBM        2.204622622     // (1.0/C_LBM2KG) 
+#define C_LBF2N         4.448221615     // (C_LBM2KG*C_G0MPERSEC2) lb force 
+#define C_SLUG2KG       14.59390294     // (C_LBM2KG*C_G0) slugs 
+
+#define C_LBM2KG_F      0.45359237f     // lb mass 
+#define C_KG2LBM_F      2.204622622f    // (1.0/C_LBM2KG) 
+#define C_LBF2N_F       4.448221615f    // (C_LBM2KG*C_G0MPERSEC2) lb force 
+#define C_SLUG2KG_F     14.59390294f    // (C_LBM2KG*C_G0) slugs 
+
+
+// Math constants 
+// from CRC Standard Mathematical Tables, 27th edition, 1984 
+
+#define C_PI            3.14159265358979323846264338327950288419716939937511
+#define C_ROOT2         1.41421356237309504880168872420969807856967187537695
+#define C_ROOT3         1.73205080756887729352744634150587236694280525381039
+#define C_E             2.71828182845904523536028747135266249775724709369996
+
+#define C_DIVROOT2      0.70710678118654752440084436210485
+
+#define C_PI_F          3.14159265358979323846264338327950288419716939937511f
+#define C_ROOT2_F       1.41421356237309504880168872420969807856967187537695f
+#define C_ROOT3_F       1.73205080756887729352744634150587236694280525381039f
+#define C_E_F           2.71828182845904523536028747135266249775724709369996f
+
+#define C_PIDIV16       0.19634954084936207740391521145497		// 11.25 deg
+#define C_PIDIV8        0.39269908169872415480783042290994		// 22.5 deg
+#define C_PIDIV4        0.78539816339744830961566084581988
+#define C_PIDIV2        1.5707963267948966192313216916398
+#define C_TWOPI         6.283185307179586476925286766559
+#define C_DIVTWOPI      0.15915494309189533576888376337251
+#define C_DIVPI         0.31830988618379067153776752674503
+
+#define C_PIDIV16_F     0.19634954084936207740391521145497f		// 11.25 deg
+#define C_PIDIV8_F      0.39269908169872415480783042290994f		// 22.5 deg
+#define C_PIDIV4_F      0.78539816339744830961566084581988f		// 45 deg
+#define C_PIDIV2_F      1.5707963267948966192313216916398f		// 90 deg
+#define C_TWOPI_F       6.283185307179586476925286766559f		// 360 deg
+#define C_DIVTWOPI_F    0.15915494309189533576888376337251f
+#define C_DIVPI_F       0.31830988618379067153776752674503f
+
+#define C_DEG2RAD       0.017453292519943295769236907684886
+#define C_DEG2RAD_F     0.017453292519943295769236907684886f
+#define C_RAD2DEG       57.295779513082320876798154814105
+#define C_RAD2DEG_F     57.295779513082320876798154814105f
+
+#define C_MM2M           0.001
+#define C_MM2M_F         0.001f
+#define C_M2MM        1000.0
+#define C_M2MM_F      1000.0f
+
+#define C_IN2M           0.0254
+#define C_IN2M_F         0.0254f
+#define C_M2IN          39.37007874
+#define C_M2IN_F        39.37007874f
+
+#define C_IN2MM         25.4
+#define C_IN2MM_F       25.4f
+#define C_MM2IN          0.03937007874
+#define C_MM2IN_F        0.03937007874f
+
+#define C_FPS2KT         0.5924838
+#define C_FPS2KT_F       0.5924838f
+#define C_KT2FPS         1.68780986
+#define C_KT2FPS_F       1.68780986f
+
+#define C_SQIN2SQFT      0.00694444444444444444444
+#define C_SQIN2SQFT_F    0.00694444444444444444444f
+#define C_SQFT2SQIN    144.0
+#define C_SQFT2SQIN_F  144.0f
+
+#define C_GPM2CFS        0.0022280093
+#define C_GPM2CFS_F      0.0022280093f
+#define C_CFS2GPM      448.83117
+#define C_CFS2GPM_F    448.83117f
+
+#define C_DEGF0_R        459.69
+#define C_DEGC0_T        273.16
+#define C_DEGC0_DEGF      32.0
+#define C_DEGF_PER_DEGC    1.8
+
+#define C_LN_2          0.69314718055994530941723212145818
+#define C_LN_2_F        0.69314718055994530941723212145818f
+
+#define C_C2K           273.16
+#define C_C2K_F         273.16f
+#define C_F2R           459.69
+#define C_F2R_F         459.69f
+
+#define C_G_CONST       1.068944098e-09   // 6.6732e-11*CUBE(C_M2FT)/C_KG2LBM
+#define C_EARTH_MASS    1.317041554e25    // 5.974e24*C_KG2LBM   
+#define C_N0_AVOGADRO   6.02205e23
+#define C_R_IDEAL_SU    8.31434
+#define C_K_BOLTZMANN   1.380622e-23
+#define C_C_LIGHT       983571194.2       // 2.9979250e+8*C_M2FT
+#define C_ECHARGE       1.6021917e-19
+
+#define C_DOFA          0.080719353       // 1.293*C_KG2LBM/CUBE(C_M2FT)  
+#define C_DOFH2O        62.427960576      // 1.000e3*C_KG2LBM/CUBE(C_M2FT)
+#define C_STOFH2O       75.6
+#define C_VOFH2O        1.787e-3
+#define C_SOUND0VEL     1087.598425       // 331.5*C_M2FT 
+#define C_SOUND20VEL    1126.64042        // 343.4*C_M2FT 
+
+#define C_G_CONST_F     1.068944098e-09f  // 6.6732e-11*CUBE(C_M2FT)/C_KG2LBM
+#define C_EARTH_MASS_F  1.317041554e25f   // 5.974e24*C_KG2LBM   
+#define C_N0_AVOGADRO_F 6.02205e23f
+#define C_R_IDEAL_SU_F  8.31434f
+#define C_K_BOLTZMANN_F 1.380622e-23f
+#define C_C_LIGHT_F     983571194.2f      // 2.9979250e+8*C_M2FT
+#define C_ECHARGE_F     1.6021917e-19f
+
+#define C_DOFA_F        0.080719353f      // 1.293*C_KG2LBM/CUBE(C_M2FT)  
+#define C_DOFH2O_F      62.427960576f     // 1.000e3*C_KG2LBM/CUBE(C_M2FT)
+#define C_STOFH2O_F     75.6f
+#define C_VOFH2O_F      1.787e-3f
+#define C_SOUND0VEL_F   1087.598425f      // 331.5*C_M2FT 
+#define C_SOUND20VEL_F  1126.64042f       // 343.4*C_M2FT 
+
+#define C_WGS84_a		6378137.0		  // WGS-84 semimajor axis (m) 
+#define C_WGS84_a_F		6378137.0f
+#define C_WGS84_b		6356752.3142	  // WGS-84 semiminor axis (m) 
+#define C_WGS84_b_F		6356752.3142f
+#define C_WIE			7.2321151467e-05  // WGS-84 earth rotation rate (rad/s) 
+#define C_WIE_F			7.2321151467e-05f
+
+#define C_TESLA2GAUSS_F		10000.0
+#define C_UTESLA2GAUSS_F	0.01
+
+
+
+#define C_0p1_DEG2RAD_F				0.00174532925199433f		// = 0.1f * C_0pDEG2RAD_F
+#define C_0p11_DEG2RAD_F			0.00191986217719376f
+#define C_0p12_DEG2RAD_F			0.00209439510239320f
+#define C_0p13_DEG2RAD_F			0.00226892802759263f
+#define C_0p14_DEG2RAD_F			0.00244346095279206f
+#define C_0p15_DEG2RAD_F			0.00261799387799149f
+#define C_0p16_DEG2RAD_F			0.00279252680319093f
+#define C_0p17_DEG2RAD_F			0.00296705972839036f
+#define C_0p18_DEG2RAD_F			0.00314159265358979f
+#define C_0p19_DEG2RAD_F			0.00331612557878923f
+#define C_0p2_DEG2RAD_F				0.00349065850398866f
+#define C_0p21_DEG2RAD_F			0.00366519142918809f
+#define C_0p22_DEG2RAD_F			0.00383972435438753f
+#define C_0p23_DEG2RAD_F			0.00401425727958696f
+#define C_0p24_DEG2RAD_F			0.00418879020478639f
+#define C_0p25_DEG2RAD_F			0.00436332312998582f
+#define C_0p26_DEG2RAD_F			0.00453785605518526f
+#define C_0p27_DEG2RAD_F			0.00471238898038469f
+#define C_0p28_DEG2RAD_F			0.00488692190558412f
+#define C_0p29_DEG2RAD_F			0.00506145483078356f
+#define C_0p3_DEG2RAD_F				0.00523598775598299f
+#define C_0p31_DEG2RAD_F			0.00541052068118242f
+#define C_0p32_DEG2RAD_F			0.00558505360638185f
+#define C_0p33_DEG2RAD_F			0.00575958653158129f
+#define C_0p34_DEG2RAD_F			0.00593411945678072f
+#define C_0p35_DEG2RAD_F			0.00610865238198015f
+#define C_0p36_DEG2RAD_F			0.00628318530717959f
+#define C_0p37_DEG2RAD_F			0.00645771823237902f
+#define C_0p38_DEG2RAD_F			0.00663225115757845f
+#define C_0p39_DEG2RAD_F			0.00680678408277788f
+#define C_0p4_DEG2RAD_F				0.00698131700797732f
+#define C_0p41_DEG2RAD_F			0.00715584993317675f
+#define C_0p42_DEG2RAD_F			0.00733038285837618f
+#define C_0p43_DEG2RAD_F			0.00750491578357562f
+#define C_0p44_DEG2RAD_F			0.00767944870877505f
+#define C_0p45_DEG2RAD_F			0.00785398163397448f
+#define C_0p46_DEG2RAD_F			0.00802851455917391f
+#define C_0p47_DEG2RAD_F			0.00820304748437335f
+#define C_0p48_DEG2RAD_F			0.00837758040957278f
+#define C_0p49_DEG2RAD_F			0.00855211333477222f
+#define C_0p5_DEG2RAD_F				0.00872664625997165f		// = 5.0f * C_0pDEG2RAD_F
+#define C_0p6_DEG2RAD_F				0.01047197551196600f
+#define C_0p7_DEG2RAD_F				0.01221730476396030f
+#define C_0p8_DEG2RAD_F				0.01396263401595460f
+#define C_0p9_DEG2RAD_F				0.01570796326794900f
+#define C_1p0_DEG2RAD_F				0.0174532925199433f		// = 1.0f * C_DEG2RAD_F
+#define C_1p1_DEG2RAD_F				0.0191986217719376f
+#define C_1p2_DEG2RAD_F				0.0209439510239320f
+#define C_1p3_DEG2RAD_F				0.0226892802759263f
+#define C_1p4_DEG2RAD_F				0.0244346095279206f
+#define C_1p5_DEG2RAD_F				0.0261799387799149f
+#define C_1p6_DEG2RAD_F				0.0279252680319093f
+#define C_1p7_DEG2RAD_F				0.0296705972839036f
+#define C_1p8_DEG2RAD_F				0.0314159265358979f
+#define C_1p9_DEG2RAD_F				0.0331612557878923f
+#define C_2p0_DEG2RAD_F				0.0349065850398866f
+#define C_2p1_DEG2RAD_F				0.0366519142918809f
+#define C_2p2_DEG2RAD_F				0.0383972435438753f
+#define C_2p3_DEG2RAD_F				0.0401425727958696f
+#define C_2p4_DEG2RAD_F				0.0418879020478639f
+#define C_2p5_DEG2RAD_F				0.0436332312998582f
+#define C_2p6_DEG2RAD_F				0.0453785605518526f
+#define C_2p7_DEG2RAD_F				0.0471238898038469f
+#define C_2p8_DEG2RAD_F				0.0488692190558412f
+#define C_2p9_DEG2RAD_F				0.0506145483078356f
+#define C_3p0_DEG2RAD_F				0.0523598775598299f
+#define C_3p1_DEG2RAD_F				0.0541052068118242f
+#define C_3p2_DEG2RAD_F				0.0558505360638185f
+#define C_3p3_DEG2RAD_F				0.0575958653158129f
+#define C_3p4_DEG2RAD_F				0.0593411945678072f
+#define C_3p5_DEG2RAD_F				0.0610865238198015f
+#define C_3p6_DEG2RAD_F				0.0628318530717959f
+#define C_3p7_DEG2RAD_F				0.0645771823237902f
+#define C_3p8_DEG2RAD_F				0.0663225115757845f
+#define C_3p9_DEG2RAD_F				0.0680678408277788f
+#define C_4p0_DEG2RAD_F				0.0698131700797732f
+#define C_4p1_DEG2RAD_F				0.0715584993317675f
+#define C_4p2_DEG2RAD_F				0.0733038285837618f
+#define C_4p3_DEG2RAD_F				0.0750491578357562f
+#define C_4p4_DEG2RAD_F				0.0767944870877505f
+#define C_4p5_DEG2RAD_F				0.0785398163397448f
+#define C_4p6_DEG2RAD_F				0.0802851455917391f
+#define C_4p7_DEG2RAD_F				0.0820304748437335f
+#define C_4p8_DEG2RAD_F				0.0837758040957278f
+#define C_4p9_DEG2RAD_F				0.0855211333477222f
+#define C_5p0_DEG2RAD_F				0.0872664625997165f		// = 5.0f * C_DEG2RAD_F
+#define C_6p0_DEG2RAD_F				0.1047197551196600f
+#define C_7p0_DEG2RAD_F				0.1221730476396030f
+#define C_8p0_DEG2RAD_F				0.1396263401595460f
+#define C_9p0_DEG2RAD_F				0.1570796326794900f
+#define C_10p0_DEG2RAD_F			0.1745329251994330f
+#define C_15p0_DEG2RAD_F			0.2617993877991490f
+#define C_20p0_DEG2RAD_F			0.3490658503988660f		// = 20.0f * C_DEG2RAD_F
+#define C_25p0_DEG2RAD_F			0.4363323129985820f
+#define C_30p0_DEG2RAD_F			0.5235987755982990f
+#define C_35p0_DEG2RAD_F			0.6108652381980150f
+#define C_40p0_DEG2RAD_F			0.6981317007977320f
+#define C_45p0_DEG2RAD_F			0.7853981633974480f
+#define C_50p0_DEG2RAD_F			0.8726646259971650f
+#define C_55p0_DEG2RAD_F			0.9599310885968810f
+#define C_60p0_DEG2RAD_F			1.0471975511966000f
+#define C_65p0_DEG2RAD_F			1.1344640137963100f
+#define C_70p0_DEG2RAD_F			1.2217304763960300f
+#define C_75p0_DEG2RAD_F			1.3089969389957500f
+#define C_80p0_DEG2RAD_F			1.3962634015954600f
+#define C_85p0_DEG2RAD_F			1.4835298641951800f
+#define C_90p0_DEG2RAD_F			1.5707963267949000f		
+#define C_135p0_DEG2RAD_F			2.3561944901923400f
+#define C_180p0_DEG2RAD_F			3.1415926535897900f
+
+
+
+
+// declination = magnetic north - true north
+// inclination: negative indicates that it is down from the horizon
+// Salem, UT on 5/1/2015
+#define SALEM_UT_MAG_INCLINATION    1.141736219     // (rad)  65.4166667° or 65° 25'  (negative pitch offset)
+#define SALEM_UT_MAG_DECLINATION    0.20303997      // (rad)  11.6333333° or 11° 38'  (heading offset)
+
+#define SALEM_UT_OFFICE_LATITUDE    40.0557114      // (°) North
+#define SALEM_UT_OFFICE_LONGITUDE   -111.6585476    // (°) West
+#define SALEM_UT_OFFICE_MSL         1426.77         // (m) Height above sea level (not HAE, height above ellipsoid)
+
+#endif // CONSTANTS_H_ 
