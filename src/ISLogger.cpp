@@ -332,17 +332,17 @@ void cISLogger::DeleteDirectory(const string& directory)
 uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, bool recursive)
 {
 	vector<file_info_t> files;
-	return GetDirectorySpaceUsed(directory, "", files, recursive);
+	return GetDirectorySpaceUsed(directory, "", files, true, recursive);
 }
 
 
 uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, vector<file_info_t>& files, bool recursive)
 {
-	return GetDirectorySpaceUsed(directory, "", files, recursive);
+	return GetDirectorySpaceUsed(directory, "", files, true, recursive);
 }
 
 
-uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, string regexPattern, vector<file_info_t>& files, bool recursive)
+uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, string regexPattern, vector<file_info_t>& files, bool sortByDate, bool recursive)
 {
 	vector<string> fileNames;
 	GetAllFilesInDirectory(directory, recursive, regexPattern, fileNames);
@@ -359,20 +359,34 @@ uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, string regexP
 		spaceUsed += info.size;
 	}
 
-	struct
+	if (sortByDate)
 	{
-		bool operator()(const file_info_t& a, const file_info_t& b)
+		struct
 		{
-			int compare = (a.lastModificationDate == b.lastModificationDate ? 0 : (a.lastModificationDate < b.lastModificationDate ? -1 : 1));
-			if (compare == 0)
+			bool operator()(const file_info_t& a, const file_info_t& b)
 			{
-				compare = a.name.compare(b.name);
+				int compare = (a.lastModificationDate == b.lastModificationDate ? 0 : (a.lastModificationDate < b.lastModificationDate ? -1 : 1));
+				if (compare == 0)
+				{
+					compare = a.name.compare(b.name);
+				}
+				return compare < 0;
 			}
-			return compare < 0;
-		}
-	} customSort;
+		} customSortDate;
+		sort(files.begin(), files.end(), customSortDate);
+	}
+	else
+	{
+		struct
+		{
+			bool operator()(const file_info_t& a, const file_info_t& b)
+			{
+				return a.name < b.name;
+			}
+		} customSortName;
+		sort(files.begin(), files.end(), customSortName);
+	}
 
-	sort(files.begin(), files.end(), customSort);
 	return spaceUsed;
 }
 
@@ -399,7 +413,10 @@ uint64_t cISLogger::GetDirectorySpaceAvailable(const string& directory)
 	struct statvfs stat;
 	memset(&stat, 0, sizeof(stat));
 	char fullPath[PATH_MAX];
-	realpath(directory.c_str(), fullPath);
+	if (realpath(directory.c_str(), fullPath) == NULL)
+	{
+		return 0;
+	}
 	bool created = (_MKDIR(fullPath) == 0);
 	statvfs(fullPath, &stat);
 	if (created)

@@ -53,7 +53,7 @@ void cDeviceLogCSV::InitDeviceForReading()
 			string dataSetRegex = string(dataSet) + "\\.csv$";
 			vector<file_info_t> infos;
 			vector<string> files;
-			cISLogger::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false);
+			cISLogger::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
 			if (infos.size() != 0)
 			{
 				cCsvLog log;

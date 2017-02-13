@@ -65,7 +65,10 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, int id, vector<string>& columnHead
 
 	char line[8192];
 	line[0] = '\0';
-	fgets(line, _ARRAY_BYTE_COUNT(line), pFile);
+	if (fgets(line, _ARRAY_BYTE_COUNT(line), pFile) == NULL || ferror(pFile) != 0)
+	{
+		return 0;
+	}
 	stringstream stream(line);
 	string columnHeader;
 	columnHeaders.clear();
@@ -103,7 +106,7 @@ int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t&
 		return 0;
 	}
 	char tmp[64];
-	SNPRINTF(tmp, 64, "%llu", orderId);
+	SNPRINTF(tmp, 64, "%llu", (long long unsigned int)orderId);
 	s = tmp + string(",") + s + "\n";
 	fputs(s.c_str(), pFile);
 	return (int)s.length();

@@ -106,10 +106,12 @@ public:
 	// delete a directory and all files and sub-directories
 	static void DeleteDirectory(const string& directory);
 
-	// get space used in a directory recursively - files is filled with all files in the directory, sorted by modification date, files is NOT cleared beforehand.
+	// get space used in a directory recursively - files is filled with all files in the directory, sorted by modification date, files is NOT cleared beforehand. sortByDate of false sorts by file name
 	static uint64_t GetDirectorySpaceUsed(const string& directory, bool recursive = true);
 	static uint64_t GetDirectorySpaceUsed(const string& directory, std::vector<file_info_t>& files, bool recursive = true);
-	static uint64_t GetDirectorySpaceUsed(const string& directory, string regexPattern, std::vector<file_info_t>& files, bool recursive = true);
+	static uint64_t GetDirectorySpaceUsed(const string& directory, string regexPattern, std::vector<file_info_t>& files, bool sortByDate = true, bool recursive = true);
+
+	// get free space for the disk that the specified directory exists on
 	static uint64_t GetDirectorySpaceAvailable(const string& directory);
 
 private:

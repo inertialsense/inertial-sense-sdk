@@ -2,7 +2,7 @@ add_executable(cltool main.cpp cltool.cpp comManagerDemoMain.cpp)
 add_subdirectory(../../ ${CMAKE_CURRENT_BINARY_DIR}/InertialSenseLibs)
 
 target_link_libraries(cltool ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(cltool InertialSenseLibs)
+target_link_libraries(cltool InertialSense)
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions")

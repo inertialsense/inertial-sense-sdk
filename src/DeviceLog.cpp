@@ -73,7 +73,7 @@ bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum,
 	m_fileNames.clear();
 	vector<file_info_t> fileInfos;
 	SetSerialNumber((uint32_t)strtoul(serialNum.c_str(), NULL, 10));
-	cISLogger::GetDirectorySpaceUsed(directory, string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_", fileInfos, false);
+	cISLogger::GetDirectorySpaceUsed(directory, string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_", fileInfos, false, false);
 	if (fileInfos.size() != 0)
 	{
 		m_fileName = fileInfos[0].name;
@@ -167,14 +167,14 @@ bool cDeviceLog::OpenNextReadFile()
 	{
 
 #if LOG_DEBUG_READ
-		printf("File opened: %s\n", filename.str().c_str());
+		printf("File opened: %s\n", m_fileName.c_str());
 #endif
 		return true;
 	}
 	else
 	{
 #if LOG_DEBUG_READ
-		printf("FAILED to open file: %s\n", filename.str().c_str());
+		printf("FAILED to open file: %s\n", m_fileName.c_str());
 #endif
 		return false;
 	}

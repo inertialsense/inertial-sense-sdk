@@ -1,4 +1,4 @@
-add_library(InertialSenseLibs
+add_library(InertialSense
   src/InertialSense.cpp
   src/inertialSenseBootLoader.c
   
