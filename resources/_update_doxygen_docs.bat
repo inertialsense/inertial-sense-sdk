@@ -14,10 +14,10 @@ cd ..
 
 
 :: Remove Old Files
-rmdir /q /s docs
+rmdir /q /s docs/html
 
 :: Create Directory
-mkdir docs
+::mkdir docs/html
 
 
 
