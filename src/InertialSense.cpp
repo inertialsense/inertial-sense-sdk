@@ -55,12 +55,19 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 			// Called for all DID's
 			handlerGlobal(s->inertialSenseInterface, data);
 		}
+
+		// if we got the device info, populate it
+		if (data->hdr.id == DID_DEV_INFO)
+		{
+			memcpy(s->devInfo, data->buf, sizeof(dev_info_t));
+		}
 	}
 }
 
 InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serialPort)
 {
-	memset(&m_comManagerState, 0, sizeof(com_manager_cpp_state_t));
+	memset(&m_comManagerState, 0, sizeof(m_comManagerState));
+	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
 	m_logSolution = SLOG_DISABLED;
 	m_cmHandle = getGlobalComManager();
 	m_logThread = nullptr;
@@ -80,6 +87,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 	m_comManagerState.binarySerialPort = &m_serialPort;
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
 	m_comManagerState.inertialSenseInterface = this;
+	m_comManagerState.devInfo = &m_deviceInfo;
 	comManagerAssignUserPointer(m_cmHandle, &m_comManagerState);
 	initComManager(1, 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
 	m_comManagerState.binaryCallbackGlobal = callback;
@@ -140,7 +148,36 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data)
 
 bool InertialSense::Open(const char* port, int baudRate)
 {
-	return (serialPortOpen(&m_serialPort, port, baudRate, 0) != 0);
+	// clear the device in preparation for auto-baud
+	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
+
+	// TODO: Validate baud rate, return false if invalid
+
+	if (!(serialPortOpen(&m_serialPort, port, baudRate, 0) != 0))
+	{
+		return false;
+	}
+
+	// negotiate baud rate by querying device info - don't return out until it negotiates or times out
+	// if the baud rate is already correct, the request for the message should succeed very quickly
+	time_t startTime = time(0);
+
+	// try to auto-baud for up to 3 seconds, then abort if we didn't get a valid packet
+	// we wait until we get a valid serial number and manufacturer
+	while (m_deviceInfo.serialNumber == 0 && m_deviceInfo.manufacturer[0] == '\0' && time(0) - startTime < 3)
+	{
+		getDataComManagerInstance(m_cmHandle, 0, DID_DEV_INFO, 0, 0, 0);
+		SLEEP_MS(2); // 2 milliseconds wait for reply
+		stepComManagerInstance(m_cmHandle);
+	}
+
+	if (m_deviceInfo.serialNumber == 0 && m_deviceInfo.manufacturer[0] == '\0')
+	{
+		Close();
+		return false;
+	}
+
+	return true;
 }
 
 void InertialSense::SetLoggerEnabled(bool enable, const string& path, uint32_t logSolution, float maxDiskSpaceMB, uint32_t maxFileSize, uint32_t chunkSize, bool useTimestampSubFolder)

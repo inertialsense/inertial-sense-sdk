@@ -56,6 +56,7 @@ public:
 		pfnHandleBinaryData binaryCallbackGlobal;
 		pfnHandleBinaryData binaryCallback[DID_COUNT];
 		pfnStepLogFunction stepLogFunction;
+		dev_info_t* devInfo;
 		InertialSense* inertialSenseInterface;
 	};
 
@@ -117,6 +118,7 @@ public:
 	* Closes any open connection and then opens the device
 	* @param port the port to open
 	* @param baudRate the baud rate to connect with
+	* @return true if opened, false if failure (i.e. baud rate failure or bad port)
 	*/
 	bool Open(const char* port, int baudRate = BAUD_RATE_STANDARD);
 
@@ -148,6 +150,11 @@ public:
 	*/
 	void StopBroadcasts();
 
+	/*!
+	* Get the device info - if it is not yet known, the serial number will be 0
+	*/
+	const dev_info_t& GetDeviceInfo() { return m_deviceInfo; }
+
 private:
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
 	string m_asciiLine;
@@ -160,6 +167,7 @@ private:
 	list<p_data_t> m_logPackets;
 	uint32_t m_logSolution; // SLOG_DISABLED if none
 	time_t m_lastLogReInit;
+	dev_info_t m_deviceInfo;
 
 	void LoggerThread();
 	void DisableLogging();

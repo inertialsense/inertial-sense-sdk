@@ -169,7 +169,6 @@ typedef struct
 
 	// ensured packets
 	ensured_pkt_t* ensuredPackets;		
-								
 
 	// handle ASCII messages not handled elsewhere
 	pfnComManagerAsciiMessageHandler asciiMessageHandler;
