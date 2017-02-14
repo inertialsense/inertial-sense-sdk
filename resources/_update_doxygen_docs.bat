@@ -2,8 +2,8 @@
 setlocal enabledelayedexpansion
 
 :: Parameters
-set sdkDir=docs
-set inputfilename=release-notes-template.txt
+::set sdkDir=docs
+::set inputfilename=release-notes-template.txt
 
 :: Read Release version, date, and time
 ::set /p releaseversion=<version\releaseVersion.txt
@@ -12,7 +12,16 @@ set inputfilename=release-notes-template.txt
 
 cd ..
 
-echo Before Doxygen
+
+:: Remove Old Files
+rmdir /q /s docs
+
+:: Create Directory
+mkdir docs
+
+
+
+echo Generating Doxygen Documentation
 
 :: Update Doxygen documentation
 ::doxygen resources\DoxyfileSDK
@@ -27,9 +36,13 @@ echo Before Doxygen
 ::echo %cmdstr%
 
 
+:: Automatically Open Doxygen Docs
+start index.html
+
+
+
 exit /b
 :: Script End
-
 
 
 :GetRelease <filename>
