@@ -1,4 +1,4 @@
-**SDK** - The Inertial Sense open source software developemnt kit provides quick integration for communication with the Inertial Sense product line, including the uINS, uAHRS, and uINS.  It includes data logger, math libraries, and serial port interface for Linux, Mac, and Windows environments.   
+**SDK** - The Inertial Sense open source software development kit provides quick integration for communication with the Inertial Sense product line, including the uINS, uAHRS, and uINS.  It includes data logger, math libraries, and serial port interface for Linux, Mac, and Windows environments.   
 
 **EvalTool** - Graphical Windows-based desktop program that allows you to explore and test functionality of the Inertial Sense products in real-time.  It has scrolling plots, 3D model representation, table views of all data, data logger, and firmware updating interface for the uINS, uAHRS, or uIMU. The EvalTool can simultaneously interface with multiple Inertial Sense devices.
 
@@ -13,7 +13,7 @@
 
 ### Downloads
 
- * [SDK & CLTool Release](https://github.com/inertialsense/InertialSenseSDK/releases) - pre-compiled static libraries and binaries for Linux and Windows.
+ * [SDK & CLTool Binaries](https://github.com/inertialsense/InertialSenseSDK/releases) - pre-compiled release static libraries and executables for Linux and Windows.
  * [SDK & CLTool Source Code](https://github.com/inertialsense/InertialSenseSDK) - open source SDK repository with command line tool and example C/C++ source code.
  * [EvalTool](https://inertialsense.com/download/eval-tool-installer/) - Windows application.
  * [Firmware](https://inertialsense.com/download/eval-tool-installer/) - for uINS, uAHRS, and uIMU hardware v2 and v3.  See [release-notes](https://inertialsense.com/download/release-notes) for details.
