@@ -23,6 +23,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <mutex>
 #include <list>
 #include <condition_variable>
+
+#include "ISTcpClient.h"
 #include "ISLogger.h"
 #include "ISDisplay.h"
 #include "ISUtilities.h"
@@ -117,10 +119,10 @@ public:
 	/*!
 	* Closes any open connection and then opens the device
 	* @param port the port to open
-	* @param baudRate the baud rate to connect with
-	* @return true if opened, false if failure (i.e. baud rate failure or bad port)
+	* @param baudRate the baud rate to connect with - supported rates are 115200, 230400, 460800, 921600, 2000000, 3000000
+	* @return true if opened, false if failure (i.e. baud rate is bad or port fails to open)
 	*/
-	bool Open(const char* port, int baudRate = BAUD_RATE_STANDARD);
+	bool Open(const char* port, int baudRate = IS_COM_BAUDRATE_DEFAULT);
 
 	/*!
 	*  Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -146,6 +148,18 @@ public:
 	bool LoggerEnabled() { return m_logger.Enabled(); }
 
 	/*!
+	* Connect to an RTCM3 server and send the data from that server to the uINS
+	* @param hostAndPort the server to connect to with the host, then port information after a colon, i.e. 192.168.1.100:7777
+	* @return true if connection opened, false if failure
+	*/
+	bool OpenServerConnectionRTCM3(const string& hostAndPort);
+
+	/*!
+	* Close any open connection to a server
+	*/
+	void CloseServerConnection();
+
+	/*!
 	* Turn off all messages
 	*/
 	void StopBroadcasts();
@@ -168,6 +182,8 @@ private:
 	uint32_t m_logSolution; // SLOG_DISABLED if none
 	time_t m_lastLogReInit;
 	dev_info_t m_deviceInfo;
+	ISTcpClient m_tcpClient;
+	vector<uint8_t> m_tcpBuffer;
 
 	void LoggerThread();
 	void DisableLogging();

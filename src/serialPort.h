@@ -24,25 +24,27 @@ extern "C" {
 extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 
 #define MAX_SERIAL_PORT_NAME_LENGTH 31
-#define BAUD_RATE_BOOTLOADER 2000000
-#define BAUD_RATE_BOOTLOADER_RS232 230400
-#define BAUD_RATE_MIN_STANDARD 921600
-#define BAUD_RATE_STANDARD 3000000
 
-// list of supported baud rates, in ascending order of speed
-#define BAUD_RATE_9600      9600    // 104 us
-#define BAUD_RATE_19200     19200   // 52 us
-#define BAUD_RATE_57600     57600   // 17 us
-#define BAUD_RATE_115200    115200  // 8680 ns
-#define BAUD_RATE_460800    460800  // 2170 ns
-#define BAUD_RATE_921600    921600  // 1085 ns
-#define BAUD_RATE_1000000   1000000 // 1000 ns
-#define BAUD_RATE_2000000   2000000 // 500 ns (FTDI 2080, AVR/ARM 2016)
-#define BAUD_RATE_3000000   3000000 // 333 ns
-#define BAUD_RATE_COUNT     9
-
-// list of supported baud rates, in ascending order of speed
-extern const int g_serialPortBaudRates[BAUD_RATE_COUNT];
+// Standard Baud Rates - FTDI Functional.	// Bit period = 1/baudrate, Actual baud (FTDI,AVR,ARM)
+#define BAUDRATE_300			300			// 3333 us
+#define BAUDRATE_600			600			// 1667 us
+#define BAUDRATE_1200			1200		//  833 us
+#define BAUDRATE_2400			2400		//  417 us
+#define BAUDRATE_4800			4800		//  208 us
+#define BAUDRATE_9600			9600		//  104 us
+#define BAUDRATE_19200			19200		//   52 us
+#define BAUDRATE_38400			38400		//   26 us
+#define BAUDRATE_57600			57600		//   17 us
+#define BAUDRATE_115200			115200		// 8680 ns
+#define BAUDRATE_230400			230400		// 4340 ns
+#define BAUDRATE_460800			460800		// 2170 ns
+#define BAUDRATE_921600			921600		// 1085 ns
+#define BAUDRATE_1000000		1000000		// 1000 ns
+#define BAUDRATE_1220000		1220000		//  820 ns
+#define BAUDRATE_1440000		1440000		//  794 ns
+#define BAUDRATE_1500000		1500000		//  667 ns	(FTDI 1520, AFR 1500)
+#define BAUDRATE_2000000		2000000		//  500 ns	(FTDI 2080, AVR/ARM 2016)
+#define BAUDRATE_3000000		3000000		//  333 ns	(FTDI 3150, AVR/ARM 3030)
 
 typedef struct serial_port_t serial_port_t;
 

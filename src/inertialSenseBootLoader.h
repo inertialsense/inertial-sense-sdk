@@ -21,6 +21,15 @@ extern "C" {
 
 extern char g_enableBootloaderVerify;		// Allow users to skip verify
 
+/*! uINS bootloader baud rate */
+#define IS_BAUD_RATE_BOOTLOADER 2000000
+
+/*! uINS rs232 bootloader baud rate */
+#define IS_BAUD_RATE_BOOTLOADER_RS232 230400
+
+/*! uINS standard baud rate, used by bootloader code to enable bootloader mode */
+#define IS_BAUD_RATE_BOOTLOADER_COM 3000000
+
 #define ENABLE_BOOTLOADER_BAUD_DETECTION
 #define BOOTLOADER_REFRESH_DELAY   20
 #define BOOTLOADER_RESPONSE_DELAY  15 // needs to be > 10 for 2M baud

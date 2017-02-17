@@ -875,7 +875,7 @@ static int bootloaderSync(serial_port_t* s)
 
 static int bootloaderHandshake(serial_port_t* s)
 {
-	static int baud = BAUD_RATE_BOOTLOADER;
+	static int baud = IS_BAUD_RATE_BOOTLOADER;
 
 #ifdef ENABLE_BOOTLOADER_BAUD_DETECTION
 	// try handshaking at each baud rate at least twice
@@ -890,7 +890,7 @@ static int bootloaderHandshake(serial_port_t* s)
 #ifdef ENABLE_BOOTLOADER_BAUD_DETECTION
 		// retry at other baud rate
 		serialPortClose(s);
-		baud = (baud == BAUD_RATE_BOOTLOADER) ? BAUD_RATE_BOOTLOADER_RS232 : BAUD_RATE_BOOTLOADER;
+		baud = (baud == IS_BAUD_RATE_BOOTLOADER) ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER;
 		serialPortOpen(s, s->port, baud, 1);
 #endif // ENABLE_BOOTLOADER_DETECTION
 	}
@@ -973,7 +973,7 @@ int bootloadFileEx(bootload_params_t* params)
 	int result = 0;
 
 	// open the serial port
-	if (serialPortOpenInternal(params->port, BAUD_RATE_BOOTLOADER, params->error, params->errorLength) == 0)
+	if (serialPortOpenInternal(params->port, IS_BAUD_RATE_BOOTLOADER, params->error, params->errorLength) == 0)
 	{
 		return result;
 	}
@@ -1017,7 +1017,7 @@ int bootloadFileEx(bootload_params_t* params)
 int enableBootloader(serial_port_t* port, char* error, int errorLength)
 {
 	// open the serial port
-	if (serialPortOpenInternal(port, BAUD_RATE_STANDARD, error, errorLength) == 0)
+	if (serialPortOpenInternal(port, IS_BAUD_RATE_BOOTLOADER_COM, error, errorLength) == 0)
 	{
 		return 0;
 	}
@@ -1049,7 +1049,7 @@ static int disableBootloaderInternal(serial_port_t* port, char* error, int error
 int disableBootloader(serial_port_t* port, char* error, int errorLength)
 {
 	int result = 0;
-	result |= disableBootloaderInternal(port, error, errorLength, BAUD_RATE_BOOTLOADER);
-	result |= disableBootloaderInternal(port, error, errorLength, BAUD_RATE_BOOTLOADER_RS232);
+	result |= disableBootloaderInternal(port, error, errorLength, IS_BAUD_RATE_BOOTLOADER);
+	result |= disableBootloaderInternal(port, error, errorLength, IS_BAUD_RATE_BOOTLOADER_RS232);
 	return result;
 }

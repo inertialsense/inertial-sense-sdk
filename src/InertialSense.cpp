@@ -100,28 +100,41 @@ InertialSense::~InertialSense()
 
 void InertialSense::DisableLogging()
 {
-	lock_guard<mutex> lk(m_logMutex);
 	m_logger.EnableLogging(false);
-	m_logCondition.notify_one();
 	if (m_logThread != nullptr)
 	{
 		m_logThread->join();
 		delete m_logThread;
 		m_logThread = nullptr;
 	}
+	m_logger.CloseAllFiles();
 }
 
 void InertialSense::LoggerThread()
 {
-	while (m_logger.Enabled())
+	bool running = true;
+	while (running)
 	{
-		unique_lock<mutex> lk(m_logMutex);
-		m_logCondition.wait(lk, [this] { return this->m_logPackets.size() != 0 || !m_logger.Enabled(); });
-		if (m_logPackets.size() != 0 && m_logger.Enabled())
+		vector<p_data_t> packets;
+		m_logMutex.lock();
+		try
 		{
-			m_logger.LogData(0, &m_logPackets.begin()->hdr, m_logPackets.begin()->buf);
-			m_logPackets.pop_front();
+			for (list<p_data_t>::iterator i = m_logPackets.begin(); i != m_logPackets.end(); i++)
+			{
+				packets.push_back(*i);
+			}
+			m_logPackets.clear();
+			running = m_logger.Enabled();
 		}
+		catch (...)
+		{
+		}
+		m_logMutex.unlock();
+		for (size_t i = 0; i < packets.size(); i++)
+		{
+			m_logger.LogData(0, &packets[i].hdr, packets[i].buf);
+		}
+		SLEEP_MS(20);
 	}
 }
 
@@ -131,12 +144,18 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data)
 	// i->m_logger.LogData(0, (p_data_hdr_t*)&data->hdr, (uint8_t*)data->buf); return;
 	const time_t reinitSeconds = 2;
 
-	if (i->m_logger.Enabled())
+	i->m_logMutex.lock();
+	try
 	{
-		lock_guard<mutex> lk(i->m_logMutex);
-		i->m_logPackets.push_back(*data);
-		i->m_logCondition.notify_one();
+		if (i->m_logger.Enabled())
+		{
+			i->m_logPackets.push_back(*data);
+		}
 	}
+	catch (...)
+	{
+	}
+	i->m_logMutex.unlock();
 
 	// if time has passed, re-send the appropriate log solution message
 	if (time(0) - i->m_lastLogReInit > reinitSeconds)
@@ -151,7 +170,17 @@ bool InertialSense::Open(const char* port, int baudRate)
 	// clear the device in preparation for auto-baud
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
 
-	// TODO: Validate baud rate, return false if invalid
+	switch (baudRate)
+	{
+	case IS_BAUDRATE_115200:
+	case IS_BAUDRATE_230400:
+	case IS_BAUDRATE_460800:
+	case IS_BAUDRATE_921600:
+	case IS_BAUDRATE_3000000:
+		break;
+	default:
+		return false;
+	}
 
 	if (!(serialPortOpen(&m_serialPort, port, baudRate, 0) != 0))
 	{
@@ -203,6 +232,24 @@ void InertialSense::SetLoggerEnabled(bool enable, const string& path, uint32_t l
 	}
 }
 
+bool InertialSense::OpenServerConnectionRTCM3(const string& hostAndPort)
+{
+	size_t colon = hostAndPort.find(':', 0);
+	if (colon == string::npos)
+	{
+		return false;
+	}
+	string host = hostAndPort.substr(0, colon);
+	string portString = hostAndPort.substr(++colon);
+	int port = (int)strtol(portString.c_str(), NULL, 10);
+	return (m_tcpClient.Open(host, port) == 0);
+}
+
+void InertialSense::CloseServerConnection()
+{
+	m_tcpClient.Close();
+}
+
 bool InertialSense::IsOpen()
 {
 	return (serialPortIsOpen(&m_serialPort) != 0);
@@ -210,6 +257,12 @@ bool InertialSense::IsOpen()
 
 void InertialSense::Update()
 {
+	if (m_tcpClient.IsOpen())
+	{
+		uint8_t buffer[4096];
+		int count = m_tcpClient.Read(buffer, sizeof(buffer), false);
+		//serialPortWrite(&m_serialPort, (unsigned char*)buffer, count);
+	}
 	stepComManager();
 }
 
@@ -217,6 +270,7 @@ void InertialSense::Close()
 {
 	SetLoggerEnabled(false);
 	serialPortClose(&m_serialPort);
+	m_tcpClient.Close();
 }
 
 const char* InertialSense::GetPort()

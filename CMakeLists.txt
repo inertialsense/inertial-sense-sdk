@@ -1,38 +1,32 @@
 add_library(InertialSense
-  src/InertialSense.cpp
-  src/inertialSenseBootLoader.c
-  
   src/com_manager.c
   src/data_sets.c
-  src/linked_list.c
-  
-  src/ISLogger.cpp
-  src/DeviceLog.cpp
-  src/DeviceLogSerial.cpp
-  src/DeviceLogSorted.cpp
-  src/DeviceLogCSV.cpp
-  src/DeviceLogKML.cpp
   src/DataChunk.cpp
   src/DataChunkSorted.cpp
   src/DataCSV.cpp
   src/DataKML.cpp
-  
+  src/DeviceLog.cpp
+  src/DeviceLogCSV.cpp
+  src/DeviceLogKML.cpp
+  src/DeviceLogSerial.cpp
+  src/DeviceLogSorted.cpp
+  src/InertialSense.cpp
+  src/inertialSenseBootLoader.c
+  src/ISDataMappings.cpp
+  src/ISDisplay.cpp
+  src/ISLogger.cpp
   src/ISMatrix.c
   src/ISPose.c
-  
+  src/ISTcpClient.cpp
+  src/ISUtilities.cpp
+  src/linked_list.c
   src/serialPort.c
   src/serialPortPlatform.c
-  
-  src/ISUtilities.cpp
-  src/ISDisplay.cpp
-  src/ISDataMappings.cpp
   src/time_conversion.c
-  
   src/tinystr.cpp
   src/tinyxml.cpp
   src/tinyxmlerror.cpp
-  src/tinyxmlparser.cpp
-  
+  src/tinyxmlparser.cpp  
   )
 
 add_definitions(

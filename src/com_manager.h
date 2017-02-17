@@ -40,6 +40,19 @@ extern "C" {
 #endif
 */
 
+enum
+{
+	IS_BAUDRATE_115200		= 115200,
+	IS_BAUDRATE_230400		= 230400,
+	IS_BAUDRATE_460800		= 460800,
+	IS_BAUDRATE_921600		= 921600,
+	IS_BAUDRATE_3000000		= 3000000,
+	IS_BAUDRATE_COUNT		= 5
+};
+
+/*! uINS default baud rate */
+#define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_3000000
+
 /*! The maximum allowable dataset size */
 #define MAX_DATASET_SIZE        1024
 
@@ -370,17 +383,32 @@ typedef enum
 /*! Contains status for the com manager */
 typedef struct  
 {
-	/*! Contains the port with the most recent error */
-	int						rxErrorPHandle;
+	/*! bytes read without a valid message */
+	uint32_t readCounter;
 
-	/*! 0 if no errors encounteted, otherwise non-zero */
-	int						rxError;
+	/*! 0 if no errors encountered, otherwise non-zero */
+	uint32_t rxError;
 
-	/*! Total read count */
-	int						rxCount;
+	/*! Number of packets read successfully */
+	uint32_t rxPktCount;
 
-	/*! Total write count */
-	int						txCount;
+	/*! Number of packets written */
+	uint32_t txPktCount;
+
+	/*! number of communication errors - can be reset to 0 if desired */
+	uint32_t communicationErrorCount;
+
+	/*!
+	flags to send on each request - do not modify
+	valid data : flags & CM_PKT_FLAGS_RX_VALID_DATA
+	*/
+	uint8_t flags;
+
+	/*! keep track of the start byte for binary parsing - do not modify */
+	uint8_t startByte;
+
+	/*! keep track of the number of pass through bytes remaining - do not modify */
+	uint32_t passThroughBytes;
 } com_manager_status_t;
 
 // com manager instance / handle is a void*
@@ -416,6 +444,8 @@ typedef void(*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_thro
 
 // get the global instance of the com manager - this is only needed if you are working with multiple com managers and need to compare instances
 CMHANDLE getGlobalComManager(void);
+
+extern const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT];
 
 /*!
 Initializes the default global com manager. This is generally only called once on program start.
@@ -473,14 +503,6 @@ Performs one round of sending and receiving message. This should be called as of
 */
 SHAREDLIB_EXPORT void stepComManager(void);
 SHAREDLIB_EXPORT void stepComManagerInstance(CMHANDLE cmInstance);
-
-/*!
-Get the most recent status of the com manager
-
-@return com manager status, this pointer is owned by the com manager
-*/
-SHAREDLIB_EXPORT com_manager_status_t* getStatusComManager(void);
-com_manager_status_t* getStatusComManagerInstance(CMHANDLE cmInstance);
 
 /*!
 Make a request to a port handle to broadcast a piece of data at a set interval
@@ -615,12 +637,12 @@ SHAREDLIB_EXPORT void disableAllBroadcasts(void);
 SHAREDLIB_EXPORT void disableAllBroadcastsInstance(CMHANDLE cmInstance);
 
 /*!
-Checks if any valid data has been received by the com manager
+Get the most recent status of the com manager
 
-@return non-zero if valid data has been received
+@return com manager status, this pointer is owned by the com manager
 */
-SHAREDLIB_EXPORT unsigned char comManagerHasReceivedValidData(void);
-SHAREDLIB_EXPORT unsigned char comManagerHasReceivedValidDataInstance(CMHANDLE cmInstance);
+SHAREDLIB_EXPORT com_manager_status_t* getStatusComManager(int pHandle);
+SHAREDLIB_EXPORT com_manager_status_t* getStatusComManagerInstance(CMHANDLE cmInstance, int pHandle);
 
 /*!
 Register message handling function for a received data id (binary). This is mostly an internal use function,
@@ -654,26 +676,12 @@ SHAREDLIB_EXPORT void registerComManagerASCII(asciiMessageMap_t* asciiMessages, 
 SHAREDLIB_EXPORT void registerComManagerASCIIInstance(CMHANDLE cmInstance, asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc);
 
 /*!
-Send all pending messages.
-Normally you don't need to call this as it is called in stepComManager.
-*/
-SHAREDLIB_EXPORT void stepComManagerSendMessages(void);
-SHAREDLIB_EXPORT void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
-
-/*!
 Force the com manager to change all sent packets to the specified endianess
+@param pHandle the port to set endianess on
 @param littleEndian 0 to force big endian, 1 to force little endian
 */
-SHAREDLIB_EXPORT void setComManagerSendEndianess(int littleEndian);
-SHAREDLIB_EXPORT void setComManagerSendEndianessInstance(CMHANDLE cmInstance, int littleEndian);
-
-/*!
-Get / set communication error count
-*/
-SHAREDLIB_EXPORT uint32_t comManagerGetCommunicationErrorCount(void);
-SHAREDLIB_EXPORT uint32_t comManagerGetCommunicationErrorCounInstance(CMHANDLE cmInstance);
-SHAREDLIB_EXPORT void comManagerSetCommunicationErrorCount(uint32_t count);
-SHAREDLIB_EXPORT void comManagerSetCommunicationErrorCountInstance(CMHANDLE cmInstance, uint32_t count);
+SHAREDLIB_EXPORT void setComManagerSendEndianess(int pHandle, int littleEndian);
+SHAREDLIB_EXPORT void setComManagerSendEndianessInstance(CMHANDLE cmInstance, int pHandle, int littleEndian);
 
 /*!
 Set a com manager pass through handler, handle can be 0 or null to remove the current handler
@@ -701,6 +709,11 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
 
 /*! Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
+
+/**
+ * \brief Ensure baudrate is valid for InertialSense hardware.  0 on success, -1 on failure.
+ */
+int validateBaudRate( int baudrate );
 
 #ifdef __cplusplus
 }

@@ -14,19 +14,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
 
-const int g_serialPortBaudRates[BAUD_RATE_COUNT] =
-{
-	BAUD_RATE_9600,
-	BAUD_RATE_19200,
-	BAUD_RATE_57600,
-	BAUD_RATE_115200,
-	BAUD_RATE_460800,
-	BAUD_RATE_921600,
-	BAUD_RATE_1000000,
-	BAUD_RATE_2000000,
-	BAUD_RATE_3000000
-};
-
 void serialPortSetPort(serial_port_t* serialPort, const char* port)
 {
 	if (serialPort != 0 && port != 0 && port != serialPort->port)
