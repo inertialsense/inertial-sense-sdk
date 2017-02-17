@@ -30,47 +30,53 @@
 ## CLTool Instructions
 
 #### Compiling in Linux / Mac
+
 1. Create build directory...
-~~~~~~~~~~~~~{.c}
-$ cd InertialSenseCLTool
-$ mkdir build
-~~~~~~~~~~~~~
+
+    ~~~~~~~~~~~~~{.c}
+    $ cd InertialSenseCLTool
+    $ mkdir build
+    ~~~~~~~~~~~~~
 
 2. Run cmake from within build directory.
-~~~~~~~~~~~~~{.c}
-$ cd build
-$ cmake ..
-~~~~~~~~~~~~~
-to cross-compile to 32 or 64 bit:
-~~~~~~~~~~~~~{.c}
-sudo apt-get install libc6-dev-i386
-sudo apt-get install gcc-multilib g++-multilib
-~~~~~~~~~~~~~
-32 bit
-~~~~~~~~~~~~~{.c}
-cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
-~~~~~~~~~~~~~
-64 bit
-~~~~~~~~~~~~~{.c}
-cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
-~~~~~~~~~~~~~
+
+    ~~~~~~~~~~~~~{.c}
+    $ cd build
+    $ cmake ..
+    ~~~~~~~~~~~~~
+    to cross-compile to 32 or 64 bit:
+    ~~~~~~~~~~~~~{.c}
+    sudo apt-get install libc6-dev-i386
+    sudo apt-get install gcc-multilib g++-multilib
+    ~~~~~~~~~~~~~
+    32 bit
+    ~~~~~~~~~~~~~{.c}
+    cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
+    ~~~~~~~~~~~~~
+    64 bit
+    ~~~~~~~~~~~~~{.c}
+    cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
+    ~~~~~~~~~~~~~
 
 3. Compile using make.
-~~~~~~~~~~~~~{.c}
-$ make
-~~~~~~~~~~~~~
+
+    ~~~~~~~~~~~~~{.c}
+    $ make
+    ~~~~~~~~~~~~~
 
 4. Add current user to the "dialout" group in order to read and write to the USB serial communication ports:
-~~~~~~~~~~~~~{.c}
-$ sudousermod -a -G dialout $USER
-$ sudousermod -a -G plugdev $USER
-~~~~~~~~~~~~~
-(reboot computer)
+
+    ~~~~~~~~~~~~~{.c}
+    $ sudousermod -a -G dialout $USER
+    $ sudousermod -a -G plugdev $USER
+    ~~~~~~~~~~~~~
+    (reboot computer)
 
 5. Run executable
-~~~~~~~~~~~~~{.c}
-$ ./bin/cltool
-~~~~~~~~~~~~~
+
+    ~~~~~~~~~~~~~{.c}
+    $ ./bin/cltool
+    ~~~~~~~~~~~~~
 
 #### Compiling in Windows (MS Visual Studio)
 1. Open Visual Studio solution file (InertialSenseCLTool.sln).
@@ -84,87 +90,98 @@ $ ./bin/cltool
 The InertialSense class provides a simple, powerful, and convenient method to communicate, data log, and bootload firmware with the uINS, uAHRS, and uIMU.  It is designed primarily around the Inertial Sense binary protocol.  Please refer to the **InertialSenseCLTool** project files **main.cpp** and **cltool.cpp** with the follow instructions.
 
 #### [COMM INSTRUCTIONS]
+
 1. Create InertialSense object and open serial port.
-~~~~~~~~~~~~~{.c}
-	// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
-	InertialSense inertialSenseInterface(cltool_dataCallback);
-	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str()))
-	{	
-		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-		return -1;	// Failed to open serial port
-	}
-~~~~~~~~~~~~~
+
+    ~~~~~~~~~~~~~{.c}
+        // [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
+        InertialSense inertialSenseInterface(cltool_dataCallback);
+        if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str()))
+        {	
+            cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
+            return -1;	// Failed to open serial port
+        }
+    ~~~~~~~~~~~~~
+
 2. Enable data broadcasting from uINS.
-~~~~~~~~~~~~~{.c}
-	// [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
-	cltool_setupCommunications(inertialSenseInterface);
-~~~~~~~~~~~~~
-3. The Update() function must be called at regular intervals to send and receive data. 
-~~~~~~~~~~~~~{.c}
-	// Main loop.  Could be in separate thread if desired.
-	while (!g_ctrlCPressed)
-	{
-		// [COMM INSTRUCTION] 3.) Process data and messages
-		inertialSenseInterface.Update();
 
-		// Specify the minimum time between read/write updates.
-		SLEEP_MS(1);
-	}
-~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~{.c}
+        // [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
+        cltool_setupCommunications(inertialSenseInterface);
+    ~~~~~~~~~~~~~
+
+3. The Update() function must be called at regular intervals to send and receive data.
+
+    ~~~~~~~~~~~~~{.c}
+        // Main loop.  Could be in separate thread if desired.
+        while (!g_ctrlCPressed)
+        {
+            // [COMM INSTRUCTION] 3.) Process data and messages
+            inertialSenseInterface.Update();
+
+            // Specify the minimum time between read/write updates.
+            SLEEP_MS(1);
+        }
+    ~~~~~~~~~~~~~
+
 4. New data is available in the data callback function.
-~~~~~~~~~~~~~{.c}
-// [COMM INSTRUCTION] 4.) This function is called every time there is new data.
-void cltool_dataCallback(InertialSense* i, p_data_t* data)
-{
-	// Print data to terminal
-	g_inertialSenseDisplay.ProcessData(data);
 
-	// uDatasets is a union of all datasets that we can receive.  See data_sets.h for a full list of all available datasets. 
-	uDatasets d = {};
-	copyDataPToStructP(&d, data, sizeof(uDatasets));
+    ~~~~~~~~~~~~~{.c}
+    // [COMM INSTRUCTION] 4.) This function is called every time there is new data.
+    void cltool_dataCallback(InertialSense* i, p_data_t* data)
+    {
+        // Print data to terminal
+        g_inertialSenseDisplay.ProcessData(data);
 
-	// Example of how to access dataset fields.
-	switch (data->hdr.id)
-	{
-	case DID_INS_2:		   
-		d.ins2.qn2b;		// quaternion attitude 
-		d.ins2.uvw;			// body velocities
-		d.ins2.lla;			// latitude, longitude, altitude
-		break;
-	case DID_INS_1:             
-		d.ins1.theta;		// euler attitude
-		d.ins1.lla;			// latitude, longitude, altitude
-		break;
-	case DID_DUAL_IMU:          d.dualImu;      break;
-	case DID_DELTA_THETA_VEL:   d.dThetaVel;    break;
-	case DID_IMU_1:             d.imu;          break;
-	case DID_IMU_2:             d.imu;          break;
-	case DID_GPS:               d.gps;          break;
-	case DID_MAGNETOMETER_1:    d.mag;          break;
-	case DID_MAGNETOMETER_2:    d.mag;          break;
-	case DID_BAROMETER:         d.baro;         break;
-	case DID_SYS_SENSORS:       d.sysSensors;   break;
-	}
-}
-~~~~~~~~~~~~~
+        // uDatasets is a union of all datasets that we can receive.  See data_sets.h for a full list of all available datasets. 
+        uDatasets d = {};
+        copyDataPToStructP(&d, data, sizeof(uDatasets));
+
+        // Example of how to access dataset fields.
+        switch (data->hdr.id)
+        {
+        case DID_INS_2:		   
+            d.ins2.qn2b;		// quaternion attitude 
+            d.ins2.uvw;			// body velocities
+            d.ins2.lla;			// latitude, longitude, altitude
+            break;
+        case DID_INS_1:             
+            d.ins1.theta;		// euler attitude
+            d.ins1.lla;			// latitude, longitude, altitude
+            break;
+        case DID_DUAL_IMU:          d.dualImu;      break;
+        case DID_DELTA_THETA_VEL:   d.dThetaVel;    break;
+        case DID_IMU_1:             d.imu;          break;
+        case DID_IMU_2:             d.imu;          break;
+        case DID_GPS:               d.gps;          break;
+        case DID_MAGNETOMETER_1:    d.mag;          break;
+        case DID_MAGNETOMETER_2:    d.mag;          break;
+        case DID_BAROMETER:         d.baro;         break;
+        case DID_SYS_SENSORS:       d.sysSensors;   break;
+        }
+    }
+    ~~~~~~~~~~~~~
 
 #### [LOGGER INSTRUCTIONS]
 The steps described in the COMM INSTRUCTIONS section are needed in addition to those in this section.
+
 1. To configure and start the data logger, call cltool_setupLogger().  This function may be called directly or duplicated for your purposes.
-~~~~~~~~~~~~~{.c}
-	// [LOGGER INSTRUCTION] Setup data logger
-	cltool_setupLogger(inertialSenseInterface);
-~~~~~~~~~~~~~
+
+    ~~~~~~~~~~~~~{.c}
+        // [LOGGER INSTRUCTION] Setup data logger
+        cltool_setupLogger(inertialSenseInterface);
+    ~~~~~~~~~~~~~
 
 #### [BOOTLOADER INSTRUCTIONS]
 The steps described in the COMM INSTRUCTIONS section are needed in addition to those in this section.
+
 1. To execute the bootloader, call cltool_runBootloader().  This function may be called directly or duplicated for your purposes.
-~~~~~~~~~~~~~{.c}
-	// [BOOTLOADER INSTRUCTIONS] Update firmware
-	return cltool_runBootloader(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.bootloaderFileName.c_str(), NULL);
-~~~~~~~~~~~~~
+
+    ~~~~~~~~~~~~~{.c}
+        // [BOOTLOADER INSTRUCTIONS] Update firmware
+        return cltool_runBootloader(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.bootloaderFileName.c_str(), NULL);
+    ~~~~~~~~~~~~~
 
 
 ************************************************
 (c) 2014 Inertial Sense, LLC
-
