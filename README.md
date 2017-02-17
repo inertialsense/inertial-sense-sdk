@@ -13,7 +13,8 @@
 
 ### Downloads
 
- * [SDK & CLTool](https://github.com/inertialsense/InertialSenseSDK) - open source SDK repository with command line tool and example C/C++ source code.
+ * [SDK & CLTool Release](https://github.com/inertialsense/InertialSenseSDK/releases) - pre-compiled static libraries and binaries for Linux and Windows.
+ * [SDK & CLTool Source Code](https://github.com/inertialsense/InertialSenseSDK) - open source SDK repository with command line tool and example C/C++ source code.
  * [EvalTool](https://inertialsense.com/download/eval-tool-installer/) - Windows application.
  * [Firmware](https://inertialsense.com/download/eval-tool-installer/) - for uINS, uAHRS, and uIMU hardware v2 and v3.  See [release-notes](https://inertialsense.com/download/release-notes) for details.
 
@@ -34,6 +35,7 @@
 $ cd InertialSenseCLTool
 $ mkdir build
 ~~~~~~~~~~~~~
+
 2. Run cmake from within build directory.
 ~~~~~~~~~~~~~{.c}
 $ cd build
@@ -53,17 +55,18 @@ cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
 cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
 ~~~~~~~~~~~~~
 
-
 3. Compile using make.
 ~~~~~~~~~~~~~{.c}
 $ make
 ~~~~~~~~~~~~~
+
 4. Add current user to the "dialout" group in order to read and write to the USB serial communication ports:
 ~~~~~~~~~~~~~{.c}
 $ sudousermod -a -G dialout $USER
 $ sudousermod -a -G plugdev $USER
 ~~~~~~~~~~~~~
 (reboot computer)
+
 5. Run executable
 ~~~~~~~~~~~~~{.c}
 $ ./bin/cltool
@@ -71,7 +74,7 @@ $ ./bin/cltool
 
 #### Compiling in Windows (MS Visual Studio)
 1. Open Visual Studio solution file (InertialSenseCLTool.sln).
-2. Build (F7).
+2. Build (F5 or F7).
 
 
 ************************************************
