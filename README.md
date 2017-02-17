@@ -15,7 +15,7 @@
 
  * [SDK & CLTool Binaries](https://github.com/inertialsense/InertialSenseSDK/releases) - pre-compiled release static libraries and executables for Linux and Windows.
  * [SDK & CLTool Source Code](https://github.com/inertialsense/InertialSenseSDK) - open source SDK repository with command line tool and example C/C++ source code.
- * [EvalTool](https://inertialsense.com/download/eval-tool-installer/) - Windows application.
+ * [EvalTool](https://inertialsense.com/download/eval-tool-installer/) - Windows application installer.
  * [Firmware](https://inertialsense.com/download/eval-tool-installer/) - for uINS, uAHRS, and uIMU hardware v2 and v3.  See [release-notes](https://inertialsense.com/download/release-notes) for details.
 
 ### Design Resources
