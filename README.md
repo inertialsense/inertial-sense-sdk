@@ -33,53 +33,46 @@
 
 1. Create build directory...
 
-    ~~~~~~~~~~~~~{.c}
-    $ cd InertialSenseCLTool
-    $ mkdir build
-    ~~~~~~~~~~~~~
+        $ cd InertialSenseCLTool
+        $ mkdir build
 
 2. Run cmake from within build directory.
 
-    ~~~~~~~~~~~~~{.c}
-    $ cd build
-    $ cmake ..
-    ~~~~~~~~~~~~~
-    to cross-compile to 32 or 64 bit:
-    ~~~~~~~~~~~~~{.c}
-    sudo apt-get install libc6-dev-i386
-    sudo apt-get install gcc-multilib g++-multilib
-    ~~~~~~~~~~~~~
-    32 bit
-    ~~~~~~~~~~~~~{.c}
-    cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
-    ~~~~~~~~~~~~~
-    64 bit
-    ~~~~~~~~~~~~~{.c}
-    cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
-    ~~~~~~~~~~~~~
+        $ cd build
+        $ cmake ..
+
+ to cross-compile to 32 or 64 bit:
+
+        sudo apt-get install libc6-dev-i386
+        sudo apt-get install gcc-multilib g++-multilib
+
+ 32 bit
+
+        cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
+
+ 64 bit
+
+        cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
 
 3. Compile using make.
 
-    ~~~~~~~~~~~~~{.c}
-    $ make
-    ~~~~~~~~~~~~~
+        $ make
 
 4. Add current user to the "dialout" group in order to read and write to the USB serial communication ports:
 
-    ~~~~~~~~~~~~~{.c}
-    $ sudousermod -a -G dialout $USER
-    $ sudousermod -a -G plugdev $USER
-    ~~~~~~~~~~~~~
-    (reboot computer)
+        $ sudousermod -a -G dialout $USER
+        $ sudousermod -a -G plugdev $USER
+
+ (reboot computer)
 
 5. Run executable
 
-    ~~~~~~~~~~~~~{.c}
-    $ ./bin/cltool
-    ~~~~~~~~~~~~~
+        $ ./bin/cltool
 
 #### Compiling in Windows (MS Visual Studio)
+
 1. Open Visual Studio solution file (InertialSenseCLTool.sln).
+
 2. Build (F5 or F7).
 
 
@@ -87,13 +80,14 @@
 # SDK Instructions
 
 ### InertialSense Class
+
 The InertialSense class provides a simple, powerful, and convenient method to communicate, data log, and bootload firmware with the uINS, uAHRS, and uIMU.  It is designed primarily around the Inertial Sense binary protocol.  Please refer to the **InertialSenseCLTool** project files **main.cpp** and **cltool.cpp** with the follow instructions.
 
 #### [COMM INSTRUCTIONS]
 
-1. Create InertialSense object and open serial port.
+* Create InertialSense object and open serial port.
 
-    ~~~~~~~~~~~~~{.c}
+```c
         // [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
         InertialSense inertialSenseInterface(cltool_dataCallback);
         if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str()))
@@ -101,18 +95,18 @@ The InertialSense class provides a simple, powerful, and convenient method to co
             cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
             return -1;	// Failed to open serial port
         }
-    ~~~~~~~~~~~~~
+```
 
-2. Enable data broadcasting from uINS.
+* Enable data broadcasting from uINS.
 
-    ~~~~~~~~~~~~~{.c}
+```c
         // [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
         cltool_setupCommunications(inertialSenseInterface);
-    ~~~~~~~~~~~~~
+```
 
-3. The Update() function must be called at regular intervals to send and receive data.
+* The Update() function must be called at regular intervals to send and receive data.
 
-    ~~~~~~~~~~~~~{.c}
+```c
         // Main loop.  Could be in separate thread if desired.
         while (!g_ctrlCPressed)
         {
@@ -122,11 +116,11 @@ The InertialSense class provides a simple, powerful, and convenient method to co
             // Specify the minimum time between read/write updates.
             SLEEP_MS(1);
         }
-    ~~~~~~~~~~~~~
+```
 
-4. New data is available in the data callback function.
+* New data is available in the data callback function.
 
-    ~~~~~~~~~~~~~{.c}
+```c
     // [COMM INSTRUCTION] 4.) This function is called every time there is new data.
     void cltool_dataCallback(InertialSense* i, p_data_t* data)
     {
@@ -160,27 +154,27 @@ The InertialSense class provides a simple, powerful, and convenient method to co
         case DID_SYS_SENSORS:       d.sysSensors;   break;
         }
     }
-    ~~~~~~~~~~~~~
+```
 
 #### [LOGGER INSTRUCTIONS]
 The steps described in the COMM INSTRUCTIONS section are needed in addition to those in this section.
 
-1. To configure and start the data logger, call cltool_setupLogger().  This function may be called directly or duplicated for your purposes.
+* To configure and start the data logger, call cltool_setupLogger().  This function may be called directly or duplicated for your purposes.
 
-    ~~~~~~~~~~~~~{.c}
+```c
         // [LOGGER INSTRUCTION] Setup data logger
         cltool_setupLogger(inertialSenseInterface);
-    ~~~~~~~~~~~~~
+```
 
 #### [BOOTLOADER INSTRUCTIONS]
 The steps described in the COMM INSTRUCTIONS section are needed in addition to those in this section.
 
-1. To execute the bootloader, call cltool_runBootloader().  This function may be called directly or duplicated for your purposes.
+* To execute the bootloader, call cltool_runBootloader().  This function may be called directly or duplicated for your purposes.
 
-    ~~~~~~~~~~~~~{.c}
+ ```c
         // [BOOTLOADER INSTRUCTIONS] Update firmware
         return cltool_runBootloader(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.bootloaderFileName.c_str(), NULL);
-    ~~~~~~~~~~~~~
+ ```
 
 
 ************************************************

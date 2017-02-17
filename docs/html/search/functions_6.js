@@ -1,6 +1,7 @@
 var searchData=
 [
   ['getdatasetname',['GetDataSetName',['../classc_i_s_data_mappings.html#a66835f41924e0fe99213d520f3b0c3cd',1,'cISDataMappings']]],
+  ['getdeviceinfo',['GetDeviceInfo',['../class_inertial_sense.html#a021ad3a3387214e53ffe3f83f9b54940',1,'InertialSense']]],
   ['getdocument',['GetDocument',['../class_ti_xml_node.html#aa66f4ebcd175204a168ed7c2d7b43071',1,'TiXmlNode']]],
   ['getmap',['GetMap',['../classc_i_s_data_mappings.html#acad4cdadbdbaccd2b3c761dd96a0740f',1,'cISDataMappings']]],
   ['getport',['GetPort',['../class_inertial_sense.html#ab3a32ba067a0a54dc90ea81de96e6fde',1,'InertialSense']]],
