@@ -111,21 +111,24 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
  <h2>CLTool Instructions</h2>
 <h4>Compiling in Linux / Mac</h4>
 <ol type="1">
-<li><p class="startli">Create build directory...</p>
-<p class="startli">~~~~~~~~~~~~~{.c} $ cd InertialSenseCLTool $ mkdir build ~~~~~~~~~~~~~</p>
+<li>Create build directory... <pre class="fragment"> $ cd InertialSenseCLTool
+ $ mkdir build
+</pre></li>
+<li><p class="startli">Run cmake from within build directory. </p><pre class="fragment"> $ cd build
+ $ cmake ..
+</pre><p class="startli">to cross-compile to 32 or 64 bit: </p><pre class="fragment">   sudo apt-get install libc6-dev-i386
+   sudo apt-get install gcc-multilib g++-multilib
+</pre><p class="startli">32 bit </p><pre class="fragment">   cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
+</pre><p class="startli">64 bit </p><pre class="fragment">   cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
+</pre></li>
+<li>Compile using make. <pre class="fragment"> $ make
+</pre></li>
+<li><p class="startli">Add current user to the "dialout" group in order to read and write to the USB serial communication ports: </p><pre class="fragment"> $ sudousermod -a -G dialout $USER
+ $ sudousermod -a -G plugdev $USER
+</pre><p class="startli">(reboot computer)</p>
 </li>
-<li><p class="startli">Run cmake from within build directory.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} $ cd build $ cmake .. ~~~~~~~~~~~~~ to cross-compile to 32 or 64 bit: ~~~~~~~~~~~~~{.c} sudo apt-get install libc6-dev-i386 sudo apt-get install gcc-multilib g++-multilib ~~~~~~~~~~~~~ 32 bit ~~~~~~~~~~~~~{.c} cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32 ~~~~~~~~~~~~~ 64 bit ~~~~~~~~~~~~~{.c} cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64 ~~~~~~~~~~~~~</p>
-</li>
-<li><p class="startli">Compile using make.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} $ make ~~~~~~~~~~~~~</p>
-</li>
-<li><p class="startli">Add current user to the "dialout" group in order to read and write to the USB serial communication ports:</p>
-<p class="startli">~~~~~~~~~~~~~{.c} $ sudousermod -a -G dialout $USER $ sudousermod -a -G plugdev $USER ~~~~~~~~~~~~~ (reboot computer)</p>
-</li>
-<li><p class="startli">Run executable</p>
-<p class="startli">~~~~~~~~~~~~~{.c} $ ./bin/cltool ~~~~~~~~~~~~~</p>
-</li>
+<li>Run executable <pre class="fragment"> $ ./bin/cltool
+</pre></li>
 </ol>
 <h4>Compiling in Windows (MS Visual Studio)</h4>
 <ol type="1">
@@ -137,43 +140,34 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <h3><a class="el" href="class_inertial_sense.html">InertialSense</a> Class</h3>
 <p>The <a class="el" href="class_inertial_sense.html">InertialSense</a> class provides a simple, powerful, and convenient method to communicate, data log, and bootload firmware with the uINS, uAHRS, and uIMU. It is designed primarily around the Inertial Sense binary protocol. Please refer to the <b>InertialSenseCLTool</b> project files <b><a class="el" href="main_8cpp_source.html">main.cpp</a></b> and <b><a class="el" href="cltool_8cpp_source.html">cltool.cpp</a></b> with the follow instructions.</p>
 <h4>[COMM INSTRUCTIONS]</h4>
-<ol type="1">
-<li><p class="startli">Create <a class="el" href="class_inertial_sense.html">InertialSense</a> object and open serial port.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} // [COMM INSTRUCTION] 1.) Create <a class="el" href="class_inertial_sense.html">InertialSense</a> object and open serial port. <a class="el" href="class_inertial_sense.html">InertialSense</a> inertialSenseInterface(cltool_dataCallback); if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str())) { cout &lt;&lt; "Failed to open serial port at " &lt;&lt; g_commandLineOptions.comPort.c_str() &lt;&lt; endl; return -1; // Failed to open serial port } ~~~~~~~~~~~~~</p>
-</li>
-<li><p class="startli">Enable data broadcasting from uINS.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} // [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS cltool_setupCommunications(inertialSenseInterface); ~~~~~~~~~~~~~</p>
-</li>
-<li><p class="startli">The Update() function must be called at regular intervals to send and receive data.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} // Main loop. Could be in separate thread if desired. while (!g_ctrlCPressed) { // [COMM INSTRUCTION] 3.) Process data and messages inertialSenseInterface.Update();</p>
-<p class="startli">// Specify the minimum time between read/write updates. SLEEP_MS(1); } ~~~~~~~~~~~~~</p>
-</li>
-<li><p class="startli">New data is available in the data callback function.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} // [COMM INSTRUCTION] 4.) This function is called every time there is new data. void cltool_dataCallback(InertialSense* i, p_data_t* data) { // Print data to terminal g_inertialSenseDisplay.ProcessData(data);</p>
-<p class="startli">// <a class="el" href="unionu_datasets.html">uDatasets</a> is a union of all datasets that we can receive. See <a class="el" href="data__sets_8h_source.html">data_sets.h</a> for a full list of all available datasets. <a class="el" href="unionu_datasets.html">uDatasets</a> d = {}; copyDataPToStructP(&amp;d, data, sizeof(uDatasets));</p>
-<p class="startli">// Example of how to access dataset fields. switch (data-&gt;hdr.id) { case DID_INS_2: d.ins2.qn2b; // quaternion attitude d.ins2.uvw; // body velocities d.ins2.lla; // latitude, longitude, altitude break; case DID_INS_1: d.ins1.theta; // euler attitude d.ins1.lla; // latitude, longitude, altitude break; case DID_DUAL_IMU: d.dualImu; break; case DID_DELTA_THETA_VEL: d.dThetaVel; break; case DID_IMU_1: d.imu; break; case DID_IMU_2: d.imu; break; case DID_GPS: d.gps; break; case DID_MAGNETOMETER_1: d.mag; break; case DID_MAGNETOMETER_2: d.mag; break; case DID_BAROMETER: d.baro; break; case DID_SYS_SENSORS: d.sysSensors; break; } } ~~~~~~~~~~~~~</p>
-</li>
-</ol>
-<h4>[LOGGER INSTRUCTIONS]</h4>
+<ul>
+<li>Create <a class="el" href="class_inertial_sense.html">InertialSense</a> object and open serial port.</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. </span></div><div class="line"><a class="code" href="class_inertial_sense.html">InertialSense</a> inertialSenseInterface(cltool_dataCallback);</div><div class="line"><span class="keywordflow">if</span> (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str()))</div><div class="line">{   </div><div class="line">    cout &lt;&lt; <span class="stringliteral">&quot;Failed to open serial port at &quot;</span> &lt;&lt; g_commandLineOptions.comPort.c_str() &lt;&lt; endl;</div><div class="line">    <span class="keywordflow">return</span> -1;  <span class="comment">// Failed to open serial port</span></div><div class="line">}</div></div><!-- fragment --><ul>
+<li>Enable data broadcasting from uINS.</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS</span></div><div class="line">cltool_setupCommunications(inertialSenseInterface);</div></div><!-- fragment --><ul>
+<li>The Update() function must be called at regular intervals to send and receive data.</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// Main loop.  Could be in separate thread if desired.</span></div><div class="line"><span class="keywordflow">while</span> (!g_ctrlCPressed)</div><div class="line">{</div><div class="line">    <span class="comment">// [COMM INSTRUCTION] 3.) Process data and messages</span></div><div class="line">    inertialSenseInterface.Update();</div><div class="line"></div><div class="line">    <span class="comment">// Specify the minimum time between read/write updates.</span></div><div class="line">    SLEEP_MS(1);</div><div class="line">}</div></div><!-- fragment --><ul>
+<li>New data is available in the data callback function.</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// [COMM INSTRUCTION] 4.) This function is called every time there is new data.</span></div><div class="line"><span class="keywordtype">void</span> cltool_dataCallback(<a class="code" href="class_inertial_sense.html">InertialSense</a>* i, <a class="code" href="structp__data__t.html">p_data_t</a>* data)</div><div class="line">{</div><div class="line">    <span class="comment">// Print data to terminal</span></div><div class="line">    g_inertialSenseDisplay.ProcessData(data);</div><div class="line"></div><div class="line">    <span class="comment">// uDatasets is a union of all datasets that we can receive.  See data_sets.h for a full list of all available datasets. </span></div><div class="line">    <a class="code" href="unionu_datasets.html">uDatasets</a> d = {};</div><div class="line">    copyDataPToStructP(&amp;d, data, <span class="keyword">sizeof</span>(<a class="code" href="unionu_datasets.html">uDatasets</a>));</div><div class="line"></div><div class="line">    <span class="comment">// Example of how to access dataset fields.</span></div><div class="line">    <span class="keywordflow">switch</span> (data-&gt;<a class="code" href="structp__data__t.html#ad581435f6761781c248158d69ca502f9">hdr</a>.<a class="code" href="structp__data__hdr__t.html#a0a70811dba0872fe68a2d58c24cb7894">id</a>)</div><div class="line">    {</div><div class="line">    <span class="keywordflow">case</span> DID_INS_2:        </div><div class="line">        d.ins2.<a class="code" href="structins__2__t.html#acdc80373d16e64356e5c0c377085fcca">qn2b</a>;        <span class="comment">// quaternion attitude </span></div><div class="line">        d.ins2.<a class="code" href="structins__2__t.html#afc5df5725b423b07863090ef93f45b55">uvw</a>;         <span class="comment">// body velocities</span></div><div class="line">        d.ins2.<a class="code" href="structins__2__t.html#a4939b741e2d9836fed540a29805ac2c4">lla</a>;         <span class="comment">// latitude, longitude, altitude</span></div><div class="line">        <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_INS_1:             </div><div class="line">        d.ins1.<a class="code" href="structins__1__t.html#a02efb433b474d6789e90895004e85a89">theta</a>;       <span class="comment">// euler attitude</span></div><div class="line">        d.ins1.<a class="code" href="structins__1__t.html#a5090a812befe9ff2a62bd751b7629ae0">lla</a>;         <span class="comment">// latitude, longitude, altitude</span></div><div class="line">        <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_DUAL_IMU:          d.dualImu;      <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_DELTA_THETA_VEL:   d.dThetaVel;    <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_IMU_1:             d.imu;          <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_IMU_2:             d.imu;          <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_GPS:               d.gps;          <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_MAGNETOMETER_1:    d.mag;          <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_MAGNETOMETER_2:    d.mag;          <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_BAROMETER:         d.baro;         <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> DID_SYS_SENSORS:       d.sysSensors;   <span class="keywordflow">break</span>;</div><div class="line">    }</div><div class="line">}</div></div><!-- fragment --><h4>[LOGGER INSTRUCTIONS]</h4>
 <p>The steps described in the COMM INSTRUCTIONS section are needed in addition to those in this section.</p>
-<ol type="1">
-<li><p class="startli">To configure and start the data logger, call cltool_setupLogger(). This function may be called directly or duplicated for your purposes.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} // [LOGGER INSTRUCTION] Setup data logger cltool_setupLogger(inertialSenseInterface); ~~~~~~~~~~~~~</p>
-</li>
-</ol>
-<h4>[BOOTLOADER INSTRUCTIONS]</h4>
+<ul>
+<li>To configure and start the data logger, call cltool_setupLogger(). This function may be called directly or duplicated for your purposes.</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// [LOGGER INSTRUCTION] Setup data logger</span></div><div class="line">cltool_setupLogger(inertialSenseInterface);</div></div><!-- fragment --><h4>[BOOTLOADER INSTRUCTIONS]</h4>
 <p>The steps described in the COMM INSTRUCTIONS section are needed in addition to those in this section.</p>
-<ol type="1">
-<li><p class="startli">To execute the bootloader, call cltool_runBootloader(). This function may be called directly or duplicated for your purposes.</p>
-<p class="startli">~~~~~~~~~~~~~{.c} // [BOOTLOADER INSTRUCTIONS] Update firmware return cltool_runBootloader(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.bootloaderFileName.c_str(), NULL); ~~~~~~~~~~~~~</p>
-</li>
-</ol>
-<hr/>
+<ul>
+<li>To execute the bootloader, call cltool_runBootloader(). This function may be called directly or duplicated for your purposes.</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// [BOOTLOADER INSTRUCTIONS] Update firmware</span></div><div class="line"><span class="keywordflow">return</span> cltool_runBootloader(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.bootloaderFileName.c_str(), NULL);</div></div><!-- fragment --><hr/>
 <p> (c) 2014 Inertial Sense, LLC </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 17 2017 12:01:11 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Feb 17 2017 12:40:02 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>
