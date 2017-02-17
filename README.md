@@ -6,7 +6,7 @@
 
 ### Documents
 
- * [SDK Documentation](http://docs.inertialsense.com/html/index.html)
+ * [SDK Documentation](http://docs.inertialsense.com/)
  * [User Manual](https://inertialsense.com/download/uins-datasheet/)
  * [Datasheet - uINS, uAHRS, and uIMU](https://inertialsense.com/download/uins-datasheet/)
  * [Release Notes](https://inertialsense.com/download/release-notes) - version information and software feature change log.
