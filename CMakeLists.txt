@@ -20,6 +20,7 @@ add_library(InertialSense
   src/ISTcpClient.cpp
   src/ISUtilities.cpp
   src/linked_list.c
+  src/Rtcm3Reader.cpp
   src/serialPort.c
   src/serialPortPlatform.c
   src/time_conversion.c
