@@ -124,4 +124,21 @@ int bootloadVerifyProgress(const void* port, float percent);
 
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec);
 
+/*!
+* Retrieve the 32 bit unsigned integer value of the specified bits - note that no bounds checking is done on buffer
+* @param buffer the buffer containing the bits
+* @param pos the start bit position in buffer to read at
+* @param len the number of bits to read
+* @return the 32 bit unsigned integer value
+*/
+uint32_t GetBitsAsUInt32(uint8_t* buffer, uint32_t pos, uint32_t len);
+
+/*!
+* Calculate 24 bit crc used in formats like RTCM3 - note that no bound schecking is done on buffer
+* @param buffer the buffer to calculate the CRC for
+* @param len the number of bytes to calculate the CRC for
+* @return the CRC value
+*/
+uint32_t Calculate24BitCRCQ(uint8_t* buffer, uint32_t len);
+
 #endif // IS_UTILITIES_H

@@ -508,26 +508,30 @@ enum
 	SLOG_DISABLED			= 0,
 	SLOG_W_INS1				= 1,	// Log INS1, INS_PARAMS, SYS_PARAMS, INS_INPUT, BIASES, OBS_PARAMS, GPS_POS
 	SLOG_W_INS2				= 2,	// Log INS2, "
-	SLOG_REDUCED_INS1		= 20,	// Log INS1, INS_PARAMS, SYS_PARAMS
-	SLOG_REDUCED_INS2		= 21,	// Log INS2, "
+	SLOG_DELTA_THETA_VEL_W_INS2	= 3,	// Log conning and sculling integrals (instead of IMU) and INS2, "
+	SLOG_INS1_OUTPUT		= 20,	// Log INS1, INS_PARAMS, SYS_PARAMS
+	SLOG_INS2_OUTPUT		= 21,	// Log INS2, "
 };
 
 enum eSysConfigBits
 {
 	/*! Disable automatic baudrate detection on startup */
-	SYS_CFG_BITS_DISABLE_AUTOBAUD					= (int)0x00000001,
+	SYS_CFG_BITS_DISABLE_AUTOBAUD						= (int)0x00000001,
 
 	/*! Disable automatic mag calibration */
-	SYS_CFG_BITS_DISABLE_MAG_AUTO_CAL				= (int)0x00000002,
+	SYS_CFG_BITS_DISABLE_MAG_AUTO_CAL					= (int)0x00000002,
 
 	/*! Disable LEDs */
-	SYS_CFG_BITS_DISABLE_LEDS						= (int)0x00000004,
+	SYS_CFG_BITS_DISABLE_LEDS							= (int)0x00000004,
 
 	/*! Send communications (com manager) data as little endian */
-	SYS_CFG_BITS_COM_MANAGER_SEND_AS_LITTLE_ENDIAN	= (int)0x00000008,
+	SYS_CFG_BITS_COM_MANAGER_SEND_AS_LITTLE_ENDIAN		= (int)0x00000008,
 
-	/*! Enable com manager pass through of GPS data */
-	SYS_CFG_BITS_ENABLE_COM_MANAGER_PASS_THROUGH	= (int)0x00000010
+	/*! Enable com manager pass through of ublox data */
+	SYS_CFG_BITS_ENABLE_COM_MANAGER_PASS_THROUGH_UBLOX	= (int)0x00000010,
+
+	/*! Enable com manager pass through of RTCM3 data */
+	SYS_CFG_BITS_ENABLE_COM_MANAGER_PASS_THROUGH_RTCM3	= (int)0x00000020,
 };
 
 PUSH_PACK_NONE
@@ -859,6 +863,19 @@ typedef struct
 	/*! Three axis sensor */
 	float                   val[3];
 } gen_3axis_sensor_t;
+
+/*! Generic dual 3 axis sensor */
+typedef struct
+{
+	/*! Time in seconds */
+	double                  time;
+
+	/*! First three axis sensor */
+	float                   val1[3];
+
+	/*! Second three axis sensor */
+	float                   val2[3];
+} gen_dual_3axis_sensor_t;
 
 /*! Generic 3 axis sensor */
 typedef struct
@@ -1397,6 +1414,7 @@ void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day);
 void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds);
 gen_1axis_sensor_t gen1AxisSensorData(double time, const float val);
 gen_3axis_sensor_t gen3AxisSensorData(double time, const float val[3]);
+gen_dual_3axis_sensor_t genDual3AxisSensorData(double time, const float val1[3], const float val2[3]);
 gen_3axis_sensord_t gen3AxisSensorDataD(double time, const double val[3]);
 
 #ifdef __cplusplus

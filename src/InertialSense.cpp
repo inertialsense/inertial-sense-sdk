@@ -72,6 +72,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 	m_cmHandle = getGlobalComManager();
 	m_logThread = nullptr;
 	m_lastLogReInit = time(0);
+	m_tcpBytesRemaining = 0;
 
 	if (serialPort == NULL)
 	{
@@ -115,26 +116,30 @@ void InertialSense::LoggerThread()
 	bool running = true;
 	while (running)
 	{
+		SLEEP_MS(20);
+
+		// gather up packets in memory
 		vector<p_data_t> packets;
-		m_logMutex.lock();
-		try
 		{
+			// lock so we can read and clear m_logPackets
+			lock_guard<mutex> l(m_logMutex);
 			for (list<p_data_t>::iterator i = m_logPackets.begin(); i != m_logPackets.end(); i++)
 			{
 				packets.push_back(*i);
 			}
+
+			// clear shared memory
 			m_logPackets.clear();
+
+			// update running state
 			running = m_logger.Enabled();
 		}
-		catch (...)
-		{
-		}
-		m_logMutex.unlock();
+
+		// log the packets
 		for (size_t i = 0; i < packets.size(); i++)
 		{
 			m_logger.LogData(0, &packets[i].hdr, packets[i].buf);
 		}
-		SLEEP_MS(20);
 	}
 }
 
@@ -143,19 +148,13 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data)
 	// single threaded implementation would just do this:
 	// i->m_logger.LogData(0, (p_data_hdr_t*)&data->hdr, (uint8_t*)data->buf); return;
 	const time_t reinitSeconds = 2;
-
-	i->m_logMutex.lock();
-	try
 	{
+		lock_guard<mutex> l(i->m_logMutex);
 		if (i->m_logger.Enabled())
 		{
 			i->m_logPackets.push_back(*data);
 		}
 	}
-	catch (...)
-	{
-	}
-	i->m_logMutex.unlock();
 
 	// if time has passed, re-send the appropriate log solution message
 	if (time(0) - i->m_lastLogReInit > reinitSeconds)
@@ -170,19 +169,7 @@ bool InertialSense::Open(const char* port, int baudRate)
 	// clear the device in preparation for auto-baud
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
 
-	switch (baudRate)
-	{
-	case IS_BAUDRATE_115200:
-	case IS_BAUDRATE_230400:
-	case IS_BAUDRATE_460800:
-	case IS_BAUDRATE_921600:
-	case IS_BAUDRATE_3000000:
-		break;
-	default:
-		return false;
-	}
-
-	if (!(serialPortOpen(&m_serialPort, port, baudRate, 0) != 0))
+	if (validateBaudRate(baudRate) != 0 || serialPortOpen(&m_serialPort, port, baudRate, 0) != 1)
 	{
 		return false;
 	}
@@ -261,7 +248,10 @@ void InertialSense::Update()
 	{
 		uint8_t buffer[4096];
 		int count = m_tcpClient.Read(buffer, sizeof(buffer), false);
-		//serialPortWrite(&m_serialPort, (unsigned char*)buffer, count);
+		for (int i = 0; i < count; i++)
+		{
+			ProcessRTCM3Byte(buffer[i]);
+		}
 	}
 	stepComManager();
 }
@@ -353,5 +343,70 @@ bool InertialSense::BootloadFile(const string& fileName, pfnBootloadProgress upl
 	return true;
 }
 
+void InertialSense::ProcessRTCM3Byte(uint8_t b)
+{
+	// if we have no bytes yet, check for header
+	// if we have exactly 3 bytes, we have enough to calculate the length
+	// fewer than 3 bytes and we want to exit out early
+	if (m_tcpBuffer.size() <= 3)
+	{
+		// check for header byte
+		if (m_tcpBuffer.size() == 0)
+		{
+			// 0xD3 is the first byte in an RTCM3 message
+			if (b != 0xD3)
+			{
+				// corrupt data
+				return;
+			}
+		}
+		else if (m_tcpBuffer.size() == 3)
+		{
+			uint32_t msgLength = GetBitsAsUInt32(&m_tcpBuffer[0], 14, 10);
+			if (msgLength > 1023)
+			{
+				// corrupt data
+				m_tcpBuffer.clear();
+				return;
+			}
+			else
+			{
+				// message length only includes the message bytes, not the header or 3 CRC bytes at the end
+				// plus 2 because we will be appending the first byte of the message or CRC bytes
+				m_tcpBytesRemaining = msgLength + 2;
+			}
+		}
 
+		// append the byte
+		m_tcpBuffer.push_back(b);
+		return;
+	}
 
+	// append the byte
+	m_tcpBuffer.push_back(b);
+
+	// see if we are done reading bytes, if so calculate CRC and forward the message on to the uINS if it is valid
+	if (--m_tcpBytesRemaining == 0)
+	{
+		// if the message is large enough, forward it on
+		if (m_tcpBuffer.size() > 5)
+		{
+			// the CRC calculation does not include the 3 CRC bytes at the end for obvious reasons
+			uint32_t actualCRC = Calculate24BitCRCQ(&m_tcpBuffer[0], m_tcpBuffer.size() - 3);
+
+			// get the CRC from the last 3 bytes of the message
+			uint32_t correctCRC = GetBitsAsUInt32(&m_tcpBuffer[m_tcpBuffer.size() - 3], 0, 24);
+
+			// if valid CRC, forward mesasge to uINS
+			if (actualCRC == correctCRC)
+			{
+				serialPortWrite(&m_serialPort, &m_tcpBuffer[0], m_tcpBuffer.size());
+			}
+			else
+			{
+				// corrupt data
+			}
+		}
+		m_tcpBuffer.clear();
+	}
+}

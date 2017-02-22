@@ -141,7 +141,8 @@ typedef struct
 
 typedef struct
 {
-	unsigned char pktCounter;
+	// identifier for packets
+	uint8_t pktCounter;
 
 	// reads n bytes into buffer from the source (usually a serial port)
 	pfnComManagerRead readCallback;
@@ -174,22 +175,23 @@ typedef struct
 	pfnComManagerAsciiMessageHandler asciiMessageHandler;
 
 	asciiMessageMap_t* asciiMessages;
-	int	asciiMessagesCount;
+    uint32_t asciiMessagesCount;
 	broadcast_msg_t msgs[MAX_NUM_BCAST_MSGS];
 	broadcast_msg_t* msgsHead;
 	broadcast_msg_t* msgsTail;
+    int32_t lastEnsuredPacketIndex;
 
 	// Number of communication ports
-	int numHandes;											
+	int32_t numHandes;											
 
-	// default is 2, max number of packets to insured delivery at one time.  Adjust based on available memory.
-	int maxEnsuredPackets;									
+	// default is 2, max number of packets to ensured delivery at one time.  Adjust based on available memory.
+	int32_t maxEnsuredPackets;
 
 	// default is 2 - processing interval
-	int stepPeriodMilliseconds;								
+	int32_t stepPeriodMilliseconds;
 
 	// default is 3 - Ensure retry count
-	int ensureRetryCount;				
+	int32_t ensureRetryCount;
 
 	// current status, malloc for each possible port
 	com_manager_status_t* status;
@@ -248,6 +250,9 @@ int processBinaryPacket(com_manager_t* cmInstance, int pHandle, unsigned char* d
 int processPassThroughBytes(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ringBuffer);
 int beginUbloxPacket(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ringBuffer);
 int decodeBinaryPacketByte(com_manager_t* cmInstance, int pHandle, uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
+int asciiMessageCompare(const void* elem1, const void* elem2);
+uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest);
+void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum);
 
 //  Packet Retry
 void stepPacketRetry(com_manager_t* cmInstance);
@@ -314,9 +319,13 @@ void initComManagerInstanceInternal
 	pfnComManagerDisableBroadcasts disableBcastFnc
 )
 {
-	int i;
+    int32_t i;
 	
 	initDataSets();
+    if (numHandles < 0 || numHandles > 128)
+    {
+        numHandles = 1;
+    }
 	
 	// free ring buffers and ensured packet memory
 	if (cmInstance->ringBuffers != 0)
@@ -365,13 +374,13 @@ void initComManagerInstanceInternal
 
 	cmInstance->status = MALLOC(sizeof(com_manager_status_t) * numHandles);
     memset(cmInstance->status, 0, sizeof(com_manager_status_t) * numHandles);
-	for (int i = 0; i < numHandles; i++)
+    for (i = 0; i < numHandles; i++)
 	{
 		cmInstance->status[i].flags = IS_LITTLE_ENDIAN;
 	}
 }
 
-static int asciiMessageCompare(const void* elem1, const void* elem2)
+int asciiMessageCompare(const void* elem1, const void* elem2)
 {
 	asciiMessageMap_t* e1 = (asciiMessageMap_t*)elem1;
 	asciiMessageMap_t* e2 = (asciiMessageMap_t*)elem2;
@@ -441,7 +450,7 @@ void stepComManagerInstance(CMHANDLE cmInstance_)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 	uint8_t c, additionalDataAvailable, canReadAgain;
-	int32_t n, pHandle, freeByteCount;
+    int32_t n, pHandle, freeByteCount;
 	ring_buffer_t* ringBuffer;
 
     if (cmInstance->readCallback)
@@ -637,14 +646,17 @@ void freeComManagerInstance(CMHANDLE cmInstance_)
 		if (cmInstance->ringBuffers != 0)
 		{
 			FREE(cmInstance->ringBuffers);
+			cmInstance->ringBuffers = 0;
 		}
 		if (cmInstance->ensuredPackets != 0)
 		{
 			FREE(cmInstance->ensuredPackets);
+			cmInstance->ensuredPackets = 0;
 		}
 		if (cmInstance->status != 0)
 		{
 			FREE(cmInstance->status);
+			cmInstance->status = 0;
 		}
 		FREE(cmInstance);
 	}
@@ -1584,7 +1596,7 @@ void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned cha
 
 
 // Replace special character with encoded equivalent and add to buffer
-static __inline uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest)
+uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest)
 {
 	switch (val)
 	{
@@ -1696,7 +1708,7 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 }
 
 
-static __inline void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum)
+void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum)
 {
 	uint8_t* ptrSrcEnd = *_ptrSrcEnd;
 
@@ -1914,10 +1926,12 @@ int processPassThroughBytes(com_manager_t* cmInstance, int pHandle, ring_buffer_
 	switch (startByte)
 	{
 		case UBLOX_START_BYTE1:
+		case RTCM3_START_BYTE:
 		{
 			if (cmInstance->passThroughHandler != 0)
 			{
-				cmInstance->passThroughHandler(cmInstance, COM_MANAGER_PASS_THROUGH_UBLOX, pHandle, ringBuffer->buf + passThroughIndex, byteCount);
+				com_manager_pass_through_t type = (startByte == UBLOX_START_BYTE1 ? COM_MANAGER_PASS_THROUGH_UBLOX : COM_MANAGER_PASS_THROUGH_RTCM3);
+				cmInstance->passThroughHandler(cmInstance, type, pHandle, ringBuffer->buf + passThroughIndex, byteCount);
 			}
 			return 0;
 		} break;
@@ -1965,7 +1979,7 @@ int beginUbloxPacket(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ring
 */
 void stepPacketRetry(com_manager_t* cmInstance)
 {
-	int i;
+    int32_t i;
 	ensured_pkt_t* ePkt;
 
 	for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
@@ -2007,16 +2021,15 @@ void stepPacketRetry(com_manager_t* cmInstance)
 */
 packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, pkt_info_byte_t pid, unsigned char data[], unsigned int dataSize)
 {
-	int i;
+    int32_t i;
 	ensured_pkt_t *ePkt = 0;
-	static int iLast;
 	unsigned char searching = 1;
 
 #if ENABLE_FILTER_DUPLICATE_PACKETS
 
 #if ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
 
-	int j;
+    int32_t j;
 
 #endif
 
@@ -2108,17 +2121,17 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, pkt_info_b
 	}
 
 	// All slots enabled, so take the oldest (one after last used)
-	if (searching)
+	if (searching && cmInstance->ensuredPackets != 0)
 	{
-		if (++iLast >= cmInstance->maxEnsuredPackets)
+        if (++cmInstance->lastEnsuredPacketIndex >= cmInstance->maxEnsuredPackets)
 		{
-			iLast = 0;
+            cmInstance->lastEnsuredPacketIndex = 0;
 		}
-		ePkt = &(cmInstance->ensuredPackets[iLast]);
+        ePkt = &(cmInstance->ensuredPackets[cmInstance->lastEnsuredPacketIndex]);
 	}
 	else
 	{
-		iLast = i;
+        cmInstance->lastEnsuredPacketIndex = i;
 	}
 	if (ePkt == 0)
 	{
@@ -2148,7 +2161,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, pkt_info_b
 */
 void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt)
 {
-	int i;
+    int32_t i;
 	ensured_pkt_t *ePkt;
 
 	// Search for retries that match packet received.  If found, removed it from the retry list.
@@ -2192,7 +2205,7 @@ void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt)
 
 void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 {
-	int i;
+    int32_t i;
 	ensured_pkt_t *ePkt;
 	p_ack_t *ack;
 	pkt_info_byte_t ackInfo;
@@ -2285,11 +2298,10 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 }
 
 
-// 0 on success, -1 on failure
-int validateBaudRate( int baudrate )
+int validateBaudRate(int baudRate)
 {
 	// Valid baudrates for InertialSense hardware
-	switch (baudrate)
+	switch (baudRate)
 	{
 		case IS_BAUDRATE_115200:
 		case IS_BAUDRATE_230400:

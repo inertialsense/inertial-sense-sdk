@@ -63,10 +63,34 @@ public:
 	int Write(uint8_t* data, int dataLength);
 
 	/*!
+	* Send a GET http request to a url. You must then call Read to get the response.
+	* @param subUrl the url to request, i.e. index.html or pages/page1.txt, etc.
+	* @param userAgent the user agent to send
+	* @param userName optional user name (basic authentication)
+	* @param password optional password (basic authentication)
+	*/
+	void HttpGet(const string& subUrl, const string& userAgent, const string& userName, const string& password);
+
+	/*!
 	* Get whether the connection is open
 	* @return true if connection open, false if not
 	*/
 	bool IsOpen() { return m_socket != 0; }
+
+	/*!
+	* Encode data as base64
+	* @param bytes_to_encode the data to encode
+	* @param in_len the number of bytes to encode
+	* @param return the base64 encoded data
+	*/
+	static string Base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len);
+
+	/*!
+	* Decode base64 data
+	* @param encoded_string the base64 encoded data
+	* @return the base64 decoded data - if error, this may be an incomplete set of data
+	*/
+	static string Base64Decode(const string& encoded_string);
 
 private:
 	uint64_t m_socket;

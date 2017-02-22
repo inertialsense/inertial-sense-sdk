@@ -513,6 +513,19 @@ gen_3axis_sensor_t gen3AxisSensorData(double time, const float val[3])
     return data;
 }
 
+gen_dual_3axis_sensor_t genDual3AxisSensorData(double time, const float val1[3], const float val2[3])
+{
+	gen_dual_3axis_sensor_t data;
+	data.time = time;
+	data.val1[0] = val1[0];
+	data.val1[1] = val1[1];
+	data.val1[2] = val1[2];
+	data.val2[0] = val2[0];
+	data.val2[1] = val2[1];
+	data.val2[2] = val2[2];
+	return data;
+}
+
 gen_3axis_sensord_t gen3AxisSensorDataD(double time, const double val[3])
 {
     gen_3axis_sensord_t data;

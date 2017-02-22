@@ -376,6 +376,9 @@ typedef enum
 	/*! UBLOX pass through */
 	COM_MANAGER_PASS_THROUGH_UBLOX = 1,
 
+	/*! RTCM3 pass through */
+	COM_MANAGER_PASS_THROUGH_RTCM3 = 2,
+
 	/*! Maximum number of pass through types */
 	COM_MANAGER_MAX_PASS_THROUGH_TYPES = 8
 } com_manager_pass_through_t;
@@ -713,7 +716,7 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 /**
  * \brief Ensure baudrate is valid for InertialSense hardware.  0 on success, -1 on failure.
  */
-int validateBaudRate( int baudrate );
+int validateBaudRate(int baudRate);
 
 #ifdef __cplusplus
 }

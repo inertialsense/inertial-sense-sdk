@@ -184,9 +184,11 @@ private:
 	dev_info_t m_deviceInfo;
 	ISTcpClient m_tcpClient;
 	vector<uint8_t> m_tcpBuffer;
+	uint32_t m_tcpBytesRemaining;
 
 	void LoggerThread();
 	void DisableLogging();
+	void ProcessRTCM3Byte(uint8_t b);
 	static void StepLogger(InertialSense* i, const p_data_t* data);
 };
 
