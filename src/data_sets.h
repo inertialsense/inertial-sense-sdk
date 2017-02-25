@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define DATA_SETS_H
 
 #include <stdint.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,12 +110,6 @@ extern "C" {
 
 #ifndef OFFSETOF
 #define OFFSETOF offsetof//(TYPE, MEMBER) ((uint8_t)&(((TYPE*)0)->MEMBER))
-#endif
-
-#ifdef RTK_EMBEDDED
-
-#include "rtklib_embedded.h"
-
 #endif
 
 // *****************************************
@@ -1222,37 +1217,6 @@ typedef struct
 	float					magYawOffset;		// (rad)	Temporary offset in mag heading used to remove discontinuities when transitioning from moving to stationary (from GPS to mag heading)
 } ins_res_t;
 
-#ifdef RTK_EMBEDDED
-
-typedef enum
-{
-	rtk_data_type_single_observation = 0,
-	rtk_data_type_ephemeris = 1,
-	rtk_data_type_glonass_ephemeris = 2,
-	rtk_data_type_base_station_antenna = 3,
-	rtk_data_type_observation_group_start = 100,
-	rtk_data_type_observation_group_end = 101
-} rtk_data_type_t;
-
-/*! (DID_RTK) - for this data id, the data must be pre-flipped to the endianess of the receiver */
-typedef struct PACK_ONE
-{
-	uint8_t	dataType; // rtk_data_type_t
-	union
-	{
-		obsd_t obsd; // rtk_data_type_single_observation
-		eph_t eph; // rtk_data_type_rover_ephemeris
-		geph_t geph; // rtk_data_type_rover_glonass_ephemeris
-		antenna_t antenna; // rtk_data_type_base_station_antenna
-		uint8_t index; // rtk_data_type_observation_group_start or rtk_data_type_observation_group_end
-	} data;
-} rtk_data_t;
-
-// flip 32 bit integers and 64 bit doubles in rtk data
-void flipRTK(rtk_data_t* r);
-
-#endif
-
 POP_PACK_NONE
 
 /*! Union of datasets */
@@ -1277,12 +1241,6 @@ union uDatasets
 	io_t				io;
 	ins_res_t			insRes;
 	ekf_states_t		ekfStates;
-#ifdef RTK_EMBEDDED
-
-	rtk_data_t			rtkData;
-
-#endif
-
 };
 
 /*!
@@ -1412,6 +1370,7 @@ int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day);
 int32_t convertGpsToMjd(int32_t gpsCycle, int32_t gpsWeek, int32_t gpsSeconds);
 void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day);
 void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds);
+
 gen_1axis_sensor_t gen1AxisSensorData(double time, const float val);
 gen_3axis_sensor_t gen3AxisSensorData(double time, const float val[3]);
 gen_dual_3axis_sensor_t genDual3AxisSensorData(double time, const float val1[3], const float val2[3]);

@@ -91,6 +91,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	g_commandLineOptions.maxLogMemory = 131072;
 	g_commandLineOptions.replaySpeed = 1.0;
 	g_commandLineOptions.enableLogging = true;
+	g_commandLineOptions.baudRate = IS_COM_BAUDRATE_DEFAULT;
 
 	// parse command line
 	for (int i = 1; i < argc; i++)
@@ -162,6 +163,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
+		else if (startsWith(a, "-baud="))
+		{
+			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
+		}
 		else if (startsWith(a, "-lms="))
 		{
 			g_commandLineOptions.maxLogSpaceMB = (float)atof(&a[5]);
@@ -199,6 +204,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (!strncmp(a, "-r", 2))
 		{
 			g_commandLineOptions.replayDataLog = true;
+		}
+		else if (startsWith(a, "-svr="))
+		{
+			g_commandLineOptions.serverHostAndPort = &a[5];
 		}
 		else
 		{
@@ -341,6 +350,9 @@ void cltool_outputUsage()
 	cout << "    -lmf=" << boldOff << "BYTES     log max file size in bytes (default: 5242880)" << endlbOn;
 	cout << "    -lmm=" << boldOff << "BYTES     log max memory in bytes (default: 131072)" << endlbOn;
 	cout << "    -lts=" << boldOff << "0         log use timestamp sub folder" << endlbOn;
+
+	cout << endlbOn;
+	cout << "    -svr=" << boldOff << "serverAndPort, i.e. 192.168.1.100:7777:url:user:password, for retrieving RTCM3 data and sending to the uINS, url, user and password are optional." << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }

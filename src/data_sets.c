@@ -11,7 +11,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "data_sets.h"
-#include "stddef.h"
+#include <stddef.h>
+#include <math.h>
+
+#if defined(_WIN32) || defined(_WIN64)
+
+#include <windows.h>
+
+#else
+
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#endif
 
 int IS_LITTLE_ENDIAN = -1;
 
@@ -535,113 +548,3 @@ gen_3axis_sensord_t gen3AxisSensorDataD(double time, const double val[3])
     data.val[2] = val[2];
     return data;
 }
-
-#ifdef RTK_EMBEDDED
-
-static void flipRTKObservation(obsd_t* d)
-{
-	// we don't flip the endianess of obsd_t because it contains char data
-	d->time.time = SWAP32(d->time.time);
-	flipEndianess32((uint8_t*)&d->time.sec, sizeof(double));
-	flipDouble((uint8_t*)&d->time.sec);
-	flipEndianess32((uint8_t*)d->D, sizeof(d->D[0]) * sizeof(d->D));
-	flipEndianess32((uint8_t*)d->L, sizeof(d->L[0]) * sizeof(d->L));
-	flipEndianess32((uint8_t*)d->P, sizeof(d->P[0]) * sizeof(d->P));
-	for (int i = 0; i < NFREQ + NEXOBS; i++)
-	{
-		flipDouble((uint8_t*)&d->L[i]);
-		flipDouble((uint8_t*)&d->P[i]);
-	}
-}
-
-static void flipRTKEphemeris(eph_t* e)
-{
-	flipEndianess32((uint8_t*)e, sizeof(eph_t));
-	flipDouble((uint8_t*)&e->toe.sec);
-	flipDouble((uint8_t*)&e->toc.sec);
-	flipDouble((uint8_t*)&e->ttr.sec);
-	flipDouble((uint8_t*)&e->A);
-	flipDouble((uint8_t*)&e->e);
-	flipDouble((uint8_t*)&e->i0);
-	flipDouble((uint8_t*)&e->OMG0);
-	flipDouble((uint8_t*)&e->omg);
-	flipDouble((uint8_t*)&e->M0);
-	flipDouble((uint8_t*)&e->deln);
-	flipDouble((uint8_t*)&e->OMGd);
-	flipDouble((uint8_t*)&e->idot);
-	flipDouble((uint8_t*)&e->crc);
-	flipDouble((uint8_t*)&e->crs);
-	flipDouble((uint8_t*)&e->cuc);
-	flipDouble((uint8_t*)&e->cus);
-	flipDouble((uint8_t*)&e->cic);
-	flipDouble((uint8_t*)&e->cis);
-	flipDouble((uint8_t*)&e->toes);
-	flipDouble((uint8_t*)&e->fit);
-	flipDouble((uint8_t*)&e->f0);
-	flipDouble((uint8_t*)&e->f1);
-	flipDouble((uint8_t*)&e->f2);
-	flipDouble((uint8_t*)&e->tgd[0]);
-	flipDouble((uint8_t*)&e->tgd[1]);
-	flipDouble((uint8_t*)&e->tgd[2]);
-	flipDouble((uint8_t*)&e->tgd[3]);
-	flipDouble((uint8_t*)&e->Adot);
-	flipDouble((uint8_t*)&e->ndot);
-}
-
-static void flipRTKGlonassEphemeris(geph_t* g)
-{
-	int i;
-
-	flipEndianess32((uint8_t*)g, sizeof(geph_t));
-	flipDouble((uint8_t*)&g->toe.sec);
-	flipDouble((uint8_t*)&g->tof.sec);
-	for (i = 0; i < 3; i++)
-	{
-		flipDouble((uint8_t*)&g->pos[i]);
-		flipDouble((uint8_t*)&g->vel[i]);
-		flipDouble((uint8_t*)&g->acc[i]);
-	}
-	flipDouble((uint8_t*)&g->taun);
-	flipDouble((uint8_t*)&g->gamn);
-	flipDouble((uint8_t*)&g->dtaun);
-}
-
-static void flipRTKAntenna(antenna_t* a)
-{
-	int i;
-
-	flipEndianess32((uint8_t*)a, sizeof(antenna_t));
-	for (i = 0; i < 3; i++)
-	{
-		flipDouble((uint8_t*)&a->pos[i]);
-		flipDouble((uint8_t*)&a->del[i]);
-	}
-	flipDouble((uint8_t*)&a->height);
-}
-
-void flipRTK(rtk_data_t* r)
-{
-	switch (r->dataType)
-	{
-	case rtk_data_type_single_observation:
-		flipRTKObservation(&r->data.obsd);
-		break;
-
-	case rtk_data_type_ephemeris:
-		flipRTKEphemeris(&r->data.eph);
-		break;
-
-	case rtk_data_type_glonass_ephemeris:
-		flipRTKGlonassEphemeris(&r->data.geph);
-		break;
-
-	case rtk_data_type_base_station_antenna:
-		flipRTKAntenna(&r->data.antenna);
-		break;
-
-	default:
-		break;
-	}
-}
-
-#endif

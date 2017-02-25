@@ -64,7 +64,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	}
 }
 
-InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serialPort)
+InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serialPort) : m_rtcm3Reader(this)
 {
 	memset(&m_comManagerState, 0, sizeof(m_comManagerState));
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
@@ -72,7 +72,6 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 	m_cmHandle = getGlobalComManager();
 	m_logThread = nullptr;
 	m_lastLogReInit = time(0);
-	m_tcpBytesRemaining = 0;
 
 	if (serialPort == NULL)
 	{
@@ -226,10 +225,35 @@ bool InertialSense::OpenServerConnectionRTCM3(const string& hostAndPort)
 	{
 		return false;
 	}
+	size_t colon2 = hostAndPort.find(':', colon + 1);
+	if (colon2 == string::npos)
+	{
+		return false;
+	}
 	string host = hostAndPort.substr(0, colon);
-	string portString = hostAndPort.substr(++colon);
+	string portString = hostAndPort.substr(colon + 1, colon2 - colon - 1);
 	int port = (int)strtol(portString.c_str(), NULL, 10);
-	return (m_tcpClient.Open(host, port) == 0);
+	bool opened = (m_tcpClient.Open(host, port) == 0);
+	if (opened)
+	{
+		// try to find url:user:pwd on the string
+		colon = hostAndPort.find(':', colon2 + 1);
+		if (colon != string::npos)
+		{
+			string url = hostAndPort.substr(colon2 + 1, colon - colon2 - 1);
+			colon2 = hostAndPort.find(':', colon + 1);
+			if (colon2 != string::npos)
+			{
+				string user = hostAndPort.substr(colon + 1, colon2 - colon - 1);
+				string pwd = hostAndPort.substr(colon2 + 1);
+				if (user.size() != 0 && pwd.size() != 0)
+				{
+					m_tcpClient.HttpGet(url, "InertialSense", user, pwd);
+				}
+			}
+		}
+	}
+	return opened;
 }
 
 void InertialSense::CloseServerConnection()
@@ -250,7 +274,7 @@ void InertialSense::Update()
 		int count = m_tcpClient.Read(buffer, sizeof(buffer), false);
 		for (int i = 0; i < count; i++)
 		{
-			ProcessRTCM3Byte(buffer[i]);
+			m_rtcm3Reader.WriteByte(buffer[i]);
 		}
 	}
 	stepComManager();
@@ -343,70 +367,10 @@ bool InertialSense::BootloadFile(const string& fileName, pfnBootloadProgress upl
 	return true;
 }
 
-void InertialSense::ProcessRTCM3Byte(uint8_t b)
+bool InertialSense::OnPacketReceived(const cRtcm3Reader* reader, const uint8_t* data, uint32_t dataLength)
 {
-	// if we have no bytes yet, check for header
-	// if we have exactly 3 bytes, we have enough to calculate the length
-	// fewer than 3 bytes and we want to exit out early
-	if (m_tcpBuffer.size() <= 3)
-	{
-		// check for header byte
-		if (m_tcpBuffer.size() == 0)
-		{
-			// 0xD3 is the first byte in an RTCM3 message
-			if (b != 0xD3)
-			{
-				// corrupt data
-				return;
-			}
-		}
-		else if (m_tcpBuffer.size() == 3)
-		{
-			uint32_t msgLength = GetBitsAsUInt32(&m_tcpBuffer[0], 14, 10);
-			if (msgLength > 1023)
-			{
-				// corrupt data
-				m_tcpBuffer.clear();
-				return;
-			}
-			else
-			{
-				// message length only includes the message bytes, not the header or 3 CRC bytes at the end
-				// plus 2 because we will be appending the first byte of the message or CRC bytes
-				m_tcpBytesRemaining = msgLength + 2;
-			}
-		}
-
-		// append the byte
-		m_tcpBuffer.push_back(b);
-		return;
-	}
-
-	// append the byte
-	m_tcpBuffer.push_back(b);
-
-	// see if we are done reading bytes, if so calculate CRC and forward the message on to the uINS if it is valid
-	if (--m_tcpBytesRemaining == 0)
-	{
-		// if the message is large enough, forward it on
-		if (m_tcpBuffer.size() > 5)
-		{
-			// the CRC calculation does not include the 3 CRC bytes at the end for obvious reasons
-			uint32_t actualCRC = Calculate24BitCRCQ(&m_tcpBuffer[0], m_tcpBuffer.size() - 3);
-
-			// get the CRC from the last 3 bytes of the message
-			uint32_t correctCRC = GetBitsAsUInt32(&m_tcpBuffer[m_tcpBuffer.size() - 3], 0, 24);
-
-			// if valid CRC, forward mesasge to uINS
-			if (actualCRC == correctCRC)
-			{
-				serialPortWrite(&m_serialPort, &m_tcpBuffer[0], m_tcpBuffer.size());
-			}
-			else
-			{
-				// corrupt data
-			}
-		}
-		m_tcpBuffer.clear();
-	}
+    (void)reader;
+	serialPortWrite(&m_serialPort, data, dataLength);
+	return false; // do not parse, since we are just forwarding it on
 }
+

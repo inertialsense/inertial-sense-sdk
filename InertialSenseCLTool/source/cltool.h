@@ -70,6 +70,9 @@ typedef struct
 	uint32_t maxLogFileSize; // -lmf=max_file_size
 	uint32_t maxLogMemory; // -lmm=max_memory
 	bool useLogTimestampSubFolder; // -lts=1
+	int baudRate; // -baud=3000000
+
+	string serverHostAndPort; // -svr=host:port:url:user:password
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

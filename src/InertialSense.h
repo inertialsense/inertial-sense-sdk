@@ -29,6 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDisplay.h"
 #include "ISUtilities.h"
 #include "ISConstants.h"
+#include "Rtcm3Reader.h"
 
 extern "C"
 {
@@ -49,7 +50,7 @@ using namespace std;
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
 */
-class InertialSense
+class InertialSense : public iRtcm3ReaderDelegate
 {
 public:
 	struct com_manager_cpp_state_t
@@ -149,7 +150,7 @@ public:
 
 	/*!
 	* Connect to an RTCM3 server and send the data from that server to the uINS
-	* @param hostAndPort the server to connect to with the host, then port information after a colon, i.e. 192.168.1.100:7777
+	* @param hostAndPort the server to connect to with the host, then port information after a colon, followed by colon then optional url, user and password, i.e. 192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure
 	*/
 	bool OpenServerConnectionRTCM3(const string& hostAndPort);
@@ -169,6 +170,9 @@ public:
 	*/
 	const dev_info_t& GetDeviceInfo() { return m_deviceInfo; }
 
+protected:
+	bool OnPacketReceived(const cRtcm3Reader* reader, const uint8_t* data, uint32_t dataLength) override;
+
 private:
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
 	string m_asciiLine;
@@ -182,13 +186,11 @@ private:
 	uint32_t m_logSolution; // SLOG_DISABLED if none
 	time_t m_lastLogReInit;
 	dev_info_t m_deviceInfo;
-	ISTcpClient m_tcpClient;
-	vector<uint8_t> m_tcpBuffer;
-	uint32_t m_tcpBytesRemaining;
+	cISTcpClient m_tcpClient;
+	cRtcm3Reader m_rtcm3Reader;
 
 	void LoggerThread();
 	void DisableLogging();
-	void ProcessRTCM3Byte(uint8_t b);
 	static void StepLogger(InertialSense* i, const p_data_t* data);
 };
 

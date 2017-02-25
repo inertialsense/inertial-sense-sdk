@@ -72,20 +72,20 @@ void ISSocketShutdown()
 
 }
 
-ISTcpClient::ISTcpClient()
+cISTcpClient::cISTcpClient()
 {
 	m_socket = 0;
 	m_port = 0;
 	ISSocketInitialize();
 }
 
-ISTcpClient::~ISTcpClient()
+cISTcpClient::~cISTcpClient()
 {
 	Close();
 	ISSocketShutdown();
 }
 
-int ISTcpClient::Open(const string& host, int port)
+int cISTcpClient::Open(const string& host, int port)
 {
 	Close();
 	int status;
@@ -105,7 +105,7 @@ int ISTcpClient::Open(const string& host, int port)
 		return status;
 	}
 	m_socket = (uint64_t)socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	if ((uint32_t*)m_socket == (uint32_t*)0xFFFFFFFF)
+	if (m_socket == 0 || m_socket == ~0)
 	{
 		freeaddrinfo(result);
 		Close();
@@ -134,7 +134,7 @@ int ISTcpClient::Open(const string& host, int port)
 		return status;
 	}
 
-	status = connect((SOCKET_TYPE)m_socket, result->ai_addr, result->ai_addrlen);
+	status = connect((SOCKET_TYPE)m_socket, result->ai_addr, (int)result->ai_addrlen);
 	freeaddrinfo(result);
 	if (status != 0)
 	{
@@ -145,7 +145,7 @@ int ISTcpClient::Open(const string& host, int port)
 	return status;
 }
 
-int ISTcpClient::Close()
+int cISTcpClient::Close()
 {
 	int status = 0;
 	if (m_socket != 0)
@@ -176,7 +176,7 @@ int ISTcpClient::Close()
 	return status;
 }
 
-int ISTcpClient::Read(uint8_t* data, int dataLength, bool blocking)
+int cISTcpClient::Read(uint8_t* data, int dataLength, bool blocking)
 {
 	if (!blocking)
 	{
@@ -225,7 +225,7 @@ int ISTcpClient::Read(uint8_t* data, int dataLength, bool blocking)
 	return count;
 }
 
-int ISTcpClient::Write(uint8_t* data, int dataLength)
+int cISTcpClient::Write(uint8_t* data, int dataLength)
 {
 	int count = send((SOCKET_TYPE)m_socket, (const char*)data, dataLength, 0);
 	if (count < 0)
@@ -235,20 +235,20 @@ int ISTcpClient::Write(uint8_t* data, int dataLength)
 	return count;
 }
 
-void ISTcpClient::HttpGet(const string& subUrl, const string& userAgent, const string& userName, const string& password)
+void cISTcpClient::HttpGet(const string& subUrl, const string& userAgent, const string& userName, const string& password)
 {
 	string msg = "GET /" + subUrl + " HTTP/1.1\r\n";
 	msg += "User-Agent: " + userAgent + "\r\n";
 	if (userName.size() != 0 && password.size() != 0)
 	{
 		string auth = userName + ":" + password;
-		msg += "Authorization: Basic " + Base64Encode((const unsigned char*)auth.data(), auth.size()) + "\r\n";
+		msg += "Authorization: Basic " + Base64Encode((const unsigned char*)auth.data(), (int)auth.size()) + "\r\n";
 	}
 	msg += "Accept: */*\r\nConnection: close\r\n\r\n";
-	Write((uint8_t*)msg.data(), msg.size());
+	Write((uint8_t*)msg.data(), (int)msg.size());
 }
 
-string ISTcpClient::Base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len)
+string cISTcpClient::Base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len)
 {
 	string ret;
 	int i = 0;
@@ -300,9 +300,9 @@ string ISTcpClient::Base64Encode(const unsigned char* bytes_to_encode, unsigned 
 
 }
 
-string ISTcpClient::Base64Decode(const string& encoded_string)
+string cISTcpClient::Base64Decode(const string& encoded_string)
 {
-	int in_len = encoded_string.size();
+	int in_len = (int)encoded_string.size();
 	int i = 0;
 	int j = 0;
 	int in_ = 0;

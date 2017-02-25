@@ -18,18 +18,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-class ISTcpClient
+class cISTcpClient
 {
 public:
 	/*!
 	* Constructor
 	*/
-	ISTcpClient();
+	cISTcpClient();
 
 	/*!
 	* Destructor
 	*/
-	virtual ~ISTcpClient();
+	virtual ~cISTcpClient();
 
 	/*!
 	* Closes, then opens a tcp client

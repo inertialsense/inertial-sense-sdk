@@ -1,4 +1,4 @@
-Inertial Sense Command Line Tool Readme
+Inertial Sense Command Line Tool (cltool) Readme
 
 
 ======================================
@@ -13,13 +13,19 @@ Linux Instructions
 
    $ cd build
    $ cmake ..
-   # to cross-compile 32 or 64 bit:
-   # sudo apt-get install libc6-dev-i386
-   # sudo apt-get install gcc-multilib g++-multilib
-   # 32 bit
-   # cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
-   # 64 bit
-   # cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
+
+   To cross-compile 32 or 64 bit:
+
+   $ sudo apt-get install libc6-dev-i386
+   $ sudo apt-get install gcc-multilib g++-multilib
+   
+   32 bit
+   
+   $ cmake .. -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_C_FLAGS=-m32
+
+   64 bit
+
+   $ cmake .. -DCMAKE_CXX_FLAGS=-m64 -DCMAKE_C_FLAGS=-m64
 
 3. Compile using make.
 
@@ -34,7 +40,7 @@ Linux Instructions
 
 5. Run tool executable
 
-   $ ./bin/iscltool
+   $ ./bin/cltool
 
 ======================================
 Windows Instructions (MS Visual Studio)

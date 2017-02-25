@@ -40,6 +40,12 @@ extern "C" {
 #endif
 */
 
+#define UBLOX_HEADER_SIZE 6
+#define UBLOX_START_BYTE1 0xB5
+#define UBLOX_START_BYTE2 0x62
+#define RTCM3_START_BYTE 0xD3
+#define RTCM3_HEADER_SIZE 3
+
 enum
 {
 	IS_BAUDRATE_115200		= 115200,
@@ -374,13 +380,10 @@ typedef enum
 	COM_MANAGER_PASS_THROUGH_NONE = 0,
 
 	/*! UBLOX pass through */
-	COM_MANAGER_PASS_THROUGH_UBLOX = 1,
+	COM_MANAGER_PASS_THROUGH_UBLOX = UBLOX_START_BYTE1,
 
 	/*! RTCM3 pass through */
-	COM_MANAGER_PASS_THROUGH_RTCM3 = 2,
-
-	/*! Maximum number of pass through types */
-	COM_MANAGER_MAX_PASS_THROUGH_TYPES = 8
+	COM_MANAGER_PASS_THROUGH_RTCM3 = RTCM3_START_BYTE
 } com_manager_pass_through_t;
 
 /*! Contains status for the com manager */
@@ -627,7 +630,7 @@ No byte swapping occurs.
 
 Example:
 @code
-sendDataComManager(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
+sendRawDataComManager(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 @endcode
 */
 SHAREDLIB_EXPORT int sendRawDataComManager(int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset);

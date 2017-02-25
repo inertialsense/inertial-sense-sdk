@@ -23,14 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // whether the first character or all characters are checked in duplicate packets
 #define ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS 0
 
-// enable the new parser in preparation for pass through
-#define ENABLE_NEW_COM_MANAGER_PARSER 1
-
-#define UBLOX_HEADER_SIZE 6
-#define UBLOX_START_BYTE1 0xB5
-#define UBLOX_START_BYTE2 0x62
-#define RTCM3_START_BYTE 0xD3
-
 #define PARSE_DOUBLE(str) strtod(str, 0)
 #define PARSE_FLOAT(str) strtof(str, 0)
 
@@ -249,6 +241,7 @@ int processAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* da
 int processBinaryPacket(com_manager_t* cmInstance, int pHandle, unsigned char* dataStart, unsigned char* data, int dataLength, unsigned char* additionalDataAvailable);
 int processPassThroughBytes(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ringBuffer);
 int beginUbloxPacket(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ringBuffer);
+int beginRtcm3Packet(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ringBuffer);
 int decodeBinaryPacketByte(com_manager_t* cmInstance, int pHandle, uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
 int asciiMessageCompare(const void* elem1, const void* elem2);
 uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest);
@@ -544,10 +537,13 @@ readAgain:
 								return;
 							}
 						} break;
-						//case RTCM3_START_BYTE:
-						//{
-						// TODO: Implement RTCM3 forwarder
-						//} break;
+						case RTCM3_START_BYTE:
+						{
+							if (beginRtcm3Packet(cmInstance, pHandle, ringBuffer))
+							{
+								return;
+							}
+						} break;
 					}
 				}
 
@@ -1741,7 +1737,7 @@ void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t*
 	*_ptrSrcEnd = ptrSrcEnd;
 }
 
-__inline int decodeBinaryPacketByte(com_manager_t* cmInstance, int pHandle, uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift)
+INLINE int decodeBinaryPacketByte(com_manager_t* cmInstance, int pHandle, uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift)
 {
 	uint8_t* ptrSrc = *_ptrSrc;
 // 	uint8_t* ptrDest = *_ptrDest;
@@ -1930,8 +1926,7 @@ int processPassThroughBytes(com_manager_t* cmInstance, int pHandle, ring_buffer_
 		{
 			if (cmInstance->passThroughHandler != 0)
 			{
-				com_manager_pass_through_t type = (startByte == UBLOX_START_BYTE1 ? COM_MANAGER_PASS_THROUGH_UBLOX : COM_MANAGER_PASS_THROUGH_RTCM3);
-				cmInstance->passThroughHandler(cmInstance, type, pHandle, ringBuffer->buf + passThroughIndex, byteCount);
+				cmInstance->passThroughHandler(cmInstance, (com_manager_pass_through_t)startByte, pHandle, ringBuffer->buf + passThroughIndex, byteCount);
 			}
 			return 0;
 		} break;
@@ -1966,6 +1961,35 @@ int beginUbloxPacket(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ring
 	cmInstance->status[pHandle].startByte = UBLOX_START_BYTE1;
 	ringBuffer->startIndex = ringBuffer->scanIndex;
 	cmInstance->status[pHandle].passThroughBytes = UBLOX_HEADER_SIZE + headerLength + 2; // + 2 for checksum
+	return 0; // 0 means keep reading as normal
+}
+
+int beginRtcm3Packet(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ringBuffer)
+{
+	uint32_t count = ringBuffer->endIndex - (--ringBuffer->scanIndex);
+	if (count < RTCM3_HEADER_SIZE)
+	{
+		// not enough data to read a rtcm3 packet header, wait for more data to arrive
+		return 1; // 1 means more data needed
+	}
+
+	// if message length valid, probably an rtcm3 packet, message length starts at bit 14 and goes for 10 bits
+	uint32_t msgLength = 0;
+	for (uint32_t i = 14; i < 14 + 10; i++)
+	{
+		msgLength = (msgLength << 1) + ((ringBuffer->buf[i / 8] >> (7 - i % 8)) & 1u);
+	}
+	if (msgLength > 1023)
+	{
+		ringBuffer->scanIndex++;
+		cmInstance->status[pHandle].startByte = 0;
+		return 0;
+	}
+
+	// probably a valid rtcm3 packet
+	cmInstance->status[pHandle].startByte = RTCM3_START_BYTE;
+	ringBuffer->startIndex = ringBuffer->scanIndex;
+	cmInstance->status[pHandle].passThroughBytes = RTCM3_HEADER_SIZE + msgLength + 3; // + 3 for crc24
 	return 0; // 0 means keep reading as normal
 }
 

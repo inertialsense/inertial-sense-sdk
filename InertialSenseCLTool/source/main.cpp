@@ -125,6 +125,10 @@ void cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, periodMs, cltool_dataCallback);
 	}
+	if (g_commandLineOptions.serverHostAndPort.size() != 0)
+	{
+		inertialSenseInterface.OpenServerConnectionRTCM3(g_commandLineOptions.serverHostAndPort);
+	}
 }
 
 
@@ -140,7 +144,7 @@ int inertialSenseMain()
 
 	// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
 	InertialSense inertialSenseInterface(cltool_dataCallback);
-	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str()))
+	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
 	{	
 		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
 		return -1;	// Failed to open serial port

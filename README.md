@@ -1,8 +1,8 @@
-**SDK** - The Inertial Sense open source software development kit provides quick integration for communication with the Inertial Sense product line, including the uINS, uAHRS, and uINS.  It includes data logger, math libraries, and serial port interface for Linux, Mac, and Windows environments.   
+**SDK** - The Inertial Sense open source software development kit provides quick integration for communication with the Inertial Sense product line, including the uINS, uAHRS, and uINS.  It includes data logger, math libraries, and serial port interface for Linux and Windows environments.   
 
 **EvalTool** - Graphical Windows-based desktop program that allows you to explore and test functionality of the Inertial Sense products in real-time.  It has scrolling plots, 3D model representation, table views of all data, data logger, and firmware updating interface for the uINS, uAHRS, or uIMU. The EvalTool can simultaneously interface with multiple Inertial Sense devices.
 
-**CLTool** - Command line utility that can be used to communicate, log data, and update firmware for Inertial Sense products.  Additionally, InertialSenseCLTool serves as example source code to demonstrate how to integrate the Inertial Sense SDK into your own source code.  The InertialSenseCLTool can be compiled in Linux, Mac, and Windows. 
+**CLTool** - Command line utility that can be used to communicate, log data, and update firmware for Inertial Sense products.  Additionally, InertialSenseCLTool serves as example source code to demonstrate how to integrate the Inertial Sense SDK into your own source code.  The InertialSenseCLTool can be compiled in Linux and Windows. 
 
 ### Documents
 
@@ -29,7 +29,7 @@
 ************************************************
 ## CLTool Instructions
 
-#### Compiling in Linux / Mac
+#### Compiling in Linux
 
 1. Create build directory...
 
@@ -171,10 +171,10 @@ The steps described in the COMM INSTRUCTIONS section are needed in addition to t
 
 * To execute the bootloader, call cltool_runBootloader().  This function may be called directly or duplicated for your purposes.
 
- ```c
+```c
         // [BOOTLOADER INSTRUCTIONS] Update firmware
         return cltool_runBootloader(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.bootloaderFileName.c_str(), NULL);
- ```
+```
 
 
 ************************************************

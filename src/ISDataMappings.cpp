@@ -848,6 +848,24 @@ static void PopulateUserPage1Mappings(map_lookup_name_t& mappings)
 	ADD_MAP(m, totalSize, "oKat2", MAP_TYPE, cf.oKat2, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "oKuvw", MAP_TYPE, cf.oKuvw, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "oKlla", MAP_TYPE, cf.oKlla, 0, DataTypeFloat, float);
+
+#if 0
+
+	ADD_MAP(m, totalSize, "bias_cal[0]", MAP_TYPE, bias_cal[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "bias_cal[1]", MAP_TYPE, bias_cal[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "bias_cal[2]", MAP_TYPE, bias_cal[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[0]", MAP_TYPE, Wcal[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[1]", MAP_TYPE, Wcal[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[2]", MAP_TYPE, Wcal[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[3]", MAP_TYPE, Wcal[3], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[4]", MAP_TYPE, Wcal[4], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[5]", MAP_TYPE, Wcal[5], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[6]", MAP_TYPE, Wcal[6], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[7]", MAP_TYPE, Wcal[7], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "Wcal[8]", MAP_TYPE, Wcal[8], 0, DataTypeFloat, float&);
+
+#endif
+
 	mappings[DID_NVR_USERPAGE_G1] = m;
 
 	ASSERT_SIZE(totalSize, MAP_TYPE);
@@ -953,8 +971,8 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 	case DID_SENSORS_CF_BIAS:	return "sensorCFbias";
 	case DID_SCOMP:				return "scomp";
 	case DID_DEBUG_ARRAY:		return "debugArray";
-	case DID_NVR_USERPAGE_G0:	return "userpage0";
-	case DID_NVR_USERPAGE_G1:	return "userpage1";
+	case DID_NVR_USERPAGE_G0:    return "userpage0";
+	case DID_NVR_USERPAGE_G1:    return "userpage1";
 	case DID_EKF_STATES:		return "ekfstates";
 
 #endif
