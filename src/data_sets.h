@@ -295,6 +295,11 @@ typedef uint32_t eDataIDs;
 /*! 58: (dual_imu_t) dual inertial measurement units data: calibrated gyroscope and accelerometer. */
 #define DID_DUAL_IMU (eDataIDs)58
 
+/*! 59: (inl2_mag_obs_monitor_t) INL2 magnetometer calibration information. */
+#define DID_INL2_MAG_OBS_INFO (eDataIDs)59
+
+
+
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
@@ -302,7 +307,7 @@ typedef uint32_t eDataIDs;
 // 4] Test!
 
 /*! Count of data ids - make sure to increment if you add a new data id! */
-#define DID_COUNT (eDataIDs)59
+#define DID_COUNT (eDataIDs)60
 
 /*! Maximum number of data ids */
 #define DID_MAX_COUNT 256
