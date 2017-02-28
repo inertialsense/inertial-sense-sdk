@@ -3,6 +3,8 @@ var searchData=
   ['bar',['bar',['../structbarometer__t.html#a480bcdd9ba3545fba9f1bff3f7b4a4d8',1,'barometer_t::bar()'],['../structsys__sensors__t.html#af9323618973cda448274b214b7ec804a',1,'sys_sensors_t::bar()']]],
   ['barometer_5ft',['barometer_t',['../structbarometer__t.html',1,'']]],
   ['bartemp',['barTemp',['../structbarometer__t.html#a5ec49f99ea2a41fca1c70ea2c4be9c05',1,'barometer_t::barTemp()'],['../structsys__sensors__t.html#a8086b9bb6229796a99d7e71a5942b755',1,'sys_sensors_t::barTemp()']]],
+  ['base64decode',['Base64Decode',['../classc_i_s_tcp_client.html#adf70224f07a826a708957d1a0255fa35',1,'cISTcpClient']]],
+  ['base64encode',['Base64Encode',['../classc_i_s_tcp_client.html#a6f96cc9974327fe6287eda751c5380c3',1,'cISTcpClient']]],
   ['bc_5fperiod_5fms',['bc_period_ms',['../structp__data__get__t.html#ae844be67615d36ebcbd704e75f13613e',1,'p_data_get_t']]],
   ['body',['body',['../structpacket__t.html#a4955d2c7f0cacef9987e6e33a7dfc885',1,'packet_t']]],
   ['bootload_5fparams_5ft',['bootload_params_t',['../structbootload__params__t.html',1,'']]],

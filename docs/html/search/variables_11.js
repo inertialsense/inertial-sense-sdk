@@ -11,7 +11,7 @@ var searchData=
   ['servofailsafetriggerus',['servoFailsafeTriggerUs',['../structnvm__flash__cfg__t.html#a844f4b429fb7ef41b940da8827e4b2ef',1,'nvm_flash_cfg_t']]],
   ['size',['size',['../structbuffer__t.html#ab1ce0deb7a33566b5c9e2705ae822007',1,'buffer_t::size()'],['../structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457',1,'bufPtr_t::size()'],['../structbuf_tx_rx_ptr__t.html#aa35ef37b9fa29843a3f96140484c3dce',1,'bufTxRxPtr_t::size()'],['../structp__data__hdr__t.html#ae4e77713f907776d843284114634d642',1,'p_data_hdr_t::size()'],['../structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a',1,'p_data_get_t::size()'],['../structnvm__flash__cfg__t.html#a22b639081037f0d4335e3d192f52b445',1,'nvm_flash_cfg_t::size()']]],
   ['slogctrl',['sLogCtrl',['../structconfig__t.html#a145a20f49ef91615d12be6b873c0b06f',1,'config_t']]],
-  ['startbyte',['startByte',['../structpacket__hdr__t.html#aae0969a547bd5ea711e2fe7e2d9a5f4e',1,'packet_hdr_t']]],
+  ['startbyte',['startByte',['../structpacket__hdr__t.html#aae0969a547bd5ea711e2fe7e2d9a5f4e',1,'packet_hdr_t::startByte()'],['../structcom__manager__status__t.html#a799659757d78ea8a857bc35994b9cb8a',1,'com_manager_status_t::startByte()']]],
   ['startupnavdtms',['startupNavDtMs',['../structnvm__flash__cfg__t.html#aeb9fac590fc994e1f6137f48a2d8cfae',1,'nvm_flash_cfg_t']]],
   ['startupsampledtms',['startupSampleDtMs',['../structnvm__flash__cfg__t.html#a73e0287f56618e48672ab17374e62856',1,'nvm_flash_cfg_t']]],
   ['status',['status',['../structgps__nav__poslla__t.html#a6fff22a47a9e19a9cd727017e502299d',1,'gps_nav_poslla_t']]],

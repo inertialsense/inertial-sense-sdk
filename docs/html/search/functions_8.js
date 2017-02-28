@@ -1,9 +1,12 @@
 var searchData=
 [
-  ['lastattribute',['LastAttribute',['../class_ti_xml_element.html#a86191b49f9177be132b85b14655f1381',1,'TiXmlElement']]],
-  ['lastchild',['LastChild',['../class_ti_xml_node.html#a6432d2b2495f6caf9cb4278df706a031',1,'TiXmlNode::LastChild()'],['../class_ti_xml_node.html#abad5bf1059c48127b958711ef89e8e5d',1,'TiXmlNode::LastChild(const char *_value)'],['../class_ti_xml_node.html#a256d0cdbfcfeccae83f3a1c9747a8b63',1,'TiXmlNode::LastChild(const std::string &amp;_value) const '],['../class_ti_xml_node.html#a69772c9202f70553f940b15c06b07be3',1,'TiXmlNode::LastChild(const std::string &amp;_value)']]],
-  ['linebreak',['LineBreak',['../class_ti_xml_printer.html#a11f1b4804a460b175ec244eb5724d96d',1,'TiXmlPrinter']]],
-  ['linkendchild',['LinkEndChild',['../class_ti_xml_node.html#a1a881212554b759865f6cac79a851d38',1,'TiXmlNode']]],
-  ['loadfile',['LoadFile',['../class_ti_xml_document.html#a4c852a889c02cf251117fd1d9fe1845f',1,'TiXmlDocument::LoadFile(TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)'],['../class_ti_xml_document.html#a879cdf5e981b8b2d2ef82f2546dd28fb',1,'TiXmlDocument::LoadFile(const char *filename, TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)'],['../class_ti_xml_document.html#a41f6fe7200864d1dca663d230caf8db6',1,'TiXmlDocument::LoadFile(FILE *, TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)'],['../class_ti_xml_document.html#a18ae6ed34fed7991ebc220862dfac884',1,'TiXmlDocument::LoadFile(const std::string &amp;filename, TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)']]],
-  ['loggerenabled',['LoggerEnabled',['../class_inertial_sense.html#a1cae5904548417a138ce40da68e7c08c',1,'InertialSense']]]
+  ['indent',['Indent',['../class_ti_xml_printer.html#abb33ec7d4bad6aaeb57f4304394b133d',1,'TiXmlPrinter']]],
+  ['inertialsense',['InertialSense',['../class_inertial_sense.html#aa42388f048a98788d6d68c13482a08e3',1,'InertialSense']]],
+  ['insertafterchild',['InsertAfterChild',['../class_ti_xml_node.html#a274db3292218202805c093f66a964cb5',1,'TiXmlNode']]],
+  ['insertbeforechild',['InsertBeforeChild',['../class_ti_xml_node.html#a71e54e393336382bc9875f64aab5cb15',1,'TiXmlNode']]],
+  ['insertendchild',['InsertEndChild',['../class_ti_xml_node.html#af287a913ce46d8dbf7ef24fec69bbaf0',1,'TiXmlNode']]],
+  ['intvalue',['IntValue',['../class_ti_xml_attribute.html#aa1a20ad59dc7e89a0ab265396360d50f',1,'TiXmlAttribute']]],
+  ['isopen',['IsOpen',['../class_inertial_sense.html#a8effe3d6e6b05ca285ef413a85223e09',1,'InertialSense::IsOpen()'],['../classc_i_s_tcp_client.html#a4d1ceeac99c7c64c0683c50345a087e2',1,'cISTcpClient::IsOpen()']]],
+  ['iswhitespacecondensed',['IsWhiteSpaceCondensed',['../class_ti_xml_base.html#ad4b1472531c647a25b1840a87ae42438',1,'TiXmlBase']]],
+  ['iteratechildren',['IterateChildren',['../class_ti_xml_node.html#aaef7ac3978c4bb1cc8a24ffae7bced75',1,'TiXmlNode::IterateChildren(const TiXmlNode *previous) const '],['../class_ti_xml_node.html#af2b86dbe25d3d26fa48180edc5e2a9fc',1,'TiXmlNode::IterateChildren(const char *value, const TiXmlNode *previous) const '],['../class_ti_xml_node.html#a1cbaaf8e82c09ad763d52616d75724df',1,'TiXmlNode::IterateChildren(const std::string &amp;_value, const TiXmlNode *previous) const '],['../class_ti_xml_node.html#a16e9ad53e2f5445b14bf325c90aa862c',1,'TiXmlNode::IterateChildren(const std::string &amp;_value, const TiXmlNode *previous)']]]
 ];

@@ -8,6 +8,7 @@ var searchData=
   ['cksum2',['cksum2',['../structpacket__ftr__t.html#ac354b0937e265b7e75d9a68378a8c651',1,'packet_ftr_t']]],
   ['classification',['classification',['../structs_chunk_header.html#a04031364e0d9208b82cb924272f12e80',1,'sChunkHeader']]],
   ['cno',['cno',['../structgps__nav__poslla__t.html#a9cd113e7c5a56dde67e09aecec7dd4fb',1,'gps_nav_poslla_t::cno()'],['../structgps__sat__info__t.html#a59d5e82ba9570f781d2c910656cea5b0',1,'gps_sat_info_t::cno()']]],
+  ['communicationerrorcount',['communicationErrorCount',['../structcom__manager__status__t.html#a8542bc5e9db157565ea3418ed158e070',1,'com_manager_status_t']]],
   ['counter',['counter',['../structpacket__hdr__t.html#a5e22ca5884ff79547cdaf5577cad9f41',1,'packet_hdr_t']]],
   ['course',['course',['../structgps__nav__velned__t.html#a87a646df9c6d88e2e2794f1cc68b2252',1,'gps_nav_velned_t']]]
 ];

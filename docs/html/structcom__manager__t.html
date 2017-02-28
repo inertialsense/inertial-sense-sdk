@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="logo_300x77.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.0.30</span>
+   &#160;<span id="projectnumber">Release 1.1.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -96,9 +96,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:af7a7eeedc8aef4b5299499ace4d5ff01"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="af7a7eeedc8aef4b5299499ace4d5ff01"></a>
-unsigned char&#160;</td><td class="memItemRight" valign="bottom"><b>pktCounter</b></td></tr>
-<tr class="separator:af7a7eeedc8aef4b5299499ace4d5ff01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59a276b78b028a84985cd68d53132639"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a59a276b78b028a84985cd68d53132639"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>pktCounter</b></td></tr>
+<tr class="separator:a59a276b78b028a84985cd68d53132639"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef5b95591013849e1710861537ed5818"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aef5b95591013849e1710861537ed5818"></a>
 pfnComManagerRead&#160;</td><td class="memItemRight" valign="bottom"><b>readCallback</b></td></tr>
 <tr class="separator:aef5b95591013849e1710861537ed5818"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,9 +132,9 @@ pfnComManagerAsciiMessageHandler&#160;</td><td class="memItemRight" valign="bott
 <tr class="memitem:a7b82b19bdc580ff201c26478dccf4bcf"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a7b82b19bdc580ff201c26478dccf4bcf"></a>
 <a class="el" href="structascii_message_map__t.html">asciiMessageMap_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>asciiMessages</b></td></tr>
 <tr class="separator:a7b82b19bdc580ff201c26478dccf4bcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97e6f61a473f2d6461eedfb9290faa39"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a97e6f61a473f2d6461eedfb9290faa39"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>asciiMessagesCount</b></td></tr>
-<tr class="separator:a97e6f61a473f2d6461eedfb9290faa39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdd39e362d1688f6af6f80ca5399cb1f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="acdd39e362d1688f6af6f80ca5399cb1f"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>asciiMessagesCount</b></td></tr>
+<tr class="separator:acdd39e362d1688f6af6f80ca5399cb1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa472f53336f6e49aff7eb9d76c0c5a4e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa472f53336f6e49aff7eb9d76c0c5a4e"></a>
 <a class="el" href="structbroadcast__msg__t.html">broadcast_msg_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>msgs</b> [MAX_NUM_BCAST_MSGS]</td></tr>
 <tr class="separator:aa472f53336f6e49aff7eb9d76c0c5a4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -144,56 +144,44 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>asciiMessagesCount</b>
 <tr class="memitem:a0bf9ddb64caeea7eecc3a71967debc77"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a0bf9ddb64caeea7eecc3a71967debc77"></a>
 <a class="el" href="structbroadcast__msg__t.html">broadcast_msg_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>msgsTail</b></td></tr>
 <tr class="separator:a0bf9ddb64caeea7eecc3a71967debc77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a807e9ab385c5c865e06a9ed09ff307c5"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a807e9ab385c5c865e06a9ed09ff307c5"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>numHandes</b></td></tr>
-<tr class="separator:a807e9ab385c5c865e06a9ed09ff307c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08d3016d7e7db4a09c84234b86260134"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a08d3016d7e7db4a09c84234b86260134"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>maxEnsuredPackets</b></td></tr>
-<tr class="separator:a08d3016d7e7db4a09c84234b86260134"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5f8f43c98a5f4ce2eaf99e05e39483a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab5f8f43c98a5f4ce2eaf99e05e39483a"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>stepPeriodMilliseconds</b></td></tr>
-<tr class="separator:ab5f8f43c98a5f4ce2eaf99e05e39483a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b363305450ea932e20444b22c5e114d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5b363305450ea932e20444b22c5e114d"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>ensureRetryCount</b></td></tr>
-<tr class="separator:a5b363305450ea932e20444b22c5e114d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1274950e6df004a878390e78dd60e0e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab1274950e6df004a878390e78dd60e0e"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>readCounter</b></td></tr>
-<tr class="separator:ab1274950e6df004a878390e78dd60e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60a1c84f663b303e2c63e6f4a39e639b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a60a1c84f663b303e2c63e6f4a39e639b"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>flags</b></td></tr>
-<tr class="separator:a60a1c84f663b303e2c63e6f4a39e639b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0873508933c9f418d0d4f2bde625bf1"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa0873508933c9f418d0d4f2bde625bf1"></a>
-<a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>status</b></td></tr>
-<tr class="separator:aa0873508933c9f418d0d4f2bde625bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e76816e96ec28569e523fcf38150775"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a4e76816e96ec28569e523fcf38150775"></a>
+int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastEnsuredPacketIndex</b></td></tr>
+<tr class="separator:a4e76816e96ec28569e523fcf38150775"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab98e59906ef79731a315b0f404f17bc3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab98e59906ef79731a315b0f404f17bc3"></a>
+int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>numHandes</b></td></tr>
+<tr class="separator:ab98e59906ef79731a315b0f404f17bc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1204df7157bed57959a9daa3f83884c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="af1204df7157bed57959a9daa3f83884c"></a>
+int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>maxEnsuredPackets</b></td></tr>
+<tr class="separator:af1204df7157bed57959a9daa3f83884c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad698cf1f00ae25965d355ec7f6e86c94"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad698cf1f00ae25965d355ec7f6e86c94"></a>
+int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>stepPeriodMilliseconds</b></td></tr>
+<tr class="separator:ad698cf1f00ae25965d355ec7f6e86c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a4da8b8846be0d82a1d83af2adb7698"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2a4da8b8846be0d82a1d83af2adb7698"></a>
+int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>ensureRetryCount</b></td></tr>
+<tr class="separator:a2a4da8b8846be0d82a1d83af2adb7698"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1c22dddc776abe38f50a78ff1f76893"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae1c22dddc776abe38f50a78ff1f76893"></a>
+<a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>status</b></td></tr>
+<tr class="separator:ae1c22dddc776abe38f50a78ff1f76893"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e24261a4484b05d0556cd3abb9a8e54"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1e24261a4484b05d0556cd3abb9a8e54"></a>
 void *&#160;</td><td class="memItemRight" valign="bottom"><b>userPointer</b></td></tr>
 <tr class="separator:a1e24261a4484b05d0556cd3abb9a8e54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a68c4ac7253adafa7a227571f30aac0"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a8a68c4ac7253adafa7a227571f30aac0"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>communicationErrorCount</b></td></tr>
-<tr class="separator:a8a68c4ac7253adafa7a227571f30aac0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab416d1e7f6dd0ab395d0867d0083d5a9"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab416d1e7f6dd0ab395d0867d0083d5a9"></a>
 pfnComManagerPassThrough&#160;</td><td class="memItemRight" valign="bottom"><b>passThroughHandler</b></td></tr>
 <tr class="separator:ab416d1e7f6dd0ab395d0867d0083d5a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a829a03db174e9b4a5ae2b8e82a27f2c0"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a829a03db174e9b4a5ae2b8e82a27f2c0"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>startByte</b></td></tr>
-<tr class="separator:a829a03db174e9b4a5ae2b8e82a27f2c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46823d496e3886c26d86abcd3dea2112"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a46823d496e3886c26d86abcd3dea2112"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>passThroughBytes</b></td></tr>
-<tr class="separator:a46823d496e3886c26d86abcd3dea2112"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79b7111600c7bf080dd0fd5c2673a0e8"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a79b7111600c7bf080dd0fd5c2673a0e8"></a>
 <a class="el" href="structcom__manager__con__t.html">com_manager_con_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>con</b></td></tr>
 <tr class="separator:a79b7111600c7bf080dd0fd5c2673a0e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p>Definition at line <a class="el" href="com__manager_8c_source.html#l00142">142</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8c_source.html#l00134">134</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>src/<a class="el" href="com__manager_8c_source.html">com_manager.c</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 17 2017 13:16:06 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Feb 27 2017 19:04:27 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

@@ -99,8 +99,6 @@ static void PopulateSizeMappings(map<uint32_t, uint32_t>& sizeMap)
 	sizeMap[DID_SENSORS_CF_BIAS] = sizeof(sensor_bias_t);
 	sizeMap[DID_SCOMP] = sizeof(sensor_compensation_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
-	sizeMap[DID_NVR_USERPAGE_G0] = sizeof(nvm_group_0_t);
-	sizeMap[DID_NVR_USERPAGE_G1] = sizeof(nvm_group_1_t);
 	sizeMap[DID_EKF_STATES] = sizeof(ekf_states_t);
 
 #endif
@@ -817,60 +815,6 @@ static void PopulateDebugArrayMappings(map_lookup_name_t& mappings)
 	ASSERT_SIZE(totalSize, MAP_TYPE);
 }
 
-static void PopulateUserPage0Mappings(map_lookup_name_t& mappings)
-{
-	typedef nvm_group_0_t MAP_TYPE;
-	map_name_to_info_t m;
-	uint32_t totalSize = 0;
-	ADD_MAP(m, totalSize, "size", MAP_TYPE, size, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "checksum", MAP_TYPE, checksum, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "key", MAP_TYPE, key, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "lockBits", MAP_TYPE, lockBits, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "featureBits", MAP_TYPE, featureBits, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "featureHash1", MAP_TYPE, featureHash1, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "featureHash2", MAP_TYPE, featureHash2, 0, DataTypeUInt32, uint32_t);
-	mappings[DID_NVR_USERPAGE_G0] = m;
-
-	ASSERT_SIZE(totalSize, MAP_TYPE);
-}
-
-static void PopulateUserPage1Mappings(map_lookup_name_t& mappings)
-{
-	typedef nvm_group_1_t MAP_TYPE;
-	map_name_to_info_t m;
-	uint32_t totalSize = 0;
-	ADD_MAP(m, totalSize, "size", MAP_TYPE, size, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "checksum", MAP_TYPE, checksum, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "key", MAP_TYPE, key, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "bKpqr", MAP_TYPE, cf.bKpqr, 0, DataTypeFloat, float);
-	ADD_MAP(m, totalSize, "bKuvw", MAP_TYPE, cf.bKuvw, 0, DataTypeFloat, float);
-	ADD_MAP(m, totalSize, "oKat1", MAP_TYPE, cf.oKat1, 0, DataTypeFloat, float);
-	ADD_MAP(m, totalSize, "oKat2", MAP_TYPE, cf.oKat2, 0, DataTypeFloat, float);
-	ADD_MAP(m, totalSize, "oKuvw", MAP_TYPE, cf.oKuvw, 0, DataTypeFloat, float);
-	ADD_MAP(m, totalSize, "oKlla", MAP_TYPE, cf.oKlla, 0, DataTypeFloat, float);
-
-#if 0
-
-	ADD_MAP(m, totalSize, "bias_cal[0]", MAP_TYPE, bias_cal[0], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "bias_cal[1]", MAP_TYPE, bias_cal[1], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "bias_cal[2]", MAP_TYPE, bias_cal[2], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[0]", MAP_TYPE, Wcal[0], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[1]", MAP_TYPE, Wcal[1], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[2]", MAP_TYPE, Wcal[2], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[3]", MAP_TYPE, Wcal[3], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[4]", MAP_TYPE, Wcal[4], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[5]", MAP_TYPE, Wcal[5], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[6]", MAP_TYPE, Wcal[6], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[7]", MAP_TYPE, Wcal[7], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "Wcal[8]", MAP_TYPE, Wcal[8], 0, DataTypeFloat, float&);
-
-#endif
-
-	mappings[DID_NVR_USERPAGE_G1] = m;
-
-	ASSERT_SIZE(totalSize, MAP_TYPE);
-}
-
 static void PopulateEKFStatesMappings(map_lookup_name_t& mappings)
 {
 	typedef ekf_states_t MAP_TYPE;
@@ -930,8 +874,6 @@ cISDataMappings::cISDataMappings()
 	PopulateSensorsTCMappings(m_columnMappings);
 	PopulateSensorsCompMappings(m_columnMappings);
 	PopulateDebugArrayMappings(m_columnMappings);
-	PopulateUserPage0Mappings(m_columnMappings);
-	PopulateUserPage1Mappings(m_columnMappings);
 	PopulateEKFStatesMappings(m_columnMappings);
 
 #endif
@@ -971,8 +913,6 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 	case DID_SENSORS_CF_BIAS:	return "sensorCFbias";
 	case DID_SCOMP:				return "scomp";
 	case DID_DEBUG_ARRAY:		return "debugArray";
-	case DID_NVR_USERPAGE_G0:    return "userpage0";
-	case DID_NVR_USERPAGE_G1:    return "userpage1";
 	case DID_EKF_STATES:		return "ekfstates";
 
 #endif

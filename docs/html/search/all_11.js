@@ -36,7 +36,7 @@ var searchData=
   ['slpfo0',['sLpfO0',['../structs_lpf_o0.html',1,'']]],
   ['slpfo1',['sLpfO1',['../structs_lpf_o1.html',1,'']]],
   ['standalone',['Standalone',['../class_ti_xml_declaration.html#a9ff06afc033d7ef730ec7c6825b97ad9',1,'TiXmlDeclaration']]],
-  ['startbyte',['startByte',['../structpacket__hdr__t.html#aae0969a547bd5ea711e2fe7e2d9a5f4e',1,'packet_hdr_t']]],
+  ['startbyte',['startByte',['../structpacket__hdr__t.html#aae0969a547bd5ea711e2fe7e2d9a5f4e',1,'packet_hdr_t::startByte()'],['../structcom__manager__status__t.html#a799659757d78ea8a857bc35994b9cb8a',1,'com_manager_status_t::startByte()']]],
   ['startupnavdtms',['startupNavDtMs',['../structnvm__flash__cfg__t.html#aeb9fac590fc994e1f6137f48a2d8cfae',1,'nvm_flash_cfg_t']]],
   ['startupsampledtms',['startupSampleDtMs',['../structnvm__flash__cfg__t.html#a73e0287f56618e48672ab17374e62856',1,'nvm_flash_cfg_t']]],
   ['state_5fvars_5ft',['state_vars_t',['../structstate__vars__t.html',1,'']]],

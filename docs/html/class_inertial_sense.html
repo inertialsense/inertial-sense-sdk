@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="logo_300x77.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.0.30</span>
+   &#160;<span id="projectnumber">Release 1.1.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -89,6 +89,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="class_inertial_sense-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">InertialSense Class Reference</div>  </div>
@@ -96,6 +97,15 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 
 <p><code>#include &lt;<a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>&gt;</code></p>
+<div class="dynheader">
+Inheritance diagram for InertialSense:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="class_inertial_sense.png" usemap="#InertialSense_map" alt=""/>
+  <map id="InertialSense_map" name="InertialSense_map">
+<area href="classi_rtcm3_reader_delegate.html" alt="iRtcm3ReaderDelegate" shape="rect" coords="0,0,140,24"/>
+</map>
+ </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -121,23 +131,32 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 <tr class="separator:ab3a32ba067a0a54dc90ea81de96e6fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8effe3d6e6b05ca285ef413a85223e09"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a8effe3d6e6b05ca285ef413a85223e09">IsOpen</a> ()</td></tr>
 <tr class="separator:a8effe3d6e6b05ca285ef413a85223e09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd0bf50fe31456b00da2fbdc65830b14"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#acd0bf50fe31456b00da2fbdc65830b14">Open</a> (const char *port, int baudRate=BAUD_RATE_STANDARD)</td></tr>
-<tr class="separator:acd0bf50fe31456b00da2fbdc65830b14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51d2b75545513703085bd9597229c274"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a51d2b75545513703085bd9597229c274">Open</a> (const char *port, int baudRate=IS_COM_BAUDRATE_DEFAULT)</td></tr>
+<tr class="separator:a51d2b75545513703085bd9597229c274"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1071b3bcf5b069fb86776941cc1c3896"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a1071b3bcf5b069fb86776941cc1c3896">Update</a> ()</td></tr>
 <tr class="separator:a1071b3bcf5b069fb86776941cc1c3896"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfc9b2b36fb9733fbc5b5ca4bb7a3e3a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#adfc9b2b36fb9733fbc5b5ca4bb7a3e3a">SetLoggerEnabled</a> (bool enable, const string &amp;path=cISLogger::g_emptyString, uint32_t logSolution=SLOG_W_INS2, float maxDiskSpaceMB=1024.0f, uint32_t maxFileSize=1024 *1024 *5, uint32_t chunkSize=131072, bool useTimestampSubFolder=false)</td></tr>
 <tr class="separator:adfc9b2b36fb9733fbc5b5ca4bb7a3e3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cae5904548417a138ce40da68e7c08c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a1cae5904548417a138ce40da68e7c08c">LoggerEnabled</a> ()</td></tr>
 <tr class="separator:a1cae5904548417a138ce40da68e7c08c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9543303890cccac26d377b17f5fdc58"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ac9543303890cccac26d377b17f5fdc58">OpenServerConnectionRTCM3</a> (const string &amp;hostAndPort)</td></tr>
+<tr class="separator:ac9543303890cccac26d377b17f5fdc58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73a675fd832f7579cd790de41f40f5fe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a73a675fd832f7579cd790de41f40f5fe">CloseServerConnection</a> ()</td></tr>
+<tr class="separator:a73a675fd832f7579cd790de41f40f5fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1afdf5cd1ba24ae3936b0fc03e7cb30d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a1afdf5cd1ba24ae3936b0fc03e7cb30d">StopBroadcasts</a> ()</td></tr>
 <tr class="separator:a1afdf5cd1ba24ae3936b0fc03e7cb30d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a021ad3a3387214e53ffe3f83f9b54940"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structdev__info__t.html">dev_info_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a021ad3a3387214e53ffe3f83f9b54940">GetDeviceInfo</a> ()</td></tr>
 <tr class="separator:a021ad3a3387214e53ffe3f83f9b54940"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a320870ccfcebc55fccfbf15807217d81"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a320870ccfcebc55fccfbf15807217d81">OnPacketReceived</a> (const <a class="el" href="classc_rtcm3_reader.html">cRtcm3Reader</a> *reader, const uint8_t *data, uint32_t dataLength) override</td></tr>
+<tr class="separator:a320870ccfcebc55fccfbf15807217d81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Inertial Sense C++ interface Note only one instance of this class per process is supported </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00050">50</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00053">53</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="aa42388f048a98788d6d68c13482a08e3"></a>
 <div class="memitem">
@@ -253,7 +272,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00273">273</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00341">341</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -271,7 +290,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><div class="memdoc">
 <p>Close the connection, logger and free all resources </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00216">216</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00283">283</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a73a675fd832f7579cd790de41f40f5fe"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void InertialSense::CloseServerConnection </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Close any open connection to a server </p>
+
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00259">259</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -297,7 +334,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><div class="memdoc">
 <p>Get the device info - if it is not yet known, the serial number will be 0 </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00156">156</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00171">171</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -315,7 +352,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><div class="memdoc">
 <p>Get the current port name </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00222">222</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00290">290</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -333,7 +370,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><div class="memdoc">
 <p>Check if the connection is open </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00206">206</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00264">264</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -359,11 +396,64 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><div class="memdoc">
 <p>Gets whether logging is enabled </p><dl class="section return"><dt>Returns</dt><dd>whether logging is enabled </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00146">146</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00149">149</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="acd0bf50fe31456b00da2fbdc65830b14"></a>
+<a class="anchor" id="a320870ccfcebc55fccfbf15807217d81"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool InertialSense::OnPacketReceived </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classc_rtcm3_reader.html">cRtcm3Reader</a> *&#160;</td>
+          <td class="paramname"><em>reader</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>dataLength</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Executes when a valid rtcm3 packet is received. Data is not valid after this callback completes. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">reader</td><td>the rtcm3 reader </td></tr>
+    <tr><td class="paramname">data</td><td>the rtcm3 data </td></tr>
+    <tr><td class="paramname">dataLength</td><td>the length of the rtcm3 data </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true to parse the packet, false to discard it </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classi_rtcm3_reader_delegate.html#affde4eb4dcec34e8bab35c041cb5e28e">iRtcm3ReaderDelegate</a>.</p>
+
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00370">370</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a51d2b75545513703085bd9597229c274"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -377,7 +467,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>baudRate</em> = <code>BAUD_RATE_STANDARD</code>&#160;</td>
+          <td class="paramname"><em>baudRate</em> = <code>IS_COM_BAUDRATE_DEFAULT</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -389,13 +479,38 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 <p>Closes any open connection and then opens the device </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">port</td><td>the port to open </td></tr>
-    <tr><td class="paramname">baudRate</td><td>the baud rate to connect with </td></tr>
+    <tr><td class="paramname">baudRate</td><td>the baud rate to connect with - supported rates are 115200, 230400, 460800, 921600, 2000000, 3000000 </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>true if opened, false if failure (i.e. baud rate failure or bad port) </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>true if opened, false if failure (i.e. baud rate is bad or port fails to open) </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00149">149</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00166">166</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ac9543303890cccac26d377b17f5fdc58"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool InertialSense::OpenServerConnectionRTCM3 </td>
+          <td>(</td>
+          <td class="paramtype">const string &amp;&#160;</td>
+          <td class="paramname"><em>hostAndPort</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Connect to an RTCM3 server and send the data from that server to the uINS </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">hostAndPort</td><td>the server to connect to with the host, then port information after a colon, followed by colon then optional url, user and password, i.e. 192.168.1.100:7777:RTCM3_Mount:user:password </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if connection opened, false if failure </dd></dl>
+
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00221">221</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -419,7 +534,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00268">268</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00336">336</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -489,7 +604,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00183">183</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00198">198</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -507,7 +622,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><div class="memdoc">
 <p>Turn off all messages </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00227">227</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00295">295</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -525,7 +640,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><div class="memdoc">
 <p>Call in a loop to send and receive data. Call at regular intervals as frequently as want to receive data. </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00211">211</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00269">269</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -536,7 +651,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 17 2017 13:16:06 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Feb 27 2017 19:04:27 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

@@ -3,6 +3,7 @@ var searchData=
   ['gen_5f1axis_5fsensor_5ft',['gen_1axis_sensor_t',['../structgen__1axis__sensor__t.html',1,'']]],
   ['gen_5f3axis_5fsensor_5ft',['gen_3axis_sensor_t',['../structgen__3axis__sensor__t.html',1,'']]],
   ['gen_5f3axis_5fsensord_5ft',['gen_3axis_sensord_t',['../structgen__3axis__sensord__t.html',1,'']]],
+  ['gen_5fdual_5f3axis_5fsensor_5ft',['gen_dual_3axis_sensor_t',['../structgen__dual__3axis__sensor__t.html',1,'']]],
   ['genfaultcode',['genFaultCode',['../structsys__params__t.html#a5dfb5f7b5a493ed7370d8354f095bb6b',1,'sys_params_t']]],
   ['getdatasetname',['GetDataSetName',['../classc_i_s_data_mappings.html#a66835f41924e0fe99213d520f3b0c3cd',1,'cISDataMappings']]],
   ['getdeviceinfo',['GetDeviceInfo',['../class_inertial_sense.html#a021ad3a3387214e53ffe3f83f9b54940',1,'InertialSense']]],

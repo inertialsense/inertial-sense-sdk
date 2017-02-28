@@ -105,7 +105,7 @@ int cISTcpClient::Open(const string& host, int port)
 		return status;
 	}
 	m_socket = (uint64_t)socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	if (m_socket == 0 || m_socket == ~0)
+	if ((uint32_t*)m_socket == (uint32_t*)0xFFFFFFFF)
 	{
 		freeaddrinfo(result);
 		Close();
@@ -134,7 +134,7 @@ int cISTcpClient::Open(const string& host, int port)
 		return status;
 	}
 
-	status = connect((SOCKET_TYPE)m_socket, result->ai_addr, (int)result->ai_addrlen);
+	status = connect((SOCKET_TYPE)m_socket, result->ai_addr, result->ai_addrlen);
 	freeaddrinfo(result);
 	if (status != 0)
 	{
@@ -242,10 +242,10 @@ void cISTcpClient::HttpGet(const string& subUrl, const string& userAgent, const 
 	if (userName.size() != 0 && password.size() != 0)
 	{
 		string auth = userName + ":" + password;
-		msg += "Authorization: Basic " + Base64Encode((const unsigned char*)auth.data(), (int)auth.size()) + "\r\n";
+		msg += "Authorization: Basic " + Base64Encode((const unsigned char*)auth.data(), auth.size()) + "\r\n";
 	}
 	msg += "Accept: */*\r\nConnection: close\r\n\r\n";
-	Write((uint8_t*)msg.data(), (int)msg.size());
+	Write((uint8_t*)msg.data(), msg.size());
 }
 
 string cISTcpClient::Base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len)
@@ -302,7 +302,7 @@ string cISTcpClient::Base64Encode(const unsigned char* bytes_to_encode, unsigned
 
 string cISTcpClient::Base64Decode(const string& encoded_string)
 {
-	int in_len = (int)encoded_string.size();
+	int in_len = encoded_string.size();
 	int i = 0;
 	int j = 0;
 	int in_ = 0;

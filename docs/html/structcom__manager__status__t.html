@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="logo_300x77.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.0.30</span>
+   &#160;<span id="projectnumber">Release 1.1.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -98,77 +98,145 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a23473c666631be598adfe819829e7d31"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a23473c666631be598adfe819829e7d31">rxErrorPHandle</a></td></tr>
-<tr class="separator:a23473c666631be598adfe819829e7d31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2bdd9202edccf4978acb9bb96ae4079"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#aa2bdd9202edccf4978acb9bb96ae4079">rxError</a></td></tr>
-<tr class="separator:aa2bdd9202edccf4978acb9bb96ae4079"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a121c88240636377d1d681c979403d022"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a121c88240636377d1d681c979403d022">rxCount</a></td></tr>
-<tr class="separator:a121c88240636377d1d681c979403d022"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32ebc214eaf9122453ffadc85402f648"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a32ebc214eaf9122453ffadc85402f648">txCount</a></td></tr>
-<tr class="separator:a32ebc214eaf9122453ffadc85402f648"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac612f97d0b588330e0ce0293170a60f0"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#ac612f97d0b588330e0ce0293170a60f0">readCounter</a></td></tr>
+<tr class="separator:ac612f97d0b588330e0ce0293170a60f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a277a4268d8d1eb8e152c65f016d64f68"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a277a4268d8d1eb8e152c65f016d64f68">rxError</a></td></tr>
+<tr class="separator:a277a4268d8d1eb8e152c65f016d64f68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b358bcb95013a3606a763c35a66538d"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a9b358bcb95013a3606a763c35a66538d">rxPktCount</a></td></tr>
+<tr class="separator:a9b358bcb95013a3606a763c35a66538d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ad6d483eb2fbd825a90a518dad9e0ce"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a0ad6d483eb2fbd825a90a518dad9e0ce">txPktCount</a></td></tr>
+<tr class="separator:a0ad6d483eb2fbd825a90a518dad9e0ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8542bc5e9db157565ea3418ed158e070"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a8542bc5e9db157565ea3418ed158e070">communicationErrorCount</a></td></tr>
+<tr class="separator:a8542bc5e9db157565ea3418ed158e070"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8212909888b506491643d391cd7da2c3"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a8212909888b506491643d391cd7da2c3">flags</a></td></tr>
+<tr class="separator:a8212909888b506491643d391cd7da2c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a799659757d78ea8a857bc35994b9cb8a"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#a799659757d78ea8a857bc35994b9cb8a">startByte</a></td></tr>
+<tr class="separator:a799659757d78ea8a857bc35994b9cb8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae21797145c303bff1e0df2126550232d"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html#ae21797145c303bff1e0df2126550232d">passThroughBytes</a></td></tr>
+<tr class="separator:ae21797145c303bff1e0df2126550232d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Contains status for the com manager </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00371">371</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00390">390</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
-<a class="anchor" id="a121c88240636377d1d681c979403d022"></a>
+<a class="anchor" id="a8542bc5e9db157565ea3418ed158e070"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int com_manager_status_t::rxCount</td>
+          <td class="memname">uint32_t com_manager_status_t::communicationErrorCount</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Total read count </p>
+<p>number of communication errors - can be reset to 0 if desired </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00380">380</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00405">405</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="aa2bdd9202edccf4978acb9bb96ae4079"></a>
+<a class="anchor" id="a8212909888b506491643d391cd7da2c3"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int com_manager_status_t::rxError</td>
+          <td class="memname">uint8_t com_manager_status_t::flags</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>0 if no errors encounteted, otherwise non-zero </p>
+<p>flags to send on each request - do not modify valid data : flags &amp; CM_PKT_FLAGS_RX_VALID_DATA </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00377">377</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00411">411</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a23473c666631be598adfe819829e7d31"></a>
+<a class="anchor" id="ae21797145c303bff1e0df2126550232d"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int com_manager_status_t::rxErrorPHandle</td>
+          <td class="memname">uint32_t com_manager_status_t::passThroughBytes</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Contains the port with the most recent error </p>
+<p>keep track of the number of pass through bytes remaining - do not modify </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00374">374</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00417">417</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a32ebc214eaf9122453ffadc85402f648"></a>
+<a class="anchor" id="ac612f97d0b588330e0ce0293170a60f0"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int com_manager_status_t::txCount</td>
+          <td class="memname">uint32_t com_manager_status_t::readCounter</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Total write count </p>
+<p>bytes read without a valid message </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00383">383</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00393">393</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a277a4268d8d1eb8e152c65f016d64f68"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t com_manager_status_t::rxError</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>0 if no errors encountered, otherwise non-zero </p>
+
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00396">396</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a9b358bcb95013a3606a763c35a66538d"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t com_manager_status_t::rxPktCount</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Number of packets read successfully </p>
+
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00399">399</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a799659757d78ea8a857bc35994b9cb8a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t com_manager_status_t::startByte</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>keep track of the start byte for binary parsing - do not modify </p>
+
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00414">414</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a0ad6d483eb2fbd825a90a518dad9e0ce"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t com_manager_status_t::txPktCount</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Number of packets written </p>
+
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00402">402</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -178,7 +246,7 @@ Public Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Feb 17 2017 13:16:06 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Feb 27 2017 19:04:27 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>
