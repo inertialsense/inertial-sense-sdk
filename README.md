@@ -7,16 +7,15 @@
 ### Documents
 
  * [SDK Documentation](http://docs.inertialsense.com/)
- * [User Manual](https://inertialsense.com/download/uins-datasheet/)
- * [Datasheet - uINS, uAHRS, and uIMU](https://inertialsense.com/download/uins-datasheet/)
- * [Release Notes](https://inertialsense.com/download/release-notes) - version information and software feature change log.
+ * [User Manual](https://inertialsense.com/?wpdmdl=184)
+ * [Datasheet - uINS, uAHRS, and uIMU](https://inertialsense.com/?wpdmdl=204)
+ * [Release Notes](https://inertialsense.com/?wpdmdl=516) - version information and software change log.
 
 ### Downloads
 
  * [SDK & CLTool Binaries](https://github.com/inertialsense/InertialSenseSDK/releases) - pre-compiled release static libraries and executables for Linux and Windows.
  * [SDK & CLTool Source Code](https://github.com/inertialsense/InertialSenseSDK) - open source SDK repository with command line tool and example C/C++ source code.
- * [EvalTool](https://inertialsense.com/download/eval-tool-installer/) - Windows application installer.
- * [Firmware](https://inertialsense.com/download/eval-tool-installer/) - for uINS, uAHRS, and uIMU hardware v2 and v3.  See [release-notes](https://inertialsense.com/download/release-notes) for details.
+ * [Firmware and EvalTool](https://github.com/inertialsense/InertialSenseSDK/releases) - uINS, uAHRS, and uIMU firmware and Windows application installer.
 
 ### Design Resources
 
