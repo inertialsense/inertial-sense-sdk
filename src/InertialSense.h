@@ -99,13 +99,14 @@ public:
 	* Bootload a file and re-open the device - if the bootloader fails, the device stays in bootloader mode and you
 	*  must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
 	*  You must manually re-enable logging if you had it enabled before calling BootloadFile.
+	* @param the com port to bootload
 	* @param fileName the path of the file to bootload
 	* @param uploadProgress optional callback for upload progress
 	* @param verifyProgress optional callback for verify progress
 	* @param errorBuffer receives any error messages
 	* @param errorBufferLength the number of bytes available in errorBuffer
 	*/ 
-	bool BootloadFile(const string& fileName, pfnBootloadProgress uploadProgress = NULL, pfnBootloadProgress verifyProgress = NULL, char* errorBuffer = NULL, int errorBufferLength = 0);
+	bool BootloadFile(const string& comPort, const string& fileName, pfnBootloadProgress uploadProgress = NULL, pfnBootloadProgress verifyProgress = NULL, char* errorBuffer = NULL, int errorBufferLength = 0);
 
 	/*!
 	* Get the current port name
@@ -166,6 +167,15 @@ public:
 	void StopBroadcasts();
 
 	/*!
+	* Send raw data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
+	* @param dataId the data id of the data to send
+	* @param data the data to send
+	* @param length length of data to send
+	* @param offset offset into data to send at
+	*/
+	void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length = 0, uint32_t offset = 0);
+
+	/*!
 	* Get the device info - if it is not yet known, the serial number will be 0
 	*/
 	const dev_info_t& GetDeviceInfo() { return m_deviceInfo; }
@@ -178,6 +188,7 @@ private:
 	string m_asciiLine;
 	serial_port_t m_serialPort;
 	CMHANDLE m_cmHandle;
+	int m_pHandle;
 	cISLogger m_logger;
 	thread *m_logThread;
 	mutex m_logMutex;

@@ -84,7 +84,6 @@ int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bu
 void cltool_setupLogger(InertialSense& inertialSenseInterface);
 bool cltool_parseCommandLine(int argc, char* argv[]);
 bool cltool_replayDataLog();
-int cltool_runBootloader(const char* port, const char* fileName, const char* verifyFileName);
 void cltool_outputUsage();
 void cltool_setupCtrlCHandler();
 

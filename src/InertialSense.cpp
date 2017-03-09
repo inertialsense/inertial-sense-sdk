@@ -70,6 +70,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
 	m_logSolution = SLOG_DISABLED;
 	m_cmHandle = getGlobalComManager();
+	m_pHandle = 0;
 	m_logThread = nullptr;
 	m_lastLogReInit = time(0);
 
@@ -314,6 +315,11 @@ void InertialSense::StopBroadcasts()
 
 }
 
+void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
+{
+	sendRawDataComManagerInstance(m_cmHandle, m_pHandle, dataId, data, length, offset);
+}
+
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandleBinaryData callback)
 {
 	if (m_comManagerState.binarySerialPort == NULL || dataId >= DID_COUNT || (m_comManagerState.binaryCallbackGlobal == NULL && m_comManagerState.binaryCallback[dataId] == NULL))
@@ -338,11 +344,12 @@ void InertialSense::SetBroadcastSolutionEnabled(bool enable)
 	m_logSolution = (enable ? SLOG_W_INS2 : SLOG_DISABLED);
 }
 
-bool InertialSense::BootloadFile(const string& fileName, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, char* errorBuffer, int errorBufferLength)
+bool InertialSense::BootloadFile(const string& comPort, const string& fileName, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, char* errorBuffer, int errorBufferLength)
 {
 	// for debug
 	// SERIAL_PORT_DEFAULT_TIMEOUT = 9999999;
 	Close();
+	serialPortSetPort(&m_serialPort, comPort.c_str());
 	if (!enableBootloader(&m_serialPort, errorBuffer, errorBufferLength))
 	{
 		serialPortClose(&m_serialPort);

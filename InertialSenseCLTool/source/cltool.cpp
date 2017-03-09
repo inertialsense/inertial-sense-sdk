@@ -102,13 +102,59 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			cltool_outputUsage();
 			return false;
 		}
-		else if (startsWith(a, "-c="))
+		else if (startsWith(a, "-baud="))
 		{
-			g_commandLineOptions.comPort = &a[3];
+			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
 		}
 		else if (startsWith(a, "-b="))
 		{
 			g_commandLineOptions.bootloaderFileName = &a[3];
+		}
+		else if (startsWith(a, "-c="))
+		{
+			g_commandLineOptions.comPort = &a[3];
+		}
+		else if (startsWith(a, "-lms="))
+		{
+			g_commandLineOptions.maxLogSpaceMB = (float)atof(&a[5]);
+		}
+		else if (startsWith(a, "-lmf="))
+		{
+			g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
+		}
+		else if (startsWith(a, "-lmm="))
+		{
+			g_commandLineOptions.maxLogMemory = (uint32_t)strtoul(&a[5], NULL, 10);
+		}
+		else if (startsWith(a, "-lts="))
+		{
+			g_commandLineOptions.useLogTimestampSubFolder = (a[5] == '1' || startsWith(&a[5], "true"));
+		}
+		else if (startsWith(a, "-lp="))
+		{
+			g_commandLineOptions.logPath = &a[4];
+		}
+		else if (!strncmp(a, "-loff", 5))
+		{
+			g_commandLineOptions.enableLogging = false;
+		}
+		else if (!strncmp(a, "-q", 2))
+		{
+			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUITE;
+		}
+		else if (startsWith(a, "-rp="))
+		{
+			g_commandLineOptions.replayDataLog = true;
+			g_commandLineOptions.logPath = &a[4];
+		}
+		else if (startsWith(a, "-rs="))
+		{
+			g_commandLineOptions.replayDataLog = true;
+			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
+		}
+		else if (!strncmp(a, "-r", 2))
+		{
+			g_commandLineOptions.replayDataLog = true;
 		}
 		else if (!strncmp(a, "-sINS1", 6))
 		{
@@ -163,48 +209,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
-		else if (startsWith(a, "-baud="))
-		{
-			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
-		}
-		else if (startsWith(a, "-lms="))
-		{
-			g_commandLineOptions.maxLogSpaceMB = (float)atof(&a[5]);
-		}
-		else if (startsWith(a, "-lmf="))
-		{
-			g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
-		}
-		else if (startsWith(a, "-lmm="))
-		{
-			g_commandLineOptions.maxLogMemory = (uint32_t)strtoul(&a[5], NULL, 10);
-		}
-		else if (startsWith(a, "-lts="))
-		{
-			g_commandLineOptions.useLogTimestampSubFolder = (a[5] == '1' || startsWith(&a[5], "true"));
-		}
-		else if (startsWith(a, "-lp="))
-		{
-			g_commandLineOptions.logPath = &a[4];
-		}
-		else if (!strncmp(a, "-loff", 5))
-		{
-			g_commandLineOptions.enableLogging = false;
-		}
-		else if (startsWith(a, "-rs="))
-		{
-			g_commandLineOptions.replayDataLog = true;
-			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
-		}
-		else if (startsWith(a, "-rp="))
-		{
-			g_commandLineOptions.replayDataLog = true;
-			g_commandLineOptions.logPath = &a[4];
-		}
-		else if (!strncmp(a, "-r", 2))
-		{
-			g_commandLineOptions.replayDataLog = true;
-		}
 		else if (startsWith(a, "-svr="))
 		{
 			g_commandLineOptions.serverHostAndPort = &a[5];
@@ -257,50 +261,6 @@ bool cltool_replayDataLog()
 	return true;
 }
 
-int cltool_runBootloader(const char* port, const char* fileName, const char* verifyFileName)
-{
-	cout << "Updating firmware to: " << g_commandLineOptions.bootloaderFileName << endl;
-
-	// for debug
-	// SERIAL_PORT_DEFAULT_TIMEOUT = 9999999;
-
-	char errorBuffer[1024];
-	if (!serialPortPlatformInit(&g_serialPort))
-	{
-		printf("Failed to initialize serial port\r\n");
-		return -3;
-	}
-
-	serialPortSetPort(&g_serialPort, port);
-	if (!enableBootloader(&g_serialPort, errorBuffer, sizeof(errorBuffer)))
-	{
-		printf("Failed to enable bootloader: %s\r\n", errorBuffer);
-		serialPortClose(&g_serialPort);
-		return -2;
-	}
-
-	printf("Erasing flash...\r\n");
-	bootload_params_t params;
-	params.fileName = fileName;
-	params.port = &g_serialPort;
-	params.error = errorBuffer;
-	params.errorLength = sizeof(errorBuffer) / sizeof(errorBuffer[0]);
-	params.obj = NULL;
-	params.uploadProgress = bootloadUploadProgress;
-	params.verifyProgress = bootloadVerifyProgress;
-	params.verifyFileName = verifyFileName;
-	if (!bootloadFileEx(&params))
-	{
-		printf("Error in bootloader: %s\r\n", errorBuffer);
-		serialPortClose(&g_serialPort);
-		return -1;
-	}
-
-	serialPortClose(&g_serialPort);
-
-	return 0;
-}
-
 void cltool_outputUsage()
 {
 	cout << boldOff;
@@ -326,6 +286,7 @@ void cltool_outputUsage()
 	cout << "    -b=" << boldOff << "FILEPATH    bootload firmware using .hex file FILEPATH" << endlbOn;
 	cout << endlbOn;
 	cout << "    -h" << boldOff << "             display this help menu" << endlbOn;
+	cout << "    -q" << boldOff << "             quite mode, no display" << endlbOn;
 	cout << "    -scroll" << boldOff << "        scroll displayed messages to show history" << endlbOn;
 	cout << endlbOn;
 	cout << "    -sINS1" << boldOff << "         stream message DID_INS_1" << endlbOn;
