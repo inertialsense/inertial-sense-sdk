@@ -14,7 +14,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define DATA_SETS_H
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,6 +64,24 @@ extern "C" {
 
 /*! Start of extended external ids - NEVER change this value */
 #define DID_EXTERNAL_EXTENDED_START 8192
+
+#if !defined(MALLOC) && !defined(FREE)
+
+#if defined(AVR) || defined(ARM)
+
+extern void* pvPortMalloc(size_t xWantedSize);
+extern void vPortFree(void* pv);
+#define MALLOC(m) pvPortMalloc(m)
+#define FREE(m) vPortFree(m)
+
+#else
+
+#define MALLOC(m) malloc(m)
+#define FREE(m) free(m)
+
+#endif
+
+#endif
 
 #ifndef UNMASK
 #define UNMASK(_word, _prefix) (((_word) & (_prefix##_MASK)) >> (_prefix##_SHIFT))
@@ -1286,18 +1306,34 @@ Flip the endianess of 32 bit values in data
 void flipEndianess32(uint8_t* data, int dataLength);
 
 /*!
-Flip the bytes of a float (4 bytes) - ptr is assumed to be at least 4 bytes
+Flip the bytes of a float in place (4 bytes) - ptr is assumed to be at least 4 bytes
 
 @param ptr the float to flip
 */
 void flipFloat(uint8_t* ptr);
 
 /*!
-Flip the bytes of a double (8 bytes) - ptr is assumed to be at least 8 bytes
+Flip the bytes of a float (4 bytes) - ptr is assumed to be at least 4 bytes
+
+@param val the float to flip
+@return the flipped float
+*/
+float flipFloatCopy(float val);
+
+/*!
+Flip the bytes of a double in place (8 bytes) - ptr is assumed to be at least 8 bytes
 
 @param ptr the double to flip
 */
 void flipDouble(uint8_t* ptr);
+
+/*!
+Flip the bytes of a double in place (8 bytes) - ptr is assumed to be at least 8 bytes
+
+@param val the double to flip
+@return the flipped double
+*/
+double flipDoubleCopy(double val);
 
 /*!
 Flip double (64 bit) floating point values in data
@@ -1321,34 +1357,36 @@ Flip string values in data - this compensates for the fact that flipEndianess32 
 */
 void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, uint16_t offsetsLength);
 
-// BE_SWAP: if big endian then swap
-// LE_SWAP: if little endian then swap
-#ifdef AVR
+// BE_SWAP: if big endian then swap, else no-op
+// LE_SWAP: if little endian then swap, else no-op
+#if defined(AVR)
+#define BE_SWAP64F(_i) flipDoubleCopy(_i)
+#define BE_SWAP32F(_i) flipFloatCopy(_i)
 #define BE_SWAP32(_i) (SWAP32(_i))
 #define BE_SWAP16(_i) (SWAP16(_i))
+#define LE_SWAP64F(_i) (_i)
+#define LE_SWAP32F(_i) (_i)
 #define LE_SWAP32(_i) (_i)
 #define LE_SWAP16(_i) (_i)
-#elif ARM
+#elif defined(ARM)
+#define BE_SWAP64F(_i) (_i)
+#define BE_SWAP32F(_i) (_i)
 #define BE_SWAP32(_i) (_i)
 #define BE_SWAP16(_i) (_i)
+#define LE_SWAP64F(_i) flipDoubleCopy(_i)
+#define LE_SWAP32F(_i) flipFloatCopy(_i)
 #define LE_SWAP32(_i) (SWAP32(_i))
 #define LE_SWAP16(_i) (SWAP16(_i))
 #else
+#define BE_SWAP64F(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (flipDoubleCopy(_i)))
+#define BE_SWAP32F(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (flipFloatCopy(_i)))
 #define BE_SWAP32(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (SWAP32(_i)))
 #define BE_SWAP16(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (SWAP16(_i)))
+#define LE_SWAP64F(_i) ((IS_LITTLE_ENDIAN) ? (flipDoubleCopy(_i)) : (_i))
+#define LE_SWAP32F(_i) ((IS_LITTLE_ENDIAN) ? (flipFloatCopy(_i)) : (_i))
 #define LE_SWAP32(_i) ((IS_LITTLE_ENDIAN) ? (SWAP32(_i)) : (_i))
 #define LE_SWAP16(_i) ((IS_LITTLE_ENDIAN) ? (SWAP16(_i)) : (_i))
 #endif
-
-static INLINE float BE_SWAP_FLOAT32(uint8_t* f)
-{
-	if (IS_LITTLE_ENDIAN) { return *(float*)f; } else { flipFloat(f); return *(float*)f; }
-}
-
-static INLINE double BE_SWAP_FLOAT64(uint8_t* d)
-{
-	if (IS_LITTLE_ENDIAN) { return *(double*)d; } else { flipDouble(d); return *(double*)d; }
-}
 
 /*!
 Get the offsets of double (64 bit) floating point values given a data id

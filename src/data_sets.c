@@ -71,6 +71,22 @@ void flipFloat(uint8_t* ptr)
 	*ptr = tmp4;
 }
 
+float flipFloatCopy(float val)
+{
+	float flippedFloat;
+	uint8_t* ptr = (uint8_t*)&val;
+	uint8_t* ptr2 = (uint8_t*)&flippedFloat;
+	uint8_t tmp1 = *ptr++;
+	uint8_t tmp2 = *ptr++;
+	uint8_t tmp3 = *ptr++;
+	uint8_t tmp4 = *ptr;
+	*ptr2++ = tmp4;
+	*ptr2++ = tmp3;
+	*ptr2++ = tmp2;
+	*ptr2 = tmp1;
+	return flippedFloat;
+}
+
 // Reversed upper and lower 32 bit words in a double.
 // change to 32 bit compiler if you are getting errors here.
 // compiler will likely inline this as it's a tiny function
@@ -79,14 +95,24 @@ void flipDouble(uint8_t* ptr)
 	const uint32_t* w = (const uint32_t*)(ptr);
 	union
 	{
-		double          v;
-		uint32_t        w[2];
+		double v;
+		uint32_t w[2];
 	} u;
-
 	u.w[0] = w[1];
 	u.w[1] = w[0];
-
 	*(double*)ptr = u.v;
+}
+
+double flipDoubleCopy(double val)
+{
+	union
+	{
+		double v;
+		uint32_t w[2];
+	} u;
+	u.w[1] = *(uint32_t*)&val;
+	u.w[0] = *((uint32_t*)&val + 1);
+	return u.v;
 }
 
 void flipEndianess32(uint8_t* data, int dataLength)

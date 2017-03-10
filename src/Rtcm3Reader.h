@@ -2,7 +2,6 @@
 #define __RTCM3_READER_H_
 
 #include <inttypes.h>
-#include "data_sets.h"
 
 #if defined(RTK_EMBEDDED)
 
@@ -48,23 +47,27 @@ protected:
 	/*!
 	* Executes when GPS ephemeris data is received. Data is not valid after this callback completes.
 	* @param reader the rtcm3 reader
-	* @param obs the observation data
+	* @param eph the ephemeris data
+	* @param prn the prn identifier
 	*/
-    virtual void OnGpsEphemerisReceived(const cRtcm3Reader* reader, const eph_t* eph)
+    virtual void OnGpsEphemerisReceived(const cRtcm3Reader* reader, const eph_t* eph, int prn)
     {
         (void)reader;
         (void)eph;
+		(void)prn;
     }
 
 	/*!
 	* Executes when Glonass ephemeris data is received. Data is not valid after this callback completes.
 	* @param reader the rtcm3 reader
-	* @param obs the observation data
+	* @param geph the ephemeris data
+	* @param prn the prn identifier
 	*/
-    virtual void OnGlonassEphemerisReceived(const cRtcm3Reader* reader, const geph_t* geph)
+    virtual void OnGlonassEphemerisReceived(const cRtcm3Reader* reader, const geph_t* geph, int prn)
     {
         (void)reader;
         (void)geph;
+		(void)prn;
     }
 
 	/*!
@@ -92,6 +95,13 @@ public:
 	*/
 	cRtcm3Reader(iRtcm3ReaderDelegate* delegate);
 	virtual ~cRtcm3Reader();
+
+	/*!
+	* Add data to the reader
+	* @param data the data to write
+	* @param dataLength the number of bytes in data
+	*/
+	void Write(const uint8_t* data, int dataLength);
 
 	/*!
 	* Add a byte to the reader

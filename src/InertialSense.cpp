@@ -376,8 +376,7 @@ bool InertialSense::BootloadFile(const string& comPort, const string& fileName, 
 
 bool InertialSense::OnPacketReceived(const cRtcm3Reader* reader, const uint8_t* data, uint32_t dataLength)
 {
-	(void)reader;
-
+    (void)reader;
 	serialPortWrite(&m_serialPort, data, dataLength);
 	return false; // do not parse, since we are just forwarding it on
 }

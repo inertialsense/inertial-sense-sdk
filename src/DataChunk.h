@@ -77,7 +77,7 @@ public:
 	uint32_t GetByteCountAvailableToRead() { return m_bytesRemaining; }
 	uint32_t GetByteCountAvailableToWrite() { return m_maxSize - (uint32_t)m_data.size(); }
 	uint32_t GetDataSize() { return (uint32_t)m_data.size(); }
-	int32_t WriteToFile(FILE* pFile, int groupNumber = 0); // Returns number of bytes written to file
+    int32_t WriteToFile(FILE* pFile, int groupNumber = 0); // Returns number of bytes written to file and clears the chunk
 	int32_t ReadFromFile(FILE* pFile);
 	bool PushBack(uint8_t* d1, uint32_t d1Size, uint8_t* d2 = NULL, uint32_t d2Size = 0);
 

@@ -50,20 +50,25 @@ bool cDeviceLogSorted::CloseAllFiles()
 	// Write to file and clear any non-empty chunks to file
 	for (uint32_t id = 0; id < m_chunks.size(); id++)
 	{
-		cSortedDataChunk& chunk = m_chunks[id];
-		if (chunk.GetDataSize() != 0)
+        list<cSortedDataChunk>& chunkList = m_chunks[id];
+        if (chunkList.size() != 0)
 		{
-			// Create new file if needed
-			if (m_pFile == NULL && !OpenNewSaveFile())
-			{
-				return false;
-			}
+            cSortedDataChunk& chunk = chunkList.front();
 
-			// Write to file and clear chunk
-			if (chunk.WriteToFile(m_pFile, 1) <= 0)
-			{
-				return false;
-			}
+            if (chunk.GetDataSize() != 0)
+            {
+                // Create new file if needed
+                if (m_pFile == NULL && !OpenNewSaveFile())
+                {
+                    return false;
+                }
+
+                // Write to file and clear chunk
+                if (chunk.WriteToFile(m_pFile, 1) <= 0)
+                {
+                    return false;
+                }
+            }
 		}
 	}
 
@@ -92,13 +97,21 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 		m_chunks.resize(id + 1);
 	}
 
-	cSortedDataChunk& chunk = m_chunks[id];
+    cSortedDataChunk* currentChunk;
+    list<cSortedDataChunk>& chunkList = m_chunks[id];
 
 	// First time saving to this chunk
-	if (chunk.m_subHdr.dHdr.id == 0)
+    if (chunkList.size() == 0)
 	{
-		chunk.m_subHdr.dHdr = *dataHdr;
-		chunk.m_hdr.pHandle = m_pHandle;
+        cSortedDataChunk newChunk = { 0 };
+        chunkList.push_back(newChunk);
+        currentChunk = &chunkList.front();
+        currentChunk->m_subHdr.dHdr = *dataHdr;
+        currentChunk->m_hdr.pHandle = m_pHandle;
+	}
+	else
+	{
+		currentChunk = &chunkList.front();
 	}
 
 	// Add serial number if available
@@ -111,19 +124,23 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 		// Did we get the serial number portion of devInfo?
 		if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
 		{
-			chunk.m_hdr.devSerialNum = m_devInfo.serialNumber;
+			currentChunk->m_hdr.devSerialNum = m_devInfo.serialNumber;
 		}
 	}
 
-	// Ensure new data size matches size defined in chunk
-	if (chunk.m_subHdr.dHdr.size != dataHdr->size)
-	{
-		return false;
-	}
-
-	// Ensure data will fit in chunk, if not, create new chunk.
-	uint32_t dataBytes = sizeof(int32_t) + dataHdr->size;
-	if (dataBytes > chunk.GetByteCountAvailableToWrite())
+    // depending on devices and sources, some logs may have different size for the same id
+    // if the size changes, flush the chunk and start a new one with the new size
+    uint32_t dataBytes;
+    if (currentChunk->m_subHdr.dHdr.size != dataHdr->size || currentChunk->m_subHdr.dHdr.offset != dataHdr->offset)
+    {
+        // force a flush of the chunk and start a new chunk with the new size
+        dataBytes = UINT_MAX;
+    }
+    else
+    {
+        dataBytes = sizeof(int32_t) + dataHdr->size;
+    }
+	if (dataBytes > currentChunk->GetByteCountAvailableToWrite())
 	{
 		// Create new file if needed
 		if (m_pFile == NULL && !OpenNewSaveFile())
@@ -132,13 +149,16 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 		}
 
 		// Byte size
-		int nBytes = chunk.GetDataSize();
+		int nBytes = currentChunk->GetDataSize();
 
-		// Write to file and clear chunk
-		if ((nBytes = chunk.WriteToFile(m_pFile, 1)) <= 0)
-		{
-			return false;
-		}
+        if (nBytes != 0)
+        {
+            // Write to file and clear chunk
+            if ((nBytes = currentChunk->WriteToFile(m_pFile, 1)) <= 0)
+            {
+                return false;
+            }
+        }
 
 		m_fileSize += nBytes;
 		m_logSize += nBytes;
@@ -154,12 +174,18 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 		}
 	}
 
+	// reset data header if it changed
+	if (dataBytes == UINT_MAX)
+	{
+		currentChunk->m_subHdr.dHdr = *dataHdr;
+	}
+
 	// Add data header and data buffer to chunk
-	if (!chunk.PushBack((unsigned char*)&(m_dataSerNum), sizeof(int32_t), (unsigned char*)dataBuf, dataHdr->size))
+	if (!currentChunk->PushBack((unsigned char*)&(m_dataSerNum), sizeof(int32_t), (unsigned char*)dataBuf, dataHdr->size))
 	{
 		return false;
 	}
-	chunk.m_subHdr.dCount++;
+	currentChunk->m_subHdr.dCount++;
 	m_dataSerNum++;
 
 	return true;
@@ -210,10 +236,17 @@ tryAgain:
 	// while there is data in any chunk, find the chunk with the next id
 	for (uint32_t id = 0; id < m_chunks.size(); id++)
 	{
-		cSortedDataChunk& chunk = m_chunks[id];
-		if (chunk.GetByteCountAvailableToRead() == 0)
+tryChunkListAgain:
+        list<cSortedDataChunk>& chunksForId = m_chunks[id];
+		if (chunksForId.size() == 0)
 		{
 			continue;
+		}
+        cSortedDataChunk& chunk = chunksForId.front();
+		if (chunk.GetByteCountAvailableToRead() == 0)
+		{
+			chunksForId.pop_front();
+            goto tryChunkListAgain;
 		}
 		p_cnk_data_t* cnkData = (p_cnk_data_t*)chunk.GetDataPtr();
 		if (cnkData->dataSerNum < minSerialNum)
@@ -228,7 +261,7 @@ tryAgain:
 		return NULL;
 	}
 
-	cSortedDataChunk& chunk = m_chunks[foundId];
+	cSortedDataChunk& chunk = m_chunks[foundId].front();
 	p_cnk_data_t* cnkData = (p_cnk_data_t*)chunk.GetDataPtr();
 
 #if 0	// Error check for gap data serial number.  Verify we didn't drop any data.
@@ -249,7 +282,7 @@ tryAgain:
 	m_dataSerNum = cnkData->dataSerNum + 1;
 
 	// Data fits in temp buf
-	if (chunk.m_subHdr.dHdr.size < MAX_P_DATA_BODY_SIZE)
+	if (chunk.m_subHdr.dHdr.size <= MAX_DATASET_SIZE)
 	{
 		// Copy data header
 		m_data.hdr = chunk.m_subHdr.dHdr;
@@ -261,6 +294,10 @@ tryAgain:
 		chunk.PopFront(pSize);
 		return &m_data;
 	}
+    else
+    {
+        perror("Data is larger than max data set size");
+    }
 
 	goto tryAgain;
 }
@@ -284,36 +321,44 @@ bool cDeviceLogSorted::ReadAllChunksFromFile()
 			m_chunks.resize(id + 1);
 		}
 
-		cSortedDataChunk& chunk = m_chunks[id];
+        list<cSortedDataChunk>& chunkList = m_chunks[id];
+		cSortedDataChunk* currentChunk;
 
-		if (chunk.GetDataSize() == 0)
+        if (chunkList.size() == 0)
 		{
 			// Empty source chunk, copy Header
+            cSortedDataChunk chunk = { 0 };
 			chunk.m_subHdr = m_currentReadChunk.m_subHdr;
 
 			// Find lowest serial number
 			p_cnk_data_t* cdat = (p_cnk_data_t*)m_currentReadChunk.GetDataPtr();
 			m_dataSerNum = _MIN(m_dataSerNum, cdat->dataSerNum);
+
+            chunkList.push_back(chunk);
+			currentChunk = &chunkList.front();
 		}
-		else
-		{	
-			// Appending read chunk to chunk w/ existing data
-			// Ensure new data matches ID, size, offset
-			if (chunk.m_subHdr.dHdr.id != m_currentReadChunk.m_subHdr.dHdr.id ||
-				chunk.m_subHdr.dHdr.size != m_currentReadChunk.m_subHdr.dHdr.size ||
-				chunk.m_subHdr.dHdr.offset != m_currentReadChunk.m_subHdr.dHdr.offset)
+        else
+		{
+			currentChunk = &chunkList.back();
+			if (currentChunk->m_subHdr.dHdr.size != m_currentReadChunk.m_subHdr.dHdr.size ||
+				currentChunk->m_subHdr.dHdr.offset != m_currentReadChunk.m_subHdr.dHdr.offset)
 			{
-				cout << endl << "MISMATCHED SORTED CHUNKS!";
-				return false;
+				// chunk data size or offset change, append a new chunk
+				cSortedDataChunk chunk = { 0 };
+				chunk.m_subHdr = m_currentReadChunk.m_subHdr;
+				chunkList.push_back(chunk);
+				currentChunk = &chunkList.back();
 			}
-			chunk.m_subHdr.dCount += m_currentReadChunk.m_subHdr.dCount;
-		}
+        }
+
+		// add data count
+		currentChunk->m_subHdr.dCount += m_currentReadChunk.m_subHdr.dCount;
 
 		// Make sure chunk max size is large enough
-		chunk.SetMaxSize(chunk.GetMaxSize() + m_currentReadChunk.GetDataSize());
+		currentChunk->SetMaxSize(currentChunk->GetMaxSize() + m_currentReadChunk.GetDataSize());
 
 		// Append data
-		chunk.PushBack(m_currentReadChunk.GetDataPtr(), m_currentReadChunk.GetDataSize());
+		currentChunk->PushBack(m_currentReadChunk.GetDataPtr(), m_currentReadChunk.GetDataSize());
 	}
 
 	return m_fileSize != 0;
@@ -352,7 +397,11 @@ void cDeviceLogSorted::SetSerialNumber(uint32_t serialNumber)
 	{
 		m_chunks.resize(DID_DEV_INFO + 1);
 	}
-	m_chunks[DID_DEV_INFO].m_hdr.devSerialNum = serialNumber;
+    list<cSortedDataChunk>& chunkList = m_chunks[DID_DEV_INFO];
+	for (list<cSortedDataChunk>::iterator i = chunkList.begin(); i != chunkList.end(); i++)
+	{
+		i->m_hdr.devSerialNum = serialNumber;
+	}
 }
 
 

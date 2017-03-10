@@ -34,7 +34,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 const string cISLogger::g_emptyString;
 
-
 cISLogger::cISLogger()
 {
 	m_enabled = false;
@@ -336,9 +335,9 @@ uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, bool recursiv
 }
 
 
-uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, vector<file_info_t>& files, bool recursive)
+uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, vector<file_info_t>& files, bool sortByDate, bool recursive)
 {
-	return GetDirectorySpaceUsed(directory, "", files, true, recursive);
+	return GetDirectorySpaceUsed(directory, "", files, sortByDate, recursive);
 }
 
 
@@ -429,6 +428,16 @@ uint64_t cISLogger::GetDirectorySpaceAvailable(const string& directory)
 
 }
 
+string cISLogger::GetFileName(const string& path)
+{
+	size_t lastSepIndex = path.find_last_of("\\/");
+	if (lastSepIndex != string::npos)
+	{
+		return path.substr(lastSepIndex + 1);
+	}
+	return path;
+}
+
 bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 {
 	// Delete and clear prior devices
@@ -446,26 +455,18 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 	case cISLogger::LOGTYPE_KML: return false; // fileExtensionRegex = "\\.kml$"; break; // kml read not supported
 	}
 
-	// get all files
-	vector<string> fileNames;
-	if (!GetAllFilesInDirectory(directory, false, fileExtensionRegex, fileNames))
+	// get all files, sorted by name
+	vector<file_info_t> files;
+	GetDirectorySpaceUsed(directory, fileExtensionRegex, files, false, false);
+	if (files.size() == 0)
 	{
 		return false;
 	}
 
-	for (size_t i = 0; i < fileNames.size(); i++)
+	for (size_t i = 0; i < files.size(); i++)
 	{
-		string& name = fileNames[i];
+		string name = GetFileName(files[i].name);
 
-		// remove sub directory info
-		for (int32_t j = (int32_t)name.length() - 1; j >= 0; j--)
-		{
-			if (name[j] == '/' || name[j] == '\\')
-			{
-				name = name.substr(++j);
-				break;
-			}
-		}
 		// check for log file prefix
 		size_t endOfLogPrefixIndex = name.find(IS_LOG_FILE_PREFIX);
 		if (endOfLogPrefixIndex != string::npos)
@@ -520,9 +521,14 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 
 bool cISLogger::LogData(unsigned int device, p_data_hdr_t *dataHdr, uint8_t *dataBuf)
 {
-	if (!m_enabled || device >= m_devices.size())
+	if (!m_enabled || device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
 		return false;
+	}
+	else if (LogHeaderIsCorrupt(dataHdr))
+	{
+		perror("Attempting to log invalid log data");
+		return true; // don't fail the entire log just because one corrupt data was sent
 	}
 
 	// Save data
@@ -542,7 +548,12 @@ p_data_t* cISLogger::ReadData( unsigned int device )
 		return NULL;
 	}
 
-	return m_devices[device]->ReadData();
+	p_data_t* data;
+	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
+	{
+		perror("Corrupt data read from log file");
+	}
+	return data;
 }
 
 
@@ -645,8 +656,9 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		// Copy data
 		while ((data = log.ReadData(dev)))
 		{
-			if (data->hdr.size == 0)
+            if (LogDataIsCorrupt(data))
 			{
+				perror("Corrupt data in log file");
 				continue;
 			}
 			else if (!LogData(dev, &data->hdr, data->buf))

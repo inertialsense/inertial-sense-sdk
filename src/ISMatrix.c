@@ -13,30 +13,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 #include "ISMatrix.h"
-
-#if defined(AVR) || defined(ARM)
-// RTOS task-safe tools
-#	include <asf.h>
-#	define MALLOC(m)				pvPortMalloc(m)
-#	define FREE(m)					vPortFree(m)
-#else
-#	define MALLOC(m)				malloc(m)
-#	define FREE(m)					free(m)
-#endif
-
-//_____ M A C R O S ________________________________________________________
-
-//_____ D E F I N I T I O N S ______________________________________________
-
-//_____ G L O B A L S ______________________________________________________
-
-//_____ P R O T O T Y P E S ________________________________________________
+#include "data_sets.h"
 
 void LU( const f_t *M, i_t n, f_t *L, f_t *U );
 char solve_upper( f_t *result, i_t n, f_t *A, f_t *b );
 char solve_lower( f_t *result, i_t n, f_t *A, f_t *b );
-
-//_____ F U N C T I O N S __________________________________________________
 
 void mul_MatMxN( void * result, const void * A_ptr, const void * B_ptr, i_t m, i_t n, i_t p, char transpose_B, char add )
 {

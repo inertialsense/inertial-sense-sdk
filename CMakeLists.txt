@@ -27,7 +27,8 @@ add_library(InertialSense
   src/tinystr.cpp
   src/tinyxml.cpp
   src/tinyxmlerror.cpp
-  src/tinyxmlparser.cpp  
+  src/tinyxmlparser.cpp
+  src/UbloxReader.cpp
   )
 
 add_definitions(

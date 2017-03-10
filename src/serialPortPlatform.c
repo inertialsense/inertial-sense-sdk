@@ -184,10 +184,11 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 		return 0;
 	}
 
+	serialPortSetPort(serialPort, port);
+	
 #if PLATFORM_IS_WINDOWS
 
 	void* platformHandle = 0;
-	serialPortSetPort(serialPort, port);
 	platformHandle = CreateFileA(serialPort->port, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0);
 	if (platformHandle == INVALID_HANDLE_VALUE)
 	{

@@ -107,7 +107,7 @@ bool cDeviceLog::OpenNewSaveFile()
 	if (m_maxDiskSpace != 0)
 	{
 		vector<file_info_t> files;
-		uint64_t spaceUsed = cISLogger::GetDirectorySpaceUsed(m_directory.c_str(), files);
+		uint64_t spaceUsed = cISLogger::GetDirectorySpaceUsed(m_directory.c_str(), files, true, false);
 		unsigned int index = 0;
 
 		// clear out old files until we have space

@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <list>
 
 #include "DeviceLog.h"
 #include "DataChunkSorted.h"
@@ -39,7 +40,7 @@ public:
 	string LogFileExtention() override { return string(".sdat"); }
 
 	cSortedDataChunk m_currentReadChunk;
-	vector<cSortedDataChunk> m_chunks;
+    vector<list<cSortedDataChunk>> m_chunks;
 
 	p_data_t* SerializeDataFromChunks();
 	bool ReadAllChunksFromFile();

@@ -26,24 +26,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define PARSE_DOUBLE(str) strtod(str, 0)
 #define PARSE_FLOAT(str) strtof(str, 0)
 
-#if !defined(MALLOC) && !defined(FREE)
-
-#if defined(AVR) || defined(ARM)
-
-extern void* pvPortMalloc(size_t xWantedSize);
-extern void vPortFree(void* pv);
-#define MALLOC(m) pvPortMalloc(m)
-#define FREE(m) vPortFree(m)
-
-#else
-
-#define MALLOC(m) malloc(m)
-#define FREE(m) free(m)
-
-#endif
-
-#endif
-
 #define MIN_REQUEST_PERIOD_MS       1               // (ms) 1 KHz
 #define MAX_REQUEST_PERIOD_MS       100000          // (ms)
 #define MSG_PERIOD_SEND_ONCE		-1
@@ -1491,7 +1473,6 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 			uint32_t offset = 0;
 			uint32_t id = hdr.id;
 			pkt.body.ptr = bufToEncode.buf;
-			pkt.body.size = hdrToSend->size;
 
 			while (size > 0)
 			{
@@ -1534,7 +1515,7 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 				}
 
 				// Encode the packet, handling special characters, etc.
-				if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size & 1)))
+				if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size != 0)))
 				{
 					return -1;
 				}

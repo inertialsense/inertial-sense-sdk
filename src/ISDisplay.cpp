@@ -108,6 +108,9 @@ string cInertialSenseDisplay::Goodbye()
 
 void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
 {
+	if (m_displayMode == DMODE_QUITE)
+		return;
+
 	int curTimeMs = current_weekMs();
 
 	if (enableReplay)

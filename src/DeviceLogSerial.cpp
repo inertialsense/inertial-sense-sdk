@@ -72,7 +72,7 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
 	uint32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
 	if (dataBytes > m_chunk.GetByteCountAvailableToWrite())
 	{
-		// Save chunk to file
+        // Save chunk to file and clear
 		if (!WriteChunkToFile())
 		{
 			return false;
@@ -82,9 +82,6 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
 			// Close existing file
 			CloseAllFiles();
 		}
-
-		// Empty chunk data
-		m_chunk.Clear();
 	}
 	// Add data header and data buffer to chunk
 	if (!m_chunk.PushBack((unsigned char*)dataHdr, sizeof(p_data_hdr_t), (unsigned char*)dataBuf, dataHdr->size))

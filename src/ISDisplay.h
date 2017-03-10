@@ -31,7 +31,8 @@ public:
 	{
 		DMODE_PRETTY,
 		DMODE_SCROLL,
-		DMODE_STATS
+		DMODE_STATS,
+		DMODE_QUITE
 	};
 
 	cInertialSenseDisplay();

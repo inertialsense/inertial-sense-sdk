@@ -113,6 +113,14 @@ cRtcm3Reader::~cRtcm3Reader()
 
 }
 
+void cRtcm3Reader::Write(const uint8_t* data, int dataLength)
+{
+	for (const uint8_t* ptr = data, *ptrEnd = data + dataLength; ptr != ptrEnd; ptr++)
+	{
+		WriteByte(*ptr);
+	}
+}
+
 void cRtcm3Reader::WriteByte(uint8_t b)
 {
 	// if we have no bytes yet, check for header
@@ -203,11 +211,11 @@ void cRtcm3Reader::ParseMessage()
 		switch (satsys(m_rtcm.ephsat, &prn))
 		{
 		case SYS_GPS:
-			m_delegate->OnGpsEphemerisReceived(this, &m_rtcm.eph);
+			m_delegate->OnGpsEphemerisReceived(this, &m_rtcm.eph, prn);
 			break;
 
 		case SYS_GLO:
-			m_delegate->OnGlonassEphemerisReceived(this, &m_rtcm.geph);
+			m_delegate->OnGlonassEphemerisReceived(this, &m_rtcm.geph, prn);
 			break;
 		}
 		break;

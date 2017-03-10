@@ -43,11 +43,22 @@ using namespace std;
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
-#define _MKDIR(dir)				mkdir(dir, S_IRWXU) // 0777
+//#define _MKDIR(dir)				mkdir(dir, S_IRWXU) // 777 owner access only 
+#define _MKDIR(dir)				mkdir(dir, ACCESSPERMS) // 0777 access for all
 #define _RMDIR(dir)				rmdir(dir)
 #define _GETCWD(buf, len)		getcwd(buf, len)
 #define FLOAT2DOUBLE	(double)		// Used to prevent warning when compiling with -Wdouble-promotion in Linux
 #endif
+
+static bool LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
+{
+	return (hdr != NULL && (hdr->size == 0 || hdr->size > MAX_DATASET_SIZE || hdr->id == 0 || hdr->id >= DID_MAX_COUNT || hdr->offset >= MAX_DATASET_SIZE));
+}
+
+static bool LogDataIsCorrupt(const p_data_t* data)
+{
+	return (data != NULL && LogHeaderIsCorrupt(&data->hdr));
+}
 
 typedef struct
 {
@@ -108,11 +119,14 @@ public:
 
 	// get space used in a directory recursively - files is filled with all files in the directory, sorted by modification date, files is NOT cleared beforehand. sortByDate of false sorts by file name
 	static uint64_t GetDirectorySpaceUsed(const string& directory, bool recursive = true);
-	static uint64_t GetDirectorySpaceUsed(const string& directory, std::vector<file_info_t>& files, bool recursive = true);
-	static uint64_t GetDirectorySpaceUsed(const string& directory, string regexPattern, std::vector<file_info_t>& files, bool sortByDate = true, bool recursive = true);
+	static uint64_t GetDirectorySpaceUsed(const string& directory, vector<file_info_t>& files, bool sortByDate = true, bool recursive = true);
+	static uint64_t GetDirectorySpaceUsed(const string& directory, string regexPattern, vector<file_info_t>& files, bool sortByDate = true, bool recursive = true);
 
 	// get free space for the disk that the specified directory exists on
 	static uint64_t GetDirectorySpaceAvailable(const string& directory);
+
+	// get just the file name from a path
+	static string GetFileName(const string& path);
 
 private:
 	bool InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpaceMB, uint32_t maxFileSize, uint32_t chunkSize, bool useSubFolderTimestamp);

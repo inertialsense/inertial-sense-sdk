@@ -142,26 +142,27 @@ int inertialSenseMain()
 		return !cltool_replayDataLog();
 	}
 
-	// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
-	InertialSense inertialSenseInterface(cltool_dataCallback);
-	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
-	{	
-		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-		return -1;	// Failed to open serial port
-	}
-
 	// if bootloader was specified on the command line, do that now and return out
 	if (g_commandLineOptions.bootloaderFileName.length() != 0)
 	{
 		// [BOOTLOADER INSTRUCTIONS] Update firmware
 		char bootloaderError[1024];
 		cout << "Bootloading file at " << g_commandLineOptions.bootloaderFileName << endl;
-		bool success = inertialSenseInterface.BootloadFile(g_commandLineOptions.bootloaderFileName, bootloadUploadProgress, bootloadVerifyProgress, bootloaderError, sizeof(bootloaderError));
+		InertialSense bootloader;
+		bool success = bootloader.BootloadFile(g_commandLineOptions.comPort, g_commandLineOptions.bootloaderFileName, bootloadUploadProgress, bootloadVerifyProgress, bootloaderError, sizeof(bootloaderError));
 		if (!success)
 		{
 			cout << "Error bootloading file " << g_commandLineOptions.bootloaderFileName << ", error: " << bootloaderError;
 		}
 		return (success ? 0 : -1);
+	}
+
+	// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
+	InertialSense inertialSenseInterface(cltool_dataCallback);
+	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
+	{	
+		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
+		return -1;	// Failed to open serial port
 	}
 
 	// [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
