@@ -125,10 +125,6 @@ void cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, periodMs, cltool_dataCallback);
 	}
-	if (g_commandLineOptions.serverHostAndPort.size() != 0)
-	{
-		inertialSenseInterface.OpenServerConnectionRTCM3(g_commandLineOptions.serverHostAndPort);
-	}
 }
 
 
@@ -158,12 +154,20 @@ int inertialSenseMain()
 	}
 
 	// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
-	InertialSense inertialSenseInterface(cltool_dataCallback);
+	InertialSense inertialSenseInterface(g_commandLineOptions.flashConfig.length() != 0 ? NULL : cltool_dataCallback);
 	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
 	{	
 		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
 		return -1;	// Failed to open serial port
 	}
+
+	// if we are updating flash config, do that and exit
+	if (g_commandLineOptions.flashConfig.length() != 0)
+	{
+		cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig);
+		return 0;
+	}
+
 
 	// [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
 	cltool_setupCommunications(inertialSenseInterface);

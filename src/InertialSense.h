@@ -60,6 +60,7 @@ public:
 		pfnHandleBinaryData binaryCallback[DID_COUNT];
 		pfnStepLogFunction stepLogFunction;
 		dev_info_t* devInfo;
+		nvm_flash_cfg_t* flashConfig;
 		InertialSense* inertialSenseInterface;
 	};
 
@@ -180,6 +181,18 @@ public:
 	*/
 	const dev_info_t& GetDeviceInfo() { return m_deviceInfo; }
 
+	/*!
+	* Get the flash config, returns the latest flash config read from the uINS flash memory
+	* @return the flash config
+	*/
+	const nvm_flash_cfg_t& GetFlashConfig() { return m_flashConfig; }
+
+	/*!
+	* Set the flash config and update flash config on the uINS flash memory
+	* @param flashConfig the flash config
+	*/
+	void SetFlashConfig(const nvm_flash_cfg_t& flashConfig);
+
 protected:
 	bool OnPacketReceived(const cRtcm3Reader* reader, const uint8_t* data, uint32_t dataLength) override;
 
@@ -197,6 +210,7 @@ private:
 	uint32_t m_logSolution; // SLOG_DISABLED if none
 	time_t m_lastLogReInit;
 	dev_info_t m_deviceInfo;
+	nvm_flash_cfg_t m_flashConfig;
 	cISTcpClient m_tcpClient;
 	cRtcm3Reader m_rtcm3Reader;
 

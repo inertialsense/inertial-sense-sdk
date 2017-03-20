@@ -11,15 +11,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "cltool.h"
+#include "../../src/ISDataMappings.h"
 
 cmd_options_t g_commandLineOptions;
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 bool g_ctrlCPressed;
 
-#if defined(_WIN32)
-
-#include <Windows.h>
+#if defined(_WIN32) || defined(_WIN64)
 
 static bool ctrlHandler(DWORD fdwCtrlType)
 {
@@ -34,7 +33,7 @@ static bool ctrlHandler(DWORD fdwCtrlType)
 		return true;
 	default:
 		return false;
-  }
+	}
 }
 
 #else
@@ -70,8 +69,28 @@ void cltool_setupLogger(InertialSense& inertialSenseInterface)
 	);
 
 	// Call these elsewhere as needed
-// 	inertialSenseInterface.EnableLogger(false);	// Enable/disable during runtime
-// 	inertialSenseInterface.CloseLogger();		// Stop logging and save remaining data to file
+	// 	inertialSenseInterface.EnableLogger(false);	// Enable/disable during runtime
+	// 	inertialSenseInterface.CloseLogger();		// Stop logging and save remaining data to file
+}
+
+template<typename Out>
+void splitStringIterator(const string &s, char delim, Out result)
+{
+	stringstream ss;
+	ss.str(s);
+	string item;
+	while (getline(ss, item, delim))
+	{
+		*(result++) = item;
+	}
+}
+
+
+vector<string> splitString(const string &s, char delim)
+{
+	vector<string> elems;
+	splitStringIterator(s, delim, back_inserter(elems));
+	return elems;
 }
 
 static bool startsWith(const char* str, const char* pre)
@@ -97,7 +116,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	for (int i = 1; i < argc; i++)
 	{
 		const char* a = argv[i];
-		if (!strncmp(a, "-h", 2))
+		if (!strncmp(a, "-h", 16))
 		{
 			cltool_outputUsage();
 			return false;
@@ -211,7 +230,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-svr="))
 		{
-			g_commandLineOptions.serverHostAndPort = &a[5];
+			g_commandLineOptions.serverConnection = &a[5];
+		}
+		else if (startsWith(a, "-host="))
+		{
+			g_commandLineOptions.host = &a[6];
+		}
+		else if (startsWith(a, "-flashConfig="))
+		{
+			g_commandLineOptions.flashConfig = &a[13];
 		}
 		else
 		{
@@ -270,11 +297,11 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << boldOff << " [OPTION]" << endlbOn;
 	cout << endlbOn;
 	cout << "EXAMPLE USAGE" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS1             " << EXAMPLE_SPACE_1 << boldOff << " # stream one data set" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS2 -sGPS -sBaro" << EXAMPLE_SPACE_1 << boldOff << " # stream multiple sets" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS2 -l -lts=0   " << EXAMPLE_SPACE_1 << boldOff << " # stream and log data" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -rp=" << EXAMPLE_LOG_DIR                                              << boldOff << " # replay data file" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -b=" << EXAMPLE_FIRMWARE_FILE           << boldOff << " # bootload firmware" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -sINS1             " << EXAMPLE_SPACE_1 << boldOff << " # stream one data set" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -sINS2 -sGPS -sBaro" << EXAMPLE_SPACE_1 << boldOff << " # stream multiple sets" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -sINS2 -l -lts=0   " << EXAMPLE_SPACE_1 << boldOff << " # stream and log data" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -rp=" << EXAMPLE_LOG_DIR << boldOff << " # replay data file" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -b=" << EXAMPLE_FIRMWARE_FILE << boldOff << " # bootload firmware" << endlbOn;
 	cout << endlbOn;
 	cout << "DESCRIPTION" << endlbOff;
 	cout << "    Command line utility for communicating, logging, and updating" << endl;
@@ -312,8 +339,9 @@ void cltool_outputUsage()
 	cout << "    -lmm=" << boldOff << "BYTES     log max memory in bytes (default: 131072)" << endlbOn;
 	cout << "    -lts=" << boldOff << "0         log use timestamp sub folder" << endlbOn;
 
-	cout << endlbOn;
-	cout << "    -svr=" << boldOff << "serverAndPort, i.e. 192.168.1.100:7777:url:user:password, for retrieving RTCM3 data and sending to the uINS, url, user and password are optional." << endl;
+	cout << endl << "Flash config. Read or write flash configuration." << endl;
+	cout << "    -flashConfig=." << boldOff << " - read flash config and display." << endlbOn;
+	cout << "    -flashConfig=key=value|key=value " << boldOff << " - set key / value pairs in flash config." << endlbOn;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }
@@ -321,7 +349,7 @@ void cltool_outputUsage()
 void cltool_setupCtrlCHandler()
 {
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64)
 
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, true);
 
@@ -332,4 +360,48 @@ void cltool_setupCtrlCHandler()
 
 #endif
 
+}
+
+void cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
+{
+	const nvm_flash_cfg_t& flashConfig = inertialSenseInterface.GetFlashConfig();
+	const map_lookup_name_t& globalMap = cISDataMappings::GetMap();
+	const map_name_to_info_t& flashMap = globalMap.at(DID_FLASH_CONFIG);
+
+	if (flashConfigString.length() < 2)
+	{
+		// read flash config and display
+		char stringBuffer[128];
+		cout << "Current flash config" << endl;
+		for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
+		{
+			if (cISDataMappings::DataToString(i->second, (const uint8_t*)&flashConfig, stringBuffer))
+			{
+				cout << i->first << " = " << stringBuffer << endl;
+			}
+		}
+	}
+	else
+	{
+		nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
+		vector<string> keyValues = splitString(flashConfigString, '|');
+		for (size_t i = 0; i < keyValues.size(); i++)
+		{
+			vector<string> keyAndValue = splitString(keyValues[i], '=');
+			if (keyAndValue.size() == 2)
+			{
+				if (flashMap.find(keyAndValue[0]) == flashMap.end())
+				{
+					cout << "Unrecognized flash config key '" << keyAndValue[0] << "' specified, ignoring." << endl;
+				}
+				else
+				{
+					const data_info_t& info = flashMap.at(keyAndValue[0]);
+					cISDataMappings::StringToData(keyAndValue[1].c_str(), (uint8_t*)&flashConfig, info);
+					cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
+				}
+			}
+		}
+		inertialSenseInterface.SetFlashConfig(flashConfig);
+	}
 }

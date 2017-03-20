@@ -19,14 +19,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 
 // change these includes to be the correct path for your system
-#include "../../src/InertialSense.h"
+#include "../../src/InertialSense.h" // best to include this file first
 #include "../../src/ISDisplay.h"
 #include "../../src/ISUtilities.h"
 
 using namespace std;
 
 #define APP_NAME                "cltool"
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64)
 #define APP_EXT                 ".exe"
 #define EXAMPLE_PORT            "COM5"
 #define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549     "
@@ -72,7 +72,10 @@ typedef struct
 	bool useLogTimestampSubFolder; // -lts=1
 	int baudRate; // -baud=3000000
 
-	string serverHostAndPort; // -svr=host:port:url:user:password
+	string serverConnection; // -svr=type:host:port:url:user:password
+	string host; // -host=ip:port
+
+	string flashConfig;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
@@ -86,6 +89,7 @@ bool cltool_parseCommandLine(int argc, char* argv[]);
 bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_setupCtrlCHandler();
+void cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfig);
 
 #endif // __CLTOOL_H__
 

@@ -61,6 +61,10 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		{
 			memcpy(s->devInfo, data->buf, sizeof(dev_info_t));
 		}
+		else if (data->hdr.id == DID_FLASH_CONFIG)
+		{
+			memcpy(s->flashConfig, data->buf, sizeof(nvm_flash_cfg_t));
+		}
 	}
 }
 
@@ -68,6 +72,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 {
 	memset(&m_comManagerState, 0, sizeof(m_comManagerState));
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
+	memset(&m_flashConfig, 0, sizeof(m_flashConfig));
 	m_logSolution = SLOG_DISABLED;
 	m_cmHandle = getGlobalComManager();
 	m_pHandle = 0;
@@ -89,6 +94,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
 	m_comManagerState.inertialSenseInterface = this;
 	m_comManagerState.devInfo = &m_deviceInfo;
+	m_comManagerState.flashConfig = &m_flashConfig;
 	comManagerAssignUserPointer(m_cmHandle, &m_comManagerState);
 	initComManager(1, 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
 	m_comManagerState.binaryCallbackGlobal = callback;
@@ -180,14 +186,15 @@ bool InertialSense::Open(const char* port, int baudRate)
 
 	// try to auto-baud for up to 3 seconds, then abort if we didn't get a valid packet
 	// we wait until we get a valid serial number and manufacturer
-	while (m_deviceInfo.serialNumber == 0 && m_deviceInfo.manufacturer[0] == '\0' && time(0) - startTime < 3)
+	while ((m_flashConfig.size == 0 || (m_deviceInfo.serialNumber == 0 && m_deviceInfo.manufacturer[0] == '\0')) && time(0) - startTime < 3)
 	{
 		getDataComManagerInstance(m_cmHandle, 0, DID_DEV_INFO, 0, 0, 0);
+		getDataComManagerInstance(m_cmHandle, 0, DID_FLASH_CONFIG, 0, 0, 0);
 		SLEEP_MS(2); // 2 milliseconds wait for reply
 		stepComManagerInstance(m_cmHandle);
 	}
 
-	if (m_deviceInfo.serialNumber == 0 && m_deviceInfo.manufacturer[0] == '\0')
+	if (m_flashConfig.size == 0 || (m_deviceInfo.serialNumber == 0 && m_deviceInfo.manufacturer[0] == '\0'))
 	{
 		Close();
 		return false;
@@ -337,6 +344,12 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 		getDataComManager(0, dataId, 0, 0, periodMS);
 	}
 	return true;
+}
+
+void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig)
+{
+	m_flashConfig = flashConfig;
+	sendDataComManagerInstance(m_cmHandle, m_pHandle, DID_FLASH_CONFIG, &m_flashConfig, sizeof(flashConfig), 0);
 }
 
 void InertialSense::SetBroadcastSolutionEnabled(bool enable)

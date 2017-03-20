@@ -157,21 +157,12 @@ int TIMECONV_GetSystemTime(
   double timebuffer_time_in_seconds;
   //char *timeline; // for debugging
 
-#ifndef _CRT_SECURE_NO_DEPRECATE
-  if( _ftime_s( &timebuffer ) != 0 )
-  {
-    GNSS_ERROR_MSG( "if( _ftime_s( &timebuffer ) != 0 )" );
-    return 0;
-  }
-#else
-
 #ifdef WIN32
   _ftime( &timebuffer );
 #else
   ftime( &timebuffer );
 #endif 
 
-#endif
   //timeline = ctime( & ( timebuffer.time ) ); // for debugging
   //printf( "%s\n", timeline ); // for debugging
 
