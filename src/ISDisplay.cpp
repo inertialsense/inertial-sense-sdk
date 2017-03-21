@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISDisplay.h"
 #include "ISConstants.h"
+#include "ISPose.h"
 
 using namespace std;
 
@@ -32,12 +33,12 @@ using namespace std;
 
 #endif
 
-#define PRINTV3_P1	"%7.1f,%7.1f,%7.1f\n"
-#define PRINTV3_P2	" %7.2f,%7.2f,%7.2f\n"
-#define PRINTV3_P3	"  %7.3f,%7.3f,%7.3f\n"
-#define PRINTV4_P1	"%7.1f,%7.1f,%7.1f,%7.1f\n"
-#define PRINTV4_P2	" %7.2f,%7.2f,%7.2f,%7.2f\n"
-#define PRINTV4_P3	"  %7.3f,%7.3f,%7.3f,%7.3f\n"
+#define PRINTV3_P1	"%8.1f,%8.1f,%8.1f\n"
+#define PRINTV3_P2	" %8.2f,%8.2f,%8.2f\n"
+#define PRINTV3_P3	"  %8.3f,%8.3f,%8.3f\n"
+#define PRINTV4_P1	"%8.1f,%8.1f,%8.1f,%8.1f\n"
+#define PRINTV4_P2	" %8.2f,%8.2f,%8.2f,%8.2f\n"
+#define PRINTV4_P3	"  %8.3f,%8.3f,%8.3f,%8.3f\n"
 #define PRINTV3_LLA	"%13.7f,%13.7f,%7.1f\n"
 #define BUF_SIZE 8192
 
@@ -438,6 +439,13 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 			ins2.qn2b[1],					// X
 			ins2.qn2b[2],					// Y
 			ins2.qn2b[3]);					// Z
+		float theta[3];
+		quat2euler(ins2.qn2b, theta);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tEuler\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,					// Convert quaternion to euler rotation
+			theta[0] * C_RAD2DEG_F,			// Roll
+			theta[1] * C_RAD2DEG_F,			// Pitch
+			theta[2] * C_RAD2DEG_F);		// Yaw
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
 			ins2.uvw[0],					// U body velocity

@@ -84,7 +84,7 @@ void cUbloxReader::WriteByte(uint8_t b)
 		m_raw.nbyte = BE_SWAP16(*(uint16_t*)(m_raw.buff + 4)) + UBLOX_CHECKSUM_SIZE;
 
 		// if packet size is larger than buffer minus header and checksum
-		if (m_raw.nbyte < UBLOX_CHECKSUM_SIZE || m_raw.nbyte > sizeof(m_raw.buff) - UBLOX_HEADER_SIZE)
+		if (m_raw.nbyte < UBLOX_CHECKSUM_SIZE || (unsigned int)m_raw.nbyte > sizeof(m_raw.buff) - UBLOX_HEADER_SIZE)
 		{
 			// corrupt data
 			Reset();

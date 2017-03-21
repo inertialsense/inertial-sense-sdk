@@ -15,8 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 *
 *  (c) 2014 Inertial Sense, LLC
 *
-*  The Inertial Sense Command Line Tool (iscltool) shows how easy it is to 
-*  communicate with the uINS, data log, or bootload firmware.  
+*  The Inertial Sense Command Line Tool (cltool) shows how easy it is to communicate with the uINS, log data, update firmware and more.
 *
 *  The following keywords are found within this file to identify instructions
 *  for SDK implementation.  
@@ -36,7 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "cltool.h"
 
 // [COMM INSTRUCTION] 4.) This function is called every time there is new data.
-void cltool_dataCallback(InertialSense* i, p_data_t* data)
+static void cltool_dataCallback(InertialSense* i, p_data_t* data)
 {
 	// Print data to terminal
 	g_inertialSenseDisplay.ProcessData(data);
@@ -72,7 +71,7 @@ void cltool_dataCallback(InertialSense* i, p_data_t* data)
 // Where we tell the uINS what data to send and at what rate.  
 // "cltool_dataCallback()" is registered as the callback functions for all received data.
 // All DID messages are found in data_sets.h
-void cltool_setupCommunications(InertialSense& inertialSenseInterface)
+static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
 	int periodMs = 50;
 	inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
@@ -125,12 +124,37 @@ void cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, periodMs, cltool_dataCallback);
 	}
+	if (g_commandLineOptions.flashConfig.length() != 0)
+	{
+		cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig);
+		return false;
+	}
+	return true;
+}
+
+static int cltool_runBootloader()
+{
+	// [BOOTLOADER INSTRUCTIONS] Update firmware
+	char bootloaderError[1024];
+	cout << "Bootloading file at " << g_commandLineOptions.bootloaderFileName << endl;
+	InertialSense bootloader;
+	bool success = bootloader.BootloadFile(g_commandLineOptions.comPort, g_commandLineOptions.bootloaderFileName, bootloadUploadProgress, bootloadVerifyProgress, bootloaderError, sizeof(bootloaderError));
+	if (!success)
+	{
+		cout << "Error bootloading file " << g_commandLineOptions.bootloaderFileName << ", error: " << bootloaderError;
+	}
+	return (success ? 0 : -1);
 }
 
 
-int inertialSenseMain()
+static int inertialSenseMain()
 {	
+	// catch ctrl-c, break, etc.
+	cltool_setupCtrlCHandler();
+
+	// clear display
 	g_inertialSenseDisplay.SetDisplayMode(g_commandLineOptions.displayMode);
+	g_inertialSenseDisplay.Clear();
 
 	// if replay data log specified on command line, do that now and return
 	if (g_commandLineOptions.replayDataLog)
@@ -139,47 +163,27 @@ int inertialSenseMain()
 	}
 
 	// if bootloader was specified on the command line, do that now and return out
-	if (g_commandLineOptions.bootloaderFileName.length() != 0)
+	else if (g_commandLineOptions.bootloaderFileName.length() != 0)
 	{
-		// [BOOTLOADER INSTRUCTIONS] Update firmware
-		char bootloaderError[1024];
-		cout << "Bootloading file at " << g_commandLineOptions.bootloaderFileName << endl;
-		InertialSense bootloader;
-		bool success = bootloader.BootloadFile(g_commandLineOptions.comPort, g_commandLineOptions.bootloaderFileName, bootloadUploadProgress, bootloadVerifyProgress, bootloaderError, sizeof(bootloaderError));
-		if (!success)
+		return cltool_runBootloader();
+	}
+
+	// open the device, start streaming data and logging
+	else
+	{
+		// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. if reading/writing flash config, don't bother with data callback
+		InertialSense inertialSenseInterface(g_commandLineOptions.flashConfig.length() == 0 ? cltool_dataCallback : NULL);
+		if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
 		{
-			cout << "Error bootloading file " << g_commandLineOptions.bootloaderFileName << ", error: " << bootloaderError;
+			cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
+			return -1;	// Failed to open serial port
 		}
-		return (success ? 0 : -1);
-	}
 
-	// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port. 
-	InertialSense inertialSenseInterface(g_commandLineOptions.flashConfig.length() != 0 ? NULL : cltool_dataCallback);
-	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
-	{	
-		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-		return -1;	// Failed to open serial port
-	}
-
-	// if we are updating flash config, do that and exit
-	if (g_commandLineOptions.flashConfig.length() != 0)
-	{
-		cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig);
-		return 0;
-	}
-
-
-	// [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
-	cltool_setupCommunications(inertialSenseInterface);
-
-	// [LOGGER INSTRUCTION] Setup and start data logger
-	cltool_setupLogger(inertialSenseInterface);
-
-	// catch ctrl-c, break, etc.
-	cltool_setupCtrlCHandler();
-
-	// clear display
-	g_inertialSenseDisplay.Clear();
+		// [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
+		if (cltool_setupCommunications(inertialSenseInterface))
+		{
+			// [LOGGER INSTRUCTION] Setup and start data logger
+			cltool_setupLogger(inertialSenseInterface);
 
 	try
 	{
@@ -189,6 +193,12 @@ int inertialSenseMain()
 			// [COMM INSTRUCTION] 3.) Process data and messages
 			inertialSenseInterface.Update();
 
+					if (inertialSenseInterface.GetTcpByteCount() != 0)
+					{
+						g_inertialSenseDisplay.GoToRow(1);
+						cout << "Tcp bytes read: " << inertialSenseInterface.GetTcpByteCount() << "   ";
+					}
+
 			// Specify the minimum time between read/write updates.
 			SLEEP_MS(1);
 		}
@@ -197,11 +207,13 @@ int inertialSenseMain()
 	{
 		cout << "Unknown exception, ";
 	}
+		}
 
 	cout << "Shutting down..." << endl;
 
 	// close the interface cleanly, this ensures serial port and any logging are shutdown properly
 	inertialSenseInterface.Close();
+	}
 
 	return 0;
 }

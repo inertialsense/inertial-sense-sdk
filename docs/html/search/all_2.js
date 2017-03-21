@@ -41,5 +41,6 @@ var searchData=
   ['course',['course',['../structgps__nav__velned__t.html#a87a646df9c6d88e2e2794f1cc68b2252',1,'gps_nav_velned_t']]],
   ['crtcm3reader',['cRtcm3Reader',['../classc_rtcm3_reader.html',1,'cRtcm3Reader'],['../classc_rtcm3_reader.html#af0adc4597ab4bfb55b3b9a1913729c05',1,'cRtcm3Reader::cRtcm3Reader()']]],
   ['csorteddatachunk',['cSortedDataChunk',['../classc_sorted_data_chunk.html',1,'']]],
-  ['cstr',['CStr',['../class_ti_xml_printer.html#a859eede9597d3e0355b77757be48735e',1,'TiXmlPrinter']]]
+  ['cstr',['CStr',['../class_ti_xml_printer.html#a859eede9597d3e0355b77757be48735e',1,'TiXmlPrinter']]],
+  ['cubloxreader',['cUbloxReader',['../classc_ublox_reader.html',1,'cUbloxReader'],['../classc_ublox_reader.html#aef096f76308ddcacc31e899ddc1b3e2c',1,'cUbloxReader::cUbloxReader()']]]
 ];

@@ -1,12 +1,14 @@
 var searchData=
 [
   ['savefile',['SaveFile',['../class_ti_xml_document.html#a21c0aeb0d0a720169ad4ac89523ebe93',1,'TiXmlDocument::SaveFile() const '],['../class_ti_xml_document.html#ae869f5ebf7fc54c4a1d737fb4689fd44',1,'TiXmlDocument::SaveFile(const char *filename) const '],['../class_ti_xml_document.html#acf1672b4538c6d1d441f9f108aea2bf4',1,'TiXmlDocument::SaveFile(FILE *) const '],['../class_ti_xml_document.html#a3d4fae0463f3f03679ba0b7cf6f2df52',1,'TiXmlDocument::SaveFile(const std::string &amp;filename) const ']]],
+  ['sendrawdata',['SendRawData',['../class_inertial_sense.html#abb6f052b9425dd24bd82224fe0e1cfa8',1,'InertialSense']]],
   ['setattribute',['SetAttribute',['../class_ti_xml_element.html#abf0b3bd7f0e4c746a89ec6e7f101fc32',1,'TiXmlElement::SetAttribute(const char *name, const char *_value)'],['../class_ti_xml_element.html#a80ed65b1d194c71c6c9986ae42337d7d',1,'TiXmlElement::SetAttribute(const std::string &amp;name, const std::string &amp;_value)'],['../class_ti_xml_element.html#a6f18d54fbe25bbc527936ee65363b3c5',1,'TiXmlElement::SetAttribute(const std::string &amp;name, int _value)'],['../class_ti_xml_element.html#ace6f4be75e373726d4774073d666d1a7',1,'TiXmlElement::SetAttribute(const char *name, int value)']]],
   ['setbroadcastsolutionenabled',['SetBroadcastSolutionEnabled',['../class_inertial_sense.html#a560624581c6440198ec99c05429db1d1',1,'InertialSense']]],
   ['setcdata',['SetCDATA',['../class_ti_xml_text.html#acb17ff7c5d09b2c839393445a3de5ea9',1,'TiXmlText']]],
   ['setcondensewhitespace',['SetCondenseWhiteSpace',['../class_ti_xml_base.html#a0f799ec645bfb8d8a969e83478f379c1',1,'TiXmlBase']]],
   ['setdoubleattribute',['SetDoubleAttribute',['../class_ti_xml_element.html#a0d1dd975d75496778177e35abfe0ec0b',1,'TiXmlElement']]],
   ['setdoublevalue',['SetDoubleValue',['../class_ti_xml_attribute.html#a0316da31373496c4368ad549bf711394',1,'TiXmlAttribute']]],
+  ['setflashconfig',['SetFlashConfig',['../class_inertial_sense.html#ad643ea5008bbf8fcb8584a81dc6d269e',1,'InertialSense']]],
   ['setindent',['SetIndent',['../class_ti_xml_printer.html#a213377a4070c7e625bae59716b089e5e',1,'TiXmlPrinter']]],
   ['setintvalue',['SetIntValue',['../class_ti_xml_attribute.html#a7e065df640116a62ea4f4b7da5449cc8',1,'TiXmlAttribute']]],
   ['setlinebreak',['SetLineBreak',['../class_ti_xml_printer.html#a4be1e37e69e3858c59635aa947174fe6',1,'TiXmlPrinter']]],

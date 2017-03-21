@@ -18,7 +18,9 @@ serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 bool g_ctrlCPressed;
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
+
+#include <Windows.h>
 
 static bool ctrlHandler(DWORD fdwCtrlType)
 {
@@ -33,7 +35,7 @@ static bool ctrlHandler(DWORD fdwCtrlType)
 		return true;
 	default:
 		return false;
-	}
+  }
 }
 
 #else
@@ -69,8 +71,8 @@ void cltool_setupLogger(InertialSense& inertialSenseInterface)
 	);
 
 	// Call these elsewhere as needed
-	// 	inertialSenseInterface.EnableLogger(false);	// Enable/disable during runtime
-	// 	inertialSenseInterface.CloseLogger();		// Stop logging and save remaining data to file
+// 	inertialSenseInterface.EnableLogger(false);	// Enable/disable during runtime
+// 	inertialSenseInterface.CloseLogger();		// Stop logging and save remaining data to file
 }
 
 template<typename Out>
@@ -297,11 +299,11 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << boldOff << " [OPTION]" << endlbOn;
 	cout << endlbOn;
 	cout << "EXAMPLE USAGE" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -sINS1             " << EXAMPLE_SPACE_1 << boldOff << " # stream one data set" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -sINS2 -sGPS -sBaro" << EXAMPLE_SPACE_1 << boldOff << " # stream multiple sets" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -sINS2 -l -lts=0   " << EXAMPLE_SPACE_1 << boldOff << " # stream and log data" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -rp=" << EXAMPLE_LOG_DIR << boldOff << " # replay data file" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -b=" << EXAMPLE_FIRMWARE_FILE << boldOff << " # bootload firmware" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS1             " << EXAMPLE_SPACE_1 << boldOff << " # stream one data set" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS2 -sGPS -sBaro" << EXAMPLE_SPACE_1 << boldOff << " # stream multiple sets" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS2 -l -lts=0   " << EXAMPLE_SPACE_1 << boldOff << " # stream and log data" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -rp=" << EXAMPLE_LOG_DIR                                              << boldOff << " # replay data file" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -b=" << EXAMPLE_FIRMWARE_FILE           << boldOff << " # bootload firmware" << endlbOn;
 	cout << endlbOn;
 	cout << "DESCRIPTION" << endlbOff;
 	cout << "    Command line utility for communicating, logging, and updating" << endl;
@@ -343,13 +345,21 @@ void cltool_outputUsage()
 	cout << "    -flashConfig=." << boldOff << " - read flash config and display." << endlbOn;
 	cout << "    -flashConfig=key=value|key=value " << boldOff << " - set key / value pairs in flash config." << endlbOn;
 
+	cout << endl << "Server connection. Use the uINS as RTK rover." << endl;
+	cout << "    -svr=" << boldOff << "connection info, used to retreive external data and send to the uINS. Examples:" << endl;
+	cout << "    For retrieving RTCM3 data: RTCM3:192.168.1.100:7777:url:user:password - url, user and password are optional." << endl;
+	cout << "    For retrieving InertialSense data: IS:192.168.1.100:7777 - no url, user or password for InertialSense data." << endlbOn;
+
+	cout << endl << "Server host. Use the uINS as RTK base station." << endl;
+	cout << "    -host=" << boldOff << "ipAndPort, host an InertialSense server, i.e. :7777 or 192.168.1.43:7777. The ip address part is optional." << endlbOn;
+
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }
 
 void cltool_setupCtrlCHandler()
 {
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, true);
 
@@ -377,7 +387,7 @@ void cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 		{
 			if (cISDataMappings::DataToString(i->second, (const uint8_t*)&flashConfig, stringBuffer))
 			{
-				cout << i->first << " = " << stringBuffer << endl;
+				cout << i->second.name << " = " << stringBuffer << endl;
 			}
 		}
 	}

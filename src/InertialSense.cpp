@@ -68,7 +68,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	}
 }
 
-InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serialPort) : m_rtcm3Reader(this)
+InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serialPort)
 {
 	memset(&m_comManagerState, 0, sizeof(m_comManagerState));
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
@@ -78,6 +78,8 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 	m_pHandle = 0;
 	m_logThread = nullptr;
 	m_lastLogReInit = time(0);
+	m_rtcm3Reader = NULL;
+	m_tcpByteCount = 0;
 
 	if (serialPort == NULL)
 	{
@@ -102,6 +104,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 
 InertialSense::~InertialSense()
 {
+	CloseServerConnection();
 	Close();
 }
 
@@ -174,6 +177,7 @@ bool InertialSense::Open(const char* port, int baudRate)
 {
 	// clear the device in preparation for auto-baud
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
+	memset(&m_flashConfig, 0, sizeof(m_flashConfig));
 
 	if (validateBaudRate(baudRate) != 0 || serialPortOpen(&m_serialPort, port, baudRate, 0) != 1)
 	{
@@ -226,46 +230,13 @@ void InertialSense::SetLoggerEnabled(bool enable, const string& path, uint32_t l
 	}
 }
 
-bool InertialSense::OpenServerConnectionRTCM3(const string& hostAndPort)
-{
-	size_t colon = hostAndPort.find(':', 0);
-	if (colon == string::npos)
-	{
-		return false;
-	}
-	size_t colon2 = hostAndPort.find(':', colon + 1);
-	if (colon2 == string::npos)
-	{
-		return false;
-	}
-	string host = hostAndPort.substr(0, colon);
-	string portString = hostAndPort.substr(colon + 1, colon2 - colon - 1);
-	int port = (int)strtol(portString.c_str(), NULL, 10);
-	bool opened = (m_tcpClient.Open(host, port) == 0);
-	if (opened)
-	{
-		// try to find url:user:pwd on the string
-		colon = hostAndPort.find(':', colon2 + 1);
-		if (colon != string::npos)
-		{
-			string url = hostAndPort.substr(colon2 + 1, colon - colon2 - 1);
-			colon2 = hostAndPort.find(':', colon + 1);
-			if (colon2 != string::npos)
-			{
-				string user = hostAndPort.substr(colon + 1, colon2 - colon - 1);
-				string pwd = hostAndPort.substr(colon2 + 1);
-				if (user.size() != 0 && pwd.size() != 0)
-				{
-					m_tcpClient.HttpGet(url, "InertialSense", user, pwd);
-				}
-			}
-		}
-	}
-	return opened;
-}
-
 void InertialSense::CloseServerConnection()
 {
+	if (m_rtcm3Reader != NULL)
+	{
+		delete m_rtcm3Reader;
+		m_rtcm3Reader = NULL;
+	}
 	m_tcpClient.Close();
 }
 
@@ -276,15 +247,27 @@ bool InertialSense::IsOpen()
 
 void InertialSense::Update()
 {
+	uint8_t buffer[8192];
+
 	if (m_tcpClient.IsOpen())
 	{
-		uint8_t buffer[4096];
-		int count = m_tcpClient.Read(buffer, sizeof(buffer), false);
-		for (int i = 0; i < count; i++)
+		int count = m_tcpClient.Read(buffer, sizeof(buffer));
+		if (count > 0)
 		{
-			m_rtcm3Reader.WriteByte(buffer[i]);
+			m_tcpByteCount += count;
+			if (m_rtcm3Reader == NULL)
+			{
+				// send the server data right through to the uINS, it should already be formatted as an InertialSense packet
+				serialPortWrite(&m_serialPort, buffer, count);
+			}
+			else
+			{
+				// read the rtcm3 data and parse it
+				m_rtcm3Reader->Write(buffer, count);
+			}
 		}
 	}
+
 	stepComManager();
 }
 
@@ -327,9 +310,15 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 	sendRawDataComManagerInstance(m_cmHandle, m_pHandle, dataId, data, length, offset);
 }
 
+void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig)
+{
+	m_flashConfig = flashConfig;
+	sendDataComManagerInstance(m_cmHandle, m_pHandle, DID_FLASH_CONFIG, &m_flashConfig, sizeof(flashConfig), 0);
+}
+
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandleBinaryData callback)
 {
-	if (m_comManagerState.binarySerialPort == NULL || dataId >= DID_COUNT || (m_comManagerState.binaryCallbackGlobal == NULL && m_comManagerState.binaryCallback[dataId] == NULL))
+	if (m_comManagerState.binarySerialPort == NULL || dataId >= DID_COUNT)
 	{
 		return false;
 	}
@@ -346,12 +335,6 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 	return true;
 }
 
-void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig)
-{
-	m_flashConfig = flashConfig;
-	sendDataComManagerInstance(m_cmHandle, m_pHandle, DID_FLASH_CONFIG, &m_flashConfig, sizeof(flashConfig), 0);
-}
-
 void InertialSense::SetBroadcastSolutionEnabled(bool enable)
 {
 	m_logSolution = (enable ? SLOG_W_INS2 : SLOG_DISABLED);
@@ -361,29 +344,28 @@ bool InertialSense::BootloadFile(const string& comPort, const string& fileName, 
 {
 	// for debug
 	// SERIAL_PORT_DEFAULT_TIMEOUT = 9999999;
-	Close();
-	serialPortSetPort(&m_serialPort, comPort.c_str());
-	if (!enableBootloader(&m_serialPort, errorBuffer, errorBufferLength))
+	InertialSense bootloader;
+	serialPortSetPort(&bootloader.m_serialPort, comPort.c_str());
+	if (!enableBootloader(&bootloader.m_serialPort, errorBuffer, errorBufferLength))
 	{
-		serialPortClose(&m_serialPort);
+		serialPortClose(&bootloader.m_serialPort);
 		return false;
 	}
 	bootload_params_t params;
 	params.fileName = fileName.c_str();
-	params.port = &m_serialPort;
+	params.port = &bootloader.m_serialPort;
 	params.error = errorBuffer;
 	params.errorLength = errorBufferLength;
-	params.obj = this;
+	params.obj = &bootloader;
 	params.uploadProgress = uploadProgress;
 	params.verifyProgress = verifyProgress;
 	params.verifyFileName = NULL;
 	if (!bootloadFileEx(&params))
 	{
-		serialPortClose(&m_serialPort);
+		serialPortClose(&bootloader.m_serialPort);
 		return false;
 	}
-	serialPortClose(&m_serialPort);
-	Open(m_serialPort.port);
+	serialPortClose(&bootloader.m_serialPort);
 	return true;
 }
 

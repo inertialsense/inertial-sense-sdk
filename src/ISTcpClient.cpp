@@ -93,8 +93,8 @@ int cISTcpClient::Open(const string& host, int port)
 	m_port = port;
 	char portString[64];
 	SNPRINTF(portString, sizeof(portString), "%ld", (long)m_port);
-	struct addrinfo* result = NULL;
-	struct addrinfo hints = {};
+	addrinfo* result = NULL;
+	addrinfo hints = addrinfo();
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;

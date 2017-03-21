@@ -26,7 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 #define APP_NAME                "cltool"
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 #define APP_EXT                 ".exe"
 #define EXAMPLE_PORT            "COM5"
 #define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549     "

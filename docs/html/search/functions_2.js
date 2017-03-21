@@ -12,5 +12,6 @@ var searchData=
   ['closeserverconnection',['CloseServerConnection',['../class_inertial_sense.html#a73a675fd832f7579cd790de41f40f5fe',1,'InertialSense']]],
   ['column',['Column',['../class_ti_xml_base.html#ab54bfb9b70fe6dd276e7b279cab7f003',1,'TiXmlBase']]],
   ['crtcm3reader',['cRtcm3Reader',['../classc_rtcm3_reader.html#af0adc4597ab4bfb55b3b9a1913729c05',1,'cRtcm3Reader']]],
-  ['cstr',['CStr',['../class_ti_xml_printer.html#a859eede9597d3e0355b77757be48735e',1,'TiXmlPrinter']]]
+  ['cstr',['CStr',['../class_ti_xml_printer.html#a859eede9597d3e0355b77757be48735e',1,'TiXmlPrinter']]],
+  ['cubloxreader',['cUbloxReader',['../classc_ublox_reader.html#aef096f76308ddcacc31e899ddc1b3e2c',1,'cUbloxReader']]]
 ];

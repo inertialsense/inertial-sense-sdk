@@ -30,6 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISConstants.h"
 #include "Rtcm3Reader.h"
+#include "UbloxReader.h"
 
 extern "C"
 {
@@ -97,19 +98,6 @@ public:
 	void Close();
 
 	/*!
-	* Bootload a file and re-open the device - if the bootloader fails, the device stays in bootloader mode and you
-	*  must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
-	*  You must manually re-enable logging if you had it enabled before calling BootloadFile.
-	* @param the com port to bootload
-	* @param fileName the path of the file to bootload
-	* @param uploadProgress optional callback for upload progress
-	* @param verifyProgress optional callback for verify progress
-	* @param errorBuffer receives any error messages
-	* @param errorBufferLength the number of bytes available in errorBuffer
-	*/ 
-	bool BootloadFile(const string& comPort, const string& fileName, pfnBootloadProgress uploadProgress = NULL, pfnBootloadProgress verifyProgress = NULL, char* errorBuffer = NULL, int errorBufferLength = 0);
-
-	/*!
 	* Get the current port name
 	*/
 	const char* GetPort();
@@ -151,13 +139,6 @@ public:
 	bool LoggerEnabled() { return m_logger.Enabled(); }
 
 	/*!
-	* Connect to an RTCM3 server and send the data from that server to the uINS
-	* @param hostAndPort the server to connect to with the host, then port information after a colon, followed by colon then optional url, user and password, i.e. 192.168.1.100:7777:RTCM3_Mount:user:password
-	* @return true if connection opened, false if failure
-	*/
-	bool OpenServerConnectionRTCM3(const string& hostAndPort);
-
-	/*!
 	* Close any open connection to a server
 	*/
 	void CloseServerConnection();
@@ -177,7 +158,8 @@ public:
 	void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length = 0, uint32_t offset = 0);
 
 	/*!
-	* Get the device info - if it is not yet known, the serial number will be 0
+	* Get the device info
+	* @return the device info
 	*/
 	const dev_info_t& GetDeviceInfo() { return m_deviceInfo; }
 
@@ -192,6 +174,24 @@ public:
 	* @param flashConfig the flash config
 	*/
 	void SetFlashConfig(const nvm_flash_cfg_t& flashConfig);
+
+	/*!
+	* Get the number of bytes read or written over tcp connection
+	* @return byte count of tcp bytes read or written
+	*/
+	uint64_t GetTcpByteCount() { return m_tcpByteCount; }
+
+	/*!
+	* Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
+	* Please ensure that all other connections to the com port are closed before calling this function.
+	* @param the com port to bootload
+	* @param fileName the path of the file to bootload
+	* @param uploadProgress optional callback for upload progress
+	* @param verifyProgress optional callback for verify progress
+	* @param errorBuffer receives any error messages
+	* @param errorBufferLength the number of bytes available in errorBuffer
+	*/
+	static bool BootloadFile(const string& comPort, const string& fileName, pfnBootloadProgress uploadProgress = NULL, pfnBootloadProgress verifyProgress = NULL, char* errorBuffer = NULL, int errorBufferLength = 0);
 
 protected:
 	bool OnPacketReceived(const cRtcm3Reader* reader, const uint8_t* data, uint32_t dataLength) override;
@@ -212,7 +212,8 @@ private:
 	dev_info_t m_deviceInfo;
 	nvm_flash_cfg_t m_flashConfig;
 	cISTcpClient m_tcpClient;
-	cRtcm3Reader m_rtcm3Reader;
+	cRtcm3Reader* m_rtcm3Reader;
+	uint64_t m_tcpByteCount;
 
 	void LoggerThread();
 	void DisableLogging();

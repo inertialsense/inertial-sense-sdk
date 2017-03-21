@@ -20,5 +20,6 @@ var searchData=
   ['com_5fmanager_5ft',['com_manager_t',['../structcom__manager__t.html',1,'']]],
   ['config_5ft',['config_t',['../structconfig__t.html',1,'']]],
   ['crtcm3reader',['cRtcm3Reader',['../classc_rtcm3_reader.html',1,'']]],
-  ['csorteddatachunk',['cSortedDataChunk',['../classc_sorted_data_chunk.html',1,'']]]
+  ['csorteddatachunk',['cSortedDataChunk',['../classc_sorted_data_chunk.html',1,'']]],
+  ['cubloxreader',['cUbloxReader',['../classc_ublox_reader.html',1,'']]]
 ];

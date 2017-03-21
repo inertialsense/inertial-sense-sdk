@@ -25,21 +25,25 @@ extern "C" {
 // with this you can tell the compiler not to insert padding - be VERY careful as this can cause hard-faults if your struct or class is not 4 byte (or 8 byte for 64 bit) aligned
 #if defined(_MSC_VER)
 #define PUSH_PACK_NONE __pragma(pack(push, 1))
+#define PUSH_PACK_4 __pragma(pack(push, 4))
 #define POP_PACK_NONE __pragma(pack(pop))
 #define PACK_ONE
 #elif defined(AVR)
 // there is a bug in the AVR compiler in debug mode that can generate bad instructions, crashing the process - until this is figured out, debug on AVR cannot pack globally
 #if DEBUG
 #define PUSH_PACK_NONE
+#define PUSH_PACK_4
 #define POP_PACK_NONE
 #define PACK_ONE __attribute__ ((packed))
 #else
 #define PUSH_PACK_NONE _Pragma("pack(1)")
+#define PUSH_PACK_4 _Pragma("pack(4)")
 #define POP_PACK_NONE _Pragma("pack(0)")
 #define PACK_ONE
 #endif
 #else
 #define PUSH_PACK_NONE _Pragma("pack(push, 1)")
+#define PUSH_PACK_4 _Pragma("pack(push, 4)")
 #define POP_PACK_NONE _Pragma("pack(pop)")
 #define PACK_ONE
 #endif
@@ -615,7 +619,7 @@ typedef struct
 	/*! Velocity U, V, W in meters per second */
 	float					uvw[3];
 
-	/*! WGS84 Latitude, longitude, height above ellipsoid in meters (not MSL) */
+	/*! WGS84 Latitude, longitude, height above ellipsoid (degrees,degrees,meters) */
 	double					lla[3];
 
 	/*! North, east and down offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */

@@ -34,7 +34,7 @@ cISDataMappings cISDataMappings::s_map;
 
 #if !_MSC_VER || _MSC_VER >= 1900
 
-#define ADD_MAP_NO_VALIDATION(map, totalSize, name, type, member, dataSize, dataType, memberType) map[name] = { (uint32_t)OFFSETOF(type, member), (uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize), dataType }; totalSize += sizeof(type::member);
+#define ADD_MAP_NO_VALIDATION(map, totalSize, name, type, member, dataSize, dataType, memberType) map[name] = { (uint32_t)OFFSETOF(type, member), (uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize), dataType, name }; totalSize += sizeof(type::member);
 
 constexpr uint32_t eDataTypeSizes[11] =
 {
@@ -52,8 +52,8 @@ constexpr uint32_t eDataTypeSizes[11] =
 };
 
 // note when passing member type for arrays, it must be a reference, i.e. float&
-#define ADD_MAP(map, totalSize, re, type, member, dataSize, dataType, memberType) \
-	ADD_MAP_NO_VALIDATION(map, totalSize, re, type, member, dataSize, dataType, memberType); \
+#define ADD_MAP(map, totalSize, name, type, member, dataSize, dataType, memberType) \
+	ADD_MAP_NO_VALIDATION(map, totalSize, name, type, member, dataSize, dataType, memberType); \
 	static_assert(is_same<decltype(type::member), memberType>::value, "Member type is an unexpected type"); \
 	static_assert((uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize) == sizeof(memberType), "Member type is an unexpected size"); \
 	static_assert((uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize) == sizeof(type::member), "Member type is an unexpected size"); \
@@ -63,7 +63,7 @@ constexpr uint32_t eDataTypeSizes[11] =
 #else
 
 #define ADD_MAP_NO_VALIDATION(map, totalSize, name, type, member, dataSize, dataType, memberType) map[name] = { (uint32_t)OFFSETOF(type, member), (uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize), dataType };
-#define ADD_MAP(map, totalSize, re, type, member, dataSize, dataType, memberType) ADD_MAP_NO_VALIDATION(map, totalSize, re, type, member, dataSize, dataType, memberType)
+#define ADD_MAP(map, totalSize, name, type, member, dataSize, dataType, memberType) ADD_MAP_NO_VALIDATION(map, totalSize, name, type, member, dataSize, dataType, memberType)
 #define ASSERT_SIZE(s, t) // not supported on VS < 2015
 
 #endif

@@ -41,6 +41,7 @@ typedef struct
 	uint32_t dataOffset;
 	uint32_t dataSize;
 	eDataType dataType;
+	string name;
 } data_info_t;
 
 // map of field name to data info
