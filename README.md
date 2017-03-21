@@ -30,7 +30,7 @@
 
 #### Compiling in Linux
 
-1. Create build directory...
+1. Create build directory inside SDK/InertialSenseCLTool/.
 
         $ cd InertialSenseCLTool
         $ mkdir build
@@ -59,10 +59,10 @@
 
 4. Add current user to the "dialout" group in order to read and write to the USB serial communication ports:
 
-        $ sudousermod -a -G dialout $USER
-        $ sudousermod -a -G plugdev $USER
+        $ sudo usermod -a -G dialout $USER
+        $ sudo usermod -a -G plugdev $USER
 
- (reboot computer)
+ (**Reboot computer**)
 
 5. Run executable
 

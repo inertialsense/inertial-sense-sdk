@@ -48,6 +48,7 @@
     <ClCompile Include="..\src\tinyxml.cpp" />
     <ClCompile Include="..\src\tinyxmlerror.cpp" />
     <ClCompile Include="..\src\tinyxmlparser.cpp" />
+    <ClCompile Include="..\src\UbloxReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\com_manager.h" />
@@ -80,6 +81,7 @@
     <ClInclude Include="..\src\time_conversion.h" />
     <ClInclude Include="..\src\tinystr.h" />
     <ClInclude Include="..\src\tinyxml.h" />
+    <ClInclude Include="..\src\UbloxReader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

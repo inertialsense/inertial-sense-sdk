@@ -94,6 +94,9 @@
     <ClCompile Include="..\src\Rtcm3Reader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\UbloxReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\com_manager.h">
@@ -184,6 +187,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\Rtcm3Reader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\UbloxReader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
