@@ -12,15 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "serialPort.h"
 #include "serialPortPlatform.h"
-#include "ISUtilities.h"
+#include "ISConstants.h"
 
-#if !defined(PLATFORM_IS_WINDOWS) && (defined(_WIN32) || defined(_WIN64))
-
-#include <windows.h>
-
-#define PLATFORM_IS_WINDOWS 1
-
-#elif !defined(PLATFORM_IS_LINUX) && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE || TARGET_OS_MAC || __linux || __unix__ )
+#if PLATFORM_IS_LINUX
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,15 +31,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/socket.h>
 #endif
 
-#define PLATFORM_IS_LINUX 1
-
 #ifndef error_message
 #define error_message printf
 #endif
-
-#else
-
-#error "Only Windows and Linux are currently supported."
 
 #endif
 
@@ -60,7 +48,7 @@ typedef struct
 	OVERLAPPED ovWrite;
 	int writePending;
 
-#elif PLATFORM_IS_LINUX
+#else
 
 	int fd;
 
@@ -85,7 +73,7 @@ static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferre
 	free(c);
 }
 
-#elif PLATFORM_IS_LINUX
+#else
 
 static int get_baud_speed(int baudRate)
 {
@@ -150,8 +138,79 @@ static int set_interface_attribs(int fd, int speed, int parity)
 		error_message("error %d from tcsetattr", errno);
 		return -1;
 	}
+
+	// re-open and remove additional flags
+	memset(&tty, 0, sizeof(tty));
+
+	// Check if the file descriptor is pointing to a TTY device or not.
+	if (!isatty(fd))
+	{
+		return -1;
+	}
+
+	// Get the current configuration of the serial interface
+	if (tcgetattr(fd, &tty) < 0)
+	{
+		return -1;
+	}
+
+	// Input flags - Turn off input processing
+	//
+	// convert break to null byte, no CR to NL translation,
+	// no NL to CR translation, don't mark parity errors or breaks
+	// no input parity check, don't strip high bit off,
+	// no XON/XOFF software flow control
+	//
+	// config.c_iflag &= ~(IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON);
+	tty.c_iflag = 0;
+
+	// Output flags - Turn off output processing
+	//
+	// no CR to NL translation, no NL to CR-NL translation,
+	// no NL to CR translation, no column 0 CR suppression,
+	// no Ctrl-D suppression, no fill characters, no case mapping,
+	// no local output processing
+	//
+	// config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
+	// config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
+	tty.c_oflag = 0;
+
+	// No line processing
+	//
+	// echo off, echo newline off, canonical mode off, 
+	// extended input processing off, signal chars off
+	//
+	// config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+	tty.c_lflag = 0;
+
+	// Turn off character processing
+	//
+	// clear current char size mask, no parity checking,
+	// no output processing, force 8 bit input
+	tty.c_cflag &= ~(CSIZE | PARENB);
+	tty.c_cflag |= CS8;
+
+	// One input byte is enough to return from read()
+	// Inter-character timer off
+	tty.c_cc[VMIN] = 1;
+	tty.c_cc[VTIME] = 0;
+
+	// Communication speed (simple version, using the predefined
+	// constants)
+	//
+	// if(cfsetispeed(&config, B9600) < 0 || cfsetospeed(&config, B9600) < 0) 
+	// 	return 0;
+
+	// Finally, apply the configuration
+	if (tcsetattr(fd, TCSAFLUSH, &tty) < 0)
+	{
+		return -1;
+	}
+
 	return 0;
 }
+
+#if 0
 
 // this function is no longer needed as the serial read loop takes care of timeouts and required byte read counts
 // code causes glitches on Linux anyway but is left here in case someone wants to try and make blocking reads work better
@@ -173,6 +232,8 @@ static void set_blocking(int fd, int should_block)
 		error_message("error %d setting term attributes", errno);
 	}
 }
+
+#endif
 
 #endif
 
@@ -247,7 +308,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 	handle->platformHandle = platformHandle;
 	serialPort->handle = handle;
 
-#elif PLATFORM_IS_LINUX
+#else
 
 	int fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (fd < 0 || set_interface_attribs(fd, baudRate, 0) != 0)
@@ -258,71 +319,6 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 	handle->fd = fd;
 	handle->blocking = blocking;
 	serialPort->handle = handle;
-
-	struct termios  config;
-
-	 // Check if the file descriptor is pointing to a TTY device or not.
-	 if(!isatty(fd))
-	 	return 0;
-
-	 // Get the current configuration of the serial interface
-	 if(tcgetattr(fd, &config) < 0) 
-	 	return 0;
-
-	 // Input flags - Turn off input processing
-	 //
-	 // convert break to null byte, no CR to NL translation,
-	 // no NL to CR translation, don't mark parity errors or breaks
-	 // no input parity check, don't strip high bit off,
-	 // no XON/XOFF software flow control
-	 //
-	 // config.c_iflag &= ~(IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON);
-	 config.c_iflag = 0;
-
-	 // Output flags - Turn off output processing
-	 //
-	 // no CR to NL translation, no NL to CR-NL translation,
-	 // no NL to CR translation, no column 0 CR suppression,
-	 // no Ctrl-D suppression, no fill characters, no case mapping,
-	 // no local output processing
-	 //
-	 // config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
-	 // config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
-	 config.c_oflag = 0;
-
-	 // No line processing
-	 //
-	 // echo off, echo newline off, canonical mode off, 
-	 // extended input processing off, signal chars off
-	 //
-	 // config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
-	 config.c_lflag = 0;
-
-	 // Turn off character processing
-	 //
-	 // clear current char size mask, no parity checking,
-	 // no output processing, force 8 bit input
-	 config.c_cflag &= ~(CSIZE | PARENB);
-	 config.c_cflag |= CS8;
-
-	 // One input byte is enough to return from read()
-	 // Inter-character timer off
-	 config.c_cc[VMIN]  = 1;
-	 config.c_cc[VTIME] = 0;
-
-	 // Communication speed (simple version, using the predefined
-	 // constants)
-	 //
-	 // if(cfsetispeed(&config, B9600) < 0 || cfsetospeed(&config, B9600) < 0) 
-	 // 	return 0;
-
-	 // Finally, apply the configuration
-	 if(tcsetattr(fd, TCSAFLUSH, &config) < 0) 
-	 	return 0;
-
-#else
-
-	return 0;
 
 #endif
 
@@ -357,7 +353,7 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
 	handle->platformHandle = 0;
 	handle->writePending = 0;
 
-#elif PLATFORM_IS_LINUX
+#else
 
 	close(handle->fd);
 	handle->fd = 0;
@@ -381,7 +377,7 @@ static int serialPortFlushPlatform(serial_port_t* serialPort)
 		return 0;
 	}
 
-#elif PLATFORM_IS_LINUX
+#else
 
 	tcflush(handle->fd, TCIOFLUSH);
 
@@ -435,7 +431,7 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
     return totalRead;
 }
 
-#elif PLATFORM_IS_LINUX
+#else
 
 static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
@@ -490,14 +486,9 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
 
 	return serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
 
-#elif PLATFORM_IS_LINUX
-
-	return serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
-
 #else
 
-	#error "Platform not implemented"
-	return 0;
+	return serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
 
 #endif
 
@@ -520,7 +511,7 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 		return 0;
 	}
 
-#elif PLATFORM_IS_LINUX
+#else
 
 	// no support for async, just call the completion right away
 	int n = read(handle->fd, buffer, readCount);
@@ -571,7 +562,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
 	return dwWritten;
 
-#elif PLATFORM_IS_LINUX
+#else
 
 	return write(handle->fd, buffer, writeCount);
 
@@ -613,15 +604,11 @@ static int serialPortGetByteCountAvailableToReadPlatform(serial_port_t* serialPo
 	}
 	return 0;
 
-#elif PLATFORM_IS_LINUX
+#else
 
 	int bytesAvailable;
 	ioctl(handle->fd, FIONREAD, &bytesAvailable);
 	return bytesAvailable;
-
-#else
-
-	return 0;
 
 #endif
 
@@ -632,12 +619,7 @@ static int serialPortGetByteCountAvailableToWritePlatform(serial_port_t* serialP
 	// serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
 	(void)serialPort;
 
-#if PLATFORM_IS_WINDOWS
-
-	// we use overlapped IO, no limit on bytes that can be written or how fast, so we use an arbitrary number here of 64K
 	return 65536;
-
-#elif PLATFORM_IS_LINUX
 
 	/*
 	int bytesUsed;
@@ -647,16 +629,6 @@ static int serialPortGetByteCountAvailableToWritePlatform(serial_port_t* serialP
 	ioctl(handle->fd, TIOCOUTQ, &bytesUsed);
 	return serinfo.xmit_fifo_size - bytesUsed;
 	*/
-
-	// TODO: not sure how to include serial_struct... investigate later.
-	return 65536;
-
-#else
-
-	return 0;
-
-#endif
-
 }
 
 static int serialPortSleepPlatform(serial_port_t* serialPort, int sleepMilliseconds)
@@ -667,13 +639,9 @@ static int serialPortSleepPlatform(serial_port_t* serialPort, int sleepMilliseco
 
 	Sleep(sleepMilliseconds);
 
-#elif PLATFORM_IS_LINUX
-
-	usleep(sleepMilliseconds * 1000);
-
 #else
 
-	return 0;
+	usleep(sleepMilliseconds * 1000);
 
 #endif
 
@@ -682,9 +650,6 @@ static int serialPortSleepPlatform(serial_port_t* serialPort, int sleepMilliseco
 
 int serialPortPlatformInit(serial_port_t* serialPort)
 {
-
-#if PLATFORM_IS_WINDOWS || PLATFORM_IS_LINUX
-
 	serialPort->pfnClose = serialPortClosePlatform;
 	serialPort->pfnFlush = serialPortFlushPlatform;
 	serialPort->pfnOpen = serialPortOpenPlatform;
@@ -694,10 +659,5 @@ int serialPortPlatformInit(serial_port_t* serialPort)
 	serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
 	serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
 	serialPort->pfnSleep = serialPortSleepPlatform;
-
-	return 1;
-
-#endif
-
 	return 0;
 }

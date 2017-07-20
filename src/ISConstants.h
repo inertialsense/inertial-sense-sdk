@@ -13,12 +13,325 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#undef _MATH_DEFINES_DEFINED
+#define _MATH_DEFINES_DEFINED
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <assert.h>
+#include <inttypes.h>
+	
+#define PRE_PROC_COMBINE1(X, Y) X##Y
+#define PRE_PROC_COMBINE(X, Y) PRE_PROC_COMBINE1(X, Y)
+
+#if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
+
+#define PLATFORM_IS_WINDOWS 1
+#ifndef _CRT_SECURE_NO_DEPRECATE
+#define _CRT_SECURE_NO_DEPRECATE
+#endif
+
+// If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
+#include <winsock2.h>
+#include <WS2tcpip.h>
+#include <windows.h>
+#define socket_t SOCKET
+
+#define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
+#define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
+
+#elif defined(__APPLE__)
+
+#error Apple platform not supported yet
+
+#define PLATFORM_IS_APPLE 1
+#if defined(__LITTLE_ENDIAN__)
+#define CPU_IS_LITTLE_ENDIAN 1
+#define CPU_IS_BIG_ENDIAN 0
+#elif defined(__BIG_ENDIAN__)
+#define CPU_IS_LITTLE_ENDIAN 0
+#define CPU_IS_BIG_ENDIAN 1
+#endif
+
+#elif defined(__linux__) || defined(__unix__) || defined(__CYGWIN__)
+
+#include <endian.h>
+
+#ifndef __BYTE_ORDER
+#error __BYTE_ORDER not defined, must be __LITTLE_ENDIAN or __BIG_ENDIAN
+#endif
+
+#define PLATFORM_IS_LINUX 1
+#define socket_t int
+#define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
+#define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
+
+#elif defined(AVR)
+
+#define PLATFORM_IS_EMBEDDED 1
+#define PLATFORM_IS_AVR 1
+#define CPU_IS_LITTLE_ENDIAN 0
+#define CPU_IS_BIG_ENDIAN 1
+
+#elif defined(ARM)
+
+#define PLATFORM_IS_EMBEDDED 1
+#define PLATFORM_IS_ARM 1
+#define CPU_IS_LITTLE_ENDIAN 1
+#define CPU_IS_BIG_ENDIAN 0
+
+#else
+
+#error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
+
+#endif
+
+#if !defined(CPU_IS_LITTLE_ENDIAN) || !defined(CPU_IS_BIG_ENDIAN) || CPU_IS_LITTLE_ENDIAN == CPU_IS_BIG_ENDIAN
+
+#error Unsupported / unknown CPU architecture
+
+#endif
+
+#if defined(PLATFORM_IS_EMBEDDED) && PLATFORM_IS_EMBEDDED
+
+extern void* pvPortMalloc(size_t xWantedSize);
+extern void vPortFree(void* pv);
+#define MALLOC(m) pvPortMalloc(m)
+#define FREE(m) vPortFree(m)
+#define REALLOC(m, size) while (1) {} // not supported
+
+#else
+
+#define MALLOC(m) malloc(m)
+#define FREE(m) free(m)
+#define REALLOC(m, size) realloc(m, size)
+
+#endif
+
+#if defined(_MSC_VER)
+
+#ifndef INLINE
+#define INLINE __inline 
+#endif
+
+#ifndef SSCANF
+#define SSCANF(src, fmt, ...) sscanf_s(src, fmt, __VA_ARGS__);
+#endif
+
+#ifndef SNPRINTF
+#define SNPRINTF(a, b, c, ...) _snprintf_s(a, b, b, c, __VA_ARGS__)
+#endif
+
+#ifndef STRNCPY
+#define STRNCPY(a, b, c) strncpy_s(a, c, b, c);
+#endif
+
+#else
+
+#ifndef INLINE
+#define INLINE inline
+#endif
+
+#ifndef SSCANF
+#define SSCANF sscanf
+#endif
+
+#ifndef SNPRINTF
+#define SNPRINTF snprintf
+#endif
+
+#ifndef STRNCPY
+#define STRNCPY(a, b, c) strncpy((char*)a, (char*)b, c)
+#endif
+
+#endif
+
+// with this you can tell the compiler not to insert padding
+#if defined(_MSC_VER)
+#define PUSH_PACK_1 __pragma(pack(push, 1))
+#define PUSH_PACK_4 __pragma(pack(push, 4))
+#define PUSH_PACK_8 __pragma(pack(push, 8))
+#define POP_PACK __pragma(pack(pop))
+#define PACKED_UNION typedef union
+#define PACKED_STRUCT typedef struct
+#define PACKED
+#elif PLATFORM_IS_AVR
+// crashes AVR if done globally, must be done per struct
+#define PUSH_PACK_1
+#define PUSH_PACK_4
+#define PUSH_PACK_8
+#define POP_PACK
+#define PACKED_UNION typedef union __attribute__ ((packed))
+#define PACKED_STRUCT typedef struct __attribute__ ((packed))
+#define PACKED __attribute__ ((packed))
+#else
+#define PUSH_PACK_1 _Pragma("pack(push, 1)")
+#define PUSH_PACK_4 _Pragma("pack(push, 4)")
+#define PUSH_PACK_8 _Pragma("pack(push, 8)")
+#define POP_PACK _Pragma("pack(pop)")
+#define PACKED_UNION typedef union
+#define PACKED_STRUCT typedef struct
+#define PACKED
+#endif
+
+#ifndef UNMASK
+#define UNMASK(_word, _prefix) (((_word) & (_prefix##_MASK)) >> (_prefix##_SHIFT))
+#endif
+
+#ifndef MASK
+#define MASK(_prefix, _val) ((_prefix##_MASK) & ((_val) << (_prefix##_SHIFT)))
+#endif
+
+#ifndef SWAP16
+#define SWAP16(v) ((uint16_t)(((uint16_t)(v) >> 8) | ((uint16_t)(v) << 8)))
+#endif
+
+#ifndef SWAP32
+#if defined(__GNUC__)
+#define SWAP32 __builtin_bswap32
+#elif defined(__ICCAVR32__)
+#define SWAP32 __swap_bytes
+#elif defined(_MSC_VER)
+#include "intrin.h"
+#define SWAP32 _byteswap_ulong
+#else
+#define SWAP32(v) ((uint32_t)(((uint32_t)SWAP16((uint32_t)(v) >> 16)) | ((uint32_t)SWAP16((uint32_t)(v)) << 16)))
+#endif
+#endif
+
+#ifndef _MAX 
+#define _MAX(a,b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef _MIN
+#define _MIN(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#ifndef _CLAMP
+#define _CLAMP(v, minV, maxV) (v < minV ? minV : (v > maxV ? maxV : v))
+#endif
+
+#ifndef _SATURATE
+#define _SATURATE(v) _CLAMP(v, 0, 1)
+#endif
+
+#ifndef _LIMIT
+#define _LIMIT(x, lim) {if(!((x)>(-lim))){(x)=(-lim);}else{if(!((x)<(lim))){(x)=(lim);}}} // Works w/ NAN
+#endif
+
+#ifndef _LIMIT2
+#define _LIMIT2(x, xmin, xmax) { if ((x) < (xmin)) { (x) = (xmin); } else { if ((x) > (xmax)) { (x) = (xmax); } } }
+#endif
+
+#ifndef _ISNAN
+#define _ISNAN(a) ((a)!=(a))
+#endif
+
+#ifndef _ARRAY_BYTE_COUNT
+#define _ARRAY_BYTE_COUNT(a) sizeof(a)
+#endif
+
+#ifndef _ARRAY_ELEMENT_COUNT
+#define _ARRAY_ELEMENT_COUNT(a) (sizeof(a) / sizeof(a[0]))
+#endif
+
+#ifndef _MEMBER_ARRAY_ELEMENT_COUNT
+#define _MEMBER_ARRAY_ELEMENT_COUNT(type, member) _ARRAY_ELEMENT_COUNT(((type*)0)->member)
+#endif
+
+#ifndef OFFSETOF
+#define OFFSETOF offsetof//(TYPE, MEMBER) ((uint8_t)&(((TYPE*)0)->MEMBER))
+#endif
+
+#ifndef MEMBERSIZE
+#define MEMBERSIZE(type, member) sizeof(((type*)0)->member)
+#endif
+
+#ifndef STRINGIFY
+#define STRINGIFY(x) #x
+#endif
+
+#ifndef M_PI
+#define M_PI (3.14159265358979323846f)
+#endif
+
+#ifndef RAD2DEG
+#define RAD2DEG(rad)    ((rad)*(180.0f/M_PI))
+#endif
+#ifndef DEG2RAD
+#define DEG2RAD(deg)    ((deg)*(M_PI/180.0f))
+#endif
+#ifndef DEG2RADMULT
+#define DEG2RADMULT  (PI/180.0f)
+#endif
+#ifndef RAD2DEGMULT
+#define RAD2DEGMULT  (180.0f/PI)
+#endif
+#define ATanH(x)	    (0.5 * log((1 + x) / (1 - x)))
+
+#if ((defined(_MSC_VER) && _MSC_VER >= 1900) || ((__cplusplus >= 201103L || (__cplusplus < 200000 && __cplusplus > 199711L))))
+
+#ifndef C11_IS_ENABLED
+#define C11_IS_ENABLED 1
+#endif
+#ifndef CONST_EXPRESSION
+#define CONST_EXPRESSION constexpr static
+#endif
+#ifndef STATIC_ASSERT
+#define STATIC_ASSERT(exp) static_assert(exp, "STATIC ASSERT FAILED!")
+#endif
+#ifndef STATIC_ASSERT_MSG
+#define STATIC_ASSERT_MSG(exp, msg) static_assert(exp, msg)
+#endif
+#ifndef OVERRIDE
+#define OVERRIDE override
+#endif
+#ifndef NULLPTR
+#define NULLPTR nullptr
+#endif
+
+#else
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
+#endif
+
+#ifndef C11_IS_ENABLED
+#define C11_IS_ENABLED 0
+#endif
+#ifndef CONST_EXPRESSION
+#define CONST_EXPRESSION static const
+#endif
+#ifndef STATIC_ASSERT
+#define STATIC_ASSERT(exp) typedef char PRE_PROC_COMBINE(STATIC_ASSERT_FAILED_, __LINE__)[(exp) ? 1 : -1]
+#endif
+#ifndef STATIC_ASSERT_MSG
+#define STATIC_ASSERT_MSG(exp, msg) typedef char PRE_PROC_COMBINE(msg, __LINE__)[(exp) ? 1 : -1]
+#endif
+#ifndef OVERRIDE
+#define OVERRIDE
+#endif
+#ifndef NULLPTR
+#define NULLPTR 0
+#endif
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+#endif
+
 #define DT_TO_HZ(dt)	(((dt) == (0.0)) ? (0) : (1.0/dt))
 
 #define C_IN2M          0.0254          // inches to meters 
 #define C_FT2M          0.3048          // (C_IN2M*12) feet to meters 
 #define C_M2FT          3.2808398950131233595800524934383   // (1.0/C_FT2M) 
-						
+
 #define C_YD2M          0.9144          // (C_FT2M*3) yards to meters 
 
 #define C_IN2M_F        0.0254f         // inches to meters 
@@ -45,12 +358,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define C_MPS2_TO_G_F   0.101971621297793f
 #define C_G_TO_FTPS2_F  32.17404856f    // (ft/s^2) standard gravity 
 
-
 //////////////////////////////////////////////////////////////////////////
 // Pressure
 
 // Standard Atmospheric Pressure (at sea level)
-                                        // standard atmospheric pressure
+										// standard atmospheric pressure
 #define C_P0N_M2        1.01325e5       // p0 in N/m^2
 #define C_P0N_M2_F      1.01325e5f      // p0 in N/m^2
 #define C_P0            14.692125       // (C_P0N_M2*1.450e-4)
@@ -83,7 +395,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define C_KG2LBM_F      2.204622622f    // (1.0/C_LBM2KG) 
 #define C_LBF2N_F       4.448221615f    // (C_LBM2KG*C_G0MPERSEC2) lb force 
 #define C_SLUG2KG_F     14.59390294f    // (C_LBM2KG*C_G0) slugs 
-
 
 // Math constants 
 // from CRC Standard Mathematical Tables, 27th edition, 1984 
@@ -204,8 +515,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define C_TESLA2GAUSS_F		10000.0
 #define C_UTESLA2GAUSS_F	0.01
 
-
-
 #define C_0p1_DEG2RAD_F				0.00174532925199433f		// = 0.1f * C_0pDEG2RAD_F
 #define C_0p11_DEG2RAD_F			0.00191986217719376f
 #define C_0p12_DEG2RAD_F			0.00209439510239320f
@@ -316,17 +625,49 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define C_135p0_DEG2RAD_F			2.3561944901923400f
 #define C_180p0_DEG2RAD_F			3.1415926535897900f
 
+#ifndef UNWRAP_F64
+#define UNWRAP_F64(x)			{while( (x) > (C_PI) )   (x) -= (C_TWOPI);   while( (x) < (-C_PI) )   (x) += (C_TWOPI);}	// unwrap to +- PI
+#endif
 
+#ifndef UNWRAP_F
+#define UNWRAP_F(x)				{while( (x) > (C_PI_F) ) (x) -= (C_TWOPI_F); while( (x) < (-C_PI_F) ) (x) += (C_TWOPI_F);}	// unwrap to +- PI
+#endif
 
+#define _SIN        sinf
+#define _COS        cosf
+#define _TAN        tanf
+#define _ASIN       asinf
+#define _ACOS       acosf
+#define _ATAN2      atan2f
+#define _SQRT       sqrtf
+#define _FABS       fabsf
+#define _LOG		logf
 
-// declination = magnetic north - true north
-// inclination: negative indicates that it is down from the horizon
-// Salem, UT on 5/1/2015
-#define SALEM_UT_MAG_INCLINATION    1.141736219     // (rad)  65.4166667° or 65° 25'  (negative pitch offset)
-#define SALEM_UT_MAG_DECLINATION    0.20303997      // (rad)  11.6333333° or 11° 38'  (heading offset)
+#define _DEG2RAD    C_DEG2RAD_F
+#define _RAD2DEG    C_RAD2DEG_F
+#define _ZERO		0.0f
 
-#define SALEM_UT_OFFICE_LATITUDE    40.0557114      // (°) North
-#define SALEM_UT_OFFICE_LONGITUDE   -111.6585476    // (°) West
-#define SALEM_UT_OFFICE_MSL         1426.77         // (m) Height above sea level (not HAE, height above ellipsoid)
+#define _UNWRAP     UNWRAP_F
+
+typedef float       f_t;
+typedef int			i_t;
+typedef double      Vector2d[3];    // V = | 0 1 |
+typedef f_t         Vector2[3];     // V = | 0 1 |
+typedef double      Vector3d[3];    // V = | 0 1 2 |
+typedef f_t         Vector3[3];     // V = | 0 1 2 |
+typedef double      Vector4d[4];    // V = | 0 1 2 3 |
+typedef f_t         Vector4[4];     // V = | 0 1 2 3 |
+typedef f_t         Vector5[5];     // V = | 0 1 2 3 4 |
+typedef f_t         Vector6[6];     // V = | 0 1 2 3 4 5 |
+typedef Vector4     Quat;		    // w,x,y,z
+typedef Vector3     Euler;          // roll,pitch,yaw
+typedef f_t         Matrix2[4];
+typedef f_t         Matrix3[9];
+typedef f_t         Matrix4[16];
+typedef f_t         Matrix5[25];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // CONSTANTS_H_ 

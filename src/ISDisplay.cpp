@@ -15,21 +15,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 #include <math.h>
 
+#include "ISConstants.h"
 #include "ISUtilities.h"
 #include "ISDisplay.h"
-#include "ISConstants.h"
 #include "ISPose.h"
 
-using namespace std;
-
-#if defined(_WIN32)		//   =========  Windows  =========
-
-#include <windows.h>
-
-#else					//   ==========  Linux  ==========
+#if PLATFORM_IS_LINUX
 
 #include <unistd.h>
 #include <sys/time.h>
+#include <termios.h>
 
 #endif
 
@@ -44,42 +39,129 @@ using namespace std;
 
 #define DISPLAY_DELTA_TIME	0	// show delta time instead of time
 
+static bool s_controlCWasPressed;
+
+#if PLATFORM_IS_WINDOWS
+
+static bool ctrlHandler(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType)
+	{
+	case CTRL_C_EVENT:
+	case CTRL_CLOSE_EVENT:
+	case CTRL_BREAK_EVENT:
+	case CTRL_LOGOFF_EVENT:
+	case CTRL_SHUTDOWN_EVENT:
+		s_controlCWasPressed = true;
+		return true;
+	default:
+		return false;
+	}
+}
+
+#else
+
+#include <signal.h>
+
+static void signalFunction(int sig)
+{
+	s_controlCWasPressed = true;
+}
+
+#endif
 
 cInertialSenseDisplay::cInertialSenseDisplay()
 {
 	cout << endl << Hello() << endl;
 
 	m_displayMode = false;
-}
 
+#if PLATFORM_IS_WINDOWS
+
+	m_windowsConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
+	m_windowsConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO cursorInfo;
+	GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+	cursorInfo.bVisible = 0;
+	SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+	SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, true);
+
+#else
+
+	signal(SIGINT, signalFunction);
+
+#endif
+
+}
 
 void cInertialSenseDisplay::Clear(void)
 {
-#if defined(_WIN32)
-	system( "cls" );
+
+#if PLATFORM_IS_WINDOWS
+
+	COORD topLeft = { 0, 0 };
+	HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_SCREEN_BUFFER_INFO screen;
+	DWORD written;
+	GetConsoleScreenBufferInfo(console, &screen);
+	FillConsoleOutputCharacterA(console, ' ', screen.dwSize.X * screen.dwSize.Y, topLeft, &written);
+	FillConsoleOutputAttribute(console, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE, screen.dwSize.X * screen.dwSize.Y, topLeft, &written);
+	SetConsoleCursorPosition(console, topLeft);
+
 #else
-	printf( "\x1B[2J" );		// VT100 terminal command
+
+	printf( "\x1B[2J" ); // VT100 terminal command
+
 #endif
+
 }
 
 void cInertialSenseDisplay::Home(void)
 {
-#if defined(_WIN32)
-	COORD pos = { 0, 0 };
-	HANDLE output = GetStdHandle( STD_OUTPUT_HANDLE );
-	SetConsoleCursorPosition( output, pos );
+
+#if PLATFORM_IS_WINDOWS
+
+	COORD topLeft = { 0, 0 };
+	SetConsoleCursorPosition(m_windowsConsoleOut, topLeft);
+
 #else
-	printf( "\x1B[H" );			// VT100 terminal command
+
+	printf( "\x1B[H" ); // VT100 terminal command
+
 #endif
+
 }
 
-void cInertialSenseDisplay::GoToRow(unsigned int row)
+void cInertialSenseDisplay::GoToRow(int y)
 {
-#if defined(_WIN32)
-	(void)row;
+
+#if PLATFORM_IS_WINDOWS
+
+	COORD pos = { 0, (int16_t)y };
+	SetConsoleCursorPosition(m_windowsConsoleOut, pos);
+
 #else
-	printf( "\x1B[%dH", row );	// VT100 terminal command
+
+	printf("\x1B[%dH", y); // VT100 terminal command
+
 #endif
+
+}
+
+void cInertialSenseDisplay::GoToColumnAndRow(int x, int y)
+{
+
+#if PLATFORM_IS_WINDOWS
+
+	COORD pos = { (int16_t)x, (int16_t)y };
+	SetConsoleCursorPosition(m_windowsConsoleOut, pos);
+
+#else
+
+	printf("\x1B[%d;%df", y, x); // VT100 terminal command
+
+#endif
+
 }
 
 string cInertialSenseDisplay::Hello()
@@ -106,11 +188,61 @@ string cInertialSenseDisplay::Goodbye()
 	return "\nThanks for using Inertial Sense!\n";
 }
 
+int cInertialSenseDisplay::ReadKey()
+{
+
+#if PLATFORM_IS_WINDOWS
+
+	INPUT_RECORD ip;
+	DWORD numRead = 0;
+	PeekConsoleInputA(m_windowsConsoleIn, &ip, 1, &numRead);
+	if (numRead == 1)
+	{
+		ReadConsoleInputA(m_windowsConsoleIn, &ip, 1, &numRead);
+		if (numRead == 1 && ip.EventType == KEY_EVENT && ip.Event.KeyEvent.bKeyDown)
+		{
+			return ip.Event.KeyEvent.uChar.AsciiChar;
+		}
+	}
+
+#else
+
+	struct timeval tv;
+	fd_set fds;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	FD_ZERO(&fds);
+	FD_SET(STDIN_FILENO, &fds);
+	select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
+	if (FD_ISSET(0, &fds))
+	{
+		struct termios oldt;
+		struct termios newt;
+		tcgetattr(STDIN_FILENO, &oldt); /* store old settings*/
+		newt = oldt; /* copy old settings to new settings */
+		newt.c_lflag &= ~(ICANON); /* change settings */
+		tcsetattr(STDIN_FILENO, TCSANOW, &newt); /*apply the new settings immediatly */
+		int ch = getchar(); /* standard getchar call */
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt); /* reapply the old settings */
+		return ch; /* return received char */
+	}
+
+#endif
+
+	return -1;
+}
+
+bool cInertialSenseDisplay::ControlCWasPressed()
+{
+	return s_controlCWasPressed;
+}
 
 void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
 {
-	if (m_displayMode == DMODE_QUITE)
+	if (m_displayMode == DMODE_QUIET)
+	{
 		return;
+	}
 
 	int curTimeMs = current_weekMs();
 
@@ -149,6 +281,11 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			isTowMode = true; 
 			break;
 
+		case DID_RTK_SOL:
+			msgTimeMs = (uint64_t)d.rtkSol.seconds % 604800;
+			isTowMode = false;
+			break;
+
 			// Time since boot - double
 		case DID_MAGNETOMETER_1:
 		case DID_BAROMETER:
@@ -158,6 +295,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_EKF_STATES:
 		case DID_IMU_2:
 		case DID_IMU_1:
+		case DID_RAW_GPS_DATA:
 			if( isTowMode )
 				msgTimeMs = (int)(1000.0*d.imu.time) + gpsTowMsOffset; 
 			else
@@ -257,7 +395,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 }
 
-
 string cInertialSenseDisplay::VectortoString()
 {
 	stringstream ss;
@@ -273,7 +410,6 @@ string cInertialSenseDisplay::VectortoString()
 	return ss.str();
 }
 
-
 void cInertialSenseDisplay::DataToVector(const p_data_t* data)
 {
 	size_t id = data->hdr.id;
@@ -284,7 +420,6 @@ void cInertialSenseDisplay::DataToVector(const p_data_t* data)
 	// Add string to vector
 	m_didMsgs[id] = DataToString(data);
 }
-
 
 void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 {
@@ -314,7 +449,6 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 	}
 }
 
-
 string cInertialSenseDisplay::DataToString(const p_data_t* data)
 {
 	uDatasets d = {};
@@ -338,7 +472,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_GPS:				str = DataToStringGPS(d.gps, data->hdr);				break;
 	case DID_SYS_PARAMS:		str = DataToStringSysParams(d.sysParams, data->hdr);	break;
 	case DID_SYS_SENSORS:		str = DataToStringSysSensors(d.sysSensors, data->hdr);	break;
-
+	case DID_RTK_SOL:			str = DataToStringRtkSol(d.rtkSol, data->hdr);			break;
+	case DID_RAW_GPS_DATA:			str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
 	default:
 		char buf[128];
 		SNPRINTF(buf, 128, "DID: %d\n", data->hdr.id);
@@ -348,7 +483,6 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 
 	return str;
 }
-
 
 string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr)
 {
@@ -371,7 +505,7 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 	{	
 		// Single line format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s theta[%6.2f,%6.2f,%7.2f], uvw[%6.2f,%6.2f,%6.2f], lla[%12.7f,%12.7f,%7.1f], ned[%6.3f,%6.3f,%6.3f]",
-			((ins1.iStatus&INS_STATUS_ATT_ALIGNED) ? "aligned" : "_______"),
+			((ins1.iStatus&INS_STATUS_ATT_ALIGN_GOOD) ? "aligned" : "_______"),
 			ins1.theta[0] * C_RAD2DEG_F,
 			ins1.theta[1] * C_RAD2DEG_F,
 			ins1.theta[2] * C_RAD2DEG_F,
@@ -397,9 +531,9 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 			ins1.lla[1],					// INS Longitude
 			ins1.lla[2]);				// INS Ellipsoid altitude (meters)
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAligned    Att %d   Vel %d   Pos %d\n",
-			(ins1.iStatus & INS_STATUS_ATT_ALIGNED) != 0,
-			(ins1.iStatus & INS_STATUS_VEL_ALIGNED) != 0,
-			(ins1.iStatus & INS_STATUS_POS_ALIGNED) != 0
+			(ins1.iStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
+			(ins1.iStatus & INS_STATUS_VEL_ALIGN_GOOD) != 0,
+			(ins1.iStatus & INS_STATUS_POS_ALIGN_GOOD) != 0
 		);
 	}
 
@@ -426,7 +560,7 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s qn2b[%6.3f,%6.3f,%6.3f,%6.3f], uvw[%6.2f,%6.2f,%6.2f], lla[%12.7f,%12.7f,%7.1f]",
-			((ins2.iStatus&INS_STATUS_ATT_ALIGNED) ? "aligned" : "_______"),
+			((ins2.iStatus&INS_STATUS_ATT_ALIGN_GOOD) ? "aligned" : "_______"),
 			ins2.qn2b[0], ins2.qn2b[1], ins2.qn2b[2], ins2.qn2b[3],
 			ins2.uvw[0], ins2.uvw[1], ins2.uvw[2],
 			ins2.lla[0], ins2.lla[1], ins2.lla[2]);
@@ -457,9 +591,9 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 			ins2.lla[1],					// INS Longitude
 			ins2.lla[2]);				// INS Ellipsoid altitude (meters)
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAligned    Att %d   Vel %d   Pos %d\n",
-			(ins2.iStatus & INS_STATUS_ATT_ALIGNED) != 0,
-			(ins2.iStatus & INS_STATUS_VEL_ALIGNED) != 0,
-			(ins2.iStatus & INS_STATUS_POS_ALIGNED) != 0);
+			(ins2.iStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
+			(ins2.iStatus & INS_STATUS_VEL_ALIGN_GOOD) != 0,
+			(ins2.iStatus & INS_STATUS_POS_ALIGN_GOOD) != 0);
 	}
 
 	return buf;
@@ -519,9 +653,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	int i = 0;
-	if (hdr.id == DID_IMU_2) i = 1;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_IMU_%d:", i);
+	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_IMU_%d:", (int)(hdr.id == DID_IMU_2));
 	return buf;
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime[2] = { 0 };
@@ -721,27 +853,27 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 	// Single line format
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %c%d, %04d-%02d-%02d",
 		info.serialNumber,
-		info.firmwareVer[3],
-		info.firmwareVer[2],
-		info.firmwareVer[1],
 		info.firmwareVer[0],
-		info.buildDate[3],
+		info.firmwareVer[1],
+		info.firmwareVer[2],
+		info.firmwareVer[3],
+		info.buildDate[0],
 		info.buildNumber,
-		info.buildDate[2] + 2000,
-		info.buildDate[1],
-		info.buildDate[0]
+		info.buildDate[1] + 2000,
+		info.buildDate[2],
+		info.buildDate[3]
 	);
 
 	if (m_displayMode != DMODE_SCROLL)
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d, Proto %d.%d.%d.%d\n",
-			info.buildTime[3],
-			info.buildTime[2],
+			info.buildTime[0],
 			info.buildTime[1],
-			info.protocolVer[3],
-			info.protocolVer[2],
+			info.buildTime[2],
+			info.protocolVer[0],
 			info.protocolVer[1],
-			info.protocolVer[0]
+			info.protocolVer[2],
+			info.protocolVer[3]
 		);
 	}
 
@@ -812,44 +944,105 @@ string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensor
 	return buf;
 }
 
+string cInertialSenseDisplay::DataToStringRtkSol(const rtk_sol_t& sol, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
+	SNPRINTF(buf, BUF_SIZE, "RTK: T=%.3f, S=%d, R=%3.2f, N=%d, G=%.3g, P=%.10g, %.10g, %.10g, A:%3.3f,%3.3f,%3.3f%s",
+		sol.seconds, sol.status, sol.ratio, sol.numberOfSatellites, sol.age, sol.pos[0], sol.pos[1], sol.pos[2],
+		sol.accuracy[0], sol.accuracy[1], sol.accuracy[2], terminator);
+	return buf;
+}
 
+string cInertialSenseDisplay::DataToStringRawGPS(const raw_gps_msg_t& raw, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
+	SNPRINTF(buf, BUF_SIZE, "RAW GPS: receiverIndex=%d, type=%d, count=%d%s",
+		raw.receiverIndex, raw.type, raw.count, terminator);
+	return buf;
+}
 
 ostream& boldOn(ostream& os)
 {
-#if defined(_WIN32)
+
+#if PLATFORM_IS_WINDOWS
+
 	return os;
-#else // Linux
+
+#else
+
 	return os << "\033[1m";
+
 #endif
+
 }
 
 ostream& boldOff(ostream& os)
 {
-#if defined(_WIN32)
+
+#if PLATFORM_IS_WINDOWS
+
 	return os;
-#else // Linux
+
+#else
+
 	return os << "\033[0m";
+
 #endif
+
 }
 
 // Bold on with newline
 ostream& endlbOn(ostream& os)
 {
-#if defined(_WIN32)
+
+#if PLATFORM_IS_WINDOWS
+
 	return os << endl;
-#else // Linux
+
+#else
+
 	return os << endl << boldOn;
+
 #endif
+
 }
 
 // Bold off with newline
 ostream& endlbOff(ostream& os)
 {
-#if defined(_WIN32)
+
+#if PLATFORM_IS_WINDOWS
+
 	return os << endl;
-#else // Linux
+
+#else
+
 	return os << endl << boldOff;
+
 #endif
+
 }
 
+#if defined(ENABLE_IS_PYTHON_WRAPPER)
 
+namespace py = pybind11;
+
+test_initializer display([](py::module &m) {
+	py::module m2 = m.def_submodule("display");
+
+	py::class_<cInertialSenseDisplay> display(m2, "cInertialSenseDisplay");
+	display.def(py::init<>());
+	display.def("SetDisplayMode", &cInertialSenseDisplay::SetDisplayMode);
+	display.def("Clear", &cInertialSenseDisplay::Clear);
+	display.def("GoToRow", &cInertialSenseDisplay::GoToRow);
+	display.def("ProcessData", &cInertialSenseDisplay::ProcessData);
+	display.def("Goodbye", &cInertialSenseDisplay::Goodbye);
+	display.def("Home", &cInertialSenseDisplay::Home);
+	
+});
+
+#endif

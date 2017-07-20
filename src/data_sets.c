@@ -14,48 +14,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stddef.h>
 #include <math.h>
 
-#if defined(_WIN32) || defined(_WIN64)
-
-#include <windows.h>
-
-#else
-
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#endif
-
-int IS_LITTLE_ENDIAN = -1;
-
 // prototype for checmsun32 function
 uint32_t checksum32(void* data, int count);
-
-int initDataSets(void)
-{
-	return ((IS_LITTLE_ENDIAN = isCpuLittleEndian()) != -1);
-}
-
-int isCpuLittleEndian(void)
-{
-	union
-	{
-		uint8_t  c[4];
-		uint32_t i;
-	} u;
-	u.i = 0x01020304;
-	switch (u.c[0])
-	{
-		case 0x04:
-			return 1;
-
-		case 0x01:
-			return 0;
-
-		default:
-			return -1;
-	}
-}
 
 // Reversed bytes in a float.
 // compiler will likely inline this as it's a tiny function
@@ -87,9 +47,6 @@ float flipFloatCopy(float val)
 	return flippedFloat;
 }
 
-// Reversed upper and lower 32 bit words in a double.
-// change to 32 bit compiler if you are getting errors here.
-// compiler will likely inline this as it's a tiny function
 void flipDouble(uint8_t* ptr)
 {
 	const uint32_t* w = (const uint32_t*)(ptr);
@@ -110,8 +67,8 @@ double flipDoubleCopy(double val)
 		double v;
 		uint32_t w[2];
 	} u;
-	u.w[1] = *(uint32_t*)&val;
-	u.w[0] = *((uint32_t*)&val + 1);
+	u.w[1] = SWAP32(*(uint32_t*)&val);
+	u.w[0] = SWAP32(*((uint32_t*)&val + 1));
 	return u.v;
 }
 
@@ -247,6 +204,22 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		OFFSETOF( ins_res_t, x_dot.lla[2] ),
 	};
 
+	static uint16_t offsetsRtkSol[] =
+	{
+		11,
+		OFFSETOF(rtk_sol_t, seconds),
+		OFFSETOF(rtk_sol_t, pos[0]),
+		OFFSETOF(rtk_sol_t, pos[1]),
+		OFFSETOF(rtk_sol_t, pos[2]),
+		OFFSETOF(rtk_sol_t, vel[0]),
+		OFFSETOF(rtk_sol_t, vel[1]),
+		OFFSETOF(rtk_sol_t, vel[2]),
+		OFFSETOF(rtk_sol_t, gdop),
+		OFFSETOF(rtk_sol_t, pdop),
+		OFFSETOF(rtk_sol_t, hdop),
+		OFFSETOF(rtk_sol_t, vdop)
+	};
+
 	static uint16_t offsetsFlashConfig[] =
 	{
 		6,
@@ -264,7 +237,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 	static uint16_t offsetsObsParams[] = { 6, 72, 80, 88, 100, 108, 116 };
 	static uint16_t offsetsDebugArray[] = { 3, 72, 80, 88 };
 
-    static uint16_t* doubleOffsets[DID_COUNT] =
+    static uint16_t* s_doubleOffsets[] =
 	{
 		0,						// DID_NULL
 		0,						// DID_DEV_INFO
@@ -288,7 +261,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_MAGNETOMETER_CAL
 		offsetsInsRes,			// DID_INS_RESOURCES
         0,                      // DID_DGPS_CORRECTION
-        0,                      // DID_RTK,
+        offsetsRtkSol,          // DID_RTK_SOL,
 		0,						// DID_FEATURE_BITS
 		0,						// DID_SENSORS_IS1
 		0,						// DID_SENSORS_IS2
@@ -324,13 +297,20 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	// DID_MAGNETOMETER_2
 		0,                      // DID_GPS_VERSION
 		0,						// DID_COMMUNICATIONS_LOOPBACK
-		offsetsOnlyTimeFirst	// DID_DUAL_IMU
+		offsetsOnlyTimeFirst,	// DID_DUAL_IMU,
+		0,						// DID_INL2_MAG_OBS_INFO
+        0,						// DID_RAW_GPS_DATA,
+        0,                      // DID_RTK_OPT,
+        0,                      // DID_NVR_USERPAGE_INTERNAL
+		0						// DID_MANUFACTURING_INFO
 	};
+
+    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
 
 	if (dataId < DID_COUNT)
 	{
         uint16_t* offsets;
-        if ((offsets = doubleOffsets[dataId]))
+        if ((offsets = s_doubleOffsets[dataId]))
         {
             *offsetsLength = (*offsets++);
             return offsets;
@@ -355,38 +335,29 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		...
 	} */
 
-	static uint16_t devInfoOffsets[] =
-	{
-		4,
-		OFFSETOF(dev_info_t, manufacturer), sizeof(((dev_info_t*)0)->manufacturer) / sizeof(((dev_info_t*)0)->manufacturer[0]),
-		OFFSETOF(dev_info_t, addInfo), sizeof(((dev_info_t*)0)->addInfo) / sizeof(((dev_info_t*)0)->addInfo[0])
-	};
-
 	static uint16_t debugStringOffsets[] = { 2, 0, 80 };
 
 	static uint16_t rtosTaskOffsets[] =
 	{
 		12,
-		0, 12,
-		32, 12,
-		64, 12,
-		96, 12,
-		128, 12,
-		160, 12
+		0, MAX_TASK_NAME_LEN,
+		32, MAX_TASK_NAME_LEN,
+		64, MAX_TASK_NAME_LEN,
+		96, MAX_TASK_NAME_LEN,
+		128, MAX_TASK_NAME_LEN,
+		160, MAX_TASK_NAME_LEN
 	};
 
-	static uint16_t gpsVersionOffsets[] = 
-	{ 
-		2, 
-		0, 30,
-		30, 10,
-		40, 30
+	static uint16_t manufInfoOffsets[] =
+	{
+		2,
+		OFFSETOF(manufacturing_info_t, date), _MEMBER_ARRAY_ELEMENT_COUNT(manufacturing_info_t, date)
 	};
 
-    static uint16_t* stringOffsets[DID_COUNT] =
+    static uint16_t* s_stringOffsets[] =
 	{
 		0,						// DID_NULL
-		devInfoOffsets,			// DID_DEV_INFO
+        0,          			// DID_DEV_INFO
 		0,						// DID_IMU_1
 		0,						// DID_CON_SCUL_INT
 		0,						// DID_INS_1
@@ -407,7 +378,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_MAGNETOMETER_CAL
 		0,						// DID_INS_RESOURCES
         0,                      // DID_DGPS_CORRECTION
-        0,                      // DID_RTK,
+        0,                      // DID_RTK_SOL,
 		0,						// DID_FEATURE_BITS
 		0,						// DID_SENSORS_IS1
 		0,						// DID_SENSORS_IS2
@@ -441,15 +412,22 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_BAROMETER
 		0,						// DID_IMU_2
 		0,						// DID_MAGNETOMETER_2
-		gpsVersionOffsets,      // DID_GPS_VERSION
+		0,						// DID_GPS_VERSION
 		0,						// DID_COMMUNICATIONS_LOOPBACK
-		0						// DID_DUAL_IMU
+		0,						// DID_DUAL_IMU,
+		0,						// DID_INL2_MAG_OBS_INFO
+        0,						// DID_RAW_GPS_DATA,
+        0,                      // DID_RTK_OPT,
+        0,                      // DID_NVR_USERPAGE_INTERNAL
+		manufInfoOffsets		// DID_MANUFACTURING_INFO
 	};
+
+    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
 
     if (dataId < DID_COUNT)
 	{
         uint16_t* offsets;
-        if ((offsets = stringOffsets[dataId]))
+        if ((offsets = s_stringOffsets[dataId]))
         {
             *offsetsLength = (*offsets++);
             return offsets;

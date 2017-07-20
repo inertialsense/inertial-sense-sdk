@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['barometer_5ft',['barometer_t',['../structbarometer__t.html',1,'']]],
   ['bootload_5fparams_5ft',['bootload_params_t',['../structbootload__params__t.html',1,'']]],
   ['bootloader_5fstate_5ft',['bootloader_state_t',['../structbootloader__state__t.html',1,'']]],
   ['broadcast_5fmsg_5ft',['broadcast_msg_t',['../structbroadcast__msg__t.html',1,'']]],

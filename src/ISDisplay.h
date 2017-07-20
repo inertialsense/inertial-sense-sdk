@@ -20,6 +20,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "com_manager.h"
 #include "data_sets.h"
+#include "ISConstants.h"
+
+#if defined(ENABLE_IS_PYTHON_WRAPPER)
+
+#include "../pySDK/pySDK.h"
+
+#endif
+
+using namespace std;
 
 /*!
 * Utility functions for displaying data
@@ -32,7 +41,7 @@ public:
 		DMODE_PRETTY,
 		DMODE_SCROLL,
 		DMODE_STATS,
-		DMODE_QUITE
+		DMODE_QUIET
 	};
 
 	cInertialSenseDisplay();
@@ -40,35 +49,39 @@ public:
 	void SetDisplayMode(int mode) { m_displayMode = mode; };
 	void Clear(void);
 	void Home(void);
-	void GoToRow(unsigned int row);
-	std::string Hello();
-	std::string Connected();
-	std::string Replay(double speed=1.0);
-	std::string Goodbye();
+	void GoToRow(int y);
+	void GoToColumnAndRow(int x, int y);
+	string Hello();
+	string Connected();
+	string Replay(double speed=1.0);
+	string Goodbye();
+	int ReadKey(); // non-block, returns -1 if no key available
+	bool ControlCWasPressed();
 
 	// for the binary protocol, this processes a packet of data
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void DataToStats(const p_data_t* data);
-	std::string DataToString(const p_data_t* data);
-	std::string DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr);
-	std::string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
-	std::string DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr);
-	std::string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
-	std::string DataToStringDThetaVel(const delta_theta_vel_t &imu, const p_data_hdr_t& hdr);
-	std::string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);
-	std::string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
-	std::string DataToStringGPS(const gps_t &gps, const p_data_hdr_t& hdr);
-	std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
-	std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
-	std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
+	string DataToString(const p_data_t* data);
+	string DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr);
+	string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
+	string DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr);
+	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
+	string DataToStringDThetaVel(const delta_theta_vel_t &imu, const p_data_hdr_t& hdr);
+	string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);
+	string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
+	string DataToStringGPS(const gps_t &gps, const p_data_hdr_t& hdr);
+	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
+	string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
+	string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
+	string DataToStringRtkSol(const rtk_sol_t& sol, const p_data_hdr_t& hdr);
+	string DataToStringRawGPS(const raw_gps_msg_t& raw, const p_data_hdr_t& hdr);
 
 private:
-	std::string VectortoString();
+	string VectortoString();
 	void DataToVector(const p_data_t* data);
 
-	std::vector<std::string>	m_didMsgs;
-	int							m_displayMode;
-
+	vector<string>	m_didMsgs;
+	int m_displayMode;
 
 	struct sDidStats
 	{
@@ -77,17 +90,20 @@ private:
 		int count;
 	};
 
-	std::vector<sDidStats>	m_didStats;
+	vector<sDidStats> m_didStats;
+
+#if PLATFORM_IS_WINDOWS
+
+	HANDLE m_windowsConsoleIn;
+	HANDLE m_windowsConsoleOut;
+
+#endif
 
 };
 
-
-std::ostream& boldOn(std::ostream& os);
-std::ostream& boldOff(std::ostream& os);
-std::ostream& endlbOn(std::ostream& os);  // Bold on with newline
-std::ostream& endlbOff(std::ostream& os); // Bold off with newline
-
-
-
+ostream& boldOn(ostream& os);
+ostream& boldOff(ostream& os);
+ostream& endlbOn(ostream& os);  // Bold on with newline
+ostream& endlbOff(ostream& os); // Bold off with newline
 
 #endif // IS_DISPLAY_H

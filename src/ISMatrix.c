@@ -25,14 +25,14 @@ void mul_MatMxN( void * result, const void * A_ptr, const void * B_ptr, i_t m, i
 	i_t j;
 	i_t k;
 
-	f_t * OUT = (f_t*)result;
+	f_t * matOut = (f_t*)result;
 	const f_t * A = (const f_t*)A_ptr;
 	const f_t * B = (const f_t*)B_ptr;
 
 	for (i = 0; i < m; i++)
 	{
 		const f_t * A_i = A + i * n;
-		f_t * O_i = OUT + i * p;
+		f_t * O_i = matOut + i * p;
 
 		for (j = 0; j < p; j++)
 		{

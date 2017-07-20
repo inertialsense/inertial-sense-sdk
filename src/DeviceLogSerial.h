@@ -32,12 +32,12 @@ public:
 		m_chunk.Clear();
 	}
 
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize, uint32_t chunkSize) override;
-	bool CloseAllFiles() override;
-	bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf) override;
-	p_data_t* ReadData() override;
-	void SetSerialNumber(uint32_t serialNumber) override;
-	std::string LogFileExtention() override { return std::string(".dat"); }
+	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize, uint32_t chunkSize) OVERRIDE;
+	bool CloseAllFiles() OVERRIDE;
+	bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf) OVERRIDE;
+	p_data_t* ReadData() OVERRIDE;
+	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
+	std::string LogFileExtention() OVERRIDE { return std::string(".dat"); }
 
 	cDataChunk m_chunk;
 

@@ -1,4 +1,6 @@
 add_library(InertialSense
+  src/cltool.cpp
+  src/cltool_main.cpp
   src/com_manager.c
   src/data_sets.c
   src/DataChunk.cpp
@@ -10,6 +12,7 @@ add_library(InertialSense
   src/DeviceLogKML.cpp
   src/DeviceLogSerial.cpp
   src/DeviceLogSorted.cpp
+  src/GpsParser.cpp
   src/InertialSense.cpp
   src/inertialSenseBootLoader.c
   src/ISDataMappings.cpp
@@ -18,9 +21,9 @@ add_library(InertialSense
   src/ISMatrix.c
   src/ISPose.c
   src/ISTcpClient.cpp
+  src/ISTcpServer.cpp
   src/ISUtilities.cpp
   src/linked_list.c
-  src/Rtcm3Reader.cpp
   src/serialPort.c
   src/serialPortPlatform.c
   src/time_conversion.c
@@ -28,7 +31,6 @@ add_library(InertialSense
   src/tinyxml.cpp
   src/tinyxmlerror.cpp
   src/tinyxmlparser.cpp
-  src/UbloxReader.cpp
   )
 
 add_definitions(

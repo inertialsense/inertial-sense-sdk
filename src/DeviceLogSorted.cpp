@@ -47,6 +47,8 @@ void cDeviceLogSorted::InitDeviceForReading()
 
 bool cDeviceLogSorted::CloseAllFiles()
 {
+    cDeviceLog::CloseAllFiles();
+
 	// Write to file and clear any non-empty chunks to file
 	for (uint32_t id = 0; id < m_chunks.size(); id++)
 	{
@@ -85,14 +87,15 @@ bool cDeviceLogSorted::CloseAllFiles()
 
 bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 {
+    cDeviceLog::SaveData(dataHdr, dataBuf);
+
 	uint32_t id = dataHdr->id;
 
-	if (id >= 256)
+	if (id >= DID_MAX_COUNT)
 	{
 		return false;
 	}
-
-	if (id >= m_chunks.size())
+	else if (id >= m_chunks.size())
 	{
 		m_chunks.resize(id + 1);
 	}
@@ -199,7 +202,7 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 // Read serialized data
 p_data_t* cDeviceLogSorted::ReadData()
 {
-	p_data_t *data;
+	p_data_t* data;
 
 	while (1)
 	{
@@ -208,6 +211,7 @@ p_data_t* cDeviceLogSorted::ReadData()
 		if (data)
 		{
 			// Found data
+            cDeviceLog::OnReadData(data);
 			return data;
 		}
 

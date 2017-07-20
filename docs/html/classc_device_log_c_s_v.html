@@ -22,10 +22,10 @@
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
-  <td id="projectlogo"><img alt="Logo" src="logo_300x77.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.1</span>
+   &#160;<span id="projectnumber">Release 1.1.2</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -105,27 +105,27 @@ Inheritance diagram for cDeviceLogCSV:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:abebc8af236858de15d70cf496bbf49da"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abebc8af236858de15d70cf496bbf49da"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>InitDeviceForWriting</b> (int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) override</td></tr>
-<tr class="separator:abebc8af236858de15d70cf496bbf49da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a855ced208b347a31c3db3b98e6793e9a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a855ced208b347a31c3db3b98e6793e9a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>InitDeviceForReading</b> () override</td></tr>
-<tr class="separator:a855ced208b347a31c3db3b98e6793e9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad05a1320f47bc21cb4f380274075b09d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad05a1320f47bc21cb4f380274075b09d"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>CloseAllFiles</b> () override</td></tr>
-<tr class="separator:ad05a1320f47bc21cb4f380274075b09d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa950a8dc40ebd510c5e81460fd639594"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa950a8dc40ebd510c5e81460fd639594"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>SaveData</b> (<a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, uint8_t *dataBuf) override</td></tr>
-<tr class="separator:aa950a8dc40ebd510c5e81460fd639594"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade995eb3d781cf3b616f89875db55d3d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ade995eb3d781cf3b616f89875db55d3d"></a>
-<a class="el" href="structp__data__t.html">p_data_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>ReadData</b> () override</td></tr>
-<tr class="separator:ade995eb3d781cf3b616f89875db55d3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae41cb9958811d4889dc2119ec688d454"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae41cb9958811d4889dc2119ec688d454"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>SetSerialNumber</b> (uint32_t serialNumber) override</td></tr>
-<tr class="separator:ae41cb9958811d4889dc2119ec688d454"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab34634b278f17a5b9b5f5af0bbd693e8"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab34634b278f17a5b9b5f5af0bbd693e8"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>LogFileExtention</b> () override</td></tr>
-<tr class="separator:ab34634b278f17a5b9b5f5af0bbd693e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6dfb83b5cc0a3a3124190677791b604"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae6dfb83b5cc0a3a3124190677791b604"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>InitDeviceForWriting</b> (int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) OVERRIDE</td></tr>
+<tr class="separator:ae6dfb83b5cc0a3a3124190677791b604"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3654b051c50e8b7a248a46cf4a0916fa"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3654b051c50e8b7a248a46cf4a0916fa"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>InitDeviceForReading</b> () OVERRIDE</td></tr>
+<tr class="separator:a3654b051c50e8b7a248a46cf4a0916fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3ce46153c6369de06d396beadbcdb3c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa3ce46153c6369de06d396beadbcdb3c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>CloseAllFiles</b> () OVERRIDE</td></tr>
+<tr class="separator:aa3ce46153c6369de06d396beadbcdb3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe6a056cdfa600abe96b05fda8532fa3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abe6a056cdfa600abe96b05fda8532fa3"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>SaveData</b> (<a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, uint8_t *dataBuf) OVERRIDE</td></tr>
+<tr class="separator:abe6a056cdfa600abe96b05fda8532fa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee1975c72c3a2b5cc39c1d114c605449"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aee1975c72c3a2b5cc39c1d114c605449"></a>
+<a class="el" href="structp__data__t.html">p_data_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>ReadData</b> () OVERRIDE</td></tr>
+<tr class="separator:aee1975c72c3a2b5cc39c1d114c605449"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1662448e37f19a1abe0c22ba0b8a6072"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1662448e37f19a1abe0c22ba0b8a6072"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>SetSerialNumber</b> (uint32_t serialNumber) OVERRIDE</td></tr>
+<tr class="separator:a1662448e37f19a1abe0c22ba0b8a6072"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ebe0478f18423089cc138ea921105c7"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a0ebe0478f18423089cc138ea921105c7"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>LogFileExtention</b> () OVERRIDE</td></tr>
+<tr class="separator:a0ebe0478f18423089cc138ea921105c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classc_device_log"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classc_device_log')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classc_device_log.html">cDeviceLog</a></td></tr>
 <tr class="memitem:ac4e0fefa7cd2ec299addac8e5de192e2 inherit pub_methods_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac4e0fefa7cd2ec299addac8e5de192e2"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>InitDeviceForWriting</b> (int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)</td></tr>
@@ -137,10 +137,10 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>OpenWithSyste
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>SetupReadInfo</b> (const string &amp;directory, const string &amp;deviceName, const string &amp;timeStamp)</td></tr>
 <tr class="separator:ac393edd3ba5447ab190ce237aa4d9353 inherit pub_methods_classc_device_log"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2f3d61ecfe65ca3a09782584e78ddf4 inherit pub_methods_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac2f3d61ecfe65ca3a09782584e78ddf4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>SetDeviceInfo</b> (const <a class="el" href="structdev__info__t.html">dev_info_t</a> *info)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>SetDeviceInfo</b> (const dev_info_t *info)</td></tr>
 <tr class="separator:ac2f3d61ecfe65ca3a09782584e78ddf4 inherit pub_methods_classc_device_log"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41dabf5658823fb80a2e8beede2a0e28 inherit pub_methods_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a41dabf5658823fb80a2e8beede2a0e28"></a>
-const <a class="el" href="structdev__info__t.html">dev_info_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>GetDeviceInfo</b> ()</td></tr>
+const dev_info_t *&#160;</td><td class="memItemRight" valign="bottom"><b>GetDeviceInfo</b> ()</td></tr>
 <tr class="separator:a41dabf5658823fb80a2e8beede2a0e28 inherit pub_methods_classc_device_log"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5429d03af73e3a2f50a0dc72d8ccf0d6 inherit pub_methods_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5429d03af73e3a2f50a0dc72d8ccf0d6"></a>
 uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>FileSize</b> ()</td></tr>
@@ -164,6 +164,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>OpenNextReadFile</b> 
 <tr class="memitem:aaf917910d02de4f78b4f7c4b424ceed5 inherit pro_methods_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aaf917910d02de4f78b4f7c4b424ceed5"></a>
 string&#160;</td><td class="memItemRight" valign="bottom"><b>GetNewFileName</b> (uint32_t serialNumber, uint32_t fileCount, const char *suffix)</td></tr>
 <tr class="separator:aaf917910d02de4f78b4f7c4b424ceed5 inherit pro_methods_classc_device_log"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14a7bf3e27904cf6024ca25c1dbd5c1b inherit pro_methods_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a14a7bf3e27904cf6024ca25c1dbd5c1b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>OnReadData</b> (<a class="el" href="structp__data__t.html">p_data_t</a> *data)</td></tr>
+<tr class="separator:a14a7bf3e27904cf6024ca25c1dbd5c1b inherit pro_methods_classc_device_log"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classc_device_log"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classc_device_log')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classc_device_log.html">cDeviceLog</a></td></tr>
 <tr class="memitem:a286191e815c4a52f4922e506e959a038 inherit pro_attribs_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a286191e815c4a52f4922e506e959a038"></a>
 vector&lt; string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_fileNames</b></td></tr>
@@ -181,7 +184,7 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>m_timeStamp</b></td
 string&#160;</td><td class="memItemRight" valign="bottom"><b>m_fileName</b></td></tr>
 <tr class="separator:a5901c1aceb266c75693fb3a0791c7763 inherit pro_attribs_classc_device_log"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac74742554845b222ce24c81ed1fb42f1 inherit pro_attribs_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac74742554845b222ce24c81ed1fb42f1"></a>
-<a class="el" href="structdev__info__t.html">dev_info_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_devInfo</b></td></tr>
+dev_info_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_devInfo</b></td></tr>
 <tr class="separator:ac74742554845b222ce24c81ed1fb42f1 inherit pro_attribs_classc_device_log"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06236645d9bfc715ef6224732ccd37d5 inherit pro_attribs_classc_device_log"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a06236645d9bfc715ef6224732ccd37d5"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_pHandle</b></td></tr>
@@ -207,7 +210,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_maxChunkSize</b
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p>Definition at line <a class="el" href="_device_log_c_s_v_8h_source.html#l00041">41</a> of file <a class="el" href="_device_log_c_s_v_8h_source.html">DeviceLogCSV.h</a>.</p>
+<p>Definition at line <a class="el" href="_device_log_c_s_v_8h_source.html#l00042">42</a> of file <a class="el" href="_device_log_c_s_v_8h_source.html">DeviceLogCSV.h</a>.</p>
 </div><hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/<a class="el" href="_device_log_c_s_v_8h_source.html">DeviceLogCSV.h</a></li>
 <li>src/<a class="el" href="_device_log_c_s_v_8cpp_source.html">DeviceLogCSV.cpp</a></li>
@@ -215,7 +218,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_maxChunkSize</b
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 21 2017 14:57:10 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Jul 19 2017 18:35:13 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

@@ -24,9 +24,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISPose.h"
 #include "DeviceLogKML.h"
 #include "ISLogger.h"
+#include "ISConstants.h"
 
 using namespace std;
-
 
 void cDeviceLogKML::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)
 {
@@ -38,6 +38,8 @@ void cDeviceLogKML::InitDeviceForWriting(int pHandle, std::string timestamp, std
 
 bool cDeviceLogKML::CloseAllFiles()
 {
+    cDeviceLog::CloseAllFiles();
+
 	for (int kid = 0; kid < cDataKML::MAX_NUM_KID; kid++)
 	{
 		// Close file
@@ -294,8 +296,7 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 bool cDeviceLogKML::OpenWithSystemApp(void)
 {
 
-#if defined(_WIN32)
-#include <windows.h>
+#if PLATFORM_IS_WINDOWS
 
 	for (int kid = 0; kid < cDataKML::MAX_NUM_KID; kid++)
 	{
@@ -311,9 +312,6 @@ bool cDeviceLogKML::OpenWithSystemApp(void)
 		ShellExecuteW(0, 0, filename, 0, 0, SW_SHOW);
 	}
 
-
-#elif !defined(PLATFORM_IS_LINUX) && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE || TARGET_OS_MAC || __linux || __unix__ )
-
 #endif
 
 	return true;
@@ -322,6 +320,8 @@ bool cDeviceLogKML::OpenWithSystemApp(void)
 
 bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
 {
+    cDeviceLog::SaveData(dataHdr, dataBuf);
+
 	// Save data to file
 	if (!WriteDateToFile(dataHdr, dataBuf))
 	{
@@ -399,6 +399,7 @@ p_data_t* cDeviceLogKML::ReadData()
 	}
 
 	// Read is good
+    cDeviceLog::OnReadData(data);
 	return data;
 }
 

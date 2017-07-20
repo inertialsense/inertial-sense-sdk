@@ -31,13 +31,13 @@ public:
 		m_chunks.resize(0);
 	}
 
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) override;
-	void InitDeviceForReading() override;
-	bool CloseAllFiles() override;
-	bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf) override;
-	p_data_t* ReadData() override;
-	void SetSerialNumber(uint32_t serialNumber) override;
-	string LogFileExtention() override { return string(".sdat"); }
+	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) OVERRIDE;
+	void InitDeviceForReading() OVERRIDE;
+	bool CloseAllFiles() OVERRIDE;
+	bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf) OVERRIDE;
+	p_data_t* ReadData() OVERRIDE;
+	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
+	string LogFileExtention() OVERRIDE { return string(".sdat"); }
 
 	cSortedDataChunk m_currentReadChunk;
     vector<list<cSortedDataChunk>> m_chunks;

@@ -91,10 +91,16 @@
     <ClCompile Include="..\src\ISTcpClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Rtcm3Reader.cpp">
+    <ClCompile Include="..\src\ISTcpServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\UbloxReader.cpp">
+    <ClCompile Include="..\src\GpsParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\cltool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\cltool_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -153,9 +159,6 @@
     <ClInclude Include="..\src\ISLogger.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ISMathTypes.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\ISMatrix.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -186,10 +189,13 @@
     <ClInclude Include="..\src\ISTcpClient.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Rtcm3Reader.h">
+    <ClInclude Include="..\src\ISTcpServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\UbloxReader.h">
+    <ClInclude Include="..\src\GpsParser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\cltool.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

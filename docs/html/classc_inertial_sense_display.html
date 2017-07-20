@@ -22,10 +22,10 @@
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
-  <td id="projectlogo"><img alt="Logo" src="logo_300x77.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.1</span>
+   &#160;<span id="projectnumber">Release 1.1.2</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -103,7 +103,7 @@ Public Types</h2></td></tr>
 <tr class="memitem:a7fc8e1c31c742b8a345603c9a0ab28a8"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a7fc8e1c31c742b8a345603c9a0ab28a8"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>eDisplayMode</b> { <b>DMODE_PRETTY</b>, 
 <b>DMODE_SCROLL</b>, 
 <b>DMODE_STATS</b>, 
-<b>DMODE_QUITE</b>
+<b>DMODE_QUIET</b>
  }</td></tr>
 <tr class="separator:a7fc8e1c31c742b8a345603c9a0ab28a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -118,21 +118,30 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>Clear</b> (void)</td>
 <tr class="memitem:adbf81871dd6ff661a0082b555d7085fe"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="adbf81871dd6ff661a0082b555d7085fe"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>Home</b> (void)</td></tr>
 <tr class="separator:adbf81871dd6ff661a0082b555d7085fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46a54c699e270f6b0cd4e41a24dc07fa"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a46a54c699e270f6b0cd4e41a24dc07fa"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>GoToRow</b> (unsigned int row)</td></tr>
-<tr class="separator:a46a54c699e270f6b0cd4e41a24dc07fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a9dc9daac0a34e427a327504f67b6b3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3a9dc9daac0a34e427a327504f67b6b3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>GoToRow</b> (int y)</td></tr>
+<tr class="separator:a3a9dc9daac0a34e427a327504f67b6b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5fbbf17d6d694a5690e9addb9baa17e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab5fbbf17d6d694a5690e9addb9baa17e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>GoToColumnAndRow</b> (int x, int y)</td></tr>
+<tr class="separator:ab5fbbf17d6d694a5690e9addb9baa17e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaadefa46510922ae9e1a881be9c54321"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aaadefa46510922ae9e1a881be9c54321"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>Hello</b> ()</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>Hello</b> ()</td></tr>
 <tr class="separator:aaadefa46510922ae9e1a881be9c54321"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac6791e8c44532af82d35c10d65d2d3d2"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac6791e8c44532af82d35c10d65d2d3d2"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>Connected</b> ()</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>Connected</b> ()</td></tr>
 <tr class="separator:ac6791e8c44532af82d35c10d65d2d3d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e8a194fc6c9aca641d493ef589f651f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a0e8a194fc6c9aca641d493ef589f651f"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>Replay</b> (double speed=1.0)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>Replay</b> (double speed=1.0)</td></tr>
 <tr class="separator:a0e8a194fc6c9aca641d493ef589f651f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93655a1878681b71d15c5c3d73711eb2"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a93655a1878681b71d15c5c3d73711eb2"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>Goodbye</b> ()</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>Goodbye</b> ()</td></tr>
 <tr class="separator:a93655a1878681b71d15c5c3d73711eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae14f6b8df04ca56106c25159c9659cb2"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae14f6b8df04ca56106c25159c9659cb2"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>ReadKey</b> ()</td></tr>
+<tr class="separator:ae14f6b8df04ca56106c25159c9659cb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06b780109f2e776399a1c93027a43c05"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a06b780109f2e776399a1c93027a43c05"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>ControlCWasPressed</b> ()</td></tr>
+<tr class="separator:a06b780109f2e776399a1c93027a43c05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acec907555da7da00111863bcd1f4f40e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="acec907555da7da00111863bcd1f4f40e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>ProcessData</b> (<a class="el" href="structp__data__t.html">p_data_t</a> *data, bool enableReplay=false, double replaySpeedX=1.0)</td></tr>
 <tr class="separator:acec907555da7da00111863bcd1f4f40e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -140,46 +149,52 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ProcessData</b> (<a c
 void&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStats</b> (const <a class="el" href="structp__data__t.html">p_data_t</a> *data)</td></tr>
 <tr class="separator:ad2dcc483f6ff791f8270790b66f991bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad121eb862cbc71e60e247015da553768"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad121eb862cbc71e60e247015da553768"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToString</b> (const <a class="el" href="structp__data__t.html">p_data_t</a> *data)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToString</b> (const <a class="el" href="structp__data__t.html">p_data_t</a> *data)</td></tr>
 <tr class="separator:ad121eb862cbc71e60e247015da553768"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a930a047126e22b68cb0d054dd8d0649a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a930a047126e22b68cb0d054dd8d0649a"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringINS1</b> (const <a class="el" href="structins__1__t.html">ins_1_t</a> &amp;ins1, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringINS1</b> (const ins_1_t &amp;ins1, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:a930a047126e22b68cb0d054dd8d0649a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afba13168fe1524792bfd8a84320aaa2a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="afba13168fe1524792bfd8a84320aaa2a"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringINS2</b> (const <a class="el" href="structins__2__t.html">ins_2_t</a> &amp;ins2, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringINS2</b> (const ins_2_t &amp;ins2, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:afba13168fe1524792bfd8a84320aaa2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08d440b96e3738a04a41b1a97d2a3fe8"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a08d440b96e3738a04a41b1a97d2a3fe8"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringDualIMU</b> (const <a class="el" href="structdual__imu__t.html">dual_imu_t</a> &amp;imu, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringDualIMU</b> (const dual_imu_t &amp;imu, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:a08d440b96e3738a04a41b1a97d2a3fe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada1fd41fb78693a9939e8d3e65a2dd09"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ada1fd41fb78693a9939e8d3e65a2dd09"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringIMU</b> (const <a class="el" href="structimu__t.html">imu_t</a> &amp;imu, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringIMU</b> (const imu_t &amp;imu, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:ada1fd41fb78693a9939e8d3e65a2dd09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae87e70136ff01173407b8cd61126f8ec"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae87e70136ff01173407b8cd61126f8ec"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringDThetaVel</b> (const <a class="el" href="structdelta__theta__vel__t.html">delta_theta_vel_t</a> &amp;imu, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringDThetaVel</b> (const delta_theta_vel_t &amp;imu, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:ae87e70136ff01173407b8cd61126f8ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44a851c8fef802476735dede9381d05d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a44a851c8fef802476735dede9381d05d"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringMag</b> (const <a class="el" href="structmagnetometer__t.html">magnetometer_t</a> &amp;mag, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringMag</b> (const magnetometer_t &amp;mag, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:a44a851c8fef802476735dede9381d05d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6453c64ec13e63c8cf5e8b0fc96ef8b5"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6453c64ec13e63c8cf5e8b0fc96ef8b5"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringBaro</b> (const <a class="el" href="structbarometer__t.html">barometer_t</a> &amp;baro, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringBaro</b> (const barometer_t &amp;baro, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:a6453c64ec13e63c8cf5e8b0fc96ef8b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a604b14898f0d96c6fd0569f2b8c6d891"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a604b14898f0d96c6fd0569f2b8c6d891"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringGPS</b> (const <a class="el" href="structgps__t.html">gps_t</a> &amp;gps, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringGPS</b> (const gps_t &amp;gps, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:a604b14898f0d96c6fd0569f2b8c6d891"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3449baa2386e083c7d7b1fc8be3e5bbd"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3449baa2386e083c7d7b1fc8be3e5bbd"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringDevInfo</b> (const <a class="el" href="structdev__info__t.html">dev_info_t</a> &amp;info, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringDevInfo</b> (const dev_info_t &amp;info, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:a3449baa2386e083c7d7b1fc8be3e5bbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae84b6093c3699517369bd1631e07c110"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae84b6093c3699517369bd1631e07c110"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringSysParams</b> (const <a class="el" href="structsys__params__t.html">sys_params_t</a> &amp;sys, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringSysParams</b> (const sys_params_t &amp;sys, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:ae84b6093c3699517369bd1631e07c110"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc31c6668f9956a4e6ebf9ddef242cb1"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="adc31c6668f9956a4e6ebf9ddef242cb1"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringSysSensors</b> (const <a class="el" href="structsys__sensors__t.html">sys_sensors_t</a> &amp;sensors, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringSysSensors</b> (const sys_sensors_t &amp;sensors, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
 <tr class="separator:adc31c6668f9956a4e6ebf9ddef242cb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a246b092489e1ad601d33f00cc731f086"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a246b092489e1ad601d33f00cc731f086"></a>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringRtkSol</b> (const rtk_sol_t &amp;sol, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+<tr class="separator:a246b092489e1ad601d33f00cc731f086"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff7658549f5fb503d14624b7f742d600"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aff7658549f5fb503d14624b7f742d600"></a>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringRawGPS</b> (const raw_gps_msg_t &amp;raw, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr)</td></tr>
+<tr class="separator:aff7658549f5fb503d14624b7f742d600"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Utility functions for displaying data </p>
 
-<p>Definition at line <a class="el" href="_i_s_display_8h_source.html#l00027">27</a> of file <a class="el" href="_i_s_display_8h_source.html">ISDisplay.h</a>.</p>
+<p>Definition at line <a class="el" href="_i_s_display_8h_source.html#l00036">36</a> of file <a class="el" href="_i_s_display_8h_source.html">ISDisplay.h</a>.</p>
 </div><hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/<a class="el" href="_i_s_display_8h_source.html">ISDisplay.h</a></li>
 <li>src/<a class="el" href="_i_s_display_8cpp_source.html">ISDisplay.cpp</a></li>
@@ -187,7 +202,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>DataToStringSy
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 21 2017 14:57:10 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Jul 19 2017 18:35:13 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

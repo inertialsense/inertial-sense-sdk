@@ -49,15 +49,7 @@ SUCH DAMAGE.
 #include <time.h>
 #include <math.h> // for fmod()
 #include "time_conversion.h"
-
-#ifndef WIN32
-  #define _CRT_SECURE_NO_DEPRECATE  
-#endif
-
-#ifdef WIN32
-  #include <windows.h>
-#endif
-
+#include "ISConstants.h"
 
 #define TIMECONV_JULIAN_DATE_START_OF_GPS_TIME (2444244.5)  // [days]
 #define TIMECONV_JULIAN_DATE_START_OF_PC_TIME  (2440587.5)  // [days]
@@ -157,21 +149,12 @@ int TIMECONV_GetSystemTime(
   double timebuffer_time_in_seconds;
   //char *timeline; // for debugging
 
-#ifndef _CRT_SECURE_NO_DEPRECATE
-  if( _ftime_s( &timebuffer ) != 0 )
-  {
-    GNSS_ERROR_MSG( "if( _ftime_s( &timebuffer ) != 0 )" );
-    return 0;
-  }
-#else
-
 #ifdef WIN32
   _ftime( &timebuffer );
 #else
   ftime( &timebuffer );
 #endif 
 
-#endif
   //timeline = ctime( & ( timebuffer.time ) ); // for debugging
   //printf( "%s\n", timeline ); // for debugging
 

@@ -38,6 +38,8 @@ void cDeviceLogSerial::InitDeviceForWriting(int pHandle, std::string timestamp, 
 
 bool cDeviceLogSerial::CloseAllFiles()
 {
+    cDeviceLog::CloseAllFiles();
+
 	// Write any remaining chunk data to file
 	WriteChunkToFile();
 
@@ -52,8 +54,10 @@ bool cDeviceLogSerial::CloseAllFiles()
 }
 
 
-bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
+bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 {
+    cDeviceLog::SaveData(dataHdr, dataBuf);
+
 	// Add serial number if available
 	if (dataHdr->id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, dataHdr, dataBuf, sizeof(dev_info_t)))
 	{
@@ -130,7 +134,7 @@ bool cDeviceLogSerial::WriteChunkToFile()
 
 p_data_t* cDeviceLogSerial::ReadData()
 {
-	p_data_t *data = NULL;
+	p_data_t* data = NULL;
 
 	// Read data from chunk
 	while (!(data = ReadDataFromChunk()))
@@ -143,6 +147,7 @@ p_data_t* cDeviceLogSerial::ReadData()
 	}
 
 	// Read is good
+    cDeviceLog::OnReadData(data);
 	return data;
 }
 

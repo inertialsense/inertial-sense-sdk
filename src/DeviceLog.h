@@ -29,41 +29,24 @@ using namespace std;
 #define IS_LOG_FILE_PREFIX_LENGTH 6
 #define IS_LOG_TIMESTAMP_LENGTH 15
 
+class cLogStats;
+
 class cDeviceLog
 {
 public:
-	cDeviceLog()
-	{
-		m_pFile = NULL;
-		m_pHandle = 0;
-		m_fileSize = 0;
-		m_logSize = 0;
-		m_fileCount = 0;
-		memset(&m_devInfo, 0, sizeof(dev_info_t));
-	}
-
-	virtual ~cDeviceLog()
-	{	
-		// Close open files
-		if (m_pFile)
-		{
-			fclose(m_pFile);
-			m_pFile = NULL;
-		}
-		CloseAllFiles();
-	}
-
+    cDeviceLog();
+    virtual ~cDeviceLog();
 	virtual void InitDeviceForWriting(int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize);
 	virtual void InitDeviceForReading();
-	virtual bool CloseAllFiles() { return false; }
+    virtual bool CloseAllFiles();
 	virtual bool OpenWithSystemApp();
-	virtual bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf) = 0;
-	bool SetupReadInfo(const string& directory, const string& deviceName, const string& timeStamp);
-	virtual p_data_t* ReadData() = 0;
-	void SetDeviceInfo(const dev_info_t *info);
-	const dev_info_t* GetDeviceInfo() { return &m_devInfo; }
+    virtual bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf);
+    virtual p_data_t* ReadData() = 0;
 	virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 	virtual string LogFileExtention() = 0;
+    bool SetupReadInfo(const string& directory, const string& deviceName, const string& timeStamp);
+    void SetDeviceInfo(const dev_info_t *info);
+    const dev_info_t* GetDeviceInfo() { return &m_devInfo; }
 	uint64_t FileSize() { return m_fileSize; }
 	uint64_t LogSize() { return m_logSize; }
 	uint32_t FileCount() { return m_fileCount; }
@@ -72,6 +55,7 @@ protected:
 	bool OpenNewSaveFile();
 	bool OpenNextReadFile();
 	string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
+    void OnReadData(p_data_t* data);
 
 	vector<string>			m_fileNames;
 	FILE*					m_pFile;
@@ -86,6 +70,9 @@ protected:
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;
 	uint32_t				m_maxChunkSize;
+
+private:
+    cLogStats*              m_logStats;
 };
 
 #endif // DEVICE_LOG_H

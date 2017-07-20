@@ -1,7 +1,12 @@
 var searchData=
 [
-  ['name',['name',['../structs_chunk_header.html#a57c14794ad07d928e61281867f59615a',1,'sChunkHeader']]],
-  ['navdtms',['navDtMs',['../structsys__params__t.html#a7766068d379fe3c77184f8bbcc564a74',1,'sys_params_t']]],
-  ['ned',['ned',['../structins__1__t.html#acd540e71735b9a05847d305f231e0fc8',1,'ins_1_t::ned()'],['../structgps__nav__velned__t.html#a51270e6a317de1de0853cc761d930da8',1,'gps_nav_velned_t::ned()'],['../structins__misc__t.html#ac48072c0923072fe7a6f81c15a96d759',1,'ins_misc_t::ned()'],['../structins__output__t.html#a47264c8d7074cdb540b663613c3831cd',1,'ins_output_t::ned()']]],
-  ['numsats',['numSats',['../structgps__rssi__t.html#aeb4dc162a87de870445016aef706517a',1,'gps_rssi_t']]]
+  ['passthroughbytes',['passThroughBytes',['../structcom__manager__status__t.html#ae21797145c303bff1e0df2126550232d',1,'com_manager_status_t']]],
+  ['phandle',['pHandle',['../structs_chunk_header.html#a90a51bd59c0b99efc994cbc9f570f924',1,'sChunkHeader']]],
+  ['pid',['pid',['../structpacket__hdr__t.html#a915f088eeed50b151584165a97598709',1,'packet_hdr_t']]],
+  ['pktcounter',['pktCounter',['../structp__ack__hdr__t.html#a6e047dce01db1c893021485be63cbb6f',1,'p_ack_hdr_t']]],
+  ['pktinfo',['pktInfo',['../structp__ack__hdr__t.html#a9c409a6deaf6d6bb1c8e1d2b73b3bf34',1,'p_ack_hdr_t']]],
+  ['pos',['pos',['../structgeph__t.html#a578283956ed6ef9eb882a30b2ae6c702',1,'geph_t::pos()'],['../structsta__t.html#a09de90a31a5588faad3c1200d1509034',1,'sta_t::pos()']]],
+  ['prn',['prn',['../structprcopt__t.html#aefd694549d441407287ae00f985536af',1,'prcopt_t::prn()'],['../structsbsmsg__t.html#a8e91db615bcca1089efd527dd306ac03',1,'sbsmsg_t::prn()']]],
+  ['ptr',['ptr',['../structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c',1,'bufPtr_t::ptr()'],['../structascii_message_map__t.html#a33d8b7845ee9c8d532fa5e22fadb9b37',1,'asciiMessageMap_t::ptr()']]],
+  ['ptrsize',['ptrSize',['../structascii_message_map__t.html#ab0323ac72ebddd6e2b20b3381e316c23',1,'asciiMessageMap_t']]]
 ];

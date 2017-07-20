@@ -58,6 +58,7 @@ void cDeviceLogCSV::InitDeviceForReading()
 			{
 				cCsvLog log;
 				log.dataId = id;
+				log.dataSize = cISDataMappings::GetSize(log.dataId);
 				for (size_t i = 0; i < infos.size(); i++)
 				{
 					files.push_back(infos[i].name);
@@ -77,6 +78,8 @@ void cDeviceLogCSV::InitDeviceForReading()
 
 bool cDeviceLogCSV::CloseAllFiles()
 {
+    cDeviceLog::CloseAllFiles();
+
 	for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end(); i++)
 	{
 		cCsvLog& log = i->second;
@@ -212,6 +215,8 @@ bool cDeviceLogCSV::GetNextLineForFile(cCsvLog& log)
 
 bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
 {
+    cDeviceLog::SaveData(dataHdr, dataBuf);
+
 	// Reference current log
 	cCsvLog& log = m_logs[dataHdr->id];
 	log.dataId = dataHdr->id;
@@ -262,7 +267,6 @@ tryAgain:
 	p_data_t* data = NULL;
 	cCsvLog* nextLog = NULL;
 	uint64_t nextId = ULLONG_MAX;
-	static uint64_t lastId = 1;
 	for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end(); )
 	{
 		if (i->second.finishedReading)
@@ -285,6 +289,8 @@ tryAgain:
 	{
 		goto tryAgain;
 	}
+
+    cDeviceLog::OnReadData(data);
 	return data;
 }
 
@@ -293,6 +299,7 @@ p_data_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
 {
 	assert(log.pFile != NULL);
 	m_dataBuffer.hdr.id = log.dataId;
+	m_dataBuffer.hdr.size = log.dataSize;
 	if (m_csv.StringCSVToData(log.nextLine, m_dataBuffer.hdr, m_dataBuffer.buf, log.columnHeaders))
 	{
 		if (m_dataBuffer.hdr.id == DID_DEV_INFO)

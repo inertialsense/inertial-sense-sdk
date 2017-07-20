@@ -22,10 +22,10 @@
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
-  <td id="projectlogo"><img alt="Logo" src="logo_300x77.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.1</span>
+   &#160;<span id="projectnumber">Release 1.1.2</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -111,15 +111,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:addc5304d2402db171b383c2954ae7095"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="addc5304d2402db171b383c2954ae7095"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>LoadFromDirectory</b> (const string &amp;directory, eLogType logType=LOGTYPE_DAT)</td></tr>
 <tr class="separator:addc5304d2402db171b383c2954ae7095"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa5a815d57812cd9e0449ea134015a369"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa5a815d57812cd9e0449ea134015a369"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>InitSave</b> (eLogType logType=LOGTYPE_DAT, const string &amp;directory=g_emptyString, int numDevices=1, float maxDiskSpaceMB=1024.0f, uint32_t maxFileSize=1024 *1024 *5, uint32_t maxChunkSize=131072, bool useSubFolderTimestamp=true)</td></tr>
-<tr class="separator:aa5a815d57812cd9e0449ea134015a369"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e3e8842f8a264f7276012ad2552cb03"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6e3e8842f8a264f7276012ad2552cb03"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>InitSaveTimestamp</b> (const string &amp;timeStamp, const string &amp;directory=g_emptyString, const string &amp;subDirectory=g_emptyString, int numDevices=1, eLogType logType=LOGTYPE_DAT, float maxDiskSpaceMB=1024.0f, uint32_t maxFileSize=1024 *1024 *5, uint32_t maxChunkSize=131072, bool useSubFolderTimestamp=true)</td></tr>
-<tr class="separator:a6e3e8842f8a264f7276012ad2552cb03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa159fd3e7fe9ba10a8dd8f7a91d729dd"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa159fd3e7fe9ba10a8dd8f7a91d729dd"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>LogData</b> (unsigned int device, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, uint8_t *dataBuf)</td></tr>
-<tr class="separator:aa159fd3e7fe9ba10a8dd8f7a91d729dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a665ce28465e596ed893977e4d6b8ea0c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a665ce28465e596ed893977e4d6b8ea0c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>InitSave</b> (eLogType logType=LOGTYPE_DAT, const string &amp;directory=g_emptyString, int numDevices=1, float maxDiskSpacePercent=0.5f, uint32_t maxFileSize=1024 *1024 *5, uint32_t maxChunkSize=131072, bool useSubFolderTimestamp=true)</td></tr>
+<tr class="separator:a665ce28465e596ed893977e4d6b8ea0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa35cd8112ca44d16c592b59499529c7f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa35cd8112ca44d16c592b59499529c7f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>InitSaveTimestamp</b> (const string &amp;timeStamp, const string &amp;directory=g_emptyString, const string &amp;subDirectory=g_emptyString, int numDevices=1, eLogType logType=LOGTYPE_DAT, float maxDiskSpacePercent=0.5f, uint32_t maxFileSize=1024 *1024 *5, uint32_t maxChunkSize=131072, bool useSubFolderTimestamp=true)</td></tr>
+<tr class="separator:aa35cd8112ca44d16c592b59499529c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6079a7505728f9f257a24baf390024da"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6079a7505728f9f257a24baf390024da"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>LogData</b> (unsigned int device, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, void *dataBuf)</td></tr>
+<tr class="separator:a6079a7505728f9f257a24baf390024da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04a048a0f5b937894ab25c90f9f7e420"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a04a048a0f5b937894ab25c90f9f7e420"></a>
 <a class="el" href="structp__data__t.html">p_data_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>ReadData</b> (unsigned int device=0)</td></tr>
 <tr class="separator:a04a048a0f5b937894ab25c90f9f7e420"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -141,9 +141,15 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>TimeStamp</b> ()</t
 <tr class="memitem:ae039a55a31716d79e10e39c4bffda9cb"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae039a55a31716d79e10e39c4bffda9cb"></a>
 string&#160;</td><td class="memItemRight" valign="bottom"><b>LogDirectory</b> ()</td></tr>
 <tr class="separator:ae039a55a31716d79e10e39c4bffda9cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a293783e5ec6e7554ed4d5524c6e022ca"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a293783e5ec6e7554ed4d5524c6e022ca"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>LogSizeAll</b> ()</td></tr>
+<tr class="separator:a293783e5ec6e7554ed4d5524c6e022ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dc2c51389370449f3bfaa18d6993d67"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2dc2c51389370449f3bfaa18d6993d67"></a>
 uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>LogSize</b> (unsigned int device=0)</td></tr>
 <tr class="separator:a2dc2c51389370449f3bfaa18d6993d67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3d396b24ff489cab5c1c7cd073ce84f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad3d396b24ff489cab5c1c7cd073ce84f"></a>
+float&#160;</td><td class="memItemRight" valign="bottom"><b>LogSizeAllMB</b> ()</td></tr>
+<tr class="separator:ad3d396b24ff489cab5c1c7cd073ce84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00c27983aba46c3583f674215252a23c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a00c27983aba46c3583f674215252a23c"></a>
 float&#160;</td><td class="memItemRight" valign="bottom"><b>LogSizeMB</b> (unsigned int device=0)</td></tr>
 <tr class="separator:a00c27983aba46c3583f674215252a23c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,14 +163,17 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>FileCount</b> (un
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>GetDeviceCount</b> ()</td></tr>
 <tr class="separator:a0d7e34b649326a1556ab8284c8c8dfcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a477e17db2c480bc21837f875db278093"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a477e17db2c480bc21837f875db278093"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>SetDeviceInfo</b> (const <a class="el" href="structdev__info__t.html">dev_info_t</a> *info, unsigned int device=0)</td></tr>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>SetDeviceInfo</b> (const dev_info_t *info, unsigned int device=0)</td></tr>
 <tr class="separator:a477e17db2c480bc21837f875db278093"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a355d12f292a21501d49e4bb5467e5e71"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a355d12f292a21501d49e4bb5467e5e71"></a>
-const <a class="el" href="structdev__info__t.html">dev_info_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>GetDeviceInfo</b> (unsigned int device=0)</td></tr>
+const dev_info_t *&#160;</td><td class="memItemRight" valign="bottom"><b>GetDeviceInfo</b> (unsigned int device=0)</td></tr>
 <tr class="separator:a355d12f292a21501d49e4bb5467e5e71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b2dca9a121b292995ad560664a011fd"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9b2dca9a121b292995ad560664a011fd"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>CopyLog</b> (<a class="el" href="classc_i_s_logger.html">cISLogger</a> &amp;log, const string &amp;timestamp=g_emptyString, const string &amp;outputDir=g_emptyString, eLogType logType=LOGTYPE_DAT, float maxDiskSpaceMB=1024.0f, uint32_t maxFileSize=1024 *1024 *5, uint32_t maxChunkSize=131072, bool useSubFolderTimestamp=true)</td></tr>
-<tr class="separator:a9b2dca9a121b292995ad560664a011fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae86ecacf0a939f8cf9ada27c99a0ab33"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae86ecacf0a939f8cf9ada27c99a0ab33"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>CopyLog</b> (<a class="el" href="classc_i_s_logger.html">cISLogger</a> &amp;log, const string &amp;timestamp=g_emptyString, const string &amp;outputDir=g_emptyString, eLogType logType=LOGTYPE_DAT, float maxDiskSpacePercent=0.5f, uint32_t maxFileSize=1024 *1024 *5, uint32_t maxChunkSize=131072, bool useSubFolderTimestamp=true)</td></tr>
+<tr class="separator:ae86ecacf0a939f8cf9ada27c99a0ab33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1323eb650c6397ba493a0fa44d1461b4"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1323eb650c6397ba493a0fa44d1461b4"></a>
+const <a class="el" href="classc_log_stats.html">cLogStats</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>GetStats</b> ()</td></tr>
+<tr class="separator:a1323eb650c6397ba493a0fa44d1461b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -174,9 +183,9 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>GetAllFilesInD
 <tr class="memitem:a1c32e0abbbf842e8d8908e340cde7c5d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1c32e0abbbf842e8d8908e340cde7c5d"></a>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>GetAllFilesInDirectory</b> (const string &amp;directory, bool recursive, const string &amp;regexPattern, vector&lt; string &gt; &amp;files)</td></tr>
 <tr class="separator:a1c32e0abbbf842e8d8908e340cde7c5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae31d6eab6eaca6c6f75c9a0e666659ef"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae31d6eab6eaca6c6f75c9a0e666659ef"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>DeleteDirectory</b> (const string &amp;directory)</td></tr>
-<tr class="separator:ae31d6eab6eaca6c6f75c9a0e666659ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2f55da8f2bc312a11a72f373736223c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad2f55da8f2bc312a11a72f373736223c"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>DeleteDirectory</b> (const string &amp;directory, bool recursive=true)</td></tr>
+<tr class="separator:ad2f55da8f2bc312a11a72f373736223c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef32922544e5bd8d204f0ddb27a76c80"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aef32922544e5bd8d204f0ddb27a76c80"></a>
 static uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>GetDirectorySpaceUsed</b> (const string &amp;directory, bool recursive=true)</td></tr>
 <tr class="separator:aef32922544e5bd8d204f0ddb27a76c80"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -192,6 +201,15 @@ static uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>GetDirecto
 <tr class="memitem:a6ccdcc5c32a38c2afc885a7ed9aff1e4"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6ccdcc5c32a38c2afc885a7ed9aff1e4"></a>
 static string&#160;</td><td class="memItemRight" valign="bottom"><b>GetFileName</b> (const string &amp;path)</td></tr>
 <tr class="separator:a6ccdcc5c32a38c2afc885a7ed9aff1e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51f4d1c83131a6b8fa7d5820379cf0c0"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a51f4d1c83131a6b8fa7d5820379cf0c0"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>LogHeaderIsCorrupt</b> (const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *hdr)</td></tr>
+<tr class="separator:a51f4d1c83131a6b8fa7d5820379cf0c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9a98f041cc47b41676d589ea35c2a73"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae9a98f041cc47b41676d589ea35c2a73"></a>
+static string&#160;</td><td class="memItemRight" valign="bottom"><b>CreateCurrentTimestamp</b> ()</td></tr>
+<tr class="separator:ae9a98f041cc47b41676d589ea35c2a73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae179f45bc1c6170e92fda6a9880e56c3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae179f45bc1c6170e92fda6a9880e56c3"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>LogDataIsCorrupt</b> (const <a class="el" href="structp__data__t.html">p_data_t</a> *data)</td></tr>
+<tr class="separator:ae179f45bc1c6170e92fda6a9880e56c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -209,7 +227,7 @@ static const string&#160;</td><td class="memItemRight" valign="bottom"><b>g_empt
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 21 2017 14:57:11 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Jul 19 2017 18:35:14 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

@@ -22,10 +22,10 @@
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
-  <td id="projectlogo"><img alt="Logo" src="logo_300x77.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.1</span>
+   &#160;<span id="projectnumber">Release 1.1.2</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -120,17 +120,37 @@ pfnBootloadProgress&#160;</td><td class="memItemRight" valign="bottom"><b>verify
 <tr class="memitem:a24f112ce5750a485a5679c51e45fa664"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a24f112ce5750a485a5679c51e45fa664"></a>
 const char *&#160;</td><td class="memItemRight" valign="bottom"><b>verifyFileName</b></td></tr>
 <tr class="separator:a24f112ce5750a485a5679c51e45fa664"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9503237f9c9e527a60158ee62822ab76"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9503237f9c9e527a60158ee62822ab76"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>numberOfDevices</b></td></tr>
+<tr class="separator:a9503237f9c9e527a60158ee62822ab76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4846bc93321b20d04d3cb46d3bcf474"><td class="memItemLeft" ><a class="anchor" id="ad4846bc93321b20d04d3cb46d3bcf474"></a>
+union {</td></tr>
+<tr class="memitem:ad1f0bce466c84c49f02c027d6f5a8d04"><td class="memItemLeft" >
+&#160;&#160;&#160;unsigned int&#160;&#160;&#160;<b>bits</b></td></tr>
+<tr class="separator:ad1f0bce466c84c49f02c027d6f5a8d04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96d2ea5d81a546a28a5083511f58d568"><td class="memItemLeft" >
+&#160;&#160;&#160;struct {</td></tr>
+<tr class="memitem:a42bcc1e85a8ced82e6baeb9acbe5522e"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;unsigned int&#160;&#160;&#160;<b>enableVerify</b>: 1</td></tr>
+<tr class="separator:a42bcc1e85a8ced82e6baeb9acbe5522e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8176690b844524ff012a083757818d2"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;unsigned int&#160;&#160;&#160;<b>enableAutoBaud</b>: 1</td></tr>
+<tr class="separator:ad8176690b844524ff012a083757818d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96d2ea5d81a546a28a5083511f58d568"><td class="memItemLeft" valign="top">&#160;&#160;&#160;}&#160;&#160;&#160;<b>bitFields</b></td></tr>
+<tr class="separator:a96d2ea5d81a546a28a5083511f58d568"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4846bc93321b20d04d3cb46d3bcf474"><td class="memItemLeft" valign="top">}&#160;</td><td class="memItemRight" valign="bottom"><b>flags</b></td></tr>
+<tr class="separator:ad4846bc93321b20d04d3cb46d3bcf474"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p>Definition at line <a class="el" href="inertial_sense_boot_loader_8h_source.html#l00045">45</a> of file <a class="el" href="inertial_sense_boot_loader_8h_source.html">inertialSenseBootLoader.h</a>.</p>
+<p>Definition at line <a class="el" href="inertial_sense_boot_loader_8h_source.html#l00043">43</a> of file <a class="el" href="inertial_sense_boot_loader_8h_source.html">inertialSenseBootLoader.h</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>src/<a class="el" href="inertial_sense_boot_loader_8h_source.html">inertialSenseBootLoader.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 21 2017 14:57:10 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Jul 19 2017 18:35:13 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

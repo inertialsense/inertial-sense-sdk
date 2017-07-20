@@ -157,16 +157,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\cltool.cpp" />
-    <ClCompile Include="..\source\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\source\cltool.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\VS_project\InertialSenseLib.vcxproj">
       <Project>{b6df5042-23c7-42d9-976b-d313e6ea092c}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\source\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

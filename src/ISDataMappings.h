@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <map>
 #include <inttypes.h>
+#include "com_manager.h"
 
 using namespace std;
 
@@ -33,9 +34,21 @@ typedef enum
 	DataTypeUInt64,
 	DataTypeFloat,
 	DataTypeDouble,
-	DataTypeString
+	DataTypeString,
+
+	DataTypeCount
 } eDataType;
 
+/*!
+* Get the size of an eDataType
+* @param dataType the data type to get size for
+* @return the size of the data type, or 0 if unknown or variable length (i.e. DataTypeString)
+*/
+uint32_t GetDataTypeSize(eDataType dataType);
+
+/*
+* Metadata about a specific field
+*/
 typedef struct
 {
 	uint32_t dataOffset;
@@ -50,35 +63,68 @@ typedef map<string, data_info_t> map_name_to_info_t;
 // map of data id to map of name and data info
 typedef map<uint32_t, map_name_to_info_t> map_lookup_name_t;
 
+typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
+
 class cISDataMappings
 {
 public:
 	/*!
-	* Get a data set name from an id, returns NULL if not found
+	* Get a data set name from an id
+	* @param dataId the data id to get a data set name from
+	* @return data set name or NULL if not found
 	*/
 	static const char* GetDataSetName(uint32_t dataId);
 
 	/*!
 	* Get the data id to name/info lookup table
+	* @return the global map lookup table
 	*/
 	static const map_lookup_name_t& GetMap();
 
 	/*!
-	* Get the size of a given data id, 0 if not found or unknown
+	* Get the size of a given data id
+	* @param dataId the data id
+	* @return the data id size or 0 if not found or unknown
 	*/
 	static uint32_t GetSize(uint32_t dataId);
 
 	/*!
 	* Convert a string to a data field
-	* buf must be the size of the entire data structure
+	* @param stringBuffer the string to convert, must not be NULL
+	* @param hdr packet header, NULL means dataBuffer is the entire data structure
+	* @param dataBuffer packet buffer
+	* @param info metadata about the field to convert
+	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, uint8_t* buf, const data_info_t& info);
+	static bool StringToData(const char* stringBuffer, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info);
 
 	/*!
 	* Convert data to a string
-	* dataBuffer must be the size of the entire data structure
+	* @param info metadata about the field to convert
+	* @param hdr packet header, NULL means dataBuffer is the entire data structure
+	* @param dataBuffer packet buffer
+	* @param stringBuffer the buffer to hold the converted string
+	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const uint8_t* dataBuffer, char stringBuffer[IS_DATA_MAPPING_MAX_STRING_LENGTH]);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer);
+
+	/*!
+	* Get a timestamp from data if available
+	* @param hdr data header
+	* @param buf data buffer
+	* @return timestamp, or 0.0 if no timestamp available
+	*/
+	static double GetTimestamp(const p_data_hdr_t* hdr, const void* buf);
+
+	/*!
+	* Check whether field data can be retrieved given a data packet
+	* @param info metadata for the field to get
+	* @param hdr packet header
+	* @param buf packet buffer
+	* @param ptr receives the offset to get data at if the return value is true
+	* @return true if the data can be retrieved, false otherwise
+	*/
+	static bool CanGetFieldData(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* buf, const uint8_t*& ptr);
 
 private:
 	cISDataMappings();

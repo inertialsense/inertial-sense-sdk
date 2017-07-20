@@ -31,6 +31,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MSG_PERIOD_SEND_ONCE		-1
 #define MSG_PERIOD_DISABLED			0
 
+#define CHECKSUM_SEED 0x00AAAAAA
+
 /* Contains callback information for a before and after send for a data structure */
 typedef struct
 {
@@ -90,13 +92,6 @@ typedef struct
 	/* Port packet was sent on */
 	int                     pHandle;
 } ensured_pkt_t;
-
-// continuation of packet data
-typedef struct
-{
-	p_data_hdr_t	hdr;
-	unsigned char	buf[MAX_DATASET_SIZE];
-} com_manager_con_t;
 
 // ring buffer storage size
 #define RING_BUFFER_SIZE PKT_BUF_SIZE
@@ -176,10 +171,13 @@ typedef struct
 	// pass through handler
 	pfnComManagerPassThrough passThroughHandler;
 
+	// broadcast message handler
+	pfnComManagerBroadcast broadcastHandler;
+
 #if ENABLE_PACKET_CONTINUATION
 
 	// continuation data for packets
-	com_manager_con_t con;
+    p_data_t* con;
 
 #endif
 
@@ -206,7 +204,6 @@ void initComManagerInstanceInternal
 int processAsciiRxPacket(com_manager_t* cmInstance, int pHandle, unsigned char* start, int count);
 void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count);
 int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned char additionalDataAvailable);
-int processDataRequest(com_manager_t* cmInstance, int pHandle, p_data_get_t *req);
 void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int period_ms);
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg);
 void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t *disable);
@@ -227,7 +224,19 @@ int beginRtcm3Packet(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ring
 int decodeBinaryPacketByte(com_manager_t* cmInstance, int pHandle, uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
 int asciiMessageCompare(const void* elem1, const void* elem2);
 uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest);
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+
+void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
+
+#else
+
 void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum);
+
+#endif
+
+void swapPacket(packet_t* pkt);
+int dataIdShouldSwap(uint32_t dataId);
 
 //  Packet Retry
 void stepPacketRetry(com_manager_t* cmInstance);
@@ -296,8 +305,7 @@ void initComManagerInstanceInternal
 {
     int32_t i;
 	
-	initDataSets();
-    if (numHandles < 0 || numHandles > 128)
+    if (numHandles < 0 || numHandles > 1024)
     {
         numHandles = 1;
     }
@@ -351,8 +359,26 @@ void initComManagerInstanceInternal
     memset(cmInstance->status, 0, sizeof(com_manager_status_t) * numHandles);
     for (i = 0; i < numHandles; i++)
 	{
-		cmInstance->status[i].flags = IS_LITTLE_ENDIAN;
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+
+		cmInstance->status[i].flags = CPU_IS_LITTLE_ENDIAN | CM_PKT_FLAGS_CHECKSUM_24_BIT;
+
+#else
+
+		cmInstance->status[i].flags = CPU_IS_LITTLE_ENDIAN;
+
+#endif
+
 	}
+
+#if ENABLE_PACKET_CONTINUATION
+
+    cmInstance->con = MALLOC(sizeof(p_data_t) * numHandles);
+    memset(cmInstance->con, 0, sizeof(p_data_t) * numHandles);
+
+#endif
+
 }
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
@@ -597,25 +623,6 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 	stepPacketRetry(cmInstance);
 }
 
-void setComManagerSendEndianess(int pHandle, int littleEndian)
-{
-	setComManagerSendEndianessInstance(&g_cm, pHandle, littleEndian);
-}
-
-void setComManagerSendEndianessInstance(CMHANDLE cmInstance, int pHandle, int littleEndian)
-{
-	com_manager_t* _cmInstance = (com_manager_t*)cmInstance;
-	
-	if (littleEndian)
-	{
-		_cmInstance->status[pHandle].flags |= (CM_PKT_FLAGS_LITTLE_ENDIAN);
-	}
-	else
-	{
-		_cmInstance->status[pHandle].flags &= ~(CM_PKT_FLAGS_LITTLE_ENDIAN);
-	}
-}
-
 void freeComManagerInstance(CMHANDLE cmInstance_)
 {
 	if (cmInstance_ != 0 && cmInstance_ != &g_cm)
@@ -636,6 +643,17 @@ void freeComManagerInstance(CMHANDLE cmInstance_)
 			FREE(cmInstance->status);
 			cmInstance->status = 0;
 		}
+
+#if ENABLE_PACKET_CONTINUATION
+
+        if (cmInstance->con != 0)
+        {
+            FREE(cmInstance->con);
+            cmInstance->con = 0;
+        }
+
+#endif
+
 		FREE(cmInstance);
 	}
 }
@@ -650,6 +668,19 @@ void setComManagerPassThroughInstance(CMHANDLE cmInstance, pfnComManagerPassThro
 	if (cmInstance != 0)
 	{
 		((com_manager_t*)cmInstance)->passThroughHandler = handler;
+	}
+}
+
+void setComManagerBroadcastCallback(pfnComManagerBroadcast handler)
+{
+	setComManagerBroadcastCallbackInstance(&g_cm, handler);
+}
+
+void setComManagerBroadcastCallbackInstance(CMHANDLE cmInstance, pfnComManagerBroadcast handler)
+{
+	if (cmInstance != 0)
+	{
+		((com_manager_t*)cmInstance)->broadcastHandler = handler;
 	}
 }
 
@@ -893,10 +924,12 @@ int validateAsciiChecksum(com_manager_t* cmInstance, unsigned char* buf, int cou
 void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count)
 {
 	unsigned char c;
-	unsigned char* start = buf + 1; // skip $ char
+	unsigned char* messageId;
+	unsigned char* messageData = 0;
 	unsigned char* end = buf + count;
 	unsigned char* ptr = buf;
-	int fieldIndex = -1;
+	int fieldIndex = 0;
+	int length;
 	asciiMessageMap_t* foundMap = 0;
 	cmInstance->status[pHandle].flags |= CM_PKT_FLAGS_RX_VALID_DATA; // communication received
 	cmInstance->status[pHandle].readCounter = 0;
@@ -904,82 +937,75 @@ void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf
 	// Packet read success
 	cmInstance->status[pHandle].rxPktCount++;
 
-	// parse the ASCII line, skipping the initial $ char
-	while (ptr <= end)
+	// message id is right after the $ char
+	messageId = ++ptr;
+
+	while (ptr < end)
 	{
-		c = *(++ptr);
+		c = *ptr;
 		if (c == ',' || c == '*')
 		{
-			if (fieldIndex == -1)
-			{
-				if (ptr - start < 4)
-				{
-					// message ids must be exactly 4 chars, they can be suffixed with a -[ANYTHING] though - in reality the suffix can be any sequence of non comma and non asterisk chars, and the hyphen
-					// is not required, although it is recommended for clarity. The suffix is useful when the message is echoed back so the caller can know exactly which message was received
-					// in the event that multiple messages with the same message id are being transmitted in quick succession.
-					return;
-				}
+			if
+			(
+				// global ascii handler gobbled up the message, we are done
+				(cmInstance->asciiMessageHandler != 0 && cmInstance->asciiMessageHandler(cmInstance, pHandle, messageId, buf, count)) ||
 
-				// see if there's a global handler that processes the message, if so we are done
-				// if the global handler did not process the message and we don't have any data mappings, we are also done
-				if ((cmInstance->asciiMessageHandler != 0 && cmInstance->asciiMessageHandler(cmInstance, start, buf, count)) ||
-					cmInstance->asciiMessages == 0 || cmInstance->asciiMessagesCount == 0)
-				{
-					return;
-				}
+				// no ascii messages defined, we are done
+				cmInstance->asciiMessages == 0 || cmInstance->asciiMessagesCount == 0 ||
 
-				foundMap = bsearch(start, cmInstance->asciiMessages, cmInstance->asciiMessagesCount, sizeof(cmInstance->asciiMessages[0]), findAsciiMessage);
-				if (foundMap == 0)
-				{
-					// no global handle and no data mapping for this message id, we are done
-					return;
-				}
-			}
-			else if (fieldIndex >= foundMap->fieldCount)
-			{
+				// no global handle and no data mapping for this message id, we are done
+				((foundMap = bsearch(messageId, cmInstance->asciiMessages, cmInstance->asciiMessagesCount, sizeof(cmInstance->asciiMessages[0]), findAsciiMessage)) == 0) ||
+
 				// field count exceeded, we are done
+				(fieldIndex >= foundMap->fieldCount)
+			)
+			{
 				return;
 			}
-			else
+			// check if we have the first piece of data yet
+			else if (messageData != 0)
 			{
-				// empty fields do not perform any modification
-				if (start + 1 != ptr)
+				// if we have a non-empty message, parse it out
+				if ((length = (ptr - messageData)) > 0)
 				{
-					unsigned char tmp = *ptr;
 					*ptr = '\0';
 					uint16_t fieldAndOffset = foundMap->fieldsAndOffsets[fieldIndex];
 					asciiDataType type = (fieldAndOffset & 0x00FF);
 					uint8_t offset = (fieldAndOffset & 0xFF00) >> 8;
-
 					switch (type)
 					{
 						case asciiTypeInt:
 						{
-							const int dataValue = strtol((char*)start, 0, 10);
+							const int dataValue = strtol((char*)messageData, 0, 10);
 							memcpy(foundMap->ptr + offset, &dataValue, sizeof(dataValue));
 						} break;
 						case asciiTypeUInt:
 						{
-							const unsigned int dataValue = strtoul((char*)start, 0, 10);
+							const unsigned int dataValue = strtoul((char*)messageData, 0, 10);
 							memcpy(foundMap->ptr + offset, &dataValue, sizeof(dataValue));
 						} break;
 						case asciiTypeFloat:
 						{
-                            const float dataValue = PARSE_FLOAT((char*)start);
+							const float dataValue = PARSE_FLOAT((char*)messageData);
 							memcpy(foundMap->ptr + offset, &dataValue, sizeof(dataValue));
 						} break;
 						case asciiTypeDouble:
 						{
-                            const double dataValue = PARSE_DOUBLE((char*)start);
+							const double dataValue = PARSE_DOUBLE((char*)messageData);
 							memcpy(foundMap->ptr + offset, &dataValue, sizeof(dataValue));
 						} break;
 					}
-					
-					*ptr = tmp;
+					*ptr = c;
 				}
+				fieldIndex++;
 			}
-			start = ++ptr; // skip comma char with ++
-			fieldIndex++;
+
+			// next message data is at next char
+			messageData = ++ptr;
+		}
+		else
+		{
+			ptr++;
 		}
 	}
 }
@@ -1043,24 +1069,6 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 
 		regd = &(cmInstance->regData[dataHdr->id]);
 
-		if ((pkt->hdr.flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != IS_LITTLE_ENDIAN)
-		{
-			uint16_t* offsets;
-			uint16_t offsetsLength;
-
-			// flip doubles back if needed
-			if ((offsets = getDoubleOffsets(dataHdr->id, &offsetsLength)))
-			{
-				flipDoubles(dataBuf, dataHdr->size, dataHdr->offset, offsets, offsetsLength);
-			}
-
-			// flip strings back if needed
-			if ((offsets = getStringOffsetsLengths(dataHdr->id, &offsetsLength)))
-			{
-				flipStrings(dataBuf, dataHdr->size, dataHdr->offset, offsets, offsetsLength);
-			}
-		}
-
 		// Validate and constrain Rx data size to fit within local data struct
 		if (regd->dataSet.size && (dataHdr->offset + dataHdr->size) > regd->dataSet.size)
 		{
@@ -1080,36 +1088,39 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 #if ENABLE_PACKET_CONTINUATION
 
 		// Consolidate datasets that were broken-up across multiple packets
-		if (additionalDataAvailable || cmInstance->con.hdr.size)
-		{
-			// New dataset
-			if (cmInstance->con.hdr.id == 0 ||
-				cmInstance->con.hdr.size == 0 ||
-				cmInstance->con.hdr.id != dataHdr->id)
-			{
-				// Reset data consolidation
-				memset(&cmInstance->con, 0, sizeof(cmInstance->con));
-				cmInstance->con.hdr.id = dataHdr->id;
-				cmInstance->con.hdr.offset = dataHdr->offset;
-			}
+        p_data_t* con = &cmInstance->con[pHandle];
+        if (additionalDataAvailable || (con->hdr.size != 0 && con->hdr.id == dataHdr->id))
+        {
+            // New dataset
+            if (con->hdr.id == 0 || con->hdr.size == 0 || con->hdr.id != dataHdr->id || con->hdr.size > dataHdr->offset)
+            {
+                // Reset data consolidation
+                con->hdr.id = dataHdr->id;
+                con->hdr.offset = dataHdr->offset;
+                con->hdr.size = 0;
+            }
 
-			// Ensure data will fit in buffer
-			if ((cmInstance->con.hdr.size + dataHdr->size) < sizeof(cmInstance->con.buf))
-			{
-				// Add data to buffer
-				memcpy(&(cmInstance->con.buf[cmInstance->con.hdr.size]), dataBuf, dataHdr->size);
-				cmInstance->con.hdr.size += dataHdr->size;
-			}
+            // Ensure data will fit in buffer
+            if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
+            {
+                // Add data to buffer
+                memcpy(con->buf + con->hdr.size, dataBuf, dataHdr->size);
+                con->hdr.size += dataHdr->size;
+            }
+            else
+            {
+                // buffer overflow
+            }
 
-			// Wait for end of data
-			if (additionalDataAvailable)
-			{
-				return 0;
-			}
+            // Wait for end of data
+            if (additionalDataAvailable)
+            {
+                return 0;
+            }
 
-			// Use consolidated data
-			data = (p_data_t*)&cmInstance->con;
-		}
+            // Use consolidated data
+            data = con;
+        }
             
 #else
             
@@ -1140,11 +1151,8 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 
 #if ENABLE_PACKET_CONTINUATION
 
-		// Clear dataset consolidation if necessary
-		if (cmInstance->con.hdr.size)
-		{
-			cmInstance->con.hdr.size = 0;
-		}
+        // Clear dataset consolidation
+        con->hdr.id = con->hdr.size = con->hdr.offset = 0;
 
 #endif
 
@@ -1156,7 +1164,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 		break;
 
 	case PID_GET_DATA:
-		if (processDataRequest(cmInstance, pHandle, (p_data_get_t *)(pkt->body.ptr)))
+		if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t *)(pkt->body.ptr)))
 		{
 			sendAck(cmInstance, pHandle, pkt, PID_NACK);
 		}
@@ -1193,9 +1201,31 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 	return 0;
 }
 
-// 0 on success. -1 on failure.
-int processDataRequest(com_manager_t* cmInstance, int pHandle, p_data_get_t *req)
+bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint32_t dataId)
 {
+	return comManagerGetRegisteredDataInfoInstance(&g_cm, dataId);
+}
+
+bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint32_t dataId)
+{
+	if (dataId >= DID_COUNT)
+	{
+		return 0;
+	}
+
+	com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
+	return &cmInstance->regData[dataId].dataSet;
+}
+
+// 0 on success. -1 on failure.
+int comManagerGetDataRequest(int pHandle, p_data_get_t* req)
+{
+    return comManagerGetDataRequestInstance(&g_cm, pHandle, req);
+}
+
+int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_get_t* req)
+{
+	com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
 	broadcast_msg_t* msg = 0;
 	int i;
 
@@ -1206,13 +1236,13 @@ int processDataRequest(com_manager_t* cmInstance, int pHandle, p_data_get_t *req
 	}
 
 	// Constrain request broadcast period if necessary
-	if (req->bc_period_ms != 0)
+	else if (req->bc_period_ms != 0)
 	{
 		_LIMIT2(req->bc_period_ms, MIN_REQUEST_PERIOD_MS, MAX_REQUEST_PERIOD_MS);
 	}
 
 	// if size is 0 and offset is 0, set size to full data struct size
-	if (req->size == 0 && req->offset == 0 && req->id < sizeof(cmInstance->regData) / sizeof(cmInstance->regData[0]))
+	if (req->size == 0 && req->offset == 0 && req->id < _ARRAY_ELEMENT_COUNT(cmInstance->regData))
 	{
 		req->size = cmInstance->regData[req->id].dataSet.size;
 	}
@@ -1296,8 +1326,8 @@ int processDataRequest(com_manager_t* cmInstance, int pHandle, p_data_get_t *req
 		enableBroadcastMsg(cmInstance, msg, req->bc_period_ms);
 	}
 	else
-	{	// ***  Request Single  ***
-
+	{	
+		// ***  Request Single  ***
 		// Send data immediately if possible
 		if (cmInstance->txFreeCallback == 0 || msg->pkt.txData.size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
 		{
@@ -1309,6 +1339,11 @@ int processDataRequest(com_manager_t* cmInstance, int pHandle, p_data_get_t *req
 			// Won't fit in queue, so send it later
 			enableBroadcastMsg(cmInstance, msg, req->bc_period_ms);
 		}
+	}
+
+	if (cmInstance->broadcastHandler != 0)
+	{
+		cmInstance->broadcastHandler(cmInstance, pHandle, req);
 	}
 
 	return 0;
@@ -1422,19 +1457,13 @@ int sendPacket(com_manager_t* cmInstance, int pHandle, packet_t *dPkt, uint8_t a
 {
 	buffer_t buffer;
 
-	// check if we need to change the send data endianess
-	if ((cmInstance->status[pHandle].flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != IS_LITTLE_ENDIAN)
-	{
-		flipEndianess32(dPkt->body.ptr, dPkt->body.size);
-	}
-
 	if (encodeBinaryPacket(cmInstance, pHandle, &buffer, dPkt, additionalPktFlags))
 	{
 		return -1;
 	}
 
 	// Send Packet
-	if (cmInstance->sendPacketCallback)
+	else if (cmInstance->sendPacketCallback)
 	{
 		cmInstance->sendPacketCallback(cmInstance, pHandle, &buffer);
 	}
@@ -1462,9 +1491,6 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 		case PID_DATA:
 		case PID_SET_DATA:
 		{
-			// Breakup data into MAX_P_DATA_BODY_SIZE chunks of data if necessary
-			int forceEndianessSwap = ((cmInstance->status[pHandle].flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != IS_LITTLE_ENDIAN);
-
 			// Setup packet and encoding state
 			buffer_t bufToEncode;
 			p_data_hdr_t hdr = *(p_data_hdr_t*)msg->bodyHdr.ptr;
@@ -1490,29 +1516,6 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 
 				// Set data body size
 				pkt.body.size = sizeof(p_data_hdr_t) + hdrToSend->size;
-
-				// check if we need to change the send data endianess
-				if (forceEndianessSwap)
-				{
-					// send the packet in the endianess that was set
-					uint16_t* offsets;
-					uint16_t offsetsLength;
-
-					// flip doubles back if needed
-					if ((offsets = getDoubleOffsets(id, &offsetsLength)))
-					{
-						flipDoubles(pkt.body.ptr + sizeof(p_data_hdr_t), hdrToSend->size, hdrToSend->offset, offsets, offsetsLength);
-					}
-
-					// flip strings back if needed
-					if ((offsets = getStringOffsetsLengths(id, &offsetsLength)))
-					{
-						flipStrings(pkt.body.ptr + sizeof(p_data_hdr_t), hdrToSend->size, hdrToSend->offset, offsets, offsetsLength);
-					}
-
-					// flip all 4 byte pairs - id, offset and size in the header are now invalid after this point
-					flipEndianess32(pkt.body.ptr, hdrToSend->size + sizeof(p_data_hdr_t));
-				}
 
 				// Encode the packet, handling special characters, etc.
 				if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size != 0)))
@@ -1632,8 +1635,8 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
     uint8_t* ptrSrc;
 	uint8_t* ptrSrcEnd;
 	uint8_t* ptrDest = pkt->buf;
-	unsigned shifter = 8;
-	unsigned checkSumValue = 0x0000FF00; // the packet start byte begins the checksum	
+	unsigned shifter = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? 0 : 8);
+	unsigned checkSumValue = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? CHECKSUM_SEED  : 0x0000FF00);
 	unsigned val;
 
 	// Packet header -------------------------------------------------------------------------------------------
@@ -1642,17 +1645,17 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 	// PID
 	val = dPkt->hdr.pid;
 	ptrDest = encodeByteAddToBuffer(val, ptrDest);
-	checkSumValue ^= val; // no shift
+	checkSumValue ^= val;
 	
 	// Counter
 	val = dPkt->hdr.counter;
 	ptrDest = encodeByteAddToBuffer(val, ptrDest);
-	checkSumValue ^= (val << 8); // shift 8
+	checkSumValue ^= (val << 8);
 	
 	// Flags
 	val = cmInstance->status[pHandle].flags | dPkt->hdr.flags | additionalPktFlags;
 	ptrDest = encodeByteAddToBuffer(val, ptrDest);
-	checkSumValue ^= val; // no shift
+	checkSumValue ^= (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? val << 16 : val);
 
 	// Packet body ----------------------------------------------------------------------------------------------
 	ptrSrc = (uint8_t*)dPkt->body.ptr;
@@ -1663,27 +1666,114 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 	{
 		val = *ptrSrc++;
 		checkSumValue ^= (val << shifter);
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+
+		// increment shifter
+		shifter += 8;
+
+		// reset if shifter equals 24
+		shifter *= (shifter != 24);
+
+#else
+
 		shifter ^= 8;
+
+#endif
+
 		ptrDest = encodeByteAddToBuffer(val, ptrDest);
 	}
 	
-	// footer, not part of checksum ----------------------------------------------------------------------------------------------------
+	// footer ----------------------------------------------------------------------------------------------------
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+
+	// checksum byte 3
+	val = (uint8_t)((checkSumValue >> 16) & 0xFF);
+	ptrDest = encodeByteAddToBuffer(val, ptrDest);
+
+#else
+
 	*ptrDest++ = 0; // reserved
 	
-	// we need to encode the checksum values if they end up being a special character value
+#endif
+
+	// checksum byte 2
 	val = (uint8_t)(checkSumValue >> 8) & 0xFF;
 	ptrDest = encodeByteAddToBuffer(val, ptrDest);
 	
+	// checksum byte 1
 	val = (uint8_t)(checkSumValue & 0xFF);
 	ptrDest = encodeByteAddToBuffer(val, ptrDest);
-		
-	// finish the packet
+
+	// packet end byte
 	*ptrDest++ = PSC_END_BYTE;
 	pkt->size = (uint32_t)(ptrDest - pkt->buf);
 
     return 0;
 }
 
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+
+void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum)
+{
+	int state = 0;
+	uint8_t* currentPtr = (*ptrSrcEnd) - 1;
+	*(uint32_t*)ftr = 0;
+
+	// we need a state machine to ensure we don't overrun ptrSrcEnd
+	while (state != 7 && currentPtr > ptrSrc)
+	{
+		switch (state)
+		{
+		case 0: // packet end byte
+			ftr->stopByte = *currentPtr--;
+			state = 1;
+			break;
+
+		case 1: // packet checksum 1
+			ftr->cksum1 = *currentPtr--;
+			state = (3 - (*currentPtr == PSC_RESERVED_KEY));
+			break;
+
+		case 2: // packet checksum 1 is encoded
+			ftr->cksum1 = ~ftr->cksum1;
+			currentPtr--;
+			state = 3;
+			break;
+
+		case 3: // packet checksum 2
+			ftr->cksum2 = *currentPtr--;
+			state = (5 - (*currentPtr == PSC_RESERVED_KEY));
+			break;
+
+		case 4: // packet checksum 2 is encoded
+			ftr->cksum2 = ~ftr->cksum2;
+			currentPtr--;
+			state = 5;
+			break;
+
+		case 5: // packet checksum 3
+			ftr->cksum3 = *currentPtr;
+			state = (7 - (*(currentPtr - 1) == PSC_RESERVED_KEY));
+			break;
+
+		case 6: // packet checksum 3 is encoded
+			ftr->cksum3 = ~ftr->cksum3;
+			currentPtr--;
+			state = 7;
+			break;
+
+		default:
+			break;
+		}
+	}
+	*ptrSrcEnd = currentPtr;
+	*checksum = ((unsigned)ftr->cksum1) | (0x0000FF00 & ((unsigned)ftr->cksum2 << 8)) | (0x00FF0000 & ((unsigned)ftr->cksum3 << 16));
+}
+
+#else
 
 void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum)
 {
@@ -1718,11 +1808,78 @@ void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t*
 	*_ptrSrcEnd = ptrSrcEnd;
 }
 
+#endif
+
+
+void swapPacket(packet_t* pkt)
+{
+	if (pkt->hdr.flags & CM_PKT_FLAGS_RAW_DATA_NO_SWAP)
+	{
+        if ((pkt->hdr.pid == PID_DATA || pkt->hdr.pid == PID_SET_DATA) && pkt->body.size >= sizeof(p_data_hdr_t))
+		{
+			// swap the data header only
+			flipEndianess32(pkt->body.ptr, sizeof(p_data_hdr_t));
+		}
+	}
+    else if (pkt->body.size < sizeof(p_data_hdr_t) || (pkt->hdr.pid != PID_DATA && pkt->hdr.pid != PID_SET_DATA))
+	{
+		// swap entire packet, not a data packet
+		flipEndianess32(pkt->body.ptr, pkt->body.size);
+	}
+	else
+	{
+		// swap header
+		flipEndianess32(pkt->body.ptr, sizeof(p_data_hdr_t));
+
+		// get header
+		p_data_hdr_t* dataHdr = (p_data_hdr_t*)pkt->body.ptr;
+
+		// if dev_info_t, swap only the uint32 fields, this data structure is handled special as it contains char[] arrays and uint32_t in the same struct
+		if (dataHdr->id == DID_DEV_INFO && pkt->body.size == sizeof(p_data_hdr_t) + sizeof(dev_info_t))
+		{
+			// swap only the pieces that need swapping
+			dev_info_t* devInfo = (dev_info_t*)(pkt->body.ptr + sizeof(p_data_hdr_t));
+			devInfo->buildNumber = SWAP32(devInfo->buildNumber);
+			devInfo->repoRevision = SWAP32(devInfo->repoRevision);
+			devInfo->serialNumber = SWAP32(devInfo->serialNumber);
+		}
+		else if (dataIdShouldSwap(dataHdr->id))
+		{
+			// swap entire packet body
+			flipEndianess32(pkt->body.ptr + sizeof(p_data_hdr_t), pkt->body.size - sizeof(p_data_hdr_t));
+				
+			// flip doubles
+			uint16_t* offsets;
+			uint16_t offsetsLength;
+			uint8_t* dataBuf = pkt->body.ptr + sizeof(p_data_hdr_t);
+
+			// flip doubles back if needed
+			if ((offsets = getDoubleOffsets(dataHdr->id, &offsetsLength)))
+			{
+				flipDoubles(dataBuf, dataHdr->size, dataHdr->offset, offsets, offsetsLength);
+			}
+
+			// flip strings back if needed
+			if ((offsets = getStringOffsetsLengths(dataHdr->id, &offsetsLength)))
+			{
+				flipStrings(dataBuf, dataHdr->size, dataHdr->offset, offsets, offsetsLength);
+			}
+		}
+	}
+}
+
+INLINE int dataIdShouldSwap(uint32_t dataId)
+{
+	switch (dataId)
+	{
+		case DID_GPS_VERSION: return 0;
+	}
+	return 1;
+}
+
 INLINE int decodeBinaryPacketByte(com_manager_t* cmInstance, int pHandle, uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift)
 {
 	uint8_t* ptrSrc = *_ptrSrc;
-// 	uint8_t* ptrDest = *_ptrDest;
-	(void)_ptrDest;
 
 	// packet id byte
 	uint32_t val = *ptrSrc++;
@@ -1774,28 +1931,35 @@ int decodeBinaryPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt, un
 	uint8_t* ptrDest = (uint8_t*)&pkt->hdr;
 	uint8_t* ptrSrcEnd = pbuf + pbufSize;
 	packet_ftr_t ftr;
-	uint32_t checkSumValue = 0x0000FF00; // the packet start byte begins the checksum
 	uint32_t actualCheckSumValue;
-	uint32_t shifter = 8;
+	uint32_t shifter = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? 0 : 8);
+	uint32_t checkSumValue = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? CHECKSUM_SEED : 0x0000FF00);
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+	
+	decodeBinaryPacketFooter(&ftr, ptrSrc, &ptrSrcEnd, &actualCheckSumValue);
+
+#else
+
 	decodeBinaryPacketFooter(&ftr, &ptrSrcEnd, &actualCheckSumValue);
+
+#endif
 
 	// start packet byte
 	*ptrDest++ = *ptrSrc++;
 
-	// packet id - no shift
-	if (decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, 0))
-	{
-		return -1;
-	}
+	
+	if
+	(
+		// packet id
+		decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, 0) ||
 
-	// packet counter - shift 8
-	if (decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, 8))
-	{
-		return -1;
-	}
+		// packet counter
+		decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, 8) ||
 
-	// packet flags - no shift
-	if (decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, 0))
+		// packet flags
+		decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? 16 : 0))
+	)
 	{
 		return -1;
 	}
@@ -1808,7 +1972,20 @@ int decodeBinaryPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt, un
 		{
 			return -1;
 		}
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+
+		shifter += 8;
+
+		// reset if shifter equals 24
+		shifter *= (shifter != 24);
+
+#else
+
 		shifter ^= 8;
+
+#endif
+
 	}
 
 	if (actualCheckSumValue != checkSumValue)
@@ -1829,18 +2006,9 @@ int decodeBinaryPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt, un
 	}
 
 	// if the endianness of the packet doesn't match our CPU, we need to flip the data so it will be correct for our CPU architecture
-	if (pkt->body.size != 0 && (pkt->hdr.flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != IS_LITTLE_ENDIAN)
+	if (pkt->body.size != 0 && (pkt->hdr.flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != CPU_IS_LITTLE_ENDIAN)
 	{
-		if (pkt->hdr.flags & CM_PKT_FLAGS_RAW_DATA_NO_SWAP)
-		{
-			// Just swap the data header
-			flipEndianess32(pkt->body.ptr, sizeof(p_data_hdr_t));
-		}
-		else
-		{
-			// Swap entire packet body (data header and data)
-			flipEndianess32(pkt->body.ptr, pkt->body.size);			
-		}
+		swapPacket(pkt);
 	}
 
 	return 0;
@@ -1958,7 +2126,7 @@ int beginRtcm3Packet(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ring
 	uint32_t msgLength = 0;
 	for (uint32_t i = 14; i < 14 + 10; i++)
 	{
-		msgLength = (msgLength << 1) + ((ringBuffer->buf[i / 8] >> (7 - i % 8)) & 1u);
+		msgLength = (msgLength << 1) + ((ringBuffer->buf[ringBuffer->scanIndex + (i / 8)] >> (7 - i % 8)) & 1u);
 	}
 	if (msgLength > 1023)
 	{
@@ -2313,7 +2481,7 @@ int validateBaudRate(int baudRate)
 		case IS_BAUDRATE_460800:
 		case IS_BAUDRATE_921600:
 		case IS_BAUDRATE_3000000:
-		return 0;	// success
+			return 0;	// success
 	}
 
 	return -1;	// failure

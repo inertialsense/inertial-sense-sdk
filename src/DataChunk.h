@@ -30,7 +30,8 @@ using namespace std;
 void logStats(const char *format, ...);
 
 //!< Chunk Header
-#pragma pack(push, 1)
+PUSH_PACK_1
+
 struct sChunkHeader 
 {
 	uint32_t	marker;				//!< Chunk marker (0xFC05EA32)
@@ -63,7 +64,8 @@ struct sChunkHeader
 	}
 #endif
 };
-#pragma pack(pop)
+
+POP_PACK
 
 class cDataChunk
 {

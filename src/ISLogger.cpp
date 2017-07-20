@@ -25,8 +25,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <set>
 
 #include "ISLogger.h"
+#include "ISDataMappings.h"
+#include "InertialSense.h"
 
-#if !defined(_WIN32)
+#if PLATFORM_IS_LINUX
 
 #include <sys/statvfs.h>
 
@@ -34,15 +36,38 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 const string cISLogger::g_emptyString;
 
+bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
+{
+    return (hdr != NULL &&
+    (
+        hdr->size == 0 ||
+        hdr->offset + hdr->size > MAX_DATASET_SIZE ||
+        hdr->id == 0 ||
+        hdr->id >= DID_COUNT ||
+        hdr->offset % 4 != 0 ||
+        hdr->size % 4 != 0 ||
+        (cISDataMappings::GetSize(hdr->id) > 0 && hdr->offset + hdr->size > cISDataMappings::GetSize(hdr->id))
+    ));
+}
+
+bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
+{
+    return (data != NULL && LogHeaderIsCorrupt(&data->hdr));
+}
+
 cISLogger::cISLogger()
 {
 	m_enabled = false;
+	m_logStats = new cLogStats;
+	m_logStats->Clear();
+	m_errorFile = NULL;
 }
 
 
 cISLogger::~cISLogger()
 {
 	Cleanup();
+	delete m_logStats;
 }
 
 
@@ -57,28 +82,37 @@ void cISLogger::Cleanup()
 		}
 	}
 	m_devices.clear();
+	m_logStats->Clear();
+	if (m_errorFile != NULL)
+	{
+		fclose(m_errorFile);
+		m_errorFile = NULL;
+	}
 }
 
 
-bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpaceMB, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
 {
+	static const int minFileCount = 50;
+	static const int maxFileCount = 10000;
+
 	// Close any open files
 	CloseAllFiles();
 
 	m_logType = logType;
 	m_directory = directory;
-	m_maxDiskSpace = (uint64_t)(maxDiskSpaceMB * 1024.0f * 1024.0f);
 	uint64_t availableSpace = cISLogger::GetDirectorySpaceAvailable(m_directory);
-	m_maxDiskSpace = (m_maxDiskSpace == 0 || m_maxDiskSpace > availableSpace / MAX_PERCENT_OF_FREE_SPACE_TO_USE_FOR_IS_LOGS ? m_maxDiskSpace / MAX_PERCENT_OF_FREE_SPACE_TO_USE_FOR_IS_LOGS : m_maxDiskSpace);
+	maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.0f, 1.0f);
+	m_maxDiskSpace = (maxDiskSpacePercent <= 0.0f ? availableSpace : (uint64_t)(availableSpace * maxDiskSpacePercent));
 
-	// ensure there are between 50 and 1000 files
-	if (maxFileSize > m_maxDiskSpace / 50)
+	// ensure there are between min and max file count
+	if (maxFileSize > m_maxDiskSpace / minFileCount)
 	{
-		m_maxFileSize = (uint32_t)(m_maxDiskSpace / 50);
+		m_maxFileSize = (uint32_t)(m_maxDiskSpace / minFileCount);
 	}
-	else if (maxFileSize < m_maxDiskSpace / 1000)
+	else if (maxFileSize < m_maxDiskSpace / maxFileCount)
 	{
-		m_maxFileSize = (uint32_t)(m_maxDiskSpace / 1000);
+		m_maxFileSize = (uint32_t)(m_maxDiskSpace / maxFileCount);
 	}
 	else
 	{
@@ -135,14 +169,14 @@ string cISLogger::CreateCurrentTimestamp()
 }
 
 
-bool cISLogger::InitSave(eLogType logType, const string& directory, int numDevices, float maxDiskSpaceMB, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSave(eLogType logType, const string& directory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
 {
 	m_timeStamp = CreateCurrentTimestamp();
-	return InitSaveCommon(logType, directory, g_emptyString, numDevices, maxDiskSpaceMB, maxFileSize, maxChunkSize, useSubFolderTimestamp);
+	return InitSaveCommon(logType, directory, g_emptyString, numDevices, maxDiskSpacePercent, maxFileSize, maxChunkSize, useSubFolderTimestamp);
 }
 
 
-bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directory, const string& subDirectory, int numDevices, eLogType logType, float maxDiskSpaceMB, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directory, const string& subDirectory, int numDevices, eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
 {
 	if (timeStamp.length() == 0)
 	{
@@ -154,7 +188,7 @@ bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directo
 		m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
 	}
 
-	return InitSaveCommon(logType, directory, subDirectory, numDevices, maxDiskSpaceMB, maxFileSize, maxChunkSize, useSubFolderTimestamp);
+	return InitSaveCommon(logType, directory, subDirectory, numDevices, maxDiskSpacePercent, maxFileSize, maxChunkSize, useSubFolderTimestamp);
 }
 
 
@@ -180,6 +214,16 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 		m_devices[i]->InitDeviceForWriting(i, m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize, m_maxChunkSize);
 	}
 
+#ifdef _MSC_VER
+
+	fopen_s(&m_errorFile, (m_directory + "/errors.txt").c_str(), "wb");
+
+#else
+
+	m_errorFile = fopen((m_directory + "/errors.txt").c_str(), "wb");
+
+#endif
+
 	return true;
 }
 
@@ -200,7 +244,7 @@ bool cISLogger::GetAllFilesInDirectory(const string& directory, bool recursive, 
 		rePtr = &re;
 	}
 
-#if defined(_WIN32)
+#if PLATFORM_IS_WINDOWS
 
 	HANDLE dir;
 	WIN32_FIND_DATAA file_data;
@@ -246,7 +290,7 @@ bool cISLogger::GetAllFilesInDirectory(const string& directory, bool recursive, 
 		const string full_file_name = directory + "/" + file_name;
 
 		// if file is current path or does not exist (-1) then continue
-		if (file_name[0] == '.' || stat(full_file_name.c_str(), &st) == -1)
+		if (file_name[0] == '.' || stat(full_file_name.c_str(), &st) == -1 || (rePtr != NULL && !regex_search(full_file_name, re)))
 		{
 			continue;
 		}
@@ -269,10 +313,10 @@ bool cISLogger::GetAllFilesInDirectory(const string& directory, bool recursive, 
 }
 
 
-void cISLogger::DeleteDirectory(const string& directory)
+void cISLogger::DeleteDirectory(const string& directory, bool recursive)
 {
 
-#if defined(_WIN32)
+#if PLATFORM_IS_WINDOWS
 
 	HANDLE dir;
 	WIN32_FIND_DATAA file_data;
@@ -291,7 +335,10 @@ void cISLogger::DeleteDirectory(const string& directory)
 		}
 		else if (is_directory)
 		{
-			DeleteDirectory(full_file_name);
+			if (recursive)
+			{
+				DeleteDirectory(full_file_name);
+			}
 			continue;
 		}
 		remove(full_file_name.c_str());
@@ -302,8 +349,14 @@ void cISLogger::DeleteDirectory(const string& directory)
 
 	class dirent* ent;
 	class stat st;
-	DIR* dir = opendir(directory.c_str());
-	while ((ent = readdir(dir)) != NULL)
+ 	
+        DIR* dir;  
+	if ((dir = opendir(directory.c_str())) == NULL) 
+	{
+		return;
+	}
+
+        while ((ent = readdir(dir)) != NULL)
 	{
 		const string file_name = ent->d_name;
 		const string full_file_name = directory + "/" + file_name;
@@ -315,7 +368,10 @@ void cISLogger::DeleteDirectory(const string& directory)
 		}
 		else if ((st.st_mode & S_IFDIR) != 0)
 		{
-			DeleteDirectory(full_file_name.c_str());
+			if (recursive)
+			{
+				DeleteDirectory(full_file_name.c_str());
+			}
 			continue;
 		}
 		remove(full_file_name.c_str());
@@ -393,7 +449,7 @@ uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, string regexP
 uint64_t cISLogger::GetDirectorySpaceAvailable(const string& directory)
 {
 
-#if defined(_WIN32)
+#if PLATFORM_IS_WINDOWS
 
 	ULARGE_INTEGER space;
 	memset(&space, 0, sizeof(space));
@@ -519,7 +575,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 }
 
 
-bool cISLogger::LogData(unsigned int device, p_data_hdr_t *dataHdr, uint8_t *dataBuf)
+bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, void* dataBuf)
 {
 	if (!m_enabled || device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
@@ -527,31 +583,50 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t *dataHdr, uint8_t *dat
 	}
 	else if (LogHeaderIsCorrupt(dataHdr))
 	{
-		perror("Attempting to log invalid log data");
-		return true; // don't fail the entire log just because one corrupt data was sent
+		if (m_errorFile != NULL)
+		{
+			fprintf(m_errorFile, "Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
+		}
+		m_logStats->LogError(dataHdr);
 	}
-
-	// Save data
-	if (!m_devices[device]->SaveData(dataHdr, dataBuf))
+	else if (!m_devices[device]->SaveData(dataHdr, (uint8_t*)dataBuf))
 	{
-		perror("Error logging data");
-		return false;
+		if (m_errorFile != NULL)
+		{
+			fprintf(m_errorFile, "Error logging data, underlying log implementation failed to save\r\n");
+		}
+		m_logStats->LogError(dataHdr);
+	}
+	else
+	{
+		double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+		m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
 	}
 	return true;
 }
 
 
-p_data_t* cISLogger::ReadData( unsigned int device )
+p_data_t* cISLogger::ReadData(unsigned int device)
 {
 	if (device >= m_devices.size())
 	{
 		return NULL;
 	}
 
-	p_data_t* data;
+	p_data_t* data = NULL;
 	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
 	{
-		perror("Corrupt data read from log file");
+		if (m_errorFile != NULL)
+		{
+			fprintf(m_errorFile, "Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
+		}
+		m_logStats->LogError(&data->hdr);
+		data = NULL;
+	}
+	if (data != NULL)
+	{
+		double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+		m_logStats->LogDataAndTimestamp(data->hdr.id, timestamp);
 	}
 	return data;
 }
@@ -563,6 +638,13 @@ void cISLogger::CloseAllFiles()
 	{
 		m_devices[i]->CloseAllFiles();
 	}
+
+    m_logStats->WriteToFile(m_directory + "/stats.txt");
+    if (m_errorFile != NULL)
+    {
+        fclose(m_errorFile);
+        m_errorFile = NULL;
+    }
 }
 
 
@@ -575,6 +657,17 @@ void cISLogger::OpenWithSystemApp()
 }
 
 
+uint64_t cISLogger::LogSizeAll()
+{
+    uint64_t size = 0;
+    for (size_t i = 0; i < m_devices.size(); i++)
+    {
+        size += m_devices[i]->LogSize();
+    }
+    return size;
+}
+
+
 uint64_t cISLogger::LogSize( unsigned int device )
 {
 	if (device >= m_devices.size())
@@ -583,6 +676,12 @@ uint64_t cISLogger::LogSize( unsigned int device )
 	}
 
 	return m_devices[device]->LogSize();
+}
+
+
+float cISLogger::LogSizeAllMB()
+{
+    return LogSizeAll() * 0.000001f;
 }
 
 
@@ -599,12 +698,12 @@ float cISLogger::LogSizeMB( unsigned int device )
 
 float cISLogger::FileSizeMB( unsigned int device )
 {
-	if (device >= m_devices.size())
-	{
-		return 0;
-	}
+    if (device >= m_devices.size())
+    {
+        return 0;
+    }
 
-	return m_devices[device]->FileSize() * 0.000001f;
+    return m_devices[device]->FileSize() * 0.000001f;
 }
 
 
@@ -639,9 +738,10 @@ const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
 	return m_devices[device]->GetDeviceInfo();
 }
 
-bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxDiskSpaceMB, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
 {
-	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxDiskSpaceMB, maxFileSize, maxChunkSize, useSubFolderTimestamp))
+	m_logStats->Clear();
+	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxLogSpacePercent, maxFileSize, maxChunkSize, useSubFolderTimestamp))
 	{
 		return false;
 	}
@@ -656,19 +756,188 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		// Copy data
 		while ((data = log.ReadData(dev)))
 		{
-            if (LogDataIsCorrupt(data))
-			{
-				perror("Corrupt data in log file");
-				continue;
-			}
-			else if (!LogData(dev, &data->hdr, data->buf))
-			{
-				return false;
-			}
+			LogData(dev, &data->hdr, data->buf);
 		}
-
-		// Close file
-		m_devices[dev]->CloseAllFiles();
 	}
+	CloseAllFiles();
 	return true;
 }
+
+cLogStatDataId::cLogStatDataId()
+{
+	count = 0;
+	errorCount = 0;
+	averageTimeDelta = 0.0;
+	totalTimeDelta = 0.0;
+	lastTimestamp = 0.0;
+	lastTimestampDelta = 0.0;
+	maxTimestampDelta = 0.0;
+    timestampDeltaCount = 0;
+	timestampDropCount = 0;
+}
+
+void cLogStatDataId::LogTimestamp(double timestamp)
+{
+    // check for corrupt data
+    if (_ISNAN(timestamp) || timestamp < 0.0 || timestamp > 999999999999.0)
+    {
+        return;
+    }
+    else if (lastTimestamp > 0.0)
+    {
+        double delta = fabs(timestamp - lastTimestamp);
+        maxTimestampDelta = _MAX(delta, maxTimestampDelta);
+        totalTimeDelta += delta;
+        averageTimeDelta = (totalTimeDelta / (double)++timestampDeltaCount);
+        if (lastTimestampDelta != 0.0 && (fabs(delta - lastTimestampDelta) > (lastTimestampDelta * 0.5)))
+        {
+            timestampDropCount++;
+        }
+        lastTimestampDelta = delta;
+	}
+    lastTimestamp = timestamp;
+    count++;
+}
+
+void cLogStatDataId::Printf()
+{
+	printf(" Count: %llu\r\n", (unsigned long long)count);
+	printf(" Errors: %llu\r\n", (unsigned long long)errorCount);
+	printf(" Time delta avg: %f\r\n", averageTimeDelta);
+	printf(" Max time delta: %f\r\n", maxTimestampDelta);
+	printf(" Time delta drop: %llu\r\n", (unsigned long long)timestampDropCount);
+}
+
+cLogStats::cLogStats()
+{
+	Clear();
+}
+
+void cLogStats::Clear()
+{
+	dataIdStats.clear();
+	errorCount = 0;
+	count = 0;
+}
+
+void cLogStats::LogError(const p_data_hdr_t* hdr)
+{
+	errorCount++;
+	if (hdr != NULL)
+	{
+		cLogStatDataId& d = dataIdStats[hdr->id];
+		d.errorCount++;
+	}
+}
+
+void cLogStats::LogData(uint32_t dataId)
+{
+	cLogStatDataId& d = dataIdStats[dataId];
+	d.count++;
+	count++;
+}
+
+void cLogStats::LogDataAndTimestamp(uint32_t dataId, double timestamp)
+{
+	cLogStatDataId& d = dataIdStats[dataId];
+	d.count++;
+	count++;
+	if (timestamp != 0.0)
+	{
+		d.LogTimestamp(timestamp);
+	}
+}
+
+void cLogStats::Printf()
+{
+	printf("LOG STATS\r\n");
+	printf("----------");
+	printf("Count: %llu\r\n", (unsigned long long)count);
+	printf("Errors: %llu\r\n", (unsigned long long)errorCount);
+	for (map<uint32_t, cLogStatDataId>::iterator i = dataIdStats.begin(); i != dataIdStats.end(); i++)
+	{
+		printf(" DID: %d\r\n", i->first);
+		i->second.Printf();
+		printf("\r\n");
+	}
+}
+
+void cLogStats::WriteToFile(const string &fileName)
+{
+    if (count != 0)
+    {
+        // flush log stats to disk
+        ofstream stats;
+        string newline = "\r\n";
+        stats << fixed << setprecision(6);
+        stats.open(fileName, ios::out | ios::binary);
+        stats << "Count: " << count << newline;
+        stats << "Errors: " << errorCount << newline << newline;
+        for (map<uint32_t, cLogStatDataId>::iterator i = dataIdStats.begin(); i != dataIdStats.end(); i++)
+        {
+            stats << "Data Id: " << i->first << " - " << cISDataMappings::GetDataSetName(i->first) << newline;
+            stats << "Count: " << i->second.count << newline;
+            stats << "Errors: " << i->second.errorCount << newline;
+            stats << "Average Timestamp Delta: " << i->second.averageTimeDelta << newline;
+            stats << "Max Timestamp Delta: " << i->second.maxTimestampDelta << newline;
+            stats << "Timestamp Drops: " << i->second.timestampDropCount << newline;
+            stats << newline;
+        }
+        stats.close();
+    }
+}
+
+#if defined(ENABLE_IS_PYTHON_WRAPPER)
+
+void cISLogger::SetPyDisplay(cInertialSenseDisplay display)
+{
+	m_pyDisplay = display;
+}
+
+namespace py = pybind11;
+
+py::dict cISLogger::PyReadData(unsigned int device)
+{
+	py::dict dOut;
+	if (device >= m_devices.size())
+	{
+		return dOut;
+	}
+
+	p_data_t* data = NULL;
+	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
+	{
+		perror("Corrupt data read from log file");
+		m_logStats->LogError(&data->hdr);
+		data = NULL;
+	}
+	if (data != NULL)
+	{
+		double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+		m_logStats->LogDataAndTimestamp(data->hdr.id, timestamp);
+		m_pyDisplay.ProcessData(data, true, 1.0);
+		dOut = py_dataHandling(data);
+	} 
+	
+	return dOut;
+}
+
+test_initializer logger([](py::module &m) {
+	py::module m2 = m.def_submodule("logger");
+
+	py::class_<cISLogger> log(m2, "cISLogger");
+	log.def(py::init<>());
+	log.def("LoadFromDirectory", &cISLogger::LoadFromDirectory);
+	log.def("ReadData", &cISLogger::ReadData);
+	log.def("PyReadData", &cISLogger::PyReadData);
+
+	py::enum_<cISLogger::eLogType>(log, "eLogType")
+		.value("LOGTYPE_DAT", cISLogger::eLogType::LOGTYPE_DAT)
+		.value("LOGTYPE_SDAT",cISLogger::eLogType::LOGTYPE_SDAT)
+		.value("LOGTYPE_CSV", cISLogger::eLogType::LOGTYPE_CSV)
+		.value("LOGTYPE_KML", cISLogger::eLogType::LOGTYPE_KML)
+		.export_values();
+
+});
+
+#endif

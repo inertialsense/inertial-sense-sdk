@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <string>
 #include <inttypes.h>
+#include "ISConstants.h"
 
 using namespace std;
 
@@ -49,10 +50,9 @@ public:
 	* Read data from the client
 	* @param data the buffer to read data into
 	* @param dataLength the number of bytes available in data
-	* @param blocking whether to block or timeout until data is received, if false method returns immediately with number of bytes read
 	* @return the number of bytes read or less than 0 if error
 	*/
-	int Read(uint8_t* data, int dataLength, bool blocking = true);
+	int Read(uint8_t* data, int dataLength);
 
 	/*!
 	* Write data to the client
@@ -60,7 +60,7 @@ public:
 	* @param dataLength the number of bytes to write
 	* @return the number of bytes written or less than 0 if error
 	*/
-	int Write(uint8_t* data, int dataLength);
+	int Write(const uint8_t* data, int dataLength);
 
 	/*!
 	* Send a GET http request to a url. You must then call Read to get the response.
@@ -78,24 +78,73 @@ public:
 	bool IsOpen() { return m_socket != 0; }
 
 	/*!
-	* Encode data as base64
-	* @param bytes_to_encode the data to encode
-	* @param in_len the number of bytes to encode
-	* @param return the base64 encoded data
+	* Get whether the client socket is blocking - blocking reads do not return until the data is read or a timeout occurs. Default is false.
+	* @return whether the client is a blocking socket
 	*/
-	static string Base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len);
+	bool GetBlocking() { return m_blocking; }
 
 	/*!
-	* Decode base64 data
-	* @param encoded_string the base64 encoded data
-	* @return the base64 decoded data - if error, this may be an incomplete set of data
+	* Sets whether the client socket is blocking. Default is false.
+	* @return 0 if success otherwise an error code
 	*/
-	static string Base64Decode(const string& encoded_string);
+	int SetBlocking(bool blocking);
 
 private:
-	uint64_t m_socket;
+	socket_t m_socket;
 	string m_host;
 	int m_port;
+	bool m_blocking;
 };
+
+/*!
+* Initialize socket framework - called automatically by ISTcpClient and ISTcpServer
+*/
+void ISSocketFrameworkInitialize();
+
+/*!
+* Shutdown socket framework - called automatically by ISTcpClient and ISTcpServer
+*/
+void ISSocketFrameworkShutdown();
+
+/*!
+* Write data to a socket
+* @param socket the socket to write to
+* @param data the data to write
+* @param dataLength the number of bytes in data
+* @return the number of bytes written or less than 0 if error, in which case the socket is probably disconnected
+*/
+int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength);
+
+/*!
+* Read data from a socket
+* @param socket the socket to read from
+* @param data the buffer to read data into
+* @param dataLength the number of bytes available in data
+* @return the number of bytes read or less than 0 if error, in which case the socket is probably disconnected
+*/
+int ISSocketRead(socket_t socket, uint8_t* data, int dataLength);
+
+/*!
+* Sets whether a socket is blocking. When reading, a blocking socket waits for the specified amount of data until the timeout is reached, a non-blocking socket returns immediately with the number of bytes read.
+* @param socket the socket to set blocking for
+* @param blocking whether the socket is blocking
+* @return 0 if success otherwise an error code
+*/
+int ISSocketSetBlocking(socket_t socket, bool blocking);
+
+/*!
+* Set a read timeout on a socket. This function is only useful for blocking sockets, where it is highly recommended.
+* @param socket the socket to set the read timeout on
+* @param timeoutMilliseconds the timeout in milliseconds
+* @return 0 if success otherwise an error code
+*/
+int ISSocketSetReadTimeout(socket_t socket, int timeoutMilliseconds);
+
+/*!
+* Close a socket and zero it out
+* @param socket the socket to close, this will be zeroed out
+* @return 0 if success otherwise an error code
+*/
+int ISSocketClose(socket_t& socket);
 
 #endif // __ISTCPCLIENT__H__

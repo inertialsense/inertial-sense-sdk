@@ -29,12 +29,7 @@ distribution.
 
 //#define DEBUG_PARSER
 #if defined( DEBUG_PARSER )
-#	if defined( DEBUG ) && defined( _MSC_VER )
-#		include <windows.h>
-#		define TIXML_LOG OutputDebugString
-#	else
-#		define TIXML_LOG printf
-#	endif
+#define TIXML_LOG printf
 #endif
 
 // Note tha "PutString" hardcodes the same list. This

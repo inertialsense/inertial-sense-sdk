@@ -136,14 +136,29 @@ int serialPortReadTimeout(serial_port_t* serialPort, unsigned char* buffer, int 
 // returns 1 if success, 0 if failed to start async operation
 int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion callback);
 
+// read up until a \r\n sequence has been read
+// result will be allocated using malloc and you will need to call free
+// result will not contain \r\n sequence
+// returns number of bytes read or -1 if timeout
+int serialPortReadLine(serial_port_t* serialPort, unsigned char** result);
+
+// read up until a \r\n sequence has been read
+// result will be allocated using malloc and you will need to call free
+// result will not contain \r\n sequence
+// returns number of bytes read or -1 if timeout
+int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char** result, int timeoutMilliseconds);
+
 // read one char, waiting SERIAL_PORT_DEFAULT_TIMEOUT milliseconds to get a char
 int serialPortReadChar(serial_port_t* serialPort, unsigned char* c);
 
-// read one char, waiting timeoutMilliseconds to get a char
+// read one char, waiting timeoutMilliseconds to get a char, returns number of chars read
 int serialPortReadCharTimeout(serial_port_t* serialPort, unsigned char* c, int timeoutMilliseconds);
 
 // write, returns the number of bytes written
 int serialPortWrite(serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
+
+// write with a \r\n added at the end, \r\n should not be part of buffer, returns the number of bytes written
+int serialPortWriteLine(serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
 
 // write ascii data - if buffer does not start with $, a $ will be written first, followed by buffer, followed by *xx\r\n, where xx is a two hex character checksum
 int serialPortWriteAscii(serial_port_t* serialPort, const char* buffer, int bufferLength);

@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "serialPort.h"
+#include <stdlib.h>
 
 int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
 
@@ -97,6 +98,45 @@ int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer,
 	return serialPort->pfnAsyncRead(serialPort, buffer, readCount, completion);
 }
 
+int serialPortReadLine(serial_port_t* serialPort, unsigned char** result)
+{
+	return serialPortReadLineTimeout(serialPort, result, SERIAL_PORT_DEFAULT_TIMEOUT);
+}
+
+int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char** result, int timeoutMilliseconds)
+{
+	if (serialPort == 0 || serialPort->handle == 0 || result == 0 || serialPort->pfnRead == 0)
+	{
+		return 0;
+	}
+
+	int prevCR = 0;
+	unsigned char b;
+	unsigned char* mem = (unsigned char*)malloc(512);
+	unsigned int memIndex = 0;
+	unsigned int memCapacity = 512;
+
+	while (serialPortReadCharTimeout(serialPort, &b, timeoutMilliseconds) == 1)
+	{
+		if (memIndex == memCapacity)
+		{
+			memCapacity = (unsigned int)(memCapacity * 1.5);
+			mem = (unsigned char*)realloc(mem, memCapacity);
+		}
+		mem[memIndex++] = b;
+		if (b == '\n' && prevCR)
+		{
+			mem[memIndex -= 2] = '\0';
+			*result = mem;
+			return memIndex;
+		}
+		prevCR = (b == '\r');
+	}
+	free(mem);
+	mem = 0;
+	return -1;
+}
+
 int serialPortReadChar(serial_port_t* serialPort, unsigned char* c)
 {
 	return serialPortReadCharTimeout(serialPort, c, SERIAL_PORT_DEFAULT_TIMEOUT);
@@ -121,6 +161,18 @@ int serialPortWrite(serial_port_t* serialPort, const unsigned char* buffer, int 
 		return 0;
 	}
 
+	return count;
+}
+
+int serialPortWriteLine(serial_port_t* serialPort, const unsigned char* buffer, int writeCount)
+{
+	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || writeCount < 1)
+	{
+		return 0;
+	}
+
+	int count = serialPortWrite(serialPort, buffer, writeCount);
+	count += serialPortWrite(serialPort, (unsigned char[2]){ '\r', '\n' }, 2);
 	return count;
 }
 

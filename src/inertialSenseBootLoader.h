@@ -19,8 +19,6 @@ extern "C" {
 
 #include "serialPort.h"
 
-extern char g_enableBootloaderVerify;		// Allow users to skip verify
-
 /*! uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 2000000
 
@@ -30,14 +28,14 @@ extern char g_enableBootloaderVerify;		// Allow users to skip verify
 /*! uINS standard baud rate, used by bootloader code to enable bootloader mode */
 #define IS_BAUD_RATE_BOOTLOADER_COM 3000000
 
-#define ENABLE_BOOTLOADER_BAUD_DETECTION
+#define ENABLE_BOOTLOADER_BAUD_DETECTION 1
 #define BOOTLOADER_REFRESH_DELAY   20
 #define BOOTLOADER_RESPONSE_DELAY  15 // needs to be > 10 for 2M baud
-#ifdef ENABLE_BOOTLOADER_BAUD_DETECTION
+#if ENABLE_BOOTLOADER_BAUD_DETECTION
 #define BOOTLOADER_RETRIES         16
 #else
 #define BOOTLOADER_RETRIES         1
-#endif  // ENABLE_BOOTLOADER_DETECTION
+#endif
 
 /*! Bootloader callback function prototype, return value unused currently so return 0 */
 typedef int(*pfnBootloadProgress)(const void* obj, float percent);
@@ -52,6 +50,17 @@ typedef struct
 	pfnBootloadProgress uploadProgress; // upload progress
 	pfnBootloadProgress verifyProgress; // verify progress
 	const char* verifyFileName; // optional, writes verify file to the path if not 0
+	int numberOfDevices; // number of devices if bootloading in parallel
+    union
+    {
+        unsigned int bits;
+        struct
+        {
+            unsigned int enableVerify : 1; // whether to enable the verify phase
+			unsigned int enableAutoBaud : 1; // whether to enable auto-baud detection
+        } bitFields;
+    } flags;
+
 } bootload_params_t;
 
 /*!

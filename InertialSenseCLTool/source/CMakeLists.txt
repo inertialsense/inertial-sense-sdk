@@ -1,4 +1,4 @@
-add_executable(cltool main.cpp cltool.cpp comManagerDemoMain.cpp)
+add_executable(cltool main.cpp)
 add_subdirectory(../../ ${CMAKE_CURRENT_BINARY_DIR}/SDK)
 
 target_link_libraries(cltool ${CMAKE_THREAD_LIBS_INIT})

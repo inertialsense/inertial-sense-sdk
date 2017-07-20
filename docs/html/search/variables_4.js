@@ -1,6 +1,9 @@
 var searchData=
 [
-  ['enbootloader',['enBootloader',['../structconfig__t.html#acfe8269a13144924ad5e641aed83c72b',1,'config_t']]],
-  ['enrtosstats',['enRTOSStats',['../structconfig__t.html#ac059fcb276e1aa0913ea880852c48acd',1,'config_t']]],
-  ['ensensorstats',['enSensorStats',['../structconfig__t.html#a62114aed8166557f51bd2cdd98f89fec',1,'config_t']]]
+  ['e',['e',['../structeph__t.html#a47154d65ba473a03a8db8aae50e94e87',1,'eph_t']]],
+  ['elmaskar',['elmaskar',['../structprcopt__t.html#aba81c787a39d1ab05602976ba68804b5',1,'prcopt_t']]],
+  ['elmaskhold',['elmaskhold',['../structprcopt__t.html#a56923d668e3bc1af6c86dee5c0e2cf6d',1,'prcopt_t']]],
+  ['elmin',['elmin',['../structprcopt__t.html#a296b6b9a5505c35a9bf2e81920df15aa',1,'prcopt_t']]],
+  ['eratio',['eratio',['../structprcopt__t.html#afb2a01796e12a8f4de651bbef689e9f3',1,'prcopt_t']]],
+  ['err',['err',['../structprcopt__t.html#a9677a022311ecf28aa4537fea6304767',1,'prcopt_t']]]
 ];

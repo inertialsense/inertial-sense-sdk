@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-#include "ISMathTypes.h"
+#include "ISConstants.h"
 
 #include <string.h>
 
@@ -59,27 +59,6 @@ extern "C" {
 
 #define set_Vec3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define set_Vec4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
-
-
-#ifndef _LIMIT
-// #define _LIMIT(x,lim)		{if( ((x)<(-lim))){(x)=(-lim);}else{if( ((x)>(lim))){(x)=(lim);}}}
-#define _LIMIT(x,lim)			{if(!((x)>(-lim))){(x)=(-lim);}else{if(!((x)<(lim))){(x)=(lim);}}}		// Works w/ NAN
-#endif
-#ifndef _LIMIT2
-// #define _LIMIT2(x,xmin,xmax)	{if( ((x)<(xmin))){(x)=(xmin);}else{if( ((x)>(xmax))){(x)=(xmax);}}}
-#define _LIMIT2(x,xmin,xmax)		{if(!((x)>(xmin))){(x)=(xmin);}else{if(!((x)<(xmax))){(x)=(xmax);}}}			// Works w/ NAN
-#endif
-#ifndef _MAX
-#define _MAX(a,b)				(((a) > (b)) ? (a) : (b))
-#endif
-#ifndef _MIN
-#define _MIN(a,b)				(((a) < (b)) ? (a) : (b))
-#endif
-
-
-
-//_____ D E F I N I T I O N S ______________________________________________
-
 
 // Zero order low-pass filter 
 typedef struct

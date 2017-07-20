@@ -17,47 +17,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include "ISConstants.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// with this you can tell the compiler not to insert padding - be VERY careful as this can cause hard-faults if your struct or class is not 4 byte (or 8 byte for 64 bit) aligned
-#if defined(_MSC_VER)
-#define PUSH_PACK_NONE __pragma(pack(push, 1))
-#define PUSH_PACK_4 __pragma(pack(push, 4))
-#define POP_PACK_NONE __pragma(pack(pop))
-#define PACK_ONE
-#elif defined(AVR)
-// there is a bug in the AVR compiler in debug mode that can generate bad instructions, crashing the process - until this is figured out, debug on AVR cannot pack globally
-#if DEBUG
-#define PUSH_PACK_NONE
-#define PUSH_PACK_4
-#define POP_PACK_NONE
-#define PACK_ONE __attribute__ ((packed))
-#else
-#define PUSH_PACK_NONE _Pragma("pack(1)")
-#define PUSH_PACK_4 _Pragma("pack(4)")
-#define POP_PACK_NONE _Pragma("pack(0)")
-#define PACK_ONE
-#endif
-#else
-#define PUSH_PACK_NONE _Pragma("pack(push, 1)")
-#define PUSH_PACK_4 _Pragma("pack(push, 4)")
-#define POP_PACK_NONE _Pragma("pack(pop)")
-#define PACK_ONE
-#endif
-
-#ifndef INLINE
-#if defined(_MSC_VER)
-#define INLINE __inline 
-#else
-#define INLINE inline
-#endif
-#endif
-
-/*! Maximum number of messages that may be broadcast simultaneously */
-#define MAX_NUM_BCAST_MSGS 10
 
 /*! Maximum number of satellite channels */
 #define MAX_NUM_SAT_CHANNELS 50
@@ -66,75 +30,10 @@ extern "C" {
 #define DEVINFO_MANUFACTURER_STRLEN 24
 #define DEVINFO_ADDINFO_STRLEN 24
 
-/*! Start of extended external ids - NEVER change this value */
-#define DID_EXTERNAL_EXTENDED_START 8192
-
-#if !defined(MALLOC) && !defined(FREE)
-
-#if defined(AVR) || defined(ARM)
-
-extern void* pvPortMalloc(size_t xWantedSize);
-extern void vPortFree(void* pv);
-#define MALLOC(m) pvPortMalloc(m)
-#define FREE(m) vPortFree(m)
-
-#else
-
-#define MALLOC(m) malloc(m)
-#define FREE(m) free(m)
-
-#endif
-
-#endif
-
-#ifndef UNMASK
-#define UNMASK(_word, _prefix) (((_word) & (_prefix##_MASK)) >> (_prefix##_SHIFT))
-#endif
-
-#ifndef MASK
-#define MASK(_prefix, _val) ((_prefix##_MASK) & ((_val) << (_prefix##_SHIFT)))
-#endif
-
-#ifndef SWAP16
-#define SWAP16(v) ((uint16_t)(((uint16_t)(v) >> 8) | ((uint16_t)(v) << 8)))
-#endif
-
-#ifndef SWAP32
-#if defined(__GNUC__)
-#define SWAP32 __builtin_bswap32
-#elif defined(__ICCAVR32__)
-#define SWAP32 __swap_bytes
-#elif defined(_WIN32)
-#include "intrin.h"
-#define SWAP32 _byteswap_ulong
-#else
-#define SWAP32(v) ((uint32_t)(((uint32_t)SWAP16((uint32_t)(v) >> 16)) | ((uint32_t)SWAP16((uint32_t)(v)) << 16)))
-#endif
-#endif
-
-#ifndef _MAX 
-#define _MAX(a,b) (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef _MIN
-#define _MIN(a,b) (((a) < (b)) ? (a) : (b))
-#endif
-
-#ifndef _LIMIT2
-#define _LIMIT2(x, xmin, xmax) { if ((x) < (xmin)) { (x) = (xmin); } else { if ((x) > (xmax)) { (x) = (xmax); } } }
-#endif
-
-#ifndef _ARRAY_BYTE_COUNT
-#define _ARRAY_BYTE_COUNT(a) sizeof(a)
-#endif
-
-#ifndef _ARRAY_ELEMENT_COUNT
-#define _ARRAY_ELEMENT_COUNT(a) (sizeof(a) / sizeof(a[0]))
-#endif
-
-#ifndef OFFSETOF
-#define OFFSETOF offsetof//(TYPE, MEMBER) ((uint8_t)&(((TYPE*)0)->MEMBER))
-#endif
+/*!
+* Max task name length - do not change
+*/
+#define MAX_TASK_NAME_LEN 12
 
 // *****************************************
 // ****** NEVER REORDER THESE VALUES! ******
@@ -142,34 +41,34 @@ extern void vPortFree(void* pv);
 /*! Data identifiers - these are unsigned int and #define because enum are signed according to C standard */
 typedef uint32_t eDataIDs;
 
-/*! 0 : NULL (INVALID) */
+/*! 0  : NULL (INVALID) */
 #define DID_NULL (eDataIDs)0
 
-/*! 1 : (dev_info_t) Device information */
+/*! 1  : (dev_info_t) Device information */
 #define DID_DEV_INFO (eDataIDs)1
 	
-/*! 2: (imu_t) Inertial measurement unit data: calibrated gyro, accelerometer, magnetometer, and barometric pressure. */
+/*! 2  : (imu_t) Inertial measurement unit data: calibrated gyro, accelerometer, magnetometer, and barometric pressure. */
 #define DID_IMU_1 (eDataIDs)2
 
-/*! 3: (delta_theta_vel_t) Conning and sculling integral in body/IMU frame. Updated at IMU rate. */
+/*! 3  : (delta_theta_vel_t) Conning and sculling integral in body/IMU frame. Updated at IMU rate. */
 #define DID_DELTA_THETA_VEL (eDataIDs)3
 
-/*! 4 : (ins_1_t) Inertial navigation data with euler attitude and NED from reference LLA */
+/*! 4  : (ins_1_t) Inertial navigation data with euler attitude and NED from reference LLA */
 #define DID_INS_1 (eDataIDs)4
 
-/*! 5 : (ins_2_t) Inertial navigation data with quaternion NED to body attitude */
+/*! 5  : (ins_2_t) Inertial navigation data with quaternion NED to body attitude */
 #define DID_INS_2 (eDataIDs)5
 
-/*! 6 : (gps_t) GPS data */
+/*! 6  : (gps_t) GPS data */
 #define DID_GPS (eDataIDs)6
 
-/*! 7 : (config_t) Configuration data */
+/*! 7  : (config_t) Configuration data */
 #define DID_CONFIG (eDataIDs)7
 
-/*! 8 : (ascii_msgs_t) Broadcast period for ASCII messages */
+/*! 8  : (ascii_msgs_t) Broadcast period for ASCII messages */
 #define DID_ASCII_BCAST_PERIOD (eDataIDs)8
 
-/*! 9 : (ins_misc_t) Other INS data */
+/*! 9  : (ins_misc_t) Other INS data */
 #define DID_INS_MISC (eDataIDs)9
 
 /*! 10 : (sys_params_t) System parameters */
@@ -208,94 +107,94 @@ typedef uint32_t eDataIDs;
 /*! 21 : Differential GPS Correction */
 #define DID_DGPS_CORRECTION (eDataIDs)21
 
-/*! 22 : (Rtk data - packet parsing is done in RTKLib specific code) */
-#define DID_RTK (eDataIDs)22
+/*! 22 : RTK Solution (rtk_sol_t) */
+#define DID_RTK_SOL (eDataIDs)22
 
-/*! INTERNAL USE ONLY (23 feature_bits_t) */
+/*! 23 : INTERNAL USE ONLY (feature_bits_t) */
 #define DID_FEATURE_BITS (eDataIDs)23
 
-/*! INTERNAL USE ONLY (24 sensors_w_temp_t) */
+/*! 24 : INTERNAL USE ONLY (sensors_w_temp_t) */
 #define DID_SENSORS_IS1 (eDataIDs)24
 
-/*! INTERNAL USE ONLY (25 sensors_w_temp_t) */
+/*! 25 : INTERNAL USE ONLY (sensors_w_temp_t) */
 #define DID_SENSORS_IS2 (eDataIDs)25
 
-/*! INTERNAL USE ONLY (26 sensors_t) */
+/*! 26 : INTERNAL USE ONLY (sensors_t) */
 #define DID_SENSORS_TC_BIAS (eDataIDs)26
 
-/*! INTERNAL USE ONLY (27 sensor_bias_t) */
+/*! 27 : INTERNAL USE ONLY (sensor_bias_t) */
 #define DID_SENSORS_CF_BIAS (eDataIDs)27
 
-/*! INTERNAL USE ONLY (28 sys_sensors_adc_t) */
+/*! 28 : INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SENSORS_ADC (eDataIDs)28
 
-/*! INTERNAL USE ONLY (29 sensor_compensation_t) */
+/*! 29 : INTERNAL USE ONLY (sensor_compensation_t) */
 #define DID_SCOMP (eDataIDs)29
 
-/*! INTERNAL USE ONLY (30 ins_params_t) */
+/*! 30 : INTERNAL USE ONLY (ins_params_t) */
 #define DID_INS_PARAMS (eDataIDs)30
 
-/*! INTERNAL USE ONLY (31 obs_params_t) */
+/*! 31 : INTERNAL USE ONLY (obs_params_t) */
 #define DID_OBS_PARAMS (eDataIDs)31
 
-/*! INTERNAL USE ONLY (32 hdw_params_t) */
+/*! 32 : INTERNAL USE ONLY (hdw_params_t) */
 #define DID_HDW_PARAMS (eDataIDs)32
 
-/*! INTERNAL USE ONLY (33 nvr_manage_t) */
+/*! 33 : INTERNAL USE ONLY (nvr_manage_t) */
 #define DID_NVR_MANAGE_USERPAGE (eDataIDs)33
 
-/*! INTERNAL USE ONLY (34 nvm_group_sn_t) */
+/*! 34 : INTERNAL USE ONLY (nvm_group_sn_t) */
 #define DID_NVR_USERPAGE_SN (eDataIDs)34
 
-/*! INTERNAL USE ONLY (35 nvm_group_0_t) */
+/*! 35 : INTERNAL USE ONLY (nvm_group_0_t) */
 #define DID_NVR_USERPAGE_G0 (eDataIDs)35
 
-/*! INTERNAL USE ONLY (36 nvm_group_1_t) */
+/*! 36 : INTERNAL USE ONLY (nvm_group_1_t) */
 #define DID_NVR_USERPAGE_G1 (eDataIDs)36
 
-/*! INTERNAL USE ONLY (37 debug_string_t) */
+/*! 37 : INTERNAL USE ONLY (debug_string_t) */
 #define DID_DEBUG_STRING (eDataIDs)37
 
-/*! INTERNAL USE ONLY (38 rtos_info_t) */
+/*! 38 : INTERNAL USE ONLY (rtos_info_t) */
 #define DID_RTOS_INFO (eDataIDs)38
 
-/*! INTERNAL USE ONLY (39 debug_array_t) */
+/*! 39 : INTERNAL USE ONLY (debug_array_t) */
 #define DID_DEBUG_ARRAY (eDataIDs)39
 
-/*! INTERNAL USE ONLY (40 sensors_mpu_w_temp_t) */
+/*! 40 : INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
 #define DID_SENSORS_CAL1 (eDataIDs)40
 
-/*! INTERNAL USE ONLY (41 sensors_mpu_w_temp_t) */
+/*! 41 : INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
 #define DID_SENSORS_CAL2 (eDataIDs)41
 
-/*! INTERNAL USE ONLY (42 sensor_cal_t) */
+/*! 42 : INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_SC (eDataIDs)42
 
-/*! INTERNAL USE ONLY (43 sensor_cal_mpu_t) */
+/*! 43 : INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_CAL_SC1 (eDataIDs)43
 
-/*! INTERNAL USE ONLY (44 sensor_cal_mpu_t) */
+/*! 44 : INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_CAL_SC2 (eDataIDs)44
 
-/*! INTERNAL USE ONLY (45 sys_sensors_t) */
+/*! 45 : INTERNAL USE ONLY (sys_sensors_t) */
 #define DID_SYS_SENSORS_SIGMA (eDataIDs)45
 
-/*! INTERNAL USE ONLY (46 sys_sensors_adc_t) */
+/*! 46 : INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SENSORS_ADC_SIGMA (eDataIDs)46
 
-/*! INTERNAL USE ONLY (47 ins_dev_1_t) */
+/*! 47 : INTERNAL USE ONLY (ins_dev_1_t) */
 #define DID_INS_DEV_1 (eDataIDs)47
 
-/*! (48 ekf_states_t) */
+/*! 48 : (ekf_states_t) ekf states */
 #define DID_EKF_STATES (eDataIDs)48
 
-/*! INTERNAL USE ONLY (49 float[24]) */
+/*! 49 : INTERNAL USE ONLY (float[24]) */
 #define DID_EKF_COVARIANCE (eDataIDs)49
 
-/*! INTERNAL USE ONLY (50 ekf_innov_t) */
+/*! 50 : INTERNAL USE ONLY (ekf_innov_t) */
 #define DID_EKF_INNOV (eDataIDs)50
 
-/*! INTERNAL USE ONLY (51 ekf_innov_var_t) */
+/*! 51 : INTERNAL USE ONLY (ekf_innov_var_t) */
 #define DID_EKF_INNOV_VAR (eDataIDs)51
 
 /*! 52 : (magnetometer_t) Magnetometer sensor data */
@@ -304,7 +203,7 @@ typedef uint32_t eDataIDs;
 /*! 53 : (barometer_t) Barometric pressure sensor data */
 #define DID_BAROMETER (eDataIDs)53
 
-/*! 54: (imu_t) 2nd inertial measurement unit data: calibrated gyroscope and accelerometer. */
+/*! 54 : (imu_t) 2nd inertial measurement unit data: calibrated gyroscope and accelerometer. */
 #define DID_IMU_2 (eDataIDs)54
 
 /*! 55 : (magnetometer_t) 2nd magnetometer sensor data */
@@ -313,25 +212,36 @@ typedef uint32_t eDataIDs;
 /*! 56 : (gps_version_t) GPS version info */
 #define DID_GPS_VERSION (eDataIDs)56
 
-/*! 57 : () Unit test for communications manager  */
+/*! 57 : (internal) Unit test for communications manager  */
 #define DID_COMMUNICATIONS_LOOPBACK (eDataIDs)57
 
-/*! 58: (dual_imu_t) dual inertial measurement units data: calibrated gyroscope and accelerometer. */
+/*! 58 : (dual_imu_t) dual inertial measurement units data: calibrated gyroscope and accelerometer. */
 #define DID_DUAL_IMU (eDataIDs)58
 
-/*! 59: (inl2_mag_obs_monitor_t) INL2 magnetometer calibration information. */
+/*! 59 : (inl2_mag_obs_monitor_t) INL2 magnetometer calibration information. */
 #define DID_INL2_MAG_OBS_INFO (eDataIDs)59
 
+/*! 60 : (rtk_msg_t) Raw data (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */
+#define DID_RAW_GPS_DATA (eDataIDs)60
 
+/*! 61 : (rtk_opt_t) RTK options - requires little endian CPU */
+#define DID_RTK_OPT (eDataIDs)61
+
+/*! 62 : (internal) Internal user page data */
+#define DID_NVR_USERPAGE_INTERNAL (eDataIDs)62
+
+/*! 63 : INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
+#define DID_MANUFACTURING_INFO (eDataIDs)63
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
-// 3] Increment DID_COUNT
-// 4] Test!
+// 3] Add data id to ISDataMappings.cpp
+// 4] Increment DID_COUNT
+// 5] Test!
 
 /*! Count of data ids - make sure to increment if you add a new data id! */
-#define DID_COUNT (eDataIDs)60
+#define DID_COUNT (eDataIDs)64
 
 /*! Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -347,52 +257,53 @@ typedef uint32_t eDataIDs;
 /*! INS status flags */
 enum eInsStatus
 {
-	/*! INS attitude is coarse aligned */
-	INS_STATUS_ATT_ALIGNED_COARSE			= (int)0x00000001,
-	/*! INS velocity is coarse aligned */
-	INS_STATUS_VEL_ALIGNED_COARSE			= (int)0x00000002,
-	/*! INS position is coarse aligned */
-	INS_STATUS_POS_ALIGNED_COARSE			= (int)0x00000004,
-	/*! INS coarse aligned mask */
-	INS_STATUS_ALIGNED_COARSE_MASK			= (int)0x00000007,
+	/*! INS attitude alignment is COARSE */
+	INS_STATUS_ATT_ALIGN_COARSE				= (int)0x00000001,
+	/*! INS velocity alignment is COARSE */
+	INS_STATUS_VEL_ALIGN_COARSE				= (int)0x00000002,
+	/*! INS position alignment is COARSE */
+	INS_STATUS_POS_ALIGN_COARSE				= (int)0x00000004,
+	/*! INS alignment is COARSE mask */
+	INS_STATUS_ALIGN_COARSE_MASK			= (int)0x00000007,
 
-	/*! INS attitude is aligned */
-	INS_STATUS_ATT_ALIGNED					= (int)0x00000010,
-	/*! INS velocity is aligned */
-	INS_STATUS_VEL_ALIGNED					= (int)0x00000020,
-	/*! INS position is aligned */
-	INS_STATUS_POS_ALIGNED					= (int)0x00000040,
-	/*! INS aligned mask */
-	INS_STATUS_ALIGNED_MASK					= (int)0x00000070,
-	/*! INS attitude is fine aligned */
-	INS_STATUS_ATT_ALIGNED_FINE				= (int)0x00000080,
-	/*! INS all fine aligned mask */
+	/*! INS attitude alignment is GOOD */
+	INS_STATUS_ATT_ALIGN_GOOD				= (int)0x00000010,
+	/*! INS velocity alignment is GOOD */
+	INS_STATUS_VEL_ALIGN_GOOD				= (int)0x00000020,
+	/*! INS position alignment is GOOD */
+	INS_STATUS_POS_ALIGN_GOOD				= (int)0x00000040,
+	/*! INS alignment is GOOD mask */
+	INS_STATUS_ALIGN_GOOD_MASK				= (int)0x00000070,
+
+	/*! INS attitude alignment is FINE.  (For internal use. Do not use.) */
+	INS_STATUS_ATT_ALIGN_FINE				= (int)0x00000080,
+	/*! INS alignment is FINE mask.  (For internal use. Do not use.) */
 	INS_STATUS_FINE_ALIGNED_MASK			= (int)0x000000FF,
 
-	/*! INS attitude is aligning from GPS */
-	INS_STATUS_ATT_ALIGNING_GPS				= (int)0x00000100,
+	/*! INS is aligning from GPS */
+	INS_STATUS_ALIGNING_FROM_GPS			= (int)0x00000100,
 	/*! INS velocity is aligning */
 	INS_STATUS_VEL_ALIGNING					= (int)0x00000200,
 	/*! INS position is aligning */
 	INS_STATUS_POS_ALIGNING					= (int)0x00000400,
-	/*! INS attitude is aligning from Mag */
-	INS_STATUS_ATT_ALIGNING_MAG				= (int)0x00000800,
+	/*! INS is aligning from Mag */
+	INS_STATUS_ALIGNING_FROM_MAG			= (int)0x00000800,
 	/*! INS aligning mask */
 	INS_STATUS_ALIGNING_MASK				= (int)0x00000F00,
 
-	/*! Reference (GPS) position is valid */
-	INS_STATUS_REF_POS_VALID				= (int)0x00001000,
-	/*! Reference (GPS) Velocity is valid */
-	INS_STATUS_REF_VEL_VALID				= (int)0x00002000,
-	/*! Reference (GPS) Acceleration is valid */
-	INS_STATUS_REF_ACC_VALID				= (int)0x00004000,
+	/*! Set = Nav mode (w/ GPS). Cleared = AHRS mode (w/o GPS) */
+	INS_STATUS_NAV_MODE						= (int)0x00001000,
+	/*! GPS Velocity is valid */
+	INS_STATUS_GPS_VEL_VALID				= (int)0x00002000,
+	/*! GPS Acceleration is valid */
+	INS_STATUS_GPS_ACC_VALID				= (int)0x00004000,
 
 	/*! INS accelerating in horizontal plane. */
 	INS_STATUS_INS_ACC_2D					= (int)0x00010000,
-	/*! Reference (GPS) accelerating in horizontal plane. */
-	INS_STATUS_REF_ACC_2D					= (int)0x00020000,
-	/*! Reference (GPS) moving in horizontal plane. */
-	INS_STATUS_REF_VEL_2D					= (int)0x00040000,
+	/*! GPS accelerating in horizontal plane. */
+	INS_STATUS_GPS_ACC_2D					= (int)0x00020000,
+	/*! GPS moving in horizontal plane. */
+	INS_STATUS_GPS_VEL_2D					= (int)0x00040000,
 	
 	/*! Startup static aligning */
 	INS_STATUS_STARTUP_STATIC_ALIGNING		= (int)0x00100000,
@@ -414,6 +325,8 @@ enum eInsStatus
 
 	/*! INS has rotated while not translating/moving */
 	INS_STATUS_STATIONARY_ROTATION			= (int)0x10000000,
+	/*! RTOS task ran longer than allotted period */
+	INS_STATUS_RTOS_TASK_PERIOD_OVERRUN		= (int)0x20000000,
 	/*! General fault */
 	INS_STATUS_GENERAL_FAULT				= (int)0x80000000,
 };
@@ -527,15 +440,15 @@ enum eGpsStatus
 	GPS_STATUS_INIT_STATUS_BIT_OFFSET        = (int)24,
 };
 
-enum
+typedef enum
 {
 	SLOG_DISABLED			= 0,
 	SLOG_W_INS1				= 1,	// Log INS1, INS_PARAMS, SYS_PARAMS, INS_INPUT, BIASES, OBS_PARAMS, GPS_POS
 	SLOG_W_INS2				= 2,	// Log INS2, "
-	SLOG_DELTA_THETA_VEL_W_INS2	= 3,	// Log conning and sculling integrals (instead of IMU) and INS2, "
+	SLOG_DELTA_THETA_VEL_W_INS2	= 3,// Log conning and sculling integrals (instead of IMU) and INS2, "
 	SLOG_INS1_OUTPUT		= 20,	// Log INS1, INS_PARAMS, SYS_PARAMS
 	SLOG_INS2_OUTPUT		= 21,	// Log INS2, "
-};
+} eSolLogControl;
 
 enum eSysConfigBits
 {
@@ -548,20 +461,26 @@ enum eSysConfigBits
 	/*! Disable LEDs */
 	SYS_CFG_BITS_DISABLE_LEDS							= (int)0x00000004,
 
-	/*! Send communications (com manager) data as little endian */
-	SYS_CFG_BITS_COM_MANAGER_SEND_AS_LITTLE_ENDIAN		= (int)0x00000008,
+	/*! RESERVED */
+	SYS_CFG_BITS_RESERVED1								= (int)0x00000008,
 
 	/*! Enable com manager pass through of ublox data */
 	SYS_CFG_BITS_ENABLE_COM_MANAGER_PASS_THROUGH_UBLOX	= (int)0x00000010,
 
-	/*! Enable com manager pass through of RTCM3 data */
-	SYS_CFG_BITS_ENABLE_COM_MANAGER_PASS_THROUGH_RTCM3	= (int)0x00000020,
+	/*! Enable RTK rover if available */
+	SYS_CFG_BITS_RTK_ROVER								= (int)0x00000020,
+
+	/*! Enable RTK base station if available */
+	SYS_CFG_BITS_RTK_BASE_STATION						= (int)0x00000040,
+
+	/*! RTK bit mask */
+	SYS_CFG_BITS_RTK_MASK								= (SYS_CFG_BITS_RTK_ROVER | SYS_CFG_BITS_RTK_BASE_STATION)
 };
 
-PUSH_PACK_NONE
+PUSH_PACK_1
 
 /*! (DID_DEV_INFO) Device information */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Reserved bits */
 	uint32_t        reserved;
@@ -597,11 +516,23 @@ typedef struct
 	char            addInfo[DEVINFO_ADDINFO_STRLEN];
 } dev_info_t;
 
+/*! (DID_MANUFACTURING_INFO) Manufacturing info */
+PACKED_STRUCT
+{
+	/*! Serial number */
+	uint32_t		serialNumber;
+
+	/*! Lot number */
+	uint32_t		lotNumber;
+
+	/*! Manufacturing date (YYYYMMDDHHMMSS) */
+    char			date[16];
+} manufacturing_info_t;
 
 /*! (DID_INS_1) INS data with euler attitude and NED from reference LLA */
-typedef struct
+PACKED_STRUCT
 {
-	/*! Weeks since January 1st, 1980 */
+	/*! Weeks since January 6th, 1980 */
 	uint32_t				week;
 	
 	/*! Time of week (since Sunday morning) in seconds, GMT */
@@ -628,9 +559,9 @@ typedef struct
 
 
 /*! (DID_INS_2) INS data with quaternion attitude */
-typedef struct
+PACKED_STRUCT
 {
-	/*! Weeks since January 1st, 1980 */
+	/*! Weeks since January 6th, 1980 */
 	uint32_t				week;
 	
 	/*! Time of week (since Sunday morning) in seconds, GMT */
@@ -653,7 +584,7 @@ typedef struct
 } ins_2_t;
 
 
-typedef struct
+PACKED_STRUCT
 {
 	/*! Gyroscope P, Q, R in radians / second */
 	float                   pqr[3];
@@ -664,7 +595,7 @@ typedef struct
 
 
 /*! (DID_IMU_1, DID_IMU_2) Inertial Measurement Unit (IMU) data */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -675,7 +606,7 @@ typedef struct
 
 
 /*! (DID_DUAL_IMU) Dual Inertial Measurement Units (IMUs) data */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -686,7 +617,7 @@ typedef struct
 
 
 /*! (DID_MAGNETOMETER_1, DID_MAGNETOMETER_2) Magnetometer sensor data */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -697,7 +628,7 @@ typedef struct
 
 
 /*! (DID_BAROMETER) Barometric pressure sensor data */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -717,7 +648,7 @@ typedef struct
 
 
 /*! (DID_DELTA_THETA_VEL) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -734,9 +665,9 @@ typedef struct
 
 
 /*! (DID_GPS_POS) GPS position */
-typedef struct
+PACKED_STRUCT
 {
-	/*! Number of week since January 1st, 1980 */
+	/*! Number of weeks since January 6th, 1980 */
 	uint32_t                week;
 	
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
@@ -748,7 +679,7 @@ typedef struct
 	/*! Carrier to noise ratio (receiver signal strength) of strongest satellite (dBHz) */
 	uint32_t                cno;
 
-	/*! WGS84 Latitude, longitude, height above ellipsoid in meters (not geoid / MSL) */
+	/*! WGS84 Latitude, longitude, height above ellipsoid (not geoid / MSL) in degrees, degrees, meters */
 	double					lla[3];
 
 	/*! Mean sea level (MSL) height above geoid altitude in meters */
@@ -766,7 +697,7 @@ typedef struct
 
 	
 /*! (DID_GPS_VEL) GPS velocity */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t				timeOfWeekMs;
@@ -792,7 +723,7 @@ typedef struct
 
 
 /*! (DID_GPS) GPS Data */
-typedef struct
+PACKED_STRUCT
 {
 	/*! GPS position */
 	gps_nav_poslla_t		pos;
@@ -809,9 +740,20 @@ typedef struct
 
 
 /*! GPS satellite information */
-typedef struct
+PACKED_STRUCT
 {
-	/*! Satellite identifier */
+	/*!
+	Satellite identifier
+	- GPS: 0, 0-32
+	- SBS: 1, 20-58
+	- GAL: 2, 0-36
+	- BEI: 3, 0-37
+	- IME: 4, 0-10
+	- QZS: 5, 0-5
+	- GLO: 6, 0-32
+	- svId % 100 = satellite id (0 = unknown)
+	- svId / 100 = constellation (0 = GPS, 1 = SBS, 2 = GAL, 3 = BEI, 4 = IMES, 5 = QZS, 6 = GLO)
+	*/
 	uint32_t				svId;
 
 	/*! Carrier to noise ratio (receiver signal strength, dBHz) */
@@ -820,7 +762,7 @@ typedef struct
 
 
 /*! (DID_GPS_RSSI) GPS received signal strength indicator */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -834,7 +776,7 @@ typedef struct
 
 
 /*! (DID_GPS_VERSION) GPS version strings */
-typedef struct
+PACKED_STRUCT
 {
 	uint8_t                 swVersion[30];
 	uint8_t                 hwVersion[10];
@@ -844,7 +786,7 @@ typedef struct
 
 
 /*! (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */ 
-typedef struct
+PACKED_STRUCT
 {
 	/*! Broadcast period for ASCII IMU data in milliseconds. 0 for none */
 	uint32_t                 imu;
@@ -866,10 +808,16 @@ typedef struct
 
 	/*! Broadcast period for GLL (NMEA) data in milliseconds. 0 for none */
 	uint32_t				 gll;
+
+	/*! Broadcast period for GSA (NMEA) data in milliseconds. 0 for none */
+	uint32_t				 gsa;
+
+	/*! Broadcast period for ASCII delta theta velocity data in milliseconds. 0 for none */
+	uint32_t                 dtv;
 } ascii_msgs_t;
 
 /*! Generic 1 axis sensor */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time in seconds */
 	double                  time;
@@ -879,7 +827,7 @@ typedef struct
 } gen_1axis_sensor_t;
 
 /*! Generic 3 axis sensor */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time in seconds */
 	double                  time;
@@ -889,7 +837,7 @@ typedef struct
 } gen_3axis_sensor_t;
 
 /*! Generic dual 3 axis sensor */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time in seconds */
 	double                  time;
@@ -902,7 +850,7 @@ typedef struct
 } gen_dual_3axis_sensor_t;
 
 /*! Generic 3 axis sensor */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time in seconds */
 	double                  time;
@@ -911,9 +859,8 @@ typedef struct
 	double                  val[3];
 } gen_3axis_sensord_t;
 
-
 /*! (DID_SYS_SENSORS) Output from system sensors */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double					time;
@@ -955,9 +902,8 @@ typedef struct
 	float                   ana4;
 } sys_sensors_t;
 
-
 // (DID_EKF_STATES) INS Extended Kalman Filter (EKF) states
-typedef struct
+PACKED_STRUCT
 {	
 	double                  time;					// (s)     Time since boot up in seconds
 	float					qe2b[4];                //         Quaternion body rotation with respect to ECEF
@@ -970,9 +916,8 @@ typedef struct
 	float					magInc;                 // (rad)   Magnetic inclination
 } ekf_states_t;
 
-
 /*! Sensor state variables */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Latitude, longitude and height above ellipsoid in radians, radians and meters */
 	double                  lla[3];
@@ -985,7 +930,7 @@ typedef struct
 } state_vars_t;
 
 /*! (DID_INS_MISC) INS Misc data */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time of week (since Sunday morning) in seconds, GMT */
 	double                  timeOfWeek;
@@ -1018,9 +963,8 @@ typedef struct
 	float					mslBar;
 } ins_misc_t;
 
-
 /*! INS output */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -1038,9 +982,8 @@ typedef struct
 	float                   dcm[9];
 } ins_output_t;
 
-
 /*! (DID_SYS_PARAMS) System parameters */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -1063,10 +1006,10 @@ typedef struct
 	/*! Position alignment error in meters per second */
 	float				    alignPosError;
 
-	/*! Sample period in milliseconds */
+	/*! Sample period in milliseconds. Zero disables sampling. */
 	uint32_t				sampleDtMs;
 
-	/*! Solution update period in milliseconds */
+	/*! Nav filter update period in milliseconds. Zero disables nav filter. */
 	uint32_t				navDtMs;
 
 	/*! Ratio of system tuned clock to actual clock frequencies */
@@ -1085,14 +1028,20 @@ typedef struct
 	uint32_t                genFaultCode;
 } sys_params_t;
 
+/*! On demand messages - these messages are sent whenever available, rather than sent or received at a specific rate */
+typedef enum
+{
+	/*! Raw observation and ephemeris data */
+	MSG_CFG_BIT_RTK = 1 << 0
+} eMsgCfgBits;
 
 /*! (DID_CONFIG) Configuration functions */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Set to 1 to reset processor into bootloader mode */
 	uint32_t                enBootloader;
 
-	/*! Set to 1 to log solution input */
+	/*! Solution logging options (eSolLogControl) */
 	uint32_t                sLogCtrl;
 
 	/*! Set to 1 to enable sensor stats */
@@ -1103,6 +1052,12 @@ typedef struct
 
 	/*! Set to 1 to enable GPS low-level configuration */
 	uint32_t                gpsStatus;
+
+	/*! System: 99=software reset */
+	uint32_t                system;
+
+	/*! Message configuration bits, on demand messages (eMsgCfgBits) */
+	uint32_t				msgCfgBits;
 } config_t;
 
 #define NUM_SERVOS			8
@@ -1110,7 +1065,7 @@ typedef struct
 #define SERVO_PULSE_US_MAX	2300
 
 /*! (DID_IO) Input/Output */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -1119,37 +1074,36 @@ typedef struct
 	uint32_t				gpioStatus;
 } io_t;
 
-
 /*! (DID_IO_SERVOS_PWM & DID_IO_SERVOS_PPM) I/O: PWM and PPM Servos */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Servo pulse time (us) */
 	uint32_t				ch[NUM_SERVOS];
 } io_servos_t;
 
 
-// typedef struct
+// PACKED_STRUCT
 // {											// Magnetic Distortions:
 // 	float				bFrame[3];				// static to body frame
 // 	float				iFrame[3];				// static to inertial frame
 // 	float				accuracy;				// Goodness of fit cal accuracy indicator (smaller is better)
 // } magDistortion_t;
 
-typedef struct
+PACKED_STRUCT
 {
 	// 		uint32_t			timeMs;				// (ms)		Sample timestamp used to identify age of sample
 	float				theta[3];			// (rad)	Euler attitude
 	float				mag[3];				// (Gauss)	Measured magnetometer output (body frame)
 } magCalPoint_t;
 
-typedef struct
+PACKED_STRUCT
 {
 	magCalPoint_t		pt[5];
 	float				delta;				// (Gauss)	Difference between pt[1].mag and pt[3].mag.
 } magCalSet_t;
 
 /*! (DID_MAGNETOMETER_CAL) Magnetometer Calibration */
-typedef struct
+PACKED_STRUCT
 {
 	uint32_t				state;			// Calibration state
 	magCalSet_t				data[3];		// Data array.  Each element contains the min and max value found for roll, pitch, and yaw.
@@ -1157,9 +1111,8 @@ typedef struct
 	float					accuracy;		// Goodness of fit cal accuracy indicator (smaller is better)
 } mag_cal_t;
 
-
 /*! (DID_FLASH_CONFIG) Configuration data */
-typedef struct
+PACKED_STRUCT
 {
 	/*! Size of group or union, which is nvm_group_x_t + padding */
 	uint32_t				size;
@@ -1170,10 +1123,10 @@ typedef struct
 	/*! Manufacturer method for restoring flash defaults */
 	uint32_t                key;
 
-	/*! Startup sample period in milliseconds */
+	/*! Startup sample period in milliseconds. Zero disables sampling. */
 	uint32_t				startupSampleDtMs;
 
-	/*! Startup solution update period in milliseconds */
+	/*! Startup nav filter update period in milliseconds. Zero disables nav filter. */
 	uint32_t				startupNavDtMs;
 
 	/*! Serial port 0 baud rate in bits per second */
@@ -1191,22 +1144,22 @@ typedef struct
 	/*! GPS antenna offset from INS comp frame origin (in INS comp frame) in meters */
 	float					gpsAntOffset[3];
 
-	/* INS dynamic platform model.  Determines performance characteristics of system.  */
+	/* INS dynamic platform model.  Determines performance characteristics of system. 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST */
 	uint32_t				insDynModel;
 	
 	/*! System configuration bits */
 	uint32_t				sysCfgBits;
 
-	/*! Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations in degrees, degrees, and meters */
+	/*! Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
 	double                  refLla[3];
 
-	/*! Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup in degrees, degrees, and meters */
+	/*! Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup (deg, deg, m) */
 	double					lastLla[3];
 
 	/*! Last LLA time since week start (Sunday morning) in milliseconds */
 	uint32_t				lastLlaTimeOfWeekMs;
 
-	/*! Last LLA number of week since January 1st, 1980 */
+	/*! Last LLA number of weeks since January 6th, 1980 */
 	uint32_t				lastLlaWeek;
 	
 	/*! Distance between current and last LLA that triggers an update of lastLla  */
@@ -1235,21 +1188,523 @@ typedef struct
 
 	/*! Magnetometer bias estimate in body frame (normalized gauss) */
 	float					magB[3];
-
 } nvm_flash_cfg_t;
 
 /*! (DID_INS_RESOURCES) */
-typedef struct
+PACKED_STRUCT
 {	
 	uint32_t                timeOfWeekMs;		//			Time of week (since Sunday morning) in milliseconds, GMT
 	state_vars_t            x_dot;				//			State variables derivative
 	float					magYawOffset;		// (rad)	Temporary offset in mag heading used to remove discontinuities when transitioning from moving to stationary (from GPS to mag heading)
 } ins_res_t;
 
-POP_PACK_NONE
+POP_PACK
+
+PUSH_PACK_8
+
+/*! time struct */
+typedef struct
+{
+	/*! time (s) expressed by standard time_t */
+	time_t time;
+
+	/*! fraction of second under 1 s */
+	double sec;         
+} gtime_t;
+
+POP_PACK
+
+PUSH_PACK_1
+
+/*! RTK processing options */
+typedef struct
+{
+	/*! positioning mode (PMODE_???) */
+	int32_t mode;           
+
+	/*! solution type (0:forward,1:backward,2:combined) */
+	int32_t soltype;
+
+	/*! number of frequencies (1:L1,2:L1+L2,3:L1+L2+L5) */
+	int32_t nf;
+
+	/*! navigation systems */
+	int32_t navsys;
+
+	/*! elevation mask angle (rad) */
+	double elmin;
+
+	/*! AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold,4:ppp-ar) */
+	int32_t modear;
+
+	/*! GLONASS AR mode (0:off,1:on,2:auto cal,3:ext cal) */
+	int32_t glomodear;
+
+	/*! GPS AR mode (0:off,1:on) */
+	int32_t gpsmodear;
+
+	/*! BeiDou AR mode (0:off,1:on) */
+	int32_t bdsmodear;
+
+	/*! AR filtering to reject bad sats (0:off,1:on) */
+	int32_t arfilter;
+
+	/*! obs outage count to reset bias */
+	int32_t maxout;
+
+	/*! min lock count to fix ambiguity */
+	int32_t minlock;
+
+	/*! min sats to fix integer ambiguities */
+	int32_t minfixsats;
+
+	/*! min sats to hold integer ambiguities */
+	int32_t minholdsats;
+
+	/*! min sats to drop sats in AR */
+	int32_t mindropsats;
+
+	/*! use stdev estimates from receiver to adjust measurement variances */
+	int32_t rcvstds;
+
+	/*! min fix count to hold ambiguity */
+	int32_t minfix;
+
+	/*! max iteration to resolve ambiguity */
+	int32_t armaxiter;
+
+	/*! dynamics model (0:none,1:velociy,2:accel) */
+	int32_t dynamics;
+
+	/*! number of filter iteration */
+	int32_t niter;
+
+	/*! interpolate reference obs (for post mission) */
+	int32_t intpref;
+
+	/*! rover position for fixed mode */
+	int32_t rovpos;
+
+	/*! base position for relative mode */
+	int32_t refpos;
+
+	/*! code/phase error ratio */
+	double eratio[1];
+
+	/*! measurement error factor */
+	double err[5];
+
+	/*! initial-state std [0]bias,[1]iono [2]trop */
+	double std[3];
+
+	/*! process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
+	double prn[6];
+
+	/*! satellite clock stability (sec/sec) */
+	double sclkstab;
+
+	/*! AR validation threshold */
+	double thresar[8];
+
+	/*! elevation mask of AR for rising satellite (rad) */
+	double elmaskar;
+
+	/*! elevation mask to hold ambiguity (rad) */
+	double elmaskhold;
+
+	/*! slip threshold of geometry-free phase (m) */
+	double thresslip;
+
+	/*! variance for fix-and-hold psuedo measurements (cycle^2) */
+	double varholdamb;
+
+	/*! gain used for GLO and SBAS sats to adjust ambiguity */
+	double gainholdamb;
+
+	/*! max difference of time (sec) */
+	double maxtdiff;
+
+	/*! reject threshold of innovation (m) */
+	double maxinno;
+
+	/*! reject threshold of gdop */
+	double maxgdop;
+
+	/*! baseline length constraint {const,sigma} (m) */
+	double baseline[2];
+
+	/*! rover position for fixed mode {x,y,z} (ecef) (m) */
+	double ru[3];
+
+	/*! base position for relative mode {x,y,z} (ecef) (m) */
+	double rb[3];
+
+	/*! max averaging epoches */
+	int32_t maxaveep;
+
+	/*! output single by dgps/float/fix/ppp outage */
+	int32_t outsingle;
+} prcopt_t;
+typedef prcopt_t rtk_opt_t;
+
+/*! Raw satellite observation data */
+PACKED_STRUCT
+{
+	/*! receiver sampling time (GPST) */
+	gtime_t time;
+
+	/*! satellite number */
+	uint8_t sat;
+
+	/*! receiver number */
+	uint8_t rcv;
+
+	/*! signal strength (0.25 dBHz) */
+	uint8_t SNR[1];
+
+	/*! loss of lock indicator */
+	uint8_t LLI[1];
+
+	/*! code indicator (CODE_???) */
+	uint8_t code[1];
+
+	/*! quality of carrier phase measurement */
+	uint8_t qualL[1];
+
+	/*! quality of pseudorange measurement */
+	uint8_t qualP[1];
+
+	/*! reserved, for alignment */
+	uint8_t reserved1;
+
+	/*! observation data carrier-phase (cycle) */
+	double L[1];
+
+	/*! observation data pseudorange (m) */
+	double P[1]; 
+
+	/*! observation data doppler frequency (Hz) */
+	float D[1];
+
+	/*! reserved, for alignment */
+	uint32_t reserved2;
+} obsd_t;
+
+/*! observation data */
+typedef struct
+{
+	/*! number of obervation slots used */
+	int32_t n;
+
+	/*! number of obervation slots allocated */
+	int32_t nmax;
+
+	/*! observation data buffer */
+	obsd_t* data;
+} obs_t;
+
+/*! GPS / GAL / QZS ephemeris data */
+typedef struct
+{
+	/* satellite number */
+	int32_t sat;
+
+	/*! IODE */
+	int32_t iode;
+	
+	/*! IODC */
+	int32_t iodc;
+
+	/*! SV accuracy (URA index) */
+	int32_t sva;            
+
+	/*! SV health (0:ok) */
+	int32_t svh;            
+
+	/* GPS/QZS: gps week, GAL: galileo week */
+	int32_t week;
+
+	/*! GPS/QZS: code on L2, GAL/CMP: data sources */
+	int32_t code;
+
+	/*! GPS/QZS: L2 P data flag, CMP: nav type */
+	int32_t flag;
+
+	/*! Toe */
+	gtime_t toe;
+	
+	/*! Toc */
+	gtime_t toc;
+	
+	/*! T_trans */
+	gtime_t ttr;
+
+	/*! SV orbit parameters - A */
+	double A;
+
+	/*! SV orbit parameters - e */
+	double e;
+
+	/*! SV orbit parameters - i0 */
+	double i0;
+
+	/*! SV orbit parameters - OMG0 */
+	double OMG0;
+
+	/*! SV orbit parameters - omg */
+	double omg;
+
+	/*! SV orbit parameters - M0 */
+	double M0;
+
+	/*! SV orbit parameters - deln */
+	double deln;
+
+	/*! SV orbit parameters - OMGd */
+	double OMGd;
+
+	/*! SV orbit parameters - idot */
+	double idot;
+
+	/*! SV orbit parameters - crc */
+	double crc;
+
+	/*! SV orbit parameters - crs */
+	double crs;
+
+	/*! SV orbit parameters - cuc */
+	double cuc;
+
+	/*! SV orbit parameters - cus */
+	double cus;
+
+	/*! SV orbit parameters - cic */
+	double cic;
+
+	/*! SV orbit parameters - cis */
+	double cis;
+
+	/*! Toe (s) in week */
+	double toes;
+
+	/*! fit interval (h) */
+	double fit;
+
+	/*! SV clock parameters - af0 */
+	double f0;
+	
+	/*! SV clock parameters - af1 */
+	double f1;
+	
+	/*! SV clock parameters - af2 */
+	double f2;
+
+	/*! group delay parameters
+	* GPS/QZS:tgd[0]=TGD
+	* GAL    :tgd[0]=BGD E5a/E1,tgd[1]=BGD E5b/E1
+	* CMP    :tgd[0]=BGD1,tgd[1]=BGD2
+	*/
+	double tgd[4];
+
+	/*! Adot for CNAV */
+	double Adot;
+	
+	/*! ndot for CNAV */
+	double ndot;
+} eph_t;
+
+/*! Glonass ephemeris data */
+typedef struct
+{        
+	/*! satellite number */
+	int32_t sat;
+
+	/*! IODE (0-6 bit of tb field) */
+	int32_t iode;
+
+	/*! satellite frequency number */
+	int32_t frq;
+
+	/*! satellite health */
+	int32_t svh;
+	
+	/*! satellite accuracy */
+	int32_t sva;
+	
+	/*! satellite age of operation */
+	int32_t age;
+
+	/*! epoch of epherides (gpst) */
+	gtime_t toe;
+
+	/*! message frame time (gpst) */
+	gtime_t tof;
+
+	/*! satellite position (ecef) (m) */
+	double pos[3];
+
+	/*! satellite velocity (ecef) (m/s) */
+	double vel[3];
+
+	/*! satellite acceleration (ecef) (m/s^2) */
+	double acc[3];
+
+	/*! SV clock bias (s) */
+	double taun;
+
+	/*! relative freq bias */
+	double gamn;
+
+	/*! delay between L1 and L2 (s) */
+	double dtaun;
+} geph_t;
+
+/*! SBAS message type */
+typedef struct
+{
+	/* receiption time - week */
+	int32_t week;
+	
+	/*! reception time - tow */
+	int32_t tow;
+
+	/*! SBAS satellite PRN number */
+	int32_t prn;
+
+	/*! SBAS message (226bit) padded by 0 */
+	uint8_t msg[29];
+
+	/*! reserved for alighment */
+	uint8_t reserved[3];
+} sbsmsg_t;
+
+/*! station parameter type */
+typedef struct
+{
+	/*! antenna delta type (0:enu,1:xyz) */
+	int32_t deltype;    
+
+	/*! station position (ecef) (m) */
+	double pos[3];
+
+	/*! antenna position delta (e/n/u or x/y/z) (m) */
+	double del[3];
+
+	/*! antenna height (m) */
+	double hgt;
+} sta_t;
+
+/*! RTK solution status */
+typedef enum
+{
+	/*! No status */
+	rtk_solution_status_none = 0,
+
+	/*! RTK fix */
+	rtk_solution_status_fix = 1,
+
+	/*! RTK float */
+	rtk_solution_status_float = 2,
+
+	/*! RTK SBAS */
+	rtk_solution_status_sbas = 3,
+
+	/*! RTK DGPS */
+	rtk_solution_status_dgps = 4,
+
+	/*! RTK SINGLE */
+	rtk_solution_status_single = 5
+} eRtkSolStatus;
+
+/*! DID_RTK_SOL - requires little endian CPU */
+PACKED_STRUCT
+{
+	/*! Reserved for future use, do not modify */
+	uint32_t header;
+
+	/*! Solution status - eRtkSolStatus */
+	uint32_t status;
+
+	/*! Seconds in GPST */
+	double seconds;
+
+	/*! Position - latitude (degrees), longitude (degrees), height (meters) */
+	double pos[3];
+
+	/*! Velocity (xyz, meters per second) */
+	double vel[3];
+
+	/*! Accuracy - sdn, sde, sdu, sdne, sdeu, sdun (meters) */
+	float accuracy[6];
+
+	/*! Number of satellites in solution */
+	uint32_t numberOfSatellites;
+
+	/*! Age of differential, seconds */
+	float age;
+
+	/*! Ambiguity resolution ratio factor for valiation */
+	float ratio;
+
+	/*! Ambiguity resolution threshold for valiation */
+	float threshold;
+
+	/*! Geometric dilution of precision in meters */
+	double gdop;
+	
+	/*! Position dilution of precision in meters */
+	double pdop;
+	
+	/*! Horizontal dilution of precision in meters */
+	double hdop;
+	
+	/*! Vertical dilution of precision in meters */
+	double vdop;
+} rtk_sol_t;
+
+/*! RAW data types for DID_RAW_GPS_DATA */
+typedef enum
+{
+	/*! obsd_t */
+	raw_data_type_observation = 1,
+
+	/*! eph_t */
+	raw_data_type_ephemeris = 2,
+
+	/*! geph_t */
+	raw_data_type_glonass_ephemeris = 3,
+
+	/*! sbsmsg_t */
+	raw_data_type_sbas = 4,
+
+	/*! sta_t */
+	raw_data_type_base_station_antenna_position = 5,
+
+	/*! sol_t */
+	raw_data_type_solution = 64
+} eRawDataType;
+
+/*! Message wrapper for DID_RAW_GPS_DATA - simply cast the data buffer to this struct */
+PACKED_STRUCT
+{
+	/*! Receiver index, 0 or 1 */
+	uint8_t receiverIndex;
+
+	/*! Type of message - eRawDataType */
+	uint8_t type; 
+
+	/*! number of messages of type */
+	uint8_t count;
+
+	/*! Reserved */
+	uint8_t reserved;
+
+	/*! Data buffer */
+	uint8_t buf[1020];
+} raw_gps_msg_t;
 
 /*! Union of datasets */
-union uDatasets
+PACKED_UNION
 {
 	dev_info_t			devInfo;
 	ins_1_t				ins1;
@@ -1270,25 +1725,11 @@ union uDatasets
 	io_t				io;
 	ins_res_t			insRes;
 	ekf_states_t		ekfStates;
-};
+	rtk_sol_t			rtkSol;
+	raw_gps_msg_t       gpsRaw;
+} uDatasets;
 
-/*!
-Contains 0 if big endian, 1 if little endian, -1 if unknown CPU architecture.
-initDataSets must be called before this value is populated properly.
-*/
-extern int IS_LITTLE_ENDIAN; // 0 if big endian, 1 if little endian, -1 if unknown architecture
-
-// calculates whether the current CPU is little endian or big endian architecture.
-// 0 if big endian, 1 if little endian, -1 if unknown
-int isCpuLittleEndian(void);
-
-/*!
-Initializes data structures - this must be called ONCE and only ONCE at program start
-Upon completion, IS_LITTLE_ENDIAN is populated
-
-@return 0 if CPU architecture could not be determined, otherwise non-zero
-*/
-int initDataSets(void);
+POP_PACK
 
 /*!
 Creates a 32 bit checksum from data
@@ -1326,13 +1767,15 @@ float flipFloatCopy(float val);
 
 /*!
 Flip the bytes of a double in place (8 bytes) - ptr is assumed to be at least 8 bytes
+Only flips each 4 byte pair, does not flip the individual bytes within the pair
 
 @param ptr the double to flip
 */
 void flipDouble(uint8_t* ptr);
 
 /*!
-Flip the bytes of a double in place (8 bytes) - ptr is assumed to be at least 8 bytes
+Flip the bytes of a double in place (8 bytes)
+Unlike flipDouble, this also flips the individual bytes in each 4 byte pair
 
 @param val the double to flip
 @return the flipped double
@@ -1363,7 +1806,7 @@ void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 
 // BE_SWAP: if big endian then swap, else no-op
 // LE_SWAP: if little endian then swap, else no-op
-#if defined(AVR)
+#if CPU_IS_BIG_ENDIAN
 #define BE_SWAP64F(_i) flipDoubleCopy(_i)
 #define BE_SWAP32F(_i) flipFloatCopy(_i)
 #define BE_SWAP32(_i) (SWAP32(_i))
@@ -1372,7 +1815,7 @@ void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 #define LE_SWAP32F(_i) (_i)
 #define LE_SWAP32(_i) (_i)
 #define LE_SWAP16(_i) (_i)
-#elif defined(ARM)
+#else // little endian
 #define BE_SWAP64F(_i) (_i)
 #define BE_SWAP32F(_i) (_i)
 #define BE_SWAP32(_i) (_i)
@@ -1381,15 +1824,6 @@ void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 #define LE_SWAP32F(_i) flipFloatCopy(_i)
 #define LE_SWAP32(_i) (SWAP32(_i))
 #define LE_SWAP16(_i) (SWAP16(_i))
-#else
-#define BE_SWAP64F(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (flipDoubleCopy(_i)))
-#define BE_SWAP32F(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (flipFloatCopy(_i)))
-#define BE_SWAP32(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (SWAP32(_i)))
-#define BE_SWAP16(_i) ((IS_LITTLE_ENDIAN) ? (_i) : (SWAP16(_i)))
-#define LE_SWAP64F(_i) ((IS_LITTLE_ENDIAN) ? (flipDoubleCopy(_i)) : (_i))
-#define LE_SWAP32F(_i) ((IS_LITTLE_ENDIAN) ? (flipFloatCopy(_i)) : (_i))
-#define LE_SWAP32(_i) ((IS_LITTLE_ENDIAN) ? (SWAP32(_i)) : (_i))
-#define LE_SWAP16(_i) ((IS_LITTLE_ENDIAN) ? (SWAP16(_i)) : (_i))
 #endif
 
 /*!

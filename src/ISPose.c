@@ -183,8 +183,12 @@ void quatConjRot(Vector3_t result, const Quat_t q, const Vector3_t v)
  */
 void quat2euler(const Quat_t q, Euler_t theta)
 {
+    float sinang = 2 * (q[0] * q[2] - q[3] * q[1]);
+    if (sinang > 1.0f) { sinang = 1.0f; }
+    if (sinang < -1.0f) { sinang = -1.0f; }
+
 	theta[0] = _ATAN2(2 * (q[0]*q[1] + q[2]*q[3]), 1 - 2 * (q[1]*q[1] + q[2]*q[2]));
-	theta[1] = _ASIN (2 * (q[0]*q[2] - q[3]*q[1]));
+	theta[1] = _ASIN (sinang);
 	theta[2] = _ATAN2(2 * (q[0]*q[3] + q[1]*q[2]), 1 - 2 * (q[2]*q[2] + q[3]*q[3]));
 }
 void quat2phiTheta(const Quat_t q, f_t *phi, f_t *theta)

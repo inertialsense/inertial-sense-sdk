@@ -21,11 +21,18 @@ extern "C" {
 #include "data_sets.h"
 #include "linked_list.h"
 
+// set to 0 to disable 24 bit checksum and use old 16 bit checksum instead
+#define ENABLE_COM_MANAGER_CHECKSUM_24_BIT 0
+
 /*! Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
-#define PROTOCOL_VERSION_CHAR0      1   // Major (in com_manager.h)
-#define PROTOCOL_VERSION_CHAR1      1
-// #define PROTOCOL_VERSION_CHAR2      0
-// #define PROTOCOL_VERSION_CHAR3      0   // Minor (in data_sets.h)
+
+// Major (in com_manager.h)
+#define PROTOCOL_VERSION_CHAR0			1
+#define PROTOCOL_VERSION_CHAR1			(1 + ENABLE_COM_MANAGER_CHECKSUM_24_BIT)
+
+// Minor (in data_sets.h)
+// #define PROTOCOL_VERSION_CHAR2		0
+// #define PROTOCOL_VERSION_CHAR3		0
 
 // if a Windows DLL is needed, this can be redefined using the commented out code below
 #define SHAREDLIB_EXPORT
@@ -79,6 +86,9 @@ enum
 
 /*! The maximum size of a decoded ACK message */
 #define MAX_P_ACK_BODY_SIZE     (MAX_PKT_BODY_SIZE-sizeof(p_ack_hdr_t))     // Ack data size
+
+/*! Maximum number of messages that may be broadcast simultaneously */
+#define MAX_NUM_BCAST_MSGS 16
 
 /*
 Packet Overview
@@ -193,11 +203,12 @@ enum ePktHdrFlags
 	CM_PKT_FLAGS_ENDIANNESS_MASK		= 0x01,
 	CM_PKT_FLAGS_RX_VALID_DATA			= 0x02,
 	CM_PKT_FLAGS_MORE_DATA_AVAILABLE	= 0x04,
-	CM_PKT_FLAGS_RAW_DATA_NO_SWAP		= 0x08,		// Allow for arbitrary length in bytes of data, not necessarily multiple of 4.  Don't swap bytes for endianness
+	CM_PKT_FLAGS_RAW_DATA_NO_SWAP		= 0x08, // Allow for arbitrary length in bytes of data, not necessarily multiple of 4.  Don't swap bytes for endianness
+	CM_PKT_FLAGS_CHECKSUM_24_BIT		= 0x10  // Checksum is the new 24 bit algorithm instead of the old 16 bit algorithm
 };
 
 /*! We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
-PUSH_PACK_NONE
+PUSH_PACK_1
 
 /*! Represents an ASCII message and how it is mapped to a structure in memory */
 typedef struct
@@ -243,6 +254,20 @@ typedef struct
 /*! Represents the 4 bytes that end each binary packet */
 typedef struct
 {
+
+#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+
+	/*! Checksum byte 3 */
+	uint8_t             cksum3;
+
+	/*! Checksum byte 2 */
+	uint8_t             cksum2;
+
+	/*! Checksum byte 1 */
+	uint8_t             cksum1;
+
+#else
+
 	/*! Reserved for future use */
  	uint8_t             reserved;
 
@@ -251,6 +276,8 @@ typedef struct
 
 	/*! Checksum low byte */
     uint8_t             cksum2;
+
+#endif
 
 	/*! Packet end byte, always 0xFE */
     uint8_t             stopByte;
@@ -344,7 +371,7 @@ typedef struct
 } p_ack_t, p_nack_t;
 
 /*! Pop off the packing argument, we can safely allow packing and shifting in memory at this point */
-POP_PACK_NONE
+POP_PACK
 
 /*!
 Built in special bytes that will need to be encoded in the binary packet format. This is not an exhaustive list, as other bytes such as ublox and rtcm preambles
@@ -443,10 +470,13 @@ typedef void(*pfnComManagerDisableBroadcasts)(CMHANDLE cmHandle, int pHandle);
 typedef void(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle);
 
 // ASCII message handler function
-typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, unsigned char* messageId, unsigned char* line, int lineLength);
+typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
 
 // pass through handler
 typedef void(*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_through_t passThroughType, int pHandle, const unsigned char* data, int dataLength);
+
+// broadcast message handler
+typedef void(*pfnComManagerBroadcast)(CMHANDLE cmHandle, int pHandle, p_data_get_t* req);
 
 // get the global instance of the com manager - this is only needed if you are working with multiple com managers and need to compare instances
 CMHANDLE getGlobalComManager(void);
@@ -511,7 +541,7 @@ SHAREDLIB_EXPORT void stepComManager(void);
 SHAREDLIB_EXPORT void stepComManagerInstance(CMHANDLE cmInstance);
 
 /*!
-Make a request to a port handle to broadcast a piece of data at a set interval
+Make a request to a port handle to broadcast a piece of data at a set interval. This will be saved to flash memory if supported and re-enabled on bootup.
 
 @param pHandle the port handle to request broadcast data from
 @param dataId the data id to broadcast
@@ -651,6 +681,22 @@ SHAREDLIB_EXPORT com_manager_status_t* getStatusComManager(int pHandle);
 SHAREDLIB_EXPORT com_manager_status_t* getStatusComManagerInstance(CMHANDLE cmInstance, int pHandle);
 
 /*!
+Internal use mostly, get data info for a the specified pre-registered dataId
+
+@return 0 on failure, pointer on success
+*/
+bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint32_t dataId);
+bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE cmInstance, uint32_t dataId);
+
+/*!
+Internal use mostly, process a get data request for a message that needs to be broadcasted
+
+@return 0 on success, anything else is failure
+*/
+int comManagerGetDataRequest(int pHandle, p_data_get_t* req);
+int comManagerGetDataRequestInstance(CMHANDLE cmInstance, int pHandle, p_data_get_t* req);
+
+/*!
 Register message handling function for a received data id (binary). This is mostly an internal use function,
 but can be used if you are implementing your own receiver on a device.
 
@@ -682,18 +728,16 @@ SHAREDLIB_EXPORT void registerComManagerASCII(asciiMessageMap_t* asciiMessages, 
 SHAREDLIB_EXPORT void registerComManagerASCIIInstance(CMHANDLE cmInstance, asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc);
 
 /*!
-Force the com manager to change all sent packets to the specified endianess
-@param pHandle the port to set endianess on
-@param littleEndian 0 to force big endian, 1 to force little endian
-*/
-SHAREDLIB_EXPORT void setComManagerSendEndianess(int pHandle, int littleEndian);
-SHAREDLIB_EXPORT void setComManagerSendEndianessInstance(CMHANDLE cmInstance, int pHandle, int littleEndian);
-
-/*!
-Set a com manager pass through handler, handle can be 0 or null to remove the current handler
+Set a com manager pass through handler, handler can be 0 or null to remove the current handler
 */
 SHAREDLIB_EXPORT void setComManagerPassThrough(pfnComManagerPassThrough handler);
 SHAREDLIB_EXPORT void setComManagerPassThroughInstance(CMHANDLE cmInstance, pfnComManagerPassThrough handler);
+
+/*!
+Set a com manager broadcast message handler, handler can be 0 or null to remove the current handler
+*/
+SHAREDLIB_EXPORT void setComManagerBroadcastCallback(pfnComManagerBroadcast handler);
+SHAREDLIB_EXPORT void setComManagerBroadcastCallbackInstance(CMHANDLE cmInstance, pfnComManagerBroadcast handler);
 
 /*!
 Free a com manager instance. This instance should never be used again. The default global com manager can never be freed.

@@ -31,6 +31,7 @@ public:
 	uint32_t fileCount;
 	uint64_t fileSize;
 	uint32_t dataId;
+	uint32_t dataSize;
 	uint64_t orderId;
 	string nextLine;
 	bool finishedReading;
@@ -41,13 +42,13 @@ public:
 class cDeviceLogCSV : public cDeviceLog
 {
 public:
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) override;
-	void InitDeviceForReading() override;
-	bool CloseAllFiles() override;
-	bool SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf) override;
-	p_data_t* ReadData() override;
-	void SetSerialNumber(uint32_t serialNumber) override;
-	std::string LogFileExtention() override { return std::string(".csv"); }
+	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) OVERRIDE;
+	void InitDeviceForReading() OVERRIDE;
+	bool CloseAllFiles() OVERRIDE;
+	bool SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf) OVERRIDE;
+	p_data_t* ReadData() OVERRIDE;
+	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
+	std::string LogFileExtention() OVERRIDE { return std::string(".csv"); }
 
 private:
 	bool OpenNewFile(cCsvLog& log, bool readOnly);

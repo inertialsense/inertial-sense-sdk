@@ -7,9 +7,9 @@
 ### Documents
 
  * [SDK Documentation](http://docs.inertialsense.com/)
- * [User Manual](https://inertialsense.com/?wpdmdl=184)
- * [Datasheet - uINS, uAHRS, and uIMU](https://inertialsense.com/?wpdmdl=204)
- * [Release Notes](https://inertialsense.com/?wpdmdl=516) - version information and software change log.
+ * [User Manual](http://inertialsense.com/wp-content/uploads/2017/05/is_user_manual.pdf)
+ * [Datasheet - uINS, uAHRS, and uIMU](http://inertialsense.com/wp-content/uploads/2017/05/uimu_uahrs_uins_datasheet.pdf)
+ * [Release Notes](http://inertialsense.com/wp-content/uploads/2017/05/release-notes.txt) - version information and software change log.
 
 ### Downloads
 
@@ -19,7 +19,8 @@
 
 ### Design Resources
 
- * [uINS, uAHRS, uIMU v2 CAD Model](https://inertialsense.com/download/eval-tool-installer/) - 3D step model of uINS 2 used for CAD and circuit board designs.
+ * [uINS PCB Design Libraries](https://inertialsense.com/resources) - Schematic and layout files for printed circuit board designs.
+ * [uINS, uAHRS, uIMU CAD Model](https://inertialsense.com/resources) - 3D step model of uINS and EVB used for CAD and circuit board designs.
 
 ### Support
 

@@ -22,7 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define LOG_DEBUG_WRITE		0
 #define LOG_DEBUG_READ		0
 
-#pragma pack(push, 1)
+PUSH_PACK_1
 
 /*! Represents the complete packet body of a PID_DATA and PID_DATA_SET packet */
 typedef struct
@@ -43,17 +43,17 @@ typedef struct
 	uint32_t dCount;
 } sChunkSubHeader;
 
-#pragma pack(pop)
+POP_PACK
 
 class cSortedDataChunk : public cDataChunk
 {
 public:
 	cSortedDataChunk(uint32_t maxSize = MAX_CHUNK_SIZE, const char* name = "EMPT");
-	void Clear() override;
+	void Clear() OVERRIDE;
 
-	int32_t WriteAdditionalChunkHeader(FILE* pFile) override;
-	int32_t ReadAdditionalChunkHeader(FILE* pFile) override;
-	int32_t GetHeaderSize() override;
+	int32_t WriteAdditionalChunkHeader(FILE* pFile) OVERRIDE;
+	int32_t ReadAdditionalChunkHeader(FILE* pFile) OVERRIDE;
+	int32_t GetHeaderSize() OVERRIDE;
 
 	sChunkSubHeader m_subHdr;
 };

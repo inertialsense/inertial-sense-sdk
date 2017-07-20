@@ -133,7 +133,7 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, const
 	map_name_to_info_t::const_iterator offset;
 	bool inQuotes = false;
 	uint32_t foundQuotes = 0;
-	for (string::const_iterator i = start; i < s.end(); i++)
+	for (string::const_iterator i = start; i < s.end() && index < columnHeaders.size(); i++)
 	{
 		if (*i == ',' && !inQuotes)
 		{
@@ -141,7 +141,7 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, const
 			columnData = string(start + foundQuotes, i - foundQuotes);
 			start = i + 1;
 			offset = offsetMap->second.find(columnHeaders[index++]);
-			if (offset != offsetMap->second.end() && !cISDataMappings::StringToData(columnData.c_str(), buf, offset->second))
+			if (offset != offsetMap->second.end() && !cISDataMappings::StringToData(columnData.c_str(), &hdr, buf, offset->second))
 			{
 				return false;
 			}
@@ -166,7 +166,6 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	}
 	csv.clear();
 	string columnData;
-// 	int index = 0;
 	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(hdr.id);
 	if (offsetMap == cISDataMappings::GetMap().end())
 	{
@@ -185,7 +184,7 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	}
 	for (map_name_to_info_t::const_iterator offset = offsetMap->second.begin(); offset != offsetMap->second.end(); offset++)
 	{
-		cISDataMappings::DataToString(offset->second, bufPtr, tmp);
+		cISDataMappings::DataToString(offset->second, &hdr, bufPtr, tmp);
 		if (csv.length() != 0)
 		{
 			csv += ",";

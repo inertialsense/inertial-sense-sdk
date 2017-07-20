@@ -24,12 +24,37 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "DeviceLog.h"
 #include "ISLogger.h"
+#include "ISConstants.h"
+#include "ISDataMappings.h"
 
 using namespace std;
 
+cDeviceLog::cDeviceLog()
+{
+    m_pFile = NULL;
+    m_pHandle = 0;
+    m_fileSize = 0;
+    m_logSize = 0;
+    m_fileCount = 0;
+    memset(&m_devInfo, 0, sizeof(dev_info_t));
+    m_logStats = new cLogStats;
+}
+
+cDeviceLog::~cDeviceLog()
+{
+    // Close open files
+    if (m_pFile)
+    {
+        fclose(m_pFile);
+        m_pFile = NULL;
+    }
+    CloseAllFiles();
+    delete m_logStats;
+}
+
 void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)
 {
-	m_pHandle = pHandle;
+    m_pHandle = pHandle;
 	m_timeStamp = timestamp;
 	m_directory = directory;
 	m_fileCount = 0;
@@ -48,22 +73,39 @@ void cDeviceLog::InitDeviceForReading()
 }
 
 
+bool cDeviceLog::CloseAllFiles()
+{
+	ostringstream serialNumString;
+	serialNumString << m_devInfo.serialNumber;
+    m_logStats->WriteToFile(m_directory + "/stats_SN" + serialNumString.str() + ".txt");
+    m_logStats->Clear();
+    return true;
+}
+
 bool cDeviceLog::OpenWithSystemApp()
 {
-#if defined(_WIN32)
-#include <windows.h>
+
+#if PLATFORM_IS_WINDOWS
 
 	std::wstring stemp = std::wstring(m_fileName.begin(), m_fileName.end());
 	LPCWSTR filename = stemp.c_str();
 	ShellExecuteW(0, 0, filename, 0, 0, SW_SHOW);
-
-#elif !defined(PLATFORM_IS_LINUX) && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE || TARGET_OS_MAC || __linux || __unix__ )
 
 #endif
 
 	return true;
 }
 
+
+bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
+{
+    if (dataHdr != NULL)
+    {
+        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+        m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
+    }
+    return true;
+}
 
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
 {
@@ -205,6 +247,13 @@ void cDeviceLog::SetDeviceInfo(const dev_info_t *info)
 }
 
 
-
+void cDeviceLog::OnReadData(p_data_t* data)
+{
+    if (data != NULL)
+    {
+        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        m_logStats->LogDataAndTimestamp(data->hdr.id, timestamp);
+    }
+}
 
 
