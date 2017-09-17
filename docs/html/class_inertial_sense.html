@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.2</span>
+   &#160;<span id="projectnumber">Release 1.1.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -122,11 +122,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a52a7e142419b21231d5d7b25afaf117d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a52a7e142419b21231d5d7b25afaf117d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>BroadcastBinaryData</b> (uint32_t dataId, int periodMS, pfnHandleBinaryData callback=NULL)</td></tr>
 <tr class="separator:a52a7e142419b21231d5d7b25afaf117d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6842779452ceb50c3c38032b19ae9c5"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa6842779452ceb50c3c38032b19ae9c5"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>PyBroadcastBinaryData</b> (uint32_t dataId, int periodMS)</td></tr>
-<tr class="separator:aa6842779452ceb50c3c38032b19ae9c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a560624581c6440198ec99c05429db1d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a560624581c6440198ec99c05429db1d1">SetBroadcastSolutionEnabled</a> (bool enabled)</td></tr>
-<tr class="separator:a560624581c6440198ec99c05429db1d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08aa8dd64db81fe35415a08435349318"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a08aa8dd64db81fe35415a08435349318">Close</a> ()</td></tr>
 <tr class="separator:a08aa8dd64db81fe35415a08435349318"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab3a32ba067a0a54dc90ea81de96e6fde"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ab3a32ba067a0a54dc90ea81de96e6fde">GetPort</a> ()</td></tr>
@@ -137,8 +132,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>PyBroadcastBinaryData
 <tr class="separator:a51d2b75545513703085bd9597229c274"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1071b3bcf5b069fb86776941cc1c3896"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a1071b3bcf5b069fb86776941cc1c3896">Update</a> ()</td></tr>
 <tr class="separator:a1071b3bcf5b069fb86776941cc1c3896"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5261e5c2d38c9e235a70392a7e7e1e2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ab5261e5c2d38c9e235a70392a7e7e1e2">SetLoggerEnabled</a> (bool enable, const string &amp;path=cISLogger::g_emptyString, uint32_t logSolution=SLOG_W_INS2, float maxDiskSpacePercent=0.5f, uint32_t maxFileSize=1024 *1024 *5, uint32_t chunkSize=131072, const string &amp;subFolder=cISLogger::g_emptyString)</td></tr>
-<tr class="separator:ab5261e5c2d38c9e235a70392a7e7e1e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91d5f06f72176a96c7410473293d8e05"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a91d5f06f72176a96c7410473293d8e05">SetLoggerEnabled</a> (bool enable, const string &amp;path=cISLogger::g_emptyString, uint32_t logSolution=SLOG_W_INS2, float maxDiskSpacePercent=0.5f, uint32_t maxFileSize=1024 *1024 *5, uint32_t chunkSize=131072, const string &amp;subFolder=cISLogger::g_emptyString)</td></tr>
+<tr class="separator:a91d5f06f72176a96c7410473293d8e05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cae5904548417a138ce40da68e7c08c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a1cae5904548417a138ce40da68e7c08c">LoggerEnabled</a> ()</td></tr>
 <tr class="separator:a1cae5904548417a138ce40da68e7c08c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9543303890cccac26d377b17f5fdc58"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ac9543303890cccac26d377b17f5fdc58">OpenServerConnectionRTCM3</a> (const string &amp;hostAndPort)</td></tr>
@@ -159,13 +154,13 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>PyBroadcastBinaryData
 <tr class="separator:abb6f052b9425dd24bd82224fe0e1cfa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a021ad3a3387214e53ffe3f83f9b54940"><td class="memItemLeft" align="right" valign="top">const dev_info_t &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a021ad3a3387214e53ffe3f83f9b54940">GetDeviceInfo</a> ()</td></tr>
 <tr class="separator:a021ad3a3387214e53ffe3f83f9b54940"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b9c460bc08f9989e23a962e112b2871"><td class="memItemLeft" align="right" valign="top">config_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a9b9c460bc08f9989e23a962e112b2871">GetConfig</a> ()</td></tr>
+<tr class="memitem:a9b9c460bc08f9989e23a962e112b2871"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_p_a_c_k_e_d.html">config_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a9b9c460bc08f9989e23a962e112b2871">GetConfig</a> ()</td></tr>
 <tr class="separator:a9b9c460bc08f9989e23a962e112b2871"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae25d3d94dd3a92334f47ebbb81662ba2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ae25d3d94dd3a92334f47ebbb81662ba2">SetConfig</a> (const config_t &amp;config)</td></tr>
+<tr class="memitem:ae25d3d94dd3a92334f47ebbb81662ba2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ae25d3d94dd3a92334f47ebbb81662ba2">SetConfig</a> (const <a class="el" href="struct_p_a_c_k_e_d.html">config_t</a> &amp;config)</td></tr>
 <tr class="separator:ae25d3d94dd3a92334f47ebbb81662ba2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8c81cd556ea45343a2a01100c3b28de"><td class="memItemLeft" align="right" valign="top">nvm_flash_cfg_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ab8c81cd556ea45343a2a01100c3b28de">GetFlashConfig</a> ()</td></tr>
+<tr class="memitem:ab8c81cd556ea45343a2a01100c3b28de"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_p_a_c_k_e_d.html">nvm_flash_cfg_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ab8c81cd556ea45343a2a01100c3b28de">GetFlashConfig</a> ()</td></tr>
 <tr class="separator:ab8c81cd556ea45343a2a01100c3b28de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad643ea5008bbf8fcb8584a81dc6d269e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ad643ea5008bbf8fcb8584a81dc6d269e">SetFlashConfig</a> (const nvm_flash_cfg_t &amp;flashConfig)</td></tr>
+<tr class="memitem:ad643ea5008bbf8fcb8584a81dc6d269e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ad643ea5008bbf8fcb8584a81dc6d269e">SetFlashConfig</a> (const <a class="el" href="struct_p_a_c_k_e_d.html">nvm_flash_cfg_t</a> &amp;flashConfig)</td></tr>
 <tr class="separator:ad643ea5008bbf8fcb8584a81dc6d269e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e79e9c7c2037ba75d5b2bd81f9ba66f"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a5e79e9c7c2037ba75d5b2bd81f9ba66f">GetTcpByteCount</a> ()</td></tr>
 <tr class="separator:a5e79e9c7c2037ba75d5b2bd81f9ba66f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -255,7 +250,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Destructor </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00122">122</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00120">120</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -327,7 +322,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00465">465</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00466">466</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -345,7 +340,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Close the connection, logger and free all resources </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00377">377</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00383">383</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -363,7 +358,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Close any open connection to a server </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00306">306</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00312">312</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -388,7 +383,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if success, false if error </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00317">317</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00323">323</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -400,7 +395,7 @@ Protected Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">config_t InertialSense::GetConfig </td>
+          <td class="memname"><a class="el" href="struct_p_a_c_k_e_d.html">config_t</a> InertialSense::GetConfig </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -414,7 +409,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get current device conviguration </p><dl class="section return"><dt>Returns</dt><dd>current device configuration </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00218">218</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00205">205</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -440,7 +435,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get the device info </p><dl class="section return"><dt>Returns</dt><dd>the device info </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00212">212</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00199">199</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -452,7 +447,7 @@ Protected Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">nvm_flash_cfg_t InertialSense::GetFlashConfig </td>
+          <td class="memname"><a class="el" href="struct_p_a_c_k_e_d.html">nvm_flash_cfg_t</a> InertialSense::GetFlashConfig </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -466,7 +461,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get the flash config, returns the latest flash config read from the uINS flash memory </p><dl class="section return"><dt>Returns</dt><dd>the flash config </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00230">230</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00217">217</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +479,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get the current port name </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00384">384</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00390">390</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -510,7 +505,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get access to the underlying serial port </p><dl class="section return"><dt>Returns</dt><dd>the serial port </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00248">248</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00235">235</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -536,7 +531,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get the number of bytes read or written over tcp connection </p><dl class="section return"><dt>Returns</dt><dd>byte count of tcp bytes read or written </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00242">242</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00229">229</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -554,7 +549,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Check if the connection is open </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00347">347</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00353">353</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -580,7 +575,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Gets whether logging is enabled </p><dl class="section return"><dt>Returns</dt><dd>whether logging is enabled </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00152">152</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00139">139</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -633,7 +628,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_gps_parser_delegate.html#a592450747817cba6ca018c4fe99281b4">iGpsParserDelegate</a>.</p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00494">494</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00496">496</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -669,7 +664,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if opened, false if failure (i.e. baud rate is bad or port fails to open) </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00201">201</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00206">206</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -693,7 +688,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00286">286</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00292">292</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -718,7 +713,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if connection opened, false if failure </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00256">256</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00262">262</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -742,7 +737,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00296">296</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00302">302</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -791,7 +786,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00411">411</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00417">417</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -840,31 +835,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00416">416</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="a560624581c6440198ec99c05429db1d1"></a>
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void InertialSense::SetBroadcastSolutionEnabled </td>
-          <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>enabled</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Sets whether the device broadcasts standard solution messages (DID_INS2, DID_SYS_PARAMS, DID_EKF_STATES, DID_OBS_PARAMS, DID_GPS_POS) </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">enable</td><td>whether to enable or disable standard solution messages </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00460">460</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00422">422</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -875,7 +846,7 @@ Protected Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void InertialSense::SetConfig </td>
           <td>(</td>
-          <td class="paramtype">const config_t &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="struct_p_a_c_k_e_d.html">config_t</a> &amp;&#160;</td>
           <td class="paramname"><em>config</em></td><td>)</td>
           <td></td>
         </tr>
@@ -888,7 +859,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00421">421</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00427">427</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -899,7 +870,7 @@ Protected Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void InertialSense::SetFlashConfig </td>
           <td>(</td>
-          <td class="paramtype">const nvm_flash_cfg_t &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="struct_p_a_c_k_e_d.html">nvm_flash_cfg_t</a> &amp;&#160;</td>
           <td class="paramname"><em>flashConfig</em></td><td>)</td>
           <td></td>
         </tr>
@@ -912,16 +883,16 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00427">427</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00433">433</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="ab5261e5c2d38c9e235a70392a7e7e1e2"></a>
+<a class="anchor" id="a91d5f06f72176a96c7410473293d8e05"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void InertialSense::SetLoggerEnabled </td>
+          <td class="memname">bool InertialSense::SetLoggerEnabled </td>
           <td>(</td>
           <td class="paramtype">bool&#160;</td>
           <td class="paramname"><em>enable</em>, </td>
@@ -981,8 +952,9 @@ Protected Member Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>true if success, false if failure </dd></dl>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00238">238</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00243">243</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1000,7 +972,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Turn off all messages </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00389">389</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00395">395</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1018,7 +990,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Call in a loop to send and receive data. Call at regular intervals as frequently as want to receive data. </p>
 
-<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00352">352</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00358">358</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1029,7 +1001,7 @@ Protected Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2017 19:40:16 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Sep 16 2017 23:00:16 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

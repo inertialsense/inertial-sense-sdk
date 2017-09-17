@@ -5,7 +5,6 @@ var searchData=
   ['sendrawdata',['SendRawData',['../class_inertial_sense.html#abb6f052b9425dd24bd82224fe0e1cfa8',1,'InertialSense']]],
   ['setattribute',['SetAttribute',['../class_ti_xml_element.html#abf0b3bd7f0e4c746a89ec6e7f101fc32',1,'TiXmlElement::SetAttribute(const char *name, const char *_value)'],['../class_ti_xml_element.html#a80ed65b1d194c71c6c9986ae42337d7d',1,'TiXmlElement::SetAttribute(const std::string &amp;name, const std::string &amp;_value)'],['../class_ti_xml_element.html#a6f18d54fbe25bbc527936ee65363b3c5',1,'TiXmlElement::SetAttribute(const std::string &amp;name, int _value)'],['../class_ti_xml_element.html#ace6f4be75e373726d4774073d666d1a7',1,'TiXmlElement::SetAttribute(const char *name, int value)']]],
   ['setblocking',['SetBlocking',['../classc_i_s_tcp_client.html#a284eaa84fe2522f28f13486515aa6b51',1,'cISTcpClient']]],
-  ['setbroadcastsolutionenabled',['SetBroadcastSolutionEnabled',['../class_inertial_sense.html#a560624581c6440198ec99c05429db1d1',1,'InertialSense']]],
   ['setcdata',['SetCDATA',['../class_ti_xml_text.html#acb17ff7c5d09b2c839393445a3de5ea9',1,'TiXmlText']]],
   ['setcondensewhitespace',['SetCondenseWhiteSpace',['../class_ti_xml_base.html#a0f799ec645bfb8d8a969e83478f379c1',1,'TiXmlBase']]],
   ['setconfig',['SetConfig',['../class_inertial_sense.html#ae25d3d94dd3a92334f47ebbb81662ba2',1,'InertialSense']]],
@@ -15,7 +14,7 @@ var searchData=
   ['setindent',['SetIndent',['../class_ti_xml_printer.html#a213377a4070c7e625bae59716b089e5e',1,'TiXmlPrinter']]],
   ['setintvalue',['SetIntValue',['../class_ti_xml_attribute.html#a7e065df640116a62ea4f4b7da5449cc8',1,'TiXmlAttribute']]],
   ['setlinebreak',['SetLineBreak',['../class_ti_xml_printer.html#a4be1e37e69e3858c59635aa947174fe6',1,'TiXmlPrinter']]],
-  ['setloggerenabled',['SetLoggerEnabled',['../class_inertial_sense.html#ab5261e5c2d38c9e235a70392a7e7e1e2',1,'InertialSense']]],
+  ['setloggerenabled',['SetLoggerEnabled',['../class_inertial_sense.html#a91d5f06f72176a96c7410473293d8e05',1,'InertialSense']]],
   ['setname',['SetName',['../class_ti_xml_attribute.html#ab7fa3d21ff8d7c5764cf9af15b667a99',1,'TiXmlAttribute::SetName(const char *_name)'],['../class_ti_xml_attribute.html#ab296ff0c9a8c701055cd257a8a976e57',1,'TiXmlAttribute::SetName(const std::string &amp;_name)']]],
   ['setreceiverindex',['SetReceiverIndex',['../classc_gps_parser.html#a544933ba7a8deb8397c7a1d062979280',1,'cGpsParser']]],
   ['setstreamprinting',['SetStreamPrinting',['../class_ti_xml_printer.html#ab23a90629e374cb1cadca090468bbd19',1,'TiXmlPrinter']]],
@@ -26,6 +25,6 @@ var searchData=
   ['standalone',['Standalone',['../class_ti_xml_declaration.html#a9ff06afc033d7ef730ec7c6825b97ad9',1,'TiXmlDeclaration']]],
   ['stopbroadcasts',['StopBroadcasts',['../class_inertial_sense.html#a1afdf5cd1ba24ae3936b0fc03e7cb30d',1,'InertialSense']]],
   ['str',['Str',['../class_ti_xml_printer.html#a3bd4daf44309b41f5813a833caa0d1c9',1,'TiXmlPrinter']]],
-  ['stringcsvtodata',['StringCSVToData',['../classc_data_c_s_v.html#a0639b91e5e4701667b9535db575bf509',1,'cDataCSV']]],
-  ['stringtodata',['StringToData',['../classc_i_s_data_mappings.html#a3d6ef212fcb369993584a1ff483f06d2',1,'cISDataMappings']]]
+  ['stringcsvtodata',['StringCSVToData',['../classc_data_c_s_v.html#aee25ce0476361bec5895218e2d687d26',1,'cDataCSV']]],
+  ['stringtodata',['StringToData',['../classc_i_s_data_mappings.html#a4c8312fb1402bb83ef456e4adf2bb033',1,'cISDataMappings']]]
 ];

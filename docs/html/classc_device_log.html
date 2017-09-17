@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.2</span>
+   &#160;<span id="projectnumber">Release 1.1.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -122,9 +122,9 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>CloseAllFiles
 <tr class="memitem:aec72af21f6c9d5cc2094b45581f1062f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aec72af21f6c9d5cc2094b45581f1062f"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>OpenWithSystemApp</b> ()</td></tr>
 <tr class="separator:aec72af21f6c9d5cc2094b45581f1062f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76225c4410d0257c7bb2031246673a20"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a76225c4410d0257c7bb2031246673a20"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>SaveData</b> (<a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, uint8_t *dataBuf)</td></tr>
-<tr class="separator:a76225c4410d0257c7bb2031246673a20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5fd4a4bd61ef6930c41bb75e4a75972"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad5fd4a4bd61ef6930c41bb75e4a75972"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>SaveData</b> (<a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, const uint8_t *dataBuf)</td></tr>
+<tr class="separator:ad5fd4a4bd61ef6930c41bb75e4a75972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbb93c22d7fdd05d28f9b28209b08df7"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="afbb93c22d7fdd05d28f9b28209b08df7"></a>
 virtual <a class="el" href="structp__data__t.html">p_data_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>ReadData</b> ()=0</td></tr>
 <tr class="separator:afbb93c22d7fdd05d28f9b28209b08df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -152,6 +152,9 @@ uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>LogSize</b> ()</t
 <tr class="memitem:aa0492eccd3f0e29d77759ae1a3b304d9"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa0492eccd3f0e29d77759ae1a3b304d9"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>FileCount</b> ()</td></tr>
 <tr class="separator:aa0492eccd3f0e29d77759ae1a3b304d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a001bd1f6411d942ea9bd081a41a67944"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a001bd1f6411d942ea9bd081a41a67944"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>SetKmlConfig</b> (bool showPath=true, bool showTimeStamp=true, double updatePeriodSec=1.0, bool altClampToGround=true)</td></tr>
+<tr class="separator:a001bd1f6411d942ea9bd081a41a67944"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -209,6 +212,18 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_maxFileSize</b>
 <tr class="memitem:a933a6c736c9540ef27e1e92d7363f1fc"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a933a6c736c9540ef27e1e92d7363f1fc"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_maxChunkSize</b></td></tr>
 <tr class="separator:a933a6c736c9540ef27e1e92d7363f1fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab266bf4e6d44831b1510600bfb05d3db"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab266bf4e6d44831b1510600bfb05d3db"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_altClampToGround</b></td></tr>
+<tr class="separator:ab266bf4e6d44831b1510600bfb05d3db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb3623321bfb5ff5798908649af7cbf5"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="adb3623321bfb5ff5798908649af7cbf5"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_showPath</b></td></tr>
+<tr class="separator:adb3623321bfb5ff5798908649af7cbf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0e2acc4af5aa36ed701dac5a6820363"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa0e2acc4af5aa36ed701dac5a6820363"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_showTimeStamp</b></td></tr>
+<tr class="separator:aa0e2acc4af5aa36ed701dac5a6820363"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab36b1c2be62ef7b3bf8a181cf15a8117"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab36b1c2be62ef7b3bf8a181cf15a8117"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_iconUpdatePeriodSec</b></td></tr>
+<tr class="separator:ab36b1c2be62ef7b3bf8a181cf15a8117"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -220,7 +235,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_maxChunkSize</b
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2017 19:40:15 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Sep 16 2017 23:00:14 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

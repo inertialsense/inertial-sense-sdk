@@ -5,6 +5,5 @@ var searchData=
   ['linebreak',['LineBreak',['../class_ti_xml_printer.html#a11f1b4804a460b175ec244eb5724d96d',1,'TiXmlPrinter']]],
   ['linkendchild',['LinkEndChild',['../class_ti_xml_node.html#a1a881212554b759865f6cac79a851d38',1,'TiXmlNode']]],
   ['loadfile',['LoadFile',['../class_ti_xml_document.html#a4c852a889c02cf251117fd1d9fe1845f',1,'TiXmlDocument::LoadFile(TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)'],['../class_ti_xml_document.html#a879cdf5e981b8b2d2ef82f2546dd28fb',1,'TiXmlDocument::LoadFile(const char *filename, TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)'],['../class_ti_xml_document.html#a41f6fe7200864d1dca663d230caf8db6',1,'TiXmlDocument::LoadFile(FILE *, TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)'],['../class_ti_xml_document.html#a18ae6ed34fed7991ebc220862dfac884',1,'TiXmlDocument::LoadFile(const std::string &amp;filename, TiXmlEncoding encoding=TIXML_DEFAULT_ENCODING)']]],
-  ['lock',['Lock',['../classc_mutex.html#a44a7ce26d526d05da655986e3e8f5b2a',1,'cMutex']]],
   ['loggerenabled',['LoggerEnabled',['../class_inertial_sense.html#a1cae5904548417a138ce40da68e7c08c',1,'InertialSense']]]
 ];

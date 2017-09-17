@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.2</span>
+   &#160;<span id="projectnumber">Release 1.1.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -98,12 +98,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ae96833423403c396fe26a70fbae1e22e"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structpacket__ftr__t.html#ae96833423403c396fe26a70fbae1e22e">reserved</a></td></tr>
-<tr class="separator:ae96833423403c396fe26a70fbae1e22e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e42e66db3c3d40746082e91c379069d"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structpacket__ftr__t.html#a6e42e66db3c3d40746082e91c379069d">cksum1</a></td></tr>
-<tr class="separator:a6e42e66db3c3d40746082e91c379069d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09927e370e8faf154f669a88c42be952"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structpacket__ftr__t.html#a09927e370e8faf154f669a88c42be952">cksum3</a></td></tr>
+<tr class="separator:a09927e370e8faf154f669a88c42be952"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac354b0937e265b7e75d9a68378a8c651"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structpacket__ftr__t.html#ac354b0937e265b7e75d9a68378a8c651">cksum2</a></td></tr>
 <tr class="separator:ac354b0937e265b7e75d9a68378a8c651"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e42e66db3c3d40746082e91c379069d"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structpacket__ftr__t.html#a6e42e66db3c3d40746082e91c379069d">cksum1</a></td></tr>
+<tr class="separator:a6e42e66db3c3d40746082e91c379069d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7065d9b4532287ac5d3f18c9f7bef735"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structpacket__ftr__t.html#a7065d9b4532287ac5d3f18c9f7bef735">stopByte</a></td></tr>
 <tr class="separator:a7065d9b4532287ac5d3f18c9f7bef735"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -121,9 +121,9 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Checksum high byte </p>
+<p>Checksum byte 1 </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00275">275</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00264">264</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -136,24 +136,24 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Checksum low byte </p>
+<p>Checksum byte 2 </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00278">278</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00261">261</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="ae96833423403c396fe26a70fbae1e22e"></a>
+<a class="anchor" id="a09927e370e8faf154f669a88c42be952"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint8_t packet_ftr_t::reserved</td>
+          <td class="memname">uint8_t packet_ftr_t::cksum3</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Reserved for future use </p>
+<p>Checksum byte 3 </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00272">272</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00258">258</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -168,7 +168,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Packet end byte, always 0xFE </p>
 
-<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00283">283</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p>Definition at line <a class="el" href="com__manager_8h_source.html#l00267">267</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -178,7 +178,7 @@ Public Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2017 19:40:16 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Sep 16 2017 23:00:16 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

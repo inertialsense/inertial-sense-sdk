@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.2</span>
+   &#160;<span id="projectnumber">Release 1.1.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -105,6 +105,9 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>comPort</b></td></t
 <tr class="memitem:a9c02b6ab5eba05965d90d3e1aa6768b8"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9c02b6ab5eba05965d90d3e1aa6768b8"></a>
 string&#160;</td><td class="memItemRight" valign="bottom"><b>bootloaderFileName</b></td></tr>
 <tr class="separator:a9c02b6ab5eba05965d90d3e1aa6768b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86075aac41712b9d96dd1e52aee0667b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a86075aac41712b9d96dd1e52aee0667b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>bootloaderVerify</b></td></tr>
+<tr class="separator:a86075aac41712b9d96dd1e52aee0667b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaae3958e8217c9035c247a7594eacdca"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aaae3958e8217c9035c247a7594eacdca"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>replayDataLog</b></td></tr>
 <tr class="separator:aaae3958e8217c9035c247a7594eacdca"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -138,9 +141,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamMag1</b></td></
 <tr class="memitem:a712dfac80edd5bb5f5d50a4f51437b8f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a712dfac80edd5bb5f5d50a4f51437b8f"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamBaro</b></td></tr>
 <tr class="separator:a712dfac80edd5bb5f5d50a4f51437b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f3d688984e4325cbf2b889e65980fcb"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9f3d688984e4325cbf2b889e65980fcb"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamSol</b></td></tr>
-<tr class="separator:a9f3d688984e4325cbf2b889e65980fcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c672fbd00940a97a608c3fa07c61d7a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a4c672fbd00940a97a608c3fa07c61d7a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamSysSensors</b></td></tr>
 <tr class="separator:a4c672fbd00940a97a608c3fa07c61d7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -153,18 +153,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>enableLogging</b></td
 <tr class="memitem:afd0992b8f11a9a104c0b34ec1e9fe591"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="afd0992b8f11a9a104c0b34ec1e9fe591"></a>
 string&#160;</td><td class="memItemRight" valign="bottom"><b>logPath</b></td></tr>
 <tr class="separator:afd0992b8f11a9a104c0b34ec1e9fe591"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad4a2b4abec4c947329bba32a69582246"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad4a2b4abec4c947329bba32a69582246"></a>
-float&#160;</td><td class="memItemRight" valign="bottom"><b>maxLogSpaceMB</b></td></tr>
-<tr class="separator:ad4a2b4abec4c947329bba32a69582246"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9dc6ca08f10839c014e4aec8f88835b3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9dc6ca08f10839c014e4aec8f88835b3"></a>
+float&#160;</td><td class="memItemRight" valign="bottom"><b>maxLogSpacePercent</b></td></tr>
+<tr class="separator:a9dc6ca08f10839c014e4aec8f88835b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a243fefd69ecd065433fbb5a47e1688bd"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a243fefd69ecd065433fbb5a47e1688bd"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>maxLogFileSize</b></td></tr>
 <tr class="separator:a243fefd69ecd065433fbb5a47e1688bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a57a9bb05db2c88c8852918d9256bd4"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2a57a9bb05db2c88c8852918d9256bd4"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>maxLogMemory</b></td></tr>
 <tr class="separator:a2a57a9bb05db2c88c8852918d9256bd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee87f5c730f089a7051ad3ea4e769c6a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aee87f5c730f089a7051ad3ea4e769c6a"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>useLogTimestampSubFolder</b></td></tr>
-<tr class="separator:aee87f5c730f089a7051ad3ea4e769c6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa608255c9ba986d071a7f1f288e49050"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa608255c9ba986d071a7f1f288e49050"></a>
+string&#160;</td><td class="memItemRight" valign="bottom"><b>logSubFolder</b></td></tr>
+<tr class="separator:aa608255c9ba986d071a7f1f288e49050"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a784c7c17571811bfed65fe0f135dc36b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a784c7c17571811bfed65fe0f135dc36b"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>baudRate</b></td></tr>
 <tr class="separator:a784c7c17571811bfed65fe0f135dc36b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -177,26 +177,17 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>host</b></td></tr>
 <tr class="memitem:a5140db6acdf2f29beabbe45745bdecda"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5140db6acdf2f29beabbe45745bdecda"></a>
 string&#160;</td><td class="memItemRight" valign="bottom"><b>flashConfig</b></td></tr>
 <tr class="separator:a5140db6acdf2f29beabbe45745bdecda"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86075aac41712b9d96dd1e52aee0667b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a86075aac41712b9d96dd1e52aee0667b"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>bootloaderVerify</b></td></tr>
-<tr class="separator:a86075aac41712b9d96dd1e52aee0667b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9dc6ca08f10839c014e4aec8f88835b3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9dc6ca08f10839c014e4aec8f88835b3"></a>
-float&#160;</td><td class="memItemRight" valign="bottom"><b>maxLogSpacePercent</b></td></tr>
-<tr class="separator:a9dc6ca08f10839c014e4aec8f88835b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa608255c9ba986d071a7f1f288e49050"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa608255c9ba986d071a7f1f288e49050"></a>
-string&#160;</td><td class="memItemRight" valign="bottom"><b>logSubFolder</b></td></tr>
-<tr class="separator:aa608255c9ba986d071a7f1f288e49050"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p>Definition at line <a class="el" href="_inertial_sense_c_l_tool_2source_2cltool_8h_source.html#l00043">43</a> of file <a class="el" href="_inertial_sense_c_l_tool_2source_2cltool_8h_source.html">cltool.h</a>.</p>
+<p>Definition at line <a class="el" href="cltool_8h_source.html#l00043">43</a> of file <a class="el" href="cltool_8h_source.html">cltool.h</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
-<li>InertialSenseCLTool/source/<a class="el" href="_inertial_sense_c_l_tool_2source_2cltool_8h_source.html">cltool.h</a></li>
+<li>src/<a class="el" href="cltool_8h_source.html">cltool.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2017 19:40:15 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Sep 16 2017 23:00:16 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

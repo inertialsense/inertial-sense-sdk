@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.2</span>
+   &#160;<span id="projectnumber">Release 1.1.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -102,11 +102,11 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>WriteHeaderToFile</b> 
 <tr class="memitem:a5fc19df00004fbc6514918cb221dfabb"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5fc19df00004fbc6514918cb221dfabb"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>ReadHeaderFromFile</b> (FILE *pFile, int id, vector&lt; string &gt; &amp;columnHeaders)</td></tr>
 <tr class="separator:a5fc19df00004fbc6514918cb221dfabb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae19c7a903dc36d74a3ad4a8f59fd7894"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae19c7a903dc36d74a3ad4a8f59fd7894"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>WriteDataToFile</b> (uint64_t orderId, FILE *pFile, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;dataHdr, uint8_t *dataBuf)</td></tr>
-<tr class="separator:ae19c7a903dc36d74a3ad4a8f59fd7894"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0639b91e5e4701667b9535db575bf509"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#a0639b91e5e4701667b9535db575bf509">StringCSVToData</a> (string &amp;s, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr, uint8_t *buf, const vector&lt; string &gt; &amp;columnHeaders)</td></tr>
-<tr class="separator:a0639b91e5e4701667b9535db575bf509"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ea0890017d9f42ae884d9eb303af4af"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1ea0890017d9f42ae884d9eb303af4af"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>WriteDataToFile</b> (uint64_t orderId, FILE *pFile, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;dataHdr, const uint8_t *dataBuf)</td></tr>
+<tr class="separator:a1ea0890017d9f42ae884d9eb303af4af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee25ce0476361bec5895218e2d687d26"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#aee25ce0476361bec5895218e2d687d26">StringCSVToData</a> (string &amp;s, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr, uint8_t *buf, uint32_t bufSize, const vector&lt; string &gt; &amp;columnHeaders)</td></tr>
+<tr class="separator:aee25ce0476361bec5895218e2d687d26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fbacc4c1556a74cc32f06d8dc607444"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#a9fbacc4c1556a74cc32f06d8dc607444">DataToStringCSV</a> (const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr, const uint8_t *buf, string &amp;csv)</td></tr>
 <tr class="separator:a9fbacc4c1556a74cc32f06d8dc607444"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -145,11 +145,11 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>WriteDataToFile</b> (u
 </div><div class="memdoc">
 <p>Convert data to a csv string buf is assumed to be large enough to hold the data structure return true if success, false if no map found </p>
 
-<p>Definition at line <a class="el" href="_data_c_s_v_8cpp_source.html#l00160">160</a> of file <a class="el" href="_data_c_s_v_8cpp_source.html">DataCSV.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_data_c_s_v_8cpp_source.html#l00164">164</a> of file <a class="el" href="_data_c_s_v_8cpp_source.html">DataCSV.cpp</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a0639b91e5e4701667b9535db575bf509"></a>
+<a class="anchor" id="aee25ce0476361bec5895218e2d687d26"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -174,6 +174,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>WriteDataToFile</b> (u
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>bufSize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">const vector&lt; string &gt; &amp;&#160;</td>
           <td class="paramname"><em>columnHeaders</em>&#160;</td>
         </tr>
@@ -184,9 +190,9 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>WriteDataToFile</b> (u
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Parse a csv string into a data packet data needs the id set to the proper data id buf is assumed to be large enough to hold the data structure order id contains the value for ordering data returns true if success, false if no map found </p>
+<p>Parse a csv string into a data packet data needs the id set to the proper data id buf memory to fill with data bufSize size of available memory in buf order id contains the value for ordering data returns true if success, false if no map found </p>
 
-<p>Definition at line <a class="el" href="_data_c_s_v_8cpp_source.html#l00115">115</a> of file <a class="el" href="_data_c_s_v_8cpp_source.html">DataCSV.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_data_c_s_v_8cpp_source.html#l00118">118</a> of file <a class="el" href="_data_c_s_v_8cpp_source.html">DataCSV.cpp</a>.</p>
 
 </div>
 </div>
@@ -197,7 +203,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>WriteDataToFile</b> (u
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2017 19:40:15 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Sep 16 2017 23:00:14 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

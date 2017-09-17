@@ -1,10 +1,12 @@
 var searchData=
 [
-  ['vacc',['vAcc',['../structgps__nav__poslla__t.html#af832461174983459b9bb702c08c1cc77',1,'gps_nav_poslla_t']]],
-  ['val',['val',['../structgen__1axis__sensor__t.html#ad973584cae0bdd5cc1e3386cc9dcca4d',1,'gen_1axis_sensor_t::val()'],['../structgen__3axis__sensor__t.html#a72c9390d4d56640fc8218cda81f042fe',1,'gen_3axis_sensor_t::val()'],['../structgen__3axis__sensord__t.html#a8de5e85e888072b177e047698aed862d',1,'gen_3axis_sensord_t::val()']]],
-  ['val1',['val1',['../structgen__dual__3axis__sensor__t.html#a47e91b87f7d306f0611bb770edbc5669',1,'gen_dual_3axis_sensor_t']]],
-  ['val2',['val2',['../structgen__dual__3axis__sensor__t.html#ab623f81e5de6dff91289c79863f59747',1,'gen_dual_3axis_sensor_t']]],
-  ['vel',['vel',['../structgps__t.html#a7914a2de3d241f306e92943f36c87b27',1,'gps_t']]],
+  ['vacc',['vAcc',['../struct_p_a_c_k_e_d.html#ad1dea8a0db7676c91fe5648669c72589',1,'PACKED']]],
+  ['val',['val',['../struct_p_a_c_k_e_d.html#a72f709c101de3dfc68d7462bfee25d57',1,'PACKED::val()'],['../struct_p_a_c_k_e_d.html#adc646f74c5147988b10ecc0785ee4ca2',1,'PACKED::val()']]],
+  ['val1',['val1',['../struct_p_a_c_k_e_d.html#a43a4a74c1c89067b5fc6338984c220e2',1,'PACKED']]],
+  ['val2',['val2',['../struct_p_a_c_k_e_d.html#a66c723f38bb4c419d9df41b196bb8e21',1,'PACKED']]],
+  ['varholdamb',['varholdamb',['../structprcopt__t.html#ac906b7837156a23a13b65a93c5074c90',1,'prcopt_t']]],
+  ['vdop',['vdop',['../struct_p_a_c_k_e_d.html#a3b632a31c91937ae6ef5411e5cef3d2b',1,'PACKED']]],
+  ['vel',['vel',['../struct_p_a_c_k_e_d.html#a263530ba661b29648bc257c53070dacf',1,'PACKED::vel()'],['../structgeph__t.html#a02a84c277664f6b8d2fbab748396292d',1,'geph_t::vel()'],['../struct_p_a_c_k_e_d.html#a5be058f93ecfb6434aceb89b814417a7',1,'PACKED::vel()']]],
   ['version',['version',['../structs_chunk_header.html#ad8c8cf4331e93ae2553c98fe2aed3c45',1,'sChunkHeader']]],
-  ['vin',['vin',['../structsys__sensors__t.html#a60830c04a8dddb701433d34d1c276b38',1,'sys_sensors_t']]]
+  ['vin',['vin',['../struct_p_a_c_k_e_d.html#a27e7242881454ff37e529019af4aaa0a',1,'PACKED']]]
 ];

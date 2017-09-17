@@ -1,12 +1,14 @@
 var searchData=
 [
-  ['passthroughbytes',['passThroughBytes',['../structcom__manager__status__t.html#ae21797145c303bff1e0df2126550232d',1,'com_manager_status_t']]],
-  ['phandle',['pHandle',['../structs_chunk_header.html#a90a51bd59c0b99efc994cbc9f570f924',1,'sChunkHeader']]],
-  ['pid',['pid',['../structpacket__hdr__t.html#a915f088eeed50b151584165a97598709',1,'packet_hdr_t']]],
-  ['pktcounter',['pktCounter',['../structp__ack__hdr__t.html#a6e047dce01db1c893021485be63cbb6f',1,'p_ack_hdr_t']]],
-  ['pktinfo',['pktInfo',['../structp__ack__hdr__t.html#a9c409a6deaf6d6bb1c8e1d2b73b3bf34',1,'p_ack_hdr_t']]],
-  ['pos',['pos',['../structgeph__t.html#a578283956ed6ef9eb882a30b2ae6c702',1,'geph_t::pos()'],['../structsta__t.html#a09de90a31a5588faad3c1200d1509034',1,'sta_t::pos()']]],
-  ['prn',['prn',['../structprcopt__t.html#aefd694549d441407287ae00f985536af',1,'prcopt_t::prn()'],['../structsbsmsg__t.html#a8e91db615bcca1089efd527dd306ac03',1,'sbsmsg_t::prn()']]],
-  ['ptr',['ptr',['../structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c',1,'bufPtr_t::ptr()'],['../structascii_message_map__t.html#a33d8b7845ee9c8d532fa5e22fadb9b37',1,'asciiMessageMap_t::ptr()']]],
-  ['ptrsize',['ptrSize',['../structascii_message_map__t.html#ab0323ac72ebddd6e2b20b3381e316c23',1,'asciiMessageMap_t']]]
+  ['n',['n',['../structobs__t.html#a09e05f3d10900ec57feab9eca3c6c8a9',1,'obs_t']]],
+  ['name',['name',['../structs_chunk_header.html#a57c14794ad07d928e61281867f59615a',1,'sChunkHeader']]],
+  ['navdtms',['navDtMs',['../struct_p_a_c_k_e_d.html#a1e68016f8802063f595a00b56f47839c',1,'PACKED']]],
+  ['navsys',['navsys',['../structprcopt__t.html#ad0a3821a5755756b0e13cd57deed12e2',1,'prcopt_t']]],
+  ['ndot',['ndot',['../structeph__t.html#ad4db84ee58a3c060439f1ed21d1e3f08',1,'eph_t']]],
+  ['ned',['ned',['../struct_p_a_c_k_e_d.html#a3e6aabf6f2198ea5daa2b608e264402f',1,'PACKED']]],
+  ['nf',['nf',['../structprcopt__t.html#a2ef9fef184d133547d0606d6760aafe4',1,'prcopt_t']]],
+  ['niter',['niter',['../structprcopt__t.html#a01605bf88f2a06134a1b231d736ce90b',1,'prcopt_t']]],
+  ['nmax',['nmax',['../structobs__t.html#a2dfe38f511872663338a62d184de9940',1,'obs_t']]],
+  ['numberofsatellites',['numberOfSatellites',['../struct_p_a_c_k_e_d.html#a3d073dd1f1d2e65d6171b38073820fdb',1,'PACKED']]],
+  ['numsats',['numSats',['../struct_p_a_c_k_e_d.html#ae1e425949e40c3901b694e8ecd061dfe',1,'PACKED']]]
 ];

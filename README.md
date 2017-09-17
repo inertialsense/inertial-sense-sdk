@@ -7,9 +7,9 @@
 ### Documents
 
  * [SDK Documentation](http://docs.inertialsense.com/)
- * [User Manual](http://inertialsense.com/wp-content/uploads/2017/07/is_user_manual.pdf)
- * [Datasheet - uINS, uAHRS, and uIMU](http://inertialsense.com/wp-content/uploads/2017/07/uimu_uahrs_uins_datasheet.pdf)
- * [Release Notes](http://inertialsense.com/wp-content/uploads/2017/07/release-notes.txt) - version information and software change log.
+ * [User Manual](https://github.com/inertialsense/InertialSenseSDK/files/1308832/IS_User_Manual.pdf)
+ * [Datasheet - uINS, uAHRS, and uIMU](https://github.com/inertialsense/InertialSenseSDK/files/1308833/uIMU_uAHRS_uINS_Datasheet.pdf)
+ * [Release Notes](https://github.com/inertialsense/InertialSenseSDK/files/1308836/release-notes.txt) - version information and software change log.
 
 ### Downloads
 

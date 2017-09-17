@@ -14,6 +14,6 @@ var searchData=
   ['getsize',['GetSize',['../classc_i_s_data_mappings.html#a31cd5b7fc9a05b14335ac744f2f368a5',1,'cISDataMappings']]],
   ['gettcpbytecount',['GetTcpByteCount',['../class_inertial_sense.html#a5e79e9c7c2037ba75d5b2bd81f9ba66f',1,'InertialSense']]],
   ['gettext',['GetText',['../class_ti_xml_element.html#aa6dedd8a146acf3b1bc0903deb2d411a',1,'TiXmlElement']]],
-  ['gettimestamp',['GetTimestamp',['../classc_i_s_data_mappings.html#a70b215e513a2026c5b4992051a3b96ce',1,'cISDataMappings']]],
+  ['gettimestamp',['GetTimestamp',['../classc_i_s_data_mappings.html#a6fe58714d1a4c9557287f231683e5063',1,'cISDataMappings']]],
   ['getuserdata',['GetUserData',['../class_ti_xml_base.html#a6559a530ca6763fc301a14d77ed28c17',1,'TiXmlBase::GetUserData()'],['../class_ti_xml_base.html#ad0120210e4680ef2088601753ce0ede4',1,'TiXmlBase::GetUserData() const ']]]
 ];

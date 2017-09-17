@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.2</span>
+   &#160;<span id="projectnumber">Release 1.1.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -117,12 +117,15 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>InitSave</b> (eLogTyp
 <tr class="memitem:aa35cd8112ca44d16c592b59499529c7f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa35cd8112ca44d16c592b59499529c7f"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>InitSaveTimestamp</b> (const string &amp;timeStamp, const string &amp;directory=g_emptyString, const string &amp;subDirectory=g_emptyString, int numDevices=1, eLogType logType=LOGTYPE_DAT, float maxDiskSpacePercent=0.5f, uint32_t maxFileSize=1024 *1024 *5, uint32_t maxChunkSize=131072, bool useSubFolderTimestamp=true)</td></tr>
 <tr class="separator:aa35cd8112ca44d16c592b59499529c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6079a7505728f9f257a24baf390024da"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6079a7505728f9f257a24baf390024da"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>LogData</b> (unsigned int device, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, void *dataBuf)</td></tr>
-<tr class="separator:a6079a7505728f9f257a24baf390024da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5893f6add9cb8f827ba3877171dbc475"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5893f6add9cb8f827ba3877171dbc475"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>LogData</b> (unsigned int device, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, const uint8_t *dataBuf)</td></tr>
+<tr class="separator:a5893f6add9cb8f827ba3877171dbc475"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04a048a0f5b937894ab25c90f9f7e420"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a04a048a0f5b937894ab25c90f9f7e420"></a>
 <a class="el" href="structp__data__t.html">p_data_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>ReadData</b> (unsigned int device=0)</td></tr>
 <tr class="separator:a04a048a0f5b937894ab25c90f9f7e420"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa20138539d26904c787968df5f7f1082"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa20138539d26904c787968df5f7f1082"></a>
+<a class="el" href="structp__data__t.html">p_data_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>ReadNextData</b> (unsigned int &amp;device)</td></tr>
+<tr class="separator:aa20138539d26904c787968df5f7f1082"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4d651b3fbaf5ece85a0f762a0f7f215"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad4d651b3fbaf5ece85a0f762a0f7f215"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>EnableLogging</b> (bool enabled)</td></tr>
 <tr class="separator:ad4d651b3fbaf5ece85a0f762a0f7f215"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -174,6 +177,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>CopyLog</b> (<a class
 <tr class="memitem:a1323eb650c6397ba493a0fa44d1461b4"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1323eb650c6397ba493a0fa44d1461b4"></a>
 const <a class="el" href="classc_log_stats.html">cLogStats</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>GetStats</b> ()</td></tr>
 <tr class="separator:a1323eb650c6397ba493a0fa44d1461b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f9ae485c78e14f1dbd1bb33f626594b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5f9ae485c78e14f1dbd1bb33f626594b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>SetKmlConfig</b> (bool showPath=true, bool showTimeStamp=true, double updatePeriodSec=1.0, bool altClampToGround=true)</td></tr>
+<tr class="separator:a5f9ae485c78e14f1dbd1bb33f626594b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -210,6 +216,9 @@ static string&#160;</td><td class="memItemRight" valign="bottom"><b>CreateCurren
 <tr class="memitem:ae179f45bc1c6170e92fda6a9880e56c3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae179f45bc1c6170e92fda6a9880e56c3"></a>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>LogDataIsCorrupt</b> (const <a class="el" href="structp__data__t.html">p_data_t</a> *data)</td></tr>
 <tr class="separator:ae179f45bc1c6170e92fda6a9880e56c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47c7db220aa83c69d6648c22a1f88bd0"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a47c7db220aa83c69d6648c22a1f88bd0"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>ReadAllLogDataIntoMemory</b> (const string &amp;directory, map&lt; uint32_t, vector&lt; vector&lt; uint8_t &gt;&gt;&gt; &amp;data)</td></tr>
+<tr class="separator:a47c7db220aa83c69d6648c22a1f88bd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -227,7 +236,7 @@ static const string&#160;</td><td class="memItemRight" valign="bottom"><b>g_empt
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 19 2017 19:40:15 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Sep 16 2017 23:00:16 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

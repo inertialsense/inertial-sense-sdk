@@ -1,13 +1,8 @@
 var searchData=
 [
-  ['rb',['rb',['../structprcopt__t.html#af28f0730feba407b68f9625166552240',1,'prcopt_t']]],
-  ['rcvstds',['rcvstds',['../structprcopt__t.html#aa1d2bd9e74bd58326313ea4efafefb66',1,'prcopt_t']]],
-  ['readcounter',['readCounter',['../structcom__manager__status__t.html#ac612f97d0b588330e0ce0293170a60f0',1,'com_manager_status_t']]],
-  ['refpos',['refpos',['../structprcopt__t.html#a26331afdd0a139426d8ff64c4edbbf57',1,'prcopt_t']]],
-  ['reserved',['reserved',['../structpacket__ftr__t.html#ae96833423403c396fe26a70fbae1e22e',1,'packet_ftr_t::reserved()'],['../structsbsmsg__t.html#a911dfebcb2e90e62e40e3be8ec33f93d',1,'sbsmsg_t::reserved()'],['../structs_chunk_header.html#a351ddedfb03b6d7eb91b76fa9947da27',1,'sChunkHeader::reserved()']]],
-  ['rovpos',['rovpos',['../structprcopt__t.html#a560145d6fcd1c870c1f29e7f27c79281',1,'prcopt_t']]],
-  ['ru',['ru',['../structprcopt__t.html#ad955858e696bc28c17c145696c9ce504',1,'prcopt_t']]],
-  ['rxerror',['rxError',['../structcom__manager__status__t.html#a277a4268d8d1eb8e152c65f016d64f68',1,'com_manager_status_t']]],
-  ['rxpktcount',['rxPktCount',['../structcom__manager__status__t.html#a9b358bcb95013a3606a763c35a66538d',1,'com_manager_status_t']]],
-  ['rxptr',['rxPtr',['../structbuf_tx_rx_ptr__t.html#a3c8e53783acdd89e12c360315fbaac0e',1,'bufTxRxPtr_t']]]
+  ['offset',['offset',['../structp__data__hdr__t.html#a5671779d9843a522942f60cbca2dee18',1,'p_data_hdr_t::offset()'],['../structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8',1,'p_data_get_t::offset()']]],
+  ['omg',['omg',['../structeph__t.html#a1de6fc83e37743cf8fc63b9ab4920912',1,'eph_t']]],
+  ['omg0',['OMG0',['../structeph__t.html#a0f98239f73c3a66a8aa6ce8201eafb08',1,'eph_t']]],
+  ['omgd',['OMGd',['../structeph__t.html#a2ba68a7c2a99555bad213aa6f0d4b6af',1,'eph_t']]],
+  ['outsingle',['outsingle',['../structprcopt__t.html#a9516076388346a269e57d8b99116dc96',1,'prcopt_t']]]
 ];
