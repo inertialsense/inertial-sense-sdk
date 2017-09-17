@@ -56,7 +56,7 @@ string cDataKML::GetDatasetName(int kid)
 #include <stdio.h>
 #include <time.h>
 
-int cDataKML::WriteDataToFile(vector<sKmlLogData>& data, p_data_hdr_t *dataHdr, uint8_t *dataBuf )
+int cDataKML::WriteDataToFile(vector<sKmlLogData>& data, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
 	int nBytes=0;
 	uDatasets& d = (uDatasets&)(*dataBuf);

@@ -461,11 +461,24 @@ void abs_Vec2( Vector2 result, const Vector2 v )
 	result[1] = _FABS( v[1] );
 }
 
+void abs_Vec2d(Vector2d result, const Vector2d v)
+{
+	result[0] = fabs(v[0]);
+	result[1] = fabs(v[1]);
+}
+
 void abs_Vec3( Vector3 result, const Vector3 v )
 {
 	result[0] = _FABS( v[0] );
 	result[1] = _FABS( v[1] );
 	result[2] = _FABS( v[2] );	
+}
+
+void abs_Vec3d(Vector3d result, const Vector3d v)
+{
+	result[0] = fabs(v[0]);
+	result[1] = fabs(v[1]);
+	result[2] = fabs(v[2]);
 }
 
 void abs_Vec4( Vector4 result, const Vector4 v )
@@ -474,6 +487,14 @@ void abs_Vec4( Vector4 result, const Vector4 v )
 	result[1] = _FABS( v[1] );
 	result[2] = _FABS( v[2] );
 	result[3] = _FABS( v[3] );
+}
+
+void abs_Vec4d(Vector4d result, const Vector4d v)
+{
+	result[0] = fabs(v[0]);
+	result[1] = fabs(v[1]);
+	result[2] = fabs(v[2]);
+	result[3] = fabs(v[3]);
 }
 
 f_t dot_Vec2_Vec2(const Vector2 v1, const Vector2 v2 )

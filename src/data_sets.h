@@ -80,8 +80,8 @@ typedef uint32_t eDataIDs;
 /*! 12 : (nvm_flash_cfg_t) Flash memory configuration */
 #define DID_FLASH_CONFIG (eDataIDs)12
 
-/*! 13 : (gps_rssi_t) GPS received signal strength indicator */
-#define DID_GPS_RSSI (eDataIDs)13
+/*! 13 : (gps_cno_t) GPS carrier to noise ration (signal strength) */
+#define DID_GPS_CNO (eDataIDs)13
 
 /*! 14 : (gps_nav_poslla_t) GPS velocity data */
 #define DID_GPS_POS (eDataIDs)14
@@ -212,13 +212,13 @@ typedef uint32_t eDataIDs;
 /*! 56 : (gps_version_t) GPS version info */
 #define DID_GPS_VERSION (eDataIDs)56
 
-/*! 57 : (internal) Unit test for communications manager  */
+/*! 57 : INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_COMMUNICATIONS_LOOPBACK (eDataIDs)57
 
 /*! 58 : (dual_imu_t) dual inertial measurement units data: calibrated gyroscope and accelerometer. */
 #define DID_DUAL_IMU (eDataIDs)58
 
-/*! 59 : (inl2_mag_obs_monitor_t) INL2 magnetometer calibration information. */
+/*! 59 : (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_INL2_MAG_OBS_INFO (eDataIDs)59
 
 /*! 60 : (rtk_msg_t) Raw data (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */
@@ -233,6 +233,12 @@ typedef uint32_t eDataIDs;
 /*! 63 : INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_MANUFACTURING_INFO (eDataIDs)63
 
+/*! 64 : (self_test_t) System self test of hardware and calibration */
+#define DID_SELF_TEST (eDataIDs)64
+
+/*! 65 : (inl2_status_t) */
+#define DID_INL2_STATUS (eDataIDs)65
+
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
@@ -241,7 +247,7 @@ typedef uint32_t eDataIDs;
 // 5] Test!
 
 /*! Count of data ids - make sure to increment if you add a new data id! */
-#define DID_COUNT (eDataIDs)64
+#define DID_COUNT (eDataIDs)66
 
 /*! Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -309,8 +315,10 @@ enum eInsStatus
 	INS_STATUS_STARTUP_STATIC_ALIGNING		= (int)0x00100000,
 	/*! Startup dynamic alignment complete */
 	INS_STATUS_STARTUP_DYNAMIC_ALIGNED		= (int)0x00200000,
-	/*! Magnetometer calibration running */
-	INS_STATUS_CALIBRATING_MAG				= (int)0x00400000,
+	/*! Magnetometer is not calibration.  Device requires rotation. */
+	INS_STATUS_MAG_NOT_CALIBRATED			= (int)0x00400000,
+	/*! Magnetometer is experiencing interference.  Attention may be required to remove interference (i.e. move device). */
+	INS_STATUS_MAG_NOT_GOOD					= (int)0x00800000,
 
 	/*! INS PQR bias estimation running */
 	INS_STATUS_BIAS_EST_PQR					= (int)0x01000000,
@@ -385,18 +393,18 @@ enum eHardwareStatus
 	HDW_STATUS_ERR_COM_RX_OVERRUN			= (int)0x00020000,
 	/*! GPS Tx buffer limited */
 	HDW_STATUS_ERR_GPS_TX_LIMITED			= (int)0x00040000,
-	/*! GPS Tx buffer overrun */
+	/*! GPS Rx buffer overrun */
 	HDW_STATUS_ERR_GPS_RX_OVERRUN			= (int)0x00080000,
 
-	/*! Automatic baudrate detection fault */
-	HDW_STATUS_ERR_AUTOBAUD_FAULT			= (int)0x00100000,
 	/*! Communications read fault */
-	HDW_STATUS_ERR_COM_READ_FAULT			= (int)0x00200000,
+	HDW_STATUS_ERR_COM_READ_FAULT			= (int)0x00100000,
+	/*! Self-Test - failure */
+	HDW_STATUS_SELF_TEST_FAULT				= (int)0x00200000,
+	HDW_STATUS_SELF_TEST_FAULT_INV			= (int)0xFFDFFFFF,
 
-	/*! Auto-baud negotiated */
-	HDW_STATUS_AUTOBAUD_DETECTED			= (int)0x01000000,
+	
 
-	/*! Watchdog reset fault */
+	/*! Watchdog reset */
 	HDW_STATUS_FAULT_WATCHDOG_RESET			= (int)0x10000000,
 	/*! Brownout (low system voltage) detection reset */
 	HDW_STATUS_FAULT_BOD_RESET				= (int)0x20000000,
@@ -455,8 +463,8 @@ enum eSysConfigBits
 	/*! Disable automatic baudrate detection on startup */
 	SYS_CFG_BITS_DISABLE_AUTOBAUD						= (int)0x00000001,
 
-	/*! Disable automatic mag calibration */
-	SYS_CFG_BITS_DISABLE_MAG_AUTO_CAL					= (int)0x00000002,
+	/*! Disable automatic mag recalibration */
+	SYS_CFG_BITS_AUTO_DISABLE_MAG_RECAL					= (int)0x00000002,
 
 	/*! Disable LEDs */
 	SYS_CFG_BITS_DISABLE_LEDS							= (int)0x00000004,
@@ -474,13 +482,13 @@ enum eSysConfigBits
 	SYS_CFG_BITS_RTK_BASE_STATION						= (int)0x00000040,
 
 	/*! RTK bit mask */
-	SYS_CFG_BITS_RTK_MASK								= (SYS_CFG_BITS_RTK_ROVER | SYS_CFG_BITS_RTK_BASE_STATION)
+	SYS_CFG_BITS_RTK_MASK								= (SYS_CFG_BITS_RTK_ROVER | SYS_CFG_BITS_RTK_BASE_STATION),
 };
 
 PUSH_PACK_1
 
 /*! (DID_DEV_INFO) Device information */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Reserved bits */
 	uint32_t        reserved;
@@ -517,7 +525,7 @@ PACKED_STRUCT
 } dev_info_t;
 
 /*! (DID_MANUFACTURING_INFO) Manufacturing info */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Serial number */
 	uint32_t		serialNumber;
@@ -527,10 +535,13 @@ PACKED_STRUCT
 
 	/*! Manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
+
+	/*! Key */
+	uint32_t		key;
 } manufacturing_info_t;
 
 /*! (DID_INS_1) INS data with euler attitude and NED from reference LLA */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Weeks since January 6th, 1980 */
 	uint32_t				week;
@@ -559,7 +570,7 @@ PACKED_STRUCT
 
 
 /*! (DID_INS_2) INS data with quaternion attitude */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Weeks since January 6th, 1980 */
 	uint32_t				week;
@@ -584,7 +595,7 @@ PACKED_STRUCT
 } ins_2_t;
 
 
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Gyroscope P, Q, R in radians / second */
 	float                   pqr[3];
@@ -595,7 +606,7 @@ PACKED_STRUCT
 
 
 /*! (DID_IMU_1, DID_IMU_2) Inertial Measurement Unit (IMU) data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -606,7 +617,7 @@ PACKED_STRUCT
 
 
 /*! (DID_DUAL_IMU) Dual Inertial Measurement Units (IMUs) data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -617,7 +628,7 @@ PACKED_STRUCT
 
 
 /*! (DID_MAGNETOMETER_1, DID_MAGNETOMETER_2) Magnetometer sensor data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -628,7 +639,7 @@ PACKED_STRUCT
 
 
 /*! (DID_BAROMETER) Barometric pressure sensor data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -648,7 +659,7 @@ PACKED_STRUCT
 
 
 /*! (DID_DELTA_THETA_VEL) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
@@ -665,7 +676,7 @@ PACKED_STRUCT
 
 
 /*! (DID_GPS_POS) GPS position */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Number of weeks since January 6th, 1980 */
 	uint32_t                week;
@@ -676,7 +687,7 @@ PACKED_STRUCT
 	/*! GPS status: [7:0] number of satellites used in solution, [15:8] status flags, [23:16] fix type */
 	uint32_t                status;
 
-	/*! Carrier to noise ratio (receiver signal strength) of strongest satellite (dBHz) */
+	/*! Carrier to noise ratio (signal strength) of strongest satellite in dBHz */
 	uint32_t                cno;
 
 	/*! WGS84 Latitude, longitude, height above ellipsoid (not geoid / MSL) in degrees, degrees, meters */
@@ -697,7 +708,7 @@ PACKED_STRUCT
 
 	
 /*! (DID_GPS_VEL) GPS velocity */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t				timeOfWeekMs;
@@ -723,7 +734,7 @@ PACKED_STRUCT
 
 
 /*! (DID_GPS) GPS Data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! GPS position */
 	gps_nav_poslla_t		pos;
@@ -740,29 +751,29 @@ PACKED_STRUCT
 
 
 /*! GPS satellite information */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*!
 	Satellite identifier
-	- GPS: 0, 0-32
-	- SBS: 1, 20-58
-	- GAL: 2, 0-36
-	- BEI: 3, 0-37
-	- IME: 4, 0-10
-	- QZS: 5, 0-5
-	- GLO: 6, 0-32
+	- GPS:     0, 0-32
+	- SBAS:    1, 20-58
+	- Galileo: 2, 0-36
+	- BeiDou:  3, 0-37
+	- IMES:    4, 0-10
+	- QZSS:    5, 0-5
+	- GLONASS: 6, 0-32
 	- svId % 100 = satellite id (0 = unknown)
 	- svId / 100 = constellation (0 = GPS, 1 = SBS, 2 = GAL, 3 = BEI, 4 = IMES, 5 = QZS, 6 = GLO)
 	*/
 	uint32_t				svId;
 
-	/*! Carrier to noise ratio (receiver signal strength, dBHz) */
+	/*! Carrier to noise ratio (signal strength) in  dBHz */
 	uint32_t				cno;
 } gps_sat_info_t;
 
 
-/*! (DID_GPS_RSSI) GPS received signal strength indicator */
-PACKED_STRUCT
+/*! (DID_GPS_CNO) GPS satellite signal strength */
+typedef struct PACKED
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -772,11 +783,11 @@ PACKED_STRUCT
 
 	/*! Satellite information list */
 	gps_sat_info_t			info[MAX_NUM_SAT_CHANNELS];
-} gps_rssi_t;
+} gps_cno_t;
 
 
 /*! (DID_GPS_VERSION) GPS version strings */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	uint8_t                 swVersion[30];
 	uint8_t                 hwVersion[10];
@@ -786,7 +797,7 @@ PACKED_STRUCT
 
 
 /*! (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */ 
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Broadcast period for ASCII IMU data in milliseconds. 0 for none */
 	uint32_t                 imu;
@@ -817,7 +828,7 @@ PACKED_STRUCT
 } ascii_msgs_t;
 
 /*! Generic 1 axis sensor */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time in seconds */
 	double                  time;
@@ -827,7 +838,7 @@ PACKED_STRUCT
 } gen_1axis_sensor_t;
 
 /*! Generic 3 axis sensor */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time in seconds */
 	double                  time;
@@ -837,7 +848,7 @@ PACKED_STRUCT
 } gen_3axis_sensor_t;
 
 /*! Generic dual 3 axis sensor */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time in seconds */
 	double                  time;
@@ -850,7 +861,7 @@ PACKED_STRUCT
 } gen_dual_3axis_sensor_t;
 
 /*! Generic 3 axis sensor */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time in seconds */
 	double                  time;
@@ -860,7 +871,7 @@ PACKED_STRUCT
 } gen_3axis_sensord_t;
 
 /*! (DID_SYS_SENSORS) Output from system sensors */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double					time;
@@ -903,7 +914,7 @@ PACKED_STRUCT
 } sys_sensors_t;
 
 // (DID_EKF_STATES) INS Extended Kalman Filter (EKF) states
-PACKED_STRUCT
+typedef struct PACKED
 {	
 	double                  time;					// (s)     Time since boot up in seconds
 	float					qe2b[4];                //         Quaternion body rotation with respect to ECEF
@@ -917,7 +928,7 @@ PACKED_STRUCT
 } ekf_states_t;
 
 /*! Sensor state variables */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Latitude, longitude and height above ellipsoid in radians, radians and meters */
 	double                  lla[3];
@@ -930,7 +941,7 @@ PACKED_STRUCT
 } state_vars_t;
 
 /*! (DID_INS_MISC) INS Misc data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time of week (since Sunday morning) in seconds, GMT */
 	double                  timeOfWeek;
@@ -964,7 +975,7 @@ PACKED_STRUCT
 } ins_misc_t;
 
 /*! INS output */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -983,7 +994,7 @@ PACKED_STRUCT
 } ins_output_t;
 
 /*! (DID_SYS_PARAMS) System parameters */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -1036,7 +1047,7 @@ typedef enum
 } eMsgCfgBits;
 
 /*! (DID_CONFIG) Configuration functions */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Set to 1 to reset processor into bootloader mode */
 	uint32_t                enBootloader;
@@ -1065,7 +1076,7 @@ PACKED_STRUCT
 #define SERVO_PULSE_US_MAX	2300
 
 /*! (DID_IO) Input/Output */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
@@ -1075,35 +1086,35 @@ PACKED_STRUCT
 } io_t;
 
 /*! (DID_IO_SERVOS_PWM & DID_IO_SERVOS_PPM) I/O: PWM and PPM Servos */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Servo pulse time (us) */
 	uint32_t				ch[NUM_SERVOS];
 } io_servos_t;
 
 
-// PACKED_STRUCT
+// typedef struct PACKED
 // {											// Magnetic Distortions:
 // 	float				bFrame[3];				// static to body frame
 // 	float				iFrame[3];				// static to inertial frame
 // 	float				accuracy;				// Goodness of fit cal accuracy indicator (smaller is better)
 // } magDistortion_t;
 
-PACKED_STRUCT
+typedef struct PACKED
 {
 	// 		uint32_t			timeMs;				// (ms)		Sample timestamp used to identify age of sample
 	float				theta[3];			// (rad)	Euler attitude
 	float				mag[3];				// (Gauss)	Measured magnetometer output (body frame)
 } magCalPoint_t;
 
-PACKED_STRUCT
+typedef struct PACKED
 {
 	magCalPoint_t		pt[5];
 	float				delta;				// (Gauss)	Difference between pt[1].mag and pt[3].mag.
 } magCalSet_t;
 
 /*! (DID_MAGNETOMETER_CAL) Magnetometer Calibration */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	uint32_t				state;			// Calibration state
 	magCalSet_t				data[3];		// Data array.  Each element contains the min and max value found for roll, pitch, and yaw.
@@ -1111,8 +1122,92 @@ PACKED_STRUCT
 	float					accuracy;		// Goodness of fit cal accuracy indicator (smaller is better)
 } mag_cal_t;
 
+
+/*! Self-test state */
+enum eSelfTestState
+{
+	SELF_TEST_STATE_OFF						= (int)0,
+	SELF_TEST_STATE_DONE					= (int)1,
+	SELF_TEST_STATE_START					= (int)2,
+	SELF_TEST_STATE_ONE_CHECK				= (int)(SELF_TEST_STATE_START+1),
+};
+
+/*! Hardware self-test flags */
+enum eHdwSelfTestFlags
+{
+	HDW_SELF_TEST_PASSED_MASK				= (int)0x0000000F,
+	HDW_SELF_TEST_PASSED_ALL				= (int)0x00000001,
+	HDW_SELF_TEST_PASSED_AHRS				= (int)0x00000002,	// Passed w/o valid GPS signal
+	HDW_SELF_TEST_FAILED_MASK				= (int)0xFFFFFFF0,
+	HDW_SELF_TEST_FAULT_NOISE_PQR			= (int)0x00000010,
+	HDW_SELF_TEST_FAULT_NOISE_ACC			= (int)0x00000020,
+	HDW_SELF_TEST_FAULT_GPS_NO_COM			= (int)0x00000100,	// GPS not communicating
+	HDW_SELF_TEST_FAULT_GPS_SIGNAL		= (int)0x00000200,	// Poor GPS bad signal, number of satellites, or accuracy 
+	HDW_SELF_TEST_FAULT_GPS_NOISE			= (int)0x00000400,	// Noise on signal
+};
+
+/*! Calibration self-test flags */
+enum eCalSelfTestFlags
+{
+	CAL_SELF_TEST_PASSED_MASK				= (int)0x0000000F,
+	CAL_SELF_TEST_PASSED_ALL				= (int)0x00000001,
+	CAL_SELF_TEST_FAILED_MASK				= (int)0xFFFFFFF0,
+	CAL_SELF_TEST_FAULT_TCAL_EMPTY			= (int)0x00000010,	// Temperature calibration not present
+	CAL_SELF_TEST_FAULT_TCAL_TSPAN			= (int)0x00000020,	// Temperature calibration temperature range is inadequate
+	CAL_SELF_TEST_FAULT_TCAL_INCONSISTENT	= (int)0x00000040,	// Temperature calibration number of points or slopes are not consistent
+	CAL_SELF_TEST_FAULT_TCAL_CORRUPT		= (int)0x00000080,	// Temperature calibration memory corruption
+	CAL_SELF_TEST_FAULT_TCAL_PQR_BIAS		= (int)0x00000100,	// Temperature calibration gyro bias
+	CAL_SELF_TEST_FAULT_TCAL_PQR_SLOPE		= (int)0x00000200,	// Temperature calibration gyro slope
+	CAL_SELF_TEST_FAULT_TCAL_PQR_LIN		= (int)0x00000400,	// Temperature calibration gyro linearity
+	CAL_SELF_TEST_FAULT_TCAL_ACC_BIAS		= (int)0x00000800,	// Temperature calibration accelerometer bias
+	CAL_SELF_TEST_FAULT_TCAL_ACC_SLOPE		= (int)0x00001000,	// Temperature calibration accelerometer slope
+	CAL_SELF_TEST_FAULT_TCAL_ACC_LIN		= (int)0x00002000,	// Temperature calibration accelerometer linearity
+	CAL_SELF_TEST_FAULT_ORTO_EMPTY			= (int)0x00010000,	// Cross-axis alignment is not calibrated
+	CAL_SELF_TEST_FAULT_ORTO_INVALID			= (int)0x00020000,	// Cross-axis alignment is poorly formed
+	CAL_SELF_TEST_FAULT_MOTION_PQR			= (int)0x00040000,	// Motion on gyros
+	CAL_SELF_TEST_FAULT_MOTION_ACC			= (int)0x00080000,	// Motion on accelerometers
+};
+
+/*! (DID_SELF_TEST) Hardware parameters */
+typedef struct PACKED
+{
+	/*! Self-test state */
+	uint32_t                state;
+
+	/*! Hardware self-test status (see eHdwSelfTestFlags) */
+	uint32_t                hdwStatus;
+
+	/*! Calibration self-test status (see eCalSelfTestFlags) */
+	uint32_t                calStatus;
+
+	/*! Temperature calibration bias */
+	float                   tcPqrBias;
+	float                   tcAccBias;
+
+	/*! Temperature calibration slope */
+	float                   tcPqrSlope;
+	float                   tcAccSlope;
+
+	/*! Temperature calibration linearity */
+	float                   tcPqrLinearity;
+	float                   tcAccLinearity;
+
+	/*! PQR motion (angular rate) */
+	float                   pqr;
+
+	/*! ACC motion w/ gravity removed (linear acceleration) */
+	float                   acc;
+
+	/*! Angular rate standard deviation */
+	float                   pqrSigma;
+
+	/*! Acceleration standard deviation */
+	float                   accSigma;
+	
+} self_test_t;
+
 /*! (DID_FLASH_CONFIG) Configuration data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Size of group or union, which is nvm_group_x_t + padding */
 	uint32_t				size;
@@ -1147,7 +1242,7 @@ PACKED_STRUCT
 	/* INS dynamic platform model.  Determines performance characteristics of system. 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST */
 	uint32_t				insDynModel;
 	
-	/*! System configuration bits */
+	/*! System configuration bits (see eSysConfigBits) */
 	uint32_t				sysCfgBits;
 
 	/*! Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
@@ -1191,7 +1286,7 @@ PACKED_STRUCT
 } nvm_flash_cfg_t;
 
 /*! (DID_INS_RESOURCES) */
-PACKED_STRUCT
+typedef struct PACKED
 {	
 	uint32_t                timeOfWeekMs;		//			Time of week (since Sunday morning) in milliseconds, GMT
 	state_vars_t            x_dot;				//			State variables derivative
@@ -1348,7 +1443,7 @@ typedef struct
 typedef prcopt_t rtk_opt_t;
 
 /*! Raw satellite observation data */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! receiver sampling time (GPST) */
 	gtime_t time;
@@ -1617,11 +1712,8 @@ typedef enum
 } eRtkSolStatus;
 
 /*! DID_RTK_SOL - requires little endian CPU */
-PACKED_STRUCT
+typedef struct PACKED
 {
-	/*! Reserved for future use, do not modify */
-	uint32_t header;
-
 	/*! Solution status - eRtkSolStatus */
 	uint32_t status;
 
@@ -1678,14 +1770,11 @@ typedef enum
 	raw_data_type_sbas = 4,
 
 	/*! sta_t */
-	raw_data_type_base_station_antenna_position = 5,
-
-	/*! sol_t */
-	raw_data_type_solution = 64
+	raw_data_type_base_station_antenna_position = 5
 } eRawDataType;
 
 /*! Message wrapper for DID_RAW_GPS_DATA - simply cast the data buffer to this struct */
-PACKED_STRUCT
+typedef struct PACKED
 {
 	/*! Receiver index, 0 or 1 */
 	uint8_t receiverIndex;
@@ -1704,7 +1793,7 @@ PACKED_STRUCT
 } raw_gps_msg_t;
 
 /*! Union of datasets */
-PACKED_UNION
+typedef union PACKED
 {
 	dev_info_t			devInfo;
 	ins_1_t				ins1;
@@ -1717,7 +1806,7 @@ PACKED_UNION
 	gps_t				gps;
 	gps_nav_poslla_t	gpsPos;
 	gps_nav_velned_t	gpsVel;
-	gps_rssi_t			gpsRssi;
+	gps_cno_t			gpsCNO;
 	nvm_flash_cfg_t		flashCfg;
 	ins_misc_t			insMisc;
 	sys_params_t		sysParams;

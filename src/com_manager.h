@@ -21,14 +21,14 @@ extern "C" {
 #include "data_sets.h"
 #include "linked_list.h"
 
-// set to 0 to disable 24 bit checksum and use old 16 bit checksum instead
-#define ENABLE_COM_MANAGER_CHECKSUM_24_BIT 0
-
 /*! Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
 
 // Major (in com_manager.h)
-#define PROTOCOL_VERSION_CHAR0			1
-#define PROTOCOL_VERSION_CHAR1			(1 + ENABLE_COM_MANAGER_CHECKSUM_24_BIT)
+#define PROTOCOL_VERSION_CHAR0			(1)
+
+// version 1: initial release
+// version 2: 24 bit checksum support
+#define PROTOCOL_VERSION_CHAR1			(2)
 
 // Minor (in data_sets.h)
 // #define PROTOCOL_VERSION_CHAR2		0
@@ -254,9 +254,6 @@ typedef struct
 /*! Represents the 4 bytes that end each binary packet */
 typedef struct
 {
-
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
-
 	/*! Checksum byte 3 */
 	uint8_t             cksum3;
 
@@ -265,19 +262,6 @@ typedef struct
 
 	/*! Checksum byte 1 */
 	uint8_t             cksum1;
-
-#else
-
-	/*! Reserved for future use */
- 	uint8_t             reserved;
-
-	/*! Checksum high byte */
-    uint8_t             cksum1;
-
-	/*! Checksum low byte */
-    uint8_t             cksum2;
-
-#endif
 
 	/*! Packet end byte, always 0xFE */
     uint8_t             stopByte;

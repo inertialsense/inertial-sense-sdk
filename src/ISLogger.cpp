@@ -38,7 +38,7 @@ const string cISLogger::g_emptyString;
 
 bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 {
-    return (hdr != NULL &&
+    bool corrupt = (hdr != NULL &&
     (
         hdr->size == 0 ||
         hdr->offset + hdr->size > MAX_DATASET_SIZE ||
@@ -48,6 +48,7 @@ bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
         hdr->size % 4 != 0 ||
         (cISDataMappings::GetSize(hdr->id) > 0 && hdr->offset + hdr->size > cISDataMappings::GetSize(hdr->id))
     ));
+	return corrupt;
 }
 
 bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
@@ -101,8 +102,8 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 
 	m_logType = logType;
 	m_directory = directory;
+    maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.01f, 0.99f);
 	uint64_t availableSpace = cISLogger::GetDirectorySpaceAvailable(m_directory);
-	maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.0f, 1.0f);
 	m_maxDiskSpace = (maxDiskSpacePercent <= 0.0f ? availableSpace : (uint64_t)(availableSpace * maxDiskSpacePercent));
 
 	// ensure there are between min and max file count
@@ -224,7 +225,8 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 
 #endif
 
-	return true;
+	struct stat sb;
+	return (stat(m_directory.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
 }
 
 
@@ -575,7 +577,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 }
 
 
-bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, void* dataBuf)
+bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
 	if (!m_enabled || device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
@@ -589,18 +591,21 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, void* dataBu
 		}
 		m_logStats->LogError(dataHdr);
 	}
-	else if (!m_devices[device]->SaveData(dataHdr, (uint8_t*)dataBuf))
-	{
-		if (m_errorFile != NULL)
-		{
-			fprintf(m_errorFile, "Error logging data, underlying log implementation failed to save\r\n");
-		}
-		m_logStats->LogError(dataHdr);
-	}
 	else
 	{
-		double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-		m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
+        if (!m_devices[device]->SaveData(dataHdr, dataBuf))
+		{
+			if (m_errorFile != NULL)
+			{
+				fprintf(m_errorFile, "Error logging data, underlying log implementation failed to save\r\n");
+			}
+			m_logStats->LogError(dataHdr);
+		}
+		else
+		{
+            double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+			m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
+		}
 	}
 	return true;
 }
@@ -625,10 +630,24 @@ p_data_t* cISLogger::ReadData(unsigned int device)
 	}
 	if (data != NULL)
 	{
-		double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
 		m_logStats->LogDataAndTimestamp(data->hdr.id, timestamp);
 	}
 	return data;
+}
+
+
+p_data_t* cISLogger::ReadNextData(unsigned int& device)
+{
+	while (device < m_devices.size())
+	{
+		p_data_t* data = ReadData(device);
+		if (data == NULL)
+		{
+			++device;
+		}
+	}
+	return NULL;
 }
 
 
@@ -753,14 +772,63 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		const dev_info_t* devInfo = log.GetDeviceInfo(dev);
 		SetDeviceInfo(devInfo, dev);
 
+		// Set KML configuration
+		m_devices[dev]->SetKmlConfig(m_showPath, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+
 		// Copy data
 		while ((data = log.ReadData(dev)))
 		{
-			LogData(dev, &data->hdr, data->buf);
+            LogData(dev, &data->hdr, data->buf);
 		}
 	}
 	CloseAllFiles();
 	return true;
+}
+
+bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, vector<vector<uint8_t>>>& data)
+{
+    cISLogger logger;
+    if (!logger.LoadFromDirectory(directory))
+    {
+        return false;
+    }
+    unsigned int deviceId = 0;
+    unsigned int lastDeviceId = 0xFFFFFEFE;
+    p_data_t* p;
+	vector<vector<uint8_t>>* currentDeviceData = NULL;
+    const dev_info_t* info;
+    uint8_t* ptr, *ptrEnd;
+    data.clear();
+
+    // read every piece of data out of every device log
+    while ((p = logger.ReadNextData(deviceId)) != NULL)
+    {
+        // if this is a new device, we need to add the device to the map using the serial number
+        if (deviceId != lastDeviceId)
+        {
+            lastDeviceId = deviceId;
+            info = logger.GetDeviceInfo(deviceId);
+            data[info->serialNumber] = vector<vector<uint8_t>>();
+            currentDeviceData = &data[info->serialNumber];
+        }
+
+		assert(currentDeviceData != NULL);
+
+        // add slots until we have slots at least equal to the data id
+        while (currentDeviceData->size() < p->hdr.id)
+        {
+            currentDeviceData->push_back(vector<uint8_t>());
+        }
+
+        // append each byte of the packet to the slot
+        ptrEnd = p->buf + p->hdr.size;
+		vector<uint8_t>& stream = (*currentDeviceData)[p->hdr.id];
+        for (ptr = p->buf; ptr != ptrEnd; ptr++)
+        {
+			stream.push_back(*ptr);
+        }
+    }
+    return true;
 }
 
 cLogStatDataId::cLogStatDataId()

@@ -40,7 +40,7 @@ public:
 	virtual void InitDeviceForReading();
     virtual bool CloseAllFiles();
 	virtual bool OpenWithSystemApp();
-    virtual bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf);
+    virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf);
     virtual p_data_t* ReadData() = 0;
 	virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 	virtual string LogFileExtention() = 0;
@@ -50,6 +50,13 @@ public:
 	uint64_t FileSize() { return m_fileSize; }
 	uint64_t LogSize() { return m_logSize; }
 	uint32_t FileCount() { return m_fileCount; }
+	void SetKmlConfig(bool showPath=true, bool showTimeStamp=true, double updatePeriodSec=1.0, bool altClampToGround=true) 
+	{ 
+		m_showPath = showPath;
+		m_showTimeStamp = showTimeStamp;
+		m_iconUpdatePeriodSec = updatePeriodSec;
+		m_altClampToGround = altClampToGround; 
+	}
 
 protected:
 	bool OpenNewSaveFile();
@@ -70,6 +77,10 @@ protected:
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;
 	uint32_t				m_maxChunkSize;
+	bool					m_altClampToGround;
+	bool					m_showPath;
+	bool					m_showTimeStamp;
+	double					m_iconUpdatePeriodSec;
 
 private:
     cLogStats*              m_logStats;

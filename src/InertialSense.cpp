@@ -78,7 +78,6 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 	memset(&m_deviceInfo, 0, sizeof(m_deviceInfo));
 	memset(&m_config, 0, sizeof(m_config));
 	memset(&m_flashConfig, 0, sizeof(m_flashConfig));
-	m_logSolution = SLOG_DISABLED;
 	m_cmHandle = getGlobalComManager();
 	m_pHandle = 0;
 	m_logThread = NULLPTR;
@@ -118,24 +117,26 @@ InertialSense::InertialSense(pfnHandleBinaryData callback, serial_port_t* serial
 
 }
 
-
 InertialSense::~InertialSense()
 {
 	CloseServerConnection();
 	Close();
 }
 
-void InertialSense::EnableLogging(const string& path, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
+bool InertialSense::EnableLogging(const string& path, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
 {
 	cMutexLocker logMutexLocker(&m_logMutex);
-	getDataComManagerInstance(m_cmHandle, 0, DID_DEV_INFO, 0, 0, 0);
-	m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, 1, cISLogger::LOGTYPE_DAT, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder.length() != 0);
+	if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, 1, cISLogger::LOGTYPE_DAT, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder.length() != 0))
+	{
+		return false;
+	}
 	m_logger.EnableLogging(true);
 	m_logger.SetDeviceInfo(&m_deviceInfo);
 	if (m_logThread == NULLPTR)
 	{
 		m_logThread = threadCreateAndStart(&InertialSense::LoggerThread, this);
 	}
+	return true;
 }
 
 void InertialSense::DisableLogging()
@@ -181,7 +182,11 @@ void InertialSense::LoggerThread(void* info)
 		// log the packets
 		for (size_t i = 0; i < packets.size(); i++)
 		{
-			inertialSense->m_logger.LogData(0, &packets[i].hdr, packets[i].buf);
+            if (!inertialSense->m_logger.LogData(0, &packets[i].hdr, packets[i].buf))
+            {
+                // Failed to write to log
+				return;
+			}
 		}
 		packets.clear();
 	}
@@ -235,22 +240,23 @@ bool InertialSense::Open(const char* port, int baudRate)
 	return true;
 }
 
-void InertialSense::SetLoggerEnabled(bool enable, const string& path, uint32_t logSolution, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
+bool InertialSense::SetLoggerEnabled(bool enable, const string& path, uint32_t logSolution, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
 {
 	{
 		cMutexLocker logMutexLocker(&m_logMutex);
 		m_logger.CloseAllFiles();
-		m_logSolution = logSolution;
-		sendDataComManagerInstance(m_cmHandle, 0, DID_CONFIG, &m_logSolution, sizeof(uint32_t), offsetof(config_t, sLogCtrl));
+		m_config.msgCfgBits = 1;
+		m_config.sLogCtrl = logSolution;
+		sendDataComManagerInstance(m_cmHandle, 0, DID_CONFIG, &m_config, 0, 0);
+		getDataComManagerInstance(m_cmHandle, 0, DID_RAW_GPS_DATA, 0, 0, 200);
+		getDataComManagerInstance(m_cmHandle, 0, DID_RTK_SOL, 0, 0, 200);
 	}
 	if (enable)
 	{
-		EnableLogging(path, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder);
+		return EnableLogging(path, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder);
 	}
-	else
-	{
-		DisableLogging();
-	}
+	DisableLogging();
+	return true;
 }
 
 bool InertialSense::OpenServerConnectionRTCM3(const string& hostAndPort)
@@ -457,11 +463,6 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 	return true;
 }
 
-void InertialSense::SetBroadcastSolutionEnabled(bool enable)
-{
-	m_logSolution = (enable ? SLOG_W_INS2 : SLOG_DISABLED);
-}
-
 bool InertialSense::BootloadFile(const string& comPort, const string& fileName, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, char* errorBuffer, int errorBufferLength)
 {
 	// for debug
@@ -482,6 +483,7 @@ bool InertialSense::BootloadFile(const string& comPort, const string& fileName, 
 	params.uploadProgress = uploadProgress;
 	params.verifyProgress = verifyProgress;
 	params.verifyFileName = NULL;
+	params.flags.bitFields.enableVerify = (verifyProgress != NULL);
 	if (!bootloadFileEx(&params))
 	{
 		serialPortClose(&bootloader.m_serialPort);
@@ -549,7 +551,7 @@ bool InertialSense::PyBootloadFile(const string& comPort, const string& fileName
 	// SERIAL_PORT_DEFAULT_TIMEOUT = 9999999;
 	InertialSense bootloader;
 	serialPortSetPort(&bootloader.m_serialPort, comPort.c_str());
-	if (!enableBootloader(&bootloader.m_serialPort, &bootloaderError[0], errorBufferLength))
+	if (!enableBootloader(&bootloader.m_serialPort, &bootloaderError[0], errorBufferLength, IS_BAUD_RATE_BOOTLOADER_COM))
 	{
 		serialPortClose(&bootloader.m_serialPort);
 		return false;
@@ -812,7 +814,6 @@ test_initializer inertialsensemodule([](py::module &m) {
 	inertialsense.def("Close", &InertialSense::Close);
 	inertialsense.def("StopBroadcasts", &InertialSense::StopBroadcasts);
 	inertialsense.def("BroadcastBinaryData", &InertialSense::BroadcastBinaryData);
-	inertialsense.def("SetBroadcastSolutionEnabled", &InertialSense::SetBroadcastSolutionEnabled);
 	inertialsense.def("OpenServerConnectionRTCM3", &InertialSense::OpenServerConnectionRTCM3);
 	inertialsense.def("OpenServerConnectionInertialSense", &InertialSense::OpenServerConnectionInertialSense);
 	inertialsense.def("OpenServerConnectionUblox", &InertialSense::OpenServerConnectionUblox);

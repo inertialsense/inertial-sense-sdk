@@ -85,7 +85,7 @@ bool cDeviceLogSorted::CloseAllFiles()
 }
 
 
-bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
+bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
     cDeviceLog::SaveData(dataHdr, dataBuf);
 

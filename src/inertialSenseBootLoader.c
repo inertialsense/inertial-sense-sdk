@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <math.h>
 #include "inertialSenseBootLoader.h"
 #include "ISConstants.h"
+#include "ISUtilities.h"
 
 #define ENABLE_HEX_BOOT_LOADER 1
 #define MAX_SEND_COUNT 510
@@ -75,7 +76,7 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
 
 #if PLATFORM_IS_WINDOWS
 
-	// eval tool and multiple bootloads under Windows 10 have issues with dropped data if verify runs too fast
+	// EvalTool and multiple bootloads under Windows 10 have issues with dropped data if verify runs too fast
     state->verifyChunkSize = 125;
 
 #else
@@ -719,7 +720,6 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 {
 	bootloader_state_t state = { 0 };
 	unsigned char c;
-	unsigned char hexLookupTable[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 	int dataLength;
 	int verifyCheckSum;
 	int lastPage;
@@ -727,6 +727,7 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 	int commandLength;
 	unsigned char buf[16];
 	unsigned char commandType;
+	const unsigned char* hexLookupTable = getHexLookupTable();
 	float percent = 0.0f;
 	fseek(file, 0, SEEK_END);
 	int fileSize = ftell(file);
@@ -871,15 +872,21 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 	return dataLength;
 }
 
+static void bootloaderRestart(serial_port_t* s)
+{
+	// restart bootloader command
+	serialPortWrite(s, (unsigned char*)":020000040500F5", 15);
+
+	// give the device time to start up
+	serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+}
+
 static int bootloaderSync(serial_port_t* s)
 {
 	static const unsigned char handshakerChar = 'U';
 
 	// reboot the device in case it is stuck
-	serialPortWrite(s, (unsigned char*)":020000040500F5", 15);
-
-	// give the device time to start up
-	serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+	bootloaderRestart(s);
 
 	// write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
 	for (int i = 0; i < BOOTLOADER_RETRIES; i++)
@@ -1053,15 +1060,52 @@ int bootloadFileEx(bootload_params_t* params)
 
 int enableBootloader(serial_port_t* port, char* error, int errorLength)
 {
-	// open the serial port
-	if (serialPortOpenInternal(port, IS_BAUD_RATE_BOOTLOADER_COM, error, errorLength) == 0)
+	// raspberry PI and other Linux have trouble with 3000000 baud, so start with 921600
+    static const int baudRates[] = { 921600, 3000000, 460800, 230400, 115200 };
+
+	// detect if device is already in bootloader mode
+	bootload_params_t p = { 0 };
+	p.port = port;
+	p.flags.bitFields.enableAutoBaud = 1;
+	if (!bootloaderHandshake(&p))
 	{
-		return 0;
+		// we are probably in program mode, we will need to try and get the baud rate right
+		unsigned char c = 0;
+		for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
+		{
+			serialPortClose(port);
+			if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
+			{
+				return 0;
+			}
+			for (size_t loop = 0; loop < 10; loop++)
+			{
+				serialPortWrite(port, (unsigned char*)"$BLEN*05\r\n", 10);
+				c = 0;
+				if (serialPortReadCharTimeout(port, &c, 50) == 1)
+				{
+					if (c == '$')
+					{
+						// done, we got into bootloader mode
+						i = 9999;
+						break;
+					}
+				}
+			}
+		}
+
+		// if we can't handshake at this point, bootloader enable has failed
+		if (!bootloaderHandshake(&p))
+		{
+			// failure
+			return 0;
+		}
 	}
-	
-	// enable the boot loader
-	serialPortWrite(port, (unsigned char*)"$BLEN*05\r\n", 10);
-	serialPortSleep(port, 250);
+
+	// ensure bootloader restarts in fresh state
+	bootloaderRestart(port);
+
+    // by this point the bootloader should be enabled
 	serialPortClose(port);
 
 	return 1;

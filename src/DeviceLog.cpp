@@ -38,6 +38,10 @@ cDeviceLog::cDeviceLog()
     m_fileCount = 0;
     memset(&m_devInfo, 0, sizeof(dev_info_t));
     m_logStats = new cLogStats;
+	m_altClampToGround = true;
+	m_showPath = true;
+	m_showTimeStamp = true;
+	m_iconUpdatePeriodSec = 1.0f;
 }
 
 cDeviceLog::~cDeviceLog()
@@ -97,7 +101,7 @@ bool cDeviceLog::OpenWithSystemApp()
 }
 
 
-bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
+bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
 {
     if (dataHdr != NULL)
     {

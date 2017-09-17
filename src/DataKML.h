@@ -81,7 +81,7 @@ public:
 	
 	cDataKML();
 	string GetDatasetName(int kid);
-	int WriteDataToFile(vector<sKmlLogData>& data, p_data_hdr_t *dataHdr, uint8_t *dataBuf);
+    int WriteDataToFile(vector<sKmlLogData>& data, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
 };
 
 #endif // DATA_KML_H

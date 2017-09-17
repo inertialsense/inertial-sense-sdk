@@ -473,7 +473,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_SYS_PARAMS:		str = DataToStringSysParams(d.sysParams, data->hdr);	break;
 	case DID_SYS_SENSORS:		str = DataToStringSysSensors(d.sysSensors, data->hdr);	break;
 	case DID_RTK_SOL:			str = DataToStringRtkSol(d.rtkSol, data->hdr);			break;
-	case DID_RAW_GPS_DATA:			str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
+	case DID_RAW_GPS_DATA:		str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
 	default:
 		char buf[128];
 		SNPRINTF(buf, 128, "DID: %d\n", data->hdr.id);

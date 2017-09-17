@@ -224,17 +224,8 @@ int beginRtcm3Packet(com_manager_t* cmInstance, int pHandle, ring_buffer_t* ring
 int decodeBinaryPacketByte(com_manager_t* cmInstance, int pHandle, uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
 int asciiMessageCompare(const void* elem1, const void* elem2);
 uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest);
-
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
-
-void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
-
-#else
-
-void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum);
-
-#endif
-
+void decodeBinaryPacketFooter24(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
+void decodeBinaryPacketFooter16(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum);
 void swapPacket(packet_t* pkt);
 int dataIdShouldSwap(uint32_t dataId);
 
@@ -360,7 +351,7 @@ void initComManagerInstanceInternal
     for (i = 0; i < numHandles; i++)
 	{
 
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+#if PROTOCOL_VERSION_CHAR1 > 1
 
 		cmInstance->status[i].flags = CPU_IS_LITTLE_ENDIAN | CM_PKT_FLAGS_CHECKSUM_24_BIT;
 
@@ -519,6 +510,7 @@ readAgain:
 							cmInstance->status[pHandle].startByte = PSC_START_BYTE;
 							ringBuffer->startIndex = ringBuffer->scanIndex - 1;
 						} break;
+
 						case PSC_ASCII_END_BYTE:
 						{
 							if (cmInstance->status[pHandle].startByte == PSC_ASCII_START_BYTE)
@@ -538,6 +530,7 @@ readAgain:
 							ringBuffer->startIndex = ringBuffer->scanIndex;
 							cmInstance->status[pHandle].startByte = 0;
 						} break;
+
 						case UBLOX_START_BYTE1:
 						{
 							if (beginUbloxPacket(cmInstance, pHandle, ringBuffer))
@@ -545,6 +538,7 @@ readAgain:
 								return;
 							}
 						} break;
+
 						case RTCM3_START_BYTE:
 						{
 							if (beginRtcm3Packet(cmInstance, pHandle, ringBuffer))
@@ -966,7 +960,7 @@ void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf
 			else if (messageData != 0)
 			{
 				// if we have a non-empty message, parse it out
-				if ((length = (ptr - messageData)) > 0)
+                if ((length = (int)(ptr - messageData)) > 0)
 				{
 					*ptr = '\0';
 					uint16_t fieldAndOffset = foundMap->fieldsAndOffsets[fieldIndex];
@@ -1630,13 +1624,13 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
         return -1;
 	}
 
-    // Update Packet Counter		
+    // Update Packet Counter
 	dPkt->hdr.counter = cmInstance->pktCounter++;
     uint8_t* ptrSrc;
 	uint8_t* ptrSrcEnd;
 	uint8_t* ptrDest = pkt->buf;
-	unsigned shifter = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? 0 : 8);
-	unsigned checkSumValue = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? CHECKSUM_SEED  : 0x0000FF00);
+    unsigned shifter = (PROTOCOL_VERSION_CHAR1 > 1 ? 0 : 8);
+    unsigned checkSumValue = (PROTOCOL_VERSION_CHAR1 > 1 ? CHECKSUM_SEED  : 0x0000FF00);
 	unsigned val;
 
 	// Packet header -------------------------------------------------------------------------------------------
@@ -1655,7 +1649,7 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 	// Flags
 	val = cmInstance->status[pHandle].flags | dPkt->hdr.flags | additionalPktFlags;
 	ptrDest = encodeByteAddToBuffer(val, ptrDest);
-	checkSumValue ^= (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? val << 16 : val);
+    checkSumValue ^= (PROTOCOL_VERSION_CHAR1 > 1 ? val << 16 : val);
 
 	// Packet body ----------------------------------------------------------------------------------------------
 	ptrSrc = (uint8_t*)dPkt->body.ptr;
@@ -1667,7 +1661,7 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 		val = *ptrSrc++;
 		checkSumValue ^= (val << shifter);
 
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+#if PROTOCOL_VERSION_CHAR1 > 1
 
 		// increment shifter
 		shifter += 8;
@@ -1686,7 +1680,7 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 	
 	// footer ----------------------------------------------------------------------------------------------------
 
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+#if PROTOCOL_VERSION_CHAR1 > 1
 
 	// checksum byte 3
 	val = (uint8_t)((checkSumValue >> 16) & 0xFF);
@@ -1714,9 +1708,7 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 }
 
 
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
-
-void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum)
+void decodeBinaryPacketFooter24(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum)
 {
 	int state = 0;
 	uint8_t* currentPtr = (*ptrSrcEnd) - 1;
@@ -1773,42 +1765,39 @@ void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrS
 	*checksum = ((unsigned)ftr->cksum1) | (0x0000FF00 & ((unsigned)ftr->cksum2 << 8)) | (0x00FF0000 & ((unsigned)ftr->cksum3 << 16));
 }
 
-#else
 
-void decodeBinaryPacketFooter(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum)
+void decodeBinaryPacketFooter16(packet_ftr_t* ftr, uint8_t** _ptrSrcEnd, uint32_t* checksum)
 {
 	uint8_t* ptrSrcEnd = *_ptrSrcEnd;
 
 	// decode the footer first, accounting for special bytes
 	ftr->stopByte = *(--ptrSrcEnd);
-	ftr->cksum2 = *(--ptrSrcEnd);
-	ftr->cksum1 = *(--ptrSrcEnd);
-	if (ftr->cksum1 == PSC_RESERVED_KEY)
+    ftr->cksum1 = *(--ptrSrcEnd);
+    ftr->cksum2 = *(--ptrSrcEnd);
+    if (ftr->cksum2 == PSC_RESERVED_KEY)
 	{
-		ftr->cksum2 = ~ftr->cksum2;
-		ftr->cksum1 = *(--ptrSrcEnd);
-		ftr->reserved = *(--ptrSrcEnd);
-		if (ftr->reserved == PSC_RESERVED_KEY)
+        ftr->cksum1 = ~ftr->cksum1;
+        ftr->cksum2 = *(--ptrSrcEnd);
+        ftr->cksum3 = *(--ptrSrcEnd);
+        if (ftr->cksum3 == PSC_RESERVED_KEY)
 		{
-			ftr->cksum1 = ~ftr->cksum1;
-			ftr->reserved = *(--ptrSrcEnd);
+            ftr->cksum2 = ~ftr->cksum2;
+            ftr->cksum3 = *(--ptrSrcEnd);
 		}
 	}
 	else
 	{
-		ftr->reserved = *(--ptrSrcEnd);
-		if (ftr->reserved == PSC_RESERVED_KEY)
+        ftr->cksum3 = *(--ptrSrcEnd);
+        if (ftr->cksum3 == PSC_RESERVED_KEY)
 		{
-			ftr->cksum1 = ~ftr->cksum1;
-			ftr->reserved = *(--ptrSrcEnd);
+            ftr->cksum2 = ~ftr->cksum2;
+            ftr->cksum3 = *(--ptrSrcEnd);
 		}
 	}
-	*checksum = ((unsigned)ftr->cksum1 << 8) | (unsigned)ftr->cksum2;
+    *checksum = ((unsigned)ftr->cksum2 << 8) | (unsigned)ftr->cksum1;
 
 	*_ptrSrcEnd = ptrSrcEnd;
 }
-
-#endif
 
 
 void swapPacket(packet_t* pkt)
@@ -1932,22 +1921,35 @@ int decodeBinaryPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt, un
 	uint8_t* ptrSrcEnd = pbuf + pbufSize;
 	packet_ftr_t ftr;
 	uint32_t actualCheckSumValue;
-	uint32_t shifter = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? 0 : 8);
-	uint32_t checkSumValue = (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? CHECKSUM_SEED : 0x0000FF00);
 
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
-	
-	decodeBinaryPacketFooter(&ftr, ptrSrc, &ptrSrcEnd, &actualCheckSumValue);
+    // determine if checksum is 16 bit or 24 bit
+    uint8_t* bufPtr = pbuf + 1;
+    uint32_t is24BitChecksum;
+    if (*bufPtr++ == PSC_RESERVED_KEY) bufPtr++; // skip id
+    if (*bufPtr++ == PSC_RESERVED_KEY) bufPtr++; // skip counter
+    if (*bufPtr == PSC_RESERVED_KEY)
+    {
+        is24BitChecksum = ((~(*(++bufPtr))) & CM_PKT_FLAGS_CHECKSUM_24_BIT);
+    }
+    else
+    {
+        is24BitChecksum = (*bufPtr & CM_PKT_FLAGS_CHECKSUM_24_BIT);
+    }
 
-#else
+    if (is24BitChecksum)
+    {
+        decodeBinaryPacketFooter24(&ftr, ptrSrc, &ptrSrcEnd, &actualCheckSumValue);
+    }
+    else
+    {
+        decodeBinaryPacketFooter16(&ftr, &ptrSrcEnd, &actualCheckSumValue);
+    }
 
-	decodeBinaryPacketFooter(&ftr, &ptrSrcEnd, &actualCheckSumValue);
-
-#endif
+    uint32_t shifter = (is24BitChecksum ? 0 : 8);
+    uint32_t checkSumValue = (is24BitChecksum ? CHECKSUM_SEED : 0x0000FF00);
 
 	// start packet byte
 	*ptrDest++ = *ptrSrc++;
-
 	
 	if
 	(
@@ -1958,7 +1960,7 @@ int decodeBinaryPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt, un
 		decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, 8) ||
 
 		// packet flags
-		decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, (ENABLE_COM_MANAGER_CHECKSUM_24_BIT ? 16 : 0))
+        decodeBinaryPacketByte(cmInstance, pHandle, &ptrSrc, &ptrDest, &checkSumValue, (is24BitChecksum ? 16 : 0))
 	)
 	{
 		return -1;
@@ -1973,19 +1975,17 @@ int decodeBinaryPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt, un
 			return -1;
 		}
 
-#if ENABLE_COM_MANAGER_CHECKSUM_24_BIT
+        if (is24BitChecksum)
+        {
+            shifter += 8;
 
-		shifter += 8;
-
-		// reset if shifter equals 24
-		shifter *= (shifter != 24);
-
-#else
-
-		shifter ^= 8;
-
-#endif
-
+            // reset if shifter equals 24
+            shifter *= (shifter != 24);
+        }
+        else
+        {
+            shifter ^= 8;
+        }
 	}
 
 	if (actualCheckSumValue != checkSumValue)
@@ -2006,7 +2006,7 @@ int decodeBinaryPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt, un
 	}
 
 	// if the endianness of the packet doesn't match our CPU, we need to flip the data so it will be correct for our CPU architecture
-	if (pkt->body.size != 0 && (pkt->hdr.flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != CPU_IS_LITTLE_ENDIAN)
+	else if (pkt->body.size != 0 && (pkt->hdr.flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != CPU_IS_LITTLE_ENDIAN)
 	{
 		swapPacket(pkt);
 	}

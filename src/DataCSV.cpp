@@ -88,7 +88,7 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, int id, vector<string>& columnHead
 	return (int)strnlen(line, _ARRAY_BYTE_COUNT(line));
 }
 
-int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, uint8_t* dataBuf)
+int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf)
 {
 	// Verify file pointer
 	if (pFile == NULL)
@@ -101,21 +101,24 @@ int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t&
 		return 0;
 	}
 	string s;
-	if (!DataToStringCSV(dataHdr, dataBuf, s))
+    if (!DataToStringCSV(dataHdr, dataBuf, s))
 	{
 		return 0;
 	}
 	char tmp[64];
 	SNPRINTF(tmp, 64, "%llu", (long long unsigned int)orderId);
-	s = tmp + string(",") + s + "\n";
+	fputs(tmp, pFile);
+	fputc(',', pFile);
 	fputs(s.c_str(), pFile);
-	return (int)s.length();
+
+	// return the data string length plus comma plus order id string
+    return (int)s.length() + 1 + (int)strnlen(tmp, sizeof(tmp));
 }
 
-bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, const vector<string>& columnHeaders)
+bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const vector<string>& columnHeaders)
 {
 	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(hdr.id);
-	if (offsetMap == cISDataMappings::GetMap().end())
+	if (offsetMap == cISDataMappings::GetMap().end() || hdr.offset != 0 || hdr.size == 0 || bufSize < hdr.size)
 	{
 		return false;
 	}
@@ -133,6 +136,7 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, const
 	map_name_to_info_t::const_iterator offset;
 	bool inQuotes = false;
 	uint32_t foundQuotes = 0;
+	memset(buf, 0, hdr.size);
 	for (string::const_iterator i = start; i < s.end() && index < columnHeaders.size(); i++)
 	{
 		if (*i == ',' && !inQuotes)
@@ -140,8 +144,8 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, const
 			// end field
 			columnData = string(start + foundQuotes, i - foundQuotes);
 			start = i + 1;
-			offset = offsetMap->second.find(columnHeaders[index++]);
-			if (offset != offsetMap->second.end() && !cISDataMappings::StringToData(columnData.c_str(), &hdr, buf, offset->second))
+            offset = offsetMap->second.find(columnHeaders[index++]);
+            if (offset != offsetMap->second.end() && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, offset->second))
 			{
 				return false;
 			}
@@ -159,11 +163,6 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, const
 
 bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, string& csv)
 {
-	// size must be expected size, otherwise fail
-	if (hdr.offset != 0)
-	{
-		return false;
-	}
 	csv.clear();
 	string columnData;
 	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(hdr.id);
@@ -177,20 +176,29 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	uint32_t size = cISDataMappings::GetSize(hdr.id);
 	if (size > hdr.size)
 	{
-		// memset any unknown bytes to 0, if the log is older and doesn't have fields that the current data structure has, set it to 0
-		memcpy(tmpBuffer, buf, hdr.size);
-		memset(tmpBuffer + hdr.size, 0, size - hdr.size);
+		// copy into temp buffer, zeroing out bytes that are not part of this packet
+		memset(tmpBuffer, 0, hdr.offset);
+		memcpy(tmpBuffer + hdr.offset, buf, hdr.size);
+		uint32_t dataEnd = hdr.offset + hdr.size;
+		memset(tmpBuffer + dataEnd, 0, size - dataEnd);
 		bufPtr = tmpBuffer;
 	}
+
+	// copy header as we are now storing an entire struct, even if we got a partial hdr and buf
+	p_data_hdr_t hdrCopy = hdr;
+	hdrCopy.offset = 0;
+	hdrCopy.size = size;
+
 	for (map_name_to_info_t::const_iterator offset = offsetMap->second.begin(); offset != offsetMap->second.end(); offset++)
 	{
-		cISDataMappings::DataToString(offset->second, &hdr, bufPtr, tmp);
+		cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp);
 		if (csv.length() != 0)
 		{
 			csv += ",";
 		}
 		csv += tmp;
 	}
+	csv += "\n";
 	return true;
 }
 

@@ -32,7 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 cISDataMappings cISDataMappings::s_map;
 
-CONST_EXPRESSION uint32_t s_eDataTypeSizes[11] =
+CONST_EXPRESSION uint32_t s_eDataTypeSizes[DataTypeCount] =
 {
 	(uint32_t)sizeof(int8_t),
 	(uint32_t)sizeof(uint8_t),
@@ -44,6 +44,7 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[11] =
 	(uint32_t)sizeof(uint64_t),
 	(uint32_t)sizeof(float),
 	(uint32_t)sizeof(double),
+	(uint32_t)0,
 	(uint32_t)0
 };
 
@@ -92,7 +93,7 @@ static void PopulateSizeMappings(map<uint32_t, uint32_t>& sizeMap)
 	sizeMap[DID_CONFIG] = sizeof(config_t);
 	sizeMap[DID_GPS_POS] = sizeof(gps_nav_poslla_t);
 	sizeMap[DID_GPS_VEL] = sizeof(gps_nav_velned_t);
-	sizeMap[DID_GPS_RSSI] = sizeof(gps_rssi_t);
+	sizeMap[DID_GPS_CNO] = sizeof(gps_cno_t);
 	sizeMap[DID_INS_MISC] = sizeof(ins_misc_t);
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
@@ -100,6 +101,7 @@ static void PopulateSizeMappings(map<uint32_t, uint32_t>& sizeMap)
 	sizeMap[DID_INS_RESOURCES] = sizeof(ins_res_t);
 	sizeMap[DID_RTK_SOL] = sizeof(rtk_sol_t);
 	sizeMap[DID_DUAL_IMU] = sizeof(dual_imu_t);
+	sizeMap[DID_RAW_GPS_DATA] = sizeof(raw_gps_msg_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -367,9 +369,9 @@ static void PopulateGPSVelocityMappings(map_lookup_name_t& mappings)
 	ASSERT_SIZE(totalSize, MAP_TYPE);
 }
 
-static void PopulateGPSRSSIMappings(map_lookup_name_t& mappings)
+static void PopulateGPSCNOMappings(map_lookup_name_t& mappings)
 {
-	typedef gps_rssi_t MAP_TYPE;
+	typedef gps_cno_t MAP_TYPE;
 	map_name_to_info_t m;
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", MAP_TYPE, timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
@@ -474,7 +476,7 @@ static void PopulateGPSRSSIMappings(map_lookup_name_t& mappings)
 	ADD_MAP(m, totalSize, "cno[47]", MAP_TYPE, info[47].cno, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "cno[48]", MAP_TYPE, info[48].cno, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "cno[49]", MAP_TYPE, info[49].cno, 0, DataTypeUInt32, uint32_t);
-	mappings[DID_GPS_RSSI] = m;
+	mappings[DID_GPS_CNO] = m;
 
 	ASSERT_SIZE(totalSize, MAP_TYPE);
 }
@@ -672,7 +674,6 @@ static void PopulateRtkSolMappings(map_lookup_name_t& mappings)
 	typedef rtk_sol_t MAP_TYPE;
 	map_name_to_info_t m;
 	uint32_t totalSize = 0;
-	ADD_MAP(m, totalSize, "header", MAP_TYPE, header, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "status", MAP_TYPE, status, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "seconds", MAP_TYPE, seconds, 0, DataTypeDouble, double);
 	ADD_MAP(m, totalSize, "pos[0]", MAP_TYPE, pos[0], 0, DataTypeDouble, double&);
@@ -698,6 +699,21 @@ static void PopulateRtkSolMappings(map_lookup_name_t& mappings)
     mappings[DID_RTK_SOL] = m;
 
     ASSERT_SIZE(totalSize, MAP_TYPE);
+}
+
+static void PopulateRawGpsMappings(map_lookup_name_t& mappings)
+{
+	typedef raw_gps_msg_t MAP_TYPE;
+	map_name_to_info_t m;
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "receiveIndex", MAP_TYPE, receiverIndex, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "type", MAP_TYPE, type, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "count", MAP_TYPE, count, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "reserved", MAP_TYPE, reserved, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "buf", MAP_TYPE, buf, 0, DataTypeBinary, uint8_t[MEMBERSIZE(raw_gps_msg_t, buf)]);
+	mappings[DID_RAW_GPS_DATA] = m;
+
+	ASSERT_SIZE(totalSize, MAP_TYPE);
 }
 
 #ifdef USE_IS_INTERNAL
@@ -1093,7 +1109,7 @@ cISDataMappings::cISDataMappings()
 	PopulateGPSMappings(m_columnMappings);
 	PopulateGPSPosMappings(m_columnMappings);
 	PopulateGPSVelocityMappings(m_columnMappings);
-	PopulateGPSRSSIMappings(m_columnMappings);
+	PopulateGPSCNOMappings(m_columnMappings);
 	PopulateMagnetometerMappings(m_columnMappings);
 	PopulateBarometerMappings(m_columnMappings);
 	PopulateDeltaThetaVelocityMappings(m_columnMappings);
@@ -1136,7 +1152,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "sysParams", // 10: DID_SYS_PARAMS
         "sysSensors", // 11: DID_SYS_SENSORS
         "flashCfg", // 12: DID_FLASH_CONFIG
-        "gpsRSSI", // 13: DID_GPS_RSSI
+        "gpsCNO", // 13: DID_GPS_CNO
         "gpsPos", // 14: DID_GPS_POS
         "gpsVel", // 15: DID_GPS_VEL,
         "ioServos", // 16: DID_IO
@@ -1182,12 +1198,14 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "gpsVersion", // 56: DID_GPS_VERSION
         "commLoopback", // 57: DID_COMMUNICATIONS_LOOPBACK
         "imuDual", // 58: DID_DUAL_IMU
-        "inl2MagObsInfo", // 59: DID_INL2_MAG_OBS_INFO
+        "inl2MagObs", // 59: DID_INL2_MAG_OBS_INFO
         "rawGpsData", // 60: DID_RAW_GPS_DATA
         "rtkOptions", // 61: DID_RTK_OPT
         "userPageInternal", // 62: DID_NVR_USERPAGE_INTERNAL
         "manufacturingInfo", // 63: DID_MANUFACTURING_INFO
-    };
+		"selfTest", // 64: DID_SELF_TEST
+		"inl2Status", // 65: DID_INL2_STATUS
+	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);
 
@@ -1211,13 +1229,14 @@ uint32_t cISDataMappings::GetSize(uint32_t dataId)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info)
 {
 	const uint8_t* ptr;
 	if (!CanGetFieldData(info, hdr, dataBuffer, ptr))
 	{
 		return false;
 	}
+
 	switch (info.dataType)
 	{
 	case DataTypeInt8:
@@ -1262,12 +1281,24 @@ bool cISDataMappings::StringToData(const char* stringBuffer, const p_data_hdr_t*
 
 	case DataTypeString:
 	{
-	string s2(stringBuffer);
-	s2.erase(std::remove(s2.begin(), s2.end(), '"'), s2.end());
-	// ensure string fits with null terminator
-	s2.resize(info.dataSize - 1);
-	memcpy((void*)ptr, s2.data(), s2.length());
-	memset((uint8_t*)ptr + s2.length(), 0, info.dataSize - s2.length());
+		string s2(stringBuffer);
+		s2.erase(std::remove(s2.begin(), s2.end(), '"'), s2.end());
+		// ensure string fits with null terminator
+		s2.resize(info.dataSize - 1);
+		memcpy((void*)ptr, s2.data(), s2.length());
+		memset((uint8_t*)ptr + s2.length(), 0, info.dataSize - s2.length());
+	} break;
+
+	case DataTypeBinary:
+	{
+		// convert hex data back to binary
+		size_t len = _MIN(1020, stringLength);
+		len -= (len % 2);
+		uint8_t* ptr2 = (uint8_t*)ptr;
+		for (size_t i = 0; i != len; )
+		{
+			*ptr2 = (getHexValue(stringBuffer[i++]) << 4) | getHexValue(stringBuffer[i++]);
+		}
 	} break;
 
 	default:
@@ -1290,6 +1321,10 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 			stringBuffer[1] = '"';
 			stringBuffer[2] = '\0';
 		}
+		else if (info.dataType == DataTypeBinary)
+		{
+			stringBuffer[0] = '\0';
+		}
 		else
 		{
 			stringBuffer[0] = '0';
@@ -1297,6 +1332,7 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 		}
 		return false;
 	}
+
 	switch (info.dataType)
 	{
 	case DataTypeInt8:
@@ -1352,6 +1388,20 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 		stringBuffer[tempIndex++] = '"';
 		stringBuffer[tempIndex] = '\0';
 	} break;
+
+	case DataTypeBinary:
+	{
+		// convert to hex
+		const unsigned char* hexTable = getHexLookupTable();
+		size_t hexIndex = 0;
+		for (size_t i = 0; i < info.dataSize; i++)
+		{
+			stringBuffer[hexIndex++] = hexTable[0x0F & (dataBuffer[i] >> 4)];
+			stringBuffer[hexIndex++] = hexTable[0x0F & dataBuffer[i]];
+		}
+		stringBuffer[hexIndex] = '\0';
+	} break;
+
 	default:
 		stringBuffer[0] = '\0';
 		return false;
@@ -1360,9 +1410,9 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 }
 
 
-double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const void* buf)
+double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
 {
-	if (hdr == NULL || hdr->id == 0 || hdr->id >= DID_COUNT)
+    if (hdr == NULL || buf == NULL || hdr->id == 0 || hdr->id >= DID_COUNT || hdr->size == 0)
 	{
 		return 0.0;
 	}

@@ -43,6 +43,8 @@ extern "C" {
 
 #define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
 #define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 
 #elif defined(__APPLE__)
 
@@ -156,8 +158,6 @@ extern void vPortFree(void* pv);
 #define PUSH_PACK_4 __pragma(pack(push, 4))
 #define PUSH_PACK_8 __pragma(pack(push, 8))
 #define POP_PACK __pragma(pack(pop))
-#define PACKED_UNION typedef union
-#define PACKED_STRUCT typedef struct
 #define PACKED
 #elif PLATFORM_IS_AVR
 // crashes AVR if done globally, must be done per struct
@@ -165,18 +165,17 @@ extern void vPortFree(void* pv);
 #define PUSH_PACK_4
 #define PUSH_PACK_8
 #define POP_PACK
-#define PACKED_UNION typedef union __attribute__ ((packed))
-#define PACKED_STRUCT typedef struct __attribute__ ((packed))
 #define PACKED __attribute__ ((packed))
 #else
 #define PUSH_PACK_1 _Pragma("pack(push, 1)")
 #define PUSH_PACK_4 _Pragma("pack(push, 4)")
 #define PUSH_PACK_8 _Pragma("pack(push, 8)")
 #define POP_PACK _Pragma("pack(pop)")
-#define PACKED_UNION typedef union
-#define PACKED_STRUCT typedef struct
 #define PACKED
 #endif
+
+// #define PACKED_STRUCT typedef struct PACKED
+// #define PACKED_UNION typedef union PACKED
 
 #ifndef UNMASK
 #define UNMASK(_word, _prefix) (((_word) & (_prefix##_MASK)) >> (_prefix##_SHIFT))

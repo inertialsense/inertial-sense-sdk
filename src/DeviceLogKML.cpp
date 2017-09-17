@@ -79,11 +79,16 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 
 	char buf[100];
 	int styleCnt = 1;
-	string altitudeMode = "clampToGround";
+	string altitudeMode;
 	string iconScale = "0.5";
 	string labelScale = "0.2";
 	string iconUrl;
-	double iconUpdatePeriodSec = 1.0;
+
+	// Altitude mode
+	if(m_altClampToGround)
+		altitudeMode = "clampToGround";
+	else
+		altitudeMode = "absolute";
 
 	// Style
 	string styleStr, colorStr;
@@ -135,7 +140,7 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 		{
 			continue;
 		}
-		nextTime = data->time - fmod(data->time, 1.0) + iconUpdatePeriodSec;
+		nextTime = data->time - fmod(data->time, m_iconUpdatePeriodSec) + m_iconUpdatePeriodSec;
 
 		// Icon style
 		styleStr = string("stylesel_") + to_string(styleCnt++);
@@ -183,13 +188,16 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 		// Icon
 		Placemark = new TiXmlElement("Placemark");
 		Document->LinkEndChild(Placemark);
-#if 1
-		elem = new TiXmlElement("name");
-		ostringstream timeStream;
-		timeStream << fixed << setprecision(3) << data->time;
-		elem->LinkEndChild(new TiXmlText(timeStream.str()));
-		Placemark->LinkEndChild(elem);
-#endif
+
+		if(m_showTimeStamp)	
+		{	// Draw Name
+			elem = new TiXmlElement("name");
+			ostringstream timeStream;
+			timeStream << fixed << setprecision(3) << data->time;
+			elem->LinkEndChild(new TiXmlText(timeStream.str()));
+			Placemark->LinkEndChild(elem);
+		}
+
 		elem = new TiXmlElement("styleUrl");
 		elem->LinkEndChild(new TiXmlText("#" + styleStr));
 		Placemark->LinkEndChild(elem);
@@ -219,66 +227,69 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 		Point->LinkEndChild(elem);
 	}
 
-	// Track style
-	styleStr = string("stylesel_") + to_string(styleCnt++);
-
-	Style = new TiXmlElement("Style");
-	Style->SetAttribute("id", styleStr);
-	Document->LinkEndChild(Style);
-
-	LineStyle = new TiXmlElement("LineStyle");
-	Style->LinkEndChild(LineStyle);
-
-	elem = new TiXmlElement("color");
-	elem->LinkEndChild(new TiXmlText(colorStr));
-	LineStyle->LinkEndChild(elem);
-
-	elem = new TiXmlElement("colorMode");
-	elem->LinkEndChild(new TiXmlText("normal"));
-	LineStyle->LinkEndChild(elem);
-
-	elem = new TiXmlElement("width");
-	elem->LinkEndChild(new TiXmlText("2"));
-	LineStyle->LinkEndChild(elem);
-
-	// Track
-	Placemark = new TiXmlElement("Placemark");
-	Document->LinkEndChild(Placemark);
-
-	elem = new TiXmlElement("name");
-	elem->LinkEndChild(new TiXmlText("Tracks"));
-	Placemark->LinkEndChild(elem);
-
-	elem = new TiXmlElement("description");
-	elem->LinkEndChild(new TiXmlText("SN tracks"));
-	Placemark->LinkEndChild(elem);
-
-	elem = new TiXmlElement("styleUrl");
-	elem->LinkEndChild(new TiXmlText("#" + styleStr));
-	Placemark->LinkEndChild(elem);
-
-	LineString = new TiXmlElement("LineString");
-	Placemark->LinkEndChild(LineString);
-
-	ostringstream coordinateStream;
-	for (size_t i = 0; i < log.data.size(); i++)
+	if (m_showPath)
 	{
-		sKmlLogData *data = &(log.data[i]);
-		sprintf(buf, "%.8lf,%.8lf,%.3lf ", data->lla[1], data->lla[0], data->lla[2]);
-		coordinateStream << string(buf);
+		// Track style
+		styleStr = string("stylesel_") + to_string(styleCnt++);
+
+		Style = new TiXmlElement("Style");
+		Style->SetAttribute("id", styleStr);
+		Document->LinkEndChild(Style);
+
+		LineStyle = new TiXmlElement("LineStyle");
+		Style->LinkEndChild(LineStyle);
+
+		elem = new TiXmlElement("color");
+		elem->LinkEndChild(new TiXmlText(colorStr));
+		LineStyle->LinkEndChild(elem);
+
+		elem = new TiXmlElement("colorMode");
+		elem->LinkEndChild(new TiXmlText("normal"));
+		LineStyle->LinkEndChild(elem);
+
+		elem = new TiXmlElement("width");
+		elem->LinkEndChild(new TiXmlText("2"));
+		LineStyle->LinkEndChild(elem);
+
+		// Track
+		Placemark = new TiXmlElement("Placemark");
+		Document->LinkEndChild(Placemark);
+
+		elem = new TiXmlElement("name");
+		elem->LinkEndChild(new TiXmlText("Tracks"));
+		Placemark->LinkEndChild(elem);
+
+		elem = new TiXmlElement("description");
+		elem->LinkEndChild(new TiXmlText("SN tracks"));
+		Placemark->LinkEndChild(elem);
+
+		elem = new TiXmlElement("styleUrl");
+		elem->LinkEndChild(new TiXmlText("#" + styleStr));
+		Placemark->LinkEndChild(elem);
+
+		LineString = new TiXmlElement("LineString");
+		Placemark->LinkEndChild(LineString);
+
+		ostringstream coordinateStream;
+		for (size_t i = 0; i < log.data.size(); i++)
+		{
+			sKmlLogData *data = &(log.data[i]);
+			sprintf(buf, "%.8lf,%.8lf,%.3lf ", data->lla[1], data->lla[0], data->lla[2]);
+			coordinateStream << string(buf);
+		}
+
+		elem = new TiXmlElement("coordinates");
+		elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
+		LineString->LinkEndChild(elem);
+
+		elem = new TiXmlElement("extrude");
+		elem->LinkEndChild(new TiXmlText("1"));
+		LineString->LinkEndChild(elem);
+
+		elem = new TiXmlElement("altitudeMode");
+		elem->LinkEndChild(new TiXmlText(altitudeMode));
+		LineString->LinkEndChild(elem);
 	}
-
-	elem = new TiXmlElement("coordinates");
-	elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
-	LineString->LinkEndChild(elem);
-
-	elem = new TiXmlElement("extrude");
-	elem->LinkEndChild(new TiXmlText("1"));
-	LineString->LinkEndChild(elem);
-
-	elem = new TiXmlElement("altitudeMode");
-	elem->LinkEndChild(new TiXmlText("clampToGround"));
-	LineString->LinkEndChild(elem);
 
 	// Write XML to file
 	if (!tDoc.SaveFile(log.fileName.c_str()))
@@ -318,12 +329,12 @@ bool cDeviceLogKML::OpenWithSystemApp(void)
 }
 
 
-bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
+bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
 {
     cDeviceLog::SaveData(dataHdr, dataBuf);
 
 	// Save data to file
-	if (!WriteDateToFile(dataHdr, dataBuf))
+    if (!WriteDateToFile(dataHdr, dataBuf))
 	{
 		return false;
 	}
@@ -340,11 +351,11 @@ bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
 		ins1.iStatus = d.ins2.iStatus;
 		quat2euler(d.ins2.qn2b, ins1.theta);
 		memcpy(ins1.uvw, d.ins2.uvw, 12);
-		memcpy(ins1.lla, d.ins2.lla, 24);
+        memcpy(ins1.lla, d.ins2.lla, 24);
 
 		p_data_hdr_t dHdr = { DID_INS_1 , sizeof(ins_1_t), 0 };
 		// Save data to file
-		WriteDateToFile(&dHdr, (uint8_t*)&ins1);
+        WriteDateToFile(&dHdr, (uint8_t*)&ins1);
 		break;
 	}
 
@@ -352,7 +363,7 @@ bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
 }
 
 
-bool cDeviceLogKML::WriteDateToFile(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
+bool cDeviceLogKML::WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
 {
 	int kid = cDataKML::DID_TO_KID(dataHdr->id);
 
@@ -366,7 +377,7 @@ bool cDeviceLogKML::WriteDateToFile(p_data_hdr_t *dataHdr, uint8_t *dataBuf)
 	sKmlLog &log = m_Log[kid];
 
 	// Write date to file
-	int nBytes = m_kml.WriteDataToFile(log.data, dataHdr, dataBuf);
+    int nBytes = m_kml.WriteDataToFile(log.data, dataHdr, dataBuf);
 
 	// File byte size
 	nBytes = (int)(log.data.size() * cDataKML::BYTES_PER_KID(kid));

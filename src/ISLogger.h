@@ -90,8 +90,9 @@ public:
 	bool InitSave(eLogType logType = LOGTYPE_DAT, const string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
 	bool InitSaveTimestamp(const string& timeStamp, const string& directory = g_emptyString, const string& subDirectory = g_emptyString, int numDevices = 1, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
 
-	bool LogData(unsigned int device, p_data_hdr_t* dataHdr, void* dataBuf);
+    bool LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
 	p_data_t* ReadData(unsigned int device = 0);
+	p_data_t* ReadNextData(unsigned int& device);
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
 	bool Enabled() { return m_enabled; }
 	void CloseAllFiles();
@@ -139,6 +140,18 @@ public:
     // check if a data packet is corrupt, NULL data is OK
     static bool LogDataIsCorrupt(const p_data_t* data);
 
+    // read all log data into memory - if the log is over 1.5 GB this will fail on 32 bit processess
+    // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
+    static bool ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, vector<vector<uint8_t>>>& data);
+
+	void SetKmlConfig(bool showPath = true, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
+	{
+		m_showPath = showPath;
+		m_showTimeStamp = showTimeStamp;
+		m_iconUpdatePeriodSec = updatePeriodSec;
+		m_altClampToGround = altClampToGround;
+	}
+
 private:
 	bool InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, bool useSubFolderTimestamp);
 	bool InitDevicesForWriting(int numDevices = 1);
@@ -154,6 +167,11 @@ private:
 	uint32_t				m_maxChunkSize;
 	cLogStats*				m_logStats;
 	FILE*					m_errorFile;
+
+	bool					m_altClampToGround;
+	bool					m_showPath;
+	bool					m_showTimeStamp;
+	double					m_iconUpdatePeriodSec;
 
 #if defined(ENABLE_IS_PYTHON_WRAPPER)
 

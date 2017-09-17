@@ -91,20 +91,6 @@ public:
 	*/ 
 	bool BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandleBinaryData callback = NULL);
 
-	/*
-	* Broadcast binary data
-	* @param dataId the data id (DID_* - see data_sets.h) to broadcast
-	* @param periodMS the period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
-	* @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
-	*/
-	bool PyBroadcastBinaryData(uint32_t dataId, int periodMS);
-
-	/*!
-	* Sets whether the device broadcasts standard solution messages (DID_INS2, DID_SYS_PARAMS, DID_EKF_STATES, DID_OBS_PARAMS, DID_GPS_POS)
-	* @param enable whether to enable or disable standard solution messages
-	*/
-	void SetBroadcastSolutionEnabled(bool enabled);
-
 	/*!
 	* Close the connection, logger and free all resources
 	*/
@@ -142,8 +128,9 @@ public:
 	* @param maxFileSize the max file size for each log file in bytes
 	* @param chunkSize the max data to keep in RAM before flushing to disk in bytes
 	* @param subFolder timestamp sub folder or empty for none
+	* @return true if success, false if failure
 	*/
-	void SetLoggerEnabled(bool enable, const string& path = cISLogger::g_emptyString, uint32_t logSolution = SLOG_W_INS2, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t chunkSize = 131072, const string& subFolder = cISLogger::g_emptyString);
+	bool SetLoggerEnabled(bool enable, const string& path = cISLogger::g_emptyString, uint32_t logSolution = SLOG_W_INS2, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t chunkSize = 131072, const string& subFolder = cISLogger::g_emptyString);
 
 	/*!
 	* Gets whether logging is enabled
@@ -274,7 +261,6 @@ private:
 	void* m_logThread;
 	cMutex m_logMutex;
 	list<p_data_t> m_logPackets;
-	uint32_t m_logSolution; // SLOG_DISABLED if none
 	time_t m_lastLogReInit;
 	dev_info_t m_deviceInfo;
 	config_t m_config;
@@ -284,7 +270,8 @@ private:
 	cGpsParser* m_parser; // parser so we can forward messages from a server to the uINS all at once - that way they aren't broken up in between other data set to the uINS
 	uint64_t m_tcpByteCount;
 
-	void EnableLogging(const string& path, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder);
+	// returns false if logger failed to open
+	bool EnableLogging(const string& path, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder);
 	void DisableLogging();
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data);
@@ -295,6 +282,14 @@ private:
 	cInertialSenseDisplay m_pyDisplay;
 
 public:
+
+	/*
+	* Broadcast binary data
+	* @param dataId the data id (DID_* - see data_sets.h) to broadcast
+	* @param periodMS the period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+	* @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
+	*/
+	bool PyBroadcastBinaryData(uint32_t dataId, int periodMS);
 
 	/*!
 	* Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.

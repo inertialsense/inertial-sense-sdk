@@ -54,7 +54,7 @@ bool cDeviceLogSerial::CloseAllFiles()
 }
 
 
-bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf)
+bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
     cDeviceLog::SaveData(dataHdr, dataBuf);
 

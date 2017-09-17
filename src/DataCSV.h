@@ -30,23 +30,24 @@ class cDataCSV
 public:
 	int WriteHeaderToFile(FILE* pFile, int id);
 	int ReadHeaderFromFile(FILE* pFile, int id, vector<string>& columnHeaders);
-	int WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, uint8_t *dataBuf);
+    int WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf);
 
 	/*!
 	* Parse a csv string into a data packet
 	* data needs the id set to the proper data id
-	* buf is assumed to be large enough to hold the data structure
+	* buf memory to fill with data
+	* bufSize size of available memory in buf
 	* order id contains the value for ordering data
 	* returns true if success, false if no map found
 	*/
-	bool StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, const vector<string>& columnHeaders);
+	bool StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const vector<string>& columnHeaders);
 
 	/*!
 	* Convert data to a csv string
 	* buf is assumed to be large enough to hold the data structure
 	* return true if success, false if no map found
 	*/
-	bool DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, string& csv);
+    bool DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, string& csv);
 };
 
 #endif // DATA_CVS_H

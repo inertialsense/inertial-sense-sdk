@@ -19,67 +19,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "data_sets.h"
 #include "ISConstants.h"
 
-#ifdef __cplusplus
-#include <string>
-#endif
-
 #if defined(ENABLE_IS_PYTHON_WRAPPER)
 
 #include "../pySDK/pySDK.h"
 
 #endif
 
-int current_timeSec();
-int current_timeMs();
-int current_weekMs();
-uint64_t current_weekUs();
-
-uint64_t timerUsStart();
-uint64_t timerUsEnd(uint64_t start);
-uint64_t timerRawStart();
-uint64_t timerRawEnd(uint64_t start);
-
-#if PLATFORM_IS_WINDOWS
-
-void usleep(__int64 usec);
-
-#define DEFAULT_COM_PORT "COM4"
-
-#ifndef SLEEP_MS
-#define SLEEP_MS(milliseconds) Sleep(milliseconds);
-#endif
-
-#ifndef SLEEP_US
-#define SLEEP_US(timeUs) usleep(timeUs);
-#endif
-
-#else // LINUX
-
-#include <unistd.h>
-#include <sys/time.h>
-#include <stdarg.h>
-
-#define DEFAULT_COM_PORT "/dev/ttyUSB0"
-
-#ifndef SLEEP_MS
-#define SLEEP_MS(timeMs) usleep(timeMs * 1000);
-#endif
-
-#ifndef SLEEP_US
-#define SLEEP_US(timeUs) usleep(timeUs);
-#endif
-
-#endif
-
+// C++ API
 #ifdef __cplusplus
+
+#include <string>
+
 using namespace std;
-#endif
-
-int bootloadUploadProgress(const void* port, float percent);
-int bootloadVerifyProgress(const void* port, float percent);
-float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec);
-
-#ifdef __cplusplus
 
 /*!
 * Encode data as base64
@@ -95,54 +46,6 @@ string base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len);
 * @return the base64 decoded data - if error, this may be an incomplete set of data
 */
 string base64Decode(const string& encoded_string);
-
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*!
-* Create a thread and execute a function
-* @param function the function to execute in a background thread
-* @param info the parameter to pass to the thread function
-* @return the thread handle
-*/
-void* threadCreateAndStart(void(*function)(void* info), void* info);
-
-/*!
-* Join a thread with this thread, waiting for it to finish, then free the thread
-* @param handle the thread handle to join, wait for finish and then to free
-*/
-void threadJoinAndFree(void* handle);
-
-/*
-* Create a mutex which allows exclusive access to a shared resource
-* @return the mutex handle
-*/
-void* mutexCreate(void);
-
-/*!
-* Lock a mutex - mutex cannot be locked until mutexUnlock is called
-* @param handle the mutex handle to lock
-*/
-void mutexLock(void* handle);
-
-/*!
-* Unlock a mutex
-* @param handle the mutex handle to unlock
-*/
-void mutexUnlock(void* handle);
-
-/*!
-* Free a mutex
-* @param handle the mutex handle to free
-*/
-void mutexFree(void* handle);
-
-#ifdef __cplusplus
-} // extern C
-#endif
 
 /*!
 * Wraps the mutex functions above
@@ -194,5 +97,113 @@ public:
 private:
 	cMutex* m_mutex;
 };
+
+#endif
+
+// C API...
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if PLATFORM_IS_WINDOWS
+
+void usleep(__int64 usec);
+
+#define DEFAULT_COM_PORT "COM4"
+
+#ifndef SLEEP_MS
+#define SLEEP_MS(milliseconds) Sleep(milliseconds);
+#endif
+
+#ifndef SLEEP_US
+#define SLEEP_US(timeUs) usleep(timeUs);
+#endif
+
+#else // LINUX
+
+#include <unistd.h>
+#include <sys/time.h>
+#include <stdarg.h>
+
+#define DEFAULT_COM_PORT "/dev/ttyUSB0"
+
+#ifndef SLEEP_MS
+#define SLEEP_MS(timeMs) usleep(timeMs * 1000);
+#endif
+
+#ifndef SLEEP_US
+#define SLEEP_US(timeUs) usleep(timeUs);
+#endif
+
+#endif
+
+int current_timeSec();
+int current_timeMs();
+int current_weekMs();
+uint64_t current_weekUs();
+
+uint64_t timerUsStart();
+uint64_t timerUsEnd(uint64_t start);
+uint64_t timerRawStart();
+uint64_t timerRawEnd(uint64_t start);
+
+int bootloadUploadProgress(const void* port, float percent);
+int bootloadVerifyProgress(const void* port, float percent);
+float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec);
+
+/*!
+* Return a pointer to 16 elements to map nibbles to for converting to hex
+* @return pointer to 16 bytes for mapping nibbles to chars
+*/
+const unsigned char* getHexLookupTable();
+
+/*!
+* Get numberic value of a hex code - no bounds check is done, so non-hex chars will return undefined values
+* @param hex the hex digit, i.e. 'A'
+* @return the numberic value
+*/
+uint8_t getHexValue(unsigned char hex);
+
+/*!
+* Create a thread and execute a function
+* @param function the function to execute in a background thread
+* @param info the parameter to pass to the thread function
+* @return the thread handle
+*/
+void* threadCreateAndStart(void(*function)(void* info), void* info);
+
+/*!
+* Join a thread with this thread, waiting for it to finish, then free the thread
+* @param handle the thread handle to join, wait for finish and then to free
+*/
+void threadJoinAndFree(void* handle);
+
+/*
+* Create a mutex which allows exclusive access to a shared resource
+* @return the mutex handle
+*/
+void* mutexCreate(void);
+
+/*!
+* Lock a mutex - mutex cannot be locked until mutexUnlock is called
+* @param handle the mutex handle to lock
+*/
+void mutexLock(void* handle);
+
+/*!
+* Unlock a mutex
+* @param handle the mutex handle to unlock
+*/
+void mutexUnlock(void* handle);
+
+/*!
+* Free a mutex
+* @param handle the mutex handle to free
+*/
+void mutexFree(void* handle);
+
+#ifdef __cplusplus
+} // extern C
+#endif
 
 #endif // IS_UTILITIES_H

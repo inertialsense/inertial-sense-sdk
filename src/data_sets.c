@@ -178,6 +178,11 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		OFFSETOF(gps_nav_poslla_t, lla[2])
 	};
 
+	static uint16_t offsetsInl2Status[] =
+	{
+		1, 24
+	};
+
 	static uint16_t offsetsEkfStates[] =
 	{
 		4,
@@ -252,7 +257,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_SYS_PARAMS
 		offsetsOnlyTimeFirst,	// DID_SYS_SENSORS
 		offsetsFlashConfig,		// DID_FLASH_CONFIG
-		0,						// DID_GPS_RSSI
+		0,						// DID_GPS_CNO
 		offsetsGpsPos,			// DID_GPS_POS
 		0,						// DID_GPS_VEL
 		0,						// DID_IO
@@ -297,12 +302,14 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	// DID_MAGNETOMETER_2
 		0,                      // DID_GPS_VERSION
 		0,						// DID_COMMUNICATIONS_LOOPBACK
-		offsetsOnlyTimeFirst,	// DID_DUAL_IMU,
+		offsetsOnlyTimeFirst,	// DID_DUAL_IMU
 		0,						// DID_INL2_MAG_OBS_INFO
-        0,						// DID_RAW_GPS_DATA,
-        0,                      // DID_RTK_OPT,
+        0,						// DID_RAW_GPS_DATA
+        0,                      // DID_RTK_OPT
         0,                      // DID_NVR_USERPAGE_INTERNAL
-		0						// DID_MANUFACTURING_INFO
+		0,						// DID_MANUFACTURING_INFO
+		0,                      // DID_SELF_TEST
+		offsetsInl2Status       // DID_INL2_STATUS
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -369,7 +376,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_SYS_PARAMS
 		0,						// DID_SYS_SENSORS
 		0,						// DID_FLASH_CONFIG
-		0,						// DID_GPS_RSSI
+		0,						// DID_GPS_CNO
 		0,						// DID_GPS_POS
 		0,						// DID_GPS_VEL
 		0,						// DID_IO
@@ -414,12 +421,14 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_MAGNETOMETER_2
 		0,						// DID_GPS_VERSION
 		0,						// DID_COMMUNICATIONS_LOOPBACK
-		0,						// DID_DUAL_IMU,
+		0,						// DID_DUAL_IMU
 		0,						// DID_INL2_MAG_OBS_INFO
-        0,						// DID_RAW_GPS_DATA,
-        0,                      // DID_RTK_OPT,
+        0,						// DID_RAW_GPS_DATA
+        0,                      // DID_RTK_OPT
         0,                      // DID_NVR_USERPAGE_INTERNAL
-		manufInfoOffsets		// DID_MANUFACTURING_INFO
+		manufInfoOffsets,		// DID_MANUFACTURING_INFO
+		0,                      // DID_SELF_TEST
+		0                       // DID_INL2_STATUS
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -438,7 +447,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 
 uint32_t checksum32(void* data, int count)
 {
-	if (count % 4 != 0)
+	if (count % 4 != 0 || count < 0)
 	{
 		return 0;
 	}

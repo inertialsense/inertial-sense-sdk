@@ -34,7 +34,7 @@ public:
 
 	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize, uint32_t chunkSize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
-	bool SaveData(p_data_hdr_t *dataHdr, uint8_t *dataBuf) OVERRIDE;
+    bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".dat"); }
@@ -45,7 +45,6 @@ private:
 	p_data_t* ReadDataFromChunk();
 	bool ReadChunkFromFile();
 	bool WriteChunkToFile();
-
 };
 
 #endif // DEVICE_LOG_SERIAL_H

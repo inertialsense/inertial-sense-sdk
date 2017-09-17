@@ -222,8 +222,12 @@ void sqrt_Vec4( Vector4 result, const Vector4 v );
  * result(n) = .abs(v(n))
  */
 void abs_Vec2( Vector2 result, const Vector2 v );
-void abs_Vec3( Vector3 result, const Vector3 v );
+void abs_Vec3(Vector3 result, const Vector3 v);
 void abs_Vec4( Vector4 result, const Vector4 v );
+
+void abs_Vec2d(Vector2d result, const Vector2d v);
+void abs_Vec3d(Vector3d result, const Vector3d v);
+void abs_Vec4d(Vector4d result, const Vector4d v);
 
 /* Dot product
  * result = v1(n) dot v2(n)

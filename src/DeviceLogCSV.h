@@ -25,7 +25,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cCsvLog
 {
 public:
-	cCsvLog() : pFile(NULL), fileCount(0), fileSize(0), dataId(0), orderId(0), finishedReading(false) { }
+	cCsvLog() : pFile(NULL), fileCount(0), fileSize(0), dataId(0), orderId(0) { }
 
 	FILE* pFile;
 	uint32_t fileCount;
@@ -34,7 +34,6 @@ public:
 	uint32_t dataSize;
 	uint64_t orderId;
 	string nextLine;
-	bool finishedReading;
 	vector<string> columnHeaders;
 };
 
@@ -45,7 +44,7 @@ public:
 	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) OVERRIDE;
 	void InitDeviceForReading() OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
-	bool SaveData(p_data_hdr_t* dataHdr, uint8_t* dataBuf) OVERRIDE;
+    bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".csv"); }

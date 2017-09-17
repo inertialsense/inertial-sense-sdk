@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#define IS_DATA_MAPPING_MAX_STRING_LENGTH 128
+#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
 
 typedef enum
 {
@@ -35,6 +35,7 @@ typedef enum
 	DataTypeFloat,
 	DataTypeDouble,
 	DataTypeString,
+	DataTypeBinary,
 
 	DataTypeCount
 } eDataType;
@@ -90,13 +91,14 @@ public:
 
 	/*!
 	* Convert a string to a data field
-	* @param stringBuffer the string to convert, must not be NULL
+	* @param stringBuffer the null terminated string to convert, must not be NULL
+	* @param stringLength the number of chars in stringBuffer
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param dataBuffer packet buffer
 	* @param info metadata about the field to convert
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info);
 
 	/*!
 	* Convert data to a string
@@ -114,7 +116,7 @@ public:
 	* @param buf data buffer
 	* @return timestamp, or 0.0 if no timestamp available
 	*/
-	static double GetTimestamp(const p_data_hdr_t* hdr, const void* buf);
+    static double GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
 	/*!
 	* Check whether field data can be retrieved given a data packet
