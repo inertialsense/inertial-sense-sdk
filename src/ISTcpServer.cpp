@@ -154,7 +154,7 @@ void cISTcpServer::Update()
 	}
 }
 
-void cISTcpServer::Write(const uint8_t* data, int dataLength)
+int cISTcpServer::Write(const uint8_t* data, int dataLength)
 {
 	for (size_t i = 0; i < m_clients.size(); i++)
 	{
@@ -169,4 +169,5 @@ void cISTcpServer::Write(const uint8_t* data, int dataLength)
 			m_clients.erase(m_clients.begin() + i--);
 		}
 	}
+	return dataLength; // TODO: Maybe be smarter about detecting difference in bytes written for each client
 }

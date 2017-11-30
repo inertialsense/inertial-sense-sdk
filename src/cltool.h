@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 #include <iostream>
+#include <iomanip>      // std::setw
 #include <algorithm>
 #include <string>
 
@@ -30,20 +31,20 @@ using namespace std;
 #define APP_EXT                 ".exe"
 #define EXAMPLE_PORT            "COM5"
 #define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549     "
-#define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex  "
+#define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex       "
 #define EXAMPLE_SPACE_1         "     "
 #else
 #define APP_EXT	                ""
 #define EXAMPLE_PORT            "/dev/ttyS2"
 #define EXAMPLE_LOG_DIR         "logs/20170117_222549             "
-#define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex    "
+#define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex         "
 #define EXAMPLE_SPACE_1         "    "
 #endif
 
 typedef struct
 {
 	// calculated
-	uint32_t logSolution;
+	uint32_t solStreamCtrl;
 
 	// parsed
 	string comPort; // -c=com_port
@@ -55,14 +56,18 @@ typedef struct
 
 	bool streamINS1;
 	bool streamINS2;
+	bool streamINS3;
+	bool streamINS4;
 	bool streamDualIMU;
 	bool streamIMU1;
 	bool streamIMU2;
 	bool streamGPS;
 	bool streamMag1;
+	bool streamMag2;
 	bool streamBaro;
 	bool streamSysSensors;
 	bool streamDThetaVel;
+	bool streamRTOS;
 
 	bool enableLogging;
 	string logPath; // -lp=path
@@ -71,6 +76,7 @@ typedef struct
 	uint32_t maxLogMemory; // -lmm=max_memory
 	string logSubFolder; // -lts=1
 	int baudRate; // -baud=3000000
+	bool disableBroadcastsOnClose;
 
 	string serverConnection; // -svr=type:host:port:url:user:password
 	string host; // -host=ip:port
@@ -91,6 +97,7 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface);
 bool cltool_parseCommandLine(int argc, char* argv[]);
 bool cltool_replayDataLog();
 void cltool_outputUsage();
+void cltool_outputHelp();
 bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfig); // true if should continue
 
 #endif // __CLTOOL_H__

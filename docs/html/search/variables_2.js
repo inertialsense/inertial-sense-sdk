@@ -1,7 +1,7 @@
 var searchData=
 [
   ['cacc',['cAcc',['../struct_p_a_c_k_e_d.html#a4f4e0e6001e086c63f22d94f1ad2eb8a',1,'PACKED']]],
-  ['calstatus',['calStatus',['../struct_p_a_c_k_e_d.html#a81362afa5463a3f7c524812f3073d1f5',1,'PACKED']]],
+  ['calbitstatus',['calBitStatus',['../struct_p_a_c_k_e_d.html#a0834b7f328a43dbf7a683aa2415402b0',1,'PACKED']]],
   ['cbrdconfig',['cBrdConfig',['../struct_p_a_c_k_e_d.html#a08bf49ac72e0d3a3b7e623979dfd67ba',1,'PACKED']]],
   ['ch',['ch',['../struct_p_a_c_k_e_d.html#a3e364ff4a83eba4b21a2520bad574543',1,'PACKED']]],
   ['checksum',['checksum',['../struct_p_a_c_k_e_d.html#a3a534cffa96087941c89b5fc2a0d1d51',1,'PACKED']]],
@@ -17,6 +17,7 @@ var searchData=
   ['count',['count',['../struct_p_a_c_k_e_d.html#ab633d83c36a3c09bdf40a589d447014f',1,'PACKED']]],
   ['counter',['counter',['../structpacket__hdr__t.html#a5e22ca5884ff79547cdaf5577cad9f41',1,'packet_hdr_t']]],
   ['course',['course',['../struct_p_a_c_k_e_d.html#a5fbeb569e57d6d7d4dfb5b24179aa877',1,'PACKED']]],
+  ['cpuusage',['cpuUsage',['../struct_p_a_c_k_e_d.html#a385ec05fce8c7b1727b6ee6c897be4b9',1,'PACKED']]],
   ['crc',['crc',['../structeph__t.html#af9670bfd8d49c502b9c5a3bc30419845',1,'eph_t']]],
   ['crs',['crs',['../structeph__t.html#aae51b61e9bbe4cbc5a3fd11d26581897',1,'eph_t']]],
   ['cuc',['cuc',['../structeph__t.html#a87979665672fd502171c79e072a8b308',1,'eph_t']]],

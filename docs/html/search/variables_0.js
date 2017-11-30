@@ -3,7 +3,7 @@ var searchData=
   ['a',['A',['../structeph__t.html#a552c43589298f592f94e14ecf799b0ff',1,'eph_t']]],
   ['acc',['acc',['../struct_p_a_c_k_e_d.html#ad024b9a181a0fda19585a0eea7cacf33',1,'PACKED::acc()'],['../structgeph__t.html#aab07e1cd48e783dc2f2c76d02b75962c',1,'geph_t::acc()']]],
   ['accsigma',['accSigma',['../struct_p_a_c_k_e_d.html#a7df6cbe92e24ae3dcada77ec0f3a1171',1,'PACKED']]],
-  ['accuracy',['accuracy',['../struct_p_a_c_k_e_d.html#ac3c45b2e12e16c97b297d95d5b0d7092',1,'PACKED']]],
+  ['accuracy',['accuracy',['../struct_p_a_c_k_e_d.html#abc0eecf2017046b44c50ecba105f4f77',1,'PACKED']]],
   ['addinfo',['addInfo',['../struct_p_a_c_k_e_d.html#a4e76ab8edbeae0b39c220e56201c7d86',1,'PACKED']]],
   ['adot',['Adot',['../structeph__t.html#a9cc9730893dce4a099d7689516e9a1ac',1,'eph_t']]],
   ['age',['age',['../structgeph__t.html#aca3a89109fef659030f7cf47f28e4d26',1,'geph_t::age()'],['../struct_p_a_c_k_e_d.html#adba3cfe399556444549b66430f6d062f',1,'PACKED::age()']]],

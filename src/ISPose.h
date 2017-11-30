@@ -102,13 +102,13 @@ void quat_Vec3_Vec3( Quat_t result, const Vector3_t v1, const Vector3_t v2 );
 
 /* Computationally simple means to apply quaternion rotation to a vector.
  * Requires quaternion be normalized first.  
- * If quaternion describes current attitude, then rotation is body -> inertial frame.
+ * If quaternion describes current attitude, then rotation is body frame -> reference frame.
  */
 void quatRot( Vector3_t result, const Quat_t q, const Vector3_t v );
 
 /* Computationally simple means to apply quaternion conjugate (opposite) rotation to a vector
  * Requires quaternion be normalized first
- * If quaternion describes current attitude, then rotation is inertial -> body frame.
+ * If quaternion describes current attitude, then rotation is reference frame -> body frame.
  */
 void quatConjRot( Vector3_t result, const Quat_t q, const Vector3_t v );
 
@@ -133,6 +133,11 @@ void euler2quat(const Euler_t euler, Quat_t q );
  * Quaternion rotation to NED with respect to ECEF at specified LLA
  */
 void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla);
+
+/*
+* Convert ECEF quaternion to NED euler at specified ECEF
+*/
+void qe2b2EulerNed(Vector3 theta, const Vector4 qe2b, const Vector3d ecef);
 
 /*
  * This will construct a direction cosine matrix from
@@ -259,24 +264,24 @@ void nedEuler(const Vector3_t ned, Euler_t e);
 void eulerNed(const Euler_t e, Vector3_t ned);
 
 /*
- * Rotate theta eulers from body to inertial frame by ins eulers, in order: phi, theta, psi
+ * Rotate theta eulers from body frame to reference frame by eulers, in order: phi, theta, psi
  */
-void eulerRotateBodyToInertial(const  Euler_t e, const  Euler_t rot, Euler_t result);
+void eulerBodyToReference(const  Euler_t e, const  Euler_t rot, Euler_t result);
 
 /*
- * Rotate theta eulers from inertial to body frame by ins eulers, in order: psi, theta, phi
+ * Rotate theta eulers from reference frame to body frame by eulers, in order: psi, theta, phi
  */
-void eulerRotateInertialToBody(const  Euler_t e, const Euler_t rot, Euler_t result);
+void eulerReferenceToBody(const  Euler_t e, const Euler_t rot, Euler_t result);
 
 /*
- * Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
+ * Rotate vector from body frame to reference frame by euler angles, in order: phi, theta, psi
  */
-void vectorRotateBodyToInertial(const  Vector3_t v, const Euler_t rot, Vector3_t result);
+void vectorBodyToReference(const  Vector3_t v, const Euler_t rot, Vector3_t result);
 
 /*
- * Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
+ * Rotate vector from reference frame to body frame by euler angles, in order: psi, theta, phi
  */
-void vectorRotateInertialToBody(const  Vector3_t v, const Euler_t rot, Vector3_t result);
+void vectorReferenceToBody(const  Vector3_t v, const Euler_t rot, Vector3_t result);
 
 
 #ifdef __cplusplus

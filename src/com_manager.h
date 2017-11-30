@@ -73,7 +73,9 @@ enum
 #define PKT_OVERHEAD_SIZE       8       // = START_BYTE + INFO_BYTE + COUNTER_BYTE + FLAGS_BYTE + RESERVED_BYTE + CHECKSUM_BYTE_1 + CHECKSUM_BYTE_2 + END_BYTE
 
 /*! The maximum buffer space that is used for sending and receiving packets */
-#define PKT_BUF_SIZE            512
+#ifndef PKT_BUF_SIZE
+#define PKT_BUF_SIZE            2048
+#endif
 
 /*! The maximum encoded overhead size in sending a packet (7 bytes for header, 7 bytes for footer). The packet start and end bytes are never encoded. */
 #define MAX_PKT_OVERHEAD_SIZE   (PKT_OVERHEAD_SIZE + PKT_OVERHEAD_SIZE - 2)  // worst case for packet encoding header / footer
@@ -433,34 +435,34 @@ typedef void* CMHANDLE;
 
 // com manager callback prototypes
 // readFnc read data from the serial port represented by pHandle - return number of bytes read
-typedef int(*pfnComManagerRead)(CMHANDLE cmHandle, int pHandle, unsigned char* readIntoBytes, int numberOfBytes);
+typedef int  (*pfnComManagerRead)(CMHANDLE cmHandle, int pHandle, unsigned char* readIntoBytes, int numberOfBytes);
 
 // sendFnc send data to the serial port represented by pHandle - return number of bytes written
-typedef int(*pfnComManagerSend)(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend);
+typedef int  (*pfnComManagerSend)(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend);
 
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
-typedef int(*pfnComManagerSendBufferAvailableBytes)(CMHANDLE cmHandle, int pHandle);
+typedef int  (*pfnComManagerSendBufferAvailableBytes)(CMHANDLE cmHandle, int pHandle);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by pHandle
-typedef void(*pfnComManagerPostRead)(CMHANDLE cmHandle, int pHandle, p_data_t* dataRead);
+typedef void (*pfnComManagerPostRead)(CMHANDLE cmHandle, int pHandle, p_data_t* dataRead);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
-typedef void(*pfnComManagerPostAck)(CMHANDLE cmHandle, int pHandle, p_ack_t* ack, unsigned char packetIdentifier);
+typedef void (*pfnComManagerPostAck)(CMHANDLE cmHandle, int pHandle, p_ack_t* ack, unsigned char packetIdentifier);
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL
-typedef void(*pfnComManagerDisableBroadcasts)(CMHANDLE cmHandle, int pHandle);
+typedef void (*pfnComManagerDisableBroadcasts)(CMHANDLE cmHandle, int pHandle);
 
 // called right before data is sent
-typedef void(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle);
+typedef void (*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle);
 
-// ASCII message handler function
-typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
+// ASCII message handler function, return 1 if message handled
+typedef int  (*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
 
 // pass through handler
-typedef void(*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_through_t passThroughType, int pHandle, const unsigned char* data, int dataLength);
+typedef void (*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_through_t passThroughType, int pHandle, const unsigned char* data, int dataLength);
 
 // broadcast message handler
-typedef void(*pfnComManagerBroadcast)(CMHANDLE cmHandle, int pHandle, p_data_get_t* req);
+typedef void (*pfnComManagerBroadcast)(CMHANDLE cmHandle, int pHandle, p_data_get_t* req);
 
 // get the global instance of the com manager - this is only needed if you are working with multiple com managers and need to compare instances
 CMHANDLE getGlobalComManager(void);
@@ -697,8 +699,8 @@ Example:
 registerComManager(DID_INS_1, prepMsgINS, writeMsgINS, &g_insData, &g_insData, sizeof(ins_1_t));
 @endcode
 */
-SHAREDLIB_EXPORT void registerComManager(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags);
-SHAREDLIB_EXPORT void registerComManagerInstance(CMHANDLE cmInstance, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags);
+SHAREDLIB_EXPORT void registerComManager(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags);
+SHAREDLIB_EXPORT void registerComManagerInstance(CMHANDLE cmInstance, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags);
 
 /*!
 Register handlers for when ASCII messages are received. This is also an internal function,

@@ -15,11 +15,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <string>
 #include <inttypes.h>
-#include "ISConstants.h"
+
+#include "ISStream.h"
 
 using namespace std;
 
-class cISTcpClient
+class cISTcpClient : public cISStreamReader, public cISStreamWriter
 {
 public:
 	/*!

@@ -6,6 +6,7 @@ var searchData=
   ['datasize',['dataSize',['../structs_chunk_header.html#a99e4f552665cbf3f1874f6bac35580d9',1,'sChunkHeader']]],
   ['date',['date',['../struct_p_a_c_k_e_d.html#a4293b435f1e25cc7bbed523b5d1ee8ad',1,'PACKED']]],
   ['dcm',['dcm',['../struct_p_a_c_k_e_d.html#a7e88972b6bffa1d077e0b126683ab1a7',1,'PACKED']]],
+  ['declination',['declination',['../struct_p_a_c_k_e_d.html#a125d4dc395c2008b084ad3f9e5b5898f',1,'PACKED']]],
   ['del',['del',['../structsta__t.html#a646a3c3c5ac127e710828b03e0911da5',1,'sta_t']]],
   ['deln',['deln',['../structeph__t.html#ad8a28bc7d7a4bfd57fb02b2deab4104c',1,'eph_t']]],
   ['deltype',['deltype',['../structsta__t.html#af78add2645d6347b71177640ea57e792',1,'sta_t']]],

@@ -25,7 +25,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.3</span>
+   &#160;<span id="projectnumber">Release 1.1.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -96,9 +96,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ab7b058ee6a0fbc3d3867ba2fbbcfc58d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab7b058ee6a0fbc3d3867ba2fbbcfc58d"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>logSolution</b></td></tr>
-<tr class="separator:ab7b058ee6a0fbc3d3867ba2fbbcfc58d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae01a762906bf13ba9be0b7db9558caa5"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae01a762906bf13ba9be0b7db9558caa5"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>solStreamCtrl</b></td></tr>
+<tr class="separator:ae01a762906bf13ba9be0b7db9558caa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0013d76628a86642a818346b9e0e7e2"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae0013d76628a86642a818346b9e0e7e2"></a>
 string&#160;</td><td class="memItemRight" valign="bottom"><b>comPort</b></td></tr>
 <tr class="separator:ae0013d76628a86642a818346b9e0e7e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -123,6 +123,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamINS1</b></td></
 <tr class="memitem:a257acdb580f979d7f1bb41d81357f98e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a257acdb580f979d7f1bb41d81357f98e"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamINS2</b></td></tr>
 <tr class="separator:a257acdb580f979d7f1bb41d81357f98e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a111622b188892bce6335c7c27416ee7c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a111622b188892bce6335c7c27416ee7c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamINS3</b></td></tr>
+<tr class="separator:a111622b188892bce6335c7c27416ee7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1903085536f3233b484be2bffd0af2d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae1903085536f3233b484be2bffd0af2d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamINS4</b></td></tr>
+<tr class="separator:ae1903085536f3233b484be2bffd0af2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1736fb802d4eb705554361568b7c5f0c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1736fb802d4eb705554361568b7c5f0c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamDualIMU</b></td></tr>
 <tr class="separator:a1736fb802d4eb705554361568b7c5f0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -138,6 +144,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamGPS</b></td></t
 <tr class="memitem:aa27472315cf43c8df5edb4db1ff7946f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa27472315cf43c8df5edb4db1ff7946f"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamMag1</b></td></tr>
 <tr class="separator:aa27472315cf43c8df5edb4db1ff7946f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68d164246faa0e01589954df95350ac4"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a68d164246faa0e01589954df95350ac4"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamMag2</b></td></tr>
+<tr class="separator:a68d164246faa0e01589954df95350ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a712dfac80edd5bb5f5d50a4f51437b8f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a712dfac80edd5bb5f5d50a4f51437b8f"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamBaro</b></td></tr>
 <tr class="separator:a712dfac80edd5bb5f5d50a4f51437b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -147,6 +156,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamSysSensors</b><
 <tr class="memitem:a94af4dd05d40be8a92dd02948bb44d23"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a94af4dd05d40be8a92dd02948bb44d23"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamDThetaVel</b></td></tr>
 <tr class="separator:a94af4dd05d40be8a92dd02948bb44d23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5035937303627116ef15562ed7a56df"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa5035937303627116ef15562ed7a56df"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>streamRTOS</b></td></tr>
+<tr class="separator:aa5035937303627116ef15562ed7a56df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40f5f9ab969110692cf343f0a7c8467c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a40f5f9ab969110692cf343f0a7c8467c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>enableLogging</b></td></tr>
 <tr class="separator:a40f5f9ab969110692cf343f0a7c8467c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -168,6 +180,9 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>logSubFolder</b></t
 <tr class="memitem:a784c7c17571811bfed65fe0f135dc36b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a784c7c17571811bfed65fe0f135dc36b"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>baudRate</b></td></tr>
 <tr class="separator:a784c7c17571811bfed65fe0f135dc36b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95f70dd338c2306ba569295a50e8a20f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a95f70dd338c2306ba569295a50e8a20f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>disableBroadcastsOnClose</b></td></tr>
+<tr class="separator:a95f70dd338c2306ba569295a50e8a20f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a479bc59fb0a0baa1927fafbdb51ab3b2"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a479bc59fb0a0baa1927fafbdb51ab3b2"></a>
 string&#160;</td><td class="memItemRight" valign="bottom"><b>serverConnection</b></td></tr>
 <tr class="separator:a479bc59fb0a0baa1927fafbdb51ab3b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -180,14 +195,14 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>flashConfig</b></td
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p>Definition at line <a class="el" href="cltool_8h_source.html#l00043">43</a> of file <a class="el" href="cltool_8h_source.html">cltool.h</a>.</p>
+<p>Definition at line <a class="el" href="cltool_8h_source.html#l00044">44</a> of file <a class="el" href="cltool_8h_source.html">cltool.h</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>src/<a class="el" href="cltool_8h_source.html">cltool.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Sep 16 2017 23:00:16 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Nov 30 2017 04:31:08 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

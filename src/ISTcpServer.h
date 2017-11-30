@@ -48,7 +48,7 @@ protected:
 	friend class cISTcpServer;
 };
 
-class cISTcpServer
+class cISTcpServer : public cISStreamWriter
 {
 public:
 	/*!
@@ -84,8 +84,9 @@ public:
 	* Write data to all connected clients - any clients that are disconnected will be closed and removed
 	* @param data the data to write
 	* @param dataLength the number of bytes in data
+	* @return the number of bytes written
 	*/
-	void Write(const uint8_t* data, int dataLength);
+	int Write(const uint8_t* data, int dataLength);
 
 	/*!
 	* Get whether the server is open

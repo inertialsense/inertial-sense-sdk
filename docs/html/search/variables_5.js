@@ -9,6 +9,7 @@ var searchData=
   ['fit',['fit',['../structeph__t.html#a7e977d73382148280a6ddf9ab76ad563',1,'eph_t']]],
   ['flag',['flag',['../structeph__t.html#a109faf0a9ce07ee1f2cba57f1f7594e3',1,'eph_t']]],
   ['flags',['flags',['../structpacket__hdr__t.html#a2f70c5610514823dd705571fd68df9d7',1,'packet_hdr_t::flags()'],['../structcom__manager__status__t.html#a8212909888b506491643d391cd7da2c3',1,'com_manager_status_t::flags()']]],
+  ['freeheapsize',['freeHeapSize',['../struct_p_a_c_k_e_d.html#a1f22827b3509e0d6c0784decd176606b',1,'PACKED']]],
   ['frq',['frq',['../structgeph__t.html#ae7fc742d01d96b4757bd037aa1e43bc9',1,'geph_t']]],
   ['ftf0',['ftf0',['../struct_p_a_c_k_e_d.html#af57dbfd9064b20e9195e3fd0765f88bf',1,'PACKED']]]
 ];

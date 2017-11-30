@@ -86,6 +86,12 @@ extern "C" {
 #define CPU_IS_LITTLE_ENDIAN 1
 #define CPU_IS_BIG_ENDIAN 0
 
+#elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
+
+#define PLATFORM_IS_ARM 1
+#define CPU_IS_LITTLE_ENDIAN 1
+#define CPU_IS_BIG_ENDIAN 0
+
 #else
 
 #error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
@@ -271,6 +277,12 @@ extern void vPortFree(void* pv);
 #define RAD2DEGMULT  (180.0f/PI)
 #endif
 #define ATanH(x)	    (0.5 * log((1 + x) / (1 - x)))
+
+#if defined(__cplusplus)
+
+#define PURE_VIRTUAL = 0
+
+#endif
 
 #if ((defined(_MSC_VER) && _MSC_VER >= 1900) || ((__cplusplus >= 201103L || (__cplusplus < 200000 && __cplusplus > 199711L))))
 

@@ -579,8 +579,16 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 
 bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
-	if (!m_enabled || device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
+	if (!m_enabled)
 	{
+		return false;
+	}
+	else if (device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
+	{
+		if (m_errorFile != NULL)
+		{
+			fprintf(m_errorFile, "Error writing to log, log is not enabled, invalid device handle or NULL data");
+		}
 		return false;
 	}
 	else if (LogHeaderIsCorrupt(dataHdr))

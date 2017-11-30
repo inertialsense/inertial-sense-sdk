@@ -1,6 +1,7 @@
 var searchData=
 [
   ['e',['e',['../structeph__t.html#a47154d65ba473a03a8db8aae50e94e87',1,'eph_t']]],
+  ['ecef',['ecef',['../struct_p_a_c_k_e_d.html#a2d56e3b2a6d22fbe64e0d41c834cc159',1,'PACKED']]],
   ['element',['Element',['../class_ti_xml_handle.html#acb5fe8388a526289ea65e817a51e05e7',1,'TiXmlHandle']]],
   ['elmaskar',['elmaskar',['../structprcopt__t.html#aba81c787a39d1ab05602976ba68804b5',1,'prcopt_t']]],
   ['elmaskhold',['elmaskhold',['../structprcopt__t.html#a56923d668e3bc1af6c86dee5c0e2cf6d',1,'prcopt_t']]],
@@ -8,6 +9,7 @@ var searchData=
   ['enbootloader',['enBootloader',['../struct_p_a_c_k_e_d.html#ab94f9e0da6a51f3ac25a5f48b8510821',1,'PACKED']]],
   ['encodestring',['EncodeString',['../class_ti_xml_base.html#a32ed202562b58de64c7d799ca3c9db98',1,'TiXmlBase']]],
   ['encoding',['Encoding',['../class_ti_xml_declaration.html#a5d974231f9e9a2f0542f15f3a46cdb76',1,'TiXmlDeclaration']]],
+  ['enmagrecal',['enMagRecal',['../struct_p_a_c_k_e_d.html#ac9b4510f172281ed7df577c6fa4aab85',1,'PACKED']]],
   ['enrtosstats',['enRTOSStats',['../struct_p_a_c_k_e_d.html#acbb239f002fe20c7d7e5a6c455bcee35',1,'PACKED']]],
   ['ensensorstats',['enSensorStats',['../struct_p_a_c_k_e_d.html#af6eedaa9539a696ace61208c505e3a19',1,'PACKED']]],
   ['ensured_5fpkt_5ft',['ensured_pkt_t',['../structensured__pkt__t.html',1,'']]],

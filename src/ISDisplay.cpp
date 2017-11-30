@@ -19,6 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISDisplay.h"
 #include "ISPose.h"
+#include "ISEarth.h"
+#include "ISDataMappings.h"
 
 #if PLATFORM_IS_LINUX
 
@@ -28,13 +30,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-#define PRINTV3_P1	"%8.1f,%8.1f,%8.1f\n"
-#define PRINTV3_P2	" %8.2f,%8.2f,%8.2f\n"
-#define PRINTV3_P3	"  %8.3f,%8.3f,%8.3f\n"
-#define PRINTV4_P1	"%8.1f,%8.1f,%8.1f,%8.1f\n"
-#define PRINTV4_P2	" %8.2f,%8.2f,%8.2f,%8.2f\n"
-#define PRINTV4_P3	"  %8.3f,%8.3f,%8.3f,%8.3f\n"
-#define PRINTV3_LLA	"%13.7f,%13.7f,%7.1f\n"
+#define PRINTV3_P1		"%8.1f,%8.1f,%8.1f\n"
+#define PRINTV3_P2		" %8.2f,%8.2f,%8.2f\n"
+#define PRINTV3_P3		"  %8.3f,%8.3f,%8.3f\n"
+#define PRINTV4_P1		"%8.1f,%8.1f,%8.1f,%8.1f\n"
+#define PRINTV4_P2		" %8.2f,%8.2f,%8.2f,%8.2f\n"
+#define PRINTV4_P3		"  %8.3f,%8.3f,%8.3f,%8.3f\n"
+#define PRINTV3_LLA		"%13.7f,%13.7f,%7.1f ellipsoid\n"
+#define PRINTV3_LLA_MSL	"%13.7f,%13.7f,%7.1f MSL\n"
 #define BUF_SIZE 8192
 
 #define DISPLAY_DELTA_TIME	0	// show delta time instead of time
@@ -171,7 +174,7 @@ string cInertialSenseDisplay::Hello()
 
 string cInertialSenseDisplay::Connected()
 {
-	return "$ Inertial Sense.  Connected.  Press CTRL-C to terminate.\n";
+	return string("$ Inertial Sense.  Connected.  Press CTRL-C to terminate.  Rx ") + std::to_string(m_rxCount) + "\n";
 }
 
 string cInertialSenseDisplay::Replay(double speed)
@@ -245,6 +248,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 	}
 
 	int curTimeMs = current_weekMs();
+	m_rxCount++;
 
 	if (enableReplay)
 	{
@@ -292,7 +296,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_SYS_SENSORS:
 		case DID_DELTA_THETA_VEL:
 		case DID_DUAL_IMU:
-		case DID_EKF_STATES:
+		case DID_INL2_STATES:
 		case DID_IMU_2:
 		case DID_IMU_1:
 		case DID_RAW_GPS_DATA:
@@ -438,13 +442,13 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 	s.lastTimeMs = curTimeMs;
 
 	// Display stats
-	printf("Data ID    Count         dt\n");
+	printf("                Name  DID    Count        dt\n");
 	for (int i = 0; i < (int)m_didStats.size(); i++)
 	{
 		sDidStats &s = m_didStats[i];
 		if (s.count)
 		{
-			printf(" %6d %8d %10.3lf\n", i, s.count, s.dtMs*0.001);
+			printf("%20s %4d %9d %9.3lf\n", cISDataMappings::GetDataSetName(i), i, s.count, s.dtMs*0.001);
 		}
 	}
 }
@@ -466,6 +470,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_DELTA_THETA_VEL:	str = DataToStringDThetaVel(d.dThetaVel, data->hdr);	break;
 	case DID_INS_1:				str = DataToStringINS1(d.ins1, data->hdr);				break;
 	case DID_INS_2:				str = DataToStringINS2(d.ins2, data->hdr);				break;
+	case DID_INS_3:				str = DataToStringINS3(d.ins3, data->hdr);				break;
+	case DID_INS_4:				str = DataToStringINS4(d.ins4, data->hdr);				break;
 	case DID_MAGNETOMETER_1:
 	case DID_MAGNETOMETER_2:	str = DataToStringMag(d.mag, data->hdr);				break;
 	case DID_BAROMETER:			str = DataToStringBaro(d.baro, data->hdr);				break;
@@ -475,13 +481,70 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_RTK_SOL:			str = DataToStringRtkSol(d.rtkSol, data->hdr);			break;
 	case DID_RAW_GPS_DATA:		str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
 	default:
+#if 0	// List all DIDs 
 		char buf[128];
 		SNPRINTF(buf, 128, "DID: %d\n", data->hdr.id);
 		str = buf;
+#endif
 		break;
 	}
 
 	return str;
+}
+
+char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus)
+{
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tSTATUS\n");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     INS Fusing: GPS %d, Mag %d\n",
+		(hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
+		(insStatus & INS_STATUS_USING_GPS_IN_SOLUTION) != 0,
+		(insStatus & INS_STATUS_USING_MAG_IN_SOLUTION) != 0);
+	if (insStatus & INS_STATUS_NAV_MODE)
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: NAV ");
+	}
+	else
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: AHRS");
+	}
+	switch (INS_STATUS_SOLUTION(insStatus))
+	{
+	default:
+	case INS_STATUS_SOLUTION_OFF:					ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: OFF\n");					break;
+	case INS_STATUS_SOLUTION_ALIGNING:				ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNING\n");			break;
+	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNMENT COMPLETE\n");	break;
+	case INS_STATUS_SOLUTION_NAV_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV GOOD\n");			break;
+	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV HIGH VARIANCE\n");	break;
+	case INS_STATUS_SOLUTION_AHRS_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS GOOD\n");			break;
+	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS HIGH VARIANCE\n");	break;
+	}
+// 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Align Good: Att %d, Vel %d, Pos %d\n",
+// 		(insStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
+// 		(insStatus & INS_STATUS_VEL_ALIGN_GOOD) != 0,
+// 		(insStatus & INS_STATUS_POS_ALIGN_GOOD) != 0);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tErrors    Rx parse %d, temperature %d, self-test %d\n",
+		HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus),
+		(hdwStatus & HDW_STATUS_ERR_TEMPERATURE) != 0,
+		(hdwStatus & HDW_STATUS_BIT_FAULT) != 0);
+
+	return ptr;
+}
+
+char* cInertialSenseDisplay::InsStatusToSolStatusString(char* ptr, char* ptrEnd, const uint32_t insStatus)
+{
+	switch (INS_STATUS_SOLUTION(insStatus))
+	{
+	default:
+	case INS_STATUS_SOLUTION_OFF:					ptr += SNPRINTF(ptr, ptrEnd - ptr, ", OFF      ");	break;
+	case INS_STATUS_SOLUTION_ALIGNING:				ptr += SNPRINTF(ptr, ptrEnd - ptr, ", ALIGNING ");	break;
+	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", COMPLETE ");	break;
+	case INS_STATUS_SOLUTION_NAV_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, ", NAV GOOD ");	break;
+	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", NAV VARIA");	break;
+	case INS_STATUS_SOLUTION_AHRS_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS GOOD");	break;
+	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS VARI");	break;
+	}
+
+	return ptr;
 }
 
 string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr)
@@ -502,10 +565,9 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 #endif
 
 	if (m_displayMode == DMODE_SCROLL)
-	{	
-		// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s theta[%6.2f,%6.2f,%7.2f], uvw[%6.2f,%6.2f,%6.2f], lla[%12.7f,%12.7f,%7.1f], ned[%6.3f,%6.3f,%6.3f]",
-			((ins1.iStatus&INS_STATUS_ATT_ALIGN_GOOD) ? "aligned" : "_______"),
+	{	// Single line format
+		ptr = InsStatusToSolStatusString(ptr, ptrEnd, ins1.insStatus);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, " theta[%6.2f,%6.2f,%7.2f], uvw[%6.2f,%6.2f,%6.2f], lla[%12.7f,%12.7f,%7.1f], ned[%6.3f,%6.3f,%6.3f]",
 			ins1.theta[0] * C_RAD2DEG_F,
 			ins1.theta[1] * C_RAD2DEG_F,
 			ins1.theta[2] * C_RAD2DEG_F,
@@ -524,17 +586,13 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
 			ins1.uvw[0],					// U body velocity
 			ins1.uvw[1],					// V body velocity
-			ins1.uvw[2]);				// W body velocity
+			ins1.uvw[2]);					// W body velocity
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
 			ins1.lla[0],					// INS Latitude
 			ins1.lla[1],					// INS Longitude
-			ins1.lla[2]);				// INS Ellipsoid altitude (meters)
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAligned    Att %d   Vel %d   Pos %d\n",
-			(ins1.iStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
-			(ins1.iStatus & INS_STATUS_VEL_ALIGN_GOOD) != 0,
-			(ins1.iStatus & INS_STATUS_POS_ALIGN_GOOD) != 0
-		);
+			ins1.lla[2]);					// INS Ellipsoid altitude (meters)
+		ptr = StatusToString(ptr, ptrEnd, ins1.insStatus, ins1.hdwStatus);
 	}
 
 	return buf;
@@ -546,7 +604,7 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_INS_2:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_INS_2:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -559,15 +617,15 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s qn2b[%6.3f,%6.3f,%6.3f,%6.3f], uvw[%6.2f,%6.2f,%6.2f], lla[%12.7f,%12.7f,%7.1f]",
-			((ins2.iStatus&INS_STATUS_ATT_ALIGN_GOOD) ? "aligned" : "_______"),
+		ptr = InsStatusToSolStatusString(ptr, ptrEnd, ins2.insStatus);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, " qn2b[%6.3f,%6.3f,%6.3f,%6.3f], uvw[%6.2f,%6.2f,%6.2f], lla[%12.7f,%12.7f,%7.1f]",
 			ins2.qn2b[0], ins2.qn2b[1], ins2.qn2b[2], ins2.qn2b[3],
 			ins2.uvw[0], ins2.uvw[1], ins2.uvw[2],
 			ins2.lla[0], ins2.lla[1], ins2.lla[2]);
 	}
 	else
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tQuat\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tQn2b\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3,					// Quaternion attitude rotation
 			ins2.qn2b[0],					// W
 			ins2.qn2b[1],					// X
@@ -575,8 +633,8 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 			ins2.qn2b[3]);					// Z
 		float theta[3];
 		quat2euler(ins2.qn2b, theta);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tEuler\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,					// Convert quaternion to euler rotation
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t(Euler)\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,					// Convert quaternion to euler rotation
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
@@ -584,16 +642,125 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
 			ins2.uvw[0],					// U body velocity
 			ins2.uvw[1],					// V body velocity
-			ins2.uvw[2]);				// W body velocity
+			ins2.uvw[2]);					// W body velocity
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
 			ins2.lla[0],					// INS Latitude
 			ins2.lla[1],					// INS Longitude
-			ins2.lla[2]);				// INS Ellipsoid altitude (meters)
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAligned    Att %d   Vel %d   Pos %d\n",
-			(ins2.iStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
-			(ins2.iStatus & INS_STATUS_VEL_ALIGN_GOOD) != 0,
-			(ins2.iStatus & INS_STATUS_POS_ALIGN_GOOD) != 0);
+			ins2.lla[2]);					// INS Ellipsoid altitude (meters)
+		ptr = StatusToString(ptr, ptrEnd, ins2.insStatus, ins2.hdwStatus);
+	}
+
+	return buf;
+}
+
+string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_INS_3:");
+
+#if DISPLAY_DELTA_TIME==1
+	static double lastTime = 0;
+	double dtMs = 1000.0*(ins3.timeOfWeek - lastTime);
+	lastTime = ins3.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", ins3.timeOfWeek);
+#endif
+
+	if (m_displayMode == DMODE_SCROLL)
+	{	// Single line format
+		ptr = InsStatusToSolStatusString(ptr, ptrEnd, ins3.insStatus);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, " qn2b[%6.3f,%6.3f,%6.3f,%6.3f], uvw[%6.2f,%6.2f,%6.2f], lla[%12.7f,%12.7f,%7.1f]",
+			ins3.qn2b[0], ins3.qn2b[1], ins3.qn2b[2], ins3.qn2b[3],
+			ins3.uvw[0], ins3.uvw[1], ins3.uvw[2],
+			ins3.lla[0], ins3.lla[1], ins3.lla[2]);
+	}
+	else
+	{	// Spacious format
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tQn2b\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3,					// Quaternion attitude rotation
+			ins3.qn2b[0],					// W
+			ins3.qn2b[1],					// X
+			ins3.qn2b[2],					// Y
+			ins3.qn2b[3]);					// Z
+		float theta[3];
+		quat2euler(ins3.qn2b, theta);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t(Euler)\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,					// Convert quaternion to euler rotation
+			theta[0] * C_RAD2DEG_F,			// Roll
+			theta[1] * C_RAD2DEG_F,			// Pitch
+			theta[2] * C_RAD2DEG_F);		// Yaw
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+			ins3.uvw[0],					// U body velocity
+			ins3.uvw[1],					// V body velocity
+			ins3.uvw[2]);					// W body velocity
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA_MSL,
+			ins3.lla[0],					// INS Latitude
+			ins3.lla[1],					// INS Longitude
+			ins3.lla[2]);					// INS Ellipsoid altitude (meters)
+		ptr = StatusToString(ptr, ptrEnd, ins3.insStatus, ins3.hdwStatus);
+	}
+
+	return buf;
+}
+
+string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_INS_3:");
+
+#if DISPLAY_DELTA_TIME==1
+	static double lastTime = 0;
+	double dtMs = 1000.0*(ins4.timeOfWeek - lastTime);
+	lastTime = ins4.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", ins4.timeOfWeek);
+#endif
+
+	if (m_displayMode == DMODE_SCROLL)
+	{	// Single line format
+		ptr = InsStatusToSolStatusString(ptr, ptrEnd, ins4.insStatus);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, " qe2b[%6.3f,%6.3f,%6.3f,%6.3f], ve[%6.2f,%6.2f,%6.2f], ecef[%12.7f,%12.7f,%7.1f]",
+			ins4.qe2b[0], ins4.qe2b[1], ins4.qe2b[2], ins4.qe2b[3],
+			ins4.ve[0], ins4.ve[1], ins4.ve[2],
+			ins4.ecef[0], ins4.ecef[1], ins4.ecef[2]);
+	}
+	else
+	{	// Spacious format
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tQe2b\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3,					// Quaternion attitude rotation
+			ins4.qe2b[0],					// W
+			ins4.qe2b[1],					// X
+			ins4.qe2b[2],					// Y
+			ins4.qe2b[3]);					// Z
+		float theta[3];
+		qe2b2EulerNed(theta, (float*)ins4.qe2b, (double*)ins4.ecef);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t(Euler)\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,					// Convert quaternion to euler rotation
+			theta[0] * C_RAD2DEG_F,			// Roll
+			theta[1] * C_RAD2DEG_F,			// Pitch
+			theta[2] * C_RAD2DEG_F);		// Yaw
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tVE\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+			ins4.ve[0],						// X ECEF velocity
+			ins4.ve[1],						// Y ECEF velocity
+			ins4.ve[2]);					// Z ECEF velocity
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tECEF\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+			ins4.ecef[0],					// X ECEF position
+			ins4.ecef[1],					// Y ECEF position
+			ins4.ecef[2]);					// Z ECEF position
+		ptr = StatusToString(ptr, ptrEnd, ins4.insStatus, ins4.hdwStatus);
 	}
 
 	return buf;
@@ -605,7 +772,7 @@ string cInertialSenseDisplay::DataToStringDualIMU(const dual_imu_t &imu, const p
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_DUAL_IMU:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_DUAL_IMU:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -620,10 +787,14 @@ string cInertialSenseDisplay::DataToStringDualIMU(const dual_imu_t &imu, const p
 	{	// Single line format
 		for (int i = 0; i < 2; i++)
 		{
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f], acc[%5.1f,%5.1f,%5.1f]",
+			ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f]",
 				imu.I[i].pqr[0] * C_RAD2DEG_F,
 				imu.I[i].pqr[1] * C_RAD2DEG_F,
-				imu.I[i].pqr[2] * C_RAD2DEG_F,
+				imu.I[i].pqr[2] * C_RAD2DEG_F);
+		}
+		for (int i = 0; i < 2; i++)
+		{
+			ptr += SNPRINTF(ptr, ptrEnd - ptr, ", acc[%5.1f,%5.1f,%5.1f]",
 				imu.I[i].acc[0], imu.I[i].acc[1], imu.I[i].acc[2]);
 		}
 	}
@@ -653,7 +824,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_IMU_%d:", (int)(hdr.id == DID_IMU_2));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_IMU_%d:", 1 + (int)(hdr.id == DID_IMU_2));
 	return buf;
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime[2] = { 0 };
@@ -697,7 +868,7 @@ string cInertialSenseDisplay::DataToStringDThetaVel(const delta_theta_vel_t &imu
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_DELTA_THETA_VEL:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_DELTA_THETA_VEL:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -741,7 +912,7 @@ string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p
 	char* ptrEnd = buf + BUF_SIZE;
 	int i = 0;
 	if (hdr.id == DID_MAGNETOMETER_2) i = 1;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_MAGNETOMETER_%d:", i + 1);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_MAGNETOMETER_%d:", i + 1);
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime[2] = { 0 };
@@ -807,7 +978,7 @@ string cInertialSenseDisplay::DataToStringGPS(const gps_t &gps, const p_data_hdr
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_GPS:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS:");
 
 #if DISPLAY_DELTA_TIME==1
 	static int lastTimeMs = 0;
@@ -848,7 +1019,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_DEV_INFO:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_DEV_INFO:");
 
 	// Single line format
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %c%d, %04d-%02d-%02d",
@@ -886,7 +1057,7 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_SYS_PARAMS:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_SYS_PARAMS:");
 
 #if DISPLAY_DELTA_TIME==1
 	static int lastTimeMs = 0;
@@ -897,12 +1068,15 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", sys.timeOfWeekMs);
 #endif
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%d,%d,%f,%f,%f,%f,%d,%d,%f,%f,%f,%f,%d",
-		sys.iStatus, sys.hStatus, sys.alignAttDetect, sys.alignAttError, sys.alignVelError, sys.alignPosError,
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%f,%f,%f,%f,%d,%d,%f,%f,%f,%f,%d\n",
+		sys.alignAttDetect, sys.alignAttError, sys.alignVelError, sys.alignPosError,
 		sys.sampleDtMs, sys.navDtMs, sys.ftf0, sys.magInclination, sys.magDeclination, sys.magMagnitude, sys.genFaultCode);
 
-	if (m_displayMode != DMODE_SCROLL)
+	if (m_displayMode == DMODE_PRETTY)
+	{
+		ptr = StatusToString(ptr, ptrEnd, sys.insStatus, sys.hdwStatus);
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+	}
 
 	return buf;
 }
@@ -913,25 +1087,28 @@ string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensor
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "DID_SYS_SENSORS:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_SYS_SENSORS:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
 	double dtMs = 1000.0*(sensors.time - lastTime);
 	lastTime = sensors.time;
-	ptr += SNPRINTF(buf, ptrEnd - ptr, " %4.1lfms", dtMs);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
-	ptr += SNPRINTF(buf, ptrEnd - ptr, " %.3lfs", sensors.time);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", sensors.time);
 #endif
 
 	// Single line format
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %4.1fC, pqr[%5.1f,%5.1f,%5.1f], acc[%5.1f,%5.1f,%5.1f], mag[%6.2f,%6.2f,%6.2f], baro[%5.2fkPa, %4.1fC, %7.2fm, %3.1f%% humidity], adc[%3.1fV, %3.1fV, %3.1fV, %3.1fV]",
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %4.1fC, pqr[%5.1f,%5.1f,%5.1f], acc[%5.1f,%5.1f,%5.1f], mag[%6.2f,%6.2f,%6.2f]",
 		sensors.temp,
 		sensors.pqr[0] * C_RAD2DEG_F,
 		sensors.pqr[1] * C_RAD2DEG_F,
 		sensors.pqr[2] * C_RAD2DEG_F,
 		sensors.acc[0], sensors.acc[1], sensors.acc[2],
-		sensors.mag[0], sensors.mag[1], sensors.mag[2],
+		sensors.mag[0], sensors.mag[1], sensors.mag[2]
+	);
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", baro[%5.2fkPa, %4.1fC, %7.2fm, %3.1f%% humidity], adc[%3.1fV, %3.1fV, %3.1fV, %3.1fV]",
 		sensors.bar, sensors.barTemp, sensors.mslBar, sensors.humidity,
 		sensors.vin, sensors.ana1, sensors.ana3, sensors.ana4
 	);

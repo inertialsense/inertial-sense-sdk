@@ -21,11 +21,11 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 
-extern int SERIAL_PORT_DEFAULT_TIMEOUT;
+	extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 
-#define MAX_SERIAL_PORT_NAME_LENGTH 31
+#define MAX_SERIAL_PORT_NAME_LENGTH 63
 
-// Standard Baud Rates - FTDI Functional.	// Bit period = 1/baudrate, Actual baud (FTDI,AVR,ARM)
+	// Standard Baud Rates - FTDI Functional.	// Bit period = 1/baudrate, Actual baud (FTDI,AVR,ARM)
 #define BAUDRATE_300			300			// 3333 us
 #define BAUDRATE_600			600			// 1667 us
 #define BAUDRATE_1200			1200		//  833 us
@@ -46,139 +46,143 @@ extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 #define BAUDRATE_2000000		2000000		//  500 ns	(FTDI 2080, AVR/ARM 2016)
 #define BAUDRATE_3000000		3000000		//  333 ns	(FTDI 3150, AVR/ARM 3030)
 
-typedef struct serial_port_t serial_port_t;
+	typedef struct serial_port_t serial_port_t;
 
-typedef int(*pfnSerialPortOpen)(serial_port_t* serialPort, const char* port, int baudRate, int blocking);
-typedef int(*pfnSerialPortRead)(serial_port_t* serialPort, unsigned char* buf, int len, int timeoutMilliseconds);
-typedef void(*pfnSerialPortAsyncReadCompletion)(serial_port_t* serialPort, unsigned char* buf, int len, int errorCode);
-typedef int(*pfnSerialPortAsyncRead)(serial_port_t* serialPort, unsigned char* buf, int len, pfnSerialPortAsyncReadCompletion completion);
-typedef int(*pfnSerialPortWrite)(serial_port_t* serialPort, const unsigned char* buf, int len);
-typedef int(*pfnSerialPortClose)(serial_port_t* serialPort);
-typedef int(*pfnSerialPortFlush)(serial_port_t* serialPort);
-typedef int(*pfnSerialPortGetByteCountAvailableToRead)(serial_port_t* serialPort);
-typedef int(*pfnSerialPortGetByteCountAvailableToWrite)(serial_port_t* serialPort);
-typedef int(*pfnSerialPortSleep)(serial_port_t* serialPort, int sleepMilliseconds);
+	typedef int(*pfnSerialPortOpen)(serial_port_t* serialPort, const char* port, int baudRate, int blocking);
+	typedef int(*pfnSerialPortIsOpen)(serial_port_t* serialPort);
+	typedef int(*pfnSerialPortRead)(serial_port_t* serialPort, unsigned char* buf, int len, int timeoutMilliseconds);
+	typedef void(*pfnSerialPortAsyncReadCompletion)(serial_port_t* serialPort, unsigned char* buf, int len, int errorCode);
+	typedef int(*pfnSerialPortAsyncRead)(serial_port_t* serialPort, unsigned char* buf, int len, pfnSerialPortAsyncReadCompletion completion);
+	typedef int(*pfnSerialPortWrite)(serial_port_t* serialPort, const unsigned char* buf, int len);
+	typedef int(*pfnSerialPortClose)(serial_port_t* serialPort);
+	typedef int(*pfnSerialPortFlush)(serial_port_t* serialPort);
+	typedef int(*pfnSerialPortGetByteCountAvailableToRead)(serial_port_t* serialPort);
+	typedef int(*pfnSerialPortGetByteCountAvailableToWrite)(serial_port_t* serialPort);
+	typedef int(*pfnSerialPortSleep)(serial_port_t* serialPort, int sleepMilliseconds);
 
-// allows communicating over a serial port
-struct serial_port_t
-{
-    // platform specific handle
-    void* handle;
+	// allows communicating over a serial port
+	struct serial_port_t
+	{
+		// platform specific handle
+		void* handle;
 
-    // the port name (do not modify directly)
-    char port[MAX_SERIAL_PORT_NAME_LENGTH + 1];
+		// the port name (do not modify directly)
+		char port[MAX_SERIAL_PORT_NAME_LENGTH + 1];
 
-    // optional error buffer to store errors
-    char* error;
+		// optional error buffer to store errors
+		char* error;
 
-    // length of error
-    int errorLength;
+		// length of error
+		int errorLength;
 
-    // open the serial port
-    pfnSerialPortOpen pfnOpen;
+		// open the serial port
+		pfnSerialPortOpen pfnOpen;
 
-    // read data synchronously
-    pfnSerialPortRead pfnRead;
+		// is the serial port open?
+		pfnSerialPortIsOpen pfnIsOpen;
 
-    // read data asynchronously
-    pfnSerialPortAsyncRead pfnAsyncRead;
+		// read data synchronously
+		pfnSerialPortRead pfnRead;
 
-    // write data synchronously
-    pfnSerialPortWrite pfnWrite;
+		// read data asynchronously
+		pfnSerialPortAsyncRead pfnAsyncRead;
 
-    // close the serial port
-    pfnSerialPortClose pfnClose;
+		// write data synchronously
+		pfnSerialPortWrite pfnWrite;
 
-    // remove all data from all buffers
-    pfnSerialPortFlush pfnFlush;
+		// close the serial port
+		pfnSerialPortClose pfnClose;
 
-	// get number of bytes in the receive buffer that can be read
-	pfnSerialPortGetByteCountAvailableToRead pfnGetByteCountAvailableToRead;
+		// remove all data from all buffers
+		pfnSerialPortFlush pfnFlush;
 
-	// get the number of available bytes in the send buffer
-	pfnSerialPortGetByteCountAvailableToWrite pfnGetByteCountAvailableToWrite;
+		// get number of bytes in the receive buffer that can be read
+		pfnSerialPortGetByteCountAvailableToRead pfnGetByteCountAvailableToRead;
 
-	// sleep for a specified number of milliseconds
-	pfnSerialPortSleep pfnSleep;
-};
+		// get the number of available bytes in the send buffer
+		pfnSerialPortGetByteCountAvailableToWrite pfnGetByteCountAvailableToWrite;
 
-// set the port name for a serial port, in case you are opening it later
-void serialPortSetPort(serial_port_t* serialPort, const char* port);
+		// sleep for a specified number of milliseconds
+		pfnSerialPortSleep pfnSleep;
+	};
 
-// open a serial port
-// port is null terminated, i.e. COM1\0, COM2\0, etc.
-// use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
-// uses such as a boot loader where a write would then require n bytes to be read in a single operation.
-// blocking simply determines the default timeout value of the serialPortRead function
-// returns 1 if success, 0 if failure
-int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, int blocking);
+	// set the port name for a serial port, in case you are opening it later
+	void serialPortSetPort(serial_port_t* serialPort, const char* port);
 
-// check if the port is open
-// returns 1 if open, 0 if not open
-int serialPortIsOpen(serial_port_t* serialPort);
+	// open a serial port
+	// port is null terminated, i.e. COM1\0, COM2\0, etc.
+	// use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
+	// uses such as a boot loader where a write would then require n bytes to be read in a single operation.
+	// blocking simply determines the default timeout value of the serialPortRead function
+	// returns 1 if success, 0 if failure
+	int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, int blocking);
 
-// close the serial port - this object can be re-used by calling open again, returns 1 if closed and returns 0 if the port was not closed
-int serialPortClose(serial_port_t* serialPort);
+	// check if the port is open
+	// returns 1 if open, 0 if not open
+	int serialPortIsOpen(serial_port_t* serialPort);
 
-// clear all buffers and pending reads and writes - returns 1 if success, 0 if failure
-int serialPortFlush(serial_port_t* serialPort);
+	// close the serial port - this object can be re-used by calling open again, returns 1 if closed and returns 0 if the port was not closed
+	int serialPortClose(serial_port_t* serialPort);
 
-// read up to readCount bytes into buffer
-// call is forwarded to serialPortReadTimeout with timeoutMilliseconds of 0 for non-blocking, or SERIAL_PORT_DEFAULT_TIMEOUT for blocking
-int serialPortRead(serial_port_t* serialPort, unsigned char* buffer, int readCount);
+	// clear all buffers and pending reads and writes - returns 1 if success, 0 if failure
+	int serialPortFlush(serial_port_t* serialPort);
 
-// read up to thue number of bytes requested, returns number of bytes read which is less than or equal to readCount
-int serialPortReadTimeout(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds);
+	// read up to readCount bytes into buffer
+	// call is forwarded to serialPortReadTimeout with timeoutMilliseconds of 0 for non-blocking, or SERIAL_PORT_DEFAULT_TIMEOUT for blocking
+	int serialPortRead(serial_port_t* serialPort, unsigned char* buffer, int readCount);
 
-// start an async read - not all platforms will support an async read and may call the callback function immediately
-// reads up to readCount bytes into buffer
-// buffer must exist until callback is executed, if it needs to be freed, free it in the callback or later
-// returns 1 if success, 0 if failed to start async operation
-int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion callback);
+	// read up to thue number of bytes requested, returns number of bytes read which is less than or equal to readCount
+	int serialPortReadTimeout(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
-// read up until a \r\n sequence has been read
-// result will be allocated using malloc and you will need to call free
-// result will not contain \r\n sequence
-// returns number of bytes read or -1 if timeout
-int serialPortReadLine(serial_port_t* serialPort, unsigned char** result);
+	// start an async read - not all platforms will support an async read and may call the callback function immediately
+	// reads up to readCount bytes into buffer
+	// buffer must exist until callback is executed, if it needs to be freed, free it in the callback or later
+	// returns 1 if success, 0 if failed to start async operation
+	int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion callback);
 
-// read up until a \r\n sequence has been read
-// result will be allocated using malloc and you will need to call free
-// result will not contain \r\n sequence
-// returns number of bytes read or -1 if timeout
-int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char** result, int timeoutMilliseconds);
+	// read up until a \r\n sequence has been read
+	// result will be allocated using malloc and you will need to call free
+	// result will not contain \r\n sequence
+	// returns number of bytes read or -1 if timeout
+	int serialPortReadLine(serial_port_t* serialPort, unsigned char** result);
 
-// read one char, waiting SERIAL_PORT_DEFAULT_TIMEOUT milliseconds to get a char
-int serialPortReadChar(serial_port_t* serialPort, unsigned char* c);
+	// read up until a \r\n sequence has been read
+	// result will be allocated using malloc and you will need to call free
+	// result will not contain \r\n sequence
+	// returns number of bytes read or -1 if timeout
+	int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char** result, int timeoutMilliseconds);
 
-// read one char, waiting timeoutMilliseconds to get a char, returns number of chars read
-int serialPortReadCharTimeout(serial_port_t* serialPort, unsigned char* c, int timeoutMilliseconds);
+	// read one char, waiting SERIAL_PORT_DEFAULT_TIMEOUT milliseconds to get a char
+	int serialPortReadChar(serial_port_t* serialPort, unsigned char* c);
 
-// write, returns the number of bytes written
-int serialPortWrite(serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
+	// read one char, waiting timeoutMilliseconds to get a char, returns number of chars read
+	int serialPortReadCharTimeout(serial_port_t* serialPort, unsigned char* c, int timeoutMilliseconds);
 
-// write with a \r\n added at the end, \r\n should not be part of buffer, returns the number of bytes written
-int serialPortWriteLine(serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
+	// write, returns the number of bytes written
+	int serialPortWrite(serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
 
-// write ascii data - if buffer does not start with $, a $ will be written first, followed by buffer, followed by *xx\r\n, where xx is a two hex character checksum
-int serialPortWriteAscii(serial_port_t* serialPort, const char* buffer, int bufferLength);
+	// write with a \r\n added at the end, \r\n should not be part of buffer, returns the number of bytes written
+	int serialPortWriteLine(serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
 
-// write and wait for a response, returns 1 if success, 0 if failure
-int serialPortWriteAndWaitFor(serial_port_t* serialPort, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength);
-int serialPortWriteAndWaitForTimeout(serial_port_t* serialPort, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength, const int timeoutMilliseconds);
+	// write ascii data - if buffer does not start with $, a $ will be written first, followed by buffer, followed by *xx\r\n, where xx is a two hex character checksum
+	int serialPortWriteAscii(serial_port_t* serialPort, const char* buffer, int bufferLength);
 
-// wait for a response, returns 0 if failure, 1 if success
-int serialPortWaitFor(serial_port_t* serialPort, const unsigned char* waitFor, int waitForLength);
-int serialPortWaitForTimeout(serial_port_t* serialPort, const unsigned char* waitFor, int waitForLength, int timeoutMilliseconds);
+	// write and wait for a response, returns 1 if success, 0 if failure
+	int serialPortWriteAndWaitFor(serial_port_t* serialPort, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength);
+	int serialPortWriteAndWaitForTimeout(serial_port_t* serialPort, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength, const int timeoutMilliseconds);
 
-// get available bytes in the receive buffer
-int serialPortGetByteCountAvailableToRead(serial_port_t* serialPort);
+	// wait for a response, returns 0 if failure, 1 if success
+	int serialPortWaitFor(serial_port_t* serialPort, const unsigned char* waitFor, int waitForLength);
+	int serialPortWaitForTimeout(serial_port_t* serialPort, const unsigned char* waitFor, int waitForLength, int timeoutMilliseconds);
 
-// get available bytes in the send buffer
-int serialPortGetByteCountAvailableToWrite(serial_port_t* serialPort);
+	// get available bytes in the receive buffer
+	int serialPortGetByteCountAvailableToRead(serial_port_t* serialPort);
 
-// sleep for the specified number of milliseconds if supported, returns 1 if success, 0 if failed to sleep
-int serialPortSleep(serial_port_t* serialPort, int sleepMilliseconds);
+	// get available bytes in the send buffer
+	int serialPortGetByteCountAvailableToWrite(serial_port_t* serialPort);
+
+	// sleep for the specified number of milliseconds if supported, returns 1 if success, 0 if failed to sleep
+	int serialPortSleep(serial_port_t* serialPort, int sleepMilliseconds);
 
 #ifdef __cplusplus
 }

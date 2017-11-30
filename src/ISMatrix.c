@@ -132,8 +132,8 @@ void LU( const f_t *M, i_t n, f_t *L, f_t *U )
 	int in, kn;
 
 	f_t *A = MALLOC( sizeof( f_t )*n*n );
-	while( A==NULL ) { /* Error check malloc */ }
-	
+	if (A == 0) { return; }
+
 	cpy_MatMxN( A, M, n, n );
 
 	for( int k=0; k < n - 1; k++ )
@@ -740,22 +740,21 @@ void transpose_Mat4( Matrix4 result, const Matrix4 m )
 	result[15] = m[15];
 }
 
-char inv_Mat2( f_t A[2][2] )
+char inv_Mat2(Matrix2 result, Matrix2 m)
 {
-    f_t invDet, det =	1 / (A[0][0] * A[1][1] - A[0][1] * A[1][0]);
-    f_t temp;
+    f_t invDet, det = m[0] * m[3] - m[1] * m[2];
 
-    if( det!=0 )
-        invDet = 1/det;
+    if( det!=0.0f )
+        invDet = 1.0f/det;
     else
         return -1;
 
-    temp = A[0][0];
-    A[0][0] = A[1][1] * invDet;
-    A[1][1] = temp * invDet;
-
-    A[0][1] *= -invDet;
-    A[1][0] *= -invDet;
+	// Row 1
+    result[0] = m[3] * ( invDet);
+	result[1] = m[1] * (-invDet);
+	// Row 2
+	result[2] = m[2] * (-invDet);
+	result[3] = m[0] * ( invDet);
 
     return 1;
 }

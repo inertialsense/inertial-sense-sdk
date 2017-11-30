@@ -26,6 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "tinyxml.h"
 #include "DataKML.h"
 #include "ISLogger.h"
+#include "ISPose.h"
 #include "data_sets.h"
 #ifdef USE_IS_INTERNAL
 #	include "../../libs/IS_internal.h"
@@ -60,6 +61,7 @@ int cDataKML::WriteDataToFile(vector<sKmlLogData>& data, const p_data_hdr_t* dat
 {
 	int nBytes=0;
 	uDatasets& d = (uDatasets&)(*dataBuf);
+	Euler theta;
 #ifdef USE_IS_INTERNAL
 // 	uInternalDatasets &i = (uInternalDatasets&)(*dataBuf);
 #endif
@@ -70,10 +72,16 @@ int cDataKML::WriteDataToFile(vector<sKmlLogData>& data, const p_data_hdr_t* dat
 	default:		// Unidentified dataset
 		break;
 
-	case DID_INS_1:		
+	case DID_INS_1:
 		data.push_back(sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta));
 		break;
-	case DID_INS_2:				//nBytes += writeIns2(pFile, d);
+	case DID_INS_2:
+		quat2euler(d.ins2.qn2b, theta);
+		data.push_back(sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta));
+		break;
+	case DID_INS_3:
+		quat2euler(d.ins3.qn2b, theta);
+		data.push_back(sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta));
 		break;
 	case DID_GPS:				//nBytes += writeGps(pFile, d);
 		data.push_back(sKmlLogData(d.gps.pos.timeOfWeekMs, d.gps.pos.lla));

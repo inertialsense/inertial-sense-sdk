@@ -37,9 +37,12 @@
     <ClCompile Include="..\src\inertialSenseBootLoader.c" />
     <ClCompile Include="..\src\ISDataMappings.cpp" />
     <ClCompile Include="..\src\ISDisplay.cpp" />
+    <ClCompile Include="..\src\ISEarth.c" />
     <ClCompile Include="..\src\ISLogger.cpp" />
     <ClCompile Include="..\src\ISMatrix.c" />
     <ClCompile Include="..\src\ISPose.c" />
+    <ClCompile Include="..\src\ISSerialPort.cpp" />
+    <ClCompile Include="..\src\ISStream.cpp" />
     <ClCompile Include="..\src\ISTcpClient.cpp" />
     <ClCompile Include="..\src\ISTcpServer.cpp" />
     <ClCompile Include="..\src\ISUtilities.cpp" />
@@ -72,9 +75,12 @@
     <ClInclude Include="..\src\ISConstants.h" />
     <ClInclude Include="..\src\ISDataMappings.h" />
     <ClInclude Include="..\src\ISDisplay.h" />
+    <ClInclude Include="..\src\ISEarth.h" />
     <ClInclude Include="..\src\ISLogger.h" />
     <ClInclude Include="..\src\ISMatrix.h" />
     <ClInclude Include="..\src\ISPose.h" />
+    <ClInclude Include="..\src\ISSerialPort.h" />
+    <ClInclude Include="..\src\ISStream.h" />
     <ClInclude Include="..\src\ISTcpClient.h" />
     <ClInclude Include="..\src\ISTcpServer.h" />
     <ClInclude Include="..\src\ISUtilities.h" />
@@ -109,13 +115,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>

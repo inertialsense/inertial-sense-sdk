@@ -14,8 +14,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 
-// allow packet continuation or not. If enabled, an extra 1K buffer is allocated globally for each com_manager_t instance.
-#define ENABLE_PACKET_CONTINUATION 1
+// allow packet continuation or not. If enabled, an extra 1K buffer is allocated globally for each pHandle instance.
+#define ENABLE_PACKET_CONTINUATION 0
 
 // enable filtering of duplicate packets
 #define ENABLE_FILTER_DUPLICATE_PACKETS 1
@@ -272,10 +272,11 @@ CMHANDLE initComManagerInstance
 )
 {
 	com_manager_t* cmInstance = (com_manager_t*)MALLOC(sizeof(com_manager_t));
-	while( cmInstance==NULL ) { /* Error check malloc */ }
-	memset(cmInstance, 0, sizeof(com_manager_t));
-	initComManagerInstanceInternal(cmInstance, numHandles, maxEnsuredPackets, stepPeriodMilliseconds, retryCount, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc);
-
+	if (cmInstance != 0)
+	{
+		memset(cmInstance, 0, sizeof(com_manager_t));
+		initComManagerInstanceInternal(cmInstance, numHandles, maxEnsuredPackets, stepPeriodMilliseconds, retryCount, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc);
+	}
 	return cmInstance;
 }
 
@@ -294,13 +295,13 @@ void initComManagerInstanceInternal
 	pfnComManagerDisableBroadcasts disableBcastFnc
 )
 {
-    int32_t i;
-	
-    if (numHandles < 0 || numHandles > 1024)
-    {
-        numHandles = 1;
-    }
-	
+	int32_t i;
+
+	if (numHandles < 0 || numHandles > 1024)
+	{
+		numHandles = 1;
+	}
+
 	// free ring buffers and ensured packet memory
 	if (cmInstance->ringBuffers != 0)
 	{
@@ -317,7 +318,7 @@ void initComManagerInstanceInternal
 		FREE(cmInstance->status);
 		cmInstance->status = 0;
 	}
-	
+
 	// assign new variables
 	cmInstance->maxEnsuredPackets = maxEnsuredPackets;
 	cmInstance->readCallback = readFnc;
@@ -332,41 +333,53 @@ void initComManagerInstanceInternal
 
 	// Allocate ring buffers for serial reads / writes
 	cmInstance->ringBuffers = (ring_buffer_t*)MALLOC(sizeof(ring_buffer_t) * numHandles);
-    memset(cmInstance->ringBuffers, 0, sizeof(ring_buffer_t) * numHandles);
+	if (cmInstance->ringBuffers != 0)
+	{
+		memset(cmInstance->ringBuffers, 0, sizeof(ring_buffer_t) * numHandles);
+	}
 
 	// Allocate memory for ensured packets
 	if (cmInstance->maxEnsuredPackets > 0)
 	{
 		cmInstance->ensuredPackets = MALLOC(sizeof(ensured_pkt_t) * cmInstance->maxEnsuredPackets);
-        memset(cmInstance->ensuredPackets, 0, sizeof(ensured_pkt_t) * cmInstance->maxEnsuredPackets);
-        for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
-        {
-            cmInstance->ensuredPackets[i].counter = -2; // indicates no retries are enabled
-            cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
-        }
+		if (cmInstance->ensuredPackets != 0)
+		{
+			memset(cmInstance->ensuredPackets, 0, sizeof(ensured_pkt_t) * cmInstance->maxEnsuredPackets);
+			for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
+			{
+				cmInstance->ensuredPackets[i].counter = -2; // indicates no retries are enabled
+				cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
+			}
+		}
 	}
 
 	cmInstance->status = MALLOC(sizeof(com_manager_status_t) * numHandles);
-    memset(cmInstance->status, 0, sizeof(com_manager_status_t) * numHandles);
-    for (i = 0; i < numHandles; i++)
+	if (cmInstance->status != 0)
 	{
+		memset(cmInstance->status, 0, sizeof(com_manager_status_t) * numHandles);
+		for (i = 0; i < numHandles; i++)
+		{
 
 #if PROTOCOL_VERSION_CHAR1 > 1
 
-		cmInstance->status[i].flags = CPU_IS_LITTLE_ENDIAN | CM_PKT_FLAGS_CHECKSUM_24_BIT;
+			cmInstance->status[i].flags = CPU_IS_LITTLE_ENDIAN | CM_PKT_FLAGS_CHECKSUM_24_BIT;
 
 #else
 
-		cmInstance->status[i].flags = CPU_IS_LITTLE_ENDIAN;
+			cmInstance->status[i].flags = CPU_IS_LITTLE_ENDIAN;
 
 #endif
 
+		}
 	}
 
 #if ENABLE_PACKET_CONTINUATION
 
-    cmInstance->con = MALLOC(sizeof(p_data_t) * numHandles);
-    memset(cmInstance->con, 0, sizeof(p_data_t) * numHandles);
+	cmInstance->con = MALLOC(sizeof(p_data_t) * numHandles);
+	if (cmInstance->con != 0)
+	{
+		memset(cmInstance->con, 0, sizeof(p_data_t) * numHandles);
+	}
 
 #endif
 
@@ -399,12 +412,12 @@ void registerComManagerASCIIInstance(CMHANDLE cmInstance_, asciiMessageMap_t* as
 	}
 }
 
-void registerComManager(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
+void registerComManager(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
 {
 	registerComManagerInstance(&g_cm, dataId, txFnc, pstRxFnc, txDataPtr, rxDataPtr, dataSize, pktFlags);
 }
 
-void registerComManagerInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
+void registerComManagerInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 

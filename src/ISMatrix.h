@@ -490,9 +490,9 @@ void transpose_Mat3( Matrix3 result, const Matrix3 m );
 void transpose_Mat4( Matrix4 result, const Matrix4 m );
 
 /*
- * Invert a 2x2 matrix in place.
+ * Invert a 2x2 matrix.
  */
-char inv_Mat2( f_t	A[2][2] );
+char inv_Mat2( Matrix2 result, Matrix2 m );
 
 /* Matrix Inverse
  * result(3x3) = m(3x3)^-1

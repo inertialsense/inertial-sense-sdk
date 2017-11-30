@@ -62,8 +62,12 @@ public:
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void DataToStats(const p_data_t* data);
 	string DataToString(const p_data_t* data);
+	char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);
+	char* InsStatusToSolStatusString(char* ptr, char* ptrEnd, const uint32_t insStatus);
 	string DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr);
 	string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
+ 	string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
+	string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
 	string DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringDThetaVel(const delta_theta_vel_t &imu, const p_data_hdr_t& hdr);
@@ -82,6 +86,7 @@ private:
 
 	vector<string>	m_didMsgs;
 	int m_displayMode;
+	uint16_t m_rxCount;
 
 	struct sDidStats
 	{

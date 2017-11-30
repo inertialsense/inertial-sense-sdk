@@ -17,9 +17,12 @@ add_library(InertialSense
   src/inertialSenseBootLoader.c
   src/ISDataMappings.cpp
   src/ISDisplay.cpp
+  src/ISEarth.c
   src/ISLogger.cpp
   src/ISMatrix.c
   src/ISPose.c
+  src/ISSerialPort.cpp
+  src/ISStream.cpp
   src/ISTcpClient.cpp
   src/ISTcpServer.cpp
   src/ISUtilities.cpp

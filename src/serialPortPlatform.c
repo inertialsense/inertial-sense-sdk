@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPortPlatform.h"
 #include "ISConstants.h"
 
-#if PLATFORM_IS_LINUX
+#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +22,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
@@ -31,8 +33,37 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/socket.h>
 #endif
 
+#if PLATFORM_IS_APPLE
+
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/serial/IOSerialKeys.h>
+#include <IOKit/serial/ioss.h>
+#include <IOKit/IOBSD.h>
+
+#endif
+
 #ifndef error_message
 #define error_message printf
+#endif
+
+#ifndef B460800
+#define B460800 460800
+#endif
+#ifndef B921600
+#define B921600 921600
+#endif
+#ifndef B1500000
+#define B1500000 1500000
+#endif
+#ifndef B2000000
+#define B2000000 2000000
+#endif
+#ifndef B2500000
+#define B2500000 2500000
+#endif
+#ifndef B3000000
+#define B3000000 3000000
 #endif
 
 #endif
@@ -79,24 +110,24 @@ static int get_baud_speed(int baudRate)
 {
 	switch (baudRate)
 	{
-		default:      return 0;
-		case 300:     return B300;
-		case 600:     return B600;
-		case 1200:    return B1200;
-		case 2400:    return B2400;
-		case 4800:    return B4800;
-		case 9600:    return B9600;
-		case 19200:   return B19200;
-		case 38400:   return B38400;
-		case 57600:   return B57600;
-		case 115200:  return B115200;
-		case 230400:  return B230400;
-		case 460800:  return B460800;
-		case 921600:  return B921600;
-		case 1500000: return B1500000;
-		case 2000000: return B2000000;
-		case 2500000: return B2500000;
-		case 3000000: return B3000000;
+	default:      return 0;
+	case 300:     return B300;
+	case 600:     return B600;
+	case 1200:    return B1200;
+	case 2400:    return B2400;
+	case 4800:    return B4800;
+	case 9600:    return B9600;
+	case 19200:   return B19200;
+	case 38400:   return B38400;
+	case 57600:   return B57600;
+	case 115200:  return B115200;
+	case 230400:  return B230400;
+	case 460800:  return B460800;
+	case 921600:  return B921600;
+	case 1500000: return B1500000;
+	case 2000000: return B2000000;
+	case 2500000: return B2500000;
+	case 3000000: return B3000000;
 	}
 }
 
@@ -110,9 +141,25 @@ static int set_interface_attribs(int fd, int speed, int parity)
 		return -1;
 	}
 
+#if PLATFORM_IS_APPLE
+
+	// set a valid speed for MAC, serial won't open otherwise
+	cfsetospeed(&tty, 230400);
+	cfsetispeed(&tty, 230400);
+
+	// HACK: Set the actual speed, allows higher than 230400 baud
+	if (ioctl(fd, IOSSIOSPEED, &speed) == -1)
+	{
+		error_message("error %d from ioctl IOSSIOSPEED", errno);
+	}
+
+#else
+
 	speed = get_baud_speed(speed);
 	cfsetospeed(&tty, speed);
 	cfsetispeed(&tty, speed);
+
+#endif
 
 	tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;     // 8-bit chars
 													// disable IGNBRK for mismatched speed tests; otherwise receive break
@@ -246,7 +293,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 	}
 
 	serialPortSetPort(serialPort, port);
-	
+
 #if PLATFORM_IS_WINDOWS
 
 	void* platformHandle = 0;
@@ -277,8 +324,8 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 		serialParams.fAbortOnError = 0;
 		serialParams.fNull = 0;
 		serialParams.fErrorChar = 0;
-        serialParams.fDtrControl = DTR_CONTROL_ENABLE;
-        serialParams.fRtsControl = RTS_CONTROL_ENABLE;
+		serialParams.fDtrControl = DTR_CONTROL_ENABLE;
+		serialParams.fRtsControl = RTS_CONTROL_ENABLE;
 		if (!SetCommState(platformHandle, &serialParams))
 		{
 			serialPortClose(serialPort);
@@ -297,7 +344,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 		serialPortClose(serialPort);
 		return 0;
 	}
-    SetupComm(platformHandle, 8192, 8192);
+	SetupComm(platformHandle, 8192, 8192);
 
 	serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
 	handle->blocking = blocking;
@@ -323,6 +370,25 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 #endif
 
 	return 1;	// success
+}
+
+static int serialPortIsOpenPlatform(serial_port_t* serialPort)
+{
+
+#if PLATFORM_IS_WINDOWS
+
+	DCB serialParams;
+	serialParams.DCBlength = sizeof(DCB);
+	serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+	return GetCommState(handle->platformHandle, &serialParams);
+
+#else
+
+	struct stat sb;
+	return (stat(serialPort->port, &sb) == 0);
+
+#endif
+
 }
 
 static int serialPortClosePlatform(serial_port_t* serialPort)
@@ -390,9 +456,9 @@ static int serialPortFlushPlatform(serial_port_t* serialPort)
 
 static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
-    DWORD dwRead = 0;
+	DWORD dwRead = 0;
 	DWORD error;
-    int totalRead = 0;
+	int totalRead = 0;
 	ULONGLONG startTime = GetTickCount64();
 	while (1)
 	{
@@ -428,7 +494,7 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
 			break;
 		}
 	}
-    return totalRead;
+	return totalRead;
 }
 
 #else
@@ -476,7 +542,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
 
 static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
-    serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+	serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
 	if (timeoutMilliseconds < 0)
 	{
 		timeoutMilliseconds = (handle->blocking ? SERIAL_PORT_DEFAULT_TIMEOUT : 0);
@@ -653,6 +719,7 @@ int serialPortPlatformInit(serial_port_t* serialPort)
 	serialPort->pfnClose = serialPortClosePlatform;
 	serialPort->pfnFlush = serialPortFlushPlatform;
 	serialPort->pfnOpen = serialPortOpenPlatform;
+	serialPort->pfnIsOpen = serialPortIsOpenPlatform;
 	serialPort->pfnRead = serialPortReadTimeoutPlatform;
 	serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
 	serialPort->pfnWrite = serialPortWritePlatform;

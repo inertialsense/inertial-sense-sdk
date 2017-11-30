@@ -15,7 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <math.h>
 
 // prototype for checmsun32 function
-uint32_t checksum32(void* data, int count);
+uint32_t checksum32(const void* data, int count);
 
 // Reversed bytes in a float.
 // compiler will likely inline this as it's a tiny function
@@ -161,6 +161,24 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		OFFSETOF(ins_2_t, lla[2])
 	};
 
+	static uint16_t offsetsIns3[] =
+	{
+		4,
+		OFFSETOF(ins_3_t, timeOfWeek),
+		OFFSETOF(ins_3_t, lla[0]),
+		OFFSETOF(ins_3_t, lla[1]),
+		OFFSETOF(ins_3_t, lla[2])
+	};
+
+	static uint16_t offsetsIns4[] =
+	{
+		4,
+		OFFSETOF(ins_4_t, timeOfWeek),
+		OFFSETOF(ins_4_t, ecef[0]),
+		OFFSETOF(ins_4_t, ecef[1]),
+		OFFSETOF(ins_4_t, ecef[2])
+	};
+
 	static uint16_t offsetsGps[] =
 	{
 		4,
@@ -183,13 +201,9 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		1, 24
 	};
 
-	static uint16_t offsetsEkfStates[] =
+	static uint16_t offsetsInl2States[] =
 	{
-		4,
-		OFFSETOF(ekf_states_t, time),
-		OFFSETOF(ekf_states_t, ecef[0]),
-		OFFSETOF(ekf_states_t, ecef[1]),
-		OFFSETOF(ekf_states_t, ecef[2])
+		4, 0, 36, 44, 52
 	};
 
 	static uint16_t offsetsInsMisc[] =
@@ -263,7 +277,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_IO
 		0,						// DID_IO_SERVOS_PWM
 		0,						// DID_IO_SERVOS_PPM
-		0,						// DID_MAGNETOMETER_CAL
+		0,						// DID_MAG_CAL
 		offsetsInsRes,			// DID_INS_RESOURCES
         0,                      // DID_DGPS_CORRECTION
         offsetsRtkSol,          // DID_RTK_SOL,
@@ -292,10 +306,10 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	// DID_SYS_SENSORS_SIGMA
 		offsetsOnlyTimeFirst,	// DID_SENSORS_ADC_SIGMA
 		0,                      // DID_INS_DEV_1
-		offsetsEkfStates,       // DID_EKF_STATES
-		0,                      // DID_EKF_COVARIANCE
-		0,                      // DID_EKF_INNOV
-		0,                      // DID_EKF_INNOV_VAR,
+		offsetsInl2States,      // DID_INL2_STATES
+		0,                      // DID_INL2_COVARIANCE_UD
+		0,                      // DID_INL2_MISC
+		0,                      // DID_INL2_STATUS,
 		offsetsOnlyTimeFirst,	// DID_MAGNETOMETER_1
 		offsetsOnlyTimeFirst,	// DID_BAROMETER
 		offsetsOnlyTimeFirst,	// DID_IMU_2
@@ -308,8 +322,10 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // DID_RTK_OPT
         0,                      // DID_NVR_USERPAGE_INTERNAL
 		0,						// DID_MANUFACTURING_INFO
-		0,                      // DID_SELF_TEST
-		offsetsInl2Status       // DID_INL2_STATUS
+		0,                      // DID_BIT
+		offsetsIns3,			// DID_INS_3
+		offsetsIns4,			// DID_INS_4
+		0,						// DID_INL2_VARIANCE
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -364,7 +380,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
     static uint16_t* s_stringOffsets[] =
 	{
 		0,						// DID_NULL
-        0,          			// DID_DEV_INFO
+        0,						// DID_DEV_INFO
 		0,						// DID_IMU_1
 		0,						// DID_CON_SCUL_INT
 		0,						// DID_INS_1
@@ -382,7 +398,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_IO
 		0,						// DID_IO_SERVOS_PWM
 		0,						// DID_IO_SERVOS_PPM
-		0,						// DID_MAGNETOMETER_CAL
+		0,						// DID_MAG_CAL
 		0,						// DID_INS_RESOURCES
         0,                      // DID_DGPS_CORRECTION
         0,                      // DID_RTK_SOL,
@@ -411,10 +427,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// DID_SYS_SENSORS_SIGMA
 		0,						// DID_SENSORS_ADC_SIGMA
 		0,                      // DID_INS_DEV_1
-		0,                      // DID_INS_STATES
-		0,                      // DID_EKF_COVARIANCE
-		0,                      // DID_EKF_INNOV
-		0,                      // DID_EKF_INNOV_VAR
+		0,                      // DID_INL2_STATES
+		0,                      // DID_INL2_COVARIANCE_UD
+		0,                      // DID_INL2_MISC
+		0,                      // DID_INL2_STATUS
 		0,						// DID_MAGNETOMETER_1
 		0,						// DID_BAROMETER
 		0,						// DID_IMU_2
@@ -427,8 +443,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // DID_RTK_OPT
         0,                      // DID_NVR_USERPAGE_INTERNAL
 		manufInfoOffsets,		// DID_MANUFACTURING_INFO
-		0,                      // DID_SELF_TEST
-		0                       // DID_INL2_STATUS
+		0,                      // DID_BIT
+		0,                      // DID_INS_3
+		0,                      // DID_INS_4
+		0,						// DID_INL2_VARIANCE
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -445,7 +463,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 	return 0;
 }
 
-uint32_t checksum32(void* data, int count)
+uint32_t checksum32(const void* data, int count)
 {
 	if (count % 4 != 0 || count < 0)
 	{
@@ -465,15 +483,15 @@ uint32_t checksum32(void* data, int count)
 }
 
 // This function skips the first 4 bytes (one 4 byte word), which are assumed to be the checksum in the serial number flash memory data structure.
-uint32_t serialNumChecksum32(void* data, int size)
+uint32_t serialNumChecksum32(const void* data, int size)
 {
-	return checksum32((uint8_t*)data + 4, size - 4);
+	return checksum32((const uint8_t*)data + 4, size - 4);
 }
 
 // This function skips the first 8 bytes (two 4 byte words), which are assumed to be the size and checksum in flash memory data structures.
-uint32_t flashChecksum32(void* data, int size)
+uint32_t flashChecksum32(const void* data, int size)
 {
-	return checksum32((uint8_t*)data + 8, size - 8);
+	return checksum32((const uint8_t*)data + 8, size - 8);
 }
 
 int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day)

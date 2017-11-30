@@ -103,6 +103,15 @@
     <ClCompile Include="..\src\cltool_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\ISEarth.c">
+	  <Filter>Source Files</Filter>
+	</ClCompile>
+    <ClCompile Include="..\src\ISSerialPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ISStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\com_manager.h">
@@ -196,6 +205,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\cltool.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ISEarth.h">
+		<Filter>Source Files</Filter>
+	</ClInclude>
+    <ClInclude Include="..\src\ISSerialPort.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ISStream.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

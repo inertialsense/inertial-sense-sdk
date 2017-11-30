@@ -45,7 +45,11 @@ int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, in
 
 int serialPortIsOpen(serial_port_t* serialPort)
 {
-	return (serialPort != 0 && serialPort->handle != 0);
+	if (serialPort == 0 || serialPort->handle == 0)
+	{
+		return 0;
+	}
+	return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(serialPort) : 1);
 }
 
 int serialPortClose(serial_port_t* serialPort)
@@ -77,7 +81,7 @@ int serialPortReadTimeout(serial_port_t* serialPort, unsigned char* buffer, int 
 	{
 		return 0;
 	}
-	
+
 	int count = serialPort->pfnRead(serialPort, buffer, readCount, timeoutMilliseconds);
 
 	if (count < 0)
@@ -172,7 +176,7 @@ int serialPortWriteLine(serial_port_t* serialPort, const unsigned char* buffer, 
 	}
 
 	int count = serialPortWrite(serialPort, buffer, writeCount);
-	count += serialPortWrite(serialPort, (unsigned char[2]){ '\r', '\n' }, 2);
+	count += serialPortWrite(serialPort, (unsigned char[2]) { '\r', '\n' }, 2);
 	return count;
 }
 

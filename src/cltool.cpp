@@ -31,7 +31,7 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 	(
 		g_commandLineOptions.enableLogging, // enable logger
 		g_commandLineOptions.logPath, // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
-		g_commandLineOptions.logSolution, // solution logging options
+		g_commandLineOptions.solStreamCtrl, // solution logging options
 		g_commandLineOptions.maxLogSpacePercent, // max space in percentage of free space to use, 0 for unlimited
 		g_commandLineOptions.maxLogFileSize, // each log file will be no larger than this in bytes
 		g_commandLineOptions.maxLogMemory, // logger will try and keep under this amount of memory
@@ -43,56 +43,45 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 // 	inertialSenseInterface.CloseLogger();		// Stop logging and save remaining data to file
 }
 
-template<typename Out>
-void splitStringIterator(const string &s, char delim, Out result)
-{
-	stringstream ss;
-	ss.str(s);
-	string item;
-	while (getline(ss, item, delim))
-	{
-		*(result++) = item;
-	}
-}
-
-
-vector<string> splitString(const string &s, char delim)
-{
-	vector<string> elems;
-	splitStringIterator(s, delim, back_inserter(elems));
-	return elems;
-}
-
 static bool startsWith(const char* str, const char* pre)
 {
 	size_t lenpre = strlen(pre), lenstr = strlen(str);
 	return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
 }
 
+#define CL_DEFAULT_BAUD_RATE				IS_COM_BAUDRATE_DEFAULT 
+#define CL_DEFAULT_COM_PORT					"*"
+#define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_PRETTY 
+#define CL_DEFAULT_LOGS_DIRECTORY			DEFAULT_LOGS_DIRECTORY
+#define CL_DEFAULT_ENABLE_LOGGING			false 
+#define CL_DEFAULT_MAX_LOG_FILE_SIZE		1024 * 1024 * 5
+#define CL_DEFAULT_MAX_LOG_SPACE_PERCENT	0.5f 
+#define CL_DEFAULT_MAX_LOG_MEMORY			131072
+#define CL_DEFAULT_REPLAY_SPEED				1.0
+#define CL_DEFAULT_BOOTLOAD_VERIFY			true
+
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
 	// set defaults
-	g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_PRETTY;
-	g_commandLineOptions.logPath = DEFAULT_LOGS_DIRECTORY;
-	g_commandLineOptions.logSolution = SLOG_W_INS2;
-	g_commandLineOptions.maxLogFileSize = 1024 * 1024 * 5;
-	g_commandLineOptions.maxLogSpacePercent = 0.5f;
-	g_commandLineOptions.maxLogMemory = 131072;
-	g_commandLineOptions.replaySpeed = 1.0;
-	g_commandLineOptions.enableLogging = true;
-	g_commandLineOptions.baudRate = IS_COM_BAUDRATE_DEFAULT;
-	g_commandLineOptions.bootloaderVerify = true;
+	g_commandLineOptions.baudRate = CL_DEFAULT_BAUD_RATE;
+	g_commandLineOptions.comPort = CL_DEFAULT_COM_PORT;
+	g_commandLineOptions.displayMode = CL_DEFAULT_DISPLAY_MODE;
+	g_commandLineOptions.solStreamCtrl = 0xFFFFFFFF;
+	g_commandLineOptions.enableLogging = CL_DEFAULT_ENABLE_LOGGING;
+	g_commandLineOptions.logPath = CL_DEFAULT_LOGS_DIRECTORY;
+	g_commandLineOptions.maxLogFileSize = CL_DEFAULT_MAX_LOG_FILE_SIZE;
+	g_commandLineOptions.maxLogSpacePercent = CL_DEFAULT_MAX_LOG_SPACE_PERCENT;
+	g_commandLineOptions.maxLogMemory = CL_DEFAULT_MAX_LOG_MEMORY;
+	g_commandLineOptions.replaySpeed = CL_DEFAULT_REPLAY_SPEED;
+	g_commandLineOptions.bootloaderVerify = CL_DEFAULT_BOOTLOAD_VERIFY;
+
+	cltool_outputHelp();
 
 	// parse command line
 	for (int i = 1; i < argc; i++)
 	{
 		const char* a = argv[i];
-		if (!strncmp(a, "-h", 16))
-		{
-			cltool_outputUsage();
-			return false;
-		}
-		else if (startsWith(a, "-baud="))
+		if (startsWith(a, "-baud="))
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
 		}
@@ -107,6 +96,23 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-c="))
 		{
 			g_commandLineOptions.comPort = &a[3];
+		}
+		else if (startsWith(a, "-dboc"))
+		{
+			g_commandLineOptions.disableBroadcastsOnClose = true;
+		}
+		else if (startsWith(a, "-flashConfig="))
+		{
+			g_commandLineOptions.flashConfig = &a[13];
+		}
+		else if (startsWith(a, "-host="))
+		{
+			g_commandLineOptions.host = &a[6];
+		}
+		else if (startsWith(a, "-h") || startsWith(a, "--h") || startsWith(a, "-help") || startsWith(a, "--help"))
+		{
+			cltool_outputUsage();
+			return false;
 		}
 		else if (startsWith(a, "-lms="))
 		{
@@ -140,11 +146,71 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.logPath = &a[4];
 		}
-		else if (!strncmp(a, "-loff", 5))
+		else if (startsWith(a, "-lon"))
 		{
-			g_commandLineOptions.enableLogging = false;
+			g_commandLineOptions.enableLogging = true;
 		}
-		else if (!strncmp(a, "-q", 2))
+		else if (startsWith(a, "-msgBaro"))
+		{
+			g_commandLineOptions.streamBaro = true;
+		}
+		else if (startsWith(a, "-msgDThetaVel"))
+		{
+			g_commandLineOptions.streamDThetaVel = true;
+		}
+		else if (startsWith(a, "-msgDualIMU"))
+		{
+			g_commandLineOptions.streamDualIMU = true;
+		}
+		else if (startsWith(a, "-msgGPS"))
+		{
+			g_commandLineOptions.streamGPS = true;
+		}
+		else if (startsWith(a, "-msgIMU1"))
+		{
+			g_commandLineOptions.streamIMU1 = true;
+		}
+		else if (startsWith(a, "-msgIMU2"))
+		{
+			g_commandLineOptions.streamIMU2 = true;
+		}
+		else if (startsWith(a, "-msgINS1"))
+		{
+			g_commandLineOptions.streamINS1 = true;
+		}
+		else if (startsWith(a, "-msgINS2"))
+		{
+			g_commandLineOptions.streamINS2 = true;
+		}
+		else if (startsWith(a, "-msgINS3"))
+		{
+			g_commandLineOptions.streamINS3 = true;
+		}
+		else if (startsWith(a, "-msgINS4"))
+		{
+			g_commandLineOptions.streamINS4 = true;
+		}
+		else if (startsWith(a, "-msgMag1"))
+		{
+			g_commandLineOptions.streamMag1 = true;
+		}
+		else if (startsWith(a, "-msgMag2"))
+		{
+			g_commandLineOptions.streamMag2 = true;
+		}
+		else if (startsWith(a, "-msgRTOS"))
+		{
+			g_commandLineOptions.streamRTOS = true;
+		}
+		else if (startsWith(a, "-msgSensors"))
+		{
+			g_commandLineOptions.streamSysSensors = true;
+		}
+		else if (startsWith(a, "-msgSol"))
+		{
+			g_commandLineOptions.solStreamCtrl = strtol(a + 7, NULL, 10);
+		}
+		else if (startsWith(a, "-q"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
 		}
@@ -158,59 +224,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
 		}
-		else if (!strncmp(a, "-r", 2))
+		else if (startsWith(a, "-r"))
 		{
 			g_commandLineOptions.replayDataLog = true;
 		}
-		else if (!strncmp(a, "-sINS1", 6))
-		{
-			g_commandLineOptions.streamINS1 = true;
-		}
-		else if (!strncmp(a, "-sINS2", 6))
-		{
-			g_commandLineOptions.streamINS2 = true;
-		}
-		else if (!strncmp(a, "-sDualIMU", 9))
-		{
-			g_commandLineOptions.streamDualIMU = true;
-		}
-		else if (!strncmp(a, "-sIMU1", 6))
-		{
-			g_commandLineOptions.streamIMU1 = true;
-		}
-		else if (!strncmp(a, "-sIMU2", 6))
-		{
-			g_commandLineOptions.streamIMU2 = true;
-		}
-		else if (!strncmp(a, "-sGPS", 5))
-		{
-			g_commandLineOptions.streamGPS = true;
-		}
-		else if (!strncmp(a, "-sMag1", 6))
-		{
-			g_commandLineOptions.streamMag1 = true;
-		}
-		else if (!strncmp(a, "-sBaro", 6))
-		{
-			g_commandLineOptions.streamBaro = true;
-		}
-		else if (!strncmp(a, "-sSol=", 6))
-		{
-			g_commandLineOptions.logSolution = strtol(a + 6, NULL, 10);
-		}
-		else if (!strncmp(a, "-sSensors", 9))
-		{
-			g_commandLineOptions.streamSysSensors = true;
-		}
-		else if (!strncmp(a, "-sDThetaVel", 11))
-		{
-			g_commandLineOptions.streamDThetaVel = true;
-		}
-		else if (!strncmp(a, "-scroll", 7))
-		{
-			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
-		}
-		else if (!strncmp(a, "-stats", 6))
+		else if (startsWith(a, "-stats"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
@@ -218,13 +236,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.serverConnection = &a[5];
 		}
-		else if (startsWith(a, "-host="))
+		else if (startsWith(a, "-s"))
 		{
-			g_commandLineOptions.host = &a[6];
-		}
-		else if (startsWith(a, "-flashConfig="))
-		{
-			g_commandLineOptions.flashConfig = &a[13];
+			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
 		}
 		else
 		{
@@ -277,70 +291,86 @@ bool cltool_replayDataLog()
 void cltool_outputUsage()
 {
 	cout << boldOff;
-	cout << "-----------------------------------------------------------------" << endlbOn;
-	cout << "                    $ Inertial Sense CL Tool" << endl;
-	cout << boldOn << "USAGE" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << boldOff << " [OPTION]" << endlbOn;
-	cout << endlbOn;
-	cout << "EXAMPLE USAGE" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS1             " << EXAMPLE_SPACE_1 << boldOff << " # stream one data set" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS2 -sGPS -sBaro" << EXAMPLE_SPACE_1 << boldOff << " # stream multiple sets" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -sINS2 -l -lts=0   " << EXAMPLE_SPACE_1 << boldOff << " # stream and log data" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -rp=" << EXAMPLE_LOG_DIR                                              << boldOff << " # replay data file" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" <<     EXAMPLE_PORT << " -b=" << EXAMPLE_FIRMWARE_FILE           << boldOff << " # bootload firmware" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -baud=921600           " << EXAMPLE_SPACE_1 << boldOff << " # set the serial port baudrate" << endlbOn;
+	cout << "-----------------------------------------------------------------" << endl;
 	cout << endlbOn;
 	cout << "DESCRIPTION" << endlbOff;
 	cout << "    Command line utility for communicating, logging, and updating" << endl;
 	cout << "    firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
-	cout << "OPTIONS" << endlbOn;
-	cout << "    -c=" << boldOff << "COM_PORT    select the serial port" << endlbOn;
+	cout << "EXAMPLES" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << "                          " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2 (default)" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -lon -lts=1              " << EXAMPLE_SPACE_1 << boldOff << " # logging to timestamp directory, stream PPD + INS2 data" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -lon -msgSol=3           " << EXAMPLE_SPACE_1 << boldOff << " # logging, stream PPD + INS3 data" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS -msgBaro" << EXAMPLE_SPACE_1 << boldOff << " # stream multiple data sets at 115200 baud rate" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<	    EXAMPLE_PORT << " -msgSol=0                " << EXAMPLE_SPACE_1 << boldOff << " # disable solution stream" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << "       # replay log files from a folder" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b= " << EXAMPLE_FIRMWARE_FILE                << boldOff << " # bootload firmware" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=* -baud=921600                      " << EXAMPLE_SPACE_1 << boldOff << " # 921600 mbps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
-	cout << "    -b=" << boldOff << "FILEPATH    bootload firmware using .hex file FILEPATH" << endlbOn;
-	cout << "    -baud=" << boldOff << "BAUDRATE set the serial port baudrate" << endlbOn;
+	cout << "OPTIONS (General)" << endl;
+	cout << "    -h --help" << boldOff << "       display this help menu" << endlbOn;
+	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\"" << endlbOn;
+	cout << "       " << boldOff << "             to use only the first four ports. Not specifying this parameter is same as \"-c=" << CL_DEFAULT_COM_PORT << "\"" <<  endlbOn;
+	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << ", " << IS_BAUDRATE_3000000 << " (default) " << endlbOn;
+	cout << "    -b=" << boldOff << "FILEPATH     bootload firmware using .hex file FILEPATH" << endlbOn;
+	cout << "    -q" << boldOff << "              quite mode, no display" << endlbOn;
+	cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
+	cout << "    -stats" << boldOff << "          display statistics of data received" << endlbOn;
 	cout << endlbOn;
-	cout << "    -h" << boldOff << "             display this help menu" << endlbOn;
-	cout << "    -q" << boldOff << "             quite mode, no display" << endlbOn;
-	cout << "    -scroll" << boldOff << "        scroll displayed messages to show history" << endlbOn;
+	cout << "OPTIONS (Solution Streaming)" << endl;
+	cout << "    -msgSol[n]    " << boldOff << "  Post Process Data (PPD) = DID_GPS + DID_MAGNETOMETER1 + DID_MAGNETOMETER2 +" << endlbOn;
+	cout << "                  " << boldOff << "  DID_BAROMETER + DID_FLASH_CONFIG.  Use -msgSol0 to disable solution streaming." << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD1_INS1 << ": PPD + DID_DUAL_IMU + DID_INS1" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD1_INS2 << ": PPD + DID_DUAL_IMU + DID_INS2 (recommended default)" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD1_INS3 << ": PPD + DID_DUAL_IMU + DID_INS3" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD1_INS4 << ": PPD + DID_DUAL_IMU + DID_INS4" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD2_INS1 << ": PPD + DID_DELTA_THETA_VEL + DID_INS1" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD2_INS2 << ": PPD + DID_DELTA_THETA_VEL + DID_INS2" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD2_INS3 << ": PPD + DID_DELTA_THETA_VEL + DID_INS3" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_PPD2_INS4 << ": PPD + DID_DELTA_THETA_VEL + DID_INS4" << endlbOn;
+	cout << "                  " << boldOff << "  INS output only without PPD" << endlbOn;
+	cout << "                  " << boldOff << "    n=" << std::setw(2) << SOL_STREAM_INS1 << ": DID_INS1, n=" << std::setw(2) << SOL_STREAM_INS2 << ": DID_INS2, n=" << std::setw(2) << SOL_STREAM_INS3 << ": DID_INS3, n=" << std::setw(2) << SOL_STREAM_INS4 << ": DID_INS4" << endlbOn;
 	cout << endlbOn;
-	cout << "    -sINS1" << boldOff << "         stream message DID_INS_1" << endlbOn;
-	cout << "    -sINS2" << boldOff << "         stream message DID_INS_2" << endlbOn;
-	cout << "    -sDualIMU" << boldOff << "      stream message DID_DUAL_IMU" << endlbOn;
-	cout << "    -sIMU1" << boldOff << "         stream message DID_IMU_1" << endlbOn;
-	cout << "    -sIMU2" << boldOff << "         stream message DID_IMU_2" << endlbOn;
-	cout << "    -sGPS " << boldOff << "         stream message DID_GPS" << endlbOn;
-	cout << "    -sMag1" << boldOff << "         stream message DID_MAGNETOMETER_1" << endlbOn;
-	cout << "    -sBaro" << boldOff << "         stream message DID_BAROMETER" << endlbOn;
-	cout << "    -sSol= " << boldOff << "        stream solution messages (IMU, GPS, INS2, etc.)" << endlbOn;
-	cout << "    -sSensors" << boldOff << "      stream message DID_SYS_SENSORS" << endlbOn;
-	cout << "    -sDThetaVel" << boldOff << "    stream message DID_DELTA_THETA_VEL" << endlbOn;
-
-	cout << endl << "    Logging is enabled by default." << endlbOn;
-	cout << "    -loff" << boldOff << "          disable logging" << endlbOn;
-	cout << "    -lp=" << boldOff << "PATH       log data to path" << endlbOn;
-	cout << "    -r" << boldOff << "             replay data log from default path" << endlbOn;
-	cout << "    -rp=" << boldOff << "PATH       replay data log from PATH" << endlbOn;
-	cout << "    -rs=" << boldOff << "SPEED      replay data log at x SPEED" << endlbOn;
-	cout << "    -lms=" << boldOff << "PERCENT   log max space in percent of free space (default: 0.5)" << endlbOn;
-	cout << "    -lmf=" << boldOff << "BYTES     log max file size in bytes (default: 5242880)" << endlbOn;
-	cout << "    -lmm=" << boldOff << "BYTES     log max memory in bytes (default: 131072)" << endlbOn;
-	cout << "    -lts=" << boldOff << "0         log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
-
-	cout << endl << "Flash config. Read or write flash configuration." << endl;
+	cout << "OPTIONS (Message Streaming)" << endl;
+	cout << "    -msgINS[n]    " << boldOff << "  message DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
+	cout << "    -msgIMU[n]    " << boldOff << "  message DID_IMU_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
+	cout << "    -msgDualIMU   " << boldOff << "  message DID_DUAL_IMU" << endlbOn;
+	cout << "    -msgDThetaVel " << boldOff << "  message DID_DELTA_THETA_VEL" << endlbOn;
+	cout << "    -msgMag[n]    " << boldOff << "  message DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
+	cout << "    -msgBaro      " << boldOff << "  message DID_BAROMETER" << endlbOn;
+	cout << "    -msgGPS       " << boldOff << "  message DID_GPS" << endlbOn;
+	cout << "    -msgSensors   " << boldOff << "  message DID_SYS_SENSORS" << endlbOn;
+	cout << endlbOn;
+	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
+	cout << "    -lon" << boldOff << "            enable logging" << endlbOn;
+	cout << "    -lp=" << boldOff << "PATH        log data to path (default: " << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
+	cout << "    -lms=" << boldOff << "PERCENT    log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
+	cout << "    -lmf=" << boldOff << "BYTES      log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
+	cout << "    -lmm=" << boldOff << "BYTES      log max memory in bytes (default: "<< CL_DEFAULT_MAX_LOG_MEMORY << ")" << endlbOn;
+	cout << "    -lts=" << boldOff << "0          log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
+	cout << "    -r" << boldOff << "              replay data log from default path" << endlbOn;
+	cout << "    -rp=" << boldOff << "PATH        replay data log from PATH" << endlbOn;
+	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED" << endlbOn;
+	cout << endlbOn;
+	cout << "OPTIONS (Read or write flash configuration)" << endl;
 	cout << "    -flashConfig=." << boldOff << " - read flash config and display." << endlbOn;
 	cout << "    -flashConfig=key=value|key=value " << boldOff << " - set key / value pairs in flash config." << endlbOn;
-
-	cout << endl << "Server connection. Use the uINS as RTK rover." << endl;
-	cout << "    -svr=" << boldOff << "connection info, used to retreive external data and send to the uINS. Examples:" << endl;
-	cout << "    For retrieving RTCM3 data: RTCM3:192.168.1.100:7777:url:user:password - url, user and password are optional." << endl;
-	cout << "    For retrieving InertialSense data: IS:192.168.1.100:7777 - no url, user or password for InertialSense data." << endlbOn;
-	cout << "    For retrieving UBLOX data: UBLOX:192.168.1.100:7777 - no url, user or password." << endl;
-
-	cout << endl << "Server host. Use the uINS as RTK base station." << endl;
-	cout << "    -host=" << boldOff << "ipAndPort, host an InertialSense server, i.e. :7777 or 192.168.1.43:7777. The ip address part is optional." << endlbOn;
+	cout << endlbOn;
+	cout << "OPTIONS (Client / server)" << endl;
+	cout << "    -svr=" << boldOff << "connectionInfo, used to retreive external data and send to the uINS. Examples:" << endl;
+	cout << "     For retrieving RTCM3 data: -svr=RTCM3:192.168.1.100:7777:url:user:password - url, user and password optional." << endl;
+	cout << "     For retrieving SERIAL data: -svr=RTCM3:SERIAL:COM9:57600 (port, baud)." << endl;
+	cout << "     For retrieving InertialSense data: -svr=IS:192.168.1.100:7777 - no url, user or password." << endlbOn;
+	cout << "     For retrieving UBLOX data: -svr=UBLOX:192.168.1.100:7777 - no url, user or password." << endlbOn;
+	cout << "    -host=" << boldOff << "ipAndPort, used to host a tcp/ip InertialSense server." << endl;
+	cout << "     Example: -host=:7777 or -host=192.168.1.43:7777. The ip address part is optional." << endlbOn;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
+}
+
+void cltool_outputHelp()
+{
+	cout << endlbOff << "Run \"" << boldOn << "cltool -h" << boldOff << "\" to display the help menu." << endl;
 }
 
 bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
@@ -366,10 +396,12 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 	else
 	{
 		nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
-		vector<string> keyValues = splitString(flashConfigString, '|');
+		vector<string> keyValues;
+		InertialSense::SplitString(flashConfigString, "|", keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
-			vector<string> keyAndValue = splitString(keyValues[i], '=');
+			vector<string> keyAndValue;
+			InertialSense::SplitString(keyValues[i], "=", keyAndValue);
 			if (keyAndValue.size() == 2)
 			{
 				if (flashMap.find(keyAndValue[0]) == flashMap.end())
@@ -379,7 +411,7 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 				else
 				{
 					const data_info_t& info = flashMap.at(keyAndValue[0]);
-					cISDataMappings::StringToData(keyAndValue[1].c_str(), keyAndValue[1].length(), NULL, (uint8_t*)&flashConfig, info);
+					cISDataMappings::StringToData(keyAndValue[1].c_str(), (int)(keyAndValue[1].length()), NULL, (uint8_t*)&flashConfig, info);
 					cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
 				}
 			}

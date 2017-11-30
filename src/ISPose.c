@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // #include "misc/debug.h"
 #include "ISConstants.h"
 #include "ISPose.h"
+#include "ISEarth.h"
 
 //_____ M A C R O S ________________________________________________________
 
@@ -249,6 +250,26 @@ void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla)
 
 	//Qe2b=Qe2n*Qn2b is vehicle attitude [BOD w/r/t ECEF]
 	mul_Quat_Quat(Qe2n, Qe2n0LL, Qe2nLL);
+}
+
+
+/*
+* Convert ECEF quaternion to NED euler at specified ECEF
+*/
+void qe2b2EulerNed(Vector3 eul, const Vector4 qe2b, const Vector3d ecef)
+{
+	Vector3d lla;
+	Vector3 eulned;
+	Vector4 qe2n;
+	Vector4 qn2b;
+
+	ecef2lla_d((double*)ecef, lla);
+	eulned[0] = 0.0f;
+	eulned[1] = ((float)-lla[0]) - 0.5f * C_PI_F;
+	eulned[2] = (float)lla[1];
+	euler2quat(eulned, qe2n);
+	mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
+	quat2euler(qn2b, eul);
 }
 
 
@@ -606,14 +627,14 @@ void eulerNed(const Euler_t e, Vector3_t ned)
 {
     Vector3_t v = { 1, 0, 0};
     
-    vectorRotateBodyToInertial( v, e, ned );
+    vectorBodyToReference( v, e, ned );
 }
 
 
 /*
  * Rotate eulers from body to inertial frame by ins eulers, in order: phi, theta, psi
  */
-void eulerRotateBodyToInertial(const Euler_t e, const Euler_t rot, Euler_t result)
+void eulerBodyToReference(const Euler_t e, const Euler_t rot, Euler_t result)
 {
 	Matrix3_t Ai, At, AiAt;
 	// Create DCMs (rotation matrices)
@@ -629,7 +650,7 @@ void eulerRotateBodyToInertial(const Euler_t e, const Euler_t rot, Euler_t resul
 /*
  * Rotate eulers from inertial to body frame by ins eulers, in order: psi, theta, phi
  */
-void eulerRotateInertialToBody(const Euler_t e, const Euler_t rot, Euler_t result)
+void eulerReferenceToBody(const Euler_t e, const Euler_t rot, Euler_t result)
 {
 	Matrix3_t Ai, At, AiAt;
 	// Create DCMs (rotation matrices)
@@ -646,7 +667,7 @@ void eulerRotateInertialToBody(const Euler_t e, const Euler_t rot, Euler_t resul
  * Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
  * Rotates unit vector (1,0,0) from current frame to result in IF frame.
  */
-void vectorRotateBodyToInertial(const Vector3_t v, const Euler_t rot, Vector3_t result)
+void vectorBodyToReference(const Vector3_t v, const Euler_t rot, Vector3_t result)
 {
 	Matrix3_t DCM;
     
@@ -661,7 +682,7 @@ void vectorRotateBodyToInertial(const Vector3_t v, const Euler_t rot, Vector3_t 
 /*
  * Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
  */
-void vectorRotateInertialToBody(const Vector3_t v, const Euler_t rot, Vector3_t result)
+void vectorReferenceToBody(const Vector3_t v, const Euler_t rot, Vector3_t result)
 {
 	Matrix3_t DCM;
     

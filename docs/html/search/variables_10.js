@@ -14,6 +14,7 @@ var searchData=
   ['reserved2',['reserved2',['../struct_p_a_c_k_e_d.html#ac407af44714de4d39a9d641cdfcf94f0',1,'PACKED']]],
   ['rovpos',['rovpos',['../structprcopt__t.html#a560145d6fcd1c870c1f29e7f27c79281',1,'prcopt_t']]],
   ['ru',['ru',['../structprcopt__t.html#ad955858e696bc28c17c145696c9ce504',1,'prcopt_t']]],
+  ['runtimeus',['runTimeUs',['../struct_p_a_c_k_e_d.html#a866d8be5f31ed6ace1633341f0c53ffe',1,'PACKED']]],
   ['rxerror',['rxError',['../structcom__manager__status__t.html#a277a4268d8d1eb8e152c65f016d64f68',1,'com_manager_status_t']]],
   ['rxpktcount',['rxPktCount',['../structcom__manager__status__t.html#a9b358bcb95013a3606a763c35a66538d',1,'com_manager_status_t']]],
   ['rxps',['rxps',['../struct_p_a_c_k_e_d.html#ac8d6910ae980df7dd821d9004aabc9b3',1,'PACKED']]],

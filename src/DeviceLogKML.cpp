@@ -347,8 +347,8 @@ bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
 		ins_1_t ins1;
 		ins1.week = d.ins2.week;
 		ins1.timeOfWeek = d.ins2.timeOfWeek;
-		ins1.hStatus = d.ins2.hStatus;
-		ins1.iStatus = d.ins2.iStatus;
+		ins1.hdwStatus = d.ins2.hdwStatus;
+		ins1.insStatus = d.ins2.insStatus;
 		quat2euler(d.ins2.qn2b, ins1.theta);
 		memcpy(ins1.uvw, d.ins2.uvw, 12);
         memcpy(ins1.lla, d.ins2.lla, 24);
