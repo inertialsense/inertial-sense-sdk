@@ -14,9 +14,9 @@ extern "C" {
 
 #include <stdbool.h>
 
-#include "../../SDK/src/ISMatrix.h"
-#include "../../SDK/src/ISConstants.h"
-#include "../../SDK/src/ISPose.h"
+#include "ISMatrix.h"
+#include "ISConstants.h"
+#include "ISPose.h"
 
 //_____ M A C R O S ________________________________________________________
 
