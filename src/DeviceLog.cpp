@@ -39,9 +39,9 @@ cDeviceLog::cDeviceLog()
     memset(&m_devInfo, 0, sizeof(dev_info_t));
     m_logStats = new cLogStats;
 	m_altClampToGround = true;
-	m_showPath = true;
-	m_showTimeStamp = true;
-	m_iconUpdatePeriodSec = 1.0f;
+	m_showTracks = true;
+	m_showPointTimestamps = true;
+	m_pointUpdatePeriodSec = 1.0f;
 }
 
 cDeviceLog::~cDeviceLog()

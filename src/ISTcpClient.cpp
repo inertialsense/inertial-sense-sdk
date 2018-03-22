@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISConstants.h"
 
-#if PLATFORM_IS_LINUX
+#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
 
 /* Assume that any non-Windows platform uses POSIX-style sockets instead. */
 #include <sys/socket.h>
@@ -258,9 +258,9 @@ int cISTcpClient::Close()
 	return ISSocketClose(m_socket);
 }
 
-int cISTcpClient::Read(uint8_t* data, int dataLength)
+int cISTcpClient::Read(void* data, int dataLength)
 {
-	int count = ISSocketRead(m_socket, data, dataLength);
+	int count = ISSocketRead(m_socket, (uint8_t*)data, dataLength);
 	if (count < 0)
 	{
 		Close();
@@ -268,9 +268,9 @@ int cISTcpClient::Read(uint8_t* data, int dataLength)
 	return count;
 }
 
-int cISTcpClient::Write(const uint8_t* data, int dataLength)
+int cISTcpClient::Write(const void* data, int dataLength)
 {
-	int count = ISSocketWrite(m_socket, data, dataLength);
+	int count = ISSocketWrite(m_socket, (const uint8_t*)data, dataLength);
 	if (count < 0)
 	{
 		Close();

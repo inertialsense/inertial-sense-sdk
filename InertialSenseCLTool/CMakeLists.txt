@@ -22,8 +22,13 @@ add_definitions(
 #  -DNDEBUG
   )
 
+if(APPLE)
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+else()
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions -Wl,--no-as-needed")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions -Wl,--no-as-needed")
+endif()
 
 SET(LIBPREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
 SET(LIBSUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")

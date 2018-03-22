@@ -195,6 +195,12 @@ void cDeviceLogSerial::SetSerialNumber(uint32_t serialNumber)
 }
 
 
-
+void cDeviceLogSerial::Flush()
+{
+	if (WriteChunkToFile())
+	{
+		fflush(m_pFile);
+	}
+}
 
 

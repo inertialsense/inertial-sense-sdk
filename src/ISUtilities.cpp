@@ -16,7 +16,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 
 #include "ISUtilities.h"
-#include "ISConstants.h"
+#include "ISPose.h"
+#include "ISEarth.h"
 
 #if C11_IS_ENABLED
 
@@ -148,6 +149,27 @@ string base64Decode(const string& encoded_string)
 	return ret;
 }
 
+size_t splitString(const string& s, const string& delimiter, vector<string>& result)
+{
+	result.clear();
+	size_t pos = 0;
+	size_t pos2;
+	while (true)
+	{
+		pos2 = s.find(delimiter, pos);
+		if (pos2 == string::npos)
+		{
+			result.push_back(s.substr(pos));
+			break;
+		}
+		else
+		{
+			result.push_back(s.substr(pos, pos2 - pos));
+			pos = pos2 + delimiter.length();
+		}
+	}
+	return result.size();
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -162,7 +184,7 @@ extern "C" {
 
 		ft.QuadPart = -(10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
 
-		timer = CreateWaitableTimer(NULL, TRUE, NULL);
+		timer = CreateWaitableTimer(NULL, true, NULL);
 		SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
 		WaitForSingleObject(timer, INFINITE);
 		CloseHandle(timer);
@@ -213,7 +235,7 @@ int current_timeMs()
 
 }
 
-/*! Time since week start (Sunday morning) in milliseconds, GMT */
+/** Time since week start (Sunday morning) in milliseconds, GMT */
 int current_weekMs()
 {
 
@@ -390,6 +412,44 @@ float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSe
 	return amplitude * sinf(*sig_gen);
 }
 
+FILE* openFile(const char* path, const char* mode)
+{
+    FILE* file = 0;
+
+#ifdef _MSC_VER
+
+    fopen_s(&file, path, mode);
+
+#else
+
+    file = fopen(path, mode);
+
+#endif
+
+    return file;
+
+}
+
+const char* tempPath()
+{
+
+#if PLATFORM_IS_WINDOWS
+
+    static char _tempPath[MAX_PATH];
+    if (_tempPath[0] == 0)
+    {
+        GetTempPathA(MAX_PATH, _tempPath);
+    }
+    return _tempPath;
+
+#else
+
+    return "/tmp/";
+
+#endif
+
+}
+
 const unsigned char* getHexLookupTable()
 {
 	static const unsigned char s_hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -532,6 +592,132 @@ void mutexFree(void* handle)
 
 #endif
 
+}
+
+int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day)
+{
+    return
+        367 * year
+        - 7 * (year + (month + 9) / 12) / 4
+        - 3 * ((year + (month - 9) / 7) / 100 + 1) / 4
+        + 275 * month / 9
+        + day
+        + 1721028
+        - 2400000;
+}
+
+int32_t convertGpsToMjd(int32_t gpsCycle, int32_t gpsWeek, int32_t gpsSeconds)
+{
+    uint32_t gpsDays = ((gpsCycle * 1024) + gpsWeek) * 7 + (gpsSeconds / 86400);
+    return convertDateToMjd(1980, 1, 6) + gpsDays;
+}
+
+void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day)
+{
+    int32_t j, c, y, m;
+
+    j = mjd + 2400001 + 68569;
+    c = 4 * j / 146097;
+    j = j - (146097 * c + 3) / 4;
+    y = 4000 * (j + 1) / 1461001;
+    j = j - 1461 * y / 4 + 31;
+    m = 80 * j / 2447;
+    *day = j - 2447 * m / 80;
+    j = m / 11;
+    *month = m + 2 - (12 * j);
+    *year = 100 * (c - 49) + y + j;
+}
+
+void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds)
+{
+    // shave off days
+    gpsSeconds = gpsSeconds % 86400;
+
+    // compute hours, minutes, seconds
+    *hour = gpsSeconds / 3600;
+    *minutes = (gpsSeconds / 60) % 60;
+    *seconds = gpsSeconds % 60;
+}
+
+void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result)
+{
+    result->week		= ins2->week;
+    result->timeOfWeek	= ins2->timeOfWeek;
+    result->insStatus	= ins2->insStatus;
+    result->hdwStatus	= ins2->hdwStatus;
+    quat2euler(ins2->qn2b, result->theta);
+    memcpy(result->uvw, ins2->uvw, sizeof(Vector3));
+    memcpy(result->lla, ins2->lla, sizeof(Vector3d));
+    memset(result->ned, 0, sizeof(Vector3));
+}
+
+void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result)
+{
+    result->week		= ins3->week;
+    result->timeOfWeek	= ins3->timeOfWeek;
+    result->insStatus	= ins3->insStatus;
+    result->hdwStatus	= ins3->hdwStatus;
+    quat2euler(ins3->qn2b, result->theta);
+    memcpy(result->uvw, ins3->uvw, sizeof(Vector3));
+    memcpy(result->lla, ins3->lla, sizeof(Vector3d));
+    memset(result->ned, 0, sizeof(Vector3));
+}
+
+void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result)
+{
+    Vector3d llaRad;
+
+    result->week		= ins4->week;
+    result->timeOfWeek	= ins4->timeOfWeek;
+    result->insStatus	= ins4->insStatus;
+    result->hdwStatus	= ins4->hdwStatus;
+
+    quatConjRot(result->uvw, ins4->qe2b, ins4->ve);
+    ecef2lla(ins4->ecef, llaRad, 1, 5);
+    qe2b2EulerNedLLA(result->theta, ins4->qe2b, llaRad);
+    lla_Rad2Deg_d(result->lla, llaRad);
+    memset(result->ned, 0, sizeof(Vector3));
+}
+
+gen_1axis_sensor_t gen1AxisSensorData(double time, const float val)
+{
+    gen_1axis_sensor_t data;
+    data.time = time;
+    data.val = val;
+    return data;
+}
+
+gen_3axis_sensor_t gen3AxisSensorData(double time, const float val[3])
+{
+    gen_3axis_sensor_t data;
+    data.time = time;
+    data.val[0] = val[0];
+    data.val[1] = val[1];
+    data.val[2] = val[2];
+    return data;
+}
+
+gen_dual_3axis_sensor_t genDual3AxisSensorData(double time, const float val1[3], const float val2[3])
+{
+    gen_dual_3axis_sensor_t data;
+    data.time = time;
+    data.val1[0] = val1[0];
+    data.val1[1] = val1[1];
+    data.val1[2] = val1[2];
+    data.val2[0] = val2[0];
+    data.val2[1] = val2[1];
+    data.val2[2] = val2[2];
+    return data;
+}
+
+gen_3axis_sensord_t gen3AxisSensorDataD(double time, const double val[3])
+{
+    gen_3axis_sensord_t data;
+    data.time = time;
+    data.val[0] = val[0];
+    data.val[1] = val[1];
+    data.val[2] = val[2];
+    return data;
 }
 
 #ifdef __cplusplus

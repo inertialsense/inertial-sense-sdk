@@ -44,17 +44,19 @@ public:
     virtual p_data_t* ReadData() = 0;
 	virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 	virtual string LogFileExtention() = 0;
+	virtual void Flush() {}
     bool SetupReadInfo(const string& directory, const string& deviceName, const string& timeStamp);
     void SetDeviceInfo(const dev_info_t *info);
     const dev_info_t* GetDeviceInfo() { return &m_devInfo; }
 	uint64_t FileSize() { return m_fileSize; }
 	uint64_t LogSize() { return m_logSize; }
 	uint32_t FileCount() { return m_fileCount; }
-	void SetKmlConfig(bool showPath=true, bool showTimeStamp=true, double updatePeriodSec=1.0, bool altClampToGround=true) 
+	void SetKmlConfig(bool showTracks =true, bool showPoints =true, bool showPointTimestamps =true, double pointUpdatePeriodSec=1.0, bool altClampToGround=true)
 	{ 
-		m_showPath = showPath;
-		m_showTimeStamp = showTimeStamp;
-		m_iconUpdatePeriodSec = updatePeriodSec;
+		m_showTracks = showTracks;
+		m_showPoints = showPoints;
+		m_showPointTimestamps = showPointTimestamps;
+		m_pointUpdatePeriodSec = pointUpdatePeriodSec;
 		m_altClampToGround = altClampToGround; 
 	}
 
@@ -78,9 +80,10 @@ protected:
 	uint32_t				m_maxFileSize;
 	uint32_t				m_maxChunkSize;
 	bool					m_altClampToGround;
-	bool					m_showPath;
-	bool					m_showTimeStamp;
-	double					m_iconUpdatePeriodSec;
+	bool					m_showTracks;
+	bool					m_showPoints;
+	bool					m_showPointTimestamps;
+	double					m_pointUpdatePeriodSec;
 
 private:
     cLogStats*              m_logStats;

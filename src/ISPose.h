@@ -114,17 +114,17 @@ void quatConjRot( Vector3_t result, const Quat_t q, const Vector3_t v );
 
 /*
  * This will convert from quaternions to euler angles
- * q(4,1) -> euler[phi;theta;psi] (rad)
+ * q(W,X,Y,Z) -> euler(phi,theta,psi) (rad)
  *
  * Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
  */
 void quat2euler(const Quat_t q, Euler_t theta);
 void quat2phiTheta(const Quat_t q, f_t *phi, f_t *theta);
+void quat2psi(const Quat_t q, f_t *psi);
 
 /*
  * This will convert from euler angles to quaternion vector
- * phi, theta, psi -> q(4,1)
- * euler angles in radians
+ * euler(phi,theta,psi) (rad) -> q(W,X,Y,Z)
  */
 void euler2quat(const Euler_t euler, Quat_t q );
 
@@ -137,7 +137,8 @@ void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla);
 /*
 * Convert ECEF quaternion to NED euler at specified ECEF
 */
-void qe2b2EulerNed(Vector3 theta, const Vector4 qe2b, const Vector3d ecef);
+void qe2b2EulerNedEcef(Vector3 theta, const Vector4 qe2b, const Vector3d ecef);
+void qe2b2EulerNedLLA(Vector3 eul, const Vector4 qe2b, const Vector3d lla);
 
 /*
  * This will construct a direction cosine matrix from

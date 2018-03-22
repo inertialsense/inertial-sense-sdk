@@ -19,25 +19,25 @@ extern "C" {
 
 #include "serialPort.h"
 
-/*! uINS bootloader baud rate */
+/** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 2000000
 
-/*! uINS rs232 bootloader baud rate */
+/** uINS rs232 bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER_RS232 230400
 
-/*! uINS standard baud rate, used by bootloader code to enable bootloader mode */
+/** uINS standard baud rate, used by bootloader code to enable bootloader mode */
 #define IS_BAUD_RATE_BOOTLOADER_COM 3000000
 
 #define ENABLE_BOOTLOADER_BAUD_DETECTION 1
-#define BOOTLOADER_REFRESH_DELAY   20
-#define BOOTLOADER_RESPONSE_DELAY  15 // needs to be > 10 for 2M baud
+#define BOOTLOADER_REFRESH_DELAY   250
+#define BOOTLOADER_RESPONSE_DELAY  20
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
-#define BOOTLOADER_RETRIES         16
+#define BOOTLOADER_RETRIES         10
 #else
 #define BOOTLOADER_RETRIES         1
 #endif
 
-/*! Bootloader callback function prototype, return value unused currently so return 0 */
+/** Bootloader callback function prototype, return value unused currently so return 0 */
 typedef int(*pfnBootloadProgress)(const void* obj, float percent);
 
 typedef struct
@@ -51,6 +51,7 @@ typedef struct
 	pfnBootloadProgress verifyProgress; // verify progress
 	const char* verifyFileName; // optional, writes verify file to the path if not 0
 	int numberOfDevices; // number of devices if bootloading in parallel
+	int baudRate; // baud rate to connect to
     union
     {
         unsigned int bits;
@@ -63,7 +64,7 @@ typedef struct
 
 } bootload_params_t;
 
-/*!
+/**
 Boot load a .hex or .bin file to a device
 
 @param port the serial port to bootload to, will be opened and closed, must have port set
@@ -78,18 +79,19 @@ Boot load a .hex or .bin file to a device
 int bootloadFile(const char* fileName, serial_port_t* port, char* error, int errorLength, const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
 
-/*!
+/**
 Enable bootloader mode for a device
 
 @param port the port to enable the bootloader on
+@param baudRate the baud rate to communicate with, IS_BAUD_RATE_BOOTLOADER or IS_BAUD_RATE_BOOTLOADER_RS232
 @param error a buffer to store any error messages - can be NULL
 @param errorLength the number of bytes available in error
 
 @return 0 if failure, non-zero if success
 */
-int enableBootloader(serial_port_t* port, char* error, int errorLength);
+int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength);
 
-/*!
+/**
 Disables the bootloader and goes back to program mode
 
 @port the port to go back to program mode on

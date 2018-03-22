@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\ring_buffer.c" />
     <ClCompile Include="..\src\cltool.cpp" />
     <ClCompile Include="..\src\cltool_main.cpp" />
     <ClCompile Include="..\src\com_manager.c" />
@@ -42,6 +43,7 @@
     <ClCompile Include="..\src\ISMatrix.c" />
     <ClCompile Include="..\src\ISPose.c" />
     <ClCompile Include="..\src\ISSerialPort.cpp" />
+    <ClCompile Include="..\src\ISComm.c" />
     <ClCompile Include="..\src\ISStream.cpp" />
     <ClCompile Include="..\src\ISTcpClient.cpp" />
     <ClCompile Include="..\src\ISTcpServer.cpp" />
@@ -56,6 +58,7 @@
     <ClCompile Include="..\src\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\ring_buffer.h" />
     <ClInclude Include="..\src\cltool.h" />
     <ClInclude Include="..\src\com_manager.h" />
     <ClInclude Include="..\src\DataChunk.h" />
@@ -80,6 +83,7 @@
     <ClInclude Include="..\src\ISMatrix.h" />
     <ClInclude Include="..\src\ISPose.h" />
     <ClInclude Include="..\src\ISSerialPort.h" />
+    <ClInclude Include="..\src\ISComm.h" />
     <ClInclude Include="..\src\ISStream.h" />
     <ClInclude Include="..\src\ISTcpClient.h" />
     <ClInclude Include="..\src\ISTcpServer.h" />
@@ -102,13 +106,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -202,7 +206,6 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

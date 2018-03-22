@@ -40,7 +40,7 @@ public:
 	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
 	bool CloseWriteFile(int kid, sKmlLog& log);
-	bool OpenWithSystemApp(void);
+	bool OpenWithSystemApp(void) OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;

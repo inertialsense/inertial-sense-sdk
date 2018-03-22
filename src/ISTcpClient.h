@@ -20,20 +20,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-class cISTcpClient : public cISStreamReader, public cISStreamWriter
+class cISTcpClient : public cISStream
 {
 public:
-	/*!
+	/**
 	* Constructor
 	*/
 	cISTcpClient();
 
-	/*!
+	/**
 	* Destructor
 	*/
 	virtual ~cISTcpClient();
 
-	/*!
+	/**
 	* Closes, then opens a tcp client
 	* @param host the host or ip address to connect to
 	* @param port the port to connect to on the host
@@ -41,29 +41,29 @@ public:
 	*/
 	int Open(const string& host, int port);
 
-	/*!
+	/**
 	* Close the client
 	* @return 0 if success, otherwise an error code
 	*/
-	int Close();
+	int Close() OVERRIDE;
 
-	/*!
+	/**
 	* Read data from the client
 	* @param data the buffer to read data into
 	* @param dataLength the number of bytes available in data
 	* @return the number of bytes read or less than 0 if error
 	*/
-	int Read(uint8_t* data, int dataLength);
+	int Read(void* data, int dataLength) OVERRIDE;
 
-	/*!
+	/**
 	* Write data to the client
 	* @param data the data to write
 	* @param dataLength the number of bytes to write
 	* @return the number of bytes written or less than 0 if error
 	*/
-	int Write(const uint8_t* data, int dataLength);
+	int Write(const void* data, int dataLength) OVERRIDE;
 
-	/*!
+	/**
 	* Send a GET http request to a url. You must then call Read to get the response.
 	* @param subUrl the url to request, i.e. index.html or pages/page1.txt, etc.
 	* @param userAgent the user agent to send
@@ -72,42 +72,44 @@ public:
 	*/
 	void HttpGet(const string& subUrl, const string& userAgent, const string& userName, const string& password);
 
-	/*!
+	/**
 	* Get whether the connection is open
 	* @return true if connection open, false if not
 	*/
 	bool IsOpen() { return m_socket != 0; }
 
-	/*!
+	/**
 	* Get whether the client socket is blocking - blocking reads do not return until the data is read or a timeout occurs. Default is false.
 	* @return whether the client is a blocking socket
 	*/
 	bool GetBlocking() { return m_blocking; }
 
-	/*!
+	/**
 	* Sets whether the client socket is blocking. Default is false.
 	* @return 0 if success otherwise an error code
 	*/
 	int SetBlocking(bool blocking);
 
 private:
+	cISTcpClient(const cISTcpClient& copy); // Disable copy constructor
+
 	socket_t m_socket;
 	string m_host;
 	int m_port;
 	bool m_blocking;
 };
 
-/*!
+/**
 * Initialize socket framework - called automatically by ISTcpClient and ISTcpServer
 */
 void ISSocketFrameworkInitialize();
 
-/*!
+/**
 * Shutdown socket framework - called automatically by ISTcpClient and ISTcpServer
 */
 void ISSocketFrameworkShutdown();
 
-/*!
+/**
 * Write data to a socket
 * @param socket the socket to write to
 * @param data the data to write
@@ -116,7 +118,7 @@ void ISSocketFrameworkShutdown();
 */
 int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength);
 
-/*!
+/**
 * Read data from a socket
 * @param socket the socket to read from
 * @param data the buffer to read data into
@@ -125,7 +127,7 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength);
 */
 int ISSocketRead(socket_t socket, uint8_t* data, int dataLength);
 
-/*!
+/**
 * Sets whether a socket is blocking. When reading, a blocking socket waits for the specified amount of data until the timeout is reached, a non-blocking socket returns immediately with the number of bytes read.
 * @param socket the socket to set blocking for
 * @param blocking whether the socket is blocking
@@ -133,7 +135,7 @@ int ISSocketRead(socket_t socket, uint8_t* data, int dataLength);
 */
 int ISSocketSetBlocking(socket_t socket, bool blocking);
 
-/*!
+/**
 * Set a read timeout on a socket. This function is only useful for blocking sockets, where it is highly recommended.
 * @param socket the socket to set the read timeout on
 * @param timeoutMilliseconds the timeout in milliseconds
@@ -141,7 +143,7 @@ int ISSocketSetBlocking(socket_t socket, bool blocking);
 */
 int ISSocketSetReadTimeout(socket_t socket, int timeoutMilliseconds);
 
-/*!
+/**
 * Close a socket and zero it out
 * @param socket the socket to close, this will be zeroed out
 * @return 0 if success otherwise an error code

@@ -510,6 +510,13 @@ f_t dot_Vec3_Vec3(const Vector3 v1, const Vector3 v2 )
 	        v1[2] * v2[2];
 }
 
+double dot_Vec3d_Vec3d(const Vector3d v1, const Vector3d v2)
+{
+    return  v1[0] * v2[0] +
+            v1[1] * v2[1] +
+            v1[2] * v2[2];
+}
+
 f_t dot_Vec4_Vec4(const Vector4 v1, const Vector4 v2 )
 {
 	return  v1[0] * v2[0] +

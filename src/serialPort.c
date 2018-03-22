@@ -102,42 +102,79 @@ int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer,
 	return serialPort->pfnAsyncRead(serialPort, buffer, readCount, completion);
 }
 
-int serialPortReadLine(serial_port_t* serialPort, unsigned char** result)
+int serialPortReadLine(serial_port_t* serialPort, unsigned char* buffer, int bufferLength)
 {
-	return serialPortReadLineTimeout(serialPort, result, SERIAL_PORT_DEFAULT_TIMEOUT);
+	return serialPortReadLineTimeout(serialPort, buffer, bufferLength, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
-int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char** result, int timeoutMilliseconds)
+int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char* buffer, int bufferLength, int timeoutMilliseconds)
 {
-	if (serialPort == 0 || serialPort->handle == 0 || result == 0 || serialPort->pfnRead == 0)
+	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || bufferLength < 8 || serialPort->pfnRead == 0)
 	{
 		return 0;
 	}
 
 	int prevCR = 0;
-	unsigned char b;
-	unsigned char* mem = (unsigned char*)malloc(512);
-	unsigned int memIndex = 0;
-	unsigned int memCapacity = 512;
-
-	while (serialPortReadCharTimeout(serialPort, &b, timeoutMilliseconds) == 1)
+	int bufferIndex = 0;
+	unsigned char c;
+	while (bufferIndex < bufferLength && serialPortReadCharTimeout(serialPort, &c, timeoutMilliseconds) == 1)
 	{
-		if (memIndex == memCapacity)
+		buffer[bufferIndex++] = c;
+		if (c == '\n' && prevCR)
 		{
-			memCapacity = (unsigned int)(memCapacity * 1.5);
-			mem = (unsigned char*)realloc(mem, memCapacity);
+			// remove \r\n and null terminate and return count of chars
+			buffer[bufferIndex -= 2] = '\0';
+			return ++bufferIndex;
 		}
-		mem[memIndex++] = b;
-		if (b == '\n' && prevCR)
-		{
-			mem[memIndex -= 2] = '\0';
-			*result = mem;
-			return memIndex;
-		}
-		prevCR = (b == '\r');
+		prevCR = (c == '\r');
 	}
-	free(mem);
-	mem = 0;
+	return -1;
+}
+
+int serialPortReadAscii(serial_port_t* serialPort, unsigned char* buffer, int bufferLength, unsigned char** asciiData)
+{
+	return serialPortReadAsciiTimeout(serialPort, buffer, bufferLength, SERIAL_PORT_DEFAULT_TIMEOUT, asciiData);
+}
+
+int serialPortReadAsciiTimeout(serial_port_t* serialPort, unsigned char* buffer, int bufferLength, int timeoutMilliseconds, unsigned char** asciiData)
+{
+	int count = serialPortReadLineTimeout(serialPort, buffer, bufferLength, timeoutMilliseconds);
+	unsigned char* ptr = buffer;
+	unsigned char* ptrEnd = buffer + count;
+	while (*ptr != '$' && ptr < ptrEnd)
+	{
+		ptr++;
+	}
+
+	// if at least 8 chars available
+	if (ptrEnd - ptr > 7)
+	{
+		if (asciiData != 0)
+		{
+			*asciiData = ptr;
+		}
+		int checksum = 0;
+		int existingChecksum;
+
+		// calculate checksum, skipping leading $ and trailing *XX\r\n
+		unsigned char* ptrEndNoChecksum = ptrEnd - 4;
+		while (++ptr < ptrEndNoChecksum)
+		{
+			checksum ^= *ptr;
+		}
+
+		if (*ptr == '*')
+		{
+			// read checksum from buffer, skipping the * char
+			sscanf((void*)++ptr, "%2x", (unsigned int*)&existingChecksum);
+
+			if (existingChecksum == checksum)
+			{
+				return count;
+			}
+		}
+	}
+
 	return -1;
 }
 
@@ -189,19 +226,21 @@ int serialPortWriteAscii(serial_port_t* serialPort, const char* buffer, int buff
 
 	int checkSum = 0;
 	const unsigned char* ptr = (const unsigned char*)buffer;
-	const unsigned char* ptrEnd = ptr + bufferLength;
-	unsigned char buf[8];
-
 	int count = 0;
 
 	if (*buffer == '$')
 	{
 		ptr++;
+        bufferLength--;
 	}
 	else
 	{
 		count += serialPortWrite(serialPort, (const unsigned char*)"$", 1);
 	}
+
+    const unsigned char* ptrEnd = ptr + bufferLength;
+    unsigned char buf[16];
+
 	count += serialPortWrite(serialPort, (const unsigned char*)buffer, bufferLength);
 
 	while (ptr != ptrEnd)
@@ -216,7 +255,7 @@ int serialPortWriteAscii(serial_port_t* serialPort, const char* buffer, int buff
 
 #endif
 
-	sprintf((char*)buf, "*%.2x\r\n", checkSum);
+	snprintf((char*)buf, sizeof(buf), "*%.2x\r\n", checkSum);
 
 #ifdef _MSC_VER
 

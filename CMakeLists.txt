@@ -15,6 +15,7 @@ add_library(InertialSense
   src/GpsParser.cpp
   src/InertialSense.cpp
   src/inertialSenseBootLoader.c
+  src/ISComm.c
   src/ISDataMappings.cpp
   src/ISDisplay.cpp
   src/ISEarth.c
@@ -38,6 +39,7 @@ add_library(InertialSense
 
 add_definitions(
   -Wno-format-extra-args
+  -Wno-extended-offsetof
   )
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions")

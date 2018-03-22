@@ -67,6 +67,12 @@
     <File Name="../../src/tinyxml.h"/>
     <File Name="../../src/tinyxmlerror.cpp"/>
     <File Name="../../src/tinyxmlparser.cpp"/>
+    <File Name="../../src/ISSerialPort.cpp"/>
+    <File Name="../../src/ISSerialPort.h"/>
+    <File Name="../../src/ISStream.cpp"/>
+    <File Name="../../src/ISStream.h"/>
+    <File Name="../../src/ISEarth.c"/>
+    <File Name="../../src/ISEarth.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
@@ -86,7 +92,7 @@
         <Library Value="pthread"/>
       </Linker>
       <ResourceCompiler Options="" Required="no"/>
-      <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="-c=/dev/ttyUSB0 -sSol -loff" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
+      <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="-baud=921600 -lon -c=*1 -svr=RTCM3:SERIAL:/dev/ttyACM0:57600" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[]]>
       </Environment>

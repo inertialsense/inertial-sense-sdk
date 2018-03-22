@@ -101,27 +101,58 @@ Inheritance diagram for cISStreamReader:</div>
  <div class="center">
   <img src="classc_i_s_stream_reader.png" usemap="#cISStreamReader_map" alt=""/>
   <map id="cISStreamReader_map" name="cISStreamReader_map">
-<area href="classc_i_s_stream_close.html" alt="cISStreamClose" shape="rect" coords="196,0,317,24"/>
-<area href="classc_i_s_serial_port.html" alt="cISSerialPort" shape="rect" coords="0,112,121,136"/>
-<area href="classc_i_s_stream.html" alt="cISStream" shape="rect" coords="131,112,252,136"/>
-<area href="classc_i_s_tcp_client.html" alt="cISTcpClient" shape="rect" coords="262,112,383,136"/>
-<area href="classc_null_stream_reader.html" alt="cNullStreamReader" shape="rect" coords="393,112,514,136"/>
+<area href="classc_i_s_stream_close.html" alt="cISStreamClose" shape="rect" coords="131,0,252,24"/>
+<area href="classc_i_s_stream.html" alt="cISStream" shape="rect" coords="65,112,186,136"/>
+<area href="classc_null_stream_reader.html" alt="cNullStreamReader" shape="rect" coords="196,112,317,136"/>
+<area href="classc_i_s_serial_port.html" alt="cISSerialPort" shape="rect" coords="0,168,121,192"/>
+<area href="classc_i_s_tcp_client.html" alt="cISTcpClient" shape="rect" coords="131,168,252,192"/>
 </map>
  </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:ae8b9d2b5bb0fa35b9618a999c91481e6"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_stream_reader.html#ae8b9d2b5bb0fa35b9618a999c91481e6">~cISStreamReader</a> ()</td></tr>
+<tr class="separator:ae8b9d2b5bb0fa35b9618a999c91481e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3bda4d5e44e47a15e2dc75ebb2743ce"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_stream_reader.html#ad3bda4d5e44e47a15e2dc75ebb2743ce">Read</a> (uint8_t *buffer, int count) PURE_VIRTUAL</td></tr>
 <tr class="separator:ad3bda4d5e44e47a15e2dc75ebb2743ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classc_i_s_stream_close"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classc_i_s_stream_close')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classc_i_s_stream_close.html">cISStreamClose</a></td></tr>
+<tr class="memitem:ae6d23844b18f6395767748fd8a52198f inherit pub_methods_classc_i_s_stream_close"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_stream_close.html#ae6d23844b18f6395767748fd8a52198f">~cISStreamClose</a> ()</td></tr>
+<tr class="separator:ae6d23844b18f6395767748fd8a52198f inherit pub_methods_classc_i_s_stream_close"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab36acb330919727368dc341d5439af88 inherit pub_methods_classc_i_s_stream_close"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_stream_close.html#ab36acb330919727368dc341d5439af88">Close</a> () PURE_VIRTUAL</td></tr>
 <tr class="separator:ab36acb330919727368dc341d5439af88 inherit pub_methods_classc_i_s_stream_close"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Interface to read data from a stream </p>
 
-<p>Definition at line <a class="el" href="_i_s_stream_8h_source.html#l00039">39</a> of file <a class="el" href="_i_s_stream_8h_source.html">ISStream.h</a>.</p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+<p>Definition at line <a class="el" href="_i_s_stream_8h_source.html#l00044">44</a> of file <a class="el" href="_i_s_stream_8h_source.html">ISStream.h</a>.</p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a class="anchor" id="ae8b9d2b5bb0fa35b9618a999c91481e6"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual cISStreamReader::~cISStreamReader </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Destructor </p>
+
+<p>Definition at line <a class="el" href="_i_s_stream_8h_source.html#l00050">50</a> of file <a class="el" href="_i_s_stream_8h_source.html">ISStream.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a class="anchor" id="ad3bda4d5e44e47a15e2dc75ebb2743ce"></a>
 <div class="memitem">
 <div class="memproto">
@@ -172,7 +203,7 @@ Public Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Nov 30 2017 04:31:08 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Jan 19 2018 15:30:28 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.11
 </small></address>

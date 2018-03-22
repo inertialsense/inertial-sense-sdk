@@ -55,7 +55,7 @@ extern "C" {
 #define Vec3_OneGrtrThan_X(v,x)		( ((v[0])>(x))  || ((v[1])>(x))  || ((v[2])>(x)) )
 #define Vec3_AllLessThan_X(v,x)		( ((v[0])<(x))  && ((v[1])<(x))  && ((v[2])<(x)) )
 #define Vec3_AllGrtrThan_X(v,x)		( ((v[0])>(x))  && ((v[1])>(x))  && ((v[2])>(x)) )
-#define Vec3_IsZero(v,x)			( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
+#define Vec3_IsZero(v)				( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
 
 #define set_Vec3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define set_Vec4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
@@ -235,6 +235,7 @@ void abs_Vec4d(Vector4d result, const Vector4d v);
 f_t dot_Vec2_Vec2(const Vector2 v1, const Vector2 v2 );
 f_t dot_Vec3_Vec3(const Vector3 v1, const Vector3 v2 );
 f_t dot_Vec4_Vec4(const Vector4 v1, const Vector4 v2 );
+double dot_Vec3d_Vec3d(const Vector3d v1, const Vector3d v2);
 
 /* Cross product
  * result(3) = v1(3) x v2(3)
@@ -636,6 +637,26 @@ static __inline int isInf_array( f_t *a, int size )
 }
 
 
+/* Array contains INF
+* return 1 if INF found in double array, 0 if not
+*/
+static __inline int isInf_array_d(double *a, int size)
+{
+	int i;
+
+	double tmp = 1.0f;
+	double inf = 1.0f / (tmp - 1.0f);
+
+	for (i = 0; i<size; i++)
+	{
+		if (a[i] == inf)
+			return 1;
+	}
+
+	return 0;
+}
+
+
 /* Array does not contain NAN or INF
  * return 0 if NAN or INF found in array, 1 if not
  */
@@ -648,6 +669,21 @@ static __inline int isFinite_array( f_t *a, int size )
         return 0;
 
     return 1;
+}
+
+
+/* Array does not contain NAN or INF
+* return 0 if NAN or INF found in double array, 1 if not
+*/
+static __inline int isFinite_array_d(double *a, int size)
+{
+	if (isNan_array_d(a, size))
+		return 0;
+
+	if (isInf_array_d(a, size))
+		return 0;
+
+	return 1;
 }
 
 

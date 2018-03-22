@@ -14,123 +14,124 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __ISSTREAM_H__
 
 #include <stdio.h>
+#include <string>
 #include <iostream>
 #include <string>
 #include <inttypes.h>
 
 #include "ISConstants.h"
 
-/*!
-* Interface for closing a stream
-*/
-class cISStreamClose
-{
-public:
-	/*!
-	* Close the stream
-	* @return 0 if success, otherwise error code
-	*/
-	virtual int Close() PURE_VIRTUAL;
-};
-
-/*!
-* Interface to read data from a stream
-*/
-class cISStreamReader : public cISStreamClose
-{
-public:
-	/*!
-	* Read n bytes from the stream
-	* @param buffer the buffer to read into
-	* @param count the max count of bytes to read
-	* @return the number of bytes read, less than 0 if error
-	*/
-	virtual int Read(uint8_t* buffer, int count) PURE_VIRTUAL;
-};
-
-/*!
-* Interface to write data to a stream
-*/
-class cISStreamWriter : public cISStreamClose
-{
-public:
-	/*!
-	* Write n bytes from the stream to buffer
-	* @param buffer the buffer to write into
-	* @param count the max count of bytes to write
-	* @return the number of bytes written, less than 0 if error
-	*/
-	virtual int Write(const uint8_t* buffer, int count) PURE_VIRTUAL;
-};
-
-/*!
+/**
 * Interface to read and write data using stream interfaces
 */
-class cISStream : public cISStreamReader, public cISStreamWriter
+class cISStream
 {
-private:
-	cISStreamReader* m_reader;
-	cISStreamWriter* m_writer;
-	bool m_ownsReader;
-	bool m_ownsWriter;
-	bool m_canRead;
-	bool m_canWrite;
-
-protected:
-	/*!
-	* Constructor for derived classes that have custom read / write logic
-	*/
+public:
+	/** Constructor */
 	cISStream() {}
 
-public:
-	/*!
-	* Constructor
-	* @param reader the reader to read from or NULL for no reading
-	* @param writer the writer to write from or NULL for no writing
-	* @param ownsReader whether this instance owns (and deletes on destruction) reader
-	* @param ownsWriter whether this instance owns (and deletes on destruction) writer
-	*/
-	cISStream(cISStreamReader* reader, cISStreamWriter* writer, bool ownsReader = true, bool ownsWriter = true);
-
-	/*!
+	/**
 	* Destructor
 	* If this instance owns the reader and/or writer streams, they are deleted
 	*/
 	virtual ~cISStream();
 
-	/*!
+	/**
 	* Read n bytes from the stream
 	* @param buffer the buffer to read into
 	* @param count the max count of bytes to read
-	* @return the number of bytes read, -1 if error, 0 bytes if can't read
+	* @return the number of bytes read, -1 if reading is not supported, 0 if no bytes available
 	*/
-	int Read(uint8_t* buffer, int count) OVERRIDE { return m_reader->Read(buffer, count); }
+    virtual int Read(void* buffer, int count) { (void)buffer; (void)count; return -1; }
 
-	/*!
+	/**
 	* Write n bytes from the stream to buffer
 	* @param buffer the buffer to write into
 	* @param count the max count of bytes to write
-	* @return the number of bytes written, -1 if error, 0 bytes if can't write
+	* @return the number of bytes written, -1 if writing is not supported, 0 if no bytes written
 	*/
-	int Write(const uint8_t* buffer, int count) OVERRIDE { return m_writer->Write(buffer, count); }
+    virtual int Write(const void* buffer, int count) { (void)buffer; (void)count; return -1; }
 
-	/*!
+	/**
+	* Flush the stream
+	* @return 0 if success, otherwise an error code
+	*/
+	virtual int Flush() { return -1; }
+
+	/**
 	* Close the stream
 	* @return 0 if success, otherwise an error code
 	*/
-	int Close();
+	virtual int Close() { return -1; }
 
-	/*!
-	* Gets whether this stream can read
-	* @return true if can read, false if not
+	/**
+	* Gets the number of bytes available to read
+	* @return The number of bytes available to read or -1 if this feature is not supported
 	*/
-	bool CanRead() { return m_canRead; }
+	virtual long long GetBytesAvailableToRead() { return -1; }
 
-	/*!
-	* Gets whether this stream can write
-	* @return true if can write, false if not
+private:
+	cISStream(const cISStream& copy); // Disable copy constructor
+};
+
+class cISFileStream : public cISStream
+{
+public:
+	/** Constructor */
+	cISFileStream();
+
+	/**
+	* Open a file. If the file is writeable and does not exist, it is created. If the file was already opened, it is closed first.
+	* @param path the file path
+	* @param mode the file open mode (i.e. r or rw, etc.)
+	* @return true if success, false if failure
 	*/
-	bool CanWrite() { return m_canWrite; }
+	bool Open(const std::string& path, const char* mode);
+
+	/**
+	* Read n bytes from the file
+	* @param buffer the buffer to read into
+	* @param count the max count of bytes to read
+	* @return the number of bytes read, -1 if reading is not supported, 0 if no bytes available
+	*/
+	int Read(void* buffer, int count) OVERRIDE;
+
+	/**
+	* Write n bytes from the file to buffer
+	* @param buffer the buffer to write into
+	* @param count the max count of bytes to write
+	* @return the number of bytes written, -1 if writing is not supported, 0 if no bytes written
+	*/
+	int Write(const void* buffer, int count) OVERRIDE;
+
+	/**
+	* Flush the file, causing any pending writes to be written to disk
+	* @return 0 if success, otherwise an error code
+	*/
+	int Flush() OVERRIDE;
+
+	/**
+	* Close the file
+	* @return 0 if success, otherwise an error code
+	*/
+	int Close() OVERRIDE;
+
+	/**
+	* Gets the number of bytes available to read
+	* @return The number of bytes available to read or -1 if this feature is not supported
+	*/
+	long long GetBytesAvailableToRead() OVERRIDE;
+
+	/**
+	* Gets whether the file has hit end of file during read
+	* @return true if end of file, false otherwise
+	*/
+	bool Eof();
+
+private:
+	cISFileStream(const cISFileStream& copy); // Disable copy constructor
+
+	FILE* m_file;
 };
 
 #endif // __BASE_STREAM_H__

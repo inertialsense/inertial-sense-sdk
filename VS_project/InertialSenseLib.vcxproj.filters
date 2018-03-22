@@ -104,12 +104,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ISEarth.c">
-	  <Filter>Source Files</Filter>
-	</ClCompile>
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\ISSerialPort.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ISStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ISComm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ring_buffer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -208,12 +214,18 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ISEarth.h">
-		<Filter>Source Files</Filter>
-	</ClInclude>
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\ISSerialPort.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ISStream.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ISComm.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ring_buffer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

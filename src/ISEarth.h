@@ -56,12 +56,11 @@ typedef Matrix4     Matrix4_t;
 
 //_____ P R O T O T Y P E S ________________________________________________
 
+/* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude */
+void ecef2lla(const double *Pe, double *LLA, const bool metric, const int Niter);
 
-// Coordinate transformation from latitude/longitude/altitude (rad,rad,m) to ECEF coordinates
-void lla2ecef_d(double *lla, double *ecef);
-
-// Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m)
-void ecef2lla_d(double *ecef, double *lla);
+/* Coordinate transformation from latitude/longitude/altitude to ECEF coordinates */
+void lla2ecef(const double *LLA, double *Pe, const bool metric);
 
 /*
  *  Find NED (north, east, down) from LLAref to LLA
@@ -71,7 +70,7 @@ void ecef2lla_d(double *ecef, double *lla);
  *  lla[2] = msl altitude (m)
  */
 void lla2ned( Vector3_t llaRef, Vector3_t lla, Vector3_t result );
-void lla2ned_d( Vector3d llaRef, Vector3d lla, Vector3_t result );     // double precision
+void lla2ned_d( double llaRef[3], double lla[3], Vector3_t result );     // double precision
 
 /*
  *  Find NED (north, east, down) from LLAref to LLA
@@ -80,7 +79,7 @@ void lla2ned_d( Vector3d llaRef, Vector3d lla, Vector3_t result );     // double
  *  lla[1] = longitude (degrees)
  *  lla[2] = msl altitude (m)
  */
-void llaDeg2ned_d(Vector3d llaRef, Vector3d lla, Vector3_t result);
+void llaDeg2ned_d(double llaRef[3], double lla[3], Vector3_t result);
 
 /*
  *  Find LLA of NED (north, east, down) from LLAref
@@ -90,7 +89,7 @@ void llaDeg2ned_d(Vector3d llaRef, Vector3d lla, Vector3_t result);
  *  lla[2] = msl altitude (m)
  */
 void ned2lla( Vector3_t ned, Vector3_t llaRef, Vector3_t result );
-void ned2lla_d( Vector3_t ned, Vector3d llaRef, Vector3d result );     // double precision
+void ned2lla_d( Vector3_t ned, double llaRef[3], double result[3] );     // double precision
 
 /*
 *  Find LLA of NED (north, east, down) from LLAref (WGS-84 standard)
@@ -99,7 +98,7 @@ void ned2lla_d( Vector3_t ned, Vector3d llaRef, Vector3d result );     // double
 *  lla[1] = longitude (degrees)
 *  lla[2] = msl altitude (m)
 */
-void ned2llaDeg_d(Vector3_t ned, Vector3d llaRef, Vector3d result);
+void ned2llaDeg_d(Vector3_t ned, double llaRef[3], double result[3]);
 
 /*
  *  Find Delta LLA of NED (north, east, down) from LLAref
@@ -109,7 +108,7 @@ void ned2llaDeg_d(Vector3_t ned, Vector3d llaRef, Vector3d result);
  *  lla[2] = msl altitude (m)
  */
 void ned2DeltaLla(Vector3_t ned, Vector3 llaRef, Vector3 deltaLLA);
-void ned2DeltaLla_d(Vector3_t ned, Vector3d llaRef, Vector3d deltaLLA);
+void ned2DeltaLla_d(Vector3_t ned, double llaRef[3], double deltaLLA[3]);
 
 /*
 *  Find Delta LLA of NED (north, east, down) from LLAref
@@ -118,14 +117,14 @@ void ned2DeltaLla_d(Vector3_t ned, Vector3d llaRef, Vector3d deltaLLA);
 *  lla[1] = longitude (degrees)
 *  lla[2] = msl altitude (m)
 */
-void ned2DeltaLlaDeg_d(Vector3_t ned, Vector3d llaRef, Vector3d deltaLLA);
+void ned2DeltaLlaDeg_d(Vector3_t ned, double llaRef[3], double deltaLLA[3]);
 
 // Convert LLA from radians to degrees
-void lla_Rad2Deg_d(Vector3d result, Vector3d lla);
+void lla_Rad2Deg_d(double result[3], double lla[3]);
 
 // Convert LLA from degrees to radians
-void lla_Deg2Rad_d(Vector3d result, Vector3d lla);
-void lla_Deg2Rad_d2(Vector3d result, double lat, double lon, double alt);
+void lla_Deg2Rad_d(double result[3], double lla[3]);
+void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt);
 
 /*
  *  Find msl altitude based on barometric pressure
@@ -142,8 +141,8 @@ f_t baro2msl( f_t pKPa );
  *
  *  return = (m) distance in meters
  */
-f_t llaRadDistance( Vector3d lla1, Vector3d lla2 );
-f_t llaDegDistance( Vector3d lla1, Vector3d lla2 );
+f_t llaRadDistance( double lla1[3], double lla2[3] );
+f_t llaDegDistance( double lla1[3], double lla2[3] );
 
 
 #ifdef __cplusplus

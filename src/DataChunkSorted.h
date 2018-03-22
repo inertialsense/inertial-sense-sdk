@@ -24,13 +24,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 PUSH_PACK_1
 
-/*! Represents the complete packet body of a PID_DATA and PID_DATA_SET packet */
+/** Represents the complete packet body of a PID_DATA and PID_DATA_SET packet */
 typedef struct
 {
-	/*! Serial order of data structure.  Used to re-serialize data.  */
+	/** Serial order of data structure.  Used to re-serialize data.  */
 	uint32_t dataSerNum;
 
-	/*! Data */
+	/** Data */
 	uint8_t buf[MAX_P_DATA_BODY_SIZE];
 } p_cnk_data_t;
 

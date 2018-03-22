@@ -26,9 +26,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISLogger.h"
 #include "ISDataMappings.h"
-#include "InertialSense.h"
+#include "ISUtilities.h"
 
-#if PLATFORM_IS_LINUX
+#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
 
 #include <sys/statvfs.h>
 
@@ -62,6 +62,8 @@ cISLogger::cISLogger()
 	m_logStats = new cLogStats;
 	m_logStats->Clear();
 	m_errorFile = NULL;
+	m_lastCommTime = 0;
+	m_timeoutFlushSeconds = 0;
 }
 
 
@@ -92,6 +94,25 @@ void cISLogger::Cleanup()
 }
 
 
+void cISLogger::Update()
+{
+	// if we have a timeout param and the time has elapsed, shutdown
+	if (m_lastCommTime == 0)
+	{
+		m_lastCommTime = time(NULLPTR);
+	}
+	else if (m_timeoutFlushSeconds > 0 && time(NULLPTR) - m_lastCommTime >= m_timeoutFlushSeconds)
+	{
+		for (unsigned int i = 0; i < m_devices.size(); i++)
+		{
+			m_devices[i]->Flush();
+		}
+	}
+	_UTIMEBUF buf{ time(NULL), time(NULL) };
+	_UTIME((m_directory + "/stats.txt").c_str(), &buf);
+}
+
+
 bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
 {
 	static const int minFileCount = 50;
@@ -101,7 +122,7 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 	CloseAllFiles();
 
 	m_logType = logType;
-	m_directory = directory;
+	m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
     maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.01f, 0.99f);
 	uint64_t availableSpace = cISLogger::GetDirectorySpaceAvailable(m_directory);
 	m_maxDiskSpace = (maxDiskSpacePercent <= 0.0f ? availableSpace : (uint64_t)(availableSpace * maxDiskSpacePercent));
@@ -130,12 +151,6 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 		m_maxChunkSize = _MIN(maxChunkSize, MAX_CHUNK_SIZE);
 	}
 
-	if (m_directory.empty())
-	{
-		// Create local default directory
-		m_directory = DEFAULT_LOGS_DIRECTORY;
-	}
-
 	// create root dir
 	_MKDIR(m_directory.c_str());
 
@@ -152,6 +167,11 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 			_MKDIR(m_directory.c_str());
 		}
 	}
+
+	// create empty stats file to track timestamps
+	fstream fs;
+	fs.open((m_directory + "/stats.txt").c_str(), ios::out);
+	fs.close();
 
 	// Initialize devices
 	return InitDevicesForWriting(numDevices);
@@ -579,15 +599,21 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 
 bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
+	m_lastCommTime = time(NULLPTR);
+
 	if (!m_enabled)
 	{
+		if (m_errorFile != NULL)
+		{
+			fprintf(m_errorFile, "Logger is not enabled\r\n");
+		}
 		return false;
 	}
 	else if (device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
 		if (m_errorFile != NULL)
 		{
-			fprintf(m_errorFile, "Error writing to log, log is not enabled, invalid device handle or NULL data");
+			fprintf(m_errorFile, "Invalid device handle or NULL data\r\n");
 		}
 		return false;
 	}
@@ -605,7 +631,7 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 		{
 			if (m_errorFile != NULL)
 			{
-				fprintf(m_errorFile, "Error logging data, underlying log implementation failed to save\r\n");
+				fprintf(m_errorFile, "Underlying log implementation failed to save\r\n");
 			}
 			m_logStats->LogError(dataHdr);
 		}
@@ -661,7 +687,7 @@ p_data_t* cISLogger::ReadNextData(unsigned int& device)
 
 void cISLogger::CloseAllFiles()
 {
-	for( unsigned int i=0; i < m_devices.size(); i++ )
+	for( unsigned int i = 0; i < m_devices.size(); i++ )
 	{
 		m_devices[i]->CloseAllFiles();
 	}
@@ -781,11 +807,31 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		SetDeviceInfo(devInfo, dev);
 
 		// Set KML configuration
-		m_devices[dev]->SetKmlConfig(m_showPath, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+		m_devices[dev]->SetKmlConfig(m_showSample, m_showPath, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 
 		// Copy data
 		while ((data = log.ReadData(dev)))
 		{
+			// CSV special cases 
+			if (logType == eLogType::LOGTYPE_CSV)
+			{
+				if (data->hdr.id == DID_INS_2)
+				{	// Convert INS2 to INS1 when creating .csv logs
+					ins_1_t ins1;
+					ins_2_t ins2;
+
+					copyDataPToStructP(&ins2, data, sizeof(ins_2_t));
+					convertIns2ToIns1(&ins2, &ins1);
+
+					p_data_hdr_t hdr;
+					hdr.id = DID_INS_1;
+					hdr.size = sizeof(ins_1_t);
+					hdr.offset = 0;
+					LogData(dev, &hdr, (uint8_t*)&ins1);
+				}
+			}
+
+			// Save data
             LogData(dev, &data->hdr, data->buf);
 		}
 	}
@@ -872,7 +918,6 @@ void cLogStatDataId::LogTimestamp(double timestamp)
         lastTimestampDelta = delta;
 	}
     lastTimestamp = timestamp;
-    count++;
 }
 
 void cLogStatDataId::Printf()

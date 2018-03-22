@@ -30,7 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-/*!
+/**
 * Utility functions for displaying data
 */
 class cInertialSenseDisplay
@@ -46,7 +46,8 @@ public:
 
 	cInertialSenseDisplay();
 
-	void SetDisplayMode(int mode) { m_displayMode = mode; };
+	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
+	eDisplayMode GetDisplayMode() { return m_displayMode; }
 	void Clear(void);
 	void Home(void);
 	void GoToRow(int y);
@@ -70,22 +71,24 @@ public:
 	string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
 	string DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
-	string DataToStringDThetaVel(const delta_theta_vel_t &imu, const p_data_hdr_t& hdr);
+	string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);
+	string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
 	string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
-	string DataToStringGPS(const gps_t &gps, const p_data_hdr_t& hdr);
+	string DataToStringGPS(const gps_nav_t &gps, const p_data_hdr_t& hdr);
 	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 	string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
 	string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
-	string DataToStringRtkSol(const rtk_sol_t& sol, const p_data_hdr_t& hdr);
-	string DataToStringRawGPS(const raw_gps_msg_t& raw, const p_data_hdr_t& hdr);
+	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
+	string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
+	string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
 
 private:
 	string VectortoString();
 	void DataToVector(const p_data_t* data);
 
 	vector<string>	m_didMsgs;
-	int m_displayMode;
+	eDisplayMode m_displayMode;
 	uint16_t m_rxCount;
 
 	struct sDidStats

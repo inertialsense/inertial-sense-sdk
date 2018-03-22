@@ -28,11 +28,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISPose.h"
 #include "data_sets.h"
+#include "ISUtilities.h"
+#include "ISConstants.h"
+
 #ifdef USE_IS_INTERNAL
 #	include "../../libs/IS_internal.h"
 #endif
-#include "ISUtilities.h"
-#include "ISConstants.h"
+
 
 cDataKML::cDataKML()
 {
@@ -46,8 +48,11 @@ string cDataKML::GetDatasetName(int kid)
 	{
 	default:                    return "";
 	case KID_INS:               return "ins";
-	case KID_GPS:               return "gps";
 	case KID_REF:               return "ref";
+	case KID_GPS:               return "gps";
+	case KID_GPS1:				return "gps1";
+	case KID_GPS2:				return "gps2";
+    case KID_RTK:               return "rtk";
 	}
 }
 
@@ -57,11 +62,12 @@ string cDataKML::GetDatasetName(int kid)
 #include <stdio.h>
 #include <time.h>
 
-int cDataKML::WriteDataToFile(vector<sKmlLogData>& data, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
+int cDataKML::WriteDataToFile(vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
-	int nBytes=0;
 	uDatasets& d = (uDatasets&)(*dataBuf);
 	Euler theta;
+    sKmlLogData data;
+
 #ifdef USE_IS_INTERNAL
 // 	uInternalDatasets &i = (uInternalDatasets&)(*dataBuf);
 #endif
@@ -70,25 +76,32 @@ int cDataKML::WriteDataToFile(vector<sKmlLogData>& data, const p_data_hdr_t* dat
 	switch (dataHdr->id)
 	{
 	default:		// Unidentified dataset
-		break;
+        return 0;
 
 	case DID_INS_1:
-		data.push_back(sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta));
+        data = sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta);
 		break;
 	case DID_INS_2:
 		quat2euler(d.ins2.qn2b, theta);
-		data.push_back(sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta));
+        data = sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta);
 		break;
 	case DID_INS_3:
 		quat2euler(d.ins3.qn2b, theta);
-		data.push_back(sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta));
+        data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta);
 		break;
-	case DID_GPS:				//nBytes += writeGps(pFile, d);
-		data.push_back(sKmlLogData(d.gps.pos.timeOfWeekMs, d.gps.pos.lla));
+	case DID_GPS_NAV:
+	case DID_GPS1_NAV:
+	case DID_GPS2_NAV:
+        data = sKmlLogData(d.gpsNav.timeOfWeekMs, d.gpsNav.lla);
 		break;
+    case DID_GPS_RTK_NAV:
+        data = sKmlLogData(d.gpsRtkNav.timeOfWeekMs, d.gpsRtkNav.lla);
+        break;
 	}
 
-	return nBytes;
+    list.push_back(data);
+
+    return 0;
 }
 
 

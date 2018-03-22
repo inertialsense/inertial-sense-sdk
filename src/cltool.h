@@ -43,17 +43,18 @@ using namespace std;
 
 typedef struct
 {
-	// calculated
-	uint32_t solStreamCtrl;
-
 	// parsed
 	string comPort; // -c=com_port
 	string bootloaderFileName; // -b=file_name
 	bool bootloaderVerify; // -bv
 	bool replayDataLog;
+	bool magRecal;
+	int magRecalMode;
+	string asciiMessages;
 	double replaySpeed;
 	int displayMode;
 
+	bool rmcPresetPPD;
 	bool streamINS1;
 	bool streamINS2;
 	bool streamINS3;
@@ -70,6 +71,7 @@ typedef struct
 	bool streamRTOS;
 
 	bool enableLogging;
+	string logType; // -lt=csv
 	string logPath; // -lp=path
 	float maxLogSpacePercent; // -lms=max_space_mb
 	uint32_t maxLogFileSize; // -lmf=max_file_size
@@ -82,6 +84,8 @@ typedef struct
 	string host; // -host=ip:port
 
 	string flashConfig;
+
+	uint32_t timeoutFlushLoggerSeconds;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

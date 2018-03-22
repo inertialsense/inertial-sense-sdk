@@ -37,27 +37,6 @@ using namespace std;
 // default logging path if none specified
 #define DEFAULT_LOGS_DIRECTORY "IS_logs"
 
-#if PLATFORM_IS_WINDOWS
-
-#include <direct.h>
-#define _MKDIR(dir) _mkdir(dir)
-#define _RMDIR(dir) _rmdir(dir)
-#define _GETCWD(buf, len) _getcwd(buf, len)
-#define FLOAT2DOUBLE // Used to prevent warning when compiling with -Wdouble-promotion in Linux
-
-#else
-
-#include <unistd.h>
-#include <dirent.h>
-#include <errno.h>
-//#define _MKDIR(dir) mkdir(dir, S_IRWXU) // 777 owner access only 
-#define _MKDIR(dir) mkdir(dir, ACCESSPERMS) // 0777 access for all
-#define _RMDIR(dir) rmdir(dir)
-#define _GETCWD(buf, len) getcwd(buf, len)
-#define FLOAT2DOUBLE (double) // Used to prevent warning when compiling with -Wdouble-promotion in Linux
-
-#endif
-
 typedef struct
 {
 	string name;
@@ -75,7 +54,7 @@ public:
 		LOGTYPE_DAT = 0,
 		LOGTYPE_SDAT,
 		LOGTYPE_CSV,
-		LOGTYPE_KML, 
+		LOGTYPE_KML,
 	};
 
 	static const string g_emptyString;
@@ -90,7 +69,9 @@ public:
 	bool InitSave(eLogType logType = LOGTYPE_DAT, const string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
 	bool InitSaveTimestamp(const string& timeStamp, const string& directory = g_emptyString, const string& subDirectory = g_emptyString, int numDevices = 1, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
 
-    bool LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
+	// update internal state, handle timeouts, etc.
+	void Update();
+	bool LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
 	p_data_t* ReadData(unsigned int device = 0);
 	p_data_t* ReadNextData(unsigned int& device);
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
@@ -99,9 +80,9 @@ public:
 	void OpenWithSystemApp();
 	string TimeStamp() { return m_timeStamp; }
 	string LogDirectory() { return m_directory; }
-    uint64_t LogSizeAll();
+	uint64_t LogSizeAll();
 	uint64_t LogSize(unsigned int device = 0);
-    float LogSizeAllMB();
+	float LogSizeAllMB();
 	float LogSizeMB(unsigned int device = 0);
 	float FileSizeMB(unsigned int device = 0);
 	uint32_t FileCount(unsigned int device = 0);
@@ -110,6 +91,19 @@ public:
 	const dev_info_t* GetDeviceInfo(unsigned int device = 0);
 	bool CopyLog(cISLogger& log, const string& timestamp = g_emptyString, const string& outputDir = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
 	const cLogStats& GetStats() { return *m_logStats; }
+	eLogType GetType() { return m_logType; }
+
+	/**
+	* Get the timeout flush parameter in seconds
+	* @return the timeout flush parameter in seconds
+	*/
+	time_t GetTimeoutFlushSeconds() { return m_timeoutFlushSeconds; }
+
+	/**
+	* Set the timeout flush logger parameter in seconds
+	* @param timeoutFlushSeconds the timeout flush logger parameter in seconds
+	*/
+	void SetTimeoutFlushSeconds(time_t timeoutFlushSeconds) { m_timeoutFlushSeconds = timeoutFlushSeconds; }
 
 	// get all files in a folder - files parameter is not cleared in this function
 	// files contains the full path to the file
@@ -144,15 +138,34 @@ public:
     // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
     static bool ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, vector<vector<uint8_t>>>& data);
 
-	void SetKmlConfig(bool showPath = true, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
+	void SetKmlConfig(bool showSample = true, bool showPath = true, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
 	{
+		m_showSample = showSample;
 		m_showPath = showPath;
 		m_showTimeStamp = showTimeStamp;
 		m_iconUpdatePeriodSec = updatePeriodSec;
 		m_altClampToGround = altClampToGround;
 	}
 
+	static eLogType ParseLogType(const string& logTypeString)
+	{
+		if (logTypeString == "csv")
+		{
+			return cISLogger::eLogType::LOGTYPE_CSV;
+		}
+		else if (logTypeString == "kml")
+		{
+			return cISLogger::eLogType::LOGTYPE_KML;
+		}
+		else if (logTypeString == "sdat")
+		{
+			return cISLogger::eLogType::LOGTYPE_SDAT;
+		}
+		return cISLogger::eLogType::LOGTYPE_DAT;
+	}
+
 private:
+	cISLogger(const cISLogger& copy); // Disable copy constructors
 	bool InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, bool useSubFolderTimestamp);
 	bool InitDevicesForWriting(int numDevices = 1);
 	void Cleanup();
@@ -169,16 +182,19 @@ private:
 	FILE*					m_errorFile;
 
 	bool					m_altClampToGround;
+	bool					m_showSample;
 	bool					m_showPath;
 	bool					m_showTimeStamp;
 	double					m_iconUpdatePeriodSec;
+	time_t					m_lastCommTime;
+	time_t					m_timeoutFlushSeconds;
 
 #if defined(ENABLE_IS_PYTHON_WRAPPER)
 
     cInertialSenseDisplay	m_pyDisplay;
 
 public:
-	/*!
+	/**
 	* Set the Display variable for the pyCallback
 	* @param python callback function
 	*/

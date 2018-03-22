@@ -21,8 +21,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "ISDataMappings.h"
+#include "DataCSV.h"
 
-#if PLATFORM_IS_LINUX
+#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
 
 #include <unistd.h>
 #include <sys/time.h>
@@ -68,6 +69,7 @@ static bool ctrlHandler(DWORD fdwCtrlType)
 
 static void signalFunction(int sig)
 {
+    (void)sig;
 	s_controlCWasPressed = true;
 }
 
@@ -77,7 +79,7 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 {
 	cout << endl << Hello() << endl;
 
-	m_displayMode = false;
+	m_displayMode = DMODE_PRETTY;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -87,7 +89,10 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 	GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
 	cursorInfo.bVisible = 0;
 	SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
-	SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, true);
+	if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, true))
+	{
+		std::cout << "Failed to set console ctrl handler!" << std::endl;
+	}
 
 #else
 
@@ -265,7 +270,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		switch (data->hdr.id)
 		{
 			// Time of week - double
-		case DID_INS_MISC:
 		case DID_INS_1:
 		case DID_INS_2:				
 			msgTimeMs = (int)(1000.0*d.ins1.timeOfWeek); 
@@ -274,19 +278,19 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 			// Time of week - uint32 ms
 		case DID_SYS_PARAMS:
-		case DID_GPS_POS:			
-			msgTimeMs = d.gps.pos.timeOfWeekMs; 
+			msgTimeMs = d.gpsNav.timeOfWeekMs; 
 			isTowMode = true;
 			break;
 
-		case DID_GPS:				
-			msgTimeMs = d.gps.pos.timeOfWeekMs; 
-			gpsTowMsOffset = (int)(1000.0*d.gps.towOffset); 
+		case DID_GPS_NAV:		
+			msgTimeMs = d.gpsNav.timeOfWeekMs; 
+			gpsTowMsOffset = (int)(1000.0*d.gpsNav.towOffset); 
 			isTowMode = true; 
 			break;
 
-		case DID_RTK_SOL:
-			msgTimeMs = (uint64_t)d.rtkSol.seconds % 604800;
+		case DID_GPS_RTK_MISC:
+			msgTimeMs = d.gpsNav.timeOfWeekMs;
+			gpsTowMsOffset = (int)(1000.0*d.gpsNav.towOffset);
 			isTowMode = false;
 			break;
 
@@ -294,12 +298,10 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_MAGNETOMETER_1:
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
-		case DID_DELTA_THETA_VEL:
+		case DID_PREINTEGRATED_IMU:
 		case DID_DUAL_IMU:
 		case DID_INL2_STATES:
-		case DID_IMU_2:
-		case DID_IMU_1:
-		case DID_RAW_GPS_DATA:
+		case DID_GPS_BASE_RAW:
 			if( isTowMode )
 				msgTimeMs = (int)(1000.0*d.imu.time) + gpsTowMsOffset; 
 			else
@@ -465,21 +467,22 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	{
 	case DID_DEV_INFO:			str = DataToStringDevInfo(d.devInfo, data->hdr);		break;
 	case DID_DUAL_IMU:			str = DataToStringDualIMU(d.dualImu, data->hdr);		break;
-	case DID_IMU_1:
-	case DID_IMU_2:				str = DataToStringIMU(d.imu, data->hdr);				break;
-	case DID_DELTA_THETA_VEL:	str = DataToStringDThetaVel(d.dThetaVel, data->hdr);	break;
+	case DID_PREINTEGRATED_IMU:	str = DataToStringPreintegratedImu(d.pImu, data->hdr);	break;
 	case DID_INS_1:				str = DataToStringINS1(d.ins1, data->hdr);				break;
 	case DID_INS_2:				str = DataToStringINS2(d.ins2, data->hdr);				break;
 	case DID_INS_3:				str = DataToStringINS3(d.ins3, data->hdr);				break;
 	case DID_INS_4:				str = DataToStringINS4(d.ins4, data->hdr);				break;
 	case DID_MAGNETOMETER_1:
 	case DID_MAGNETOMETER_2:	str = DataToStringMag(d.mag, data->hdr);				break;
+	case DID_MAG_CAL:			str = DataToStringMagCal(d.magCal, data->hdr);			break;
 	case DID_BAROMETER:			str = DataToStringBaro(d.baro, data->hdr);				break;
-	case DID_GPS:				str = DataToStringGPS(d.gps, data->hdr);				break;
+	case DID_GPS_NAV:			str = DataToStringGPS(d.gpsNav, data->hdr);				break;
 	case DID_SYS_PARAMS:		str = DataToStringSysParams(d.sysParams, data->hdr);	break;
 	case DID_SYS_SENSORS:		str = DataToStringSysSensors(d.sysSensors, data->hdr);	break;
-	case DID_RTK_SOL:			str = DataToStringRtkSol(d.rtkSol, data->hdr);			break;
-	case DID_RAW_GPS_DATA:		str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
+	case DID_GPS_RTK_MISC:		str = DataToStringGPS(d.gpsRtkNav, data->hdr);			break;
+	case DID_GPS_RTK_NAV:		str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break;
+	case DID_GPS_BASE_RAW:		str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
+	case DID_RTOS_INFO:			str = DataToStringRTOS(d.rtosInfo, data->hdr);			break;
 	default:
 #if 0	// List all DIDs 
 		char buf[128];
@@ -744,7 +747,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 			ins4.qe2b[2],					// Y
 			ins4.qe2b[3]);					// Z
 		float theta[3];
-		qe2b2EulerNed(theta, (float*)ins4.qe2b, (double*)ins4.ecef);
+		qe2b2EulerNedEcef(theta, (float*)ins4.qe2b, (double*)ins4.ecef);
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t(Euler)\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,					// Convert quaternion to euler rotation
 			theta[0] * C_RAD2DEG_F,			// Roll
@@ -819,56 +822,13 @@ string cInertialSenseDisplay::DataToStringDualIMU(const dual_imu_t &imu, const p
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr)
-{
-	char buf[BUF_SIZE];
-	char* ptr = buf;
-	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_IMU_%d:", 1 + (int)(hdr.id == DID_IMU_2));
-	return buf;
-#if DISPLAY_DELTA_TIME==1
-	static double lastTime[2] = { 0 };
-	double dtMs = 1000.0*(imu.time - lastTime[i]);
-	lastTime[i] = imu.time;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
-#else
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", imu.time);
-#endif
-
-	if (m_displayMode == DMODE_SCROLL)
-	{	
-		// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f], acc[%5.1f,%5.1f,%5.1f]",
-			imu.I.pqr[0] * C_RAD2DEG_F,
-			imu.I.pqr[1] * C_RAD2DEG_F,
-			imu.I.pqr[2] * C_RAD2DEG_F,
-			imu.I.acc[0], imu.I.acc[1], imu.I.acc[2]);
-	}
-	else
-	{	
-		// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tPQR\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
-			imu.I.pqr[0] * C_RAD2DEG_F,		// P angular rate
-			imu.I.pqr[1] * C_RAD2DEG_F,		// Q angular rate
-			imu.I.pqr[2] * C_RAD2DEG_F);		// R angular rate
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
-			imu.I.acc[0],					// X acceleration
-			imu.I.acc[1],					// Y acceleration
-			imu.I.acc[2]);					// Z acceleration
-	}
-
-	return buf;
-}
-
-string cInertialSenseDisplay::DataToStringDThetaVel(const delta_theta_vel_t &imu, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_DELTA_THETA_VEL:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_PREINTEGRATED_IMU:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -881,24 +841,39 @@ string cInertialSenseDisplay::DataToStringDThetaVel(const delta_theta_vel_t &imu
 
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", dtheta[%6.3f,%6.3f,%6.3f], duvw[%6.3f,%6.3f,%6.3f]",
-			imu.theta[0] * C_RAD2DEG_F,
-			imu.theta[1] * C_RAD2DEG_F,
-			imu.theta[2] * C_RAD2DEG_F,
-			imu.uvw[0], imu.uvw[1], imu.uvw[2]);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta1[%6.3f,%6.3f,%6.3f], vel1[%6.3f,%6.3f,%6.3f]",
+			imu.theta1[0] * C_RAD2DEG_F,
+			imu.theta1[1] * C_RAD2DEG_F,
+			imu.theta1[2] * C_RAD2DEG_F,
+			imu.vel1[0], imu.vel1[1], imu.vel1[2]);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta2[%6.3f,%6.3f,%6.3f], vel2[%6.3f,%6.3f,%6.3f]",
+			imu.theta2[0] * C_RAD2DEG_F,
+			imu.theta2[1] * C_RAD2DEG_F,
+			imu.theta2[2] * C_RAD2DEG_F,
+			imu.vel2[0], imu.vel2[1], imu.vel2[2]);
 	}
 	else
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tdtheta\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta1\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.theta[0] * C_RAD2DEG_F,		// P angular rate
-			imu.theta[1] * C_RAD2DEG_F,		// Q angular rate
-			imu.theta[2] * C_RAD2DEG_F);		// R angular rate
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tduvw\t");
+			imu.theta1[0] * C_RAD2DEG_F,		// IMU1 P angular rate
+			imu.theta1[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
+			imu.theta1[2] * C_RAD2DEG_F);		// IMU1 R angular rate
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel1\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.uvw[0],					// X acceleration
-			imu.uvw[1],					// Y acceleration
-			imu.uvw[2]);					// Z acceleration
+			imu.vel1[0],						// IMU1 X acceleration
+			imu.vel1[1],						// IMU1 Y acceleration
+			imu.vel1[2]);						// IMU1 Z acceleration
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU2 theta2\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+			imu.theta2[0] * C_RAD2DEG_F,		// IMU2 P angular rate
+			imu.theta2[1] * C_RAD2DEG_F,		// IMU2 Q angular rate
+			imu.theta2[2] * C_RAD2DEG_F);		// IMU2 R angular rate
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 vel2\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+			imu.vel2[0],						// IMU2 X acceleration
+			imu.vel2[1],						// IMU2 Y acceleration
+			imu.vel2[2]);						// IMU2 Z acceleration
 	}
 
 	return buf;
@@ -942,6 +917,36 @@ string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p
 	return buf;
 }
 
+string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_MAG_CAL:");
+
+	switch (mag.enMagRecal)
+	{
+	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d,               ", mag.enMagRecal);	break;
+	case MAG_RECAL_MODE_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d (MULTI-AXIS ), ", mag.enMagRecal);	break;
+	case MAG_RECAL_MODE_SINGLE_AXIS:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d (SINGLE-AXIS), ", mag.enMagRecal);	break;
+	case MAG_RECAL_MODE_COMPLETE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d (COMPLETE!  ), ", mag.enMagRecal);	break;
+	}
+
+	{	// Single line format
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "   progress: %3.0f %%,   declination: %4.1f",
+			mag.progress,
+			mag.declination * C_RAD2DEG_F);
+	}
+
+	if (m_displayMode == DMODE_PRETTY)
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+	}
+
+	return buf;
+}
+
 string cInertialSenseDisplay::DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
@@ -972,42 +977,42 @@ string cInertialSenseDisplay::DataToStringBaro(const barometer_t &baro, const p_
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringGPS(const gps_t &gps, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringGPS(const gps_nav_t &gps, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS_NAV:");
 
 #if DISPLAY_DELTA_TIME==1
 	static int lastTimeMs = 0;
-	int dtMs = gps.pos.timeOfWeekMs - lastTimeMs;
-	lastTimeMs = gps.pos.timeOfWeekMs;
+	int dtMs = gps.timeOfWeekMs - lastTimeMs;
+	lastTimeMs = gps.timeOfWeekMs;
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %3dms", dtMs);
 #else
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", gps.pos.timeOfWeekMs);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", gps.timeOfWeekMs);
 #endif
 
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", LLA[%12.7f,%12.7f,%7.1f], %d sats, %d cno, %4.2f hAcc, %4.2f vAcc, %4.2f pDop",
-			gps.pos.lla[0], gps.pos.lla[1], gps.pos.lla[2],
-			gps.pos.status&GPS_STATUS_NUM_SATS_USED_MASK, gps.pos.cno,
-			gps.pos.hAcc, gps.pos.vAcc, gps.pos.pDop);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", LLA[%12.7f,%12.7f,%7.1f], %d sats, %d cno, %4.3f hAcc, %4.3f vAcc, %4.3f pDop",
+			gps.lla[0], gps.lla[1], gps.lla[2],
+			gps.status&GPS_STATUS_NUM_SATS_USED_MASK, gps.cnoMax,
+			gps.hAcc, gps.vAcc, gps.pDop);
 	}
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tSats:  %2d    ",
-			gps.pos.status&GPS_STATUS_NUM_SATS_USED_MASK);	// Satellites used in solution
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status:  0x%08x", gps.pos.status);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAccuracy:  %.1f m   \n",
-			gps.pos.hAcc);					// Position accuracy
+			gps.status&GPS_STATUS_NUM_SATS_USED_MASK);	// Satellites used in solution
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status:  0x%08x", gps.status);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAccuracy:  %.3f m   \n",
+			gps.hAcc);					// Position accuracy
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
-			gps.pos.lla[0],					// GPS Latitude
-			gps.pos.lla[1],					// GPS Longitude
-			gps.pos.lla[2]);					// GPS Ellipsoid altitude (meters)
+			gps.lla[0],					// GPS Latitude
+			gps.lla[1],					// GPS Longitude
+			gps.lla[2]);				// GPS Ellipsoid altitude (meters)
 	}
 
 	return buf;
@@ -1070,7 +1075,7 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%f,%f,%f,%f,%d,%d,%f,%f,%f,%f,%d\n",
 		sys.alignAttDetect, sys.alignAttError, sys.alignVelError, sys.alignPosError,
-		sys.sampleDtMs, sys.navDtMs, sys.ftf0, sys.magInclination, sys.magDeclination, sys.magMagnitude, sys.genFaultCode);
+		sys.samplePeriodMs, sys.navPeriodMs, sys.ftf0, sys.magInclination, sys.magDeclination, sys.magMagnitude, sys.genFaultCode);
 
 	if (m_displayMode == DMODE_PRETTY)
 	{
@@ -1121,25 +1126,52 @@ string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensor
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRtkSol(const rtk_sol_t& sol, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
 	const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
-	SNPRINTF(buf, BUF_SIZE, "RTK: T=%.3f, S=%d, R=%3.2f, N=%d, G=%.3g, P=%.10g, %.10g, %.10g, A:%3.3f,%3.3f,%3.3f%s",
-		sol.seconds, sol.status, sol.ratio, sol.numberOfSatellites, sol.age, sol.pos[0], sol.pos[1], sol.pos[2],
-		sol.accuracy[0], sol.accuracy[1], sol.accuracy[2], terminator);
+	ptr += SNPRINTF(buf, ptrEnd - ptr, "RTK MISC: T=%d, lla[%4.7f,%4.7f,%7.3f], A[%3.3f,%3.3f,%3.3f], AR:%3.3f, dop(g,p,h,v)[%3.3f,%3.3f,%3.3f,%3.3f] %s",
+		rtk.timeOfWeekMs, rtk.baseLla[0], rtk.baseLla[1], rtk.baseLla[2],
+		rtk.accuracyPos[0], rtk.accuracyPos[1], rtk.accuracyPos[2],
+		rtk.arThreshold,
+		rtk.gDop, rtk.pDop, rtk.hDop, rtk.vDop,
+		terminator);
+
+	if (m_displayMode != DMODE_SCROLL)
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+	}
+
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRawGPS(const raw_gps_msg_t& raw, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
 	const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
-	SNPRINTF(buf, BUF_SIZE, "RAW GPS: receiverIndex=%d, type=%d, count=%d%s",
+	ptr += SNPRINTF(buf, ptrEnd - ptr, "RAW GPS: receiverIndex=%d, type=%d, count=%d   %s",
 		raw.receiverIndex, raw.type, raw.count, terminator);
+
+	if (m_displayMode != DMODE_SCROLL)
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+	}
 	return buf;
+}
+
+string cInertialSenseDisplay::DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr)
+{
+	cDataCSV csv;
+	string csvString;
+	csv.DataToStringCSV(hdr, (const uint8_t*)&info, csvString);
+	const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
+	return string("RTOS: ") + csvString + terminator;
 }
 
 ostream& boldOn(ostream& os)

@@ -178,7 +178,7 @@ void quatConjRot(Vector3_t result, const Quat_t q, const Vector3_t v)
 
 /*
  * This will convert from quaternions to euler angles
- * q(4,1) -> euler[phi;theta;psi] (rad)
+ * q(W,X,Y,Z) -> euler(phi,theta,psi) (rad)
  *
  * Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
  */
@@ -194,16 +194,26 @@ void quat2euler(const Quat_t q, Euler_t theta)
 }
 void quat2phiTheta(const Quat_t q, f_t *phi, f_t *theta)
 {
+    float sinang = 2 * (q[0] * q[2] - q[3] * q[1]);
+    if (sinang > 1.0f) { sinang = 1.0f; }
+    if (sinang < -1.0f) { sinang = -1.0f; }
+
 	*phi	= _ATAN2( 2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2]) );
-	*theta	= _ASIN( 2 * (q[0] * q[2] - q[3] * q[1]) );
-// 	theta[2] = _ATAN2( 2 * (q[0] * q[3] + q[1] * q[2]), 1 - 2 * (q[2] * q[2] + q[3] * q[3]) );
+	*theta  = _ASIN (sinang);
+}
+void quat2psi(const Quat_t q, f_t *psi)
+{
+	float sinang = 2 * (q[0] * q[2] - q[3] * q[1]);
+	if (sinang > 1.0f) { sinang = 1.0f; }
+	if (sinang < -1.0f) { sinang = -1.0f; }
+
+	*psi = _ATAN2(2 * (q[0]*q[3] + q[1]*q[2]), 1 - 2 * (q[2]*q[2] + q[3]*q[3]));
 }
 
 
 /*
  * This will convert from euler angles to quaternion vector
- * phi, theta, psi -> q(4,1)
- * euler angles in radians
+ * euler(phi,theta,psi) (rad) -> q(W,X,Y,Z)
  */
 void euler2quat(const Euler_t euler, Quat_t q)
 {
@@ -256,14 +266,25 @@ void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla)
 /*
 * Convert ECEF quaternion to NED euler at specified ECEF
 */
-void qe2b2EulerNed(Vector3 eul, const Vector4 qe2b, const Vector3d ecef)
+void qe2b2EulerNedEcef(Vector3 eul, const Vector4 qe2b, const Vector3d ecef)
 {
 	Vector3d lla;
+
+// 	ecef2lla_d(ecef, lla);
+	ecef2lla(ecef, lla, 1, 5);
+	qe2b2EulerNedLLA(eul, qe2b, lla);
+}
+
+
+/*
+* Convert ECEF quaternion to NED euler at specified LLA (rad)
+*/
+void qe2b2EulerNedLLA(Vector3 eul, const Vector4 qe2b, const Vector3d lla)
+{
 	Vector3 eulned;
 	Vector4 qe2n;
 	Vector4 qn2b;
 
-	ecef2lla_d((double*)ecef, lla);
 	eulned[0] = 0.0f;
 	eulned[1] = ((float)-lla[0]) - 0.5f * C_PI_F;
 	eulned[2] = (float)lla[1];

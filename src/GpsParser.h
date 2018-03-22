@@ -17,42 +17,47 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(RTK_EMBEDDED)
 
-#include "rtklib.h"
+#include "../../hdw-src/hw-libs/rtklib/src/rtklib.h"
 
 #endif
 
+extern "C"
+{
+	extern gtime_t g_gps_latest_time;
+}
+
 class cGpsParser;
 
-/*!
+/**
 * Gps parser types
 */
 typedef enum
 {
-	/*!
+	/**
 	* Inertial sense format
 	*/
 	GpsParserTypeInertialSense = 1,
 
-	/*!
+	/**
 	* Ublox format
 	*/
 	GpsParserTypeUblox = 2,
 
-	/*!
+	/**
 	* Rtcm3 format
 	*/
 	GpsParserTypeRtcm3 = 3
 } eGpsParserType;
 
-/*!
+/**
 * Gps parser interface. A gps parser handles parsing messages common to all types of gps data formats.
 */
 class iGpsParserDelegate
 {
 public:
-	/*!
+	/**
 	* Executes when a valid packet is received. Data is not valid after this callback completes.
-	* @param parser the ublox reader
+    * @param parser the gps parser
 	* @param data the packet, including all headers and checksums
 	* @param dataLength the length of the data
 	* @return true to parse the packet, false to discard it
@@ -65,7 +70,7 @@ public:
 		return true;
 	}
 
-	/*!
+	/**
 	* Executes when observation data is received. Data is not valid after this callback completes.
 	* @param parser the parser
 	* @param obs the observation data
@@ -76,10 +81,10 @@ public:
 		(void)obs;
 	}
 
-	/*!
-	* Executes when GPS ephemeris data is received. Data is not valid after this callback completes.
+	/**
+	* Executes when non-glonass ephemeris data is received. Data is not valid after this callback completes.
 	* @param parser the parser
-	* @param obs the observation data
+	* @param eph the ephemeris data
 	* @param prn the prn identifier
 	*/
 	virtual void OnGpsEphemerisReceived(const cGpsParser* parser, const eph_t* eph, int prn)
@@ -89,10 +94,10 @@ public:
 		(void)prn;
 	}
 
-	/*!
+	/**
 	* Executes when Glonass ephemeris data is received. Data is not valid after this callback completes.
 	* @param parser the parser
-	* @param obs the observation data
+	* @param geph the glonass ephemeris data
 	* @param prn the prn identifier
 	*/
 	virtual void OnGlonassEphemerisReceived(const cGpsParser* parser, const geph_t* geph, int prn)
@@ -102,7 +107,7 @@ public:
 		(void)prn;
 	}
 
-	/*!
+	/**
 	* Executes when sbs message received
 	* @param parser the parser
 	* @param sbs the sbs message
@@ -113,7 +118,7 @@ public:
 		(void)sbs;
 	}
 
-	/*!
+	/**
 	* Executes when station info is received. Data is not valid after this callback completes.
 	* @param parser the parser
 	* @param sta the station info
@@ -128,7 +133,7 @@ public:
 class cGpsParser
 {
 public:
-	/*!
+	/**
 	* Create a GPS parser
 	* @param type the type of parser
 	* @param delegate the delegate for callbacks
@@ -138,7 +143,7 @@ public:
 
 	virtual ~cGpsParser() {}
 
-	/*!
+	/**
 	* Add data to the parser
 	* @param data the data to write
 	* @param dataLength the number of bytes in data
@@ -151,31 +156,31 @@ public:
 		}
 	}
 
-	/*!
+	/**
 	* Add a byte to the parser
 	* @param b the byte to write
 	*/
 	virtual void WriteByte(uint8_t b) = 0;
 
-	/*!
+	/**
 	* Get the delegate for the parser
 	* @return the delegate
 	*/
 	iGpsParserDelegate* GetDelegate() { return m_delegate; }
 
-	/*!
+	/**
 	* Set the receiver index
 	* @param index the receiver index, RECEIVER_INDEX_ROVER or RECEIVER_INDEX_BASE_STATION
 	*/
 	void SetReceiverIndex(int32_t index) { m_receiverIndex = index; }
 
-	/*!
+	/**
 	* Get the receiver index
 	* @return the receiver index, RECEIVER_INDEX_ROVER or RECEIVER_INDEX_BASE_STATION
 	*/
 	int32_t GetReceiverIndex() const { return m_receiverIndex; }
 
-	/*!
+	/**
 	* Parse a full formed message. This is normally called during the course of Write and WriteByte, but you can pass in a fully formed message as well
 	* @param data the full formed message data
 	* @param dataLength the number of bytes in data
@@ -183,7 +188,7 @@ public:
     virtual void ParseMessage(const uint8_t* data, int dataLength) { (void)data; (void)dataLength; }
 
 protected:
-	/*!
+	/**
 	* Constructor
 	* @param delegate the delegate to receive callbacks on packets, must not be NULL
 	*/

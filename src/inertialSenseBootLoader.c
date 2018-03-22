@@ -19,9 +19,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define ENABLE_HEX_BOOT_LOADER 1
 #define MAX_SEND_COUNT 510
 #define MAX_VERIFY_CHUNK_SIZE 1024
+#define BOOTLOADER_TIMEOUT_DEFAULT 1000
 
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
-#define PAGE_SIZE 65536
+#define FLASH_PAGE_SIZE 65536
 
 typedef struct
 {
@@ -42,14 +43,15 @@ typedef struct
 #endif
 
 #define bootloader_perror(s, ...) \
-	if (s->error) \
+	if (s->error != 0 && s->errorLength > 0) \
 	{ \
-		bootloader_snprintf(s->error, s->errorLength, __VA_ARGS__); \
+		bootloader_snprintf(s->error + strlen(s->error), s->errorLength - strlen(s->error), __VA_ARGS__); \
 	}
 
 #define bootloader_min(a, b) (a < b ? a : b)
 #define bootloader_max(a, b) (a > b ? a : b)
 
+static const unsigned char hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 // negotiate the bootloader version, once a 'U' character has been read, we read another character, timing out after 500 milliseconds
 // if nothing comes back, we are using version 1, otherwise the version is the number sent back
@@ -70,7 +72,7 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
 	}
 	else
 	{
-        bootloader_perror(state->param->port, "Invalid version sent from bootloader: 0x%02X", (int)v);
+        bootloader_perror(state->param->port, "Invalid version sent from bootloader: 0x%02X\n", (int)v);
 		return 0;
 	}
 
@@ -97,9 +99,9 @@ static int serialPortOpenInternal(serial_port_t* s, int baudRate, char* error, i
 	serialPortClose(s);
 	s->error = error;
 	s->errorLength = errorLength;
-	if (serialPortOpen(s, s->port, baudRate, 1) == 0)
+	if (serialPortOpen(s, s->port, baudRate == 0 ? IS_BAUD_RATE_BOOTLOADER : baudRate, 1) == 0)
 	{
-		bootloader_perror(s, "Unable to open serial port at %s", s->port);
+		bootloader_perror(s, "Unable to open serial port at %s\n", s->port);
 		return 0;
 	}
 
@@ -145,9 +147,9 @@ static int bootloaderEraseFlash(serial_port_t* s)
 	
 	memcpy(selectFlash, ":03000006030000F4CC\0\0\0\0\0", 24);
 	bootloaderChecksum(0, selectFlash, 1, 17, 17, 1);
-	if (serialPortWriteAndWaitFor(s, selectFlash, 19, (unsigned char*)".\r\n", 3) == 0)
+	if (serialPortWriteAndWaitForTimeout(s, selectFlash, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
 	{
-		bootloader_perror(s, "Failed to select flash memory to erase");
+		bootloader_perror(s, "Failed to select flash memory to erase\n");
 		return 0;
 	}
 
@@ -155,7 +157,7 @@ static int bootloaderEraseFlash(serial_port_t* s)
 	bootloaderChecksum(0, selectFlash, 1, 15, 15, 1);
 	if (serialPortWriteAndWaitForTimeout(s, selectFlash, 17, (unsigned char*)".\r\n", 3, eraseFlashTimeoutMilliseconds) == 0)
 	{
-		bootloader_perror(s, "Failed to perform erase flash memory operation");
+		bootloader_perror(s, "Failed to perform erase flash memory operation\n");
 		return 0;
 	}
 
@@ -169,9 +171,9 @@ static int bootloaderSelectPage(serial_port_t* s, int page)
 	bootloader_snprintf((char*)changePage, 24, ":040000060301%.4XCC", page);
 	bootloaderChecksum(0, changePage, 1, 17, 17, 1);
 
-	if (serialPortWriteAndWaitFor(s, changePage, 19, (unsigned char*)".\r\n", 3) == 0)
+	if (serialPortWriteAndWaitForTimeout(s, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
 	{
-		bootloader_perror(s, "Failed to change to page %d", page);
+		bootloader_perror(s, "Failed to change to page %d\n", page);
 		return 0;
 	}
 
@@ -188,9 +190,9 @@ static int bootloaderBeginProgramForCurrentPage(serial_port_t* s, int startOffse
 	bootloader_snprintf((char*)programPage, 24, ":0500000100%.4X%.4XCC", startOffset, endOffset);
 	bootloaderChecksum(0, programPage, 1, 19, 19, 1);
 
-	if (serialPortWriteAndWaitFor(s, programPage, 21, (unsigned char*)".\r\n", 3) == 0)
+	if (serialPortWriteAndWaitForTimeout(s, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
 	{
-		bootloader_perror(s, "Failed to select offset %X to %X", startOffset, endOffset);
+		bootloader_perror(s, "Failed to select offset %X to %X\n", startOffset, endOffset);
 		return 0;
 	}
 
@@ -244,7 +246,7 @@ static int bootloaderUploadHexDataPage(serial_port_t* s, unsigned char* hexData,
 	bootloader_snprintf((char*)programLine, 12, ":%.2X%.4X00", byteCount, *currentOffset);
 	if (serialPortWrite(s, programLine, 9) != 9)
 	{
-		bootloader_perror(s, "Failed to write start page at offset %d", *currentOffset);
+		bootloader_perror(s, "Failed to write start page at offset %d\n", *currentOffset);
 		return 0;
 	}
 
@@ -255,7 +257,7 @@ static int bootloaderUploadHexDataPage(serial_port_t* s, unsigned char* hexData,
 	int charsForThisPage = byteCount * 2;
 	if (serialPortWrite(s, hexData, charsForThisPage) != charsForThisPage)
 	{
-		bootloader_perror(s, "Failed to write page data at offset %d", *currentOffset);
+		bootloader_perror(s, "Failed to write page data at offset %d\n", *currentOffset);
 		return 0;
 	}
 
@@ -268,9 +270,9 @@ static int bootloaderUploadHexDataPage(serial_port_t* s, unsigned char* hexData,
 	checkSum = bootloaderChecksum(checkSum, hexData, 0, charsForThisPage, 0, 1);
 	unsigned char checkSumHex[3];
 	bootloader_snprintf((char*)checkSumHex, 3, "%.2X", checkSum);
-	if (serialPortWriteAndWaitFor(s, checkSumHex, 2, (unsigned char*)".\r\n", 3) == 0)
+	if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
 	{
-		bootloader_perror(s, "Failed to write checksum %s at offset %d", checkSumHex, *currentOffset);
+		bootloader_perror(s, "Failed to write checksum %s at offset %d\n", checkSumHex, *currentOffset);
 		return 0;
 	}
 
@@ -284,7 +286,7 @@ static int bootloaderUploadHexData(serial_port_t* s, unsigned char* hexData, int
 {
 	if (charCount > MAX_SEND_COUNT)
 	{
-		bootloader_perror(s, "Unexpected char count of %d for page %d at offset %X", charCount, *currentPage, *currentOffset);
+		bootloader_perror(s, "Unexpected char count of %d for page %d at offset %X\n", charCount, *currentPage, *currentOffset);
 		return 0;
 	}
 	else if (charCount == 0)
@@ -295,12 +297,12 @@ static int bootloaderUploadHexData(serial_port_t* s, unsigned char* hexData, int
 	int byteCount = charCount / 2;
 
 	// check if we will overrun the current page
-	if (*currentOffset + byteCount > PAGE_SIZE)
+	if (*currentOffset + byteCount > FLASH_PAGE_SIZE)
 	{
-		int pageByteCount = PAGE_SIZE - *currentOffset;
+		int pageByteCount = FLASH_PAGE_SIZE - *currentOffset;
 		if (bootloaderUploadHexDataPage(s, hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) == 0)
 		{
-			bootloader_perror(s, "Failed to upload %d bytes to page %d at offset %d", pageByteCount, *currentPage, *currentOffset);
+			bootloader_perror(s, "Failed to upload %d bytes to page %d at offset %d\n", pageByteCount, *currentPage, *currentOffset);
 			return 0;
 		}
 		hexData += (pageByteCount * 2);
@@ -309,16 +311,16 @@ static int bootloaderUploadHexData(serial_port_t* s, unsigned char* hexData, int
 		// change to the next page
 		*currentOffset = 0;
 		(*currentPage)++;
-		if (!bootloaderSelectPage(s, *currentPage) || !bootloaderBeginProgramForCurrentPage(s, 0, PAGE_SIZE - 1))
+		if (!bootloaderSelectPage(s, *currentPage) || !bootloaderBeginProgramForCurrentPage(s, 0, FLASH_PAGE_SIZE - 1))
 		{
-			bootloader_perror(s, "Failure issuing select page command for upload");
+			bootloader_perror(s, "Failure issuing select page command for upload\n");
 			return 0;
 		}
 	}
 
 	if (charCount != 0 && bootloaderUploadHexDataPage(s, hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) == 0)
 	{
-		bootloader_perror(s, "Failed to upload %d bytes to page %d at offset %d", charCount / 2, *currentPage, *currentOffset);
+		bootloader_perror(s, "Failed to upload %d bytes to page %d at offset %d\n", charCount / 2, *currentPage, *currentOffset);
 		return 0;
 	}
 
@@ -327,14 +329,14 @@ static int bootloaderUploadHexData(serial_port_t* s, unsigned char* hexData, int
 
 static int bootloaderFillCurrentPage(serial_port_t* s, int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
-	if (*currentOffset < PAGE_SIZE)
+	if (*currentOffset < FLASH_PAGE_SIZE)
 	{
 		unsigned char hexData[256];
 		memset(hexData, 'F', 256);
 
-		while (*currentOffset < PAGE_SIZE)
+		while (*currentOffset < FLASH_PAGE_SIZE)
 		{
-			int byteCount = (PAGE_SIZE - *currentOffset) * 2;
+			int byteCount = (FLASH_PAGE_SIZE - *currentOffset) * 2;
 			if (byteCount > 256)
 			{
 				byteCount = 256;
@@ -343,7 +345,7 @@ static int bootloaderFillCurrentPage(serial_port_t* s, int* currentPage, int* cu
 
 			if (bootloaderUploadHexDataPage(s, hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) == 0)
 			{
-				bootloader_perror(s, "Failed to fill page %d with %d bytes at offset %d", *currentPage, byteCount, *currentOffset);
+				bootloader_perror(s, "Failed to fill page %d with %d bytes at offset %d\n", *currentPage, byteCount, *currentOffset);
 				return 0;
 			}
 		}
@@ -362,7 +364,7 @@ static int bootloaderDownloadData(serial_port_t* s, int startOffset, int endOffs
 	bootloaderChecksum(0, programLine, 1, 19, 19, 1);
 	if (serialPortWrite(s, programLine, 21) != 21)
 	{
-		bootloader_perror(s, "Failed to download offsets %X to %X", startOffset, endOffset);
+		bootloader_perror(s, "Failed to attempt download offsets %X to %X\n", startOffset, endOffset);
 		return 0;
 	}
 
@@ -373,10 +375,10 @@ static int bootloaderDownloadData(serial_port_t* s, int startOffset, int endOffs
 static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* state)
 {
 	int verifyChunkSize = state->verifyChunkSize;
-	int chunkSize = bootloader_min(PAGE_SIZE, verifyChunkSize);
+	int chunkSize = bootloader_min(FLASH_PAGE_SIZE, verifyChunkSize);
 	int realCheckSum = 5381;
 	int totalCharCount = state->firstPageSkipBytes * 2;
-	int grandTotalCharCount = (lastPage + 1) * PAGE_SIZE * 2; // char count
+	int grandTotalCharCount = (lastPage + 1) * FLASH_PAGE_SIZE * 2; // char count
 	int i, pageOffset, readCount, actualPageOffset, pageChars, chunkIndex, lines;
 	int verifyByte = -1;
 	unsigned char chunkBuffer[(MAX_VERIFY_CHUNK_SIZE * 2) + 64]; // extra space for overhead
@@ -403,50 +405,50 @@ static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* stat
 	{
         if (bootloaderSelectPage(state->param->port, i) == 0)
 		{
-            bootloader_perror(state->param->port, "Failure issuing select page command for verify");
+            bootloader_perror(state->param->port, "Failure issuing select page command for verify\n");
 			return 0;
 		}
 		pageOffset = (i == 0 ? state->firstPageSkipBytes : 0);
-		while (pageOffset < PAGE_SIZE)
+		while (pageOffset < FLASH_PAGE_SIZE)
 		{
-			readCount = bootloader_min(chunkSize, PAGE_SIZE - pageOffset);
+			readCount = bootloader_min(chunkSize, FLASH_PAGE_SIZE - pageOffset);
 
 			// range is inclusive on the uINS, so subtract one
             if (bootloaderDownloadData(state->param->port, pageOffset, pageOffset + readCount - 1) == 0)
 			{
-                bootloader_perror(state->param->port, "Failure issuing download data command");
+                bootloader_perror(state->param->port, "Failure issuing download data command\n");
 				return 0;
 			}
 
 			// each line has 7 overhead bytes, plus two bytes (hex) for each byte on the page and max 255 bytes per line
 			lines = (int)ceilf((float)readCount / 255.0f);
-            readCount = serialPortRead(state->param->port, chunkBuffer, (7 * lines) + (readCount * 2));
+            readCount = serialPortReadTimeout(state->param->port, chunkBuffer, (7 * lines) + (readCount * 2), BOOTLOADER_TIMEOUT_DEFAULT);
 			chunkIndex = 0;
 
 			while (chunkIndex < readCount)
 			{
 				if (chunkIndex > readCount - 5)
 				{
-                    bootloader_perror(state->param->port, "Unexpected start line during validation");
+                    bootloader_perror(state->param->port, "Unexpected start line during validation\n");
 					return 0;
 				}
 
 				// skip the first 5 chars, they are simply ####=
 				if (chunkBuffer[chunkIndex] == 'X')
 				{
-                    bootloader_perror(state->param->port, "Invalid checksum during validation");
+                    bootloader_perror(state->param->port, "Invalid checksum during validation\n");
 					return 0;
 				}
 				else if (chunkBuffer[chunkIndex += 4] != '=')
 				{
-                    bootloader_perror(state->param->port, "Unexpected start line during validation");
+                    bootloader_perror(state->param->port, "Unexpected start line during validation\n");
 					return 0;
 				}
 				chunkBuffer[chunkIndex] = '\0';
 				actualPageOffset = strtol((char*)(chunkBuffer + chunkIndex - 4), 0, 16);
 				if (actualPageOffset != pageOffset)
 				{
-                    bootloader_perror(state->param->port, "Unexpected offset during validation");
+                    bootloader_perror(state->param->port, "Unexpected offset during validation\n");
 					return 0;
 				}
 				pageChars = 0;
@@ -484,14 +486,14 @@ static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* stat
 					}
 					else
 					{
-                        bootloader_perror(state->param->port, "Unexpected hex data during validation: 0x%02x [%c]", c, c);
+                        bootloader_perror(state->param->port, "Unexpected hex data during validation: 0x%02x [%c]\n", c, c);
 						return 0;
 					}
 				}
 
 				if (c != '\n')
 				{
-                    bootloader_perror(state->param->port, "Unexpected end line character found during validation: 0x%02x [%c]", c, c);
+                    bootloader_perror(state->param->port, "Unexpected end line character found during validation: 0x%02x [%c]\n", c, c);
 					return 0;
 				}
 
@@ -503,7 +505,7 @@ static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* stat
 					percent = (float)totalCharCount / (float)grandTotalCharCount;
                     if (state->param->verifyProgress(state->param->obj, percent) == 0)
 					{
-                        bootloader_perror(state->param->port, "Validate firmware cancelled");
+                        bootloader_perror(state->param->port, "Validate firmware cancelled\n");
 						return 0;
 					}
 				}
@@ -518,7 +520,7 @@ static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* stat
 
 	if (realCheckSum != checkSum)
 	{
-        bootloader_perror(state->param->port, "Download checksum 0x%08x != calculated checksum 0x%08x", realCheckSum, checkSum);
+        bootloader_perror(state->param->port, "Download checksum 0x%08x != calculated checksum 0x%08x\n", realCheckSum, checkSum);
 		return 0;
 	}
 
@@ -561,7 +563,7 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 		{
             if (lineLength > BUFFER_SIZE * 4)
             {
-                bootloader_perror(state->param->port, "Line length of %d was too large", lineLength);
+                bootloader_perror(state->param->port, "Line length of %d was too large\n", lineLength);
                 return 0;
             }
 
@@ -578,7 +580,7 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 				pad = (subOffset - lastSubOffset);
                 if (outputPtr + pad >= outputPtrEnd)
                 {
-                    bootloader_perror(state->param->port, "FF padding overflowed output buffer");
+                    bootloader_perror(state->param->port, "FF padding overflowed output buffer\n");
                     return 0;
                 }
 
@@ -594,7 +596,7 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
             pad = lineLength - 11;
             if (outputPtr + pad >= outputPtrEnd)
             {
-                bootloader_perror(state->param->port, "Line data overflowed output buffer");
+                bootloader_perror(state->param->port, "Line data overflowed output buffer\n");
                 return 0;
             }
 
@@ -624,7 +626,7 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 
 			if (outputSize < 0 || outputSize > BUFFER_SIZE)
 			{
-                bootloader_perror(state->param->port, "Output size of %d was too large", outputSize);
+                bootloader_perror(state->param->port, "Output size of %d was too large\n", outputSize);
 				return 0;
 			}
 			else if (outputSize > 0)
@@ -650,7 +652,7 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 
 				if (outputSize < 0 || outputSize > BUFFER_SIZE)
 				{
-                    bootloader_perror(state->param->port, "Output size of %d was too large", outputSize);
+                    bootloader_perror(state->param->port, "Output size of %d was too large\n", outputSize);
 					return 0;
 				}
 
@@ -677,7 +679,7 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 			percent = (float)ftell(file) / (float)fileSize;
             if (state->param->uploadProgress(state->param->obj, percent) == 0)
 			{
-                bootloader_perror(state->param->port, "Upload firmware cancelled");
+                bootloader_perror(state->param->port, "Upload firmware cancelled\n");
 				return 0;
 			}
 		}
@@ -718,7 +720,8 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 
 static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 {
-	bootloader_state_t state = { 0 };
+    bootloader_state_t state;
+    memset(&state, 0, sizeof(state));
 	unsigned char c;
 	int dataLength;
 	int verifyCheckSum;
@@ -727,7 +730,7 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 	int commandLength;
 	unsigned char buf[16];
 	unsigned char commandType;
-	const unsigned char* hexLookupTable = getHexLookupTable();
+
 	float percent = 0.0f;
 	fseek(file, 0, SEEK_END);
 	int fileSize = ftell(file);
@@ -783,7 +786,7 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
                     serialPortWrite(p->port, buf, 2);
 				}
 
-                serialPortWaitFor(p->port, (unsigned char*)".\r\n", 3);
+                serialPortWaitForTimeout(p->port, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT);
 
                 if (p->uploadProgress != 0)
 				{
@@ -843,7 +846,7 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 		}
 		else
 		{
-            bootloader_perror(p->port, "Invalid data in .bin file");
+            bootloader_perror(p->port, "Invalid data in .bin file\n");
 			return 0;
 		}
 	}
@@ -872,6 +875,17 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 	return dataLength;
 }
 
+static void bootloaderRestartAssist(serial_port_t* s)
+{
+    // USE WITH CAUTION! This will put in bootloader assist mode allowing a new bootloader to be put on, i.e. SAM-BA
+
+    // restart bootloader assist command
+    serialPortWrite(s, (unsigned char*)":020000040700F5", 15);
+
+    // give the device time to start up
+    serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+}
+
 static void bootloaderRestart(serial_port_t* s)
 {
 	// restart bootloader command
@@ -893,18 +907,23 @@ static int bootloaderSync(serial_port_t* s)
 	{
 		if (serialPortWriteAndWaitForTimeout(s, &handshakerChar, 1, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
 		{
+            serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
 			return 1;
 		}
 	}
-
-	serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
 
 	return 0;
 }
 
 static int bootloaderHandshake(bootload_params_t* p)
 {
-	static int baud = IS_BAUD_RATE_BOOTLOADER;
+    p->baudRate = (p->baudRate != IS_BAUD_RATE_BOOTLOADER_RS232 ? IS_BAUD_RATE_BOOTLOADER : IS_BAUD_RATE_BOOTLOADER_RS232);
+
+    serialPortClose(p->port);
+    if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
+    {
+        return 0;
+    }
 
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
 
@@ -928,20 +947,28 @@ static int bootloaderHandshake(bootload_params_t* p)
 
 		// retry at other baud rate
         serialPortClose(p->port);
-		baud = (baud == IS_BAUD_RATE_BOOTLOADER) ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER;
-        serialPortOpen(p->port, p->port->port, baud, 1);
+		p->baudRate = (p->baudRate == IS_BAUD_RATE_BOOTLOADER) ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER;
+        if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
+        {
+            return 0;
+        }
 
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
 	}
 
     // failed to handshake, fatal error
-    bootloader_perror(p->port, "Unable to handshake with bootloader");
+    bootloader_perror(p->port, "Unable to handshake with bootloader\n");
 	return 0;
 }
 
 static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 {
+	if (!enableBootloader(p->port, p->baudRate, p->error, p->errorLength))
+	{
+		return 0;
+	}
+
 	// flush device input buffer with invalid chars to reset state machine
 	for (int i = 0; i < 64; i++)
 	{
@@ -965,7 +992,8 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 
 #if ENABLE_HEX_BOOT_LOADER
 
-		bootloader_state_t state = { 0 };
+        bootloader_state_t state;
+        memset(&state, 0, sizeof(state));
         state.param = p;
 
 		if
@@ -977,7 +1005,7 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 			// select the first page
             !bootloaderSelectPage(p->port, 0) ||
 			// begin programming the first page
-            !bootloaderBeginProgramForCurrentPage(p->port, state.firstPageSkipBytes, PAGE_SIZE - 1)
+            !bootloaderBeginProgramForCurrentPage(p->port, state.firstPageSkipBytes, FLASH_PAGE_SIZE - 1)
 		)
 		{
 			return 0;
@@ -997,7 +1025,8 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 
 int bootloadFile(const char* fileName, serial_port_t* port, char* error, int errorLength, const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
-	bootload_params_t params = { 0 };
+    bootload_params_t params;
+    memset(&params, 0, sizeof(params));
 	params.fileName = fileName;
 	params.port = port;
 	params.error = error;
@@ -1016,10 +1045,9 @@ int bootloadFileEx(bootload_params_t* params)
 {
 	int result = 0;
 
-	// open the serial port
-	if (serialPortOpenInternal(params->port, IS_BAUD_RATE_BOOTLOADER, params->error, params->errorLength) == 0)
+	if (params->error != 0 && params->errorLength > 0)
 	{
-		return result;
+		*params->error = '\0';
 	}
 
 	// open the file
@@ -1058,49 +1086,56 @@ int bootloadFileEx(bootload_params_t* params)
 	return result;
 }
 
-int enableBootloader(serial_port_t* port, char* error, int errorLength)
+int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength)
 {
-	// raspberry PI and other Linux have trouble with 3000000 baud, so start with 921600
+    // raspberry PI and other Linux have trouble with 3000000 baud, so start with 921600
     static const int baudRates[] = { 921600, 3000000, 460800, 230400, 115200 };
 
 	// detect if device is already in bootloader mode
-	bootload_params_t p = { 0 };
+    bootload_params_t p;
+    memset(&p, 0, sizeof(p));
 	p.port = port;
 	p.flags.bitFields.enableAutoBaud = 1;
-	if (!bootloaderHandshake(&p))
-	{
-		// we are probably in program mode, we will need to try and get the baud rate right
-		unsigned char c = 0;
-		for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
-		{
-			serialPortClose(port);
-			if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
-			{
-				return 0;
-			}
-			for (size_t loop = 0; loop < 10; loop++)
-			{
-				serialPortWrite(port, (unsigned char*)"$BLEN*05\r\n", 10);
-				c = 0;
-				if (serialPortReadCharTimeout(port, &c, 50) == 1)
-				{
-					if (c == '$')
-					{
-						// done, we got into bootloader mode
-						i = 9999;
-						break;
-					}
-				}
-			}
-		}
 
-		// if we can't handshake at this point, bootloader enable has failed
-		if (!bootloaderHandshake(&p))
-		{
-			// failure
-			return 0;
-		}
-	}
+    // in case we are in program mode, try and send the commands to go into bootloader mode
+    unsigned char c = 0;
+    for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
+    {
+        serialPortClose(port);
+        if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
+        {
+            return 0;
+        }
+        for (size_t loop = 0; loop < 10; loop++)
+        {
+            serialPortWriteAscii(port, "STPB", 4);
+            serialPortWriteAscii(port, "BLEN", 4);
+            c = 0;
+            if (serialPortReadCharTimeout(port, &c, 13) == 1)
+            {
+                if (c == '$')
+                {
+                    // done, we got into bootloader mode
+                    i = 9999;
+                    SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
+                    break;
+                }
+            }
+            else
+            {
+                serialPortFlush(port);
+            }
+        }
+    }
+    serialPortClose(port);
+
+    // if we can't handshake at this point, bootloader enable has failed
+	p.baudRate = (baudRate == IS_BAUD_RATE_BOOTLOADER_RS232 ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER);
+    if (!bootloaderHandshake(&p))
+    {
+        // failure
+        return 0;
+    }
 
 	// ensure bootloader restarts in fresh state
 	bootloaderRestart(port);

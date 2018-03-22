@@ -13,48 +13,45 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISSerialPort.h"
 #include "ISLogger.h"
 
-cISSerialPort::cISSerialPort(serial_port_t* serial, bool ownsSerial, int timeout, bool blocking)
+cISSerialPort::cISSerialPort(serial_port_t* serial) : cISStream()
 {
-	m_serial = serial;
-	m_ownsSerial = ownsSerial;
-	m_timeout = timeout;
-	m_blocking = blocking;
-	if (serial == NULL)
+	if (serial != NULLPTR)
 	{
-		m_serial = (serial_port_t*)MALLOC(sizeof(serial_port_t));
-		memset(m_serial, 0, sizeof(serial_port_t));
-		m_ownsSerial = true;
-		serialPortPlatformInit(m_serial);
+		m_serial = *serial;
 	}
+	else
+	{
+		memset(&m_serial, 0, sizeof(m_serial));
+		serialPortPlatformInit(&m_serial);
+	}
+	Close();
 }
 
 cISSerialPort::~cISSerialPort()
 {
 	Close();
-	if (m_ownsSerial)
-	{
-		FREE(m_serial);
-	}
 }
 
-bool cISSerialPort::Open(const char* portName, int baudRate)
+bool cISSerialPort::Open(const std::string& portName, int baudRate, int timeout, bool blocking)
 {
-	return (serialPortOpen(m_serial, portName, baudRate, (int)m_blocking) != 0);
+	m_timeout = timeout;
+	m_blocking = blocking;
+	return (serialPortOpen(&m_serial, portName.c_str(), baudRate, (int)m_blocking) != 0);
 }
 
 int cISSerialPort::Close()
 {
-	return serialPortClose(m_serial);
+	return serialPortClose(&m_serial);
 }
 
-int cISSerialPort::Read(uint8_t* data, int dataLength)
+int cISSerialPort::Read(void* data, int dataLength)
 {
-	return serialPortReadTimeout(m_serial, data, dataLength, m_timeout);
+	return serialPortReadTimeout(&m_serial, (unsigned char*)data, dataLength, m_timeout);
 }
 
-int cISSerialPort::Write(const uint8_t* data, int dataLength)
+int cISSerialPort::Write(const void* data, int dataLength)
 {
-	return serialPortWrite(m_serial, data, dataLength);
+	return serialPortWrite(&m_serial, (const unsigned char*)data, dataLength);
 }
 
 void cISSerialPort::GetComPorts(vector<string>& ports)

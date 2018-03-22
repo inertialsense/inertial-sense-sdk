@@ -27,13 +27,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DataCSV.h"
 #include "ISLogger.h"
 #include "data_sets.h"
-#ifdef USE_IS_INTERNAL
-#	include "../../libs/IS_internal.h"
-#endif
 #include "ISDataMappings.h"
 #include "ISUtilities.h"
 #include "ISConstants.h"
 
+#ifdef USE_IS_INTERNAL
+#	include "../../libs/IS_internal.h"
+#endif
 
 int cDataCSV::WriteHeaderToFile(FILE* pFile, int id)
 {

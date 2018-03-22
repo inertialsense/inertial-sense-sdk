@@ -38,6 +38,7 @@ public:
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".dat"); }
+	void Flush() OVERRIDE;
 
 	cDataChunk m_chunk;
 

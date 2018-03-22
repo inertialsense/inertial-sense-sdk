@@ -40,7 +40,7 @@ typedef enum
 	DataTypeCount
 } eDataType;
 
-/*!
+/**
 * Get the size of an eDataType
 * @param dataType the data type to get size for
 * @return the size of the data type, or 0 if unknown or variable length (i.e. DataTypeString)
@@ -69,27 +69,27 @@ typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 class cISDataMappings
 {
 public:
-	/*!
+	/**
 	* Get a data set name from an id
 	* @param dataId the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
 	static const char* GetDataSetName(uint32_t dataId);
 
-	/*!
+	/**
 	* Get the data id to name/info lookup table
 	* @return the global map lookup table
 	*/
 	static const map_lookup_name_t& GetMap();
 
-	/*!
+	/**
 	* Get the size of a given data id
 	* @param dataId the data id
 	* @return the data id size or 0 if not found or unknown
 	*/
 	static uint32_t GetSize(uint32_t dataId);
 
-	/*!
+	/**
 	* Convert a string to a data field
 	* @param stringBuffer the null terminated string to convert, must not be NULL
 	* @param stringLength the number of chars in stringBuffer
@@ -100,7 +100,7 @@ public:
 	*/
 	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info);
 
-	/*!
+	/**
 	* Convert data to a string
 	* @param info metadata about the field to convert
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
@@ -110,7 +110,7 @@ public:
 	*/
 	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer);
 
-	/*!
+	/**
 	* Get a timestamp from data if available
 	* @param hdr data header
 	* @param buf data buffer
@@ -118,7 +118,7 @@ public:
 	*/
     static double GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
-	/*!
+	/**
 	* Check whether field data can be retrieved given a data packet
 	* @param info metadata for the field to get
 	* @param hdr packet header

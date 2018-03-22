@@ -20,11 +20,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 *  The following keywords are found within this file to identify instructions
 *  for SDK implementation.  
 *
-*    KEYWORD:                
-*    [COMM INSTRUCTION]        - InertialSense class implementation with binary communication protocol 
-*                                and serial port support for Linux and Windows.
-*    [LOGGER INSTRUCTION]      - Data logger
-*    [BOOTLOADER INSTRUCTIONS] - Firmware update feature
+*    KEYWORD:                  SDK Implementation
+*    [C++ COMM INSTRUCTION]    - C++ binding API - InertialSense class with binary communication 
+*                                protocol and serial port support for Linux and Windows.
+*    [C COMM INSTRUCTION]      - C binding API - Com Manager with binary communication protocol.
+*    [LOGGER INSTRUCTION]      - Data logger.
+*    [BOOTLOADER INSTRUCTION]  - Firmware update feature.
 *
 *  This app is designed to be compiled in Linux and Windows.  When using MS
 *  Visual Studio IDE, command line arguments can be supplied by right clicking 
@@ -34,11 +35,50 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
-// [COMM INSTRUCTION] 4.) This function is called every time there is new data.
+// [C++ COMM INSTRUCTION] 5.) This function is called every time there is new data.
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
 	// Print data to terminal
 	g_inertialSenseDisplay.ProcessData(data);
+
+	// uDatasets is a union of all datasets that we can receive.  See data_sets.h for a full list of all available datasets. 
+	uDatasets d = {};
+	copyDataPToStructP(&d, data, sizeof(uDatasets));
+
+	// Example of how to access dataset fields.
+	switch (data->hdr.id)
+	{
+	case DID_INS_2:
+		d.ins2.qn2b;		// quaternion attitude 
+		d.ins2.uvw;			// body velocities
+		d.ins2.lla;			// latitude, longitude, altitude
+		break;
+	case DID_INS_1:
+		d.ins1.theta;		// euler attitude
+		d.ins1.lla;			// latitude, longitude, altitude
+		break;
+	case DID_DUAL_IMU:				
+		d.dualImu;      
+		break;
+	case DID_PREINTEGRATED_IMU:		
+		d.pImu;    
+		break;
+	case DID_GPS_NAV:				
+		d.gpsNav;       
+		break;
+	case DID_MAGNETOMETER_1:		
+		d.mag;          
+		break;
+	case DID_MAGNETOMETER_2:		
+		d.mag;          
+		break;
+	case DID_BAROMETER:				
+		d.baro;         
+		break;
+	case DID_SYS_SENSORS:			
+		d.sysSensors;   
+		break;
+	}
 }
 
 // Where we tell the uINS what data to send and at what rate.  
@@ -47,8 +87,13 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
 	int periodMs = 50;
-	int streamingMessageCount = 0;
 	inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
+
+	if (g_commandLineOptions.asciiMessages.size() != 0)
+	{
+		serialPortWriteAscii(inertialSenseInterface.GetSerialPort(), g_commandLineOptions.asciiMessages.c_str(), g_commandLineOptions.asciiMessages.size());
+		return true;
+	}
 
 	// ask for device info every 2 seconds
 	inertialSenseInterface.BroadcastBinaryData(DID_DEV_INFO, 2000);
@@ -57,92 +102,69 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	if (g_commandLineOptions.streamINS1)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_INS_1, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamINS2)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_INS_2, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamINS3)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_INS_3, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamINS4)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_INS_4, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamSysSensors)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_SYS_SENSORS, 100);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamDualIMU)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_DUAL_IMU, periodMs);
-		streamingMessageCount++;
-	}
-	if (g_commandLineOptions.streamIMU1)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_IMU_1, periodMs);
-		streamingMessageCount++;
-	}
-	if (g_commandLineOptions.streamIMU2)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_IMU_2, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamDThetaVel)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_DELTA_THETA_VEL, periodMs);
-		streamingMessageCount++;
+		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU, periodMs);
 	}
 	if (g_commandLineOptions.streamGPS)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_GPS, 200);
-		streamingMessageCount++;
+		inertialSenseInterface.BroadcastBinaryData(DID_GPS_NAV, 200);
 	}
 	if (g_commandLineOptions.streamMag1)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_1, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamMag2)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_2, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamBaro)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, periodMs);
-		streamingMessageCount++;
 	}
 	if (g_commandLineOptions.streamRTOS)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_RTOS_INFO, 250);
 		uint32_t enRTOSStats = 1;
-		inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&enRTOSStats, sizeof(enRTOSStats), OFFSETOF(config_t, enRTOSStats));
-		streamingMessageCount++;
+		inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&enRTOSStats, sizeof(enRTOSStats), offsetof(config_t, enRTOSStats));
+	}
+	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
+	{
+		inertialSenseInterface.SetTimeoutFlushLoggerSeconds(g_commandLineOptions.timeoutFlushLoggerSeconds);
+	}
+	if (g_commandLineOptions.magRecal)
+	{	
+		// Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.enMagRecal == 100).
+		inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL, 100);
+		// Enable mult-axis 
+		uint32_t enMagRecal = MAG_RECAL_MODE_MULTI_AXIS;
+		inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&enMagRecal, sizeof(enMagRecal), offsetof(mag_cal_t, enMagRecal));
 	}
 
-	// stream default post processing messages if no other message were specified and no solution streaming option was specified
-	if (g_commandLineOptions.solStreamCtrl == 0xFFFFFFFF)
+	if (g_commandLineOptions.rmcPresetPPD)
 	{
-		if (streamingMessageCount == 0)
-		{
-			g_commandLineOptions.solStreamCtrl = SOL_STREAM_PPD1_INS2;
-		}
-		else
-		{
-			g_commandLineOptions.solStreamCtrl = 0;
-		}
-	}
-	if (g_commandLineOptions.solStreamCtrl != 0)
-	{
-		// turn on solution stream for each device
-		inertialSenseInterface.SetSolutionStream(g_commandLineOptions.solStreamCtrl);
+		inertialSenseInterface.BroadcastBinaryDataRmcPreset(RMC_PRESET_PPD_BITS);
 	}
 
 	if (g_commandLineOptions.serverConnection.length() != 0)
@@ -172,15 +194,21 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 static int cltool_runBootloader()
 {
 	// [BOOTLOADER INSTRUCTION] Update firmware
-	char bootloaderError[1024];
 	cout << "Bootloading file at " << g_commandLineOptions.bootloaderFileName << endl;
-	bool success = InertialSense::BootloadFile(g_commandLineOptions.comPort, g_commandLineOptions.bootloaderFileName, bootloadUploadProgress,
-		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0), bootloaderError, sizeof(bootloaderError));
-	if (!success)
+	vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, g_commandLineOptions.bootloaderFileName, g_commandLineOptions.baudRate, bootloadUploadProgress,
+		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0));
+	cout << endl << "Results:" << endl;
+	int errorCount = 0;
+	for (size_t i = 0; i < results.size(); i++)
 	{
-		cout << "Error bootloading file " << g_commandLineOptions.bootloaderFileName << ", error: " << bootloaderError << endl;
+		cout << results[i].port << ": " << (results[i].error.size() == 0 ? "Success\n" : results[i].error);
+		errorCount += (int)(results[i].error.size() != 0);
 	}
-	return (success ? 0 : -1);
+	if (errorCount != 0)
+	{
+		cout << endl << errorCount << " ports failed." << endl;
+	}
+	return (errorCount == 0 ? 0 : -1);
 }
 
 static int cltool_createHost()
@@ -203,8 +231,11 @@ static int cltool_createHost()
 	while (!g_inertialSenseDisplay.ControlCWasPressed())
 	{
 		inertialSenseInterface.Update();
-		g_inertialSenseDisplay.Home();
-		cout << "Server bytes: " << inertialSenseInterface.GetClientServerByteCount() << "   ";
+		if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_QUIET)
+		{
+			g_inertialSenseDisplay.Home();
+			cout << "Server bytes: " << inertialSenseInterface.GetClientServerByteCount() << "   ";
+		}
 		SLEEP_MS(1);
 	}
 	cout << "Shutting down..." << endl;
@@ -218,7 +249,7 @@ static int cltool_createHost()
 static int inertialSenseMain()
 {	
 	// clear display
-	g_inertialSenseDisplay.SetDisplayMode(g_commandLineOptions.displayMode);
+	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
 	g_inertialSenseDisplay.Clear();
 
 	// if replay data log specified on command line, do that now and return
@@ -227,36 +258,55 @@ static int inertialSenseMain()
 		// [REPLAY INSTRUCTION] 1.) Replay data log
 		return !cltool_replayDataLog();
 	}
-
 	// if bootloader was specified on the command line, do that now and return out
 	else if (g_commandLineOptions.bootloaderFileName.length() != 0)
 	{
 		// [BOOTLOADER INSTRUCTION] 1.) Run bootloader
 		return cltool_runBootloader();
 	}
-
 	// if host was specified on the command line, create a tcp server
 	else if (g_commandLineOptions.host.length() != 0)
 	{
 		return cltool_createHost();
 	}
-
-	// open the device, start streaming data and logging
+	else if (g_commandLineOptions.asciiMessages.size() != 0)
+	{
+		serial_port_t serialForAscii;
+		memset(&serialForAscii, 0, sizeof(serialForAscii));
+		serialPortPlatformInit(&serialForAscii);
+		serialPortOpen(&serialForAscii, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
+		serialPortWriteAscii(&serialForAscii, "STPB", 4);
+		serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), 5 + g_commandLineOptions.asciiMessages.size());
+		unsigned char line[512];
+		unsigned char* asciiData;
+		while (!g_inertialSenseDisplay.ControlCWasPressed())
+		{
+			int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
+			if (count > 0)
+			{
+				printf("%s", (char*)asciiData);
+				printf("\r\n");
+			}
+		}
+	}
+	// open the device, start streaming data and logging if needed
 	else
 	{
-		// [COMM INSTRUCTION] 1.) Create InertialSense object and open serial port
+		// [C++ COMM INSTRUCTION] 1.) Create InertialSense object, passing in data callback function pointer.
 		InertialSense inertialSenseInterface(cltool_dataCallback);
+
+		// [C++ COMM INSTRUCTION] 2.) Open serial port.
 		if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
 		{
 			cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
 			return -1;	// Failed to open serial port
 		}
 
-		// [COMM INSTRUCTION] 2.) Enable data broadcasting from uINS
+		// [C++ COMM INSTRUCTION] 3.) Enable data broadcasting from uINS.
 		if (cltool_setupCommunications(inertialSenseInterface))
 		{
 			// [LOGGER INSTRUCTION] Setup and start data logger
-			if (!cltool_setupLogger(inertialSenseInterface))
+			if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
 			{
 				cout << "Failed to setup logger!" << endl;
 				inertialSenseInterface.Close();
@@ -267,31 +317,37 @@ static int inertialSenseMain()
 				// Main loop. Could be in separate thread if desired.
 				while (!g_inertialSenseDisplay.ControlCWasPressed())
 				{
-					// [COMM INSTRUCTION] 3.) Process data and messages
+					// [C++ COMM INSTRUCTION] 4.) Process data and messages.
 					if (!inertialSenseInterface.Update())
 					{
 						// device disconnected, exit
 						break;
 					}
-					else if (inertialSenseInterface.GetClientServerByteCount() != 0)
-					{
-						g_inertialSenseDisplay.GoToRow(1);
-						cout << "Client bytes: " << inertialSenseInterface.GetClientServerByteCount() << "   ";
-					}
 
-					// Specify the minimum time between read/write updates.
-					SLEEP_MS(1);
+					g_inertialSenseDisplay.GoToRow(1);
+					if (inertialSenseInterface.GetClientServerByteCount() != 0)
+					{
+						if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_QUIET)
+						{
+							cout << "Client bytes: " << inertialSenseInterface.GetClientServerByteCount() << "   ";
+						}
+					}
+					com_manager_status_t* status = getStatusComManager(0);
+					if (status->communicationErrorCount != 0 && g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
+					{
+						cout << "Com errors: " << status->communicationErrorCount << "    ";
+					}
 				}
 			}
 			catch (...)
 			{
-				cout << "Unknown exception, ";
+				cout << "Unknown exception...";
 			}
 		}
 
 		cout << "Shutting down..." << endl;
 
-		// close the interface cleanly, this ensures serial port and any logging are shutdown properly
+		// [C++ COMM INSTRUCTION] 6.) Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
 		inertialSenseInterface.Close();
 	}
 
@@ -309,11 +365,11 @@ int cltool_main(int argc, char* argv[])
 	}
 
 	// InertialSense class example using command line options
-	if (inertialSenseMain() == -1)
+	int result = inertialSenseMain();
+	if (result == -1)
 	{
 		cltool_outputHelp();
-		return -1;
 	}
 	
-	return 0;
+	return result;
 }

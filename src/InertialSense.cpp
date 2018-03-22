@@ -25,8 +25,8 @@ typedef struct
 static void bootloaderThread(void* state)
 {
 	bootloader_state_t* s = (bootloader_state_t*)state;
-	serialPortOpen(&s->serial, s->serial.port, IS_BAUD_RATE_BOOTLOADER, 1);
-	if (!enableBootloader(&s->serial, s->param.error, s->param.errorLength))
+	serialPortOpen(&s->serial, s->serial.port, s->param.baudRate, 1);
+	if (!enableBootloader(&s->serial, s->param.baudRate, s->param.error, s->param.errorLength))
 	{
 		serialPortClose(&s->serial);
 		s->result = false;
@@ -61,7 +61,7 @@ static int staticReadPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, 
 	{
 		return 0;
 	}
-	return serialPortRead(&s->serialPorts[pHandle], buf, len);
+	return serialPortReadTimeout(&s->serialPorts[pHandle], buf, len, 1);
 }
 
 static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
@@ -101,7 +101,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	}
 }
 
-InertialSense::InertialSense(pfnHandleBinaryData callback) : m_serialServer(NULL, true, 0, false)
+InertialSense::InertialSense(pfnHandleBinaryData callback)
 {
 	m_logThread = NULLPTR;
 	m_lastLogReInit = time(0);
@@ -132,10 +132,10 @@ InertialSense::~InertialSense()
 	Close();
 }
 
-bool InertialSense::EnableLogging(const string& path, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
+bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
 {
 	cMutexLocker logMutexLocker(&m_logMutex);
-	if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, (int)m_comManagerState.serialPorts.size(), cISLogger::LOGTYPE_DAT, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder.length() != 0))
+	if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, (int)m_comManagerState.serialPorts.size(), logType, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder.length() != 0))
 	{
 		return false;
 	}
@@ -201,7 +201,7 @@ void InertialSense::LoggerThread(void* info)
 
 	while (running)
 	{
-		SLEEP_MS(2);
+		SLEEP_MS(20);
 		{
 			// lock so we can read and clear m_logPackets
 			cMutexLocker logMutexLocker(&inertialSense->m_logMutex);
@@ -235,7 +235,11 @@ void InertialSense::LoggerThread(void* info)
 				i->second.clear();
 			}
 		}
+
+		inertialSense->m_logger.Update();
 	}
+
+	printf("\n...Logger thread terminated...\n");
 }
 
 void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHandle)
@@ -259,7 +263,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 	return false;
 }
 
-bool InertialSense::SetLoggerEnabled(bool enable, const string& path, uint32_t logSolution, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
+bool InertialSense::SetLoggerEnabled(bool enable, const string& path, cISLogger::eLogType logType, bool streamPPD, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
 {
 	if (enable)
 	{
@@ -268,22 +272,17 @@ bool InertialSense::SetLoggerEnabled(bool enable, const string& path, uint32_t l
 			// already logging
 			return true;
 		}
-		SetSolutionStream(logSolution);
-		return EnableLogging(path, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder);
+
+		if(streamPPD)
+		{ 
+			BroadcastBinaryDataRmcPreset(RMC_PRESET_PPD_BITS);
+		}
+		return EnableLogging(path, logType, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder);
 	}
 
 	// !enable, shutdown logger gracefully
 	DisableLogging();
 	return true;
-}
-
-void InertialSense::SetSolutionStream(uint32_t logSolution)
-{
-	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
-	{
-		m_comManagerState.config[i].solStreamCtrl = logSolution;
-		sendDataComManager((int)i, DID_CONFIG, &m_comManagerState.config[i].solStreamCtrl, sizeof(m_comManagerState.config[i].solStreamCtrl), OFFSETOF(config_t, solStreamCtrl));
-	}
 }
 
 bool InertialSense::OpenServerConnection(const string& connectionString)
@@ -298,7 +297,7 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 
 	CloseServerConnection();
 	vector<string> pieces;
-	SplitString(connectionString, ":", pieces);
+	splitString(connectionString, ":", pieces);
 	if (pieces.size() < 3)
 	{
 		return opened;
@@ -343,7 +342,7 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 		uint32_t cfgBits = SYS_CFG_BITS_RTK_ROVER;
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
-			sendDataComManager((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), OFFSETOF(nvm_flash_cfg_t, sysCfgBits));
+			sendDataComManager((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, sysCfgBits));
 		}
 		if (m_clientStream == NULLPTR)
 		{
@@ -390,9 +389,7 @@ bool InertialSense::CreateHost(const string& ipAndPort)
 	{
 		// configure as RTK base station
 		uint32_t cfgBits = SYS_CFG_BITS_RTK_BASE_STATION;
-		sendDataComManager(0, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), OFFSETOF(nvm_flash_cfg_t, sysCfgBits));
-		cfgBits = 1; // raw messages
-		sendDataComManager(0, DID_CONFIG, &cfgBits, sizeof(cfgBits), OFFSETOF(config_t, msgCfgBits));
+		sendDataComManager(0, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, sysCfgBits));
 	}
 	return opened;
 }
@@ -431,9 +428,14 @@ bool InertialSense::Update()
 		}
 		m_tcpServer.Update();
 	}
-	stepComManager();
 
-	// if any serial ports have closed, shut everything down
+	// [C COMM INSTRUCTION]  2.) Update Com Manager at regular interval to send and receive data.  
+	// Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
+	// task system with serial port read function that does NOT incorporate a timeout.   
+	stepComManager();
+// 	SLEEP_MS(1);
+
+	// if any serial ports have closed, shutdown
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		if (!serialPortIsOpen(&m_comManagerState.serialPorts[i]))
@@ -442,6 +444,7 @@ bool InertialSense::Update()
 			return false;
 		}
 	}
+
 	return true;
 }
 
@@ -451,7 +454,7 @@ void InertialSense::Close()
 	if (m_disableBroadcastsOnClose)
 	{
 		StopBroadcasts();
-		SLEEP_MS(1000);
+		SLEEP_MS(100);
 	}
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
@@ -478,12 +481,9 @@ void InertialSense::StopBroadcasts()
 {
 	// Stop all broadcasts
 
-	// // Binary command
-	// unsigned char pkt[9] = { 0xff,0x06,0x00,0x01,0x00,0xfd,0x00,0x07,0xfe };
-
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
-		// Turn off any existing broadcast messages, i.e. INS, IMU, GPS, etc.
+		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the uINS.
 		sendComManager((int)i, PID_STOP_ALL_BROADCASTS, 0, 0, 0);
 	}
 }
@@ -492,6 +492,7 @@ void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, ui
 {
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
+		// [C COMM INSTRUCTION]  4.) Send data to the uINS.  
 		sendDataComManager((int)i, dataId, data, length, offset);
 	}
 }
@@ -507,12 +508,14 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 void InertialSense::SetConfig(const config_t& config, int pHandle)
 {
 	m_comManagerState.config[pHandle] = config;
+	// [C COMM INSTRUCTION]  Update the entire DID_CONFIG data set in the uINS.  
 	sendDataComManager(pHandle, DID_CONFIG, &m_comManagerState.config[pHandle], sizeof(config), 0);
 }
 
 void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHandle)
 {
 	m_comManagerState.flashConfig[pHandle] = flashConfig;
+	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
 	sendDataComManager(pHandle, DID_FLASH_CONFIG, &m_comManagerState.flashConfig[pHandle], sizeof(flashConfig), 0);
 }
 
@@ -530,6 +533,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 	{
 		for (int i = 0; i < (int)m_comManagerState.serialPorts.size(); i++)
 		{
+			// [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the uINS.
 			disableDataComManager(i, dataId);
 		}
 	}
@@ -537,99 +541,96 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 	{
 		for (int i = 0; i < (int)m_comManagerState.serialPorts.size(); i++)
 		{
-			// we pass an offset and size of 0. The uINS will handle a size and offset of 0 and make it the full struct size.
+			// [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMs" specifies the interval
+			// between broadcasts and "periodMs=0" will disable broadcasts and transmit one single message. 
 			getDataComManager(i, dataId, 0, 0, periodMS);
 		}
 	}
 	return true;
 }
 
-bool InertialSense::BootloadFile(const string& comPort, const string& fileName, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, char* errorBuffer, int errorBufferLength)
+void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset)
 {
-	// test file exists
+	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
-		ifstream tmpStream(fileName);
-		if (!tmpStream.good())
-		{
-			if (errorBuffer != NULLPTR)
-			{
-				SNPRINTF(errorBuffer, errorBufferLength, "Bootloader file does not exist");
-			}
-			return false;
-		}
+		// [C COMM INSTRUCTION]  Use a preset to enable a predefined set of messages.  R 
+		getDataRmcComManager(i, rmcPreset, 0);
 	}
+}
 
-	// for debug
-	// SERIAL_PORT_DEFAULT_TIMEOUT = 9999999;
-
+vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
+{
+	vector<bootloader_result_t> results;
 	vector<string> portStrings;
 	vector<bootloader_state_t> state;
+
 	if (comPort == "*")
 	{
 		cISSerialPort::GetComPorts(portStrings);
 	}
 	else
 	{
-		SplitString(comPort, ",", portStrings);
+		splitString(comPort, ",", portStrings);
 	}
+	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
 
-	// for each port requested, setup a thread to do the bootloader for that port
-	for (size_t i = 0; i < portStrings.size(); i++)
+	for (size_t i = 0; i < state.size(); i++)
 	{
+		state[i].param.error = (char*)MALLOC(1024);
+		state[i].param.errorLength = 1024;
 		memset(&state[i].serial, 0, sizeof(state[i].serial));
 		serialPortSetPort(&state[i].serial, portStrings[i].c_str());
-		serialPortPlatformInit(&state[i].serial);
-		state[i].param.uploadProgress = uploadProgress;
-		state[i].param.verifyProgress = verifyProgress;
-		state[i].param.fileName = fileName.c_str();
-		state[i].param.error = errorBuffer;
-		state[i].param.errorLength = errorBufferLength;
-		state[i].param.port = &state[i].serial;
-		state[i].param.verifyFileName = NULLPTR;
-		state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
-		state[i].thread = threadCreateAndStart(bootloaderThread, &state[i]);
 	}
 
-	// wait for all threads to finish
+	// test file exists
+	{
+		ifstream tmpStream(fileName);
+		if (!tmpStream.good())
+		{
+			for (size_t i = 0; i < state.size(); i++)
+			{
+				results.push_back({ state[i].serial.port, "Bootloader file does not exist" });
+			}
+		}
+	}
+
+	if (results.size() == 0)
+	{
+		// for each port requested, setup a thread to do the bootloader for that port
+		for (size_t i = 0; i < state.size(); i++)
+		{
+			serialPortPlatformInit(&state[i].serial);
+			state[i].param.uploadProgress = uploadProgress;
+			state[i].param.verifyProgress = verifyProgress;
+			state[i].param.fileName = fileName.c_str();
+			state[i].param.port = &state[i].serial;
+			state[i].param.verifyFileName = NULLPTR;
+			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
+            state[i].param.numberOfDevices = (int)state.size();
+			state[i].param.baudRate = baudRate;
+			state[i].thread = threadCreateAndStart(bootloaderThread, &state[i]);
+		}
+
+		// wait for all threads to finish
+		for (size_t i = 0; i < state.size(); i++)
+		{
+			threadJoinAndFree(state[i].thread);
+		}
+
+		// if any thread failed, we return failure
+		for (size_t i = 0; i < state.size(); i++)
+		{
+			results.push_back({ state[i].serial.port, state[i].param.error });
+		}
+	}
+
 	for (size_t i = 0; i < state.size(); i++)
 	{
-		threadJoinAndFree(state[i].thread);
+		FREE(state[i].param.error);
 	}
 
-	// if any thread failed, we return failure
-	for (size_t i = 0; i < state.size(); i++)
-	{
-		if (!state[i].result)
-		{
-			return false;
-		}
-	}
-
-	// all threads succeeded
-	return true;
-}
-
-size_t InertialSense::SplitString(const string& s, const string& delimiter, vector<string>& result)
-{
-	result.clear();
-	size_t pos = 0;
-	size_t pos2;
-	while (true)
-	{
-		pos2 = s.find(delimiter, pos);
-		if (pos2 == string::npos)
-		{
-			result.push_back(s.substr(pos));
-			break;
-		}
-		else
-		{
-			result.push_back(s.substr(pos, pos2 - pos));
-			pos = pos2 + delimiter.length();
-		}
-	}
-	return result.size();
+	return results;
 }
 
 bool InertialSense::OnPacketReceived(const cGpsParser* parser, const uint8_t* data, uint32_t dataLength)
@@ -670,7 +671,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	else
 	{
 		// comma separated list of serial ports
-		SplitString(port, ",", ports);
+		splitString(port, ",", ports);
 	}
 
 	// open serial ports
@@ -690,7 +691,8 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		}
 	}
 
-	// setup com manager
+	// [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
+	// serial port read and write and for successfully parsed data.
 	initComManager((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
 
 	// re-initialize data sets
@@ -708,9 +710,9 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	// if the baud rate is already correct, the request for the message should succeed very quickly
 	time_t startTime = time(0);
 
-	// try to auto-baud for up to 3 seconds, then abort if we didn't get a valid packet
+	// try to auto-baud for up to 10 seconds, then abort if we didn't get a valid packet
 	// we wait until we get a valid serial number and manufacturer
-	while (!HasReceivedResponseFromAllDevices() && time(0) - startTime < 3)
+	while (!HasReceivedResponseFromAllDevices() && time(0) - startTime < 10)
 	{
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
@@ -719,9 +721,8 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			getDataComManager((int)i, DID_FLASH_CONFIG, 0, 0, 0);
 		}
 
-		SLEEP_MS(12);
+		SLEEP_MS(13);
 		stepComManager();
-		SLEEP_MS(12);
 	}
 
 	bool removedSerials = false;
@@ -756,7 +757,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		initComManager((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
 	}
 
-    return true;
+    return m_comManagerState.serialPorts.size() != 0;
 }
 
 #if defined(ENABLE_IS_PYTHON_WRAPPER)
@@ -862,37 +863,37 @@ py::dict py_dataHandling(p_data_t* data)
 		msgData["imu2pqr"] = convertArray(d.dualImu.I[1].pqr, 3);
 		msgData["time"] = d.dualImu.time;
 		break;
-	case DID_DELTA_THETA_VEL:
-		msgData["time"] = d.dThetaVel.time;
-		msgData["theta"] = convertArray(d.dThetaVel.theta, 3);
-		msgData["uvw"] = convertArray(d.dThetaVel.uvw, 3);
-		msgData["dt"] = d.dThetaVel.dt;
+	case DID_PREINTEGRATED_IMU:
+		msgData["time"] = d.pImu.time;
+		msgData["theta"] = convertArray(d.pImu.theta, 3);
+		msgData["uvw"] = convertArray(d.pImu.uvw, 3);
+		msgData["dt"] = d.pImu.dt;
 		break;
-	case DID_GPS:
+	case DID_GPS_NAV:
 	{
-		msgData["rxps"] = d.gps.rxps;
-		msgData["towOffset"] = d.gps.towOffset;
+		msgData["rxps"] = d.gpsNav.rxps;
+		msgData["towOffset"] = d.gpsNav.towOffset;
 
 		py::dict gpsPos;
-		gpsPos["week"] = d.gps.pos.week;
-		gpsPos["timeOfWeekMs"] = d.gps.pos.timeOfWeekMs;
-		gpsPos["status"] = d.gps.pos.status;
-		gpsPos["cno"] = d.gps.pos.cno;
-		gpsPos["lla"] = convertArray(d.gps.pos.lla, 3);
-		gpsPos["hMSL"] = d.gps.pos.hMSL;
-		gpsPos["hAcc"] = d.gps.pos.hAcc;
-		gpsPos["vAcc"] = d.gps.pos.vAcc;
-		gpsPos["pDop"] = d.gps.pos.pDop;
+		gpsPos["week"] = d.gpsNav.lla.week;
+		gpsPos["timeOfWeekMs"] = d.gpsNav.timeOfWeekMs;
+		gpsPos["status"] = d.gpsNav.status;
+		gpsPos["cno"] = d.gpsNav.lla.cno;
+		gpsPos["lla"] = convertArray(d.gpsNav.lla.lla, 3);
+		gpsPos["hMSL"] = d.gpsNav.lla.hMSL;
+		gpsPos["hAcc"] = d.gpsNav.hAcc;
+		gpsPos["vAcc"] = d.gpsNav.vAcc;
+		gpsPos["pDop"] = d.gpsNav.lla.pDop;
 		msgData["gpsPos"] = gpsPos;
 
 		py::dict gpsVel;
-		gpsVel["timeOfWeekMs"] = d.gps.vel.timeOfWeekMs;
-		gpsVel["ned"] = convertArray(d.gps.vel.ned, 3);
-		gpsVel["s2D"] = d.gps.vel.s2D;
-		gpsVel["s3D"] = d.gps.vel.s3D;
-		gpsVel["sAcc"] = d.gps.vel.sAcc;
-		gpsVel["course"] = d.gps.vel.course;
-		gpsVel["cAcc"] = d.gps.vel.cAcc;
+		gpsVel["timeOfWeekMs"] = d.gpsNav.vel.timeOfWeekMs;
+		gpsVel["ned"] = convertArray(d.gpsNav.vel.ned, 3);
+		gpsVel["s2D"] = d.gpsNav.vel.s2D;
+		gpsVel["s3D"] = d.gpsNav.vel.s3D;
+		gpsVel["sAcc"] = d.gpsNav.vel.sAcc;
+		gpsVel["course"] = d.gpsNav.vel.course;
+		gpsVel["cAcc"] = d.gpsNav.vel.cAcc;
 		msgData["gpsVel"] = gpsVel;
 		break;
 	}
@@ -911,7 +912,7 @@ py::dict py_dataHandling(p_data_t* data)
 		msgData["humidity"] = d.baro.humidity;
 		msgData["mslBar"] = d.baro.mslBar;
 		break;
-	case DID_RAW_GPS_DATA:
+	case DID_GPS_BASE_RAW:
 		//printf("Received the Raw Data Message!");
 		//py::list buffer;
 		msgData["receiverIndex"] = d.gpsRaw.receiverIndex;
@@ -990,11 +991,11 @@ bool pyUpdateFlashConfig(InertialSense& inertialSenseInterface, string flashConf
 	{
 		nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
 		vector<string> keyValues;
-		InertialSense::SplitString(flashConfigString, "|", keyValues);
+		splitString(flashConfigString, "|", keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
 			vector<string> keyAndValue;
-			InertialSense::SplitString(splitString(keyValues[i], "=", keyAndValue);
+			splitString(splitString(keyValues[i], "=", keyAndValue);
 			if (keyAndValue.size() == 2)
 			{
 				if (flashMap.find(keyAndValue[0]) == flashMap.end())
@@ -1053,7 +1054,7 @@ bool InertialSense::PyBroadcastBinaryData(uint32_t dataId, int periodMS)
 
 	m_comManagerState.binaryCallback[dataId] = (pfnHandleBinaryData)pyClt_dataCallback;
 
-	if (dataId == DID_RAW_GPS_DATA)
+	if (dataId == DID_GPS_BASE_RAW)
 	{
 		config_t cfg = GetConfig();
 		cfg.msgCfgBits = 1;

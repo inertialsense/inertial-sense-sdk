@@ -77,7 +77,8 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 
 	log.fileName = GetNewFileName(serNum, log.fileCount, m_kml.GetDatasetName(kid).c_str());
 
-	char buf[100];
+#define BUF_SIZE	100
+	char buf[BUF_SIZE];
 	int styleCnt = 1;
 	string altitudeMode;
 	string iconScale = "0.5";
@@ -92,6 +93,11 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 
 	// Style
 	string styleStr, colorStr;
+
+	iconUrl = "http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png";
+	// 		iconUrl = "http://earth.google.com/images/kml-icons/track-directional/track-none.png";
+
+	// colors are ABGR
 	switch (kid)
 	{
 	case cDataKML::KID_INS:
@@ -99,14 +105,17 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 		colorStr = "ff00ffff";  // yellow
 		break;
 	case cDataKML::KID_GPS:
-		iconUrl = "http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png";
-		// 		iconUrl = "http://earth.google.com/images/kml-icons/track-directional/track-none.png";
 		colorStr = "ff0000ff";  // red
 		break;
+	case cDataKML::KID_GPS1:
+		colorStr = "ffff0000";  // blue
+		break;
+    case cDataKML::KID_RTK:
+		colorStr = "ffffff00";  // cyan
+        break;
 	case cDataKML::KID_REF:
 		iconUrl = "http://earth.google.com/images/kml-icons/track-directional/track-0.png";
-		colorStr = "ffff00ff";  // cyan
-// 		colorStr = "ffff0000";  // blue
+		colorStr = "ffff00ff";  // magenta
 		break;
 	}
 
@@ -130,104 +139,113 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	kml->SetAttribute("xmlns", "http://www.opengis.net/kml/2.2");
 	kml->SetAttribute("xmlns:gx", "http://www.google.com/kml/ext/2.2");
 
-	double nextTime = log.data[0].time;
-	for (size_t i = 0; i < log.data.size(); i++)
+	// Show sample (dot)
+	if (m_showPoints)
 	{
-		sKmlLogData *data = &(log.data[i]);
-
-		// Log only every iconUpdatePeriodSec
-		if (data->time < nextTime)
+		double nextTime = log.data[0].time;
+		for (size_t i = 0; i < log.data.size(); i++)
 		{
-			continue;
-		}
-		nextTime = data->time - fmod(data->time, m_iconUpdatePeriodSec) + m_iconUpdatePeriodSec;
+			sKmlLogData& item = (log.data[i]);
 
-		// Icon style
-		styleStr = string("stylesel_") + to_string(styleCnt++);
+			// Log only every iconUpdatePeriodSec
+			if (item.time < nextTime)
+			{
+				continue;
+			}
+			nextTime = item.time - fmod(item.time, m_pointUpdatePeriodSec) + m_pointUpdatePeriodSec;
 
-		Style = new TiXmlElement("Style");
-		Style->SetAttribute("id", styleStr);
-		Document->LinkEndChild(Style);
+			// Icon style
+			styleStr = string("stylesel_") + to_string(styleCnt++);
 
-		IconStyle = new TiXmlElement("IconStyle");
-		Style->LinkEndChild(IconStyle);
+			Style = new TiXmlElement("Style");
+			Style->SetAttribute("id", styleStr);
+			Document->LinkEndChild(Style);
 
-		elem = new TiXmlElement("color");
-		elem->LinkEndChild(new TiXmlText(colorStr));
-		IconStyle->LinkEndChild(elem);
+			IconStyle = new TiXmlElement("IconStyle");
+			Style->LinkEndChild(IconStyle);
 
-		elem = new TiXmlElement("colorMode");
-		elem->LinkEndChild(new TiXmlText("normal"));
-		IconStyle->LinkEndChild(elem);
+			elem = new TiXmlElement("color");
+			elem->LinkEndChild(new TiXmlText(colorStr));
+			IconStyle->LinkEndChild(elem);
 
-		elem = new TiXmlElement("scale");
-		elem->LinkEndChild(new TiXmlText(iconScale));
-		IconStyle->LinkEndChild(elem);
+			elem = new TiXmlElement("colorMode");
+			elem->LinkEndChild(new TiXmlText("normal"));
+			IconStyle->LinkEndChild(elem);
 
-		heading = new TiXmlElement("heading");
-		heading->LinkEndChild(new TiXmlText(to_string(data->theta[2] * C_RAD2DEG_F)));
-		IconStyle->LinkEndChild(heading);
+			elem = new TiXmlElement("scale");
+			elem->LinkEndChild(new TiXmlText(iconScale));
+			IconStyle->LinkEndChild(elem);
 
-		href = new TiXmlElement("href");
-		href->LinkEndChild(new TiXmlText(iconUrl));
-		elem = new TiXmlElement("Icon");
-		elem->LinkEndChild(href);
-		IconStyle->LinkEndChild(elem);
+			heading = new TiXmlElement("heading");
+			heading->LinkEndChild(new TiXmlText(to_string(item.theta[2] * C_RAD2DEG_F)));
+			IconStyle->LinkEndChild(heading);
 
-		LabelStyle = new TiXmlElement("LabelStyle");
-		Style->LinkEndChild(LabelStyle);
+			href = new TiXmlElement("href");
+			href->LinkEndChild(new TiXmlText(iconUrl));
+			elem = new TiXmlElement("Icon");
+			elem->LinkEndChild(href);
+			IconStyle->LinkEndChild(elem);
 
-		elem = new TiXmlElement("colorMode");
-		elem->LinkEndChild(new TiXmlText("normal"));
-		LabelStyle->LinkEndChild(elem);
+			LabelStyle = new TiXmlElement("LabelStyle");
+			Style->LinkEndChild(LabelStyle);
 
-		elem = new TiXmlElement("scale");
-		elem->LinkEndChild(new TiXmlText(labelScale));
-		LabelStyle->LinkEndChild(elem);
+			elem = new TiXmlElement("colorMode");
+			elem->LinkEndChild(new TiXmlText("normal"));
+			LabelStyle->LinkEndChild(elem);
 
-		// Icon
-		Placemark = new TiXmlElement("Placemark");
-		Document->LinkEndChild(Placemark);
+			elem = new TiXmlElement("scale");
+			elem->LinkEndChild(new TiXmlText(labelScale));
+			LabelStyle->LinkEndChild(elem);
 
-		if(m_showTimeStamp)	
-		{	// Draw Name
-			elem = new TiXmlElement("name");
-			ostringstream timeStream;
-			timeStream << fixed << setprecision(3) << data->time;
-			elem->LinkEndChild(new TiXmlText(timeStream.str()));
+			// Icon
+			Placemark = new TiXmlElement("Placemark");
+			Document->LinkEndChild(Placemark);
+
+			if (m_showPointTimestamps)
+			{	// Draw Name
+				elem = new TiXmlElement("name");
+				ostringstream timeStream;
+				timeStream << fixed << setprecision(3) << item.time;
+				elem->LinkEndChild(new TiXmlText(timeStream.str()));
+				Placemark->LinkEndChild(elem);
+			}
+
+			elem = new TiXmlElement("styleUrl");
+			elem->LinkEndChild(new TiXmlText("#" + styleStr));
 			Placemark->LinkEndChild(elem);
-		}
 
-		elem = new TiXmlElement("styleUrl");
-		elem->LinkEndChild(new TiXmlText("#" + styleStr));
-		Placemark->LinkEndChild(elem);
+			Point = new TiXmlElement("Point");
+			Placemark->LinkEndChild(Point);
 
-		Point = new TiXmlElement("Point");
-		Placemark->LinkEndChild(Point);
-
-		elem = new TiXmlElement("coordinates");
+			elem = new TiXmlElement("coordinates");
 #if 1
-		sprintf(buf, "%.8lf,%.8lf,%.3lf", data->lla[1], data->lla[0], data->lla[2]);
-		elem->LinkEndChild(new TiXmlText(buf));
+			double lat = _CLAMP(item.lla[0] * DEG2RADMULT, -C_PIDIV2, C_PIDIV2) * RAD2DEGMULT;
+			double lon = _CLAMP(item.lla[1] * DEG2RADMULT, -C_PI, C_PI) * RAD2DEGMULT;
+			double alt = _CLAMP(item.lla[2], -1000, 100000);
+			snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf", lon, lat, alt);
+			elem->LinkEndChild(new TiXmlText(buf));
 #else
-		ostringstream coordinateStream;	// Not getting digits of precision
-		coordinateStream
-			<< fixed
-			<< setprecision(8)
-			<< data->lla[1] << ","  // Lat
-			<< data->lla[0] << ","  // Lon
-			<< setprecision(3)
-			<< data->lla[2] << " "; // Alt
-		elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
+			ostringstream coordinateStream;	// Not getting digits of precision
+			coordinateStream
+				<< fixed
+				<< setprecision(8)
+				<< item->lla[1] << ","  // Lat
+				<< item->lla[0] << ","  // Lon
+				<< setprecision(3)
+				<< item->lla[2] << " "; // Alt
+			elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
 #endif
-		Point->LinkEndChild(elem);
+			Point->LinkEndChild(elem);
 
-		elem = new TiXmlElement("altitudeMode");
-		elem->LinkEndChild(new TiXmlText(altitudeMode));
-		Point->LinkEndChild(elem);
-	}
+			elem = new TiXmlElement("altitudeMode");
+			elem->LinkEndChild(new TiXmlText(altitudeMode));
+			Point->LinkEndChild(elem);
+		}
+	}// if (m_showSample)
 
-	if (m_showPath)
+
+	// Show path (track)
+	if (m_showTracks)
 	{
 		// Track style
 		styleStr = string("stylesel_") + to_string(styleCnt++);
@@ -271,10 +289,26 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 		Placemark->LinkEndChild(LineString);
 
 		ostringstream coordinateStream;
+		int j = 0;
 		for (size_t i = 0; i < log.data.size(); i++)
 		{
-			sKmlLogData *data = &(log.data[i]);
-			sprintf(buf, "%.8lf,%.8lf,%.3lf ", data->lla[1], data->lla[0], data->lla[2]);
+            sKmlLogData& item = (log.data[i]);
+            double lat = _CLAMP(item.lla[0] * DEG2RADMULT, -C_PIDIV2, C_PIDIV2) * RAD2DEGMULT;
+            double lon = _CLAMP(item.lla[1] * DEG2RADMULT, -C_PI, C_PI) * RAD2DEGMULT;
+            double alt = _CLAMP(item.lla[2], -1000, 100000);
+
+			if (i >= log.data.size()-2)
+			{
+				j++;
+			}
+
+            snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf ", lon, lat, alt);
+			if (strcmp("-111.65863637,40.05570543,1418.282 ", buf) == 0)
+			{
+				j++;
+			}
+// 			qDebug() << string(buf);
+//			std::cout << "Value of str is : ";
 			coordinateStream << string(buf);
 		}
 
@@ -352,7 +386,6 @@ bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
 		quat2euler(d.ins2.qn2b, ins1.theta);
 		memcpy(ins1.uvw, d.ins2.uvw, 12);
         memcpy(ins1.lla, d.ins2.lla, 24);
-
 		p_data_hdr_t dHdr = { DID_INS_1 , sizeof(ins_1_t), 0 };
 		// Save data to file
         WriteDateToFile(&dHdr, (uint8_t*)&ins1);
@@ -377,10 +410,10 @@ bool cDeviceLogKML::WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t* 
 	sKmlLog &log = m_Log[kid];
 
 	// Write date to file
-    int nBytes = m_kml.WriteDataToFile(log.data, dataHdr, dataBuf);
+    m_kml.WriteDataToFile(log.data, dataHdr, dataBuf);
 
 	// File byte size
-	nBytes = (int)(log.data.size() * cDataKML::BYTES_PER_KID(kid));
+    int nBytes = (int)(log.data.size() * cDataKML::BYTES_PER_KID(kid));
 	log.fileSize = nBytes;
 	m_fileSize = _MAX(m_fileSize, log.fileSize);
 	m_logSize = nBytes;

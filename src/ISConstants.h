@@ -24,6 +24,7 @@ extern "C" {
 #include <string.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <time.h>
 	
 #define PRE_PROC_COMBINE1(X, Y) X##Y
 #define PRE_PROC_COMBINE(X, Y) PRE_PROC_COMBINE1(X, Y)
@@ -36,6 +37,7 @@ extern "C" {
 #endif
 
 // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
+#define _WINSOCKAPI_
 #include <winsock2.h>
 #include <WS2tcpip.h>
 #include <windows.h>
@@ -48,7 +50,7 @@ extern "C" {
 
 #elif defined(__APPLE__)
 
-#error Apple platform not supported yet
+#define socket_t int
 
 #define PLATFORM_IS_APPLE 1
 #if defined(__LITTLE_ENDIAN__)
@@ -72,13 +74,6 @@ extern "C" {
 #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
 
-#elif defined(AVR)
-
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_AVR 1
-#define CPU_IS_LITTLE_ENDIAN 0
-#define CPU_IS_BIG_ENDIAN 1
-
 #elif defined(ARM)
 
 #define PLATFORM_IS_EMBEDDED 1
@@ -86,8 +81,15 @@ extern "C" {
 #define CPU_IS_LITTLE_ENDIAN 1
 #define CPU_IS_BIG_ENDIAN 0
 
+#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega168__) ||defined(__AVR_ATmega168P__) ||defined(__AVR_ATmega328P__)
+#define PLATFORM_IS_EMBEDDED 1
+#define PLATFORM_IS_ARM 0
+#define CPU_IS_LITTLE_ENDIAN 1
+#define CPU_IS_BIG_ENDIAN 0
+
 #elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 
+#define PLATFORM_IS_EMBEDDED 1
 #define PLATFORM_IS_ARM 1
 #define CPU_IS_LITTLE_ENDIAN 1
 #define CPU_IS_BIG_ENDIAN 0
@@ -131,7 +133,7 @@ extern void vPortFree(void* pv);
 #endif
 
 #ifndef SNPRINTF
-#define SNPRINTF(a, b, c, ...) _snprintf_s(a, b, b, c, __VA_ARGS__)
+#define SNPRINTF(buf, size, format, ...) _snprintf_s(buf, size, size, format, __VA_ARGS__)
 #endif
 
 #ifndef STRNCPY
@@ -158,6 +160,36 @@ extern void vPortFree(void* pv);
 
 #endif
 
+#if !defined(PLATFORM_IS_EMBEDDED) || !PLATFORM_IS_EMBEDDED
+
+#if PLATFORM_IS_WINDOWS
+
+#include <direct.h>
+#include <sys/utime.h>
+#define _MKDIR(dir) _mkdir(dir)
+#define _RMDIR(dir) _rmdir(dir)
+#define _GETCWD(buf, len) _getcwd(buf, len)
+#define _UTIME _utime
+#define _UTIMEBUF struct _utimbuf
+
+#else
+
+#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+#include <utime.h>
+#include <sys/stat.h>
+//#define _MKDIR(dir) mkdir(dir, S_IRWXU) // 777 owner access only 
+#define _MKDIR(dir) mkdir(dir, ACCESSPERMS) // 0777 access for all
+#define _RMDIR(dir) rmdir(dir)
+#define _GETCWD(buf, len) getcwd(buf, len)
+#define _UTIME utime
+#define _UTIMEBUF struct utimbuf
+
+#endif
+
+#endif
+
 // with this you can tell the compiler not to insert padding
 #if defined(_MSC_VER)
 #define PUSH_PACK_1 __pragma(pack(push, 1))
@@ -165,13 +197,6 @@ extern void vPortFree(void* pv);
 #define PUSH_PACK_8 __pragma(pack(push, 8))
 #define POP_PACK __pragma(pack(pop))
 #define PACKED
-#elif PLATFORM_IS_AVR
-// crashes AVR if done globally, must be done per struct
-#define PUSH_PACK_1
-#define PUSH_PACK_4
-#define PUSH_PACK_8
-#define POP_PACK
-#define PACKED __attribute__ ((packed))
 #else
 #define PUSH_PACK_1 _Pragma("pack(push, 1)")
 #define PUSH_PACK_4 _Pragma("pack(push, 4)")
@@ -198,14 +223,22 @@ extern void vPortFree(void* pv);
 #ifndef SWAP32
 #if defined(__GNUC__)
 #define SWAP32 __builtin_bswap32
+#define SWAP64 __builtin_bswap64
 #elif defined(__ICCAVR32__)
 #define SWAP32 __swap_bytes
 #elif defined(_MSC_VER)
 #include "intrin.h"
 #define SWAP32 _byteswap_ulong
-#else
+#define SWAP64 _byteswap_uint64
+#endif
+#endif
+
+#ifndef SWAP32
 #define SWAP32(v) ((uint32_t)(((uint32_t)SWAP16((uint32_t)(v) >> 16)) | ((uint32_t)SWAP16((uint32_t)(v)) << 16)))
 #endif
+
+#ifndef SWAP64
+#define SWAP64(v) ((uint64_t)(((uint64_t)SWAP32((uint64_t)(v) >> 32)) | ((uint64_t)SWAP32((uint64_t)(v)) << 32)))
 #endif
 
 #ifndef _MAX 
@@ -248,10 +281,6 @@ extern void vPortFree(void* pv);
 #define _MEMBER_ARRAY_ELEMENT_COUNT(type, member) _ARRAY_ELEMENT_COUNT(((type*)0)->member)
 #endif
 
-#ifndef OFFSETOF
-#define OFFSETOF offsetof//(TYPE, MEMBER) ((uint8_t)&(((TYPE*)0)->MEMBER))
-#endif
-
 #ifndef MEMBERSIZE
 #define MEMBERSIZE(type, member) sizeof(((type*)0)->member)
 #endif
@@ -271,10 +300,10 @@ extern void vPortFree(void* pv);
 #define DEG2RAD(deg)    ((deg)*(M_PI/180.0f))
 #endif
 #ifndef DEG2RADMULT
-#define DEG2RADMULT  (PI/180.0f)
+#define DEG2RADMULT  (M_PI/180.0f)
 #endif
 #ifndef RAD2DEGMULT
-#define RAD2DEGMULT  (180.0f/PI)
+#define RAD2DEGMULT  (180.0f/M_PI)
 #endif
 #define ATanH(x)	    (0.5 * log((1 + x) / (1 - x)))
 
@@ -284,7 +313,7 @@ extern void vPortFree(void* pv);
 
 #endif
 
-#if ((defined(_MSC_VER) && _MSC_VER >= 1900) || ((__cplusplus >= 201103L || (__cplusplus < 200000 && __cplusplus > 199711L))))
+#if ((defined(_MSC_VER) && _MSC_VER >= 1900) || (defined(__cplusplus) && ((__cplusplus >= 201103L || (__cplusplus < 200000 && __cplusplus > 199711L)))))
 
 #ifndef C11_IS_ENABLED
 #define C11_IS_ENABLED 1
@@ -337,6 +366,9 @@ extern void vPortFree(void* pv);
 
 #endif
 
+// diff two times as uint32_t, handling wrap-around
+#define UINT32_TIME_DIFF(current, prev) ((uint32_t)(current) - (uint32_t)(prev))
+
 #define DT_TO_HZ(dt)	(((dt) == (0.0)) ? (0) : (1.0/dt))
 
 #define C_IN2M          0.0254          // inches to meters 
@@ -357,8 +389,13 @@ extern void vPortFree(void* pv);
 #define C_NMI2M_F       1852.0f         // nautical miles to meters 
 #define C_MI2M_F        1609.344f       // (C_FT2M*5280) miles to meters 
 
+#define C_METERS_KNOTS	1.943844		// Meters/sec squared to knots
+
 //////////////////////////////////////////////////////////////////////////
 // Acceleration / Force
+
+// Local gravity available as = gravity_igf80(lattitude_rad, altitude_m);
+#if 1	
 
 // Standard Gravity (at sea level)
 #define C_G_TO_MPS2     9.80665         // (m/s^2) standard gravity
@@ -368,6 +405,7 @@ extern void vPortFree(void* pv);
 #define C_G_TO_MPS2_F   9.80665f        // (m/s^2) standard gravity
 #define C_MPS2_TO_G_F   0.101971621297793f
 #define C_G_TO_FTPS2_F  32.17404856f    // (ft/s^2) standard gravity 
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Pressure
@@ -659,6 +697,8 @@ extern void vPortFree(void* pv);
 #define _ZERO		0.0f
 
 #define _UNWRAP     UNWRAP_F
+
+#define FLOAT2DOUBLE (double) // Used to prevent warning when compiling with -Wdouble-promotion in Linux
 
 typedef float       f_t;
 typedef int			i_t;

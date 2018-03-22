@@ -95,13 +95,23 @@ void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 	uint16_t* doubleOffsetsEnd = offsets + offsetsLength;
 	int offsetToDouble;
 	int maxDoubleOffset = dataLength - 8;
-
+    int isDouble;
 	while (offsets < doubleOffsetsEnd)
 	{
-		offsetToDouble = (*offsets++) - offset;
+        offsetToDouble = (*offsets++);
+        isDouble = ((offsetToDouble & 0x8000) == 0);
+        offsetToDouble = (offsetToDouble & 0x7FFF) - offset;
 		if (offsetToDouble >= 0 && offsetToDouble <= maxDoubleOffset)
 		{
-			flipDouble(data + offsetToDouble);
+            if (isDouble)
+            {
+                flipDouble(data + offsetToDouble);
+            }
+            else
+            {
+                uint64_t* ptr = (uint64_t*)(data + offsetToDouble);
+                *ptr = SWAP64(*ptr);
+            }
 		}
 	}
 }
@@ -146,55 +156,57 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 	static uint16_t offsetsIns1[] =
 	{
 		4,
-		OFFSETOF(ins_1_t, timeOfWeek),
-		OFFSETOF(ins_1_t, lla[0]),
-		OFFSETOF(ins_1_t, lla[1]),
-		OFFSETOF(ins_1_t, lla[2])
+		offsetof(ins_1_t, timeOfWeek),
+		offsetof(ins_1_t, lla[0]),
+		offsetof(ins_1_t, lla[1]),
+		offsetof(ins_1_t, lla[2])
 	};
 
 	static uint16_t offsetsIns2[] =
 	{
 		4,
-		OFFSETOF(ins_2_t, timeOfWeek),
-		OFFSETOF(ins_2_t, lla[0]),
-		OFFSETOF(ins_2_t, lla[1]),
-		OFFSETOF(ins_2_t, lla[2])
+		offsetof(ins_2_t, timeOfWeek),
+		offsetof(ins_2_t, lla[0]),
+		offsetof(ins_2_t, lla[1]),
+		offsetof(ins_2_t, lla[2])
 	};
 
 	static uint16_t offsetsIns3[] =
 	{
 		4,
-		OFFSETOF(ins_3_t, timeOfWeek),
-		OFFSETOF(ins_3_t, lla[0]),
-		OFFSETOF(ins_3_t, lla[1]),
-		OFFSETOF(ins_3_t, lla[2])
+		offsetof(ins_3_t, timeOfWeek),
+		offsetof(ins_3_t, lla[0]),
+		offsetof(ins_3_t, lla[1]),
+		offsetof(ins_3_t, lla[2])
 	};
 
 	static uint16_t offsetsIns4[] =
 	{
 		4,
-		OFFSETOF(ins_4_t, timeOfWeek),
-		OFFSETOF(ins_4_t, ecef[0]),
-		OFFSETOF(ins_4_t, ecef[1]),
-		OFFSETOF(ins_4_t, ecef[2])
+		offsetof(ins_4_t, timeOfWeek),
+		offsetof(ins_4_t, ecef[0]),
+		offsetof(ins_4_t, ecef[1]),
+		offsetof(ins_4_t, ecef[2])
 	};
 
 	static uint16_t offsetsGps[] =
 	{
-		4,
-		OFFSETOF(gps_t, pos.lla[0]),
-		OFFSETOF(gps_t, pos.lla[1]),
-		OFFSETOF(gps_t, pos.lla[2]),
-		OFFSETOF(gps_t, towOffset)
+		7,
+		offsetof(gps_nav_t, lla[0]),
+		offsetof(gps_nav_t, lla[1]),
+		offsetof(gps_nav_t, lla[2]),
+		offsetof(gps_nav_t, towOffset),
+		offsetof(gps_nav_t, ecef[0]),
+		offsetof(gps_nav_t, ecef[1]),
+		offsetof(gps_nav_t, ecef[2])
 	};
 
-	static uint16_t offsetsGpsPos[] =
-	{
-		3,
-		OFFSETOF(gps_nav_poslla_t, lla[0]),
-		OFFSETOF(gps_nav_poslla_t, lla[1]),
-		OFFSETOF(gps_nav_poslla_t, lla[2])
-	};
+    static uint16_t offsetsRmc[] =
+    {
+        1, 
+        // 0x8000 denotes a 64 bit int vs a double
+		offsetof(rmc_t, bits) | 0x8000
+    };
 
 	static uint16_t offsetsInl2Status[] =
 	{
@@ -206,126 +218,103 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		4, 0, 36, 44, 52
 	};
 
-	static uint16_t offsetsInsMisc[] =
-	{
-		4,
-		OFFSETOF(ins_misc_t, timeOfWeek),
-		OFFSETOF(ins_misc_t, x.lla[0]),
-		OFFSETOF(ins_misc_t, x.lla[1]),
-		OFFSETOF(ins_misc_t, x.lla[2]),
-	};
-
-	static uint16_t offsetsInsRes[] =
+	static uint16_t offsetsRtkNav[] =
 	{
 		3,
-		OFFSETOF( ins_res_t, x_dot.lla[0] ),
-		OFFSETOF( ins_res_t, x_dot.lla[1] ),
-		OFFSETOF( ins_res_t, x_dot.lla[2] ),
-	};
-
-	static uint16_t offsetsRtkSol[] =
-	{
-		11,
-		OFFSETOF(rtk_sol_t, seconds),
-		OFFSETOF(rtk_sol_t, pos[0]),
-		OFFSETOF(rtk_sol_t, pos[1]),
-		OFFSETOF(rtk_sol_t, pos[2]),
-		OFFSETOF(rtk_sol_t, vel[0]),
-		OFFSETOF(rtk_sol_t, vel[1]),
-		OFFSETOF(rtk_sol_t, vel[2]),
-		OFFSETOF(rtk_sol_t, gdop),
-		OFFSETOF(rtk_sol_t, pdop),
-		OFFSETOF(rtk_sol_t, hdop),
-		OFFSETOF(rtk_sol_t, vdop)
+		offsetof(gps_rtk_misc_t, baseLla[0]),
+		offsetof(gps_rtk_misc_t, baseLla[1]),
+		offsetof(gps_rtk_misc_t, baseLla[2]),
 	};
 
 	static uint16_t offsetsFlashConfig[] =
 	{
 		6,
-		OFFSETOF( nvm_flash_cfg_t, refLla[0] ),
-		OFFSETOF( nvm_flash_cfg_t, refLla[1] ),
-		OFFSETOF( nvm_flash_cfg_t, refLla[2] ),
-		OFFSETOF( nvm_flash_cfg_t, lastLla[0] ),
-		OFFSETOF( nvm_flash_cfg_t, lastLla[1] ),
-		OFFSETOF( nvm_flash_cfg_t, lastLla[2] )
+		offsetof( nvm_flash_cfg_t, refLla[0] ),
+		offsetof( nvm_flash_cfg_t, refLla[1] ),
+		offsetof( nvm_flash_cfg_t, refLla[2] ),
+		offsetof( nvm_flash_cfg_t, lastLla[0] ),
+		offsetof( nvm_flash_cfg_t, lastLla[1] ),
+		offsetof( nvm_flash_cfg_t, lastLla[2] )
 	};
 
-	// INTERNAL USE ONLY
 	static uint16_t offsetsOnlyTimeFirst[] = { 1, 0 };
-	static uint16_t offsetsInsParams[] = { 3, 156, 164, 172 };
-	static uint16_t offsetsObsParams[] = { 6, 72, 80, 88, 100, 108, 116 };
 	static uint16_t offsetsDebugArray[] = { 3, 72, 80, 88 };
 
     static uint16_t* s_doubleOffsets[] =
 	{
-		0,						// DID_NULL
-		0,						// DID_DEV_INFO
-		offsetsOnlyTimeFirst,	// DID_IMU_1
-		offsetsOnlyTimeFirst,	// DID_CON_SCUL_INT
-		offsetsIns1,			// DID_INS_1
-		offsetsIns2,			// DID_INS_2
-		offsetsGps,				// DID_GPS
-		0,						// DID_CONFIG
-		0,						// DID_ASCII_BCAST_PERIOD
-		offsetsInsMisc,			// DID_INS_MISC
-		0,						// DID_SYS_PARAMS
-		offsetsOnlyTimeFirst,	// DID_SYS_SENSORS
-		offsetsFlashConfig,		// DID_FLASH_CONFIG
-		0,						// DID_GPS_CNO
-		offsetsGpsPos,			// DID_GPS_POS
-		0,						// DID_GPS_VEL
-		0,						// DID_IO
-		0,						// DID_IO_SERVOS_PWM
-		0,						// DID_IO_SERVOS_PPM
-		0,						// DID_MAG_CAL
-		offsetsInsRes,			// DID_INS_RESOURCES
-        0,                      // DID_DGPS_CORRECTION
-        offsetsRtkSol,          // DID_RTK_SOL,
-		0,						// DID_FEATURE_BITS
-		0,						// DID_SENSORS_IS1
-		0,						// DID_SENSORS_IS2
-		0,						// DID_SENSORS_TC_BIAS
-		0,						// DID_SENSORS_CF_BIAS
-		offsetsOnlyTimeFirst,	// DID_SENSORS_ADC
-		0,						// DID_SCOMP
-		offsetsInsParams,		// DID_INS_PARAMS
-		offsetsObsParams,		// DID_OBS_PARAMS
-		0,						// DID_HDW_PARAMS
-		0,						// DID_NVR_MANAGE_USERPAGE
-		0,						// DID_NVR_USERPAGE_SN
-		0,						// DID_NVR_USERPAGE_G0
-		0,						// DID_NVR_USERPAGE_G1
-		0,						// DID_NVR_MANAGE_PROTECTED
-		0,						// DID_RTOS_INFO
-		offsetsDebugArray,		// DID_DEBUG_ARRAY
-		0,						// DID_SENSORS_CAL1
-		0,						// DID_SENSORS_CAL2
-		0,						// DID_CAL_SC
-		0,						// DID_CAL_SC1
-		0,						// DID_CAL_SC2
-		offsetsOnlyTimeFirst,	// DID_SYS_SENSORS_SIGMA
-		offsetsOnlyTimeFirst,	// DID_SENSORS_ADC_SIGMA
-		0,                      // DID_INS_DEV_1
-		offsetsInl2States,      // DID_INL2_STATES
-		0,                      // DID_INL2_COVARIANCE_UD
-		0,                      // DID_INL2_MISC
-		0,                      // DID_INL2_STATUS,
-		offsetsOnlyTimeFirst,	// DID_MAGNETOMETER_1
-		offsetsOnlyTimeFirst,	// DID_BAROMETER
-		offsetsOnlyTimeFirst,	// DID_IMU_2
-		offsetsOnlyTimeFirst,	// DID_MAGNETOMETER_2
-		0,                      // DID_GPS_VERSION
-		0,						// DID_COMMUNICATIONS_LOOPBACK
-		offsetsOnlyTimeFirst,	// DID_DUAL_IMU
-		0,						// DID_INL2_MAG_OBS_INFO
-        0,						// DID_RAW_GPS_DATA
-        0,                      // DID_RTK_OPT
-        0,                      // DID_NVR_USERPAGE_INTERNAL
-		0,						// DID_MANUFACTURING_INFO
-		0,                      // DID_BIT
-		offsetsIns3,			// DID_INS_3
-		offsetsIns4,			// DID_INS_4
-		0,						// DID_INL2_VARIANCE
+		0,						//  0: DID_NULL
+		0,						//  1: DID_DEV_INFO
+        0,						//  2: DID_CRASH_INFO
+		offsetsOnlyTimeFirst,	//  3: DID_PREINTEGRATED_IMU
+		offsetsIns1,			//  4: DID_INS_1
+		offsetsIns2,			//  5: DID_INS_2
+		offsetsGps,				//  6: DID_GPS_NAV
+        0,  					//  7: DID_CONFIG
+		0,						//  8: DID_ASCII_BCAST_PERIOD
+		offsetsRmc,				//  9: DID_RMC
+		0,						// 10: DID_SYS_PARAMS
+		offsetsOnlyTimeFirst,	// 11: DID_SYS_SENSORS
+		offsetsFlashConfig,		// 12: DID_FLASH_CONFIG
+		offsetsGps,				// 13: DID_GPS1_NAV
+		offsetsGps,				// 14: DID_GPS2_NAV
+		0,						// 15: DID_GPS1_SAT
+		0,						// 16: DID_GPS2_SAT
+		0,                      // 17: DID_GPS1_VERSION
+		0,						// 18: DID_GPS2_VERSION
+		0,						// 19: DID_MAG_CAL
+		0,						// 20: 
+        0,                      // 21: DID_GPS_RTK_NAV
+        offsetsRtkNav,          // 22: DID_GPS_RTK_MISC,
+		0,						// 23: DID_FEATURE_BITS
+		0,						// 24: DID_SENSORS_IS1
+		0,						// 25: DID_SENSORS_IS2
+		0,						// 26: DID_SENSORS_TC_BIAS
+		0,						// 27: DID_IO
+		offsetsOnlyTimeFirst,	// 28: DID_SENSORS_ADC
+		0,						// 29: DID_SCOMP
+		0,						// 30: 
+		0,						// 31: 
+		0,						// 32: DID_HDW_PARAMS
+		0,						// 33: DID_NVR_MANAGE_USERPAGE
+		0,						// 34: DID_NVR_USERPAGE_SN
+		0,						// 35: DID_NVR_USERPAGE_G0
+		0,						// 36: DID_NVR_USERPAGE_G1
+		0,						// 37: DID_NVR_MANAGE_PROTECTED
+		0,						// 38: DID_RTOS_INFO
+		offsetsDebugArray,		// 39: DID_DEBUG_ARRAY
+		0,						// 40: DID_SENSORS_CAL1
+		0,						// 41: DID_SENSORS_CAL2
+		0,						// 42: DID_CAL_SC
+		0,						// 43: DID_CAL_SC1
+		0,						// 44: DID_CAL_SC2
+		offsetsOnlyTimeFirst,	// 45: DID_SYS_SENSORS_SIGMA
+		offsetsOnlyTimeFirst,	// 46: DID_SENSORS_ADC_SIGMA
+		0,                      // 47: DID_INS_DEV_1
+		offsetsInl2States,      // 48: DID_INL2_STATES
+		0,                      // 49: DID_INL2_COVARIANCE_UD
+		0,                      // 50: DID_INL2_MISC
+		0,                      // 51: DID_INL2_STATUS,
+		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER_1
+		offsetsOnlyTimeFirst,	// 53: DID_BAROMETER
+		0,						// 54: 
+		offsetsOnlyTimeFirst,	// 55: DID_MAGNETOMETER_2
+		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
+		offsetsOnlyTimeFirst,	// 57: DID_DUAL_IMU_RAW
+		offsetsOnlyTimeFirst,	// 58: DID_DUAL_IMU
+		0,						// 59: DID_INL2_MAG_OBS_INFO
+        0,						// 60: DID_GPS_BASE_RAW
+        0,                      // 61: DID_GPS_RTK_OPT
+        0,                      // 62: DID_NVR_USERPAGE_INTERNAL
+		0,						// 63: DID_MANUFACTURING_INFO
+		0,                      // 64: DID_BIT
+		offsetsIns3,			// 65: DID_INS_3
+		offsetsIns4,			// 66: DID_INS_4
+		0,						// 67: DID_INL2_VARIANCE
+		0,						// 68: DID_STROBE_IN_TIME
+		0,						// 69: DID_GPS1_RAW
+		0,						// 70: DID_GPS2_RAW
+		0,						// 71: DID_VELOCITY_SENSOR
+		0,						// 72: DID_DIAGNOSTIC_MESSAGE
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -374,79 +363,90 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 	static uint16_t manufInfoOffsets[] =
 	{
 		2,
-		OFFSETOF(manufacturing_info_t, date), _MEMBER_ARRAY_ELEMENT_COUNT(manufacturing_info_t, date)
+		offsetof(manufacturing_info_t, date), _MEMBER_ARRAY_ELEMENT_COUNT(manufacturing_info_t, date)
+	};
+	
+	static uint16_t diagMsgOffsets[] =
+	{
+		2,
+		offsetof(diag_msg_t, message), _MEMBER_ARRAY_ELEMENT_COUNT(diag_msg_t, message)
 	};
 
     static uint16_t* s_stringOffsets[] =
 	{
-		0,						// DID_NULL
-        0,						// DID_DEV_INFO
-		0,						// DID_IMU_1
-		0,						// DID_CON_SCUL_INT
-		0,						// DID_INS_1
-		0,						// DID_INS_2
-		0,						// DID_GPS
-		0,						// DID_CONFIG
-		0,						// DID_ASCII_BCAST_PERIOD
-		0,						// DID_INS_MISC
-		0,						// DID_SYS_PARAMS
-		0,						// DID_SYS_SENSORS
-		0,						// DID_FLASH_CONFIG
-		0,						// DID_GPS_CNO
-		0,						// DID_GPS_POS
-		0,						// DID_GPS_VEL
-		0,						// DID_IO
-		0,						// DID_IO_SERVOS_PWM
-		0,						// DID_IO_SERVOS_PPM
-		0,						// DID_MAG_CAL
-		0,						// DID_INS_RESOURCES
-        0,                      // DID_DGPS_CORRECTION
-        0,                      // DID_RTK_SOL,
-		0,						// DID_FEATURE_BITS
-		0,						// DID_SENSORS_IS1
-		0,						// DID_SENSORS_IS2
-		0,						// DID_SENSORS_TC_BIAS
-		0,						// DID_SENSORS_CF_BIAS
-		0,						// DID_SENSORS_ADC
-		0,						// DID_SCOMP
-		0,						// DID_INS_PARAMS,
-		0,						// DID_OBS_PARAMS,
-		0,						// DID_HDW_PARAMS,
-		0,						// DID_NVR_MANAGE_USERPAGE
-		0,						// DID_NVR_USERPAGE_SN
-		0,						// DID_NVR_USERPAGE_G0
-		0,						// DID_NVR_USERPAGE_G1
-		debugStringOffsets,		// DID_DEBUG_STRING
-		rtosTaskOffsets,		// DID_RTOS_INFO
-		0,						// DID_DEBUG_ARRAY
-		0,						// DID_SENSORS_CAL1
-		0,						// DID_SENSORS_CAL2
-		0,						// DID_CAL_SC
-		0,						// DID_CAL_SC1
-		0,						// DID_CAL_SC2
-		0,						// DID_SYS_SENSORS_SIGMA
-		0,						// DID_SENSORS_ADC_SIGMA
-		0,                      // DID_INS_DEV_1
-		0,                      // DID_INL2_STATES
-		0,                      // DID_INL2_COVARIANCE_UD
-		0,                      // DID_INL2_MISC
-		0,                      // DID_INL2_STATUS
-		0,						// DID_MAGNETOMETER_1
-		0,						// DID_BAROMETER
-		0,						// DID_IMU_2
-		0,						// DID_MAGNETOMETER_2
-		0,						// DID_GPS_VERSION
-		0,						// DID_COMMUNICATIONS_LOOPBACK
-		0,						// DID_DUAL_IMU
-		0,						// DID_INL2_MAG_OBS_INFO
-        0,						// DID_RAW_GPS_DATA
-        0,                      // DID_RTK_OPT
-        0,                      // DID_NVR_USERPAGE_INTERNAL
-		manufInfoOffsets,		// DID_MANUFACTURING_INFO
-		0,                      // DID_BIT
-		0,                      // DID_INS_3
-		0,                      // DID_INS_4
-		0,						// DID_INL2_VARIANCE
+		0,						//  0: DID_NULL
+        0,						//  1: DID_DEV_INFO
+        0,						//  2: DID_CRASH_INFO
+		0,						//  3: DID_PREINTEGRATED_IMU
+		0,						//  4: DID_INS_1
+		0,						//  5: DID_INS_2
+		0,						//  6: DID_GPS_NAV
+		0,						//  7: DID_CONFIG
+		0,						//  8: DID_ASCII_BCAST_PERIOD
+		0,						//  9: DID_RMC
+		0,						// 10: DID_SYS_PARAMS
+		0,						// 11: DID_SYS_SENSORS
+		0,						// 12: DID_FLASH_CONFIG
+		0,						// 13: DID_GPS1_NAV
+		0,						// 14: DID_GPS2_NAV
+		0,						// 15: DID_GPS1_SAT
+		0,						// 16: DID_GPS2_SAT
+		0,						// 17: DID_GPS1_VERSION
+		0,						// 18: DID_GPS2_VERSION
+		0,						// 19: DID_MAG_CAL
+		0,						// 20: 
+        0,                      // 21: DID_GPS_RTK_NAV
+        0,                      // 22: DID_GPS_RTK_MISC,
+		0,						// 23: DID_FEATURE_BITS
+		0,						// 24: DID_SENSORS_IS1
+		0,						// 25: DID_SENSORS_IS2
+		0,						// 26: DID_SENSORS_TC_BIAS
+		0,						// 27: DID_IO
+		0,						// 28: DID_SENSORS_ADC
+		0,						// 29: DID_SCOMP
+		0,						// 30: 
+		0,						// 31: 
+		0,						// 32: DID_HDW_PARAMS,
+		0,						// 33: DID_NVR_MANAGE_USERPAGE
+		0,						// 34: DID_NVR_USERPAGE_SN
+		0,						// 35: DID_NVR_USERPAGE_G0
+		0,						// 36: DID_NVR_USERPAGE_G1
+		debugStringOffsets,		// 37: DID_DEBUG_STRING
+		rtosTaskOffsets,		// 38: DID_RTOS_INFO
+		0,						// 39: DID_DEBUG_ARRAY
+		0,						// 40: DID_SENSORS_CAL1
+		0,						// 41: DID_SENSORS_CAL2
+		0,						// 42: DID_CAL_SC
+		0,						// 43: DID_CAL_SC1
+		0,						// 44: DID_CAL_SC2
+		0,						// 45: DID_SYS_SENSORS_SIGMA
+		0,						// 46: DID_SENSORS_ADC_SIGMA
+		0,                      // 47: DID_INS_DEV_1
+		0,                      // 48: DID_INL2_STATES
+		0,                      // 49: DID_INL2_COVARIANCE_UD
+		0,                      // 50: DID_INL2_MISC
+		0,                      // 51: DID_INL2_STATUS
+		0,						// 52: DID_MAGNETOMETER_1
+		0,						// 53: DID_BAROMETER
+		0,						// 54: 
+		0,						// 55: DID_MAGNETOMETER_2
+		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
+		0,						// 57: DID_DUAL_IMU_RAW
+		0,						// 58: DID_DUAL_IMU
+		0,						// 59: DID_INL2_MAG_OBS_INFO
+        0,						// 60: DID_GPS_BASE_RAW
+        0,                      // 61: DID_GPS_RTK_OPT
+        0,                      // 62: DID_NVR_USERPAGE_INTERNAL
+		manufInfoOffsets,		// 63: DID_MANUFACTURING_INFO
+		0,                      // 64: DID_BIT
+		0,                      // 65: DID_INS_3
+		0,                      // 66: DID_INS_4
+		0,						// 67: DID_INL2_VARIANCE
+		0,						// 68: DID_STROBE_IN_TIME
+		0,						// 69: DID_GPS1_RAW
+		0,						// 70: DID_GPS2_RAW
+		0,						// 71: DID_VELOCITY_SENSOR
+		diagMsgOffsets, 		// 72: DID_DIAGNOSTIC_MESSAGE
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -465,7 +465,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 
 uint32_t checksum32(const void* data, int count)
 {
-	if (count % 4 != 0 || count < 0)
+	if (count < 1 || count % 4 != 0)
 	{
 		return 0;
 	}
@@ -494,88 +494,131 @@ uint32_t flashChecksum32(const void* data, int size)
 	return checksum32((const uint8_t*)data + 8, size - 8);
 }
 
-int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day)
+// Convert DID to message out control mask
+uint64_t didToRmcBits(uint32_t did, uint64_t defaultRmcBits)
 {
-	return
-		367 * year
-		- 7 * (year + (month + 9) / 12) / 4
-		- 3 * ((year + (month - 9) / 7) / 100 + 1) / 4
-		+ 275 * month / 9
-		+ day
-		+ 1721028
-		- 2400000;
+	switch(did)
+	{
+		case DID_INS_1:					return RMC_BITS_INS1;
+		case DID_INS_2:					return RMC_BITS_INS2;
+		case DID_INS_3:					return RMC_BITS_INS3;
+		case DID_INS_4:					return RMC_BITS_INS4;
+		case DID_DUAL_IMU:				return RMC_BITS_DUAL_IMU;
+		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
+		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
+		case DID_MAGNETOMETER_1:		return RMC_BITS_MAGNETOMETER1;
+		case DID_MAGNETOMETER_2:		return RMC_BITS_MAGNETOMETER2;
+		case DID_GPS_NAV:				return RMC_BITS_GPS_NAV;
+		case DID_GPS1_NAV:				return RMC_BITS_GPS1_NAV;
+		case DID_GPS2_NAV:				return RMC_BITS_GPS2_NAV;
+		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
+		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
+		case DID_GPS1_SAT:				return RMC_BITS_GPS1_SAT;
+		case DID_GPS2_SAT:				return RMC_BITS_GPS2_SAT;
+		case DID_GPS_RTK_NAV:			return RMC_BITS_GPS_RTK_NAV;
+		case DID_GPS_RTK_MISC:			return RMC_BITS_GPS_RTK_MISC;
+		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE;
+		case DID_STROBE_IN_TIME:		return RMC_BITS_STROBE_IN_TIME;
+		
+		default:						return defaultRmcBits;
+	}
 }
 
-int32_t convertGpsToMjd(int32_t gpsCycle, int32_t gpsWeek, int32_t gpsSeconds)
+void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hours, int32_t* minutes, int32_t* seconds, int32_t* milliseconds)
 {
-	uint32_t gpsDays = ((gpsCycle * 1024) + gpsWeek) * 7 + (gpsSeconds / 86400);
-	return convertDateToMjd(1980, 1, 6) + gpsDays;
+	double j1, j2, j3, j4, j5;
+	double intgr = floor(julian);
+	double frac = julian - intgr;
+	double gregjd = 2299161.0;
+	if (intgr >= gregjd)
+	{
+		//Gregorian calendar correction
+		double tmp = floor(((intgr - 1867216.0) - 0.25) / 36524.25);
+		j1 = intgr + 1.0 + tmp - floor(0.25 * tmp);
+	}
+	else
+	{
+		j1 = intgr;
+	}
+
+	//correction for half day offset
+	double dayfrac = frac + 0.5;
+	if (dayfrac >= 1.0)
+	{
+		dayfrac -= 1.0;
+		++j1;
+	}
+
+	j2 = j1 + 1524.0;
+	j3 = floor(6680.0 + ((j2 - 2439870.0) - 122.1) / 365.25);
+	j4 = floor(j3 * 365.25);
+	j5 = floor((j2 - j4) / 30.6001);
+
+	double d = floor(j2 - j4 - floor(j5 * 30.6001));
+	double m = floor(j5 - 1);
+	if (m > 12)
+	{
+		m -= 12;
+	}
+	double y = floor(j3 - 4715.0);
+	if (m > 2)
+	{
+		--y;
+	}
+	if (y <= 0)
+	{
+		--y;
+	}
+
+	//
+	// get time of day from day fraction
+	//
+	double hr = floor(dayfrac * 24.0);
+	double mn = floor((dayfrac * 24.0 - hr) * 60.0);
+	double f = ((dayfrac * 24.0 - hr) * 60.0 - mn) * 60.0;
+	double sc = f;
+	if (f - sc > 0.5)
+	{
+		++sc;
+	}
+
+	if (y < 0)
+	{
+		y = -y;
+	}
+	if (year)
+	{
+		*year = (int32_t)y;
+	}
+	if (month)
+	{
+		*month = (int32_t)m;
+	}
+	if (day)
+	{
+		*day = (int32_t)d;
+	}
+	if (hours)
+	{
+		*hours = (int32_t)hr;
+	}
+	if (minutes)
+	{
+		*minutes = (int32_t)mn;
+	}
+	if (seconds)
+	{
+		*seconds = (int32_t)sc;
+	}
+	if (milliseconds)
+	{
+		*milliseconds = (int32_t)((sc - floor(sc)) * 1000.0);
+	}
 }
 
-void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day)
+double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds)
 {
-	int32_t j, c, y, m;
-
-	j = mjd + 2400001 + 68569;
-	c = 4 * j / 146097;
-	j = j - (146097 * c + 3) / 4;
-	y = 4000 * (j + 1) / 1461001;
-	j = j - 1461 * y / 4 + 31;
-	m = 80 * j / 2447;
-	*day = j - 2447 * m / 80;
-	j = m / 11;
-	*month = m + 2 - (12 * j);
-	*year = 100 * (c - 49) + y + j;
-}
-
-void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds)
-{
-	// shave off days
-	gpsSeconds = gpsSeconds % 86400;
-
-	// compute hours, minutes, seconds
-	*hour = gpsSeconds / 3600;
-	*minutes = (gpsSeconds / 60) % 60;
-	*seconds = gpsSeconds % 60;
-}
-
-gen_1axis_sensor_t gen1AxisSensorData(double time, const float val)
-{
-    gen_1axis_sensor_t data;
-    data.time = time;
-    data.val = val;
-    return data;
-}
-
-gen_3axis_sensor_t gen3AxisSensorData(double time, const float val[3])
-{
-    gen_3axis_sensor_t data;
-    data.time = time;
-    data.val[0] = val[0];
-    data.val[1] = val[1];
-    data.val[2] = val[2];
-    return data;
-}
-
-gen_dual_3axis_sensor_t genDual3AxisSensorData(double time, const float val1[3], const float val2[3])
-{
-	gen_dual_3axis_sensor_t data;
-	data.time = time;
-	data.val1[0] = val1[0];
-	data.val1[1] = val1[1];
-	data.val1[2] = val1[2];
-	data.val2[0] = val2[0];
-	data.val2[1] = val2[1];
-	data.val2[2] = val2[2];
-	return data;
-}
-
-gen_3axis_sensord_t gen3AxisSensorDataD(double time, const double val[3])
-{
-    gen_3axis_sensord_t data;
-    data.time = time;
-    data.val[0] = val[0];
-    data.val[1] = val[1];
-    data.val[2] = val[2];
-    return data;
+	double gpsDays = (double)gpsWeek * 7.0;
+	gpsDays += ((((double)gpsMilliseconds / 1000.0) - (double)CURRENT_LEAP_SECONDS) / 86400.0);
+	return (2444244.500000) + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
 }

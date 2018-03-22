@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['write',['Write',['../classc_gps_parser.html#aec8b26614dcf909d991d3e1854c00165',1,'cGpsParser::Write()'],['../classc_i_s_serial_port.html#a07e94da66d0d8b2827de5da3d4cfff33',1,'cISSerialPort::Write()'],['../classc_i_s_stream_writer.html#a724838a4bed2bda9d7217206cc84fec1',1,'cISStreamWriter::Write()'],['../classc_i_s_stream.html#ac3932adca4a663819addcda054c8c29e',1,'cISStream::Write()'],['../classc_i_s_tcp_client.html#a4c7e613ed53e5938d8171516fa871653',1,'cISTcpClient::Write()'],['../classc_i_s_tcp_server.html#adda8d8b08ca0ac887be66f6e4572e6e4',1,'cISTcpServer::Write()']]],
-  ['writebyte',['WriteByte',['../classc_inertial_sense_parser.html#a946b92985b6663bccd5f02d6afee1776',1,'cInertialSenseParser::WriteByte()'],['../classc_rtcm_parser.html#aa49ac9396fcf583ddbb1f7bcf2e6af71',1,'cRtcmParser::WriteByte()'],['../classc_ublox_parser.html#a4daf658f9f6edf2cc1bbf6dfe5a60660',1,'cUbloxParser::WriteByte()'],['../classc_gps_parser.html#a47f011d2918e9c2f939346bf6617b699',1,'cGpsParser::WriteByte()']]]
+  ['unknown',['Unknown',['../class_ti_xml_handle.html#a12b32f098c7daa5facbc04e9618262c5',1,'TiXmlHandle']]],
+  ['update',['Update',['../class_inertial_sense.html#a8f375c416f8b8fc007de5053e45f5e5b',1,'InertialSense::Update()'],['../classc_i_s_logger.html#aae12567eb73514a2e28fe3807956854c',1,'cISLogger::Update()'],['../classc_i_s_tcp_server.html#a0407d47a3a0f522e09f088d4a20e469b',1,'cISTcpServer::Update()']]],
+  ['updatepacketretryack',['updatePacketRetryAck',['../com__manager_8c.html#a993761774598a78d7bcb807aa493ed4a',1,'com_manager.c']]],
+  ['updatepacketretrydata',['updatePacketRetryData',['../com__manager_8c.html#a8752fd18e0f3378d4feab9f8398fa172',1,'com_manager.c']]]
 ];
