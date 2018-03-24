@@ -12,21 +12,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 
-// change these include paths to the correct paths for your project
+// STEP 1: Add Includes
+// Change these include paths to the correct paths for your project
 #include "../../src/serialPortPlatform.h"
 #include "../../src/ISComm.h"
 
-static bool running = true;
+static int running = 1;
 
 int main(int argc, char* argv[])
 {
-	unsigned char* asciiData;
-	unsigned char asciiLine[512];
-	serial_port_t serialPort;
-
-	// very important - the serial port must be initialized to zeros
-	memset(&serialPort, 0, sizeof(serialPort));
-
 	if (argc < 2)
 	{
 		printf("Please pass the com port as the only argument\r\n");
@@ -34,12 +28,16 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	// initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
+
+	// STEP 2: Initialize and open serial port
+	serial_port_t serialPort;
+
+	// Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
 	//  you will need to handle the serial port creation, open and reads yourself. In this
 	//  case, you do not need to include serialPort.h/.c and serialPortPlatform.h/.c in your project.
 	serialPortPlatformInit(&serialPort);
 
-	// open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
+	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
 	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
@@ -48,7 +46,9 @@ int main(int argc, char* argv[])
 		return -2;
 	}
 
-	// stop all broadcasts on the device, we don't want binary message coming through while we are doing ASCII
+
+	// STEP 3: Enable message broadcasting
+	// Stop all broadcasts on the device, we don't want binary message coming through while we are doing ASCII
 	if (!serialPortWriteAscii(&serialPort, "STPB", 4))
 	{
 		printf("Failed to encode stop broadcasts message\r\n");
@@ -96,7 +96,12 @@ int main(int argc, char* argv[])
 	}
 	*/
 
-	// you can set running to false with some other piece of code to break out of the loop and end the program
+
+	// STEP 4: Handle received data
+	unsigned char* asciiData;
+	unsigned char asciiLine[512];
+
+	// You can set running to false with some other piece of code to break out of the loop and end the program
 	while (running)
 	{
 		if (serialPortReadAscii(&serialPort, asciiLine, sizeof(asciiLine), &asciiData) > 0)

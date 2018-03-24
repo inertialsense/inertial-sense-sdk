@@ -23,6 +23,7 @@ var searchData=
   ['sys_5fcfg_5fbits_5fenabled_5fzero_5fvelocity_5fupdates',['SYS_CFG_BITS_ENABLED_ZERO_VELOCITY_UPDATES',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85ae77856298802ffc858fc6631fe9050dd',1,'data_sets.h']]],
   ['sys_5fcfg_5fbits_5fmag_5frecal_5fmode_5fmask',['SYS_CFG_BITS_MAG_RECAL_MODE_MASK',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a3fe717f40096d1443ed449271b42789b',1,'data_sets.h']]],
   ['sys_5fcfg_5fbits_5fmag_5frecal_5fmode_5foffset',['SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85ab8933133087071da25a499cb25279517',1,'data_sets.h']]],
+  ['sys_5fcfg_5fbits_5frtk_5fbase_5fis_5fidentical_5fto_5frover',['SYS_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a7bbf8321e30514fd41b3cd355d078e8e',1,'data_sets.h']]],
   ['sys_5fcfg_5fbits_5frtk_5fbase_5fstation',['SYS_CFG_BITS_RTK_BASE_STATION',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a668023da77dd274228d0920211c8d095',1,'data_sets.h']]],
   ['sys_5fcfg_5fbits_5frtk_5fmask',['SYS_CFG_BITS_RTK_MASK',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a09115d6476fbc1b87e704e66698e5305',1,'data_sets.h']]],
   ['sys_5fcfg_5fbits_5frtk_5foutput_5frtcm_5fon_5fserial0',['SYS_CFG_BITS_RTK_OUTPUT_RTCM_ON_SERIAL0',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a4b924bb9d2a13a6e2d4227bee9aab780',1,'data_sets.h']]],

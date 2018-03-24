@@ -33,7 +33,7 @@ endif()
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(ISCommunicationsExample
-	"ISCommunicationsExample.cpp"
+	"ISCommunicationsExample.c"
 	"../../src/data_sets.c"
 	"../../src/ISComm.c"
 	"../../src/serialPort.c"

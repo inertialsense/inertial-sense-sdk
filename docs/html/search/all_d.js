@@ -47,8 +47,6 @@ var searchData=
   ['magnetometer_5ft',['magnetometer_t',['../data__sets_8h.html#a4be00f4285847c80d813a66ec60492ef',1,'data_sets.h']]],
   ['magrecal',['magRecal',['../structcmd__options__t.html#a20ad9f21f58a25045d451fe139d91fd8',1,'cmd_options_t']]],
   ['magrecalmode',['magRecalMode',['../structcmd__options__t.html#abba643ef05c3c1c481517e14291b0f47',1,'cmd_options_t']]],
-  ['main',['main',['../main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97',1,'main.cpp']]],
-  ['main_2ecpp',['main.cpp',['../main_8cpp.html',1,'']]],
   ['malloc',['MALLOC',['../_i_s_constants_8h.html#a43880057a63fb01126278a533081c603',1,'ISConstants.h']]],
   ['mallocminusfree',['mallocMinusFree',['../struct_p_a_c_k_e_d.html#ad380b2310b8fb5fd0f659fdd7a560cdd',1,'PACKED']]],
   ['manufacturer',['manufacturer',['../struct_p_a_c_k_e_d.html#a27b1d31aeee03fea7ccd29b572b3d19e',1,'PACKED']]],

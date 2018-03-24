@@ -35,7 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
-// [C++ COMM INSTRUCTION] 5.) This function is called every time there is new data.
+// [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
 	// Print data to terminal
@@ -272,7 +272,6 @@ static int inertialSenseMain()
 	else if (g_commandLineOptions.asciiMessages.size() != 0)
 	{
 		serial_port_t serialForAscii;
-		memset(&serialForAscii, 0, sizeof(serialForAscii));
 		serialPortPlatformInit(&serialForAscii);
 		serialPortOpen(&serialForAscii, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
 		serialPortWriteAscii(&serialForAscii, "STPB", 4);
@@ -292,17 +291,18 @@ static int inertialSenseMain()
 	// open the device, start streaming data and logging if needed
 	else
 	{
-		// [C++ COMM INSTRUCTION] 1.) Create InertialSense object, passing in data callback function pointer.
+		// [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class  
+		// Create InertialSense object, passing in data callback function pointer.
 		InertialSense inertialSenseInterface(cltool_dataCallback);
 
-		// [C++ COMM INSTRUCTION] 2.) Open serial port.
+		// [C++ COMM INSTRUCTION] STEP 2: Open serial port
 		if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
 		{
 			cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
 			return -1;	// Failed to open serial port
 		}
 
-		// [C++ COMM INSTRUCTION] 3.) Enable data broadcasting from uINS.
+		// [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
 		if (cltool_setupCommunications(inertialSenseInterface))
 		{
 			// [LOGGER INSTRUCTION] Setup and start data logger
@@ -317,7 +317,7 @@ static int inertialSenseMain()
 				// Main loop. Could be in separate thread if desired.
 				while (!g_inertialSenseDisplay.ControlCWasPressed())
 				{
-					// [C++ COMM INSTRUCTION] 4.) Process data and messages.
+					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
 					{
 						// device disconnected, exit
@@ -347,7 +347,8 @@ static int inertialSenseMain()
 
 		cout << "Shutting down..." << endl;
 
-		// [C++ COMM INSTRUCTION] 6.) Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
+		// [C++ COMM INSTRUCTION] STEP 6: Close interface
+		// Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
 		inertialSenseInterface.Close();
 	}
 

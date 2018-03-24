@@ -11,6 +11,7 @@ var searchData=
   ['ring_5fbuffer_5fflush_5fthreshold',['RING_BUFFER_FLUSH_THRESHOLD',['../com__manager_8c.html#aeb9aa926cea56bd3907b418e3c62a7e7',1,'com_manager.c']]],
   ['ring_5fbuffer_5fsize',['RING_BUFFER_SIZE',['../com__manager_8c.html#a779b513296068d2a6186659183ff3c2c',1,'com_manager.c']]],
   ['rmc_5fbits_5fbarometer',['RMC_BITS_BAROMETER',['../data__sets_8h.html#a6af1c6a1f0d14aac743e5b15b32f6a9f',1,'data_sets.h']]],
+  ['rmc_5fbits_5fdiagnostic_5fmessage',['RMC_BITS_DIAGNOSTIC_MESSAGE',['../data__sets_8h.html#acef9668f4560f6af25b6ef1c09c73a30',1,'data_sets.h']]],
   ['rmc_5fbits_5fdual_5fimu',['RMC_BITS_DUAL_IMU',['../data__sets_8h.html#ab98e3d82b194b002013d32f950f201c2',1,'data_sets.h']]],
   ['rmc_5fbits_5fgps1_5fnav',['RMC_BITS_GPS1_NAV',['../data__sets_8h.html#a9e251fc9b5430020f4e74968f18a7d1a',1,'data_sets.h']]],
   ['rmc_5fbits_5fgps1_5fraw',['RMC_BITS_GPS1_RAW',['../data__sets_8h.html#a4b4ad791ed0932898e1711154644729a',1,'data_sets.h']]],

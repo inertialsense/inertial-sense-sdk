@@ -23,7 +23,7 @@
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
     <ClCompile Include="..\..\..\src\serialPortPlatform.c" />
-    <ClCompile Include="..\ISAsciiExample.cpp" />
+    <ClCompile Include="..\ISAsciiExample.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h" />
@@ -34,7 +34,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{0855696E-0D7F-4CA6-A7B6-EE004853445C}</ProjectGuid>
+    <ProjectGuid>{0E230391-F0BB-42D8-B3ED-95F1FB3E8195}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ISSimpleExample</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>

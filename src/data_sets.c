@@ -495,9 +495,9 @@ uint32_t flashChecksum32(const void* data, int size)
 }
 
 // Convert DID to message out control mask
-uint64_t didToRmcBits(uint32_t did, uint64_t defaultRmcBits)
+uint64_t didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits)
 {
-	switch(did)
+	switch (dataId)
 	{
 		case DID_INS_1:					return RMC_BITS_INS1;
 		case DID_INS_2:					return RMC_BITS_INS2;
@@ -519,7 +519,7 @@ uint64_t didToRmcBits(uint32_t did, uint64_t defaultRmcBits)
 		case DID_GPS_RTK_MISC:			return RMC_BITS_GPS_RTK_MISC;
 		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE;
 		case DID_STROBE_IN_TIME:		return RMC_BITS_STROBE_IN_TIME;
-		
+		case DID_DIAGNOSTIC_MESSAGE:	return RMC_BITS_DIAGNOSTIC_MESSAGE;		
 		default:						return defaultRmcBits;
 	}
 }

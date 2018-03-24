@@ -12,15 +12,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 
-// change these include paths to the correct paths for your project
+// STEP 1: Add Includes
+// Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
 
-static bool running = true;
+static int running = 1;
 
 static void handleInsMessage(ins_1_t* ins)
 {
 	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n", 
+		ins->timeOfWeek,
 		ins->lla[0], ins->lla[1], ins->lla[2], 
 		ins->theta[0] * C_RAD2DEG_F, ins->theta[1] * C_RAD2DEG_F, ins->theta[2] * C_RAD2DEG_F );
 }
@@ -40,15 +42,6 @@ static void handleImuMessage(dual_imu_t* imu)
 
 int main(int argc, char* argv[])
 {
-	serial_port_t serialPort;
-
-	// very important - the serial port must be initialized to zeros
-	memset(&serialPort, 0, sizeof(serialPort));
-
-	int count;
-	is_comm_instance_t comm;
-	uint8_t buffer[2048];
-
 	if (argc < 2)
 	{
 		printf("Please pass the com port as the only argument\r\n");
@@ -56,19 +49,28 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	// make sure to assign a valid buffer and buffer size to the comm instance
+
+	// STEP 2: Init comm instance
+	is_comm_instance_t comm;
+	uint8_t buffer[2048];
+
+	// Make sure to assign a valid buffer and buffer size to the comm instance
 	comm.buffer = buffer;
 	comm.bufferSize = sizeof(buffer);
 
-	// initialize the comm instance, sets up state tracking, packet parsing, etc.
+	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
 	is_comm_init(&comm);
 
-	// initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
+
+	// STEP 3: Initialize and open serial port
+	serial_port_t serialPort;
+
+	// Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
 	//  you will need to handle the serial port creation, open and reads yourself. In this
 	//  case, you do not need to include serialPort.h/.c and serialPortPlatform.h/.c in your project.
 	serialPortPlatformInit(&serialPort);
 
-	// open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
+	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
 	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
@@ -77,9 +79,11 @@ int main(int argc, char* argv[])
 		return -2;
 	}
 
+
+	// STEP 4: Enable message broadcasting
 	int messageSize;
 
-	// stop all broadcasts on the device
+	// Stop all broadcasts on the device
 	messageSize = is_comm_stop_broadcasts(&comm);
 	if (messageSize < 1)
 	{
@@ -88,7 +92,7 @@ int main(int argc, char* argv[])
 	}
 	serialPortWrite(&serialPort, buffer, messageSize);
 
-	// ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
+	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
 	messageSize = is_comm_get_data(&comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
 	if (messageSize < 1)
 	{
@@ -97,7 +101,7 @@ int main(int argc, char* argv[])
 	}
 	serialPortWrite(&serialPort, buffer, messageSize);
 
-	// ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
+	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
 	messageSize = is_comm_get_data(&comm, _DID_GPS_NAV, 0, 0, 200);
 	if (messageSize < 1)
 	{
@@ -107,7 +111,7 @@ int main(int argc, char* argv[])
 	serialPortWrite(&serialPort, buffer, messageSize);
 
 #if 0
-	// ask for IMU data 10 times a second - this could be as high as 1000 times a second (a period of 1)
+	// Ask for IMU data 10 times a second - this could be as high as 1000 times a second (a period of 1)
 	messageSize = is_comm_get_data(&comm, _DID_IMU_DUAL, 0, 0, 100);
 	if (messageSize < 1)
 	{
@@ -118,12 +122,14 @@ int main(int argc, char* argv[])
 #endif
 
 
+	// STEP 5: Handle received data
+	int count;
 	uint8_t inByte;
 
-	// you can set running to false with some other piece of code to break out of the loop and end the program
+	// You can set running to false with some other piece of code to break out of the loop and end the program
 	while (running)
 	{
-		// read one byte with a 20 millisecond timeout
+		// Read one byte with a 20 millisecond timeout
 		while ((count = serialPortReadCharTimeout(&serialPort, &inByte, 20)) > 0)
 		{
 			switch (is_comm_parse(&comm, inByte))

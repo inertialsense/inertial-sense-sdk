@@ -930,7 +930,8 @@ typedef struct PACKED
 #define RMC_BITS_GPS_RTK_NAV			0x0000000000010000
 #define RMC_BITS_GPS_RTK_MISC			0x0000000000020000
 #define RMC_BITS_GPS_BASE				0x0000000000040000
-#define RMC_BITS_STROBE_IN_TIME			0x0000000000040000
+#define RMC_BITS_STROBE_IN_TIME			0x0000000000080000
+#define RMC_BITS_DIAGNOSTIC_MESSAGE		0x0000000000100000
 
 #define RMC_BITS_INTERNAL_PPD			0x4000000000000000
 #define RMC_BITS_PRESET					0x8000000000000000
@@ -947,7 +948,8 @@ typedef struct PACKED
 										RMC_BITS_GPS1_RAW | \
 										RMC_BITS_GPS2_RAW | \
 										RMC_BITS_INTERNAL_PPD | \
-										RMC_BITS_PRESET	)
+										RMC_BITS_PRESET | \
+										RMC_BITS_DIAGNOSTIC_MESSAGE	)
 // Preset: INS2 Data
 #define RMC_PRESET_INS_NAV_PERIOD		1	// fastest rate (EKF update rate)
 #define RMC_PRESET_INS_BITS				(RMC_BITS_INS2 | \
@@ -1139,13 +1141,18 @@ enum eSysConfigBits
 
 	/** Disable magnetometer fusion */
 	SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION			= (int)0x00001000,
+
 	/** Disable barometer fusion */
 	SYS_CFG_BITS_DISABLE_BAROMETER_FUSION				= (int)0x00002000,
+
 	/** Disable GPS fusion */
 	SYS_CFG_BITS_DISABLE_GPS_FUSION						= (int)0x00004000,
 
-	/*! Enable Zero Velocity Updates */
+	/** Enable Zero Velocity Updates */
 	SYS_CFG_BITS_ENABLED_ZERO_VELOCITY_UPDATES			= (int)0x00010000,
+
+	/** When using RTK, specifies whether the base station is identical hardware to this rover. If so, there are optimzation enabled to get fix faster. */
+	SYS_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER			= (int)0x00020000
 };
 
 
@@ -1299,6 +1306,9 @@ typedef struct
 
 	/** elevation mask angle (rad) */
 	double elmin;
+
+	/** Min snr to consider satellite for rtk */
+	int32_t snrmin;
 
 	/** AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold,4:ppp-ar) */
 	int32_t modear;
@@ -2214,13 +2224,13 @@ Gets the offsets and lengths of strings given a data id
 */
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
-// Convert DID to message out control mask
-uint64_t didToRmcBits(uint32_t did, uint64_t defaultRmcBits);
+/** Convert DID to realtime message bits */
+uint64_t didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits);
 
-// Convert Julian Date to calendar date.
+/** Convert Julian Date to calendar date. */
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hours, int32_t* minutes, int32_t* seconds, int32_t* milliseconds);
 
-// Convert GPS Week and Seconds to Julian Date.
+/** Convert GPS Week and Seconds to Julian Date. */
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds);
 
 #ifdef __cplusplus

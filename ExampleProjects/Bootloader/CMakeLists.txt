@@ -33,7 +33,7 @@ endif()
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(ISBootloaderExample
-	"ISBootloaderExample.cpp"
+	"ISBootloaderExample.c"
 	"../../src/data_sets.c"
 	"../../src/inertialSenseBootLoader.c"
 	"../../src/ISComm.c"

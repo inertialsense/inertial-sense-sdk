@@ -12,7 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 
-// change these include paths to the correct paths for your project
+// STEP 1: Add Includes
+// Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
 #include "../../src/inertialSenseBootLoader.h"
@@ -41,27 +42,17 @@ static int bootloaderVerifyProgress(const void* obj, float percent)
 
 int main(int argc, char* argv[])
 {
-	// serial port to communicate with the bootloader
-	serial_port_t serialPort;
-
-	// very important - the serial port must be initialized to zeros
-	memset(&serialPort, 0, sizeof(serialPort));
-
-	// buffer to show any errors
-	char errorBuffer[512];
-
-	// bootloader parameters
-	bootload_params_t param;
-
-	// very important - initialize the bootloader params to zeros
-	memset(&param, 0, sizeof(param));
-
 	if (argc < 3)
 	{
 		printf("Please pass the com port and then file name to bootload as the only arguments\r\n");
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 IS_uINS-3.hex" 
 		return -1;
 	}
+
+
+	// STEP 2: Initialize and open serial port
+
+	serial_port_t serialPort;
 
 	// initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
 	//  you will need to either bootload from Windows, MAC or Linux, or implement your own code that
@@ -70,6 +61,17 @@ int main(int argc, char* argv[])
 
 	// set the port - the bootloader uses this to open the port and enable bootload mode, etc.
 	serialPortSetPort(&serialPort, argv[1]);
+
+
+	// STEP 3: Set bootloader parameters
+
+	// bootloader parameters
+	bootload_params_t param;
+	// buffer to show any errors
+	char errorBuffer[512];
+
+	// very important - initialize the bootloader params to zeros
+	memset(&param, 0, sizeof(param));
 
 	// error buffer, useful if something fails
 	param.error = errorBuffer;
@@ -92,7 +94,9 @@ int main(int argc, char* argv[])
 	//  the bootloader will attempt to fall back to a slower speed
 	param.flags.bitFields.enableAutoBaud = 1;
 
-	// perform the bootload
+
+	// STEP 4: Run bootloader
+
 	if (bootloadFileEx(&param))
 	{
 		printf("Bootloader success on port %s with file %s\n", serialPort.port, param.fileName);

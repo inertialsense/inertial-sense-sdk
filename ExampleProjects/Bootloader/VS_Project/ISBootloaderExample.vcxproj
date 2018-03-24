@@ -24,7 +24,7 @@
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
     <ClCompile Include="..\..\..\src\serialPortPlatform.c" />
-    <ClCompile Include="..\ISBootloaderExample.cpp" />
+    <ClCompile Include="..\ISBootloaderExample.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h" />

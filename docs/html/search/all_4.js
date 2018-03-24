@@ -169,7 +169,7 @@ var searchData=
   ['did_5funused_5f31',['DID_UNUSED_31',['../data__sets_8h.html#a7f633bd47b1f004f6950c61b83b250e8',1,'data_sets.h']]],
   ['did_5funused_5f54',['DID_UNUSED_54',['../data__sets_8h.html#a7f1d4c143f7b0be11d0d884ceae93a8c',1,'data_sets.h']]],
   ['did_5fvelocity_5fmeasurement',['DID_VELOCITY_MEASUREMENT',['../data__sets_8h.html#a11b821e2e3ce342751ad2097a747f525',1,'data_sets.h']]],
-  ['didtormcbits',['didToRmcBits',['../data__sets_8c.html#ae4f9aa815603e46de9cb03a5b9a1f9fc',1,'didToRmcBits(uint32_t did, uint64_t defaultRmcBits):&#160;data_sets.c'],['../data__sets_8h.html#ae4f9aa815603e46de9cb03a5b9a1f9fc',1,'didToRmcBits(uint32_t did, uint64_t defaultRmcBits):&#160;data_sets.c']]],
+  ['didtormcbits',['didToRmcBits',['../data__sets_8c.html#a7001f84a8149de37c8274a8c05b2287b',1,'didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c'],['../data__sets_8h.html#a7001f84a8149de37c8274a8c05b2287b',1,'didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c']]],
   ['differentialage',['differentialAge',['../struct_p_a_c_k_e_d.html#ad0615ac2daecdcad17448134f56888aa',1,'PACKED']]],
   ['disableallbroadcasts',['disableAllBroadcasts',['../com__manager_8c.html#a6b29e73aabaf4ba7750bcb1f6681e2d0',1,'disableAllBroadcasts(void):&#160;com_manager.c'],['../com__manager_8h.html#a6b29e73aabaf4ba7750bcb1f6681e2d0',1,'disableAllBroadcasts(void):&#160;com_manager.c']]],
   ['disableallbroadcastsinstance',['disableAllBroadcastsInstance',['../com__manager_8c.html#ae0ed57ec96da2f143a44ac17e8d99301',1,'disableAllBroadcastsInstance(CMHANDLE cmInstance_):&#160;com_manager.c'],['../com__manager_8h.html#a4495bd283bd83fbccd3bf6eaff05f1c3',1,'disableAllBroadcastsInstance(CMHANDLE cmInstance):&#160;com_manager.c']]],

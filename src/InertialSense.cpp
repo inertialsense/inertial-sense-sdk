@@ -678,7 +678,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	for (size_t i = 0; i < ports.size(); i++)
 	{
 		serial_port_t serial;
-		memset(&serial, 0, sizeof(serial));
 		serialPortPlatformInit(&serial);
 		if (serialPortOpen(&serial, ports[i].c_str(), baudRate, 0) == 0)
 		{

@@ -12,9 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 
-// change these include paths to the correct paths for your project
-#include "../../src/data_sets.h"
-#include "../../src/serialPortPlatform.h"
+// STEP 1: Add Includes
+// Change these include paths to the correct paths for your project
 #include "../../src/InertialSense.h"
 
 static void dataCallback(InertialSense* i, p_data_t* data, int pHandle)
@@ -32,30 +31,32 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	serial_port_t serialPort;
 
-	// very important - the serial port must be initialized to zeros
-	memset(&serialPort, 0, sizeof(serialPort));
-
-	// utility class for display and ctrl-c handling
-	cInertialSenseDisplay display;
-
+	// STEP 2: Instantiate InertialSense class
 	// InertialSense class wraps communications and logging in a convenient, easy to use class
 	InertialSense inertialSense(dataCallback);
 	if (!inertialSense.Open(argv[1]))
 	{
 		std::cout << "Failed to open com port at " << argv[1] << std::endl;
 	}
-	
+
+
+	// STEP 3: Enable data logger
 	// get log type from command line
 	cISLogger::eLogType logType = (argc < 3 ? cISLogger::eLogType::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
 	inertialSense.SetLoggerEnabled(true, "", logType);
 
+
+	// STEP 4: Enable data broadcasting
 	// broadcast the standard set of post processing messages (ins, imu, etc.)
 	inertialSense.BroadcastBinaryDataRmcPreset();
 
 	// instead of the rmc preset (real-time message controller) you can request individual messages...
 	// inertialSense.BroadcastBinaryData(DID_DUAL_IMU, 10); // imu every 10 milliseconds (100 hz)
+
+
+	// utility class for display and ctrl-c handling
+	cInertialSenseDisplay display;
 
 	std::cout << "Started logger..." << std::endl;
 

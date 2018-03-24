@@ -106,8 +106,8 @@ Functions</h2></td></tr>
 <tr class="separator:ab78ef4a124a2099a5c7b22798eb5a876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1d697adf4fcd3a4798840c93abf7bac"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ab1d697adf4fcd3a4798840c93abf7bac">flashChecksum32</a> (const void *data, int size)</td></tr>
 <tr class="separator:ab1d697adf4fcd3a4798840c93abf7bac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4f9aa815603e46de9cb03a5b9a1f9fc"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ae4f9aa815603e46de9cb03a5b9a1f9fc">didToRmcBits</a> (uint32_t did, uint64_t defaultRmcBits)</td></tr>
-<tr class="separator:ae4f9aa815603e46de9cb03a5b9a1f9fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7001f84a8149de37c8274a8c05b2287b"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a7001f84a8149de37c8274a8c05b2287b">didToRmcBits</a> (uint32_t dataId, uint64_t defaultRmcBits)</td></tr>
+<tr class="separator:a7001f84a8149de37c8274a8c05b2287b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac6881ffc1ffb4af759ca1e934216323e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ac6881ffc1ffb4af759ca1e934216323e">julianToDate</a> (double julian, int32_t *year, int32_t *month, int32_t *day, int32_t *hours, int32_t *minutes, int32_t *seconds, int32_t *milliseconds)</td></tr>
 <tr class="separator:ac6881ffc1ffb4af759ca1e934216323e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa09e5edb76b1cd3c9199889cdcd16b1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1">gpsToJulian</a> (int32_t gpsWeek, int32_t gpsMilliseconds)</td></tr>
@@ -144,8 +144,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae4f9aa815603e46de9cb03a5b9a1f9fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4f9aa815603e46de9cb03a5b9a1f9fc">&#9670;&nbsp;</a></span>didToRmcBits()</h2>
+<a id="a7001f84a8149de37c8274a8c05b2287b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7001f84a8149de37c8274a8c05b2287b">&#9670;&nbsp;</a></span>didToRmcBits()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -154,7 +154,7 @@ Functions</h2></td></tr>
           <td class="memname">uint64_t didToRmcBits </td>
           <td>(</td>
           <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>did</em>, </td>
+          <td class="paramname"><em>dataId</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -169,6 +169,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Convert DID to realtime message bits </p>
 
 <p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00498">498</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
@@ -573,6 +574,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Convert GPS Week and Seconds to Julian Date. </p>
 
 <p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00619">619</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
@@ -639,6 +641,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Convert Julian Date to calendar date. </p>
 
 <p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00527">527</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
@@ -686,7 +689,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Mar 22 2018 02:53:13 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Mar 24 2018 02:38:48 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.14
 </small></address>

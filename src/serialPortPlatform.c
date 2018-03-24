@@ -718,6 +718,9 @@ static int serialPortSleepPlatform(serial_port_t* serialPort, int sleepMilliseco
 
 int serialPortPlatformInit(serial_port_t* serialPort)
 {
+	// very important - the serial port must be initialized to zeros
+	memset(serialPort, 0, sizeof(serial_port_t));
+
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;
     serialPort->pfnOpen = serialPortOpenPlatform;

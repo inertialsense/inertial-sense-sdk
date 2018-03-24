@@ -21,7 +21,6 @@ cISSerialPort::cISSerialPort(serial_port_t* serial) : cISStream()
 	}
 	else
 	{
-		memset(&m_serial, 0, sizeof(m_serial));
 		serialPortPlatformInit(&m_serial);
 	}
 	Close();

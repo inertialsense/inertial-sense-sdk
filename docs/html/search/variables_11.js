@@ -17,6 +17,7 @@ var searchData=
   ['serverconnection',['serverConnection',['../structcmd__options__t.html#a479bc59fb0a0baa1927fafbdb51ab3b2',1,'cmd_options_t']]],
   ['size',['size',['../struct_p_a_c_k_e_d.html#ab92b12c3d0123d7a4122c89f3926d680',1,'PACKED::size()'],['../structbuffer__t.html#ab1ce0deb7a33566b5c9e2705ae822007',1,'buffer_t::size()'],['../structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457',1,'bufPtr_t::size()'],['../structbuf_tx_rx_ptr__t.html#aa35ef37b9fa29843a3f96140484c3dce',1,'bufTxRxPtr_t::size()'],['../structp__data__hdr__t.html#ae4e77713f907776d843284114634d642',1,'p_data_hdr_t::size()'],['../structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a',1,'p_data_get_t::size()'],['../structfile__info__t.html#ae0be7ce776c6ae4552e889e26e9bcc97',1,'file_info_t::size()'],['../structringbuf__t.html#af5cc4f655d68a1046747e48e860960b0',1,'ringbuf_t::size()']]],
   ['snr',['SNR',['../struct_p_a_c_k_e_d.html#a7f30c96e9054c79ade81262fbe2e2e58',1,'PACKED']]],
+  ['snrmin',['snrmin',['../structprcopt__t.html#ae4c507ff1db35838624a429f0847dd49',1,'prcopt_t']]],
   ['soltype',['soltype',['../structprcopt__t.html#aa4f8e98d5ef335c41f6048151770fab7',1,'prcopt_t']]],
   ['stackunused',['stackUnused',['../struct_p_a_c_k_e_d.html#a737fe057f189e9656407c626d1d0c8bf',1,'PACKED']]],
   ['startbyte',['startByte',['../structcom__manager__status__t.html#a799659757d78ea8a857bc35994b9cb8a',1,'com_manager_status_t::startByte()'],['../structpacket__hdr__t.html#aae0969a547bd5ea711e2fe7e2d9a5f4e',1,'packet_hdr_t::startByte()']]],
