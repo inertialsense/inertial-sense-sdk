@@ -448,14 +448,12 @@ extern void vPortFree(void* pv);
 // Math constants 
 // from CRC Standard Mathematical Tables, 27th edition, 1984 
 
-#define C_PI            3.14159265358979323846264338327950288419716939937511
 #define C_ROOT2         1.41421356237309504880168872420969807856967187537695
 #define C_ROOT3         1.73205080756887729352744634150587236694280525381039
 #define C_E             2.71828182845904523536028747135266249775724709369996
 
 #define C_DIVROOT2      0.70710678118654752440084436210485
 
-#define C_PI_F          3.14159265358979323846264338327950288419716939937511f
 #define C_ROOT2_F       1.41421356237309504880168872420969807856967187537695f
 #define C_ROOT3_F       1.73205080756887729352744634150587236694280525381039f
 #define C_E_F           2.71828182845904523536028747135266249775724709369996f
@@ -464,6 +462,7 @@ extern void vPortFree(void* pv);
 #define C_PIDIV8        0.39269908169872415480783042290994		// 22.5 deg
 #define C_PIDIV4        0.78539816339744830961566084581988
 #define C_PIDIV2        1.5707963267948966192313216916398
+#define C_PI            3.14159265358979323846264338327950288419716939937511
 #define C_TWOPI         6.283185307179586476925286766559
 #define C_DIVTWOPI      0.15915494309189533576888376337251
 #define C_DIVPI         0.31830988618379067153776752674503
@@ -472,6 +471,7 @@ extern void vPortFree(void* pv);
 #define C_PIDIV8_F      0.39269908169872415480783042290994f		// 22.5 deg
 #define C_PIDIV4_F      0.78539816339744830961566084581988f		// 45 deg
 #define C_PIDIV2_F      1.5707963267948966192313216916398f		// 90 deg
+#define C_PI_F          3.14159265358979323846264338327950288419716939937511f	// 180 deg
 #define C_TWOPI_F       6.283185307179586476925286766559f		// 360 deg
 #define C_DIVTWOPI_F    0.15915494309189533576888376337251f
 #define C_DIVPI_F       0.31830988618379067153776752674503f
@@ -674,14 +674,14 @@ extern void vPortFree(void* pv);
 #define C_135p0_DEG2RAD_F			2.3561944901923400f
 #define C_180p0_DEG2RAD_F			3.1415926535897900f
 
-#ifndef UNWRAP_F64
-#define UNWRAP_F64(x)			{while( (x) > (C_PI) )   (x) -= (C_TWOPI);   while( (x) < (-C_PI) )   (x) += (C_TWOPI);}	// unwrap to +- PI
-#endif
-
-#ifndef UNWRAP_F
-#define UNWRAP_F(x)				{while( (x) > (C_PI_F) ) (x) -= (C_TWOPI_F); while( (x) < (-C_PI_F) ) (x) += (C_TWOPI_F);}	// unwrap to +- PI
-#endif
-
+// Angle Unwrap
+#define UNWRAP_DEG_F64(x)			{ if((x) < (-180.0 )) { (x) += (360.0 );    } if((x) > (180.0 ))    { (x) -= (360.0 );    } }	// unwrap to +- 180
+#define UNWRAP_DEG_F32(x)			{ if((x) < (-180.0f)) { (x) += (360.0f);    } if((x) > (180.0f))    { (x) -= (360.0f);    } }	// unwrap to +- 180
+#define UNWRAP_F64(x)				{ if((x) < (-C_PI))   { (x) += (C_TWOPI);   } if((x) > (C_PI))      { (x) -= (C_TWOPI);   } }	// unwrap to +- PI
+#define UNWRAP_F32(x)				{ if((x) < (-C_PI_F)) { (x) += (C_TWOPI_F); } if((x) > (C_PI_F))    { (x) -= (C_TWOPI_F); } }	// unwrap to +- PI
+#define UNWRAP_ZERO_TWOPI_F64(x)	{ if((x) < (0.0))     { (x) += (C_TWOPI);   } if((x) > (C_TWOPI))   { (x) -= (C_TWOPI);   } }	// unwrap to 0 to TWOPI
+#define UNWRAP_ZERO_TWOPI_F32(x)	{ if((x) < (0.f))     { (x) += (C_TWOPI_F); } if((x) > (C_TWOPI_F)) { (x) -= (C_TWOPI_F); } }	// unwrap to 0 to TWOPI
+	
 #define _SIN        sinf
 #define _COS        cosf
 #define _TAN        tanf
@@ -695,8 +695,6 @@ extern void vPortFree(void* pv);
 #define _DEG2RAD    C_DEG2RAD_F
 #define _RAD2DEG    C_RAD2DEG_F
 #define _ZERO		0.0f
-
-#define _UNWRAP     UNWRAP_F
 
 #define FLOAT2DOUBLE (double) // Used to prevent warning when compiling with -Wdouble-promotion in Linux
 

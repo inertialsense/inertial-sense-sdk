@@ -41,7 +41,6 @@ var searchData=
   ['_5fsin',['_SIN',['../_i_s_constants_8h.html#ae78f59023c79f301b0f2764e40b662e1',1,'ISConstants.h']]],
   ['_5fsqrt',['_SQRT',['../_i_s_constants_8h.html#a94ab9da2af0f45f05db87cd27f7e5338',1,'ISConstants.h']]],
   ['_5ftan',['_TAN',['../_i_s_constants_8h.html#a59785dee6a1c0c8e8cd5c798242f8f7a',1,'ISConstants.h']]],
-  ['_5funwrap',['_UNWRAP',['../_i_s_constants_8h.html#a743f6ddd32e9879456e540e4a1a7d214',1,'ISConstants.h']]],
   ['_5futime',['_UTIME',['../_i_s_constants_8h.html#ad9971e4c771166d71d05bbeeee8c3d78',1,'ISConstants.h']]],
   ['_5futimebuf',['_UTIMEBUF',['../_i_s_constants_8h.html#af7cedb846cb551c3e8f5f6b3c5483e5e',1,'ISConstants.h']]],
   ['_5fzero',['_ZERO',['../_i_s_constants_8h.html#a706c70b0632018103bbfd969e749834b',1,'ISConstants.h']]]

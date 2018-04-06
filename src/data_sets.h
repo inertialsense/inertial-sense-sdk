@@ -203,7 +203,7 @@ enum eInsStatusFlags
 	
 	/** RTOS task ran longer than allotted period */
 	INS_STATUS_RTOS_TASK_PERIOD_OVERRUN		= (int)0x20000000,
-	/** General fault */
+	/** General fault (eGenFaultCodes) */
 	INS_STATUS_GENERAL_FAULT				= (int)0x80000000,
 };
 
@@ -277,7 +277,6 @@ enum eHdwStatusFlags
 	HDW_STATUS_ERR_TEMPERATURE				= (int)0x02000000,
 	/** Vibrations effecting accuracy */
 // 	HDW_STATUS_ERR_VIBRATION				= (int)0x04000000,
-
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK				= (int)0x70000000,	
@@ -837,7 +836,7 @@ typedef struct PACKED
 	/** Earth magnetic field (magnetic north) magnitude (nominally 1) */
 	float                   magMagnitude;
 	
-	/** General fault code descriptor */
+	/** General fault code descriptor (eGenFaultCodes) */
 	uint32_t                genFaultCode;
 } sys_params_t;
 
@@ -902,7 +901,13 @@ typedef struct PACKED
 } ascii_msgs_t;
 
 
-/** Message stream controller (used in rmc_t). */
+/** Realtime Message Controller (used in rmc_t). 
+	The data sets available through RMC are broadcast at the availability of the data.  A goal of RMC is 
+	to provide updates from each onboard sensor as fast as possible with minimal latency.  However, these
+	onboard sensors output data at different data rates and don't all correspond in time.  The RMC is 
+	provided so that broadcast of sensor data is done as soon as it becomes available.   The exception to
+	this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
+*/
 #define RMC_OPTIONS_PORT_MASK			0x000000FF
 #define RMC_OPTIONS_PORT_ALL			RMC_OPTIONS_PORT_MASK
 #define RMC_OPTIONS_PORT_CURRENT		0x00000000
@@ -1163,86 +1168,91 @@ enum eIoConfig
 };
 
 
-/** (DID_FLASH_CONFIG) Configuration data */
+/** (DID_FLASH_CONFIG) Configuration data
+ * IMPORTANT! These fields should not be deleted, they can be deprecated and marked as reserved,
+ * or new fields added to the end.
+*/
 typedef struct PACKED
 {
-	/** Size of group or union, which is nvm_group_x_t + padding */
-	uint32_t				size;
+    /** Size of group or union, which is nvm_group_x_t + padding */
+    uint32_t				size;
 
-	/** Checksum, excluding size and checksum */
-	uint32_t                checksum;
+    /** Checksum, excluding size and checksum */
+    uint32_t                checksum;
 
-	/** Manufacturer method for restoring flash defaults */
-	uint32_t                key;
+    /** Manufacturer method for restoring flash defaults */
+    uint32_t                key;
 
-	/** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
-	uint32_t				startupSampleDtMs;
+    /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
+    uint32_t				startupSampleDtMs;
 
-	/** Nav filter update (system output data) period in milliseconds set on startup. 2ms minimum (500Hz max). Zero disables nav filter updates. */
-	uint32_t				startupNavDtMs;
+    /** Nav filter update (system output data) period in milliseconds set on startup. 2ms minimum (500Hz max). Zero disables nav filter updates. */
+    uint32_t				startupNavDtMs;
 
-	/** Serial port 0 baud rate in bits per second */
-	uint32_t				ser0BaudRate;
-	
-	/** Serial port 1 baud rate in bits per second */
-	uint32_t				ser1BaudRate;
+    /** Serial port 0 baud rate in bits per second */
+    uint32_t				ser0BaudRate;
 
-	/** Roll, pitch, yaw euler angle rotation in radians from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll. */
-	float					insRotation[3];
+    /** Serial port 1 baud rate in bits per second */
+    uint32_t				ser1BaudRate;
 
-	/** X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame. */
-	float					insOffset[3];
+    /** Roll, pitch, yaw euler angle rotation in radians from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll. */
+    float					insRotation[3];
 
-	/** X,Y,Z offset in meters from Sensor Frame origin to GPS 1 antenna. */
-	float					gps1AntOffset[3];
+    /** X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame. */
+    float					insOffset[3];
 
-	/** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
-	float					gps2AntOffset[3];
+    /** X,Y,Z offset in meters from Sensor Frame origin to GPS 1 antenna. */
+    float					gps1AntOffset[3];
 
-	/** INS dynamic platform model.  Determines performance characteristics of system. 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST */
-	uint32_t				insDynModel;
-	
-	/** System configuration bits (see eSysConfigBits). 0x1=AutobaudOff, 0x2=AutoMagRecal, 0x4=DisableLeds, 0x8=SendLittleEndian, 0x20=RtkRover, 0x40=RtcmOnSer0, 0x80=RtcmOnSer1, 0x100=1AxisMagRecal, 0x1000=Disable magnetometer fusion, 0x2000=Disable barometer fusion, 0x4000=Disable GPS fusion, 0x10000=Enable Zero Velocity Updates */
-	uint32_t				sysCfgBits;
+    /** INS dynamic platform model.  Determines performance characteristics of system. 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST */
+    uint32_t				insDynModel;
 
-	/** Hardware interface configuration bits */
-	uint32_t				ioConfig;
+    /** System configuration bits (see eSysConfigBits). 0x1=AutobaudOff, 0x2=AutoMagRecal, 0x4=DisableLeds, 0x8=SendLittleEndian, 0x20=RtkRover, 0x40=RtcmOnSer0, 0x80=RtcmOnSer1, 0x100=1AxisMagRecal, 0x1000=Disable magnetometer fusion, 0x2000=Disable barometer fusion, 0x4000=Disable GPS fusion, 0x10000=Enable Zero Velocity Updates */
+    uint32_t				sysCfgBits;
 
-	/** Carrier board (i.e. eval board) configuration bits */
-	uint32_t				cBrdConfig;
+    /** Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
+    double                  refLla[3];
 
-	/** Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
-	double                  refLla[3];
+    /** Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup (deg, deg, m) */
+    double					lastLla[3];
 
-	/** Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup (deg, deg, m) */
-	double					lastLla[3];
+    /** Last LLA time since week start (Sunday morning) in milliseconds */
+    uint32_t				lastLlaTimeOfWeekMs;
 
-	/** Last LLA time since week start (Sunday morning) in milliseconds */
-	uint32_t				lastLlaTimeOfWeekMs;
+    /** Last LLA number of weeks since January 6th, 1980 */
+    uint32_t				lastLlaWeek;
 
-	/** Last LLA number of weeks since January 6th, 1980 */
-	uint32_t				lastLlaWeek;
-	
-	/** Distance between current and last LLA that triggers an update of lastLla  */
-	float					lastLlaUpdateDistance;
+    /** Distance between current and last LLA that triggers an update of lastLla  */
+    float					lastLlaUpdateDistance;
 
-	/** Earth magnetic field (magnetic north) inclination (negative pitch offset) in radians */
-	float                   magInclination;
+    /** Hardware interface configuration bits */
+    uint32_t				ioConfig;
 
-	/** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
-	float                   magDeclination;
+    /** Carrier board (i.e. eval board) configuration bits */
+    uint32_t				cBrdConfig;
 
-	/** Euler (roll, pitch, yaw) rotation in radians from INS Sensor Frame to Intermediate ZeroVelocity Frame.  Order applied: heading, pitch, roll. */
-	float					zeroVelRotation[3];
+    /** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
+    float					gps2AntOffset[3];
 
-	/** X,Y,Z offset in meters from Intermediate ZeroVelocity Frame to Zero Velocity Frame. */
-	float					zeroVelOffset[3];
+    /** Euler (roll, pitch, yaw) rotation in radians from INS Sensor Frame to Intermediate ZeroVelocity Frame.  Order applied: heading, pitch, roll. */
+    float					zeroVelRotation[3];
 
-	/** GPS time synchronization pulse period in milliseconds.  Requires reboot to take effect. */
-	uint32_t				gpsTimeSyncPulsePeriodMs;
+    /** X,Y,Z offset in meters from Intermediate ZeroVelocity Frame to Zero Velocity Frame. */
+    float					zeroVelOffset[3];
+
+    /** Earth magnetic field (magnetic north) inclination (negative pitch offset) in radians */
+    float                   magInclination;
+
+    /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
+    float                   magDeclination;
+
+    /** GPS time synchronization pulse period in milliseconds.  Requires reboot to take effect. */
+    uint32_t				gpsTimeSyncPulsePeriodMs;
+
+    /** Reserved for future use */
+    uint32_t                reserved[3];
 
 } nvm_flash_cfg_t;
-
 typedef struct PACKED
 {											// INL2 - Estimate error variances
 	unsigned int			timeOfWeekMs;	// Timestamp in milliseconds
@@ -1893,6 +1903,8 @@ typedef struct
 	char message[256];
 } diag_msg_t;
 
+
+#define CRASH_INFO_NONE 0x00000000
 #define CRASH_INFO_USER_RESET 0xFFFFFFFA
 #define CRASH_INFO_ENABLE_BOOTLOADER 0xFFFFFFFB
 #define CRASH_INFO_INVALID_CODE_OPERATION 0xFFFFFFFC
@@ -1909,7 +1921,7 @@ typedef struct
 * 0xFFFFFFFD: soft reset was issued
 * 0xFFFFFFFE: malloc failed
 * 0xFFFFFFFF: stack overflow
-* Others: Hard fault
+* Others: Non-zero is Hard fault
 */
 typedef struct 
 {

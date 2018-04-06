@@ -124,7 +124,7 @@ int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char* buffer, 
 		{
 			// remove \r\n and null terminate and return count of chars
 			buffer[bufferIndex -= 2] = '\0';
-			return ++bufferIndex;
+			return bufferIndex;
 		}
 		prevCR = (c == '\r');
 	}
@@ -166,8 +166,7 @@ int serialPortReadAsciiTimeout(serial_port_t* serialPort, unsigned char* buffer,
 		if (*ptr == '*')
 		{
 			// read checksum from buffer, skipping the * char
-			sscanf((void*)++ptr, "%2x", (unsigned int*)&existingChecksum);
-
+			existingChecksum = strtol(++ptr, NULL, 16);
 			if (existingChecksum == checksum)
 			{
 				return count;
@@ -213,7 +212,7 @@ int serialPortWriteLine(serial_port_t* serialPort, const unsigned char* buffer, 
 	}
 
 	int count = serialPortWrite(serialPort, buffer, writeCount);
-	count += serialPortWrite(serialPort, (unsigned char[2]) { '\r', '\n' }, 2);
+	count += serialPortWrite(serialPort, "\r\n", 2);
 	return count;
 }
 

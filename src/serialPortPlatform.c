@@ -314,15 +314,12 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         serialPortClose(serialPort);
         return 0;
     }
-
     COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), 0, 0 };
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
         serialPortClose(serialPort);
         return 0;
     }
-	SetupComm(platformHandle, 16384, 16384);
-
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->blocking = blocking;
     handle->platformHandle = platformHandle;

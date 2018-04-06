@@ -13,7 +13,7 @@
     <ClCompile Include="..\..\..\src\serialPortPlatform.c">
       <Filter>SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\ISAsciiExample.cpp" />
+    <ClCompile Include="..\ISAsciiExample.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h">

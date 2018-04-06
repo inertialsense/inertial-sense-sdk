@@ -73,15 +73,31 @@ int main(int argc, char* argv[])
 	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
+// 	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
+	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_115200, 1))
 	{
 		printf("Failed to open serial port on com port %s\r\n", argv[1]);
 		return -2;
 	}
 
 
-	// STEP 4: Enable message broadcasting
 	int messageSize;
+
+#if 0
+	// STEP 4: Set configuration
+
+	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
+	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
+	messageSize = is_comm_set_data(&comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float)*3, rotation);
+	if (messageSize < 1)
+	{
+		printf("Failed to set INS rotation\r\n");
+		return -3;
+	}
+	serialPortWrite(&serialPort, buffer, messageSize);
+#endif
+
+	// STEP 5: Enable message broadcasting
 
 	// Stop all broadcasts on the device
 	messageSize = is_comm_stop_broadcasts(&comm);
@@ -93,7 +109,7 @@ int main(int argc, char* argv[])
 	serialPortWrite(&serialPort, buffer, messageSize);
 
 	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
-	messageSize = is_comm_get_data(&comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
+	messageSize = is_comm_get_data(&comm, _DID_INS_LLA_EULER_NED, 0, 0, 25);
 	if (messageSize < 1)
 	{
 		printf("Failed to encode get INS message\r\n");
@@ -101,6 +117,7 @@ int main(int argc, char* argv[])
 	}
 	serialPortWrite(&serialPort, buffer, messageSize);
 
+#if 0
 	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
 	messageSize = is_comm_get_data(&comm, _DID_GPS_NAV, 0, 0, 200);
 	if (messageSize < 1)
@@ -109,6 +126,7 @@ int main(int argc, char* argv[])
 		return -4;
 	}
 	serialPortWrite(&serialPort, buffer, messageSize);
+#endif
 
 #if 0
 	// Ask for IMU data 10 times a second - this could be as high as 1000 times a second (a period of 1)
@@ -122,7 +140,7 @@ int main(int argc, char* argv[])
 #endif
 
 
-	// STEP 5: Handle received data
+	// STEP 6: Handle received data
 	int count;
 	uint8_t inByte;
 

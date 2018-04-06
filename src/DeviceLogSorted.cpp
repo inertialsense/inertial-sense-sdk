@@ -111,6 +111,7 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
         currentChunk = &chunkList.front();
         currentChunk->m_subHdr.dHdr = *dataHdr;
         currentChunk->m_hdr.pHandle = m_pHandle;
+		currentChunk->m_hdr.devSerialNum = m_devInfo.serialNumber;
 	}
 	else
 	{
@@ -118,16 +119,19 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 	}
 
 	// Add serial number if available
-	if (id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, dataHdr, dataBuf, sizeof(dev_info_t)))
+	if (id == DID_DEV_INFO)
 	{
-		int start = dataHdr->offset;
-		int end = dataHdr->offset + dataHdr->size;
-		int snOffset = offsetof(dev_info_t, serialNumber);
-
-		// Did we get the serial number portion of devInfo?
-		if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
+		if (!copyDataPToStructP2(&m_devInfo, dataHdr, dataBuf, sizeof(dev_info_t)))
 		{
-			currentChunk->m_hdr.devSerialNum = m_devInfo.serialNumber;
+			int start = dataHdr->offset;
+			int end = dataHdr->offset + dataHdr->size;
+			int snOffset = offsetof(dev_info_t, serialNumber);
+
+			// Did we get the serial number portion of devInfo?
+			if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
+			{
+				currentChunk->m_hdr.devSerialNum = m_devInfo.serialNumber;
+			}
 		}
 	}
 

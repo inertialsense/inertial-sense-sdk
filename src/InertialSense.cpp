@@ -554,7 +554,7 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset)
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  Use a preset to enable a predefined set of messages.  R 
-		getDataRmcComManager(i, rmcPreset, 0);
+		getDataRmcComManager((int)i, rmcPreset, 0);
 	}
 }
 

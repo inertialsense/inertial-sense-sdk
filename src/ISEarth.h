@@ -18,20 +18,11 @@ extern "C" {
 #include "ISConstants.h"
 #include "ISPose.h"
 
-//_____ M A C R O S ________________________________________________________
-
-//_____ D E F I N I T I O N S ______________________________________________
-
 #define DEG2RAD_EARTH_RADIUS_F		111120.0f					// = DEG2RAD * earth_radius_in_meters
 #define INV_DEG2RAD_EARTH_RADIUS_F	8.99928005759539236861e-6f	// = 1 / ( DEG2RAD * earth_radius_in_meters )
 
 #define EARTH_RADIUS_F			6366707.01949371f				// = earth_radius_in_meters
 #define INV_EARTH_RADIUS_F		1.5706706731410E-07f				// = 1 / earth_radius_in_meters
-
-#define UNWRAP_DEG_F64(x)		{while( (x) > (180.0) )	 (x) -= (360.0);     while( (x) < (-180.0) )  (x) += (360.0);}	    // unwrap to +- 180
-#define UNWRAP_DEG_F(x)			{while( (x) > (180.0f) ) (x) -= (360.0f);    while( (x) < (-180.0f) ) (x) += (360.0f);}	    // unwrap to +- 180
-#define UNWRAP_F64(x)			{while( (x) > (C_PI) )   (x) -= (C_TWOPI);   while( (x) < (-C_PI) )   (x) += (C_TWOPI);}	// unwrap to +- PI
-#define UNWRAP_F(x)				{while( (x) > (C_PI_F) ) (x) -= (C_TWOPI_F); while( (x) < (-C_PI_F) ) (x) += (C_TWOPI_F);}	// unwrap to +- PI
 
 #if 0
 typedef Vector2     Vector2_t;
@@ -143,6 +134,14 @@ f_t baro2msl( f_t pKPa );
  */
 f_t llaRadDistance( double lla1[3], double lla2[3] );
 f_t llaDegDistance( double lla1[3], double lla2[3] );
+
+
+/*
+ *  Check if lat,lon,alt (deg,deg,m) coordinates are valid.
+ *
+ *  return 0 on success, -1 on failure.
+ */
+int llaDegValid( double lla[3] );
 
 
 #ifdef __cplusplus

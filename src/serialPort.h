@@ -142,12 +142,12 @@ int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer,
 
 // read up until a \r\n sequence has been read
 // buffer will not contain \r\n sequence
-// returns number of bytes read or -1 if timeout or buffer overflow
+// returns number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
 int serialPortReadLine(serial_port_t* serialPort, unsigned char* buffer, int bufferLength);
 
 // read up until a \r\n sequence has been read
 // result will not contain \r\n sequence
-// returns number of bytes read or -1 if timeout or buffer overflow
+// returns number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
 int serialPortReadLineTimeout(serial_port_t* serialPort, unsigned char* buffer, int bufferLength, int timeoutMilliseconds);
 
 // read ASCII data (starts with $ and ends with \r\n, based on NMEA format)

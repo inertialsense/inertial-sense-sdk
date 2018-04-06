@@ -118,7 +118,7 @@ Macros</h2></td></tr>
 <tr class="separator:af75637a65fac4277f530a84152ccaac6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e556042c3159a33ed75e080690a2a94"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#a0e556042c3159a33ed75e080690a2a94">recipNorm_Vec4d</a>(v)&#160;&#160;&#160;(1.0/<a class="el" href="_i_s_matrix_8h.html#a73a66c39e2a569fd88c518152144abcb">mag_Vec4d</a>(v))</td></tr>
 <tr class="separator:a0e556042c3159a33ed75e080690a2a94"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1c14814a1266bbd5d7109390c7932fc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#ac1c14814a1266bbd5d7109390c7932fc">unwrap_Vec3</a>(v)&#160;&#160;&#160;{<a class="el" href="_i_s_earth_8h.html#a4b853f648183c3b8a4dd74270d687def">UNWRAP_F</a>(v[0]); <a class="el" href="_i_s_earth_8h.html#a4b853f648183c3b8a4dd74270d687def">UNWRAP_F</a>(v[1]); <a class="el" href="_i_s_earth_8h.html#a4b853f648183c3b8a4dd74270d687def">UNWRAP_F</a>(v[2]) }</td></tr>
+<tr class="memitem:ac1c14814a1266bbd5d7109390c7932fc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#ac1c14814a1266bbd5d7109390c7932fc">unwrap_Vec3</a>(v)&#160;&#160;&#160;{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }</td></tr>
 <tr class="separator:ac1c14814a1266bbd5d7109390c7932fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad408923a974a24078a4199d954d98a9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#aad408923a974a24078a4199d954d98a9">Vec3_OneLessThan_X</a>(v,  x)&#160;&#160;&#160;( ((v[0])&lt;(x))  || ((v[1])&lt;(x))  || ((v[2])&lt;(x)) )</td></tr>
 <tr class="separator:aad408923a974a24078a4199d954d98a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -604,7 +604,7 @@ Functions</h2></td></tr>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname">v</td><td>)</td>
-          <td>&#160;&#160;&#160;{<a class="el" href="_i_s_earth_8h.html#a4b853f648183c3b8a4dd74270d687def">UNWRAP_F</a>(v[0]); <a class="el" href="_i_s_earth_8h.html#a4b853f648183c3b8a4dd74270d687def">UNWRAP_F</a>(v[1]); <a class="el" href="_i_s_earth_8h.html#a4b853f648183c3b8a4dd74270d687def">UNWRAP_F</a>(v[2]) }</td>
+          <td>&#160;&#160;&#160;{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2759,7 +2759,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Mar 24 2018 02:38:49 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Apr 6 2018 03:07:04 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.14
 </small></address>

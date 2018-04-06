@@ -49,7 +49,7 @@ extern "C" {
 #	define recipNorm_Vec3d(v)	(1.0/mag_Vec3d(v))
 #	define recipNorm_Vec4d(v)	(1.0/mag_Vec4d(v))
 
-#define unwrap_Vec3(v)	{UNWRAP_F(v[0]); UNWRAP_F(v[1]); UNWRAP_F(v[2]) }
+#define unwrap_Vec3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
 #define Vec3_OneLessThan_X(v,x)		( ((v[0])<(x))  || ((v[1])<(x))  || ((v[2])<(x)) )
 #define Vec3_OneGrtrThan_X(v,x)		( ((v[0])>(x))  || ((v[1])>(x))  || ((v[2])>(x)) )

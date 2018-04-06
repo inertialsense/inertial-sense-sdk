@@ -393,6 +393,7 @@ var searchData=
   ['crash_5finfo_5fenable_5fbootloader',['CRASH_INFO_ENABLE_BOOTLOADER',['../data__sets_8h.html#ae6ec796656b07cf629b2c628d54999af',1,'data_sets.h']]],
   ['crash_5finfo_5finvalid_5fcode_5foperation',['CRASH_INFO_INVALID_CODE_OPERATION',['../data__sets_8h.html#a7a999967f46e50a1ec202d35a38ea1ce',1,'data_sets.h']]],
   ['crash_5finfo_5fmalloc_5ffailed',['CRASH_INFO_MALLOC_FAILED',['../data__sets_8h.html#a7ea4ad8860548b6fb67c562c45bbef05',1,'data_sets.h']]],
+  ['crash_5finfo_5fnone',['CRASH_INFO_NONE',['../data__sets_8h.html#abb0489cff5cfa92d48bfb9ea218b2ea2',1,'data_sets.h']]],
   ['crash_5finfo_5fsoft_5freset',['CRASH_INFO_SOFT_RESET',['../data__sets_8h.html#a519692fb039fef68e39d22eca30a3db9',1,'data_sets.h']]],
   ['crash_5finfo_5fstack_5foverflow',['CRASH_INFO_STACK_OVERFLOW',['../data__sets_8h.html#a89e509478d992b1604706bb69d5289c5',1,'data_sets.h']]],
   ['crash_5finfo_5ft',['crash_info_t',['../structcrash__info__t.html',1,'']]],

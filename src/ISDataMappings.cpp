@@ -558,10 +558,6 @@ static void PopulateFlashConfigMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "gps1AntOffset[0]", gps1AntOffset[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "gps1AntOffset[1]", gps1AntOffset[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "gps1AntOffset[2]", gps1AntOffset[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "gps2AntOffset[0]", gps2AntOffset[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "gps2AntOffset[1]", gps2AntOffset[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "gps2AntOffset[2]", gps2AntOffset[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "gpsTimeSyncPulsePeriodMs", gpsTimeSyncPulsePeriodMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "insDynModel", insDynModel, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "sysCfgBits", sysCfgBits, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "refLla[0]", refLla[0], 0, DataTypeDouble, double&);
@@ -577,12 +573,19 @@ static void PopulateFlashConfigMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "cBrdConfig", cBrdConfig, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "magInclination", magInclination, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "magDeclination", magDeclination, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "zeroVelRotation[0]", zeroVelRotation[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "gps2AntOffset[0]", gps2AntOffset[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "gps2AntOffset[1]", gps2AntOffset[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "gps2AntOffset[2]", gps2AntOffset[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "zeroVelRotation[0]", zeroVelRotation[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "zeroVelRotation[1]", zeroVelRotation[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "zeroVelRotation[2]", zeroVelRotation[2], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "zeroVelOffset[0]", zeroVelOffset[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "zeroVelOffset[1]", zeroVelOffset[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "zeroVelOffset[2]", zeroVelOffset[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "gpsTimeSyncPulsePeriodMs", gpsTimeSyncPulsePeriodMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt32, uint32_t&);
+	ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt32, uint32_t&);
+	ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt32, uint32_t&);
 	mappings[DID_FLASH_CONFIG] = m;
 
     ASSERT_SIZE(totalSize);
@@ -1185,7 +1188,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"gps1Version",			// 17: DID_GPS1_VERSION
 		"gps2Version",			// 18: DID_GPS2_VERSION
 		"magCal",				// 19: DID_MAG_CAL
-        "UNUSED_DID_20",		// 20: 
+        "diagnosticInfo",		// 20: DID_INTERNAL_DIAGNOSTIC
         "gpsRtkNav",			// 21: DID_GPS_RTK_NAV
         "gpsRtkMisc",			// 22: DID_GPS_RTK_MISC
         "featureBits",			// 23: DID_FEATURE_BITS
@@ -1221,8 +1224,8 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "barometer",			// 53: DID_BAROMETER
         "imu2",					// 54: DID_IMU_2
         "magnetometer2",		// 55: DID_MAGNETOMETER_2
-		"UNUSED_DID_56",		// 56: 
-		"commLoopback",			// 57: DID_COMMUNICATIONS_LOOPBACK
+        "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
+        "imuDualRaw",			// 57: DID_DUAL_IMU_RAW
         "imuDual",				// 58: DID_DUAL_IMU
         "inl2MagObs",			// 59: DID_INL2_MAG_OBS_INFO
         "gpsBaseRaw",			// 60: DID_GPS_BASE_RAW
@@ -1237,7 +1240,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"gps1Raw",				// 69: DID_GPS1_RAW
 		"gps2Raw",				// 70: DID_GPS2_RAW
         "velocityMeasurement",	// 71: DID_VELOCITY_MEASUREMENT
-        "diagMsg",              // 72: DID_DIAGNOSTIC_MESSAGE
+        "diagnosticMsg",        // 72: DID_DIAGNOSTIC_MESSAGE
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);

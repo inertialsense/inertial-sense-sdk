@@ -126,7 +126,7 @@ void lla2ned(Vector3_t llaRef, Vector3_t lla, Vector3_t result)
     deltaLLA[2] = lla[2] - llaRef[2];
     
 	// Handle longitude wrapping 
-	UNWRAP_F( deltaLLA[1] );
+	UNWRAP_F32(deltaLLA[1]);
 
     // Find NED
 	result[0] =  deltaLLA[0] * EARTH_RADIUS_F;
@@ -149,8 +149,8 @@ void lla2ned_d(double llaRef[3], double lla[3], Vector3_t result)
     deltaLLA[1] = (f_t)(lla[1] - llaRef[1]);
     deltaLLA[2] = (f_t)(lla[2] - llaRef[2]);
 
-	// Handle longitude wrapping 
-	UNWRAP_F( deltaLLA[1] );
+	// Handle longitude wrapping in radians
+	UNWRAP_F32(deltaLLA[1]);
     
     // Find NED
 	result[0] =  deltaLLA[0] * EARTH_RADIUS_F;
@@ -173,7 +173,7 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], Vector3_t result)
     deltaLLA[2] = (f_t)(lla[2] - llaRef[2]);
 
 	// Handle longitude wrapping 
-	UNWRAP_DEG_F( deltaLLA[1] );
+	UNWRAP_DEG_F32(deltaLLA[1]);
     
     // Find NED
 	result[0] =  deltaLLA[0] * DEG2RAD_EARTH_RADIUS_F;
@@ -325,5 +325,24 @@ void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt)
 	result[0] = C_DEG2RAD * lat;
 	result[1] = C_DEG2RAD * lon;
 	result[2] = alt;
+}
+
+/*
+ *  Check if lat,lon,alt (deg,deg,m) coordinates are valid.
+ *
+ *  return 1 on success, 0 on failure.
+ */
+int llaDegValid( double lla[3] )
+{
+    if( (lla[0]<-90.0)		|| (lla[0]>90.0) ||			// Lat
+        (lla[1]<-180.0)		|| (lla[1]>180.0) ||		// Lon
+        (lla[2]<-10000.0)   || (lla[2]>1000000.0) )		// Alt: -10 to 1,000 kilometers
+    {    // Invalid
+        return 0;
+    }
+    else
+    {    // Valid
+        return 1;
+    }
 }
 
