@@ -73,8 +73,7 @@ int main(int argc, char* argv[])
 	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-// 	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_115200, 1))
+	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
 	{
 		printf("Failed to open serial port on com port %s\r\n", argv[1]);
 		return -2;
@@ -109,7 +108,7 @@ int main(int argc, char* argv[])
 	serialPortWrite(&serialPort, buffer, messageSize);
 
 	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
-	messageSize = is_comm_get_data(&comm, _DID_INS_LLA_EULER_NED, 0, 0, 25);
+	messageSize = is_comm_get_data(&comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
 	if (messageSize < 1)
 	{
 		printf("Failed to encode get INS message\r\n");
@@ -117,7 +116,7 @@ int main(int argc, char* argv[])
 	}
 	serialPortWrite(&serialPort, buffer, messageSize);
 
-#if 0
+#if 1
 	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
 	messageSize = is_comm_get_data(&comm, _DID_GPS_NAV, 0, 0, 200);
 	if (messageSize < 1)

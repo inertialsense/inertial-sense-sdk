@@ -24,7 +24,7 @@ var searchData=
   ['counter',['counter',['../structbroadcast__msg__t.html#ac2c2693434d62bb975997096b6cfcb0c',1,'broadcast_msg_t::counter()'],['../structensured__pkt__t.html#a0e33c78ab018ea5e2c608fea068f746d',1,'ensured_pkt_t::counter()'],['../structis__comm__instance__t.html#aa39f313d9acfa358050a1c93ded58c1e',1,'is_comm_instance_t::counter()'],['../structpacket__hdr__t.html#a5e22ca5884ff79547cdaf5577cad9f41',1,'packet_hdr_t::counter()']]],
   ['cov',['cov',['../struct_p_a_c_k_e_d.html#a5a1902bb3ee588c94113ce4ed66a6602',1,'PACKED']]],
   ['cpuusage',['cpuUsage',['../struct_p_a_c_k_e_d.html#a385ec05fce8c7b1727b6ee6c897be4b9',1,'PACKED']]],
-  ['crc',['crc',['../structeph__t.html#af9670bfd8d49c502b9c5a3bc30419845',1,'eph_t']]],
+  ['crc',['crc',['../structeph__t.html#af9670bfd8d49c502b9c5a3bc30419845',1,'eph_t::crc()'],['../structxmodem__chunk__t.html#ac8e4ae3c656fb62e025100bcb3be1af7',1,'xmodem_chunk_t::crc()']]],
   ['crs',['crs',['../structeph__t.html#aae51b61e9bbe4cbc5a3fd11d26581897',1,'eph_t']]],
   ['cuc',['cuc',['../structeph__t.html#a87979665672fd502171c79e072a8b308',1,'eph_t']]],
   ['cus',['cus',['../structeph__t.html#a8790ffa56b41753fb7e3c58d7ef25af1',1,'eph_t']]],

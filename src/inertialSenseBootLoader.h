@@ -76,8 +76,23 @@ Boot load a .hex or .bin file to a device
 
 @return 0 if failure, non-zero if success
 */
-int bootloadFile(const char* fileName, serial_port_t* port, char* error, int errorLength, const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
+int bootloadFile(const char* fileName, serial_port_t* port, char* error, int errorLength, const void* obj,
+                 pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
+
+/**
+Boot load a new bootloader .bin file to device. Device must be in application or bootloader assist mode, not bootloader mode.
+@param port the serial port, must be initialized and have the port set
+@param fileName the new bootloader .bin file
+@param error a buffer to store any error messages in - can be NULL
+@param errorLength the number of bytes available in error
+@param obj custom user object that will be passed in the callback
+@param uploadProgress called periodically during firmware upload - can be NULL
+@param verifyProgress called periodically during firmware verification - can be NULL
+@retur 0 if failure, non-zero if success
+*/
+int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* error, int errorLength,
+                             const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 
 /**
 Enable bootloader mode for a device

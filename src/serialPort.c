@@ -166,7 +166,7 @@ int serialPortReadAsciiTimeout(serial_port_t* serialPort, unsigned char* buffer,
 		if (*ptr == '*')
 		{
 			// read checksum from buffer, skipping the * char
-			existingChecksum = strtol(++ptr, NULL, 16);
+			existingChecksum = strtol((void*)++ptr, NULL, 16);
 			if (existingChecksum == checksum)
 			{
 				return count;
@@ -212,7 +212,7 @@ int serialPortWriteLine(serial_port_t* serialPort, const unsigned char* buffer, 
 	}
 
 	int count = serialPortWrite(serialPort, buffer, writeCount);
-	count += serialPortWrite(serialPort, "\r\n", 2);
+	count += serialPortWrite(serialPort, (unsigned char*)"\r\n", 2);
 	return count;
 }
 

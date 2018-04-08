@@ -25,6 +25,8 @@ var searchData=
   ['binarycallbackglobal',['binaryCallbackGlobal',['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#af8bd2d3e0d91808c92a4a36f98f944c3',1,'InertialSense::com_manager_cpp_state_t']]],
   ['bitfields',['bitFields',['../structbootload__params__t.html#afba10fabb2a845dbc392fb1ad7a49c91',1,'bootload_params_t']]],
   ['bits',['bits',['../struct_p_a_c_k_e_d.html#aaccb3eeb711867f9d36d033359eb8917',1,'PACKED::bits()'],['../structbootload__params__t.html#a77f35287a980c0994e4d50fa93d34838',1,'bootload_params_t::bits()']]],
+  ['block',['block',['../structxmodem__chunk__t.html#a54cbea1a5a2bf6d38f3fdd4dc1210588',1,'xmodem_chunk_t']]],
+  ['block_5fneg',['block_neg',['../structxmodem__chunk__t.html#a08365679b65dbfa8c81f293fcd8f36bc',1,'xmodem_chunk_t']]],
   ['blocking',['blocking',['../structserial_port_handle.html#a9b815a420cdd03225e728e0749443ebb',1,'serialPortHandle']]],
   ['body',['body',['../structpacket__t.html#a4955d2c7f0cacef9987e6e33a7dfc885',1,'packet_t']]],
   ['bodyhdr',['bodyHdr',['../structpkt__info__t.html#a4c09f07154b356ff1c99b71e63dd089c',1,'pkt_info_t']]],

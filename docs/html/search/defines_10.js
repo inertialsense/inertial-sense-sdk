@@ -1,5 +1,9 @@
 var searchData=
 [
+  ['sam_5fba_5fbaudrate',['SAM_BA_BAUDRATE',['../inertial_sense_boot_loader_8c.html#a97c6b46fb3f7fa2d7e62961e3f94d374',1,'inertialSenseBootLoader.c']]],
+  ['sam_5fba_5fbootloader_5fsize',['SAM_BA_BOOTLOADER_SIZE',['../inertial_sense_boot_loader_8c.html#abac28520efbc61d0cb08abc48263753c',1,'inertialSenseBootLoader.c']]],
+  ['sam_5fba_5fflash_5fpage_5fsize',['SAM_BA_FLASH_PAGE_SIZE',['../inertial_sense_boot_loader_8c.html#a4732b6933d4d4dfcf6beeef8994ac2c5',1,'inertialSenseBootLoader.c']]],
+  ['sam_5fba_5fflash_5fstart_5faddress',['SAM_BA_FLASH_START_ADDRESS',['../inertial_sense_boot_loader_8c.html#a9bab5e89643dedb225c44447a84b4eab',1,'inertialSenseBootLoader.c']]],
   ['seconds_5fin_5fday',['SECONDS_IN_DAY',['../time__conversion_8h.html#ab8e2596e9eb4c7f02aa52caa4c07ff90',1,'time_conversion.h']]],
   ['seconds_5fin_5fweek',['SECONDS_IN_WEEK',['../time__conversion_8h.html#a7e7087a54da1e633ceb9057a83bcbbec',1,'time_conversion.h']]],
   ['set_5fvec3_5fx',['set_Vec3_X',['../_i_s_matrix_8h.html#a4140bd125e757250417860a26a3844b8',1,'ISMatrix.h']]],

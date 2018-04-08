@@ -116,6 +116,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.flashConfig = &a[13];
 		}
+		else if (startsWith(a, "-flashConfig"))
+		{
+			g_commandLineOptions.flashConfig = ".";
+		}
 		else if (startsWith(a, "-host="))
 		{
 			g_commandLineOptions.host = &a[6];
@@ -327,19 +331,20 @@ void cltool_outputUsage()
 	cout << "    firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << "                          " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2 (default)" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -lon -lts=1              " << EXAMPLE_SPACE_1 << boldOff << " # logging to timestamp directory, stream PPD + INS2 data" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -lon -msgPPD             " << EXAMPLE_SPACE_1 << boldOff << " # logging, stream post processing data" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS -msgBaro" << EXAMPLE_SPACE_1 << boldOff << " # stream multiple data sets at 115200 baud rate" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << "       # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b= " << EXAMPLE_FIRMWARE_FILE                << boldOff << " # bootload firmware" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=* -baud=921600                " << EXAMPLE_SPACE_1 << boldOff << " # 921600 mbps baudrate on all serial ports" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS -msgBaro" << boldOff << " # stream multiple at 115200 bps" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b= " << EXAMPLE_FIRMWARE_FILE          << boldOff << " # bootload firmware" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=* -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       display this help menu" << endlbOn;
-	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\"" << endlbOn;
-	cout << "       " << boldOff << "             to use only the first four ports. Not specifying this parameter is same as \"-c=" << CL_DEFAULT_COM_PORT << "\"" <<  endlbOn;
-	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << ", " << IS_BAUDRATE_3000000 << " (default) " << endlbOn;
+	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
+	cout << "       " << boldOff << "             only the first four ports. Not specifying this parameter is same as \"-c=" << CL_DEFAULT_COM_PORT << "\"" <<  endlbOn;
+	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << ", " << endlbOn;
+	cout << "       " << boldOff << "             " << IS_BAUDRATE_3000000 << " (default) " << endlbOn;
 	cout << "    -b=" << boldOff << "FILEPATH     bootload firmware using .hex file FILEPATH" << endlbOn;
 	cout << "    -q" << boldOff << "              quite mode, no display" << endlbOn;
 	cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
@@ -348,13 +353,13 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
 	cout << "    -msgPPD       " << boldOff << "  stream post processing data sets" << endlbOn;
-	cout << "    -msgINS[n]    " << boldOff << "  message DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
-	cout << "    -msgDualIMU   " << boldOff << "  message DID_DUAL_IMU" << endlbOn;
-	cout << "    -msgPIMU      " << boldOff << "  message DID_PREINTEGRATED_IMU" << endlbOn;
-	cout << "    -msgMag[n]    " << boldOff << "  message DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
-	cout << "    -msgBaro      " << boldOff << "  message DID_BAROMETER" << endlbOn;
-	cout << "    -msgGPS       " << boldOff << "  message DID_GPS1_NAV" << endlbOn;
-	cout << "    -msgSensors   " << boldOff << "  message DID_SYS_SENSORS" << endlbOn;
+	cout << "    -msgINS[n]    " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
+	cout << "    -msgDualIMU   " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
+	cout << "    -msgPIMU      " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
+	cout << "    -msgMag[n]    " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
+	cout << "    -msgBaro      " << boldOff << "  stream DID_BAROMETER" << endlbOn;
+	cout << "    -msgGPS       " << boldOff << "  stream DID_GPS1_NAV" << endlbOn;
+	cout << "    -msgSensors   " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            enable logging" << endlbOn;
@@ -369,17 +374,20 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration)" << endl;
-	cout << "    -flashConfig=." << boldOff << " - read flash config and display." << endlbOn;
-	cout << "    -flashConfig=key=value|key=value " << boldOff << " - set key / value pairs in flash config." << endlbOn;
+	cout << "    -flashConfig" << boldOff << "    read and print to screen flash config" << endlbOn;
+	cout << "    -flashConfig=key=value|key=value " << boldOff <<  endlbOn;
+	cout << "        " << boldOff << "            set key / value pairs in flash config" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Client / server)" << endl;
-	cout << "    -svr=" << boldOff << "connectionInfo, used to retreive external data and send to the uINS. Examples:" << endl;
-	cout << "     For retrieving RTCM3 data: -svr=RTCM3:192.168.1.100:7777:url:user:password - url, user and password optional." << endl;
-	cout << "     For retrieving SERIAL data: -svr=RTCM3:SERIAL:COM9:57600 (port, baud)." << endl;
-	cout << "     For retrieving InertialSense data: -svr=IS:192.168.1.100:7777 - no url, user or password." << endlbOn;
-	cout << "     For retrieving UBLOX data: -svr=UBLOX:192.168.1.100:7777 - no url, user or password." << endlbOn;
-	cout << "    -host=" << boldOff << "ipAndPort, used to host a tcp/ip InertialSense server." << endl;
-	cout << "     Example: -host=:7777 or -host=192.168.1.43:7777. The ip address part is optional." << endlbOn;
+	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;
+	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:COM9:57600         (port, baud rate)" << endl;
+	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:user:password" << endl;
+	cout << "                                                              (URL, user, password optional)" << endl;
+	cout << "        - UBLOX data:    -svr=UBLOX:192.168.1.100:7777        (no URL, user or password)" << endl;
+	cout << "        - InertialSense: -svr=IS:192.168.1.100:7777           (no URL, user or password)" << endlbOn;
+	cout << "    -host=" << boldOff << "IP:PORT   used to host a TCP/IP InertialSense server. Examples:" << endl;
+	cout << "                         -host=:7777                          (IP is optional)" << endl;
+	cout << "                         -host=192.168.1.43:7777" << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }

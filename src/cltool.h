@@ -30,15 +30,17 @@ using namespace std;
 #if PLATFORM_IS_WINDOWS
 #define APP_EXT                 ".exe"
 #define EXAMPLE_PORT            "COM5"
-#define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549     "
-#define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex       "
-#define EXAMPLE_SPACE_1         "     "
+#define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549    "
+#define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex"
+#define EXAMPLE_SPACE_1         "    "
+#define EXAMPLE_SPACE_2         ""
 #else
 #define APP_EXT	                ""
 #define EXAMPLE_PORT            "/dev/ttyS2"
-#define EXAMPLE_LOG_DIR         "logs/20170117_222549             "
-#define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex         "
-#define EXAMPLE_SPACE_1         "    "
+#define EXAMPLE_LOG_DIR         "logs/20170117_222549           "
+#define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex "
+#define EXAMPLE_SPACE_1         "  "
+#define EXAMPLE_SPACE_2			"    "
 #endif
 
 typedef struct

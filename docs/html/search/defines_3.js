@@ -265,5 +265,6 @@ var searchData=
   ['crash_5finfo_5fsoft_5freset',['CRASH_INFO_SOFT_RESET',['../data__sets_8h.html#a519692fb039fef68e39d22eca30a3db9',1,'data_sets.h']]],
   ['crash_5finfo_5fstack_5foverflow',['CRASH_INFO_STACK_OVERFLOW',['../data__sets_8h.html#a89e509478d992b1604706bb69d5289c5',1,'data_sets.h']]],
   ['crash_5finfo_5fuser_5freset',['CRASH_INFO_USER_RESET',['../data__sets_8h.html#a5f6baf273b2a463d01be2f776f415beb',1,'data_sets.h']]],
+  ['crc_5fpoly',['CRC_POLY',['../inertial_sense_boot_loader_8c.html#a3a57af5c3275b2f53fa64274b11e8d52',1,'inertialSenseBootLoader.c']]],
   ['current_5fleap_5fseconds',['CURRENT_LEAP_SECONDS',['../data__sets_8h.html#a3cea95f95355911bacdfb8d3795106a8',1,'data_sets.h']]]
 ];

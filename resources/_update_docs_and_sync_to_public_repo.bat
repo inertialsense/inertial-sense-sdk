@@ -1,6 +1,7 @@
 @echo off
 
 set SDKDIR=..\..\..\InertialSenseSDK
+set COMDIR=..\..\..\inertialsense_serial_protocol
 
 echo.
 echo Prepare SDK for release.
@@ -25,11 +26,17 @@ call update_doxygen_docs.bat
 cd ..
 
 echo.
-echo Sync SDK into public repo
+echo Sync SDK into %SDKDIR% repo
 robocopy %SDKDIR%\.git %SDKDIR%tmp\.git /MIR /XA:H
 robocopy . %SDKDIR% /MIR /XA:H
 robocopy %SDKDIR%tmp\.git %SDKDIR%\.git /MIR /XA:H
 rmdir /S /Q %SDKDIR%tmp
+
+cd src 
+
+echo.
+echo Sync SDK into %COMDIR% repo
+robocopy . ..\%COMDIR% data_sets.c data_sets.h ISComm.c ISComm.h ISConstants.h /MIR /XA:H
 
 echo.
 echo Done.

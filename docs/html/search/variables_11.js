@@ -20,6 +20,7 @@ var searchData=
   ['snrmin',['snrmin',['../structprcopt__t.html#ae4c507ff1db35838624a429f0847dd49',1,'prcopt_t']]],
   ['soltype',['soltype',['../structprcopt__t.html#aa4f8e98d5ef335c41f6048151770fab7',1,'prcopt_t']]],
   ['stackunused',['stackUnused',['../struct_p_a_c_k_e_d.html#a737fe057f189e9656407c626d1d0c8bf',1,'PACKED']]],
+  ['start',['start',['../structxmodem__chunk__t.html#a7a2ab607af54ab9ea0dc8606350b916b',1,'xmodem_chunk_t']]],
   ['startbyte',['startByte',['../structcom__manager__status__t.html#a799659757d78ea8a857bc35994b9cb8a',1,'com_manager_status_t::startByte()'],['../structpacket__hdr__t.html#aae0969a547bd5ea711e2fe7e2d9a5f4e',1,'packet_hdr_t::startByte()']]],
   ['startindex',['startIndex',['../structring__buffer__t.html#a2923f0836c88d3d7055f20b25edc2fd8',1,'ring_buffer_t']]],
   ['startupnavdtms',['startupNavDtMs',['../struct_p_a_c_k_e_d.html#a1458cdc80f7709c9a267236bebd190ed',1,'PACKED']]],
