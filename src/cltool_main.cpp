@@ -38,6 +38,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
+    (void)i;
+    (void)pHandle;
 	// Print data to terminal
 	g_inertialSenseDisplay.ProcessData(data);
 
@@ -45,6 +47,8 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	uDatasets d = {};
 	copyDataPToStructP(&d, data, sizeof(uDatasets));
 
+#if 0
+    
 	// Example of how to access dataset fields.
 	switch (data->hdr.id)
 	{
@@ -79,6 +83,9 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 		d.sysSensors;   
 		break;
 	}
+    
+#endif
+    
 }
 
 // Where we tell the uINS what data to send and at what rate.  

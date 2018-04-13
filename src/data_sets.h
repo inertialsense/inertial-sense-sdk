@@ -188,10 +188,10 @@ enum eInsStatusFlags
 	INS_STATUS_SOLUTION_AHRS_GOOD			= 5,	// System is in AHRS mode and solution is good.
 	INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE	= 6,	// System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
 	
-	/** Magnetometer is being recalibrated.  Device requires rotation. */
+	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. */
 	INS_STATUS_MAG_RECALIBRATING			= (int)0x00400000,
-	/** Magnetometer is experiencing interference.  Attention may be required to remove interference (i.e. move device). */
-	INS_STATUS_MAG_NOT_GOOD					= (int)0x00800000,
+	/** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
+	INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL = (int)0x00800000,
 
     /** Navigation fix type (see eNavFixStatus) */
     INS_STATUS_NAV_FIX_STATUS_MASK          = (int)0x07000000,

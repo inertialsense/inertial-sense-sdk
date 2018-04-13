@@ -1210,7 +1210,7 @@ static int samBaSetBootFromFlash(serial_port_t* port)
 	return 0;
 }
 
-static int samBaFlashEraseWritePage(serial_port_t* port, size_t offset, unsigned char buf[SAM_BA_FLASH_PAGE_SIZE], size_t len)
+static int samBaFlashEraseWritePage(serial_port_t* port, size_t offset, unsigned char buf[SAM_BA_FLASH_PAGE_SIZE])
 {
 	uint16_t page = (uint16_t)(offset / SAM_BA_FLASH_PAGE_SIZE);
 	unsigned char _buf[32];
@@ -1435,7 +1435,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
 	uint32_t offset = 0;
 	while (fread(buf, 1, SAM_BA_FLASH_PAGE_SIZE, file) == SAM_BA_FLASH_PAGE_SIZE)
 	{
-		if (!samBaFlashEraseWritePage(port, offset, buf, sizeof(buf)))
+		if (!samBaFlashEraseWritePage(port, offset, buf))
 		{
 			bootloader_perror(&s, "Failed to upload page at offset %d\n", (int)offset);
 			return 0;

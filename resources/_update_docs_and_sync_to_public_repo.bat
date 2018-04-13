@@ -36,7 +36,7 @@ cd src
 
 echo.
 echo Sync SDK into %COMDIR% repo
-robocopy . ..\%COMDIR% data_sets.c data_sets.h ISComm.c ISComm.h ISConstants.h /MIR /XA:H
+robocopy . ..\%COMDIR% data_sets.c data_sets.h ISComm.c ISComm.h ISConstants.h
 
 echo.
 echo Done.

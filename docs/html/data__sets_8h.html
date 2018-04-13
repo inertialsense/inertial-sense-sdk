@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.1.5</span>
+   &#160;<span id="projectnumber">Release 1.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -589,7 +589,7 @@ Enumerations</h2></td></tr>
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca391f76b913c630b64d2a1e0c0ac67904">INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE</a> = 6, 
 <br />
 &#160;&#160;<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca89e62a48945c4f247ce4665c0d811053">INS_STATUS_MAG_RECALIBRATING</a> = (int)0x00400000, 
-<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cafa7fb3298d446aabd8a4aca071ce08e1">INS_STATUS_MAG_NOT_GOOD</a> = (int)0x00800000, 
+<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca99e4f574a713507f7ee48ba6630ef90a">INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL</a> = (int)0x00800000, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca51f5010e279d6e6ce66a06f1d4f319ba">INS_STATUS_NAV_FIX_STATUS_MASK</a> = (int)0x07000000, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf50e5f5fa40494e7ea450a39e3396cb4">INS_STATUS_NAV_FIX_STATUS_OFFSET</a> = 24, 
 <br />
@@ -4051,9 +4051,9 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca633b8f8b2e7f406d3906cffa72dc219b"></a>INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415cad65ce017a3cca247e519cf481b5f058f"></a>INS_STATUS_SOLUTION_AHRS_GOOD&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca391f76b913c630b64d2a1e0c0ac67904"></a>INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca89e62a48945c4f247ce4665c0d811053"></a>INS_STATUS_MAG_RECALIBRATING&#160;</td><td class="fielddoc"><p>Magnetometer is being recalibrated. Device requires rotation. </p>
+<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca89e62a48945c4f247ce4665c0d811053"></a>INS_STATUS_MAG_RECALIBRATING&#160;</td><td class="fielddoc"><p>Magnetometer is being recalibrated. Device requires rotation to complete the calibration process. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415cafa7fb3298d446aabd8a4aca071ce08e1"></a>INS_STATUS_MAG_NOT_GOOD&#160;</td><td class="fielddoc"><p>Magnetometer is experiencing interference. Attention may be required to remove interference (i.e. move device). </p>
+<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca99e4f574a713507f7ee48ba6630ef90a"></a>INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL&#160;</td><td class="fielddoc"><p>Magnetometer is experiencing interference or calibration is bad. Attention may be required to remove interference (move the device) or recalibrate the magnetometer. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca51f5010e279d6e6ce66a06f1d4f319ba"></a>INS_STATUS_NAV_FIX_STATUS_MASK&#160;</td><td class="fielddoc"><p>Navigation fix type (see eNavFixStatus) </p>
 </td></tr>
@@ -4861,7 +4861,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Apr 8 2018 02:03:50 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Apr 13 2018 00:31:43 for SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.14
 </small></address>

@@ -9,7 +9,7 @@ var searchData=
   ['ins_5fstatus_5fgeneral_5ffault',['INS_STATUS_GENERAL_FAULT',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4e0d0beebd5d854e00bb62ff1fed941a',1,'data_sets.h']]],
   ['ins_5fstatus_5fgps_5fupdate_5fin_5fsolution',['INS_STATUS_GPS_UPDATE_IN_SOLUTION',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4662a4846829c59d0e06598d98873eb2',1,'data_sets.h']]],
   ['ins_5fstatus_5fmag_5factive_5fcal_5fset',['INS_STATUS_MAG_ACTIVE_CAL_SET',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca1c6b7ac96d61943036b27acb87c7428b',1,'data_sets.h']]],
-  ['ins_5fstatus_5fmag_5fnot_5fgood',['INS_STATUS_MAG_NOT_GOOD',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cafa7fb3298d446aabd8a4aca071ce08e1',1,'data_sets.h']]],
+  ['ins_5fstatus_5fmag_5finterference_5for_5fbad_5fcal',['INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca99e4f574a713507f7ee48ba6630ef90a',1,'data_sets.h']]],
   ['ins_5fstatus_5fmag_5frecalibrating',['INS_STATUS_MAG_RECALIBRATING',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca89e62a48945c4f247ce4665c0d811053',1,'data_sets.h']]],
   ['ins_5fstatus_5fnav_5ffix_5fstatus_5fmask',['INS_STATUS_NAV_FIX_STATUS_MASK',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca51f5010e279d6e6ce66a06f1d4f319ba',1,'data_sets.h']]],
   ['ins_5fstatus_5fnav_5ffix_5fstatus_5foffset',['INS_STATUS_NAV_FIX_STATUS_OFFSET',['../data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf50e5f5fa40494e7ea450a39e3396cb4',1,'data_sets.h']]],

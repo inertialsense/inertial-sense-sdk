@@ -157,7 +157,7 @@ int serialPortReadAsciiTimeout(serial_port_t* serialPort, unsigned char* buffer,
 		int existingChecksum;
 
 		// calculate checksum, skipping leading $ and trailing *XX\r\n
-		unsigned char* ptrEndNoChecksum = ptrEnd - 4;
+		unsigned char* ptrEndNoChecksum = ptrEnd - 3;
 		while (++ptr < ptrEndNoChecksum)
 		{
 			checksum ^= *ptr;
