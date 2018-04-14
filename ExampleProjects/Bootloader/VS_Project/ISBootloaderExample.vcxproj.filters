@@ -22,11 +22,11 @@
     <ClCompile Include="..\..\..\src\serialPortPlatform.c">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\ISBootloaderExample.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c">
       <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ISBootloaderExample.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

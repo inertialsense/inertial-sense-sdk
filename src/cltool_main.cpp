@@ -98,7 +98,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 	if (g_commandLineOptions.asciiMessages.size() != 0)
 	{
-		serialPortWriteAscii(inertialSenseInterface.GetSerialPort(), g_commandLineOptions.asciiMessages.c_str(), g_commandLineOptions.asciiMessages.size());
+		serialPortWriteAscii(inertialSenseInterface.GetSerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
 		return true;
 	}
 
@@ -282,7 +282,7 @@ static int inertialSenseMain()
 		serialPortPlatformInit(&serialForAscii);
 		serialPortOpen(&serialForAscii, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
 		serialPortWriteAscii(&serialForAscii, "STPB", 4);
-		serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), 5 + g_commandLineOptions.asciiMessages.size());
+		serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
 		unsigned char line[512];
 		unsigned char* asciiData;
 		while (!g_inertialSenseDisplay.ControlCWasPressed())

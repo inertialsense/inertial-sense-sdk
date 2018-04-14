@@ -28,7 +28,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	// STEP 2: Initialize and open serial port
 	serial_port_t serialPort;
 
@@ -65,7 +64,8 @@ int main(int argc, char* argv[])
 	// please see the user manual for additional updates and notes
 
 	// Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same
-	const char* asciiMessage = "ASCB,0,,,100,,,,,,,";
+// 	const char* asciiMessage = "ASCB,0,,,100,,,,,,,";
+	const char* asciiMessage = "ASCB,0,500,500,500,500,500,600,600,600,600,600";
 
 	// Get PIMU @ 50Hz, GPGGA @ 5Hz, both serial ports, set all other periods to 0
 	// const char* asciiMessage = "ASCB,3,20,0,0,0,0,0,100,0,0,0";

@@ -390,6 +390,7 @@ extern void vPortFree(void* pv);
 #define C_MI2M_F        1609.344f       // (C_FT2M*5280) miles to meters 
 
 #define C_METERS_KNOTS	1.943844		// Meters/sec squared to knots
+#define C_METERS_KNOTS_F 1.943844f		// Meters/sec squared to knots
 
 //////////////////////////////////////////////////////////////////////////
 // Acceleration / Force
