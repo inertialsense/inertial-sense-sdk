@@ -40,6 +40,86 @@ static void handleImuMessage(dual_imu_t* imu)
 		imu->I[0].acc[0], imu->I[0].acc[1], imu->I[0].acc[2]);
 }
 
+
+int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
+{
+	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
+	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
+	int messageSize = is_comm_set_data(comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
+	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+	{
+		printf("Failed to encode and write set INS rotation\r\n");
+		return -3;
+	}
+
+	return 0;
+}
+
+
+int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+{
+	// Stop all broadcasts on the device
+	int messageSize = is_comm_stop_broadcasts(comm);
+	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+	{
+		printf("Failed to encode and write stop broadcasts message\r\n");
+		return -3;
+	}
+	return 0;
+}
+
+
+int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_t *comm)
+{
+	// Enable broadcasts using RMC: DID_INS_1 @ 20Hz and DID_GPS_NAV @ 5Hz
+	rmc_t rmc;
+	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS_NAV;
+	rmc.insPeriodMs = 50;	// INS @ 20Hz
+	rmc.options = 0;		// current port
+
+	int messageSize = is_comm_set_data(comm, _DID_RMC, 0, sizeof(rmc_t), &rmc);
+	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+	{
+		printf("Failed to encode and write RMC message\r\n");
+		return -3;
+	}
+	return 0;
+}
+
+
+int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_instance_t *comm)
+{
+	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
+	int messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
+	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+	{
+		printf("Failed to encode and write get INS message\r\n");
+		return -4;
+	}
+
+#if 1
+	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
+	messageSize = is_comm_get_data(comm, _DID_GPS_NAV, 0, 0, 200);
+	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+	{
+		printf("Failed to encode and write get GPS message\r\n");
+		return -5;
+	}
+#endif
+
+#if 0
+	// Ask for IMU data 10 times a second - this could be as high as 1000 times a second (a period of 1)
+	messageSize = is_comm_get_data(comm, _DID_IMU_DUAL, 0, 0, 100);
+	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+	{
+		printf("Failed to encode and write get IMU message\r\n");
+		return -6;
+	}
+#endif
+	return 0;
+}
+
+
 int main(int argc, char* argv[])
 {
 	if (argc < 2)
@@ -80,66 +160,34 @@ int main(int argc, char* argv[])
 	}
 
 
-	int messageSize;
+	int error;
 
-#if 0
-	// STEP 4: Set configuration
-
-	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
-	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	messageSize = is_comm_set_data(&comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float)*3, rotation);
-	if (messageSize < 1)
+	// STEP 4: Stop any message broadcasting
+	if (error = stop_message_broadcasting(&serialPort, &comm))
 	{
-		printf("Failed to set INS rotation\r\n");
-		return -3;
+		return error;
 	}
-	serialPortWrite(&serialPort, buffer, messageSize);
+
+
+#if 0	// STEP 5: Set configuration
+	if (error = set_configuration(&serialPort, &comm))
+	{
+		return error; 
+	}
 #endif
 
-	// STEP 5: Enable message broadcasting
-
-	// Stop all broadcasts on the device
-	messageSize = is_comm_stop_broadcasts(&comm);
-	if (messageSize < 1)
-	{
-		printf("Failed to encode stop broadcasts message\r\n");
-		return -3;
-	}
-	serialPortWrite(&serialPort, buffer, messageSize);
-
-	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
-	messageSize = is_comm_get_data(&comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
-	if (messageSize < 1)
-	{
-		printf("Failed to encode get INS message\r\n");
-		return -4;
-	}
-	serialPortWrite(&serialPort, buffer, messageSize);
-
-#if 1
-	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
-	messageSize = is_comm_get_data(&comm, _DID_GPS_NAV, 0, 0, 200);
-	if (messageSize < 1)
-	{
-		printf("Failed to encode get GPS message\r\n");
-		return -4;
-	}
-	serialPortWrite(&serialPort, buffer, messageSize);
+	
+#if 1	// STEP 6: Enable message broadcasting
+	if (error = enable_message_broadcasting_RMC(&serialPort, &comm))
+#else
+	if (error = enable_message_broadcasting_get_data(&serialPort, &comm))
 #endif
-
-#if 0
-	// Ask for IMU data 10 times a second - this could be as high as 1000 times a second (a period of 1)
-	messageSize = is_comm_get_data(&comm, _DID_IMU_DUAL, 0, 0, 100);
-	if (messageSize < 1)
 	{
-		printf("Failed to encode get IMU message\r\n");
-		return -5;
+		return error;
 	}
-	serialPortWrite(&serialPort, buffer, messageSize);
-#endif
 
 
-	// STEP 6: Handle received data
+	// STEP 7: Handle received data
 	int count;
 	uint8_t inByte;
 

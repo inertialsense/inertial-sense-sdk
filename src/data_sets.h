@@ -903,8 +903,7 @@ typedef struct PACKED
 
 /** Realtime Message Controller (used in rmc_t). 
 	The data sets available through RMC are broadcast at the availability of the data.  A goal of RMC is 
-	to provide updates from each onboard sensor as fast as possible with minimal latency.  However, these
-	onboard sensors output data at different data rates and don't all correspond in time.  The RMC is 
+	to provide updates from each onboard sensor as fast as possible with minimal latency.  The RMC is 
 	provided so that broadcast of sensor data is done as soon as it becomes available.   The exception to
 	this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
 */
@@ -916,26 +915,27 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_USB			0x00000004
 #define RMC_OPTIONS_PRESERVE_CTRL		0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
 
-#define RMC_BITS_INS1					0x0000000000000001
-#define RMC_BITS_INS2					0x0000000000000002
-#define RMC_BITS_INS3					0x0000000000000004
-#define RMC_BITS_INS4					0x0000000000000008
-#define RMC_BITS_DUAL_IMU				0x0000000000000010
-#define RMC_BITS_PREINTEGRATED_IMU		0x0000000000000020
-#define RMC_BITS_BAROMETER 				0x0000000000000040
-#define RMC_BITS_MAGNETOMETER1			0x0000000000000080
-#define RMC_BITS_MAGNETOMETER2			0x0000000000000100
-#define RMC_BITS_GPS_NAV				0x0000000000000200
-#define RMC_BITS_GPS1_NAV				0x0000000000000400
-#define RMC_BITS_GPS2_NAV				0x0000000000000800
-#define RMC_BITS_GPS1_RAW				0x0000000000001000
-#define RMC_BITS_GPS2_RAW				0x0000000000002000
-#define RMC_BITS_GPS1_SAT				0x0000000000004000
-#define RMC_BITS_GPS2_SAT				0x0000000000008000
-#define RMC_BITS_GPS_RTK_NAV			0x0000000000010000
-#define RMC_BITS_GPS_RTK_MISC			0x0000000000020000
-#define RMC_BITS_GPS_BASE				0x0000000000040000
-#define RMC_BITS_STROBE_IN_TIME			0x0000000000080000
+																// RMC message data rates:
+#define RMC_BITS_INS1					0x0000000000000001		// rmc.insPeriodMs (4ms default)
+#define RMC_BITS_INS2					0x0000000000000002		// "
+#define RMC_BITS_INS3					0x0000000000000004		// "
+#define RMC_BITS_INS4					0x0000000000000008		// "
+#define RMC_BITS_DUAL_IMU				0x0000000000000010		// DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+#define RMC_BITS_PREINTEGRATED_IMU		0x0000000000000020		// "
+#define RMC_BITS_BAROMETER 				0x0000000000000040		// ~8ms
+#define RMC_BITS_MAGNETOMETER1			0x0000000000000080		// ~10ms
+#define RMC_BITS_MAGNETOMETER2			0x0000000000000100		// "
+#define RMC_BITS_GPS_NAV				0x0000000000000200		// 200ms
+#define RMC_BITS_GPS1_NAV				0x0000000000000400		// "
+#define RMC_BITS_GPS2_NAV				0x0000000000000800		// "
+#define RMC_BITS_GPS1_RAW				0x0000000000001000		// "
+#define RMC_BITS_GPS2_RAW				0x0000000000002000		// "
+#define RMC_BITS_GPS1_SAT				0x0000000000004000		// 1s
+#define RMC_BITS_GPS2_SAT				0x0000000000008000		// "
+#define RMC_BITS_GPS_RTK_NAV			0x0000000000010000		// 200ms
+#define RMC_BITS_GPS_RTK_MISC			0x0000000000020000		// "
+#define RMC_BITS_GPS_BASE				0x0000000000040000		// "
+#define RMC_BITS_STROBE_IN_TIME			0x0000000000080000		// On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE		0x0000000000100000
 
 #define RMC_BITS_INTERNAL_PPD			0x4000000000000000
