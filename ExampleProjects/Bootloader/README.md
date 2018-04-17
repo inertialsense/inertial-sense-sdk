@@ -1,6 +1,6 @@
 # SDK: Firmware Update (Bootloader) Example Project
 
-This example project demonstrates firmware update with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISBootloaderExample](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Bootloader) project demonstrates firmware update with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
@@ -9,7 +9,7 @@ This example project demonstrates firmware update with the <a href="https://iner
 * [ISBootloaderExample.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Bootloader/ISBootloaderExample.c)
 
 #### SDK Files
- 
+
 * [data_sets.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/data_sets.c)
 * [data_sets.h](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/data_sets.h)
 * [inertialSenseBootLoader.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/inertialSenseBootLoader.c)
@@ -132,4 +132,4 @@ C:\InertialSenseSDK\ExampleProjects\Bootloader\VS_project\Release\ISBootloaderEx
 
 ## Summary
 
-That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/InertialSenseSDK">InertialSenseSDK</a> github repository, and we will be happy to help.
+That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/InertialSenseSDK">InertialSenseSDK</a> GitHub repository, and we will be happy to help.
