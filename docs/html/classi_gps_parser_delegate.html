@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.5</span>
+   &#160;<span id="projectnumber">Release 1.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -97,6 +97,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a94a8e9fc5ffaf0635a5c19d468701a48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fea12f01b07177946f1ce10cd26eb9a"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classi_gps_parser_delegate.html#a1fea12f01b07177946f1ce10cd26eb9a">OnStationReceived</a> (const <a class="el" href="classc_gps_parser.html">cGpsParser</a> *parser, <a class="el" href="structsta__t.html">sta_t</a> *sta)</td></tr>
 <tr class="separator:a1fea12f01b07177946f1ce10cd26eb9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a938592121441395308150fa8d1a9faf3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classi_gps_parser_delegate.html#a938592121441395308150fa8d1a9faf3">OnIonosphereModelUtcAlmanacReceived</a> (const <a class="el" href="classc_gps_parser.html">cGpsParser</a> *parser, <a class="el" href="struction__model__utc__alm__t.html">ion_model_utc_alm_t</a> *ionUtcAlm)</td></tr>
+<tr class="separator:a938592121441395308150fa8d1a9faf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Gps parser interface. A gps parser handles parsing messages common to all types of gps data formats. </p>
@@ -204,6 +206,51 @@ Public Member Functions</h2></td></tr>
 </dl>
 
 <p class="definition">Definition at line <a class="el" href="_gps_parser_8h_source.html#l00090">90</a> of file <a class="el" href="_gps_parser_8h_source.html">GpsParser.h</a>.</p>
+
+</div>
+</div>
+<a id="a938592121441395308150fa8d1a9faf3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a938592121441395308150fa8d1a9faf3">&#9670;&nbsp;</a></span>OnIonosphereModelUtcAlmanacReceived()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void iGpsParserDelegate::OnIonosphereModelUtcAlmanacReceived </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classc_gps_parser.html">cGpsParser</a> *&#160;</td>
+          <td class="paramname"><em>parser</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struction__model__utc__alm__t.html">ion_model_utc_alm_t</a> *&#160;</td>
+          <td class="paramname"><em>ionUtcAlm</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Executes when ionosphere model and utc is received. Data is not valid after this callback completes. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">parser</td><td>the parser </td></tr>
+    <tr><td class="paramname">ionUtcAlm</td><td>the ionosphere model, utc info and almanac </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="_gps_parser_8h_source.html#l00137">137</a> of file <a class="el" href="_gps_parser_8h_source.html">GpsParser.h</a>.</p>
 
 </div>
 </div>
@@ -340,7 +387,7 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Executes when sbs message received </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Executes when sbs message received. Data is not valid after this callback completes. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">parser</td><td>the parser </td></tr>
     <tr><td class="paramname">sbs</td><td>the sbs message </td></tr>

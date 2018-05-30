@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.5</span>
+   &#160;<span id="projectnumber">Release 1.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -82,8 +82,8 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:acad4cdadbdbaccd2b3c761dd96a0740f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31cd5b7fc9a05b14335ac744f2f368a5"><td class="memItemLeft" align="right" valign="top">static uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_data_mappings.html#a31cd5b7fc9a05b14335ac744f2f368a5">GetSize</a> (uint32_t dataId)</td></tr>
 <tr class="separator:a31cd5b7fc9a05b14335ac744f2f368a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c8312fb1402bb83ef456e4adf2bb033"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_data_mappings.html#a4c8312fb1402bb83ef456e4adf2bb033">StringToData</a> (const char *stringBuffer, int stringLength, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *hdr, uint8_t *dataBuffer, const <a class="el" href="structdata__info__t.html">data_info_t</a> &amp;info)</td></tr>
-<tr class="separator:a4c8312fb1402bb83ef456e4adf2bb033"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9c744b23bf1bd16e430c9e3fa485c01"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_data_mappings.html#ac9c744b23bf1bd16e430c9e3fa485c01">StringToData</a> (const char *stringBuffer, int stringLength, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *hdr, uint8_t *dataBuffer, const <a class="el" href="structdata__info__t.html">data_info_t</a> &amp;info, int radix=10)</td></tr>
+<tr class="separator:ac9c744b23bf1bd16e430c9e3fa485c01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14dc8cac4cab36bb9e4717021695cda2"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_data_mappings.html#a14dc8cac4cab36bb9e4717021695cda2">DataToString</a> (const <a class="el" href="structdata__info__t.html">data_info_t</a> &amp;info, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *hdr, const uint8_t *dataBuffer, <a class="el" href="_i_s_data_mappings_8h.html#a572efc6b591fba1f5337c08e9900580c">data_mapping_string_t</a> stringBuffer)</td></tr>
 <tr class="separator:a14dc8cac4cab36bb9e4717021695cda2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6fe58714d1a4c9557287f231683e5063"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_data_mappings.html#a6fe58714d1a4c9557287f231683e5063">GetTimestamp</a> (const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *hdr, const uint8_t *buf)</td></tr>
@@ -151,7 +151,7 @@ Static Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the data can be retrieved, false otherwise </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01489">1489</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01495">1495</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
 
 </div>
 </div>
@@ -211,7 +211,7 @@ Static Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if success, false if error </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01348">1348</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01354">1354</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
 
 </div>
 </div>
@@ -246,7 +246,7 @@ Static Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>data set name or NULL if not found </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01167">1167</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01173">1173</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
 
 </div>
 </div>
@@ -274,7 +274,7 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get the data id to name/info lookup table </p><dl class="section return"><dt>Returns</dt><dd>the global map lookup table </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01256">1256</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01262">1262</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
 
 </div>
 </div>
@@ -309,7 +309,7 @@ Static Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the data id size or 0 if not found or unknown </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01262">1262</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01268">1268</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
 
 </div>
 </div>
@@ -355,12 +355,12 @@ Static Public Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>timestamp, or 0.0 if no timestamp available </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01449">1449</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01455">1455</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a4c8312fb1402bb83ef456e4adf2bb033"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c8312fb1402bb83ef456e4adf2bb033">&#9670;&nbsp;</a></span>StringToData()</h2>
+<a id="ac9c744b23bf1bd16e430c9e3fa485c01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9c744b23bf1bd16e430c9e3fa485c01">&#9670;&nbsp;</a></span>StringToData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -396,7 +396,13 @@ Static Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="structdata__info__t.html">data_info_t</a> &amp;&#160;</td>
-          <td class="paramname"><em>info</em>&#160;</td>
+          <td class="paramname"><em>info</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>radix</em> = <code>10</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -417,12 +423,13 @@ Static Public Member Functions</h2></td></tr>
     <tr><td class="paramname">hdr</td><td>packet header, NULL means dataBuffer is the entire data structure </td></tr>
     <tr><td class="paramname">dataBuffer</td><td>packet buffer </td></tr>
     <tr><td class="paramname">info</td><td>metadata about the field to convert </td></tr>
+    <tr><td class="paramname">radix</td><td>(base 10, base 16, etc.) to use if the field is a number field, ignored otherwise </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if success, false if error </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01268">1268</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8cpp_source.html#l01274">1274</a> of file <a class="el" href="_i_s_data_mappings_8cpp_source.html">ISDataMappings.cpp</a>.</p>
 
 </div>
 </div>

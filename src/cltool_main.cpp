@@ -224,17 +224,21 @@ static int cltool_createHost()
 	if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
 	{
 		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-		return -1;	// Failed to open serial port
+		return -1;
 	}
 	else if (g_commandLineOptions.flashConfig.length() != 0 && !cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig))
 	{
+		cout << "Failed to update flash config" << endl;
 		return -1;
 	}
 	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.host))
 	{
 		cout << "Failed to create host at " << g_commandLineOptions.host << endl;
-		return -1; // Failed to open host
+		return -1;
 	}
+
+	inertialSenseInterface.StopBroadcasts();
+
 	while (!g_inertialSenseDisplay.ControlCWasPressed())
 	{
 		inertialSenseInterface.Update();
@@ -368,6 +372,8 @@ int cltool_main(int argc, char* argv[])
 	// Parse command line options
 	if (!cltool_parseCommandLine(argc, argv))
 	{
+		g_inertialSenseDisplay.ShutDown();
+
 		// parsing failed
 		return -1;
 	}
@@ -378,6 +384,8 @@ int cltool_main(int argc, char* argv[])
 	{
 		cltool_outputHelp();
 	}
-	
+
+	g_inertialSenseDisplay.ShutDown();
+
 	return result;
 }

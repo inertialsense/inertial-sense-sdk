@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['a',['A',['../structeph__t.html#a552c43589298f592f94e14ecf799b0ff',1,'eph_t']]],
+  ['a',['A',['../structeph__t.html#a552c43589298f592f94e14ecf799b0ff',1,'eph_t::A()'],['../structalm__t.html#a5b341d33d238554358be7d5064f1d9ff',1,'alm_t::A()']]],
   ['abs_5fvec2',['abs_Vec2',['../_i_s_matrix_8c.html#abb860c88c13d56becc80fc13ff81c7a3',1,'abs_Vec2(Vector2 result, const Vector2 v):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#abb860c88c13d56becc80fc13ff81c7a3',1,'abs_Vec2(Vector2 result, const Vector2 v):&#160;ISMatrix.c']]],
   ['abs_5fvec2d',['abs_Vec2d',['../_i_s_matrix_8c.html#a1e4867c0e07ee4033b1c74c32016e5ca',1,'abs_Vec2d(Vector2d result, const Vector2d v):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#a1e4867c0e07ee4033b1c74c32016e5ca',1,'abs_Vec2d(Vector2d result, const Vector2d v):&#160;ISMatrix.c']]],
   ['abs_5fvec3',['abs_Vec3',['../_i_s_matrix_8c.html#ad8f25ed52ce200adb17ef3605a5e82a5',1,'abs_Vec3(Vector3 result, const Vector3 v):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#ad8f25ed52ce200adb17ef3605a5e82a5',1,'abs_Vec3(Vector3 result, const Vector3 v):&#160;ISMatrix.c']]],
@@ -28,6 +28,8 @@ var searchData=
   ['alignvelerror',['alignVelError',['../struct_p_a_c_k_e_d.html#ae71dcd3f5d3d657553a4d318388df598',1,'PACKED']]],
   ['allocate_5fm_5fraw',['ALLOCATE_M_RAW',['../_gps_parser_8cpp.html#a0c3b92111acd780de5d7c7d0fc43ebeb',1,'GpsParser.cpp']]],
   ['allocate_5fm_5frtcm',['ALLOCATE_M_RTCM',['../_gps_parser_8cpp.html#a684bb41a65461b7e9985286aea1d23d7',1,'GpsParser.cpp']]],
+  ['alm',['alm',['../struction__model__utc__alm__t.html#a56243805d77e73eb0bca91ed562d16d4',1,'ion_model_utc_alm_t']]],
+  ['alm_5ft',['alm_t',['../structalm__t.html',1,'']]],
   ['alpha',['alpha',['../structs_lpf_o0.html#af7a05a69313f3471d6200125034d5aac',1,'sLpfO0::alpha()'],['../structs_lpf_o1.html#a8ce12024c314694e2bc4aa2e2deeefd9',1,'sLpfO1::alpha()']]],
   ['ana1',['ana1',['../struct_p_a_c_k_e_d.html#a4e23e92341f5191d1ea55fa3ebcd6c5f',1,'PACKED']]],
   ['ana3',['ana3',['../struct_p_a_c_k_e_d.html#a33336aa20c7a943e3b71ea835f72d7e4',1,'PACKED']]],

@@ -312,9 +312,10 @@ int sendRawDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dat
 
 /**
 Disables broadcasts of all messages on all ports.
+@param pHandle the pHandle to disable broadcasts on, -1 for all
 */
-void disableAllBroadcasts(void);
-void disableAllBroadcastsInstance(CMHANDLE cmInstance);
+void disableAllBroadcasts(int pHandle);
+void disableAllBroadcastsInstance(CMHANDLE cmInstance, int pHandle);
 
 /**
 Get the most recent status of the com manager

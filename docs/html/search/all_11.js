@@ -6,7 +6,6 @@ var searchData=
   ['qe2b2eulernedecef',['qe2b2EulerNedEcef',['../_i_s_pose_8c.html#aad41f0c06f1e8a3f76d987bcb77a8382',1,'qe2b2EulerNedEcef(Vector3 eul, const Vector4 qe2b, const Vector3d ecef):&#160;ISPose.c'],['../_i_s_pose_8h.html#a9452fda48077a4f0ca5c8fe58f0b56e3',1,'qe2b2EulerNedEcef(Vector3 theta, const Vector4 qe2b, const Vector3d ecef):&#160;ISPose.c']]],
   ['qe2b2eulernedlla',['qe2b2EulerNedLLA',['../_i_s_pose_8c.html#a2deed11b3baa15dfcf716c10c028c575',1,'qe2b2EulerNedLLA(Vector3 eul, const Vector4 qe2b, const Vector3d lla):&#160;ISPose.c'],['../_i_s_pose_8h.html#a2deed11b3baa15dfcf716c10c028c575',1,'qe2b2EulerNedLLA(Vector3 eul, const Vector4 qe2b, const Vector3d lla):&#160;ISPose.c']]],
   ['qn2b',['qn2b',['../struct_p_a_c_k_e_d.html#ad2e9d489a5ccbca27cd121b2d4723c9e',1,'PACKED']]],
-  ['quald',['qualD',['../struct_p_a_c_k_e_d.html#a9ededdf96fe39324ff113d0c3c381fda',1,'PACKED']]],
   ['quall',['qualL',['../struct_p_a_c_k_e_d.html#ab017065a1b20ffc99e97e57d8322c8f2',1,'PACKED']]],
   ['qualp',['qualP',['../struct_p_a_c_k_e_d.html#a3560a86e3f5370956dce72ad1b7f1678',1,'PACKED']]],
   ['quat',['Quat',['../_i_s_constants_8h.html#a1385e22ba13fe7e60b33b7fb408019ac',1,'ISConstants.h']]],

@@ -149,8 +149,9 @@ public:
 				}
 				else
 				{
-					// message length only includes the message bytes, not the header or 3 CRC bytes at the end
-					// plus 2 because we will be appending the first byte of the message or CRC bytes
+					// set the bytes left to read (nbyte)
+					// use + 2 because we already read the first byte of the message here to bring us
+					// to a total length of 4
 					m_rtcm.nbyte = msgLength + 2;
 				}
 			}
@@ -183,6 +184,8 @@ public:
 				{
 					if (GetDelegate()->OnPacketReceived(this, m_rtcm.buff, m_rtcm.len))
 					{
+						// remove checksum from length
+						m_rtcm.len = lenWithoutCrc;
 						ParseMessage(m_rtcm.buff, m_rtcm.len);
 					}
 				}
@@ -413,6 +416,10 @@ public:
 
 		case DATA_TYPE_ANTENNA_POSITION:
 			GetDelegate()->OnStationReceived(this, &m_raw.sta);
+			break;
+
+		case DATA_TYPE_ION_UTC_ALMANAC:
+			GetDelegate()->OnIonosphereModelUtcAlmanacReceived(this, &m_raw.ionUtcAlm);
 			break;
 		}
 

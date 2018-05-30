@@ -339,10 +339,10 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 	if (opened)
 	{
 		// configure as RTK rover
-		uint32_t cfgBits = SYS_CFG_BITS_RTK_ROVER;
+		uint32_t cfgBits = RTK_CFG_BITS_GPS1_RTK_ROVER;
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
-			sendDataComManager((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, sysCfgBits));
+			sendDataComManager((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
 		}
 		if (m_clientStream == NULLPTR)
 		{
@@ -388,8 +388,8 @@ bool InertialSense::CreateHost(const string& ipAndPort)
 	if (opened)
 	{
 		// configure as RTK base station
-		uint32_t cfgBits = SYS_CFG_BITS_RTK_BASE_STATION;
-		sendDataComManager(0, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, sysCfgBits));
+		uint32_t cfgBits = RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0;
+		sendDataComManager(0, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
 	}
 	return opened;
 }
@@ -575,14 +575,6 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
 
-	for (size_t i = 0; i < state.size(); i++)
-	{
-		state[i].param.error = (char*)MALLOC(1024);
-		state[i].param.errorLength = 1024;
-		memset(&state[i].serial, 0, sizeof(state[i].serial));
-		serialPortSetPort(&state[i].serial, portStrings[i].c_str());
-	}
-
 	// test file exists
 	{
 		ifstream tmpStream(fileName);
@@ -600,7 +592,10 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 		// for each port requested, setup a thread to do the bootloader for that port
 		for (size_t i = 0; i < state.size(); i++)
 		{
+			state[i].param.error = (char*)MALLOC(1024);
+			state[i].param.errorLength = 1024;
 			serialPortPlatformInit(&state[i].serial);
+			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
 			state[i].param.uploadProgress = uploadProgress;
 			state[i].param.verifyProgress = verifyProgress;
 			state[i].param.fileName = fileName.c_str();
@@ -627,7 +622,10 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 
 	for (size_t i = 0; i < state.size(); i++)
 	{
-		FREE(state[i].param.error);
+		if (state[i].param.error != NULLPTR)
+		{
+			FREE(state[i].param.error);
+		}
 	}
 
 	return results;

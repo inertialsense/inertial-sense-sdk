@@ -374,9 +374,12 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration)" << endl;
-	cout << "    -flashConfig" << boldOff << "    read and print to screen flash config" << endlbOn;
+	cout << "    -flashConfig" << boldOff << "    read and print to screen flash config \"keys\" and \"values\"" << endlbOn;
 	cout << "    -flashConfig=key=value|key=value " << boldOff <<  endlbOn;
-	cout << "        " << boldOff << "            set key / value pairs in flash config" << endlbOn;
+	cout << "        " << boldOff << "            set key / value pairs in flash config. (Run -flashConfig to list all keys)" << endlbOn;
+	cout << "EXAMPLES" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig                      " << EXAMPLE_SPACE_1 << boldOff << "# Read from device and print all keys and values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig=insRotation[0]=1.5708" << EXAMPLE_SPACE_1 << boldOff << "# Set INS X rotation in radians (90 deg)" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Client / server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;
@@ -435,7 +438,9 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 				else
 				{
 					const data_info_t& info = flashMap.at(keyAndValue[0]);
-					cISDataMappings::StringToData(keyAndValue[1].c_str(), (int)(keyAndValue[1].length()), NULL, (uint8_t*)&flashConfig, info);
+					int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
+					int substrIndex = 2 * (radix == 16);
+					cISDataMappings::StringToData(keyAndValue[1].substr(substrIndex).c_str(), (int)(keyAndValue[1].length()), NULL, (uint8_t*)&flashConfig, info, radix);
 					cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
 				}
 			}

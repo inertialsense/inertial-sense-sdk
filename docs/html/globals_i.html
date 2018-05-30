@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.5</span>
+   &#160;<span id="projectnumber">Release 1.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -96,11 +96,11 @@ $(function() {
 <li>inl2_variance_t
 : <a class="el" href="data__sets_8h.html#ad30b4fe62d7fb90ae719d67633dbfcdf">data_sets.h</a>
 </li>
-<li>INLINE
-: <a class="el" href="_i_s_constants_8h.html#a2eb6f9e0395b47b8d5e3eeae4fe0c116">ISConstants.h</a>
-</li>
 <li>inline
 : <a class="el" href="_i_s_pose_8h.html#a00d24c7231be28dbaf71f5408f30e44c">ISPose.h</a>
+</li>
+<li>INLINE
+: <a class="el" href="_i_s_constants_8h.html#a2eb6f9e0395b47b8d5e3eeae4fe0c116">ISConstants.h</a>
 </li>
 <li>ins_1_t
 : <a class="el" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">data_sets.h</a>
@@ -131,6 +131,9 @@ $(function() {
 </li>
 <li>INS_STATUS_ATT_ALIGN_GOOD
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf5970bf183f43c2a7a669fab7c394fbf">data_sets.h</a>
+</li>
+<li>INS_STATUS_BASE_POSITION_MOVING
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca9244dae691f365a622b2be768a723d49">data_sets.h</a>
 </li>
 <li>INS_STATUS_FINE_ALIGNED_MASK
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca68cf9b2842295245bfe3b13dc0f1552d">data_sets.h</a>
@@ -171,8 +174,11 @@ $(function() {
 <li>INS_STATUS_RTOS_TASK_PERIOD_OVERRUN
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca04015cafe4c98b3cccd163098bd58e1b">data_sets.h</a>
 </li>
-<li>INS_STATUS_RX_BASE_DIFFERENTIAL
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca7e2ea099a10f51b35236fb8b8e3cb671">data_sets.h</a>
+<li>INS_STATUS_RX_BASE_OBSERVATIONS_EPHEMERIS
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca0555671d541448bf1be2a7bbc5042e8b">data_sets.h</a>
+</li>
+<li>INS_STATUS_RX_BASE_POSITION
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca0865f4438268e974ace01fe0e38b3f8b">data_sets.h</a>
 </li>
 <li>INS_STATUS_SOLUTION
 : <a class="el" href="data__sets_8h.html#aabf5c609d0e4745f3fe7954cbefbc235">data_sets.h</a>
@@ -235,8 +241,8 @@ $(function() {
 , <a class="el" href="_i_s_matrix_8h.html#abd9e28a9954ff9c72157bff71b9249dd">ISMatrix.h</a>
 </li>
 <li>inv_MatN()
-: <a class="el" href="_i_s_matrix_8c.html#a47eaad96554902b5cc19b86da8ca2ec7">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a47eaad96554902b5cc19b86da8ca2ec7">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a47eaad96554902b5cc19b86da8ca2ec7">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a47eaad96554902b5cc19b86da8ca2ec7">ISMatrix.c</a>
 </li>
 <li>IO_CFG_INPUT_STROBE_TRIGGER_HIGH
 : <a class="el" href="data__sets_8h.html#aa151b96a32b57f6c700233cff1602f8aa698c1455374b3f220e76283f749906a6">data_sets.h</a>
@@ -284,12 +290,12 @@ $(function() {
 : <a class="el" href="_i_s_comm_8h.html#a8f9086b9c33b305c89fc841a8f10a4a7">ISComm.h</a>
 </li>
 <li>is_comm_get_data()
-: <a class="el" href="_i_s_comm_8c.html#a53bacac9edb5801f3416a504e6a19956">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#a53bacac9edb5801f3416a504e6a19956">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#a53bacac9edb5801f3416a504e6a19956">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#a53bacac9edb5801f3416a504e6a19956">ISComm.c</a>
 </li>
 <li>is_comm_get_data_rmc()
-: <a class="el" href="_i_s_comm_8c.html#a2c516e5e416c7601de415a45ca05841a">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#a2c516e5e416c7601de415a45ca05841a">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#a2c516e5e416c7601de415a45ca05841a">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#a2c516e5e416c7601de415a45ca05841a">ISComm.c</a>
 </li>
 <li>is_comm_init()
 : <a class="el" href="_i_s_comm_8c.html#ab81821036e21d6afe0fca0f1c087dac3">ISComm.c</a>
@@ -300,8 +306,8 @@ $(function() {
 , <a class="el" href="_i_s_comm_8h.html#a9ee32c6b88cfb4ea9697e1a1b2b6b657">ISComm.h</a>
 </li>
 <li>is_comm_set_data()
-: <a class="el" href="_i_s_comm_8c.html#ac276c88fef83c901d29f5058dff79aa7">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#ac276c88fef83c901d29f5058dff79aa7">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#ac276c88fef83c901d29f5058dff79aa7">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#ac276c88fef83c901d29f5058dff79aa7">ISComm.c</a>
 </li>
 <li>is_comm_stop_broadcasts()
 : <a class="el" href="_i_s_comm_8h.html#a16da834a4423c99a0935aea99ae431a1">ISComm.h</a>
@@ -323,8 +329,8 @@ $(function() {
 , <a class="el" href="_i_s_comm_8h.html#abd9a92256006a595860483725032f486">ISComm.h</a>
 </li>
 <li>is_encode_binary_packet()
-: <a class="el" href="_i_s_comm_8h.html#a39c8da4340fdb19cd3db3afdd5b1097b">ISComm.h</a>
-, <a class="el" href="_i_s_comm_8c.html#a5b68834d97874ca7fe0b54ad4943a733">ISComm.c</a>
+: <a class="el" href="_i_s_comm_8c.html#a5b68834d97874ca7fe0b54ad4943a733">ISComm.c</a>
+, <a class="el" href="_i_s_comm_8h.html#a39c8da4340fdb19cd3db3afdd5b1097b">ISComm.h</a>
 </li>
 <li>IS_LOG_FILE_PREFIX
 : <a class="el" href="_device_log_8h.html#a95335e05336c16fb604061b4cd451120">DeviceLog.h</a>
@@ -336,28 +342,28 @@ $(function() {
 : <a class="el" href="_device_log_8h.html#a363d278fd17d4e1691efc1385a5f8b3b">DeviceLog.h</a>
 </li>
 <li>ISSocketClose()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketFrameworkInitialize()
 : <a class="el" href="_i_s_tcp_client_8h.html#ae367046426f61690f26864d75ce133cf">ISTcpClient.h</a>
 , <a class="el" href="_i_s_tcp_client_8cpp.html#ae367046426f61690f26864d75ce133cf">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketFrameworkShutdown()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketRead()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketSetBlocking()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketSetReadTimeout()
-: <a class="el" href="_i_s_tcp_client_8h.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.h</a>
-, <a class="el" href="_i_s_tcp_client_8cpp.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.cpp</a>
+: <a class="el" href="_i_s_tcp_client_8cpp.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.cpp</a>
+, <a class="el" href="_i_s_tcp_client_8h.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.h</a>
 </li>
 <li>ISSocketWrite()
 : <a class="el" href="_i_s_tcp_client_8cpp.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISTcpClient.cpp</a>

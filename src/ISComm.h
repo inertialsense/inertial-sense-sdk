@@ -218,9 +218,6 @@ int is_comm_stop_broadcasts(is_comm_instance_t* instance);
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
 
-/** Maximum number of messages that may be broadcast simultaneously */
-#define MAX_NUM_BCAST_MSGS 16
-
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1
 

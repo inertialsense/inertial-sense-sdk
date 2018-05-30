@@ -19,9 +19,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-	// assign function pointers for common platforms such as Windows
-	// returns non-zero if success, 0 if platform not implemented
-	int serialPortPlatformInit(serial_port_t* serialPort);
+// zero the struct then assign function pointers for common platforms such as Windows
+// returns non-zero if success, 0 if platform not implemented
+int serialPortPlatformInit(serial_port_t* serialPort);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['m0',['M0',['../structeph__t.html#a537ac0b9d94ba65af72592d2c418ff78',1,'eph_t']]],
+  ['m0',['M0',['../structeph__t.html#a537ac0b9d94ba65af72592d2c418ff78',1,'eph_t::M0()'],['../structalm__t.html#a432eef10c6060ab69ca419c3d51d253d',1,'alm_t::M0()']]],
   ['m_5faltclamptoground',['m_altClampToGround',['../classc_device_log.html#ab266bf4e6d44831b1510600bfb05d3db',1,'cDeviceLog']]],
   ['m_5fchunk',['m_chunk',['../classc_device_log_serial.html#a4d1f6166e0a5d5e752a7a956dc34e9cc',1,'cDeviceLogSerial']]],
   ['m_5fchunks',['m_chunks',['../classc_device_log_sorted.html#a89bc40fe085cef07fa3c81e9e7e9617c',1,'cDeviceLogSorted']]],
@@ -59,9 +59,6 @@ var searchData=
   ['mode',['mode',['../structprcopt__t.html#a80b995a9753003772603d1800612ac52',1,'prcopt_t']]],
   ['modear',['modear',['../structprcopt__t.html#a8567f4e05c4db09831f0ee2f46e67888',1,'prcopt_t']]],
   ['msg',['msg',['../structsbsmsg__t.html#a2bdb759f4c9a2de63d5ee899ad9b2a77',1,'sbsmsg_t']]],
-  ['msgs',['msgs',['../structcom__manager__t.html#aa472f53336f6e49aff7eb9d76c0c5a4e',1,'com_manager_t']]],
-  ['msgshead',['msgsHead',['../structcom__manager__t.html#adf73e875a1a57caa872662ca6c7a1b33',1,'com_manager_t']]],
-  ['msgstail',['msgsTail',['../structcom__manager__t.html#a0bf9ddb64caeea7eecc3a71967debc77',1,'com_manager_t']]],
   ['msl',['msl',['../struct_p_a_c_k_e_d.html#ac89360fd6842093781e324fc4f2a6d77',1,'PACKED']]],
   ['mslbar',['mslBar',['../struct_p_a_c_k_e_d.html#ab05803bd68103a21b4d34d06b58a117e',1,'PACKED']]]
 ];

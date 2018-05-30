@@ -14,6 +14,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 
+/** Maximum number of messages that may be broadcast simultaneously, per port.
+Since most messages use the RMC (real-time message controller) now, this can be fairly low */
+#define MAX_NUM_BCAST_MSGS 8
+
 // allow packet continuation or not. If enabled, an extra 1K buffer is allocated globally for each pHandle instance.
 #define ENABLE_PACKET_CONTINUATION 0
 
@@ -50,29 +54,19 @@ typedef struct
 /* Contains data that determines what messages are being broadcast */
 typedef struct
 {
-	/* Packet  */
 	pkt_info_t              pkt;
 
-	/* Broadcast specific data header (i.e. data size and offset) */
+	/* Broadcast specific data header (i.e. data id, size and offset) */
 	p_data_hdr_t            dataHdr;
 
-	/* Pointer and size of entire data set (not sub portion that is communicated) */
-	bufTxRxPtr_t            dataSet;
-
 	/* Broadcast period counter */
-	int                     counter;
+	int32_t                 counter;
 
 	/* Millisecond broadcast period intervals.  -1 = send once.  0 = disabled/unused/don't send. */
-	int                     period;
-
-	/* Linked list pointer.  0 indicates this is the head. */
-	void*                   llPrv;
-
-	/* Linked list pointer.  0 indicates this is the tail. */
-	void*                   llNxt;
+	int32_t                 period;
 
 	/* Port to broadcast on. */
-	int                     pHandle;
+	int32_t                 pHandle;
 } broadcast_msg_t;
 
 /* Contains data to implement ensured packet delivery */
@@ -144,9 +138,8 @@ typedef struct
 
 	asciiMessageMap_t* asciiMessages;
 	uint32_t asciiMessagesCount;
-	broadcast_msg_t msgs[MAX_NUM_BCAST_MSGS];
-	broadcast_msg_t* msgsHead;
-	broadcast_msg_t* msgsTail;
+	broadcast_msg_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
+	
 	int32_t lastEnsuredPacketIndex;
 
 	// Number of communication ports
@@ -318,7 +311,11 @@ pfnComManagerDisableBroadcasts disableBcastFnc
 	cmInstance->numHandes = numHandles;
 	cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
 	cmInstance->ensureRetryCount = retryCount;
-
+	
+	// allocate space for message broadcasts, in the future allow max broadcasts to be dynamically configured
+	cmInstance->broadcastMessages = (broadcast_msg_t*)MALLOC(MAX_NUM_BCAST_MSGS * sizeof(broadcast_msg_t));
+	memset(cmInstance->broadcastMessages, 0, MAX_NUM_BCAST_MSGS * sizeof(broadcast_msg_t));
+	
 	// Allocate ring buffers for serial reads / writes
 	cmInstance->ringBuffers = (ring_buffer_t*)MALLOC(sizeof(ring_buffer_t) * numHandles);
 	if (cmInstance->ringBuffers != 0)
@@ -565,11 +562,9 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 	com_manager_t* cmInstance = cmInstance_;
 	
 	// Send data (if necessary)
-	broadcast_msg_t* bcPtr = cmInstance->msgsHead;
-
-	while (bcPtr)
+	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
 	{
-		// Wait until buffer is empty enough.
+		// If send buffer does not have space, exit out
 		if (cmInstance->txFreeCallback && (bcPtr->pkt.txData.size > (uint32_t)cmInstance->txFreeCallback(cmInstance, bcPtr->pHandle)))
 		{
 			break;
@@ -581,7 +576,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 			disableBroadcastMsg(cmInstance, bcPtr);
 		}
 		// Broadcast messages
-		else
+		else if (bcPtr->period > 0)
 		{
 			// Check if counter has expired
 			if (++bcPtr->counter >= bcPtr->period)
@@ -595,9 +590,6 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 				}
 				sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
 			}
-
-			// Iterate to next message in message list
-			bcPtr = (broadcast_msg_t*)bcPtr->llNxt;
 		}
 	}
 
@@ -610,6 +602,11 @@ void freeComManagerInstance(CMHANDLE cmInstance_)
 	if (cmInstance_ != 0 && cmInstance_ != &g_cm)
 	{
 		com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
+		if (cmInstance->broadcastMessages != 0)
+		{
+			FREE(cmInstance->broadcastMessages);
+			cmInstance->broadcastMessages = 0;
+		}
 		if (cmInstance->ringBuffers != 0)
 		{
 			FREE(cmInstance->ringBuffers);
@@ -626,7 +623,7 @@ void freeComManagerInstance(CMHANDLE cmInstance_)
 			cmInstance->status = 0;
 		}
 
-		#if ENABLE_PACKET_CONTINUATION
+#if ENABLE_PACKET_CONTINUATION
 
 		if (cmInstance->con != 0)
 		{
@@ -634,7 +631,7 @@ void freeComManagerInstance(CMHANDLE cmInstance_)
 			cmInstance->con = 0;
 		}
 
-		#endif
+#endif
 
 		FREE(cmInstance);
 	}
@@ -1160,7 +1157,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 		break;
 
 	case PID_STOP_ALL_BROADCASTS:
-		disableAllBroadcastsInstance(cmInstance);
+		disableAllBroadcastsInstance(cmInstance, -1);
 
 		// Call disable all broadcast callback if exists
 		if (cmInstance->disableBcastFnc)
@@ -1216,36 +1213,45 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 {
 	com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
 	broadcast_msg_t* msg = 0;
-	int i;
 
 	// Validate the request
 	if (req->id >= DID_COUNT)
 	{
+		// invalid data id
 		return -1;
 	}
-
 	// Call RealtimeMessageController (RMC) handler
-	if (cmInstance->rmcHandler && (cmInstance->rmcHandler(cmInstance, pHandle, req) == 0))
+	else if (cmInstance->rmcHandler && (cmInstance->rmcHandler(cmInstance, pHandle, req) == 0))
 	{
-		return 0;	// Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
+		// Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
+		return 0;
 	}
-
 	// if size is 0 and offset is 0, set size to full data struct size
-	if (req->size == 0 && req->offset == 0 && req->id < _ARRAY_ELEMENT_COUNT(cmInstance->regData))
+	else if (req->size == 0 && req->offset == 0 && req->id < _ARRAY_ELEMENT_COUNT(cmInstance->regData))
 	{
 		req->size = cmInstance->regData[req->id].dataSet.size;
 	}
+	
+	// Copy reference to source data
+	bufTxRxPtr_t* dataSetPtr = &cmInstance->regData[req->id].dataSet;
+
+	// Abort if no data pointer is registered or offset + size is out of bounds
+	if (dataSetPtr->txPtr == 0 || dataSetPtr->size == 0)
+	{
+		return -1;
+	}
+	else if (req->offset + req->size > dataSetPtr->size)
+	{
+		req->offset = 0;
+		req->size = dataSetPtr->size;
+	}
 
 	// Search for matching message (i.e. matches pHandle, id, size, and offset)...
-	for (i = 0; i < MAX_NUM_BCAST_MSGS; i++)
+	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
 	{
-		if (cmInstance->msgs[i].pHandle == pHandle &&
-		cmInstance->msgs[i].dataHdr.id == req->id &&
-		cmInstance->msgs[i].dataHdr.size == req->size &&
-		cmInstance->msgs[i].dataHdr.offset == req->offset
-		)
+		if (bcPtr->pHandle == pHandle && bcPtr->dataHdr.id == req->id && bcPtr->dataHdr.size == req->size && bcPtr->dataHdr.offset == req->offset)
 		{
-			msg = &cmInstance->msgs[i];
+			msg = bcPtr;
 			break;
 		}
 	}
@@ -1253,33 +1259,20 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	// otherwise use the first available (period=0) message.
 	if (msg == 0)
 	{
-		for (i = 0; i < MAX_NUM_BCAST_MSGS; i++)
+		for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
 		{
-			if (cmInstance->msgs[i].period <= MSG_PERIOD_DISABLED)
+			if (bcPtr->period <= MSG_PERIOD_DISABLED)
 			{
-				msg = &cmInstance->msgs[i];
+				msg = bcPtr;
 				break;
 			}
 		}
 
 		if (msg == 0)
 		{
-			msg = &cmInstance->msgs[MAX_NUM_BCAST_MSGS - 1];
+			// use last slot, force overwrite
+			msg = cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS - 1;
 		}
-	}
-
-	// Copy reference to source data
-	msg->dataSet = cmInstance->regData[req->id].dataSet;
-
-	// Abort if no data pointer is registered or offset + size is out of bounds
-	if (msg->dataSet.txPtr == 0 || msg->dataSet.size == 0)
-	{
-		return -1;
-	}
-	else if (req->offset + req->size > msg->dataSet.size)
-	{
-		req->offset = 0;
-		req->size = msg->dataSet.size;
 	}
 
 	// Port handle
@@ -1297,7 +1290,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	msg->pkt.bodyHdr.ptr = (uint8_t *)&msg->dataHdr;
 	msg->pkt.bodyHdr.size = sizeof(msg->dataHdr);
 	msg->pkt.txData.size = req->size;
-	msg->pkt.txData.ptr = msg->dataSet.txPtr + req->offset;
+	msg->pkt.txData.ptr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
 
 	// Prep data if callback exists
 	if (cmInstance->regData[msg->dataHdr.id].preTxFnc)
@@ -1343,25 +1336,8 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	return 0;
 }
 
-void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int period_ms)
+void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t* msg, int period_ms)
 {
-	// Add to linked list if not already running
-	if (msg->period == MSG_PERIOD_DISABLED)
-	{
-		if (cmInstance->msgsHead)
-		{
-			// Non-empty linked list.  Add to head of linked list
-			cmInstance->msgsHead->llPrv = msg;
-			msg->llNxt = cmInstance->msgsHead;
-			cmInstance->msgsHead = msg;
-		}
-		else
-		{   // Empty linked list.  Add to head.
-			cmInstance->msgsHead = msg;
-			cmInstance->msgsTail = msg;
-		}
-	}
-
 	// Update broadcast period
 	if (period_ms > 0)
 	{
@@ -1377,65 +1353,33 @@ void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int per
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg)
 {
 	// Remove item from linked list
-	broadcast_msg_t* llPrv = (broadcast_msg_t*)msg->llPrv;
-	broadcast_msg_t* llNxt = (broadcast_msg_t*)msg->llNxt;
-	if (llPrv)   llPrv->llNxt = llNxt;
-	if (llNxt)   llNxt->llPrv = llPrv;
-	msg->llPrv = 0;
-	msg->llNxt = 0;
-
-	// Update Head pointer if needed
-	if (cmInstance->msgsHead == msg)
-	{
-		cmInstance->msgsHead = llNxt;
-	}
-
-	// Update Tail pointer if needed
-	if (cmInstance->msgsTail == msg)
-	{
-		cmInstance->msgsTail = llPrv;
-	}
-
-	// Disabled indicator
 	msg->period = MSG_PERIOD_DISABLED;
 }
 
-void disableAllBroadcasts(void)
+void disableAllBroadcasts(int pHandle)
 {
-	disableAllBroadcastsInstance(&g_cm);
+	disableAllBroadcastsInstance(&g_cm, pHandle);
 }
 
-void disableAllBroadcastsInstance(CMHANDLE cmInstance_)
+void disableAllBroadcastsInstance(CMHANDLE cmInstance_, int pHandle)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	broadcast_msg_t *msg = cmInstance->msgsHead;
-	broadcast_msg_t *llNxt;
-
-	// Zero out the head and tail pointers.
-	cmInstance->msgsHead = 0;
-	cmInstance->msgsTail = 0;
-
-	// Ensure period and the previous/next linked list pointers are 0.
-	while (msg)
+	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
 	{
-		llNxt = (broadcast_msg_t*)msg->llNxt;
-		msg->llPrv = msg->llNxt = 0;
-		msg->period = MSG_PERIOD_DISABLED;
-		msg = llNxt;
+		if (pHandle < 0 || bcPtr->pHandle == pHandle)
+		{
+			bcPtr->period = MSG_PERIOD_DISABLED;
+		}
 	}
 }
 
-void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t *disable)
+void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t* disable)
 {
-	int i;
-
-	// Search for matching message by ID
-	for (i = 0; i < MAX_NUM_BCAST_MSGS; i++)
+	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
 	{
-		if (cmInstance->msgs[i].dataHdr.id == disable->id && cmInstance->msgs[i].pHandle == pHandle)
+		if ((pHandle < 0 || pHandle == bcPtr->pHandle) && bcPtr->dataHdr.id == disable->id)
 		{
-			disableBroadcastMsg(cmInstance, &cmInstance->msgs[i]);
-			break;
+			bcPtr->period = MSG_PERIOD_DISABLED;
 		}
 	}
 	

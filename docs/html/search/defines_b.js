@@ -12,7 +12,7 @@ var searchData=
   ['max_5fchunk_5fsize',['MAX_CHUNK_SIZE',['../_data_chunk_8h.html#a523eaf5b650f38c307a6aab7f957fa2b',1,'DataChunk.h']]],
   ['max_5fdataset_5fsize',['MAX_DATASET_SIZE',['../_i_s_comm_8h.html#a8364bcbf2735d47d2f45504a0e3076ae',1,'ISComm.h']]],
   ['max_5fitem_5fhistory',['MAX_ITEM_HISTORY',['../_i_s_comm_data_buffer_8cpp.html#ad914b7fb293e4a65bd010cb8c13206af',1,'ISCommDataBuffer.cpp']]],
-  ['max_5fnum_5fbcast_5fmsgs',['MAX_NUM_BCAST_MSGS',['../_i_s_comm_8h.html#a08d1326bfd508f5c35f3a8853488ad04',1,'ISComm.h']]],
+  ['max_5fnum_5fbcast_5fmsgs',['MAX_NUM_BCAST_MSGS',['../com__manager_8c.html#a08d1326bfd508f5c35f3a8853488ad04',1,'com_manager.c']]],
   ['max_5fnum_5fsat_5fchannels',['MAX_NUM_SAT_CHANNELS',['../data__sets_8h.html#aa32e4265587af2b4e8879ab032514e7d',1,'data_sets.h']]],
   ['max_5fobservation_5fcount_5fin_5frtk_5fmessage',['MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE',['../data__sets_8h.html#ad9a80974e60c35748e602c96a84aea25',1,'data_sets.h']]],
   ['max_5fp_5fack_5fbody_5fsize',['MAX_P_ACK_BODY_SIZE',['../_i_s_comm_8h.html#a7024c54ae2bd455dcb782f3c0aaea0d6',1,'ISComm.h']]],

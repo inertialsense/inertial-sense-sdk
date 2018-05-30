@@ -73,7 +73,7 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
 #else
 
-	cISLogger::GetAllFilesInDirectory("/dev", false, "^/dev/tty(USB|S)", ports);
+	cISLogger::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
 
 #endif
 

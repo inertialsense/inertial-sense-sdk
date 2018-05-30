@@ -31,6 +31,8 @@ var searchData=
   ['tixml_5futf_5flead_5f0',['TIXML_UTF_LEAD_0',['../tinyxmlparser_8cpp.html#a37999e32163e2a3280bc0b8e1999774e',1,'tinyxmlparser.cpp']]],
   ['tixml_5futf_5flead_5f1',['TIXML_UTF_LEAD_1',['../tinyxmlparser_8cpp.html#a3cda92a178036c812663a7b75c5e04d0',1,'tinyxmlparser.cpp']]],
   ['tixml_5futf_5flead_5f2',['TIXML_UTF_LEAD_2',['../tinyxmlparser_8cpp.html#a8e36ce25f81f009c066037e937da3a6a',1,'tinyxmlparser.cpp']]],
+  ['toa',['toa',['../structalm__t.html#a0332c9fe3b2bf86ae1d7871352e2f024',1,'alm_t']]],
+  ['toas',['toas',['../structalm__t.html#a4af892f4b89054fd427b82e86adc5074',1,'alm_t']]],
   ['toc',['toc',['../structeph__t.html#a854da79d53877db201f2c4e38a70e8c2',1,'eph_t']]],
   ['toe',['toe',['../structeph__t.html#a728c608850a08c9826e5a18d7e8c8e7d',1,'eph_t::toe()'],['../structgeph__t.html#a51e073c0a74e30e7be94ef2618eef750',1,'geph_t::toe()']]],
   ['toes',['toes',['../structeph__t.html#a8a286982500a5b40d79a1d6e02a92b59',1,'eph_t']]],

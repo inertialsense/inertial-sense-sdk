@@ -134,7 +134,11 @@ int cComDataBuffer::ReadData(int pHandle, uint32_t dataId, vector<uint8_t>& data
     struct stat buf;
     FILE* file = m_buffers[pHandle][dataId].file;
     fflush(file);
+#ifdef __linux__
     fstat(fileno(file), &buf);
+#else
+    fstat(_fileno(file), &buf);
+#endif
     long size = buf.st_size;
     long pos = ftell(file);
     long afterWriteOffset = size - pos;

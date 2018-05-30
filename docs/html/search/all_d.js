@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['m0',['M0',['../structeph__t.html#a537ac0b9d94ba65af72592d2c418ff78',1,'eph_t']]],
+  ['m0',['M0',['../structeph__t.html#a537ac0b9d94ba65af72592d2c418ff78',1,'eph_t::M0()'],['../structalm__t.html#a432eef10c6060ab69ca419c3d51d253d',1,'alm_t::M0()']]],
   ['m_5faltclamptoground',['m_altClampToGround',['../classc_device_log.html#ab266bf4e6d44831b1510600bfb05d3db',1,'cDeviceLog']]],
   ['m_5fchunk',['m_chunk',['../classc_device_log_serial.html#a4d1f6166e0a5d5e752a7a956dc34e9cc',1,'cDeviceLogSerial']]],
   ['m_5fchunks',['m_chunks',['../classc_device_log_sorted.html#a89bc40fe085cef07fa3c81e9e7e9617c',1,'cDeviceLogSorted']]],
@@ -65,7 +65,7 @@ var searchData=
   ['max_5fchunk_5fsize',['MAX_CHUNK_SIZE',['../_data_chunk_8h.html#a523eaf5b650f38c307a6aab7f957fa2b',1,'DataChunk.h']]],
   ['max_5fdataset_5fsize',['MAX_DATASET_SIZE',['../_i_s_comm_8h.html#a8364bcbf2735d47d2f45504a0e3076ae',1,'ISComm.h']]],
   ['max_5fitem_5fhistory',['MAX_ITEM_HISTORY',['../_i_s_comm_data_buffer_8cpp.html#ad914b7fb293e4a65bd010cb8c13206af',1,'ISCommDataBuffer.cpp']]],
-  ['max_5fnum_5fbcast_5fmsgs',['MAX_NUM_BCAST_MSGS',['../_i_s_comm_8h.html#a08d1326bfd508f5c35f3a8853488ad04',1,'ISComm.h']]],
+  ['max_5fnum_5fbcast_5fmsgs',['MAX_NUM_BCAST_MSGS',['../com__manager_8c.html#a08d1326bfd508f5c35f3a8853488ad04',1,'com_manager.c']]],
   ['max_5fnum_5fkid',['MAX_NUM_KID',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978facbd00269f1a1fba1652c307acf93932d',1,'cDataKML']]],
   ['max_5fnum_5fsat_5fchannels',['MAX_NUM_SAT_CHANNELS',['../data__sets_8h.html#aa32e4265587af2b4e8879ab032514e7d',1,'data_sets.h']]],
   ['max_5fobservation_5fcount_5fin_5frtk_5fmessage',['MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE',['../data__sets_8h.html#ad9a80974e60c35748e602c96a84aea25',1,'data_sets.h']]],
@@ -106,9 +106,6 @@ var searchData=
   ['msg',['msg',['../structsbsmsg__t.html#a2bdb759f4c9a2de63d5ee899ad9b2a77',1,'sbsmsg_t']]],
   ['msg_5fperiod_5fdisabled',['MSG_PERIOD_DISABLED',['../com__manager_8c.html#a530fd5a94ed593dd66ec7cdeee00b411',1,'com_manager.c']]],
   ['msg_5fperiod_5fsend_5fonce',['MSG_PERIOD_SEND_ONCE',['../com__manager_8c.html#a055a98068f64092742e6e50a5167c4a4',1,'com_manager.c']]],
-  ['msgs',['msgs',['../structcom__manager__t.html#aa472f53336f6e49aff7eb9d76c0c5a4e',1,'com_manager_t']]],
-  ['msgshead',['msgsHead',['../structcom__manager__t.html#adf73e875a1a57caa872662ca6c7a1b33',1,'com_manager_t']]],
-  ['msgstail',['msgsTail',['../structcom__manager__t.html#a0bf9ddb64caeea7eecc3a71967debc77',1,'com_manager_t']]],
   ['msl',['msl',['../struct_p_a_c_k_e_d.html#ac89360fd6842093781e324fc4f2a6d77',1,'PACKED']]],
   ['mslbar',['mslBar',['../struct_p_a_c_k_e_d.html#ab05803bd68103a21b4d34d06b58a117e',1,'PACKED']]],
   ['mul_5fconjquat_5fquat',['mul_ConjQuat_Quat',['../_i_s_pose_8c.html#aaac9cda975ec94835307eaa04dfd0174',1,'mul_ConjQuat_Quat(Quat_t result, const Quat_t qc, const Quat_t q2):&#160;ISPose.c'],['../_i_s_pose_8h.html#aaac9cda975ec94835307eaa04dfd0174',1,'mul_ConjQuat_Quat(Quat_t result, const Quat_t qc, const Quat_t q2):&#160;ISPose.c']]],

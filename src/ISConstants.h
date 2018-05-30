@@ -25,6 +25,8 @@ extern "C" {
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
+
+#define RAW_DROP_DEBUG
 	
 #define PRE_PROC_COMBINE1(X, Y) X##Y
 #define PRE_PROC_COMBINE(X, Y) PRE_PROC_COMBINE1(X, Y)
@@ -112,13 +114,28 @@ extern void* pvPortMalloc(size_t xWantedSize);
 extern void vPortFree(void* pv);
 #define MALLOC(m) pvPortMalloc(m)
 #define FREE(m) vPortFree(m)
-#define REALLOC(m, size) while (1) {} // not supported
+#define REALLOC(m, size) 0 // not supported
 
 #else
 
+#ifdef MALLOC_DEBUG
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern void* malloc_debug(size_t size);
+extern void free_debug(void* mem);
+extern void* realloc_debug(void* mem, size_t newSize);
+#ifdef __cplusplus
+}
+#endif
+#define MALLOC(m) malloc_debug(m)
+#define FREE(m) free_debug(m)
+#define REALLOC(m, size) realloc_debug(m, size)
+#else
 #define MALLOC(m) malloc(m)
 #define FREE(m) free(m)
 #define REALLOC(m, size) realloc(m, size)
+#endif
 
 #endif
 
@@ -161,6 +178,9 @@ extern void vPortFree(void* pv);
 #endif
 
 #if !defined(PLATFORM_IS_EMBEDDED) || !PLATFORM_IS_EMBEDDED
+
+#define BEGIN_CRITICAL_SECTION
+#define END_CRITICAL_SECTION
 
 #if PLATFORM_IS_WINDOWS
 

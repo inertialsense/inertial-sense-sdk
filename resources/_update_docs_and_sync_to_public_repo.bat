@@ -30,7 +30,7 @@ echo Sync SDK into %SDKDIR% repo
 robocopy %SDKDIR%\.git %SDKDIR%tmp\.git /MIR /XA:H
 robocopy . %SDKDIR% /MIR /XA:H
 robocopy %SDKDIR%tmp\.git %SDKDIR%\.git /MIR /XA:H
-rmdir /S /Q %SDKDIR%tmp
+::rmdir /S /Q %SDKDIR%tmp
 
 cd src 
 

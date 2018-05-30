@@ -48,6 +48,8 @@ public:
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
 	eDisplayMode GetDisplayMode() { return m_displayMode; }
+	void ShowCursor(bool visible);
+	void ShutDown();
 	void Clear(void);
 	void Home(void);
 	void GoToRow(int y);

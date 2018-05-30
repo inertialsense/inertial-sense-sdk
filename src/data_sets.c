@@ -291,7 +291,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	// 46: DID_SENSORS_ADC_SIGMA
 		0,                      // 47: DID_INS_DEV_1
 		offsetsInl2States,      // 48: DID_INL2_STATES
-		0,                      // 49: DID_INL2_COVARIANCE_UD
+		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
 		0,                      // 51: DID_INL2_STATUS,
 		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER_1
@@ -423,7 +423,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 46: DID_SENSORS_ADC_SIGMA
 		0,                      // 47: DID_INS_DEV_1
 		0,                      // 48: DID_INL2_STATES
-		0,                      // 49: DID_INL2_COVARIANCE_UD
+		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
 		0,                      // 51: DID_INL2_STATUS
 		0,						// 52: DID_MAGNETOMETER_1
@@ -503,6 +503,7 @@ uint64_t didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_INS_2:					return RMC_BITS_INS2;
 		case DID_INS_3:					return RMC_BITS_INS3;
 		case DID_INS_4:					return RMC_BITS_INS4;
+		case DID_DUAL_IMU_RAW:			return RMC_BITS_DUAL_IMU_RAW;
 		case DID_DUAL_IMU:				return RMC_BITS_DUAL_IMU;
 		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
@@ -511,13 +512,13 @@ uint64_t didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_GPS_NAV:				return RMC_BITS_GPS_NAV;
 		case DID_GPS1_NAV:				return RMC_BITS_GPS1_NAV;
 		case DID_GPS2_NAV:				return RMC_BITS_GPS2_NAV;
-		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
-		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
 		case DID_GPS1_SAT:				return RMC_BITS_GPS1_SAT;
 		case DID_GPS2_SAT:				return RMC_BITS_GPS2_SAT;
+		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
+		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
+		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE_RAW;
 		case DID_GPS_RTK_NAV:			return RMC_BITS_GPS_RTK_NAV;
 		case DID_GPS_RTK_MISC:			return RMC_BITS_GPS_RTK_MISC;
-		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE;
 		case DID_STROBE_IN_TIME:		return RMC_BITS_STROBE_IN_TIME;
 		case DID_DIAGNOSTIC_MESSAGE:	return RMC_BITS_DIAGNOSTIC_MESSAGE;		
 		default:						return defaultRmcBits;

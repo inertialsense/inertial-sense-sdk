@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['a',['A',['../structeph__t.html#a552c43589298f592f94e14ecf799b0ff',1,'eph_t']]],
+  ['a',['A',['../structeph__t.html#a552c43589298f592f94e14ecf799b0ff',1,'eph_t::A()'],['../structalm__t.html#a5b341d33d238554358be7d5064f1d9ff',1,'alm_t::A()']]],
   ['acc',['acc',['../struct_p_a_c_k_e_d.html#ad024b9a181a0fda19585a0eea7cacf33',1,'PACKED::acc()'],['../structgeph__t.html#aab07e1cd48e783dc2f2c76d02b75962c',1,'geph_t::acc()']]],
   ['accsigma',['accSigma',['../struct_p_a_c_k_e_d.html#a7df6cbe92e24ae3dcada77ec0f3a1171',1,'PACKED']]],
   ['accuracycov',['accuracyCov',['../struct_p_a_c_k_e_d.html#a19e95789795b674cb3782d2c09b66641',1,'PACKED']]],
@@ -12,6 +12,7 @@ var searchData=
   ['alignatterror',['alignAttError',['../struct_p_a_c_k_e_d.html#a1e667bed38a828ee72e50ae01d92c685',1,'PACKED']]],
   ['alignposerror',['alignPosError',['../struct_p_a_c_k_e_d.html#a60347183340b8d5915bff30e42061273',1,'PACKED']]],
   ['alignvelerror',['alignVelError',['../struct_p_a_c_k_e_d.html#ae71dcd3f5d3d657553a4d318388df598',1,'PACKED']]],
+  ['alm',['alm',['../struction__model__utc__alm__t.html#a56243805d77e73eb0bca91ed562d16d4',1,'ion_model_utc_alm_t']]],
   ['alpha',['alpha',['../structs_lpf_o0.html#af7a05a69313f3471d6200125034d5aac',1,'sLpfO0::alpha()'],['../structs_lpf_o1.html#a8ce12024c314694e2bc4aa2e2deeefd9',1,'sLpfO1::alpha()']]],
   ['ana1',['ana1',['../struct_p_a_c_k_e_d.html#a4e23e92341f5191d1ea55fa3ebcd6c5f',1,'PACKED']]],
   ['ana3',['ana3',['../struct_p_a_c_k_e_d.html#a33336aa20c7a943e3b71ea835f72d7e4',1,'PACKED']]],

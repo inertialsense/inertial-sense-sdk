@@ -4,6 +4,7 @@ var searchData=
   ['onclientdisconnected',['OnClientDisconnected',['../classi_i_s_tcp_server_delegate.html#a88af04ec51346fb1fbd91452118ea447',1,'iISTcpServerDelegate']]],
   ['onglonassephemerisreceived',['OnGlonassEphemerisReceived',['../classi_gps_parser_delegate.html#ab711598d3e65ae1b7ba4e7a04afedc29',1,'iGpsParserDelegate']]],
   ['ongpsephemerisreceived',['OnGpsEphemerisReceived',['../classi_gps_parser_delegate.html#ad51fee5d3324537e4a9a8664237b8626',1,'iGpsParserDelegate']]],
+  ['onionospheremodelutcalmanacreceived',['OnIonosphereModelUtcAlmanacReceived',['../classi_gps_parser_delegate.html#a938592121441395308150fa8d1a9faf3',1,'iGpsParserDelegate']]],
   ['onobservationreceived',['OnObservationReceived',['../classi_gps_parser_delegate.html#a3d84621cccf117972b96af70c6e2c86a',1,'iGpsParserDelegate']]],
   ['onpacketreceived',['OnPacketReceived',['../classi_gps_parser_delegate.html#a592450747817cba6ca018c4fe99281b4',1,'iGpsParserDelegate::OnPacketReceived()'],['../class_inertial_sense.html#a36cd41e8ab948ad1357242c87d6c06ba',1,'InertialSense::OnPacketReceived()']]],
   ['onreaddata',['OnReadData',['../classc_device_log.html#a14a7bf3e27904cf6024ca25c1dbd5c1b',1,'cDeviceLog']]],

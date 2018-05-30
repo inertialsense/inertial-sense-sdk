@@ -83,12 +83,9 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 
 #if PLATFORM_IS_WINDOWS
 
-	m_windowsConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
-	m_windowsConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_CURSOR_INFO cursorInfo;
-	GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
-	cursorInfo.bVisible = 0;
-	SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+	// Hide cursor
+	ShowCursor(false);
+
 	if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, true))
 	{
 		std::cout << "Failed to set console ctrl handler!" << std::endl;
@@ -101,6 +98,31 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 #endif
 
 }
+
+
+void cInertialSenseDisplay::ShowCursor(bool visible)
+{
+
+#if PLATFORM_IS_WINDOWS
+
+// 	m_windowsConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
+	m_windowsConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO cursorInfo;
+	GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+	cursorInfo.bVisible = visible;
+	SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+
+#endif
+
+}
+
+
+void cInertialSenseDisplay::ShutDown()
+{
+	ShowCursor(true);
+// 	cout << "Shutting down..." << endl;
+}
+
 
 void cInertialSenseDisplay::Clear(void)
 {
@@ -479,8 +501,10 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_GPS_NAV:			str = DataToStringGPS(d.gpsNav, data->hdr);				break;
 	case DID_SYS_PARAMS:		str = DataToStringSysParams(d.sysParams, data->hdr);	break;
 	case DID_SYS_SENSORS:		str = DataToStringSysSensors(d.sysSensors, data->hdr);	break;
-	case DID_GPS_RTK_MISC:		str = DataToStringGPS(d.gpsRtkNav, data->hdr);			break;
-	case DID_GPS_RTK_NAV:		str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break;
+	case DID_GPS_RTK_MISC:		str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break; 
+	case DID_GPS_RTK_NAV:		str = DataToStringGPS(d.gpsRtkNav, data->hdr);			break;
+	case DID_GPS1_RAW:
+	case DID_GPS2_RAW:
 	case DID_GPS_BASE_RAW:		str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
 	case DID_RTOS_INFO:			str = DataToStringRTOS(d.rtosInfo, data->hdr);			break;
 	default:

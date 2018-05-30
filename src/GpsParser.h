@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(RTK_EMBEDDED)
 
-#include "../../hdw-src/hw-libs/rtklib/src/rtklib.h"
+#include "../../libs/rtklib/src/rtklib.h"
 
 #endif
 
@@ -108,7 +108,7 @@ public:
 	}
 
 	/**
-	* Executes when sbs message received
+	* Executes when sbs message received. Data is not valid after this callback completes.
 	* @param parser the parser
 	* @param sbs the sbs message
 	*/
@@ -127,6 +127,17 @@ public:
 	{
 		(void)parser;
 		(void)sta;
+	}
+
+	/**
+	* Executes when ionosphere model and utc is received. Data is not valid after this callback completes.
+	* @param parser the parser
+	* @param ionUtcAlm the ionosphere model, utc info and almanac
+	*/
+	virtual void OnIonosphereModelUtcAlmanacReceived(const cGpsParser* parser, ion_model_utc_alm_t* ionUtcAlm)
+	{
+		(void)parser;
+		(void)ionUtcAlm;
 	}
 };
 

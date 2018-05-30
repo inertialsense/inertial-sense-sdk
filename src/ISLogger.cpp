@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stddef.h>
 #include <regex>
 #include <set>
+#include <sstream>
 
 #include "ISLogger.h"
 #include "ISDataMappings.h"
@@ -625,22 +626,34 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 		}
 		m_logStats->LogError(dataHdr);
 	}
-	else
-	{
-        if (!m_devices[device]->SaveData(dataHdr, dataBuf))
-		{
-			if (m_errorFile != NULL)
-			{
-				fprintf(m_errorFile, "Underlying log implementation failed to save\r\n");
-			}
-			m_logStats->LogError(dataHdr);
-		}
-		else
-		{
-            double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-			m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
-		}
-	}
+    else if (!m_devices[device]->SaveData(dataHdr, dataBuf))
+    {
+        if (m_errorFile != NULL)
+        {
+            fprintf(m_errorFile, "Underlying log implementation failed to save\r\n");
+        }
+        m_logStats->LogError(dataHdr);
+    }
+    else
+    {
+        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+        m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
+
+        if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
+        {
+            // write to diagnostic text file
+            std::ofstream outfile;
+            std::ostringstream outFilePath;
+            outFilePath << m_directory << "/diagnostic_" << m_devices[device]->GetDeviceInfo()->serialNumber << ".txt";
+            outfile.open(outFilePath.str(), std::ios_base::app);
+            std::string msg = (((diag_msg_t*)dataBuf)->message);
+            outfile.write(msg.c_str(), msg.length());
+            if (msg.length() > 0 && msg[msg.length() - 1] != '\n')
+            {
+                outfile << std::endl;
+            }
+        }
+    }
 	return true;
 }
 
