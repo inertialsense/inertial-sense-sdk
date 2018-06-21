@@ -73,32 +73,36 @@ void ISSocketFrameworkShutdown()
 
 }
 
+int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds)
+{
+    struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
+    fd_set ws;
+    FD_ZERO(&ws);
+    FD_SET(socket, &ws);
+    int numberOfSocketsThatCanWrite = select(0, NULL, &ws, NULL, &tv);
+    return (numberOfSocketsThatCanWrite > 0);
+}
+
 int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
 {
-	int count = 0;
-	struct timeval tv = { 0, 0 };
-	fd_set ws;
-	int ret;
-	int ns;
+    int totalWriteCount = 0;
+    int writeCount;
 
-	while (count < dataLength)
+    while (totalWriteCount < dataLength)
 	{
-		FD_ZERO(&ws);
-		FD_SET(socket, &ws);
-		ret = select(0, NULL, &ws, NULL, &tv);
-		if (ret <= 0)
-		{
-			return ret;
-		}
-		ns = send(socket, (const char*)data, dataLength, 0);
-		if (ns < 0)
-		{
-			return ns;
-		}
-		count += ns;
+        if (!ISSocketCanWrite(socket))
+        {
+            break;
+        }
+        writeCount = send(socket, (const char*)data, dataLength, 0);
+        if (writeCount < 0)
+        {
+            break;
+        }
+        totalWriteCount += writeCount;
 	}
 
-	return count;
+    return totalWriteCount;
 }
 
 int ISSocketRead(socket_t socket, uint8_t* data, int dataLength)
@@ -133,7 +137,7 @@ int ISSocketSetBlocking(socket_t socket, bool blocking)
 
 #if PLATFORM_IS_WINDOWS
 
-	u_long blockingInt = (blocking ? 0 : 0xFFFFFFFF);
+	u_long blockingInt = (blocking ? 0 : 1);
 	return ioctlsocket(socket, FIONBIO, &blockingInt);
 
 #else
@@ -143,7 +147,7 @@ int ISSocketSetBlocking(socket_t socket, bool blocking)
 	{
 		return -1;
 	}
-	opts = (blocking ? opts | O_NONBLOCK : opts & (~O_NONBLOCK));
+	opts = (blocking ? opts & (~O_NONBLOCK) : opts | O_NONBLOCK);
 	return fcntl(socket, F_SETFL, opts);
 
 #endif
@@ -214,7 +218,7 @@ cISTcpClient::~cISTcpClient()
 	ISSocketFrameworkShutdown();
 }
 
-int cISTcpClient::Open(const string& host, int port)
+int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
 {
 	Close();
 	int status;
@@ -227,30 +231,45 @@ int cISTcpClient::Open(const string& host, int port)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
+
+    // attempt to get info about the host and port
 	status = getaddrinfo(m_host.c_str(), portString, &hints, &result);
 	if (status != 0)
 	{
+        // no info, fail
 		Close();
 		return status;
 	}
+
+    // create the socket
 	m_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (m_socket == 0)
 	{
+        // no socket, fail
 		freeaddrinfo(result);
 		Close();
 		return -1;
 	}
 
-	status = connect(m_socket, result->ai_addr, (int)result->ai_addrlen);
-	freeaddrinfo(result);
-	if (status != 0)
-	{
-		Close();
-		return status;
-	}
-	SetBlocking(false);
+    // make non-blocking socket
+    SetBlocking(false);
 
-	return status;
+    // because non-blocking, connect returns immediately
+    connect(m_socket, result->ai_addr, (int)result->ai_addrlen);
+
+    // in order to detect connection we determine whether the socket is writeable
+    status = ISSocketCanWrite(m_socket, timeoutMilliseconds);
+
+    // cleanup
+	freeaddrinfo(result);
+    if (status <= 0)
+	{
+        // no socket was writeable, fail
+		Close();
+        return -1;
+	}
+
+    return 0;
 }
 
 int cISTcpClient::Close()

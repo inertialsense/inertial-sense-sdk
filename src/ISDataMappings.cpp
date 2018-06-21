@@ -194,17 +194,17 @@ static void PopulateSysParamsMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "alignAttDetect", alignAttDetect, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "alignAttError", alignAttError, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "alignVelError", alignVelError, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "alignPosError", alignPosError, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "samplePeriodMs", samplePeriodMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "reserved1[0]", reserved1[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "reserved1[1]", reserved1[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "reserved1[2]", reserved1[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "reserved1[3]", reserved1[3], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "ftf0", ftf0, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "magInclination", magInclination, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "magDeclination", magDeclination, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "magMagnitude", magMagnitude, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "reserved2[2]", reserved2[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "reserved2[3]", reserved2[3], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t);
 	mappings[DID_SYS_PARAMS] = m;
 
     ASSERT_SIZE(totalSize);
@@ -549,7 +549,7 @@ static void PopulateFlashConfigMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "size", size, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "checksum", checksum, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "key", key, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "startupSampleDtMs", startupSampleDtMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "startupImuDtMs", startupImuDtMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "startupNavDtMs", startupNavDtMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "ser0BaudRate", ser0BaudRate, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "ser1BaudRate", ser1BaudRate, 0, DataTypeUInt32, uint32_t);
@@ -589,7 +589,7 @@ static void PopulateFlashConfigMappings(map_lookup_name_t& mappings)
 	ADD_MAP(m, totalSize, "gpsTimeSyncPeriodMs", gpsTimeSyncPeriodMs, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "startupGPSDtMs", startupGPSDtMs, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t);
 	mappings[DID_FLASH_CONFIG] = m;
 
     ASSERT_SIZE(totalSize);

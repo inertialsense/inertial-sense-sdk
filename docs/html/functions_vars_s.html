@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6</span>
+   &#160;<span id="projectnumber">Release 1.6.1</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -70,14 +70,11 @@ $(function() {
 <li>sAcc
 : <a class="el" href="struct_p_a_c_k_e_d.html#a9f878e7d0dd88838fea553daba665478">PACKED</a>
 </li>
-<li>samplePeriodMs
-: <a class="el" href="struct_p_a_c_k_e_d.html#a9f777d459d1d727a2eb795325aba6b2b">PACKED</a>
-</li>
 <li>sat
 : <a class="el" href="structalm__t.html#aa34b8b6b27ecb9788e8f9434f0c18f8a">alm_t</a>
 , <a class="el" href="structeph__t.html#ac0a88b549db74cff4f15b667e43860c5">eph_t</a>
 , <a class="el" href="structgeph__t.html#a2c1bfea0adef48a5f47716a0b4f9273e">geph_t</a>
-, <a class="el" href="struct_p_a_c_k_e_d.html#a49c70d3609f588d102664fbd0ce844fb">PACKED</a>
+, <a class="el" href="struct_p_a_c_k_e_d.html#a0e87ab4d5a0d1133455f93612b916dfc">PACKED</a>
 </li>
 <li>scanIndex
 : <a class="el" href="structring__buffer__t.html#ac100861fe6491df179556a3c0cb7384b">ring_buffer_t</a>
@@ -90,6 +87,9 @@ $(function() {
 </li>
 <li>sendPacketCallback
 : <a class="el" href="structcom__manager__t.html#a49b2fded8a1c7c3142bc1a90f34603ea">com_manager_t</a>
+</li>
+<li>sensorConfig
+: <a class="el" href="struct_p_a_c_k_e_d.html#af340d5a31e1ea7ea4e51295607ac12f4">PACKED</a>
 </li>
 <li>ser0BaudRate
 : <a class="el" href="struct_p_a_c_k_e_d.html#a54e83f1a2025b965f765380fd0e17a15">PACKED</a>
@@ -144,11 +144,11 @@ $(function() {
 <li>startupGPSDtMs
 : <a class="el" href="struct_p_a_c_k_e_d.html#a26d57ebcfbf2fab650480194600a966e">PACKED</a>
 </li>
+<li>startupImuDtMs
+: <a class="el" href="struct_p_a_c_k_e_d.html#a25e09edc4a1546ff79d96fc024e53ca5">PACKED</a>
+</li>
 <li>startupNavDtMs
 : <a class="el" href="struct_p_a_c_k_e_d.html#a1458cdc80f7709c9a267236bebd190ed">PACKED</a>
-</li>
-<li>startupSampleDtMs
-: <a class="el" href="struct_p_a_c_k_e_d.html#acbd5af1defbee0a959b55400ba67752e">PACKED</a>
 </li>
 <li>state
 : <a class="el" href="struct_p_a_c_k_e_d.html#a19b03bdcc2cd6d03f3c4c73d3329a942">PACKED</a>
@@ -207,6 +207,9 @@ $(function() {
 </li>
 <li>streamMag2
 : <a class="el" href="structcmd__options__t.html#a68d164246faa0e01589954df95350ac4">cmd_options_t</a>
+</li>
+<li>streamRTKGPS
+: <a class="el" href="structcmd__options__t.html#a42f204c5641d072763ef1761f8b8b3be">cmd_options_t</a>
 </li>
 <li>streamRTOS
 : <a class="el" href="structcmd__options__t.html#aa5035937303627116ef15562ed7a56df">cmd_options_t</a>

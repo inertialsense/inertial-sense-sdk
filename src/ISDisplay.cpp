@@ -487,26 +487,26 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	string str;
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:			str = DataToStringDevInfo(d.devInfo, data->hdr);		break;
-	case DID_DUAL_IMU:			str = DataToStringDualIMU(d.dualImu, data->hdr);		break;
-	case DID_PREINTEGRATED_IMU:	str = DataToStringPreintegratedImu(d.pImu, data->hdr);	break;
-	case DID_INS_1:				str = DataToStringINS1(d.ins1, data->hdr);				break;
-	case DID_INS_2:				str = DataToStringINS2(d.ins2, data->hdr);				break;
-	case DID_INS_3:				str = DataToStringINS3(d.ins3, data->hdr);				break;
-	case DID_INS_4:				str = DataToStringINS4(d.ins4, data->hdr);				break;
+	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);		break;
+	case DID_DUAL_IMU:          str = DataToStringDualIMU(d.dualImu, data->hdr);		break;
+	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);	break;
+	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);				break;
+	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);				break;
+	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);				break;
+	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);				break;
 	case DID_MAGNETOMETER_1:
-	case DID_MAGNETOMETER_2:	str = DataToStringMag(d.mag, data->hdr);				break;
-	case DID_MAG_CAL:			str = DataToStringMagCal(d.magCal, data->hdr);			break;
-	case DID_BAROMETER:			str = DataToStringBaro(d.baro, data->hdr);				break;
-	case DID_GPS_NAV:			str = DataToStringGPS(d.gpsNav, data->hdr);				break;
-	case DID_SYS_PARAMS:		str = DataToStringSysParams(d.sysParams, data->hdr);	break;
-	case DID_SYS_SENSORS:		str = DataToStringSysSensors(d.sysSensors, data->hdr);	break;
-	case DID_GPS_RTK_MISC:		str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break; 
-	case DID_GPS_RTK_NAV:		str = DataToStringGPS(d.gpsRtkNav, data->hdr);			break;
+	case DID_MAGNETOMETER_2:    str = DataToStringMag(d.mag, data->hdr);				break;
+	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);			break;
+	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);				break;
+    case DID_GPS_NAV:           str = DataToStringGPS(d.gpsNav, data->hdr);				break;
+    case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);	break;
+	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);	break;
+	case DID_GPS_RTK_MISC:      str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break; 
+	case DID_GPS_RTK_NAV:       str = DataToStringGPS(d.gpsRtkNav, data->hdr);			break;
 	case DID_GPS1_RAW:
 	case DID_GPS2_RAW:
-	case DID_GPS_BASE_RAW:		str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
-	case DID_RTOS_INFO:			str = DataToStringRTOS(d.rtosInfo, data->hdr);			break;
+	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
+	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);			break;
 	default:
 #if 0	// List all DIDs 
 		char buf[128];
@@ -1007,7 +1007,13 @@ string cInertialSenseDisplay::DataToStringGPS(const gps_nav_t &gps, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS_NAV:");
+    switch (hdr.id)
+    {
+    default:
+    case DID_GPS_NAV:       ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS_NAV:");         break;
+    case DID_GPS1_NAV:      ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS1_NAV:");        break;
+    case DID_GPS_RTK_NAV:   ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS_RTK_NAV:");     break;
+    }
 
 #if DISPLAY_DELTA_TIME==1
 	static int lastTimeMs = 0;
@@ -1027,16 +1033,42 @@ string cInertialSenseDisplay::DataToStringGPS(const gps_nav_t &gps, const p_data
 	}
 	else
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tSats:  %2d    ",
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tSats: %2d,  ",
 			gps.status&GPS_STATUS_NUM_SATS_USED_MASK);	// Satellites used in solution
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status:  0x%08x", gps.status);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAccuracy:  %.3f m   \n",
-			gps.hAcc);					// Position accuracy
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status: 0x%08x (", gps.status);
+		switch (gps.status&GPS_STATUS_FIX_MASK)
+		{
+		default: 
+		case GPS_STATUS_FIX_NONE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);	break;
+		case GPS_STATUS_FIX_2D:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");		break;
+		case GPS_STATUS_FIX_3D:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");		break;
+		case GPS_STATUS_FIX_RTK_SINGLE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "Single");	break;
+		case GPS_STATUS_FIX_RTK_FLOAT:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "Float");	break;
+		case GPS_STATUS_FIX_RTK_FIX:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "FIX");		break;
+		}
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "),\thAcc: %.3f m   \n", gps.hAcc);	// Position accuracy
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA: ");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
 			gps.lla[0],					// GPS Latitude
 			gps.lla[1],					// GPS Longitude
 			gps.lla[2]);				// GPS Ellipsoid altitude (meters)
+		if (gps.status&GPS_STATUS_FLAGS_RTK_MODE)
+		{
+			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge: %3.1fs  arRatio: %4.1f  dist: %3.1fm \n", 
+				gps.differentialAge, gps.arRatio, gps.distanceToBase);
+			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\t");
+			if (gps.status&GPS_STATUS_FLAGS_GPS_COMPASSING_MODE) 
+			{ 
+				ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing, "); 
+			}
+			else
+			{
+				if (gps.status&GPS_STATUS_FLAGS_BASE_POSITION_MOVING) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, "); }
+			}
+			if (gps.status&GPS_STATUS_FLAGS_RX_BASE_NO_OBSERV_EPHEM) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No obs/ephem, "); }
+			if (gps.status&GPS_STATUS_FLAGS_RX_BASE_NO_POSITION) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No base position, "); }
+			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+		}
 	}
 
 	return buf;
@@ -1097,9 +1129,8 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", sys.timeOfWeekMs);
 #endif
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%f,%f,%f,%f,%d,%d,%f,%f,%f,%f,%d\n",
-		sys.alignAttDetect, sys.alignAttError, sys.alignVelError, sys.alignPosError,
-		sys.samplePeriodMs, sys.navPeriodMs, sys.ftf0, sys.magInclination, sys.magDeclination, sys.magMagnitude, sys.genFaultCode);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%d,%d,%d\n",
+		sys.imuPeriodMs, sys.navPeriodMs, sys.genFaultCode);
 
 	if (m_displayMode == DMODE_PRETTY)
 	{

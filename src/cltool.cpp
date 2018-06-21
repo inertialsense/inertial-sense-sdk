@@ -47,7 +47,7 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 static bool startsWith(const char* str, const char* pre)
 {
 	size_t lenpre = strlen(pre), lenstr = strlen(str);
-	return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
+	return lenstr < lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
 }
 
 #define CL_DEFAULT_BAUD_RATE				IS_COM_BAUDRATE_DEFAULT 
@@ -187,7 +187,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamDualIMU = true;
 		}
-		else if (startsWith(a, "-msgGPS"))
+        else if (startsWith(a, "-msgRTKGPS"))
+        {
+            g_commandLineOptions.streamRTKGPS = true;
+        }
+        else if (startsWith(a, "-msgGPS"))
 		{
 			g_commandLineOptions.streamGPS = true;
 		}
@@ -358,7 +362,7 @@ void cltool_outputUsage()
 	cout << "    -msgPIMU      " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
 	cout << "    -msgMag[n]    " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
 	cout << "    -msgBaro      " << boldOff << "  stream DID_BAROMETER" << endlbOn;
-	cout << "    -msgGPS       " << boldOff << "  stream DID_GPS1_NAV" << endlbOn;
+	cout << "    -msgGPS       " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
 	cout << "    -msgSensors   " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
@@ -381,7 +385,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig                      " << EXAMPLE_SPACE_1 << boldOff << "# Read from device and print all keys and values" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig=insRotation[0]=1.5708" << EXAMPLE_SPACE_1 << boldOff << "# Set INS X rotation in radians (90 deg)" << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Client / server)" << endl;
+	cout << "OPTIONS (Client / Server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;
 	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:COM9:57600         (port, baud rate)" << endl;
 	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:user:password" << endl;
@@ -439,14 +443,14 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 				{
 					const data_info_t& info = flashMap.at(keyAndValue[0]);
 					int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
-					int substrIndex = 2 * (radix == 16);
-					cISDataMappings::StringToData(keyAndValue[1].substr(substrIndex).c_str(), (int)(keyAndValue[1].length()), NULL, (uint8_t*)&flashConfig, info, radix);
+					int substrIndex = 2 * (radix == 16); // skip 0x for hex
+					const string& str = keyAndValue[1].substr(substrIndex);
+					cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashConfig, info, radix);
 					cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
 				}
 			}
 		}
 		inertialSenseInterface.SetFlashConfig(flashConfig);
-		SLEEP_MS(1000);
 		g_inertialSenseDisplay.Clear();
 		return true;
 	}

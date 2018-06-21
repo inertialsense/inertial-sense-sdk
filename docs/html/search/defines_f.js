@@ -2,10 +2,10 @@ var searchData=
 [
   ['rad2deg',['RAD2DEG',['../_i_s_constants_8h.html#aacc958134b53425ec947541bb72ac8b1',1,'ISConstants.h']]],
   ['rad2degmult',['RAD2DEGMULT',['../_i_s_constants_8h.html#a4935c69cfa93f8e2b0170d8e77c68fe7',1,'ISConstants.h']]],
-  ['raw_5fdrop_5fdebug',['RAW_DROP_DEBUG',['../_i_s_constants_8h.html#aeec9ee8dc59fe5885b1837ccde1a3703',1,'ISConstants.h']]],
   ['realloc',['REALLOC',['../_i_s_constants_8h.html#a3c55bf806a35e18db96cfcf80d4edcf4',1,'ISConstants.h']]],
-  ['receiver_5findex_5fbase_5fstation',['RECEIVER_INDEX_BASE_STATION',['../data__sets_8h.html#a2d16f258b6b47c6f7e55232b2f0799b9',1,'data_sets.h']]],
-  ['receiver_5findex_5frover',['RECEIVER_INDEX_ROVER',['../data__sets_8h.html#a24d291350e6ade67665b0260fcae3e2e',1,'data_sets.h']]],
+  ['receiver_5findex_5fexternal_5fbase',['RECEIVER_INDEX_EXTERNAL_BASE',['../data__sets_8h.html#a68aca9c8493eab0342528f380c759c65',1,'data_sets.h']]],
+  ['receiver_5findex_5fgps1',['RECEIVER_INDEX_GPS1',['../data__sets_8h.html#a598448eb759f351d35ad501facc6b232',1,'data_sets.h']]],
+  ['receiver_5findex_5fgps2',['RECEIVER_INDEX_GPS2',['../data__sets_8h.html#a2aa317def5f06ad6bebc9aec584ed234',1,'data_sets.h']]],
   ['recipnorm_5fvec2',['recipNorm_Vec2',['../_i_s_matrix_8h.html#afd1c461c96a74658736d94fde5cc3675',1,'ISMatrix.h']]],
   ['recipnorm_5fvec3',['recipNorm_Vec3',['../_i_s_matrix_8h.html#a8a9bcc39ce3d03d82b2daeb008059afa',1,'ISMatrix.h']]],
   ['recipnorm_5fvec3d',['recipNorm_Vec3d',['../_i_s_matrix_8h.html#af75637a65fac4277f530a84152ccaac6',1,'ISMatrix.h']]],

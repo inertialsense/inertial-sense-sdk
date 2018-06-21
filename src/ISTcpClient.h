@@ -18,6 +18,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISStream.h"
 
+#define IS_SOCKET_DEFAULT_TIMEOUT_MS 5000
+
 using namespace std;
 
 class cISTcpClient : public cISStream
@@ -37,9 +39,10 @@ public:
 	* Closes, then opens a tcp client
 	* @param host the host or ip address to connect to
 	* @param port the port to connect to on the host
+    * @param timeoutMilliseconds the max milliseconds to wait for a successful connection before aborting
 	* @return 0 if success, otherwise an error code
 	*/
-	int Open(const string& host, int port);
+    int Open(const string& host, int port, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
 	/**
 	* Close the client
@@ -64,7 +67,7 @@ public:
 	int Write(const void* data, int dataLength) OVERRIDE;
 
 	/**
-	* Send a GET http request to a url. You must then call Read to get the response.
+    * Send a GET http request to a url. You must then call Read to get the response. SSL is NOT supported.
 	* @param subUrl the url to request, i.e. index.html or pages/page1.txt, etc.
 	* @param userAgent the user agent to send
 	* @param userName optional user name (basic authentication)
@@ -108,6 +111,14 @@ void ISSocketFrameworkInitialize();
 * Shutdown socket framework - called automatically by ISTcpClient and ISTcpServer
 */
 void ISSocketFrameworkShutdown();
+
+/**
+* Determines if a socket can be written to
+* @param socket the socket to check for write capability
+* @param timeoutMilliseconds the number of milliseconds to wait before aborting
+* @return non-zero if the socket can be written to, otherwise zero
+*/
+int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
 /**
 * Write data to a socket

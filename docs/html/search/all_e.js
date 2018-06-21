@@ -28,6 +28,7 @@ var searchData=
   ['nf',['nf',['../structprcopt__t.html#a2ef9fef184d133547d0606d6760aafe4',1,'prcopt_t']]],
   ['niter',['niter',['../structprcopt__t.html#a01605bf88f2a06134a1b231d736ce90b',1,'prcopt_t']]],
   ['nmax',['nmax',['../structobs__t.html#a2dfe38f511872663338a62d184de9940',1,'obs_t']]],
+  ['nocase_5fcompare',['nocase_compare',['../structs_case_insensitive_compare_1_1nocase__compare.html',1,'sCaseInsensitiveCompare']]],
   ['nochildren',['NoChildren',['../class_ti_xml_node.html#abe85e0ec04ea59c033f324c8504653e5',1,'TiXmlNode']]],
   ['node',['Node',['../class_ti_xml_handle.html#aec0e3ea58ff98a45cd13507a02e2ca1e',1,'TiXmlHandle']]],
   ['nodetype',['NodeType',['../class_ti_xml_node.html#a836eded4920ab9e9ef28496f48cd95a2',1,'TiXmlNode']]],

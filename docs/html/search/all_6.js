@@ -41,6 +41,5 @@ var searchData=
   ['free',['FREE',['../_i_s_constants_8h.html#a08df5b6fa6b8d02fce35aedf8776e435',1,'ISConstants.h']]],
   ['freecommanagerinstance',['freeComManagerInstance',['../com__manager_8c.html#a14e704eef94b347384af4f286e9bc644',1,'freeComManagerInstance(CMHANDLE cmInstance_):&#160;com_manager.c'],['../com__manager_8h.html#a2504cc9b81ea76263f17b01447878980',1,'freeComManagerInstance(CMHANDLE cmInstance):&#160;com_manager.c']]],
   ['freeheapsize',['freeHeapSize',['../struct_p_a_c_k_e_d.html#a1f22827b3509e0d6c0784decd176606b',1,'PACKED']]],
-  ['frq',['frq',['../structgeph__t.html#ae7fc742d01d96b4757bd037aa1e43bc9',1,'geph_t']]],
-  ['ftf0',['ftf0',['../struct_p_a_c_k_e_d.html#af57dbfd9064b20e9195e3fd0765f88bf',1,'PACKED']]]
+  ['frq',['frq',['../structgeph__t.html#ae7fc742d01d96b4757bd037aa1e43bc9',1,'geph_t']]]
 ];

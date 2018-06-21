@@ -384,14 +384,7 @@ bool InertialSense::CreateHost(const string& ipAndPort)
 	string host = ipAndPort.substr(0, colon);
 	string portString = ipAndPort.substr(colon + 1);
 	int port = (int)strtol(portString.c_str(), NULLPTR, 10);
-	bool opened = (m_tcpServer.Open(host, port) == 0);
-	if (opened)
-	{
-		// configure as RTK base station
-		uint32_t cfgBits = RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0;
-		sendDataComManager(0, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
-	}
-	return opened;
+	return (m_tcpServer.Open(host, port) == 0);
 }
 
 bool InertialSense::IsOpen()
@@ -517,6 +510,7 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHand
 	m_comManagerState.flashConfig[pHandle] = flashConfig;
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
 	sendDataComManager(pHandle, DID_FLASH_CONFIG, &m_comManagerState.flashConfig[pHandle], sizeof(flashConfig), 0);
+	Update();
 }
 
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandleBinaryData callback)

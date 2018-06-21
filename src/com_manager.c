@@ -1352,6 +1352,8 @@ void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t* msg, int per
 
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg)
 {
+	(void*)cmInstance;
+
 	// Remove item from linked list
 	msg->period = MSG_PERIOD_DISABLED;
 }

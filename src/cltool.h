@@ -64,8 +64,9 @@ typedef struct
 	bool streamDualIMU;
 	bool streamIMU1;
 	bool streamIMU2;
-	bool streamGPS;
-	bool streamMag1;
+    bool streamGPS;
+    bool streamRTKGPS;
+    bool streamMag1;
 	bool streamMag2;
 	bool streamBaro;
 	bool streamSysSensors;

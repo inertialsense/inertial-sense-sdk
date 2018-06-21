@@ -25,9 +25,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(RTK_EMBEDDED)
 
-#define INIT_M_RTCM init_rtcm(&m_rtcm, 0, 1); SetReceiverIndex(RECEIVER_INDEX_BASE_STATION);
+#define INIT_M_RTCM init_rtcm(&m_rtcm, 0, 1); SetReceiverIndex(RECEIVER_INDEX_EXTERNAL_BASE);
 #define ALLOCATE_M_RTCM if (!m_rtcm.ownsBuff) { m_rtcm.buff = (unsigned char*)RTK_MALLOC(MAXRTCMLEN); m_rtcm.ownsBuff = 1; }
-#define INIT_M_RAW(fmt) init_raw(&m_raw, fmt, 0); SetReceiverIndex(RECEIVER_INDEX_ROVER);
+#define INIT_M_RAW(fmt) init_raw(&m_raw, fmt, 0); SetReceiverIndex(RECEIVER_INDEX_GPS1);
 #define ALLOCATE_M_RAW if (!m_raw.ownsBuff) { m_raw.buff = (unsigned char*)RTK_MALLOC(MAXRAWLEN); m_raw.ownsBuff = 1; }
 #define DECLARE_RTCM_DESTRUCTOR(class_name) ~class_name() OVERRIDE { free_rtcm(&m_rtcm); }
 #define DECLARE_RAW_DESTRUCTOR(class_name) ~class_name() OVERRIDE { free_raw(&m_raw); }

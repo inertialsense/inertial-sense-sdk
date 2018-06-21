@@ -58,8 +58,10 @@ typedef struct
 	string name;
 } data_info_t;
 
+struct sCaseInsensitiveCompare;
+
 // map of field name to data info
-typedef map<string, data_info_t> map_name_to_info_t;
+typedef map<string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
 
 // map of data id to map of name and data info
 typedef map<uint32_t, map_name_to_info_t> map_lookup_name_t;
@@ -136,6 +138,24 @@ private:
 	map<uint32_t, uint32_t> m_lookupSize;
 
 	static cISDataMappings s_map;
+};
+
+/**
+* Case-insensitive comparer for std::find and other functions
+*/
+struct sCaseInsensitiveCompare : std::binary_function<std::string, std::string, bool>
+{
+	struct nocase_compare : public std::binary_function<unsigned char, unsigned char, bool>
+	{
+		bool operator() (const unsigned char& c1, const unsigned char& c2) const
+		{
+			return tolower(c1) < tolower(c2);
+		}
+	};
+	bool operator() (const std::string& s1, const std::string& s2) const
+	{
+		return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(), nocase_compare());
+	}
 };
 
 #endif // __ISDATAMAPPINGS_H_

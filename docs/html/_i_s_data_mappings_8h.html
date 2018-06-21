@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6</span>
+   &#160;<span id="projectnumber">Release 1.6.1</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -91,6 +91,10 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_data_mappings.html">cISDataMappings</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structs_case_insensitive_compare.html">sCaseInsensitiveCompare</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structs_case_insensitive_compare_1_1nocase__compare.html">sCaseInsensitiveCompare::nocase_compare</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
@@ -99,9 +103,9 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a4ba2b3a6d75034f5b415942be435c808"><td class="memItemLeft" align="right" valign="top">typedef map&lt; string, <a class="el" href="structdata__info__t.html">data_info_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_data_mappings_8h.html#a4ba2b3a6d75034f5b415942be435c808">map_name_to_info_t</a></td></tr>
-<tr class="separator:a4ba2b3a6d75034f5b415942be435c808"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ecb6be1ff514a89f90e61c19304c3b4"><td class="memItemLeft" align="right" valign="top">typedef map&lt; uint32_t, <a class="el" href="_i_s_data_mappings_8h.html#a4ba2b3a6d75034f5b415942be435c808">map_name_to_info_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_data_mappings_8h.html#a2ecb6be1ff514a89f90e61c19304c3b4">map_lookup_name_t</a></td></tr>
+<tr class="memitem:ab539505899fa9fc79a929a8d14fbd609"><td class="memItemLeft" align="right" valign="top">typedef map&lt; string, <a class="el" href="structdata__info__t.html">data_info_t</a>, <a class="el" href="structs_case_insensitive_compare.html">sCaseInsensitiveCompare</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_data_mappings_8h.html#ab539505899fa9fc79a929a8d14fbd609">map_name_to_info_t</a></td></tr>
+<tr class="separator:ab539505899fa9fc79a929a8d14fbd609"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ecb6be1ff514a89f90e61c19304c3b4"><td class="memItemLeft" align="right" valign="top">typedef map&lt; uint32_t, <a class="el" href="_i_s_data_mappings_8h.html#ab539505899fa9fc79a929a8d14fbd609">map_name_to_info_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_data_mappings_8h.html#a2ecb6be1ff514a89f90e61c19304c3b4">map_lookup_name_t</a></td></tr>
 <tr class="separator:a2ecb6be1ff514a89f90e61c19304c3b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a572efc6b591fba1f5337c08e9900580c"><td class="memItemLeft" align="right" valign="top">typedef char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_data_mappings_8h.html#a572efc6b591fba1f5337c08e9900580c">data_mapping_string_t</a>[<a class="el" href="_i_s_data_mappings_8h.html#af2dd5abd54a80131d81441faf59d9c81">IS_DATA_MAPPING_MAX_STRING_LENGTH</a>]</td></tr>
 <tr class="separator:a572efc6b591fba1f5337c08e9900580c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -164,7 +168,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8h_source.html#l00067">67</a> of file <a class="el" href="_i_s_data_mappings_8h_source.html">ISDataMappings.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8h_source.html#l00069">69</a> of file <a class="el" href="_i_s_data_mappings_8h_source.html">ISDataMappings.h</a>.</p>
 
 </div>
 </div>
@@ -175,28 +179,28 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef map&lt;uint32_t, <a class="el" href="_i_s_data_mappings_8h.html#a4ba2b3a6d75034f5b415942be435c808">map_name_to_info_t</a>&gt; <a class="el" href="_i_s_data_mappings_8h.html#a2ecb6be1ff514a89f90e61c19304c3b4">map_lookup_name_t</a></td>
+          <td class="memname">typedef map&lt;uint32_t, <a class="el" href="_i_s_data_mappings_8h.html#ab539505899fa9fc79a929a8d14fbd609">map_name_to_info_t</a>&gt; <a class="el" href="_i_s_data_mappings_8h.html#a2ecb6be1ff514a89f90e61c19304c3b4">map_lookup_name_t</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8h_source.html#l00065">65</a> of file <a class="el" href="_i_s_data_mappings_8h_source.html">ISDataMappings.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8h_source.html#l00067">67</a> of file <a class="el" href="_i_s_data_mappings_8h_source.html">ISDataMappings.h</a>.</p>
 
 </div>
 </div>
-<a id="a4ba2b3a6d75034f5b415942be435c808"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ba2b3a6d75034f5b415942be435c808">&#9670;&nbsp;</a></span>map_name_to_info_t</h2>
+<a id="ab539505899fa9fc79a929a8d14fbd609"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab539505899fa9fc79a929a8d14fbd609">&#9670;&nbsp;</a></span>map_name_to_info_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef map&lt;string, <a class="el" href="structdata__info__t.html">data_info_t</a>&gt; <a class="el" href="_i_s_data_mappings_8h.html#a4ba2b3a6d75034f5b415942be435c808">map_name_to_info_t</a></td>
+          <td class="memname">typedef map&lt;string, <a class="el" href="structdata__info__t.html">data_info_t</a>, <a class="el" href="structs_case_insensitive_compare.html">sCaseInsensitiveCompare</a>&gt; <a class="el" href="_i_s_data_mappings_8h.html#ab539505899fa9fc79a929a8d14fbd609">map_name_to_info_t</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8h_source.html#l00062">62</a> of file <a class="el" href="_i_s_data_mappings_8h_source.html">ISDataMappings.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_data_mappings_8h_source.html#l00061">61</a> of file <a class="el" href="_i_s_data_mappings_8h_source.html">ISDataMappings.h</a>.</p>
 
 </div>
 </div>

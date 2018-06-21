@@ -138,7 +138,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_GPS_NAV, 200);
 	}
-	if (g_commandLineOptions.streamMag1)
+    if (g_commandLineOptions.streamRTKGPS)
+    {
+        inertialSenseInterface.BroadcastBinaryData(DID_GPS_RTK_NAV, 200);
+    }
+    if (g_commandLineOptions.streamMag1)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_1, periodMs);
 	}

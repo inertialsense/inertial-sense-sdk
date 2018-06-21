@@ -26,8 +26,6 @@ extern "C" {
 #include <inttypes.h>
 #include <time.h>
 
-#define RAW_DROP_DEBUG
-	
 #define PRE_PROC_COMBINE1(X, Y) X##Y
 #define PRE_PROC_COMBINE(X, Y) PRE_PROC_COMBINE1(X, Y)
 
@@ -156,6 +154,8 @@ extern void* realloc_debug(void* mem, size_t newSize);
 #ifndef STRNCPY
 #define STRNCPY(a, b, c) strncpy_s(a, c, b, c);
 #endif
+
+#define strncasecmp _strnicmp 
 
 #else
 

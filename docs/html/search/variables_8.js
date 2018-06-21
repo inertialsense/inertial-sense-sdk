@@ -5,6 +5,7 @@ var searchData=
   ['id',['id',['../struct_p_a_c_k_e_d.html#a320c9940953f1796e5b11629845d6d3d',1,'PACKED::id()'],['../structp__data__hdr__t.html#a0a70811dba0872fe68a2d58c24cb7894',1,'p_data_hdr_t::id()'],['../structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8',1,'p_data_get_t::id()'],['../structp__data__disable__t.html#aca2ef5d5ec699f32fe117e470f6c1986',1,'p_data_disable_t::id()']]],
   ['idot',['idot',['../structeph__t.html#a4ff5a1fccfbfc914c4af48f0792e5d17',1,'eph_t']]],
   ['imu',['imu',['../struct_p_a_c_k_e_d.html#ac45129ca2163394e45075dbfbccffc11',1,'PACKED']]],
+  ['imuperiodms',['imuPeriodMs',['../struct_p_a_c_k_e_d.html#abeec7e47367dc40638e52a310e522465',1,'PACKED']]],
   ['inertialsenseinterface',['inertialSenseInterface',['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#af002ad4e41266ef3f5316acb7482d152',1,'InertialSense::com_manager_cpp_state_t']]],
   ['ins1',['ins1',['../struct_p_a_c_k_e_d.html#a9dd18f4806913f34c71296a73a41c049',1,'PACKED']]],
   ['ins2',['ins2',['../struct_p_a_c_k_e_d.html#a3742032afa094a575f0bab0e9124590e',1,'PACKED']]],

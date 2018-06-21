@@ -19,6 +19,5 @@ var searchData=
   ['flashcfg',['flashCfg',['../struct_p_a_c_k_e_d.html#a401dd1a523b1d4c59259e14644668a70',1,'PACKED']]],
   ['flashconfig',['flashConfig',['../structcmd__options__t.html#a5140db6acdf2f29beabbe45745bdecda',1,'cmd_options_t::flashConfig()'],['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#a72d0d105a61a62b3acfc22d6215be7a2',1,'InertialSense::com_manager_cpp_state_t::flashConfig()']]],
   ['freeheapsize',['freeHeapSize',['../struct_p_a_c_k_e_d.html#a1f22827b3509e0d6c0784decd176606b',1,'PACKED']]],
-  ['frq',['frq',['../structgeph__t.html#ae7fc742d01d96b4757bd037aa1e43bc9',1,'geph_t']]],
-  ['ftf0',['ftf0',['../struct_p_a_c_k_e_d.html#af57dbfd9064b20e9195e3fd0765f88bf',1,'PACKED']]]
+  ['frq',['frq',['../structgeph__t.html#ae7fc742d01d96b4757bd037aa1e43bc9',1,'geph_t']]]
 ];
