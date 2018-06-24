@@ -10,5 +10,6 @@ var searchData=
   ['skmllogdata',['sKmlLogData',['../structs_kml_log_data.html',1,'']]],
   ['slpfo0',['sLpfO0',['../structs_lpf_o0.html',1,'']]],
   ['slpfo1',['sLpfO1',['../structs_lpf_o1.html',1,'']]],
-  ['sta_5ft',['sta_t',['../structsta__t.html',1,'']]]
+  ['sta_5ft',['sta_t',['../structsta__t.html',1,'']]],
+  ['survey_5fin_5ft',['survey_in_t',['../structsurvey__in__t.html',1,'']]]
 ];

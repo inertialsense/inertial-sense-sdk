@@ -820,7 +820,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		SetDeviceInfo(devInfo, dev);
 
 		// Set KML configuration
-		m_devices[dev]->SetKmlConfig(m_showSample, m_showPath, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+		m_devices[dev]->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 
 		// Copy data
 		while ((data = log.ReadData(dev)))

@@ -1143,7 +1143,7 @@ cISDataMappings::cISDataMappings()
 	PopulateINS2Mappings(m_columnMappings, DID_INS_3);
 	PopulateINS4Mappings(m_columnMappings);
 	PopulateGPSNavMappings(m_columnMappings);
-    //PopulateGPSCNOMappings(m_columnMappings);
+    //PopulateGPSCNOMappings(m_columnMappings); // too much data, we don't want to log this
 	PopulateMagnetometerMappings(m_columnMappings);
 	PopulateBarometerMappings(m_columnMappings);
 	PopulateIMUDeltaThetaVelocityMappings(m_columnMappings);
@@ -1247,6 +1247,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"gps2Raw",				// 70: DID_GPS2_RAW
         "velocityMeasurement",	// 71: DID_VELOCITY_MEASUREMENT
         "diagnosticMsg",        // 72: DID_DIAGNOSTIC_MESSAGE
+		"surveyIn"				// 73: DID_SURVEY_IN
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);

@@ -273,7 +273,7 @@ static int inertialSenseMain()
 		// [REPLAY INSTRUCTION] 1.) Replay data log
 		return !cltool_replayDataLog();
 	}
-	// if bootloader was specified on the command line, do that now and return out
+	// if bootloader was specified on the command line, do that now and return
 	else if (g_commandLineOptions.bootloaderFileName.length() != 0)
 	{
 		// [BOOTLOADER INSTRUCTION] 1.) Run bootloader
@@ -348,7 +348,7 @@ static int inertialSenseMain()
 						}
 					}
 					com_manager_status_t* status = getStatusComManager(0);
-					if (status->communicationErrorCount != 0 && g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
+					if (status != NULLPTR && status->communicationErrorCount != 0 && g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
 					{
 						cout << "Com errors: " << status->communicationErrorCount << "    ";
 					}

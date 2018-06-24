@@ -20,5 +20,6 @@ var searchData=
   ['ertostask',['eRtosTask',['../data__sets_8h.html#ab35ac489ad3a332c0a1ed5894a1e892e',1,'data_sets.h']]],
   ['esatsvflags',['eSatSvFlags',['../data__sets_8h.html#a2b43fc2aa26e8e97cd130f8c14f617be',1,'data_sets.h']]],
   ['esensorconfig',['eSensorConfig',['../data__sets_8h.html#ab3168be6810eb262cd4e4881e49171df',1,'data_sets.h']]],
+  ['esurveyinstatus',['eSurveyInStatus',['../data__sets_8h.html#a83bd7219c131eb152addd83d0473caf6',1,'data_sets.h']]],
   ['esysconfigbits',['eSysConfigBits',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85',1,'data_sets.h']]]
 ];

@@ -104,6 +104,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */
 #define DID_VELOCITY_MEASUREMENT        (eDataIDs)71 /** (velocity_sensor_t) external generic velocity sensor to be fused with GPS-INS measurements. */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) diagnostic message */
+#define DID_SURVEY_IN					(eDataIDs)73 /** (survey_in_t) survey in, used to determine position for RTK base station */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -112,8 +113,8 @@ typedef uint32_t eDataIDs;
 // 4] Increment DID_COUNT
 // 5] Test!
 
-/** Count of data ids - make sure to increment if you add a new data id! */
-#define DID_COUNT (eDataIDs)73
+/** Count of data ids (including null data id 0) - make sure to increment if you add a new data id! */
+#define DID_COUNT (eDataIDs)74
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -1194,11 +1195,11 @@ enum eRTKConfigBits
 	/** Enable RTK base and output RTCM3 data from GPS 2 on serial port 1 */
 	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1			= (int)0x00000800,	
 	
-	/** User specified base location or surveyed in position - this indicated a trusted base position */
-	RTK_CFG_BITS_BASE_POS_USE_REFLLA					= (int)0x00001000,
+	/** Enable base mode moving position. (For future use. Not implemented. This bit should always be 0 for now.) TODO: Implement moving base. */
+	RTK_CFG_BITS_BASE_POS_MOVING						= (int)0x00001000,
 	
-	/** Base station is in process of survey to determine position, when survey completes this bit is cleared and RTK_CFG_BITS_BASE_POS_USE_REFLLA is set */
-	RTK_CFG_BITS_BASE_POS_SURVEYING						= (int)0x00002000,	
+	/** Reserved for future use */
+	RTK_CFG_BITS_RESERVED1								= (int)0x00002000,	
 	
 	/** When using RTK, specifies whether the base station is identical hardware to this rover. If so, there are optimizations enabled to get fix faster. */
 	RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER			= (int)0x00004000,
@@ -2095,6 +2096,48 @@ typedef struct
 	char message[256];
 } diag_msg_t;
 
+typedef enum
+{
+	// default state
+	SURVEY_IN_STATE_OFF                     = 0,
+
+	// commands
+	SURVEY_IN_STATE_CANCEL                  = 1,
+	SURVEY_IN_STATE_START_3D                = 2,
+	SURVEY_IN_STATE_START_FLOAT             = 3,
+	SURVEY_IN_STATE_START_FIX               = 4,
+
+	// status
+	SURVEY_IN_STATE_RUNNING_3D              = 8,
+	SURVEY_IN_STATE_RUNNING_FLOAT           = 9,
+	SURVEY_IN_STATE_RUNNING_FIX             = 10,
+	SURVEY_IN_STATE_SAVE_POS                = 19,
+	SURVEY_IN_STATE_DONE                    = 20
+} eSurveyInStatus;
+
+/**
+* Survey in status
+*/
+typedef struct
+{
+	/** State of current survey, eSurveyInStatus */
+	uint32_t state;
+
+	/** Maximum time survey will run if minAccuracy is not first achieved. (ignored if 0). */
+	uint32_t maxDuration;
+
+	/** Required horizontal accuracy for survey to complete before maxDuration. (ignored if 0) */
+	float minAccuracy;
+
+	/** Elapsed time in seconds of the survey. */
+	uint32_t elapsedSeconds;
+
+	/** Approximate horizontal accuracy of the survey. */
+	float hAccuracy;
+
+	/** The current surveyed latitude, longitude, altitude (deg, deg, meters) */
+	double lla[3];
+} survey_in_t;
 
 #define CRASH_INFO_NONE 0x00000000
 #define CRASH_INFO_USER_RESET 0xFFFFFFFA
@@ -2294,6 +2337,7 @@ typedef union PACKED
 	gps_sat_t				gpsSat;
 	gps_rtk_misc_t			gpsRtkMisc;
 	nvm_flash_cfg_t			flashCfg;
+    survey_in_t             surveyIn;
 	sys_params_t			sysParams;
 	sys_sensors_t			sysSensors;
 	rtos_info_t				rtosInfo;

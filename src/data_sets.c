@@ -239,6 +239,13 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
 	static uint16_t offsetsOnlyTimeFirst[] = { 1, 0 };
 	static uint16_t offsetsDebugArray[] = { 3, 72, 80, 88 };
+	static uint16_t offsetsSurveyIn[] =
+	{
+		3,
+		offsetof(survey_in_t, lla[0]),
+		offsetof(survey_in_t, lla[1]),
+		offsetof(survey_in_t, lla[2])
+	};
 
     static uint16_t* s_doubleOffsets[] =
 	{
@@ -315,6 +322,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 70: DID_GPS2_RAW
 		0,						// 71: DID_VELOCITY_SENSOR
 		0,						// 72: DID_DIAGNOSTIC_MESSAGE
+		offsetsSurveyIn			// 73: DID_SURVEY_IN
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -447,6 +455,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 70: DID_GPS2_RAW
 		0,						// 71: DID_VELOCITY_SENSOR
 		diagMsgOffsets, 		// 72: DID_DIAGNOSTIC_MESSAGE
+		0						// 73: DID_SURVEY_IN
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);

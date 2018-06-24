@@ -1,6 +1,7 @@
 var searchData=
 [
   ['hacc',['hAcc',['../struct_p_a_c_k_e_d.html#a29a848f06df0abd584ca1b5da135c731',1,'PACKED']]],
+  ['haccuracy',['hAccuracy',['../structsurvey__in__t.html#ac4ca25d7ad3693b2b735bc1f7c487eb0',1,'survey_in_t']]],
   ['handle',['handle',['../struct_p_a_c_k_e_d.html#a6984e9780f992e0c47e1cced69b904fd',1,'PACKED::handle()'],['../structserial__port__t.html#a52eda1a0422b658d8581253b8f3958de',1,'serial_port_t::handle()']]],
   ['hardwarever',['hardwareVer',['../struct_p_a_c_k_e_d.html#a1d2a5d569457a525edb6abe9893133a1',1,'PACKED']]],
   ['hasstartbyte',['hasStartByte',['../structis__comm__instance__t.html#af07eae5f46d582137bbd361c3458bd07',1,'is_comm_instance_t']]],

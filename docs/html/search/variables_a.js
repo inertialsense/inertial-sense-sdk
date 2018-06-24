@@ -11,7 +11,7 @@ var searchData=
   ['lasttimestamp',['lastTimestamp',['../classc_log_stat_data_id.html#aea01cb13aa845588c11ea3fb9789901a',1,'cLogStatDataId']]],
   ['lasttimestampdelta',['lastTimestampDelta',['../classc_log_stat_data_id.html#a08b3ef360e75e1e8eb0de0476a852e82',1,'cLogStatDataId']]],
   ['leaps',['leaps',['../struction__model__utc__alm__t.html#a67212e6071a21d6c7ce9ae7a9b30df65',1,'ion_model_utc_alm_t']]],
-  ['lla',['lla',['../struct_p_a_c_k_e_d.html#a2e508fba73cb511293d5d6bdc8e5459f',1,'PACKED::lla()'],['../structs_kml_log_data.html#a978ebd86730ee147abf13973c6e19a3e',1,'sKmlLogData::lla()']]],
+  ['lla',['lla',['../struct_p_a_c_k_e_d.html#a2e508fba73cb511293d5d6bdc8e5459f',1,'PACKED::lla()'],['../structsurvey__in__t.html#a38feacc53e40b9c3dfd1b4a61f5fbe1f',1,'survey_in_t::lla()'],['../structs_kml_log_data.html#a978ebd86730ee147abf13973c6e19a3e',1,'sKmlLogData::lla()']]],
   ['lli',['LLI',['../struct_p_a_c_k_e_d.html#a84da3da799e50a7235fd8190419d72e7',1,'PACKED']]],
   ['location',['location',['../class_ti_xml_base.html#a0d992580f3bc264909f898e942677a3c',1,'TiXmlBase']]],
   ['logpath',['logPath',['../structcmd__options__t.html#afd0992b8f11a9a104c0b34ec1e9fe591',1,'cmd_options_t']]],

@@ -82,8 +82,13 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	int styleCnt = 1;
 	string altitudeMode;
 	string iconScale = "0.5";
-	string labelScale = "0.2";
+	string labelScale = "0.5";
 	string iconUrl;
+
+	if (m_showPointTimestamps)
+		labelScale = "0.5";
+	else
+		labelScale = "0.01";
 
 	// Altitude mode
 	if(m_altClampToGround)
@@ -142,6 +147,52 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	// Show sample (dot)
 	if (m_showPoints)
 	{
+		// Style
+		styleStr = string("stylesel_");
+
+		Style = new TiXmlElement("Style");
+		Style->SetAttribute("id", styleStr);
+		Document->LinkEndChild(Style);
+
+		// Icon style
+		IconStyle = new TiXmlElement("IconStyle");
+		Style->LinkEndChild(IconStyle);
+
+		elem = new TiXmlElement("color");
+		elem->LinkEndChild(new TiXmlText(colorStr));
+		IconStyle->LinkEndChild(elem);
+
+		elem = new TiXmlElement("colorMode");
+		elem->LinkEndChild(new TiXmlText("normal"));
+		IconStyle->LinkEndChild(elem);
+
+		elem = new TiXmlElement("scale");
+		elem->LinkEndChild(new TiXmlText(iconScale));
+		IconStyle->LinkEndChild(elem);
+
+		heading = new TiXmlElement("heading");
+		heading->LinkEndChild(new TiXmlText("0"));
+		IconStyle->LinkEndChild(heading);
+
+		href = new TiXmlElement("href");
+		href->LinkEndChild(new TiXmlText(iconUrl));
+		elem = new TiXmlElement("Icon");
+		elem->LinkEndChild(href);
+		IconStyle->LinkEndChild(elem);
+
+		// Label style
+		LabelStyle = new TiXmlElement("LabelStyle");
+		Style->LinkEndChild(LabelStyle);
+
+		elem = new TiXmlElement("colorMode");
+		elem->LinkEndChild(new TiXmlText("normal"));
+		LabelStyle->LinkEndChild(elem);
+
+		elem = new TiXmlElement("scale");
+		elem->LinkEndChild(new TiXmlText(labelScale));
+		LabelStyle->LinkEndChild(elem);
+
+
 		double nextTime = log.data[0].time;
 		for (size_t i = 0; i < log.data.size(); i++)
 		{
@@ -154,64 +205,44 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 			}
 			nextTime = item.time - fmod(item.time, m_pointUpdatePeriodSec) + m_pointUpdatePeriodSec;
 
-			// Icon style
-			styleStr = string("stylesel_") + to_string(styleCnt++);
-
-			Style = new TiXmlElement("Style");
-			Style->SetAttribute("id", styleStr);
-			Document->LinkEndChild(Style);
-
-			IconStyle = new TiXmlElement("IconStyle");
-			Style->LinkEndChild(IconStyle);
-
-			elem = new TiXmlElement("color");
-			elem->LinkEndChild(new TiXmlText(colorStr));
-			IconStyle->LinkEndChild(elem);
-
-			elem = new TiXmlElement("colorMode");
-			elem->LinkEndChild(new TiXmlText("normal"));
-			IconStyle->LinkEndChild(elem);
-
-			elem = new TiXmlElement("scale");
-			elem->LinkEndChild(new TiXmlText(iconScale));
-			IconStyle->LinkEndChild(elem);
-
-			heading = new TiXmlElement("heading");
-			heading->LinkEndChild(new TiXmlText(to_string(item.theta[2] * C_RAD2DEG_F)));
-			IconStyle->LinkEndChild(heading);
-
-			href = new TiXmlElement("href");
-			href->LinkEndChild(new TiXmlText(iconUrl));
-			elem = new TiXmlElement("Icon");
-			elem->LinkEndChild(href);
-			IconStyle->LinkEndChild(elem);
-
-			LabelStyle = new TiXmlElement("LabelStyle");
-			Style->LinkEndChild(LabelStyle);
-
-			elem = new TiXmlElement("colorMode");
-			elem->LinkEndChild(new TiXmlText("normal"));
-			LabelStyle->LinkEndChild(elem);
-
-			elem = new TiXmlElement("scale");
-			elem->LinkEndChild(new TiXmlText(labelScale));
-			LabelStyle->LinkEndChild(elem);
-
-			// Icon
+			// Placemark
 			Placemark = new TiXmlElement("Placemark");
 			Document->LinkEndChild(Placemark);
 
-			if (m_showPointTimestamps)
-			{	// Draw Name
-				elem = new TiXmlElement("name");
-				ostringstream timeStream;
+			// Name
+			elem = new TiXmlElement("name");
+			ostringstream timeStream;
+			switch (kid)
+			{
+			case cDataKML::KID_GPS:
+			case cDataKML::KID_GPS1:
+			case cDataKML::KID_GPS2:
+			case cDataKML::KID_RTK:
+				timeStream << fixed << setprecision(1) << item.time;
+				break;
+			default:
 				timeStream << fixed << setprecision(3) << item.time;
-				elem->LinkEndChild(new TiXmlText(timeStream.str()));
-				Placemark->LinkEndChild(elem);
+				break;
 			}
+			elem->LinkEndChild(new TiXmlText(timeStream.str()));
+			Placemark->LinkEndChild(elem);
 
+			// styleUrl
 			elem = new TiXmlElement("styleUrl");
-			elem->LinkEndChild(new TiXmlText("#" + styleStr));
+			if (item.theta[2] != 0.0f)
+			{	// Style - to indicate heading
+				string styleCntStr = styleStr + to_string(styleCnt++);
+				TiXmlNode *StyleNode = Style->Clone();
+				StyleNode->ToElement()->SetAttribute("id", styleCntStr);
+				StyleNode->FirstChildElement("IconStyle")->FirstChildElement("heading")->FirstChild()->ToText()->SetValue(to_string(item.theta[2] * C_RAD2DEG_F));
+				Document->LinkEndChild(StyleNode);
+
+				elem->LinkEndChild(new TiXmlText("#" + styleCntStr));
+			}
+			else
+			{
+				elem->LinkEndChild(new TiXmlText("#" + styleStr));
+			}
 			Placemark->LinkEndChild(elem);
 
 			Point = new TiXmlElement("Point");

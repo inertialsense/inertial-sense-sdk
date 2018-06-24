@@ -254,6 +254,12 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHand
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
 {
+	// null com port, just use other features of the interface like ntrip
+	if (port[0] == '0' && port[1] == '\0')
+	{
+		return true;
+	}
+
 	m_disableBroadcastsOnClose = false;
 	if (OpenSerialPorts(port, baudRate))
 	{
@@ -288,12 +294,6 @@ bool InertialSense::SetLoggerEnabled(bool enable, const string& path, cISLogger:
 bool InertialSense::OpenServerConnection(const string& connectionString)
 {
 	bool opened = false;
-
-	// if no serial connection, fail
-	if (!IsOpen())
-	{
-		return opened;
-	}
 
 	CloseServerConnection();
 	vector<string> pieces;
@@ -425,8 +425,10 @@ bool InertialSense::Update()
 	// [C COMM INSTRUCTION]  2.) Update Com Manager at regular interval to send and receive data.  
 	// Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
 	// task system with serial port read function that does NOT incorporate a timeout.   
-	stepComManager();
-// 	SLEEP_MS(1);
+	if (m_comManagerState.serialPorts.size() != 0)
+	{
+		stepComManager();
+	}
 
 	// if any serial ports have closed, shutdown
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)

@@ -291,9 +291,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		cltool_outputUsage();
 		return false;
 	}
-
-	if (g_commandLineOptions.bootloaderFileName.length() && g_commandLineOptions.comPort.length() == 0)
+	else if (g_commandLineOptions.bootloaderFileName.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+	{
 		cout << "Use COM_PORT option \"-c=\" with bootloader" << endl;
+		return false;
+	}
 
 	return true;
 }
