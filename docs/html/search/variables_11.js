@@ -48,7 +48,7 @@ var searchData=
   ['streamrtkgps',['streamRTKGPS',['../structcmd__options__t.html#a42f204c5641d072763ef1761f8b8b3be',1,'cmd_options_t']]],
   ['streamrtos',['streamRTOS',['../structcmd__options__t.html#aa5035937303627116ef15562ed7a56df',1,'cmd_options_t']]],
   ['streamsyssensors',['streamSysSensors',['../structcmd__options__t.html#a4c672fbd00940a97a608c3fa07c61d7a',1,'cmd_options_t']]],
-  ['surveyin',['surveyIn',['../struct_p_a_c_k_e_d.html#af56fca21bf71a7131d9e2cad79cbc96c',1,'PACKED']]],
+  ['surveyin',['surveyIn',['../structcmd__options__t.html#a6838bdd019090fda0403b66bf8be19c1',1,'cmd_options_t::surveyIn()'],['../struct_p_a_c_k_e_d.html#af56fca21bf71a7131d9e2cad79cbc96c',1,'PACKED::surveyIn()']]],
   ['sva',['sva',['../structeph__t.html#a8e5d447b17e34971078b511dadad3994',1,'eph_t::sva()'],['../structgeph__t.html#ac9225213e917d3a8c3b291e40ddf6931',1,'geph_t::sva()']]],
   ['svconf',['svconf',['../structalm__t.html#a6062ed051eef868c1e82dd56cc1b2fd1',1,'alm_t']]],
   ['svh',['svh',['../structeph__t.html#a9ea6ab9497d465f2b5f8bea82ec8fb3c',1,'eph_t::svh()'],['../structgeph__t.html#ab91b45c67012e913c6f255fd21e018b0',1,'geph_t::svh()'],['../structalm__t.html#ac88db0bcd7c1d2a4565c8ffdb23470a2',1,'alm_t::svh()']]],

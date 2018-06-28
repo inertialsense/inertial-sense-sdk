@@ -487,26 +487,27 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	string str;
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);		break;
-	case DID_DUAL_IMU:          str = DataToStringDualIMU(d.dualImu, data->hdr);		break;
-	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);	break;
-	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);				break;
-	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);				break;
-	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);				break;
-	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);				break;
+	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
+	case DID_DUAL_IMU:          str = DataToStringDualIMU(d.dualImu, data->hdr);        break;
+	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
+	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
+	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
+	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
+	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
 	case DID_MAGNETOMETER_1:
-	case DID_MAGNETOMETER_2:    str = DataToStringMag(d.mag, data->hdr);				break;
-	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);			break;
-	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);				break;
-    case DID_GPS_NAV:           str = DataToStringGPS(d.gpsNav, data->hdr);				break;
-    case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);	break;
-	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);	break;
-	case DID_GPS_RTK_MISC:      str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break; 
-	case DID_GPS_RTK_NAV:       str = DataToStringGPS(d.gpsRtkNav, data->hdr);			break;
+	case DID_MAGNETOMETER_2:    str = DataToStringMag(d.mag, data->hdr);                break;
+	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
+	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);              break;
+    case DID_GPS_NAV:           str = DataToStringGPS(d.gpsNav, data->hdr);             break;
+    case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);    break;
+	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);  break;
+	case DID_GPS_RTK_MISC:      str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break; 
+	case DID_GPS_RTK_NAV:       str = DataToStringGPS(d.gpsRtkNav, data->hdr);          break;
 	case DID_GPS1_RAW:
 	case DID_GPS2_RAW:
-	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);			break;
-	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);			break;
+	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);          break;
+    case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);      break;
+    case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);          break;
 	default:
 #if 0	// List all DIDs 
 		char buf[128];
@@ -1218,6 +1219,52 @@ string cInertialSenseDisplay::DataToStringRawGPS(const gps_raw_t& raw, const p_d
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 	}
 	return buf;
+}
+
+string cInertialSenseDisplay::DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    int i = 0;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_SURVEY_IN:");
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " state: %d ", survey.state);
+    switch (survey.state)
+    {
+    case SURVEY_IN_STATE_OFF:           ptr += SNPRINTF(ptr, ptrEnd - ptr, "(off)");           break;
+    case SURVEY_IN_STATE_RUNNING_3D:    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(running 3D)");    break;
+    case SURVEY_IN_STATE_RUNNING_FLOAT: ptr += SNPRINTF(ptr, ptrEnd - ptr, "(running Float)"); break;
+    case SURVEY_IN_STATE_RUNNING_FIX:   ptr += SNPRINTF(ptr, ptrEnd - ptr, "(running Fix)");   break;
+    case SURVEY_IN_STATE_SAVE_POS:      ptr += SNPRINTF(ptr, ptrEnd - ptr, "(saving pos)");    break;
+    case SURVEY_IN_STATE_DONE:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "(done)");          break;
+    }
+
+    int elapsedTimeMin = survey.elapsedTimeSec / 60;
+    int elapsedTimeSec = survey.elapsedTimeSec - (elapsedTimeMin * 60);
+    int maxDurationMin = survey.maxDurationSec / 60;
+    int maxDurationSec = survey.maxDurationSec - (maxDurationMin * 60);
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", elapsed: %d:%02d of %2d:%02d", 
+        elapsedTimeMin, elapsedTimeSec, maxDurationMin, maxDurationSec );
+    if (m_displayMode != DMODE_SCROLL)
+    {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\thAcc: %4.3f\tlla:", survey.hAccuracy);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
+            survey.lla[0],					// latitude
+            survey.lla[1],					// longitude
+            survey.lla[2]);					// altitude
+    }
+    else
+    {   // Single line format
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, ", hAcc: %4.3f ", survey.hAccuracy);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " lla[%12.7f,%12.7f,%7.1f]",
+            survey.lla[0],					// latitude
+            survey.lla[1],					// longitude
+            survey.lla[2]);					// altitude
+    }
+    return buf;
 }
 
 string cInertialSenseDisplay::DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr)

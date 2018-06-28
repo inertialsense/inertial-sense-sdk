@@ -83,7 +83,8 @@ public:
 	string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
 	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
 	string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
-	string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+    string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
+    string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
 
 private:
 	string VectortoString();

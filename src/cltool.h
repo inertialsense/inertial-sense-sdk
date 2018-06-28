@@ -51,8 +51,9 @@ typedef struct
 	bool bootloaderVerify; // -bv
 	bool replayDataLog;
 	bool magRecal;
-	int magRecalMode;
-	string asciiMessages;
+    uint32_t magRecalMode;
+    survey_in_t surveyIn;
+    string asciiMessages;
 	double replaySpeed;
 	int displayMode;
 

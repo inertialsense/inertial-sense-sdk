@@ -168,10 +168,13 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{	
 		// Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.enMagRecal == 100).
 		inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL, 100);
-		// Enable mult-axis 
-		uint32_t enMagRecal = MAG_RECAL_MODE_MULTI_AXIS;
-		inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&enMagRecal, sizeof(enMagRecal), offsetof(mag_cal_t, enMagRecal));
+		// Enable mag recal
+		inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, enMagRecal));
 	}
+    if (g_commandLineOptions.surveyIn.state)
+    {   // Enable mult-axis 
+        inertialSenseInterface.SendRawData(DID_SURVEY_IN, (uint8_t*)&g_commandLineOptions.surveyIn, sizeof(survey_in_t), 0);
+    }
 
 	if (g_commandLineOptions.rmcPresetPPD)
 	{
@@ -339,19 +342,23 @@ static int inertialSenseMain()
 						break;
 					}
 
-					g_inertialSenseDisplay.GoToRow(1);
-					if (inertialSenseInterface.GetClientServerByteCount() != 0)
-					{
-						if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_QUIET)
-						{
-							cout << "Client bytes: " << inertialSenseInterface.GetClientServerByteCount() << "   ";
-						}
-					}
-					com_manager_status_t* status = getStatusComManager(0);
-					if (status != NULLPTR && status->communicationErrorCount != 0 && g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
-					{
-						cout << "Com errors: " << status->communicationErrorCount << "    ";
-					}
+                    if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_SCROLL)
+                    {
+                        g_inertialSenseDisplay.GoToRow(1);
+                        if (inertialSenseInterface.GetClientServerByteCount() != 0)
+                        {
+                            if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_QUIET)
+                            {
+                                cout << "Client bytes: " << inertialSenseInterface.GetClientServerByteCount() << "   ";
+                            }
+                        }
+                        com_manager_status_t* status = getStatusComManager(0);
+                        if (status != NULLPTR && status->communicationErrorCount != 0 &&
+                            g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
+                        {
+                            cout << "Com errors: " << status->communicationErrorCount << "    ";
+                        }
+                    }
 				}
 			}
 			catch (...)
@@ -387,6 +394,9 @@ int cltool_main(int argc, char* argv[])
 	if (result == -1)
 	{
 		cltool_outputHelp();
+
+        // Pause so user can read error
+        SLEEP_MS(2000);
 	}
 
 	g_inertialSenseDisplay.ShutDown();

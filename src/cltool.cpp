@@ -80,6 +80,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	g_commandLineOptions.timeoutFlushLoggerSeconds = 3;
 	g_commandLineOptions.asciiMessages = "";
 
+    g_commandLineOptions.surveyIn.state = 0;
+    g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
+    g_commandLineOptions.surveyIn.minAccuracy = 0;
+
 	cltool_outputHelp();
 
 	if(argc <= 1)
@@ -175,6 +179,16 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.magRecal = true;
 			g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
 		}
+        else if (startsWith(a, "-survey="))
+        {
+            g_commandLineOptions.rmcPresetPPD = false;
+            g_commandLineOptions.surveyIn.state = strtol(a + 8, NULL, 10);
+            int maxDurationSec = strtol(a + 10, NULL, 10);
+            if (maxDurationSec > 5)
+            {
+                g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
+            }
+        }
 		else if (startsWith(a, "-msgBaro"))
 		{
 			g_commandLineOptions.streamBaro = true;
@@ -356,7 +370,8 @@ void cltool_outputUsage()
 	cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
 	cout << "    -stats" << boldOff << "          display statistics of data received" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
-	cout << endlbOn;
+    cout << "    -survey=[s],[d]" << boldOff << " survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
+    cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
 	cout << "    -msgPPD       " << boldOff << "  stream post processing data sets" << endlbOn;
 	cout << "    -msgINS[n]    " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;

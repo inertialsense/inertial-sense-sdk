@@ -28,7 +28,7 @@ var searchData=
   ['pgpsp',['pgpsp',['../struct_p_a_c_k_e_d.html#a37e36a49ef6bee881f1070b81bb03f5d',1,'PACKED']]],
   ['phandle',['pHandle',['../structbroadcast__msg__t.html#a01d6b19c01ac83232c132f8beaeb3368',1,'broadcast_msg_t::pHandle()'],['../structensured__pkt__t.html#a87e055f58870fc9f8bf6074f55e66301',1,'ensured_pkt_t::pHandle()'],['../structs_chunk_header.html#a90a51bd59c0b99efc994cbc9f570f924',1,'sChunkHeader::pHandle()']]],
   ['pid',['pid',['../structpacket__hdr__t.html#a915f088eeed50b151584165a97598709',1,'packet_hdr_t']]],
-  ['pimu',['pimu',['../struct_p_a_c_k_e_d.html#a7ee94a0965132def95efaf43655360c3',1,'PACKED::pimu()'],['../struct_p_a_c_k_e_d.html#abe8f89d261ce72e0c4dbedcf3d0c36f5',1,'PACKED::pImu()']]],
+  ['pimu',['pImu',['../struct_p_a_c_k_e_d.html#abe8f89d261ce72e0c4dbedcf3d0c36f5',1,'PACKED::pImu()'],['../struct_p_a_c_k_e_d.html#a7ee94a0965132def95efaf43655360c3',1,'PACKED::pimu()']]],
   ['pin',['pin',['../struct_p_a_c_k_e_d.html#a1ccb70c12e79c29308651879d7e4b028',1,'PACKED']]],
   ['pins1',['pins1',['../struct_p_a_c_k_e_d.html#ae0bebc83f4ca371e74ce55b9ae9841b5',1,'PACKED']]],
   ['pins2',['pins2',['../struct_p_a_c_k_e_d.html#a052c0a745a1243b77cbc9e757355036e',1,'PACKED']]],
