@@ -1212,7 +1212,7 @@ string cInertialSenseDisplay::DataToStringRawGPS(const gps_raw_t& raw, const p_d
 	char* ptrEnd = buf + BUF_SIZE;
 	const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
 	ptr += SNPRINTF(buf, ptrEnd - ptr, "RAW GPS: receiverIndex=%d, type=%d, count=%d   %s",
-		raw.receiverIndex, raw.type, raw.count, terminator);
+		raw.receiverIndex, raw.dataType, raw.obsCount, terminator);
 
 	if (m_displayMode != DMODE_SCROLL)
 	{

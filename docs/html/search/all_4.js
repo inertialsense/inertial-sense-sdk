@@ -1,7 +1,7 @@
 var searchData=
 [
   ['d',['D',['../struct_p_a_c_k_e_d.html#a64c97f3cd23cd2bf3d6c6bee635b3202',1,'PACKED']]],
-  ['data',['data',['../structobs__t.html#a3cff1d90b248369f3c0d31b34cfb6344',1,'obs_t::data()'],['../structs_kml_log.html#a7c32f0b6f93301a137d2e149544cc2e8',1,'sKmlLog::data()'],['../class_ti_xml_string.html#a0e010e1737cfc3ee885b42875171b88e',1,'TiXmlString::data()']]],
+  ['data',['data',['../structobs__t.html#a3cff1d90b248369f3c0d31b34cfb6344',1,'obs_t::data()'],['../struct_p_a_c_k_e_d.html#a42fe1fcebdd514c95fccd45b8bb8fb03',1,'PACKED::data()'],['../structs_kml_log.html#a7c32f0b6f93301a137d2e149544cc2e8',1,'sKmlLog::data()'],['../class_ti_xml_string.html#a0e010e1737cfc3ee885b42875171b88e',1,'TiXmlString::data()']]],
   ['data_5fchunk_5fmarker',['DATA_CHUNK_MARKER',['../_data_chunk_8h.html#a6372be6793182e66c16be4143741bd8e',1,'DataChunk.h']]],
   ['data_5finfo_5ft',['data_info_t',['../structdata__info__t.html',1,'']]],
   ['data_5fmapping_5fstring_5ft',['data_mapping_string_t',['../_i_s_data_mappings_8h.html#a572efc6b591fba1f5337c08e9900580c',1,'ISDataMappings.h']]],
@@ -43,7 +43,7 @@ var searchData=
   ['datatostringsurveyin',['DataToStringSurveyIn',['../classc_inertial_sense_display.html#af8f4aa543fe148320b492cd94c1eae20',1,'cInertialSenseDisplay']]],
   ['datatostringsysparams',['DataToStringSysParams',['../classc_inertial_sense_display.html#ae84b6093c3699517369bd1631e07c110',1,'cInertialSenseDisplay']]],
   ['datatostringsyssensors',['DataToStringSysSensors',['../classc_inertial_sense_display.html#adc31c6668f9956a4e6ebf9ddef242cb1',1,'cInertialSenseDisplay']]],
-  ['datatype',['dataType',['../structdata__info__t.html#a39a67beb4c54c73cdd9d071219e90026',1,'data_info_t']]],
+  ['datatype',['dataType',['../struct_p_a_c_k_e_d.html#adc36112750f9a3e53751c1df40765112',1,'PACKED::dataType()'],['../structdata__info__t.html#a39a67beb4c54c73cdd9d071219e90026',1,'data_info_t::dataType()']]],
   ['datatypebinary',['DataTypeBinary',['../_i_s_data_mappings_8h.html#acc461328b82c34604e8b428326a52183a2d9fccd8c5cdd1463960fe4b5539c8fc',1,'ISDataMappings.h']]],
   ['datatypecount',['DataTypeCount',['../_i_s_data_mappings_8h.html#acc461328b82c34604e8b428326a52183a2e3997ee3a6d0300b1bdfe5547294f92',1,'ISDataMappings.h']]],
   ['datatypedouble',['DataTypeDouble',['../_i_s_data_mappings_8h.html#acc461328b82c34604e8b428326a52183adc28a312e8811f2c8743cc7e376e1995',1,'ISDataMappings.h']]],

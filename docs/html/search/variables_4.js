@@ -17,6 +17,7 @@ var searchData=
   ['ensensorstats',['enSensorStats',['../struct_p_a_c_k_e_d.html#af6eedaa9539a696ace61208c505e3a19',1,'PACKED']]],
   ['ensuredpackets',['ensuredPackets',['../structcom__manager__t.html#a7fc3af964301b311635445291553551a',1,'com_manager_t']]],
   ['ensureretrycount',['ensureRetryCount',['../structcom__manager__t.html#a2a4da8b8846be0d82a1d83af2adb7698',1,'com_manager_t']]],
+  ['eph',['eph',['../struct_p_a_c_k_e_d.html#a507d0fea4e85ab35d2b9b28cf195f880',1,'PACKED']]],
   ['eratio',['eratio',['../structprcopt__t.html#afb2a01796e12a8f4de651bbef689e9f3',1,'prcopt_t']]],
   ['err',['err',['../structprcopt__t.html#a9677a022311ecf28aa4537fea6304767',1,'prcopt_t']]],
   ['error',['error',['../struct_inertial_sense_1_1bootloader__result__t.html#ae757d552b6157c2d37f61aff1b1cb0bb',1,'InertialSense::bootloader_result_t::error()'],['../structbootload__params__t.html#a469ae7bc68b7a35356367833787cacb1',1,'bootload_params_t::error()'],['../structserial__port__t.html#a8c767fdb868bc53e63afca6d0dbaae1d',1,'serial_port_t::error()']]],

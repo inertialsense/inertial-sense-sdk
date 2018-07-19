@@ -13,7 +13,7 @@ var searchData=
   ['pfncommanagerread',['pfnComManagerRead',['../com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822',1,'com_manager.h']]],
   ['pfncommanagersend',['pfnComManagerSend',['../com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4',1,'com_manager.h']]],
   ['pfncommanagersendbufferavailablebytes',['pfnComManagerSendBufferAvailableBytes',['../com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d',1,'com_manager.h']]],
-  ['pfnhandlebinarydata',['pfnHandleBinaryData',['../_inertial_sense_8h.html#a4c4d52294f06037df31bc029007ee9c1',1,'InertialSense.h']]],
+  ['pfnhandlebinarydata',['pfnHandleBinaryData',['../_inertial_sense_8h.html#a728862e429ee3497de0252d42807dd31',1,'InertialSense.h']]],
   ['pfnserialportasyncread',['pfnSerialPortAsyncRead',['../serial_port_8h.html#a1e8de3a3187ccac99095db9a8324b5a9',1,'serialPort.h']]],
   ['pfnserialportasyncreadcompletion',['pfnSerialPortAsyncReadCompletion',['../serial_port_8h.html#aaaecfc725dc7dc22fe6ccf6bf14da9ac',1,'serialPort.h']]],
   ['pfnserialportclose',['pfnSerialPortClose',['../serial_port_8h.html#a013353db7ad84823c57746154cc2c98f',1,'serialPort.h']]],

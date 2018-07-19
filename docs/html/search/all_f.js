@@ -1,7 +1,9 @@
 var searchData=
 [
   ['obj',['obj',['../structbootload__params__t.html#accd28a17ec2d3b1b8123a8af0428bdd6',1,'bootload_params_t']]],
+  ['obs',['obs',['../struct_p_a_c_k_e_d.html#aab9207c118fc708020907d9b1e70740d',1,'PACKED']]],
   ['obs_5ft',['obs_t',['../structobs__t.html',1,'']]],
+  ['obscount',['obsCount',['../struct_p_a_c_k_e_d.html#a56850797a0ab0be4c8c7ee6dc291b06b',1,'PACKED']]],
   ['obsd_5ft',['obsd_t',['../data__sets_8h.html#a793ac2cd653754cb8651d510bfb6f452',1,'data_sets.h']]],
   ['offset',['offset',['../structp__data__hdr__t.html#a5671779d9843a522942f60cbca2dee18',1,'p_data_hdr_t::offset()'],['../structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8',1,'p_data_get_t::offset()']]],
   ['omg',['omg',['../structeph__t.html#a1de6fc83e37743cf8fc63b9ab4920912',1,'eph_t::omg()'],['../structalm__t.html#ad622d2be16266fd191cd51135c2ddbc4',1,'alm_t::omg()']]],
@@ -9,6 +11,7 @@ var searchData=
   ['omgd',['OMGd',['../structeph__t.html#a2ba68a7c2a99555bad213aa6f0d4b6af',1,'eph_t::OMGd()'],['../structalm__t.html#a86c95b8f36d84f7474a74aef61184527',1,'alm_t::OMGd()']]],
   ['onclientdatareceived',['OnClientDataReceived',['../classi_i_s_tcp_server_delegate.html#a58bf6d6de6148461f5461bf4a7f073d0',1,'iISTcpServerDelegate']]],
   ['onclientdisconnected',['OnClientDisconnected',['../classi_i_s_tcp_server_delegate.html#a88af04ec51346fb1fbd91452118ea447',1,'iISTcpServerDelegate']]],
+  ['onerror',['OnError',['../classi_gps_parser_delegate.html#a235705085991ff760cf10cb49317a743',1,'iGpsParserDelegate']]],
   ['onglonassephemerisreceived',['OnGlonassEphemerisReceived',['../classi_gps_parser_delegate.html#ab711598d3e65ae1b7ba4e7a04afedc29',1,'iGpsParserDelegate']]],
   ['ongpsephemerisreceived',['OnGpsEphemerisReceived',['../classi_gps_parser_delegate.html#ad51fee5d3324537e4a9a8664237b8626',1,'iGpsParserDelegate']]],
   ['onionospheremodelutcalmanacreceived',['OnIonosphereModelUtcAlmanacReceived',['../classi_gps_parser_delegate.html#a938592121441395308150fa8d1a9faf3',1,'iGpsParserDelegate']]],

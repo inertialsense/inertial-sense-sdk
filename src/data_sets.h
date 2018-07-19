@@ -34,20 +34,20 @@ typedef uint32_t eDataIDs;
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define DID_CRASH_INFO                  (eDataIDs)2  /** (crash_info_t) Crash information */
-#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as ? Theta ? Velocity, or Integrated IMU. For clarification, we will use the name "Preintegrated IMU" through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */
-#define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
+#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we will use the name "Preintegrated IMU" through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */
+#define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GPS_NAV                     (eDataIDs)6  /** (gps_nav_t) Standard GPS data */
 #define DID_CONFIG                      (eDataIDs)7  /** (config_t) Configuration data */
 #define DID_ASCII_BCAST_PERIOD          (eDataIDs)8  /** (ascii_msgs_t) Broadcast period for ASCII messages */
-#define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime message controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */
+#define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */
 #define DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
 #define DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
 #define DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
 #define DID_GPS1_NAV                    (eDataIDs)13 /** (gps_nav_t) GPS 1 navigation data */
 #define DID_GPS2_NAV                    (eDataIDs)14 /** (gps_nav_t) GPS 2 navigation data */
-#define DID_GPS1_SAT                    (eDataIDs)15 /** (gps_sat_t) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual */
-#define DID_GPS2_SAT                    (eDataIDs)16 /** (gps_sat_t) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual */
+#define DID_GPS1_SAT                    (eDataIDs)15 /** (gps_sat_t) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
+#define DID_GPS2_SAT                    (eDataIDs)16 /** (gps_sat_t) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
 #define DID_GPS1_VERSION                (eDataIDs)17 /** (gps_version_t) GPS 1 version info */
 #define DID_GPS2_VERSION                (eDataIDs)18 /** (gps_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
@@ -69,7 +69,7 @@ typedef uint32_t eDataIDs;
 #define DID_NVR_USERPAGE_G0             (eDataIDs)35 /** INTERNAL USE ONLY (nvm_group_0_t) */
 #define DID_NVR_USERPAGE_G1             (eDataIDs)36 /** INTERNAL USE ONLY (nvm_group_1_t) */
 #define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
-#define DID_RTOS_INFO                   (eDataIDs)38 /** RTOS info (rtos_info_t) */
+#define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
 #define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
@@ -91,20 +91,20 @@ typedef uint32_t eDataIDs;
 #define DID_DUAL_IMU_RAW                (eDataIDs)57 /** (dual_imu_t) Dual inertial measurement unit data directly from IMU.  We recommend use of DID_DUAL_IMU or DID_PREINTEGRATED_IMU. */
 #define DID_DUAL_IMU                    (eDataIDs)58 /** (dual_imu_t) Dual inertial measurement unit data down-sampled from 1KHz to navigation update rate as an anti-aliasing filter to reduce noise and preserve accuracy. */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
-#define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */
-#define DID_GPS_RTK_OPT                 (eDataIDs)61 /** (gps_rtk_opt_t) RTK options - requires little endian CPU */
+#define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
+#define DID_GPS_RTK_OPT                 (eDataIDs)61 /** (gps_rtk_opt_t) RTK options - requires little endian CPU. */
 #define DID_NVR_USERPAGE_INTERNAL       (eDataIDs)62 /** (internal) Internal user page data */
 #define DID_MANUFACTURING_INFO          (eDataIDs)63 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
-#define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position */
-#define DID_INS_4                       (eDataIDs)66 /** (ins_4_t) INS output: quaternion rotation w/ respect to ECEF, ECEF position */
+#define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
+#define DID_INS_4                       (eDataIDs)66 /** (ins_4_t) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */
 #define DID_INL2_VARIANCE               (eDataIDs)67 /** (inl2_variance_t) INL2 variance */
-#define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe */
-#define DID_GPS1_RAW                    (eDataIDs)69 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */
-#define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */
-#define DID_VELOCITY_MEASUREMENT        (eDataIDs)71 /** (velocity_sensor_t) external generic velocity sensor to be fused with GPS-INS measurements. */
-#define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) diagnostic message */
-#define DID_SURVEY_IN					(eDataIDs)73 /** (survey_in_t) survey in, used to determine position for RTK base station */
+#define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
+#define DID_GPS1_RAW                    (eDataIDs)69 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
+#define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
+#define DID_VELOCITY_MEASUREMENT        (eDataIDs)71 /** (velocity_sensor_t) External generic velocity sensor to be fused with GPS-INS measurements. */
+#define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
+#define DID_SURVEY_IN					(eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -658,7 +658,7 @@ typedef struct PACKED
     /** RTK - Distance to Base (m) */
 	float                   distanceToBase;
 
-	/** RTK - Vector to base (ECEF) - If Compassing enabled, this is the 3-vector from antenna 2 to antenna 1 */
+	/** RTK - Vector to base (m) in ECEF - If Compassing enabled, this is the 3-vector from antenna 2 to antenna 1 */
 	float					vectorToBase[3];
 
 } gps_nav_t;
@@ -695,33 +695,57 @@ enum eSatSvFlags
 /** (DID_GPS1_SAT) GPS satellite signal strength */
 typedef struct PACKED
 {
-	uint32_t                timeOfWeekMs;				/** Time of week (since Sunday morning) in milliseconds, GMT */
-	uint32_t				numSats;					/** Number of satellites in the sky */
-	gps_sat_sv_t			sat[MAX_NUM_SAT_CHANNELS];	/** Satellite information list */
+    /** Time of week (since Sunday morning) in milliseconds, GMT */
+	uint32_t                timeOfWeekMs;				
+    /** Number of satellites in the sky */
+	uint32_t				numSats;					
+    /** Satellite information list */
+	gps_sat_sv_t			sat[MAX_NUM_SAT_CHANNELS];	
 } gps_sat_t;
 
 
 /** (DID_GPS1_VERSION) GPS version strings */
 typedef struct PACKED
 {
-	uint8_t                 swVersion[30];		/** Software version */
-	uint8_t                 hwVersion[10];		/** Hardware version */
-	uint8_t                 extension[30];		/** Extension */
-	uint8_t					reserved[2];		/** ensure 32 bit aligned in memory */
+    /** Software version */
+	uint8_t                 swVersion[30];
+    /** Hardware version */
+	uint8_t                 hwVersion[10];		
+    /** Extension */
+	uint8_t                 extension[30];		
+    /** ensure 32 bit aligned in memory */
+	uint8_t					reserved[2];		
 } gps_version_t;
 
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
 typedef struct PACKED
 {
-	double                  time;					// (s)     Time since boot up in seconds
-	float					qe2b[4];                //         Quaternion body rotation with respect to ECEF
-	float					ve[3];					// (m/s)   Velocity in ECEF frame
-	double					ecef[3];				// (m)     Position in ECEF frame
-	float					biasPqr[3];	            // (rad/s) Gyro bias
-	float					biasAcc[3];	            // (m/s^2) Accelerometer bias
-	float					biasBaro;               // (m)     Barometer bias
-	float					magDec;                 // (rad)   Magnetic declination
-	float					magInc;                 // (rad)   Magnetic inclination
+    /** (s) Time since boot up in seconds */
+	double                  time;					
+
+    /** Quaternion body rotation with respect to ECEF */
+	float					qe2b[4];                    
+
+    /** (m/s) Velocity in ECEF frame */
+	float					ve[3];						
+
+    /** (m)     Position in ECEF frame */
+    double					ecef[3];				
+
+	/** (rad/s) Gyro bias */
+    float					biasPqr[3];	           
+	
+    /** (m/s^2) Accelerometer bias */
+    float					biasAcc[3];	            
+	
+    /** (m)     Barometer bias */
+    float					biasBaro;               
+	
+    /** (rad)   Magnetic declination */
+    float					magDec;                 
+	
+    /** (rad)   Magnetic inclination */
+    float					magInc;                 
 } inl2_states_t;
 
 /** Generic 1 axis sensor */
@@ -838,8 +862,17 @@ typedef struct PACKED
 	/** System status 2 flags (eHdwStatusFlags) */
 	uint32_t                hdwStatus;
 
+	/** IMU temperature */
+	float					imuTemp;
+
+	/** Baro temperature */
+	float					baroTemp;
+
+	/** MCU temperature (not available yet) */
+	float					mcuTemp;
+
 	/** Reserved */
-	float					reserved1[4];
+	float					reserved1;
 
 	/** IMU sample period in milliseconds. Zero disables sampling. */
 	uint32_t				imuPeriodMs;
@@ -967,14 +1000,14 @@ typedef struct PACKED
                                         RMC_BITS_GPS_NAV | \
                                         RMC_BITS_GPS1_NAV | \
                                         RMC_BITS_GPS2_NAV | \
-                                        RMC_BITS_GPS1_RAW | \
-                                        RMC_BITS_GPS2_RAW | \
                                         RMC_BITS_GPS_BASE_RAW | \
                                         RMC_BITS_INTERNAL_PPD | \
                                         RMC_BITS_PRESET | \
                                         RMC_BITS_DIAGNOSTIC_MESSAGE   )
 #define RMC_PRESET_PPD_BITS            (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_PREINTEGRATED_IMU )
 #define RMC_PRESET_PPD_RAW_IMU_BITS    (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_DUAL_IMU_RAW )
+#define RMC_PRESET_PPD_RAW_GPS_BITS    (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_GPS1_RAW | RMC_BITS_GPS2_RAW)
+#define RMC_PRESET_PPD_COMPASSING_BITS (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_GPS_RTK_NAV | RMC_BITS_GPS_RTK_MISC | RMC_BITS_PREINTEGRATED_IMU)
 
 // Preset: INS2 Data
 #define RMC_PRESET_INS_NAV_PERIOD       1   // fastest rate (EKF update rate)
@@ -1207,7 +1240,8 @@ enum eRTKConfigBits
 	RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER			= (int)0x00004000,
 	
 	/** All base station bits */
-	RTK_CFG_BITS_RTK_BASE = (RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
+	RTK_CFG_BITS_RTK_BASE = (
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1),
@@ -1374,16 +1408,25 @@ typedef struct PACKED
 
 } nvm_flash_cfg_t;
 
+/** INL2 - Estimate error variances */
 typedef struct PACKED
-{											// INL2 - Estimate error variances
-	unsigned int			timeOfWeekMs;	// Timestamp in milliseconds
-	float					PxyzNED[3];		// NED position error variances
-	float					PvelNED[3];		// NED velocity error variances
-	float					PattNED[3];		// NED attitude error variances
-	float					PABias[3];		// Acceleration bias error variances
-	float					PWBias[3];		// Angular rate bias error variances
-	float					PBaroBias;		// Barometric altitude error variance
-	float					PDeclination;	// Mag declination error variance
+{											
+    /** Timestamp in milliseconds */
+	unsigned int			timeOfWeekMs;	
+    /** NED position error variances */
+	float					PxyzNED[3];		
+    /** NED velocity error variances */
+	float					PvelNED[3];		
+    /** NED attitude error variances */
+	float					PattNED[3];		
+    /** Acceleration bias error variances */
+	float					PABias[3];		
+    /** Angular rate bias error variances */
+	float					PWBias[3];		
+    /** Barometric altitude error variance */
+	float					PBaroBias;		
+    /** Mag declination error variance */
+	float					PDeclination;	
 } inl2_variance_t;
 
 /** (DID_STROBE_IN_TIME) Timestamp for input strobe. */
@@ -1594,7 +1637,8 @@ typedef struct PACKED
 	float D[1];
 } obsd_t;
 
-#define MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE (960 / sizeof(obsd_t))
+#define GPS_RAW_MESSAGE_BUF_SIZE    1000
+#define MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE (GPS_RAW_MESSAGE_BUF_SIZE / sizeof(obsd_t))
 
 /** observation data */
 typedef struct
@@ -2009,6 +2053,9 @@ typedef struct PACKED
 
     /** Ionosphere model, utc and almanac count */
     uint32_t				ionUtcAlmCount;
+    
+    /** Angle in local tangent plane between vectorToBase and North in NED frame (rad) */
+    float                   rtkCompassHeading;
 } gps_rtk_misc_t;
 
 /** RAW data types for DID_GPS_BASE_RAW and DID_GPS2_RAW */
@@ -2036,23 +2083,47 @@ typedef enum
 	raw_data_type_rtk_solution = 123
 } eRawDataType;
 
-/** Message wrapper for DID_GPS_BASE_RAW and DID_GPS2_RAW - simply cast the data buffer to this struct */
+typedef union PACKED
+{   
+    /** Satellite observation data */
+    obsd_t              obs[MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE];
+    
+    /** Satellite non-GLONASS ephemeris data (GPS, Galileo, Beidou, QZSS) */
+    eph_t               eph;
+    
+    /** Satellite GLONASS ephemeris data */
+    geph_t              gloEph;
+    
+    /** Satellite-Based Augmentation Systems (SBAS) data */
+    sbsmsg_t            sbas;
+        
+    /** Base station information (base position, antenna position, antenna height, etc.) */
+    sta_t               sta;
+
+    /** Ionosphere model and UTC parameters */
+    ion_model_utc_alm_t ion;
+
+    /** Byte buffer */
+    uint8_t             buf[GPS_RAW_MESSAGE_BUF_SIZE];
+} uGpsRawData;
+
+/** Message wrapper for DID_GPS1_RAW, DID_GPS2_RAW, and DID_GPS_BASE_RAW.  The contents of data can vary for this message and are determined by dataType field. */
 typedef struct PACKED
 {
-	/** Receiver index, RECEIVER_INDEX_ROVER or RECEIVER_INDEX_BASE */
+	/** Receiver index (1=RECEIVER_INDEX_GPS1, 2=RECEIVER_INDEX_EXTERNAL_BASE, or 3=RECEIVER_INDEX_GPS2 ) */
 	uint8_t receiverIndex;
 
-	/** Type of message - eRawDataType */
-	uint8_t type;
+	/** Type of data (eRawDataType: 1=observations, 2=ephemeris, 3=glonassEphemeris, 4=SBAS, 5=baseAntenna, 6=IonosphereModel) */
+	uint8_t dataType;
 
-	/** number of messages of type */
-	uint8_t count;
+	/** Number of observations in data (obsd_t) when dataType==1 (raw_data_type_observation). */
+	uint8_t obsCount;
 
 	/** Reserved */
 	uint8_t reserved;
 
-    /** Data buffer, see eRawDataType for the data structure to cast to */
-	uint8_t buf[1000];
+    /** Interpret based on dataType (see eRawDataType) */    
+	uGpsRawData data;
 } gps_raw_t;
 
 typedef struct PACKED

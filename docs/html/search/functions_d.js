@@ -2,6 +2,7 @@ var searchData=
 [
   ['onclientdatareceived',['OnClientDataReceived',['../classi_i_s_tcp_server_delegate.html#a58bf6d6de6148461f5461bf4a7f073d0',1,'iISTcpServerDelegate']]],
   ['onclientdisconnected',['OnClientDisconnected',['../classi_i_s_tcp_server_delegate.html#a88af04ec51346fb1fbd91452118ea447',1,'iISTcpServerDelegate']]],
+  ['onerror',['OnError',['../classi_gps_parser_delegate.html#a235705085991ff760cf10cb49317a743',1,'iGpsParserDelegate']]],
   ['onglonassephemerisreceived',['OnGlonassEphemerisReceived',['../classi_gps_parser_delegate.html#ab711598d3e65ae1b7ba4e7a04afedc29',1,'iGpsParserDelegate']]],
   ['ongpsephemerisreceived',['OnGpsEphemerisReceived',['../classi_gps_parser_delegate.html#ad51fee5d3324537e4a9a8664237b8626',1,'iGpsParserDelegate']]],
   ['onionospheremodelutcalmanacreceived',['OnIonosphereModelUtcAlmanacReceived',['../classi_gps_parser_delegate.html#a938592121441395308150fa8d1a9faf3',1,'iGpsParserDelegate']]],

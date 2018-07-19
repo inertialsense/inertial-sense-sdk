@@ -99,12 +99,66 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1fea12f01b07177946f1ce10cd26eb9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a938592121441395308150fa8d1a9faf3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classi_gps_parser_delegate.html#a938592121441395308150fa8d1a9faf3">OnIonosphereModelUtcAlmanacReceived</a> (const <a class="el" href="classc_gps_parser.html">cGpsParser</a> *parser, <a class="el" href="struction__model__utc__alm__t.html">ion_model_utc_alm_t</a> *ionUtcAlm)</td></tr>
 <tr class="separator:a938592121441395308150fa8d1a9faf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a235705085991ff760cf10cb49317a743"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classi_gps_parser_delegate.html#a235705085991ff760cf10cb49317a743">OnError</a> (const <a class="el" href="classc_gps_parser.html">cGpsParser</a> *parser, uint32_t id, uint32_t errorCode)</td></tr>
+<tr class="separator:a235705085991ff760cf10cb49317a743"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Gps parser interface. A gps parser handles parsing messages common to all types of gps data formats. </p>
 
 <p class="definition">Definition at line <a class="el" href="_gps_parser_8h_source.html#l00055">55</a> of file <a class="el" href="_gps_parser_8h_source.html">GpsParser.h</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a235705085991ff760cf10cb49317a743"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a235705085991ff760cf10cb49317a743">&#9670;&nbsp;</a></span>OnError()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void iGpsParserDelegate::OnError </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classc_gps_parser.html">cGpsParser</a> *&#160;</td>
+          <td class="paramname"><em>parser</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>errorCode</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Executes when an error is received in parsing </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">parser</td><td>the parser </td></tr>
+    <tr><td class="paramname">id</td><td>the message id </td></tr>
+    <tr><td class="paramname">errorCode</td><td>the errorCode </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="_gps_parser_8h_source.html#l00149">149</a> of file <a class="el" href="_gps_parser_8h_source.html">GpsParser.h</a>.</p>
+
+</div>
+</div>
 <a id="ab711598d3e65ae1b7ba4e7a04afedc29"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab711598d3e65ae1b7ba4e7a04afedc29">&#9670;&nbsp;</a></span>OnGlonassEphemerisReceived()</h2>
 

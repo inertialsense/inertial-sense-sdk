@@ -79,7 +79,7 @@ int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds)
     fd_set ws;
     FD_ZERO(&ws);
     FD_SET(socket, &ws);
-    int numberOfSocketsThatCanWrite = select(0, NULL, &ws, NULL, &tv);
+    int numberOfSocketsThatCanWrite = select((int)socket + 1, NULL, &ws, NULL, &tv);
     return (numberOfSocketsThatCanWrite > 0);
 }
 

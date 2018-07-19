@@ -75,7 +75,7 @@ int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_
 	rmc_t rmc;
 	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS_NAV;
 	rmc.insPeriodMs = 50;	// INS @ 20Hz
-	rmc.options = 0;		// current port
+	rmc.options = RMC_OPTIONS_SET_STARTUP_STREAM;		// Current port.  Preconfigure streaming (remember) for startup.
 
 	int messageSize = is_comm_set_data(comm, _DID_RMC, 0, sizeof(rmc_t), &rmc);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))

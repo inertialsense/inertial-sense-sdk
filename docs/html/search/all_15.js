@@ -7,6 +7,7 @@ var searchData=
   ['ublox_5fstart_5fbyte1',['UBLOX_START_BYTE1',['../_i_s_comm_8h.html#a739834da5d5205125ac7115741c30c63a3c40c8ab20b400ce92d105b470e09891',1,'ISComm.h']]],
   ['ublox_5fstart_5fbyte2',['UBLOX_START_BYTE2',['../_i_s_comm_8h.html#a739834da5d5205125ac7115741c30c63ae9ca61a4078c839bc88b4b49baaebd57',1,'ISComm.h']]],
   ['udatasets',['uDatasets',['../data__sets_8h.html#a2930a1f1c69fcf8f3a95dee6be6481e3',1,'data_sets.h']]],
+  ['ugpsrawdata',['uGpsRawData',['../data__sets_8h.html#a8f7551a327079ecb3babb37e689f026b',1,'data_sets.h']]],
   ['uinsoutdatasets',['uInsOutDatasets',['../data__sets_8h.html#a09747d8cba4670cd20a977587a0043f0',1,'data_sets.h']]],
   ['uint32_5ftime_5fdiff',['UINT32_TIME_DIFF',['../_i_s_constants_8h.html#a931206b446721325c1884b185d0f50ba',1,'ISConstants.h']]],
   ['unknown',['Unknown',['../class_ti_xml_handle.html#a12b32f098c7daa5facbc04e9618262c5',1,'TiXmlHandle']]],

@@ -139,6 +139,19 @@ public:
 		(void)parser;
 		(void)ionUtcAlm;
 	}
+	
+	/**
+	* Executes when an error is received in parsing
+	* @param parser the parser
+	* @param id the message id
+	* @param errorCode the errorCode
+	*/
+	virtual void OnError(const cGpsParser* parser, uint32_t id, uint32_t errorCode)
+	{
+		(void)parser;
+		(void)id;
+		(void)errorCode;
+	}
 };
 
 class cGpsParser

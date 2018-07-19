@@ -180,6 +180,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">union &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_p_a_c_k_e_d.html">PACKED</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">union &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_p_a_c_k_e_d.html">PACKED</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structdiag__msg__t.html">diag_msg_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsurvey__in__t.html">survey_in_t</a></td></tr>
@@ -205,9 +207,9 @@ Macros</h2></td></tr>
 <tr class="separator:a5ad06fc2f66d620d031065c8dc711904"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c050bbc4f6747643e3669630d850398"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a4c050bbc4f6747643e3669630d850398">DID_CRASH_INFO</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)2  /** (<a class="el" href="structcrash__info__t.html">crash_info_t</a>) Crash information */</td></tr>
 <tr class="separator:a4c050bbc4f6747643e3669630d850398"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbdf7a001284bca28a4633d4a5be3cea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#abbdf7a001284bca28a4633d4a5be3cea">DID_PREINTEGRATED_IMU</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)3  /** (<a class="el" href="data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa">preintegrated_imu_t</a>) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as ? Theta ? Velocity, or Integrated IMU. For clarification, we will use the name &quot;Preintegrated IMU&quot; through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */</td></tr>
+<tr class="memitem:abbdf7a001284bca28a4633d4a5be3cea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#abbdf7a001284bca28a4633d4a5be3cea">DID_PREINTEGRATED_IMU</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)3  /** (<a class="el" href="data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa">preintegrated_imu_t</a>) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we will use the name &quot;Preintegrated IMU&quot; through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */</td></tr>
 <tr class="separator:abbdf7a001284bca28a4633d4a5be3cea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51eb38624c99c9172d22efbaf713b863"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)4  /** (<a class="el" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>) INS output: euler rotation w/ respect to NED, NED position from reference LLA */</td></tr>
+<tr class="memitem:a51eb38624c99c9172d22efbaf713b863"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)4  /** (<a class="el" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */</td></tr>
 <tr class="separator:a51eb38624c99c9172d22efbaf713b863"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d5fd01bfed703c441c1503fb98ad804"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a3d5fd01bfed703c441c1503fb98ad804">DID_INS_2</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)5  /** (<a class="el" href="data__sets_8h.html#a8c5835bd1e36c2963acfa4d8d0bd0468">ins_2_t</a>) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */</td></tr>
 <tr class="separator:a3d5fd01bfed703c441c1503fb98ad804"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -217,7 +219,7 @@ Macros</h2></td></tr>
 <tr class="separator:a8327fa833ec7b23e61d1d0013d28a5c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d708a6686e066a4fac8c05c51c56d62"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a1d708a6686e066a4fac8c05c51c56d62">DID_ASCII_BCAST_PERIOD</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)8  /** (<a class="el" href="data__sets_8h.html#a174ed931a6a6cc2559cb56e18cb20b95">ascii_msgs_t</a>) Broadcast period for ASCII messages */</td></tr>
 <tr class="separator:a1d708a6686e066a4fac8c05c51c56d62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b78d38da66e91d33bd5fef049125f51"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a9b78d38da66e91d33bd5fef049125f51">DID_RMC</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)9  /** (<a class="el" href="data__sets_8h.html#a323b97258fc464db806e374873051264">rmc_t</a>) Realtime message controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */</td></tr>
+<tr class="memitem:a9b78d38da66e91d33bd5fef049125f51"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a9b78d38da66e91d33bd5fef049125f51">DID_RMC</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)9  /** (<a class="el" href="data__sets_8h.html#a323b97258fc464db806e374873051264">rmc_t</a>) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */</td></tr>
 <tr class="separator:a9b78d38da66e91d33bd5fef049125f51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe3d68b18ba95d181676b78e1e2fa346"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#afe3d68b18ba95d181676b78e1e2fa346">DID_SYS_PARAMS</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)10 /** (<a class="el" href="data__sets_8h.html#a013685399ef07abc9b3a836637ce403c">sys_params_t</a>) System parameters / info */</td></tr>
 <tr class="separator:afe3d68b18ba95d181676b78e1e2fa346"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -229,9 +231,9 @@ Macros</h2></td></tr>
 <tr class="separator:ac55c9006d6eb1d7f648a0744e3d8606b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3418320cb605f054dd15412adba3ec35"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a3418320cb605f054dd15412adba3ec35">DID_GPS2_NAV</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)14 /** (<a class="el" href="data__sets_8h.html#a33b2065e034fbabf89cf99dc9eaafbd1">gps_nav_t</a>) GPS 2 navigation data */</td></tr>
 <tr class="separator:a3418320cb605f054dd15412adba3ec35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad58f24fccca1c50cc9fcef2348fb4d29"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ad58f24fccca1c50cc9fcef2348fb4d29">DID_GPS1_SAT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)15 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual */</td></tr>
+<tr class="memitem:ad58f24fccca1c50cc9fcef2348fb4d29"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ad58f24fccca1c50cc9fcef2348fb4d29">DID_GPS1_SAT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)15 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */</td></tr>
 <tr class="separator:ad58f24fccca1c50cc9fcef2348fb4d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51e528924210554191797b8178ae2f10"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a51e528924210554191797b8178ae2f10">DID_GPS2_SAT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)16 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual */</td></tr>
+<tr class="memitem:a51e528924210554191797b8178ae2f10"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a51e528924210554191797b8178ae2f10">DID_GPS2_SAT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)16 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */</td></tr>
 <tr class="separator:a51e528924210554191797b8178ae2f10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75d4cc36f86264e530d8fb14c76486ec"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a75d4cc36f86264e530d8fb14c76486ec">DID_GPS1_VERSION</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)17 /** (<a class="el" href="data__sets_8h.html#a29fe12ed8e76004e3ff163ec0927e11e">gps_version_t</a>) GPS 1 version info */</td></tr>
 <tr class="separator:a75d4cc36f86264e530d8fb14c76486ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -275,7 +277,7 @@ Macros</h2></td></tr>
 <tr class="separator:a0a9bdf3c93bab20ab651d8c0e2fc3d53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa959d5bd5e79470503042878e5bb052"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#aaa959d5bd5e79470503042878e5bb052">DID_DEBUG_STRING</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)37 /** INTERNAL USE ONLY (debug_string_t) */</td></tr>
 <tr class="separator:aaa959d5bd5e79470503042878e5bb052"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad642a00e622f8fbaf5ac0882b29e7cf7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ad642a00e622f8fbaf5ac0882b29e7cf7">DID_RTOS_INFO</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)38 /** RTOS info (<a class="el" href="data__sets_8h.html#a783ce4826a865cc21b04b2232bc6705d">rtos_info_t</a>) */</td></tr>
+<tr class="memitem:ad642a00e622f8fbaf5ac0882b29e7cf7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ad642a00e622f8fbaf5ac0882b29e7cf7">DID_RTOS_INFO</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)38 /** (<a class="el" href="data__sets_8h.html#a783ce4826a865cc21b04b2232bc6705d">rtos_info_t</a>) RTOS information. */</td></tr>
 <tr class="separator:ad642a00e622f8fbaf5ac0882b29e7cf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c84f053ac64c5dac6d390d8d6e270b0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a3c84f053ac64c5dac6d390d8d6e270b0">DID_DEBUG_ARRAY</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)39 /** INTERNAL USE ONLY (debug_array_t) */</td></tr>
 <tr class="separator:a3c84f053ac64c5dac6d390d8d6e270b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -319,9 +321,9 @@ Macros</h2></td></tr>
 <tr class="separator:ad2798c3e27acd9013878bc86774aced7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4465d66f05902bd077de9f55144c8f60"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a4465d66f05902bd077de9f55144c8f60">DID_INL2_MAG_OBS_INFO</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */</td></tr>
 <tr class="separator:a4465d66f05902bd077de9f55144c8f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8520eaea81a5b3d8e163ee01e2f9388"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ac8520eaea81a5b3d8e163ee01e2f9388">DID_GPS_BASE_RAW</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)60 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */</td></tr>
+<tr class="memitem:ac8520eaea81a5b3d8e163ee01e2f9388"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ac8520eaea81a5b3d8e163ee01e2f9388">DID_GPS_BASE_RAW</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)60 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */</td></tr>
 <tr class="separator:ac8520eaea81a5b3d8e163ee01e2f9388"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af63c746c6b6876b583c016e91bca492d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#af63c746c6b6876b583c016e91bca492d">DID_GPS_RTK_OPT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)61 /** (<a class="el" href="data__sets_8h.html#aae2c80c60fae4068a039f66ee1053ad0">gps_rtk_opt_t</a>) RTK options - requires little endian CPU */</td></tr>
+<tr class="memitem:af63c746c6b6876b583c016e91bca492d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#af63c746c6b6876b583c016e91bca492d">DID_GPS_RTK_OPT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)61 /** (<a class="el" href="data__sets_8h.html#aae2c80c60fae4068a039f66ee1053ad0">gps_rtk_opt_t</a>) RTK options - requires little endian CPU. */</td></tr>
 <tr class="separator:af63c746c6b6876b583c016e91bca492d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a626b61cf81ef179836f8d265ff81fe85"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a626b61cf81ef179836f8d265ff81fe85">DID_NVR_USERPAGE_INTERNAL</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)62 /** (internal) Internal user page data */</td></tr>
 <tr class="separator:a626b61cf81ef179836f8d265ff81fe85"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -329,23 +331,23 @@ Macros</h2></td></tr>
 <tr class="separator:aee99f0f218defe4469b9d0e00c2e3670"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa65280eff4e4b5f409d63ccfdff5000b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#aa65280eff4e4b5f409d63ccfdff5000b">DID_BIT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)64 /** (<a class="el" href="data__sets_8h.html#aade7c25d6be78196852ad10bf5d1d9bd">bit_t</a>) System built-in self-test */</td></tr>
 <tr class="separator:aa65280eff4e4b5f409d63ccfdff5000b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0f460e6ea59aa0ef025b179acdf70d6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ab0f460e6ea59aa0ef025b179acdf70d6">DID_INS_3</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)65 /** (<a class="el" href="data__sets_8h.html#acfffad1a3ac9ffa3a0515950e1797fb6">ins_3_t</a>) Inertial navigation data with quaternion NED to body rotation and ECEF position */</td></tr>
+<tr class="memitem:ab0f460e6ea59aa0ef025b179acdf70d6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ab0f460e6ea59aa0ef025b179acdf70d6">DID_INS_3</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)65 /** (<a class="el" href="data__sets_8h.html#acfffad1a3ac9ffa3a0515950e1797fb6">ins_3_t</a>) Inertial navigation data with quaternion NED to body rotation and ECEF position. */</td></tr>
 <tr class="separator:ab0f460e6ea59aa0ef025b179acdf70d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa9811e0c4885b2f2aeb828f9780afec"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#aaa9811e0c4885b2f2aeb828f9780afec">DID_INS_4</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)66 /** (<a class="el" href="data__sets_8h.html#a5682b4426fa8ee87e283dddfe0b3f70d">ins_4_t</a>) INS output: quaternion rotation w/ respect to ECEF, ECEF position */</td></tr>
+<tr class="memitem:aaa9811e0c4885b2f2aeb828f9780afec"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#aaa9811e0c4885b2f2aeb828f9780afec">DID_INS_4</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)66 /** (<a class="el" href="data__sets_8h.html#a5682b4426fa8ee87e283dddfe0b3f70d">ins_4_t</a>) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */</td></tr>
 <tr class="separator:aaa9811e0c4885b2f2aeb828f9780afec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ed65b673e4db6158190d7d453e6da46"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a9ed65b673e4db6158190d7d453e6da46">DID_INL2_VARIANCE</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)67 /** (<a class="el" href="data__sets_8h.html#ad30b4fe62d7fb90ae719d67633dbfcdf">inl2_variance_t</a>) INL2 variance */</td></tr>
 <tr class="separator:a9ed65b673e4db6158190d7d453e6da46"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ad0e4894aa48cbc1dbbb21aecb5bab3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a8ad0e4894aa48cbc1dbbb21aecb5bab3">DID_STROBE_IN_TIME</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)68 /** (<a class="el" href="data__sets_8h.html#abb93c4f050ba2e23e87fb37e7d179000">strobe_in_time_t</a>) Timestamp for input strobe */</td></tr>
+<tr class="memitem:a8ad0e4894aa48cbc1dbbb21aecb5bab3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a8ad0e4894aa48cbc1dbbb21aecb5bab3">DID_STROBE_IN_TIME</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)68 /** (<a class="el" href="data__sets_8h.html#abb93c4f050ba2e23e87fb37e7d179000">strobe_in_time_t</a>) Timestamp for input strobe. */</td></tr>
 <tr class="separator:a8ad0e4894aa48cbc1dbbb21aecb5bab3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae805de4fa8fac52ea9ed1e9c6fd6259f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ae805de4fa8fac52ea9ed1e9c6fd6259f">DID_GPS1_RAW</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)69 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */</td></tr>
+<tr class="memitem:ae805de4fa8fac52ea9ed1e9c6fd6259f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ae805de4fa8fac52ea9ed1e9c6fd6259f">DID_GPS1_RAW</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)69 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */</td></tr>
 <tr class="separator:ae805de4fa8fac52ea9ed1e9c6fd6259f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7402feb87584ebeaefe507e191f8930"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#af7402feb87584ebeaefe507e191f8930">DID_GPS2_RAW</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)70 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */</td></tr>
+<tr class="memitem:af7402feb87584ebeaefe507e191f8930"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#af7402feb87584ebeaefe507e191f8930">DID_GPS2_RAW</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)70 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */</td></tr>
 <tr class="separator:af7402feb87584ebeaefe507e191f8930"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11b821e2e3ce342751ad2097a747f525"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a11b821e2e3ce342751ad2097a747f525">DID_VELOCITY_MEASUREMENT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)71 /** (<a class="el" href="data__sets_8h.html#ac79750b45de09d70b1711fc5d80184c3">velocity_sensor_t</a>) external generic velocity sensor to be fused with GPS-INS measurements. */</td></tr>
+<tr class="memitem:a11b821e2e3ce342751ad2097a747f525"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a11b821e2e3ce342751ad2097a747f525">DID_VELOCITY_MEASUREMENT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)71 /** (<a class="el" href="data__sets_8h.html#ac79750b45de09d70b1711fc5d80184c3">velocity_sensor_t</a>) External generic velocity sensor to be fused with GPS-INS measurements. */</td></tr>
 <tr class="separator:a11b821e2e3ce342751ad2097a747f525"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec46d7361e47847289c4f49c71f5502e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#aec46d7361e47847289c4f49c71f5502e">DID_DIAGNOSTIC_MESSAGE</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)72 /** (<a class="el" href="structdiag__msg__t.html">diag_msg_t</a>) diagnostic message */</td></tr>
+<tr class="memitem:aec46d7361e47847289c4f49c71f5502e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#aec46d7361e47847289c4f49c71f5502e">DID_DIAGNOSTIC_MESSAGE</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)72 /** (<a class="el" href="structdiag__msg__t.html">diag_msg_t</a>) Diagnostic message */</td></tr>
 <tr class="separator:aec46d7361e47847289c4f49c71f5502e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c08b1d9933f6d05b1955a2ec9e64bd0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a5c08b1d9933f6d05b1955a2ec9e64bd0">DID_SURVEY_IN</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)73 /** (<a class="el" href="structsurvey__in__t.html">survey_in_t</a>) survey in, used to determine position for RTK base station */</td></tr>
+<tr class="memitem:a5c08b1d9933f6d05b1955a2ec9e64bd0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a5c08b1d9933f6d05b1955a2ec9e64bd0">DID_SURVEY_IN</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)73 /** (<a class="el" href="structsurvey__in__t.html">survey_in_t</a>) Survey in, used to determine position for RTK base station. */</td></tr>
 <tr class="separator:a5c08b1d9933f6d05b1955a2ec9e64bd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a777819ed9aeeb6f96e9a74764d75064a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a777819ed9aeeb6f96e9a74764d75064a">DID_COUNT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)74</td></tr>
 <tr class="separator:a777819ed9aeeb6f96e9a74764d75064a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -449,6 +451,10 @@ Macros</h2></td></tr>
 <tr class="separator:af2dde43e94fcb8ec49be17e2578904c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb1b47c0eaac9725e8ca69f67ba7086a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#afb1b47c0eaac9725e8ca69f67ba7086a">RMC_PRESET_PPD_RAW_IMU_BITS</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a47786eeff1b24bf4a059c91607eeeef8">RMC_PRESET_PPD_NO_IMU_BITS</a> | <a class="el" href="data__sets_8h.html#a45e70b7c849af81dba7f8850f4a79e1a">RMC_BITS_DUAL_IMU_RAW</a> )</td></tr>
 <tr class="separator:afb1b47c0eaac9725e8ca69f67ba7086a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2264b5e6e66cdbf4e443adb912e0ddec"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a2264b5e6e66cdbf4e443adb912e0ddec">RMC_PRESET_PPD_RAW_GPS_BITS</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a47786eeff1b24bf4a059c91607eeeef8">RMC_PRESET_PPD_NO_IMU_BITS</a> | <a class="el" href="data__sets_8h.html#a4b4ad791ed0932898e1711154644729a">RMC_BITS_GPS1_RAW</a> | <a class="el" href="data__sets_8h.html#ac6b5e6c0f5eb5b33d617390c1fbc6b9b">RMC_BITS_GPS2_RAW</a>)</td></tr>
+<tr class="separator:a2264b5e6e66cdbf4e443adb912e0ddec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ddf237627a6fc9fb25f4172a7b7b6d0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a2ddf237627a6fc9fb25f4172a7b7b6d0">RMC_PRESET_PPD_COMPASSING_BITS</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a47786eeff1b24bf4a059c91607eeeef8">RMC_PRESET_PPD_NO_IMU_BITS</a> | <a class="el" href="data__sets_8h.html#a679d790812c515f6618e313c918f754c">RMC_BITS_GPS_RTK_NAV</a> | <a class="el" href="data__sets_8h.html#a2e22fabbb49f784f3d9811509f985f4d">RMC_BITS_GPS_RTK_MISC</a> | <a class="el" href="data__sets_8h.html#a86fc8c07e5bce4a4d68f75de454ad629">RMC_BITS_PREINTEGRATED_IMU</a>)</td></tr>
+<tr class="separator:a2ddf237627a6fc9fb25f4172a7b7b6d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a449c91ad396f8f60d95e9804fbf77093"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a449c91ad396f8f60d95e9804fbf77093">RMC_PRESET_INS_NAV_PERIOD</a>&#160;&#160;&#160;1</td></tr>
 <tr class="separator:a449c91ad396f8f60d95e9804fbf77093"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fcda2c63895620d70c7c51501dd3227"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a></td></tr>
@@ -459,7 +465,9 @@ Macros</h2></td></tr>
 <tr class="separator:a57ac37e30169130e084f5711159648d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7adc9769079cbc37a80ce31d50d081d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#aa7adc9769079cbc37a80ce31d50d081d">SYS_CFG_BITS_MAG_RECAL_MODE</a>(sysCfgBits)&#160;&#160;&#160;((sysCfgBits&amp;<a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a3fe717f40096d1443ed449271b42789b">SYS_CFG_BITS_MAG_RECAL_MODE_MASK</a>)&gt;&gt;<a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85ab8933133087071da25a499cb25279517">SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET</a>)</td></tr>
 <tr class="separator:aa7adc9769079cbc37a80ce31d50d081d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9a80974e60c35748e602c96a84aea25"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ad9a80974e60c35748e602c96a84aea25">MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE</a>&#160;&#160;&#160;(960 / sizeof(<a class="el" href="data__sets_8h.html#a793ac2cd653754cb8651d510bfb6f452">obsd_t</a>))</td></tr>
+<tr class="memitem:a5acf9cb35a0d65f2da355f7bd4b7fe10"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a5acf9cb35a0d65f2da355f7bd4b7fe10">GPS_RAW_MESSAGE_BUF_SIZE</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="separator:a5acf9cb35a0d65f2da355f7bd4b7fe10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9a80974e60c35748e602c96a84aea25"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ad9a80974e60c35748e602c96a84aea25">MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a5acf9cb35a0d65f2da355f7bd4b7fe10">GPS_RAW_MESSAGE_BUF_SIZE</a> / sizeof(<a class="el" href="data__sets_8h.html#a793ac2cd653754cb8651d510bfb6f452">obsd_t</a>))</td></tr>
 <tr class="separator:ad9a80974e60c35748e602c96a84aea25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb0489cff5cfa92d48bfb9ea218b2ea2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#abb0489cff5cfa92d48bfb9ea218b2ea2">CRASH_INFO_NONE</a>&#160;&#160;&#160;0x00000000</td></tr>
 <tr class="separator:abb0489cff5cfa92d48bfb9ea218b2ea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -570,6 +578,8 @@ Typedefs</h2></td></tr>
 <tr class="separator:a793ac2cd653754cb8651d510bfb6f452"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7068f4e67c9279e99acf99413c3a32f7"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_p_a_c_k_e_d.html">PACKED</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a7068f4e67c9279e99acf99413c3a32f7">gps_rtk_misc_t</a></td></tr>
 <tr class="separator:a7068f4e67c9279e99acf99413c3a32f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f7551a327079ecb3babb37e689f026b"><td class="memItemLeft" align="right" valign="top">typedef union <a class="el" href="struct_p_a_c_k_e_d.html">PACKED</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a8f7551a327079ecb3babb37e689f026b">uGpsRawData</a></td></tr>
+<tr class="separator:a8f7551a327079ecb3babb37e689f026b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9f57fabda18ecb475923924f7e16327"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_p_a_c_k_e_d.html">PACKED</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a></td></tr>
 <tr class="separator:ab9f57fabda18ecb475923924f7e16327"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac79750b45de09d70b1711fc5d80184c3"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_p_a_c_k_e_d.html">PACKED</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ac79750b45de09d70b1711fc5d80184c3">velocity_sensor_t</a></td></tr>
@@ -1002,7 +1012,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02449">2449</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02520">2520</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1022,7 +1032,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02448">2448</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02519">2519</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1042,7 +1052,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02447">2447</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02518">2518</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1062,7 +1072,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02446">2446</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02517">2517</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1092,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01073">1073</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01106">1106</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1098,7 +1108,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02146">2146</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02217">2217</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1114,7 +1124,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02147">2147</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02218">2218</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1130,7 +1140,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02148">2148</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02219">2219</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1146,7 +1156,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02144">2144</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02215">2215</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1162,7 +1172,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02149">2149</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02220">2220</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1178,7 +1188,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02150">2150</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02221">2221</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1194,7 +1204,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02145">2145</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02216">2216</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1464,7 +1474,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_DIAGNOSTIC_MESSAGE&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)72 /** (<a class="el" href="structdiag__msg__t.html">diag_msg_t</a>) diagnostic message */</td>
+          <td class="memname">#define DID_DIAGNOSTIC_MESSAGE&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)72 /** (<a class="el" href="structdiag__msg__t.html">diag_msg_t</a>) Diagnostic message */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1560,7 +1570,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_GPS1_RAW&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)69 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */</td>
+          <td class="memname">#define DID_GPS1_RAW&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)69 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1576,7 +1586,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_GPS1_SAT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)15 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual */</td>
+          <td class="memname">#define DID_GPS1_SAT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)15 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1624,7 +1634,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_GPS2_RAW&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)70 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */</td>
+          <td class="memname">#define DID_GPS2_RAW&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)70 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1640,7 +1650,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_GPS2_SAT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)16 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual */</td>
+          <td class="memname">#define DID_GPS2_SAT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)16 /** (<a class="el" href="data__sets_8h.html#a558ba79e3602b210842fe286507a9b94">gps_sat_t</a>) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1672,7 +1682,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_GPS_BASE_RAW&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)60 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. 4 byte header of receiver index, type, count and reserved, then n data elements based on type.  */</td>
+          <td class="memname">#define DID_GPS_BASE_RAW&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)60 /** (<a class="el" href="data__sets_8h.html#ab9f57fabda18ecb475923924f7e16327">gps_raw_t</a>) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1736,7 +1746,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_GPS_RTK_OPT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)61 /** (<a class="el" href="data__sets_8h.html#aae2c80c60fae4068a039f66ee1053ad0">gps_rtk_opt_t</a>) RTK options - requires little endian CPU */</td>
+          <td class="memname">#define DID_GPS_RTK_OPT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)61 /** (<a class="el" href="data__sets_8h.html#aae2c80c60fae4068a039f66ee1053ad0">gps_rtk_opt_t</a>) RTK options - requires little endian CPU. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1864,7 +1874,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_INS_1&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)4  /** (<a class="el" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>) INS output: euler rotation w/ respect to NED, NED position from reference LLA */</td>
+          <td class="memname">#define DID_INS_1&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)4  /** (<a class="el" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1896,7 +1906,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_INS_3&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)65 /** (<a class="el" href="data__sets_8h.html#acfffad1a3ac9ffa3a0515950e1797fb6">ins_3_t</a>) Inertial navigation data with quaternion NED to body rotation and ECEF position */</td>
+          <td class="memname">#define DID_INS_3&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)65 /** (<a class="el" href="data__sets_8h.html#acfffad1a3ac9ffa3a0515950e1797fb6">ins_3_t</a>) Inertial navigation data with quaternion NED to body rotation and ECEF position. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1912,7 +1922,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_INS_4&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)66 /** (<a class="el" href="data__sets_8h.html#a5682b4426fa8ee87e283dddfe0b3f70d">ins_4_t</a>) INS output: quaternion rotation w/ respect to ECEF, ECEF position */</td>
+          <td class="memname">#define DID_INS_4&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)66 /** (<a class="el" href="data__sets_8h.html#a5682b4426fa8ee87e283dddfe0b3f70d">ins_4_t</a>) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2153,7 +2163,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_PREINTEGRATED_IMU&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)3  /** (<a class="el" href="data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa">preintegrated_imu_t</a>) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as ? Theta ? Velocity, or Integrated IMU. For clarification, we will use the name &quot;Preintegrated IMU&quot; through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */</td>
+          <td class="memname">#define DID_PREINTEGRATED_IMU&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)3  /** (<a class="el" href="data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa">preintegrated_imu_t</a>) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we will use the name &quot;Preintegrated IMU&quot; through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2169,7 +2179,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_RMC&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)9  /** (<a class="el" href="data__sets_8h.html#a323b97258fc464db806e374873051264">rmc_t</a>) Realtime message controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */</td>
+          <td class="memname">#define DID_RMC&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)9  /** (<a class="el" href="data__sets_8h.html#a323b97258fc464db806e374873051264">rmc_t</a>) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2185,7 +2195,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_RTOS_INFO&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)38 /** RTOS info (<a class="el" href="data__sets_8h.html#a783ce4826a865cc21b04b2232bc6705d">rtos_info_t</a>) */</td>
+          <td class="memname">#define DID_RTOS_INFO&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)38 /** (<a class="el" href="data__sets_8h.html#a783ce4826a865cc21b04b2232bc6705d">rtos_info_t</a>) RTOS information. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2329,7 +2339,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_STROBE_IN_TIME&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)68 /** (<a class="el" href="data__sets_8h.html#abb93c4f050ba2e23e87fb37e7d179000">strobe_in_time_t</a>) Timestamp for input strobe */</td>
+          <td class="memname">#define DID_STROBE_IN_TIME&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)68 /** (<a class="el" href="data__sets_8h.html#abb93c4f050ba2e23e87fb37e7d179000">strobe_in_time_t</a>) Timestamp for input strobe. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2345,7 +2355,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_SURVEY_IN&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)73 /** (<a class="el" href="structsurvey__in__t.html">survey_in_t</a>) survey in, used to determine position for RTK base station */</td>
+          <td class="memname">#define DID_SURVEY_IN&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)73 /** (<a class="el" href="structsurvey__in__t.html">survey_in_t</a>) Survey in, used to determine position for RTK base station. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2457,12 +2467,28 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_VELOCITY_MEASUREMENT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)71 /** (<a class="el" href="data__sets_8h.html#ac79750b45de09d70b1711fc5d80184c3">velocity_sensor_t</a>) external generic velocity sensor to be fused with GPS-INS measurements. */</td>
+          <td class="memname">#define DID_VELOCITY_MEASUREMENT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)71 /** (<a class="el" href="data__sets_8h.html#ac79750b45de09d70b1711fc5d80184c3">velocity_sensor_t</a>) External generic velocity sensor to be fused with GPS-INS measurements. */</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00105">105</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+
+</div>
+</div>
+<a id="a5acf9cb35a0d65f2da355f7bd4b7fe10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5acf9cb35a0d65f2da355f7bd4b7fe10">&#9670;&nbsp;</a></span>GPS_RAW_MESSAGE_BUF_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define GPS_RAW_MESSAGE_BUF_SIZE&#160;&#160;&#160;1000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01640">1640</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2482,7 +2508,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01055">1055</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01088">1088</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2562,7 +2588,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02453">2453</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02524">2524</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2582,7 +2608,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02452">2452</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02523">2523</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2602,7 +2628,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02451">2451</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02522">2522</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2622,7 +2648,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02450">2450</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02521">2521</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2650,12 +2676,12 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE&#160;&#160;&#160;(960 / sizeof(<a class="el" href="data__sets_8h.html#a793ac2cd653754cb8651d510bfb6f452">obsd_t</a>))</td>
+          <td class="memname">#define MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a5acf9cb35a0d65f2da355f7bd4b7fe10">GPS_RAW_MESSAGE_BUF_SIZE</a> / sizeof(<a class="el" href="data__sets_8h.html#a793ac2cd653754cb8651d510bfb6f452">obsd_t</a>))</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01597">1597</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01641">1641</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2672,7 +2698,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Max task name length - do not change </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02253">2253</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02324">2324</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2770,7 +2796,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00941">941</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00974">974</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2786,7 +2812,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00955">955</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00988">988</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2802,7 +2828,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00939">939</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00972">972</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2818,7 +2844,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00956">956</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00989">989</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2834,7 +2860,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00945">945</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00978">978</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2850,7 +2876,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00947">947</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00980">980</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2866,7 +2892,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00949">949</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00982">982</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2882,7 +2908,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00946">946</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00979">979</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2898,7 +2924,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00948">948</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00981">981</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2914,7 +2940,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00950">950</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00983">983</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2930,7 +2956,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00953">953</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00986">986</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2946,7 +2972,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00944">944</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00977">977</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2962,7 +2988,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00952">952</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00985">985</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2978,7 +3004,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00951">951</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00984">984</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2994,7 +3020,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00935">935</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00968">968</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3010,7 +3036,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00936">936</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00969">969</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3026,7 +3052,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00937">937</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00970">970</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3042,7 +3068,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00938">938</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00971">971</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3058,7 +3084,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00958">958</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00991">991</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3074,7 +3100,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00942">942</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00975">975</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3090,7 +3116,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00943">943</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00976">976</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3106,7 +3132,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00940">940</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00973">973</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3122,7 +3148,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00959">959</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00992">992</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3138,7 +3164,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00954">954</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00987">987</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3154,7 +3180,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00917">917</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00950">950</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3170,7 +3196,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00926">926</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00959">959</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3186,7 +3212,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00927">927</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00960">960</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3203,7 +3229,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Realtime Message Controller (used in rmc_t). The data sets available through RMC are broadcast at the availability of the data. A goal of RMC is to provide updates from each onboard sensor as fast as possible with minimal latency. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00925">925</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00958">958</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3219,7 +3245,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00928">928</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00961">961</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3235,7 +3261,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00929">929</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00962">962</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3251,7 +3277,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00930">930</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00963">963</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3267,7 +3293,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00931">931</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00964">964</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3283,7 +3309,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00932">932</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00965">965</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3298,9 +3324,9 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a> | \</div><div class="line">                                        RMC_BITS_GPS_NAV | \</div><div class="line">                                        RMC_BITS_PRESET )</div><div class="ttc" id="data__sets_8h_html_a7225bec6e49c3725eb066e61985d5d00"><div class="ttname"><a href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a></div><div class="ttdeci">#define RMC_BITS_INS2</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l00936">data_sets.h:936</a></div></div>
+<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a> | \</div><div class="line">                                        RMC_BITS_GPS_NAV | \</div><div class="line">                                        RMC_BITS_PRESET )</div><div class="ttc" id="data__sets_8h_html_a7225bec6e49c3725eb066e61985d5d00"><div class="ttname"><a href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a></div><div class="ttdeci">#define RMC_BITS_INS2</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l00969">data_sets.h:969</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00981">981</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01014">1014</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3316,7 +3342,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00980">980</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01013">1013</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3332,7 +3358,23 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00976">976</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01007">1007</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+
+</div>
+</div>
+<a id="a2ddf237627a6fc9fb25f4172a7b7b6d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ddf237627a6fc9fb25f4172a7b7b6d0">&#9670;&nbsp;</a></span>RMC_PRESET_PPD_COMPASSING_BITS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define RMC_PRESET_PPD_COMPASSING_BITS&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a47786eeff1b24bf4a059c91607eeeef8">RMC_PRESET_PPD_NO_IMU_BITS</a> | <a class="el" href="data__sets_8h.html#a679d790812c515f6618e313c918f754c">RMC_BITS_GPS_RTK_NAV</a> | <a class="el" href="data__sets_8h.html#a2e22fabbb49f784f3d9811509f985f4d">RMC_BITS_GPS_RTK_MISC</a> | <a class="el" href="data__sets_8h.html#a86fc8c07e5bce4a4d68f75de454ad629">RMC_BITS_PREINTEGRATED_IMU</a>)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01010">1010</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3348,7 +3390,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00962">962</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00995">995</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3363,9 +3405,25 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a> | \</div><div class="line">                                        RMC_BITS_BAROMETER | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER1 | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER2 | \</div><div class="line">                                        RMC_BITS_GPS_NAV | \</div><div class="line">                                        RMC_BITS_GPS1_NAV | \</div><div class="line">                                        RMC_BITS_GPS2_NAV | \</div><div class="line">                                        RMC_BITS_GPS1_RAW | \</div><div class="line">                                        RMC_BITS_GPS2_RAW | \</div><div class="line">                                        RMC_BITS_GPS_BASE_RAW | \</div><div class="line">                                        RMC_BITS_INTERNAL_PPD | \</div><div class="line">                                        RMC_BITS_PRESET | \</div><div class="line">                                        RMC_BITS_DIAGNOSTIC_MESSAGE   )</div><div class="ttc" id="data__sets_8h_html_a7225bec6e49c3725eb066e61985d5d00"><div class="ttname"><a href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a></div><div class="ttdeci">#define RMC_BITS_INS2</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l00936">data_sets.h:936</a></div></div>
+<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a> | \</div><div class="line">                                        RMC_BITS_BAROMETER | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER1 | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER2 | \</div><div class="line">                                        RMC_BITS_GPS_NAV | \</div><div class="line">                                        RMC_BITS_GPS1_NAV | \</div><div class="line">                                        RMC_BITS_GPS2_NAV | \</div><div class="line">                                        RMC_BITS_GPS_BASE_RAW | \</div><div class="line">                                        RMC_BITS_INTERNAL_PPD | \</div><div class="line">                                        RMC_BITS_PRESET | \</div><div class="line">                                        RMC_BITS_DIAGNOSTIC_MESSAGE   )</div><div class="ttc" id="data__sets_8h_html_a7225bec6e49c3725eb066e61985d5d00"><div class="ttname"><a href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a></div><div class="ttdeci">#define RMC_BITS_INS2</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l00969">data_sets.h:969</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00963">963</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00996">996</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+
+</div>
+</div>
+<a id="a2264b5e6e66cdbf4e443adb912e0ddec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2264b5e6e66cdbf4e443adb912e0ddec">&#9670;&nbsp;</a></span>RMC_PRESET_PPD_RAW_GPS_BITS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define RMC_PRESET_PPD_RAW_GPS_BITS&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a47786eeff1b24bf4a059c91607eeeef8">RMC_PRESET_PPD_NO_IMU_BITS</a> | <a class="el" href="data__sets_8h.html#a4b4ad791ed0932898e1711154644729a">RMC_BITS_GPS1_RAW</a> | <a class="el" href="data__sets_8h.html#ac6b5e6c0f5eb5b33d617390c1fbc6b9b">RMC_BITS_GPS2_RAW</a>)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01009">1009</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3381,7 +3439,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00977">977</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01008">1008</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3401,7 +3459,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01148">1148</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01181">1181</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3599,7 +3657,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Message wrapper for DID_GPS_BASE_RAW and DID_GPS2_RAW - simply cast the data buffer to this struct </p>
+<p>Message wrapper for DID_GPS1_RAW, DID_GPS2_RAW, and DID_GPS_BASE_RAW. The contents of data can vary for this message and are determined by dataType field. </p>
 
 </div>
 </div>
@@ -3630,7 +3688,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01555">1555</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01598">1598</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3732,6 +3790,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>INL2 - Estimate error variances </p>
 
 </div>
 </div>
@@ -4020,6 +4079,20 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a8f7551a327079ecb3babb37e689f026b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f7551a327079ecb3babb37e689f026b">&#9670;&nbsp;</a></span>uGpsRawData</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef union <a class="el" href="struct_p_a_c_k_e_d.html">PACKED</a>  <a class="el" href="data__sets_8h.html#a8f7551a327079ecb3babb37e689f026b">uGpsRawData</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a09747d8cba4670cd20a977587a0043f0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a09747d8cba4670cd20a977587a0043f0">&#9670;&nbsp;</a></span>uInsOutDatasets</h2>
 
@@ -4074,7 +4147,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="aba5f1c941f1d2ee0acde1f3dd3921844a76f850d1fa970501cadde6bc7cff672b"></a>BIT_STATE_COMMAND_OFF&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01034">1034</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01067">1067</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4112,7 +4185,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a2382ce9663b8b75e2819f77d6b8da742a83c3c5401a757907b6738130e568a3b8"></a>CAL_BIT_FAULT_MOTION_ACC&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01067">1067</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01100">1100</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4199,7 +4272,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a20228ceb9caa12db76b8599ff714ea67a4b05bc6e4a48ab76ee1cf4bedf3f4403"></a>HDW_BIT_FAULT_GPS_NOISE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01048">1048</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01081">1081</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4375,7 +4448,7 @@ Functions</h2></td></tr>
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aa151b96a32b57f6c700233cff1602f8aa698c1455374b3f220e76283f749906a6"></a>IO_CFG_INPUT_STROBE_TRIGGER_HIGH&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01279">1279</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01313">1313</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4397,7 +4470,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a2ec3a8f9613524f7da783819d46d9ba2adf485a659548a646e4408a37a2d01c7c"></a>MAG_RECAL_MODE_ABORT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01011">1011</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01044">1044</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4454,7 +4527,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02015">2015</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02062">2062</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4511,7 +4584,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01165">1165</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01198">1198</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4542,7 +4615,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01882">1882</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01926">1926</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4575,7 +4648,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02212">2212</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02283">2283</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4659,7 +4732,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="ab3168be6810eb262cd4e4881e49171dfaf2392683278f2eaf77236c603063afcf"></a>SENSOR_CFG_ACC_DLPF_OFFSET&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01233">1233</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01267">1267</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4687,7 +4760,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a83bd7219c131eb152addd83d0473caf6a219782467a3cffd5c4733b7b2e7bfbac"></a>SURVEY_IN_STATE_DONE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02101">2101</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02172">2172</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4728,7 +4801,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01132">1132</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01165">1165</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>

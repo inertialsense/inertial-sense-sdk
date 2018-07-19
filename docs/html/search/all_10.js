@@ -50,7 +50,7 @@ var searchData=
   ['pfnflush',['pfnFlush',['../structserial__port__t.html#aef435e32320a0d4d1f1337e1a4039db2',1,'serial_port_t']]],
   ['pfngetbytecountavailabletoread',['pfnGetByteCountAvailableToRead',['../structserial__port__t.html#a9b8e8f65fcaf7f82cf6096c18cbe7edb',1,'serial_port_t']]],
   ['pfngetbytecountavailabletowrite',['pfnGetByteCountAvailableToWrite',['../structserial__port__t.html#a0ff5757115c0b132d771d549147a246c',1,'serial_port_t']]],
-  ['pfnhandlebinarydata',['pfnHandleBinaryData',['../_inertial_sense_8h.html#a4c4d52294f06037df31bc029007ee9c1',1,'InertialSense.h']]],
+  ['pfnhandlebinarydata',['pfnHandleBinaryData',['../_inertial_sense_8h.html#a728862e429ee3497de0252d42807dd31',1,'InertialSense.h']]],
   ['pfnisopen',['pfnIsOpen',['../structserial__port__t.html#ad18187b72f63ecd6a2f0ffeb821a6269',1,'serial_port_t']]],
   ['pfnopen',['pfnOpen',['../structserial__port__t.html#a535c59c95a4603c2f43cd85e68fa8176',1,'serial_port_t']]],
   ['pfnread',['pfnRead',['../structserial__port__t.html#a14f0498b6b4270692bb614bc49c15c12',1,'serial_port_t']]],

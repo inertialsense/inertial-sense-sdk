@@ -268,6 +268,12 @@ public:
 		case DATA_TYPE_ANTENNA_POSITION:
 			GetDelegate()->OnStationReceived(this, &m_rtcm.sta);
 			break;
+			
+		case DATA_TYPE_ERROR:
+		{
+			uint32_t type = type = getbitu(m_rtcm.buff, 24, 12);
+			GetDelegate()->OnError(this, type, -1);
+		} break;
 		}
 
 		m_rtcm.len = 0;
@@ -421,6 +427,12 @@ public:
 		case DATA_TYPE_ION_UTC_ALMANAC:
 			GetDelegate()->OnIonosphereModelUtcAlmanacReceived(this, &m_raw.ionUtcAlm);
 			break;
+			
+		case DATA_TYPE_ERROR:
+		{
+			uint32_t type = (*(m_raw.buff + 2) << 8) + *(m_raw.buff + 3);
+			GetDelegate()->OnError(this, type, -1);
+		} break;	
 		}
 
 		Reset();

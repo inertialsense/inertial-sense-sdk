@@ -49,8 +49,10 @@ var searchData=
   ['rmc_5fpreset_5fins_5fbits',['RMC_PRESET_INS_BITS',['../data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227',1,'data_sets.h']]],
   ['rmc_5fpreset_5fins_5fnav_5fperiod',['RMC_PRESET_INS_NAV_PERIOD',['../data__sets_8h.html#a449c91ad396f8f60d95e9804fbf77093',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fbits',['RMC_PRESET_PPD_BITS',['../data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1',1,'data_sets.h']]],
+  ['rmc_5fpreset_5fppd_5fcompassing_5fbits',['RMC_PRESET_PPD_COMPASSING_BITS',['../data__sets_8h.html#a2ddf237627a6fc9fb25f4172a7b7b6d0',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fnav_5fperiod',['RMC_PRESET_PPD_NAV_PERIOD',['../data__sets_8h.html#ac81033567ed17eca471798246f94258d',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fno_5fimu_5fbits',['RMC_PRESET_PPD_NO_IMU_BITS',['../data__sets_8h.html#a47786eeff1b24bf4a059c91607eeeef8',1,'data_sets.h']]],
+  ['rmc_5fpreset_5fppd_5fraw_5fgps_5fbits',['RMC_PRESET_PPD_RAW_GPS_BITS',['../data__sets_8h.html#a2264b5e6e66cdbf4e443adb912e0ddec',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fraw_5fimu_5fbits',['RMC_PRESET_PPD_RAW_IMU_BITS',['../data__sets_8h.html#afb1b47c0eaac9725e8ca69f67ba7086a',1,'data_sets.h']]],
   ['rtcm3_5fheader_5fsize',['RTCM3_HEADER_SIZE',['../_i_s_comm_8h.html#a4f5c35a4a8d7bc7011d154f678a44107',1,'ISComm.h']]]
 ];

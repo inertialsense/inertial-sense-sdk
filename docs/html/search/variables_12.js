@@ -46,5 +46,5 @@ var searchData=
   ['txoverflowcount',['txOverflowCount',['../structinternal__diagnostic__t.html#a8f55a1dd6e13128d42a21b81c5c1b57a',1,'internal_diagnostic_t']]],
   ['txpktcount',['txPktCount',['../structcom__manager__status__t.html#a0ad6d483eb2fbd825a90a518dad9e0ce',1,'com_manager_status_t']]],
   ['txptr',['txPtr',['../structbuf_tx_rx_ptr__t.html#adb7fdcf7f9e8c13377db7643b67199b2',1,'bufTxRxPtr_t']]],
-  ['type',['type',['../struct_p_a_c_k_e_d.html#a7ab421cafb206e39a14d771d0797a4a7',1,'PACKED::type()'],['../class_ti_xml_node.html#a2619c6379181c16ba95ae6922e2ca839',1,'TiXmlNode::type()']]]
+  ['type',['type',['../class_ti_xml_node.html#a2619c6379181c16ba95ae6922e2ca839',1,'TiXmlNode']]]
 ];

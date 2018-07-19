@@ -15,6 +15,7 @@ var searchData=
   ['gapcountserialparser',['gapCountSerialParser',['../structinternal__diagnostic__t.html#a6b00d75c9e42c83aafd2ff3b482ad388',1,'internal_diagnostic_t']]],
   ['gdop',['gDop',['../struct_p_a_c_k_e_d.html#a4cbeafce77099390130144f5e57b16d8',1,'PACKED']]],
   ['genfaultcode',['genFaultCode',['../struct_p_a_c_k_e_d.html#a58cb1d29bbe2d6841ae445944e1014f8',1,'PACKED']]],
+  ['gloeph',['gloEph',['../struct_p_a_c_k_e_d.html#a865f3b82703609d32876acf6188632e1',1,'PACKED']]],
   ['glomodear',['glomodear',['../structprcopt__t.html#a28c2094d85268133a037144e3aa50c46',1,'prcopt_t']]],
   ['gnssid',['gnssId',['../struct_p_a_c_k_e_d.html#a5980d7a72023778ff5d7b58d4a003ff6',1,'PACKED']]],
   ['gpgga',['gpgga',['../struct_p_a_c_k_e_d.html#acacaef9727b48cbde0dd6e115d7e803d',1,'PACKED']]],

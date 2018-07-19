@@ -50,6 +50,8 @@ extern "C"
 	#include "inertialSenseBootLoader.h"
 }
 
+#include <functional>
+
 #if defined(ENABLE_IS_PYTHON_WRAPPER)
 
 #include "../pySDK/pySDK.h"
@@ -58,7 +60,7 @@ extern "C"
 
 class InertialSense;
 
-typedef void(*pfnHandleBinaryData)(InertialSense* i, p_data_t* data, int pHandle);
+typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
 
 using namespace std;

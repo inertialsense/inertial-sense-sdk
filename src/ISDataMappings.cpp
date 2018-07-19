@@ -194,10 +194,10 @@ static void PopulateSysParamsMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "reserved1[0]", reserved1[0], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "reserved1[1]", reserved1[1], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "reserved1[2]", reserved1[2], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "reserved1[3]", reserved1[3], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "imuTemp", imuTemp, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "baroTemp", baroTemp, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "mcuTemp", mcuTemp, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "reserved1", reserved1, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeFloat, float&);
@@ -641,6 +641,7 @@ static void PopulateRtkMiscMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "baseSbasCount", baseSbasCount, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "baseAntennaCount", baseAntennaCount, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "ionUtcAlmCount", ionUtcAlmCount, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "rtkCompassHeading", rtkCompassHeading, 0, DataTypeFloat, float);
 	mappings[DID_GPS_RTK_MISC] = m;
 
     ASSERT_SIZE(totalSize);
@@ -653,13 +654,13 @@ static void PopulateGpsRawMappings(map_lookup_name_t& mappings)
 	uint32_t totalSize = 0;
 
     ADD_MAP(m, totalSize, "receiveIndex", receiverIndex, 0, DataTypeUInt8, uint8_t);
-    ADD_MAP(m, totalSize, "type", type, 0, DataTypeUInt8, uint8_t);
-    ADD_MAP(m, totalSize, "count", count, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "dataType", dataType, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "obsCount", obsCount, 0, DataTypeUInt8, uint8_t);
     ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t);
-    ADD_MAP(m, totalSize, "buf", buf, 0, DataTypeBinary, uint8_t[MEMBERSIZE(MAP_TYPE, buf)]);
-	mappings[DID_GPS_BASE_RAW] = m;
+    ADD_MAP(m, totalSize, "dataBuf", data.buf, 0, DataTypeBinary, uint8_t[MEMBERSIZE(MAP_TYPE, data.buf)]);
     mappings[DID_GPS1_RAW] = m;
     mappings[DID_GPS2_RAW] = m;
+    mappings[DID_GPS_BASE_RAW] = m;
 
     ASSERT_SIZE(totalSize);
 }

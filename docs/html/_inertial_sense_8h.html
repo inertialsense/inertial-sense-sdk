@@ -97,6 +97,7 @@ $(function() {
 <code>#include &quot;<a class="el" href="com__manager_8h_source.html">com_manager.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="serial_port_platform_8h_source.html">serialPortPlatform.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="inertial_sense_boot_loader_8h_source.html">inertialSenseBootLoader.h</a>&quot;</code><br />
+<code>#include &lt;functional&gt;</code><br />
 </div>
 <p><a href="_inertial_sense_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -111,20 +112,20 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a4c4d52294f06037df31bc029007ee9c1"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_inertial_sense_8h.html#a4c4d52294f06037df31bc029007ee9c1">pfnHandleBinaryData</a>) (<a class="el" href="class_inertial_sense.html">InertialSense</a> *i, <a class="el" href="structp__data__t.html">p_data_t</a> *data, int pHandle)</td></tr>
-<tr class="separator:a4c4d52294f06037df31bc029007ee9c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a728862e429ee3497de0252d42807dd31"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; void(<a class="el" href="class_inertial_sense.html">InertialSense</a> *i, <a class="el" href="structp__data__t.html">p_data_t</a> *data, int pHandle)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_inertial_sense_8h.html#a728862e429ee3497de0252d42807dd31">pfnHandleBinaryData</a></td></tr>
+<tr class="separator:a728862e429ee3497de0252d42807dd31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae91e5ac049ad4acb571f0fafd9af22f5"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_inertial_sense_8h.html#ae91e5ac049ad4acb571f0fafd9af22f5">pfnStepLogFunction</a>) (<a class="el" href="class_inertial_sense.html">InertialSense</a> *i, const <a class="el" href="structp__data__t.html">p_data_t</a> *data, int pHandle)</td></tr>
 <tr class="separator:ae91e5ac049ad4acb571f0fafd9af22f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="a4c4d52294f06037df31bc029007ee9c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c4d52294f06037df31bc029007ee9c1">&#9670;&nbsp;</a></span>pfnHandleBinaryData</h2>
+<a id="a728862e429ee3497de0252d42807dd31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a728862e429ee3497de0252d42807dd31">&#9670;&nbsp;</a></span>pfnHandleBinaryData</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* pfnHandleBinaryData) (<a class="el" href="class_inertial_sense.html">InertialSense</a> *i, <a class="el" href="structp__data__t.html">p_data_t</a> *data, int pHandle)</td>
+          <td class="memname">typedef std::function&lt;void(<a class="el" href="class_inertial_sense.html">InertialSense</a>* i, <a class="el" href="structp__data__t.html">p_data_t</a>* data, int pHandle)&gt; <a class="el" href="_inertial_sense_8h.html#a728862e429ee3497de0252d42807dd31">pfnHandleBinaryData</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -145,7 +146,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00062">62</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00064">64</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
