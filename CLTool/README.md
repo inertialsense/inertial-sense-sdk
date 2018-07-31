@@ -133,7 +133,7 @@ if (!cltool_setupLogger(inertialSenseInterface))
 ## Compile & Run (Linux/Mac)
 1. Create build directory
 ``` bash
-$ cd InertialSenseCLTool
+$ cd InertialSenseSDK/CLTool
 $ mkdir build
 ```
 2. Run cmake from within build directory
