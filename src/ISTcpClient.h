@@ -121,6 +121,14 @@ void ISSocketFrameworkShutdown();
 int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
 /**
+* Determines if a socket can be read from
+* @param socket the socket to check for read capability
+* @param timeoutMilliseconds the number of milliseconds to wait before aborting
+* @return non-zero if the socket can be read from, otherwise zero
+*/
+int ISSocketCanRead(socket_t socket, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
+
+/**
 * Write data to a socket
 * @param socket the socket to write to
 * @param data the data to write

@@ -57,5 +57,6 @@ var searchData=
   ['goodbye',['Goodbye',['../classc_inertial_sense_display.html#a93655a1878681b71d15c5c3d73711eb2',1,'cInertialSenseDisplay']]],
   ['gotocolumnandrow',['GoToColumnAndRow',['../classc_inertial_sense_display.html#ab5fbbf17d6d694a5690e9addb9baa17e',1,'cInertialSenseDisplay']]],
   ['gotorow',['GoToRow',['../classc_inertial_sense_display.html#a3a9dc9daac0a34e427a327504f67b6b3',1,'cInertialSenseDisplay']]],
-  ['gpstojulian',['gpsToJulian',['../data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c'],['../data__sets_8h.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c']]]
+  ['gpstojulian',['gpsToJulian',['../data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c'],['../data__sets_8h.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c']]],
+  ['gpstonmeagga',['gpsToNmeaGGA',['../data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca',1,'gpsToNmeaGGA(const gps_pos_t *gps, char *buffer, int bufferLength):&#160;data_sets.c'],['../data__sets_8h.html#ae56e9a11cab85685b6388a6bda1065ca',1,'gpsToNmeaGGA(const gps_pos_t *gps, char *buffer, int bufferLength):&#160;data_sets.c']]]
 ];

@@ -20,6 +20,7 @@ extern "C" {
 #undef _MATH_DEFINES_DEFINED
 #define _MATH_DEFINES_DEFINED
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <assert.h>
@@ -137,6 +138,10 @@ extern void* realloc_debug(void* mem, size_t newSize);
 
 #endif
 
+#ifndef SNPRINTF
+#define SNPRINTF snprintf
+#endif
+
 #if defined(_MSC_VER)
 
 #ifndef INLINE
@@ -145,10 +150,6 @@ extern void* realloc_debug(void* mem, size_t newSize);
 
 #ifndef SSCANF
 #define SSCANF(src, fmt, ...) sscanf_s(src, fmt, __VA_ARGS__);
-#endif
-
-#ifndef SNPRINTF
-#define SNPRINTF(buf, size, format, ...) _snprintf_s(buf, size, size, format, __VA_ARGS__)
 #endif
 
 #ifndef STRNCPY
@@ -165,10 +166,6 @@ extern void* realloc_debug(void* mem, size_t newSize);
 
 #ifndef SSCANF
 #define SSCANF sscanf
-#endif
-
-#ifndef SNPRINTF
-#define SNPRINTF snprintf
 #endif
 
 #ifndef STRNCPY

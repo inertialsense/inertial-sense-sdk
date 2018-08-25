@@ -79,8 +79,18 @@ int ISSocketCanWrite(socket_t socket, int timeoutMilliseconds)
     fd_set ws;
     FD_ZERO(&ws);
     FD_SET(socket, &ws);
-    int numberOfSocketsThatCanWrite = select((int)socket + 1, NULL, &ws, NULL, &tv);
+    int numberOfSocketsThatCanWrite = select((int)(socket + 1), NULL, &ws, NULL, &tv);
     return (numberOfSocketsThatCanWrite > 0);
+}
+
+int ISSocketCanRead(socket_t socket, int timeoutMilliseconds)
+{
+	struct timeval tv = { timeoutMilliseconds / 1000, (timeoutMilliseconds % 1000) * 1000 };
+	fd_set rs;
+	FD_ZERO(&rs);
+	FD_SET(socket, &rs);
+    int numberOfSocketsThatCanRead = select((int)(socket + 1), &rs, NULL, NULL, &tv);
+	return (numberOfSocketsThatCanRead > 0);
 }
 
 int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)

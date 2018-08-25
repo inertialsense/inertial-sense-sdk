@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.2</span>
+   &#160;<span id="projectnumber">Release 1.6.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -112,6 +112,8 @@ Functions</h2></td></tr>
 <tr class="separator:ac6881ffc1ffb4af759ca1e934216323e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa09e5edb76b1cd3c9199889cdcd16b1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1">gpsToJulian</a> (int32_t gpsWeek, int32_t gpsMilliseconds)</td></tr>
 <tr class="separator:aaa09e5edb76b1cd3c9199889cdcd16b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae56e9a11cab85685b6388a6bda1065ca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca">gpsToNmeaGGA</a> (const <a class="el" href="data__sets_8h.html#a50a853d6862de52ccc8bc68265860cb2">gps_pos_t</a> *gps, char *buffer, int bufferLength)</td></tr>
+<tr class="separator:ae56e9a11cab85685b6388a6bda1065ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="aed6af7a0ffad6afc3fa0ead07fdbcf47"></a>
@@ -576,7 +578,43 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert GPS Week and Seconds to Julian Date. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00629">629</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00632">632</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+
+</div>
+</div>
+<a id="ae56e9a11cab85685b6388a6bda1065ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae56e9a11cab85685b6388a6bda1065ca">&#9670;&nbsp;</a></span>gpsToNmeaGGA()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int gpsToNmeaGGA </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a50a853d6862de52ccc8bc68265860cb2">gps_pos_t</a> *&#160;</td>
+          <td class="paramname"><em>gps</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>bufferLength</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00668">668</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -643,7 +681,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert Julian Date to calendar date. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00537">537</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00540">540</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>

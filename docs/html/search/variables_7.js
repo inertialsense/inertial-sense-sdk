@@ -10,6 +10,7 @@ var searchData=
   ['hdwbitstatus',['hdwBitStatus',['../struct_p_a_c_k_e_d.html#ace9c601ca29e0046ba62acea57d1f137',1,'PACKED']]],
   ['hdwstatus',['hdwStatus',['../struct_p_a_c_k_e_d.html#a538ce0dab5c1397faf494cc36cfadb14',1,'PACKED']]],
   ['head',['head',['../structlinked__list__t.html#a157440ab0d4b9109e85fb4b1ab825e47',1,'linked_list_t::head()'],['../structringbuf__t.html#a66f8065ebd3650235d488f31bb31efa8',1,'ringbuf_t::head()']]],
+  ['headingtobase',['headingToBase',['../struct_p_a_c_k_e_d.html#ab8309197a764fb165c7de4e43e5ad02b',1,'PACKED']]],
   ['hgt',['hgt',['../structsta__t.html#a59a606679d669c19288a7a365e39360c',1,'sta_t']]],
   ['hmsl',['hMSL',['../struct_p_a_c_k_e_d.html#a7e4949b26766385e625964f61b445309',1,'PACKED']]],
   ['host',['host',['../structcmd__options__t.html#a8cc7a7636e635368dbee4d18f48a2f4a',1,'cmd_options_t']]],

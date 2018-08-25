@@ -32,7 +32,7 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 		g_commandLineOptions.enableLogging, // enable logger
 		g_commandLineOptions.logPath, // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
 		cISLogger::ParseLogType(g_commandLineOptions.logType), // log type
-		g_commandLineOptions.rmcPresetPPD, // Stream rmc preset
+		g_commandLineOptions.rmcPreset, // Stream rmc preset
 		g_commandLineOptions.maxLogSpacePercent, // max space in percentage of free space to use, 0 for unlimited
 		g_commandLineOptions.maxLogFileSize, // each log file will be no larger than this in bytes
 		g_commandLineOptions.maxLogMemory, // logger will try and keep under this amount of memory
@@ -68,7 +68,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	g_commandLineOptions.baudRate = CL_DEFAULT_BAUD_RATE;
 	g_commandLineOptions.comPort = CL_DEFAULT_COM_PORT;
 	g_commandLineOptions.displayMode = CL_DEFAULT_DISPLAY_MODE;
-	g_commandLineOptions.rmcPresetPPD = false;
+	g_commandLineOptions.rmcPreset = 0;
 	g_commandLineOptions.enableLogging = CL_DEFAULT_ENABLE_LOGGING;
 	g_commandLineOptions.logType = CL_DEFAULT_LOG_TYPE;
 	g_commandLineOptions.logPath = CL_DEFAULT_LOGS_DIRECTORY;
@@ -175,13 +175,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-magRecal"))
 		{
-			g_commandLineOptions.rmcPresetPPD = false;
+			g_commandLineOptions.rmcPreset = 0;
 			g_commandLineOptions.magRecal = true;
 			g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
 		}
         else if (startsWith(a, "-survey="))
         {
-            g_commandLineOptions.rmcPresetPPD = false;
+            g_commandLineOptions.rmcPreset = 0;
             g_commandLineOptions.surveyIn.state = strtol(a + 8, NULL, 10);
             int maxDurationSec = strtol(a + 10, NULL, 10);
             if (maxDurationSec > 5)
@@ -193,18 +193,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamBaro = true;
 		}
-		else if (startsWith(a, "-msgPIMU"))
-		{
-			g_commandLineOptions.streamDThetaVel = true;
-		}
 		else if (startsWith(a, "-msgDualIMU"))
 		{
 			g_commandLineOptions.streamDualIMU = true;
 		}
-        else if (startsWith(a, "-msgRTKGPS"))
-        {
-            g_commandLineOptions.streamRTKGPS = true;
-        }
         else if (startsWith(a, "-msgGPS"))
 		{
 			g_commandLineOptions.streamGPS = true;
@@ -241,6 +233,22 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamMag2 = true;
 		}
+		else if (startsWith(a, "-msgPIMU"))
+		{
+			g_commandLineOptions.streamDThetaVel = true;
+		}
+		else if (startsWith(a, "-msgPresetPPD"))
+		{
+			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_BITS;
+		}
+		else if (startsWith(a, "-msgPresetINS2"))
+		{
+			g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
+		}
+		else if (startsWith(a, "-msgRtkRel"))
+		{
+			g_commandLineOptions.streamRtkRel = true;
+		}
 		else if (startsWith(a, "-msgRTOS"))
 		{
 			g_commandLineOptions.streamRTOS = true;
@@ -248,10 +256,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-msgSensors"))
 		{
 			g_commandLineOptions.streamSysSensors = true;
-		}
-		else if (startsWith(a, "-msgPPD"))
-		{
-			g_commandLineOptions.rmcPresetPPD = true;
 		}
 		else if (startsWith(a, "-q"))
 		{
@@ -334,6 +338,11 @@ bool cltool_replayDataLog()
 	while ((data = logger.ReadData()) != NULL)
 	{
 		g_inertialSenseDisplay.ProcessData(data, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+
+// 		if (data->hdr.id == DID_GPS1_RAW)
+// 		{
+// 			// Insert your code for processing data here
+// 		}
 	}
 
 	cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
@@ -351,9 +360,9 @@ void cltool_outputUsage()
 	cout << "    firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS -msgBaro" << boldOff << " # stream multiple at 115200 bps" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b= " << EXAMPLE_FIRMWARE_FILE          << boldOff << " # bootload firmware" << endlbOn;
@@ -373,7 +382,8 @@ void cltool_outputUsage()
     cout << "    -survey=[s],[d]" << boldOff << " survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
     cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
-	cout << "    -msgPPD       " << boldOff << "  stream post processing data sets" << endlbOn;
+	cout << "    -msgPresetPPD " << boldOff << "  stream preset: post processing data sets" << endlbOn;
+	cout << "    -msgPresetINS2" << boldOff << "  stream preset: INS2 sets" << endlbOn;
 	cout << "    -msgINS[n]    " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
 	cout << "    -msgDualIMU   " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
 	cout << "    -msgPIMU      " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
@@ -381,6 +391,7 @@ void cltool_outputUsage()
 	cout << "    -msgBaro      " << boldOff << "  stream DID_BAROMETER" << endlbOn;
 	cout << "    -msgGPS       " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
 	cout << "    -msgSensors   " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
+	cout << "    -msgRtkRel    " << boldOff << "  stream DID_GPS1_RTK_REL" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            enable logging" << endlbOn;
@@ -392,7 +403,7 @@ void cltool_outputUsage()
 	cout << "    -lts=" << boldOff << "0          log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
 	cout << "    -r" << boldOff << "              replay data log from default path" << endlbOn;
 	cout << "    -rp=" << boldOff << "PATH        replay data log from PATH" << endlbOn;
-	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED" << endlbOn;
+	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration)" << endl;
 	cout << "    -flashConfig" << boldOff << "    read and print to screen flash config \"keys\" and \"values\"" << endlbOn;

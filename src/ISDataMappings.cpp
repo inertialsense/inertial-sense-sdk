@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 
 #include "ISDataMappings.h"
+#include "DataJSON.h"
 #include "ISUtilities.h"
 #include "ISConstants.h"
 #include "data_sets.h"
@@ -92,14 +93,15 @@ static void PopulateSizeMappings(map<uint32_t, uint32_t>& sizeMap)
 	sizeMap[DID_INS_2] = sizeof(ins_2_t);
 	sizeMap[DID_INS_3] = sizeof(ins_3_t);
 	sizeMap[DID_INS_4] = sizeof(ins_4_t);
-	sizeMap[DID_GPS_NAV] = sizeof(gps_nav_t);
-	sizeMap[DID_GPS1_NAV] = sizeof(gps_nav_t);
-	sizeMap[DID_GPS2_NAV] = sizeof(gps_nav_t);
+	sizeMap[DID_GPS1_POS] = sizeof(gps_pos_t);
+	sizeMap[DID_GPS1_UBX_POS] = sizeof(gps_pos_t);
+	sizeMap[DID_GPS2_POS] = sizeof(gps_pos_t);
 	sizeMap[DID_GPS1_SAT] = sizeof(gps_sat_t);
 	sizeMap[DID_GPS2_SAT] = sizeof(gps_sat_t);
 	sizeMap[DID_GPS1_VERSION] = sizeof(gps_version_t);
 	sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
-	sizeMap[DID_GPS_RTK_MISC] = sizeof(gps_rtk_misc_t);
+	sizeMap[DID_GPS1_RTK_REL] = sizeof(gps_rtk_rel_t);
+	sizeMap[DID_GPS1_RTK_MISC] = sizeof(gps_rtk_misc_t);
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
@@ -313,46 +315,48 @@ static void PopulateINS4Mappings(map_lookup_name_t& mappings)
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateGPSNavMappings(map_lookup_name_t& mappings)
+static void PopulateGpsPosMappings(map_lookup_name_t& mappings)
 {
-	typedef gps_nav_t MAP_TYPE;
+	typedef gps_pos_t MAP_TYPE;
 	map_name_to_info_t m;
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "cnoMax", cnoMax, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "cnoMean", cnoMean, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "lla[0]", lla[0], 0, DataTypeDouble, double&);
+	ADD_MAP(m, totalSize, "ecef[0]", ecef[0], 0, DataTypeDouble, double&);
+	ADD_MAP(m, totalSize, "ecef[1]", ecef[1], 0, DataTypeDouble, double&);
+	ADD_MAP(m, totalSize, "ecef[2]", ecef[2], 0, DataTypeDouble, double&);
+	ADD_MAP(m, totalSize, "lla[0]", lla[0], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "lla[1]", lla[1], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "lla[2]", lla[2], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "hMSL", hMSL, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "hAcc", hAcc, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "vAcc", vAcc, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "pDop", pDop, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "velNed[0]", velNed[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "velNed[1]", velNed[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "velNed[2]", velNed[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "sAcc", sAcc, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "towOffset", towOffset, 0, DataTypeDouble, double);
-    ADD_MAP(m, totalSize, "ecef[0]", ecef[0], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "ecef[1]", ecef[1], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "ecef[2]", ecef[2], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "velEcef[0]", velEcef[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "velEcef[1]", velEcef[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "velEcef[2]", velEcef[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "differentialAge", differentialAge, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "arRatio", arRatio, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "distanceToBase", distanceToBase, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "vectorToBase[0]", vectorToBase[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "vectorToBase[1]", vectorToBase[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "vectorToBase[2]", vectorToBase[2], 0, DataTypeFloat, float&);
-	mappings[DID_GPS_NAV] = m;
-	mappings[DID_GPS1_NAV] = m;
-	mappings[DID_GPS2_NAV] = m;
-	mappings[DID_GPS_RTK_NAV] = m;
+	ADD_MAP(m, totalSize, "cnoMean", cnoMean, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "towOffset", towOffset, 0, DataTypeDouble, double);
+	mappings[DID_GPS1_POS] = m;
+	mappings[DID_GPS1_UBX_POS] = m;
+	mappings[DID_GPS2_POS] = m;
+	mappings[DID_GPS1_RTK_POS] = m;
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpsVelMappings(map_lookup_name_t& mappings)
+{
+	typedef gps_vel_t MAP_TYPE;
+	map_name_to_info_t m;
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "velEcef[0]", velEcef[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "velEcef[1]", velEcef[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "velEcef[2]", velEcef[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "sAcc", sAcc, 0, DataTypeFloat, float);
+	mappings[DID_GPS1_VEL] = m;
+	mappings[DID_GPS2_VEL] = m;
+
+	ASSERT_SIZE(totalSize);
 }
 
 #if 0
@@ -595,12 +599,29 @@ static void PopulateFlashConfigMappings(map_lookup_name_t& mappings)
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateRtkRelMappings(map_lookup_name_t& mappings)
+{
+	typedef gps_rtk_rel_t MAP_TYPE;
+	map_name_to_info_t m;
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "vectorToBase[0]", vectorToBase[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vectorToBase[1]", vectorToBase[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vectorToBase[2]", vectorToBase[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "differentialAge", differentialAge, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "arRatio", arRatio, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "distanceToBase", distanceToBase, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "headingToBase", headingToBase, 0, DataTypeFloat, float);
+	mappings[DID_GPS1_RTK_REL] = m;
+
+	ASSERT_SIZE(totalSize);
+}
+
 static void PopulateRtkMiscMappings(map_lookup_name_t& mappings)
 {
 	typedef gps_rtk_misc_t MAP_TYPE;
 	map_name_to_info_t m;
 	uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "accuracyPos[0]", accuracyPos[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "accuracyPos[1]", accuracyPos[1], 0, DataTypeFloat, float&);
@@ -610,7 +631,6 @@ static void PopulateRtkMiscMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "accuracyCov[2]", accuracyCov[2], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "arThreshold", arThreshold, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "gDop", gDop, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "pDop", pDop, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "hDop", hDop, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "vDop", vDop, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "baseLla[0]", baseLla[0], 0, DataTypeDouble, double&);
@@ -641,8 +661,7 @@ static void PopulateRtkMiscMappings(map_lookup_name_t& mappings)
     ADD_MAP(m, totalSize, "baseSbasCount", baseSbasCount, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "baseAntennaCount", baseAntennaCount, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "ionUtcAlmCount", ionUtcAlmCount, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "rtkCompassHeading", rtkCompassHeading, 0, DataTypeFloat, float);
-	mappings[DID_GPS_RTK_MISC] = m;
+	mappings[DID_GPS1_RTK_MISC] = m;
 
     ASSERT_SIZE(totalSize);
 }
@@ -1143,13 +1162,15 @@ cISDataMappings::cISDataMappings()
 	PopulateINS2Mappings(m_columnMappings, DID_INS_2);
 	PopulateINS2Mappings(m_columnMappings, DID_INS_3);
 	PopulateINS4Mappings(m_columnMappings);
-	PopulateGPSNavMappings(m_columnMappings);
-    //PopulateGPSCNOMappings(m_columnMappings); // too much data, we don't want to log this
+	PopulateGpsPosMappings(m_columnMappings);
+	PopulateGpsVelMappings(m_columnMappings);
+	//PopulateGPSCNOMappings(m_columnMappings); // too much data, we don't want to log this
 	PopulateMagnetometerMappings(m_columnMappings);
 	PopulateBarometerMappings(m_columnMappings);
 	PopulateIMUDeltaThetaVelocityMappings(m_columnMappings);
 	PopulateConfigMappings(m_columnMappings);
 	PopulateFlashConfigMappings(m_columnMappings);
+	PopulateRtkRelMappings(m_columnMappings);
 	PopulateRtkMiscMappings(m_columnMappings);
     PopulateGpsRawMappings(m_columnMappings);
 	PopulateStrobeInTimeMappings(m_columnMappings);
@@ -1181,23 +1202,23 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "preintegratedImu",		// 3: DID_PREINTEGRATED_IMU
         "ins1",					// 4: DID_INS_1
         "ins2",					// 5: DID_INS_2
-        "gpsNav",				// 6: DID_GPS_NAV
+        "gpsPos",				// 6: DID_GPS1_POS
         "config",				// 7: DID_CONFIG
         "ascii_msg",			// 8: DID_ASCII_BCAST_PERIOD
         "misc",					// 9: DID_INS_MISC
         "sysParams",			// 10: DID_SYS_PARAMS
         "sysSensors",			// 11: DID_SYS_SENSORS
         "flashCfg",				// 12: DID_FLASH_CONFIG
-		"gps1Nav",				// 13: DID_GPS1_NAV
-		"gps2Nav",				// 14: DID_GPS2_NAV
+		"gps1Pos",				// 13: DID_GPS1_UBX_POS
+		"gps2Pos",				// 14: DID_GPS2_POS
 		"gps1CNO",				// 15: DID_GPS1_SAT
 		"gps2CNO",				// 16: DID_GPS2_SAT
 		"gps1Version",			// 17: DID_GPS1_VERSION
 		"gps2Version",			// 18: DID_GPS2_VERSION
 		"magCal",				// 19: DID_MAG_CAL
         "diagnosticInfo",		// 20: DID_INTERNAL_DIAGNOSTIC
-        "gpsRtkNav",			// 21: DID_GPS_RTK_NAV
-        "gpsRtkMisc",			// 22: DID_GPS_RTK_MISC
+        "gpsRtkRel",			// 21: DID_GPS1_RTK_REL
+        "gpsRtkMisc",			// 22: DID_GPS1_RTK_MISC
         "featureBits",			// 23: DID_FEATURE_BITS
         "sensorIS1",			// 24: DID_SENSORS_IS1
         "sensorIS2",			// 25: DID_SENSORS_IS2
@@ -1205,8 +1226,8 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"ioServos",				// 27: DID_IO
 		"sensorLSB",			// 28: DID_SENSORS_ADC
         "scomp",				// 29: DID_SCOMP
-        "UNUSED_DID_30",		// 30: 
-        "UNUSED_DID_31",		// 31: 
+        "gps1Vel",				// 30: DID_GPS1_VEL
+        "gps2Vel",				// 31: DID_GPS2_VEL
         "hdwParams",			// 32: DID_HDW_PARAMS
         "userPageNvr",			// 33: DID_NVR_MANAGE_USERPAGE
         "userPageSn",			// 34: DID_NVR_USERPAGE_SN
@@ -1229,7 +1250,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"inl2Misc",				// 51: DID_INL2_MISC
         "magnetometer1",		// 52: DID_MAGNETOMETER_1
         "barometer",			// 53: DID_BAROMETER
-        "imu2",					// 54: DID_IMU_2
+        "gpsRtkPos",			// 54: DID_GPS1_RTK_POS
         "magnetometer2",		// 55: DID_MAGNETOMETER_2
         "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
         "imuDualRaw",			// 57: DID_DUAL_IMU_RAW
@@ -1273,7 +1294,7 @@ uint32_t cISDataMappings::GetSize(uint32_t dataId)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info, int radix)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info, int radix, bool json)
 {
 	const uint8_t* ptr;
 	if (!CanGetFieldData(info, hdr, dataBuffer, ptr))
@@ -1326,7 +1347,30 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
 	case DataTypeString:
 	{
 		string s2(stringBuffer);
-		s2.erase(std::remove(s2.begin(), s2.end(), '"'), s2.end());
+		if (json)
+		{
+			char c;
+			bool escaped = false;
+			for (size_t i = 0; i < s2.size(); i++)
+			{
+				c = s2[i];
+				if (c == '\\')
+				{
+					if (!escaped)
+					{
+						escaped = true;
+						s2.erase(i);
+						continue;
+					}
+				}
+				escaped = false;
+			}
+			s2 = stringBuffer;
+		}
+		else
+		{
+			s2.erase(std::remove(s2.begin(), s2.end(), '"'), s2.end());
+		}
 		// ensure string fits with null terminator
 		s2.resize(info.dataSize - 1);
 		memcpy((void*)ptr, s2.data(), s2.length());
@@ -1353,7 +1397,7 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
 }
 
 
-bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer)
+bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer, bool json)
 {
 	const uint8_t* ptr;
 	if (!CanGetFieldData(info, hdr, dataBuffer, ptr))
@@ -1367,7 +1411,16 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 		}
 		else if (info.dataType == DataTypeBinary)
 		{
-			stringBuffer[0] = '\0';
+			if (json)
+			{
+				stringBuffer[0] = '"';
+				stringBuffer[1] = '"';
+				stringBuffer[2] = '\0';
+			}
+			else
+			{
+				stringBuffer[0] = '\0';
+			}
 		}
 		else
 		{
@@ -1427,6 +1480,20 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 		char* bufPtrEnd = bufPtr2 + _MIN(IS_DATA_MAPPING_MAX_STRING_LENGTH, info.dataSize) - 3;
 		for (; bufPtr2 < bufPtrEnd && *bufPtr2 != '\0'; bufPtr2++)
 		{
+			if (json)
+			{
+				if (IS_JSON_ESCAPE_CHAR(*bufPtr2))
+				{
+					if (bufPtr2 < bufPtrEnd - 1)
+					{
+						stringBuffer[tempIndex++] = '\\';
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
 			stringBuffer[tempIndex++] = *bufPtr2;
 		}
 		stringBuffer[tempIndex++] = '"';
@@ -1435,13 +1502,21 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 
 	case DataTypeBinary:
 	{
+		size_t hexIndex = 1;
+		if (json)
+		{
+			stringBuffer[0] = '"';
+		}
 		// convert to hex
 		const unsigned char* hexTable = getHexLookupTable();
-		size_t hexIndex = 0;
 		for (size_t i = 0; i < info.dataSize; i++)
 		{
 			stringBuffer[hexIndex++] = hexTable[0x0F & (dataBuffer[i] >> 4)];
 			stringBuffer[hexIndex++] = hexTable[0x0F & dataBuffer[i]];
+		}
+		if (json)
+		{
+			stringBuffer[hexIndex++] = '"';
 		}
 		stringBuffer[hexIndex] = '\0';
 	} break;

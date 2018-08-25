@@ -23,10 +23,12 @@
     <ClCompile Include="..\..\..\src\DataChunk.cpp" />
     <ClCompile Include="..\..\..\src\DataChunkSorted.cpp" />
     <ClCompile Include="..\..\..\src\DataCSV.cpp" />
+    <ClCompile Include="..\..\..\src\DataJSON.cpp" />
     <ClCompile Include="..\..\..\src\DataKML.cpp" />
     <ClCompile Include="..\..\..\src\data_sets.c" />
     <ClCompile Include="..\..\..\src\DeviceLog.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogCSV.cpp" />
+    <ClCompile Include="..\..\..\src\DeviceLogJSON.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSorted.cpp" />
@@ -58,10 +60,12 @@
     <ClInclude Include="..\..\..\src\DataChunk.h" />
     <ClInclude Include="..\..\..\src\DataChunkSorted.h" />
     <ClInclude Include="..\..\..\src\DataCSV.h" />
+    <ClInclude Include="..\..\..\src\DataJSON.h" />
     <ClInclude Include="..\..\..\src\DataKML.h" />
     <ClInclude Include="..\..\..\src\data_sets.h" />
     <ClInclude Include="..\..\..\src\DeviceLog.h" />
     <ClInclude Include="..\..\..\src\DeviceLogCSV.h" />
+    <ClInclude Include="..\..\..\src\DeviceLogJSON.h" />
     <ClInclude Include="..\..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSorted.h" />

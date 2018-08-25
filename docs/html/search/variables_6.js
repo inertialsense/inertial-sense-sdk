@@ -26,12 +26,13 @@ var searchData=
   ['gps1antoffset',['gps1AntOffset',['../struct_p_a_c_k_e_d.html#ac1419451705ca8a808314427329d47e4',1,'PACKED']]],
   ['gps2antoffset',['gps2AntOffset',['../struct_p_a_c_k_e_d.html#ab0a3b86e9b15ae2c805ce15b4474ad68',1,'PACKED']]],
   ['gpsmodear',['gpsmodear',['../structprcopt__t.html#a089c91ac366bf02e885a03ea4aaed8a0',1,'prcopt_t']]],
-  ['gpsnav',['gpsNav',['../struct_p_a_c_k_e_d.html#a47e596a298c6b553c24708ae69687a3d',1,'PACKED']]],
+  ['gpspos',['gpsPos',['../struct_p_a_c_k_e_d.html#ab0e8966ef72c3288be6694cfd2251ab6',1,'PACKED']]],
   ['gpsraw',['gpsRaw',['../struct_p_a_c_k_e_d.html#a6165ccd0a354c1ee9c5578d70155ad31',1,'PACKED']]],
   ['gpsrtkmisc',['gpsRtkMisc',['../struct_p_a_c_k_e_d.html#aeb2c8e87fe88f50c5d74de585caa9b40',1,'PACKED']]],
-  ['gpsrtknav',['gpsRtkNav',['../struct_p_a_c_k_e_d.html#a443fbd935fdf935c743d879237e1e348',1,'PACKED']]],
+  ['gpsrtkrel',['gpsRtkRel',['../struct_p_a_c_k_e_d.html#ac6742f7f461637b2e84904a9e53e982a',1,'PACKED']]],
   ['gpssat',['gpsSat',['../struct_p_a_c_k_e_d.html#a3fa89c1d5d1aecd32b550c2523ca9817',1,'PACKED']]],
   ['gpsstatus',['gpsStatus',['../struct_p_a_c_k_e_d.html#a539663cbe08572454397fa63a6aae066',1,'PACKED']]],
   ['gpstimesyncperiodms',['gpsTimeSyncPeriodMs',['../struct_p_a_c_k_e_d.html#ab92728c00c22075cd67e47e5466c0351',1,'PACKED']]],
+  ['gpsvel',['gpsVel',['../struct_p_a_c_k_e_d.html#a696c3f46dc09851df5b33746af2da4ef',1,'PACKED']]],
   ['grpnum',['grpNum',['../structs_chunk_header.html#a2b64e72a0ab8292bb0c1539326f80164',1,'sChunkHeader']]]
 ];

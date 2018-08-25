@@ -1,7 +1,10 @@
 var searchData=
 [
-  ['onclientdatareceived',['OnClientDataReceived',['../classi_i_s_tcp_server_delegate.html#a58bf6d6de6148461f5461bf4a7f073d0',1,'iISTcpServerDelegate']]],
-  ['onclientdisconnected',['OnClientDisconnected',['../classi_i_s_tcp_server_delegate.html#a88af04ec51346fb1fbd91452118ea447',1,'iISTcpServerDelegate']]],
+  ['onclientconnected',['OnClientConnected',['../class_inertial_sense.html#a14816a23373f073abdf09ef4ff5cad26',1,'InertialSense::OnClientConnected()'],['../classi_i_s_tcp_server_delegate.html#a3fa2dd49f1908319ac510dae47d04069',1,'iISTcpServerDelegate::OnClientConnected()']]],
+  ['onclientconnectfailed',['OnClientConnectFailed',['../class_inertial_sense.html#af8c69dc2c40e39503fbb447847df0d5a',1,'InertialSense::OnClientConnectFailed()'],['../classi_i_s_tcp_server_delegate.html#a067eae89a124bff9d8fa9217914f7b6e',1,'iISTcpServerDelegate::OnClientConnectFailed()']]],
+  ['onclientconnecting',['OnClientConnecting',['../class_inertial_sense.html#ad55ff70e5c606085075e60d7a32b7159',1,'InertialSense::OnClientConnecting()'],['../classi_i_s_tcp_server_delegate.html#aceb1a642bda5b29807e2b1fe41285730',1,'iISTcpServerDelegate::OnClientConnecting()']]],
+  ['onclientdatareceived',['OnClientDataReceived',['../classi_i_s_tcp_server_delegate.html#a55960f6278f8524f17f9b2925fe978e2',1,'iISTcpServerDelegate']]],
+  ['onclientdisconnected',['OnClientDisconnected',['../class_inertial_sense.html#ade1eb02ed38bcb28759df421803b31e6',1,'InertialSense::OnClientDisconnected()'],['../classi_i_s_tcp_server_delegate.html#a6afee213d15d230882e8057ffb15d93b',1,'iISTcpServerDelegate::OnClientDisconnected()']]],
   ['onerror',['OnError',['../classi_gps_parser_delegate.html#a235705085991ff760cf10cb49317a743',1,'iGpsParserDelegate']]],
   ['onglonassephemerisreceived',['OnGlonassEphemerisReceived',['../classi_gps_parser_delegate.html#ab711598d3e65ae1b7ba4e7a04afedc29',1,'iGpsParserDelegate']]],
   ['ongpsephemerisreceived',['OnGpsEphemerisReceived',['../classi_gps_parser_delegate.html#ad51fee5d3324537e4a9a8664237b8626',1,'iGpsParserDelegate']]],

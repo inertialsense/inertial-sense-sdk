@@ -22,15 +22,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DeviceLogSerial.h"
 #include "DeviceLogSorted.h"
 #include "DeviceLogCSV.h"
+#include "DeviceLogJSON.h"
 #include "DeviceLogKML.h"
 #include "ISConstants.h"
 #include "ISDisplay.h"
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-#include "../pySDK/pySDK.h"
-
-#endif
 
 using namespace std;
 
@@ -55,6 +50,7 @@ public:
 		LOGTYPE_SDAT,
 		LOGTYPE_CSV,
 		LOGTYPE_KML,
+		LOGTYPE_JSON
 	};
 
 	static const string g_emptyString;
@@ -166,6 +162,10 @@ public:
 		{
 			return cISLogger::eLogType::LOGTYPE_SDAT;
 		}
+		else if (logTypeString == "json")
+		{
+			return cISLogger::eLogType::LOGTYPE_JSON;
+		}
 		return cISLogger::eLogType::LOGTYPE_DAT;
 	}
 
@@ -193,22 +193,6 @@ private:
 	double					m_iconUpdatePeriodSec;
 	time_t					m_lastCommTime;
 	time_t					m_timeoutFlushSeconds;
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-    cInertialSenseDisplay	m_pyDisplay;
-
-public:
-	/**
-	* Set the Display variable for the pyCallback
-	* @param python callback function
-	*/
-	void SetPyDisplay(cInertialSenseDisplay display);
-
-	pybind11::dict PyReadData(unsigned int device = 0);
-
-#endif
-
 };
 
 class cLogStatDataId

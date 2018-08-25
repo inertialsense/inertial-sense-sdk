@@ -192,13 +192,13 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 	static uint16_t offsetsGps[] =
 	{
 		7,
-		offsetof(gps_nav_t, lla[0]),
-		offsetof(gps_nav_t, lla[1]),
-		offsetof(gps_nav_t, lla[2]),
-		offsetof(gps_nav_t, towOffset),
-		offsetof(gps_nav_t, ecef[0]),
-		offsetof(gps_nav_t, ecef[1]),
-		offsetof(gps_nav_t, ecef[2])
+		offsetof(gps_pos_t, lla[0]),
+		offsetof(gps_pos_t, lla[1]),
+		offsetof(gps_pos_t, lla[2]),
+		offsetof(gps_pos_t, towOffset),
+		offsetof(gps_pos_t, ecef[0]),
+		offsetof(gps_pos_t, ecef[1]),
+		offsetof(gps_pos_t, ecef[2])
 	};
 
     static uint16_t offsetsRmc[] =
@@ -255,23 +255,23 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	//  3: DID_PREINTEGRATED_IMU
 		offsetsIns1,			//  4: DID_INS_1
 		offsetsIns2,			//  5: DID_INS_2
-		offsetsGps,				//  6: DID_GPS_NAV
+		offsetsGps,				//  6: DID_GPS1_POS
         0,  					//  7: DID_CONFIG
 		0,						//  8: DID_ASCII_BCAST_PERIOD
 		offsetsRmc,				//  9: DID_RMC
 		0,						// 10: DID_SYS_PARAMS
 		offsetsOnlyTimeFirst,	// 11: DID_SYS_SENSORS
 		offsetsFlashConfig,		// 12: DID_FLASH_CONFIG
-		offsetsGps,				// 13: DID_GPS1_NAV
-		offsetsGps,				// 14: DID_GPS2_NAV
+		offsetsGps,				// 13: DID_GPS1_UBX_POS
+		offsetsGps,				// 14: DID_GPS2_POS
 		0,						// 15: DID_GPS1_SAT
 		0,						// 16: DID_GPS2_SAT
 		0,                      // 17: DID_GPS1_VERSION
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
-		0,						// 20: 
-        0,                      // 21: DID_GPS_RTK_NAV
-        offsetsRtkNav,          // 22: DID_GPS_RTK_MISC,
+		0,						// 20: DID_INTERNAL_DIAGNOSTIC
+        0,                      // 21: DID_GPS1_RTK_POS
+        offsetsRtkNav,          // 22: DID_GPS1_RTK_MISC,
 		0,						// 23: DID_FEATURE_BITS
 		0,						// 24: DID_SENSORS_IS1
 		0,						// 25: DID_SENSORS_IS2
@@ -279,8 +279,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 27: DID_IO
 		offsetsOnlyTimeFirst,	// 28: DID_SENSORS_ADC
 		0,						// 29: DID_SCOMP
-		0,						// 30: 
-		0,						// 31: 
+		0,						// 30: DID_GPS1_VEL
+		0,						// 31: DID_GPS2_VEL
 		0,						// 32: DID_HDW_PARAMS
 		0,						// 33: DID_NVR_MANAGE_USERPAGE
 		0,						// 34: DID_NVR_USERPAGE_SN
@@ -303,7 +303,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 51: DID_INL2_STATUS,
 		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER_1
 		offsetsOnlyTimeFirst,	// 53: DID_BAROMETER
-		0,						// 54: 
+		0,						// 54: DID_GPS1_RTK_POS
 		offsetsOnlyTimeFirst,	// 55: DID_MAGNETOMETER_2
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		offsetsOnlyTimeFirst,	// 57: DID_DUAL_IMU_RAW
@@ -322,7 +322,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 70: DID_GPS2_RAW
 		0,						// 71: DID_VELOCITY_SENSOR
 		0,						// 72: DID_DIAGNOSTIC_MESSAGE
-		offsetsSurveyIn			// 73: DID_SURVEY_IN
+		offsetsSurveyIn 		// 73: DID_SURVEY_IN
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -388,23 +388,23 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  3: DID_PREINTEGRATED_IMU
 		0,						//  4: DID_INS_1
 		0,						//  5: DID_INS_2
-		0,						//  6: DID_GPS_NAV
+		0,						//  6: DID_GPS1_POS
 		0,						//  7: DID_CONFIG
 		0,						//  8: DID_ASCII_BCAST_PERIOD
 		0,						//  9: DID_RMC
 		0,						// 10: DID_SYS_PARAMS
 		0,						// 11: DID_SYS_SENSORS
 		0,						// 12: DID_FLASH_CONFIG
-		0,						// 13: DID_GPS1_NAV
-		0,						// 14: DID_GPS2_NAV
+		0,						// 13: DID_GPS1_UBX_POS
+		0,						// 14: DID_GPS2_POS
 		0,						// 15: DID_GPS1_SAT
 		0,						// 16: DID_GPS2_SAT
 		0,						// 17: DID_GPS1_VERSION
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
-		0,						// 20: 
-        0,                      // 21: DID_GPS_RTK_NAV
-        0,                      // 22: DID_GPS_RTK_MISC,
+		0,						// 20: DID_INTERNAL_DIAGNOSTIC
+        0,                      // 21: DID_GPS1_RTK_REL
+        0,                      // 22: DID_GPS1_RTK_MISC,
 		0,						// 23: DID_FEATURE_BITS
 		0,						// 24: DID_SENSORS_IS1
 		0,						// 25: DID_SENSORS_IS2
@@ -412,8 +412,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 27: DID_IO
 		0,						// 28: DID_SENSORS_ADC
 		0,						// 29: DID_SCOMP
-		0,						// 30: 
-		0,						// 31: 
+		0,						// 30: DID_GPS1_VEL
+		0,						// 31: DID_GPS2_VEL
 		0,						// 32: DID_HDW_PARAMS,
 		0,						// 33: DID_NVR_MANAGE_USERPAGE
 		0,						// 34: DID_NVR_USERPAGE_SN
@@ -436,7 +436,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 51: DID_INL2_STATUS
 		0,						// 52: DID_MAGNETOMETER_1
 		0,						// 53: DID_BAROMETER
-		0,						// 54: 
+		0,						// 54: DID_GPS1_RTK_POS
 		0,						// 55: DID_MAGNETOMETER_2
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		0,						// 57: DID_DUAL_IMU_RAW
@@ -518,16 +518,19 @@ uint64_t didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
 		case DID_MAGNETOMETER_1:		return RMC_BITS_MAGNETOMETER1;
 		case DID_MAGNETOMETER_2:		return RMC_BITS_MAGNETOMETER2;
-		case DID_GPS_NAV:				return RMC_BITS_GPS_NAV;
-		case DID_GPS1_NAV:				return RMC_BITS_GPS1_NAV;
-		case DID_GPS2_NAV:				return RMC_BITS_GPS2_NAV;
+		case DID_GPS1_POS:				return RMC_BITS_GPS1_POS;
+		case DID_GPS2_POS:				return RMC_BITS_GPS2_POS;
+		case DID_GPS1_VEL:				return RMC_BITS_GPS1_VEL;
+		case DID_GPS2_VEL:				return RMC_BITS_GPS2_VEL;
 		case DID_GPS1_SAT:				return RMC_BITS_GPS1_SAT;
 		case DID_GPS2_SAT:				return RMC_BITS_GPS2_SAT;
 		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
 		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
 		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE_RAW;
-		case DID_GPS_RTK_NAV:			return RMC_BITS_GPS_RTK_NAV;
-		case DID_GPS_RTK_MISC:			return RMC_BITS_GPS_RTK_MISC;
+		case DID_GPS1_UBX_POS:			return RMC_BITS_GPS1_UBX_POS;
+		case DID_GPS1_RTK_POS:			return RMC_BITS_GPS1_RTK_POS;
+		case DID_GPS1_RTK_REL:			return RMC_BITS_GPS1_RTK_REL;
+		case DID_GPS1_RTK_MISC:			return RMC_BITS_GPS1_RTK_MISC;
 		case DID_STROBE_IN_TIME:		return RMC_BITS_STROBE_IN_TIME;
 		case DID_DIAGNOSTIC_MESSAGE:	return RMC_BITS_DIAGNOSTIC_MESSAGE;		
 		default:						return defaultRmcBits;
@@ -631,4 +634,136 @@ double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds)
 	double gpsDays = (double)gpsWeek * 7.0;
 	gpsDays += ((((double)gpsMilliseconds / 1000.0) - (double)CURRENT_LEAP_SECONDS) / 86400.0);
 	return (2444244.500000) + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
+}
+
+static void appendGPSTimeOfLastFix(const gps_pos_t* gps, char** buffer, int* bufferLength)
+{
+    unsigned int millisecondsToday = gps->timeOfWeekMs % 86400000;
+    unsigned int hours = millisecondsToday / 1000 / 60 / 60;
+    unsigned int minutes = (millisecondsToday / (1000 * 60)) % 60;
+    unsigned int seconds = (millisecondsToday / 1000) % 60;
+    int written = SNPRINTF(*buffer, *bufferLength, ",%02u%02u%02u", hours, minutes, seconds);
+    *bufferLength -= written;
+    *buffer += written;
+}
+
+static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLength, double v, const char* degreesFormat, char posC, char negC)
+{
+    int degrees = (int)(v);
+    double minutes = (v - ((double)degrees)) * 60.0;
+
+    int written = SNPRINTF(*buffer, *bufferLength, degreesFormat, abs(degrees));
+    *bufferLength -= written;
+    *buffer += written;
+
+    written = SNPRINTF(*buffer, *bufferLength, "%07.4f,", fabs(minutes));
+    *bufferLength -= written;
+    *buffer += written;
+
+    written = SNPRINTF(*buffer, *bufferLength, "%c", (degrees >= 0 ? posC : negC));
+    *bufferLength -= written;
+    *buffer += written;
+}
+
+int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength)
+{
+    // NMEA GGA line - http://www.gpsinformation.org/dale/nmea.htm#GGA
+    /*
+    GGA          Global Positioning System Fix Data
+    123519       Fix taken at 12:35:19 UTC
+    4807.038,N   Latitude 48 deg 07.038' N
+    01131.000,E  Longitude 11 deg 31.000' E
+    .            Fix quality:	0 = invalid
+    .							1 = GPS fix (SPS)
+    .							2 = DGPS fix
+    .							3 = PPS fix
+    .							4 = Real Time Kinematic
+    .							5 = Float RTK
+    .							6 = estimated (dead reckoning) (2.3 feature)
+    .							7 = Manual input mode
+    .							8 = Simulation mode
+    08           Number of satellites being tracked
+    0.9          Horizontal dilution of position
+    545.4,M      MSL altitude in meters
+    46.9,M       HAE altitude (above geoid / WGS84 ellipsoid)
+    ellipsoid
+    (empty field) time in seconds since last DGPS update
+    (empty field) DGPS station ID number
+    *47          the checksum data, always begins with *
+    */
+
+    if (bufferLength < 128)
+    {
+        return 0;
+    }
+
+    unsigned int checkSum = 0;
+    int fixQuality;
+    switch((gps->status & GPS_STATUS_FIX_MASK))
+    {
+    default:
+    case GPS_STATUS_FIX_NONE:
+        fixQuality = 0;
+        break;
+
+    case GPS_STATUS_FIX_SBAS:
+    case GPS_STATUS_FIX_2D:
+    case GPS_STATUS_FIX_RTK_SINGLE:
+    case GPS_STATUS_FIX_3D:
+        fixQuality = 1;
+        break;
+
+    case GPS_STATUS_FIX_DGPS:
+        fixQuality = 2;
+        break;
+
+    case GPS_STATUS_FIX_TIME_ONLY:
+        fixQuality = 3;
+        break;
+
+    case GPS_STATUS_FIX_RTK_FIX:
+        fixQuality = 4;
+        break;
+
+    case GPS_STATUS_FIX_RTK_FLOAT:
+        fixQuality = 5;
+        break;
+
+    case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
+    case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:
+        fixQuality = 6;
+        break;
+    }
+
+    // write message
+    int written = 1;
+    char* bufferStart = buffer;
+    *buffer++ = '$';
+    bufferLength--;
+    written = SNPRINTF(buffer, bufferLength, "%s", "GPGGA");
+    buffer += written;
+    bufferLength -= written;
+
+    appendGPSTimeOfLastFix(gps, &buffer, &bufferLength);
+    appendGPSCoord(gps, &buffer, &bufferLength, gps->lla[0], ",%02d", 'N', 'S');
+    appendGPSCoord(gps, &buffer, &bufferLength, gps->lla[1], ",%03d", 'E', 'W');
+
+    written = SNPRINTF(buffer, bufferLength, ",%u,%02u,%.2f,%.2f,M,%.2f,M,,",
+                       (unsigned)fixQuality,
+                       (unsigned)(gps->status & GPS_STATUS_NUM_SATS_USED_MASK),
+                       gps->pDop,
+                       gps->hMSL,
+                       gps->hMSL - gps->lla[2]);
+    buffer += written;
+    bufferLength -= written;
+
+    // compute checksum
+    for (char* ptr = bufferStart + 1; ptr < buffer; ptr++)
+    {
+        checkSum ^= *ptr;
+    }
+
+    written = SNPRINTF(buffer, bufferLength, "*%.2x\r\n", checkSum);
+    buffer += written;
+    return (int)(buffer - bufferStart);
 }

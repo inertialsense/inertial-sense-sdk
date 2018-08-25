@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.2</span>
+   &#160;<span id="projectnumber">Release 1.6.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -118,17 +118,32 @@ $(function() {
 <li>RMC_BITS_DUAL_IMU_RAW
 : <a class="el" href="data__sets_8h.html#a45e70b7c849af81dba7f8850f4a79e1a">data_sets.h</a>
 </li>
-<li>RMC_BITS_GPS1_NAV
-: <a class="el" href="data__sets_8h.html#a9e251fc9b5430020f4e74968f18a7d1a">data_sets.h</a>
+<li>RMC_BITS_GPS1_POS
+: <a class="el" href="data__sets_8h.html#aea5b562387394db6e75cc853ab0d8015">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_RAW
 : <a class="el" href="data__sets_8h.html#a4b4ad791ed0932898e1711154644729a">data_sets.h</a>
 </li>
+<li>RMC_BITS_GPS1_RTK_MISC
+: <a class="el" href="data__sets_8h.html#a662d45fdbd7ded21b8eccce84e0f1711">data_sets.h</a>
+</li>
+<li>RMC_BITS_GPS1_RTK_POS
+: <a class="el" href="data__sets_8h.html#a049594acdacfd7be759eed3cf6b99f8d">data_sets.h</a>
+</li>
+<li>RMC_BITS_GPS1_RTK_REL
+: <a class="el" href="data__sets_8h.html#ab77721b9d02e79e1334cd8a22c39791a">data_sets.h</a>
+</li>
 <li>RMC_BITS_GPS1_SAT
 : <a class="el" href="data__sets_8h.html#a2b4442725aa286672b1c8e3a38386fdf">data_sets.h</a>
 </li>
-<li>RMC_BITS_GPS2_NAV
-: <a class="el" href="data__sets_8h.html#a4c3ddaf2a3313b934b3627f1d7ff1a8f">data_sets.h</a>
+<li>RMC_BITS_GPS1_UBX_POS
+: <a class="el" href="data__sets_8h.html#aa1d34261a000eb3387fc30bc4fe2b1a7">data_sets.h</a>
+</li>
+<li>RMC_BITS_GPS1_VEL
+: <a class="el" href="data__sets_8h.html#aa494c83b3e2904bac556868cab23cdea">data_sets.h</a>
+</li>
+<li>RMC_BITS_GPS2_POS
+: <a class="el" href="data__sets_8h.html#a9e845836efc8d68a91929872440a582a">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS2_RAW
 : <a class="el" href="data__sets_8h.html#ac6b5e6c0f5eb5b33d617390c1fbc6b9b">data_sets.h</a>
@@ -136,17 +151,11 @@ $(function() {
 <li>RMC_BITS_GPS2_SAT
 : <a class="el" href="data__sets_8h.html#aefe9b4517d97332ae5cedcfa2f6ee2ce">data_sets.h</a>
 </li>
+<li>RMC_BITS_GPS2_VEL
+: <a class="el" href="data__sets_8h.html#aea35bc43e5c352326b3a4b9ae2247f97">data_sets.h</a>
+</li>
 <li>RMC_BITS_GPS_BASE_RAW
 : <a class="el" href="data__sets_8h.html#a699bf6339947409d05fa280b5079e74f">data_sets.h</a>
-</li>
-<li>RMC_BITS_GPS_NAV
-: <a class="el" href="data__sets_8h.html#aa0cc8bcf9ceb10b6f6d2588c4188c711">data_sets.h</a>
-</li>
-<li>RMC_BITS_GPS_RTK_MISC
-: <a class="el" href="data__sets_8h.html#a2e22fabbb49f784f3d9811509f985f4d">data_sets.h</a>
-</li>
-<li>RMC_BITS_GPS_RTK_NAV
-: <a class="el" href="data__sets_8h.html#a679d790812c515f6618e313c918f754c">data_sets.h</a>
 </li>
 <li>RMC_BITS_INS1
 : <a class="el" href="data__sets_8h.html#aaa71deca82de4cea6f5ae7aabc092c60">data_sets.h</a>
@@ -168,6 +177,9 @@ $(function() {
 </li>
 <li>RMC_BITS_MAGNETOMETER2
 : <a class="el" href="data__sets_8h.html#a376a1d309060600802eb462b9ead81d8">data_sets.h</a>
+</li>
+<li>RMC_BITS_MASK
+: <a class="el" href="data__sets_8h.html#a809c1c6887b7f9c0275a639e68cbafa7">data_sets.h</a>
 </li>
 <li>RMC_BITS_PREINTEGRATED_IMU
 : <a class="el" href="data__sets_8h.html#a86fc8c07e5bce4a4d68f75de454ad629">data_sets.h</a>
@@ -214,20 +226,14 @@ $(function() {
 <li>RMC_PRESET_PPD_BITS
 : <a class="el" href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">data_sets.h</a>
 </li>
-<li>RMC_PRESET_PPD_COMPASSING_BITS
-: <a class="el" href="data__sets_8h.html#a2ddf237627a6fc9fb25f4172a7b7b6d0">data_sets.h</a>
+<li>RMC_PRESET_PPD_BITS_NO_IMU
+: <a class="el" href="data__sets_8h.html#abb5a02b181cc502a8bfa95be1b3892e5">data_sets.h</a>
+</li>
+<li>RMC_PRESET_PPD_BITS_RAW_IMU
+: <a class="el" href="data__sets_8h.html#aba5a6647f5808e6cdfd54c1d6db68729">data_sets.h</a>
 </li>
 <li>RMC_PRESET_PPD_NAV_PERIOD
 : <a class="el" href="data__sets_8h.html#ac81033567ed17eca471798246f94258d">data_sets.h</a>
-</li>
-<li>RMC_PRESET_PPD_NO_IMU_BITS
-: <a class="el" href="data__sets_8h.html#a47786eeff1b24bf4a059c91607eeeef8">data_sets.h</a>
-</li>
-<li>RMC_PRESET_PPD_RAW_GPS_BITS
-: <a class="el" href="data__sets_8h.html#a2264b5e6e66cdbf4e443adb912e0ddec">data_sets.h</a>
-</li>
-<li>RMC_PRESET_PPD_RAW_IMU_BITS
-: <a class="el" href="data__sets_8h.html#afb1b47c0eaac9725e8ca69f67ba7086a">data_sets.h</a>
 </li>
 <li>RTCM3_HEADER_SIZE
 : <a class="el" href="_i_s_comm_8h.html#a4f5c35a4a8d7bc7011d154f678a44107">ISComm.h</a>

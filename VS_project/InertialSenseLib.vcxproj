@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\DataJSON.cpp" />
+    <ClCompile Include="..\src\DeviceLogJSON.cpp" />
     <ClCompile Include="..\src\ring_buffer.c" />
     <ClCompile Include="..\src\cltool.cpp" />
     <ClCompile Include="..\src\cltool_main.cpp" />
@@ -58,6 +60,8 @@
     <ClCompile Include="..\src\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\DataJSON.h" />
+    <ClInclude Include="..\src\DeviceLogJSON.h" />
     <ClInclude Include="..\src\ring_buffer.h" />
     <ClInclude Include="..\src\cltool.h" />
     <ClInclude Include="..\src\com_manager.h" />

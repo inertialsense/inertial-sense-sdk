@@ -28,22 +28,58 @@ class iISTcpServerDelegate
 protected:
 	/**
 	* Executes when client data is received
+	* @param server the server receiving data
+	* @param socket the client socket
+	* @param data the data received
+	* @param dataLength the number of bytes received
 	*/
-        virtual void OnClientDataReceived(socket_t socket, uint8_t* data, int dataLength)
-        {
-            (void)socket;
-            (void)data;
-            (void)dataLength;
-        }
+    virtual void OnClientDataReceived(cISTcpServer* server, socket_t socket, uint8_t* data, int dataLength)
+    {
+		(void)server;
+        (void)socket;
+        (void)data;
+        (void)dataLength;
+    }
+
+	/**
+	* Executes when a client is connecting
+	* @param server the server the client socket is connecting to
+	*/
+	virtual void OnClientConnecting(cISTcpServer* server)
+	{
+		(void)server;
+	}
+
+	/**
+	* Executes when a client has connected
+	* @param server the server the client connected to
+	* @param socket the connected socket
+	*/
+	virtual void OnClientConnected(cISTcpServer* server, socket_t socket)
+	{
+		(void)server;
+		(void)socket;
+	}
+
+	/**
+	* Executes when a client fails to connect
+	* @param server the server the client failed to connect to
+	*/
+	virtual void OnClientConnectFailed(cISTcpServer* server)
+	{
+		(void)server;
+	}
 
 	/**
 	* Executes when a client disconnects
+	* @param server the server the client disconnected from
 	* @param socket the socket that disconnected
 	*/
-        virtual void OnClientDisconnected(socket_t socket)
-        {
-            (void)socket;
-        }
+    virtual void OnClientDisconnected(cISTcpServer* server, socket_t socket)
+    {
+		(void)server;
+        (void)socket;
+    }
 
 	friend class cISTcpServer;
 };

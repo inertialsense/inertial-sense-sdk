@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.2</span>
+   &#160;<span id="projectnumber">Release 1.6.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -183,6 +183,12 @@ $(function() {
 <li>INS_STATUS_RTK_BASE_POSITION_MOVING
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cadc6138a7dc14f19c515d5dce35a35db7">data_sets.h</a>
 </li>
+<li>INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca8d6899ad9e2dc9366eff323f87509117">data_sets.h</a>
+</li>
+<li>INS_STATUS_RTK_COMPASSING_WRONG_BASELINE
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca65bd6dfc53952e7725702d03a57b73eb">data_sets.h</a>
+</li>
 <li>INS_STATUS_RTOS_TASK_PERIOD_OVERRUN
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca04015cafe4c98b3cccd163098bd58e1b">data_sets.h</a>
 </li>
@@ -215,6 +221,18 @@ $(function() {
 </li>
 <li>INS_STATUS_SOLUTION_OFFSET
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca5c0c9c07fac2c7d69441d05e48f790f7">data_sets.h</a>
+</li>
+<li>INS_STATUS_UNUSED_1
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4d8a6a64194a8e6cf3ee09d9ef101154">data_sets.h</a>
+</li>
+<li>INS_STATUS_UNUSED_2
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caaa49c155b56786a6f3c70b9aa0a36668">data_sets.h</a>
+</li>
+<li>INS_STATUS_UNUSED_3
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca31b79b773a80eb605d6d22f43c6634e2">data_sets.h</a>
+</li>
+<li>INS_STATUS_UNUSED_4
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caa593eda89c6a5034886317ff2841c85e">data_sets.h</a>
 </li>
 <li>INS_STATUS_USING_GPS_IN_SOLUTION
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca6f4195673c611752d05396ed57c6a191">data_sets.h</a>
@@ -296,16 +314,16 @@ $(function() {
 : <a class="el" href="_i_s_comm_8h.html#a8f9086b9c33b305c89fc841a8f10a4a7">ISComm.h</a>
 </li>
 <li>is_comm_get_data()
-: <a class="el" href="_i_s_comm_8c.html#a53bacac9edb5801f3416a504e6a19956">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#a53bacac9edb5801f3416a504e6a19956">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#a53bacac9edb5801f3416a504e6a19956">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#a53bacac9edb5801f3416a504e6a19956">ISComm.c</a>
 </li>
 <li>is_comm_get_data_rmc()
-: <a class="el" href="_i_s_comm_8c.html#a2c516e5e416c7601de415a45ca05841a">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#a2c516e5e416c7601de415a45ca05841a">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#a2c516e5e416c7601de415a45ca05841a">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#a2c516e5e416c7601de415a45ca05841a">ISComm.c</a>
 </li>
 <li>is_comm_init()
-: <a class="el" href="_i_s_comm_8c.html#ab81821036e21d6afe0fca0f1c087dac3">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#ab81821036e21d6afe0fca0f1c087dac3">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#ab81821036e21d6afe0fca0f1c087dac3">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#ab81821036e21d6afe0fca0f1c087dac3">ISComm.c</a>
 </li>
 <li>is_comm_parse()
 : <a class="el" href="_i_s_comm_8c.html#a9ee32c6b88cfb4ea9697e1a1b2b6b657">ISComm.c</a>
@@ -316,27 +334,27 @@ $(function() {
 , <a class="el" href="_i_s_comm_8c.html#ac276c88fef83c901d29f5058dff79aa7">ISComm.c</a>
 </li>
 <li>is_comm_stop_broadcasts()
-: <a class="el" href="_i_s_comm_8h.html#a16da834a4423c99a0935aea99ae431a1">ISComm.h</a>
-, <a class="el" href="_i_s_comm_8c.html#a16da834a4423c99a0935aea99ae431a1">ISComm.c</a>
+: <a class="el" href="_i_s_comm_8c.html#a16da834a4423c99a0935aea99ae431a1">ISComm.c</a>
+, <a class="el" href="_i_s_comm_8h.html#a16da834a4423c99a0935aea99ae431a1">ISComm.h</a>
 </li>
 <li>IS_DATA_MAPPING_MAX_STRING_LENGTH
 : <a class="el" href="_i_s_data_mappings_8h.html#af2dd5abd54a80131d81441faf59d9c81">ISDataMappings.h</a>
 </li>
 <li>is_decode_binary_packet()
-: <a class="el" href="_i_s_comm_8h.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.h</a>
-, <a class="el" href="_i_s_comm_8c.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.c</a>
+: <a class="el" href="_i_s_comm_8c.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.c</a>
+, <a class="el" href="_i_s_comm_8h.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.h</a>
 </li>
 <li>is_decode_binary_packet_byte()
 : <a class="el" href="_i_s_comm_8h.html#a60141b5d731b8140613373f96d82bd81">ISComm.h</a>
 , <a class="el" href="_i_s_comm_8c.html#a60141b5d731b8140613373f96d82bd81">ISComm.c</a>
 </li>
 <li>is_decode_binary_packet_footer()
-: <a class="el" href="_i_s_comm_8c.html#abd9a92256006a595860483725032f486">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#abd9a92256006a595860483725032f486">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#abd9a92256006a595860483725032f486">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#abd9a92256006a595860483725032f486">ISComm.c</a>
 </li>
 <li>is_encode_binary_packet()
-: <a class="el" href="_i_s_comm_8h.html#a39c8da4340fdb19cd3db3afdd5b1097b">ISComm.h</a>
-, <a class="el" href="_i_s_comm_8c.html#a5b68834d97874ca7fe0b54ad4943a733">ISComm.c</a>
+: <a class="el" href="_i_s_comm_8c.html#a5b68834d97874ca7fe0b54ad4943a733">ISComm.c</a>
+, <a class="el" href="_i_s_comm_8h.html#a39c8da4340fdb19cd3db3afdd5b1097b">ISComm.h</a>
 </li>
 <li>IS_LOG_FILE_PREFIX
 : <a class="el" href="_device_log_8h.html#a95335e05336c16fb604061b4cd451120">DeviceLog.h</a>
@@ -350,9 +368,13 @@ $(function() {
 <li>IS_SOCKET_DEFAULT_TIMEOUT_MS
 : <a class="el" href="_i_s_tcp_client_8h.html#a5196fa5eeb6e5544f36b175aca758892">ISTcpClient.h</a>
 </li>
+<li>ISSocketCanRead()
+: <a class="el" href="_i_s_tcp_client_8h.html#aa2cab0d9d9a8370937638b10e1d309a5">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#a34aab2247a2fe4604d233473bb3aa372">ISTcpClient.cpp</a>
+</li>
 <li>ISSocketCanWrite()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#ab7423e409af14520d1eae17dbe0531fe">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#a9e9991863976d2f32e55280d2463ec7f">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#a9e9991863976d2f32e55280d2463ec7f">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#ab7423e409af14520d1eae17dbe0531fe">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketClose()
 : <a class="el" href="_i_s_tcp_client_8cpp.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.cpp</a>
@@ -371,12 +393,12 @@ $(function() {
 , <a class="el" href="_i_s_tcp_client_8h.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.h</a>
 </li>
 <li>ISSocketSetBlocking()
-: <a class="el" href="_i_s_tcp_client_8h.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.h</a>
-, <a class="el" href="_i_s_tcp_client_8cpp.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.cpp</a>
+: <a class="el" href="_i_s_tcp_client_8cpp.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.cpp</a>
+, <a class="el" href="_i_s_tcp_client_8h.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.h</a>
 </li>
 <li>ISSocketSetReadTimeout()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketWrite()
 : <a class="el" href="_i_s_tcp_client_8h.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISTcpClient.h</a>

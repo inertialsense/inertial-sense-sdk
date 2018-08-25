@@ -18,12 +18,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include "data_sets.h"
 
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-#include "../pySDK/pySDK.h"
-
-#endif
-
 // C++ API
 #ifdef __cplusplus
 

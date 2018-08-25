@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.2</span>
+   &#160;<span id="projectnumber">Release 1.6.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -96,8 +96,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:aaaeca01956258833d356f9b7af23383a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01079b4309527eb4462983044c38c103"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a01079b4309527eb4462983044c38c103">displayMode</a></td></tr>
 <tr class="separator:a01079b4309527eb4462983044c38c103"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15ae1740e68eaa6d2d80d93e47f145bf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a15ae1740e68eaa6d2d80d93e47f145bf">rmcPresetPPD</a></td></tr>
-<tr class="separator:a15ae1740e68eaa6d2d80d93e47f145bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa38eacf8525b14f32814bdbdbfb31d9d"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#aa38eacf8525b14f32814bdbdbfb31d9d">rmcPreset</a></td></tr>
+<tr class="separator:aa38eacf8525b14f32814bdbdbfb31d9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3fef15e335f2f69560168709fe379818"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a3fef15e335f2f69560168709fe379818">streamINS1</a></td></tr>
 <tr class="separator:a3fef15e335f2f69560168709fe379818"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a257acdb580f979d7f1bb41d81357f98e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a257acdb580f979d7f1bb41d81357f98e">streamINS2</a></td></tr>
@@ -114,8 +114,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ad19e48c93f60fa7aadbe4d29de7123b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a32e10a5a339b320d9bc15389eb6395"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a7a32e10a5a339b320d9bc15389eb6395">streamGPS</a></td></tr>
 <tr class="separator:a7a32e10a5a339b320d9bc15389eb6395"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42f204c5641d072763ef1761f8b8b3be"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a42f204c5641d072763ef1761f8b8b3be">streamRTKGPS</a></td></tr>
-<tr class="separator:a42f204c5641d072763ef1761f8b8b3be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06210eeb34fa782e8e32de0a1877423b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a06210eeb34fa782e8e32de0a1877423b">streamRtkRel</a></td></tr>
+<tr class="separator:a06210eeb34fa782e8e32de0a1877423b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa27472315cf43c8df5edb4db1ff7946f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#aa27472315cf43c8df5edb4db1ff7946f">streamMag1</a></td></tr>
 <tr class="separator:aa27472315cf43c8df5edb4db1ff7946f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68d164246faa0e01589954df95350ac4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcmd__options__t.html#a68d164246faa0e01589954df95350ac4">streamMag2</a></td></tr>
@@ -479,14 +479,14 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a15ae1740e68eaa6d2d80d93e47f145bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15ae1740e68eaa6d2d80d93e47f145bf">&#9670;&nbsp;</a></span>rmcPresetPPD</h2>
+<a id="aa38eacf8525b14f32814bdbdbfb31d9d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa38eacf8525b14f32814bdbdbfb31d9d">&#9670;&nbsp;</a></span>rmcPreset</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool cmd_options_t::rmcPresetPPD</td>
+          <td class="memname">uint64_t cmd_options_t::rmcPreset</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -703,14 +703,14 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a42f204c5641d072763ef1761f8b8b3be"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a42f204c5641d072763ef1761f8b8b3be">&#9670;&nbsp;</a></span>streamRTKGPS</h2>
+<a id="a06210eeb34fa782e8e32de0a1877423b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06210eeb34fa782e8e32de0a1877423b">&#9670;&nbsp;</a></span>streamRtkRel</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool cmd_options_t::streamRTKGPS</td>
+          <td class="memname">bool cmd_options_t::streamRtkRel</td>
         </tr>
       </table>
 </div><div class="memdoc">

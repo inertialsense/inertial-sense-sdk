@@ -99,9 +99,10 @@ public:
 	* @param dataBuffer packet buffer
 	* @param info metadata about the field to convert
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
+	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info, int radix = 10);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info, int radix = 10, bool json = false);
 
 	/**
 	* Convert data to a string
@@ -109,9 +110,10 @@ public:
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param dataBuffer packet buffer
 	* @param stringBuffer the buffer to hold the converted string
+	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer, bool json = false);
 
 	/**
 	* Get a timestamp from data if available

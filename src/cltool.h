@@ -57,7 +57,7 @@ typedef struct
 	double replaySpeed;
 	int displayMode;
 
-	bool rmcPresetPPD;
+	uint64_t rmcPreset;
 	bool streamINS1;
 	bool streamINS2;
 	bool streamINS3;
@@ -66,7 +66,7 @@ typedef struct
 	bool streamIMU1;
 	bool streamIMU2;
     bool streamGPS;
-    bool streamRTKGPS;
+    bool streamRtkRel;
     bool streamMag1;
 	bool streamMag2;
 	bool streamBaro;

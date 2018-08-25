@@ -6,9 +6,11 @@ add_library(InertialSense
   src/DataChunk.cpp
   src/DataChunkSorted.cpp
   src/DataCSV.cpp
+  src/DataJSON.cpp
   src/DataKML.cpp
   src/DeviceLog.cpp
   src/DeviceLogCSV.cpp
+  src/DeviceLogJSON.cpp
   src/DeviceLogKML.cpp
   src/DeviceLogSerial.cpp
   src/DeviceLogSorted.cpp

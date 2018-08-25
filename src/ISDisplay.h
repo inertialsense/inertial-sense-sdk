@@ -22,12 +22,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "data_sets.h"
 #include "ISConstants.h"
 
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-#include "../pySDK/pySDK.h"
-
-#endif
-
 using namespace std;
 
 /**
@@ -77,14 +71,15 @@ public:
 	string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);
 	string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
 	string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
-	string DataToStringGPS(const gps_nav_t &gps, const p_data_hdr_t& hdr);
-	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
-	string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
-	string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
+	string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const string didName);
+	string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
 	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
 	string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
     string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
-    string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+	string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
+	string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
+	string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 
 private:
 	string VectortoString();

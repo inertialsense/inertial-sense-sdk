@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.2</span>
+   &#160;<span id="projectnumber">Release 1.6.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -100,6 +100,8 @@ Functions</h2></td></tr>
 <tr class="separator:aa5ab81932189d23c3bba891a7e43b3d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e9991863976d2f32e55280d2463ec7f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_tcp_client_8h.html#a9e9991863976d2f32e55280d2463ec7f">ISSocketCanWrite</a> (socket_t socket, int timeoutMilliseconds=<a class="el" href="_i_s_tcp_client_8h.html#a5196fa5eeb6e5544f36b175aca758892">IS_SOCKET_DEFAULT_TIMEOUT_MS</a>)</td></tr>
 <tr class="separator:a9e9991863976d2f32e55280d2463ec7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2cab0d9d9a8370937638b10e1d309a5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_tcp_client_8h.html#aa2cab0d9d9a8370937638b10e1d309a5">ISSocketCanRead</a> (socket_t socket, int timeoutMilliseconds=<a class="el" href="_i_s_tcp_client_8h.html#a5196fa5eeb6e5544f36b175aca758892">IS_SOCKET_DEFAULT_TIMEOUT_MS</a>)</td></tr>
+<tr class="separator:aa2cab0d9d9a8370937638b10e1d309a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeea43f58df89ebaa95fe06ca170c6bf1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_tcp_client_8h.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISSocketWrite</a> (socket_t socket, const uint8_t *data, int dataLength)</td></tr>
 <tr class="separator:aeea43f58df89ebaa95fe06ca170c6bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb708c80be96e34421481a46e135b5a5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_tcp_client_8h.html#aeb708c80be96e34421481a46e135b5a5">ISSocketRead</a> (socket_t socket, uint8_t *data, int dataLength)</td></tr>
@@ -129,6 +131,44 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="aa2cab0d9d9a8370937638b10e1d309a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2cab0d9d9a8370937638b10e1d309a5">&#9670;&nbsp;</a></span>ISSocketCanRead()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ISSocketCanRead </td>
+          <td>(</td>
+          <td class="paramtype">socket_t&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>timeoutMilliseconds</em> = <code><a class="el" href="_i_s_tcp_client_8h.html#a5196fa5eeb6e5544f36b175aca758892">IS_SOCKET_DEFAULT_TIMEOUT_MS</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Determines if a socket can be read from </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">socket</td><td>the socket to check for read capability </td></tr>
+    <tr><td class="paramname">timeoutMilliseconds</td><td>the number of milliseconds to wait before aborting </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>non-zero if the socket can be read from, otherwise zero </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00086">86</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a9e9991863976d2f32e55280d2463ec7f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9e9991863976d2f32e55280d2463ec7f">&#9670;&nbsp;</a></span>ISSocketCanWrite()</h2>
 
@@ -190,7 +230,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success otherwise an error code </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00176">176</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00186">186</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -275,7 +315,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the number of bytes read or less than 0 if error, in which case the socket is probably disconnected </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00108">108</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00118">118</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -313,7 +353,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success otherwise an error code </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00135">135</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00145">145</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -351,7 +391,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success otherwise an error code </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00157">157</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00167">167</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -396,7 +436,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the number of bytes written or less than 0 if error, in which case the socket is probably disconnected </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00086">86</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_tcp_client_8cpp_source.html#l00096">96</a> of file <a class="el" href="_i_s_tcp_client_8cpp_source.html">ISTcpClient.cpp</a>.</p>
 
 </div>
 </div>

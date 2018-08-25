@@ -15,7 +15,6 @@ var searchData=
   ['vel1',['vel1',['../struct_p_a_c_k_e_d.html#a164bbc04b57064e73cb65e16fd081974',1,'PACKED']]],
   ['vel2',['vel2',['../struct_p_a_c_k_e_d.html#afd17f2379658858811ef7f42447b63b9',1,'PACKED']]],
   ['velecef',['velEcef',['../struct_p_a_c_k_e_d.html#a3d8d6788893d23aeed9dbfd00f513af5',1,'PACKED']]],
-  ['velned',['velNed',['../struct_p_a_c_k_e_d.html#a56b2d6a201de1ead612c19c03495e52d',1,'PACKED']]],
   ['verifychunksize',['verifyChunkSize',['../structbootloader__state__t.html#a5349b92ca1d8e6d4c7849c81cfce6e44',1,'bootloader_state_t']]],
   ['verifyfilename',['verifyFileName',['../structbootload__params__t.html#a24f112ce5750a485a5679c51e45fa664',1,'bootload_params_t']]],
   ['verifyprogress',['verifyProgress',['../structbootload__params__t.html#af97213f739b02a4201fde4ce3a2727e4',1,'bootload_params_t']]],

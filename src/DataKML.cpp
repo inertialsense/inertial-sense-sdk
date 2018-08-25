@@ -89,13 +89,13 @@ int cDataKML::WriteDataToFile(vector<sKmlLogData>& list, const p_data_hdr_t* dat
 		quat2euler(d.ins3.qn2b, theta);
         data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta);
 		break;
-	case DID_GPS_NAV:
-	case DID_GPS1_NAV:
-	case DID_GPS2_NAV:
-        data = sKmlLogData(d.gpsNav.timeOfWeekMs, d.gpsNav.lla);
+	case DID_GPS1_POS:
+	case DID_GPS1_UBX_POS:
+	case DID_GPS2_POS:
+        data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
 		break;
-    case DID_GPS_RTK_NAV:
-        data = sKmlLogData(d.gpsRtkNav.timeOfWeekMs, d.gpsRtkNav.lla);
+    case DID_GPS1_RTK_POS:
+        data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
         break;
 	}
 

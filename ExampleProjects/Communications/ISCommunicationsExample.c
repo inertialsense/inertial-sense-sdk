@@ -27,9 +27,9 @@ static void handleInsMessage(ins_1_t* ins)
 		ins->theta[0] * C_RAD2DEG_F, ins->theta[1] * C_RAD2DEG_F, ins->theta[2] * C_RAD2DEG_F );
 }
 
-static void handleGpsMessage(gps_nav_t* gps)
+static void handleGpsMessage(gps_pos_t* pos)
 {
-	printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", gps->timeOfWeekMs, gps->lla[0], gps->lla[1], gps->lla[2]);
+	printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", pos->timeOfWeekMs, pos->lla[0], pos->lla[1], pos->lla[2]);
 }
 
 static void handleImuMessage(dual_imu_t* imu)
@@ -73,7 +73,7 @@ int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_
 {
 	// Enable broadcasts using RMC: DID_INS_1 @ 20Hz and DID_GPS_NAV @ 5Hz
 	rmc_t rmc;
-	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS_NAV;
+	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS1_POS;
 	rmc.insPeriodMs = 50;	// INS @ 20Hz
 	rmc.options = RMC_OPTIONS_SET_STARTUP_STREAM;		// Current port.  Preconfigure streaming (remember) for startup.
 
@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 				break;
 
 			case _DID_GPS_NAV:
-				handleGpsMessage((gps_nav_t*)buffer);
+				handleGpsMessage((gps_pos_t*)buffer);
 				break;
 
 			case _DID_IMU_DUAL:

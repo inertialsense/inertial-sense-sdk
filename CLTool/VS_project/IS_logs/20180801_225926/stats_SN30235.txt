@@ -1,0 +1,143 @@
+Count: 5247
+Errors: 0
+
+Data Id: 1 - devInfo
+Count: 2
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 3 - preintegratedImu
+Count: 2298
+Errors: 0
+Average Timestamp Delta: 0.111184
+Max Timestamp Delta: 5.947603
+Timestamp Drops: 168
+
+Data Id: 5 - ins2
+Count: 87
+Errors: 0
+Average Timestamp Delta: 2.918792
+Max Timestamp Delta: 6.000001
+Timestamp Drops: 27
+
+Data Id: 6 - gpsPos
+Count: 41
+Errors: 0
+Average Timestamp Delta: 6.385000
+Max Timestamp Delta: 28.200000
+Timestamp Drops: 25
+
+Data Id: 7 - config
+Count: 1
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 10 - sysParams
+Count: 1
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 12 - flashCfg
+Count: 3
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 21 - gpsRtkRel
+Count: 40
+Errors: 0
+Average Timestamp Delta: 6.512795
+Max Timestamp Delta: 18.400000
+Timestamp Drops: 21
+
+Data Id: 30 - DID_GPS1_VEL
+Count: 45
+Errors: 0
+Average Timestamp Delta: 5.804545
+Max Timestamp Delta: 23.200000
+Timestamp Drops: 26
+
+Data Id: 35 - userpage0
+Count: 1
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 36 - userpage1
+Count: 1
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 48 - inl2States
+Count: 51
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 50 - inl2Status
+Count: 1
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 51 - inl2Misc
+Count: 1
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 52 - magnetometer1
+Count: 773
+Errors: 0
+Average Timestamp Delta: 0.330806
+Max Timestamp Delta: 5.959603
+Timestamp Drops: 257
+
+Data Id: 53 - barometer
+Count: 912
+Errors: 0
+Average Timestamp Delta: 0.280319
+Max Timestamp Delta: 5.963603
+Timestamp Drops: 298
+
+Data Id: 55 - magnetometer2
+Count: 808
+Errors: 0
+Average Timestamp Delta: 0.316459
+Max Timestamp Delta: 5.959603
+Timestamp Drops: 239
+
+Data Id: 59 - inl2MagObs
+Count: 49
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 67 - inl2Variance
+Count: 90
+Errors: 0
+Average Timestamp Delta: 0.000000
+Max Timestamp Delta: 0.000000
+Timestamp Drops: 0
+
+Data Id: 72 - diagnosticMsg
+Count: 42
+Errors: 0
+Average Timestamp Delta: 6.195195
+Max Timestamp Delta: 18.399000
+Timestamp Drops: 22
+

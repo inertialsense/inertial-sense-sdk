@@ -98,32 +98,37 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		{
 			s->flashConfig[pHandle] = *(nvm_flash_cfg_t*)data->buf;
 		}
+		else if (data->hdr.id == DID_GPS1_POS)
+		{
+			// every 5 seconds, put in a new gps position message
+			static time_t nextGpsMessageTime;
+			time_t currentTime = time(NULLPTR);
+			if (currentTime > nextGpsMessageTime)
+			{
+				nextGpsMessageTime = currentTime + 5;
+				*s->clientBytesToSend = gpsToNmeaGGA((gps_pos_t*)data->buf, s->clientBuffer, s->clientBufferSize);
+			}
+		}
 	}
 }
 
-InertialSense::InertialSense(pfnHandleBinaryData callback)
+InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 {
 	m_logThread = NULLPTR;
 	m_lastLogReInit = time(0);
 	m_parser = NULLPTR;
 	m_clientStream = NULLPTR;
+	m_clientBufferBytesToSend = 0;
 	m_clientServerByteCount = 0;
 	m_disableBroadcastsOnClose = false;
 	memset(m_comManagerState.binaryCallback, 0, sizeof(m_comManagerState.binaryCallback));
+	m_comManagerState.binaryCallbackGlobal = callback;
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
 	m_comManagerState.inertialSenseInterface = this;
+	m_comManagerState.clientBuffer = m_clientBuffer;
+	m_comManagerState.clientBufferSize = sizeof(m_clientBuffer);
+	m_comManagerState.clientBytesToSend = &m_clientBufferBytesToSend;
 	comManagerAssignUserPointer(getGlobalComManager(), &m_comManagerState);
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-	m_comManagerState.binaryCallbackGlobal = (callback == NULLPTR ? NULLPTR : (pfnHandleBinaryData)pyClt_dataCallback);
-
-#else
-
-	m_comManagerState.binaryCallbackGlobal = callback;
-
-#endif
-
 }
 
 InertialSense::~InertialSense()
@@ -269,7 +274,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 	return false;
 }
 
-bool InertialSense::SetLoggerEnabled(bool enable, const string& path, cISLogger::eLogType logType, bool streamPPD, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
+bool InertialSense::SetLoggerEnabled(bool enable, const string& path, cISLogger::eLogType logType, uint64_t rmcPreset, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
 {
 	if (enable)
 	{
@@ -279,9 +284,9 @@ bool InertialSense::SetLoggerEnabled(bool enable, const string& path, cISLogger:
 			return true;
 		}
 
-		if(streamPPD)
+		if(rmcPreset)
 		{ 
-			BroadcastBinaryDataRmcPreset(RMC_PRESET_PPD_BITS);
+			BroadcastBinaryDataRmcPreset(rmcPreset);
 		}
 		return EnableLogging(path, logType, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder);
 	}
@@ -302,43 +307,47 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 	{
 		return opened;
 	}
-	else if (pieces[0] == "RTCM3")
+
+	eGpsParserType type;
+	if (pieces[0] == "RTCM3")
 	{
-		if (pieces[1] == "SERIAL")
-		{
-			if (pieces.size() < 4)
-			{
-				return opened;
-			}
-			else if ((opened = (m_serialServer.Open(pieces[2].c_str(), atoi(pieces[3].c_str())))))
-			{
-				m_clientStream = &m_serialServer;
-			}
-		}
-		else
-		{
-			opened = (m_tcpClient.Open(pieces[1], atoi(pieces[2].c_str())) == 0);
-			string url = (pieces.size() > 3 ? pieces[3] : "");
-			string user = (pieces.size() > 4 ? pieces[4] : "");
-			string pwd = (pieces.size() > 5 ? pieces[5] : "");
-			m_tcpClient.HttpGet(url, "InertialSense", user, pwd);
-		}
-		m_parser = cGpsParser::CreateParser(GpsParserTypeRtcm3, this);
+		type = GpsParserTypeRtcm3;
 	}
 	else if (pieces[0] == "IS")
 	{
-		opened = (m_tcpClient.Open(pieces[1], atoi(pieces[2].c_str())) == 0);
-		m_parser = cGpsParser::CreateParser(GpsParserTypeInertialSense, this);
+		type = GpsParserTypeInertialSense;
 	}
-	else if (pieces[0] == "UBLOX")
+	else
 	{
-		opened = (m_tcpClient.Open(pieces[1], atoi(pieces[2].c_str())) == 0);
-		m_parser = cGpsParser::CreateParser(GpsParserTypeUblox, this);
+		type = GpsParserTypeUblox;
 	}
 
+	if (pieces[1] == "SERIAL")
+	{
+		if (pieces.size() < 4)
+		{
+			return opened;
+		}
+		else if ((opened = (m_serialServer.Open(pieces[2].c_str(), atoi(pieces[3].c_str())))))
+		{
+			m_clientStream = &m_serialServer;
+		}
+	}
+	else
+	{
+		opened = (m_tcpClient.Open(pieces[1], atoi(pieces[2].c_str())) == 0);
+		string url = (pieces.size() > 3 ? pieces[3] : "");
+		string user = (pieces.size() > 4 ? pieces[4] : "");
+		string pwd = (pieces.size() > 5 ? pieces[5] : "");
+		if (url.size() != 0)
+		{
+			m_tcpClient.HttpGet(url, "Inertial Sense", user, pwd);
+		}
+	}
 	if (opened)
 	{
 		// configure as RTK rover
+		m_parser = cGpsParser::CreateParser(type, this);
 		uint32_t cfgBits = RTK_CFG_BITS_GPS1_RTK_ROVER;
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
@@ -400,34 +409,51 @@ size_t InertialSense::GetDeviceCount()
 bool InertialSense::Update()
 {
 	uint8_t buffer[4096];
-	if (m_clientStream != NULLPTR)
-	{
-		int count = m_clientStream->Read(buffer, sizeof(buffer));
-		if (count > 0)
-		{
-			m_clientServerByteCount += count;
-			m_parser->Write(buffer, count);
-		}
-	}
-	else if (m_tcpServer.IsOpen() && m_comManagerState.serialPorts.size() != 0)
+	if (m_tcpServer.IsOpen() && m_comManagerState.serialPorts.size() != 0)
 	{
 		// as a tcp server, only the first serial port is read from
-		int count = serialPortRead(&m_comManagerState.serialPorts[0], buffer, sizeof(buffer));
+		int count = serialPortReadTimeout(&m_comManagerState.serialPorts[0], buffer, sizeof(buffer), 0);
 		if (count > 0)
 		{
 			// forward data on to connected clients
-			m_tcpServer.Write(buffer, count);
 			m_clientServerByteCount += count;
+			if (m_tcpServer.Write(buffer, count) != count)
+			{
+				cout << endl << "Failed to write bytes to tcp server!" << endl;
+			}
 		}
 		m_tcpServer.Update();
 	}
-
-	// [C COMM INSTRUCTION]  2.) Update Com Manager at regular interval to send and receive data.  
-	// Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
-	// task system with serial port read function that does NOT incorporate a timeout.   
-	if (m_comManagerState.serialPorts.size() != 0)
+	else
 	{
-		stepComManager();
+		if (m_clientStream != NULLPTR)
+		{
+			int count = m_clientStream->Read(buffer, sizeof(buffer));
+			if (count > 0)
+			{
+				m_clientServerByteCount += count;
+				m_parser->Write(buffer, count);
+			}
+
+			// send data to client if available, i.e. nmea gga pos
+			if (m_clientServerByteCount > 0)
+			{
+				int bytes = m_clientBufferBytesToSend;
+				if (bytes != 0)
+				{
+					m_clientStream->Write(m_clientBuffer, bytes);
+					m_clientBufferBytesToSend = 0;
+				}
+			}
+		}
+		
+		// [C COMM INSTRUCTION]  2.) Update Com Manager at regular interval to send and receive data.  
+		// Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
+		// task system with serial port read function that does NOT incorporate a timeout.   
+		if (m_comManagerState.serialPorts.size() != 0)
+		{
+			stepComManager();
+		}
 	}
 
 	// if any serial ports have closed, shutdown
@@ -545,12 +571,12 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 	return true;
 }
 
-void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset)
+void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions)
 {
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  Use a preset to enable a predefined set of messages.  R 
-		getDataRmcComManager((int)i, rmcPreset, 0);
+		getDataRmcComManager((int)i, rmcPreset, rmcOptions);
 	}
 }
 
@@ -637,6 +663,26 @@ bool InertialSense::OnPacketReceived(const cGpsParser* parser, const uint8_t* da
 		serialPortWrite(&m_comManagerState.serialPorts[i], data, dataLength);
 	}
 	return false; // do not parse, since we are just forwarding it on
+}
+
+void InertialSense::OnClientConnecting(cISTcpServer* server)
+{
+	cout << endl << "Client connecting..." << endl;
+}
+
+void InertialSense::OnClientConnected(cISTcpServer* server, socket_t socket)
+{
+	cout << endl << "Client connected: " << (int)socket << endl;
+}
+
+void InertialSense::OnClientConnectFailed(cISTcpServer* server)
+{
+	cout << endl << "Client connection failed!" << endl;
+}
+
+void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
+{
+	cout << endl << "Client disconnected: " << (int)socket << endl;
 }
 
 bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
@@ -752,318 +798,3 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
     return m_comManagerState.serialPorts.size() != 0;
 }
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-namespace py = pybind11;
-
-bool InertialSense::PyBootloadFile(const string& comPort, const string& fileName)
-{
-	pfnBootloadProgress uploadProgress = bootloadUploadProgress;
-	pfnBootloadProgress verifyProgress = bootloadVerifyProgress;
-	char bootloaderError[1024];
-	int errorBufferLength = 1024;
-
-	// for debug
-	// SERIAL_PORT_DEFAULT_TIMEOUT = 9999999;
-	InertialSense bootloader;
-	serialPortSetPort(&bootloader.m_serialPort, comPort.c_str());
-	if (!enableBootloader(&bootloader.m_serialPort, &bootloaderError[0], errorBufferLength, IS_BAUD_RATE_BOOTLOADER_COM))
-	{
-		serialPortClose(&bootloader.m_serialPort);
-		return false;
-	}
-	bootload_params_t params;
-	params.fileName = fileName.c_str();
-	params.port = &bootloader.m_serialPort;
-	params.error = &bootloaderError[0];
-	params.errorLength = errorBufferLength;
-	params.obj = &bootloader;
-	params.uploadProgress = uploadProgress;
-	params.verifyProgress = verifyProgress;
-	params.verifyFileName = NULLPTR;
-	if (!bootloadFileEx(&params))
-	{
-		serialPortClose(&bootloader.m_serialPort);
-		return false;
-	}
-	serialPortClose(&bootloader.m_serialPort);
-	return true;
-}
-
-void InertialSense::SetPyCallback(py::object func)
-{
-	InertialSense::m_pyCallback = func;
-}
-
-py::object InertialSense::GetPyCallback()
-{
-	return m_pyCallback;
-}
-
-void InertialSense::SetPyDisplay(cInertialSenseDisplay display)
-{
-	m_pyDisplay = display;
-}
-
-cInertialSenseDisplay InertialSense::GetPyDisplay()
-{
-	return m_pyDisplay;
-}
-
-py::dict py_dataHandling(p_data_t* data)
-{
-	// uDatasets is a union of all datasets that we can receive.  See data_sets.h for a full list of all available datasets. 
-	uDatasets d = {};
-	copyDataPToStructP(&d, data, sizeof(uDatasets));
-
-	// Put the data into a python usable type (This works)
-	py::dict dOut;
-	py::dict header;
-	py::dict msgData;
-	header[py::str("id")] = data->hdr.id;
-	header[py::str("size")] = data->hdr.size;
-	header[py::str("offset")] = data->hdr.offset;
-	dOut[py::str("header")] = header;
-
-	// Example of how to access dataset fields.
-	switch (data->hdr.id)
-	{
-	case DID_INS_1:
-		msgData["theta"] = convertArray(d.ins1.theta, 3);		// euler attitude
-		msgData["uvw"] = convertArray(d.ins1.uvw, 3);			// body velocities
-		msgData["lla"] = convertArray(d.ins1.lla, 3);			// latitude, longitude, altitude
-		break;
-	case DID_INS_2:
-		msgData["qn2b"] = convertArray(d.ins2.qn2b, 4);			// quaternion attitude 
-		msgData["uvw"] = convertArray(d.ins2.uvw, 3);			// body velocities
-		msgData["lla"] = convertArray(d.ins2.lla, 3);			// latitude, longitude, altitude
-		break;
-	case DID_INS_3:
-		msgData["qn2b"] = convertArray(d.ins3.qn2b, 4);			// quaternion attitude 
-		msgData["uvw"] = convertArray(d.ins3.uvw, 3);			// body velocities
-		msgData["lla"] = convertArray(d.ins3.lla, 3);			// latitude, longitude, altitude
-		break;
-	case DID_INS_4:
-		msgData["qe2b"] = convertArray(d.ins4.qe2b, 4);			// quaternion attitude 
-		msgData["ve"] = convertArray(d.ins4.ve, 3);				// earth centered earth fixed  velocities
-		msgData["ecef"] = convertArray(d.ins4.ecef, 3);			// earth centered earth fixed position
-		break;
-	case DID_DUAL_IMU:
-		msgData["imu1acc"] = convertArray(d.dualImu.I[0].acc, 3);
-		msgData["imu1pqr"] = convertArray(d.dualImu.I[0].pqr, 3);
-		msgData["imu2acc"] = convertArray(d.dualImu.I[1].acc, 3);
-		msgData["imu2pqr"] = convertArray(d.dualImu.I[1].pqr, 3);
-		msgData["time"] = d.dualImu.time;
-		break;
-	case DID_PREINTEGRATED_IMU:
-		msgData["time"] = d.pImu.time;
-		msgData["theta"] = convertArray(d.pImu.theta, 3);
-		msgData["uvw"] = convertArray(d.pImu.uvw, 3);
-		msgData["dt"] = d.pImu.dt;
-		break;
-	case DID_GPS_NAV:
-	{
-		msgData["rxps"] = d.gpsNav.rxps;
-		msgData["towOffset"] = d.gpsNav.towOffset;
-
-		py::dict gpsPos;
-		gpsPos["week"] = d.gpsNav.lla.week;
-		gpsPos["timeOfWeekMs"] = d.gpsNav.timeOfWeekMs;
-		gpsPos["status"] = d.gpsNav.status;
-		gpsPos["cno"] = d.gpsNav.lla.cno;
-		gpsPos["lla"] = convertArray(d.gpsNav.lla.lla, 3);
-		gpsPos["hMSL"] = d.gpsNav.lla.hMSL;
-		gpsPos["hAcc"] = d.gpsNav.hAcc;
-		gpsPos["vAcc"] = d.gpsNav.vAcc;
-		gpsPos["pDop"] = d.gpsNav.lla.pDop;
-		msgData["gpsPos"] = gpsPos;
-
-		py::dict gpsVel;
-		gpsVel["timeOfWeekMs"] = d.gpsNav.vel.timeOfWeekMs;
-		gpsVel["ned"] = convertArray(d.gpsNav.vel.ned, 3);
-		gpsVel["s2D"] = d.gpsNav.vel.s2D;
-		gpsVel["s3D"] = d.gpsNav.vel.s3D;
-		gpsVel["sAcc"] = d.gpsNav.vel.sAcc;
-		gpsVel["course"] = d.gpsNav.vel.course;
-		gpsVel["cAcc"] = d.gpsNav.vel.cAcc;
-		msgData["gpsVel"] = gpsVel;
-		break;
-	}
-	case DID_MAGNETOMETER_1:
-		msgData["mag"] = convertArray(d.mag.mag, 3);
-		msgData["time"] = d.mag.time;
-		break;
-	case DID_MAGNETOMETER_2:
-		msgData["mag"] = convertArray(d.mag.mag, 3);
-		msgData["time"] = d.mag.time;
-		break;
-	case DID_BAROMETER:
-		msgData["time"] = d.baro.time;
-		msgData["bar"] = d.baro.bar;
-		msgData["barTemp"] = d.baro.barTemp;
-		msgData["humidity"] = d.baro.humidity;
-		msgData["mslBar"] = d.baro.mslBar;
-		break;
-	case DID_GPS_BASE_RAW:
-		//printf("Received the Raw Data Message!");
-		//py::list buffer;
-		msgData["receiverIndex"] = d.gpsRaw.receiverIndex;
-		msgData["type"] = d.gpsRaw.type;
-		msgData["count"] = d.gpsRaw.count;
-		msgData["reserved"] = d.gpsRaw.reserved;
-		/*for (int i = 0; i < 1020; i++) {
-		buffer.append(d.gpsRaw.buf)
-		}
-		msgData["buf"] = buffer; */
-		msgData["buf"] = d.gpsRaw.buf;
-		break;
-	}
-
-	dOut[py::str("data")] = msgData;
-
-	return dOut;
-}
-
-static void pyClt_dataCallback(InertialSense* i, p_data_t* data)
-{
-	i->GetPyDisplay().ProcessData(data);
-
-	py::dict dOut = py_dataHandling(data);
-
-	py::object pyFunc = i->GetPyCallback();
-	if (pyFunc != NULLPTR)
-	{
-		pyFunc(dOut);
-	}
-}
-
-py::list convertArray(float const data[], int length)
-{
-	py::list dOut;
-	for (int i = 0; i < length; i++)
-	{
-		dOut.append(data[i]);
-	}
-
-	return dOut;
-}
-
-py::list convertArray(double const data[], int length)
-{
-	py::list dOut;
-	for (int i = 0; i < length; i++)
-	{
-		dOut.append(data[i]);
-	}
-
-	return dOut;
-}
-
-bool pyUpdateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
-{
-	const nvm_flash_cfg_t& flashConfig = inertialSenseInterface.GetFlashConfig();
-	const map_lookup_name_t& globalMap = cISDataMappings::GetMap();
-	const map_name_to_info_t& flashMap = globalMap.at(DID_FLASH_CONFIG);
-
-	if (flashConfigString.length() < 2)
-	{
-		// read flash config and display
-		data_mapping_string_t stringBuffer;
-		cout << "Current flash config" << endl;
-		for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
-		{
-			if (cISDataMappings::DataToString(i->second, NULLPTR, (const uint8_t*)&flashConfig, stringBuffer))
-			{
-				cout << i->second.name << " = " << stringBuffer << endl;
-			}
-		}
-		return false;
-	}
-	else
-	{
-		nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
-		vector<string> keyValues;
-		splitString(flashConfigString, "|", keyValues);
-		for (size_t i = 0; i < keyValues.size(); i++)
-		{
-			vector<string> keyAndValue;
-			splitString(splitString(keyValues[i], "=", keyAndValue);
-			if (keyAndValue.size() == 2)
-			{
-				if (flashMap.find(keyAndValue[0]) == flashMap.end())
-				{
-					cout << "Unrecognized flash config key '" << keyAndValue[0] << "' specified, ignoring." << endl;
-				}
-				else
-				{
-					const data_info_t& info = flashMap.at(keyAndValue[0]);
-					cISDataMappings::StringToData(keyAndValue[1].c_str(), NULLPTR, (uint8_t*)&flashConfig, info);
-					cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
-				}
-			}
-		}
-		inertialSenseInterface.SetFlashConfig(flashConfig);
-		SLEEP_MS(1000);
-		inertialSenseInterface.GetPyDisplay().Clear();
-		return true;
-	}
-}
-
-test_initializer inertialsensemodule([](py::module &m) {
-	py::module m2 = m.def_submodule("inertialsensemodule");
-
-	py::class_<iGpsParserDelegate> iGpsPD(m2, "GPS_Parser_Delegate");
-	iGpsPD.def("OnPacketReceived", &iGpsParserDelegate::OnPacketReceived);
-
-	py::class_<InertialSense> inertialsense(m2, "InertialSense", iGpsPD);
-	inertialsense.def(py::init<>());
-	inertialsense.def("Open", &InertialSense::Open);
-	inertialsense.def("Update", &InertialSense::Update);
-	inertialsense.def("GetTcpByteCount", &InertialSense::GetTcpByteCount);
-	inertialsense.def("Close", &InertialSense::Close);
-	inertialsense.def("StopBroadcasts", &InertialSense::StopBroadcasts);
-	inertialsense.def("BroadcastBinaryData", &InertialSense::BroadcastBinaryData);
-	inertialsense.def("OpenServerConnectionRTCM3", &InertialSense::OpenServerConnectionRTCM3);
-	inertialsense.def("OpenServerConnectionInertialSense", &InertialSense::OpenServerConnectionInertialSense);
-	inertialsense.def("OpenServerConnectionUblox", &InertialSense::OpenServerConnectionUblox);
-	inertialsense.def_static("BootloadFile", &InertialSense::BootloadFile);
-	inertialsense.def_static("PyBootloadFile", &InertialSense::PyBootloadFile);
-	inertialsense.def("SetLoggerEnabled", &InertialSense::SetLoggerEnabled);
-	inertialsense.def("SetPyCallback", &InertialSense::SetPyCallback);
-	inertialsense.def("PyBroadcastBinaryData", &InertialSense::PyBroadcastBinaryData);
-	inertialsense.def("SetPyDisplay", &InertialSense::SetPyDisplay);
-	inertialsense.def("CreateHost", &InertialSense::CreateHost);
-
-	m2.def("pyUpdateFlashConfig", pyUpdateFlashConfig);
-});
-
-bool InertialSense::PyBroadcastBinaryData(uint32_t dataId, int periodMS)
-{
-	if (m_comManagerState.binarySerialPort == NULLPTR || dataId >= DID_COUNT)
-	{
-		return false;
-	}
-
-	m_comManagerState.binaryCallback[dataId] = (pfnHandleBinaryData)pyClt_dataCallback;
-
-	if (dataId == DID_GPS_BASE_RAW)
-	{
-		config_t cfg = GetConfig();
-		cfg.msgCfgBits = 1;
-		SetConfig(cfg);
-	}
-
-	if (periodMS < 0)
-	{
-		disableDataComManager(0, dataId);
-	}
-	else
-	{
-		// we pass an offset and size of 0. The uINS will handle a size and offset of 0 and make it the full struct size.
-		getDataComManager(0, dataId, 0, 0, periodMS);
-	}
-	return true;
-}
-
-#endif

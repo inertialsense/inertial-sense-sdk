@@ -30,9 +30,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 cISTcpServer::cISTcpServer(iISTcpServerDelegate* delegate)
 {
-	(void)delegate;
 	ISSocketFrameworkInitialize();
-	m_delegate = NULL;
+	m_delegate = delegate;
 	m_socket = 0;
 	m_port = 0;
 }
@@ -66,6 +65,14 @@ int cISTcpServer::Open(const string& ipAddress, int port)
 	// setup socket
 	m_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (m_socket == 0)
+	{
+		freeaddrinfo(result);
+		Close();
+		return -1;
+	}
+
+	int enable = 1;
+	if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&enable, sizeof(enable)) < 0)
 	{
 		freeaddrinfo(result);
 		Close();
@@ -107,48 +114,48 @@ int cISTcpServer::Close()
 void cISTcpServer::Update()
 {
 	uint8_t readBuff[8192];
-	int count;
 
-	// connect up to 10 clients per loop
-	for (int i = 0; i < 10; i++)
+	// accept new sockets
+    while (ISSocketCanRead(m_socket, 1))
 	{
-		struct timeval tv = { 0, 0 };
-		fd_set rs;
-		FD_ZERO(&rs);
-		FD_SET(m_socket, &rs);
-		int ret = select(0, &rs, NULL, NULL, &tv);
-		if (ret > 0)
+		if (m_delegate != NULLPTR)
 		{
-			socket_t socket = accept(m_socket, NULL, NULL);
-			if (socket != 0)
+			m_delegate->OnClientConnecting(this);
+		}
+		socket_t socket = accept(m_socket, NULLPTR, NULLPTR);
+		if (socket != 0)
+		{
+			ISSocketSetBlocking(socket, false);
+			m_clients.push_back(socket);
+			if (m_delegate != NULLPTR)
 			{
-				ISSocketSetBlocking(socket, false);
-				m_clients.push_back(socket);
+				m_delegate->OnClientConnected(this, socket);
 			}
 		}
-		else
+		else if (m_delegate != NULLPTR)
 		{
-			break;
+			m_delegate->OnClientConnectFailed(this);
 		}
 	}
 
 	for (size_t i = 0; i < m_clients.size(); i++)
 	{
-		if ((count = ISSocketRead(m_clients[i], readBuff, sizeof(readBuff))) < 0)
+        if (ISSocketCanRead(m_clients[i], 1))
 		{
-			// remove the client
-			if (m_delegate != NULL)
+			int count;
+			if ((count = ISSocketRead(m_clients[i], readBuff, sizeof(readBuff))) < 0)
 			{
-				m_delegate->OnClientDisconnected(m_clients[i]);
+				// remove the client
+				if (m_delegate != NULLPTR)
+				{
+					m_delegate->OnClientDisconnected(this, m_clients[i]);
+				}
+				ISSocketClose(m_clients[i]);
+				m_clients.erase(m_clients.begin() + i--);
 			}
-			ISSocketClose(m_clients[i]);
-			m_clients.erase(m_clients.begin() + i--);
-		}
-		else if (count > 0)
-		{
-			if (m_delegate != NULL)
+			else if (count > 0 && m_delegate != NULLPTR)
 			{
-				m_delegate->OnClientDataReceived(m_clients[i], readBuff, count);
+				m_delegate->OnClientDataReceived(this, m_clients[i], readBuff, count);
 			}
 		}
 	}
@@ -158,15 +165,30 @@ int cISTcpServer::Write(const uint8_t* data, int dataLength)
 {
 	for (size_t i = 0; i < m_clients.size(); i++)
 	{
-		if (ISSocketWrite(m_clients[i], data, dataLength) < 0)
+		int written = 0;
+		int count;
+		while (written < dataLength)
 		{
-			// remove the client
-			if (m_delegate != NULL)
+			count = ISSocketWrite(m_clients[i], data + written, dataLength - written);
+			if (count < 1)
 			{
-				m_delegate->OnClientDisconnected(m_clients[i]);
+				// remove the client
+				if (m_delegate != NULLPTR)
+				{
+					m_delegate->OnClientDisconnected(this, m_clients[i]);
+				}
+				ISSocketClose(m_clients[i]);
+				m_clients.erase(m_clients.begin() + i--);
+				break;
 			}
-			ISSocketClose(m_clients[i]);
-			m_clients.erase(m_clients.begin() + i--);
+			else
+			{
+				written += count;
+				if (written == dataLength)
+				{
+					break;
+				}
+			}
 		}
 	}
 	return dataLength; // TODO: Maybe be smarter about detecting difference in bytes written for each client

@@ -47,7 +47,7 @@ var searchData=
   ['streamins4',['streamINS4',['../structcmd__options__t.html#ae1903085536f3233b484be2bffd0af2d',1,'cmd_options_t']]],
   ['streammag1',['streamMag1',['../structcmd__options__t.html#aa27472315cf43c8df5edb4db1ff7946f',1,'cmd_options_t']]],
   ['streammag2',['streamMag2',['../structcmd__options__t.html#a68d164246faa0e01589954df95350ac4',1,'cmd_options_t']]],
-  ['streamrtkgps',['streamRTKGPS',['../structcmd__options__t.html#a42f204c5641d072763ef1761f8b8b3be',1,'cmd_options_t']]],
+  ['streamrtkrel',['streamRtkRel',['../structcmd__options__t.html#a06210eeb34fa782e8e32de0a1877423b',1,'cmd_options_t']]],
   ['streamrtos',['streamRTOS',['../structcmd__options__t.html#aa5035937303627116ef15562ed7a56df',1,'cmd_options_t']]],
   ['streamsyssensors',['streamSysSensors',['../structcmd__options__t.html#a4c672fbd00940a97a608c3fa07c61d7a',1,'cmd_options_t']]],
   ['surveyin',['surveyIn',['../structcmd__options__t.html#a6838bdd019090fda0403b66bf8be19c1',1,'cmd_options_t::surveyIn()'],['../struct_p_a_c_k_e_d.html#af56fca21bf71a7131d9e2cad79cbc96c',1,'PACKED::surveyIn()']]],

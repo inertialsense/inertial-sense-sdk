@@ -1120,7 +1120,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 			copyDataPToStructP(regd->dataSet.rxPtr, data, regd->dataSet.size);
 		}
 
-		// Call data specific callback
+		// Call data specific callback after data has been written to
 		if (regd->pstRxFnc)
 		{
 			regd->pstRxFnc(cmInstance, pHandle, data);

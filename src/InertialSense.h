@@ -52,12 +52,6 @@ extern "C"
 
 #include <functional>
 
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-#include "../pySDK/pySDK.h"
-
-#endif
-
 class InertialSense;
 
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
@@ -69,7 +63,7 @@ using namespace std;
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
 */
-class InertialSense : public iGpsParserDelegate
+class InertialSense : public iGpsParserDelegate, iISTcpServerDelegate
 {
 public:
 	struct com_manager_cpp_state_t
@@ -85,6 +79,9 @@ public:
 		pfnHandleBinaryData binaryCallback[DID_COUNT];
 		pfnStepLogFunction stepLogFunction;
 		InertialSense* inertialSenseInterface;
+		char* clientBuffer;
+		int clientBufferSize;
+		int* clientBytesToSend;
 	};
 
 	typedef struct
@@ -161,13 +158,13 @@ public:
 	* @param subFolder timestamp sub folder or empty for none
 	* @return true if success, false if failure
 	*/
-	bool SetLoggerEnabled(bool enable, const string& path = cISLogger::g_emptyString, cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT, bool streamPPD = true, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t chunkSize = 131072, const string& subFolder = cISLogger::g_emptyString);
+	bool SetLoggerEnabled(bool enable, const string& path = cISLogger::g_emptyString, cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT, uint64_t rmcPreset = RMC_PRESET_PPD_BITS, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t chunkSize = 131072, const string& subFolder = cISLogger::g_emptyString);
 
 	/**
 	* Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
 	* @param rmcPreset realtimeMessageController preset
 	*/
-	void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS);
+	void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS, uint32_t rmcOptions=0);
 
 	/**
 	* Gets whether logging is enabled
@@ -291,6 +288,10 @@ public:
 
 protected:
 	bool OnPacketReceived(const cGpsParser* parser, const uint8_t* data, uint32_t dataLength) OVERRIDE;
+	void OnClientConnecting(cISTcpServer* server) OVERRIDE;
+	void OnClientConnected(cISTcpServer* server, socket_t socket) OVERRIDE;
+	void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
+	void OnClientDisconnected(cISTcpServer* server, socket_t socket) OVERRIDE;
 
 private:
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
@@ -300,6 +301,8 @@ private:
 	map<int, vector<p_data_t>> m_logPackets;
 	time_t m_lastLogReInit;
 	cISTcpClient m_tcpClient;
+	char m_clientBuffer[512];
+	int m_clientBufferBytesToSend;
 	cISTcpServer m_tcpServer;
 	cISSerialPort m_serialServer;
 	cISStream* m_clientStream;
@@ -316,66 +319,6 @@ private:
 	bool OpenSerialPorts(const char* port, int baudRate);
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-	pybind11::function m_pyCallback;
-	cInertialSenseDisplay m_pyDisplay;
-
-public:
-
-	/*
-	* Broadcast binary data
-	* @param dataId the data id (DID_* - see data_sets.h) to broadcast
-	* @param periodMS the period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
-	* @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
-	*/
-	bool PyBroadcastBinaryData(uint32_t dataId, int periodMS);
-
-	/**
-	* Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
-	* Please ensure that all other connections to the com port are closed before calling this function.
-	* @param the com port to bootload
-	* @param fileName the path of the file to bootload
-	*/
-	static bool InertialSense::PyBootloadFile(const string& comPort, const string& fileName);
-
-	/**
-	* Set the pyCallback
-	* @param python callback function
-	*/
-	void SetPyCallback(pybind11::object func);
-
-	/**
-	* Set the Display variable for the pyCallback
-	* @param python callback function
-	*/
-	void SetPyDisplay(cInertialSenseDisplay display);
-
-	/**
-	* Get the pyCallback
-	* @param python callback function
-	*/
-	pybind11::object GetPyCallback();
-
-	/**
-	* Get the pyDisplay
-	* @param python callback function
-	*/
-	cInertialSenseDisplay GetPyDisplay();
-
-#endif
-
 };
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-static void pyClt_dataCallback(InertialSense* i, p_data_t* data);
-pybind11::dict py_dataHandling(p_data_t* data);
-pybind11::list convertArray(float const data[], int length);
-pybind11::list convertArray(double const data[], int length);
-bool pyUpdateFlashConfig(InertialSense& inertialSenseInterface, string flashConfig);
-
-#endif
 
 #endif

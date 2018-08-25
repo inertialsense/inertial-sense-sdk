@@ -8,6 +8,8 @@ var searchData=
   ['imuperiodms',['imuPeriodMs',['../struct_p_a_c_k_e_d.html#abeec7e47367dc40638e52a310e522465',1,'PACKED']]],
   ['imutemp',['imuTemp',['../struct_p_a_c_k_e_d.html#ac800b43408a504f1830cd89cbe702551',1,'PACKED']]],
   ['inertialsenseinterface',['inertialSenseInterface',['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#af002ad4e41266ef3f5316acb7482d152',1,'InertialSense::com_manager_cpp_state_t']]],
+  ['inl2states',['inl2States',['../struct_p_a_c_k_e_d.html#ada22862375d23f7aea2b6ee43a0d00b2',1,'PACKED']]],
+  ['inl2variance',['inl2Variance',['../struct_p_a_c_k_e_d.html#a0046c302ccc79f7928ed267b30e9bc6a',1,'PACKED']]],
   ['ins1',['ins1',['../struct_p_a_c_k_e_d.html#a9dd18f4806913f34c71296a73a41c049',1,'PACKED']]],
   ['ins2',['ins2',['../struct_p_a_c_k_e_d.html#a3742032afa094a575f0bab0e9124590e',1,'PACKED']]],
   ['ins3',['ins3',['../struct_p_a_c_k_e_d.html#acb5d40d3b5acbed9acfd1460a8f02418',1,'PACKED']]],

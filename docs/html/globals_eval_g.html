@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.2</span>
+   &#160;<span id="projectnumber">Release 1.6.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -91,12 +91,6 @@ $(function() {
 <li>GPS_STATUS_FIX_NONE
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a6223937fed01e5cafc5978e95369fd08">data_sets.h</a>
 </li>
-<li>GPS_STATUS_FIX_RESERVED1
-: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a282a2ab1ccb87752f94a2b6b25dcbfe0">data_sets.h</a>
-</li>
-<li>GPS_STATUS_FIX_RESERVED2
-: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a2956af8107279b722d5da749a03517af">data_sets.h</a>
-</li>
 <li>GPS_STATUS_FIX_RTK_FIX
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a921298a1d5d40fc0e832f1adb9c9135c">data_sets.h</a>
 </li>
@@ -112,6 +106,12 @@ $(function() {
 <li>GPS_STATUS_FIX_TIME_ONLY
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a82042f89a814bc8b2c86bb4f51dd12d5">data_sets.h</a>
 </li>
+<li>GPS_STATUS_FIX_UNUSED1
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a5a99d9aa473ca04f6a36e6dff136efa2">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FIX_UNUSED2
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a86a2e724ebc0fe1d6d7b2176f546136b">data_sets.h</a>
+</li>
 <li>GPS_STATUS_FLAGS_BASE_POSITION_MOVING
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108aee5febd8bc206aacdbb7232197b8a60e">data_sets.h</a>
 </li>
@@ -124,14 +124,26 @@ $(function() {
 <li>GPS_STATUS_FLAGS_FIX_OK
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108af7db06788bd0a8e4f9ab2fc1dd2e97cc">data_sets.h</a>
 </li>
-<li>GPS_STATUS_FLAGS_GPS_COMPASSING_MODE
-: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ad460adc21315b1b2ec6eb71d2984969f">data_sets.h</a>
+<li>GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ac203ac41bf2a88deec78aa83541ec31e">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FLAGS_GPS_COMPASS_NO_BASELINE
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a8b067d3478a1d91bb19bdee1e5710e6b">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FLAGS_GPS_COMPASSING_ENABLED
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a54e6329b66139ab933cc655216c28ec2">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FLAGS_GPS_COMPASSING_VALID
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a0a13dcd2c6f6b8bc5f7e5fc363799566">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FLAGS_HIGH_ACCURACY_POSITION
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a7ad5b29db668c575bded51286d27f1b4">data_sets.h</a>
 </li>
 <li>GPS_STATUS_FLAGS_MASK
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a74138adacc04177b787dee3171197e0d">data_sets.h</a>
 </li>
-<li>GPS_STATUS_FLAGS_RTK_MODE
-: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ae7a65d1accdd019ea70a681549e3f36f">data_sets.h</a>
+<li>GPS_STATUS_FLAGS_RTK_ENABLED
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a7059fc3a6e630b76b17c0ea5ff5a8865">data_sets.h</a>
 </li>
 <li>GPS_STATUS_FLAGS_RX_BASE_NO_OBSERV_EPHEM
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ab53b6ad6a943c75cd343d93801189374">data_sets.h</a>
@@ -144,6 +156,9 @@ $(function() {
 </li>
 <li>GPS_STATUS_FLAGS_TOW_VALID
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a763d39cf02f6c853c67ab5e471d32c39">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FLAGS_UNUSED_3
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a64b306ad1962368dcfbfe5dce8d19453">data_sets.h</a>
 </li>
 <li>GPS_STATUS_FLAGS_WEEK_VALID
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a9ffd58bfce9a2107cd1b8e63518de368">data_sets.h</a>

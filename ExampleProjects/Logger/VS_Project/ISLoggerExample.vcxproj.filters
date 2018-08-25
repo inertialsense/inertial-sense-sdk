@@ -109,6 +109,12 @@
     <ClCompile Include="..\..\..\src\DeviceLog.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\DataJSON.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\DeviceLogJSON.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h">
@@ -199,6 +205,12 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\DataJSON.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\DeviceLogJSON.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
   </ItemGroup>

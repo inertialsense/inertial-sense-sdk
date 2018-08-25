@@ -14,6 +14,6 @@ var searchData=
   ['bootloaduploadprogress',['bootloadUploadProgress',['../_i_s_utilities_8cpp.html#aa561c3f739a4d2d0ea04ed08c6deff2f',1,'bootloadUploadProgress(const void *port, float percent):&#160;ISUtilities.cpp'],['../_i_s_utilities_8h.html#aa561c3f739a4d2d0ea04ed08c6deff2f',1,'bootloadUploadProgress(const void *port, float percent):&#160;ISUtilities.cpp']]],
   ['bootloadverifyprogress',['bootloadVerifyProgress',['../_i_s_utilities_8cpp.html#a7aa795d133127e59cb01e65d76e47d01',1,'bootloadVerifyProgress(const void *port, float percent):&#160;ISUtilities.cpp'],['../_i_s_utilities_8h.html#a7aa795d133127e59cb01e65d76e47d01',1,'bootloadVerifyProgress(const void *port, float percent):&#160;ISUtilities.cpp']]],
   ['broadcastbinarydata',['BroadcastBinaryData',['../class_inertial_sense.html#a52a7e142419b21231d5d7b25afaf117d',1,'InertialSense']]],
-  ['broadcastbinarydatarmcpreset',['BroadcastBinaryDataRmcPreset',['../class_inertial_sense.html#a94d305439a26313f4c9d266006e6440a',1,'InertialSense']]],
+  ['broadcastbinarydatarmcpreset',['BroadcastBinaryDataRmcPreset',['../class_inertial_sense.html#a5ddce25f9f831619ad585c6ac7a2ba66',1,'InertialSense']]],
   ['bytes_5fper_5fkid',['BYTES_PER_KID',['../classc_data_k_m_l.html#ac1b4ec04c2319d0b1a7746cdb168e18e',1,'cDataKML']]]
 ];

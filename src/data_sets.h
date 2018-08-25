@@ -37,23 +37,23 @@ typedef uint32_t eDataIDs;
 #define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we will use the name "Preintegrated IMU" through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
-#define DID_GPS_NAV                     (eDataIDs)6  /** (gps_nav_t) Standard GPS data */
+#define DID_GPS1_UBX_POS                (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from ublox receiver. */
 #define DID_CONFIG                      (eDataIDs)7  /** (config_t) Configuration data */
 #define DID_ASCII_BCAST_PERIOD          (eDataIDs)8  /** (ascii_msgs_t) Broadcast period for ASCII messages */
 #define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */
 #define DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
 #define DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
 #define DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
-#define DID_GPS1_NAV                    (eDataIDs)13 /** (gps_nav_t) GPS 1 navigation data */
-#define DID_GPS2_NAV                    (eDataIDs)14 /** (gps_nav_t) GPS 2 navigation data */
+#define DID_GPS1_POS                    (eDataIDs)13 /** (gps_pos_t) GPS 1 position data.  This comes from DID_GPS1_UBX_POS or DID_GPS1_RTK_POS, depending on whichever is more accurate. */
+#define DID_GPS2_POS                    (eDataIDs)14 /** (gps_pos_t) GPS 2 position data */
 #define DID_GPS1_SAT                    (eDataIDs)15 /** (gps_sat_t) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
 #define DID_GPS2_SAT                    (eDataIDs)16 /** (gps_sat_t) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
 #define DID_GPS1_VERSION                (eDataIDs)17 /** (gps_version_t) GPS 1 version info */
 #define DID_GPS2_VERSION                (eDataIDs)18 /** (gps_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
 #define DID_INTERNAL_DIAGNOSTIC         (eDataIDs)20 /** INTERNAL USE ONLY (internal_diagnostic_t) Internal diagnostic info */
-#define DID_GPS_RTK_NAV                 (eDataIDs)21 /** (gps_nav_t) RTK navigation data */
-#define DID_GPS_RTK_MISC                (eDataIDs)22 /** (gps_rtk_misc_t) RTK related data */
+#define DID_GPS1_RTK_REL                (eDataIDs)21 /** (gps_rtk_rel_t) RTK navigation data */
+#define DID_GPS1_RTK_MISC               (eDataIDs)22 /** (gps_rtk_misc_t) RTK related data */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
 #define DID_SENSORS_IS1                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Cross-axis aligned w/ scale factor */
 #define DID_SENSORS_IS2                 (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated */
@@ -61,8 +61,8 @@ typedef uint32_t eDataIDs;
 #define DID_IO                          (eDataIDs)27 /** (io_t) I/O */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SCOMP                       (eDataIDs)29 /** INTERNAL USE ONLY (sensor_compensation_t) */
-#define DID_UNUSED_30                   (eDataIDs)30 /** UNUSED (_t) */
-#define DID_UNUSED_31                   (eDataIDs)31 /** UNUSED (_t) */
+#define DID_GPS1_VEL                    (eDataIDs)30 /** (gps_vel_t) GPS 1 velocity data */
+#define DID_GPS2_VEL                    (eDataIDs)31 /** (gps_vel_t) GPS 2 velocity data */
 #define DID_HDW_PARAMS                  (eDataIDs)32 /** INTERNAL USE ONLY (hdw_params_t) */
 #define DID_NVR_MANAGE_USERPAGE         (eDataIDs)33 /** INTERNAL USE ONLY (nvr_manage_t) */
 #define DID_NVR_USERPAGE_SN             (eDataIDs)34 /** INTERNAL USE ONLY (nvm_group_sn_t) */
@@ -85,7 +85,7 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
 #define DID_MAGNETOMETER_1              (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor 1 output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
-#define DID_UNUSED_54                   (eDataIDs)54 /**  */
+#define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
 #define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_DUAL_IMU_RAW                (eDataIDs)57 /** (dual_imu_t) Dual inertial measurement unit data directly from IMU.  We recommend use of DID_DUAL_IMU or DID_PREINTEGRATED_IMU. */
@@ -133,7 +133,7 @@ typedef uint32_t eDataIDs;
 // #define PROTOCOL_VERSION_CHAR0 1        // Major (in com_manager.h)
 // #define PROTOCOL_VERSION_CHAR1 0
 #define PROTOCOL_VERSION_CHAR2 (0x000000FF&DID_COUNT)
-#define PROTOCOL_VERSION_CHAR3 6         // Minor (in data_sets.h)
+#define PROTOCOL_VERSION_CHAR3 7         // Minor (in data_sets.h)
 
 /** Latest known number of leap seconds */
 #define CURRENT_LEAP_SECONDS 18
@@ -154,6 +154,8 @@ enum eInsStatusFlags
 	INS_STATUS_POS_ALIGN_COARSE					= (int)0x00000004,
 	/** Estimate is COARSE mask (usable but outside spec) */
 	INS_STATUS_ALIGN_COARSE_MASK				= (int)0x00000007,
+
+	INS_STATUS_UNUSED_1				            = (int)0x00000008,
 
 	/** Attitude estimate is GOOD */
 	INS_STATUS_ATT_ALIGN_GOOD					= (int)0x00000010,
@@ -181,6 +183,10 @@ enum eInsStatusFlags
 	/** Set = Nav mode (w/ GPS). Cleared = AHRS mode (w/o GPS) */
 	INS_STATUS_NAV_MODE							= (int)0x00001000,
 
+	INS_STATUS_UNUSED_2				            = (int)0x00002000,
+	INS_STATUS_UNUSED_3				            = (int)0x00004000,
+	INS_STATUS_UNUSED_4				            = (int)0x00008000,
+
 	/** INS/AHRS Solution Status */
 	INS_STATUS_SOLUTION_MASK					= (int)0x000F0000,
 	INS_STATUS_SOLUTION_OFFSET					= 16,
@@ -194,6 +200,11 @@ enum eInsStatusFlags
 	INS_STATUS_SOLUTION_AHRS_GOOD				= 5,	// System is in AHRS mode and solution is good.
 	INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE		= 6,	// System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
 	
+    /** Trying to perform Compassing with no baseline set in flashCfg. */
+    INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET     = (int)0x00100000,
+    /** Specified Baseline Length is signficantly different from precision solution. */
+    INS_STATUS_RTK_COMPASSING_WRONG_BASELINE    = (int)0x00200000,
+    
 	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. */
 	INS_STATUS_MAG_RECALIBRATING				= (int)0x00400000,
 	/** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
@@ -205,7 +216,7 @@ enum eInsStatusFlags
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)		((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
 	/** GPS base mask */
-	INS_STATUS_RTK_BASE_MASK					= (int)0x38000000,
+    INS_STATUS_RTK_BASE_MASK					= (int)0x38300000,
 	/** GPS base NO observations or ephemeris received (i.e. RTK differential corrections) */
     INS_STATUS_RTK_BASE_ERR_NO_OBSERV_EPHEM		= (int)0x08000000,
     /** GPS base NO position received */
@@ -252,6 +263,8 @@ enum eHdwStatusFlags
 	/** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
 	HDW_STATUS_GPS_TIME_OF_WEEK_VALID			= (int)0x00000040,
 
+	HDW_STATUS_UNUSED_1				            = (int)0x00000080,
+
 	/** Sensor saturation on gyro */
 	HDW_STATUS_SATURATION_GYR					= (int)0x00000100,
 	/** Sensor saturation on accelerometer */
@@ -268,6 +281,10 @@ enum eHdwStatusFlags
 
 	/** Sensor saturation happened within in past 10 seconds */
 	HDW_STATUS_SATURATION_HISTORY				= (int)0x00001000,
+
+	HDW_STATUS_UNUSED_2				            = (int)0x00002000,
+	HDW_STATUS_UNUSED_3				            = (int)0x00004000,
+	HDW_STATUS_UNUSED_4				            = (int)0x00008000,
 
 	/** Communications Tx buffer limited */
 	HDW_STATUS_ERR_COM_TX_LIMITED				= (int)0x00010000,
@@ -289,6 +306,8 @@ enum eHdwStatusFlags
 	HDW_STATUS_ERR_TEMPERATURE					= (int)0x02000000,
 	/** Vibrations effecting accuracy */
 // 	HDW_STATUS_ERR_VIBRATION					= (int)0x04000000,
+
+	HDW_STATUS_UNUSED_5				            = (int)0x08000000,
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
@@ -317,14 +336,14 @@ enum eGpsStatus
 	GPS_STATUS_FIX_3D							= (int)0x00000300,
 	GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK			= (int)0x00000400,
 	GPS_STATUS_FIX_TIME_ONLY					= (int)0x00000500,
-	GPS_STATUS_FIX_RESERVED1					= (int)0x00000600,
-	GPS_STATUS_FIX_RESERVED2					= (int)0x00000700,
+	GPS_STATUS_FIX_UNUSED1                      = (int)0x00000600,
+	GPS_STATUS_FIX_UNUSED2                      = (int)0x00000700,
 	GPS_STATUS_FIX_DGPS							= (int)0x00000800,
 	GPS_STATUS_FIX_SBAS							= (int)0x00000900,
 	GPS_STATUS_FIX_RTK_SINGLE					= (int)0x00000A00,
 	GPS_STATUS_FIX_RTK_FLOAT					= (int)0x00000B00,
 	GPS_STATUS_FIX_RTK_FIX						= (int)0x00000C00,	
-	GPS_STATUS_FIX_MASK							= (int)0x0000FF00,
+	GPS_STATUS_FIX_MASK							= (int)0x00001F00,
 	GPS_STATUS_FIX_BIT_OFFSET					= (int)8,
 
 	/** Flags  */
@@ -332,13 +351,18 @@ enum eGpsStatus
 	GPS_STATUS_FLAGS_DGPS_USED					= (int)0x00020000,		// Differential GPS (DGPS) used.
 	GPS_STATUS_FLAGS_WEEK_VALID					= (int)0x00040000,
 	GPS_STATUS_FLAGS_TOW_VALID					= (int)0x00080000,
-	GPS_STATUS_FLAGS_RTK_MODE					= (int)0x00100000,		// RTK mode
+	GPS_STATUS_FLAGS_RTK_ENABLED				= (int)0x00100000,
 	GPS_STATUS_FLAGS_STATIC_MODE				= (int)0x00200000,		// Static mode
-	GPS_STATUS_FLAGS_GPS_COMPASSING_MODE		= (int)0x00400000,		// GPS compassing mode
+	GPS_STATUS_FLAGS_GPS_COMPASSING_ENABLED		= (int)0x00400000,
     GPS_STATUS_FLAGS_RX_BASE_NO_OBSERV_EPHEM	= (int)0x00800000,		// GPS base observations and ephemeris received (i.e. RTK differential corrections)
     GPS_STATUS_FLAGS_RX_BASE_NO_POSITION		= (int)0x01000000,		// GPS base position received
     GPS_STATUS_FLAGS_BASE_POSITION_MOVING		= (int)0x02000000,		// GPS Base position moving
-	GPS_STATUS_FLAGS_MASK						= (int)0x0FFF0000,
+	GPS_STATUS_FLAGS_HIGH_ACCURACY_POSITION	    = (int)0x04000000,      // 1= using RTK position, 0= using ublox position
+	GPS_STATUS_FLAGS_GPS_COMPASSING_VALID	    = (int)0x08000000,
+    GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE   = (int)0x00002000,
+    GPS_STATUS_FLAGS_GPS_COMPASS_NO_BASELINE    = (int)0x00004000,
+	GPS_STATUS_FLAGS_UNUSED_3                   = (int)0x00008000,
+	GPS_STATUS_FLAGS_MASK						= (int)0x0FFFE000,    
 	GPS_STATUS_FLAGS_BIT_OFFSET					= (int)16,
 
 	/** Init */
@@ -601,7 +625,7 @@ typedef struct PACKED
 } preintegrated_imu_t;
 
 
-/** (DID_GPS_NAV, DID_GPS1_NAV, DID_GPS2_NAV) GPS navigation data */
+/** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
 typedef struct PACKED
 {
 	/** Number of weeks since January 6th, 1980 */
@@ -613,12 +637,9 @@ typedef struct PACKED
 	/** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
 	uint32_t                status;
 
-	/** Carrier to noise ratio (signal strength) of strongest satellite in dBHz */
-	uint32_t                cnoMax;
-
-	/** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
-	float                   cnoMean;
-
+	/** Position in ECEF {x,y,z} (m) */
+	double					ecef[3];
+    
 	/** Position - WGS84 latitude, longitude, height above ellipsoid (not MSL) (degrees, m) */
 	double					lla[3];
 
@@ -634,35 +655,26 @@ typedef struct PACKED
 	/** Position dilution of precision in meters */
 	float                   pDop;
 
-	/** Velocity in north, east, down (m/s) */
-	float					velNed[3];
-
-	/** Speed accuracy in meters / second */
-	float					sAcc;
+	/** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
+	float                   cnoMean;
 
 	/** Time sync offset between local time since boot up to time of week in seconds */
 	double                  towOffset;
+} gps_pos_t;
 
-	/** Position in ECEF {x,y,z} (m) */
-	double					ecef[3];
+
+/** (DID_GPS1_VEL, DID_GPS2_VEL) GPS velocity data */
+typedef struct PACKED
+{
+    /** Time of week (since Sunday morning) in milliseconds, GMT */
+    uint32_t                timeOfWeekMs;
 
 	/** Position in ECEF {vx,vy,vz} (m/s) */
-	float					velEcef[3];
+	float					velEcef[3];	
 
-	/** RTK - Age of differential (seconds) */
-	float					differentialAge;
-
-	/** RTK - Ambiguity resolution ratio factor for validation */
-	float					arRatio;
-    
-    /** RTK - Distance to Base (m) */
-	float                   distanceToBase;
-
-	/** RTK - Vector to base (m) in ECEF - If Compassing enabled, this is the 3-vector from antenna 2 to antenna 1 */
-	float					vectorToBase[3];
-
-} gps_nav_t;
-
+	/** Speed accuracy in meters / second */
+	float					sAcc;
+} gps_vel_t;
 
 typedef struct PACKED
 {
@@ -974,46 +986,51 @@ typedef struct PACKED
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER1          0x0000000000000080      // ~10ms
 #define RMC_BITS_MAGNETOMETER2          0x0000000000000100      // "
-#define RMC_BITS_GPS_NAV                0x0000000000000200      // 200ms
-#define RMC_BITS_GPS1_NAV               0x0000000000000400      // "
-#define RMC_BITS_GPS2_NAV               0x0000000000000800      // "
+
+#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
 #define RMC_BITS_GPS2_RAW               0x0000000000002000      // "
 #define RMC_BITS_GPS1_SAT               0x0000000000004000      // 1s
 #define RMC_BITS_GPS2_SAT               0x0000000000008000      // "
-#define RMC_BITS_GPS_RTK_NAV            0x0000000000010000      // 200ms
-#define RMC_BITS_GPS_RTK_MISC           0x0000000000020000      // "
-#define RMC_BITS_GPS_BASE_RAW           0x0000000000040000      // "
-#define RMC_BITS_STROBE_IN_TIME         0x0000000000080000      // On strobe input event
-#define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000100000
-#define RMC_BITS_DUAL_IMU_RAW           0x0000000000200000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_GPS_BASE_RAW           0x0000000000010000      // 
+#define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
+#define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
+#define RMC_BITS_DUAL_IMU_RAW           0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
+#define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
+#define RMC_BITS_GPS1_RTK_POS           0x0000000000800000      // "
+#define RMC_BITS_GPS1_RTK_REL           0x0000000001000000      // "
+#define RMC_BITS_GPS1_RTK_MISC          0x0000000004000000      // "
+#define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 
-#define RMC_BITS_INTERNAL_PPD           0x4000000000000000
-#define RMC_BITS_PRESET                 0x8000000000000000
+#define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
+#define RMC_BITS_PRESET                 0x8000000000000000      // Indicate BITS is a preset
 
 // Preset: Post Processing Data
-#define RMC_PRESET_PPD_NAV_PERIOD       100
-#define RMC_PRESET_PPD_NO_IMU_BITS     (RMC_BITS_INS2 | \
+#define RMC_PRESET_PPD_BITS_NO_IMU     (RMC_BITS_PRESET | \
+                                        RMC_BITS_INS2 | \
                                         RMC_BITS_BAROMETER | \
                                         RMC_BITS_MAGNETOMETER1 | \
                                         RMC_BITS_MAGNETOMETER2 | \
-                                        RMC_BITS_GPS_NAV | \
-                                        RMC_BITS_GPS1_NAV | \
-                                        RMC_BITS_GPS2_NAV | \
+                                        RMC_BITS_GPS1_POS | \
+                                        RMC_BITS_GPS2_POS | \
+                                        RMC_BITS_GPS1_VEL | \
+                                        RMC_BITS_GPS2_VEL | \
+                                        RMC_BITS_GPS1_RAW | \
+                                        RMC_BITS_GPS2_RAW | \
                                         RMC_BITS_GPS_BASE_RAW | \
+                                        RMC_BITS_GPS1_RTK_REL | \
                                         RMC_BITS_INTERNAL_PPD | \
-                                        RMC_BITS_PRESET | \
-                                        RMC_BITS_DIAGNOSTIC_MESSAGE   )
-#define RMC_PRESET_PPD_BITS            (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_PREINTEGRATED_IMU )
-#define RMC_PRESET_PPD_RAW_IMU_BITS    (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_DUAL_IMU_RAW )
-#define RMC_PRESET_PPD_RAW_GPS_BITS    (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_GPS1_RAW | RMC_BITS_GPS2_RAW)
-#define RMC_PRESET_PPD_COMPASSING_BITS (RMC_PRESET_PPD_NO_IMU_BITS | RMC_BITS_GPS_RTK_NAV | RMC_BITS_GPS_RTK_MISC | RMC_BITS_PREINTEGRATED_IMU)
-
-// Preset: INS2 Data
-#define RMC_PRESET_INS_NAV_PERIOD       1   // fastest rate (EKF update rate)
+                                        RMC_BITS_DIAGNOSTIC_MESSAGE )
+#define RMC_PRESET_PPD_BITS            (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_PREINTEGRATED_IMU )
+#define RMC_PRESET_PPD_BITS_RAW_IMU    (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_DUAL_IMU_RAW )
+#define RMC_PRESET_PPD_NAV_PERIOD       100
 #define RMC_PRESET_INS_BITS            (RMC_BITS_INS2 | \
-                                        RMC_BITS_GPS_NAV | \
+                                        RMC_BITS_GPS1_POS | \
                                         RMC_BITS_PRESET )
+#define RMC_PRESET_INS_NAV_PERIOD       1   // fastest rate (nav filter update rate)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -1351,8 +1368,8 @@ typedef struct PACKED
 
     /** X,Y,Z offset in meters from Sensor Frame origin to GPS 1 antenna. */
     float					gps1AntOffset[3];
-
-    /** INS dynamic platform model.  Determines performance characteristics of system. 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST */
+ 
+    /** INS dynamic platform model.  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint32_t				insDynModel;
 
     /** System configuration bits (see eSysConfigBits). */
@@ -1944,12 +1961,31 @@ typedef enum
 	rtk_solution_status_single = 5
 } eRtkSolStatus;
 
-/** (DID_GPS_RTK_MISC) - requires little endian CPU */
+/** (DID_GPS1_RTK_REL) */
 typedef struct PACKED
 {
-	/** Number of weeks since January 6th, 1980 */
-	uint32_t                week;
+    /** Time of week (since Sunday morning) in milliseconds, GMT */
+    uint32_t                timeOfWeekMs;
 
+    /** Age of differential (seconds) */
+    float					differentialAge;
+
+    /** Ambiguity resolution ratio factor for validation */
+    float					arRatio;
+
+	/** Vector to base (m) in ECEF - If Compassing enabled, this is the 3-vector from antenna 2 to antenna 1 */
+	float					vectorToBase[3];
+
+    /** Distance to Base (m) */
+    float                   distanceToBase;
+    
+    /** Angle from north to vectorToBase in local tangent plane. (rad) */
+    float                   headingToBase;
+} gps_rtk_rel_t;
+
+/** (DID_GPS1_RTK_MISC) - requires little endian CPU */
+typedef struct PACKED
+{
 	/** Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
 
@@ -1966,9 +2002,6 @@ typedef struct PACKED
 
 	/** Geometric dilution of precision (meters) */
 	float					gDop;
-	
-	/** Position dilution of precision (meters) */
-	float					pDop;
 	
 	/** Horizontal dilution of precision (meters) */
 	float					hDop;
@@ -2053,9 +2086,6 @@ typedef struct PACKED
 
     /** Ionosphere model, utc and almanac count */
     uint32_t				ionUtcAlmCount;
-    
-    /** Angle in local tangent plane between vectorToBase and North in NED frame (rad) */
-    float                   rtkCompassHeading;
 } gps_rtk_misc_t;
 
 /** RAW data types for DID_GPS_BASE_RAW and DID_GPS2_RAW */
@@ -2196,13 +2226,13 @@ typedef struct
 	/** State of current survey, eSurveyInStatus */
 	uint32_t state;
 
-	/** Maximum time (sec) survey will run if minAccuracy is not first achieved. (ignored if 0). */
+	/** Maximum time (milliseconds) survey will run if minAccuracy is not first achieved. (ignored if 0). */
 	uint32_t maxDurationSec;
 
 	/** Required horizontal accuracy (m) for survey to complete before maxDuration. (ignored if 0) */
 	float minAccuracy;
 
-	/** Elapsed time (sec) of the survey. */
+	/** Elapsed time (milliseconds) of the survey. */
 	uint32_t elapsedTimeSec;
 
 	/** Approximate horizontal accuracy of the survey (m). */
@@ -2406,15 +2436,18 @@ typedef union PACKED
 	mag_cal_t				magCal;
 	barometer_t				baro;
 	preintegrated_imu_t		pImu;
-	gps_nav_t				gpsNav;
+	gps_pos_t				gpsPos;
+	gps_vel_t				gpsVel;
 	gps_sat_t				gpsSat;
+	gps_rtk_rel_t			gpsRtkRel;
 	gps_rtk_misc_t			gpsRtkMisc;
+	inl2_states_t			inl2States;
+	inl2_variance_t			inl2Variance;
 	nvm_flash_cfg_t			flashCfg;
     survey_in_t             surveyIn;
 	sys_params_t			sysParams;
 	sys_sensors_t			sysSensors;
 	rtos_info_t				rtosInfo;
-    gps_nav_t               gpsRtkNav;
 	gps_raw_t				gpsRaw;
 } uDatasets;
 
@@ -2552,6 +2585,16 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 
 /** Convert GPS Week and Seconds to Julian Date. */
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds);
+
+/*
+Convert gps pos to nmea gga
+
+@param gps gps position
+@param buffer buffer to fill with nmea gga
+@param bufferLength number of chars available in buffer, should be at least 128
+@return number of chars written to buffer, not including the null terminator
+*/
+int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength);
 
 #ifdef __cplusplus
 }

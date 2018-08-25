@@ -755,15 +755,3 @@ cMutexLocker::~cMutexLocker()
 {
 	m_mutex->Unlock();
 }
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-test_initializer isutilities([](py::module &m) {
-	py::module m2 = m.def_submodule("isutilities");
-
-	m2.def("bootloadUploadProgress", bootloadUploadProgress);
-	m2.def("bootloadVerifyProgress", bootloadVerifyProgress);
-
-});
-
-#endif

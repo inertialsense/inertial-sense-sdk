@@ -230,6 +230,7 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 		case LOGTYPE_DAT:	m_devices[i] = new cDeviceLogSerial();	break;
 		case LOGTYPE_SDAT:	m_devices[i] = new cDeviceLogSorted();	break;
 		case LOGTYPE_CSV:	m_devices[i] = new cDeviceLogCSV();		break;
+		case LOGTYPE_JSON:	m_devices[i] = new cDeviceLogJSON();	break;
 		case LOGTYPE_KML:	m_devices[i] = new cDeviceLogKML();		break;
 		}
 
@@ -531,6 +532,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 	case cISLogger::LOGTYPE_DAT: fileExtensionRegex = "\\.dat$"; break;
 	case cISLogger::LOGTYPE_SDAT: fileExtensionRegex = "\\.sdat$"; break;
 	case cISLogger::LOGTYPE_CSV: fileExtensionRegex = "\\.csv$"; break;
+	case cISLogger::LOGTYPE_JSON: fileExtensionRegex = "\\.json$"; break;
 	case cISLogger::LOGTYPE_KML: return false; // fileExtensionRegex = "\\.kml$"; break; // kml read not supported
 	}
 
@@ -583,6 +585,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 					case cISLogger::LOGTYPE_DAT: m_devices.push_back(new cDeviceLogSerial()); break;
 					case cISLogger::LOGTYPE_SDAT: m_devices.push_back(new cDeviceLogSorted()); break;
 					case cISLogger::LOGTYPE_CSV: m_devices.push_back(new cDeviceLogCSV()); break;
+					case cISLogger::LOGTYPE_JSON: m_devices.push_back(new cDeviceLogJSON()); break;
 					}
 					m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
 				}
@@ -1020,58 +1023,3 @@ void cLogStats::WriteToFile(const string &fileName)
         stats.close();
     }
 }
-
-#if defined(ENABLE_IS_PYTHON_WRAPPER)
-
-void cISLogger::SetPyDisplay(cInertialSenseDisplay display)
-{
-	m_pyDisplay = display;
-}
-
-namespace py = pybind11;
-
-py::dict cISLogger::PyReadData(unsigned int device)
-{
-	py::dict dOut;
-	if (device >= m_devices.size())
-	{
-		return dOut;
-	}
-
-	p_data_t* data = NULL;
-	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
-	{
-		perror("Corrupt data read from log file");
-		m_logStats->LogError(&data->hdr);
-		data = NULL;
-	}
-	if (data != NULL)
-	{
-		double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
-		m_logStats->LogDataAndTimestamp(data->hdr.id, timestamp);
-		m_pyDisplay.ProcessData(data, true, 1.0);
-		dOut = py_dataHandling(data);
-	} 
-	
-	return dOut;
-}
-
-test_initializer logger([](py::module &m) {
-	py::module m2 = m.def_submodule("logger");
-
-	py::class_<cISLogger> log(m2, "cISLogger");
-	log.def(py::init<>());
-	log.def("LoadFromDirectory", &cISLogger::LoadFromDirectory);
-	log.def("ReadData", &cISLogger::ReadData);
-	log.def("PyReadData", &cISLogger::PyReadData);
-
-	py::enum_<cISLogger::eLogType>(log, "eLogType")
-		.value("LOGTYPE_DAT", cISLogger::eLogType::LOGTYPE_DAT)
-		.value("LOGTYPE_SDAT",cISLogger::eLogType::LOGTYPE_SDAT)
-		.value("LOGTYPE_CSV", cISLogger::eLogType::LOGTYPE_CSV)
-		.value("LOGTYPE_KML", cISLogger::eLogType::LOGTYPE_KML)
-		.export_values();
-
-});
-
-#endif

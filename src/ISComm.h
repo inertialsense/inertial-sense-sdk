@@ -52,7 +52,7 @@ extern "C" {
 #define _DID_IMU_PREINTEGRATED_IMU	DID_PREINTEGRATED_IMU	/** (see preintegrated_imu_t) Dual IMU output: Conning and sculling integrated at IMU update rate. */	
 
 /** GPS */
-#define _DID_GPS_NAV				DID_GPS_NAV				/** (see gps_nav_t) GPS output */
+#define _DID_GPS1_POS				DID_GPS1_POS			/** (see gps_pos_t) GPS output */
 
 /** Magnetometer, Barometer, and other Sensor */
 #define _DID_MAG_CAL				DID_MAG_CAL				/** (see mag_cal_t) Magnetometer calibration */

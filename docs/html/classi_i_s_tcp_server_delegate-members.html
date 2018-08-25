@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.2</span>
+   &#160;<span id="projectnumber">Release 1.6.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -72,8 +72,11 @@ $(function() {
 <p>This is the complete list of members for <a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a>, including all inherited members.</p>
 <table class="directory">
   <tr class="even"><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#adfa76a87f7ff63704297cf207729973a">cISTcpServer</a> class</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">friend</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#a58bf6d6de6148461f5461bf4a7f073d0">OnClientDataReceived</a>(socket_t socket, uint8_t *data, int dataLength)</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#a88af04ec51346fb1fbd91452118ea447">OnClientDisconnected</a>(socket_t socket)</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#a3fa2dd49f1908319ac510dae47d04069">OnClientConnected</a>(cISTcpServer *server, socket_t socket)</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#a067eae89a124bff9d8fa9217914f7b6e">OnClientConnectFailed</a>(cISTcpServer *server)</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#aceb1a642bda5b29807e2b1fe41285730">OnClientConnecting</a>(cISTcpServer *server)</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#a55960f6278f8524f17f9b2925fe978e2">OnClientDataReceived</a>(cISTcpServer *server, socket_t socket, uint8_t *data, int dataLength)</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html#a6afee213d15d230882e8057ffb15d93b">OnClientDisconnected</a>(cISTcpServer *server, socket_t socket)</td><td class="entry"><a class="el" href="classi_i_s_tcp_server_delegate.html">iISTcpServerDelegate</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
 </table></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
