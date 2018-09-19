@@ -51,7 +51,7 @@ public:
 	* @param blocking whether the serial port blocks until data is read or written
 	* @return true if success, false if failure
 	*/
-	bool Open(const std::string& portName, int baudRate = BAUDRATE_3000000, int timeout = 0, bool blocking = false);
+	bool Open(const std::string& portName, int baudRate = BAUDRATE_921600, int timeout = 0, bool blocking = false);
 
 	/**
 	* Checks if the serial port is open

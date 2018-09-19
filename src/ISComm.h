@@ -174,7 +174,7 @@ int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t off
 int is_comm_stop_broadcasts(is_comm_instance_t* instance);
 
 /** uINS default baud rate */
-#define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_3000000
+#define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600
 
 /** The maximum allowable dataset size */
 #define MAX_DATASET_SIZE        1024
@@ -261,38 +261,18 @@ n-3			Checksum high byte
 n-2			Checksum low byte
 n-1			Packet end byte
 */
-typedef enum
-{
-	/** Invalid packet id */
-	PID_INVALID = 0,
 
-	/** ACK */
-	PID_ACK,
-
-	/** NACK */
-	PID_NACK,
-
-	/** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
-	PID_GET_DATA,
-
-	/** Data received from PID_GET_DATA, no ACK is sent back */
-	PID_DATA,
-
-	/** Set data on the device, such as configuration options, sends an ACK back */
-	PID_SET_DATA,
-
-	/** Stop all data broadcasts on all ports. Responds with an ACK */
-	PID_STOP_ALL_BROADCASTS,
-
-	/** Stop a specific broadcast */
-	PID_STOP_DID_BROADCAST,
-
-	/** The number of packet identifiers, keep this at the end! */
-	PID_COUNT,
-
-	/** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
-	PID_MAX_COUNT = 32
-} pkt_info_byte_t;
+	
+#define PID_INVALID                 0   /** Invalid packet id */
+#define PID_ACK                     1   /** ACK */
+#define PID_NACK                    2   /** NACK */
+#define PID_GET_DATA                3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
+#define PID_DATA                    4   /** Data received from PID_GET_DATA, no ACK is sent back */
+#define PID_SET_DATA                5   /** Set data on the device, such as configuration options, sends an ACK back */
+#define PID_STOP_ALL_BROADCASTS     6   /** Stop all data broadcasts on all ports. Responds with an ACK */
+#define PID_STOP_DID_BROADCAST      7   /** Stop a specific broadcast */
+#define PID_COUNT                   8   /** The number of packet identifiers, keep this at the end! */
+#define PID_MAX_COUNT               32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
 typedef struct

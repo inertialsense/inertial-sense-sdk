@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 1)
 	{
-		printf("Please pass the data log directory path (i.e. \"C:\Users\[username]\Documents\Inertial Sense\Logs\20180716_172323)\"\r\n");
+		printf("Please pass the data log directory path (i.e. \"C:\\Users\\[username]\\Documents\\Inertial Sense\\Logs\\20180716_172323)\"\r\n");
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
 		return -1;
 	}

@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.4</span>
+   &#160;<span id="projectnumber">Release 1.7.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -157,7 +157,7 @@ Macros</h2></td></tr>
 <tr class="separator:a2998c960a1635145b4506f2b9c2e4616"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a895b0233f2bf9989d8e3f9c7f46b66ff"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a895b0233f2bf9989d8e3f9c7f46b66ff">EXTERNAL_DATA_ID_ASCII</a>&#160;&#160;&#160;<a class="el" href="_i_s_comm_8h.html#a739834da5d5205125ac7115741c30c63ae6fe9b97817df1aa809783bfc33f5d39">PSC_ASCII_START_BYTE</a></td></tr>
 <tr class="separator:a895b0233f2bf9989d8e3f9c7f46b66ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8f9086b9c33b305c89fc841a8f10a4a7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a8f9086b9c33b305c89fc841a8f10a4a7">IS_COM_BAUDRATE_DEFAULT</a>&#160;&#160;&#160;<a class="el" href="_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4aa4ec4d881976048c0cbaa7757d2d2b96c">IS_BAUDRATE_3000000</a></td></tr>
+<tr class="memitem:a8f9086b9c33b305c89fc841a8f10a4a7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a8f9086b9c33b305c89fc841a8f10a4a7">IS_COM_BAUDRATE_DEFAULT</a>&#160;&#160;&#160;<a class="el" href="_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4aa2b184eca8c73f16e5e1a34a6cbed0c50">IS_BAUDRATE_921600</a></td></tr>
 <tr class="separator:a8f9086b9c33b305c89fc841a8f10a4a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8364bcbf2735d47d2f45504a0e3076ae"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a8364bcbf2735d47d2f45504a0e3076ae">MAX_DATASET_SIZE</a>&#160;&#160;&#160;1024</td></tr>
 <tr class="separator:a8364bcbf2735d47d2f45504a0e3076ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -183,6 +183,26 @@ Macros</h2></td></tr>
 <tr class="separator:a77fd73f7c23687368fac3da6984d04cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f5c35a4a8d7bc7011d154f678a44107"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a4f5c35a4a8d7bc7011d154f678a44107">RTCM3_HEADER_SIZE</a>&#160;&#160;&#160;3</td></tr>
 <tr class="separator:a4f5c35a4a8d7bc7011d154f678a44107"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51fcc1ce2e7a0c1f057fc1e2d54b5e2d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a51fcc1ce2e7a0c1f057fc1e2d54b5e2d">PID_INVALID</a>&#160;&#160;&#160;0   /** Invalid packet id */</td></tr>
+<tr class="separator:a51fcc1ce2e7a0c1f057fc1e2d54b5e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6a3b4bc4d7eefb123d1e6e954b7978b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#aa6a3b4bc4d7eefb123d1e6e954b7978b">PID_ACK</a>&#160;&#160;&#160;1   /** ACK */</td></tr>
+<tr class="separator:aa6a3b4bc4d7eefb123d1e6e954b7978b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1df21b0e8f59b5c8c30a48166a01482"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ab1df21b0e8f59b5c8c30a48166a01482">PID_NACK</a>&#160;&#160;&#160;2   /** NACK */</td></tr>
+<tr class="separator:ab1df21b0e8f59b5c8c30a48166a01482"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27634099d972a0c65e8a3de17ea9d094"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>&#160;&#160;&#160;3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */</td></tr>
+<tr class="separator:a27634099d972a0c65e8a3de17ea9d094"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeafbbae0d562134d2aa48c43dfa849b8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#aeafbbae0d562134d2aa48c43dfa849b8">PID_DATA</a>&#160;&#160;&#160;4   /** Data received from <a class="el" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, no ACK is sent back */</td></tr>
+<tr class="separator:aeafbbae0d562134d2aa48c43dfa849b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8310776b70fca7c3b56b2734a68ad9f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ad8310776b70fca7c3b56b2734a68ad9f">PID_SET_DATA</a>&#160;&#160;&#160;5   /** Set data on the device, such as configuration options, sends an ACK back */</td></tr>
+<tr class="separator:ad8310776b70fca7c3b56b2734a68ad9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd5d1bb8e652e511e516df94ffa1d60f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#acd5d1bb8e652e511e516df94ffa1d60f">PID_STOP_ALL_BROADCASTS</a>&#160;&#160;&#160;6   /** Stop all data broadcasts on all ports. Responds with an ACK */</td></tr>
+<tr class="separator:acd5d1bb8e652e511e516df94ffa1d60f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37da6e9c18d89f76c39fa9a27394275a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a37da6e9c18d89f76c39fa9a27394275a">PID_STOP_DID_BROADCAST</a>&#160;&#160;&#160;7   /** Stop a specific broadcast */</td></tr>
+<tr class="separator:a37da6e9c18d89f76c39fa9a27394275a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa38b0dd3d2020209980367367daca38e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#aa38b0dd3d2020209980367367daca38e">PID_COUNT</a>&#160;&#160;&#160;8   /** The number of packet identifiers, keep this at the end! */</td></tr>
+<tr class="separator:aa38b0dd3d2020209980367367daca38e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36387dde5bf103230b02b507dc0a6dce"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a36387dde5bf103230b02b507dc0a6dce">PID_MAX_COUNT</a>&#160;&#160;&#160;32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */</td></tr>
+<tr class="separator:a36387dde5bf103230b02b507dc0a6dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ddccee79d0dc498917329a1f99a268a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a1ddccee79d0dc498917329a1f99a268a">ASCII_MESSAGEID_TO_UINT</a>(c4)&#160;&#160;&#160;((uint32_t)c4[0] &lt;&lt; 24 | ((uint32_t)c4[1] &lt;&lt; 16) | ((uint32_t)c4[2] &lt;&lt; 8) | ((uint32_t)c4[3]))</td></tr>
 <tr class="separator:a1ddccee79d0dc498917329a1f99a268a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -210,22 +230,6 @@ Enumerations</h2></td></tr>
 <br />
  }</td></tr>
 <tr class="separator:aba14184fef722499ec8d81d880851c4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ebbc929b778a8313e2ee04a9ee0896b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a> { <br />
-&#160;&#160;<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896bae9c7f0aef3c3709042ccb01a179698e5">PID_INVALID</a> = 0, 
-<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896babce2bedf5e1000840a5cfea3a9ff93a3">PID_ACK</a>, 
-<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896baa3caefda5922daeb16bba8b16441ccb3">PID_NACK</a>, 
-<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896ba0405424de8087ab4cc39591c0e4a7549">PID_GET_DATA</a>, 
-<br />
-&#160;&#160;<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896bab5bd2582efa3f7b1d56699356f6e9b80">PID_DATA</a>, 
-<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896ba7b99f49f81f4c174069ba12d2b17b3f6">PID_SET_DATA</a>, 
-<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896ba315e6d6173ab1cc31c28acad9c70c7e3">PID_STOP_ALL_BROADCASTS</a>, 
-<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896ba2a9aa16ba93cb13fcf09a27a6758428f">PID_STOP_DID_BROADCAST</a>, 
-<br />
-&#160;&#160;<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896ba8ba8528c664f97f99a06896cede85d6e">PID_COUNT</a>, 
-<a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896ba18084eea6c1bb489bd8c4d8331007676">PID_MAX_COUNT</a> = 32
-<br />
- }</td></tr>
-<tr class="separator:a7ebbc929b778a8313e2ee04a9ee0896b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8a53e32ddcd42ac1df8e6bdf6a36eef"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ae8a53e32ddcd42ac1df8e6bdf6a36eef">asciiDataType</a> { <a class="el" href="_i_s_comm_8h.html#ae8a53e32ddcd42ac1df8e6bdf6a36eefa32398ad4aa75d3c969114a9963804957">asciiTypeInt</a> = 0, 
 <a class="el" href="_i_s_comm_8h.html#ae8a53e32ddcd42ac1df8e6bdf6a36eefa12285fb40a75c9bb8ad72ebfe86a89ac">asciiTypeUInt</a> = 1, 
 <a class="el" href="_i_s_comm_8h.html#ae8a53e32ddcd42ac1df8e6bdf6a36eefa291a1df9c29abd881756c46ba4beec5d">asciiTypeFloat</a> = 2, 
@@ -575,7 +579,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>create a uint from an ASCII message id that is the same, regardless of CPU architecture </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00347">347</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00327">327</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -651,7 +655,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define IS_COM_BAUDRATE_DEFAULT&#160;&#160;&#160;<a class="el" href="_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4aa4ec4d881976048c0cbaa7757d2d2b96c">IS_BAUDRATE_3000000</a></td>
+          <td class="memname">#define IS_COM_BAUDRATE_DEFAULT&#160;&#160;&#160;<a class="el" href="_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4aa2b184eca8c73f16e5e1a34a6cbed0c50">IS_BAUDRATE_921600</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -743,6 +747,166 @@ Variables</h2></td></tr>
 <p>The maximum encoded overhead size in sending a packet (7 bytes for header, 7 bytes for footer). The packet start and end bytes are never encoded. </p>
 
 <p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00191">191</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="aa6a3b4bc4d7eefb123d1e6e954b7978b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6a3b4bc4d7eefb123d1e6e954b7978b">&#9670;&nbsp;</a></span>PID_ACK</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_ACK&#160;&#160;&#160;1   /** ACK */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00267">267</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="aa38b0dd3d2020209980367367daca38e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa38b0dd3d2020209980367367daca38e">&#9670;&nbsp;</a></span>PID_COUNT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_COUNT&#160;&#160;&#160;8   /** The number of packet identifiers, keep this at the end! */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00274">274</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="aeafbbae0d562134d2aa48c43dfa849b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeafbbae0d562134d2aa48c43dfa849b8">&#9670;&nbsp;</a></span>PID_DATA</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_DATA&#160;&#160;&#160;4   /** Data received from <a class="el" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, no ACK is sent back */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00270">270</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="a27634099d972a0c65e8a3de17ea9d094"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27634099d972a0c65e8a3de17ea9d094">&#9670;&nbsp;</a></span>PID_GET_DATA</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_GET_DATA&#160;&#160;&#160;3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00269">269</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="a51fcc1ce2e7a0c1f057fc1e2d54b5e2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51fcc1ce2e7a0c1f057fc1e2d54b5e2d">&#9670;&nbsp;</a></span>PID_INVALID</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_INVALID&#160;&#160;&#160;0   /** Invalid packet id */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00266">266</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="a36387dde5bf103230b02b507dc0a6dce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36387dde5bf103230b02b507dc0a6dce">&#9670;&nbsp;</a></span>PID_MAX_COUNT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_MAX_COUNT&#160;&#160;&#160;32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00275">275</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="ab1df21b0e8f59b5c8c30a48166a01482"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1df21b0e8f59b5c8c30a48166a01482">&#9670;&nbsp;</a></span>PID_NACK</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_NACK&#160;&#160;&#160;2   /** NACK */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00268">268</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="ad8310776b70fca7c3b56b2734a68ad9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8310776b70fca7c3b56b2734a68ad9f">&#9670;&nbsp;</a></span>PID_SET_DATA</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_SET_DATA&#160;&#160;&#160;5   /** Set data on the device, such as configuration options, sends an ACK back */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00271">271</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="acd5d1bb8e652e511e516df94ffa1d60f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd5d1bb8e652e511e516df94ffa1d60f">&#9670;&nbsp;</a></span>PID_STOP_ALL_BROADCASTS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_STOP_ALL_BROADCASTS&#160;&#160;&#160;6   /** Stop all data broadcasts on all ports. Responds with an ACK */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00272">272</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="a37da6e9c18d89f76c39fa9a27394275a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37da6e9c18d89f76c39fa9a27394275a">&#9670;&nbsp;</a></span>PID_STOP_DID_BROADCAST</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define PID_STOP_DID_BROADCAST&#160;&#160;&#160;7   /** Stop a specific broadcast */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00273">273</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -898,7 +1062,7 @@ Variables</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00331">331</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00311">311</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -950,45 +1114,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="ab0476659eb782bc338d77d1e1142abc3a598240ef76dd5a9f6688203693c9a123"></a>CM_PKT_FLAGS_CHECKSUM_24_BIT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00349">349</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
-
-</div>
-</div>
-<a id="a7ebbc929b778a8313e2ee04a9ee0896b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7ebbc929b778a8313e2ee04a9ee0896b">&#9670;&nbsp;</a></span>pkt_info_byte_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896bae9c7f0aef3c3709042ccb01a179698e5"></a>PID_INVALID&#160;</td><td class="fielddoc"><p>Invalid packet id </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896babce2bedf5e1000840a5cfea3a9ff93a3"></a>PID_ACK&#160;</td><td class="fielddoc"><p>ACK </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896baa3caefda5922daeb16bba8b16441ccb3"></a>PID_NACK&#160;</td><td class="fielddoc"><p>NACK </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896ba0405424de8087ab4cc39591c0e4a7549"></a>PID_GET_DATA&#160;</td><td class="fielddoc"><p>Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896bab5bd2582efa3f7b1d56699356f6e9b80"></a>PID_DATA&#160;</td><td class="fielddoc"><p>Data received from PID_GET_DATA, no ACK is sent back </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896ba7b99f49f81f4c174069ba12d2b17b3f6"></a>PID_SET_DATA&#160;</td><td class="fielddoc"><p>Set data on the device, such as configuration options, sends an ACK back </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896ba315e6d6173ab1cc31c28acad9c70c7e3"></a>PID_STOP_ALL_BROADCASTS&#160;</td><td class="fielddoc"><p>Stop all data broadcasts on all ports. Responds with an ACK </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896ba2a9aa16ba93cb13fcf09a27a6758428f"></a>PID_STOP_DID_BROADCAST&#160;</td><td class="fielddoc"><p>Stop a specific broadcast </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896ba8ba8528c664f97f99a06896cede85d6e"></a>PID_COUNT&#160;</td><td class="fielddoc"><p>The number of packet identifiers, keep this at the end! </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a7ebbc929b778a8313e2ee04a9ee0896ba18084eea6c1bb489bd8c4d8331007676"></a>PID_MAX_COUNT&#160;</td><td class="fielddoc"><p>The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00264">264</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00329">329</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1024,7 +1150,7 @@ Variables</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00375">375</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00355">355</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>

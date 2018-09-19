@@ -150,6 +150,8 @@ uint64_t timerUsEnd(uint64_t start);
 uint64_t timerRawStart();
 uint64_t timerRawEnd(uint64_t start);
 
+uint64_t getTickCount(void);
+
 int bootloadUploadProgress(const void* port, float percent);
 int bootloadVerifyProgress(const void* port, float percent);
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec);

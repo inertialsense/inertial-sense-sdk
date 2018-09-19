@@ -215,7 +215,7 @@ int asciiMessageCompare(const void* elem1, const void* elem2);
 
 //  Packet Retry
 void stepPacketRetry(com_manager_t* cmInstance);
-packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, pkt_info_byte_t pid, unsigned char data[], unsigned int dataSize);
+packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pid, unsigned char data[], unsigned int dataSize);
 void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt);
 void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt);
 
@@ -819,12 +819,12 @@ int disableDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dat
 	return sendComManagerInstance(cmInstance, pHandle, PID_STOP_DID_BROADCAST, 0, &data, 0);
 }
 
-int sendComManager(int pHandle, pkt_info_byte_t pktInfo, bufPtr_t *bodyHdr, bufPtr_t *txData, uint8_t pFlags)
+int sendComManager(int pHandle, uint8_t pktInfo, bufPtr_t *bodyHdr, bufPtr_t *txData, uint8_t pFlags)
 {
 	return sendComManagerInstance(&g_cm, pHandle, pktInfo, bodyHdr, txData, pFlags);
 }
 
-int sendComManagerInstance(CMHANDLE cmInstance, int pHandle, pkt_info_byte_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags)
+int sendComManagerInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags)
 {
 	pkt_info_t pkt;
 	memset(&pkt, 0, sizeof(pkt_info_t));
@@ -846,12 +846,12 @@ int sendComManagerInstance(CMHANDLE cmInstance, int pHandle, pkt_info_byte_t pkt
 	return sendDataPacket(cmInstance, pHandle, &pkt);
 }
 
-int sendEnsuredComManager(int pHandle, pkt_info_byte_t pktInfo, unsigned char* data, unsigned int dataSize)
+int sendEnsuredComManager(int pHandle, uint8_t pktInfo, unsigned char* data, unsigned int dataSize)
 {
 	return sendEnsuredComManagerInstance(&g_cm, pHandle, pktInfo, data, dataSize);
 }
 
-int sendEnsuredComManagerInstance(CMHANDLE cmInstance, int pHandle, pkt_info_byte_t pktInfo, unsigned char *data, unsigned int dataSize)
+int sendEnsuredComManagerInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)
 {
 	packet_t *pkt;
 
@@ -1028,7 +1028,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 	p_data_hdr_t		*dataHdr;
 	uint8_t				*dataBuf;
 	registered_data_t	*regd;
-	pkt_info_byte_t		pid = (pkt_info_byte_t)(pkt->hdr.pid);
+	uint8_t		pid = (uint8_t)(pkt->hdr.pid);
 
 	cmInstance->status[pHandle].flags |= CM_PKT_FLAGS_RX_VALID_DATA; // communication received
 	cmInstance->status[pHandle].readCounter = 0;
@@ -1547,7 +1547,7 @@ void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned cha
 	data.ptr = (unsigned char*)&ack;
 	data.size = ackSize;
 
-	sendComManagerInstance(cmInstance, pHandle, (pkt_info_byte_t)pid_ack, 0, &data, 0);
+	sendComManagerInstance(cmInstance, pHandle, (uint8_t)pid_ack, 0, &data, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1765,7 +1765,7 @@ void stepPacketRetry(com_manager_t* cmInstance)
 *
 *	@return Pointer to retry packet.  The header info must be populated.
 */
-packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, pkt_info_byte_t pid, unsigned char data[], unsigned int dataSize)
+packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pid, unsigned char data[], unsigned int dataSize)
 {
 	int32_t i;
 	ensured_pkt_t *ePkt = 0;
@@ -1954,10 +1954,10 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 	int32_t i;
 	ensured_pkt_t *ePkt;
 	p_ack_t *ack;
-	pkt_info_byte_t ackInfo;
+	uint8_t ackInfo;
 
 	ack = (p_ack_t*)(pkt->body.ptr);
-	ackInfo = (pkt_info_byte_t)(ack->hdr.pktInfo);
+	ackInfo = (uint8_t)(ack->hdr.pktInfo);
 
 	// Search for retries that match packet received.  If found, removed it from the retry list.
 	for (i = 0; i < cmInstance->maxEnsuredPackets; i++)

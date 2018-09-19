@@ -59,7 +59,7 @@ public:
 	virtual ~cISLogger();
 
 	// Setup logger to read from file.
-	bool LoadFromDirectory(const string& directory, eLogType logType = LOGTYPE_DAT);
+        bool LoadFromDirectory(const string& directory, eLogType logType = LOGTYPE_DAT, vector<string> serials = {});
 
 	// Setup logger for writing to file.
 	bool InitSave(eLogType logType = LOGTYPE_DAT, const string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);

@@ -37,31 +37,32 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static bool output_server_bytes(InertialSense* i, const char* prefix = "", const char* suffix = "")
 {
-	static int serverByteCount = 0;
 	static float serverKBps = 0;
-	static int updateCount = 0;
-	static int serverByteRateTimeMsLast = 0;
-	static int serverByteCountLast = 0;
+	static uint64_t serverByteCount = 0;
+	static uint64_t updateCount = 0;
+	static uint64_t serverByteRateTimeMsLast = 0;
+	static uint64_t serverByteCountLast = 0;
 
 	if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_QUIET)
 	{
-		if (serverByteCount != (int)i->GetClientServerByteCount())
+		uint64_t newServerByteCount = i->GetClientServerByteCount();
+		if (serverByteCount != newServerByteCount)
 		{
-			serverByteCount = (int)i->GetClientServerByteCount();
+			serverByteCount = newServerByteCount;
 
 			// Data rate of server bytes
-			int timeMs = current_weekMs();
-			int dtMs = timeMs - serverByteRateTimeMsLast;
+			uint64_t timeMs = getTickCount();
+			uint64_t dtMs = timeMs - serverByteRateTimeMsLast;
 			if (dtMs >= 1000)
 			{
-				int serverBytes = serverByteCount - serverByteCountLast;
-				serverKBps = (serverBytes) / (float)dtMs;
+				uint64_t serverBytesDelta = serverByteCount - serverByteCountLast;
+				serverKBps = ((float)serverBytesDelta / (float)dtMs);
 
 				// Update history
 				serverByteCountLast = serverByteCount;
 				serverByteRateTimeMsLast = timeMs;
 			}
-			printf("%sServer: %02d (%3.1f KB/s : %lld)     %s", prefix, (++updateCount) % 100, serverKBps, (long long)i->GetClientServerByteCount(), suffix);
+			printf("%sServer: %02" PRIu64 " (%3.1f KB/s : %lld)     %s", prefix, (++updateCount) % 100, serverKBps, (long long)i->GetClientServerByteCount(), suffix);
 			return true;
 		}
 	}
@@ -70,6 +71,11 @@ static bool output_server_bytes(InertialSense* i, const char* prefix = "", const
 
 static void output_client_bytes(InertialSense* i)
 {
+	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET)
+	{
+		return;
+	}
+
 	if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_SCROLL)
 	{
 		char suffix[256];
@@ -100,11 +106,11 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	g_inertialSenseDisplay.ProcessData(data);
 	output_client_bytes(i);
 
+#if 0
+
 	// uDatasets is a union of all datasets that we can receive.  See data_sets.h for a full list of all available datasets. 
 	uDatasets d = {};
 	copyDataPToStructP(&d, data, sizeof(uDatasets));
-
-#if 0
     
 	// Example of how to access dataset fields.
 	switch (data->hdr.id)

@@ -518,7 +518,7 @@ string cISLogger::GetFileName(const string& path)
 	return path;
 }
 
-bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
+bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vector<string> serials)
 {
 	// Delete and clear prior devices
 	Cleanup();
@@ -574,7 +574,9 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType)
 				}
 
 				// check for unique serial numbers
-				if (serialNumbers.find(serialNumber) == serialNumbers.end())
+				if ((serialNumbers.find(serialNumber) == serialNumbers.end()) &&
+					(find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end()
+					 || find(serials.begin(), serials.end(), "ALL") != serials.end())) // and that it is a serial number we want to use
 				{
 					serialNumbers.insert(serialNumber);
 

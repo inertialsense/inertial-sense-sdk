@@ -243,8 +243,8 @@ data.size = sizeof(request);
 sendComManager(pHandle, PID_GET_DATA, 0, &data)
 @endcode
 */
-int sendComManager(int pHandle, pkt_info_byte_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags);
-int sendComManagerInstance(CMHANDLE cmInstance, int pHandle, pkt_info_byte_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags);
+int sendComManager(int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags);
+int sendComManagerInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags);
 
 /**
 Convenience function that wraps sendComManager for sending data structures.  Must be multiple of 4 bytes in size.
@@ -273,8 +273,8 @@ Same as sendComManager, except that the com manager may retry the send if an ACK
 @param txData optional, the actual body of the packet
 @return 0 if success, anything else if failure
 */
-int sendEnsuredComManager(int pHandle, pkt_info_byte_t pktInfo, unsigned char *data, unsigned int dataSize);
-int sendEnsuredComManagerInstance(CMHANDLE cmInstance, int pHandle, pkt_info_byte_t pktInfo, unsigned char *data, unsigned int dataSize);
+int sendEnsuredComManager(int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize);
+int sendEnsuredComManagerInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize);
 
 // INTERNAL FUNCTIONS...
 /**

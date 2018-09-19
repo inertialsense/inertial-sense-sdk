@@ -369,6 +369,26 @@ uint64_t timerRawEnd(uint64_t start)
 
 }
 
+uint64_t getTickCount(void)
+{
+
+#if PLATFORM_IS_WINDOWS
+
+	return GetTickCount64();
+
+#else
+
+	struct timespec now;
+	if (clock_gettime(CLOCK_MONOTONIC, &now))
+	{
+		return 0;
+	}
+	return (uint64_t)(now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0);
+
+#endif
+
+}
+
 int bootloadUploadProgress(const void* port, float percent)
 {
 	// Suppress compiler warnings

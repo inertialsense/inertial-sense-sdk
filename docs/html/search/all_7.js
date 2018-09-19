@@ -69,6 +69,7 @@ var searchData=
   ['getstatuscommanagerinstance',['getStatusComManagerInstance',['../com__manager_8c.html#a061fb2313d0270db73c130c39dd0e1d8',1,'getStatusComManagerInstance(CMHANDLE cmInstance, int pHandle):&#160;com_manager.c'],['../com__manager_8h.html#a061fb2313d0270db73c130c39dd0e1d8',1,'getStatusComManagerInstance(CMHANDLE cmInstance, int pHandle):&#160;com_manager.c']]],
   ['getstringoffsetslengths',['getStringOffsetsLengths',['../data__sets_8c.html#ab2d8b5b7edd3dafa82f37ac180c16a3e',1,'getStringOffsetsLengths(eDataIDs dataId, uint16_t *offsetsLength):&#160;data_sets.c'],['../data__sets_8h.html#ab2d8b5b7edd3dafa82f37ac180c16a3e',1,'getStringOffsetsLengths(eDataIDs dataId, uint16_t *offsetsLength):&#160;data_sets.c']]],
   ['gettext',['GetText',['../class_ti_xml_element.html#af0f814ecbd43d50d4cdbdf4354d3da39',1,'TiXmlElement']]],
+  ['gettickcount',['getTickCount',['../_i_s_utilities_8cpp.html#a7753cfb1634d2212c80ada357fc7215b',1,'getTickCount(void):&#160;ISUtilities.cpp'],['../_i_s_utilities_8h.html#a7753cfb1634d2212c80ada357fc7215b',1,'getTickCount(void):&#160;ISUtilities.cpp']]],
   ['gettimeoutflushloggerseconds',['GetTimeoutFlushLoggerSeconds',['../class_inertial_sense.html#aca5846c8272ad642aa09ca1dd3407afd',1,'InertialSense']]],
   ['gettimeoutflushseconds',['GetTimeoutFlushSeconds',['../classc_i_s_logger.html#a4142b4ea5df16c6a8ee28c8afaa54acf',1,'cISLogger']]],
   ['gettimestamp',['GetTimestamp',['../classc_i_s_data_mappings.html#a6fe58714d1a4c9557287f231683e5063',1,'cISDataMappings']]],

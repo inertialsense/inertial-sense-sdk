@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.6.4</span>
+   &#160;<span id="projectnumber">Release 1.7.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -146,18 +146,18 @@ Functions</h2></td></tr>
 <tr class="separator:afe217609a8971ede0aabb31df9b02c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab327f399d6a277ca8e0557d44372d66b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab327f399d6a277ca8e0557d44372d66b">disableDataComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId)</td></tr>
 <tr class="separator:ab327f399d6a277ca8e0557d44372d66b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a406c214c4840319f68ba5b4f632e4e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a8a406c214c4840319f68ba5b4f632e4e">sendComManager</a> (int pHandle, <a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a> pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
-<tr class="separator:a8a406c214c4840319f68ba5b4f632e4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a069efe273210174608481739294d48bf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a069efe273210174608481739294d48bf">sendComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, <a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a> pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
-<tr class="separator:a069efe273210174608481739294d48bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a751e0cd46bcb82fd82aac4e211ae8120"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a751e0cd46bcb82fd82aac4e211ae8120">sendComManager</a> (int pHandle, uint8_t pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
+<tr class="separator:a751e0cd46bcb82fd82aac4e211ae8120"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d3f8c0e14f09f7c8cb477057d37abf3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a8d3f8c0e14f09f7c8cb477057d37abf3">sendComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint8_t pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
+<tr class="separator:a8d3f8c0e14f09f7c8cb477057d37abf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83470a78a4240c222cb2250d52db3404"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a83470a78a4240c222cb2250d52db3404">sendDataComManager</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
 <tr class="separator:a83470a78a4240c222cb2250d52db3404"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3cfa14d2de9967bb6218378aeeab848"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ac3cfa14d2de9967bb6218378aeeab848">sendDataComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
 <tr class="separator:ac3cfa14d2de9967bb6218378aeeab848"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97d2400751b6849eaaad693950029399"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a97d2400751b6849eaaad693950029399">sendEnsuredComManager</a> (int pHandle, <a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a> pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
-<tr class="separator:a97d2400751b6849eaaad693950029399"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcfd953bcf3805b7a945bd3606816199"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#abcfd953bcf3805b7a945bd3606816199">sendEnsuredComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, <a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a> pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
-<tr class="separator:abcfd953bcf3805b7a945bd3606816199"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a187bde7484d4b6a67b71786d6cdfb789"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a187bde7484d4b6a67b71786d6cdfb789">sendEnsuredComManager</a> (int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
+<tr class="separator:a187bde7484d4b6a67b71786d6cdfb789"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb4a2c3ff0d4f657ddd1b11f71a1b8ff"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aeb4a2c3ff0d4f657ddd1b11f71a1b8ff">sendEnsuredComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
+<tr class="separator:aeb4a2c3ff0d4f657ddd1b11f71a1b8ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0de0acc04cae4c9bc17e97abc84426d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aa0de0acc04cae4c9bc17e97abc84426d">sendDataComManagerNoAck</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
 <tr class="separator:aa0de0acc04cae4c9bc17e97abc84426d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab986f944aaadac5a000e0a63885ec704"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab986f944aaadac5a000e0a63885ec704">sendDataComManagerNoAckInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
@@ -1433,8 +1433,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8a406c214c4840319f68ba5b4f632e4e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a406c214c4840319f68ba5b4f632e4e">&#9670;&nbsp;</a></span>sendComManager()</h2>
+<a id="a751e0cd46bcb82fd82aac4e211ae8120"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a751e0cd46bcb82fd82aac4e211ae8120">&#9670;&nbsp;</a></span>sendComManager()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1448,7 +1448,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a>&#160;</td>
+          <td class="paramtype">uint8_t&#160;</td>
           <td class="paramname"><em>pktInfo</em>, </td>
         </tr>
         <tr>
@@ -1487,13 +1487,13 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="structp__data__get__t.html">p_data_get_t</a> request;</div><div class="line"><a class="code" href="structbuf_ptr__t.html">bufPtr_t</a> data;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8">id</a> = <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">offset</a> = 0;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">size</a> = <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>);</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ae844be67615d36ebcbd704e75f13613e">bc_period_ms</a> = 50;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c">ptr</a> = (uint8_t*)&amp;request;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">size</a> = <span class="keyword">sizeof</span>(request);</div><div class="line"><a class="code" href="com__manager_8c.html#ad61ae68dc5819a7b57c3cbf35925b52b">sendComManager</a>(pHandle, <a class="code" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896ba0405424de8087ab4cc39591c0e4a7549">PID_GET_DATA</a>, 0, &amp;data)</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="structp__data__get__t.html">p_data_get_t</a> request;</div><div class="line"><a class="code" href="structbuf_ptr__t.html">bufPtr_t</a> data;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8">id</a> = <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">offset</a> = 0;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">size</a> = <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>);</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ae844be67615d36ebcbd704e75f13613e">bc_period_ms</a> = 50;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c">ptr</a> = (uint8_t*)&amp;request;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">size</a> = <span class="keyword">sizeof</span>(request);</div><div class="line"><a class="code" href="com__manager_8c.html#a34decf76073a8bb1bdb130e5ae0f7380">sendComManager</a>(pHandle, <a class="code" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, 0, &amp;data)</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00822">822</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a069efe273210174608481739294d48bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a069efe273210174608481739294d48bf">&#9670;&nbsp;</a></span>sendComManagerInstance()</h2>
+<a id="a8d3f8c0e14f09f7c8cb477057d37abf3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d3f8c0e14f09f7c8cb477057d37abf3">&#9670;&nbsp;</a></span>sendComManagerInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1513,7 +1513,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a>&#160;</td>
+          <td class="paramtype">uint8_t&#160;</td>
           <td class="paramname"><em>pktInfo</em>, </td>
         </tr>
         <tr>
@@ -1775,8 +1775,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a97d2400751b6849eaaad693950029399"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97d2400751b6849eaaad693950029399">&#9670;&nbsp;</a></span>sendEnsuredComManager()</h2>
+<a id="a187bde7484d4b6a67b71786d6cdfb789"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a187bde7484d4b6a67b71786d6cdfb789">&#9670;&nbsp;</a></span>sendEnsuredComManager()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1790,7 +1790,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a>&#160;</td>
+          <td class="paramtype">uint8_t&#160;</td>
           <td class="paramname"><em>pktInfo</em>, </td>
         </tr>
         <tr>
@@ -1828,8 +1828,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="abcfd953bcf3805b7a945bd3606816199"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abcfd953bcf3805b7a945bd3606816199">&#9670;&nbsp;</a></span>sendEnsuredComManagerInstance()</h2>
+<a id="aeb4a2c3ff0d4f657ddd1b11f71a1b8ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb4a2c3ff0d4f657ddd1b11f71a1b8ff">&#9670;&nbsp;</a></span>sendEnsuredComManagerInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1849,7 +1849,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="_i_s_comm_8h.html#a7ebbc929b778a8313e2ee04a9ee0896b">pkt_info_byte_t</a>&#160;</td>
+          <td class="paramtype">uint8_t&#160;</td>
           <td class="paramname"><em>pktInfo</em>, </td>
         </tr>
         <tr>

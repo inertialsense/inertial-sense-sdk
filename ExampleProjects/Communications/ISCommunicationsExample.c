@@ -99,7 +99,7 @@ int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_inst
 
 #if 1
 	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
-	messageSize = is_comm_get_data(comm, _DID_GPS_NAV, 0, 0, 200);
+	messageSize = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 200);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
 				handleInsMessage((ins_1_t*)buffer);
 				break;
 
-			case _DID_GPS_NAV:
+			case _DID_GPS1_POS:
 				handleGpsMessage((gps_pos_t*)buffer);
 				break;
 
