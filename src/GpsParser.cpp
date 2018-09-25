@@ -245,6 +245,7 @@ public:
 				ptr->rcv = GetReceiverIndex();
 			}
 			GetDelegate()->OnObservationReceived(this, &m_rtcm.obs);
+			m_rtcm.obs.n = 0; // reset state
 			break;
 
 		case DATA_TYPE_EPHEMERIS:

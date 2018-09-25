@@ -74,8 +74,8 @@ int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_
 	// Enable broadcasts using RMC: DID_INS_1 @ 20Hz and DID_GPS_NAV @ 5Hz
 	rmc_t rmc;
 	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS1_POS;
+	rmc.options = 0;
 	rmc.insPeriodMs = 50;	// INS @ 20Hz
-	rmc.options = RMC_OPTIONS_SET_STARTUP_STREAM;		// Current port.  Preconfigure streaming (remember) for startup.
 
 	int messageSize = is_comm_set_data(comm, _DID_RMC, 0, sizeof(rmc_t), &rmc);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
+	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_921600, 1))
 	{
 		printf("Failed to open serial port on com port %s\r\n", argv[1]);
 		return -2;

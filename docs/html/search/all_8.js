@@ -67,6 +67,6 @@ var searchData=
   ['home',['Home',['../classc_inertial_sense_display.html#adbf81871dd6ff661a0082b555d7085fe',1,'cInertialSenseDisplay']]],
   ['host',['host',['../structcmd__options__t.html#a8cc7a7636e635368dbee4d18f48a2f4a',1,'cmd_options_t']]],
   ['httpget',['HttpGet',['../classc_i_s_tcp_client.html#a3c38fbeb03e210ca70cce05840d20377',1,'cISTcpClient']]],
-  ['humidity',['humidity',['../struct_p_a_c_k_e_d.html#abaaa5b2f951315310411b2815c97655e',1,'PACKED']]],
+  ['humidity',['humidity',['../struct_p_a_c_k_e_d.html#abaaa5b2f951315310411b2815c97655e',1,'PACKED::humidity()'],['../struct_p_a_c_k_e_d.html#ab2c5e7547bbc9ab574d90c241a5abceb',1,'PACKED::humidity()']]],
   ['hwversion',['hwVersion',['../struct_p_a_c_k_e_d.html#a994a7395abb602d4965d90c3a307e697',1,'PACKED']]]
 ];

@@ -73,6 +73,7 @@ typedef struct
 	bool streamSysSensors;
 	bool streamDThetaVel;
 	bool streamRTOS;
+	bool streamSensorsADC;
 
 	bool enableLogging;
 	string logType; // -lt=csv

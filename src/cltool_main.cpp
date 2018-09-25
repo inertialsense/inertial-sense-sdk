@@ -223,6 +223,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 		uint32_t enRTOSStats = 1;
 		inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&enRTOSStats, sizeof(enRTOSStats), offsetof(config_t, enRTOSStats));
 	}
+	if (g_commandLineOptions.streamSensorsADC)
+	{
+		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, periodMs);
+	}
 	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
 	{
 		inertialSenseInterface.SetTimeoutFlushLoggerSeconds(g_commandLineOptions.timeoutFlushLoggerSeconds);

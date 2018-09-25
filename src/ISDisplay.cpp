@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <math.h>
 
 #include "ISConstants.h"
@@ -515,6 +516,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);    break;
 	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);  break;
 	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);          break;
+	case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);  break;
 	default:
 #if 0	// List all DIDs 
 		char buf[128];
@@ -1310,6 +1312,44 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 
 	return buf;
 }
+
+string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {
+    (void) hdr; // hdr is not used
+
+	stringstream ss;
+	ss << "DID_SENSORS_ADC:";
+	ss << fixed;
+    ss << " time " << setprecision(3) << sensorsADC.time << ", ";
+    ss << " bar " << setprecision(2) << sensorsADC.bar << ", ";
+    ss << " barTemp " << setprecision(2) << sensorsADC.barTemp << ", ";
+    ss << " humidity " << setprecision(2) << sensorsADC.humidity << ", ";
+
+    ss << " ana[" << setprecision(2);
+    for (size_t i = 0; i < NUM_ANA_CHANNELS; ++i)
+    {
+        if (i != 0) { ss << ", "; }
+        ss << sensorsADC.ana[i];
+    }
+    ss << "]";
+    
+    if (m_displayMode != DMODE_SCROLL)
+    {    // Spacious format
+        ss << "\n";
+
+        for (size_t i = 0; i < NUM_MPU_DEVICES; ++i)
+        {
+            auto &mpu = sensorsADC.mpu[i];
+            ss << "\tmpu[" << i << "]: " << setprecision(2);
+            ss << " pqr[" << mpu.pqr[0] << ", " << mpu.pqr[1] << ", " << mpu.pqr[2] << "],";
+            ss << " acc[" << mpu.acc[0] << ", " << mpu.acc[1] << ", " << mpu.acc[2] << "],";
+            ss << " mag[" << mpu.mag[0] << ", " << mpu.mag[1] << ", " << mpu.mag[2] << "],";
+            ss << " temp " << setprecision(3) << mpu.temp << "\n";
+        }
+    }
+
+	return ss.str();
+}
+
 
 ostream& boldOn(ostream& os)
 {

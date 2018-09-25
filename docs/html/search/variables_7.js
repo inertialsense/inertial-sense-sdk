@@ -14,6 +14,6 @@ var searchData=
   ['hgt',['hgt',['../structsta__t.html#a59a606679d669c19288a7a365e39360c',1,'sta_t']]],
   ['hmsl',['hMSL',['../struct_p_a_c_k_e_d.html#a7e4949b26766385e625964f61b445309',1,'PACKED']]],
   ['host',['host',['../structcmd__options__t.html#a8cc7a7636e635368dbee4d18f48a2f4a',1,'cmd_options_t']]],
-  ['humidity',['humidity',['../struct_p_a_c_k_e_d.html#abaaa5b2f951315310411b2815c97655e',1,'PACKED']]],
+  ['humidity',['humidity',['../struct_p_a_c_k_e_d.html#abaaa5b2f951315310411b2815c97655e',1,'PACKED::humidity()'],['../struct_p_a_c_k_e_d.html#ab2c5e7547bbc9ab574d90c241a5abceb',1,'PACKED::humidity()']]],
   ['hwversion',['hwVersion',['../struct_p_a_c_k_e_d.html#a994a7395abb602d4965d90c3a307e697',1,'PACKED']]]
 ];

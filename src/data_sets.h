@@ -143,6 +143,8 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE 2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
+#define NUM_MPU_DEVICES     2
+
 /** INS status flags */
 enum eInsStatusFlags
 {
@@ -217,8 +219,8 @@ enum eInsStatusFlags
 
 	/** GPS base mask */
     INS_STATUS_RTK_BASE_MASK					= (int)0x38300000,
-	/** GPS base NO observations or ephemeris received (i.e. RTK differential corrections) */
-    INS_STATUS_RTK_BASE_ERR_NO_OBSERV_EPHEM		= (int)0x08000000,
+	/** GPS base NO observations received (i.e. RTK differential corrections) */
+    INS_STATUS_RTK_BASE_ERR_NO_OBSERV			= (int)0x08000000,
     /** GPS base NO position received */
     INS_STATUS_RTK_BASE_ERR_NO_POSITION			= (int)0x10000000,
     /** GPS base position is moving */
@@ -959,6 +961,26 @@ typedef struct PACKED
 
 } ascii_msgs_t;
 
+/* (DID_SENSORS_CAL1, DID_SENSORS_CAL2) */
+typedef struct PACKED
+{                                       // Units only apply for calibrated data
+	f_t						pqr[3];         // (rad/s)	Angular rate
+	f_t						acc[3];         // (m/s^2)	Linear acceleration
+	f_t						mag[3];         // (uT)		Magnetometers
+	f_t						temp;			// (°C)		Temperature of MPU
+} sensors_mpu_w_temp_t;
+
+#define NUM_ANA_CHANNELS	4
+typedef struct PACKED
+{                                       // LSB units for all except temperature, which is Celsius.
+	double					time;
+	sensors_mpu_w_temp_t	mpu[NUM_MPU_DEVICES];
+	f_t						bar;            // Barometric pressure
+	f_t						barTemp;		// Temperature of barometric pressure sensor
+	f_t                     humidity;	// Relative humidity as a percent (%rH).  Range is 0% - 100%
+	f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
+} sys_sensors_adc_t;
+
 #define RMC_NUM_PORTS	2	// COM0_PORT_NUM and COM1_PORT_NUM.  No USB yet.
 
 /** Realtime Message Controller (used in rmc_t). 
@@ -1035,7 +1057,7 @@ typedef struct PACKED
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
 {
-	/** Enable bits for the specified ports.  (see RMC_BITS_...) */
+	/** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
 	uint64_t                bits;
 
 	/** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
@@ -2449,6 +2471,7 @@ typedef union PACKED
 	sys_sensors_t			sysSensors;
 	rtos_info_t				rtosInfo;
 	gps_raw_t				gpsRaw;
+	sys_sensors_adc_t       sensorsAdc;
 } uDatasets;
 
 /** Union of INS output datasets */

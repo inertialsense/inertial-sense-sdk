@@ -257,6 +257,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamSysSensors = true;
 		}
+		else if (startsWith(a, "-msgSensorsADC"))
+		{
+			g_commandLineOptions.streamSensorsADC = true;
+		}
 		else if (startsWith(a, "-q"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
