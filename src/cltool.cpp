@@ -253,13 +253,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamRTOS = true;
 		}
-		else if (startsWith(a, "-msgSensors"))
-		{
-			g_commandLineOptions.streamSysSensors = true;
-		}
 		else if (startsWith(a, "-msgSensorsADC"))
 		{
 			g_commandLineOptions.streamSensorsADC = true;
+		}
+		else if (startsWith(a, "-msgSensors"))
+		{
+			g_commandLineOptions.streamSysSensors = true;
 		}
 		else if (startsWith(a, "-q"))
 		{

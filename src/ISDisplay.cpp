@@ -1319,33 +1319,46 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 	stringstream ss;
 	ss << "DID_SENSORS_ADC:";
 	ss << fixed;
-    ss << " time " << setprecision(3) << sensorsADC.time << ", ";
-    ss << " bar " << setprecision(2) << sensorsADC.bar << ", ";
-    ss << " barTemp " << setprecision(2) << sensorsADC.barTemp << ", ";
-    ss << " humidity " << setprecision(2) << sensorsADC.humidity << ", ";
+    ss << "time " << setprecision(3) << sensorsADC.time << ", ";
+    ss << "bar " << setprecision(2) << sensorsADC.bar << ", ";
+    ss << "barTemp " << setprecision(2) << sensorsADC.barTemp << ", ";
+    ss << "humidity " << setprecision(2) << sensorsADC.humidity << ", ";
 
-    ss << " ana[" << setprecision(2);
-    for (size_t i = 0; i < NUM_ANA_CHANNELS; ++i)
-    {
-        if (i != 0) { ss << ", "; }
-        ss << sensorsADC.ana[i];
-    }
-    ss << "]";
-    
-    if (m_displayMode != DMODE_SCROLL)
-    {    // Spacious format
-        ss << "\n";
+//     ss << " ana[" << setprecision(2);
+//     for (size_t i = 0; i < NUM_ANA_CHANNELS; ++i)
+//     {
+//         if (i != 0) { ss << ", "; }
+//         ss << sensorsADC.ana[i];
+//     }
+//     ss << "]";
 
-        for (size_t i = 0; i < NUM_MPU_DEVICES; ++i)
-        {
-            auto &mpu = sensorsADC.mpu[i];
-            ss << "\tmpu[" << i << "]: " << setprecision(2);
-            ss << " pqr[" << mpu.pqr[0] << ", " << mpu.pqr[1] << ", " << mpu.pqr[2] << "],";
-            ss << " acc[" << mpu.acc[0] << ", " << mpu.acc[1] << ", " << mpu.acc[2] << "],";
-            ss << " mag[" << mpu.mag[0] << ", " << mpu.mag[1] << ", " << mpu.mag[2] << "],";
-            ss << " temp " << setprecision(3) << mpu.temp << "\n";
-        }
-    }
+	if (m_displayMode != DMODE_SCROLL)
+	{    // Spacious format
+		ss << "\n";
+#define SADC_WIDTH	5
+		for (size_t i = 0; i < NUM_MPU_DEVICES; ++i)
+		{
+			auto &mpu = sensorsADC.mpu[i];
+			ss << "\tmpu[" << i << "]: " << setprecision(0);
+			ss << "pqr[" << setw(SADC_WIDTH) << mpu.pqr[0] << "," << setw(SADC_WIDTH) << mpu.pqr[1] << "," << setw(SADC_WIDTH) << mpu.pqr[2] << "], ";
+			ss << "acc[" << setw(SADC_WIDTH) << mpu.acc[0] << "," << setw(SADC_WIDTH) << mpu.acc[1] << "," << setw(SADC_WIDTH) << mpu.acc[2] << "], ";
+			ss << "mag[" << setw(SADC_WIDTH) << mpu.mag[0] << "," << setw(SADC_WIDTH) << mpu.mag[1] << "," << setw(SADC_WIDTH) << mpu.mag[2] << "], ";
+			ss << "temp " << setprecision(3) << mpu.temp << ",";
+			ss << "\n";
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < NUM_MPU_DEVICES; ++i)
+		{
+			auto &mpu = sensorsADC.mpu[i];
+			ss << "mpu[" << i << "]: " << setprecision(0);
+			ss << "pqr[" << mpu.pqr[0] << "," << mpu.pqr[1] << "," << mpu.pqr[2] << "], ";
+			ss << "acc[" << mpu.acc[0] << "," << mpu.acc[1] << "," << mpu.acc[2] << "], ";
+			ss << "mag[" << mpu.mag[0] << "," << mpu.mag[1] << "," << mpu.mag[2] << "], ";
+			ss << "temp " << setprecision(3) << mpu.temp << ",";
+		}
+	}
 
 	return ss.str();
 }

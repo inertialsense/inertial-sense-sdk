@@ -2,6 +2,7 @@ var searchData=
 [
   ['s_5fedatatypesizes',['s_eDataTypeSizes',['../_i_s_data_mappings_8cpp.html#ab045eac14c4309931bf99441b1164c34',1,'ISDataMappings.cpp']]],
   ['sacc',['sAcc',['../struct_p_a_c_k_e_d.html#a9f878e7d0dd88838fea553daba665478',1,'PACKED']]],
+  ['sadc_5fwidth',['SADC_WIDTH',['../_i_s_display_8cpp.html#ace244a7ff344e99ff3f85cdfb161e7a5',1,'ISDisplay.cpp']]],
   ['sam_5fba_5fbaudrate',['SAM_BA_BAUDRATE',['../inertial_sense_boot_loader_8c.html#a97c6b46fb3f7fa2d7e62961e3f94d374',1,'inertialSenseBootLoader.c']]],
   ['sam_5fba_5fbootloader_5fsize',['SAM_BA_BOOTLOADER_SIZE',['../inertial_sense_boot_loader_8c.html#abac28520efbc61d0cb08abc48263753c',1,'inertialSenseBootLoader.c']]],
   ['sam_5fba_5fflash_5fpage_5fsize',['SAM_BA_FLASH_PAGE_SIZE',['../inertial_sense_boot_loader_8c.html#a4732b6933d4d4dfcf6beeef8994ac2c5',1,'inertialSenseBootLoader.c']]],
