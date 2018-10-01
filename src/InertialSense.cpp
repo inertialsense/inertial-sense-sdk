@@ -659,7 +659,8 @@ bool InertialSense::OnPacketReceived(const cGpsParser* parser, const uint8_t* da
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		// sleep in between to allow test bed to send the serial data
-		SLEEP_MS(10);
+		// TODO: This was 10ms, but that was to long for thr CI test.
+		SLEEP_MS(1);
 		serialPortWrite(&m_comManagerState.serialPorts[i], data, dataLength);
 	}
 	return false; // do not parse, since we are just forwarding it on

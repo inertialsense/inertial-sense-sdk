@@ -1613,8 +1613,11 @@ typedef struct
 	/** max difference of time (sec) */
 	double maxtdiff;
 
-	/** reject threshold of innovation (m) */
-	double maxinno;
+        /** reject threshold of NIS */
+        double maxNIS;
+
+        /** max number of measurement rejections before bias reset */
+        double maxrejc;
 
 	/** reject threshold of gdop */
 	double maxgdop;
