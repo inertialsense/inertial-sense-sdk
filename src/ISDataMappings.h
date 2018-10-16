@@ -143,11 +143,11 @@ private:
 };
 
 /**
-* Case-insensitive comparer for std::find and other functions
+* Case-insensitive comparator for std::find and other functions
 */
-struct sCaseInsensitiveCompare : std::binary_function<std::string, std::string, bool>
+struct sCaseInsensitiveCompare
 {
-	struct nocase_compare : public std::binary_function<unsigned char, unsigned char, bool>
+	struct nocase_compare
 	{
 		bool operator() (const unsigned char& c1, const unsigned char& c2) const
 		{

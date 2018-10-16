@@ -171,7 +171,7 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 
 	// create empty stats file to track timestamps
 	fstream fs;
-	fs.open((m_directory + "/stats.txt").c_str(), ios::out);
+	fs.open((m_directory + "/" + subDirectory + "/stats.txt").c_str(), ios::out);
 	fs.close();
 
 	// Initialize devices

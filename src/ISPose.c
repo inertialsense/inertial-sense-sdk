@@ -240,26 +240,38 @@ void euler2quat(const Euler_t euler, Quat_t q)
 /*
 * Quaternion rotation to NED with respect to ECEF at specified LLA
 */
-void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla)
+// void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla)
+// {
+// 	Vector3 Ee2nLL;
+// 	Vector4 Qe2n0LL, Qe2nLL;
+// 
+// 	//Qe2n0LL is reference attitude [NED w/r/t ECEF] at zero latitude and longitude (elsewhere qned0)
+// 	Qe2n0LL[0] = cosf(-C_PIDIV4_F);
+// 	Qe2n0LL[1] = 0.0f;
+// 	Qe2n0LL[2] = sinf(-C_PIDIV4_F);
+// 	Qe2n0LL[3] = 0.0f;
+// 
+// 	//Qe2nLL is delta reference attitude [NED w/r/t ECEF] accounting for latitude and longitude (elsewhere qned)
+// 	Ee2nLL[0] = 0.0f;
+// 	Ee2nLL[1] = (float)(-lla[0]);
+// 	Ee2nLL[2] = (float)(lla[1]);
+// 
+// 	euler2quat(Ee2nLL, Qe2nLL);
+// 
+// 	//Qe2b=Qe2n*Qn2b is vehicle attitude [BOD w/r/t ECEF]
+// 	mul_Quat_Quat(Qe2n, Qe2n0LL, Qe2nLL);
+// }
+
+
+/* Attitude quaternion for NED frame in ECEF */
+void quat_ecef2ned(float lat, float lon, float *qe2n)
 {
-	Vector3 Ee2nLL;
-	Vector4 Qe2n0LL, Qe2nLL;
+    float eul[3];
 
-	//Qe2n0LL is reference attitude [NED w/r/t ECEF] at zero latitude and longitude (elsewhere qned0)
-	Qe2n0LL[0] = cosf(-C_PIDIV4_F);
-	Qe2n0LL[1] = 0.0f;
-	Qe2n0LL[2] = sinf(-C_PIDIV4_F);
-	Qe2n0LL[3] = 0.0f;
-
-	//Qe2nLL is delta reference attitude [NED w/r/t ECEF] accounting for latitude and longitude (elsewhere qned)
-	Ee2nLL[0] = 0.0f;
-	Ee2nLL[1] = (float)(-lla[0]);
-	Ee2nLL[2] = (float)(lla[1]);
-
-	euler2quat(Ee2nLL, Qe2nLL);
-
-	//Qe2b=Qe2n*Qn2b is vehicle attitude [BOD w/r/t ECEF]
-	mul_Quat_Quat(Qe2n, Qe2n0LL, Qe2nLL);
+    eul[0] = 0.0f;
+    eul[1] = -lat - 0.5f * C_PI_F;
+    eul[2] = lon;
+    euler2quat(eul, qe2n);
 }
 
 

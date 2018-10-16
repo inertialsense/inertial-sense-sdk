@@ -541,6 +541,7 @@ typedef struct PACKED
 } ins_4_t;
 
 
+/** Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Gyroscope P, Q, R in radians / second */
@@ -678,15 +679,30 @@ typedef struct PACKED
 	float					sAcc;
 } gps_vel_t;
 
+
+/** GPS Satellite information */
 typedef struct PACKED
 {
-	uint8_t					gnssId;			// GNSS identifier: 0 GPS, 1 SBAS, 2 Galileo, 3 BeiDou, 5 QZSS, 6 GLONASS
-	uint8_t					svId;			// Satellite identifier
-	uint8_t					cno;			// (dBHz) Carrier to noise ratio (signal strength)
-	int8_t					elev;			// (deg) Elevation (range: +/-90)
-	int16_t					azim;			// (deg) Azimuth (range: +/-180)
-	int16_t					prRes;			// (m) Pseudo range residual
-	uint32_t				flags;			// (see eSatSvFlags)
+	/** GNSS identifier: 0 GPS, 1 SBAS, 2 Galileo, 3 BeiDou, 5 QZSS, 6 GLONASS */
+	uint8_t					gnssId;			
+
+	/** Satellite identifier */
+	uint8_t					svId;			
+
+	/** (dBHz) Carrier to noise ratio (signal strength) */
+	uint8_t					cno;			
+
+	/** (deg) Elevation (range: +/-90) */
+	int8_t					elev;			
+
+	/** (deg) Azimuth (range: +/-180) */
+	int16_t					azim;			
+
+	/** (m) Pseudo range residual */
+	int16_t					prRes;			
+
+	/** (see eSatSvFlags) */
+	uint32_t				flags;			
 } gps_sat_sv_t;
 
 /** GPS Status */
@@ -1614,7 +1630,7 @@ typedef struct
 	double maxtdiff;
 
         /** reject threshold of NIS */
-        double maxNIS;
+        double maxinno;
 
         /** max number of measurement rejections before bias reset */
         double maxrejc;
@@ -2162,7 +2178,7 @@ typedef union PACKED
     uint8_t             buf[GPS_RAW_MESSAGE_BUF_SIZE];
 } uGpsRawData;
 
-/** Message wrapper for DID_GPS1_RAW, DID_GPS2_RAW, and DID_GPS_BASE_RAW.  The contents of data can vary for this message and are determined by dataType field. */
+/** Message wrapper for DID_GPS1_RAW, DID_GPS2_RAW, and DID_GPS_BASE_RAW.  The contents of data can vary for this message and are determined by `dataType` field. */
 typedef struct PACKED
 {
 	/** Receiver index (1=RECEIVER_INDEX_GPS1, 2=RECEIVER_INDEX_EXTERNAL_BASE, or 3=RECEIVER_INDEX_GPS2 ) */
@@ -2178,7 +2194,7 @@ typedef struct PACKED
 	uint8_t reserved;
 
     /** Interpret based on dataType (see eRawDataType) */    
-	uGpsRawData data;
+  uGpsRawData data;
 } gps_raw_t;
 
 typedef struct PACKED

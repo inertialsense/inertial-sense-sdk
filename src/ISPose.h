@@ -132,7 +132,10 @@ void euler2quat(const Euler_t euler, Quat_t q );
 /*
  * Quaternion rotation to NED with respect to ECEF at specified LLA
  */
-void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla);
+// void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla);
+
+/* Attitude quaternion for NED frame in ECEF */
+void quat_ecef2ned(float lat, float lon, float *qe2n);
 
 /*
 * Convert ECEF quaternion to NED euler at specified ECEF

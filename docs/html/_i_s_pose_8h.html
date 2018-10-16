@@ -135,8 +135,8 @@ Functions</h2></td></tr>
 <tr class="separator:aa143314b0625c25314c3953daa02e295"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e1905d2ed87bd36a80e8203f89661f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_pose_8h.html#a0e1905d2ed87bd36a80e8203f89661f1">euler2quat</a> (const <a class="el" href="_i_s_pose_8h.html#abb3f544aa64d83fb071d86ca0eafe26a">Euler_t</a> euler, <a class="el" href="_i_s_pose_8h.html#abf997f89f0e095153f3b1a4830df46d0">Quat_t</a> q)</td></tr>
 <tr class="separator:a0e1905d2ed87bd36a80e8203f89661f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ee0df0cecb01fb09d0738fddeeddf52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_pose_8h.html#a4ee0df0cecb01fb09d0738fddeeddf52">quatEcef2Ned</a> (<a class="el" href="_i_s_constants_8h.html#a9163bdd498e3f7977d07a575c1e810ed">Vector4</a> Qe2n, const <a class="el" href="_i_s_constants_8h.html#a0575902a72d480181f68ed37d316174c">Vector3d</a> lla)</td></tr>
-<tr class="separator:a4ee0df0cecb01fb09d0738fddeeddf52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03d55034b3b35dea8e12cd8e94fabdfa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_pose_8h.html#a03d55034b3b35dea8e12cd8e94fabdfa">quat_ecef2ned</a> (float lat, float lon, float *qe2n)</td></tr>
+<tr class="separator:a03d55034b3b35dea8e12cd8e94fabdfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9452fda48077a4f0ca5c8fe58f0b56e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_pose_8h.html#a9452fda48077a4f0ca5c8fe58f0b56e3">qe2b2EulerNedEcef</a> (<a class="el" href="_i_s_constants_8h.html#a7e71fcd19d872fd9e24418cab32bb56c">Vector3</a> theta, const <a class="el" href="_i_s_constants_8h.html#a9163bdd498e3f7977d07a575c1e810ed">Vector4</a> qe2b, const <a class="el" href="_i_s_constants_8h.html#a0575902a72d480181f68ed37d316174c">Vector3d</a> ecef)</td></tr>
 <tr class="separator:a9452fda48077a4f0ca5c8fe58f0b56e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2deed11b3baa15dfcf716c10c028c575"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_pose_8h.html#a2deed11b3baa15dfcf716c10c028c575">qe2b2EulerNedLLA</a> (<a class="el" href="_i_s_constants_8h.html#a7e71fcd19d872fd9e24418cab32bb56c">Vector3</a> eul, const <a class="el" href="_i_s_constants_8h.html#a9163bdd498e3f7977d07a575c1e810ed">Vector4</a> qe2b, const <a class="el" href="_i_s_constants_8h.html#a0575902a72d480181f68ed37d316174c">Vector3d</a> lla)</td></tr>
@@ -369,7 +369,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00435">435</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00447">447</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -389,7 +389,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00328">328</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00340">340</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -419,7 +419,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00515">515</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00527">527</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -485,7 +485,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00620">620</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00632">632</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -551,7 +551,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00658">658</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00670">670</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -581,7 +581,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00343">343</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00355">355</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -611,7 +611,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00401">401</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00413">413</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -641,7 +641,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00647">647</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00659">659</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -677,7 +677,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00674">674</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00686">686</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -707,7 +707,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00533">533</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00545">545</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -845,7 +845,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00636">636</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00648">648</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -875,7 +875,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00368">368</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00380">380</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -905,7 +905,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00304">304</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00316">316</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -941,7 +941,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00269">269</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00281">281</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -977,7 +977,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00282">282</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00294">294</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -1074,6 +1074,42 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00204">204</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+
+</div>
+</div>
+<a id="a03d55034b3b35dea8e12cd8e94fabdfa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03d55034b3b35dea8e12cd8e94fabdfa">&#9670;&nbsp;</a></span>quat_ecef2ned()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void quat_ecef2ned </td>
+          <td>(</td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>lat</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>lon</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>qe2n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00267">267</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -1225,7 +1261,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00454">454</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00466">466</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -1255,37 +1291,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00479">479</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
-
-</div>
-</div>
-<a id="a4ee0df0cecb01fb09d0738fddeeddf52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ee0df0cecb01fb09d0738fddeeddf52">&#9670;&nbsp;</a></span>quatEcef2Ned()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void quatEcef2Ned </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="_i_s_constants_8h.html#a9163bdd498e3f7977d07a575c1e810ed">Vector4</a>&#160;</td>
-          <td class="paramname"><em>Qe2n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="_i_s_constants_8h.html#a0575902a72d480181f68ed37d316174c">Vector3d</a>&#160;</td>
-          <td class="paramname"><em>lla</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00243">243</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00491">491</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -1351,7 +1357,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00590">590</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00602">602</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -1381,7 +1387,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00558">558</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00570">570</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -1417,7 +1423,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00691">691</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00703">703</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
@@ -1453,7 +1459,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00706">706</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_pose_8c_source.html#l00718">718</a> of file <a class="el" href="_i_s_pose_8c_source.html">ISPose.c</a>.</p>
 
 </div>
 </div>
