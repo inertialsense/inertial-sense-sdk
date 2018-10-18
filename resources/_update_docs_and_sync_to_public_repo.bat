@@ -16,6 +16,7 @@ call :remove_sub_directories Debug
 call :remove_sub_directories Release
 call :remove_sub_directories .vs
 call :remove_sub_directories .vs
+call :remove_sub_directories IS_logs
 
 cd resources
 

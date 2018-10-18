@@ -558,7 +558,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 			{
 				string serialNumber = name.substr(endOfLogPrefixIndex, serialNumberEndIndex - endOfLogPrefixIndex);
 
-				// if we don't have a timestamp yet, see if we can parse it from the file, i.e. IS_LOG_FILE_PREFIX 30013_20170103_151023_001
+				// if we don't have a timestamp yet, see if we can parse it from the filename, i.e. IS_LOG_FILE_PREFIX 30013_20170103_151023_001
 				if (m_timeStamp.length() == 0)
 				{
 					// find _ at end of timestamp
@@ -574,23 +574,25 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 				}
 
 				// check for unique serial numbers
-				if ((serialNumbers.find(serialNumber) == serialNumbers.end()) &&
-					(find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end()
-					 || find(serials.begin(), serials.end(), "ALL") != serials.end())) // and that it is a serial number we want to use
-				{
-					serialNumbers.insert(serialNumber);
+                if (serialNumbers.find(serialNumber) == serialNumbers.end())
+                {
+                    if ((find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end() ||
+                        find(serials.begin(), serials.end(), "ALL") != serials.end())) // and that it is a serial number we want to use
+                    {
+                        serialNumbers.insert(serialNumber);
 
-					// Add devices
-					switch (logType)
-					{
-					default:
-					case cISLogger::LOGTYPE_DAT: m_devices.push_back(new cDeviceLogSerial()); break;
-					case cISLogger::LOGTYPE_SDAT: m_devices.push_back(new cDeviceLogSorted()); break;
-					case cISLogger::LOGTYPE_CSV: m_devices.push_back(new cDeviceLogCSV()); break;
-					case cISLogger::LOGTYPE_JSON: m_devices.push_back(new cDeviceLogJSON()); break;
-					}
-					m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
-				}
+                        // Add devices
+                        switch (logType)
+                        {
+                        default:
+                        case cISLogger::LOGTYPE_DAT: m_devices.push_back(new cDeviceLogSerial()); break;
+                        case cISLogger::LOGTYPE_SDAT: m_devices.push_back(new cDeviceLogSorted()); break;
+                        case cISLogger::LOGTYPE_CSV: m_devices.push_back(new cDeviceLogCSV()); break;
+                        case cISLogger::LOGTYPE_JSON: m_devices.push_back(new cDeviceLogJSON()); break;
+                        }
+                        m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
+                    }
+                }
 			}
 		}
 	}

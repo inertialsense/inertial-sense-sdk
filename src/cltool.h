@@ -76,7 +76,7 @@ typedef struct
 	bool streamSensorsADC;
 
 	bool enableLogging;
-	string logType; // -lt=csv
+	string logType; // -lt=dat
 	string logPath; // -lp=path
 	float maxLogSpacePercent; // -lms=max_space_mb
 	uint32_t maxLogFileSize; // -lmf=max_file_size

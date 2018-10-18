@@ -331,7 +331,7 @@ bool cltool_replayDataLog()
 	}
 
 	cISLogger logger;
-	if (!logger.LoadFromDirectory(g_commandLineOptions.logPath))
+	if (!logger.LoadFromDirectory(g_commandLineOptions.logPath, cISLogger::ParseLogType(g_commandLineOptions.logType), { "ALL" }))
 	{
 		cout << "Failed to load log files: " << g_commandLineOptions.logPath << endl;
 		return false;
@@ -375,9 +375,8 @@ void cltool_outputUsage()
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       display this help menu" << endlbOn;
 	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
-	cout << "       " << boldOff << "             only the first four ports. Not specifying this parameter is same as \"-c=" << CL_DEFAULT_COM_PORT << "\"" <<  endlbOn;
-	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << ", " << endlbOn;
-	cout << "       " << boldOff << "             " << IS_BAUDRATE_3000000 << " (default) " << endlbOn;
+	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
+	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -b=" << boldOff << "FILEPATH     bootload firmware using .hex file FILEPATH" << endlbOn;
 	cout << "    -q" << boldOff << "              quite mode, no display" << endlbOn;
 	cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
@@ -399,8 +398,8 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        log type (dat, sdat, kml or csv, default is dat)" << endlbOn;
-	cout << "    -lp=" << boldOff << "PATH        log data to path (default: " << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        log type dat (default), sdat, kml or csv" << endlbOn;
+	cout << "    -lp=" << boldOff << "PATH        log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
 	cout << "    -lmm=" << boldOff << "BYTES      log max memory in bytes (default: "<< CL_DEFAULT_MAX_LOG_MEMORY << ")" << endlbOn;
