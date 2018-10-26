@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -20,7 +20,10 @@ extern "C" {
 #include "serialPort.h"
 
 /** uINS bootloader baud rate */
-#define IS_BAUD_RATE_BOOTLOADER 2000000
+#define IS_BAUD_RATE_BOOTLOADER 921600
+
+/** uINS bootloader baud rate - legacy */
+#define IS_BAUD_RATE_BOOTLOADER_LEGACY 2000000
 
 /** uINS rs232 bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER_RS232 230400
@@ -30,9 +33,9 @@ extern "C" {
 
 #define ENABLE_BOOTLOADER_BAUD_DETECTION 1
 #define BOOTLOADER_REFRESH_DELAY   250
-#define BOOTLOADER_RESPONSE_DELAY  20
+#define BOOTLOADER_RESPONSE_DELAY  10
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
-#define BOOTLOADER_RETRIES         10
+#define BOOTLOADER_RETRIES         30
 #else
 #define BOOTLOADER_RETRIES         1
 #endif
@@ -58,7 +61,6 @@ typedef struct
         struct
         {
             unsigned int enableVerify : 1; // whether to enable the verify phase
-			unsigned int enableAutoBaud : 1; // whether to enable auto-baud detection
         } bitFields;
     } flags;
 

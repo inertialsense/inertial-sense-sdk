@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -98,7 +98,7 @@ typedef uint32_t eDataIDs;
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
 #define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
 #define DID_INS_4                       (eDataIDs)66 /** (ins_4_t) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */
-#define DID_INL2_VARIANCE               (eDataIDs)67 /** (inl2_variance_t) INL2 variance */
+#define DID_INL2_NED_SIGMA              (eDataIDs)67 /** (inl2_ned_sigma_t) INL2 standard deviation in the NED frame */
 #define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
 #define DID_GPS1_RAW                    (eDataIDs)69 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
 #define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
@@ -148,41 +148,39 @@ typedef uint32_t eDataIDs;
 /** INS status flags */
 enum eInsStatusFlags
 {
-	/** Attitude estimate is COARSE (usable but outside spec) */
-	INS_STATUS_ATT_ALIGN_COARSE					= (int)0x00000001,
-	/** Velocity estimate is COARSE (usable but outside spec) */
-	INS_STATUS_VEL_ALIGN_COARSE					= (int)0x00000002,
-	/** Position estimate is COARSE (usable but outside spec) */
-	INS_STATUS_POS_ALIGN_COARSE					= (int)0x00000004,
+	/** Attitude estimate is usable but outside spec (COARSE) */
+	INS_STATUS_ATT_ALIGN_COARSE                 = (int)0x00000001,
+	/** Velocity estimate is usable but outside spec (COARSE) */
+	INS_STATUS_VEL_ALIGN_COARSE                 = (int)0x00000002,
+	/** Position estimate is usable but outside spec (COARSE) */
+	INS_STATUS_POS_ALIGN_COARSE                 = (int)0x00000004,
 	/** Estimate is COARSE mask (usable but outside spec) */
-	INS_STATUS_ALIGN_COARSE_MASK				= (int)0x00000007,
+	INS_STATUS_ALIGN_COARSE_MASK                = (int)0x00000007,
 
-	INS_STATUS_UNUSED_1				            = (int)0x00000008,
+	INS_STATUS_UNUSED_1                         = (int)0x00000008,
 
-	/** Attitude estimate is GOOD */
-	INS_STATUS_ATT_ALIGN_GOOD					= (int)0x00000010,
-	/** Velocity estimate is GOOD */
-	INS_STATUS_VEL_ALIGN_GOOD					= (int)0x00000020,
-	/** Position estimate is GOOD */
-	INS_STATUS_POS_ALIGN_GOOD					= (int)0x00000040,
-	/** Estimate is GOOD mask */
-	INS_STATUS_ALIGN_GOOD_MASK					= (int)0x00000070,
+	/** Attitude estimate is within spec (FINE) */
+	INS_STATUS_ATT_ALIGN_FINE                   = (int)0x00000010,
+	/** Velocity estimate is within spec (FINE) */
+	INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
+	/** Position estimate is within spec (FINE) */
+	INS_STATUS_POS_ALIGN_FINE                   = (int)0x00000040,
+	/** Estimate is FINE mask */
+	INS_STATUS_ALIGN_FINE_MASK                  = (int)0x00000070,
 
-	/** Attitude estimate is FINE.  (For internal use. Do not use.) */
-	INS_STATUS_ATT_ALIGN_FINE					= (int)0x00000080,
-	/** Estimate is FINE mask.  (For internal use. Do not use.) */
-	INS_STATUS_FINE_ALIGNED_MASK				= (int)0x000000FF,
+	/** Heading aided by GPS */
+	INS_STATUS_GPS_AIDING_HEADING               = (int)0x00000080,
 
-	/** GPS is being fused into solution */
-	INS_STATUS_USING_GPS_IN_SOLUTION			= (int)0x00000100,
+	/** Position and velocity aided by GPS */
+	INS_STATUS_GPS_AIDING_POS_VEL               = (int)0x00000100,
 	/** GPS update event occurred in solution, potentially causing discontinuity in position path */
-	INS_STATUS_GPS_UPDATE_IN_SOLUTION			= (int)0x00000200,
-	/** Identifies which of the dual mag cal sets is currently being used */
-	INS_STATUS_MAG_ACTIVE_CAL_SET				= (int)0x00000400,																	
-	/** Mag is being fused into solution */
-	INS_STATUS_USING_MAG_IN_SOLUTION			= (int)0x00000800,
+	INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
+	/** Reserved for internal purpose */
+	INS_STATUS_RESERVED_1                       = (int)0x00000400,																	
+	/** Heading aided by magnetic heading */
+	INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
-	/** Set = Nav mode (w/ GPS). Cleared = AHRS mode (w/o GPS) */
+	/** Nav mode (set) = estimating velocity and position. AHRS mode (cleared) = NOT estimating velocity and position */
 	INS_STATUS_NAV_MODE							= (int)0x00001000,
 
 	INS_STATUS_UNUSED_2				            = (int)0x00002000,
@@ -192,15 +190,15 @@ enum eInsStatusFlags
 	/** INS/AHRS Solution Status */
 	INS_STATUS_SOLUTION_MASK					= (int)0x000F0000,
 	INS_STATUS_SOLUTION_OFFSET					= 16,
-#define INS_STATUS_SOLUTION(insStatus) ((insStatus&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
+#define INS_STATUS_SOLUTION(insStatus)          ((insStatus&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
 
-	INS_STATUS_SOLUTION_OFF						= 0,	// System is off 
-	INS_STATUS_SOLUTION_ALIGNING				= 1,	// System is in alignment mode
-	INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE		= 2,	// System is aligned but not enough dynamics have been experienced to be with specifications.
-	INS_STATUS_SOLUTION_NAV_GOOD				= 3,	// System is in navigation mode and solution is good.
-	INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE		= 4,	// System is in navigation mode but the attitude uncertainty has exceeded the threshold.
-	INS_STATUS_SOLUTION_AHRS_GOOD				= 5,	// System is in AHRS mode and solution is good.
-	INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE		= 6,	// System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
+	INS_STATUS_SOLUTION_OFF                     = 0,	// System is off 
+	INS_STATUS_SOLUTION_ALIGNING                = 1,	// System is in alignment mode
+	INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE      = 2,	// System is aligned but not enough dynamics have been experienced to be with specifications.
+	INS_STATUS_SOLUTION_NAV                     = 3,	// System is in navigation mode and solution is good.
+	INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,	// System is in navigation mode but the attitude uncertainty has exceeded the threshold.
+	INS_STATUS_SOLUTION_AHRS                    = 5,	// System is in AHRS mode and solution is good.
+	INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,	// System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
 	
     /** Trying to perform Compassing with no baseline set in flashCfg. */
     INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET     = (int)0x00100000,
@@ -212,10 +210,10 @@ enum eInsStatusFlags
 	/** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
 	INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL		= (int)0x00800000,
 
-    /** Navigation fix type (see eNavFixStatus) */
+    /** GPS navigation fix type (see eNavFixStatus) */
     INS_STATUS_NAV_FIX_STATUS_MASK				= (int)0x07000000,
     INS_STATUS_NAV_FIX_STATUS_OFFSET			= 24,
-#define INS_STATUS_NAV_FIX_STATUS(insStatus)		((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
+#define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
 	/** GPS base mask */
     INS_STATUS_RTK_BASE_MASK					= (int)0x38300000,
@@ -232,7 +230,7 @@ enum eInsStatusFlags
 	INS_STATUS_GENERAL_FAULT					= (int)0x80000000,
 };
 
-/** Navigation Fix Type */
+/** GPS navigation fix type */
 enum eNavFixStatus
 {
 	NAV_FIX_STATUS_NONE							= (int)0x00000000,
@@ -240,6 +238,7 @@ enum eNavFixStatus
 	NAV_FIX_STATUS_RTK_SINGLE					= (int)0x00000002,
 	NAV_FIX_STATUS_RTK_FLOAT					= (int)0x00000003,
 	NAV_FIX_STATUS_RTK_FIX						= (int)0x00000004,
+	NAV_FIX_STATUS_STANDARD_W_GPS_COMPASSING    = (int)0x00000005,
 };
 
 /** Hardware status flags */
@@ -705,6 +704,7 @@ typedef struct PACKED
 	uint32_t				flags;			
 } gps_sat_sv_t;
 
+
 /** GPS Status */
 enum eSatSvFlags
 {
@@ -921,28 +921,30 @@ typedef struct PACKED
 /** (DID_CONFIG) Configuration functions */
 typedef struct PACKED
 {
-	/** Set to 1 to reset processor into bootloader mode */
-	uint32_t                enBootloader;
-
-	/** Set to 1 to enable sensor stats */
-	uint32_t                enSensorStats;
-
-	/** Set to 1 to enable RTOS stats */
-	uint32_t                enRTOSStats;
-
-	/** Set to 1 to enable GPS low-level configuration */
-	uint32_t                gpsStatus;
-
-	/** System: 99=software reset */
+	/** System commands: 1=save current persistent messages, 99=software reset (eConfigSystem).  "invSystem" (following variable) must be set to bitwise inverse of this value.  */
 	uint32_t                system;
-	
+
+    /** Bitwise inverse of system variable for error checking.  */
+    uint32_t                invSystem;
+
 } config_t;
+
+enum eConfigSystem {
+    CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES            = 1,
+    CFG_SYS_CMD_ENABLE_BOOTLOADER_AND_RESET         = 2,
+    CFG_SYS_CMD_ENABLE_SENSOR_STATS                 = 3,
+    CFG_SYS_CMD_ENABLE_RTOS_STATS                   = 4,
+    CFG_SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
+    CFG_SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
+    CFG_SYS_CMD_SOFTWARE_RESET                      = 99,
+};
+
 
 
 /** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
-	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=usb] (see RMC_OPTIONS_...) */
+	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
 	uint32_t				options;
 
 	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
@@ -1012,7 +1014,7 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_SER1           0x00000002	// also SPI
 #define RMC_OPTIONS_PORT_USB            0x00000004
 #define RMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_SET_STARTUP_STREAM  0x00000200	// Save as preconfigured startup streaming to flash memory to automatically broadcast messages on startup.  
+#define RMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
 
 																// RMC message data rates:
 #define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
@@ -1098,10 +1100,10 @@ typedef struct PACKED
 
 enum eMagRecalMode
 {
-	MAG_RECAL_MODE_MULTI_AXIS		= (int)0,		// Recalibrate magnetometers using multiple axis
-	MAG_RECAL_MODE_SINGLE_AXIS		= (int)1,		// Recalibrate magnetometers using only one axis
-	MAG_RECAL_MODE_COMPLETE			= (int)100,		// Recalibration is finished
-	MAG_RECAL_MODE_ABORT			= (int)101,		// Recalibration is finished
+	MAG_RECAL_MODE_MULTI_AXIS       = (int)0,		// Recalibrate magnetometers using multiple axis
+	MAG_RECAL_MODE_SINGLE_AXIS      = (int)1,		// Recalibrate magnetometers using only one axis
+	MAG_RECAL_MODE_COMPLETE         = (int)100,		// Recalibration is finished
+	MAG_RECAL_MODE_ABORT            = (int)101,		// Recalibration is finished
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
@@ -1468,21 +1470,21 @@ typedef struct PACKED
 {											
     /** Timestamp in milliseconds */
 	unsigned int			timeOfWeekMs;	
-    /** NED position error variances */
+    /** NED position error sigma */
 	float					PxyzNED[3];		
-    /** NED velocity error variances */
+    /** NED velocity error sigma */
 	float					PvelNED[3];		
-    /** NED attitude error variances */
+    /** NED attitude error sigma */
 	float					PattNED[3];		
-    /** Acceleration bias error variances */
+    /** Acceleration bias error sigma */
 	float					PABias[3];		
-    /** Angular rate bias error variances */
+    /** Angular rate bias error sigma */
 	float					PWBias[3];		
-    /** Barometric altitude error variance */
+    /** Barometric altitude bias error sigma */
 	float					PBaroBias;		
-    /** Mag declination error variance */
+    /** Mag declination error sigma */
 	float					PDeclination;	
-} inl2_variance_t;
+} inl2_ned_sigma_t;
 
 /** (DID_STROBE_IN_TIME) Timestamp for input strobe. */
 typedef struct PACKED
@@ -2483,7 +2485,7 @@ typedef union PACKED
 	gps_rtk_rel_t			gpsRtkRel;
 	gps_rtk_misc_t			gpsRtkMisc;
 	inl2_states_t			inl2States;
-	inl2_variance_t			inl2Variance;
+	inl2_ned_sigma_t        inl2NedSigma;
 	nvm_flash_cfg_t			flashCfg;
     survey_in_t             surveyIn;
 	sys_params_t			sysParams;

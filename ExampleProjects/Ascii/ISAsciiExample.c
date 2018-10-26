@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -54,6 +54,13 @@ int main(int argc, char* argv[])
 		return -3;
 	}
 
+    // Query device version information
+	if (!serialPortWriteAscii(&serialPort, "INFO", 4))
+	{
+		printf("Failed to encode stop broadcasts message\r\n");
+		return -3;
+	}
+
 	// ASCII protocol is based on NMEA protocol https://en.wikipedia.org/wiki/NMEA_0183
 	// turn on the INS message at a period of 100 milliseconds (10 hz)
 	// serialPortWriteAscii takes care of the leading $ character, checksum and ending \r\n newline
@@ -66,7 +73,7 @@ int main(int argc, char* argv[])
 	// Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same
 	// 	const char* asciiMessage = "ASCB,0,,,100,,,,,,,";
 	char asciiMessage[100];
-	SNPRINTF(asciiMessage, 100, "ASCB,%d,,,100,,,,,,,", RMC_OPTIONS_SET_STARTUP_STREAM);
+	SNPRINTF(asciiMessage, 100, "ASCB,%d,,,100,,,,,,,", RMC_OPTIONS_PERSISTENT);
 
 	// Get PIMU @ 50Hz, GPGGA @ 5Hz, both serial ports, set all other periods to 0
 	// const char* asciiMessage = "ASCB,3,20,0,0,0,0,0,100,0,0,0";

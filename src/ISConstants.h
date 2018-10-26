@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -383,10 +383,19 @@ extern void* realloc_debug(void* mem, size_t newSize);
 
 #endif
 
+
+//////////////////////////////////////////////////////////////////////////
+// Time
 // diff two times as uint32_t, handling wrap-around
 #define UINT32_TIME_DIFF(current, prev) ((uint32_t)(current) - (uint32_t)(prev))
 
 #define DT_TO_HZ(dt)	(((dt) == (0.0)) ? (0) : (1.0/dt))
+
+#define C_WEEKS_TO_SECONDS        604800.0      // Seconds per week
+#define C_WEEKS_TO_MILLISECONDS   604800000     // Milliseconds per week
+
+//////////////////////////////////////////////////////////////////////////
+// Distance
 
 #define C_IN2M          0.0254          // inches to meters 
 #define C_FT2M          0.3048          // (C_IN2M*12) feet to meters 

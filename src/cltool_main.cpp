@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -201,6 +201,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_GPS1_POS, 1);
 	}
+    if (g_commandLineOptions.streamRtkPos)
+    {
+        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS, 1);
+    }
     if (g_commandLineOptions.streamRtkRel)
     {
         inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_REL, 1);
@@ -220,8 +224,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	if (g_commandLineOptions.streamRTOS)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_RTOS_INFO, 250);
-		uint32_t enRTOSStats = 1;
-		inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&enRTOSStats, sizeof(enRTOSStats), offsetof(config_t, enRTOSStats));
+        config_t cfg;
+        cfg.system = CFG_SYS_CMD_ENABLE_RTOS_STATS;
+        cfg.invSystem = ~cfg.system;
+		inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&cfg, sizeof(config_t), 0);
 	}
 	if (g_commandLineOptions.streamSensorsADC)
 	{
@@ -247,6 +253,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryDataRmcPreset(g_commandLineOptions.rmcPreset, RMC_OPTIONS_PRESERVE_CTRL);
 	}
+
+    if (g_commandLineOptions.persistentMessages)
+    {   // Save persistent messages to flash
+        config_t cfg;
+        cfg.system = CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+        cfg.invSystem = ~cfg.system;
+        inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&cfg, sizeof(config_t), 0);
+    }
 
 	if (g_commandLineOptions.serverConnection.length() != 0)
 	{

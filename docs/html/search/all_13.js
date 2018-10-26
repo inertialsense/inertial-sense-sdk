@@ -217,6 +217,7 @@ var searchData=
   ['streamins4',['streamINS4',['../structcmd__options__t.html#ae1903085536f3233b484be2bffd0af2d',1,'cmd_options_t']]],
   ['streammag1',['streamMag1',['../structcmd__options__t.html#aa27472315cf43c8df5edb4db1ff7946f',1,'cmd_options_t']]],
   ['streammag2',['streamMag2',['../structcmd__options__t.html#a68d164246faa0e01589954df95350ac4',1,'cmd_options_t']]],
+  ['streamrtkpos',['streamRtkPos',['../structcmd__options__t.html#a5a09c0077ce66e4202b4a84bdfab9a4a',1,'cmd_options_t']]],
   ['streamrtkrel',['streamRtkRel',['../structcmd__options__t.html#a06210eeb34fa782e8e32de0a1877423b',1,'cmd_options_t']]],
   ['streamrtos',['streamRTOS',['../structcmd__options__t.html#aa5035937303627116ef15562ed7a56df',1,'cmd_options_t']]],
   ['streamsensorsadc',['streamSensorsADC',['../structcmd__options__t.html#a0aadbfea339c0bd5ac79a19e288d794d',1,'cmd_options_t']]],

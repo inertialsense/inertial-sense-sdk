@@ -148,7 +148,6 @@ var searchData=
   ['gpsrtkmisc',['gpsRtkMisc',['../struct_p_a_c_k_e_d.html#aeb2c8e87fe88f50c5d74de585caa9b40',1,'PACKED']]],
   ['gpsrtkrel',['gpsRtkRel',['../struct_p_a_c_k_e_d.html#ac6742f7f461637b2e84904a9e53e982a',1,'PACKED']]],
   ['gpssat',['gpsSat',['../struct_p_a_c_k_e_d.html#a3fa89c1d5d1aecd32b550c2523ca9817',1,'PACKED']]],
-  ['gpsstatus',['gpsStatus',['../struct_p_a_c_k_e_d.html#a539663cbe08572454397fa63a6aae066',1,'PACKED']]],
   ['gpstimesyncperiodms',['gpsTimeSyncPeriodMs',['../struct_p_a_c_k_e_d.html#ab92728c00c22075cd67e47e5466c0351',1,'PACKED']]],
   ['gpstojulian',['gpsToJulian',['../data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c'],['../data__sets_8h.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c']]],
   ['gpstonmeagga',['gpsToNmeaGGA',['../data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca',1,'gpsToNmeaGGA(const gps_pos_t *gps, char *buffer, int bufferLength):&#160;data_sets.c'],['../data__sets_8h.html#ae56e9a11cab85685b6388a6bda1065ca',1,'gpsToNmeaGGA(const gps_pos_t *gps, char *buffer, int bufferLength):&#160;data_sets.c']]],

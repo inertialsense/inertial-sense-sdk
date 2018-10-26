@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -245,11 +245,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
 		}
-		else if (startsWith(a, "-msgRtkRel"))
-		{
-			g_commandLineOptions.streamRtkRel = true;
-		}
-		else if (startsWith(a, "-msgRTOS"))
+        else if (startsWith(a, "-msgRtkPos"))
+        {
+            g_commandLineOptions.streamRtkPos = true;
+        }
+        else if (startsWith(a, "-msgRtkRel"))
+        {
+            g_commandLineOptions.streamRtkRel = true;
+        }
+        else if (startsWith(a, "-msgRTOS"))
 		{
 			g_commandLineOptions.streamRTOS = true;
 		}
@@ -261,7 +265,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamSysSensors = true;
 		}
-		else if (startsWith(a, "-q"))
+        else if (startsWith(a, "-persistent"))
+        {
+            g_commandLineOptions.persistentMessages = true;
+        }
+        else if (startsWith(a, "-q"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
 		}
@@ -395,7 +403,8 @@ void cltool_outputUsage()
 	cout << "    -msgGPS       " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
 	cout << "    -msgSensors   " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
 	cout << "    -msgRtkRel    " << boldOff << "  stream DID_GPS1_RTK_REL" << endlbOn;
-	cout << endlbOn;
+    cout << "    -persistent   " << boldOff << "  save current streams as persistent messages enabled on startup" << endlbOn;
+    cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            enable logging" << endlbOn;
 	cout << "    -lt=" << boldOff << "TYPE        log type dat (default), sdat, kml or csv" << endlbOn;

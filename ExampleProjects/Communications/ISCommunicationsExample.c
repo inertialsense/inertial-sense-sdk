@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -71,11 +71,14 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 
 int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
-	// Enable broadcasts using RMC: DID_INS_1 @ 20Hz and DID_GPS_NAV @ 5Hz
 	rmc_t rmc;
+
+    // Enable broadcasts of DID_INS_1 and DID_GPS_NAV
 	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS1_POS;
-	rmc.options = 0;
-	rmc.insPeriodMs = 50;	// INS @ 20Hz
+    // Respond on current port
+    rmc.options = RMC_OPTIONS_PORT_CURRENT;
+    // INS output data rate at 20Hz
+    rmc.insPeriodMs = 50;
 
 	int messageSize = is_comm_set_data(comm, _DID_RMC, 0, sizeof(rmc_t), &rmc);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
@@ -84,6 +87,22 @@ int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_
 		return -3;
 	}
 	return 0;
+}
+
+
+int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm)
+{
+    config_t cfg;
+    cfg.system = CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+    cfg.invSystem = ~cfg.system;
+
+    int messageSize = is_comm_set_data(comm, DID_CONFIG, 0, sizeof(config_t), &cfg);
+    if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+    {
+        printf("Failed to write save persistent message\r\n");
+        return -3;
+    }
+    return 0;
 }
 
 
@@ -187,7 +206,11 @@ int main(int argc, char* argv[])
 	}
 
 
-	// STEP 7: Handle received data
+    // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
+    save_persistent_messages(&serialPort, &comm);
+
+
+	// STEP 8: Handle received data
 	int count;
 	uint8_t inByte;
 

@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.0</span>
+   &#160;<span id="projectnumber">Release 1.7.1</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -93,17 +93,17 @@ $(function() {
 <li>initComManagerInstanceInternal()
 : <a class="el" href="com__manager_8c.html#a037d3b6bd1aa1a92f2770823d0996794">com_manager.c</a>
 </li>
+<li>inl2_ned_sigma_t
+: <a class="el" href="data__sets_8h.html#aa995f9d939d491a82ad874b0ed3906d5">data_sets.h</a>
+</li>
 <li>inl2_states_t
 : <a class="el" href="data__sets_8h.html#ac2de698a5ea2e8ed5b049e3b81778d74">data_sets.h</a>
 </li>
-<li>inl2_variance_t
-: <a class="el" href="data__sets_8h.html#ad30b4fe62d7fb90ae719d67633dbfcdf">data_sets.h</a>
+<li>inline
+: <a class="el" href="_i_s_pose_8h.html#a00d24c7231be28dbaf71f5408f30e44c">ISPose.h</a>
 </li>
 <li>INLINE
 : <a class="el" href="_i_s_constants_8h.html#a2eb6f9e0395b47b8d5e3eeae4fe0c116">ISConstants.h</a>
-</li>
-<li>inline
-: <a class="el" href="_i_s_pose_8h.html#a00d24c7231be28dbaf71f5408f30e44c">ISPose.h</a>
 </li>
 <li>ins_1_t
 : <a class="el" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">data_sets.h</a>
@@ -123,8 +123,8 @@ $(function() {
 <li>INS_STATUS_ALIGN_COARSE_MASK
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4461a4067e98c1ee1264de7d4b91a465">data_sets.h</a>
 </li>
-<li>INS_STATUS_ALIGN_GOOD_MASK
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caba6a8bc58e7e6e5cfe808b3bd06fc709">data_sets.h</a>
+<li>INS_STATUS_ALIGN_FINE_MASK
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf9211a49fae388ad2045fee0f274c007">data_sets.h</a>
 </li>
 <li>INS_STATUS_ATT_ALIGN_COARSE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca2463ded25c64f4f3fb327f999ba67dea">data_sets.h</a>
@@ -132,20 +132,20 @@ $(function() {
 <li>INS_STATUS_ATT_ALIGN_FINE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caea1f69c3aebfbec7c009be2c93338b62">data_sets.h</a>
 </li>
-<li>INS_STATUS_ATT_ALIGN_GOOD
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf5970bf183f43c2a7a669fab7c394fbf">data_sets.h</a>
-</li>
-<li>INS_STATUS_FINE_ALIGNED_MASK
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca68cf9b2842295245bfe3b13dc0f1552d">data_sets.h</a>
-</li>
 <li>INS_STATUS_GENERAL_FAULT
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4e0d0beebd5d854e00bb62ff1fed941a">data_sets.h</a>
+</li>
+<li>INS_STATUS_GPS_AIDING_HEADING
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caae26007bc2dc98a7afb01cef4ef843eb">data_sets.h</a>
+</li>
+<li>INS_STATUS_GPS_AIDING_POS_VEL
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cae2a8b5a3e552a193a89a4a0f38db590f">data_sets.h</a>
 </li>
 <li>INS_STATUS_GPS_UPDATE_IN_SOLUTION
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4662a4846829c59d0e06598d98873eb2">data_sets.h</a>
 </li>
-<li>INS_STATUS_MAG_ACTIVE_CAL_SET
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca1c6b7ac96d61943036b27acb87c7428b">data_sets.h</a>
+<li>INS_STATUS_MAG_AIDING_HEADING
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cad3762b947e38a24e95d47084853c147a">data_sets.h</a>
 </li>
 <li>INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca99e4f574a713507f7ee48ba6630ef90a">data_sets.h</a>
@@ -168,8 +168,11 @@ $(function() {
 <li>INS_STATUS_POS_ALIGN_COARSE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca8ea44e265c5a498143f108b0f91822c4">data_sets.h</a>
 </li>
-<li>INS_STATUS_POS_ALIGN_GOOD
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caecc0afad505b972c25a65f9512aa592a">data_sets.h</a>
+<li>INS_STATUS_POS_ALIGN_FINE
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca3a47400decc36d71aa0880ed801290de">data_sets.h</a>
+</li>
+<li>INS_STATUS_RESERVED_1
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cac9894fe77ead6e6c46a4a89c5a6fd05d">data_sets.h</a>
 </li>
 <li>INS_STATUS_RTK_BASE_ERR_NO_OBSERV
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca47bc958224d34f5727656a965f8e481a">data_sets.h</a>
@@ -195,8 +198,8 @@ $(function() {
 <li>INS_STATUS_SOLUTION
 : <a class="el" href="data__sets_8h.html#aabf5c609d0e4745f3fe7954cbefbc235">data_sets.h</a>
 </li>
-<li>INS_STATUS_SOLUTION_AHRS_GOOD
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cad65ce017a3cca247e519cf481b5f058f">data_sets.h</a>
+<li>INS_STATUS_SOLUTION_AHRS
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca19eb542f0a942ca7d006489feb1fe942">data_sets.h</a>
 </li>
 <li>INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca391f76b913c630b64d2a1e0c0ac67904">data_sets.h</a>
@@ -210,8 +213,8 @@ $(function() {
 <li>INS_STATUS_SOLUTION_MASK
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cad1e225efa29111ac8b4bb6d18a18f8f2">data_sets.h</a>
 </li>
-<li>INS_STATUS_SOLUTION_NAV_GOOD
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cabf139d9ab712165ac78ea7b29db174b5">data_sets.h</a>
+<li>INS_STATUS_SOLUTION_NAV
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cae6b846f2f98a54188c94ffce156f9d25">data_sets.h</a>
 </li>
 <li>INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca633b8f8b2e7f406d3906cffa72dc219b">data_sets.h</a>
@@ -234,17 +237,11 @@ $(function() {
 <li>INS_STATUS_UNUSED_4
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caa593eda89c6a5034886317ff2841c85e">data_sets.h</a>
 </li>
-<li>INS_STATUS_USING_GPS_IN_SOLUTION
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca6f4195673c611752d05396ed57c6a191">data_sets.h</a>
-</li>
-<li>INS_STATUS_USING_MAG_IN_SOLUTION
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caa7b2f5189fb46e7c41ddbdce8811b6f9">data_sets.h</a>
-</li>
 <li>INS_STATUS_VEL_ALIGN_COARSE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca43a559066c18cf2d4a8f2f03de405e39">data_sets.h</a>
 </li>
-<li>INS_STATUS_VEL_ALIGN_GOOD
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caa0f9844d8cd5a17eb0bcb7971dabb87e">data_sets.h</a>
+<li>INS_STATUS_VEL_ALIGN_FINE
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caae2ffc3dcad5780c1af7e2ded3d58e39">data_sets.h</a>
 </li>
 <li>INV_DEG2RAD_EARTH_RADIUS_F
 : <a class="el" href="_i_s_earth_8h.html#a86ae5c66468b5f5ca096b6da3e03adb5">ISEarth.h</a>
@@ -253,8 +250,8 @@ $(function() {
 : <a class="el" href="_i_s_earth_8h.html#aa5292e524b0355c08354ae730ec4fbf5">ISEarth.h</a>
 </li>
 <li>inv_Mat2()
-: <a class="el" href="_i_s_matrix_8c.html#a6e80531e98cc3beba2d47c188d827ab6">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a6e80531e98cc3beba2d47c188d827ab6">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a6e80531e98cc3beba2d47c188d827ab6">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a6e80531e98cc3beba2d47c188d827ab6">ISMatrix.c</a>
 </li>
 <li>inv_Mat3()
 : <a class="el" href="_i_s_matrix_8c.html#a2ab1066ec59c2d97ae9eb4a0e8a176a9">ISMatrix.c</a>
@@ -279,6 +276,9 @@ $(function() {
 </li>
 <li>IS_BAUD_RATE_BOOTLOADER_COM
 : <a class="el" href="inertial_sense_boot_loader_8h.html#a3e211cb8d6486021564796897143d675">inertialSenseBootLoader.h</a>
+</li>
+<li>IS_BAUD_RATE_BOOTLOADER_LEGACY
+: <a class="el" href="inertial_sense_boot_loader_8h.html#a404c96d6000a762c614a00847fd6a821">inertialSenseBootLoader.h</a>
 </li>
 <li>IS_BAUD_RATE_BOOTLOADER_RS232
 : <a class="el" href="inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d">inertialSenseBootLoader.h</a>
@@ -385,8 +385,8 @@ $(function() {
 , <a class="el" href="_i_s_tcp_client_8cpp.html#ae367046426f61690f26864d75ce133cf">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketFrameworkShutdown()
-: <a class="el" href="_i_s_tcp_client_8h.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.h</a>
-, <a class="el" href="_i_s_tcp_client_8cpp.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.cpp</a>
+: <a class="el" href="_i_s_tcp_client_8cpp.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.cpp</a>
+, <a class="el" href="_i_s_tcp_client_8h.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.h</a>
 </li>
 <li>ISSocketRead()
 : <a class="el" href="_i_s_tcp_client_8cpp.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.cpp</a>
@@ -397,8 +397,8 @@ $(function() {
 , <a class="el" href="_i_s_tcp_client_8h.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.h</a>
 </li>
 <li>ISSocketSetReadTimeout()
-: <a class="el" href="_i_s_tcp_client_8h.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.h</a>
-, <a class="el" href="_i_s_tcp_client_8cpp.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.cpp</a>
+: <a class="el" href="_i_s_tcp_client_8cpp.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.cpp</a>
+, <a class="el" href="_i_s_tcp_client_8h.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.h</a>
 </li>
 <li>ISSocketWrite()
 : <a class="el" href="_i_s_tcp_client_8h.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISTcpClient.h</a>

@@ -14,6 +14,7 @@ var searchData=
   ['pdop',['pDop',['../struct_p_a_c_k_e_d.html#af9662ab3325c5c1a973789d4503075d5',1,'PACKED']]],
   ['period',['period',['../structbroadcast__msg__t.html#a3db0429a66a52239f3df4e4741d35409',1,'broadcast_msg_t']]],
   ['periodms',['periodMs',['../struct_p_a_c_k_e_d.html#aaf029ca70496c7657117c31e71880f6f',1,'PACKED']]],
+  ['persistentmessages',['persistentMessages',['../structcmd__options__t.html#aa577c19b7a8d12f552936e4ba9cdff9d',1,'cmd_options_t']]],
   ['pfile',['pFile',['../classc_csv_log.html#a315a347d2b89b45f15b9883ade535c4d',1,'cCsvLog']]],
   ['pfnasyncread',['pfnAsyncRead',['../structserial__port__t.html#ade66d220cb7dab1d6f21733870b2a8f2',1,'serial_port_t']]],
   ['pfnclose',['pfnClose',['../structserial__port__t.html#a543cb366d5ece475c51ceb90581c1f37',1,'serial_port_t']]],

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -316,7 +316,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 64: DID_BIT
 		offsetsIns3,			// 65: DID_INS_3
 		offsetsIns4,			// 66: DID_INS_4
-		0,						// 67: DID_INL2_VARIANCE
+		0,						// 67: DID_INL2_NED_SIGMA
 		0,						// 68: DID_STROBE_IN_TIME
 		0,						// 69: DID_GPS1_RAW
 		0,						// 70: DID_GPS2_RAW
@@ -449,7 +449,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 64: DID_BIT
 		0,                      // 65: DID_INS_3
 		0,                      // 66: DID_INS_4
-		0,						// 67: DID_INL2_VARIANCE
+		0,						// 67: DID_INL2_NED_SIGMA
 		0,						// 68: DID_STROBE_IN_TIME
 		0,						// 69: DID_GPS1_RAW
 		0,						// 70: DID_GPS2_RAW
@@ -649,6 +649,8 @@ static void appendGPSTimeOfLastFix(const gps_pos_t* gps, char** buffer, int* buf
 
 static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLength, double v, const char* degreesFormat, char posC, char negC)
 {
+    (void*)gps;
+
     int degrees = (int)(v);
     double minutes = (v - ((double)degrees)) * 60.0;
 

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -305,8 +305,9 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			isTowMode = true;
 			break;
 
-		case DID_GPS1_POS:		
-			msgTimeMs = d.gpsPos.timeOfWeekMs; 
+		case DID_GPS1_POS:
+        case DID_GPS1_RTK_POS:
+            msgTimeMs = d.gpsPos.timeOfWeekMs;
 			gpsTowMsOffset = (int)(1000.0*d.gpsPos.towOffset); 
 			isTowMode = true; 
 			break;
@@ -532,10 +533,11 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus)
 {
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tSTATUS\n");
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     INS Fusing: GPS %d, Mag %d\n",
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     Aiding: Mag %d, GPS (Hdg %d, Pos %d)\n",
 		(hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
-		(insStatus & INS_STATUS_USING_GPS_IN_SOLUTION) != 0,
-		(insStatus & INS_STATUS_USING_MAG_IN_SOLUTION) != 0);
+        (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
+        (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
+        (insStatus & INS_STATUS_GPS_AIDING_POS_VEL) != 0);
 	if (insStatus & INS_STATUS_NAV_MODE)
 	{
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: NAV ");
@@ -547,13 +549,13 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 	switch (INS_STATUS_SOLUTION(insStatus))
 	{
 	default:
-	case INS_STATUS_SOLUTION_OFF:					ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: OFF\n");					break;
-	case INS_STATUS_SOLUTION_ALIGNING:				ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNING\n");			break;
-	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNMENT COMPLETE\n");	break;
-	case INS_STATUS_SOLUTION_NAV_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV GOOD\n");			break;
-	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV HIGH VARIANCE\n");	break;
-	case INS_STATUS_SOLUTION_AHRS_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS GOOD\n");			break;
-	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS HIGH VARIANCE\n");	break;
+	case INS_STATUS_SOLUTION_OFF:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: OFF\n");                 break;
+	case INS_STATUS_SOLUTION_ALIGNING:              ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNING\n");            break;
+	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNMENT COMPLETE\n");  break;
+	case INS_STATUS_SOLUTION_NAV:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV\n");                 break;
+	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:     ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV HIGH VARIANCE\n");   break;
+	case INS_STATUS_SOLUTION_AHRS:                  ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS\n");                break;
+	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS HIGH VARIANCE\n");  break;
 	}
 // 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Align Good: Att %d, Vel %d, Pos %d\n",
 // 		(insStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
@@ -572,13 +574,13 @@ char* cInertialSenseDisplay::InsStatusToSolStatusString(char* ptr, char* ptrEnd,
 	switch (INS_STATUS_SOLUTION(insStatus))
 	{
 	default:
-	case INS_STATUS_SOLUTION_OFF:					ptr += SNPRINTF(ptr, ptrEnd - ptr, ", OFF      ");	break;
-	case INS_STATUS_SOLUTION_ALIGNING:				ptr += SNPRINTF(ptr, ptrEnd - ptr, ", ALIGNING ");	break;
-	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", COMPLETE ");	break;
-	case INS_STATUS_SOLUTION_NAV_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, ", NAV GOOD ");	break;
+	case INS_STATUS_SOLUTION_OFF:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, ", OFF      ");	break;
+	case INS_STATUS_SOLUTION_ALIGNING:              ptr += SNPRINTF(ptr, ptrEnd - ptr, ", ALIGNING ");	break;
+	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", COMPLETE ");	break;
+	case INS_STATUS_SOLUTION_NAV:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, ", NAV      ");	break;
 	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", NAV VARIA");	break;
-	case INS_STATUS_SOLUTION_AHRS_GOOD:				ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS GOOD");	break;
-	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS VARI");	break;
+	case INS_STATUS_SOLUTION_AHRS:                  ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS     ");	break;
+	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS VARI");	break;
 	}
 
 	return ptr;

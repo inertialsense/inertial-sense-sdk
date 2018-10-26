@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -535,12 +535,9 @@ static void PopulateConfigMappings(map_lookup_name_t& mappings)
     typedef config_t MAP_TYPE;
     map_name_to_info_t m;
     uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "enBootloader", enBootloader, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "enSensorStats", enSensorStats, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "enRTOSStats", enBootloader, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "gpsStatus", gpsStatus, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "system", system, 0, DataTypeUInt32, uint32_t);
-	mappings[DID_CONFIG] = m;
+    ADD_MAP(m, totalSize, "invSystem", invSystem, 0, DataTypeUInt32, uint32_t);
+    mappings[DID_CONFIG] = m;
 
     ASSERT_SIZE(totalSize);
 }
@@ -1263,7 +1260,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"bit",					// 64: DID_BIT
 		"ins3",					// 65: DID_INS_3
 		"ins4",					// 66: DID_INS_4
-		"inl2Variance",			// 67: DID_INL2_VARIANCE
+		"inl2NedSigma",			// 67: DID_INL2_NED_SIGMA
 		"strobeInTime",			// 68: DID_STROBE_IN_TIME
 		"gps1Raw",				// 69: DID_GPS1_RAW
 		"gps2Raw",				// 70: DID_GPS2_RAW

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -193,6 +193,16 @@ static int xModemSend(serial_port_t* s, uint8_t* buf, size_t len)
 	}
 	serialPortReadChar(s, &eot);
 	return 0;
+}
+
+static int bootloaderCycleBaudRate(int baudRate)
+{
+    switch (baudRate)
+    {
+    case IS_BAUD_RATE_BOOTLOADER: return IS_BAUD_RATE_BOOTLOADER_LEGACY;
+    case IS_BAUD_RATE_BOOTLOADER_LEGACY: return IS_BAUD_RATE_BOOTLOADER_RS232;
+    default: return IS_BAUD_RATE_BOOTLOADER;
+    }
 }
 
 // negotiate the bootloader version, once a 'U' character has been read, we read another character, timing out after 500 milliseconds
@@ -1059,39 +1069,42 @@ static int bootloaderSync(serial_port_t* s)
 
 static int bootloaderHandshake(bootload_params_t* p)
 {
-    p->baudRate = (p->baudRate != IS_BAUD_RATE_BOOTLOADER_RS232 ? IS_BAUD_RATE_BOOTLOADER : IS_BAUD_RATE_BOOTLOADER_RS232);
-
-    serialPortClose(p->port);
-    if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
-    {
-        return 0;
-    }
 
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
 
-	// try handshaking at each baud rate at least twice
-	for (int i = 0; i < 4; i++)
+    // ensure that we start off with a valid baud rate
+    if (p->baudRate == 0)
+    {
+        p->baudRate = bootloaderCycleBaudRate(p->baudRate);
+    }
+
+    // try handshaking at each baud rate
+    for (int i = 0; i < 3; i++)
 
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
 	{
-        if (bootloaderSync(p->port))
+        serialPortClose(p->port);
+        if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
+        {
+            // can't open the port, fail
+            return 0;
+        }
+        else if (bootloaderSync(p->port))
 		{
+            // success, reset baud rate for next round of handshaking
+            p->baudRate = 0;
 			return 1;
 		}
 
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
 
-        else if (!p->flags.bitFields.enableAutoBaud)
-        {
-			break;
-        }
-
-		// retry at other baud rate
+        // retry at a different baud rate
         serialPortClose(p->port);
-		p->baudRate = (p->baudRate == IS_BAUD_RATE_BOOTLOADER) ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER;
+        p->baudRate = bootloaderCycleBaudRate(p->baudRate);
         if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
         {
+            // can't open the port, fail
             return 0;
         }
 
@@ -1305,7 +1318,6 @@ int bootloadFile(const char* fileName, serial_port_t* port, char* error, int err
 	params.uploadProgress = uploadProgress;
 	params.verifyProgress = verifyProgress;
 	params.numberOfDevices = 1;
-    params.flags.bitFields.enableAutoBaud = 1;
     params.flags.bitFields.enableVerify = (verifyProgress != 0);
 
 	return bootloadFileEx(&params);
@@ -1486,35 +1498,38 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
     bootload_params_t p;
     memset(&p, 0, sizeof(p));
 	p.port = port;
-	p.flags.bitFields.enableAutoBaud = 1;
 
-    // in case we are in program mode, try and send the commands to go into bootloader mode
-    unsigned char c = 0;
-    for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
+    // attempt to handshake in case we are in bootloader mode
+    if (!bootloaderHandshake(&p))
     {
-        serialPortClose(port);
-        if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
+        // in case we are in program mode, try and send the commands to go into bootloader mode
+        unsigned char c = 0;
+        for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
         {
-            return 0;
-        }
-        for (size_t loop = 0; loop < 10; loop++)
-        {
-            serialPortWriteAscii(port, "STPB", 4);
-            serialPortWriteAscii(port, "BLEN", 4);
-            c = 0;
-            if (serialPortReadCharTimeout(port, &c, 13) == 1)
+            serialPortClose(port);
+            if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
             {
-                if (c == '$')
-                {
-                    // done, we got into bootloader mode
-                    i = 9999;
-                    SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
-                    break;
-                }
+                return 0;
             }
-            else
+            for (size_t loop = 0; loop < 10; loop++)
             {
-                serialPortFlush(port);
+                serialPortWriteAscii(port, "STPB", 4);
+                serialPortWriteAscii(port, "BLEN", 4);
+                c = 0;
+                if (serialPortReadCharTimeout(port, &c, 13) == 1)
+                {
+                    if (c == '$')
+                    {
+                        // done, we got into bootloader mode
+                        i = 9999;
+                        SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
+                        break;
+                    }
+                }
+                else
+                {
+                    serialPortFlush(port);
+                }
             }
         }
     }

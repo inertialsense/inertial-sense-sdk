@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014 Inertial Sense, LLC - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 
 	// enable auto-baud, in the event that fast serial communications is not available,
 	//  the bootloader will attempt to fall back to a slower speed
-	param.flags.bitFields.enableAutoBaud = 1;
+// 	param.flags.bitFields.enableAutoBaud = 1;
 
 
 	// STEP 4: Run bootloader

@@ -31,7 +31,6 @@ var searchData=
   ['gpsrtkmisc',['gpsRtkMisc',['../struct_p_a_c_k_e_d.html#aeb2c8e87fe88f50c5d74de585caa9b40',1,'PACKED']]],
   ['gpsrtkrel',['gpsRtkRel',['../struct_p_a_c_k_e_d.html#ac6742f7f461637b2e84904a9e53e982a',1,'PACKED']]],
   ['gpssat',['gpsSat',['../struct_p_a_c_k_e_d.html#a3fa89c1d5d1aecd32b550c2523ca9817',1,'PACKED']]],
-  ['gpsstatus',['gpsStatus',['../struct_p_a_c_k_e_d.html#a539663cbe08572454397fa63a6aae066',1,'PACKED']]],
   ['gpstimesyncperiodms',['gpsTimeSyncPeriodMs',['../struct_p_a_c_k_e_d.html#ab92728c00c22075cd67e47e5466c0351',1,'PACKED']]],
   ['gpsvel',['gpsVel',['../struct_p_a_c_k_e_d.html#a696c3f46dc09851df5b33746af2da4ef',1,'PACKED']]],
   ['grpnum',['grpNum',['../structs_chunk_header.html#a2b64e72a0ab8292bb0c1539326f80164',1,'sChunkHeader']]]
