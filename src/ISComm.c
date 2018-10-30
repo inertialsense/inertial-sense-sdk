@@ -505,14 +505,24 @@ int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t off
 	return result;
 }
 
-int is_comm_stop_broadcasts(is_comm_instance_t* instance)
+int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance)
 {
-	packet_hdr_t hdr;
-	hdr.flags = 0;
-	hdr.pid = PID_STOP_ALL_BROADCASTS;
-	hdr.counter = instance->counter++;
+    packet_hdr_t hdr;
+    hdr.flags = 0;
+    hdr.pid = PID_STOP_BROADCASTS_ALL_PORTS;
+    hdr.counter = instance->counter++;
 
-	return is_encode_binary_packet(0, 0, &hdr, 0, instance->buffer, instance->bufferSize);
+    return is_encode_binary_packet(0, 0, &hdr, 0, instance->buffer, instance->bufferSize);
+}
+
+int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance)
+{
+    packet_hdr_t hdr;
+    hdr.flags = 0;
+    hdr.pid = PID_STOP_BROADCASTS_CURRENT_PORT;
+    hdr.counter = instance->counter++;
+
+    return is_encode_binary_packet(0, 0, &hdr, 0, instance->buffer, instance->bufferSize);
 }
 
 void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum)

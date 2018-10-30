@@ -46,8 +46,8 @@ int main(int argc, char* argv[])
 	}
 
 
-	// STEP 3: Enable message broadcasting
-	// Stop all broadcasts on the device, we don't want binary message coming through while we are doing ASCII
+	// STEP 3: Enable prior message broadcasting
+	// Stop all broadcasts on the device on all ports.  We don't want binary message coming through while we are doing ASCII
 	if (!serialPortWriteAscii(&serialPort, "STPB", 4))
 	{
 		printf("Failed to encode stop broadcasts message\r\n");
@@ -61,6 +61,8 @@ int main(int argc, char* argv[])
 		return -3;
 	}
 
+    // STEP 4: Enable message broadcasting
+
 	// ASCII protocol is based on NMEA protocol https://en.wikipedia.org/wiki/NMEA_0183
 	// turn on the INS message at a period of 100 milliseconds (10 hz)
 	// serialPortWriteAscii takes care of the leading $ character, checksum and ending \r\n newline
@@ -70,42 +72,30 @@ int main(int argc, char* argv[])
 	// Instead of a 0 for a message, it can be left blank (,,) to not modify the period for that message
 	// please see the user manual for additional updates and notes
 
-	// Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same
-	// 	const char* asciiMessage = "ASCB,0,,,100,,,,,,,";
-	char asciiMessage[100];
-	SNPRINTF(asciiMessage, 100, "ASCB,%d,,,100,,,,,,,", RMC_OPTIONS_PERSISTENT);
+    // Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same
+    const char* asciiMessage = "ASCB,,,,100,,,,,,,";
 
 	// Get PIMU @ 50Hz, GPGGA @ 5Hz, both serial ports, set all other periods to 0
-	// const char* asciiMessage = "ASCB,3,20,0,0,0,0,0,100,0,0,0";
+    // const char* asciiMessage = "ASCB,3,20,0,0,0,0,0,100,0,0,0";
 
-	// Stop all messages / broadcasts
-	// const char* asciiMessage = "STPB";
-																				
-	if (!serialPortWriteAscii(&serialPort, asciiMessage, (int)strnlen(asciiMessage, 128)))
+    if (!serialPortWriteAscii(&serialPort, asciiMessage, (int)strnlen(asciiMessage, 128)))
 	{
 		printf("Failed to encode ASCII get INS message\r\n");
 		return -4;
 	}
 
-	/*
-	// you can also enable ASCII messages using the binary protocol
-	is_comm_instance_t comm;
-	uint8_t commBuffer[2048];
-	comm.buffer = commBuffer;
-	comm.bufferSize = sizeof(commBuffer);
-	is_comm_init(&comm);
-	ascii_msgs_t ascii;
-	memset(&ascii, 0, sizeof(ascii));
-	ascii.gprmc = 100;
-	int messageSize = is_comm_set_data(&comm, DID_ASCII_BCAST_PERIOD, 0, sizeof(ascii), &ascii);
-	if (messageSize > 0)
-	{
-		serialPortWrite(&serialPort, comm.buffer, messageSize);
-	}
-	*/
+
+#if 0
+    // STEP 5: (optional) Save Persistent Messages.  This remembers the current communications and automatically streams data following reboot.
+    if (!serialPortWriteAscii(&serialPort, "PERS", 4))
+    {
+        printf("Failed to encode ASCII save persistent message\r\n");
+        return -4;
+    }
+#endif
 
 
-	// STEP 4: Handle received data
+	// STEP 6: Handle received data
 	unsigned char* asciiData;
 	unsigned char asciiLine[512];
 

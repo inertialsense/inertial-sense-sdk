@@ -1,10 +1,8 @@
 var searchData=
 [
-  ['nav_5ffix_5fstatus_5fnone',['NAV_FIX_STATUS_NONE',['../data__sets_8h.html#a1cd19951a12c6aa43e54310a3150abe6aa68fc52fd4abaa8bd4a1c2de81082bf3',1,'data_sets.h']]],
-  ['nav_5ffix_5fstatus_5frtk_5ffix',['NAV_FIX_STATUS_RTK_FIX',['../data__sets_8h.html#a1cd19951a12c6aa43e54310a3150abe6ac6dc1d6544f53ee94cd687258bbd8639',1,'data_sets.h']]],
-  ['nav_5ffix_5fstatus_5frtk_5ffloat',['NAV_FIX_STATUS_RTK_FLOAT',['../data__sets_8h.html#a1cd19951a12c6aa43e54310a3150abe6ae0646dc83c8f1dcb6489e36549d6b9c3',1,'data_sets.h']]],
-  ['nav_5ffix_5fstatus_5frtk_5fsingle',['NAV_FIX_STATUS_RTK_SINGLE',['../data__sets_8h.html#a1cd19951a12c6aa43e54310a3150abe6a44eb8ed848a57107a7cf90c7ae0de5f4',1,'data_sets.h']]],
-  ['nav_5ffix_5fstatus_5fstandard',['NAV_FIX_STATUS_STANDARD',['../data__sets_8h.html#a1cd19951a12c6aa43e54310a3150abe6a873f8ecc9c700d01fee19535fa20a454',1,'data_sets.h']]],
-  ['nav_5ffix_5fstatus_5fstandard_5fw_5fgps_5fcompassing',['NAV_FIX_STATUS_STANDARD_W_GPS_COMPASSING',['../data__sets_8h.html#a1cd19951a12c6aa43e54310a3150abe6ab932ac76df6a543fc1b6f84baa4c45f4',1,'data_sets.h']]],
-  ['nav_5fsat_5fflags_5fhealth_5foffset',['NAV_SAT_FLAGS_HEALTH_OFFSET',['../data__sets_8h.html#a2b43fc2aa26e8e97cd130f8c14f617beace7214cf64dec3a0de3426660b5f3ef2',1,'data_sets.h']]]
+  ['mag_5frecal_5fmode_5fabort',['MAG_RECAL_MODE_ABORT',['../data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2adf485a659548a646e4408a37a2d01c7c',1,'data_sets.h']]],
+  ['mag_5frecal_5fmode_5fcomplete',['MAG_RECAL_MODE_COMPLETE',['../data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2a337eb9305eec3681a81ac8ad61a49616',1,'data_sets.h']]],
+  ['mag_5frecal_5fmode_5fmulti_5faxis',['MAG_RECAL_MODE_MULTI_AXIS',['../data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2a9cf68bc281222a4e4d607af8d5d062b5',1,'data_sets.h']]],
+  ['mag_5frecal_5fmode_5fsingle_5faxis',['MAG_RECAL_MODE_SINGLE_AXIS',['../data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2ab09984fd4c2f9364327da0a59871a71f',1,'data_sets.h']]],
+  ['max_5fnum_5fkid',['MAX_NUM_KID',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978facbd00269f1a1fba1652c307acf93932d',1,'cDataKML']]]
 ];

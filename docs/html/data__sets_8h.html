@@ -194,6 +194,10 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsurvey__in__t.html">survey_in_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structevb2__t.html">evb2_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structport__monitor__t.html">port_monitor_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcrash__info__t.html">crash_info_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal__diagnostic__t.html">internal_diagnostic_t</a></td></tr>
@@ -357,7 +361,11 @@ Macros</h2></td></tr>
 <tr class="separator:aec46d7361e47847289c4f49c71f5502e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c08b1d9933f6d05b1955a2ec9e64bd0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a5c08b1d9933f6d05b1955a2ec9e64bd0">DID_SURVEY_IN</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)73 /** (<a class="el" href="structsurvey__in__t.html">survey_in_t</a>) Survey in, used to determine position for RTK base station. */</td></tr>
 <tr class="separator:a5c08b1d9933f6d05b1955a2ec9e64bd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a777819ed9aeeb6f96e9a74764d75064a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a777819ed9aeeb6f96e9a74764d75064a">DID_COUNT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)74</td></tr>
+<tr class="memitem:a666f5002e8a9ba4bf80e3392fc641a09"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a666f5002e8a9ba4bf80e3392fc641a09">DID_EVB2</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)74 /** (<a class="el" href="structevb2__t.html">evb2_t</a>) EVB monitor, configuration and log control interface. */</td></tr>
+<tr class="separator:a666f5002e8a9ba4bf80e3392fc641a09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a311733e3e26ded43b7e57085ff858164"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a311733e3e26ded43b7e57085ff858164">DID_PORT_MONITOR</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)75 /** (<a class="el" href="structport__monitor__t.html">port_monitor_t</a>) Data rate and status monitoring for each communications port. */</td></tr>
+<tr class="separator:a311733e3e26ded43b7e57085ff858164"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a777819ed9aeeb6f96e9a74764d75064a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a777819ed9aeeb6f96e9a74764d75064a">DID_COUNT</a>&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)76</td></tr>
 <tr class="separator:a777819ed9aeeb6f96e9a74764d75064a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace8d510ee9f92f22409dc0c154eb1fb1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ace8d510ee9f92f22409dc0c154eb1fb1">DID_MAX_COUNT</a>&#160;&#160;&#160;256</td></tr>
 <tr class="separator:ace8d510ee9f92f22409dc0c154eb1fb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -656,16 +664,17 @@ Enumerations</h2></td></tr>
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca8d6899ad9e2dc9366eff323f87509117">INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET</a> = (int)0x00100000, 
 <br />
 &#160;&#160;<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca65bd6dfc53952e7725702d03a57b73eb">INS_STATUS_RTK_COMPASSING_WRONG_BASELINE</a> = (int)0x00200000, 
+<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca8945cb111b094d8ab63ecd921cf1a5e5">INS_STATUS_RTK_COMPASSING_MASK</a> = (INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET|INS_STATUS_RTK_COMPASSING_WRONG_BASELINE), 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca89e62a48945c4f247ce4665c0d811053">INS_STATUS_MAG_RECALIBRATING</a> = (int)0x00400000, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca99e4f574a713507f7ee48ba6630ef90a">INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL</a> = (int)0x00800000, 
-<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca51f5010e279d6e6ce66a06f1d4f319ba">INS_STATUS_NAV_FIX_STATUS_MASK</a> = (int)0x07000000, 
 <br />
-&#160;&#160;<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf50e5f5fa40494e7ea450a39e3396cb4">INS_STATUS_NAV_FIX_STATUS_OFFSET</a> = 24, 
-<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca6f8eb92989794fea57af8ae0b49879eb">INS_STATUS_RTK_BASE_MASK</a> = (int)0x38300000, 
+&#160;&#160;<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca51f5010e279d6e6ce66a06f1d4f319ba">INS_STATUS_NAV_FIX_STATUS_MASK</a> = (int)0x07000000, 
+<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf50e5f5fa40494e7ea450a39e3396cb4">INS_STATUS_NAV_FIX_STATUS_OFFSET</a> = 24, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca47bc958224d34f5727656a965f8e481a">INS_STATUS_RTK_BASE_ERR_NO_OBSERV</a> = (int)0x08000000, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca1096a76a15ac7821f6d0dfa50ed41833">INS_STATUS_RTK_BASE_ERR_NO_POSITION</a> = (int)0x10000000, 
 <br />
 &#160;&#160;<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cadc6138a7dc14f19c515d5dce35a35db7">INS_STATUS_RTK_BASE_POSITION_MOVING</a> = (int)0x20000000, 
+<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca6f8eb92989794fea57af8ae0b49879eb">INS_STATUS_RTK_BASE_MASK</a> = (INS_STATUS_RTK_BASE_ERR_NO_OBSERV|INS_STATUS_RTK_BASE_ERR_NO_POSITION|INS_STATUS_RTK_BASE_POSITION_MOVING), 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca04015cafe4c98b3cccd163098bd58e1b">INS_STATUS_RTOS_TASK_PERIOD_OVERRUN</a> = (int)0x40000000, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4e0d0beebd5d854e00bb62ff1fed941a">INS_STATUS_GENERAL_FAULT</a> = (int)0x80000000
 <br />
@@ -758,24 +767,26 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a7059fc3a6e630b76b17c0ea5ff5a8865">GPS_STATUS_FLAGS_RTK_ENABLED</a> = (int)0x00100000, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a0fb841078ef66c5390f9901f78009a71">GPS_STATUS_FLAGS_STATIC_MODE</a> = (int)0x00200000, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a54e6329b66139ab933cc655216c28ec2">GPS_STATUS_FLAGS_GPS_COMPASSING_ENABLED</a> = (int)0x00400000, 
-<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ab53b6ad6a943c75cd343d93801189374">GPS_STATUS_FLAGS_RX_BASE_NO_OBSERV_EPHEM</a> = (int)0x00800000, 
+<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108aa540d7c86c7b417e4d87dc9439ad6693">GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM</a> = (int)0x00800000, 
 <br />
-&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a5a19998c77c1ddd73cafb4a01e3e589d">GPS_STATUS_FLAGS_RX_BASE_NO_POSITION</a> = (int)0x01000000, 
+&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ab100bb327f875eed013b44e491c5beba">GPS_STATUS_FLAGS_BASE_NO_POSITION</a> = (int)0x01000000, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108aee5febd8bc206aacdbb7232197b8a60e">GPS_STATUS_FLAGS_BASE_POSITION_MOVING</a> = (int)0x02000000, 
+<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ad4106ce9f69103bd33c6de9d0b60e965">GPS_STATUS_FLAGS_BASE_MASK</a>, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a7ad5b29db668c575bded51286d27f1b4">GPS_STATUS_FLAGS_HIGH_ACCURACY_POSITION</a> = (int)0x04000000, 
-<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a0a13dcd2c6f6b8bc5f7e5fc363799566">GPS_STATUS_FLAGS_GPS_COMPASSING_VALID</a> = (int)0x08000000, 
 <br />
-&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ac203ac41bf2a88deec78aa83541ec31e">GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE</a> = (int)0x00002000, 
+&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a0a13dcd2c6f6b8bc5f7e5fc363799566">GPS_STATUS_FLAGS_GPS_COMPASSING_VALID</a> = (int)0x08000000, 
+<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ac203ac41bf2a88deec78aa83541ec31e">GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE</a> = (int)0x00002000, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a8b067d3478a1d91bb19bdee1e5710e6b">GPS_STATUS_FLAGS_GPS_COMPASS_NO_BASELINE</a> = (int)0x00004000, 
-<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a64b306ad1962368dcfbfe5dce8d19453">GPS_STATUS_FLAGS_UNUSED_3</a> = (int)0x00008000, 
+<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ab7cb3b9ac27c803e12b13deed3d0366f">GPS_STATUS_FLAGS_GPS_COMPASS_MASK</a>, 
+<br />
+&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a64b306ad1962368dcfbfe5dce8d19453">GPS_STATUS_FLAGS_UNUSED_3</a> = (int)0x00008000, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a74138adacc04177b787dee3171197e0d">GPS_STATUS_FLAGS_MASK</a> = (int)0x0FFFE000, 
-<br />
-&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a8640d23eee96cf7ec5ae379fbe7cd6dc">GPS_STATUS_FLAGS_BIT_OFFSET</a> = (int)16, 
+<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a8640d23eee96cf7ec5ae379fbe7cd6dc">GPS_STATUS_FLAGS_BIT_OFFSET</a> = (int)16, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108aafb26f91e9c35f37a0a1ef8d2c097763">GPS_STATUS_INIT_STATUS_PROGRAM_OSC</a> = (int)0x10000000, 
-<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a4f2d7489f7b8c44edd5e220631f72517">GPS_STATUS_INIT_STATUS_REINIT</a> = (int)0x20000000, 
-<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a5a2fb4769455ed3197bebde28e2e49ff">GPS_STATUS_INIT_STATUS_READING</a> = (int)0x40000000, 
 <br />
-&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a9c3b5be486d4444a47d22bb7baf7cb96">GPS_STATUS_INIT_STATUS_MASK</a> = (int)0xF0000000, 
+&#160;&#160;<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a4f2d7489f7b8c44edd5e220631f72517">GPS_STATUS_INIT_STATUS_REINIT</a> = (int)0x20000000, 
+<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a5a2fb4769455ed3197bebde28e2e49ff">GPS_STATUS_INIT_STATUS_READING</a> = (int)0x40000000, 
+<a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a9c3b5be486d4444a47d22bb7baf7cb96">GPS_STATUS_INIT_STATUS_MASK</a> = (int)0xF0000000, 
 <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ab2d21c65d2e402036ff1814e2141cf22">GPS_STATUS_INIT_STATUS_BIT_OFFSET</a> = (int)28
 <br />
  }</td></tr>
@@ -918,7 +929,8 @@ Enumerations</h2></td></tr>
 <a class="el" href="data__sets_8h.html#a3dd13b023dd89f3c598733e70cfd0e02af0906d3332501de40c268186fa2403ff">RTK_CFG_BITS_RTK_BASE_SER0</a>, 
 <br />
 &#160;&#160;<a class="el" href="data__sets_8h.html#a3dd13b023dd89f3c598733e70cfd0e02afe1c624756d8f4a39891027aeb1cec56">RTK_CFG_BITS_RTK_BASE_SER1</a>, 
-<a class="el" href="data__sets_8h.html#a3dd13b023dd89f3c598733e70cfd0e02a1fb519bf6900533a9ca2ad5cb03c4c0e">RTK_CFG_BITS_RTK_ROVER</a> = (RTK_CFG_BITS_GPS1_RTK_ROVER), 
+<a class="el" href="data__sets_8h.html#a3dd13b023dd89f3c598733e70cfd0e02a1fb519bf6900533a9ca2ad5cb03c4c0e">RTK_CFG_BITS_RTK_ROVER</a> = (RTK_CFG_BITS_GPS1_RTK_ROVER | RTK_CFG_BITS_GPS2_RTK_ROVER), 
+<a class="el" href="data__sets_8h.html#a3dd13b023dd89f3c598733e70cfd0e02a912250ea06ea0ecb21732946dfb90950">RTK_CFG_BITS_RTK_MODE_MASK</a> = (RTK_CFG_BITS_RTK_ROVER | RTK_CFG_BITS_COMPASSING), 
 <a class="el" href="data__sets_8h.html#a3dd13b023dd89f3c598733e70cfd0e02ae4dc8123fc5a7fd6ec5c3502c7295e3b">RTK_CFG_BITS_RTK</a> = (RTK_CFG_BITS_RTK_ROVER | RTK_CFG_BITS_RTK_BASE)
 <br />
  }</td></tr>
@@ -1006,6 +1018,22 @@ Enumerations</h2></td></tr>
 <br />
  }</td></tr>
 <tr class="separator:a83bd7219c131eb152addd83d0473caf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3f070f0403365997de3501f6917745c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#af3f070f0403365997de3501f6917745c">eEvb2ComBridgeCfg</a> { <a class="el" href="data__sets_8h.html#af3f070f0403365997de3501f6917745ca1c3dfb011275685423d4703913cdf4c0">EVB2_CBC_NA</a> = 0, 
+<a class="el" href="data__sets_8h.html#af3f070f0403365997de3501f6917745ca0543be14d938cb3d71ceb166c26febeb">EVB2_CBD_USBxSER0</a> = 1, 
+<a class="el" href="data__sets_8h.html#af3f070f0403365997de3501f6917745cabf3929290918a8d04a02215536eacb9d">EVB2_CBC_USBxSPI</a> = 2
+ }</td></tr>
+<tr class="separator:af3f070f0403365997de3501f6917745c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fbf2252e55c22cb218b8e122e2213c9"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9">eEvb2LoggerState</a> { <br />
+&#160;&#160;<a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9a5d0685c1ebc5bee7985cd29455b977ec">EVB2_LOG_STATE_NA</a> = 0, 
+<a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9aaeb431f2842836c2ce185abff44765c2">EVB2_LOG_STATE_CMD_START</a> = 1, 
+<a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9ac11d22c6f935bcd4784621b7fdaf0f77">EVB2_LOG_STATE_RUNNING</a> = 2, 
+<a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9aeebc0800a8d5a6e069f22920803992ba">EVB2_LOG_STATE_CMD_PAUSE</a> = 3, 
+<br />
+&#160;&#160;<a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9ae3a79b9020b9105a7f2dc8852abae814">EVB2_LOG_STATE_CMD_STOP</a> = 4, 
+<a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9a79f211305bc48a747eb966b9e65c4e86">EVB2_LOG_STATE_CMD_PURGE</a> = 1002
+<br />
+ }</td></tr>
+<tr class="separator:a7fbf2252e55c22cb218b8e122e2213c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab35ac489ad3a332c0a1ed5894a1e892e"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#ab35ac489ad3a332c0a1ed5894a1e892e">eRtosTask</a> { <br />
 &#160;&#160;<a class="el" href="data__sets_8h.html#ab35ac489ad3a332c0a1ed5894a1e892ea4e47f3bbfa3debc236e4e1c3fc1c1ed1">TASK_SAMPLE</a> = 0, 
 <a class="el" href="data__sets_8h.html#ab35ac489ad3a332c0a1ed5894a1e892ea639bd33a60424f40a266ccaed89bdaa7">TASK_NAV</a>, 
@@ -1069,7 +1097,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02597">2597</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02697">2697</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1089,7 +1117,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02596">2596</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02696">2696</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1109,7 +1137,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02595">2595</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02695">2695</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1129,7 +1157,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02594">2594</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02694">2694</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1149,7 +1177,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01163">1163</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01172">1172</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1165,7 +1193,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02290">2290</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02390">2390</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1181,7 +1209,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02291">2291</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02391">2391</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1197,7 +1225,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02292">2292</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02392">2392</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1213,7 +1241,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02288">2288</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02388">2388</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1229,7 +1257,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02293">2293</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02393">2393</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1245,7 +1273,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02294">2294</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02394">2394</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1261,7 +1289,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02289">2289</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02389">2389</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1278,7 +1306,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Latest known number of leap seconds </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00139">139</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00141">141</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1294,7 +1322,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00129">129</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00131">131</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1311,7 +1339,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum length of device info manufacturer string (must be a multiple of 4) </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00128">128</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00130">130</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1450,13 +1478,13 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DID_COUNT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)74</td>
+          <td class="memname">#define DID_COUNT&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)76</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>Count of data ids (including null data id 0) - make sure to increment if you add a new data id! </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00117">117</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00119">119</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -1569,6 +1597,22 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00091">91</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+
+</div>
+</div>
+<a id="a666f5002e8a9ba4bf80e3392fc641a09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a666f5002e8a9ba4bf80e3392fc641a09">&#9670;&nbsp;</a></span>DID_EVB2</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define DID_EVB2&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)74 /** (<a class="el" href="structevb2__t.html">evb2_t</a>) EVB monitor, configuration and log control interface. */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00108">108</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2161,7 +2205,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum number of data ids </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00120">120</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00122">122</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2258,6 +2302,22 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00068">68</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+
+</div>
+</div>
+<a id="a311733e3e26ded43b7e57085ff858164"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a311733e3e26ded43b7e57085ff858164">&#9670;&nbsp;</a></span>DID_PORT_MONITOR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define DID_PORT_MONITOR&#160;&#160;&#160;(<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a>)75 /** (<a class="el" href="structport__monitor__t.html">port_monitor_t</a>) Data rate and status monitoring for each communications port. */</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00109">109</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2545,7 +2605,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01700">1700</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01712">1712</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2565,7 +2625,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01145">1145</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01154">1154</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2585,7 +2645,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00302">302</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00305">305</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2605,7 +2665,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00216">216</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00219">219</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2625,7 +2685,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00193">193</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00195">195</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2645,7 +2705,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02601">2601</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02701">2701</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2665,7 +2725,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02600">2600</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02700">2700</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2685,7 +2745,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02599">2599</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02699">2699</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2705,7 +2765,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02598">2598</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02698">2698</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2722,7 +2782,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum number of satellite channels </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00125">125</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00127">127</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2738,7 +2798,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01701">1701</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01713">1713</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2755,7 +2815,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Max task name length - do not change </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02397">2397</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02497">2497</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2771,7 +2831,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00991">991</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01000">1000</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2787,7 +2847,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00146">146</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00148">148</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2804,7 +2864,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00135">135</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00137">137</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2820,7 +2880,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00136">136</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00138">138</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2836,7 +2896,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00143">143</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00145">145</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2853,7 +2913,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Rtk rover receiver index </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00142">142</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00144">144</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2869,7 +2929,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00144">144</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00146">146</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2885,7 +2945,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01026">1026</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01035">1035</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2901,7 +2961,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01038">1038</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01047">1047</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2917,7 +2977,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01024">1024</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01033">1033</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2933,7 +2993,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01039">1039</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01048">1048</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2949,7 +3009,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01030">1030</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01039">1039</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2965,7 +3025,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01032">1032</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01041">1041</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2981,7 +3041,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01045">1045</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01054">1054</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -2997,7 +3057,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01043">1043</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01052">1052</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3013,7 +3073,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01044">1044</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01053">1053</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3029,7 +3089,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01034">1034</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01043">1043</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3045,7 +3105,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01042">1042</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01051">1051</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3061,7 +3121,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01040">1040</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01049">1049</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3077,7 +3137,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01031">1031</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01040">1040</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3093,7 +3153,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01033">1033</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01042">1042</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3109,7 +3169,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01035">1035</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01044">1044</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3125,7 +3185,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01041">1041</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01050">1050</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3141,7 +3201,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01036">1036</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01045">1045</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3157,7 +3217,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01020">1020</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01029">1029</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3173,7 +3233,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01021">1021</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01030">1030</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3189,7 +3249,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01022">1022</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01031">1031</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3205,7 +3265,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01023">1023</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01032">1032</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3221,7 +3281,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01048">1048</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01057">1057</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3237,7 +3297,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01027">1027</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01036">1036</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3253,7 +3313,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01028">1028</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01037">1037</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3269,7 +3329,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01046">1046</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01055">1055</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3285,7 +3345,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01025">1025</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01034">1034</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3301,7 +3361,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01049">1049</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01058">1058</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3317,7 +3377,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01037">1037</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01046">1046</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3333,7 +3393,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01002">1002</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01011">1011</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3349,7 +3409,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01017">1017</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01026">1026</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3365,7 +3425,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01011">1011</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01020">1020</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3381,7 +3441,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01012">1012</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01021">1021</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3398,7 +3458,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Realtime Message Controller (used in rmc_t). The data sets available through RMC are broadcast at the availability of the data. A goal of RMC is to provide updates from each onboard sensor as fast as possible with minimal latency. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01010">1010</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01019">1019</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3414,7 +3474,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01013">1013</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01022">1022</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3430,7 +3490,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01014">1014</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01023">1023</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3446,7 +3506,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01015">1015</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01024">1024</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3462,7 +3522,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01016">1016</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01025">1025</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3477,9 +3537,9 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a> | \</div><div class="line">                                        RMC_BITS_GPS1_POS | \</div><div class="line">                                        RMC_BITS_PRESET )</div><div class="ttc" id="data__sets_8h_html_a7225bec6e49c3725eb066e61985d5d00"><div class="ttname"><a href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a></div><div class="ttdeci">#define RMC_BITS_INS2</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01021">data_sets.h:1021</a></div></div>
+<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a> | \</div><div class="line">                                        RMC_BITS_GPS1_POS | \</div><div class="line">                                        RMC_BITS_PRESET )</div><div class="ttc" id="data__sets_8h_html_a7225bec6e49c3725eb066e61985d5d00"><div class="ttname"><a href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">RMC_BITS_INS2</a></div><div class="ttdeci">#define RMC_BITS_INS2</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01030">data_sets.h:1030</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01070">1070</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01079">1079</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3495,7 +3555,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01073">1073</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01082">1082</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3511,7 +3571,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01067">1067</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01076">1076</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3526,9 +3586,9 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#ab668c80fbdef2b427c493a6d772cba17">RMC_BITS_PRESET</a> | \</div><div class="line">                                        RMC_BITS_INS2 | \</div><div class="line">                                        RMC_BITS_BAROMETER | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER1 | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER2 | \</div><div class="line">                                        RMC_BITS_GPS1_POS | \</div><div class="line">                                        RMC_BITS_GPS2_POS | \</div><div class="line">                                        RMC_BITS_GPS1_VEL | \</div><div class="line">                                        RMC_BITS_GPS2_VEL | \</div><div class="line">                                        RMC_BITS_GPS1_RAW | \</div><div class="line">                                        RMC_BITS_GPS2_RAW | \</div><div class="line">                                        RMC_BITS_GPS_BASE_RAW | \</div><div class="line">                                        RMC_BITS_GPS1_RTK_REL | \</div><div class="line">                                        RMC_BITS_INTERNAL_PPD | \</div><div class="line">                                        RMC_BITS_DIAGNOSTIC_MESSAGE )</div><div class="ttc" id="data__sets_8h_html_ab668c80fbdef2b427c493a6d772cba17"><div class="ttname"><a href="data__sets_8h.html#ab668c80fbdef2b427c493a6d772cba17">RMC_BITS_PRESET</a></div><div class="ttdeci">#define RMC_BITS_PRESET</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01049">data_sets.h:1049</a></div></div>
+<b>Value:</b><div class="fragment"><div class="line">(<a class="code" href="data__sets_8h.html#ab668c80fbdef2b427c493a6d772cba17">RMC_BITS_PRESET</a> | \</div><div class="line">                                        RMC_BITS_INS2 | \</div><div class="line">                                        RMC_BITS_BAROMETER | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER1 | \</div><div class="line">                                        RMC_BITS_MAGNETOMETER2 | \</div><div class="line">                                        RMC_BITS_GPS1_POS | \</div><div class="line">                                        RMC_BITS_GPS2_POS | \</div><div class="line">                                        RMC_BITS_GPS1_VEL | \</div><div class="line">                                        RMC_BITS_GPS2_VEL | \</div><div class="line">                                        RMC_BITS_GPS1_RAW | \</div><div class="line">                                        RMC_BITS_GPS2_RAW | \</div><div class="line">                                        RMC_BITS_GPS_BASE_RAW | \</div><div class="line">                                        RMC_BITS_GPS1_RTK_REL | \</div><div class="line">                                        RMC_BITS_INTERNAL_PPD | \</div><div class="line">                                        RMC_BITS_DIAGNOSTIC_MESSAGE )</div><div class="ttc" id="data__sets_8h_html_ab668c80fbdef2b427c493a6d772cba17"><div class="ttname"><a href="data__sets_8h.html#ab668c80fbdef2b427c493a6d772cba17">RMC_BITS_PRESET</a></div><div class="ttdeci">#define RMC_BITS_PRESET</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01058">data_sets.h:1058</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01052">1052</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01061">1061</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3544,7 +3604,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01068">1068</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01077">1077</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3560,7 +3620,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01069">1069</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01078">1078</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3580,7 +3640,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01238">1238</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01247">1247</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -3809,7 +3869,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01658">1658</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01670">1670</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4328,7 +4388,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="aba5f1c941f1d2ee0acde1f3dd3921844a76f850d1fa970501cadde6bc7cff672b"></a>BIT_STATE_COMMAND_OFF&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01124">1124</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01133">1133</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4366,7 +4426,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a2382ce9663b8b75e2819f77d6b8da742a83c3c5401a757907b6738130e568a3b8"></a>CAL_BIT_FAULT_MOTION_ACC&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01157">1157</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01166">1166</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4391,7 +4451,63 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="af636f701dd6262687813b9dfefcd0f32a6f2e4a8756ca81bac43d6932ca58c171"></a>CFG_SYS_CMD_SOFTWARE_RESET&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00932">932</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00941">941</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+
+</div>
+</div>
+<a id="af3f070f0403365997de3501f6917745c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3f070f0403365997de3501f6917745c">&#9670;&nbsp;</a></span>eEvb2ComBridgeCfg</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="data__sets_8h.html#af3f070f0403365997de3501f6917745c">eEvb2ComBridgeCfg</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EVB-2 communications bridge configuration. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="af3f070f0403365997de3501f6917745ca1c3dfb011275685423d4703913cdf4c0"></a>EVB2_CBC_NA&#160;</td><td class="fielddoc"><p>Do not change. Sending this value causes no effect. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="af3f070f0403365997de3501f6917745ca0543be14d938cb3d71ceb166c26febeb"></a>EVB2_CBD_USBxSER0&#160;</td><td class="fielddoc"><p>USB-SER0 </p>
+</td></tr>
+<tr><td class="fieldname"><a id="af3f070f0403365997de3501f6917745cabf3929290918a8d04a02215536eacb9d"></a>EVB2_CBC_USBxSPI&#160;</td><td class="fielddoc"><p>USB-SPI </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02324">2324</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+
+</div>
+</div>
+<a id="a7fbf2252e55c22cb218b8e122e2213c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fbf2252e55c22cb218b8e122e2213c9">&#9670;&nbsp;</a></span>eEvb2LoggerState</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9">eEvb2LoggerState</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Data logger control state. Values labeled CMD </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a7fbf2252e55c22cb218b8e122e2213c9a5d0685c1ebc5bee7985cd29455b977ec"></a>EVB2_LOG_STATE_NA&#160;</td><td class="fielddoc"><p>Do not change. Sending this value causes no effect. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a7fbf2252e55c22cb218b8e122e2213c9aaeb431f2842836c2ce185abff44765c2"></a>EVB2_LOG_STATE_CMD_START&#160;</td><td class="fielddoc"><p>Start new log </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a7fbf2252e55c22cb218b8e122e2213c9ac11d22c6f935bcd4784621b7fdaf0f77"></a>EVB2_LOG_STATE_RUNNING&#160;</td><td class="fielddoc"><p>Logger running </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a7fbf2252e55c22cb218b8e122e2213c9aeebc0800a8d5a6e069f22920803992ba"></a>EVB2_LOG_STATE_CMD_PAUSE&#160;</td><td class="fielddoc"><p>Pause current log </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a7fbf2252e55c22cb218b8e122e2213c9ae3a79b9020b9105a7f2dc8852abae814"></a>EVB2_LOG_STATE_CMD_STOP&#160;</td><td class="fielddoc"><p>Stop current log </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a7fbf2252e55c22cb218b8e122e2213c9a79f211305bc48a747eb966b9e65c4e86"></a>EVB2_LOG_STATE_CMD_PURGE&#160;</td><td class="fielddoc"><p>Purge all data logs from drive </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02339">2339</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4433,13 +4549,15 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a7059fc3a6e630b76b17c0ea5ff5a8865"></a>GPS_STATUS_FLAGS_RTK_ENABLED&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a0fb841078ef66c5390f9901f78009a71"></a>GPS_STATUS_FLAGS_STATIC_MODE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a54e6329b66139ab933cc655216c28ec2"></a>GPS_STATUS_FLAGS_GPS_COMPASSING_ENABLED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108ab53b6ad6a943c75cd343d93801189374"></a>GPS_STATUS_FLAGS_RX_BASE_NO_OBSERV_EPHEM&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a5a19998c77c1ddd73cafb4a01e3e589d"></a>GPS_STATUS_FLAGS_RX_BASE_NO_POSITION&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108aa540d7c86c7b417e4d87dc9439ad6693"></a>GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108ab100bb327f875eed013b44e491c5beba"></a>GPS_STATUS_FLAGS_BASE_NO_POSITION&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108aee5febd8bc206aacdbb7232197b8a60e"></a>GPS_STATUS_FLAGS_BASE_POSITION_MOVING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108ad4106ce9f69103bd33c6de9d0b60e965"></a>GPS_STATUS_FLAGS_BASE_MASK&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a7ad5b29db668c575bded51286d27f1b4"></a>GPS_STATUS_FLAGS_HIGH_ACCURACY_POSITION&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a0a13dcd2c6f6b8bc5f7e5fc363799566"></a>GPS_STATUS_FLAGS_GPS_COMPASSING_VALID&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108ac203ac41bf2a88deec78aa83541ec31e"></a>GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a8b067d3478a1d91bb19bdee1e5710e6b"></a>GPS_STATUS_FLAGS_GPS_COMPASS_NO_BASELINE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108ab7cb3b9ac27c803e12b13deed3d0366f"></a>GPS_STATUS_FLAGS_GPS_COMPASS_MASK&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a64b306ad1962368dcfbfe5dce8d19453"></a>GPS_STATUS_FLAGS_UNUSED_3&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a74138adacc04177b787dee3171197e0d"></a>GPS_STATUS_FLAGS_MASK&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108a8640d23eee96cf7ec5ae379fbe7cd6dc"></a>GPS_STATUS_FLAGS_BIT_OFFSET&#160;</td><td class="fielddoc"></td></tr>
@@ -4451,7 +4569,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="ae6d4500b717d1fde25cfaf3caf0c0108ab2d21c65d2e402036ff1814e2141cf22"></a>GPS_STATUS_INIT_STATUS_BIT_OFFSET&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00329">329</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00332">332</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4483,7 +4601,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a20228ceb9caa12db76b8599ff714ea67a4b05bc6e4a48ab76ee1cf4bedf3f4403"></a>HDW_BIT_FAULT_GPS_NOISE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01138">1138</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01147">1147</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4567,7 +4685,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00245">245</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00248">248</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4628,8 +4746,9 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca391f76b913c630b64d2a1e0c0ac67904"></a>INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca8d6899ad9e2dc9366eff323f87509117"></a>INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET&#160;</td><td class="fielddoc"><p>Trying to perform Compassing with no baseline set in flashCfg. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca65bd6dfc53952e7725702d03a57b73eb"></a>INS_STATUS_RTK_COMPASSING_WRONG_BASELINE&#160;</td><td class="fielddoc"><p>Specified Baseline Length is signficantly different from precision solution. </p>
+<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca65bd6dfc53952e7725702d03a57b73eb"></a>INS_STATUS_RTK_COMPASSING_WRONG_BASELINE&#160;</td><td class="fielddoc"><p>Specified Baseline Length is significantly different from precision solution. </p>
 </td></tr>
+<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca8945cb111b094d8ab63ecd921cf1a5e5"></a>INS_STATUS_RTK_COMPASSING_MASK&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca89e62a48945c4f247ce4665c0d811053"></a>INS_STATUS_MAG_RECALIBRATING&#160;</td><td class="fielddoc"><p>Magnetometer is being recalibrated. Device requires rotation to complete the calibration process. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca99e4f574a713507f7ee48ba6630ef90a"></a>INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL&#160;</td><td class="fielddoc"><p>Magnetometer is experiencing interference or calibration is bad. Attention may be required to remove interference (move the device) or recalibrate the magnetometer. </p>
@@ -4637,13 +4756,13 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca51f5010e279d6e6ce66a06f1d4f319ba"></a>INS_STATUS_NAV_FIX_STATUS_MASK&#160;</td><td class="fielddoc"><p>GPS navigation fix type (see eNavFixStatus) </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415caf50e5f5fa40494e7ea450a39e3396cb4"></a>INS_STATUS_NAV_FIX_STATUS_OFFSET&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca6f8eb92989794fea57af8ae0b49879eb"></a>INS_STATUS_RTK_BASE_MASK&#160;</td><td class="fielddoc"><p>GPS base mask </p>
-</td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca47bc958224d34f5727656a965f8e481a"></a>INS_STATUS_RTK_BASE_ERR_NO_OBSERV&#160;</td><td class="fielddoc"><p>GPS base NO observations received (i.e. RTK differential corrections) </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca1096a76a15ac7821f6d0dfa50ed41833"></a>INS_STATUS_RTK_BASE_ERR_NO_POSITION&#160;</td><td class="fielddoc"><p>GPS base NO position received </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415cadc6138a7dc14f19c515d5dce35a35db7"></a>INS_STATUS_RTK_BASE_POSITION_MOVING&#160;</td><td class="fielddoc"><p>GPS base position is moving </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca6f8eb92989794fea57af8ae0b49879eb"></a>INS_STATUS_RTK_BASE_MASK&#160;</td><td class="fielddoc"><p>GPS base mask </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca04015cafe4c98b3cccd163098bd58e1b"></a>INS_STATUS_RTOS_TASK_PERIOD_OVERRUN&#160;</td><td class="fielddoc"><p>RTOS task ran longer than allotted period </p>
 </td></tr>
@@ -4651,7 +4770,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00149">149</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00151">151</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4671,7 +4790,7 @@ Functions</h2></td></tr>
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aa151b96a32b57f6c700233cff1602f8aa698c1455374b3f220e76283f749906a6"></a>IO_CFG_INPUT_STROBE_TRIGGER_HIGH&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01370">1370</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01382">1382</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4693,7 +4812,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a2ec3a8f9613524f7da783819d46d9ba2adf485a659548a646e4408a37a2d01c7c"></a>MAG_RECAL_MODE_ABORT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01101">1101</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01110">1110</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4718,7 +4837,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a1cd19951a12c6aa43e54310a3150abe6ab932ac76df6a543fc1b6f84baa4c45f4"></a>NAV_FIX_STATUS_STANDARD_W_GPS_COMPASSING&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00234">234</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00237">237</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4751,7 +4870,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02135">2135</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02147">2147</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4770,7 +4889,7 @@ Functions</h2></td></tr>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a3dd13b023dd89f3c598733e70cfd0e02abd6d91f4cc03aa281376758d679e851c"></a>RTK_CFG_BITS_GPS1_RTK_ROVER&#160;</td><td class="fielddoc"><p>Enable RTK rover on GPS1 if available </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a3dd13b023dd89f3c598733e70cfd0e02a7437a5d574965ababcf9a925c392994f"></a>RTK_CFG_BITS_GPS2_RTK_ROVER&#160;</td><td class="fielddoc"><p>Enable RTK rover on GPS2 if available </p>
+<tr><td class="fieldname"><a id="a3dd13b023dd89f3c598733e70cfd0e02a7437a5d574965ababcf9a925c392994f"></a>RTK_CFG_BITS_GPS2_RTK_ROVER&#160;</td><td class="fielddoc"><p>Enable RTK rover on GPS2 if available NOT SUPPORTED </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a3dd13b023dd89f3c598733e70cfd0e02a715c55f6fd28331daa021c0ee894ee25"></a>RTK_CFG_BITS_COMPASSING&#160;</td><td class="fielddoc"><p>Perform Compassing with dual GPS unit </p>
 </td></tr>
@@ -4804,11 +4923,13 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a3dd13b023dd89f3c598733e70cfd0e02a1fb519bf6900533a9ca2ad5cb03c4c0e"></a>RTK_CFG_BITS_RTK_ROVER&#160;</td><td class="fielddoc"><p>All rover bits </p>
 </td></tr>
+<tr><td class="fieldname"><a id="a3dd13b023dd89f3c598733e70cfd0e02a912250ea06ea0ecb21732946dfb90950"></a>RTK_CFG_BITS_RTK_MODE_MASK&#160;</td><td class="fielddoc"><p>Mask of RTK modes </p>
+</td></tr>
 <tr><td class="fieldname"><a id="a3dd13b023dd89f3c598733e70cfd0e02ae4dc8123fc5a7fd6ec5c3502c7295e3b"></a>RTK_CFG_BITS_RTK&#160;</td><td class="fielddoc"><p>RTK Enabled </p>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01255">1255</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01264">1264</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4839,7 +4960,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01986">1986</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01998">1998</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4872,7 +4993,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02356">2356</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02456">2456</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4903,7 +5024,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a2b43fc2aa26e8e97cd130f8c14f617bea8794d6a345056053e5df985235239f59"></a>SAT_SV_FLAGS_AOPAVAIL&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00709">709</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l00718">718</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4956,7 +5077,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="ab3168be6810eb262cd4e4881e49171dfaf2392683278f2eaf77236c603063afcf"></a>SENSOR_CFG_ACC_DLPF_OFFSET&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01324">1324</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01336">1336</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -4984,7 +5105,7 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a83bd7219c131eb152addd83d0473caf6a219782467a3cffd5c4733b7b2e7bfbac"></a>SURVEY_IN_STATE_DONE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02245">2245</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02257">2257</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -5025,7 +5146,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01222">1222</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l01231">1231</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
@@ -5057,7 +5178,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert DID to realtime message bits </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00507">507</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00511">511</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -5087,7 +5208,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00501">501</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00505">505</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -5431,7 +5552,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a list of offsets and lengths of strings for the data id or 0 if none </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00348">348</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00350">350</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -5462,7 +5583,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert GPS Week and Seconds to Julian Date. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00632">632</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00636">636</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -5498,7 +5619,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00670">670</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00674">674</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -5565,7 +5686,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert Julian Date to calendar date. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00540">540</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00544">544</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -5604,7 +5725,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the 32 bit checksum for data </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00495">495</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00499">499</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>

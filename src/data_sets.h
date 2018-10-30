@@ -104,7 +104,9 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
 #define DID_VELOCITY_MEASUREMENT        (eDataIDs)71 /** (velocity_sensor_t) External generic velocity sensor to be fused with GPS-INS measurements. */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
-#define DID_SURVEY_IN					(eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. */
+#define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. */
+#define DID_EVB2                        (eDataIDs)74 /** (evb2_t) EVB monitor, configuration and log control interface. */
+#define DID_PORT_MONITOR                (eDataIDs)75 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -114,7 +116,7 @@ typedef uint32_t eDataIDs;
 // 5] Test!
 
 /** Count of data ids (including null data id 0) - make sure to increment if you add a new data id! */
-#define DID_COUNT (eDataIDs)74
+#define DID_COUNT (eDataIDs)76
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -202,8 +204,9 @@ enum eInsStatusFlags
 	
     /** Trying to perform Compassing with no baseline set in flashCfg. */
     INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET     = (int)0x00100000,
-    /** Specified Baseline Length is signficantly different from precision solution. */
+    /** Specified Baseline Length is significantly different from precision solution. */
     INS_STATUS_RTK_COMPASSING_WRONG_BASELINE    = (int)0x00200000,
+    INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET|INS_STATUS_RTK_COMPASSING_WRONG_BASELINE),
     
 	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. */
 	INS_STATUS_MAG_RECALIBRATING				= (int)0x00400000,
@@ -215,14 +218,14 @@ enum eInsStatusFlags
     INS_STATUS_NAV_FIX_STATUS_OFFSET			= 24,
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
-	/** GPS base mask */
-    INS_STATUS_RTK_BASE_MASK					= (int)0x38300000,
 	/** GPS base NO observations received (i.e. RTK differential corrections) */
     INS_STATUS_RTK_BASE_ERR_NO_OBSERV			= (int)0x08000000,
     /** GPS base NO position received */
     INS_STATUS_RTK_BASE_ERR_NO_POSITION			= (int)0x10000000,
     /** GPS base position is moving */
     INS_STATUS_RTK_BASE_POSITION_MOVING			= (int)0x20000000,
+	/** GPS base mask */
+	INS_STATUS_RTK_BASE_MASK					= (INS_STATUS_RTK_BASE_ERR_NO_OBSERV|INS_STATUS_RTK_BASE_ERR_NO_POSITION|INS_STATUS_RTK_BASE_POSITION_MOVING),
 	
 	/** RTOS task ran longer than allotted period */
 	INS_STATUS_RTOS_TASK_PERIOD_OVERRUN			= (int)0x40000000,
@@ -355,13 +358,19 @@ enum eGpsStatus
 	GPS_STATUS_FLAGS_RTK_ENABLED				= (int)0x00100000,
 	GPS_STATUS_FLAGS_STATIC_MODE				= (int)0x00200000,		// Static mode
 	GPS_STATUS_FLAGS_GPS_COMPASSING_ENABLED		= (int)0x00400000,
-    GPS_STATUS_FLAGS_RX_BASE_NO_OBSERV_EPHEM	= (int)0x00800000,		// GPS base observations and ephemeris received (i.e. RTK differential corrections)
-    GPS_STATUS_FLAGS_RX_BASE_NO_POSITION		= (int)0x01000000,		// GPS base position received
-    GPS_STATUS_FLAGS_BASE_POSITION_MOVING		= (int)0x02000000,		// GPS Base position moving
+    GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM       = (int)0x00800000,		// GPS base observations and ephemeris received (i.e. RTK differential corrections)
+    GPS_STATUS_FLAGS_BASE_NO_POSITION           = (int)0x01000000,		// GPS base position received
+    GPS_STATUS_FLAGS_BASE_POSITION_MOVING       = (int)0x02000000,		// GPS Base position moving
+    GPS_STATUS_FLAGS_BASE_MASK                  = (GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM|
+                                                   GPS_STATUS_FLAGS_BASE_NO_POSITION|
+                                                   GPS_STATUS_FLAGS_BASE_POSITION_MOVING),
 	GPS_STATUS_FLAGS_HIGH_ACCURACY_POSITION	    = (int)0x04000000,      // 1= using RTK position, 0= using ublox position
 	GPS_STATUS_FLAGS_GPS_COMPASSING_VALID	    = (int)0x08000000,
     GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE   = (int)0x00002000,
     GPS_STATUS_FLAGS_GPS_COMPASS_NO_BASELINE    = (int)0x00004000,
+    GPS_STATUS_FLAGS_GPS_COMPASS_MASK           = (GPS_STATUS_FLAGS_GPS_COMPASSING_VALID|
+                                                   GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE|
+                                                   GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE),
 	GPS_STATUS_FLAGS_UNUSED_3                   = (int)0x00008000,
 	GPS_STATUS_FLAGS_MASK						= (int)0x0FFFE000,    
 	GPS_STATUS_FLAGS_BIT_OFFSET					= (int)16,
@@ -1257,7 +1266,7 @@ enum eRTKConfigBits
 	/** Enable RTK rover on GPS1 if available */
 	RTK_CFG_BITS_GPS1_RTK_ROVER							= (int)0x00000001,
 	
-	/** Enable RTK rover on GPS2 if available */
+	/** Enable RTK rover on GPS2 if available NOT SUPPORTED */
 	RTK_CFG_BITS_GPS2_RTK_ROVER							= (int)0x00000002,
 	
 	/** Perform Compassing with dual GPS unit */
@@ -1312,7 +1321,10 @@ enum eRTKConfigBits
 		| RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1),
 							
 	/** All rover bits */
-	RTK_CFG_BITS_RTK_ROVER = (RTK_CFG_BITS_GPS1_RTK_ROVER),
+	RTK_CFG_BITS_RTK_ROVER = (RTK_CFG_BITS_GPS1_RTK_ROVER | RTK_CFG_BITS_GPS2_RTK_ROVER),
+
+	/** Mask of RTK modes */
+	RTK_CFG_BITS_RTK_MODE_MASK = (RTK_CFG_BITS_RTK_ROVER | RTK_CFG_BITS_COMPASSING),
 	
 	/** RTK Enabled */
 	RTK_CFG_BITS_RTK = (RTK_CFG_BITS_RTK_ROVER | RTK_CFG_BITS_RTK_BASE)
@@ -2275,7 +2287,7 @@ typedef struct
 	/** Required horizontal accuracy (m) for survey to complete before maxDuration. (ignored if 0) */
 	float minAccuracy;
 
-	/** Elapsed time (milliseconds) of the survey. */
+	/** Elapsed time (seconds) of the survey. */
 	uint32_t elapsedTimeSec;
 
 	/** Approximate horizontal accuracy of the survey (m). */
@@ -2284,6 +2296,94 @@ typedef struct
 	/** The current surveyed latitude, longitude, altitude (deg, deg, m) */
 	double lla[3];
 } survey_in_t;
+
+/**
+* (DID_EVB2) EVB-2 monitor, config, and logger control interface
+*/
+typedef struct
+{
+	/** Firmware (software) version */
+	uint8_t         firmwareVer[4];
+    
+    /** Communications bridge configuration. (see eEvb2ComBridgeCfg) */
+    uint32_t        comBridgeCfg;
+
+    /** Data logger control state. (see eEvb2LoggerState) */
+    uint32_t        loggerState;
+
+    /** logger */
+    uint32_t        loggerElapsedTimeMs;
+
+	/** IP address */
+	uint8_t         ipAddr[4];
+    
+} evb2_t;
+
+
+/** EVB-2 communications bridge configuration. */
+typedef enum
+{
+    /** Do not change.  Sending this value causes no effect. */
+    EVB2_CBC_NA                         = 0,
+
+    /** USB-SER0 */
+    EVB2_CBD_USBxSER0                   = 1,
+
+    /** USB-SPI */
+    EVB2_CBC_USBxSPI                    = 2,
+    
+} eEvb2ComBridgeCfg;
+
+
+/** Data logger control state.  Values labeled CMD  */
+typedef enum
+{
+    /** Do not change.  Sending this value causes no effect. */
+    EVB2_LOG_STATE_NA                   = 0,
+
+    /** Start new log */
+    EVB2_LOG_STATE_CMD_START            = 1,
+
+    /** Logger running */
+    EVB2_LOG_STATE_RUNNING              = 2,
+
+    /** Pause current log */
+    EVB2_LOG_STATE_CMD_PAUSE            = 3,
+
+    /** Stop current log */
+    EVB2_LOG_STATE_CMD_STOP             = 4,
+
+    /** Purge all data logs from drive */
+    EVB2_LOG_STATE_CMD_PURGE            = 1002,
+        
+} eEvb2LoggerState;
+
+
+/** 
+* (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
+*/
+typedef struct
+{
+    /** Com port number  */
+    uint32_t        portNumber;
+
+//     /** Tx time ms */
+//     uint32_t        txTimeMs;
+
+    /** Tx rate (bytes/s) */
+    uint32_t        txBytesPerS;
+
+//     /** Rx time ms */
+//     uint32_t        rxTimeMs;
+
+    /** Rx rate (bytes/s) */
+    uint32_t        rxBytesPerS;
+
+    /** Status */
+    uint32_t        status;
+    
+} port_monitor_t;
+
 
 #define CRASH_INFO_NONE 0x00000000
 #define CRASH_INFO_USER_RESET 0xFFFFFFFA

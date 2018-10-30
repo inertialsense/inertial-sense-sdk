@@ -123,57 +123,57 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:abac1ed32f15c6e6a469f91736b9eb728"><td class="memItemLeft" align="right" valign="top"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#abac1ed32f15c6e6a469f91736b9eb728">getGlobalComManager</a> (void)</td></tr>
-<tr class="separator:abac1ed32f15c6e6a469f91736b9eb728"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa7cb232ae6fd16afb5da4e989653c18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#afa7cb232ae6fd16afb5da4e989653c18">initComManager</a> (int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc)</td></tr>
-<tr class="separator:afa7cb232ae6fd16afb5da4e989653c18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a116962e485c59fad2b3e6b6b4ede2f40"><td class="memItemLeft" align="right" valign="top"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a116962e485c59fad2b3e6b6b4ede2f40">initComManagerInstance</a> (int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc)</td></tr>
-<tr class="separator:a116962e485c59fad2b3e6b6b4ede2f40"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae580bf0e831c5a0038377eba324e34b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae580bf0e831c5a0038377eba324e34b6">stepComManager</a> (void)</td></tr>
-<tr class="separator:ae580bf0e831c5a0038377eba324e34b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2aba0e994b53c91d0df4c005a68b1c67"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a2aba0e994b53c91d0df4c005a68b1c67">stepComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
-<tr class="separator:a2aba0e994b53c91d0df4c005a68b1c67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98b499e9d58aa582e06a65b2cc76e423"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a98b499e9d58aa582e06a65b2cc76e423">getDataComManager</a> (int pHandle, uint32_t dataId, int offset, int size, int period_ms)</td></tr>
-<tr class="memdesc:a98b499e9d58aa582e06a65b2cc76e423"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request data This function requests the specified data w/ offset and length for partial reads.  <a href="#a98b499e9d58aa582e06a65b2cc76e423">More...</a><br /></td></tr>
-<tr class="separator:a98b499e9d58aa582e06a65b2cc76e423"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace8bab9b39690624d273e175b7201ad0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ace8bab9b39690624d273e175b7201ad0">getDataComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, int offset, int size, int period_ms)</td></tr>
-<tr class="separator:ace8bab9b39690624d273e175b7201ad0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a572a1b5ad91a1aaec2eb4f61478c204b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a572a1b5ad91a1aaec2eb4f61478c204b">getDataRmcComManager</a> (int pHandle, uint64_t rmcBits, uint32_t rmcOptions)</td></tr>
-<tr class="separator:a572a1b5ad91a1aaec2eb4f61478c204b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85c00e3c8698a0eb5945bda7f200410b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a85c00e3c8698a0eb5945bda7f200410b">getDataRmcComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint64_t rmcBits, uint32_t rmcOptions)</td></tr>
-<tr class="separator:a85c00e3c8698a0eb5945bda7f200410b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe217609a8971ede0aabb31df9b02c68"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#afe217609a8971ede0aabb31df9b02c68">disableDataComManager</a> (int pHandle, uint32_t dataId)</td></tr>
-<tr class="separator:afe217609a8971ede0aabb31df9b02c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab327f399d6a277ca8e0557d44372d66b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab327f399d6a277ca8e0557d44372d66b">disableDataComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId)</td></tr>
-<tr class="separator:ab327f399d6a277ca8e0557d44372d66b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a751e0cd46bcb82fd82aac4e211ae8120"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a751e0cd46bcb82fd82aac4e211ae8120">sendComManager</a> (int pHandle, uint8_t pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
-<tr class="separator:a751e0cd46bcb82fd82aac4e211ae8120"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8d3f8c0e14f09f7c8cb477057d37abf3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a8d3f8c0e14f09f7c8cb477057d37abf3">sendComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint8_t pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
-<tr class="separator:a8d3f8c0e14f09f7c8cb477057d37abf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83470a78a4240c222cb2250d52db3404"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a83470a78a4240c222cb2250d52db3404">sendDataComManager</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
-<tr class="separator:a83470a78a4240c222cb2250d52db3404"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac3cfa14d2de9967bb6218378aeeab848"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ac3cfa14d2de9967bb6218378aeeab848">sendDataComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
-<tr class="separator:ac3cfa14d2de9967bb6218378aeeab848"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a187bde7484d4b6a67b71786d6cdfb789"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a187bde7484d4b6a67b71786d6cdfb789">sendEnsuredComManager</a> (int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
-<tr class="separator:a187bde7484d4b6a67b71786d6cdfb789"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb4a2c3ff0d4f657ddd1b11f71a1b8ff"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aeb4a2c3ff0d4f657ddd1b11f71a1b8ff">sendEnsuredComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
-<tr class="separator:aeb4a2c3ff0d4f657ddd1b11f71a1b8ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0de0acc04cae4c9bc17e97abc84426d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aa0de0acc04cae4c9bc17e97abc84426d">sendDataComManagerNoAck</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
-<tr class="separator:aa0de0acc04cae4c9bc17e97abc84426d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab986f944aaadac5a000e0a63885ec704"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab986f944aaadac5a000e0a63885ec704">sendDataComManagerNoAckInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
-<tr class="separator:ab986f944aaadac5a000e0a63885ec704"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7366dcef59462fb67505b7245bafee9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#af7366dcef59462fb67505b7245bafee9">sendRawDataComManager</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
-<tr class="separator:af7366dcef59462fb67505b7245bafee9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a863614083a0165e607cf4a962045c10b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a863614083a0165e607cf4a962045c10b">sendRawDataComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
-<tr class="separator:a863614083a0165e607cf4a962045c10b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9749ee07c52d00590a2612d04528db41"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a9749ee07c52d00590a2612d04528db41">disableAllBroadcasts</a> (int pHandle)</td></tr>
-<tr class="separator:a9749ee07c52d00590a2612d04528db41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58986ddf9d8c51932dfbcdac6476fd01"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a58986ddf9d8c51932dfbcdac6476fd01">disableAllBroadcastsInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle)</td></tr>
-<tr class="separator:a58986ddf9d8c51932dfbcdac6476fd01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a171c5acb5a3b14aa3d674e1c1db5395a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a171c5acb5a3b14aa3d674e1c1db5395a">getStatusComManager</a> (int pHandle)</td></tr>
-<tr class="separator:a171c5acb5a3b14aa3d674e1c1db5395a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a061fb2313d0270db73c130c39dd0e1d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a061fb2313d0270db73c130c39dd0e1d8">getStatusComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle)</td></tr>
-<tr class="separator:a061fb2313d0270db73c130c39dd0e1d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4336f36a840ad97152a693893866ca2e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a4336f36a840ad97152a693893866ca2e">comManagerGetGlobal</a> (void)</td></tr>
+<tr class="separator:a4336f36a840ad97152a693893866ca2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bcc76cd2eb01c8e91ca97fd1e1a25d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">comManagerInit</a> (int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc)</td></tr>
+<tr class="separator:a9bcc76cd2eb01c8e91ca97fd1e1a25d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58733da275ce5a71a734317170b3c18d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a58733da275ce5a71a734317170b3c18d">comManagerInitInstance</a> (int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc)</td></tr>
+<tr class="separator:a58733da275ce5a71a734317170b3c18d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5153eef615e1ad8cd2025156d1be51d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a5153eef615e1ad8cd2025156d1be51d7">comManagerStep</a> (void)</td></tr>
+<tr class="separator:a5153eef615e1ad8cd2025156d1be51d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab21b64f82a4af5312ef06ad41de5257f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab21b64f82a4af5312ef06ad41de5257f">comManagerStepInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
+<tr class="separator:ab21b64f82a4af5312ef06ad41de5257f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8611a5a8a569db3d07af9f3f3cb4aa2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab8611a5a8a569db3d07af9f3f3cb4aa2">comManagerGetData</a> (int pHandle, uint32_t dataId, int offset, int size, int period_ms)</td></tr>
+<tr class="memdesc:ab8611a5a8a569db3d07af9f3f3cb4aa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request data This function requests the specified data w/ offset and length for partial reads.  <a href="#ab8611a5a8a569db3d07af9f3f3cb4aa2">More...</a><br /></td></tr>
+<tr class="separator:ab8611a5a8a569db3d07af9f3f3cb4aa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2292814167c95f8a1af365f0070a6a04"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a2292814167c95f8a1af365f0070a6a04">comManagerGetDataInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, int offset, int size, int period_ms)</td></tr>
+<tr class="separator:a2292814167c95f8a1af365f0070a6a04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae55430658079aefb707533cd58c5f5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a> (int pHandle, uint64_t rmcBits, uint32_t rmcOptions)</td></tr>
+<tr class="separator:aae55430658079aefb707533cd58c5f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a613a5a7fafd2403866d7e0aa5625272d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a613a5a7fafd2403866d7e0aa5625272d">comManagerGetDataRmcInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint64_t rmcBits, uint32_t rmcOptions)</td></tr>
+<tr class="separator:a613a5a7fafd2403866d7e0aa5625272d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e579189eb6108310736f30327a0cd0b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a8e579189eb6108310736f30327a0cd0b">comManagerDisableData</a> (int pHandle, uint32_t dataId)</td></tr>
+<tr class="separator:a8e579189eb6108310736f30327a0cd0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af012b68382286a50eeef956a4e68f124"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#af012b68382286a50eeef956a4e68f124">comManagerDisableDataInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId)</td></tr>
+<tr class="separator:af012b68382286a50eeef956a4e68f124"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56ddced36e9afc75cb9e94f67a8cf3f5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a56ddced36e9afc75cb9e94f67a8cf3f5">comManagerSend</a> (int pHandle, uint8_t pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
+<tr class="separator:a56ddced36e9afc75cb9e94f67a8cf3f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8cf768e6342dbe0abf16db10f2c7ede"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab8cf768e6342dbe0abf16db10f2c7ede">comManagerSendInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint8_t pktInfo, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *bodyHdr, <a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *txData, uint8_t pktFlags)</td></tr>
+<tr class="separator:ab8cf768e6342dbe0abf16db10f2c7ede"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f2c449501f06efa1689f82b88a1db64"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a4f2c449501f06efa1689f82b88a1db64">comManagerSendData</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
+<tr class="separator:a4f2c449501f06efa1689f82b88a1db64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96bbc21cd912ec5d432163a706c93bb5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a96bbc21cd912ec5d432163a706c93bb5">comManagerSendDataInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
+<tr class="separator:a96bbc21cd912ec5d432163a706c93bb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b21e0e3ea5a2fb71bac0c3e36c31622"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a3b21e0e3ea5a2fb71bac0c3e36c31622">comManagerSendEnsured</a> (int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
+<tr class="separator:a3b21e0e3ea5a2fb71bac0c3e36c31622"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2d03a088e68708a42a99cae3dac4924"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#af2d03a088e68708a42a99cae3dac4924">comManagerSendEnsuredInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)</td></tr>
+<tr class="separator:af2d03a088e68708a42a99cae3dac4924"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae13ccb8e9ac757f7fe40e212f9c92616"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae13ccb8e9ac757f7fe40e212f9c92616">comManagerSendDataNoAck</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
+<tr class="separator:ae13ccb8e9ac757f7fe40e212f9c92616"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6adce0b5b228eff4bd756011b3c2c6c8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a6adce0b5b228eff4bd756011b3c2c6c8">comManagerSendDataNoAckInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
+<tr class="separator:a6adce0b5b228eff4bd756011b3c2c6c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a750c925ebe5c23deeecd6c3dc47df2c9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a750c925ebe5c23deeecd6c3dc47df2c9">comManagerSendRawData</a> (int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
+<tr class="separator:a750c925ebe5c23deeecd6c3dc47df2c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bfdf04b15fa460f0bedcf268e596f42"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a9bfdf04b15fa460f0bedcf268e596f42">comManagerSendRawDataInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)</td></tr>
+<tr class="separator:a9bfdf04b15fa460f0bedcf268e596f42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1b28b8ce3e6b22fd7640202d5c47a19"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae1b28b8ce3e6b22fd7640202d5c47a19">comManagerDisableBroadcasts</a> (int pHandle)</td></tr>
+<tr class="separator:ae1b28b8ce3e6b22fd7640202d5c47a19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a8c6cdaa5af10630b0e7cdae1234d0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a0a8c6cdaa5af10630b0e7cdae1234d0d">comManagerDisableBroadcastsInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle)</td></tr>
+<tr class="separator:a0a8c6cdaa5af10630b0e7cdae1234d0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a8e7beee9874f9f2cbc9669186dbba3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a2a8e7beee9874f9f2cbc9669186dbba3">comManagerGetStatus</a> (int pHandle)</td></tr>
+<tr class="separator:a2a8e7beee9874f9f2cbc9669186dbba3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5653d29c5faff7390f7568db9d6918cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a5653d29c5faff7390f7568db9d6918cd">comManagerGetStatusInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle)</td></tr>
+<tr class="separator:a5653d29c5faff7390f7568db9d6918cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75d553e17d45e09a81b90f5bbbeb1166"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structbuf_tx_rx_ptr__t.html">bufTxRxPtr_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a75d553e17d45e09a81b90f5bbbeb1166">comManagerGetRegisteredDataInfo</a> (uint32_t dataId)</td></tr>
 <tr class="separator:a75d553e17d45e09a81b90f5bbbeb1166"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6783b10d3b874631bae00c51c7f835ed"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structbuf_tx_rx_ptr__t.html">bufTxRxPtr_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a6783b10d3b874631bae00c51c7f835ed">comManagerGetRegisteredDataInfoInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, uint32_t dataId)</td></tr>
@@ -182,30 +182,30 @@ Functions</h2></td></tr>
 <tr class="separator:a69751e08cb2002d64b380e2ae90d160e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0f34f05ead3087428251de6db6bd48d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#af0f34f05ead3087428251de6db6bd48d">comManagerGetDataRequestInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, <a class="el" href="structp__data__get__t.html">p_data_get_t</a> *req)</td></tr>
 <tr class="separator:af0f34f05ead3087428251de6db6bd48d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a5729d2efc523cbc8f3b81db6db9888"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a8a5729d2efc523cbc8f3b81db6db9888">registerComManager</a> (uint32_t dataId, <a class="el" href="com__manager_8h.html#a1073351c9cb5c933c1f5ee9e0040a802">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
-<tr class="separator:a8a5729d2efc523cbc8f3b81db6db9888"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abab3415f9b27727f88eb0399235ee03a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#abab3415f9b27727f88eb0399235ee03a">registerComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, uint32_t dataId, <a class="el" href="com__manager_8h.html#a1073351c9cb5c933c1f5ee9e0040a802">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
-<tr class="separator:abab3415f9b27727f88eb0399235ee03a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37cec2799e1c217f383f05970445f13a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a37cec2799e1c217f383f05970445f13a">registerComManagerASCII</a> (<a class="el" href="structascii_message_map__t.html">asciiMessageMap_t</a> *asciiMessages, int asciiMessagesCount, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFnc, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFncPost)</td></tr>
-<tr class="separator:a37cec2799e1c217f383f05970445f13a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2a71653eb83559f60fc10a7d9a842a1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae2a71653eb83559f60fc10a7d9a842a1">registerComManagerASCIIInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, <a class="el" href="structascii_message_map__t.html">asciiMessageMap_t</a> *asciiMessages, int asciiMessagesCount, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFnc, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFncPost)</td></tr>
-<tr class="separator:ae2a71653eb83559f60fc10a7d9a842a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81c22b426893c957908eeddf2379b7f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a81c22b426893c957908eeddf2379b7f1">setComManagerPassThrough</a> (<a class="el" href="com__manager_8h.html#a74683b05c0ff3f3c394e2a391e7bb42f">pfnComManagerPassThrough</a> handler)</td></tr>
-<tr class="separator:a81c22b426893c957908eeddf2379b7f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a238220cd287bfce9919be346dbd96a19"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a238220cd287bfce9919be346dbd96a19">setComManagerPassThroughInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, <a class="el" href="com__manager_8h.html#a74683b05c0ff3f3c394e2a391e7bb42f">pfnComManagerPassThrough</a> handler)</td></tr>
-<tr class="separator:a238220cd287bfce9919be346dbd96a19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46ff0e8100e993aa7708a81c5cf9c2e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a46ff0e8100e993aa7708a81c5cf9c2e9">setComManagerRmcCallback</a> (<a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a> handler)</td></tr>
-<tr class="separator:a46ff0e8100e993aa7708a81c5cf9c2e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86bbb66d0278e4398342510767701e6f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a86bbb66d0278e4398342510767701e6f">setComManagerRmcCallbackInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, <a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a> handler)</td></tr>
-<tr class="separator:a86bbb66d0278e4398342510767701e6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2504cc9b81ea76263f17b01447878980"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a2504cc9b81ea76263f17b01447878980">freeComManagerInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
-<tr class="separator:a2504cc9b81ea76263f17b01447878980"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9887c6cd8d50dbb31888d12f9b7efddc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a9887c6cd8d50dbb31888d12f9b7efddc">comManagerRegister</a> (uint32_t dataId, <a class="el" href="com__manager_8h.html#a1073351c9cb5c933c1f5ee9e0040a802">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
+<tr class="separator:a9887c6cd8d50dbb31888d12f9b7efddc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6cd5088737bfad7efabe238a163cd78e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a6cd5088737bfad7efabe238a163cd78e">comManagerRegisterInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, uint32_t dataId, <a class="el" href="com__manager_8h.html#a1073351c9cb5c933c1f5ee9e0040a802">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
+<tr class="separator:a6cd5088737bfad7efabe238a163cd78e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77e8440a1bacfa6c2427174f8ffe2a6b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a77e8440a1bacfa6c2427174f8ffe2a6b">comManagerRegisterASCII</a> (<a class="el" href="structascii_message_map__t.html">asciiMessageMap_t</a> *asciiMessages, int asciiMessagesCount, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFnc, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFncPost)</td></tr>
+<tr class="separator:a77e8440a1bacfa6c2427174f8ffe2a6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a005e44a26217db33e173b13ef8000cf9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a005e44a26217db33e173b13ef8000cf9">comManagerRegisterASCIIInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, <a class="el" href="structascii_message_map__t.html">asciiMessageMap_t</a> *asciiMessages, int asciiMessagesCount, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFnc, <a class="el" href="com__manager_8h.html#a9d0f8665a43491f9b0e729ae7ff3695c">pfnComManagerAsciiMessageHandler</a> msgFncPost)</td></tr>
+<tr class="separator:a005e44a26217db33e173b13ef8000cf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2812b540bae8534ce94668e0b4c5c617"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a2812b540bae8534ce94668e0b4c5c617">comManagerSetPassThrough</a> (<a class="el" href="com__manager_8h.html#a74683b05c0ff3f3c394e2a391e7bb42f">pfnComManagerPassThrough</a> handler)</td></tr>
+<tr class="separator:a2812b540bae8534ce94668e0b4c5c617"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75c9e4c2b6f2c9a44991454fa9dc8822"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a75c9e4c2b6f2c9a44991454fa9dc8822">comManagerSetPassThroughInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, <a class="el" href="com__manager_8h.html#a74683b05c0ff3f3c394e2a391e7bb42f">pfnComManagerPassThrough</a> handler)</td></tr>
+<tr class="separator:a75c9e4c2b6f2c9a44991454fa9dc8822"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ad33af42c470295b3e053956cd3a6b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a4ad33af42c470295b3e053956cd3a6b4">comManagerSetRmcCallback</a> (<a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a> handler)</td></tr>
+<tr class="separator:a4ad33af42c470295b3e053956cd3a6b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f293526ff6f68cdedfb57181d456bd8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a7f293526ff6f68cdedfb57181d456bd8">comManagerSetRmcCallbackInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, <a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a> handler)</td></tr>
+<tr class="separator:a7f293526ff6f68cdedfb57181d456bd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefaf81cd9fc365d9cb5bdec7c9dd44de"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aefaf81cd9fc365d9cb5bdec7c9dd44de">comManagerFreeInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
+<tr class="separator:aefaf81cd9fc365d9cb5bdec7c9dd44de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a99656c76c4e36420c61a9887081286"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a5a99656c76c4e36420c61a9887081286">comManagerAssignUserPointer</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, void *userPointer)</td></tr>
 <tr class="separator:a5a99656c76c4e36420c61a9887081286"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2cd08328452b51eb95fdfdaaac1f869"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae2cd08328452b51eb95fdfdaaac1f869">comManagerGetUserPointer</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
 <tr class="separator:ae2cd08328452b51eb95fdfdaaac1f869"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac76e2108a31ab0979c400240acd37cb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aac76e2108a31ab0979c400240acd37cb">validateBaudRate</a> (unsigned int baudRate)</td></tr>
-<tr class="separator:aac76e2108a31ab0979c400240acd37cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a202229d24b4a3d1a7ec9880ec5e309b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a202229d24b4a3d1a7ec9880ec5e309b8">comManagerValidateBaudRate</a> (unsigned int baudRate)</td></tr>
+<tr class="separator:a202229d24b4a3d1a7ec9880ec5e309b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="aa4c7b70d216e3ec5adc54f13afc5ffde"></a>
@@ -442,155 +442,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a69751e08cb2002d64b380e2ae90d160e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69751e08cb2002d64b380e2ae90d160e">&#9670;&nbsp;</a></span>comManagerGetDataRequest()</h2>
+<a id="ae1b28b8ce3e6b22fd7640202d5c47a19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1b28b8ce3e6b22fd7640202d5c47a19">&#9670;&nbsp;</a></span>comManagerDisableBroadcasts()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int comManagerGetDataRequest </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>pHandle</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structp__data__get__t.html">p_data_get_t</a> *&#160;</td>
-          <td class="paramname"><em>req</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Internal use mostly, process a get data request for a message that needs to be broadcasted</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, anything else is failure </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01207">1207</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
-
-</div>
-</div>
-<a id="af0f34f05ead3087428251de6db6bd48d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af0f34f05ead3087428251de6db6bd48d">&#9670;&nbsp;</a></span>comManagerGetDataRequestInstance()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int comManagerGetDataRequestInstance </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
-          <td class="paramname"><em>cmInstance</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>pHandle</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structp__data__get__t.html">p_data_get_t</a> *&#160;</td>
-          <td class="paramname"><em>req</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01212">1212</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
-
-</div>
-</div>
-<a id="a75d553e17d45e09a81b90f5bbbeb1166"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75d553e17d45e09a81b90f5bbbeb1166">&#9670;&nbsp;</a></span>comManagerGetRegisteredDataInfo()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structbuf_tx_rx_ptr__t.html">bufTxRxPtr_t</a>* comManagerGetRegisteredDataInfo </td>
-          <td>(</td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>dataId</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Internal use mostly, get data info for a the specified pre-registered dataId</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on failure, pointer on success </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01190">1190</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
-
-</div>
-</div>
-<a id="a6783b10d3b874631bae00c51c7f835ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6783b10d3b874631bae00c51c7f835ed">&#9670;&nbsp;</a></span>comManagerGetRegisteredDataInfoInstance()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structbuf_tx_rx_ptr__t.html">bufTxRxPtr_t</a>* comManagerGetRegisteredDataInfoInstance </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
-          <td class="paramname"><em>cmInstance</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>dataId</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01195">1195</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
-
-</div>
-</div>
-<a id="ae2cd08328452b51eb95fdfdaaac1f869"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2cd08328452b51eb95fdfdaaac1f869">&#9670;&nbsp;</a></span>comManagerGetUserPointer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void* comManagerGetUserPointer </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
-          <td class="paramname"><em>cmInstance</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Get user defined data to from a com manager instance </p>
-
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00671">671</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
-
-</div>
-</div>
-<a id="a9749ee07c52d00590a2612d04528db41"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9749ee07c52d00590a2612d04528db41">&#9670;&nbsp;</a></span>disableAllBroadcasts()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void disableAllBroadcasts </td>
+          <td class="memname">void comManagerDisableBroadcasts </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em></td><td>)</td>
@@ -598,25 +457,25 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Disables broadcasts of all messages on all ports. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Disables broadcasts of all messages on specified port, or all ports if phandle == -1. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">pHandle</td><td>the pHandle to disable broadcasts on, -1 for all </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01361">1361</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01372">1372</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a58986ddf9d8c51932dfbcdac6476fd01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58986ddf9d8c51932dfbcdac6476fd01">&#9670;&nbsp;</a></span>disableAllBroadcastsInstance()</h2>
+<a id="a0a8c6cdaa5af10630b0e7cdae1234d0d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a8c6cdaa5af10630b0e7cdae1234d0d">&#9670;&nbsp;</a></span>comManagerDisableBroadcastsInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void disableAllBroadcastsInstance </td>
+          <td class="memname">void comManagerDisableBroadcastsInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -635,18 +494,18 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01366">1366</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01377">1377</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="afe217609a8971ede0aabb31df9b02c68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe217609a8971ede0aabb31df9b02c68">&#9670;&nbsp;</a></span>disableDataComManager()</h2>
+<a id="a8e579189eb6108310736f30327a0cd0b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e579189eb6108310736f30327a0cd0b">&#9670;&nbsp;</a></span>comManagerDisableData()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int disableDataComManager </td>
+          <td class="memname">int comManagerDisableData </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -673,19 +532,19 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#afe217609a8971ede0aabb31df9b02c68">disableDataComManager</a>(0, <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>);</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a8e579189eb6108310736f30327a0cd0b">comManagerDisableData</a>(0, <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00808">808</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="ab327f399d6a277ca8e0557d44372d66b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab327f399d6a277ca8e0557d44372d66b">&#9670;&nbsp;</a></span>disableDataComManagerInstance()</h2>
+<a id="af012b68382286a50eeef956a4e68f124"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af012b68382286a50eeef956a4e68f124">&#9670;&nbsp;</a></span>comManagerDisableDataInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int disableDataComManagerInstance </td>
+          <td class="memname">int comManagerDisableDataInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -714,14 +573,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a2504cc9b81ea76263f17b01447878980"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2504cc9b81ea76263f17b01447878980">&#9670;&nbsp;</a></span>freeComManagerInstance()</h2>
+<a id="aefaf81cd9fc365d9cb5bdec7c9dd44de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aefaf81cd9fc365d9cb5bdec7c9dd44de">&#9670;&nbsp;</a></span>comManagerFreeInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void freeComManagerInstance </td>
+          <td class="memname">void comManagerFreeInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em></td><td>)</td>
@@ -735,14 +594,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a98b499e9d58aa582e06a65b2cc76e423"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a98b499e9d58aa582e06a65b2cc76e423">&#9670;&nbsp;</a></span>getDataComManager()</h2>
+<a id="ab8611a5a8a569db3d07af9f3f3cb4aa2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8611a5a8a569db3d07af9f3f3cb4aa2">&#9670;&nbsp;</a></span>comManagerGetData()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void getDataComManager </td>
+          <td class="memname">void comManagerGetData </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -791,7 +650,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<p>Example that makes a request to receive the device info just once: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a98b499e9d58aa582e06a65b2cc76e423">getDataComManager</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, 0, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --><p>Example that broadcasts INS data every 50 milliseconds: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a98b499e9d58aa582e06a65b2cc76e423">getDataComManager</a>(0, <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, 0, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">ins_1_t</a>), 50);</div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
+<p>Example that makes a request to receive the device info just once: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#ab8611a5a8a569db3d07af9f3f3cb4aa2">comManagerGetData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, 0, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --><p>Example that broadcasts INS data every 50 milliseconds: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#ab8611a5a8a569db3d07af9f3f3cb4aa2">comManagerGetData</a>(0, <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, 0, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">ins_1_t</a>), 50);</div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">dataId</td><td>Data structure ID </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Byte offset into data structure. 0 = data start. </td></tr>
@@ -806,14 +665,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ace8bab9b39690624d273e175b7201ad0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace8bab9b39690624d273e175b7201ad0">&#9670;&nbsp;</a></span>getDataComManagerInstance()</h2>
+<a id="a2292814167c95f8a1af365f0070a6a04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2292814167c95f8a1af365f0070a6a04">&#9670;&nbsp;</a></span>comManagerGetDataInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void getDataComManagerInstance </td>
+          <td class="memname">void comManagerGetDataInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -860,14 +719,82 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a572a1b5ad91a1aaec2eb4f61478c204b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a572a1b5ad91a1aaec2eb4f61478c204b">&#9670;&nbsp;</a></span>getDataRmcComManager()</h2>
+<a id="a69751e08cb2002d64b380e2ae90d160e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69751e08cb2002d64b380e2ae90d160e">&#9670;&nbsp;</a></span>comManagerGetDataRequest()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void getDataRmcComManager </td>
+          <td class="memname">int comManagerGetDataRequest </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pHandle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structp__data__get__t.html">p_data_get_t</a> *&#160;</td>
+          <td class="paramname"><em>req</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Internal use mostly, process a get data request for a message that needs to be broadcasted</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, anything else is failure </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01218">1218</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+
+</div>
+</div>
+<a id="af0f34f05ead3087428251de6db6bd48d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af0f34f05ead3087428251de6db6bd48d">&#9670;&nbsp;</a></span>comManagerGetDataRequestInstance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int comManagerGetDataRequestInstance </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
+          <td class="paramname"><em>cmInstance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pHandle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structp__data__get__t.html">p_data_get_t</a> *&#160;</td>
+          <td class="paramname"><em>req</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01223">1223</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+
+</div>
+</div>
+<a id="aae55430658079aefb707533cd58c5f5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae55430658079aefb707533cd58c5f5a">&#9670;&nbsp;</a></span>comManagerGetDataRmc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void comManagerGetDataRmc </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -903,19 +830,19 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<p>Example that enables streaming of all data messages necessary for post processing: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a572a1b5ad91a1aaec2eb4f61478c204b">getDataRmcComManager</a>(pHandle, <a class="code" href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">RMC_PRESET_PPD_BITS</a>, 0);</div></div><!-- fragment --><p>Example that broadcasts INS and GPS data at full rate: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a572a1b5ad91a1aaec2eb4f61478c204b">getDataRmcComManager</a>(pHandle, <a class="code" href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a>, 0);</div></div><!-- fragment --> 
+<p>Example that enables streaming of all data messages necessary for post processing: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code" href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">RMC_PRESET_PPD_BITS</a>, 0);</div></div><!-- fragment --><p>Example that broadcasts INS and GPS data at full rate: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code" href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a>, 0);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00721">721</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a85c00e3c8698a0eb5945bda7f200410b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85c00e3c8698a0eb5945bda7f200410b">&#9670;&nbsp;</a></span>getDataRmcComManagerInstance()</h2>
+<a id="a613a5a7fafd2403866d7e0aa5625272d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a613a5a7fafd2403866d7e0aa5625272d">&#9670;&nbsp;</a></span>comManagerGetDataRmcInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void getDataRmcComManagerInstance </td>
+          <td class="memname">void comManagerGetDataRmcInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -950,14 +877,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="abac1ed32f15c6e6a469f91736b9eb728"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abac1ed32f15c6e6a469f91736b9eb728">&#9670;&nbsp;</a></span>getGlobalComManager()</h2>
+<a id="a4336f36a840ad97152a693893866ca2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4336f36a840ad97152a693893866ca2e">&#9670;&nbsp;</a></span>comManagerGetGlobal()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> getGlobalComManager </td>
+          <td class="memname"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> comManagerGetGlobal </td>
           <td>(</td>
           <td class="paramtype">void&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -970,14 +897,66 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a171c5acb5a3b14aa3d674e1c1db5395a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a171c5acb5a3b14aa3d674e1c1db5395a">&#9670;&nbsp;</a></span>getStatusComManager()</h2>
+<a id="a75d553e17d45e09a81b90f5bbbeb1166"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75d553e17d45e09a81b90f5bbbeb1166">&#9670;&nbsp;</a></span>comManagerGetRegisteredDataInfo()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a>* getStatusComManager </td>
+          <td class="memname"><a class="el" href="structbuf_tx_rx_ptr__t.html">bufTxRxPtr_t</a>* comManagerGetRegisteredDataInfo </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>dataId</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Internal use mostly, get data info for a the specified pre-registered dataId</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on failure, pointer on success </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01201">1201</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+
+</div>
+</div>
+<a id="a6783b10d3b874631bae00c51c7f835ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6783b10d3b874631bae00c51c7f835ed">&#9670;&nbsp;</a></span>comManagerGetRegisteredDataInfoInstance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structbuf_tx_rx_ptr__t.html">bufTxRxPtr_t</a>* comManagerGetRegisteredDataInfoInstance </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
+          <td class="paramname"><em>cmInstance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>dataId</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01206">1206</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+
+</div>
+</div>
+<a id="a2a8e7beee9874f9f2cbc9669186dbba3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a8e7beee9874f9f2cbc9669186dbba3">&#9670;&nbsp;</a></span>comManagerGetStatus()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a>* comManagerGetStatus </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em></td><td>)</td>
@@ -992,14 +971,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a061fb2313d0270db73c130c39dd0e1d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a061fb2313d0270db73c130c39dd0e1d8">&#9670;&nbsp;</a></span>getStatusComManagerInstance()</h2>
+<a id="a5653d29c5faff7390f7568db9d6918cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5653d29c5faff7390f7568db9d6918cd">&#9670;&nbsp;</a></span>comManagerGetStatusInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a>* getStatusComManagerInstance </td>
+          <td class="memname"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a>* comManagerGetStatusInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -1022,14 +1001,35 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="afa7cb232ae6fd16afb5da4e989653c18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa7cb232ae6fd16afb5da4e989653c18">&#9670;&nbsp;</a></span>initComManager()</h2>
+<a id="ae2cd08328452b51eb95fdfdaaac1f869"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2cd08328452b51eb95fdfdaaac1f869">&#9670;&nbsp;</a></span>comManagerGetUserPointer()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void initComManager </td>
+          <td class="memname">void* comManagerGetUserPointer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
+          <td class="paramname"><em>cmInstance</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Get user defined data to from a com manager instance </p>
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00671">671</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+
+</div>
+</div>
+<a id="a9bcc76cd2eb01c8e91ca97fd1e1a25d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">&#9670;&nbsp;</a></span>comManagerInit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void comManagerInit </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>numHandles</em>, </td>
@@ -1100,7 +1100,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">numHandles</td><td>the max number of serial ports possible </td></tr>
     <tr><td class="paramname">maxEnsuredPackets</td><td>the max number of ensured packets </td></tr>
-    <tr><td class="paramname">stepPeriodMilliseconds</td><td>how many milliseconds you are waiting in between calls to stepComManager </td></tr>
+    <tr><td class="paramname">stepPeriodMilliseconds</td><td>how many milliseconds you are waiting in between calls to comManagerStep </td></tr>
     <tr><td class="paramname">retryCount</td><td>the number of times to retry failed packets </td></tr>
     <tr><td class="paramname">readFnc</td><td>read data from the serial port represented by pHandle </td></tr>
     <tr><td class="paramname">sendFnc</td><td>send data to the serial port represented by pHandle </td></tr>
@@ -1111,19 +1111,19 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#afa7cb232ae6fd16afb5da4e989653c18">initComManager</a>(20, 20, 10, 25, staticReadPacket, staticSendPacket, NULL, staticProcessRxData, staticProcessAck, 0);</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">comManagerInit</a>(20, 20, 10, 25, staticReadPacket, staticSendPacket, NULL, staticProcessRxData, staticProcessAck, 0);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00228">228</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a116962e485c59fad2b3e6b6b4ede2f40"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a116962e485c59fad2b3e6b6b4ede2f40">&#9670;&nbsp;</a></span>initComManagerInstance()</h2>
+<a id="a58733da275ce5a71a734317170b3c18d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58733da275ce5a71a734317170b3c18d">&#9670;&nbsp;</a></span>comManagerInitInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> initComManagerInstance </td>
+          <td class="memname"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> comManagerInitInstance </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>numHandles</em>, </td>
@@ -1194,14 +1194,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8a5729d2efc523cbc8f3b81db6db9888"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a5729d2efc523cbc8f3b81db6db9888">&#9670;&nbsp;</a></span>registerComManager()</h2>
+<a id="a9887c6cd8d50dbb31888d12f9b7efddc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9887c6cd8d50dbb31888d12f9b7efddc">&#9670;&nbsp;</a></span>comManagerRegister()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void registerComManager </td>
+          <td class="memname">void comManagerRegister </td>
           <td>(</td>
           <td class="paramtype">uint32_t&#160;</td>
           <td class="paramname"><em>dataId</em>, </td>
@@ -1262,19 +1262,19 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a8a5729d2efc523cbc8f3b81db6db9888">registerComManager</a>(<a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, prepMsgINS, writeMsgINS, &amp;g_insData, &amp;g_insData, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">ins_1_t</a>));</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line">registerComManager(<a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, prepMsgINS, writeMsgINS, &amp;g_insData, &amp;g_insData, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">ins_1_t</a>));</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00387">387</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a37cec2799e1c217f383f05970445f13a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a37cec2799e1c217f383f05970445f13a">&#9670;&nbsp;</a></span>registerComManagerASCII()</h2>
+<a id="a77e8440a1bacfa6c2427174f8ffe2a6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77e8440a1bacfa6c2427174f8ffe2a6b">&#9670;&nbsp;</a></span>comManagerRegisterASCII()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void registerComManagerASCII </td>
+          <td class="memname">void comManagerRegisterASCII </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structascii_message_map__t.html">asciiMessageMap_t</a> *&#160;</td>
           <td class="paramname"><em>asciiMessages</em>, </td>
@@ -1319,14 +1319,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae2a71653eb83559f60fc10a7d9a842a1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2a71653eb83559f60fc10a7d9a842a1">&#9670;&nbsp;</a></span>registerComManagerASCIIInstance()</h2>
+<a id="a005e44a26217db33e173b13ef8000cf9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a005e44a26217db33e173b13ef8000cf9">&#9670;&nbsp;</a></span>comManagerRegisterASCIIInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void registerComManagerASCIIInstance </td>
+          <td class="memname">void comManagerRegisterASCIIInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -1367,14 +1367,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="abab3415f9b27727f88eb0399235ee03a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abab3415f9b27727f88eb0399235ee03a">&#9670;&nbsp;</a></span>registerComManagerInstance()</h2>
+<a id="a6cd5088737bfad7efabe238a163cd78e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cd5088737bfad7efabe238a163cd78e">&#9670;&nbsp;</a></span>comManagerRegisterInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void registerComManagerInstance </td>
+          <td class="memname">void comManagerRegisterInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -1433,14 +1433,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a751e0cd46bcb82fd82aac4e211ae8120"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a751e0cd46bcb82fd82aac4e211ae8120">&#9670;&nbsp;</a></span>sendComManager()</h2>
+<a id="a56ddced36e9afc75cb9e94f67a8cf3f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56ddced36e9afc75cb9e94f67a8cf3f5">&#9670;&nbsp;</a></span>comManagerSend()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendComManager </td>
+          <td class="memname">int comManagerSend </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -1487,73 +1487,19 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="structp__data__get__t.html">p_data_get_t</a> request;</div><div class="line"><a class="code" href="structbuf_ptr__t.html">bufPtr_t</a> data;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8">id</a> = <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">offset</a> = 0;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">size</a> = <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>);</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ae844be67615d36ebcbd704e75f13613e">bc_period_ms</a> = 50;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c">ptr</a> = (uint8_t*)&amp;request;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">size</a> = <span class="keyword">sizeof</span>(request);</div><div class="line"><a class="code" href="com__manager_8c.html#a34decf76073a8bb1bdb130e5ae0f7380">sendComManager</a>(pHandle, <a class="code" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, 0, &amp;data)</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="structp__data__get__t.html">p_data_get_t</a> request;</div><div class="line"><a class="code" href="structbuf_ptr__t.html">bufPtr_t</a> data;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8">id</a> = <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">offset</a> = 0;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">size</a> = <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>);</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ae844be67615d36ebcbd704e75f13613e">bc_period_ms</a> = 50;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c">ptr</a> = (uint8_t*)&amp;request;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">size</a> = <span class="keyword">sizeof</span>(request);</div><div class="line"><a class="code" href="com__manager_8c.html#a9ffb3e89b6bb53a26e590903ac97b8e9">comManagerSend</a>(pHandle, <a class="code" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, 0, &amp;data)</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00822">822</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a8d3f8c0e14f09f7c8cb477057d37abf3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d3f8c0e14f09f7c8cb477057d37abf3">&#9670;&nbsp;</a></span>sendComManagerInstance()</h2>
+<a id="a4f2c449501f06efa1689f82b88a1db64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f2c449501f06efa1689f82b88a1db64">&#9670;&nbsp;</a></span>comManagerSendData()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendComManagerInstance </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
-          <td class="paramname"><em>cmInstance</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>pHandle</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint8_t&#160;</td>
-          <td class="paramname"><em>pktInfo</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *&#160;</td>
-          <td class="paramname"><em>bodyHdr</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *&#160;</td>
-          <td class="paramname"><em>txData</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint8_t&#160;</td>
-          <td class="paramname"><em>pktFlags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00827">827</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
-
-</div>
-</div>
-<a id="a83470a78a4240c222cb2250d52db3404"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a83470a78a4240c222cb2250d52db3404">&#9670;&nbsp;</a></span>sendDataComManager()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int sendDataComManager </td>
+          <td class="memname">int comManagerSendData </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -1589,7 +1535,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Convenience function that wraps sendComManager for sending data structures. Must be multiple of 4 bytes in size.</p>
+<p>Convenience function that wraps comManagerSend for sending data structures. Must be multiple of 4 bytes in size.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">pHandle</td><td>the port handle to send data to </td></tr>
@@ -1601,19 +1547,19 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a83470a78a4240c222cb2250d52db3404">sendDataComManager</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a4f2c449501f06efa1689f82b88a1db64">comManagerSendData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00736">736</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="ac3cfa14d2de9967bb6218378aeeab848"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac3cfa14d2de9967bb6218378aeeab848">&#9670;&nbsp;</a></span>sendDataComManagerInstance()</h2>
+<a id="a96bbc21cd912ec5d432163a706c93bb5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96bbc21cd912ec5d432163a706c93bb5">&#9670;&nbsp;</a></span>comManagerSendDataInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendDataComManagerInstance </td>
+          <td class="memname">int comManagerSendDataInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -1660,14 +1606,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aa0de0acc04cae4c9bc17e97abc84426d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0de0acc04cae4c9bc17e97abc84426d">&#9670;&nbsp;</a></span>sendDataComManagerNoAck()</h2>
+<a id="ae13ccb8e9ac757f7fe40e212f9c92616"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae13ccb8e9ac757f7fe40e212f9c92616">&#9670;&nbsp;</a></span>comManagerSendDataNoAck()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendDataComManagerNoAck </td>
+          <td class="memname">int comManagerSendDataNoAck </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -1703,7 +1649,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Same as sendComManager, except that no retry is attempted</p>
+<p>Same as comManagerSend, except that no retry is attempted</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">pHandle</td><td>the port handle to send the packet to </td></tr>
@@ -1721,14 +1667,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ab986f944aaadac5a000e0a63885ec704"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab986f944aaadac5a000e0a63885ec704">&#9670;&nbsp;</a></span>sendDataComManagerNoAckInstance()</h2>
+<a id="a6adce0b5b228eff4bd756011b3c2c6c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6adce0b5b228eff4bd756011b3c2c6c8">&#9670;&nbsp;</a></span>comManagerSendDataNoAckInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendDataComManagerNoAckInstance </td>
+          <td class="memname">int comManagerSendDataNoAckInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -1775,14 +1721,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a187bde7484d4b6a67b71786d6cdfb789"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a187bde7484d4b6a67b71786d6cdfb789">&#9670;&nbsp;</a></span>sendEnsuredComManager()</h2>
+<a id="a3b21e0e3ea5a2fb71bac0c3e36c31622"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b21e0e3ea5a2fb71bac0c3e36c31622">&#9670;&nbsp;</a></span>comManagerSendEnsured()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendEnsuredComManager </td>
+          <td class="memname">int comManagerSendEnsured </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -1812,7 +1758,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Same as sendComManager, except that the com manager may retry the send if an ACK is not received</p>
+<p>Same as comManagerSend, except that the com manager may retry the send if an ACK is not received</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">pHandle</td><td>the port handle to send the packet to </td></tr>
@@ -1828,14 +1774,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aeb4a2c3ff0d4f657ddd1b11f71a1b8ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb4a2c3ff0d4f657ddd1b11f71a1b8ff">&#9670;&nbsp;</a></span>sendEnsuredComManagerInstance()</h2>
+<a id="af2d03a088e68708a42a99cae3dac4924"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2d03a088e68708a42a99cae3dac4924">&#9670;&nbsp;</a></span>comManagerSendEnsuredInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendEnsuredComManagerInstance </td>
+          <td class="memname">int comManagerSendEnsuredInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -1876,14 +1822,68 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="af7366dcef59462fb67505b7245bafee9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7366dcef59462fb67505b7245bafee9">&#9670;&nbsp;</a></span>sendRawDataComManager()</h2>
+<a id="ab8cf768e6342dbe0abf16db10f2c7ede"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8cf768e6342dbe0abf16db10f2c7ede">&#9670;&nbsp;</a></span>comManagerSendInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendRawDataComManager </td>
+          <td class="memname">int comManagerSendInstance </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
+          <td class="paramname"><em>cmInstance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pHandle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>pktInfo</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *&#160;</td>
+          <td class="paramname"><em>bodyHdr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structbuf_ptr__t.html">bufPtr_t</a> *&#160;</td>
+          <td class="paramname"><em>txData</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>pktFlags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00827">827</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+
+</div>
+</div>
+<a id="a750c925ebe5c23deeecd6c3dc47df2c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a750c925ebe5c23deeecd6c3dc47df2c9">&#9670;&nbsp;</a></span>comManagerSendRawData()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int comManagerSendRawData </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>pHandle</em>, </td>
@@ -1919,7 +1919,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Convenience function that wraps sendComManager for sending data structures. Allows arbitrary bytes size, 4 byte multiple not required. No byte swapping occurs.</p>
+<p>Convenience function that wraps comManagerSend for sending data structures. Allows arbitrary bytes size, 4 byte multiple not required. No byte swapping occurs.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">pHandle</td><td>the port handle to send data to </td></tr>
@@ -1931,19 +1931,19 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#af7366dcef59462fb67505b7245bafee9">sendRawDataComManager</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a750c925ebe5c23deeecd6c3dc47df2c9">comManagerSendRawData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00784">784</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a863614083a0165e607cf4a962045c10b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a863614083a0165e607cf4a962045c10b">&#9670;&nbsp;</a></span>sendRawDataComManagerInstance()</h2>
+<a id="a9bfdf04b15fa460f0bedcf268e596f42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bfdf04b15fa460f0bedcf268e596f42">&#9670;&nbsp;</a></span>comManagerSendRawDataInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int sendRawDataComManagerInstance </td>
+          <td class="memname">int comManagerSendRawDataInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -1990,14 +1990,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a81c22b426893c957908eeddf2379b7f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81c22b426893c957908eeddf2379b7f1">&#9670;&nbsp;</a></span>setComManagerPassThrough()</h2>
+<a id="a2812b540bae8534ce94668e0b4c5c617"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2812b540bae8534ce94668e0b4c5c617">&#9670;&nbsp;</a></span>comManagerSetPassThrough()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void setComManagerPassThrough </td>
+          <td class="memname">void comManagerSetPassThrough </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#a74683b05c0ff3f3c394e2a391e7bb42f">pfnComManagerPassThrough</a>&#160;</td>
           <td class="paramname"><em>handler</em></td><td>)</td>
@@ -2011,14 +2011,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a238220cd287bfce9919be346dbd96a19"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a238220cd287bfce9919be346dbd96a19">&#9670;&nbsp;</a></span>setComManagerPassThroughInstance()</h2>
+<a id="a75c9e4c2b6f2c9a44991454fa9dc8822"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75c9e4c2b6f2c9a44991454fa9dc8822">&#9670;&nbsp;</a></span>comManagerSetPassThroughInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void setComManagerPassThroughInstance </td>
+          <td class="memname">void comManagerSetPassThroughInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -2041,14 +2041,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a46ff0e8100e993aa7708a81c5cf9c2e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46ff0e8100e993aa7708a81c5cf9c2e9">&#9670;&nbsp;</a></span>setComManagerRmcCallback()</h2>
+<a id="a4ad33af42c470295b3e053956cd3a6b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ad33af42c470295b3e053956cd3a6b4">&#9670;&nbsp;</a></span>comManagerSetRmcCallback()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void setComManagerRmcCallback </td>
+          <td class="memname">void comManagerSetRmcCallback </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a>&#160;</td>
           <td class="paramname"><em>handler</em></td><td>)</td>
@@ -2062,14 +2062,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a86bbb66d0278e4398342510767701e6f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86bbb66d0278e4398342510767701e6f">&#9670;&nbsp;</a></span>setComManagerRmcCallbackInstance()</h2>
+<a id="a7f293526ff6f68cdedfb57181d456bd8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f293526ff6f68cdedfb57181d456bd8">&#9670;&nbsp;</a></span>comManagerSetRmcCallbackInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void setComManagerRmcCallbackInstance </td>
+          <td class="memname">void comManagerSetRmcCallbackInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em>, </td>
@@ -2092,14 +2092,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae580bf0e831c5a0038377eba324e34b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae580bf0e831c5a0038377eba324e34b6">&#9670;&nbsp;</a></span>stepComManager()</h2>
+<a id="a5153eef615e1ad8cd2025156d1be51d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5153eef615e1ad8cd2025156d1be51d7">&#9670;&nbsp;</a></span>comManagerStep()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void stepComManager </td>
+          <td class="memname">void comManagerStep </td>
           <td>(</td>
           <td class="paramtype">void&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -2113,14 +2113,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a2aba0e994b53c91d0df4c005a68b1c67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2aba0e994b53c91d0df4c005a68b1c67">&#9670;&nbsp;</a></span>stepComManagerInstance()</h2>
+<a id="ab21b64f82a4af5312ef06ad41de5257f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab21b64f82a4af5312ef06ad41de5257f">&#9670;&nbsp;</a></span>comManagerStepInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void stepComManagerInstance </td>
+          <td class="memname">void comManagerStepInstance </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
           <td class="paramname"><em>cmInstance</em></td><td>)</td>
@@ -2133,14 +2133,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aac76e2108a31ab0979c400240acd37cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac76e2108a31ab0979c400240acd37cb">&#9670;&nbsp;</a></span>validateBaudRate()</h2>
+<a id="a202229d24b4a3d1a7ec9880ec5e309b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a202229d24b4a3d1a7ec9880ec5e309b8">&#9670;&nbsp;</a></span>comManagerValidateBaudRate()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int validateBaudRate </td>
+          <td class="memname">int comManagerValidateBaudRate </td>
           <td>(</td>
           <td class="paramtype">unsigned int&#160;</td>
           <td class="paramname"><em>baudRate</em></td><td>)</td>
@@ -2156,7 +2156,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if baud rate is valid, -1 if not </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l02019">2019</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l02030">2030</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>

@@ -167,11 +167,18 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
 
 /**
-* Encode a binary packet to stop all messages being broadcast on the device - puts the data ready to send into the buffer passed into is_comm_init
+* Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
 * @param instance the comm instance passed to is_comm_init
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts(is_comm_instance_t* instance);
+int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance);
+
+/**
+* Encode a binary packet to stop all messages being broadcast on the device on this port - puts the data ready to send into the buffer passed into is_comm_init
+* @param instance the comm instance passed to is_comm_init
+* @return 0 if success, otherwise an error code
+*/
+int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance);
 
 /** uINS default baud rate */
 #define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600
@@ -263,16 +270,17 @@ n-1			Packet end byte
 */
 
 	
-#define PID_INVALID                 0   /** Invalid packet id */
-#define PID_ACK                     1   /** ACK */
-#define PID_NACK                    2   /** NACK */
-#define PID_GET_DATA                3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
-#define PID_DATA                    4   /** Data received from PID_GET_DATA, no ACK is sent back */
-#define PID_SET_DATA                5   /** Set data on the device, such as configuration options, sends an ACK back */
-#define PID_STOP_ALL_BROADCASTS     6   /** Stop all data broadcasts on all ports. Responds with an ACK */
-#define PID_STOP_DID_BROADCAST      7   /** Stop a specific broadcast */
-#define PID_COUNT                   8   /** The number of packet identifiers, keep this at the end! */
-#define PID_MAX_COUNT               32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
+#define PID_INVALID                         0   /** Invalid packet id */
+#define PID_ACK                             1   /** ACK */
+#define PID_NACK                            2   /** NACK */
+#define PID_GET_DATA                        3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
+#define PID_DATA                            4   /** Data received from PID_GET_DATA, no ACK is sent back */
+#define PID_SET_DATA                        5   /** Set data on the device, such as configuration options, sends an ACK back */
+#define PID_STOP_BROADCASTS_ALL_PORTS       6   /** Stop all data broadcasts on all ports. Responds with an ACK */
+#define PID_STOP_DID_BROADCAST              7   /** Stop a specific broadcast */
+#define PID_STOP_BROADCASTS_CURRENT_PORT    8   /** Stop all data broadcasts on current port. Responds with an ACK */
+#define PID_COUNT                           9   /** The number of packet identifiers, keep this at the end! */
+#define PID_MAX_COUNT                       32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
 typedef struct

@@ -128,7 +128,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	m_comManagerState.clientBuffer = m_clientBuffer;
 	m_comManagerState.clientBufferSize = sizeof(m_clientBuffer);
 	m_comManagerState.clientBytesToSend = &m_clientBufferBytesToSend;
-	comManagerAssignUserPointer(getGlobalComManager(), &m_comManagerState);
+	comManagerAssignUserPointer(comManagerGetGlobal(), &m_comManagerState);
 }
 
 InertialSense::~InertialSense()
@@ -351,7 +351,7 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 		uint32_t cfgBits = RTK_CFG_BITS_GPS1_RTK_ROVER;
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
-			sendDataComManager((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
+			comManagerSendData((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
 		}
 		if (m_clientStream == NULLPTR)
 		{
@@ -452,7 +452,7 @@ bool InertialSense::Update()
 		// task system with serial port read function that does NOT incorporate a timeout.   
 		if (m_comManagerState.serialPorts.size() != 0)
 		{
-			stepComManager();
+			comManagerStep();
 		}
 	}
 
@@ -498,14 +498,15 @@ vector<string> InertialSense::GetPorts()
 	return ports;
 }
 
-void InertialSense::StopBroadcasts()
+void InertialSense::StopBroadcasts(bool allPorts)
 {
-	// Stop all broadcasts
+    uint8_t pid = (allPorts ? PID_STOP_BROADCASTS_ALL_PORTS : PID_STOP_BROADCASTS_CURRENT_PORT);
 
+	// Stop all broadcasts
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the uINS.
-		sendComManager((int)i, PID_STOP_ALL_BROADCASTS, 0, 0, 0);
+		comManagerSend((int)i, pid, 0, 0, 0);
 	}
 }
 
@@ -514,7 +515,7 @@ void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, ui
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  4.) Send data to the uINS.  
-		sendDataComManager((int)i, dataId, data, length, offset);
+		comManagerSendData((int)i, dataId, data, length, offset);
 	}
 }
 
@@ -522,7 +523,7 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 {
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
-		sendRawDataComManager((int)i, dataId, data, length, offset);
+		comManagerSendRawData((int)i, dataId, data, length, offset);
 	}
 }
 
@@ -530,14 +531,14 @@ void InertialSense::SetConfig(const config_t& config, int pHandle)
 {
 	m_comManagerState.config[pHandle] = config;
 	// [C COMM INSTRUCTION]  Update the entire DID_CONFIG data set in the uINS.  
-	sendDataComManager(pHandle, DID_CONFIG, &m_comManagerState.config[pHandle], sizeof(config), 0);
+	comManagerSendData(pHandle, DID_CONFIG, &m_comManagerState.config[pHandle], sizeof(config), 0);
 }
 
 void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHandle)
 {
 	m_comManagerState.flashConfig[pHandle] = flashConfig;
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
-	sendDataComManager(pHandle, DID_FLASH_CONFIG, &m_comManagerState.flashConfig[pHandle], sizeof(flashConfig), 0);
+	comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.flashConfig[pHandle], sizeof(flashConfig), 0);
 	Update();
 }
 
@@ -556,7 +557,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 		for (int i = 0; i < (int)m_comManagerState.serialPorts.size(); i++)
 		{
 			// [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the uINS.
-			disableDataComManager(i, dataId);
+			comManagerDisableData(i, dataId);
 		}
 	}
 	else
@@ -565,7 +566,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 		{
 			// [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMs" specifies the interval
 			// between broadcasts and "periodMs=0" will disable broadcasts and transmit one single message. 
-			getDataComManager(i, dataId, 0, 0, periodMS);
+			comManagerGetData(i, dataId, 0, 0, periodMS);
 		}
 	}
 	return true;
@@ -576,7 +577,7 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  Use a preset to enable a predefined set of messages.  R 
-		getDataRmcComManager((int)i, rmcPreset, rmcOptions);
+		comManagerGetDataRmc((int)i, rmcPreset, rmcOptions);
 	}
 }
 
@@ -690,7 +691,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 {
 	Close();
 
-	if (port == NULLPTR || validateBaudRate(baudRate) != 0)
+	if (port == NULLPTR || comManagerValidateBaudRate(baudRate) != 0)
 	{
 		return false;
 	}
@@ -733,7 +734,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
 	// [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
 	// serial port read and write and for successfully parsed data.
-	initComManager((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
+	comManagerInit((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
 
 	// re-initialize data sets
 	config_t configTemplate;
@@ -756,13 +757,13 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	{
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
-			getDataComManager((int)i, DID_CONFIG, 0, 0, 0);
-			getDataComManager((int)i, DID_DEV_INFO, 0, 0, 0);
-			getDataComManager((int)i, DID_FLASH_CONFIG, 0, 0, 0);
+			comManagerGetData((int)i, DID_CONFIG, 0, 0, 0);
+			comManagerGetData((int)i, DID_DEV_INFO, 0, 0, 0);
+			comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
 		}
 
 		SLEEP_MS(13);
-		stepComManager();
+		comManagerStep();
 	}
 
 	bool removedSerials = false;
@@ -794,7 +795,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	// setup com manager again if serial ports dropped out with new count of serial ports
 	if (removedSerials)
 	{
-		initComManager((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
+		comManagerInit((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
 	}
 
     return m_comManagerState.serialPorts.size() != 0;

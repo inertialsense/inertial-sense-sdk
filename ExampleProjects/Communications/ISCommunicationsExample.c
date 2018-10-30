@@ -59,7 +59,7 @@ int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Stop all broadcasts on the device
-	int messageSize = is_comm_stop_broadcasts(comm);
+	int messageSize = is_comm_stop_broadcasts_all_ports(comm);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
@@ -76,7 +76,8 @@ int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_
     // Enable broadcasts of DID_INS_1 and DID_GPS_NAV
 	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS1_POS;
     // Respond on current port
-    rmc.options = RMC_OPTIONS_PORT_CURRENT;
+//     rmc.options = RMC_OPTIONS_PORT_CURRENT;
+    rmc.options = RMC_OPTIONS_PORT_SER1;
     // INS output data rate at 20Hz
     rmc.insPeriodMs = 50;
 
@@ -206,8 +207,9 @@ int main(int argc, char* argv[])
 	}
 
 
-    // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
+#if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
     save_persistent_messages(&serialPort, &comm);
+#endif
 
 
 	// STEP 8: Handle received data

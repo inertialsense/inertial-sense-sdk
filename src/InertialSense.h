@@ -192,9 +192,9 @@ public:
 	void CloseServerConnection();
 
 	/**
-	* Turn off all messages
+	* Turn off all messages.  Current port only if allPorts = false.
 	*/
-	void StopBroadcasts();
+	void StopBroadcasts(bool allPorts=true);
 
 	/**
 	* Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method

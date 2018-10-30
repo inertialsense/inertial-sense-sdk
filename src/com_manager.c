@@ -222,9 +222,9 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt);
 void stepComManagerSendMessages(void);
 void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
 
-CMHANDLE getGlobalComManager(void) { return &g_cm; }
+CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
 
-void initComManager
+void comManagerInit
 (
 int numHandles,
 int maxEnsuredPackets,
@@ -241,7 +241,7 @@ pfnComManagerDisableBroadcasts disableBcastFnc
 	initComManagerInstanceInternal(&g_cm, numHandles, maxEnsuredPackets, stepPeriodMilliseconds, retryCount, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc);
 }
 
-CMHANDLE initComManagerInstance
+CMHANDLE comManagerInitInstance
 (
 int numHandles,
 int maxEnsuredPackets,
@@ -364,12 +364,12 @@ int asciiMessageCompare(const void* elem1, const void* elem2)
 	return memcmp(e1->messageId, e2->messageId, 4);
 }
 
-void registerComManagerASCII(asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc, pfnComManagerAsciiMessageHandler msgFncPost)
+void comManagerRegisterASCII(asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc, pfnComManagerAsciiMessageHandler msgFncPost)
 {
-	registerComManagerASCIIInstance(&g_cm, asciiMessages, asciiMessagesCount, msgFnc, msgFncPost);
+	comManagerRegisterASCIIInstance(&g_cm, asciiMessages, asciiMessagesCount, msgFnc, msgFncPost);
 }
 
-void registerComManagerASCIIInstance(CMHANDLE cmInstance_, asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc, pfnComManagerAsciiMessageHandler msgFncPost)
+void comManagerRegisterASCIIInstance(CMHANDLE cmInstance_, asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc, pfnComManagerAsciiMessageHandler msgFncPost)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 
@@ -384,12 +384,12 @@ void registerComManagerASCIIInstance(CMHANDLE cmInstance_, asciiMessageMap_t* as
 	}
 }
 
-void registerComManager(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
+void comManagerRegister(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
 {
-	registerComManagerInstance(&g_cm, dataId, txFnc, pstRxFnc, txDataPtr, rxDataPtr, dataSize, pktFlags);
+	comManagerRegisterInstance(&g_cm, dataId, txFnc, pstRxFnc, txDataPtr, rxDataPtr, dataSize, pktFlags);
 }
 
-void registerComManagerInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
+void comManagerRegisterInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 
@@ -418,12 +418,12 @@ void registerComManagerInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComMan
 	cmInstance->regData[dataId].pktFlags = pktFlags;
 }
 
-void stepComManager(void)
+void comManagerStep(void)
 {
-	stepComManagerInstance(&g_cm);
+	comManagerStepInstance(&g_cm);
 }
 
-void stepComManagerInstance(CMHANDLE cmInstance_)
+void comManagerStepInstance(CMHANDLE cmInstance_)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 	uint8_t c, additionalDataAvailable, canReadAgain;
@@ -597,7 +597,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 	stepPacketRetry(cmInstance);
 }
 
-void freeComManagerInstance(CMHANDLE cmInstance_)
+void comManagerFreeInstance(CMHANDLE cmInstance_)
 {
 	if (cmInstance_ != 0 && cmInstance_ != &g_cm)
 	{
@@ -637,12 +637,12 @@ void freeComManagerInstance(CMHANDLE cmInstance_)
 	}
 }
 
-void setComManagerPassThrough(pfnComManagerPassThrough handler)
+void comManagerSetPassThrough(pfnComManagerPassThrough handler)
 {
-	setComManagerPassThroughInstance(&g_cm, handler);
+	comManagerSetPassThroughInstance(&g_cm, handler);
 }
 
-void setComManagerPassThroughInstance(CMHANDLE cmInstance, pfnComManagerPassThrough handler)
+void comManagerSetPassThroughInstance(CMHANDLE cmInstance, pfnComManagerPassThrough handler)
 {
 	if (cmInstance != 0)
 	{
@@ -650,12 +650,12 @@ void setComManagerPassThroughInstance(CMHANDLE cmInstance, pfnComManagerPassThro
 	}
 }
 
-void setComManagerRmcCallback(pfnComManagerAsapMsg handler)
+void comManagerSetRmcCallback(pfnComManagerAsapMsg handler)
 {
-	setComManagerRmcCallbackInstance(&g_cm, handler);
+	comManagerSetRmcCallbackInstance(&g_cm, handler);
 }
 
-void setComManagerRmcCallbackInstance(CMHANDLE cmInstance, pfnComManagerAsapMsg handler)
+void comManagerSetRmcCallbackInstance(CMHANDLE cmInstance, pfnComManagerAsapMsg handler)
 {
 	if (cmInstance != 0)
 	{
@@ -673,12 +673,12 @@ void* comManagerGetUserPointer(CMHANDLE cmInstance)
 	return ((com_manager_t*)cmInstance)->userPointer;
 }
 
-com_manager_status_t* getStatusComManager(int pHandle)
+com_manager_status_t* comManagerGetStatus(int pHandle)
 {
-	return getStatusComManagerInstance(&g_cm, pHandle);
+	return comManagerGetStatusInstance(&g_cm, pHandle);
 }
 
-com_manager_status_t* getStatusComManagerInstance(CMHANDLE cmInstance, int pHandle)
+com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int pHandle)
 {
 	return &(((com_manager_t*)cmInstance)->status[pHandle]);
 }
@@ -695,12 +695,12 @@ com_manager_status_t* getStatusComManagerInstance(CMHANDLE cmInstance, int pHand
 *
 *	@return 0 on successful request.  -1 on failure.
 */
-void getDataComManager(int pHandle, uint32_t dataId, int offset, int size, int period_ms)
+void comManagerGetData(int pHandle, uint32_t dataId, int offset, int size, int period_ms)
 {
-	getDataComManagerInstance(&g_cm, pHandle, dataId, offset, size, period_ms);
+	comManagerGetDataInstance(&g_cm, pHandle, dataId, offset, size, period_ms);
 }
 
-void getDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, int offset, int size, int period_ms)
+void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, int offset, int size, int period_ms)
 {
 	p_data_get_t request;
 	bufPtr_t data;
@@ -713,56 +713,32 @@ void getDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId
 
 	data.ptr = (uint8_t*)&request;
 	data.size = sizeof(request);
-	sendComManagerInstance(cmInstance, pHandle, PID_GET_DATA, 0, &data, 0);
+	comManagerSendInstance(cmInstance, pHandle, PID_GET_DATA, 0, &data, 0);
 
-	// sendEnsuredComManager(pHandle, PID_GET_DATA, (unsigned char*)&request, sizeof(request));
+	// comManagerSendEnsured(pHandle, PID_GET_DATA, (unsigned char*)&request, sizeof(request));
 }
 
-void getDataRmcComManager(int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
+void comManagerGetDataRmc(int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
 {
-	getDataRmcComManagerInstance(&g_cm, pHandle, rmcBits, rmcOptions);
+	comManagerGetDataRmcInstance(&g_cm, pHandle, rmcBits, rmcOptions);
 }
 
-void getDataRmcComManagerInstance(CMHANDLE cmInstance, int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
+void comManagerGetDataRmcInstance(CMHANDLE cmInstance, int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
 {
 	rmc_t rmc;
 	rmc.bits = rmcBits;
 	rmc.options = rmcOptions;
 	rmc.insPeriodMs = 0;
 
-	sendDataComManagerInstance(cmInstance, pHandle, DID_RMC, &rmc, sizeof(rmc_t), 0);
+	comManagerSendDataInstance(cmInstance, pHandle, DID_RMC, &rmc, sizeof(rmc_t), 0);
 }
 
-int sendDataComManager(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
+int comManagerSendData(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
 {
-	return sendDataComManagerInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
+	return comManagerSendDataInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
 }
 
-int sendDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
-{
-	p_data_hdr_t hdr;
-	bufPtr_t bodyHdr, data;
-
-	// Data Header
-	hdr.id = dataId;
-	hdr.size = dataSize;
-	hdr.offset = dataOffset;
-
-	// Packet Body
-	bodyHdr.ptr = (uint8_t*)&hdr;
-	bodyHdr.size = sizeof(hdr);
-	data.ptr = (uint8_t*)dataPtr;
-	data.size = dataSize;
-
-	return sendComManagerInstance(cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, 0);
-}
-
-int sendDataComManagerNoAck(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
-{
-	return sendDataComManagerNoAckInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
-}
-
-int sendDataComManagerNoAckInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
+int comManagerSendDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
 {
 	p_data_hdr_t hdr;
 	bufPtr_t bodyHdr, data;
@@ -778,15 +754,15 @@ int sendDataComManagerNoAckInstance(CMHANDLE cmInstance, int pHandle, uint32_t d
 	data.ptr = (uint8_t*)dataPtr;
 	data.size = dataSize;
 
-	return sendComManagerInstance((com_manager_t*)cmInstance, pHandle, PID_DATA, &bodyHdr, &data, 0);
+	return comManagerSendInstance(cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, 0);
 }
 
-int sendRawDataComManager(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
+int comManagerSendDataNoAck(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
 {
-	return sendRawDataComManagerInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
+	return comManagerSendDataNoAckInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
 }
 
-int sendRawDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
+int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
 {
 	p_data_hdr_t hdr;
 	bufPtr_t bodyHdr, data;
@@ -802,29 +778,53 @@ int sendRawDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dat
 	data.ptr = (uint8_t*)dataPtr;
 	data.size = dataSize;
 
-	return sendComManagerInstance((com_manager_t*)cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, CM_PKT_FLAGS_RAW_DATA_NO_SWAP);
+	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PID_DATA, &bodyHdr, &data, 0);
 }
 
-int disableDataComManager(int pHandle, uint32_t dataId)
+int comManagerSendRawData(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
 {
-	return disableDataComManagerInstance(&g_cm, pHandle, dataId);
+	return comManagerSendRawDataInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
 }
 
-int disableDataComManagerInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId)
+int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
+{
+	p_data_hdr_t hdr;
+	bufPtr_t bodyHdr, data;
+
+	// Data Header
+	hdr.id = dataId;
+	hdr.size = dataSize;
+	hdr.offset = dataOffset;
+
+	// Packet Body
+	bodyHdr.ptr = (uint8_t*)&hdr;
+	bodyHdr.size = sizeof(hdr);
+	data.ptr = (uint8_t*)dataPtr;
+	data.size = dataSize;
+
+	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, CM_PKT_FLAGS_RAW_DATA_NO_SWAP);
+}
+
+int comManagerDisableData(int pHandle, uint32_t dataId)
+{
+	return comManagerDisableDataInstance(&g_cm, pHandle, dataId);
+}
+
+int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId)
 {
 	bufPtr_t data;
 	data.ptr  = (uint8_t*)&dataId;
 	data.size = 4;
 
-	return sendComManagerInstance(cmInstance, pHandle, PID_STOP_DID_BROADCAST, 0, &data, 0);
+	return comManagerSendInstance(cmInstance, pHandle, PID_STOP_DID_BROADCAST, 0, &data, 0);
 }
 
-int sendComManager(int pHandle, uint8_t pktInfo, bufPtr_t *bodyHdr, bufPtr_t *txData, uint8_t pFlags)
+int comManagerSend(int pHandle, uint8_t pktInfo, bufPtr_t *bodyHdr, bufPtr_t *txData, uint8_t pFlags)
 {
-	return sendComManagerInstance(&g_cm, pHandle, pktInfo, bodyHdr, txData, pFlags);
+	return comManagerSendInstance(&g_cm, pHandle, pktInfo, bodyHdr, txData, pFlags);
 }
 
-int sendComManagerInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags)
+int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags)
 {
 	pkt_info_t pkt;
 	memset(&pkt, 0, sizeof(pkt_info_t));
@@ -846,12 +846,12 @@ int sendComManagerInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bu
 	return sendDataPacket(cmInstance, pHandle, &pkt);
 }
 
-int sendEnsuredComManager(int pHandle, uint8_t pktInfo, unsigned char* data, unsigned int dataSize)
+int comManagerSendEnsured(int pHandle, uint8_t pktInfo, unsigned char* data, unsigned int dataSize)
 {
-	return sendEnsuredComManagerInstance(&g_cm, pHandle, pktInfo, data, dataSize);
+	return comManagerSendEnsuredInstance(&g_cm, pHandle, pktInfo, data, dataSize);
 }
 
-int sendEnsuredComManagerInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)
+int comManagerSendEnsuredInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)
 {
 	packet_t *pkt;
 
@@ -1156,10 +1156,21 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 		}
 		break;
 
-	case PID_STOP_ALL_BROADCASTS:
-		disableAllBroadcastsInstance(cmInstance, -1);
+	case PID_STOP_BROADCASTS_ALL_PORTS:
+		comManagerDisableBroadcastsInstance(cmInstance, -1);
 
-		// Call disable all broadcast callback if exists
+		// Call disable broadcasts callback if exists
+		if (cmInstance->disableBcastFnc)
+		{
+			cmInstance->disableBcastFnc(cmInstance, -1);
+		}
+		sendAck(cmInstance, pHandle, pkt, PID_ACK);
+		break;
+
+	case PID_STOP_BROADCASTS_CURRENT_PORT:
+		comManagerDisableBroadcastsInstance(cmInstance, pHandle);
+
+		// Call disable broadcasts callback if exists
 		if (cmInstance->disableBcastFnc)
 		{
 			cmInstance->disableBcastFnc(cmInstance, pHandle);
@@ -1358,12 +1369,12 @@ void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg)
 	msg->period = MSG_PERIOD_DISABLED;
 }
 
-void disableAllBroadcasts(int pHandle)
+void comManagerDisableBroadcasts(int pHandle)
 {
-	disableAllBroadcastsInstance(&g_cm, pHandle);
+	comManagerDisableBroadcastsInstance(&g_cm, pHandle);
 }
 
-void disableAllBroadcastsInstance(CMHANDLE cmInstance_, int pHandle)
+void comManagerDisableBroadcastsInstance(CMHANDLE cmInstance_, int pHandle)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
@@ -1547,7 +1558,7 @@ void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned cha
 	data.ptr = (unsigned char*)&ack;
 	data.size = ackSize;
 
-	sendComManagerInstance(cmInstance, pHandle, (uint8_t)pid_ack, 0, &data, 0);
+	comManagerSendInstance(cmInstance, pHandle, (uint8_t)pid_ack, 0, &data, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1807,7 +1818,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 		{
 			switch (pid)
 			{
-				case PID_GET_DATA:
+			case PID_GET_DATA:
 				getData1 = (p_data_get_t*)data;
 				getData2 = (p_data_get_t*)ePkt->pktBody;
 
@@ -1818,13 +1829,13 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 				searching = 0;
 				break;
 
-				case PID_STOP_ALL_BROADCASTS:
+			case PID_STOP_BROADCASTS_ALL_PORTS:
 				searching = 0;
 				break;
 
-				default:
+			default:
 
-				#if !ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
+#if !ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
 
 				// Match: first character
 				if (ePkt->pkt.body.ptr[0] == data[0])
@@ -1832,7 +1843,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 					searching = 0;
 				}
 
-				#else
+#else
 
 				// Match: All character
 				for (j = 0; j < dataSize; j++)
@@ -1844,7 +1855,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 					}
 				}
 
-				#endif
+#endif
 
 				break;
 			}
@@ -1985,7 +1996,7 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 			{
 				default:
 				// Custom/Specific Packets
-				case PID_STOP_ALL_BROADCASTS: // No body ID available
+				case PID_STOP_BROADCASTS_ALL_PORTS: // No body ID available
 				ePkt->counter = -1;                 // indicate disabled retry
 				break;
 
@@ -2016,7 +2027,7 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 	}
 }
 
-int validateBaudRate(unsigned int baudRate)
+int comManagerValidateBaudRate(unsigned int baudRate)
 {
 	// Valid baudrates for InertialSense hardware
 	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)

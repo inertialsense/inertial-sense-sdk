@@ -41,6 +41,7 @@ var searchData=
   ['rtosinfo',['rtosInfo',['../struct_p_a_c_k_e_d.html#a427e12fca589792aed26dc839b050cb4',1,'PACKED']]],
   ['ru',['ru',['../structprcopt__t.html#ad955858e696bc28c17c145696c9ce504',1,'prcopt_t']]],
   ['runtimeus',['runTimeUs',['../struct_p_a_c_k_e_d.html#a866d8be5f31ed6ace1633341f0c53ffe',1,'PACKED']]],
+  ['rxbytespers',['rxBytesPerS',['../structport__monitor__t.html#a2c00538b32a7542f4b996bf973943f91',1,'port_monitor_t']]],
   ['rxerror',['rxError',['../structcom__manager__status__t.html#a277a4268d8d1eb8e152c65f016d64f68',1,'com_manager_status_t']]],
   ['rxoverflowcount',['rxOverflowCount',['../structinternal__diagnostic__t.html#a570ffb3b6c797a1993571e7e1e89dd8b',1,'internal_diagnostic_t']]],
   ['rxpktcount',['rxPktCount',['../structcom__manager__status__t.html#a9b358bcb95013a3606a763c35a66538d',1,'com_manager_status_t']]],

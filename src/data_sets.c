@@ -322,8 +322,10 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 70: DID_GPS2_RAW
 		0,						// 71: DID_VELOCITY_SENSOR
 		0,						// 72: DID_DIAGNOSTIC_MESSAGE
-		offsetsSurveyIn 		// 73: DID_SURVEY_IN
-	};
+		offsetsSurveyIn, 		// 73: DID_SURVEY_IN
+        0,                      // 74: DID_EVB2
+        0                       // 75: DID_PORT_MONITOR
+    };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
 
@@ -455,8 +457,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 70: DID_GPS2_RAW
 		0,						// 71: DID_VELOCITY_SENSOR
 		diagMsgOffsets, 		// 72: DID_DIAGNOSTIC_MESSAGE
-		0						// 73: DID_SURVEY_IN
-	};
+		0,                      // 73: DID_SURVEY_IN
+		0,                      // 74: DID_EVB2
+        0                       // 75: DID_PORT_MONITOR
+    };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
 

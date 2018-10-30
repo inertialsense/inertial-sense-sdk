@@ -31,7 +31,7 @@ var searchData=
   ['startupnavdtms',['startupNavDtMs',['../struct_p_a_c_k_e_d.html#a1458cdc80f7709c9a267236bebd190ed',1,'PACKED']]],
   ['state',['state',['../struct_p_a_c_k_e_d.html#a19b03bdcc2cd6d03f3c4c73d3329a942',1,'PACKED::state()'],['../structsurvey__in__t.html#a428c053dcb9c41e5761af06177db1810',1,'survey_in_t::state()']]],
   ['stationid',['stationId',['../structsta__t.html#a024cf506ef31bbe081334ebf792c8b19',1,'sta_t']]],
-  ['status',['status',['../structcom__manager__t.html#ae1c22dddc776abe38f50a78ff1f76893',1,'com_manager_t::status()'],['../struct_p_a_c_k_e_d.html#ab41d8d9020ee7438142779e6ddb7147e',1,'PACKED::status()']]],
+  ['status',['status',['../structcom__manager__t.html#ae1c22dddc776abe38f50a78ff1f76893',1,'com_manager_t::status()'],['../struct_p_a_c_k_e_d.html#ab41d8d9020ee7438142779e6ddb7147e',1,'PACKED::status()'],['../structport__monitor__t.html#a4cf3b3930c5fc5879cd0ce549af52dc2',1,'port_monitor_t::status()']]],
   ['std',['std',['../structprcopt__t.html#adce5b4f02f20896cb1ea5237f2c4c4c3',1,'prcopt_t']]],
   ['steplogfunction',['stepLogFunction',['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#a9e8a137f5ff3a70bf747ecf0655bcd65',1,'InertialSense::com_manager_cpp_state_t']]],
   ['stepperiodmilliseconds',['stepPeriodMilliseconds',['../structcom__manager__t.html#ad698cf1f00ae25965d355ec7f6e86c94',1,'com_manager_t']]],

@@ -1069,8 +1069,8 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 			{
 				if (gps.status&GPS_STATUS_FLAGS_BASE_POSITION_MOVING) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, "); }
 			}
-			if (gps.status&GPS_STATUS_FLAGS_RX_BASE_NO_OBSERV_EPHEM) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No obs/ephem, "); }
-			if (gps.status&GPS_STATUS_FLAGS_RX_BASE_NO_POSITION) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No base position, "); }
+			if (gps.status&GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No obs/ephem, "); }
+			if (gps.status&GPS_STATUS_FLAGS_BASE_NO_POSITION) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No base position, "); }
 		}
 	}
 

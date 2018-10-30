@@ -1,8 +1,9 @@
 var searchData=
 [
-  ['logtype_5fcsv',['LOGTYPE_CSV',['../classc_i_s_logger.html#a1d8dabae55d4395940b6169ac6235fb8a4347e3d3650145ea3e205c92cd61f9e0',1,'cISLogger']]],
-  ['logtype_5fdat',['LOGTYPE_DAT',['../classc_i_s_logger.html#a1d8dabae55d4395940b6169ac6235fb8ae239b38dbdf8bfceb5473006f0198d45',1,'cISLogger']]],
-  ['logtype_5fjson',['LOGTYPE_JSON',['../classc_i_s_logger.html#a1d8dabae55d4395940b6169ac6235fb8ac2febfd8d7d0a74441d690d894852ba8',1,'cISLogger']]],
-  ['logtype_5fkml',['LOGTYPE_KML',['../classc_i_s_logger.html#a1d8dabae55d4395940b6169ac6235fb8a3c1d8f8cc597455645ed29759bbfe2ad',1,'cISLogger']]],
-  ['logtype_5fsdat',['LOGTYPE_SDAT',['../classc_i_s_logger.html#a1d8dabae55d4395940b6169ac6235fb8ac291e1adcd6819f2f7da9f5c191b2f8c',1,'cISLogger']]]
+  ['kid_5fgps',['KID_GPS',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978fa20ea809ea06525ff0f660736a8e2a395',1,'cDataKML']]],
+  ['kid_5fgps1',['KID_GPS1',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978fa4e680373d381e5166600bea55a72fac0',1,'cDataKML']]],
+  ['kid_5fgps2',['KID_GPS2',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978fa639a6016e20f966d37e45118a77d3434',1,'cDataKML']]],
+  ['kid_5fins',['KID_INS',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978fa8a75629cbb44ca758a4789685c737342',1,'cDataKML']]],
+  ['kid_5fref',['KID_REF',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978fa334d9911df891d30d8e48ea290cb1693',1,'cDataKML']]],
+  ['kid_5frtk',['KID_RTK',['../classc_data_k_m_l.html#a5bfd4435af1c6599b6c02c5b6ccf978fad9da6cf90ee1863eed09a56c590e4be9',1,'cDataKML']]]
 ];

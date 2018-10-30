@@ -1,7 +1,6 @@
 var searchData=
 [
   ['validateasciichecksum',['validateAsciiChecksum',['../com__manager_8c.html#aa9b75e21fa2d1c9fb04166a1b80d2d9e',1,'com_manager.c']]],
-  ['validatebaudrate',['validateBaudRate',['../com__manager_8c.html#aac76e2108a31ab0979c400240acd37cb',1,'validateBaudRate(unsigned int baudRate):&#160;com_manager.c'],['../com__manager_8h.html#aac76e2108a31ab0979c400240acd37cb',1,'validateBaudRate(unsigned int baudRate):&#160;com_manager.c']]],
   ['value',['Value',['../class_ti_xml_node.html#ad44dfe927d49a74dd78b72b7514417ad',1,'TiXmlNode::Value()'],['../class_ti_xml_attribute.html#ac9f0b56fcacbedb6eb49e5f282bef014',1,'TiXmlAttribute::Value()']]],
   ['valuestr',['ValueStr',['../class_ti_xml_node.html#a74bda074919e4a5e08d700204793f898',1,'TiXmlNode::ValueStr()'],['../class_ti_xml_attribute.html#af70a11c3a0c07e61bd6e215f1f9b24e9',1,'TiXmlAttribute::ValueStr()']]],
   ['valuetstr',['ValueTStr',['../class_ti_xml_node.html#a74c4ea4a91c0a91900c919f69f657d6a',1,'TiXmlNode']]],

@@ -14,6 +14,8 @@ var searchData=
   ['lla',['lla',['../struct_p_a_c_k_e_d.html#a2e508fba73cb511293d5d6bdc8e5459f',1,'PACKED::lla()'],['../structsurvey__in__t.html#a38feacc53e40b9c3dfd1b4a61f5fbe1f',1,'survey_in_t::lla()'],['../structs_kml_log_data.html#a978ebd86730ee147abf13973c6e19a3e',1,'sKmlLogData::lla()']]],
   ['lli',['LLI',['../struct_p_a_c_k_e_d.html#a84da3da799e50a7235fd8190419d72e7',1,'PACKED']]],
   ['location',['location',['../class_ti_xml_base.html#a0d992580f3bc264909f898e942677a3c',1,'TiXmlBase']]],
+  ['loggerelapsedtimems',['loggerElapsedTimeMs',['../structevb2__t.html#a86d26e30973e20846a7966b6dced233f',1,'evb2_t']]],
+  ['loggerstate',['loggerState',['../structevb2__t.html#a4c5555ee157eb72e34860a61a2a02f79',1,'evb2_t']]],
   ['logpath',['logPath',['../structcmd__options__t.html#afd0992b8f11a9a104c0b34ec1e9fe591',1,'cmd_options_t']]],
   ['logsubfolder',['logSubFolder',['../structcmd__options__t.html#aa608255c9ba986d071a7f1f288e49050',1,'cmd_options_t']]],
   ['logtype',['logType',['../structcmd__options__t.html#aec00094d07f0afb7270d96a962c16216',1,'cmd_options_t']]],

@@ -1266,8 +1266,10 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"gps2Raw",				// 70: DID_GPS2_RAW
         "velocityMeasurement",	// 71: DID_VELOCITY_MEASUREMENT
         "diagnosticMsg",        // 72: DID_DIAGNOSTIC_MESSAGE
-		"surveyIn"				// 73: DID_SURVEY_IN
-	};
+		"surveyIn",             // 73: DID_SURVEY_IN
+        "evb2",                 // 74: DID_EVB2
+        "portMonitor"           // 75: DID_PORT_MONITOR
+    };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);
 

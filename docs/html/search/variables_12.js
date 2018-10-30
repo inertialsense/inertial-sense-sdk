@@ -41,6 +41,7 @@ var searchData=
   ['tow',['tow',['../structsbsmsg__t.html#acdb5a1eee6fd3424d9900de269be572d',1,'sbsmsg_t']]],
   ['towoffset',['towOffset',['../struct_p_a_c_k_e_d.html#a73714a29e1c91b07a30053b1a7547ab6',1,'PACKED']]],
   ['ttr',['ttr',['../structeph__t.html#a29e76f1dfd4c811c3bc8e8decb32d1a5',1,'eph_t']]],
+  ['txbytespers',['txBytesPerS',['../structport__monitor__t.html#ac9f953baec88caa41bd9c52c0eb20fd9',1,'port_monitor_t']]],
   ['txdata',['txData',['../structpkt__info__t.html#a65161add71ddf48083cb3a2f5e10f65f',1,'pkt_info_t']]],
   ['txfreecallback',['txFreeCallback',['../structcom__manager__t.html#ac70b1bd3d8e2c27fe81aab2b9221d294',1,'com_manager_t']]],
   ['txoverflowcount',['txOverflowCount',['../structinternal__diagnostic__t.html#a8f55a1dd6e13128d42a21b81c5c1b57a',1,'internal_diagnostic_t']]],

@@ -5,6 +5,8 @@ var searchData=
   ['econfigsystem',['eConfigSystem',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32',1,'data_sets.h']]],
   ['edatatype',['eDataType',['../_i_s_data_mappings_8h.html#acc461328b82c34604e8b428326a52183',1,'ISDataMappings.h']]],
   ['edisplaymode',['eDisplayMode',['../classc_inertial_sense_display.html#a7fc8e1c31c742b8a345603c9a0ab28a8',1,'cInertialSenseDisplay']]],
+  ['eevb2combridgecfg',['eEvb2ComBridgeCfg',['../data__sets_8h.html#af3f070f0403365997de3501f6917745c',1,'data_sets.h']]],
+  ['eevb2loggerstate',['eEvb2LoggerState',['../data__sets_8h.html#a7fbf2252e55c22cb218b8e122e2213c9',1,'data_sets.h']]],
   ['egpsparsertype',['eGpsParserType',['../_gps_parser_8h.html#a281586dc7a286fe7a7b73e608ff8402b',1,'GpsParser.h']]],
   ['egpsstatus',['eGpsStatus',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108',1,'data_sets.h']]],
   ['ehdwbitstatusflags',['eHdwBitStatusFlags',['../data__sets_8h.html#a20228ceb9caa12db76b8599ff714ea67',1,'data_sets.h']]],

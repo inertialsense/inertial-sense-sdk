@@ -19,6 +19,7 @@ var searchData=
   ['code',['code',['../struct_p_a_c_k_e_d.html#abc9c2acbca30358868ec73aa08262570',1,'PACKED::code()'],['../structeph__t.html#a4a3d9cfee1b1ab9553bc72482bcf41da',1,'eph_t::code()']]],
   ['col',['col',['../struct_ti_xml_cursor.html#a5694d7ed2c4d20109d350c14c417969d',1,'TiXmlCursor']]],
   ['columnheaders',['columnHeaders',['../classc_csv_log.html#a17ff214e28086560cc390880465f3c03',1,'cCsvLog']]],
+  ['combridgecfg',['comBridgeCfg',['../structevb2__t.html#a531af34349a0b419450aff818b6229d7',1,'evb2_t']]],
   ['communicationerrorcount',['communicationErrorCount',['../structcom__manager__status__t.html#a8542bc5e9db157565ea3418ed158e070',1,'com_manager_status_t']]],
   ['comport',['comPort',['../structcmd__options__t.html#ae0013d76628a86642a818346b9e0e7e2',1,'cmd_options_t']]],
   ['config',['config',['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#a105c6eced7dcb5fd6771707aab84a79e',1,'InertialSense::com_manager_cpp_state_t']]],

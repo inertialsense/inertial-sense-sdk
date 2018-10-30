@@ -79,7 +79,7 @@ static void output_client_bytes(InertialSense* i)
 	if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_SCROLL)
 	{
 		char suffix[256];
-		com_manager_status_t* status = getStatusComManager(0);
+		com_manager_status_t* status = comManagerGetStatus(0);
 		suffix[0] = '\0';
 		if (status != NULLPTR && status->communicationErrorCount != 0 && g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
 		{
@@ -253,6 +253,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryDataRmcPreset(g_commandLineOptions.rmcPreset, RMC_OPTIONS_PRESERVE_CTRL);
 	}
+    if (g_commandLineOptions.persistentMessages)
+    {   // Save persistent messages 
+        inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&g_commandLineOptions.surveyIn, sizeof(survey_in_t), 0);
+    }
+
 
     if (g_commandLineOptions.persistentMessages)
     {   // Save persistent messages to flash
