@@ -16,7 +16,6 @@ var searchData=
   ['ins4',['ins4',['../struct_p_a_c_k_e_d.html#ab0ec88581e4040c248c34c1e0b2afb2b',1,'PACKED']]],
   ['insdynmodel',['insDynModel',['../struct_p_a_c_k_e_d.html#a435a66ab9fa6c725e953b42618158085',1,'PACKED']]],
   ['insoffset',['insOffset',['../struct_p_a_c_k_e_d.html#a627f473cd541b0f7eef350968731b9de',1,'PACKED']]],
-  ['insperiodms',['insPeriodMs',['../struct_p_a_c_k_e_d.html#a45c9817d157bcdd15cc0f385e758aadb',1,'PACKED']]],
   ['insrotation',['insRotation',['../struct_p_a_c_k_e_d.html#afc9adb29a87a715e0867f491d5452b50',1,'PACKED']]],
   ['insstatus',['insStatus',['../struct_p_a_c_k_e_d.html#ae9a2e8fb881a1ce1eb013b769a927885',1,'PACKED']]],
   ['intpref',['intpref',['../structprcopt__t.html#acc4af7a0c794f59ddac4f12c11388626',1,'prcopt_t']]],

@@ -194,7 +194,7 @@ pfnComManagerDisableBroadcasts disableBcastFnc
 int processAsciiRxPacket(com_manager_t* cmInstance, int pHandle, unsigned char* start, int count);
 void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count);
 int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned char additionalDataAvailable);
-void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int period_ms);
+void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int periodMultiple);
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg);
 void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t *disable);
 int sendPacket(com_manager_t* cmInstance, int pHandle, packet_t *dPkt, uint8_t additionalPktFlags);
@@ -691,16 +691,16 @@ com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int pHand
 *	@param[in] dataId       Data structure ID
 *	@param[in] offset   Byte offset into data structure.  0 = data start.
 *	@param[in] length   Byte length of data.  0 = entire structure.
-*	@param[in] period_ms Broadcast period of requested data.  0 = single request.
+*	@param[in] periodMultiple Broadcast period of requested data.  0 = single request.
 *
 *	@return 0 on successful request.  -1 on failure.
 */
-void comManagerGetData(int pHandle, uint32_t dataId, int offset, int size, int period_ms)
+void comManagerGetData(int pHandle, uint32_t dataId, int offset, int size, int periodMultiple)
 {
-	comManagerGetDataInstance(&g_cm, pHandle, dataId, offset, size, period_ms);
+	comManagerGetDataInstance(&g_cm, pHandle, dataId, offset, size, periodMultiple);
 }
 
-void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, int offset, int size, int period_ms)
+void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, int offset, int size, int periodMultiple)
 {
 	p_data_get_t request;
 	bufPtr_t data;
@@ -709,7 +709,7 @@ void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId
 	request.id = dataId;
 	request.offset = offset;
 	request.size = size;
-	request.bc_period_ms = period_ms;
+	request.bc_period_multiple = periodMultiple;
 
 	data.ptr = (uint8_t*)&request;
 	data.size = sizeof(request);
@@ -728,7 +728,6 @@ void comManagerGetDataRmcInstance(CMHANDLE cmInstance, int pHandle, uint64_t rmc
 	rmc_t rmc;
 	rmc.bits = rmcBits;
 	rmc.options = rmcOptions;
-	rmc.insPeriodMs = 0;
 
 	comManagerSendDataInstance(cmInstance, pHandle, DID_RMC, &rmc, sizeof(rmc_t), 0);
 }
@@ -1310,13 +1309,13 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	}
 	
 	// Constrain request broadcast period if necessary
-	if (req->bc_period_ms != 0)
+	if (req->bc_period_multiple != 0)
 	{
-		_LIMIT2(req->bc_period_ms, MIN_REQUEST_PERIOD_MS, MAX_REQUEST_PERIOD_MS);
+		_LIMIT2(req->bc_period_multiple, MIN_REQUEST_PERIOD_MS, MAX_REQUEST_PERIOD_MS);
 	}
 
 	// Send data
-	if (req->bc_period_ms > 0)
+	if (req->bc_period_multiple > 0)
 	{
 		// ***  Request Broadcast  ***
 		// Send data immediately if possible
@@ -1326,7 +1325,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		}
 
 		// Enable broadcast message
-		enableBroadcastMsg(cmInstance, msg, req->bc_period_ms);
+		enableBroadcastMsg(cmInstance, msg, req->bc_period_multiple);
 	}
 	else
 	{
@@ -1340,19 +1339,19 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		else
 		{
 			// Won't fit in queue, so send it later
-			enableBroadcastMsg(cmInstance, msg, req->bc_period_ms);
+			enableBroadcastMsg(cmInstance, msg, req->bc_period_multiple);
 		}
 	}
 
 	return 0;
 }
 
-void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t* msg, int period_ms)
+void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t* msg, int periodMultiple)
 {
 	// Update broadcast period
-	if (period_ms > 0)
+	if (periodMultiple > 0)
 	{
-		msg->period = period_ms / cmInstance->stepPeriodMilliseconds;
+		msg->period = periodMultiple / cmInstance->stepPeriodMilliseconds;
 	}
 	else
 	{
@@ -1403,7 +1402,7 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_
 		req.id = disable->id;
 		req.size = 0;
 		req.offset = 0;
-		req.bc_period_ms = 0;
+		req.bc_period_multiple = 0;
 		cmInstance->rmcHandler(cmInstance, pHandle, &req);
 	}
 }

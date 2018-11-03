@@ -4,7 +4,7 @@ var searchData=
   ['element',['Element',['../class_ti_xml_handle.html#ae9b22d71bf5f69ee5fda28f5ad21f19c',1,'TiXmlHandle']]],
   ['empty',['empty',['../class_ti_xml_string.html#a3139aafb0f0a8e26d1a4ed58a50f3678',1,'TiXmlString']]],
   ['enablebootloader',['enableBootloader',['../inertial_sense_boot_loader_8c.html#a9d5d18c753955260dd40e61fc3501b0d',1,'enableBootloader(serial_port_t *port, int baudRate, char *error, int errorLength):&#160;inertialSenseBootLoader.c'],['../inertial_sense_boot_loader_8h.html#a9d5d18c753955260dd40e61fc3501b0d',1,'enableBootloader(serial_port_t *port, int baudRate, char *error, int errorLength):&#160;inertialSenseBootLoader.c']]],
-  ['enablebroadcastmsg',['enableBroadcastMsg',['../com__manager_8c.html#a4a183cb1f35f49e22057268f43fc11d3',1,'com_manager.c']]],
+  ['enablebroadcastmsg',['enableBroadcastMsg',['../com__manager_8c.html#a0a04aba97ca175f8e08018d2965ac0af',1,'com_manager.c']]],
   ['enabled',['Enabled',['../classc_i_s_logger.html#a593b23332a2fcd5b491456e15c0816f0',1,'cISLogger']]],
   ['enablelogging',['EnableLogging',['../classc_i_s_logger.html#ad4d651b3fbaf5ece85a0f762a0f7f215',1,'cISLogger']]],
   ['encodebinarypacket',['encodeBinaryPacket',['../com__manager_8c.html#a2350b0785db4c4bf35d46901128475e6',1,'com_manager.c']]],

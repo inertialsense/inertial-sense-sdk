@@ -1120,7 +1120,7 @@ static void PopulateInl2StatesMappings(map_lookup_name_t& mappings)
 	typedef inl2_states_t MAP_TYPE;
 	map_name_to_info_t m;
 	uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double);
     ADD_MAP(m, totalSize, "qe2b[0]", qe2b[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "qe2b[1]", qe2b[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "qe2b[2]", qe2b[2], 0, DataTypeFloat, float&);

@@ -69,28 +69,6 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 }
 
 
-int enable_message_broadcasting_RMC(serial_port_t *serialPort, is_comm_instance_t *comm)
-{
-	rmc_t rmc;
-
-    // Enable broadcasts of DID_INS_1 and DID_GPS_NAV
-	rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS1_POS;
-    // Respond on current port
-//     rmc.options = RMC_OPTIONS_PORT_CURRENT;
-    rmc.options = RMC_OPTIONS_PORT_SER1;
-    // INS output data rate at 20Hz
-    rmc.insPeriodMs = 50;
-
-	int messageSize = is_comm_set_data(comm, _DID_RMC, 0, sizeof(rmc_t), &rmc);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write RMC message\r\n");
-		return -3;
-	}
-	return 0;
-}
-
-
 int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
     config_t cfg;
@@ -109,8 +87,8 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 
 int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
-	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
-	int messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
+	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
+	int messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 10);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write get INS message\r\n");
@@ -118,8 +96,8 @@ int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_inst
 	}
 
 #if 1
-	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
-	messageSize = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 200);
+	// Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
+	messageSize = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 1);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
@@ -128,7 +106,7 @@ int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_inst
 #endif
 
 #if 0
-	// Ask for IMU data 10 times a second - this could be as high as 1000 times a second (a period of 1)
+	// Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
 	messageSize = is_comm_get_data(comm, _DID_IMU_DUAL, 0, 0, 100);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
@@ -197,11 +175,8 @@ int main(int argc, char* argv[])
 #endif
 
 	
-#if 1	// STEP 6: Enable message broadcasting
-	if (error = enable_message_broadcasting_RMC(&serialPort, &comm))
-#else
+    // STEP 6: Enable message broadcasting
 	if (error = enable_message_broadcasting_get_data(&serialPort, &comm))
-#endif
 	{
 		return error;
 	}

@@ -328,6 +328,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
+    STATIC_ASSERT((DID_COUNT%4) == 0);
 
 	if (dataId < DID_COUNT)
 	{
@@ -508,7 +509,7 @@ uint32_t flashChecksum32(const void* data, int size)
 }
 
 // Convert DID to message out control mask
-uint64_t didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits)
+uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 {
 	switch (dataId)
 	{

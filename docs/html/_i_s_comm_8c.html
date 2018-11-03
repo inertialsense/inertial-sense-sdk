@@ -89,8 +89,8 @@ Functions</h2></td></tr>
 <tr class="separator:ab81821036e21d6afe0fca0f1c087dac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ee32c6b88cfb4ea9697e1a1b2b6b657"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#a9ee32c6b88cfb4ea9697e1a1b2b6b657">is_comm_parse</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance, uint8_t byte)</td></tr>
 <tr class="separator:a9ee32c6b88cfb4ea9697e1a1b2b6b657"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53bacac9edb5801f3416a504e6a19956"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#a53bacac9edb5801f3416a504e6a19956">is_comm_get_data</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMS)</td></tr>
-<tr class="separator:a53bacac9edb5801f3416a504e6a19956"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7bd6017ae89ecf5af3ff11942397e36"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#ad7bd6017ae89ecf5af3ff11942397e36">is_comm_get_data</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMultiple)</td></tr>
+<tr class="separator:ad7bd6017ae89ecf5af3ff11942397e36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c516e5e416c7601de415a45ca05841a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#a2c516e5e416c7601de415a45ca05841a">is_comm_get_data_rmc</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance, uint64_t rmcBits)</td></tr>
 <tr class="separator:a2c516e5e416c7601de415a45ca05841a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac276c88fef83c901d29f5058dff79aa7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#ac276c88fef83c901d29f5058dff79aa7">is_comm_set_data</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance, uint32_t dataId, uint32_t offset, uint32_t size, void *data)</td></tr>
@@ -281,8 +281,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a53bacac9edb5801f3416a504e6a19956"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a53bacac9edb5801f3416a504e6a19956">&#9670;&nbsp;</a></span>is_comm_get_data()</h2>
+<a id="ad7bd6017ae89ecf5af3ff11942397e36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7bd6017ae89ecf5af3ff11942397e36">&#9670;&nbsp;</a></span>is_comm_get_data()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -315,7 +315,7 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>periodMS</em>&#160;</td>
+          <td class="paramname"><em>periodMultiple</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -330,7 +330,7 @@ Variables</h2></td></tr>
     <tr><td class="paramname">dataId</td><td>the data id to request (see DID_* at top of this file) </td></tr>
     <tr><td class="paramname">offset</td><td>the offset into data to request. 0 offset and length for entire data structure. </td></tr>
     <tr><td class="paramname">length</td><td>the length into data from offset to request. 0 offset and length for entire data structure. </td></tr>
-    <tr><td class="paramname">periodMS</td><td>how often you want the data to stream out, 0 for a one time message, 0xFFFFFFFF to turn off </td></tr>
+    <tr><td class="paramname">periodMultiple</td><td>how often you want the data to stream out, 0 for a one time message and turn off. </td></tr>
   </table>
   </dd>
 </dl>

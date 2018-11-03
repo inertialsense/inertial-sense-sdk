@@ -43,7 +43,7 @@ var searchData=
   ['baudrate_5f600',['BAUDRATE_600',['../serial_port_8h.html#a71e251f3c6dcb20341485a094f287865',1,'serialPort.h']]],
   ['baudrate_5f921600',['BAUDRATE_921600',['../serial_port_8h.html#a6909b8799435f580fd4e7f996a4e34fb',1,'serialPort.h']]],
   ['baudrate_5f9600',['BAUDRATE_9600',['../serial_port_8h.html#a89d72bee69b33d0404d33f47608d16f0',1,'serialPort.h']]],
-  ['bc_5fperiod_5fms',['bc_period_ms',['../structp__data__get__t.html#ae844be67615d36ebcbd704e75f13613e',1,'p_data_get_t']]],
+  ['bc_5fperiod_5fmultiple',['bc_period_multiple',['../structp__data__get__t.html#ac96de892e311a7a68676a99d8e9c6f98',1,'p_data_get_t']]],
   ['bdsmodear',['bdsmodear',['../structprcopt__t.html#a09ed8ba04c9bf33daeded4ec2dad7ce7',1,'prcopt_t']]],
   ['be_5fswap16',['BE_SWAP16',['../data__sets_8h.html#a3f5951b259e3965ee2f12dd5847c896c',1,'data_sets.h']]],
   ['be_5fswap32',['BE_SWAP32',['../data__sets_8h.html#ad9905e89911900c93f562058269c243d',1,'data_sets.h']]],

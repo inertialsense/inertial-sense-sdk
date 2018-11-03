@@ -180,7 +180,7 @@ var searchData=
   ['did_5fsys_5fsensors_5fsigma',['DID_SYS_SENSORS_SIGMA',['../data__sets_8h.html#a68de7a4475f32f96fbaf68f0bbb23d27',1,'data_sets.h']]],
   ['did_5fto_5fkid',['DID_TO_KID',['../classc_data_k_m_l.html#a2e396d7510154bb134964afcc46d8058',1,'cDataKML']]],
   ['did_5fvelocity_5fmeasurement',['DID_VELOCITY_MEASUREMENT',['../data__sets_8h.html#a11b821e2e3ce342751ad2097a747f525',1,'data_sets.h']]],
-  ['didtormcbits',['didToRmcBits',['../data__sets_8c.html#a7001f84a8149de37c8274a8c05b2287b',1,'didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c'],['../data__sets_8h.html#a7001f84a8149de37c8274a8c05b2287b',1,'didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c']]],
+  ['didtormcbit',['didToRmcBit',['../data__sets_8c.html#a92f6edead84a44514c9c896af5f09fbe',1,'didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c'],['../data__sets_8h.html#a92f6edead84a44514c9c896af5f09fbe',1,'didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c']]],
   ['differentialage',['differentialAge',['../struct_p_a_c_k_e_d.html#ad0615ac2daecdcad17448134f56888aa',1,'PACKED']]],
   ['disablebcastfnc',['disableBcastFnc',['../structcom__manager__t.html#a8ec022c21b008d2c9c3c706470e47e26',1,'com_manager_t']]],
   ['disablebootloader',['disableBootloader',['../inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487',1,'disableBootloader(serial_port_t *port, char *error, int errorLength):&#160;inertialSenseBootLoader.c'],['../inertial_sense_boot_loader_8h.html#a1ba2459e76f174c6fed632130578a487',1,'disableBootloader(serial_port_t *port, char *error, int errorLength):&#160;inertialSenseBootLoader.c']]],

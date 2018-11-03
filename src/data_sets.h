@@ -40,7 +40,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_UBX_POS                (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from ublox receiver. */
 #define DID_CONFIG                      (eDataIDs)7  /** (config_t) Configuration data */
 #define DID_ASCII_BCAST_PERIOD          (eDataIDs)8  /** (ascii_msgs_t) Broadcast period for ASCII messages */
-#define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The purpose of RMC is to provide updates from various data sources (i.e. sensors) as fast as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. The exception to this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs. */
+#define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The RMC provides updates from various data sources (i.e. sensors) as soon as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. All RMC messages can be enabled using the standard Get Data packet format. */
 #define DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
 #define DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
 #define DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
@@ -115,7 +115,7 @@ typedef uint32_t eDataIDs;
 // 4] Increment DID_COUNT
 // 5] Test!
 
-/** Count of data ids (including null data id 0) - make sure to increment if you add a new data id! */
+/** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
 #define DID_COUNT (eDataIDs)76
 
 /** Maximum number of data ids */
@@ -759,8 +759,8 @@ typedef struct PACKED
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
 typedef struct PACKED
 {
-    /** (s) Time since boot up in seconds */
-	double                  time;					
+    /** Time of week (since Sunday morning) in seconds, GMT */
+	double                  timeOfWeek;					
 
     /** Quaternion body rotation with respect to ECEF */
 	float					qe2b[4];                    
@@ -1075,11 +1075,11 @@ typedef struct PACKED
                                         RMC_BITS_DIAGNOSTIC_MESSAGE )
 #define RMC_PRESET_PPD_BITS            (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_PREINTEGRATED_IMU )
 #define RMC_PRESET_PPD_BITS_RAW_IMU    (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_DUAL_IMU_RAW )
-#define RMC_PRESET_PPD_NAV_PERIOD       100
+#define RMC_PRESET_PPD_NAV_PERIOD_MULT  25
 #define RMC_PRESET_INS_BITS            (RMC_BITS_INS2 | \
                                         RMC_BITS_GPS1_POS | \
                                         RMC_BITS_PRESET )
-#define RMC_PRESET_INS_NAV_PERIOD       1   // fastest rate (nav filter update rate)
+#define RMC_PRESET_INS_NAV_PERIOD_MULT  1   // fastest rate (nav filter update rate)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -1090,9 +1090,6 @@ typedef struct PACKED
 	/** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
 	uint32_t				options;
 	
-	/** INS data transmit period (ms).  0 = full navigation update rate. */
-	uint32_t                insPeriodMs;
-
 	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
 } rmc_t;
 
@@ -2722,7 +2719,7 @@ Gets the offsets and lengths of strings given a data id
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
 /** Convert DID to realtime message bits */
-uint64_t didToRmcBits(uint32_t dataId, uint64_t defaultRmcBits);
+uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits);
 
 /** Convert Julian Date to calendar date. */
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hours, int32_t* minutes, int32_t* seconds, int32_t* milliseconds);

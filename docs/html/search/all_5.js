@@ -33,7 +33,7 @@ var searchData=
   ['enable_5fhex_5fboot_5floader',['ENABLE_HEX_BOOT_LOADER',['../inertial_sense_boot_loader_8c.html#a6035ec7e07061b8d624a59a4c6ef599b',1,'inertialSenseBootLoader.c']]],
   ['enable_5fpacket_5fcontinuation',['ENABLE_PACKET_CONTINUATION',['../com__manager_8c.html#abad56c80e8b607f7bde8cf41282850fa',1,'com_manager.c']]],
   ['enablebootloader',['enableBootloader',['../inertial_sense_boot_loader_8c.html#a9d5d18c753955260dd40e61fc3501b0d',1,'enableBootloader(serial_port_t *port, int baudRate, char *error, int errorLength):&#160;inertialSenseBootLoader.c'],['../inertial_sense_boot_loader_8h.html#a9d5d18c753955260dd40e61fc3501b0d',1,'enableBootloader(serial_port_t *port, int baudRate, char *error, int errorLength):&#160;inertialSenseBootLoader.c']]],
-  ['enablebroadcastmsg',['enableBroadcastMsg',['../com__manager_8c.html#a4a183cb1f35f49e22057268f43fc11d3',1,'com_manager.c']]],
+  ['enablebroadcastmsg',['enableBroadcastMsg',['../com__manager_8c.html#a0a04aba97ca175f8e08018d2965ac0af',1,'com_manager.c']]],
   ['enabled',['Enabled',['../classc_i_s_logger.html#a593b23332a2fcd5b491456e15c0816f0',1,'cISLogger']]],
   ['enablelogging',['enableLogging',['../structcmd__options__t.html#a40f5f9ab969110692cf343f0a7c8467c',1,'cmd_options_t::enableLogging()'],['../classc_i_s_logger.html#ad4d651b3fbaf5ece85a0f762a0f7f215',1,'cISLogger::EnableLogging()']]],
   ['enableverify',['enableVerify',['../structbootload__params__t.html#aa4b5da1935d4043076710d22ae005117',1,'bootload_params_t']]],

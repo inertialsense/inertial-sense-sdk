@@ -19,7 +19,7 @@ var searchData=
   ['baseqzsobservationcount',['baseQzsObservationCount',['../struct_p_a_c_k_e_d.html#a599dd19112754515b50e245a34a9b56f',1,'PACKED']]],
   ['basesbascount',['baseSbasCount',['../struct_p_a_c_k_e_d.html#a1d92734a45fd6ca1d684ff0f1499901c',1,'PACKED']]],
   ['baudrate',['baudRate',['../structcmd__options__t.html#a784c7c17571811bfed65fe0f135dc36b',1,'cmd_options_t::baudRate()'],['../structbootload__params__t.html#a239112373f6613392f1a0726b06045b4',1,'bootload_params_t::baudRate()']]],
-  ['bc_5fperiod_5fms',['bc_period_ms',['../structp__data__get__t.html#ae844be67615d36ebcbd704e75f13613e',1,'p_data_get_t']]],
+  ['bc_5fperiod_5fmultiple',['bc_period_multiple',['../structp__data__get__t.html#ac96de892e311a7a68676a99d8e9c6f98',1,'p_data_get_t']]],
   ['bdsmodear',['bdsmodear',['../structprcopt__t.html#a09ed8ba04c9bf33daeded4ec2dad7ce7',1,'prcopt_t']]],
   ['beta',['beta',['../structs_lpf_o0.html#a0bd359922fc53630b0f2eb1fcda0bc65',1,'sLpfO0::beta()'],['../structs_lpf_o1.html#a3ee79a97cac2f80ebed5049449d3ab7b',1,'sLpfO1::beta()']]],
   ['biasacc',['biasAcc',['../struct_p_a_c_k_e_d.html#a765aa1f8f42ba54681afb0a47a3e2ba7',1,'PACKED']]],

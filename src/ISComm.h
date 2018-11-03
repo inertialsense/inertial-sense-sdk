@@ -139,11 +139,11 @@ uint32_t is_comm_parse(is_comm_instance_t* instance, uint8_t byte);
 * @param dataId the data id to request (see DID_* at top of this file)
 * @param offset the offset into data to request. 0 offset and length for entire data structure.
 * @param length the length into data from offset to request. 0 offset and length for entire data structure.
-* @param periodMS how often you want the data to stream out, 0 for a one time message, 0xFFFFFFFF to turn off
+* @param periodMultiple how often you want the data to stream out, 0 for a one time message and turn off.
 * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
 * @remarks pass an offset and length of 0 to request the entire data structure
 */
-int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMS);
+int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMultiple);
 
 /**
 * Encode a binary packet to get predefined list of data sets from the device - puts the data ready to send into the buffer passed into is_comm_init
@@ -498,10 +498,10 @@ typedef struct
 	uint32_t            offset;
 
 	/**
-	The broadcast period in milliseconds, or 0 for a one-time broadcast. Depending on data size and baud/transfer rates,
+	The broadcast source period multiples, or 0 for a one-time broadcast. Depending on data size and baud/transfer rates,
 	some data may be dropped if this period is too short.
 	*/
-	uint32_t            bc_period_ms;
+	uint32_t            bc_period_multiple;
 } p_data_get_t;
 
 /** Represents the body of a disable broadcast for data id packet */

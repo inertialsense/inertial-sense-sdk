@@ -463,14 +463,14 @@ uint32_t is_comm_parse(is_comm_instance_t* instance, uint8_t byte)
 	return DID_NULL;
 }
 
-int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMS)
+int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMultiple)
 {
 	p_data_get_t request;
 
 	request.id = dataId;
 	request.offset = offset;
 	request.size = size;
-	request.bc_period_ms = periodMS;
+	request.bc_period_multiple = periodMultiple;
 
 	packet_hdr_t hdr;
 	hdr.flags = 0;

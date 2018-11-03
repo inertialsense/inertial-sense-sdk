@@ -168,7 +168,7 @@ Make a request to a port handle to broadcast a piece of data at a set interval.
 @param dataId the data id to broadcast
 @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
 @param size number of bytes in the data structure from offset to broadcast - pass offset and size of 0 to receive the entire data set
-@param period_ms the interval in milliseconds in which to broadcast data
+@param periodMultiple the data broadcast period in multiples of the base update period
 
 Example that makes a request to receive the device info just once:
 @code
@@ -180,8 +180,8 @@ Example that broadcasts INS data every 50 milliseconds:
 comManagerGetData(0, DID_INS_1, 0, sizeof(ins_1_t), 50);
 @endcode
 */
-void comManagerGetData(int pHandle, uint32_t dataId, int offset, int size, int period_ms);
-void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, int offset, int size, int period_ms);
+void comManagerGetData(int pHandle, uint32_t dataId, int offset, int size, int periodMultiple);
+void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, int offset, int size, int periodMultiple);
 
 /**
 Make a request to a port handle to broadcast a piece of data at a set interval.
@@ -191,7 +191,7 @@ Make a request to a port handle to broadcast a piece of data at a set interval.
 @param RMC options to enable data streaming on ports other than the current port. 
 @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
 @param size number of bytes in the data structure from offset to broadcast - pass offset and size of 0 to receive the entire data set
-@param period_ms the interval in milliseconds in which to broadcast data
+@param periodMultiple the data broadcast period in multiples of the base update period
 
 Example that enables streaming of all data messages necessary for post processing:
 @code
