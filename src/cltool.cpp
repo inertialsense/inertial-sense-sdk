@@ -422,8 +422,8 @@ void cltool_outputUsage()
 	cout << "    -flashConfig=key=value|key=value " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            set key / value pairs in flash config. (Run -flashConfig to list all keys)" << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig                      " << EXAMPLE_SPACE_1 << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig=insRotation[0]=1.5708" << EXAMPLE_SPACE_1 << boldOff << "# Set INS X rotation in radians (90 deg)" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashConfig values" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Client / Server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;

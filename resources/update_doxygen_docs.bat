@@ -25,7 +25,7 @@ echo Generating Doxygen Documentation
 
 :: Update Doxygen documentation
 ::doxygen resources\DoxyfileSDK
-( type resources\DoxyfileSDK & echo PROJECT_NUMBER="Release 1.7.1" ) | doxygen -
+( type resources\DoxyfileSDK & echo PROJECT_NUMBER="Release 1.7.2" ) | doxygen -
 ::( type resources\DoxyfileSDK & echo PROJECT_NUMBER="Release %releaseversion%,  %releasedate%,  %releasetime%" ) | doxygen -
 
 

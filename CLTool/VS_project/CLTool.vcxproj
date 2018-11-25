@@ -22,7 +22,7 @@
     <ProjectGuid>{F2B29FD9-C54E-4E14-A253-3F8EDE3F542E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>CLTool</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
     <ProjectName>CLTool</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

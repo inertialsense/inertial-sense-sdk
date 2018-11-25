@@ -1568,6 +1568,9 @@ typedef struct
 	/** obs outage count to reset bias */
 	int32_t maxout;
 
+    /** reject count to reset bias */
+    int32_t maxrej;
+
 	/** min lock count to fix ambiguity */
 	int32_t minlock;
 
@@ -1640,17 +1643,19 @@ typedef struct
 	/** max difference of time (sec) */
 	double maxtdiff;
 
-        /** reject threshold of NIS */
-        double maxinno;
+    /** reject threshold of NIS */
+    double maxinnocode;
+    double maxinnophase;
 
-        /** max number of measurement rejections before bias reset */
-        double maxrejc;
+    /** max number of measurement rejections before bias reset */
+    double maxrejc;
 
 	/** reject threshold of gdop */
 	double maxgdop;
 
 	/** baseline length constraint {const,sigma} (m) */
 	double baseline[2];
+    double max_baseline_error;
 
 	/** rover position for fixed mode {x,y,z} (ecef) (m) */
 	double ru[3];
