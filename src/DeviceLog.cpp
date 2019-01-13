@@ -17,15 +17,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/stat.h>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 
 #include "DeviceLog.h"
+#include "ISFileManager.h"
 #include "ISLogger.h"
 #include "ISConstants.h"
 #include "ISDataMappings.h"
+#include "ISLogFileFactory.h"
 
 using namespace std;
 
@@ -47,11 +48,7 @@ cDeviceLog::cDeviceLog()
 cDeviceLog::~cDeviceLog()
 {
     // Close open files
-    if (m_pFile)
-    {
-        fclose(m_pFile);
-        m_pFile = NULL;
-    }
+    CloseISLogFile(m_pFile);
     CloseAllFiles();
     delete m_logStats;
 }
@@ -79,9 +76,14 @@ void cDeviceLog::InitDeviceForReading()
 
 bool cDeviceLog::CloseAllFiles()
 {
+#if 1
+    string str = m_directory + "/stats_SN" + to_string(m_devInfo.serialNumber) + ".txt";
+    m_logStats->WriteToFile(str);
+#else   // stringstream not working on embedded platform
 	ostringstream serialNumString;
 	serialNumString << m_devInfo.serialNumber;
     m_logStats->WriteToFile(m_directory + "/stats_SN" + serialNumString.str() + ".txt");
+#endif
     m_logStats->Clear();
     return true;
 }
@@ -117,9 +119,9 @@ bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum,
 	m_fileCount = 0;
 	m_timeStamp = timeStamp;
 	m_fileNames.clear();
-	vector<file_info_t> fileInfos;
+	vector<ISFileManager::file_info_t> fileInfos;
 	SetSerialNumber((uint32_t)strtoul(serialNum.c_str(), NULL, 10));
-	cISLogger::GetDirectorySpaceUsed(directory, string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_", fileInfos, false, false);
+	ISFileManager::GetDirectorySpaceUsed(directory, string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_", fileInfos, false, false);
 	if (fileInfos.size() != 0)
 	{
 		m_fileName = fileInfos[0].name;
@@ -135,10 +137,7 @@ bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum,
 bool cDeviceLog::OpenNewSaveFile()
 {
 	// Close existing file
-	if (m_pFile)
-	{
-		fclose(m_pFile);
-	}
+	CloseISLogFile(m_pFile);
 
 	// Ensure directory exists
 	if (m_directory.empty())
@@ -149,20 +148,24 @@ bool cDeviceLog::OpenNewSaveFile()
 	// create directory
 	_MKDIR(m_directory.c_str());
 
+#if !PLATFORM_IS_EMBEDDED
+
 	// clear out space if we need to
 	if (m_maxDiskSpace != 0)
 	{
-		vector<file_info_t> files;
-		uint64_t spaceUsed = cISLogger::GetDirectorySpaceUsed(m_directory.c_str(), files, true, false);
+		vector<ISFileManager::file_info_t> files;
+		uint64_t spaceUsed = ISFileManager::GetDirectorySpaceUsed(m_directory.c_str(), files, true, false);
 		unsigned int index = 0;
 
 		// clear out old files until we have space
 		while (spaceUsed > m_maxDiskSpace && index < files.size())
 		{
 			spaceUsed -= files[index].size;
-			remove(files[index++].name.c_str());
+			ISFileManager::DeleteFile(files[index++].name);
 		}
 	}
+	
+#endif
 
 	// Open new file
 	m_fileCount++;
@@ -172,10 +175,10 @@ bool cDeviceLog::OpenNewSaveFile()
 		serNum = m_pHandle;
 	}
 	string fileName = GetNewFileName(serNum, m_fileCount, NULL);
-	m_pFile = fopen(fileName.c_str(), "wb");
+	m_pFile = CreateISLogFile(fileName, "wb");
 	m_fileSize = 0;
 
-	if (m_pFile)
+	if (m_pFile && m_pFile->isOpened())
 	{
 #if LOG_DEBUG_WRITE
 		printf("Opened save file: %s\n", filename.str().c_str());
@@ -195,11 +198,7 @@ bool cDeviceLog::OpenNewSaveFile()
 bool cDeviceLog::OpenNextReadFile()
 {
 	// Close file if open
-	if (m_pFile)
-	{
-		fclose(m_pFile);
-		m_pFile = NULL;
-	}
+	CloseISLogFile(m_pFile);
 
 	if (m_fileCount == m_fileNames.size())
 	{
@@ -207,7 +206,7 @@ bool cDeviceLog::OpenNextReadFile()
 	}
 	
 	m_fileName = m_fileNames[m_fileCount++];
-	m_pFile = fopen(m_fileName.c_str(), "rb");
+	m_pFile = CreateISLogFile(m_fileName, "rb");
 
 	if (m_pFile)
 	{
@@ -229,6 +228,19 @@ bool cDeviceLog::OpenNextReadFile()
 string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
 {
 	// file name 
+#if 1
+    char filename[200];
+    snprintf(filename, sizeof(filename), "%s/%s%d_%s_%04d%s%s", 
+        m_directory.c_str(), 
+        IS_LOG_FILE_PREFIX, 
+        serialNumber, 
+        m_timeStamp.c_str(), 
+        (fileCount % 10000), 
+        (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str()), 
+        LogFileExtention().c_str());
+    return filename;
+#else
+    // This code is not working on the embedded platform
 	ostringstream filename;
 	filename << m_directory << "/" << IS_LOG_FILE_PREFIX <<
 		serialNumber << "_" <<
@@ -237,6 +249,7 @@ string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, con
 		(suffix == NULL || *suffix == 0 ? "" : string("_") + suffix) <<
 		LogFileExtention();
 	return filename.str();
+#endif
 }
 
 

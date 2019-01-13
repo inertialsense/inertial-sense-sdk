@@ -17,28 +17,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <map>
 #include <inttypes.h>
 #include "com_manager.h"
+#include "DataCSV.h"
+
+#ifndef CHAR_BIT
+#define CHAR_BIT 8
+#endif
 
 using namespace std;
-
-#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
-
-typedef enum
-{
-	DataTypeInt8,
-	DataTypeUInt8,
-	DataTypeInt16,
-	DataTypeUInt16,
-	DataTypeInt32,
-	DataTypeUInt32,
-	DataTypeInt64,
-	DataTypeUInt64,
-	DataTypeFloat,
-	DataTypeDouble,
-	DataTypeString,
-	DataTypeBinary,
-
-	DataTypeCount
-} eDataType;
 
 /**
 * Get the size of an eDataType
@@ -47,30 +32,117 @@ typedef enum
 */
 uint32_t GetDataTypeSize(eDataType dataType);
 
-/*
-* Metadata about a specific field
-*/
-typedef struct
-{
-	uint32_t dataOffset;
-	uint32_t dataSize;
-	eDataType dataType;
-	string name;
-} data_info_t;
+#if !PLATFOM_IS_EMBEDDED
 
-struct sCaseInsensitiveCompare;
+extern const unsigned char g_asciiToLowerMap[256];
+
+#endif
+
+/**
+* Case-insensitive comparator for std::find and other functions
+*/
+struct sCaseInsensitiveCompare
+{
+	struct nocase_compare
+	{
+		bool operator() (const unsigned char& c1, const unsigned char& c2) const
+		{
+			return g_asciiToLowerMap[c1] < g_asciiToLowerMap[c2];
+		}
+	};
+
+	/*
+	size_t operator()(const std::string s) const
+	{
+		size_t hashCode = 5381;
+		char c;
+		const char* ptr = s.c_str();
+		const char* ptrEnd = ptr + s.size();
+		for (; ptr < ptrEnd; ptr++)
+		{
+			c = g_asciiToLowerMap[*ptr];
+			hashCode = ((hashCode << 5) + hashCode) + c;
+		}
+		return hashCode;
+	}
+	*/
+
+	// less than, not equal
+	bool operator() (const std::string& s1, const std::string& s2) const
+	{
+		// return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(), nocase_compare());
+
+		// we don't need unicode or fancy language handling here, and we do not want branching
+		// so we have hand-coded a highly performant ASCII case insensitive compare here.
+		// this custom code is 3x speed of lexicographical_compare
+		char c1, c2;
+		const char* ptr1 = s1.c_str();
+		const char* ptr2 = s2.c_str();
+		size_t size1 = s1.size();
+		size_t size2 = s2.size();
+		int sizeDiff = (int)size1 - (int)size2;
+
+		// branchless min
+		// y + ((x - y) & ((x - y) >> (sizeof(int) * CHAR_BIT - 1))); 
+		size_t minSize = size2 + (sizeDiff & (sizeDiff >> (sizeof(int) * CHAR_BIT - 1)));
+
+		for (size_t i = 0; i < minSize; i++)
+		{
+			c1 = g_asciiToLowerMap[ptr1[i]];
+			c2 = g_asciiToLowerMap[ptr2[i]];
+			if (c1 != c2)
+			{
+				return (c1 < c2);
+			}
+		}
+		return (s1.size() < s2.size());
+	}
+};
+
+/*
+template <>
+struct equal_to<std::string> : public unary_function<std::string, bool>
+{
+	bool operator()(const std::string& s1, const std::string& s2) const
+	{
+		// we don't need unicode or fancy language handling here, and we do not want branching
+		// so we have hand-coded a highly performant ASCII case insensitive compare here.
+		// this custom code is 3x speed of lexicographical_compare
+		if (s1.size() != s2.size())
+		{
+			return false;
+		}
+
+		char c1, c2;
+		const char* ptr1 = s1.c_str();
+		const char* ptr2 = s2.c_str();
+
+		for (size_t i = 0; i < s1.size(); i++)
+		{
+			c1 = g_asciiToLowerMap[ptr1[i]];
+			c2 = g_asciiToLowerMap[ptr2[i]];
+			if (c1 != c2)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+};
+*/
 
 // map of field name to data info
 typedef map<string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
-
-// map of data id to map of name and data info
-typedef map<uint32_t, map_name_to_info_t> map_lookup_name_t;
-
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
 class cISDataMappings
 {
 public:
+	/**
+	* Destructor
+	*/
+	virtual ~cISDataMappings();
+
 	/**
 	* Get a data set name from an id
 	* @param dataId the data id to get a data set name from
@@ -79,10 +151,10 @@ public:
 	static const char* GetDataSetName(uint32_t dataId);
 
 	/**
-	* Get the data id to name/info lookup table
-	* @return the global map lookup table
+	* Get the info for a data id
+	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_lookup_name_t& GetMap();
+	static const map_name_to_info_t* GetMapInfo(uint32_t dataId);
 
 	/**
 	* Get the size of a given data id
@@ -136,28 +208,21 @@ public:
 private:
 	cISDataMappings();
 
-	map_lookup_name_t m_columnMappings;
-	map<uint32_t, uint32_t> m_lookupSize;
+	uint32_t m_lookupSize[DID_COUNT];
+	const data_info_t* m_timestampFields[DID_COUNT];
+	map_name_to_info_t m_lookupInfo[DID_COUNT];
+
+#if PLATFORM_IS_EMBEDDED
+
+	// on embedded we cannot new up C++ runtime until after free rtos has started
+	static cISDataMappings* s_map;
+
+#else
 
 	static cISDataMappings s_map;
-};
 
-/**
-* Case-insensitive comparator for std::find and other functions
-*/
-struct sCaseInsensitiveCompare
-{
-	struct nocase_compare
-	{
-		bool operator() (const unsigned char& c1, const unsigned char& c2) const
-		{
-			return tolower(c1) < tolower(c2);
-		}
-	};
-	bool operator() (const std::string& s1, const std::string& s2) const
-	{
-		return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(), nocase_compare());
-	}
+#endif
+
 };
 
 #endif // __ISDATAMAPPINGS_H_

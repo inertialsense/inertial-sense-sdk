@@ -1,6 +1,7 @@
 add_library(InertialSense
   src/cltool.cpp
   src/cltool_main.cpp
+  src/convert_ins.cpp
   src/com_manager.c
   src/data_sets.c
   src/DataChunk.cpp
@@ -21,6 +22,8 @@ add_library(InertialSense
   src/ISDataMappings.cpp
   src/ISDisplay.cpp
   src/ISEarth.c
+  src/ISFileManager.cpp
+  src/ISLogFile.cpp
   src/ISLogger.cpp
   src/ISMatrix.c
   src/ISPose.c
@@ -44,5 +47,5 @@ add_definitions(
   -Wno-extended-offsetof
   )
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions -fPIC")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions -fPIC")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions -fPIC -O3")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions -fPIC -O3")

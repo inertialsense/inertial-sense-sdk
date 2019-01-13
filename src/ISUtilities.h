@@ -212,12 +212,10 @@ void mutexFree(void* handle);
 
 // taken from http://www.leapsecond.com/tools/gpsdate.c, uses UTC time
 int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day);
-int32_t convertGpsToMjd(int32_t gpsCycle, int32_t gpsWeek, int32_t gpsSeconds);
+int32_t convertGpsToMjd(int32_t gpsWeek, int32_t gpsSeconds);
 void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day);
 void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds);
-void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result);
-void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result);
-void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result);
+uint32_t dateToWeekDay(uint32_t ul_year, uint32_t ul_month, uint32_t ul_day);
 
 gen_1axis_sensor_t gen1AxisSensorData(double time, const float val);
 gen_3axis_sensor_t gen3AxisSensorData(double time, const float val[3]);

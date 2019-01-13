@@ -59,23 +59,23 @@ typedef struct
 
 	uint64_t rmcPreset;
     bool persistentMessages;
-	bool streamINS1;
-	bool streamINS2;
-	bool streamINS3;
-	bool streamINS4;
-	bool streamDualIMU;
-	bool streamIMU1;
-	bool streamIMU2;
-    bool streamGPS;
-    bool streamRtkPos;
-    bool streamRtkRel;
-    bool streamMag1;
-	bool streamMag2;
-	bool streamBaro;
-	bool streamSysSensors;
-	bool streamDThetaVel;
-	bool streamRTOS;
-	bool streamSensorsADC;
+	int streamINS1;
+	int streamINS2;
+	int streamINS3;
+	int streamINS4;
+	int streamDualIMU;
+	int streamIMU1;
+	int streamIMU2;
+    int streamGPS;
+    int streamRtkPos;
+    int streamRtkRel;
+    int streamMag1;
+	int streamMag2;
+	int streamBaro;
+	int streamSysSensors;
+	int streamDThetaVel;
+	int streamRTOS;
+	int streamSensorsADC;
 
 	bool enableLogging;
 	string logType; // -lt=dat

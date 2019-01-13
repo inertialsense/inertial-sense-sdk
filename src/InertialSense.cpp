@@ -542,7 +542,7 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHand
 	Update();
 }
 
-bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandleBinaryData callback)
+bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)
 {
 	if (m_comManagerState.serialPorts.size() == 0 || dataId >= DID_COUNT)
 	{
@@ -552,7 +552,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 	{
 		m_comManagerState.binaryCallback[dataId] = callback;
 	}
-	if (periodMS < 0)
+	if (periodMultiple < 0)
 	{
 		for (int i = 0; i < (int)m_comManagerState.serialPorts.size(); i++)
 		{
@@ -564,9 +564,9 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandle
 	{
 		for (int i = 0; i < (int)m_comManagerState.serialPorts.size(); i++)
 		{
-			// [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMs" specifies the interval
-			// between broadcasts and "periodMs=0" will disable broadcasts and transmit one single message. 
-			comManagerGetData(i, dataId, 0, 0, periodMS);
+			// [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMultiple" specifies the interval
+			// between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message. 
+			comManagerGetData(i, dataId, 0, 0, periodMultiple);
 		}
 	}
 	return true;

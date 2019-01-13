@@ -9,7 +9,7 @@ var searchData=
   ['lastllatimeofweekms',['lastLlaTimeOfWeekMs',['../struct_p_a_c_k_e_d.html#a7a1739ed0a24e1b9e8fa677a04ac12cc',1,'PACKED']]],
   ['lastllaupdatedistance',['lastLlaUpdateDistance',['../struct_p_a_c_k_e_d.html#ac445e7128724dd159883836fb6495099',1,'PACKED']]],
   ['lastllaweek',['lastLlaWeek',['../struct_p_a_c_k_e_d.html#ab1909baaeaefe560e3ce23ae3e623772',1,'PACKED']]],
-  ['lastmodificationdate',['lastModificationDate',['../structfile__info__t.html#aab8140c4aae7a736c95c3e56cd9704ea',1,'file_info_t']]],
+  ['lastmodificationdate',['lastModificationDate',['../struct_i_s_file_manager_1_1file__info__t.html#a0e3d2f3d53614f94063e23690ce7a62a',1,'ISFileManager::file_info_t']]],
   ['lasttimestamp',['lastTimestamp',['../classc_log_stat_data_id.html#aea01cb13aa845588c11ea3fb9789901a',1,'cLogStatDataId']]],
   ['lasttimestampdelta',['lastTimestampDelta',['../classc_log_stat_data_id.html#a08b3ef360e75e1e8eb0de0476a852e82',1,'cLogStatDataId']]],
   ['le_5fswap16',['LE_SWAP16',['../data__sets_8h.html#a67841f176ce724707f8dd6d88db3ce5a',1,'data_sets.h']]],
@@ -52,9 +52,9 @@ var searchData=
   ['logdirectory',['LogDirectory',['../classc_i_s_logger.html#ae039a55a31716d79e10e39c4bffda9cb',1,'cISLogger']]],
   ['logerror',['LogError',['../classc_log_stats.html#aeaeebc85a08ed78a1e3cfe8f4a8426be',1,'cLogStats']]],
   ['logfileextention',['LogFileExtention',['../classc_device_log.html#a3bd15dcfc6e0e0daeeed330dc145e9d0',1,'cDeviceLog::LogFileExtention()'],['../classc_device_log_c_s_v.html#a0ebe0478f18423089cc138ea921105c7',1,'cDeviceLogCSV::LogFileExtention()'],['../classc_device_log_j_s_o_n.html#a83438fa46b73fa849c0c4e598084b9ed',1,'cDeviceLogJSON::LogFileExtention()'],['../classc_device_log_k_m_l.html#aeff297fb9078e01bb58af2c039fe37f7',1,'cDeviceLogKML::LogFileExtention()'],['../classc_device_log_serial.html#aae6a0f3f24e8fed3617fffe6d6a59671',1,'cDeviceLogSerial::LogFileExtention()'],['../classc_device_log_sorted.html#a208226cd9c8c8ec866478da6b21cfea7',1,'cDeviceLogSorted::LogFileExtention()']]],
-  ['loggerelapsedtimems',['loggerElapsedTimeMs',['../structevb2__t.html#a86d26e30973e20846a7966b6dced233f',1,'evb2_t']]],
+  ['loggerelapsedtimems',['loggerElapsedTimeMs',['../structevb__status__t.html#a8190412aefe2d8ad2331ce299828bcc0',1,'evb_status_t']]],
   ['loggerenabled',['LoggerEnabled',['../class_inertial_sense.html#a1cae5904548417a138ce40da68e7c08c',1,'InertialSense']]],
-  ['loggerstate',['loggerState',['../structevb2__t.html#a4c5555ee157eb72e34860a61a2a02f79',1,'evb2_t']]],
+  ['loggermode',['loggerMode',['../structevb__status__t.html#a66de1bd6abf577b70375fd1459669b66',1,'evb_status_t']]],
   ['logheaderiscorrupt',['LogHeaderIsCorrupt',['../classc_i_s_logger.html#a51f4d1c83131a6b8fa7d5820379cf0c0',1,'cISLogger']]],
   ['logpath',['logPath',['../structcmd__options__t.html#afd0992b8f11a9a104c0b34ec1e9fe591',1,'cmd_options_t']]],
   ['logsize',['LogSize',['../classc_device_log.html#aab1268c1546df076cc084eabfc029228',1,'cDeviceLog::LogSize()'],['../classc_i_s_logger.html#a2dc2c51389370449f3bfaa18d6993d67',1,'cISLogger::LogSize()']]],
@@ -73,6 +73,5 @@ var searchData=
   ['lotnumber',['lotNumber',['../struct_p_a_c_k_e_d.html#a7e2a5fa899438f780589b00a485ccaa2',1,'PACKED']]],
   ['lpfo0_5finit_5fvec3',['LPFO0_init_Vec3',['../_i_s_matrix_8c.html#a4d19a85f33b75b18c7a7df42ced71c42',1,'LPFO0_init_Vec3(sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const Vector3 initVal):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#a4d19a85f33b75b18c7a7df42ced71c42',1,'LPFO0_init_Vec3(sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const Vector3 initVal):&#160;ISMatrix.c']]],
   ['lpfo0_5fvec3',['LPFO0_Vec3',['../_i_s_matrix_8c.html#a7ea431035925e05ebbf219e67c50747c',1,'LPFO0_Vec3(sLpfO0 *lpf, const Vector3 input):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#a7ea431035925e05ebbf219e67c50747c',1,'LPFO0_Vec3(sLpfO0 *lpf, const Vector3 input):&#160;ISMatrix.c']]],
-  ['lr',['lr',['../structcrash__info__t.html#a8154c9a8f755d75492ea811863936a2e',1,'crash_info_t']]],
   ['lu',['LU',['../_i_s_matrix_8c.html#aee2c459bd31bfdf16ec54e0e8aaeb828',1,'ISMatrix.c']]]
 ];

@@ -9,7 +9,6 @@ var searchData=
   ['mag_5fvec4d',['mag_Vec4d',['../_i_s_matrix_8h.html#a73a66c39e2a569fd88c518152144abcb',1,'ISMatrix.h']]],
   ['malloc',['MALLOC',['../_i_s_constants_8h.html#a43880057a63fb01126278a533081c603',1,'ISConstants.h']]],
   ['mask',['MASK',['../_i_s_constants_8h.html#a7c14bd5ec30f41361b4937ca7b402033',1,'ISConstants.h']]],
-  ['max_5fchunk_5fsize',['MAX_CHUNK_SIZE',['../_data_chunk_8h.html#a523eaf5b650f38c307a6aab7f957fa2b',1,'DataChunk.h']]],
   ['max_5fdataset_5fsize',['MAX_DATASET_SIZE',['../_i_s_comm_8h.html#a8364bcbf2735d47d2f45504a0e3076ae',1,'ISComm.h']]],
   ['max_5fitem_5fhistory',['MAX_ITEM_HISTORY',['../_i_s_comm_data_buffer_8cpp.html#ad914b7fb293e4a65bd010cb8c13206af',1,'ISCommDataBuffer.cpp']]],
   ['max_5fnum_5fbcast_5fmsgs',['MAX_NUM_BCAST_MSGS',['../com__manager_8c.html#a08d1326bfd508f5c35f3a8853488ad04',1,'com_manager.c']]],

@@ -15,10 +15,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DataChunkSorted.h"
 
 
-cSortedDataChunk::cSortedDataChunk(uint32_t maxSize, const char* name)
+cSortedDataChunk::cSortedDataChunk(const char* name) : cDataChunk()
 {
-	cDataChunk(maxSize, name);
 	memset(&m_subHdr, 0, sizeof(sChunkSubHeader));
+	SetName(name);
 }
 
 
@@ -29,21 +29,21 @@ void cSortedDataChunk::Clear()
 }
 
 
-int32_t cSortedDataChunk::WriteAdditionalChunkHeader(FILE* pFile)
+int32_t cSortedDataChunk::WriteAdditionalChunkHeader(cISLogFileBase* pFile)
 {
 	// Write sub header to file
-	return (int32_t)fwrite(&m_subHdr, 1, sizeof(m_subHdr), pFile);
+	return static_cast<int32_t>(pFile->write(&m_subHdr, sizeof(m_subHdr)));
 }
 
 
-int32_t cSortedDataChunk::ReadAdditionalChunkHeader(FILE* pFile)
+int32_t cSortedDataChunk::ReadAdditionalChunkHeader(cISLogFileBase* pFile)
 {
 	// Read chunk header
-	return (int32_t)fread(&m_subHdr, 1, sizeof(m_subHdr), pFile);
+	return static_cast<int32_t>(pFile->read(&m_subHdr, sizeof(m_subHdr)));
 }
 
 
 int32_t cSortedDataChunk::GetHeaderSize()
 {
-	return (int32_t)(sizeof(sChunkHeader) + sizeof(sChunkSubHeader));
+    return int32_t((sizeof(sChunkHeader) + sizeof(sChunkSubHeader)));
 }

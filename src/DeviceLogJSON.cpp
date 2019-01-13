@@ -27,6 +27,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DeviceLogJSON.h"
 #include "ISLogger.h"
 #include "ISDataMappings.h"
+#include "ISLogFileFactory.h"
+
+#if PLATFORM_IS_EVB_2
+#include "ff.h"
+#endif
 
 using namespace std;
 
@@ -35,9 +40,8 @@ bool cDeviceLogJSON::CloseAllFiles()
 	cDeviceLog::CloseAllFiles();
 	if (m_pFile != NULLPTR)
 	{
-		fputc(']', m_pFile);
-		fclose(m_pFile);
-		m_pFile = NULLPTR;
+		m_pFile->putch(']');
+		CloseISLogFile(m_pFile);
 	}
 	return true;
 }
@@ -52,7 +56,7 @@ bool cDeviceLogJSON::GetNextItemForFile()
 	int stack = 0;
 	int c;
 	int pc = 0;
-	while ((c = fgetc(m_pFile)) >= 0)
+	while ((c = m_pFile->getch()) >= 0)
 	{
 		if (c == '{' && pc != '\\')
 		{
@@ -93,7 +97,7 @@ bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
         {
             return false;
         }
-        fputc('[', m_pFile);
+        m_pFile->putch('[');
 	}
 	else if (dataHdr->id == DID_DEV_INFO)
 	{
@@ -102,7 +106,7 @@ bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 
 	// Write date to file
     int nBytes = m_json.WriteDataToFile(m_pFile, *dataHdr, dataBuf, (needsComma ? ",\n" : NULLPTR));
-	if (ferror(m_pFile) != 0)
+	if (!m_pFile->good())
 	{
 		return false;
 	}
@@ -113,9 +117,8 @@ bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 	if (m_logSize >= m_maxFileSize)
 	{
 		// Close existing file
-		fputc(']', m_pFile);
-		fclose(m_pFile);
-		m_pFile = NULL;
+		m_pFile->putch(']');
+		CloseISLogFile(m_pFile);
 		m_logSize = 0;
 	}
 
@@ -143,7 +146,7 @@ p_data_t* cDeviceLogJSON::ReadDataFromFile()
 	if (m_pFile == NULLPTR)
 	{
 		assert(false);
-		return NULL;
+		return NULLPTR;
 	}
     while (!GetNextItemForFile() && OpenNextReadFile()) {}
 	if (m_json.StringJSONToData(m_jsonString, m_dataBuffer.hdr, m_dataBuffer.buf, _ARRAY_BYTE_COUNT(m_dataBuffer.buf)))

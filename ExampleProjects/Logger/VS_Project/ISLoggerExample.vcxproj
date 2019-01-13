@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\com_manager.c" />
+    <ClCompile Include="..\..\..\src\convert_ins.cpp" />
     <ClCompile Include="..\..\..\src\DataChunk.cpp" />
     <ClCompile Include="..\..\..\src\DataChunkSorted.cpp" />
     <ClCompile Include="..\..\..\src\DataCSV.cpp" />
@@ -39,6 +40,8 @@
     <ClCompile Include="..\..\..\src\ISDataMappings.cpp" />
     <ClCompile Include="..\..\..\src\ISDisplay.cpp" />
     <ClCompile Include="..\..\..\src\ISEarth.c" />
+    <ClCompile Include="..\..\..\src\ISFileManager.cpp" />
+    <ClCompile Include="..\..\..\src\ISLogFile.cpp" />
     <ClCompile Include="..\..\..\src\ISLogger.cpp" />
     <ClCompile Include="..\..\..\src\ISMatrix.c" />
     <ClCompile Include="..\..\..\src\ISPose.c" />
@@ -57,6 +60,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\com_manager.h" />
+    <ClInclude Include="..\..\..\src\convert_ins.h" />
     <ClInclude Include="..\..\..\src\DataChunk.h" />
     <ClInclude Include="..\..\..\src\DataChunkSorted.h" />
     <ClInclude Include="..\..\..\src\DataCSV.h" />
@@ -76,6 +80,10 @@
     <ClInclude Include="..\..\..\src\ISDataMappings.h" />
     <ClInclude Include="..\..\..\src\ISDisplay.h" />
     <ClInclude Include="..\..\..\src\ISEarth.h" />
+    <ClInclude Include="..\..\..\src\ISFileManager.h" />
+    <ClInclude Include="..\..\..\src\ISLogFile.h" />
+    <ClInclude Include="..\..\..\src\ISLogFileBase.h" />
+    <ClInclude Include="..\..\..\src\ISLogFileFactory.h" />
     <ClInclude Include="..\..\..\src\ISLogger.h" />
     <ClInclude Include="..\..\..\src\ISMatrix.h" />
     <ClInclude Include="..\..\..\src\ISPose.h" />

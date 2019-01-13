@@ -23,7 +23,7 @@ var searchData=
   ['pfnserialportisopen',['pfnSerialPortIsOpen',['../serial_port_8h.html#af64525064f7c7c0fb131ec949ed65adb',1,'serialPort.h']]],
   ['pfnserialportopen',['pfnSerialPortOpen',['../serial_port_8h.html#ab8a395dc48115741b4dce6c0035d51f9',1,'serialPort.h']]],
   ['pfnserialportread',['pfnSerialPortRead',['../serial_port_8h.html#abd90e7699346b3dc88f05181ef7188b8',1,'serialPort.h']]],
-  ['pfnserialportsleep',['pfnSerialPortSleep',['../serial_port_8h.html#a0cb33abac11a0880866e5040bcc3c6a8',1,'serialPort.h']]],
+  ['pfnserialportsleep',['pfnSerialPortSleep',['../serial_port_8h.html#a6217b1baca5f2db1b47b3e287f71c696',1,'serialPort.h']]],
   ['pfnserialportwrite',['pfnSerialPortWrite',['../serial_port_8h.html#a616f80693347849a9e4f731cbf70f2d0',1,'serialPort.h']]],
   ['pfnsteplogfunction',['pfnStepLogFunction',['../_inertial_sense_8h.html#ae91e5ac049ad4acb571f0fafd9af22f5',1,'InertialSense.h']]],
   ['preintegrated_5fimu_5ft',['preintegrated_imu_t',['../data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa',1,'data_sets.h']]]

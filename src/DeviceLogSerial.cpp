@@ -17,19 +17,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/stat.h>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 
 #include "DeviceLogSerial.h"
 #include "ISLogger.h"
+#include "ISLogFileFactory.h"
 
 using namespace std;
 
 void cDeviceLogSerial::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)
 {
-	m_chunk.SetMaxSize(chunkSize);
+    m_chunk.Init(chunkSize);
 	m_chunk.m_hdr.pHandle = pHandle;
 
 	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize, chunkSize);
@@ -44,11 +44,7 @@ bool cDeviceLogSerial::CloseAllFiles()
 	WriteChunkToFile();
 
 	// Close file
-	if (m_pFile)
-	{
-		fclose(m_pFile);
-		m_pFile = NULL;
-	}
+	CloseISLogFile(m_pFile);
 
 	return true;
 }
@@ -74,7 +70,7 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 
 	// Ensure data will fit in chunk.  If not, create new chunk
 	uint32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
-	if (dataBytes > m_chunk.GetByteCountAvailableToWrite())
+	if (dataBytes > m_chunk.GetBuffFree())
 	{
         // Save chunk to file and clear
 		if (!WriteChunkToFile())
@@ -106,20 +102,20 @@ bool cDeviceLogSerial::WriteChunkToFile()
 	}
 
 	// Create first file it it doesn't exist
-	if (m_pFile == NULL)
+	if (m_pFile == NULLPTR)
 	{
 		OpenNewSaveFile();
 	}
 
 	// Validate file pointer
-	if (m_pFile == NULL)
+	if (m_pFile == NULLPTR)
 	{
 		return false;
 	}
 
 	// Write chunk to file
 	int fileBytes = m_chunk.WriteToFile(m_pFile, 0);
-	if (ferror(m_pFile) != 0)
+	if (!m_pFile->good())
 	{
 		return false;
 	}
@@ -155,7 +151,7 @@ p_data_t* cDeviceLogSerial::ReadData()
 p_data_t* cDeviceLogSerial::ReadDataFromChunk()
 {
 	// Ensure chunk has data
-	if (m_chunk.GetByteCountAvailableToRead() <= 0)
+	if (m_chunk.GetDataSize() <= 0)
 	{
 		return NULL;
 	}
@@ -199,7 +195,7 @@ void cDeviceLogSerial::Flush()
 {
 	if (WriteChunkToFile())
 	{
-		fflush(m_pFile);
+		m_pFile->flush();
 	}
 }
 

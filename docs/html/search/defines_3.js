@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['c11_5fis_5fenabled',['C11_IS_ENABLED',['../_i_s_constants_8h.html#a11e3d8dffc5d7259bb7174b41ac3d2cc',1,'ISConstants.h']]],
   ['c_5f0p11_5fdeg2rad_5ff',['C_0p11_DEG2RAD_F',['../_i_s_constants_8h.html#a2c89e0581cdb957ce07bed9389d0e88d',1,'ISConstants.h']]],
   ['c_5f0p12_5fdeg2rad_5ff',['C_0p12_DEG2RAD_F',['../_i_s_constants_8h.html#ad98a226c2b21569ddeeb3d44c99340f4',1,'ISConstants.h']]],
   ['c_5f0p13_5fdeg2rad_5ff',['C_0p13_DEG2RAD_F',['../_i_s_constants_8h.html#a41efcb7b92120be295f74639e08e59ec',1,'ISConstants.h']]],
@@ -248,6 +247,7 @@ var searchData=
   ['c_5fyd2m',['C_YD2M',['../_i_s_constants_8h.html#a93547fbc36099d5067aa356a6ab35b04',1,'ISConstants.h']]],
   ['c_5fyd2m_5ff',['C_YD2M_F',['../_i_s_constants_8h.html#af94030438e98a4d3159442ebf58c7687',1,'ISConstants.h']]],
   ['cal_5fbit_5fmode',['CAL_BIT_MODE',['../data__sets_8h.html#a57ac37e30169130e084f5711159648d5',1,'data_sets.h']]],
+  ['char_5fbit',['CHAR_BIT',['../_i_s_data_mappings_8h.html#a308d9dd2c0028ddb184b455bbd7865de',1,'ISDataMappings.h']]],
   ['checksum_5fseed',['CHECKSUM_SEED',['../_i_s_comm_8h.html#af0bddc5454e28256ae355ae805eb9ad6',1,'ISComm.h']]],
   ['cl_5fdefault_5fbaud_5frate',['CL_DEFAULT_BAUD_RATE',['../cltool_8cpp.html#af096728027c4f1efc070841f3f5ac0d1',1,'cltool.cpp']]],
   ['cl_5fdefault_5fbootload_5fverify',['CL_DEFAULT_BOOTLOAD_VERIFY',['../cltool_8cpp.html#aa5006ab292abf35b2572535a903818f0',1,'cltool.cpp']]],
@@ -261,13 +261,7 @@ var searchData=
   ['cl_5fdefault_5fmax_5flog_5fspace_5fpercent',['CL_DEFAULT_MAX_LOG_SPACE_PERCENT',['../cltool_8cpp.html#a4018cd18b8a91abe5584d3c20b69d10c',1,'cltool.cpp']]],
   ['cl_5fdefault_5freplay_5fspeed',['CL_DEFAULT_REPLAY_SPEED',['../cltool_8cpp.html#ac01049f5f99f85d4161e5dab73ce65ed',1,'cltool.cpp']]],
   ['const_5fexpression',['CONST_EXPRESSION',['../_i_s_constants_8h.html#a11b905653ff9accefbb7afcfe5901d4c',1,'ISConstants.h']]],
-  ['crash_5finfo_5fenable_5fbootloader',['CRASH_INFO_ENABLE_BOOTLOADER',['../data__sets_8h.html#ae6ec796656b07cf629b2c628d54999af',1,'data_sets.h']]],
-  ['crash_5finfo_5finvalid_5fcode_5foperation',['CRASH_INFO_INVALID_CODE_OPERATION',['../data__sets_8h.html#a7a999967f46e50a1ec202d35a38ea1ce',1,'data_sets.h']]],
-  ['crash_5finfo_5fmalloc_5ffailed',['CRASH_INFO_MALLOC_FAILED',['../data__sets_8h.html#a7ea4ad8860548b6fb67c562c45bbef05',1,'data_sets.h']]],
-  ['crash_5finfo_5fnone',['CRASH_INFO_NONE',['../data__sets_8h.html#abb0489cff5cfa92d48bfb9ea218b2ea2',1,'data_sets.h']]],
-  ['crash_5finfo_5fsoft_5freset',['CRASH_INFO_SOFT_RESET',['../data__sets_8h.html#a519692fb039fef68e39d22eca30a3db9',1,'data_sets.h']]],
-  ['crash_5finfo_5fstack_5foverflow',['CRASH_INFO_STACK_OVERFLOW',['../data__sets_8h.html#a89e509478d992b1604706bb69d5289c5',1,'data_sets.h']]],
-  ['crash_5finfo_5fuser_5freset',['CRASH_INFO_USER_RESET',['../data__sets_8h.html#a5f6baf273b2a463d01be2f776f415beb',1,'data_sets.h']]],
+  ['cpp11_5fis_5fenabled',['CPP11_IS_ENABLED',['../_i_s_constants_8h.html#a85f9027a99b5419f1d0d5d83b5eb3abc',1,'ISConstants.h']]],
   ['crc_5fpoly',['CRC_POLY',['../inertial_sense_boot_loader_8c.html#a3a57af5c3275b2f53fa64274b11e8d52',1,'inertialSenseBootLoader.c']]],
   ['current_5fleap_5fseconds',['CURRENT_LEAP_SECONDS',['../data__sets_8h.html#a3cea95f95355911bacdfb8d3795106a8',1,'data_sets.h']]]
 ];

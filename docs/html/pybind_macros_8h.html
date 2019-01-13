@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -74,7 +74,9 @@ $(function() {
 <div class="title">pybindMacros.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
+<div class="textblock"><code>#include &quot;<a class="el" href="data__sets_8h_source.html">data_sets.h</a>&quot;</code><br />
+<code>#include &quot;IS_internal.h&quot;</code><br />
+</div>
 <p><a href="pybind_macros_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -91,8 +93,8 @@ Functions</h2></td></tr>
 <tr class="separator:a35f74888106308cc4bf6d89b9cf69e02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb5c4c568fb0e1948ca3b87723089944"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#afb5c4c568fb0e1948ca3b87723089944">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo)</td></tr>
 <tr class="separator:afb5c4c568fb0e1948ca3b87723089944"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09f32ca266d109a465b199feca98d43a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a09f32ca266d109a465b199feca98d43a">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="structcrash__info__t.html">crash_info_t</a>, r0, r1, r2, r3, r12, lr, pc, psr)</td></tr>
-<tr class="separator:a09f32ca266d109a465b199feca98d43a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a364b4939ba0da27775f2064116604c8b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a364b4939ba0da27775f2064116604c8b">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="structsystem__fault__t.html">system_fault_t</a>, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr)</td></tr>
+<tr class="separator:a364b4939ba0da27775f2064116604c8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae41c2ad89f587c780dfb4da5a720acf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#aae41c2ad89f587c780dfb4da5a720acf">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa">preintegrated_imu_t</a>, time, theta1, theta2, vel1, vel2, dt)</td></tr>
 <tr class="separator:aae41c2ad89f587c780dfb4da5a720acf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bf83baa83e94d87785dc96b8e7ff672"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a6bf83baa83e94d87785dc96b8e7ff672">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>, week, timeOfWeek, insStatus, hdwStatus, theta, uvw, lla, ned)</td></tr>
@@ -133,8 +135,8 @@ Functions</h2></td></tr>
 <tr class="separator:a025170eea9927459d38f9b1fc7b2158a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8c8dc4e981f436782a508c58b2e8563"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#aa8c8dc4e981f436782a508c58b2e8563">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#a8d15c023c3165da18d5b0b431e235446">gps_vel_t</a>, timeOfWeekMs, velEcef, sAcc)</td></tr>
 <tr class="separator:aa8c8dc4e981f436782a508c58b2e8563"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15e174e0ee81baa8bb978ab0dcc530cb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a15e174e0ee81baa8bb978ab0dcc530cb">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#a783ce4826a865cc21b04b2232bc6705d">rtos_info_t</a>, task, freeHeapSize, mallocMinusFree)</td></tr>
-<tr class="separator:a15e174e0ee81baa8bb978ab0dcc530cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3678d108b4536a1c6c79e79e5fda7fb8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a3678d108b4536a1c6c79e79e5fda7fb8">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#a783ce4826a865cc21b04b2232bc6705d">rtos_info_t</a>, freeHeapSize, mallocMinusFree, task)</td></tr>
+<tr class="separator:a3678d108b4536a1c6c79e79e5fda7fb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62a5e47586c80b539c75c8459f60a366"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a62a5e47586c80b539c75c8459f60a366">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#ac2de698a5ea2e8ed5b049e3b81778d74">inl2_states_t</a>, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc)</td></tr>
 <tr class="separator:a62a5e47586c80b539c75c8459f60a366"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a813801e21dab69cecc08550baf28d636"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a813801e21dab69cecc08550baf28d636">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="data__sets_8h.html#a4be00f4285847c80d813a66ec60492ef">magnetometer_t</a>, time, mag)</td></tr>
@@ -161,8 +163,6 @@ Functions</h2></td></tr>
 <tr class="separator:abd20667d346741b7c856d8fed461b603"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68fe800b7e884fa08862b8a6eb86d1a7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a68fe800b7e884fa08862b8a6eb86d1a7">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="structsurvey__in__t.html">survey_in_t</a>, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla)</td></tr>
 <tr class="separator:a68fe800b7e884fa08862b8a6eb86d1a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea1071036889b988c430dcb3732845f1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#aea1071036889b988c430dcb3732845f1">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="structevb2__t.html">evb2_t</a>, firmwareVer, comBridgeCfg, loggerState, loggerElapsedTimeMs, ipAddr)</td></tr>
-<tr class="separator:aea1071036889b988c430dcb3732845f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea3e64b988ed39dff85b2df86a0a98fa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#aea3e64b988ed39dff85b2df86a0a98fa">PYBIND11_NUMPY_DTYPE</a> (feature_bits_t, key, featureBits, hash1, hash2)</td></tr>
 <tr class="separator:aea3e64b988ed39dff85b2df86a0a98fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae20b596426412a83ac54ca7e84dda6e4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#ae20b596426412a83ac54ca7e84dda6e4">PYBIND11_NUMPY_DTYPE</a> (sensor_comp_unit_t, lpfLsb, temp, tempRampRate, tci, numTcPts, dtTemp)</td></tr>
@@ -189,10 +189,18 @@ Functions</h2></td></tr>
 <tr class="separator:af75329bb10cdfd0499b5266da1a307a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8551e0813613055528ce9ad20aaafe0e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a8551e0813613055528ce9ad20aaafe0e">PYBIND11_NUMPY_DTYPE</a> (inl2_misc_t, gps_time_last_valid)</td></tr>
 <tr class="separator:a8551e0813613055528ce9ad20aaafe0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac51a785e0ba9aa06b74f23fd2b75148e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#ac51a785e0ba9aa06b74f23fd2b75148e">PYBIND11_NUMPY_DTYPE</a> (<a class="el" href="structgtime__t.html">gtime_t</a>, time, sec)</td></tr>
+<tr class="separator:ac51a785e0ba9aa06b74f23fd2b75148e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b85cfe15ccc0dc165009dff15d75f58"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a3b85cfe15ccc0dc165009dff15d75f58">PYBIND11_NUMPY_DTYPE</a> (rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_ecef, qr, b, qb, sat_id)</td></tr>
+<tr class="separator:a3b85cfe15ccc0dc165009dff15d75f58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a520a8eff56a9a65acbc9b33f1a4d470f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#a520a8eff56a9a65acbc9b33f1a4d470f">PYBIND11_NUMPY_DTYPE</a> (rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v)</td></tr>
+<tr class="separator:a520a8eff56a9a65acbc9b33f1a4d470f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa293a984486804a7049a4c2a2f45582"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="pybind_macros_8h.html#afa293a984486804a7049a4c2a2f45582">PYBIND11_NUMPY_DTYPE</a> (rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, debug, double_debug)</td></tr>
+<tr class="separator:afa293a984486804a7049a4c2a2f45582"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a0578f826c1929f88d0ef0f69edcf0d84"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0578f826c1929f88d0ef0f69edcf0d84">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[1/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0578f826c1929f88d0ef0f69edcf0d84">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[1/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,7 +264,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a802c709cd001933a7425a661f6aba104"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a802c709cd001933a7425a661f6aba104">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[2/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a802c709cd001933a7425a661f6aba104">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[2/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -302,7 +310,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a71623ca15d2fe6d8b69dcca49adf7071"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71623ca15d2fe6d8b69dcca49adf7071">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[3/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a71623ca15d2fe6d8b69dcca49adf7071">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[3/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -384,7 +392,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a8e72dfd688c681560b197688a4efd99a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e72dfd688c681560b197688a4efd99a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[4/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e72dfd688c681560b197688a4efd99a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[4/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -418,7 +426,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a35f74888106308cc4bf6d89b9cf69e02"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35f74888106308cc4bf6d89b9cf69e02">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[5/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a35f74888106308cc4bf6d89b9cf69e02">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[5/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -458,7 +466,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="afb5c4c568fb0e1948ca3b87723089944"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb5c4c568fb0e1948ca3b87723089944">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[6/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afb5c4c568fb0e1948ca3b87723089944">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[6/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -545,8 +553,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a09f32ca266d109a465b199feca98d43a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09f32ca266d109a465b199feca98d43a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[7/55]</span></h2>
+<a id="a364b4939ba0da27775f2064116604c8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a364b4939ba0da27775f2064116604c8b">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[7/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -554,43 +562,43 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">PYBIND11_NUMPY_DTYPE </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structcrash__info__t.html">crash_info_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="structsystem__fault__t.html">system_fault_t</a>&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">r0&#160;</td>
+          <td class="paramtype">status&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">r1&#160;</td>
+          <td class="paramtype">g1Task&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">r2&#160;</td>
+          <td class="paramtype">g2FileNum&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">r3&#160;</td>
+          <td class="paramtype">g3LineNum&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">r12&#160;</td>
+          <td class="paramtype">g4&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">lr&#160;</td>
+          <td class="paramtype">g5Lr&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -616,7 +624,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aae41c2ad89f587c780dfb4da5a720acf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae41c2ad89f587c780dfb4da5a720acf">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[8/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aae41c2ad89f587c780dfb4da5a720acf">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[8/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -674,7 +682,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a6bf83baa83e94d87785dc96b8e7ff672"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6bf83baa83e94d87785dc96b8e7ff672">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[9/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bf83baa83e94d87785dc96b8e7ff672">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[9/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -744,7 +752,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a9480210d7a4440fa51e7b8dbc835229a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9480210d7a4440fa51e7b8dbc835229a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[10/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9480210d7a4440fa51e7b8dbc835229a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[10/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -808,7 +816,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a3b6458688c9a0f0759501940cbd29472"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b6458688c9a0f0759501940cbd29472">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[11/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b6458688c9a0f0759501940cbd29472">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[11/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -896,7 +904,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a98e5186f7523043993cdd06894ac4c8b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a98e5186f7523043993cdd06894ac4c8b">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[12/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a98e5186f7523043993cdd06894ac4c8b">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[12/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -930,7 +938,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a7f992e7a529b2fafcd840699f97e9848"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f992e7a529b2fafcd840699f97e9848">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[13/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f992e7a529b2fafcd840699f97e9848">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[13/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1018,7 +1026,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a39cf1e8ed197e00a53e4f44cb75bff61"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a39cf1e8ed197e00a53e4f44cb75bff61">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[14/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a39cf1e8ed197e00a53e4f44cb75bff61">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[14/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1052,7 +1060,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a1bd6b5d3d2a1599a28b9c5679111434c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bd6b5d3d2a1599a28b9c5679111434c">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[15/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bd6b5d3d2a1599a28b9c5679111434c">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[15/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1140,7 +1148,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aaf5e3dbb72016a895633a532306c5baf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf5e3dbb72016a895633a532306c5baf">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[16/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf5e3dbb72016a895633a532306c5baf">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[16/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1240,7 +1248,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aaa392f8cbad777a6f28164323d15e5f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa392f8cbad777a6f28164323d15e5f6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[17/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa392f8cbad777a6f28164323d15e5f6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[17/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1430,7 +1438,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a57576886c84deacd393adfd1f218b39f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a57576886c84deacd393adfd1f218b39f">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[18/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a57576886c84deacd393adfd1f218b39f">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[18/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1470,7 +1478,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aad410ff7372f9b0419a7534433e9a759"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad410ff7372f9b0419a7534433e9a759">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[19/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aad410ff7372f9b0419a7534433e9a759">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[19/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1516,7 +1524,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ab41331d66240802058d5cd8069c649bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab41331d66240802058d5cd8069c649bf">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[20/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab41331d66240802058d5cd8069c649bf">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[20/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1556,7 +1564,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a64f01f8d7a38912284bb87bf2165e774"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a64f01f8d7a38912284bb87bf2165e774">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[21/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a64f01f8d7a38912284bb87bf2165e774">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[21/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1608,7 +1616,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ae0b46fe2e91cd9f2c648d754b7d2e3df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0b46fe2e91cd9f2c648d754b7d2e3df">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[22/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0b46fe2e91cd9f2c648d754b7d2e3df">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[22/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1666,7 +1674,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a43207fd28589c52a06f053bb523d59b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43207fd28589c52a06f053bb523d59b9">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[23/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a43207fd28589c52a06f053bb523d59b9">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[23/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1886,7 +1894,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a7fe92b1a2137bccd907c2ef9886dd5a6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fe92b1a2137bccd907c2ef9886dd5a6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[24/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fe92b1a2137bccd907c2ef9886dd5a6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[24/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1914,7 +1922,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a1d2c57af43d5ee1069ab8bd4e8af652a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d2c57af43d5ee1069ab8bd4e8af652a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[25/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d2c57af43d5ee1069ab8bd4e8af652a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[25/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1948,7 +1956,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a025170eea9927459d38f9b1fc7b2158a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a025170eea9927459d38f9b1fc7b2158a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[26/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a025170eea9927459d38f9b1fc7b2158a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[26/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2006,7 +2014,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aa8c8dc4e981f436782a508c58b2e8563"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa8c8dc4e981f436782a508c58b2e8563">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[27/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8c8dc4e981f436782a508c58b2e8563">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[27/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2045,8 +2053,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a15e174e0ee81baa8bb978ab0dcc530cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15e174e0ee81baa8bb978ab0dcc530cb">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[28/55]</span></h2>
+<a id="a3678d108b4536a1c6c79e79e5fda7fb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3678d108b4536a1c6c79e79e5fda7fb8">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[28/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2060,12 +2068,6 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">task&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">freeHeapSize&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -2073,6 +2075,12 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">mallocMinusFree&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">task&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -2086,7 +2094,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a62a5e47586c80b539c75c8459f60a366"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62a5e47586c80b539c75c8459f60a366">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[29/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a62a5e47586c80b539c75c8459f60a366">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[29/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2162,7 +2170,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a813801e21dab69cecc08550baf28d636"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a813801e21dab69cecc08550baf28d636">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[30/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a813801e21dab69cecc08550baf28d636">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[30/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2196,7 +2204,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ae59dc436b2c9fa5c436ca24127c093c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae59dc436b2c9fa5c436ca24127c093c8">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[31/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae59dc436b2c9fa5c436ca24127c093c8">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[31/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2248,7 +2256,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ad70e778966cb12e0cb9ba2514b67fb88"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad70e778966cb12e0cb9ba2514b67fb88">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[32/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad70e778966cb12e0cb9ba2514b67fb88">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[32/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2282,7 +2290,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="af8c4278d6693174a47350b88bb9dbca5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af8c4278d6693174a47350b88bb9dbca5">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[33/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af8c4278d6693174a47350b88bb9dbca5">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[33/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2328,7 +2336,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="abfdc6c1018c545ff3a31ce55db3e8472"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abfdc6c1018c545ff3a31ce55db3e8472">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[34/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abfdc6c1018c545ff3a31ce55db3e8472">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[34/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2428,7 +2436,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a63dca77fad09bcd70d351399f41e42d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a63dca77fad09bcd70d351399f41e42d5">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[35/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a63dca77fad09bcd70d351399f41e42d5">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[35/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2498,7 +2506,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ab092a479281be89a551a185cc99f7bd8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab092a479281be89a551a185cc99f7bd8">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[36/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab092a479281be89a551a185cc99f7bd8">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[36/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2562,7 +2570,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a7c52f6723afe29302add6f3b0875e17a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c52f6723afe29302add6f3b0875e17a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[37/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c52f6723afe29302add6f3b0875e17a">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[37/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2632,7 +2640,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ad97472471ab0aa5375b81665b3cfcb22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad97472471ab0aa5375b81665b3cfcb22">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[38/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad97472471ab0aa5375b81665b3cfcb22">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[38/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2678,7 +2686,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aedb17674d682a9e2a15ace32350151e6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aedb17674d682a9e2a15ace32350151e6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[39/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aedb17674d682a9e2a15ace32350151e6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[39/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2748,7 +2756,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="abd20667d346741b7c856d8fed461b603"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd20667d346741b7c856d8fed461b603">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[40/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abd20667d346741b7c856d8fed461b603">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[40/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2788,7 +2796,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a68fe800b7e884fa08862b8a6eb86d1a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68fe800b7e884fa08862b8a6eb86d1a7">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[41/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a68fe800b7e884fa08862b8a6eb86d1a7">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[41/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2845,60 +2853,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aea1071036889b988c430dcb3732845f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea1071036889b988c430dcb3732845f1">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[42/55]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">PYBIND11_NUMPY_DTYPE </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structevb2__t.html">evb2_t</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">firmwareVer&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">comBridgeCfg&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">loggerState&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">loggerElapsedTimeMs&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ipAddr&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="aea3e64b988ed39dff85b2df86a0a98fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea3e64b988ed39dff85b2df86a0a98fa">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[43/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aea3e64b988ed39dff85b2df86a0a98fa">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[42/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2944,7 +2900,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ae20b596426412a83ac54ca7e84dda6e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae20b596426412a83ac54ca7e84dda6e4">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[44/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae20b596426412a83ac54ca7e84dda6e4">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[43/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3002,7 +2958,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a520d91fad6254743af9aa27c29828376"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a520d91fad6254743af9aa27c29828376">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[45/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a520d91fad6254743af9aa27c29828376">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[44/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3042,7 +2998,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a4375c3a0b29807fc5f10728ace771b77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4375c3a0b29807fc5f10728ace771b77">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[46/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4375c3a0b29807fc5f10728ace771b77">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[45/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3070,7 +3026,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a3fc91e0d586ed86a3fafd3c4933479a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3fc91e0d586ed86a3fafd3c4933479a7">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[47/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3fc91e0d586ed86a3fafd3c4933479a7">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[46/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3128,7 +3084,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a18fcd7f19fe29460c7a462e9d1c8e991"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a18fcd7f19fe29460c7a462e9d1c8e991">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[48/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a18fcd7f19fe29460c7a462e9d1c8e991">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[47/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3180,7 +3136,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aec0341f436de8d8998926261d0601dbe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec0341f436de8d8998926261d0601dbe">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[49/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aec0341f436de8d8998926261d0601dbe">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[48/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3256,7 +3212,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aa5ba558cb095a456ff29c3a17b6107ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa5ba558cb095a456ff29c3a17b6107ba">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[50/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5ba558cb095a456ff29c3a17b6107ba">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[49/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3290,7 +3246,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a7b32975ef829c016ba8d988b3952fba8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b32975ef829c016ba8d988b3952fba8">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[51/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b32975ef829c016ba8d988b3952fba8">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[50/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3318,7 +3274,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="aa32335b17048486f2b05bedaa69ed0bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa32335b17048486f2b05bedaa69ed0bc">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[52/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa32335b17048486f2b05bedaa69ed0bc">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[51/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3358,7 +3314,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="acb1b52e1e25bcf70ee154ac7cbafff83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acb1b52e1e25bcf70ee154ac7cbafff83">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[53/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acb1b52e1e25bcf70ee154ac7cbafff83">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[52/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3446,7 +3402,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="af75329bb10cdfd0499b5266da1a307a6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af75329bb10cdfd0499b5266da1a307a6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[54/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af75329bb10cdfd0499b5266da1a307a6">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[53/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3558,7 +3514,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a8551e0813613055528ce9ad20aaafe0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8551e0813613055528ce9ad20aaafe0e">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[55/55]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8551e0813613055528ce9ad20aaafe0e">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[54/58]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3573,6 +3529,298 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">gps_time_last_valid&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac51a785e0ba9aa06b74f23fd2b75148e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac51a785e0ba9aa06b74f23fd2b75148e">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[55/58]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">PYBIND11_NUMPY_DTYPE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structgtime__t.html">gtime_t</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">time&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">sec&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3b85cfe15ccc0dc165009dff15d75f58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b85cfe15ccc0dc165009dff15d75f58">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[56/58]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">PYBIND11_NUMPY_DTYPE </td>
+          <td>(</td>
+          <td class="paramtype">rtk_state_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">time&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">rp_ecef&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">rv_ecef&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ra_ecef&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bp_ecef&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bv_ecef&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">qr&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">b&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">qb&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">sat_id&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a520a8eff56a9a65acbc9b33f1a4d470f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a520a8eff56a9a65acbc9b33f1a4d470f">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[57/58]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">PYBIND11_NUMPY_DTYPE </td>
+          <td>(</td>
+          <td class="paramtype">rtk_residual_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">time&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">nv&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">sat_id_i&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">sat_id_j&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">type&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">v&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afa293a984486804a7049a4c2a2f45582"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa293a984486804a7049a4c2a2f45582">&#9670;&nbsp;</a></span>PYBIND11_NUMPY_DTYPE() <span class="overload">[58/58]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">PYBIND11_NUMPY_DTYPE </td>
+          <td>(</td>
+          <td class="paramtype">rtk_debug_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">time&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">rej_ovfl&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">code_outlier&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">phase_outlier&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">code_large_residual&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">phase_large_residual&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">invalid_base_position&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bad_baseline_holdamb&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">base_position_error&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">outc_ovfl&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">reset_timer&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">use_ubx_position&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">large_v2b&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">base_position_update&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">debug&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double_debug&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>

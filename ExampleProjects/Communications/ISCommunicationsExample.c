@@ -88,7 +88,8 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-	int messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 10);
+	int messageSize;
+	messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 10);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write get INS message\r\n");

@@ -38,17 +38,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 int cDataCSV::WriteHeaderToFile(FILE* pFile, int id)
 {
 	// Verify file pointer
-	if (pFile == NULL)
+	if (pFile == NULL || id >= DID_COUNT)
 	{
 		return 0;
 	}
-	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(id);
-	if (offsetMap == cISDataMappings::GetMap().end())
+	//map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(id);
+	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(id);
+	//if (offsetMap == cISDataMappings::GetMap().end())
+	if (offsetMap == NULLPTR)
 	{
 		return 0;
 	}
 	string header("_ID_");
-	for (map_name_to_info_t::const_iterator offset = offsetMap->second.begin(); offset != offsetMap->second.end(); offset++)
+	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
 	{
 		header += ",";
 		header += offset->first;
@@ -59,8 +61,14 @@ int cDataCSV::WriteHeaderToFile(FILE* pFile, int id)
 }
 
 
-int cDataCSV::ReadHeaderFromFile(FILE* pFile, int id, vector<string>& columnHeaders)
+int cDataCSV::ReadHeaderFromFile(FILE* pFile, int id, vector<data_info_t>& columnHeaders)
 {
+#if PLATFORM_IS_EMBEDDED    
+
+    return 0;
+
+#else
+
 	(void)id;
 
 	char line[8192];
@@ -69,6 +77,7 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, int id, vector<string>& columnHead
 	{
 		return 0;
 	}
+	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(id);
 	stringstream stream(line);
 	string columnHeader;
 	columnHeaders.clear();
@@ -83,20 +92,31 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, int id, vector<string>& columnHead
 		{
 			columnHeader = "UNKNOWN";
 		}
-		columnHeaders.push_back(columnHeader);
+		if (columnHeader == "_ID_")
+		{
+			columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeInt64, "_ID_" });
+		}
+		else
+		{
+			map_name_to_info_t::const_iterator offset = offsetMap->find(columnHeader);
+			if (offset == offsetMap->end())
+			{
+				columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeBinary, columnHeader });
+			}
+			else
+			{
+				columnHeaders.push_back(offset->second);
+			}
+		}
 	}
 	return (int)strnlen(line, _ARRAY_BYTE_COUNT(line));
+#endif
 }
 
 int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf)
 {
 	// Verify file pointer
-	if (pFile == NULL)
-	{
-		return 0;
-	}
-	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(dataHdr.id);
-	if (offsetMap == cISDataMappings::GetMap().end())
+	if (pFile == NULL || cISDataMappings::GetSize(dataHdr.id) == 0)
 	{
 		return 0;
 	}
@@ -115,10 +135,10 @@ int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t&
     return (int)s.length() + 1 + (int)strnlen(tmp, sizeof(tmp));
 }
 
-bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const vector<string>& columnHeaders)
+bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const vector<data_info_t>& columnHeaders)
 {
-	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(hdr.id);
-	if (offsetMap == cISDataMappings::GetMap().end() || hdr.offset != 0 || hdr.size == 0 || bufSize < hdr.size)
+	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(hdr.id);
+	if (offsetMap == NULLPTR || hdr.offset != 0 || hdr.size == 0 || bufSize < hdr.size)
 	{
 		return false;
 	}
@@ -133,7 +153,6 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint3
 	uint32_t index = 0;
 	hdr.offset = 0;
 	hdr.size = cISDataMappings::GetSize(hdr.id);
-	map_name_to_info_t::const_iterator offset;
 	bool inQuotes = false;
 	uint32_t foundQuotes = 0;
 	memset(buf, 0, hdr.size);
@@ -144,8 +163,8 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint3
 			// end field
 			columnData = string(start + foundQuotes, i - foundQuotes);
 			start = i + 1;
-            offset = offsetMap->second.find(columnHeaders[index++]);
-            if (offset != offsetMap->second.end() && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, offset->second))
+			const data_info_t& data = columnHeaders[index++];
+            if (data.dataOffset < MAX_DATASET_SIZE && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, data))
 			{
 				return false;
 			}
@@ -165,8 +184,8 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 {
 	csv.clear();
 	string columnData;
-	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(hdr.id);
-	if (offsetMap == cISDataMappings::GetMap().end())
+	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(hdr.id);
+	if (offsetMap == NULLPTR)
 	{
 		return false;
 	}
@@ -189,7 +208,7 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	hdrCopy.offset = 0;
 	hdrCopy.size = size;
 
-	for (map_name_to_info_t::const_iterator offset = offsetMap->second.begin(); offset != offsetMap->second.end(); offset++)
+	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
 	{
 		cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp);
 		if (csv.length() != 0)

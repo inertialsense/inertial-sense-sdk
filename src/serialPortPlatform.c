@@ -473,17 +473,13 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
                 CancelIo(handle->platformHandle);
             }
         }
-		else
-		{
-
-#if _DEBUG
-
-			DWORD dRes = GetLastError();
-			int a = 5; a++;
-
-#endif
-
-		}
+// #if _DEBUG
+// 		else
+// 		{
+// 			DWORD dRes = GetLastError();
+// 			int a = 5; a++;
+// 		}
+// #endif
         if (!handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
         {
             Sleep(1);
@@ -696,10 +692,8 @@ static int serialPortGetByteCountAvailableToWritePlatform(serial_port_t* serialP
     */
 }
 
-static int serialPortSleepPlatform(serial_port_t* serialPort, int sleepMilliseconds)
+static int serialPortSleepPlatform(int sleepMilliseconds)
 {
-    (void)serialPort;
-
 #if PLATFORM_IS_WINDOWS
 
     Sleep(sleepMilliseconds);

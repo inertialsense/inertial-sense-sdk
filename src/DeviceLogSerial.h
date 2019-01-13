@@ -27,10 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cDeviceLogSerial : public cDeviceLog
 {
 public:
-	cDeviceLogSerial()
-	{
-		m_chunk.Clear();
-	}
+    cDeviceLogSerial(){}
 
 	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize, uint32_t chunkSize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;

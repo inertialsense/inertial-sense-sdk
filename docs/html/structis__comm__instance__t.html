@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -98,12 +98,33 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a263c64a68dfdd9ad048d90c5dfd70bd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafbf21540b213da6e911d8a384d2a9b4"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#aafbf21540b213da6e911d8a384d2a9b4">dataSize</a></td></tr>
 <tr class="separator:aafbf21540b213da6e911d8a384d2a9b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c1d53c310b0060d0f6babdb00946eff"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#a5c1d53c310b0060d0f6babdb00946eff">pktCounter</a></td></tr>
+<tr class="separator:a5c1d53c310b0060d0f6babdb00946eff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc3565e30eacb58cb94cd2d6f288b760"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#acc3565e30eacb58cb94cd2d6f288b760">ackNeeded</a></td></tr>
+<tr class="separator:acc3565e30eacb58cb94cd2d6f288b760"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An instance of an is_comm interface </p>
 
 <p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00080">80</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="acc3565e30eacb58cb94cd2d6f288b760"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc3565e30eacb58cb94cd2d6f288b760">&#9670;&nbsp;</a></span>ackNeeded</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t is_comm_instance_t::ackNeeded</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Acknowledge packet needed in response to the last packet received </p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00122">122</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
 <a id="a9d0ddeeff9552b068e88ada137f1a144"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9d0ddeeff9552b068e88ada137f1a144">&#9670;&nbsp;</a></span>buffer</h2>
 
@@ -288,6 +309,23 @@ Public Attributes</h2></td></tr>
 <p>Internal state, do not modify </p>
 
 <p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00104">104</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="a5c1d53c310b0060d0f6babdb00946eff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c1d53c310b0060d0f6babdb00946eff">&#9670;&nbsp;</a></span>pktCounter</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t is_comm_instance_t::pktCounter</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Packet counter value </p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00119">119</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>

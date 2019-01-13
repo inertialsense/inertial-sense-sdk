@@ -45,6 +45,7 @@ int main(int argc, char* argv[])
 	if (argc < 3)
 	{
 		printf("Please pass the com port and then file name to bootload as the only arguments\r\n");
+		printf("usage: %s {COMx} {file}\r\n", argv[0]);
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 IS_uINS-3.hex" 
 		return -1;
 	}
@@ -68,7 +69,7 @@ int main(int argc, char* argv[])
 	// bootloader parameters
 	bootload_params_t param;
 	// buffer to show any errors
-	char errorBuffer[512];
+	char errorBuffer[512] = { 0 };
 
 	// very important - initialize the bootloader params to zeros
 	memset(&param, 0, sizeof(param));
@@ -104,7 +105,10 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		printf("Bootloader failed! Error: %s\n", errorBuffer);
+		if(errorBuffer[0] != 0)
+			printf("Bootloader failed! Error: %s\n", errorBuffer);
+		else
+			printf("Bootloader failed!\n");
 		return -1;
 	}
 }

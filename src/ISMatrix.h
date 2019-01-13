@@ -55,7 +55,8 @@ extern "C" {
 #define Vec3_OneGrtrThan_X(v,x)		( ((v[0])>(x))  || ((v[1])>(x))  || ((v[2])>(x)) )
 #define Vec3_AllLessThan_X(v,x)		( ((v[0])<(x))  && ((v[1])<(x))  && ((v[2])<(x)) )
 #define Vec3_AllGrtrThan_X(v,x)		( ((v[0])>(x))  && ((v[1])>(x))  && ((v[2])>(x)) )
-#define Vec3_IsZero(v)				( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
+#define Vec3_IsAllZero(v)			( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
+#define Vec3_IsAnyZero(v)			( ((v[0])==(0.0f))  || ((v[1])==(0.0f))  || ((v[2])==(0.0f)) )
 
 #define set_Vec3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define set_Vec4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
@@ -269,7 +270,7 @@ void mul_Vec4d_X( Vector4d result, const Vector4d v, const double x );
 /* Divide
  * result(3x1) = v(3) ./ x
  */
-void div_Vec3_X( Vector4 result, const Vector4 v, const f_t x );
+void div_Vec3_X( Vector3 result, const Vector3 v, const f_t x );
 
 /* Divide
  * result(4x1) = v(4) ./ x

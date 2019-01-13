@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.14"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SDK: file_info_t Struct Reference</title>
+<title>SDK: evb_server_t Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -66,77 +66,61 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structfile__info__t-members.html">List of all members</a>  </div>
+<a href="structevb__server__t-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">file_info_t Struct Reference</div>  </div>
+<div class="title">evb_server_t Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="_i_s_logger_8h_source.html">ISLogger.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="data__sets_8h_source.html">data_sets.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a8e5de5f2986e48798d50069168d726c6"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structfile__info__t.html#a8e5de5f2986e48798d50069168d726c6">name</a></td></tr>
-<tr class="separator:a8e5de5f2986e48798d50069168d726c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0be7ce776c6ae4552e889e26e9bcc97"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structfile__info__t.html#ae0be7ce776c6ae4552e889e26e9bcc97">size</a></td></tr>
-<tr class="separator:ae0be7ce776c6ae4552e889e26e9bcc97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab8140c4aae7a736c95c3e56cd9704ea"><td class="memItemLeft" align="right" valign="top">time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structfile__info__t.html#aab8140c4aae7a736c95c3e56cd9704ea">lastModificationDate</a></td></tr>
-<tr class="separator:aab8140c4aae7a736c95c3e56cd9704ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8eabb42b17654ec6d08596e895e2679d"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structevb__server__t.html#a8eabb42b17654ec6d08596e895e2679d">ipAddr</a></td></tr>
+<tr class="separator:a8eabb42b17654ec6d08596e895e2679d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35af656c81e99c51dc107c22889b8f9b"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structevb__server__t.html#a35af656c81e99c51dc107c22889b8f9b">port</a></td></tr>
+<tr class="separator:a35af656c81e99c51dc107c22889b8f9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_i_s_logger_8h_source.html#l00035">35</a> of file <a class="el" href="_i_s_logger_8h_source.html">ISLogger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02446">2446</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="aab8140c4aae7a736c95c3e56cd9704ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aab8140c4aae7a736c95c3e56cd9704ea">&#9670;&nbsp;</a></span>lastModificationDate</h2>
+<a id="a8eabb42b17654ec6d08596e895e2679d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8eabb42b17654ec6d08596e895e2679d">&#9670;&nbsp;</a></span>ipAddr</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">time_t file_info_t::lastModificationDate</td>
+          <td class="memname">uint32_t evb_server_t::ipAddr</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Server IP address </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_logger_8h_source.html#l00039">39</a> of file <a class="el" href="_i_s_logger_8h_source.html">ISLogger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02449">2449</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
-<a id="a8e5de5f2986e48798d50069168d726c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e5de5f2986e48798d50069168d726c6">&#9670;&nbsp;</a></span>name</h2>
+<a id="a35af656c81e99c51dc107c22889b8f9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35af656c81e99c51dc107c22889b8f9b">&#9670;&nbsp;</a></span>port</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">string file_info_t::name</td>
+          <td class="memname">uint32_t evb_server_t::port</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Server port </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_logger_8h_source.html#l00037">37</a> of file <a class="el" href="_i_s_logger_8h_source.html">ISLogger.h</a>.</p>
-
-</div>
-</div>
-<a id="ae0be7ce776c6ae4552e889e26e9bcc97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0be7ce776c6ae4552e889e26e9bcc97">&#9670;&nbsp;</a></span>size</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint64_t file_info_t::size</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_i_s_logger_8h_source.html#l00038">38</a> of file <a class="el" href="_i_s_logger_8h_source.html">ISLogger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02452">2452</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>src/<a class="el" href="_i_s_logger_8h_source.html">ISLogger.h</a></li>
+<li>src/<a class="el" href="data__sets_8h_source.html">data_sets.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

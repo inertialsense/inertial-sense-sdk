@@ -1,10 +1,8 @@
 var searchData=
 [
-  ['r0',['r0',['../structcrash__info__t.html#a638892acfe3d2bcaea0fc9384789ed25',1,'crash_info_t']]],
-  ['r1',['r1',['../structcrash__info__t.html#a0eef5f1b9138d9cdb7aeede432c34790',1,'crash_info_t']]],
-  ['r12',['r12',['../structcrash__info__t.html#a54fad2f281081a35467d970a29296e5c',1,'crash_info_t']]],
-  ['r2',['r2',['../structcrash__info__t.html#a90d83bef33f77de32d9efd8dd098ef42',1,'crash_info_t']]],
-  ['r3',['r3',['../structcrash__info__t.html#ac649f00f16964ec86107ba7d3199fb22',1,'crash_info_t']]],
+  ['radionid',['radioNID',['../structevb__config__t.html#a101c23df29697485e7c660f1fcb57aaf',1,'evb_config_t']]],
+  ['radiopid',['radioPID',['../structevb__config__t.html#af1ce246a0a300c6d873e39294ce7c6a4',1,'evb_config_t']]],
+  ['radiopowerlevel',['radioPowerLevel',['../structevb__config__t.html#aaafeab940c6ac52e9353db596043ff41',1,'evb_config_t']]],
   ['rb',['rb',['../structprcopt__t.html#af28f0730feba407b68f9625166552240',1,'prcopt_t']]],
   ['rcv',['rcv',['../struct_p_a_c_k_e_d.html#acc5234ecdd35b25f79485517be8eed92',1,'PACKED']]],
   ['rcvstds',['rcvstds',['../structprcopt__t.html#aa1d2bd9e74bd58326313ea4efafefb66',1,'prcopt_t']]],
@@ -20,6 +18,7 @@ var searchData=
   ['reserved',['reserved',['../struct_p_a_c_k_e_d.html#a5a95cc5978aeda6fbeaca9b0451e9206',1,'PACKED::reserved()'],['../struct_p_a_c_k_e_d.html#a222c6bb38b9f729f510d65275e774dd9',1,'PACKED::reserved()'],['../structsbsmsg__t.html#a911dfebcb2e90e62e40e3be8ec33f93d',1,'sbsmsg_t::reserved()'],['../structs_chunk_header.html#a351ddedfb03b6d7eb91b76fa9947da27',1,'sChunkHeader::reserved()']]],
   ['reserved1',['reserved1',['../struct_p_a_c_k_e_d.html#a9ded13b8aabeb87dc72c00d2d4e44fbd',1,'PACKED']]],
   ['reserved2',['reserved2',['../struct_p_a_c_k_e_d.html#aaee0e17db7d7ddbe0abb8a50ea8a591b',1,'PACKED']]],
+  ['reset_5fbaseline_5ferror',['reset_baseline_error',['../structprcopt__t.html#ab1c1b12409617d7df6519974da0fe1d5',1,'prcopt_t']]],
   ['result',['result',['../structbootloader__state__t.html#a792875857ea2c3805cb0e0a5cc8d7efd',1,'bootloader_state_t']]],
   ['ringbuffers',['ringBuffers',['../structcom__manager__t.html#a96e9b622e9ce79bafbe1f603b20e2a20',1,'com_manager_t']]],
   ['rmchandler',['rmcHandler',['../structcom__manager__t.html#aca2b8672eb68926dc59f47d615492c2d',1,'com_manager_t']]],

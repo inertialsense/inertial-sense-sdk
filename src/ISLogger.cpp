@@ -17,7 +17,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -25,9 +24,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <set>
 #include <sstream>
 
+#include "ISFileManager.h"
 #include "ISLogger.h"
 #include "ISDataMappings.h"
-#include "ISUtilities.h"
+#include "ISLogFileFactory.h"
+
+#include "convert_ins.h"
+
+
+#if PLATFORM_IS_EVB_2
+#include "rtc.h"
+typedef struct
+{
+    uint32_t year, month, day, week, hour, minute, second;
+} date_time_t;
+#endif
 
 #if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
 
@@ -62,7 +73,7 @@ cISLogger::cISLogger()
 	m_enabled = false;
 	m_logStats = new cLogStats;
 	m_logStats->Clear();
-	m_errorFile = NULL;
+	m_errorFile = CreateISLogFile();
 	m_lastCommTime = 0;
 	m_timeoutFlushSeconds = 0;
 }
@@ -71,6 +82,7 @@ cISLogger::cISLogger()
 cISLogger::~cISLogger()
 {
 	Cleanup();
+	CloseISLogFile(m_errorFile);
 	delete m_logStats;
 }
 
@@ -80,18 +92,13 @@ void cISLogger::Cleanup()
 	// Delete old devices
 	for (unsigned int i = 0; i < m_devices.size(); i++)
 	{
-		if (m_devices[i] != NULL)
+		if (m_devices[i] != NULLPTR)
 		{
 			delete m_devices[i];
 		}
 	}
 	m_devices.clear();
 	m_logStats->Clear();
-	if (m_errorFile != NULL)
-	{
-		fclose(m_errorFile);
-		m_errorFile = NULL;
-	}
 }
 
 
@@ -100,17 +107,16 @@ void cISLogger::Update()
 	// if we have a timeout param and the time has elapsed, shutdown
 	if (m_lastCommTime == 0)
 	{
-		m_lastCommTime = time(NULLPTR);
+		m_lastCommTime = GetTime();
 	}
-	else if (m_timeoutFlushSeconds > 0 && time(NULLPTR) - m_lastCommTime >= m_timeoutFlushSeconds)
+	else if (m_timeoutFlushSeconds > 0 && GetTime() - m_lastCommTime >= m_timeoutFlushSeconds)
 	{
 		for (unsigned int i = 0; i < m_devices.size(); i++)
 		{
 			m_devices[i]->Flush();
 		}
 	}
-	_UTIMEBUF buf{ time(NULL), time(NULL) };
-	_UTIME((m_directory + "/stats.txt").c_str(), &buf);
+	ISFileManager::TouchFile(m_directory + "/stats.txt");
 }
 
 
@@ -125,7 +131,7 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 	m_logType = logType;
 	m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
     maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.01f, 0.99f);
-	uint64_t availableSpace = cISLogger::GetDirectorySpaceAvailable(m_directory);
+	uint64_t availableSpace = ISFileManager::GetDirectorySpaceAvailable(m_directory);
 	m_maxDiskSpace = (maxDiskSpacePercent <= 0.0f ? availableSpace : (uint64_t)(availableSpace * maxDiskSpacePercent));
 
 	// ensure there are between min and max file count
@@ -143,14 +149,7 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 	}
 
 	// make sure chunk size is valid
-	if (maxChunkSize > m_maxFileSize)
-	{
-		m_maxChunkSize = _MIN(m_maxFileSize, MAX_CHUNK_SIZE);
-	}
-	else
-	{
-		m_maxChunkSize = _MIN(maxChunkSize, MAX_CHUNK_SIZE);
-	}
+	m_maxChunkSize = _MIN(maxChunkSize, m_maxFileSize);
 
 	// create root dir
 	_MKDIR(m_directory.c_str());
@@ -170,9 +169,9 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 	}
 
 	// create empty stats file to track timestamps
-	fstream fs;
-	fs.open((m_directory + "/" + subDirectory + "/stats.txt").c_str(), ios::out);
-	fs.close();
+    string str = m_directory + "/" + subDirectory + "/stats.txt";
+	cISLogFileBase* statsFile = CreateISLogFile(str, "w");
+	CloseISLogFile(statsFile);
 
 	// Initialize devices
 	return InitDevicesForWriting(numDevices);
@@ -181,12 +180,21 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 
 string cISLogger::CreateCurrentTimestamp()
 {
-	// Create timestamp
 	char buf[80];
-	time_t rawtime;
-	time(&rawtime);
+
+#if PLATFORM_IS_EVB_2
+	date_time_t rtc;
+	rtc_get_date(RTC, &rtc.year, &rtc.month, &rtc.day, &rtc.week);
+	rtc_get_time(RTC, &rtc.hour, &rtc.minute, &rtc.second);
+	snprintf(buf, _ARRAY_BYTE_COUNT(buf), "%.4d%.2d%.2d_%.2d%.2d%.2d",
+			rtc.year, rtc.month, rtc.day, rtc.hour, rtc.minute, rtc.second);
+#else
+// Create timestamp
+	time_t rawtime = GetTime();
 	struct tm * timeinfo = localtime(&rawtime);
 	strftime(buf, 80, "%Y%m%d_%H%M%S", timeinfo);
+#endif
+
 	return string(buf);
 }
 
@@ -228,294 +236,20 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 		{
 		default:
 		case LOGTYPE_DAT:	m_devices[i] = new cDeviceLogSerial();	break;
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
 		case LOGTYPE_SDAT:	m_devices[i] = new cDeviceLogSorted();	break;
 		case LOGTYPE_CSV:	m_devices[i] = new cDeviceLogCSV();		break;
 		case LOGTYPE_JSON:	m_devices[i] = new cDeviceLogJSON();	break;
 		case LOGTYPE_KML:	m_devices[i] = new cDeviceLogKML();		break;
+#endif
 		}
 
 		m_devices[i]->InitDeviceForWriting(i, m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize, m_maxChunkSize);
 	}
 
-#ifdef _MSC_VER
+	m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
 
-	fopen_s(&m_errorFile, (m_directory + "/errors.txt").c_str(), "wb");
-
-#else
-
-	m_errorFile = fopen((m_directory + "/errors.txt").c_str(), "wb");
-
-#endif
-
-	struct stat sb;
-	return (stat(m_directory.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
-}
-
-
-bool cISLogger::GetAllFilesInDirectory(const string& directory, bool recursive, vector<string>& files)
-{
-	return GetAllFilesInDirectory(directory, recursive, g_emptyString, files);
-}
-
-bool cISLogger::GetAllFilesInDirectory(const string& directory, bool recursive, const string& regexPattern, vector<string>& files)
-{
-	size_t startSize = files.size();
-	regex* rePtr = NULL;
-	regex re;
-	if (regexPattern.length() != 0)
-	{
-		re = regex(regexPattern, regex::icase);
-		rePtr = &re;
-	}
-
-#if PLATFORM_IS_WINDOWS
-
-	HANDLE dir;
-	WIN32_FIND_DATAA file_data;
-	if ((dir = FindFirstFileA((directory + "/*").c_str(), &file_data)) == INVALID_HANDLE_VALUE)
-	{
-		return false;
-	}
-	do
-	{
-		string file_name = file_data.cFileName;
-		string full_file_name = directory + "/" + file_name;
-		if (file_name[0] == '.' || (rePtr != NULL && !regex_search(full_file_name, re)))
-		{
-			continue;
-		}
-		else if ((file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
-		{
-			if (recursive)
-			{
-				GetAllFilesInDirectory(full_file_name, true, files);
-			}
-			continue;
-		}
-
-		files.push_back(full_file_name);
-	} while (FindNextFileA(dir, &file_data));
-	FindClose(dir);
-
-#else
-
-	class dirent* ent;
-	class stat st;
-	DIR* dir = opendir(directory.c_str());
-
-	if (dir == NULL)
-	{
-		return false;
-	}
-
-	while ((ent = readdir(dir)) != NULL)
-	{
-		const string file_name = ent->d_name;
-		const string full_file_name = directory + "/" + file_name;
-
-		// if file is current path or does not exist (-1) then continue
-		if (file_name[0] == '.' || stat(full_file_name.c_str(), &st) == -1 || (rePtr != NULL && !regex_search(full_file_name, re)))
-		{
-			continue;
-		}
-		else if ((st.st_mode & S_IFDIR) != 0)
-		{
-			if (recursive)
-			{
-				GetAllFilesInDirectory(full_file_name, true, files);
-			}
-			continue;
-		}
-
-		files.push_back(full_file_name);
-	}
-	closedir(dir);
-
-#endif
-
-	return (files.size() != startSize);
-}
-
-
-void cISLogger::DeleteDirectory(const string& directory, bool recursive)
-{
-
-#if PLATFORM_IS_WINDOWS
-
-	HANDLE dir;
-	WIN32_FIND_DATAA file_data;
-	if ((dir = FindFirstFileA((directory + "/*").c_str(), &file_data)) == INVALID_HANDLE_VALUE)
-	{
-		return;
-	}
-	do
-	{
-		const string file_name = file_data.cFileName;
-		const string full_file_name = directory + "/" + file_name;
-		const bool is_directory = (file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-		if (file_name[0] == '.')
-		{
-			continue;
-		}
-		else if (is_directory)
-		{
-			if (recursive)
-			{
-				DeleteDirectory(full_file_name);
-			}
-			continue;
-		}
-		remove(full_file_name.c_str());
-	} while (FindNextFileA(dir, &file_data));
-	FindClose(dir);
-
-#else
-
-	class dirent* ent;
-	class stat st;
- 	
-        DIR* dir;  
-	if ((dir = opendir(directory.c_str())) == NULL) 
-	{
-		return;
-	}
-
-        while ((ent = readdir(dir)) != NULL)
-	{
-		const string file_name = ent->d_name;
-		const string full_file_name = directory + "/" + file_name;
-
-		// if file is current path or does not exist (-1) then continue
-		if (file_name[0] == '.' || stat(full_file_name.c_str(), &st) == -1)
-		{
-			continue;
-		}
-		else if ((st.st_mode & S_IFDIR) != 0)
-		{
-			if (recursive)
-			{
-				DeleteDirectory(full_file_name.c_str());
-			}
-			continue;
-		}
-		remove(full_file_name.c_str());
-	}
-	closedir(dir);
-
-#endif
-
-	_RMDIR(directory.c_str());
-}
-
-
-uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, bool recursive)
-{
-	vector<file_info_t> files;
-	return GetDirectorySpaceUsed(directory, "", files, true, recursive);
-}
-
-
-uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, vector<file_info_t>& files, bool sortByDate, bool recursive)
-{
-	return GetDirectorySpaceUsed(directory, "", files, sortByDate, recursive);
-}
-
-
-uint64_t cISLogger::GetDirectorySpaceUsed(const string& directory, string regexPattern, vector<file_info_t>& files, bool sortByDate, bool recursive)
-{
-	vector<string> fileNames;
-	GetAllFilesInDirectory(directory, recursive, regexPattern, fileNames);
-	uint64_t spaceUsed = 0;
-	for (unsigned int i = 0; i < fileNames.size(); i++)
-	{
-		file_info_t info;
-		info.name = fileNames[i];
-		struct stat st;
-		stat(info.name.c_str(), &st);
-		info.size = st.st_size;
-		info.lastModificationDate = st.st_mtime;
-		files.push_back(info);
-		spaceUsed += info.size;
-	}
-
-	if (sortByDate)
-	{
-		struct
-		{
-			bool operator()(const file_info_t& a, const file_info_t& b)
-			{
-				int compare = (a.lastModificationDate == b.lastModificationDate ? 0 : (a.lastModificationDate < b.lastModificationDate ? -1 : 1));
-				if (compare == 0)
-				{
-					compare = a.name.compare(b.name);
-				}
-				return compare < 0;
-			}
-		} customSortDate;
-		sort(files.begin(), files.end(), customSortDate);
-	}
-	else
-	{
-		struct
-		{
-			bool operator()(const file_info_t& a, const file_info_t& b)
-			{
-				return a.name < b.name;
-			}
-		} customSortName;
-		sort(files.begin(), files.end(), customSortName);
-	}
-
-	return spaceUsed;
-}
-
-
-uint64_t cISLogger::GetDirectorySpaceAvailable(const string& directory)
-{
-
-#if PLATFORM_IS_WINDOWS
-
-	ULARGE_INTEGER space;
-	memset(&space, 0, sizeof(space));
-	char fullPath[MAX_PATH];
-	GetFullPathNameA(directory.c_str(), MAX_PATH, fullPath, NULL);
-	bool created = (_MKDIR(fullPath) == 0);
-	GetDiskFreeSpaceExA(fullPath, &space, NULL, NULL);
-	if (created)
-	{
-		_RMDIR(fullPath);
-	}
-	return (uint64_t)space.QuadPart;
-
-#else
-
-	struct statvfs stat;
-	memset(&stat, 0, sizeof(stat));
-	char fullPath[PATH_MAX];
-	if (realpath(directory.c_str(), fullPath) == NULL)
-	{
-		return 0;
-	}
-	bool created = (_MKDIR(fullPath) == 0);
-	statvfs(fullPath, &stat);
-	if (created)
-	{
-		_RMDIR(fullPath);
-	}
-	return (uint64_t)stat.f_bsize * (uint64_t)stat.f_bavail;
-
-#endif
-
-}
-
-string cISLogger::GetFileName(const string& path)
-{
-	size_t lastSepIndex = path.find_last_of("\\/");
-	if (lastSepIndex != string::npos)
-	{
-		return path.substr(lastSepIndex + 1);
-	}
-	return path;
+    return ISFileManager::PathIsDir(m_directory);
 }
 
 bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vector<string> serials)
@@ -537,8 +271,8 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 	}
 
 	// get all files, sorted by name
-	vector<file_info_t> files;
-	GetDirectorySpaceUsed(directory, fileExtensionRegex, files, false, false);
+	vector<ISFileManager::file_info_t> files;
+	ISFileManager::GetDirectorySpaceUsed(directory, fileExtensionRegex, files, false, false);
 	if (files.size() == 0)
 	{
 		return false;
@@ -546,7 +280,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 
 	for (size_t i = 0; i < files.size(); i++)
 	{
-		string name = GetFileName(files[i].name);
+		string name = ISFileManager::GetFileName(files[i].name);
 
 		// check for log file prefix
 		size_t endOfLogPrefixIndex = name.find(IS_LOG_FILE_PREFIX);
@@ -576,8 +310,8 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 				// check for unique serial numbers
                 if (serialNumbers.find(serialNumber) == serialNumbers.end())
                 {
-                    if ((find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end() ||
-                        find(serials.begin(), serials.end(), "ALL") != serials.end())) // and that it is a serial number we want to use
+                    if (serials.size() == 0 || ((find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end() ||
+                        find(serials.begin(), serials.end(), "ALL") != serials.end()))) // and that it is a serial number we want to use
                     {
                         serialNumbers.insert(serialNumber);
 
@@ -586,9 +320,11 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
                         {
                         default:
                         case cISLogger::LOGTYPE_DAT: m_devices.push_back(new cDeviceLogSerial()); break;
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
                         case cISLogger::LOGTYPE_SDAT: m_devices.push_back(new cDeviceLogSorted()); break;
                         case cISLogger::LOGTYPE_CSV: m_devices.push_back(new cDeviceLogCSV()); break;
                         case cISLogger::LOGTYPE_JSON: m_devices.push_back(new cDeviceLogJSON()); break;
+#endif
                         }
                         m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
                     }
@@ -607,40 +343,29 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 
 bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
-	m_lastCommTime = time(NULLPTR);
+	m_lastCommTime = GetTime();
 
 	if (!m_enabled)
 	{
-		if (m_errorFile != NULL)
-		{
-			fprintf(m_errorFile, "Logger is not enabled\r\n");
-		}
+        m_errorFile->printf("Logger is not enabled\r\n");
 		return false;
 	}
 	else if (device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
-		if (m_errorFile != NULL)
-		{
-			fprintf(m_errorFile, "Invalid device handle or NULL data\r\n");
-		}
+        m_errorFile->printf("Invalid device handle or NULL data\r\n");
 		return false;
 	}
 	else if (LogHeaderIsCorrupt(dataHdr))
 	{
-		if (m_errorFile != NULL)
-		{
-			fprintf(m_errorFile, "Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
-		}
+        m_errorFile->printf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
 		m_logStats->LogError(dataHdr);
 	}
     else if (!m_devices[device]->SaveData(dataHdr, dataBuf))
     {
-        if (m_errorFile != NULL)
-        {
-            fprintf(m_errorFile, "Underlying log implementation failed to save\r\n");
-        }
+        m_errorFile->printf("Underlying log implementation failed to save\r\n");
         m_logStats->LogError(dataHdr);
     }
+#if 1
     else
     {
         double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
@@ -649,18 +374,23 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
             // write to diagnostic text file
-            std::ofstream outfile;
+#if 0        
             std::ostringstream outFilePath;
             outFilePath << m_directory << "/diagnostic_" << m_devices[device]->GetDeviceInfo()->serialNumber << ".txt";
-            outfile.open(outFilePath.str(), std::ios_base::app);
+            cISLogFileBase *outfile = CreateISLogFile(outFilePath.str(), "a");
+#else
+            cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(m_devices[device]->GetDeviceInfo()->serialNumber) + ".txt", "a");
+#endif            
             std::string msg = (((diag_msg_t*)dataBuf)->message);
-            outfile.write(msg.c_str(), msg.length());
-            if (msg.length() > 0 && msg[msg.length() - 1] != '\n')
+            outfile->write(msg.c_str(), msg.length());
+            if (msg.length() > 0 && *msg.end() != '\n')
             {
-                outfile << std::endl;
+                outfile->putch('\n');
             }
+            CloseISLogFile(outfile);
         }
     }
+#endif
 	return true;
 }
 
@@ -675,10 +405,7 @@ p_data_t* cISLogger::ReadData(unsigned int device)
 	p_data_t* data = NULL;
 	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
 	{
-		if (m_errorFile != NULL)
-		{
-			fprintf(m_errorFile, "Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
-		}
+	    m_errorFile->printf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
 		m_logStats->LogError(&data->hdr);
 		data = NULL;
 	}
@@ -713,11 +440,7 @@ void cISLogger::CloseAllFiles()
 	}
 
     m_logStats->WriteToFile(m_directory + "/stats.txt");
-    if (m_errorFile != NULL)
-    {
-        fclose(m_errorFile);
-        m_errorFile = NULL;
-    }
+    CloseISLogFile(m_errorFile);
 }
 
 
@@ -914,6 +637,7 @@ cLogStatDataId::cLogStatDataId()
 	lastTimestamp = 0.0;
 	lastTimestampDelta = 0.0;
 	maxTimestampDelta = 0.0;
+    minTimestampDelta = 1.0E6;
     timestampDeltaCount = 0;
 	timestampDropCount = 0;
 }
@@ -928,6 +652,7 @@ void cLogStatDataId::LogTimestamp(double timestamp)
     else if (lastTimestamp > 0.0)
     {
         double delta = fabs(timestamp - lastTimestamp);
+        minTimestampDelta = _MIN(delta, minTimestampDelta);
         maxTimestampDelta = _MAX(delta, maxTimestampDelta);
         totalTimeDelta += delta;
         averageTimeDelta = (totalTimeDelta / (double)++timestampDeltaCount);
@@ -942,11 +667,15 @@ void cLogStatDataId::LogTimestamp(double timestamp)
 
 void cLogStatDataId::Printf()
 {
-	printf(" Count: %llu\r\n", (unsigned long long)count);
-	printf(" Errors: %llu\r\n", (unsigned long long)errorCount);
-	printf(" Time delta avg: %f\r\n", averageTimeDelta);
-	printf(" Max time delta: %f\r\n", maxTimestampDelta);
+	
+#if !PLATFORM_IS_EMBEDDED
+	
+	printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
+	printf(" Time delta: (ave, min, max) %f, %f, %f\r\n", averageTimeDelta, minTimestampDelta, maxTimestampDelta);
 	printf(" Time delta drop: %llu\r\n", (unsigned long long)timestampDropCount);
+	
+#endif
+
 }
 
 cLogStats::cLogStats()
@@ -956,7 +685,11 @@ cLogStats::cLogStats()
 
 void cLogStats::Clear()
 {
-	dataIdStats.clear();
+	memset(dataIdStats, 0, sizeof(dataIdStats));
+    for (int id = 0; id < DID_COUNT; id++)
+    {
+        dataIdStats[id].minTimestampDelta = 1.0E6;
+    }
 	errorCount = 0;
 	count = 0;
 }
@@ -964,7 +697,7 @@ void cLogStats::Clear()
 void cLogStats::LogError(const p_data_hdr_t* hdr)
 {
 	errorCount++;
-	if (hdr != NULL)
+	if (hdr != NULL && hdr->id < DID_COUNT)
 	{
 		cLogStatDataId& d = dataIdStats[hdr->id];
 		d.errorCount++;
@@ -973,57 +706,96 @@ void cLogStats::LogError(const p_data_hdr_t* hdr)
 
 void cLogStats::LogData(uint32_t dataId)
 {
-	cLogStatDataId& d = dataIdStats[dataId];
-	d.count++;
-	count++;
+	if (dataId < DID_COUNT)
+	{
+		cLogStatDataId& d = dataIdStats[dataId];
+		d.count++;
+		count++;
+	}
 }
 
 void cLogStats::LogDataAndTimestamp(uint32_t dataId, double timestamp)
 {
-	cLogStatDataId& d = dataIdStats[dataId];
-	d.count++;
-	count++;
-	if (timestamp != 0.0)
+	if (dataId < DID_COUNT)
 	{
-		d.LogTimestamp(timestamp);
+		cLogStatDataId& d = dataIdStats[dataId];
+		d.count++;
+		count++;
+		if (timestamp != 0.0)
+		{
+			d.LogTimestamp(timestamp);
+		}
 	}
 }
 
 void cLogStats::Printf()
 {
+	
+#if !PLATFORM_IS_EMBEDDED
+	
 	printf("LOG STATS\r\n");
 	printf("----------");
-	printf("Count: %llu\r\n", (unsigned long long)count);
-	printf("Errors: %llu\r\n", (unsigned long long)errorCount);
-	for (map<uint32_t, cLogStatDataId>::iterator i = dataIdStats.begin(); i != dataIdStats.end(); i++)
+	printf("Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
+	for (uint32_t id = 0; id < DID_COUNT; id++)
 	{
-		printf(" DID: %d\r\n", i->first);
-		i->second.Printf();
-		printf("\r\n");
+		if (dataIdStats[id].count != 0)
+		{
+			printf(" DID: %d\r\n", id);
+			dataIdStats[id].Printf();
+			printf("\r\n");
+		}
 	}
+	
+#endif
+	
 }
 
-void cLogStats::WriteToFile(const string &fileName)
+void cLogStats::WriteToFile(const string &file_name)
 {
     if (count != 0)
     {
         // flush log stats to disk
-        ofstream stats;
-        string newline = "\r\n";
-        stats << fixed << setprecision(6);
-        stats.open(fileName, ios::out | ios::binary);
-        stats << "Count: " << count << newline;
-        stats << "Errors: " << errorCount << newline << newline;
-        for (map<uint32_t, cLogStatDataId>::iterator i = dataIdStats.begin(); i != dataIdStats.end(); i++)
+#if 1
+        cISLogFileBase *statsFile = CreateISLogFile(file_name, "wb");        
+        statsFile->printf("Total count: %d,   Total errors: \r\n\r\n", count, errorCount);
+        for (uint32_t id = 0; id < DID_COUNT; id++)
         {
-            stats << "Data Id: " << i->first << " - " << cISDataMappings::GetDataSetName(i->first) << newline;
-            stats << "Count: " << i->second.count << newline;
-            stats << "Errors: " << i->second.errorCount << newline;
-            stats << "Average Timestamp Delta: " << i->second.averageTimeDelta << newline;
-            stats << "Max Timestamp Delta: " << i->second.maxTimestampDelta << newline;
-            stats << "Timestamp Drops: " << i->second.timestampDropCount << newline;
-            stats << newline;
+            cLogStatDataId& stat = dataIdStats[id];
+            if (stat.count == 0 && stat.errorCount == 0)
+            {   // Exclude zero count stats
+                continue;
+            }
+
+            statsFile->printf("Data Id: %d (%s)\r\n", id, cISDataMappings::GetDataSetName(id));
+            statsFile->printf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
+            statsFile->printf("Timestamp Delta (ave, min, max): %d, %d, %d\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
+            statsFile->printf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
+            statsFile->printf("\r\n");
         }
-        stats.close();
+        CloseISLogFile(statsFile);
+#else
+        // The following code doesn't work on the EVB-2.  Converting stringstream to a string causes the system to hang.
+    	CONST_EXPRESSION char CRLF[]= "\r\n";
+        stringstream stats;
+        stats << fixed << setprecision(6);
+        stats << "Total count: " << count << ",   Total errors: " << errorCount << CRLF << CRLF;
+        for (uint32_t id = 0; id < DID_COUNT; id++)
+        {
+            cLogStatDataId& stat = dataIdStats[id];
+            if (stat.count == 0 && stat.errorCount == 0)
+            {   // Exclude zero count stats
+                continue;
+            }
+
+            stats << "Data Id: " << id << " (" << cISDataMappings::GetDataSetName(id) << ")" << CRLF;
+            stats << "Count: " << stat.count << ",   Errors: " << stat.errorCount << CRLF;
+            stats << "Timestamp Delta (ave, min, max): " << stat.averageTimeDelta << ", " << stat.minTimestampDelta << ", " << stat.maxTimestampDelta << CRLF;
+            stats << "Timestamp Drops: " << stat.timestampDropCount << CRLF;
+            stats << CRLF;
+        }
+        cISLogFileBase *statsFile = CreateISLogFile(file_name, "wb");
+        statsFile->puts(stats.str().c_str());
+        CloseISLogFile(statsFile);
+#endif
     }
 }

@@ -156,7 +156,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
-	int periodMs = 50;
+	int defaultperiodMultiple = 50;
 	inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
 
 	if (g_commandLineOptions.asciiMessages.size() != 0)
@@ -171,19 +171,19 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	// depending on command line options. stream various data sets
 	if (g_commandLineOptions.streamINS1)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_1, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_INS_1, g_commandLineOptions.streamINS1);
 	}
 	if (g_commandLineOptions.streamINS2)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_2, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_INS_2, g_commandLineOptions.streamINS2);
 	}
 	if (g_commandLineOptions.streamINS3)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_3, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_INS_3, g_commandLineOptions.streamINS3);
 	}
 	if (g_commandLineOptions.streamINS4)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_4, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_INS_4, g_commandLineOptions.streamINS4);
 	}
 	if (g_commandLineOptions.streamSysSensors)
 	{
@@ -191,39 +191,39 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.streamDualIMU)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_DUAL_IMU, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_DUAL_IMU, g_commandLineOptions.streamDualIMU);
 	}
 	if (g_commandLineOptions.streamDThetaVel)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU, g_commandLineOptions.streamDThetaVel);
 	}
 	if (g_commandLineOptions.streamGPS)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_GPS1_POS, 1);
+		inertialSenseInterface.BroadcastBinaryData(DID_GPS1_POS, g_commandLineOptions.streamGPS);
 	}
     if (g_commandLineOptions.streamRtkPos)
     {
-        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS, 1);
+        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS, g_commandLineOptions.streamRtkPos);
     }
     if (g_commandLineOptions.streamRtkRel)
     {
-        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_REL, 1);
+        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_REL, g_commandLineOptions.streamRtkRel);
     }
     if (g_commandLineOptions.streamMag1)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_1, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_1, g_commandLineOptions.streamMag1);
 	}
 	if (g_commandLineOptions.streamMag2)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_2, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_2, g_commandLineOptions.streamMag2);
 	}
 	if (g_commandLineOptions.streamBaro)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, g_commandLineOptions.streamBaro);
 	}
 	if (g_commandLineOptions.streamRTOS)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_RTOS_INFO, 250);
+		inertialSenseInterface.BroadcastBinaryData(DID_RTOS_INFO, g_commandLineOptions.streamRTOS);
         config_t cfg;
         cfg.system = CFG_SYS_CMD_ENABLE_RTOS_STATS;
         cfg.invSystem = ~cfg.system;
@@ -231,7 +231,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.streamSensorsADC)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, periodMs);
+		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, g_commandLineOptions.streamSensorsADC);
 	}
 	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
 	{

@@ -189,53 +189,101 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
             }
         }
+		else if (startsWith(a, "-msgBaro="))
+		{
+			g_commandLineOptions.streamBaro = (int)atof(&a[9]);
+		}
 		else if (startsWith(a, "-msgBaro"))
 		{
-			g_commandLineOptions.streamBaro = true;
+			g_commandLineOptions.streamBaro = 50;
+		}
+		else if (startsWith(a, "-msgDualIMU="))
+		{
+			g_commandLineOptions.streamDualIMU = (int)atof(&a[12]);
 		}
 		else if (startsWith(a, "-msgDualIMU"))
 		{
-			g_commandLineOptions.streamDualIMU = true;
+			g_commandLineOptions.streamDualIMU = 50;
+		}
+		else if (startsWith(a, "-msgGPS="))
+		{
+			g_commandLineOptions.streamGPS = (int)atof(&a[8]);
 		}
         else if (startsWith(a, "-msgGPS"))
 		{
-			g_commandLineOptions.streamGPS = true;
+			g_commandLineOptions.streamGPS = 1;
+		}
+		else if (startsWith(a, "-msgIMU1="))
+		{
+			g_commandLineOptions.streamIMU1 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgIMU1"))
 		{
-			g_commandLineOptions.streamIMU1 = true;
+			g_commandLineOptions.streamIMU1 = 50;
+		}
+		else if (startsWith(a, "-msgIMU2=")) 
+		{
+			g_commandLineOptions.streamIMU2 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgIMU2"))
 		{
-			g_commandLineOptions.streamIMU2 = true;
+			g_commandLineOptions.streamIMU2 = 50;
+		}
+		else if (startsWith(a, "-msgINS1="))
+		{
+			g_commandLineOptions.streamINS1 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgINS1"))
 		{
-			g_commandLineOptions.streamINS1 = true;
+			g_commandLineOptions.streamINS1 = 50;
+		}
+		else if (startsWith(a, "-msgINS2="))
+		{
+			g_commandLineOptions.streamINS2 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgINS2"))
 		{
-			g_commandLineOptions.streamINS2 = true;
+			g_commandLineOptions.streamINS2 = 50;
+		}
+		else if (startsWith(a, "-msgINS3="))
+		{
+			g_commandLineOptions.streamINS3 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgINS3"))
 		{
-			g_commandLineOptions.streamINS3 = true;
+			g_commandLineOptions.streamINS3 = 50;
+		}
+		else if (startsWith(a, "-msgINS4="))
+		{
+			g_commandLineOptions.streamINS4 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgINS4"))
 		{
-			g_commandLineOptions.streamINS4 = true;
+			g_commandLineOptions.streamINS4 = 50;
+		}
+		else if (startsWith(a, "-msgMag1="))
+		{
+			g_commandLineOptions.streamMag1 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgMag1"))
 		{
-			g_commandLineOptions.streamMag1 = true;
+			g_commandLineOptions.streamMag1 = 50;
+		}
+		else if (startsWith(a, "-msgMag2="))
+		{
+			g_commandLineOptions.streamMag2 = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgMag2"))
 		{
-			g_commandLineOptions.streamMag2 = true;
+			g_commandLineOptions.streamMag2 = 50;
+		}
+		else if (startsWith(a, "-msgPIMU="))
+		{
+			g_commandLineOptions.streamDThetaVel = (int)atof(&a[9]);
 		}
 		else if (startsWith(a, "-msgPIMU"))
 		{
-			g_commandLineOptions.streamDThetaVel = true;
+			g_commandLineOptions.streamDThetaVel = 50;
 		}
 		else if (startsWith(a, "-msgPresetPPD"))
 		{
@@ -245,25 +293,45 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
 		}
+		else if (startsWith(a, "-msgRtkPos="))
+		{
+			g_commandLineOptions.streamRtkPos = (int)atof(&a[11]);
+		}
         else if (startsWith(a, "-msgRtkPos"))
         {
-            g_commandLineOptions.streamRtkPos = true;
+            g_commandLineOptions.streamRtkPos = 1;
         }
+		else if (startsWith(a, "-msgRtkRel="))
+		{
+			g_commandLineOptions.streamRtkRel = (int)atof(&a[11]);
+		}
         else if (startsWith(a, "-msgRtkRel"))
         {
-            g_commandLineOptions.streamRtkRel = true;
+            g_commandLineOptions.streamRtkRel = 1;
         }
+		else if (startsWith(a, "-msgRTOS="))
+		{
+			g_commandLineOptions.streamRTOS = (int)atof(&a[9]);
+		}
         else if (startsWith(a, "-msgRTOS"))
 		{
-			g_commandLineOptions.streamRTOS = true;
+			g_commandLineOptions.streamRTOS = 250;
+		}
+		else if (startsWith(a, "-msgSensorsADC="))
+		{
+			g_commandLineOptions.streamSensorsADC = (int)atof(&a[15]);
 		}
 		else if (startsWith(a, "-msgSensorsADC"))
 		{
-			g_commandLineOptions.streamSensorsADC = true;
+			g_commandLineOptions.streamSensorsADC = 50;
+		}
+		else if (startsWith(a, "-msgSensors="))
+		{
+			g_commandLineOptions.streamSysSensors = (int)atof(&a[12]);
 		}
 		else if (startsWith(a, "-msgSensors"))
 		{
-			g_commandLineOptions.streamSysSensors = true;
+			g_commandLineOptions.streamSysSensors = 50;
 		}
         else if (startsWith(a, "-persistent"))
         {
@@ -375,7 +443,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS -msgBaro" << boldOff << " # stream multiple at 115200 bps" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b= " << EXAMPLE_FIRMWARE_FILE          << boldOff << " # bootload firmware" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=* -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
@@ -395,15 +463,19 @@ void cltool_outputUsage()
 	cout << "OPTIONS (Message Streaming)" << endl;
 	cout << "    -msgPresetPPD " << boldOff << "  stream preset: post processing data sets" << endlbOn;
 	cout << "    -msgPresetINS2" << boldOff << "  stream preset: INS2 sets" << endlbOn;
-	cout << "    -msgINS[n]    " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
-	cout << "    -msgDualIMU   " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
-	cout << "    -msgPIMU      " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
-	cout << "    -msgMag[n]    " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
-	cout << "    -msgBaro      " << boldOff << "  stream DID_BAROMETER" << endlbOn;
-	cout << "    -msgGPS       " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
-	cout << "    -msgSensors   " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
-	cout << "    -msgRtkRel    " << boldOff << "  stream DID_GPS1_RTK_REL" << endlbOn;
+	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
+	cout << "    -msgDualIMU *  " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
+	cout << "    -msgPIMU *     " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
+	cout << "    -msgMag[n] *   " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
+	cout << "    -msgBaro *     " << boldOff << "  stream DID_BAROMETER" << endlbOn;
+	cout << "    -msgGPS *      " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
+	cout << "    -msgSensors *  " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
+	cout << "    -msgRtkPos *   " << boldOff << "  stream DID_GPS1_RTK_POS" << endlbOn;
+	cout << "    -msgRtkRel *   " << boldOff << "  stream DID_GPS1_RTK_REL" << endlbOn;
     cout << "    -persistent   " << boldOff << "  save current streams as persistent messages enabled on startup" << endlbOn;
+	cout << "                * Message can be appended with =<PERIODMULTIPLE> to change message frequency. Period is then equal to message" << endlbOn;
+	cout << "                  source times the PERIODMULTIPLE. If not appended the data will stream at a default rate." << endlbOn;
+	cout << "                  Example: -msgINS2=10 will stream data at startupNavDtMs x 10" << endlbOn;
     cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            enable logging" << endlbOn;
@@ -447,8 +519,7 @@ void cltool_outputHelp()
 bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
 {
 	const nvm_flash_cfg_t& flashConfig = inertialSenseInterface.GetFlashConfig();
-	const map_lookup_name_t& globalMap = cISDataMappings::GetMap();
-	const map_name_to_info_t& flashMap = globalMap.at(DID_FLASH_CONFIG);
+	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	if (flashConfigString.length() < 2)
 	{

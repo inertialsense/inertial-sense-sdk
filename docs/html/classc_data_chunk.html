@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -87,28 +87,30 @@ Inheritance diagram for cDataChunk:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a5ed5f6def610a2622a1e7137d63153de"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a5ed5f6def610a2622a1e7137d63153de">cDataChunk</a> (uint32_t maxSize=<a class="el" href="_data_chunk_8h.html#a523eaf5b650f38c307a6aab7f957fa2b">MAX_CHUNK_SIZE</a>, const char *name=&quot;PDAT&quot;)</td></tr>
-<tr class="separator:a5ed5f6def610a2622a1e7137d63153de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab52d48f51b13517da7be24a32dc46993"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#ab52d48f51b13517da7be24a32dc46993">GetMaxSize</a> ()</td></tr>
-<tr class="separator:ab52d48f51b13517da7be24a32dc46993"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a865bd4c8a2354701ccd630987fa238fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a865bd4c8a2354701ccd630987fa238fc">SetMaxSize</a> (uint32_t maxSize)</td></tr>
-<tr class="separator:a865bd4c8a2354701ccd630987fa238fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75611c04040b6d62c526d10d7c39df96"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a75611c04040b6d62c526d10d7c39df96">cDataChunk</a> ()</td></tr>
+<tr class="separator:a75611c04040b6d62c526d10d7c39df96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34c8f00c19c86946fe98e4de0a0ae4dc"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a34c8f00c19c86946fe98e4de0a0ae4dc">~cDataChunk</a> ()</td></tr>
+<tr class="separator:a34c8f00c19c86946fe98e4de0a0ae4dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d3cedb032e759af615f0ae8bd2df268"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a2d3cedb032e759af615f0ae8bd2df268">Init</a> (uint32_t maxSize=<a class="el" href="_data_chunk_8h.html#a57b6b9aec20883f8d67aadf2fc183bcd">DEFAULT_CHUNK_DATA_SIZE</a>, const char *name=&quot;PDAT&quot;)</td></tr>
+<tr class="separator:a2d3cedb032e759af615f0ae8bd2df268"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33d803e4c2d1e085449d223f47dfd46f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a33d803e4c2d1e085449d223f47dfd46f">Resize</a> (uint32_t maxSize)</td></tr>
+<tr class="separator:a33d803e4c2d1e085449d223f47dfd46f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a681b1f35b42d3bcb81715a60dfec204c"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a681b1f35b42d3bcb81715a60dfec204c">GetBuffSize</a> ()</td></tr>
+<tr class="separator:a681b1f35b42d3bcb81715a60dfec204c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeae8ab6f7c68c2bc45fe5162900ec8bd"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#aeae8ab6f7c68c2bc45fe5162900ec8bd">GetBuffFree</a> ()</td></tr>
+<tr class="separator:aeae8ab6f7c68c2bc45fe5162900ec8bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd794c02715ccb64c0eb9bcb9a558018"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#afd794c02715ccb64c0eb9bcb9a558018">GetDataSize</a> ()</td></tr>
+<tr class="separator:afd794c02715ccb64c0eb9bcb9a558018"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0995a89fd9cf60f97c75d50aaaa688df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a0995a89fd9cf60f97c75d50aaaa688df">SetName</a> (const char *name)</td></tr>
 <tr class="separator:a0995a89fd9cf60f97c75d50aaaa688df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f524fe986c98eb2dcb13a47dc7cf1e3"><td class="memItemLeft" align="right" valign="top">uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a2f524fe986c98eb2dcb13a47dc7cf1e3">GetDataPtr</a> ()</td></tr>
 <tr class="separator:a2f524fe986c98eb2dcb13a47dc7cf1e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae140e4998f8c6ecb1ab8bb5c3e43062e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#ae140e4998f8c6ecb1ab8bb5c3e43062e">PopFront</a> (uint32_t size)</td></tr>
 <tr class="separator:ae140e4998f8c6ecb1ab8bb5c3e43062e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ca10f80abdc5d27084eb7181690cfd2"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a6ca10f80abdc5d27084eb7181690cfd2">GetByteCountAvailableToRead</a> ()</td></tr>
-<tr class="separator:a6ca10f80abdc5d27084eb7181690cfd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7551c7e0a1db72f4b98521f2ecc9d07d"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a7551c7e0a1db72f4b98521f2ecc9d07d">GetByteCountAvailableToWrite</a> ()</td></tr>
-<tr class="separator:a7551c7e0a1db72f4b98521f2ecc9d07d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd794c02715ccb64c0eb9bcb9a558018"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#afd794c02715ccb64c0eb9bcb9a558018">GetDataSize</a> ()</td></tr>
-<tr class="separator:afd794c02715ccb64c0eb9bcb9a558018"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5af91ed0f1ae167bc2226882718e8f10"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a5af91ed0f1ae167bc2226882718e8f10">WriteToFile</a> (FILE *pFile, int groupNumber=0)</td></tr>
-<tr class="separator:a5af91ed0f1ae167bc2226882718e8f10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a7c5a03d5d0b506513ab9c4714e4890"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a9a7c5a03d5d0b506513ab9c4714e4890">ReadFromFile</a> (FILE *pFile)</td></tr>
-<tr class="separator:a9a7c5a03d5d0b506513ab9c4714e4890"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b2c124f16bf0f36691fdc9c31d9afb7"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a2b2c124f16bf0f36691fdc9c31d9afb7">WriteToFile</a> (<a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *pFile, int groupNumber=0)</td></tr>
+<tr class="separator:a2b2c124f16bf0f36691fdc9c31d9afb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a395cc66fdecc690e993e1bf65acdd618"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a395cc66fdecc690e993e1bf65acdd618">ReadFromFile</a> (<a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *pFile)</td></tr>
+<tr class="separator:a395cc66fdecc690e993e1bf65acdd618"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac75e7ddace3a499b6094f3e78a47ef2d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#ac75e7ddace3a499b6094f3e78a47ef2d">PushBack</a> (uint8_t *d1, uint32_t d1Size, uint8_t *d2=NULL, uint32_t d2Size=0)</td></tr>
 <tr class="separator:ac75e7ddace3a499b6094f3e78a47ef2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b610e208f6d6e6e3f88f1f0bc1166a9"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a7b610e208f6d6e6e3f88f1f0bc1166a9">Clear</a> ()</td></tr>
@@ -121,10 +123,10 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a240ee8725352d4641a2eadbcc93e5447"><td class="memItemLeft" align="right" valign="top">virtual int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a240ee8725352d4641a2eadbcc93e5447">WriteAdditionalChunkHeader</a> (FILE *pFile)</td></tr>
-<tr class="separator:a240ee8725352d4641a2eadbcc93e5447"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a18c46d05d9b8ddcb7aa1238a64456815"><td class="memItemLeft" align="right" valign="top">virtual int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a18c46d05d9b8ddcb7aa1238a64456815">ReadAdditionalChunkHeader</a> (FILE *pFile)</td></tr>
-<tr class="separator:a18c46d05d9b8ddcb7aa1238a64456815"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06a920e465d9da2486dfe2d999f29698"><td class="memItemLeft" align="right" valign="top">virtual int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#a06a920e465d9da2486dfe2d999f29698">WriteAdditionalChunkHeader</a> (<a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *pFile)</td></tr>
+<tr class="separator:a06a920e465d9da2486dfe2d999f29698"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1b06f6c7115131fb8e60067ec253646"><td class="memItemLeft" align="right" valign="top">virtual int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#aa1b06f6c7115131fb8e60067ec253646">ReadAdditionalChunkHeader</a> (<a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *pFile)</td></tr>
+<tr class="separator:aa1b06f6c7115131fb8e60067ec253646"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9b723b6fe1d90c31929816638b71a87"><td class="memItemLeft" align="right" valign="top">virtual int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_chunk.html#ab9b723b6fe1d90c31929816638b71a87">GetHeaderSize</a> ()</td></tr>
 <tr class="separator:ab9b723b6fe1d90c31929816638b71a87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -132,8 +134,8 @@ Protected Member Functions</h2></td></tr>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00070">70</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a5ed5f6def610a2622a1e7137d63153de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ed5f6def610a2622a1e7137d63153de">&#9670;&nbsp;</a></span>cDataChunk()</h2>
+<a id="a75611c04040b6d62c526d10d7c39df96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75611c04040b6d62c526d10d7c39df96">&#9670;&nbsp;</a></span>cDataChunk()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -141,19 +143,8 @@ Protected Member Functions</h2></td></tr>
         <tr>
           <td class="memname">cDataChunk::cDataChunk </td>
           <td>(</td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>maxSize</em> = <code><a class="el" href="_data_chunk_8h.html#a523eaf5b650f38c307a6aab7f957fa2b">MAX_CHUNK_SIZE</a></code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em> = <code>&quot;PDAT&quot;</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -161,7 +152,34 @@ Protected Member Functions</h2></td></tr>
 <p>&lt; Serial number</p>
 <p>&lt; Reserved </p>
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00019">19</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00021">21</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a34c8f00c19c86946fe98e4de0a0ae4dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34c8f00c19c86946fe98e4de0a0ae4dc">&#9670;&nbsp;</a></span>~cDataChunk()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">cDataChunk::~cDataChunk </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00034">34</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
@@ -193,12 +211,12 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classc_sorted_data_chunk.html#afe922cd8dfe5f7a78b8c821d418eebc2">cSortedDataChunk</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00098">98</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00160">160</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a6ca10f80abdc5d27084eb7181690cfd2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ca10f80abdc5d27084eb7181690cfd2">&#9670;&nbsp;</a></span>GetByteCountAvailableToRead()</h2>
+<a id="aeae8ab6f7c68c2bc45fe5162900ec8bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeae8ab6f7c68c2bc45fe5162900ec8bd">&#9670;&nbsp;</a></span>GetBuffFree()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -207,7 +225,7 @@ Protected Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t cDataChunk::GetByteCountAvailableToRead </td>
+          <td class="memname">uint32_t cDataChunk::GetBuffFree </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -224,8 +242,8 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a7551c7e0a1db72f4b98521f2ecc9d07d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7551c7e0a1db72f4b98521f2ecc9d07d">&#9670;&nbsp;</a></span>GetByteCountAvailableToWrite()</h2>
+<a id="a681b1f35b42d3bcb81715a60dfec204c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a681b1f35b42d3bcb81715a60dfec204c">&#9670;&nbsp;</a></span>GetBuffSize()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -234,7 +252,7 @@ Protected Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t cDataChunk::GetByteCountAvailableToWrite </td>
+          <td class="memname">uint32_t cDataChunk::GetBuffSize </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -247,7 +265,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00080">80</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00078">78</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
 
 </div>
 </div>
@@ -266,7 +284,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00072">72</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00135">135</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
@@ -293,7 +311,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00081">81</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00080">80</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
 
 </div>
 </div>
@@ -322,34 +340,37 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classc_sorted_data_chunk.html#abeef3ea5e7d17d38fedf8889d3d29cc5">cSortedDataChunk</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00253">253</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00322">322</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ab52d48f51b13517da7be24a32dc46993"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab52d48f51b13517da7be24a32dc46993">&#9670;&nbsp;</a></span>GetMaxSize()</h2>
+<a id="a2d3cedb032e759af615f0ae8bd2df268"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d3cedb032e759af615f0ae8bd2df268">&#9670;&nbsp;</a></span>Init()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t cDataChunk::GetMaxSize </td>
+          <td class="memname">void cDataChunk::Init </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>maxSize</em> = <code><a class="el" href="_data_chunk_8h.html#a57b6b9aec20883f8d67aadf2fc183bcd">DEFAULT_CHUNK_DATA_SIZE</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>name</em> = <code>&quot;PDAT&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00074">74</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00045">45</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
@@ -369,7 +390,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00082">82</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00141">141</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
@@ -411,12 +432,12 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00048">48</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00106">106</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a18c46d05d9b8ddcb7aa1238a64456815"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a18c46d05d9b8ddcb7aa1238a64456815">&#9670;&nbsp;</a></span>ReadAdditionalChunkHeader()</h2>
+<a id="aa1b06f6c7115131fb8e60067ec253646"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1b06f6c7115131fb8e60067ec253646">&#9670;&nbsp;</a></span>ReadAdditionalChunkHeader()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -427,7 +448,7 @@ Protected Member Functions</h2></td></tr>
         <tr>
           <td class="memname">int32_t cDataChunk::ReadAdditionalChunkHeader </td>
           <td>(</td>
-          <td class="paramtype">FILE *&#160;</td>
+          <td class="paramtype"><a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *&#160;</td>
           <td class="paramname"><em>pFile</em></td><td>)</td>
           <td></td>
         </tr>
@@ -439,57 +460,49 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classc_sorted_data_chunk.html#a24f265e99417818bdd4c68c70514ab6a">cSortedDataChunk</a>.</p>
+<p>Reimplemented in <a class="el" href="classc_sorted_data_chunk.html#a199db7e6149c0d3d5c68a990128ce5dc">cSortedDataChunk</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00246">246</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00316">316</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a9a7c5a03d5d0b506513ab9c4714e4890"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a7c5a03d5d0b506513ab9c4714e4890">&#9670;&nbsp;</a></span>ReadFromFile()</h2>
+<a id="a395cc66fdecc690e993e1bf65acdd618"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a395cc66fdecc690e993e1bf65acdd618">&#9670;&nbsp;</a></span>ReadFromFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int cDataChunk::ReadFromFile </td>
+          <td class="memname">int32_t cDataChunk::ReadFromFile </td>
           <td>(</td>
-          <td class="paramtype">FILE *&#160;</td>
+          <td class="paramtype"><a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *&#160;</td>
           <td class="paramname"><em>pFile</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00153">153</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00217">217</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a865bd4c8a2354701ccd630987fa238fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a865bd4c8a2354701ccd630987fa238fc">&#9670;&nbsp;</a></span>SetMaxSize()</h2>
+<a id="a33d803e4c2d1e085449d223f47dfd46f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33d803e4c2d1e085449d223f47dfd46f">&#9670;&nbsp;</a></span>Resize()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void cDataChunk::SetMaxSize </td>
+          <td class="memname">void cDataChunk::Resize </td>
           <td>(</td>
           <td class="paramtype">uint32_t&#160;</td>
           <td class="paramname"><em>maxSize</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00075">75</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00085">85</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
@@ -509,12 +522,12 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00033">33</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00091">91</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a240ee8725352d4641a2eadbcc93e5447"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a240ee8725352d4641a2eadbcc93e5447">&#9670;&nbsp;</a></span>WriteAdditionalChunkHeader()</h2>
+<a id="a06a920e465d9da2486dfe2d999f29698"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06a920e465d9da2486dfe2d999f29698">&#9670;&nbsp;</a></span>WriteAdditionalChunkHeader()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -525,7 +538,7 @@ Protected Member Functions</h2></td></tr>
         <tr>
           <td class="memname">int32_t cDataChunk::WriteAdditionalChunkHeader </td>
           <td>(</td>
-          <td class="paramtype">FILE *&#160;</td>
+          <td class="paramtype"><a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *&#160;</td>
           <td class="paramname"><em>pFile</em></td><td>)</td>
           <td></td>
         </tr>
@@ -537,22 +550,22 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classc_sorted_data_chunk.html#ad494e8088357d4e56c059d33c95e20a3">cSortedDataChunk</a>.</p>
+<p>Reimplemented in <a class="el" href="classc_sorted_data_chunk.html#a86ec601c6a98ef2f074baea7b8b24a14">cSortedDataChunk</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00239">239</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00310">310</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a5af91ed0f1ae167bc2226882718e8f10"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5af91ed0f1ae167bc2226882718e8f10">&#9670;&nbsp;</a></span>WriteToFile()</h2>
+<a id="a2b2c124f16bf0f36691fdc9c31d9afb7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b2c124f16bf0f36691fdc9c31d9afb7">&#9670;&nbsp;</a></span>WriteToFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int cDataChunk::WriteToFile </td>
+          <td class="memname">int32_t cDataChunk::WriteToFile </td>
           <td>(</td>
-          <td class="paramtype">FILE *&#160;</td>
+          <td class="paramtype"><a class="el" href="classc_i_s_log_file_base.html">cISLogFileBase</a> *&#160;</td>
           <td class="paramname"><em>pFile</em>, </td>
         </tr>
         <tr>
@@ -569,7 +582,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00112">112</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00174">174</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>
@@ -586,7 +599,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00088">88</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00090">90</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
 
 </div>
 </div>

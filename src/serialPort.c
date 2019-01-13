@@ -33,10 +33,17 @@ int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, in
 	}
 	else if (serialPort->pfnOpen != 0)
 	{
-		if (!serialPort->pfnOpen(serialPort, port, baudRate, blocking))
+		int retry = 30;
+
+		while (!serialPort->pfnOpen(serialPort, port, baudRate, blocking))
 		{
-			serialPortClose(serialPort);
-			return 0;
+			if (--retry == 0)
+			{
+				serialPortClose(serialPort);
+				return 0;
+			}
+
+            serialPortSleep(serialPort, 100);
 		}
 		return 1;
 	}
@@ -337,10 +344,10 @@ int serialPortGetByteCountAvailableToWrite(serial_port_t* serialPort)
 
 int serialPortSleep(serial_port_t* serialPort, int sleepMilliseconds)
 {
-	if (serialPort == 0 || serialPort->handle == 0 || serialPort->pfnSleep == 0)
+	if (serialPort == 0 || serialPort->pfnSleep == 0)
 	{
 		return 0;
 	}
 
-	return serialPort->pfnSleep(serialPort, sleepMilliseconds);
+	return serialPort->pfnSleep(sleepMilliseconds);
 }

@@ -21,6 +21,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DeviceLog.h"
 #include "com_manager.h"
 
+#if PLATFORM_IS_EVB_2
+#include "ff.h"
+#endif
+
 
 struct sKmlLog
 {

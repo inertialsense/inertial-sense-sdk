@@ -15,18 +15,76 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdarg.h>
 
 #include "DataChunk.h"
+#include "ISLogFileBase.h"
+#include "ISLogFileFactory.h"
 
-cDataChunk::cDataChunk(uint32_t maxSize, const char* name)
+cDataChunk::cDataChunk()
 {
 	Clear();
-	m_maxSize = maxSize;
-	SetName(name);
 	m_hdr.marker = DATA_CHUNK_MARKER;
 	m_hdr.version = 1;
 	m_hdr.classification = ' ' << 8 | 'U';
 	m_hdr.grpNum = 0; //!< Chunk group number
 	m_hdr.devSerialNum = 0; //!< Serial number
 	m_hdr.reserved = 0; //!< Reserved 
+    m_buffHead = m_buffTail = NULLPTR;
+    m_dataHead = m_dataTail = NULLPTR;
+}
+
+cDataChunk::~cDataChunk()
+{
+    if (m_buffHead != NULLPTR)
+    {
+        FREE(m_buffHead);
+        m_buffHead = m_buffTail = NULLPTR;
+        m_dataHead = m_dataTail = NULLPTR;
+    }
+}
+
+
+void cDataChunk::Init(uint32_t bufSize, const char* name)
+{
+	if (m_buffHead == NULLPTR)
+	{
+		SetName(name);
+	}
+
+#if !PLATFORM_IS_EMBEDDED
+
+	// on non-embedded, just malloc the default chunk size to avoid having to free and do the malloc again as the data grows
+	bufSize = _MAX(bufSize, DEFAULT_CHUNK_DATA_SIZE);
+
+#else
+
+    bufSize = _MAX(bufSize, 512);
+
+#endif
+
+	uint32_t existingSize = GetBuffSize();
+
+	if (bufSize > existingSize)
+	{
+		// cannot use realloc, it is not available on all platfoms and this needs to run on embedded systems
+		uint32_t existingDataSize = GetDataSize();
+		uint32_t existingDataStart = (uint32_t)(m_dataHead - m_buffHead);
+		uint8_t* newPtr = (uint8_t*)MALLOC(bufSize);
+		if (m_buffHead != NULLPTR)
+		{
+			memcpy(newPtr, m_buffHead, existingDataSize);
+			FREE(m_buffHead);
+		}
+		m_buffHead = newPtr;
+		m_buffTail = m_buffHead + bufSize;
+		m_dataHead = m_buffHead + existingDataStart;
+		m_dataTail = m_buffHead + existingDataSize;
+	}
+}
+
+
+// Only increases buffer size if needed
+void cDataChunk::Resize(uint32_t bufSize)
+{
+    Init(bufSize);
 }
 
 
@@ -49,47 +107,51 @@ bool cDataChunk::PushBack(uint8_t* d1, uint32_t d1Size, uint8_t* d2, uint32_t d2
 {
 	// Ensure data will fit
 	uint32_t count = d1Size + d2Size;
-	if (count > GetByteCountAvailableToWrite())
+	if (m_dataHead == NULLPTR)
+	{
+		Init(count);
+	}
+	else if (count > GetBuffFree())
 	{
 		return false;
 	}
 	if (d1Size > 0)
 	{
-		m_data.insert(m_data.end(), d1, d1 + d1Size);
+        memcpy(m_dataTail, d1, d1Size);
+        m_dataTail += d1Size;
 		m_hdr.dataSize += d1Size;
 	}
 	if (d2Size > 0)
 	{
-		m_data.insert(m_data.end(), d2, d2 + d2Size);
+        memcpy(m_dataTail, d2, d2Size);
+        m_dataTail += d2Size;
 		m_hdr.dataSize += d2Size;
 	}
 	m_hdr.invDataSize = ~m_hdr.dataSize;
-	m_bytesRemaining += d1Size + d2Size;
 	return true;
 }
 
 
 uint8_t* cDataChunk::GetDataPtr()
 {
-	if (m_bytesRemaining == 0)
-	{
-		return NULL;
-	}
-	return &m_data[m_data.size() - m_bytesRemaining];
+	return (GetDataSize() == 0 ? NULLPTR : m_dataHead);
 }
 
 
 bool cDataChunk::PopFront(uint32_t size)
 {
-	if (size <= m_bytesRemaining)
+	assert(m_dataHead != NULLPTR);
+
+	if (size <= GetDataSize())
 	{
-		m_bytesRemaining -= size;
+        m_dataHead += size;
+		m_hdr.dataSize -= size;
+		m_hdr.invDataSize = ~m_hdr.dataSize;
 		return true;
 	}
 	else
 	{
-		m_bytesRemaining = 0;
-		m_data.clear();
+        Clear();
 		return false;
 	}
 }
@@ -99,8 +161,8 @@ void cDataChunk::Clear()
 {
 	m_hdr.dataSize = 0; //!< Byte size of data in this chunk
 	m_hdr.invDataSize = ~0; //!< Bitwise inverse of m_Size
-	m_bytesRemaining = 0;
-	m_data.clear();
+    m_dataHead = m_buffHead;
+    m_dataTail = m_buffHead;
 
 #if LOG_CHUNK_STATS
 	memset(m_stats, 0, sizeof(m_stats));
@@ -109,23 +171,25 @@ void cDataChunk::Clear()
 }
 
 // Returns number of bytes written, or -1 for error
-int cDataChunk::WriteToFile(FILE* pFile, int groupNumber)
+int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber)
 {
-	if (pFile == NULL)
+	if (pFile == NULLPTR)
 	{
 		return -1;
 	}
 
+	assert(m_dataHead != NULLPTR);
+
 	m_hdr.grpNum = groupNumber;
 
 	// Write chunk header to file
-	int32_t nBytes = (int32_t)fwrite(&m_hdr, 1, sizeof(sChunkHeader), pFile);
+	int32_t nBytes = static_cast<int32_t>(pFile->write(&m_hdr, sizeof(sChunkHeader)));
 
 	// Write any additional chunk header
 	nBytes += WriteAdditionalChunkHeader(pFile);
 
 	// Write chunk data to file
-	nBytes += (int32_t)fwrite(&m_data[0], 1, m_hdr.dataSize, pFile);
+	nBytes += static_cast<int32_t>(pFile->write(m_dataHead, m_hdr.dataSize));
 
 #if LOG_DEBUG_WRITE
 	static int totalBytes = 0;
@@ -150,15 +214,18 @@ int cDataChunk::WriteToFile(FILE* pFile, int groupNumber)
 
 
 // Returns number of bytes read, or -1 for error
-int cDataChunk::ReadFromFile(FILE* pFile)
+int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile)
 {
-	if (pFile == NULL)
+	if (pFile == NULLPTR)
 	{
 		return -1;
 	}
 
+	// reset state, prepare to read from file
+	Clear();
+
 	// Read chunk header
-	int32_t nBytes = (int32_t)fread(&m_hdr, 1, sizeof(sChunkHeader), pFile);
+	int32_t nBytes = static_cast<int32_t>(pFile->read(&m_hdr, sizeof(sChunkHeader)));
 
 	// Error checking
 	if (m_hdr.dataSize != ~(m_hdr.invDataSize) || nBytes <= 0)
@@ -169,11 +236,16 @@ int cDataChunk::ReadFromFile(FILE* pFile)
 	// Read additional chunk header
 	nBytes += ReadAdditionalChunkHeader(pFile);
 
+//     // Error check data size
+//     if (m_hdr.dataSize > MAX_DATASET_SIZE)
+//     {
+//         return -1;
+//     }
+
 	// Read chunk data
-	m_maxSize = m_hdr.dataSize;
-	m_data.resize(m_hdr.dataSize);
-	nBytes += (int32_t)fread(&m_data[0], 1, m_hdr.dataSize, pFile);
-	m_bytesRemaining = m_hdr.dataSize;
+    Resize(m_hdr.dataSize);
+	m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
+	nBytes += GetDataSize();
 
 #if LOG_DEBUG_READ
 	static int totalBytes = 0;
@@ -186,7 +258,7 @@ int cDataChunk::ReadFromFile(FILE* pFile)
 	printf("\n");
 #endif
 
-	if (m_hdr.marker == DATA_CHUNK_MARKER && nBytes == (int)(GetHeaderSize() + m_hdr.dataSize))
+	if (m_hdr.marker == DATA_CHUNK_MARKER && nBytes == static_cast<int>(GetHeaderSize() + m_hdr.dataSize))
 	{
 
 #if LOG_CHUNK_STATS
@@ -227,8 +299,7 @@ int cDataChunk::ReadFromFile(FILE* pFile)
 	}
 	else
 	{
-		m_bytesRemaining = 0;
-		m_hdr.dataSize = 0;
+        Clear();
 
 		// Error reading from file
 		return -1;
@@ -236,16 +307,14 @@ int cDataChunk::ReadFromFile(FILE* pFile)
 }
 
 
-int32_t cDataChunk::WriteAdditionalChunkHeader(FILE* pFile)
+int32_t cDataChunk::WriteAdditionalChunkHeader(cISLogFileBase* /*pFile*/)
 {
-    (void)pFile;
 	return 0;
 }
 
 
-int32_t cDataChunk::ReadAdditionalChunkHeader(FILE* pFile)
+int32_t cDataChunk::ReadAdditionalChunkHeader(cISLogFileBase* /*pFile*/)
 {
-    (void)pFile;
 	return 0;
 }
 
@@ -259,17 +328,20 @@ int32_t cDataChunk::GetHeaderSize()
 // LOG_CHUNK_STATS
 void logStats( const char *format, ... )
 {
-	static FILE* pFile = NULL;
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
+	static cISLogFileBase* pFile = NULL;
+#endif
+
 	va_list args;
 	va_start( args, format );
 
-#if 0
+#if PLATFORM_IS_EVB_2
 	vprintf( format, args );			// print to terminal
-#endif
-#if 1
-	if( pFile == NULL )
-		pFile = fopen( "STATS_.txt", "w" );
-	vfprintf( pFile, format, args );	// print to file
+#else
+	if( pFile == NULL ) {
+		pFile = CreateISLogFile("STATS_.txt", "w");
+	}
+	pFile->vprintf(format, args);	// print to file
 #endif
 	va_end( args );
 }

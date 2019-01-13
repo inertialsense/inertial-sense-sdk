@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -72,6 +72,9 @@ $(function() {
 </li>
 <li>RAD2DEGMULT
 : <a class="el" href="_i_s_constants_8h.html#a4935c69cfa93f8e2b0170d8e77c68fe7">ISConstants.h</a>
+</li>
+<li>RAMFUNC
+: <a class="el" href="_i_s_constants_8h.html#aef8a9ac028b813702d0b053b4c14b25e">ISConstants.h</a>
 </li>
 <li>raw_data_type_base_station_antenna_position
 : <a class="el" href="data__sets_8h.html#a534377a848e290b847dc1830258b216fad589388167a4194be62d479546af1c4f">data_sets.h</a>
@@ -147,8 +150,8 @@ $(function() {
 , <a class="el" href="ring__buffer_8h.html#a3e14bd0ccff22b0445e633876b97dd1c">ring_buffer.h</a>
 </li>
 <li>ringbuf_copy()
-: <a class="el" href="ring__buffer_8c.html#afbd09a70947ff7f98259f76d3667ec33">ring_buffer.c</a>
-, <a class="el" href="ring__buffer_8h.html#afbd09a70947ff7f98259f76d3667ec33">ring_buffer.h</a>
+: <a class="el" href="ring__buffer_8h.html#afbd09a70947ff7f98259f76d3667ec33">ring_buffer.h</a>
+, <a class="el" href="ring__buffer_8c.html#afbd09a70947ff7f98259f76d3667ec33">ring_buffer.c</a>
 </li>
 <li>ringbuf_findchr()
 : <a class="el" href="ring__buffer_8c.html#ad0bd16799763e119690c8dbcf3ca53f6">ring_buffer.c</a>
@@ -195,121 +198,130 @@ $(function() {
 , <a class="el" href="ring__buffer_8h.html#aeb9d8a6ff3a073c98d3d371c5d693b6d">ring_buffer.h</a>
 </li>
 <li>RMC_BITS_BAROMETER
-: <a class="el" href="data__sets_8h.html#a6af1c6a1f0d14aac743e5b15b32f6a9f">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa0ad372e7719a71325563103223178aa7">data_sets.h</a>
 </li>
 <li>RMC_BITS_DIAGNOSTIC_MESSAGE
-: <a class="el" href="data__sets_8h.html#acef9668f4560f6af25b6ef1c09c73a30">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa9bc9511c6303b088ec78b7fdc4354f10">data_sets.h</a>
 </li>
 <li>RMC_BITS_DUAL_IMU
-: <a class="el" href="data__sets_8h.html#ab98e3d82b194b002013d32f950f201c2">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfaa5e23fd2a4eb0804ddf7a042a229c662">data_sets.h</a>
 </li>
 <li>RMC_BITS_DUAL_IMU_RAW
-: <a class="el" href="data__sets_8h.html#a45e70b7c849af81dba7f8850f4a79e1a">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa0fb8fb9858d9fd98eaebefd3d64fe379">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_POS
-: <a class="el" href="data__sets_8h.html#aea5b562387394db6e75cc853ab0d8015">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfab2dd3dd059a262035a655ff4957e7231">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_RAW
-: <a class="el" href="data__sets_8h.html#a4b4ad791ed0932898e1711154644729a">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa72e30a0d2b65f0099eba06a897134691">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_RTK_MISC
-: <a class="el" href="data__sets_8h.html#a662d45fdbd7ded21b8eccce84e0f1711">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa8724cf6ed0a76b7207c9adcab797f443">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_RTK_POS
-: <a class="el" href="data__sets_8h.html#a049594acdacfd7be759eed3cf6b99f8d">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa4a6f465850968afc8da883c670768862">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_RTK_REL
-: <a class="el" href="data__sets_8h.html#ab77721b9d02e79e1334cd8a22c39791a">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfac85ccd3715840d6b729166ab4c0bbe9c">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_SAT
-: <a class="el" href="data__sets_8h.html#a2b4442725aa286672b1c8e3a38386fdf">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfafc4ab824000433838536fe394cd682ec">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_UBX_POS
-: <a class="el" href="data__sets_8h.html#aa1d34261a000eb3387fc30bc4fe2b1a7">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfab21d77203b7c969a1e360b7821c98de7">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS1_VEL
-: <a class="el" href="data__sets_8h.html#aa494c83b3e2904bac556868cab23cdea">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa215d07d7bf6ad0a945bdf3e710e53846">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS2_POS
-: <a class="el" href="data__sets_8h.html#a9e845836efc8d68a91929872440a582a">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfafe3c2cecaf728c684183e31bd48e3f7d">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS2_RAW
-: <a class="el" href="data__sets_8h.html#ac6b5e6c0f5eb5b33d617390c1fbc6b9b">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa509689465fc90e1669c892f0f38e4b8b">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS2_SAT
-: <a class="el" href="data__sets_8h.html#aefe9b4517d97332ae5cedcfa2f6ee2ce">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa8547288a5b8693cce1bfde6bf3c26d2f">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS2_VEL
-: <a class="el" href="data__sets_8h.html#aea35bc43e5c352326b3a4b9ae2247f97">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfae4a2c714b861d902ef1c75690975e9a1">data_sets.h</a>
 </li>
 <li>RMC_BITS_GPS_BASE_RAW
-: <a class="el" href="data__sets_8h.html#a699bf6339947409d05fa280b5079e74f">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa833fc08e4c482d6f3d66bddf622a9f3a">data_sets.h</a>
+</li>
+<li>RMC_BITS_INL2_NED_SIGMA
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa554f5b60964717d5017772759f52c136">data_sets.h</a>
 </li>
 <li>RMC_BITS_INS1
-: <a class="el" href="data__sets_8h.html#aaa71deca82de4cea6f5ae7aabc092c60">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfaae3b123055d1e486df8dd74841bdccf6">data_sets.h</a>
 </li>
 <li>RMC_BITS_INS2
-: <a class="el" href="data__sets_8h.html#a7225bec6e49c3725eb066e61985d5d00">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfacdded4efaca5634b9187e8631816dc4b">data_sets.h</a>
 </li>
 <li>RMC_BITS_INS3
-: <a class="el" href="data__sets_8h.html#a5a68e4bda711bd972ae216bbc1f7880e">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa56692634c4c9998af630cb0a0dda00b1">data_sets.h</a>
 </li>
 <li>RMC_BITS_INS4
-: <a class="el" href="data__sets_8h.html#a9ae69fe3d6c2927cfc20ba21284d3f11">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa1aec5a535903bb3276b7dc7b18c2f058">data_sets.h</a>
 </li>
 <li>RMC_BITS_INTERNAL_PPD
 : <a class="el" href="data__sets_8h.html#a4eb34c49887cdc1c9cdd276fe60028ae">data_sets.h</a>
 </li>
 <li>RMC_BITS_MAGNETOMETER1
-: <a class="el" href="data__sets_8h.html#ac212ab936e0919d999b01b05cad4395c">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfaea7c317335d43450d83d9343302d3795">data_sets.h</a>
 </li>
 <li>RMC_BITS_MAGNETOMETER2
-: <a class="el" href="data__sets_8h.html#a376a1d309060600802eb462b9ead81d8">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa77defcc6d72eef2a2abe27a4c429d100">data_sets.h</a>
 </li>
 <li>RMC_BITS_MASK
 : <a class="el" href="data__sets_8h.html#a809c1c6887b7f9c0275a639e68cbafa7">data_sets.h</a>
 </li>
 <li>RMC_BITS_PREINTEGRATED_IMU
-: <a class="el" href="data__sets_8h.html#a86fc8c07e5bce4a4d68f75de454ad629">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa555d1b16b1afb42e70547cfbb43909db">data_sets.h</a>
 </li>
 <li>RMC_BITS_PRESET
 : <a class="el" href="data__sets_8h.html#ab668c80fbdef2b427c493a6d772cba17">data_sets.h</a>
 </li>
-<li>RMC_BITS_STROBE_IN_TIME
-: <a class="el" href="data__sets_8h.html#a4e18652338598744a88c9eecf1341e74">data_sets.h</a>
+<li>RMC_BITS_RTK_CODE_RESIDUAL
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddface5bb7f539f8ae33f5b02b6a86126e42">data_sets.h</a>
 </li>
-<li>RMC_NUM_PORTS
-: <a class="el" href="data__sets_8h.html#af9861e3dde9269f236c8ef6d7e26e263">data_sets.h</a>
+<li>RMC_BITS_RTK_PHASE_RESIDUAL
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa8c9ac66ba92a5de60af32b431ac1b317">data_sets.h</a>
+</li>
+<li>RMC_BITS_RTK_STATE
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfaad136f856e4d6cf81067d4258e20b73d">data_sets.h</a>
+</li>
+<li>RMC_BITS_STROBE_IN_TIME
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfac6ac55c314413424ebd6ede756eede51">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PERSISTENT
-: <a class="el" href="data__sets_8h.html#aa9b4032cda6e278d6a48705e3b3bebe6">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfaa42f4252b6d9d3785eb8e671f8b9ecc4">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PORT_ALL
-: <a class="el" href="data__sets_8h.html#a1a60b3d33fae6b7e661987785c2e7734">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa5df7beab0834e9ff667d272182fa3179">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PORT_CURRENT
-: <a class="el" href="data__sets_8h.html#acca4a448b4d986e29edb5a92019354bd">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfaf157a5aec2ac5b6a14b2b6c1192dbfc4">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PORT_MASK
-: <a class="el" href="data__sets_8h.html#aa6391c25b0ebccc96037c698cb1c2079">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa42cca5fcbf296e172d6bfb59168d783a">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PORT_SER0
-: <a class="el" href="data__sets_8h.html#afe2758e2f2ad4f5f0618333b94e451ed">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfaed46171e9305fd725d9d7f71f298e558">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PORT_SER1
-: <a class="el" href="data__sets_8h.html#ac957fbf9ba23c51302bca9ccf9c3372b">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa86e58e04fca5cd6fe85886c77be47fa8">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PORT_USB
-: <a class="el" href="data__sets_8h.html#a2114b654a51aada5b4e00c765c122491">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa0660bdcb0276c3942867510120b6a517">data_sets.h</a>
 </li>
 <li>RMC_OPTIONS_PRESERVE_CTRL
-: <a class="el" href="data__sets_8h.html#adb780774ee4ce5ae56b765554591a873">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa25e928cbc55dca48c5d1f004f8f95f65">data_sets.h</a>
 </li>
 <li>RMC_PRESET_INS_BITS
 : <a class="el" href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">data_sets.h</a>
 </li>
 <li>RMC_PRESET_INS_NAV_PERIOD_MULT
-: <a class="el" href="data__sets_8h.html#a6f87fac9c95b04f07812e9dcc8d795f5">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa89a2b718627109ea4b853180f9119a10">data_sets.h</a>
 </li>
 <li>RMC_PRESET_PPD_BITS
 : <a class="el" href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">data_sets.h</a>
@@ -320,8 +332,11 @@ $(function() {
 <li>RMC_PRESET_PPD_BITS_RAW_IMU
 : <a class="el" href="data__sets_8h.html#aba5a6647f5808e6cdfd54c1d6db68729">data_sets.h</a>
 </li>
+<li>RMC_PRESET_PPD_BITS_RTK_DBG
+: <a class="el" href="data__sets_8h.html#af621f4bc9fa425bd5bc00e9b2bb490c0">data_sets.h</a>
+</li>
 <li>RMC_PRESET_PPD_NAV_PERIOD_MULT
-: <a class="el" href="data__sets_8h.html#ac4434e93fd2603beef3791f842bb86b2">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddfa13ca62b0c7c43d94d152dd0f41fc81a0">data_sets.h</a>
 </li>
 <li>rmc_t
 : <a class="el" href="data__sets_8h.html#a323b97258fc464db806e374873051264">data_sets.h</a>

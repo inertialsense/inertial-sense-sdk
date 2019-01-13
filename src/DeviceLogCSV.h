@@ -34,7 +34,7 @@ public:
 	uint32_t dataSize;
 	uint64_t orderId;
 	string nextLine;
-	vector<string> columnHeaders;
+	vector<data_info_t> columnHeaders;
 };
 
 

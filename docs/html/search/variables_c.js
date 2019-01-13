@@ -1,7 +1,7 @@
 var searchData=
 [
   ['n',['n',['../structobs__t.html#a09e05f3d10900ec57feab9eca3c6c8a9',1,'obs_t']]],
-  ['name',['name',['../struct_p_a_c_k_e_d.html#aebe9c598eaf70f504bf4fe515b2391e6',1,'PACKED::name()'],['../structs_chunk_header.html#a57c14794ad07d928e61281867f59615a',1,'sChunkHeader::name()'],['../structdata__info__t.html#ab65eb782bde0f8c856e7f360531bd1e6',1,'data_info_t::name()'],['../structfile__info__t.html#a8e5de5f2986e48798d50069168d726c6',1,'file_info_t::name()']]],
+  ['name',['name',['../struct_p_a_c_k_e_d.html#aebe9c598eaf70f504bf4fe515b2391e6',1,'PACKED::name()'],['../structs_chunk_header.html#a57c14794ad07d928e61281867f59615a',1,'sChunkHeader::name()'],['../structdata__info__t.html#ab65eb782bde0f8c856e7f360531bd1e6',1,'data_info_t::name()'],['../struct_i_s_file_manager_1_1file__info__t.html#ae36682ceb03448e15045c12e8560eafb',1,'ISFileManager::file_info_t::name()']]],
   ['navperiodms',['navPeriodMs',['../struct_p_a_c_k_e_d.html#acf756e29fdf3ae92f7e6a6db16fec1b4',1,'PACKED']]],
   ['navsys',['navsys',['../structprcopt__t.html#ad0a3821a5755756b0e13cd57deed12e2',1,'prcopt_t']]],
   ['ndot',['ndot',['../structeph__t.html#ad4db84ee58a3c060439f1ed21d1e3f08',1,'eph_t']]],

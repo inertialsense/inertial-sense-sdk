@@ -20,6 +20,7 @@ var searchData=
   ['errorcount',['errorCount',['../structis__comm__instance__t.html#a1dec969da2a5410a03f86f20a04f59c9',1,'is_comm_instance_t::errorCount()'],['../classc_log_stat_data_id.html#a111d61b2fcae74807b0473b9b23cb80a',1,'cLogStatDataId::errorCount()'],['../classc_log_stats.html#a9a9b2deb56cb101d9401138a9c604dbb',1,'cLogStats::errorCount()']]],
   ['errorlength',['errorLength',['../structbootload__params__t.html#ac90755576f5df7008432be39ee6d574c',1,'bootload_params_t::errorLength()'],['../structserial__port__t.html#a2884da85ca80486926080009e7624315',1,'serial_port_t::errorLength()']]],
   ['errorstring',['errorString',['../class_ti_xml_base.html#a7ac8feec4100e446b3d78e1ac0659700',1,'TiXmlBase']]],
+  ['evbstatus',['evbStatus',['../structevb__status__t.html#a663ac514ca0cb4a87714a7829fa2178c',1,'evb_status_t']]],
   ['extension',['extension',['../struct_p_a_c_k_e_d.html#a1bebe4b590b913b554be29ca88cdb16e',1,'PACKED']]],
   ['externaldataidentifier',['externalDataIdentifier',['../structis__comm__instance__t.html#a4784a273a50393fe3df79b430eacebdc',1,'is_comm_instance_t']]],
   ['externalparsestate',['externalParseState',['../structis__comm__instance__t.html#a03aa5bda4cd98628ab5b83e1c2123db1',1,'is_comm_instance_t']]]

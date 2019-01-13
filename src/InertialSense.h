@@ -104,11 +104,11 @@ public:
 	/*
 	* Broadcast binary data
 	* @param dataId the data id (DID_* - see data_sets.h) to broadcast
-	* @param periodMS the period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+	* @param periodMultiple a scalar that the source period is multipled by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
 	* @param callback optional callback for this dataId
 	* @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
 	*/ 
-	bool BroadcastBinaryData(uint32_t dataId, int periodMS, pfnHandleBinaryData callback = NULL);
+	bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
 
 	/**
 	* Close the connection, logger and free all resources

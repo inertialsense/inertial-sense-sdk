@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -67,20 +67,14 @@ $(function() {
 <div class="textblock">Here is a list of all class members with links to the classes they belong to:</div>
 
 <h3><a id="index_r"></a>- r -</h3><ul>
-<li>r0
-: <a class="el" href="structcrash__info__t.html#a638892acfe3d2bcaea0fc9384789ed25">crash_info_t</a>
+<li>radioNID
+: <a class="el" href="structevb__config__t.html#a101c23df29697485e7c660f1fcb57aaf">evb_config_t</a>
 </li>
-<li>r1
-: <a class="el" href="structcrash__info__t.html#a0eef5f1b9138d9cdb7aeede432c34790">crash_info_t</a>
+<li>radioPID
+: <a class="el" href="structevb__config__t.html#af1ce246a0a300c6d873e39294ce7c6a4">evb_config_t</a>
 </li>
-<li>r12
-: <a class="el" href="structcrash__info__t.html#a54fad2f281081a35467d970a29296e5c">crash_info_t</a>
-</li>
-<li>r2
-: <a class="el" href="structcrash__info__t.html#a90d83bef33f77de32d9efd8dd098ef42">crash_info_t</a>
-</li>
-<li>r3
-: <a class="el" href="structcrash__info__t.html#ac649f00f16964ec86107ba7d3199fb22">crash_info_t</a>
+<li>radioPowerLevel
+: <a class="el" href="structevb__config__t.html#aaafeab940c6ac52e9353db596043ff41">evb_config_t</a>
 </li>
 <li>rb
 : <a class="el" href="structprcopt__t.html#af28f0730feba407b68f9625166552240">prcopt_t</a>
@@ -93,13 +87,19 @@ $(function() {
 </li>
 <li>Read()
 : <a class="el" href="classc_i_s_file_stream.html#a10292a7d1a80241481e8f5c9cc1a9ba9">cISFileStream</a>
-, <a class="el" href="classc_i_s_serial_port.html#af709edecb47a677e68cdf0eaa1b6de14">cISSerialPort</a>
+</li>
+<li>read()
+: <a class="el" href="classc_i_s_log_file.html#a8b770f2911e2c5975f4acbfb7b03a265">cISLogFile</a>
+, <a class="el" href="classc_i_s_log_file_base.html#a7c5037770a198ebed2f1862d9cbcf4a8">cISLogFileBase</a>
+</li>
+<li>Read()
+: <a class="el" href="classc_i_s_serial_port.html#af709edecb47a677e68cdf0eaa1b6de14">cISSerialPort</a>
 , <a class="el" href="classc_i_s_stream.html#a1dbc8dbb611dc06573fce0bf15259adb">cISStream</a>
 , <a class="el" href="classc_i_s_tcp_client.html#a29ecb47df4ac8e4afa94b038a258fde2">cISTcpClient</a>
 </li>
 <li>ReadAdditionalChunkHeader()
-: <a class="el" href="classc_data_chunk.html#a18c46d05d9b8ddcb7aa1238a64456815">cDataChunk</a>
-, <a class="el" href="classc_sorted_data_chunk.html#a24f265e99417818bdd4c68c70514ab6a">cSortedDataChunk</a>
+: <a class="el" href="classc_data_chunk.html#aa1b06f6c7115131fb8e60067ec253646">cDataChunk</a>
+, <a class="el" href="classc_sorted_data_chunk.html#a199db7e6149c0d3d5c68a990128ce5dc">cSortedDataChunk</a>
 </li>
 <li>ReadAllChunksFromFile()
 : <a class="el" href="classc_device_log_sorted.html#acd874ce66e41d62adf8090099c8db137">cDeviceLogSorted</a>
@@ -111,7 +111,7 @@ $(function() {
 : <a class="el" href="structcom__manager__t.html#aef5b95591013849e1710861537ed5818">com_manager_t</a>
 </li>
 <li>ReadChunkFromFile()
-: <a class="el" href="classc_device_log_sorted.html#ad13c05f34047588c0dec8b7f05a13fa6">cDeviceLogSorted</a>
+: <a class="el" href="classc_device_log_sorted.html#af6917621ecd79bcd9c8e9a80c668c438">cDeviceLogSorted</a>
 </li>
 <li>readCounter
 : <a class="el" href="structcom__manager__status__t.html#ac612f97d0b588330e0ce0293170a60f0">com_manager_status_t</a>
@@ -127,10 +127,10 @@ $(function() {
 , <a class="el" href="classc_i_s_logger.html#a04a048a0f5b937894ab25c90f9f7e420">cISLogger</a>
 </li>
 <li>ReadFromFile()
-: <a class="el" href="classc_data_chunk.html#a9a7c5a03d5d0b506513ab9c4714e4890">cDataChunk</a>
+: <a class="el" href="classc_data_chunk.html#a395cc66fdecc690e993e1bf65acdd618">cDataChunk</a>
 </li>
 <li>ReadHeaderFromFile()
-: <a class="el" href="classc_data_c_s_v.html#a5fc19df00004fbc6514918cb221dfabb">cDataCSV</a>
+: <a class="el" href="classc_data_c_s_v.html#a5c571af28840ff057ecdc8ff707a7d24">cDataCSV</a>
 </li>
 <li>ReadKey()
 : <a class="el" href="classc_inertial_sense_display.html#ae14f6b8df04ca56106c25159c9659cb2">cInertialSenseDisplay</a>
@@ -199,6 +199,12 @@ $(function() {
 </li>
 <li>Reset()
 : <a class="el" href="classc_com_data_buffer.html#aaff94b83ceceebb35af4a6ed234ef2cf">cComDataBuffer</a>
+</li>
+<li>reset_baseline_error
+: <a class="el" href="structprcopt__t.html#ab1c1b12409617d7df6519974da0fe1d5">prcopt_t</a>
+</li>
+<li>Resize()
+: <a class="el" href="classc_data_chunk.html#a33d803e4c2d1e085449d223f47dfd46f">cDataChunk</a>
 </li>
 <li>result
 : <a class="el" href="structbootloader__state__t.html#a792875857ea2c3805cb0e0a5cc8d7efd">bootloader_state_t</a>

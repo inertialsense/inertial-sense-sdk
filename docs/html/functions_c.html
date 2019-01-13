@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -82,6 +82,15 @@ $(function() {
 <li>capacity()
 : <a class="el" href="class_ti_xml_string.html#a0ca248f026e698f79b8aa4c9ab8e1571">TiXmlString</a>
 </li>
+<li>cbf
+: <a class="el" href="structevb__config__t.html#a4599b113bc517df2c24fefc8c5d9686e">evb_config_t</a>
+</li>
+<li>cbOptions
+: <a class="el" href="structevb__config__t.html#a6a3763929e5b1d7868cfc458e566b32b">evb_config_t</a>
+</li>
+<li>cbPreset
+: <a class="el" href="structevb__config__t.html#afb77f178bb387a7638c91a329e8976dd">evb_config_t</a>
+</li>
 <li>cBrdConfig
 : <a class="el" href="struct_p_a_c_k_e_d.html#a08bf49ac72e0d3a3b7e623979dfd67ba">PACKED</a>
 </li>
@@ -95,7 +104,7 @@ $(function() {
 : <a class="el" href="class_ti_xml_text.html#aac1f4764d220ed6bf809b16dfcb6b45a">TiXmlText</a>
 </li>
 <li>cDataChunk()
-: <a class="el" href="classc_data_chunk.html#a5ed5f6def610a2622a1e7137d63153de">cDataChunk</a>
+: <a class="el" href="classc_data_chunk.html#a75611c04040b6d62c526d10d7c39df96">cDataChunk</a>
 </li>
 <li>cDataKML()
 : <a class="el" href="classc_data_k_m_l.html#a81570ecbbf3414c5eb335bc9e0070613">cDataKML</a>
@@ -113,7 +122,8 @@ $(function() {
 : <a class="el" href="classc_gps_parser.html#a5600c0ca39301545821df51a0292d270">cGpsParser</a>
 </li>
 <li>checksum
-: <a class="el" href="struct_p_a_c_k_e_d.html#a3a534cffa96087941c89b5fc2a0d1d51">PACKED</a>
+: <a class="el" href="structevb__config__t.html#a9e36bf4f84efdfe3eb560b3e1e094506">evb_config_t</a>
+, <a class="el" href="struct_p_a_c_k_e_d.html#a3a534cffa96087941c89b5fc2a0d1d51">PACKED</a>
 </li>
 <li>checksumFailCount
 : <a class="el" href="structinternal__diagnostic__t.html#a714257f4cc667339ceaaecd23e2ed300">internal_diagnostic_t</a>
@@ -138,6 +148,9 @@ $(function() {
 </li>
 <li>cISFileStream()
 : <a class="el" href="classc_i_s_file_stream.html#a7097a7aebdb428e699e72e2ca23ad680">cISFileStream</a>
+</li>
+<li>cISLogFile()
+: <a class="el" href="classc_i_s_log_file.html#a99be4db7ee886186d1a26b8d128b7c89">cISLogFile</a>
 </li>
 <li>cISLogger()
 : <a class="el" href="classc_i_s_logger.html#aa1293328358d55a73dce5c468b96c997">cISLogger</a>
@@ -210,7 +223,13 @@ $(function() {
 </li>
 <li>Close()
 : <a class="el" href="classc_i_s_file_stream.html#a649a84fd3b2fe2aa0ecd5bb894a5af13">cISFileStream</a>
-, <a class="el" href="classc_i_s_serial_port.html#ac332a98cc9c6242b35aa56fa7c32e428">cISSerialPort</a>
+</li>
+<li>close()
+: <a class="el" href="classc_i_s_log_file.html#a32c2fd352c73d7c7371ed4a816ad58ff">cISLogFile</a>
+, <a class="el" href="classc_i_s_log_file_base.html#a0b1301886affecf2bfa9b1fb6007939c">cISLogFileBase</a>
+</li>
+<li>Close()
+: <a class="el" href="classc_i_s_serial_port.html#ac332a98cc9c6242b35aa56fa7c32e428">cISSerialPort</a>
 , <a class="el" href="classc_i_s_stream.html#ac1f9e93a82f5141e7e8c108932153f12">cISStream</a>
 , <a class="el" href="classc_i_s_tcp_client.html#a4f18f2d9c148f7e89cf61830dc3060df">cISTcpClient</a>
 , <a class="el" href="classc_i_s_tcp_server.html#aedfc523b93548c96cb7655d603a60ed3">cISTcpServer</a>
@@ -248,10 +267,7 @@ $(function() {
 : <a class="el" href="class_ti_xml_base.html#ad283b95d9858d5d78c334f4a61b07bb4">TiXmlBase</a>
 </li>
 <li>columnHeaders
-: <a class="el" href="classc_csv_log.html#a17ff214e28086560cc390880465f3c03">cCsvLog</a>
-</li>
-<li>comBridgeCfg
-: <a class="el" href="structevb2__t.html#a531af34349a0b419450aff818b6229d7">evb2_t</a>
+: <a class="el" href="classc_csv_log.html#a8ce4946b16e42e0b249df3d3d13467ce">cCsvLog</a>
 </li>
 <li>communicationErrorCount
 : <a class="el" href="structcom__manager__status__t.html#a8542bc5e9db157565ea3418ed158e070">com_manager_status_t</a>
@@ -319,7 +335,7 @@ $(function() {
 : <a class="el" href="classc_rtcm_parser.html#afaaa681ef1eb70c3e0acf6550269f589">cRtcmParser</a>
 </li>
 <li>cSortedDataChunk()
-: <a class="el" href="classc_sorted_data_chunk.html#ac1ec5dacfc242fa195938bc0f5117a9d">cSortedDataChunk</a>
+: <a class="el" href="classc_sorted_data_chunk.html#a3a9a91a4a9609c93d5f3e05dadb8a93c">cSortedDataChunk</a>
 </li>
 <li>CStr()
 : <a class="el" href="class_ti_xml_printer.html#a859eede9597d3e0355b77757be48735e">TiXmlPrinter</a>

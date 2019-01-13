@@ -1,6 +1,6 @@
 #include "ISCommDataBuffer.h"
 #include "ISDataMappings.h"
-#include "ISLogger.h"
+#include "ISFileManager.h"
 
 #include <stdio.h>
 #include <sstream>
@@ -40,7 +40,7 @@ void cComDataBuffer::Reset()
     m_buffers.clear();
     m_timestamps.clear();
     m_lastTimestamp = 0.0;
-    cISLogger::DeleteDirectory(basePath);
+    ISFileManager::DeleteDirectory(basePath);
     _MKDIR(basePath.c_str());
 }
 

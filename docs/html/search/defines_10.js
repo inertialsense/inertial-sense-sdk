@@ -20,5 +20,20 @@ var searchData=
   ['swap16',['SWAP16',['../_i_s_constants_8h.html#ae89189d0a7577e6b18155b6865077b85',1,'ISConstants.h']]],
   ['swap32',['SWAP32',['../_i_s_constants_8h.html#aafd8035936a630faad4764126c193adc',1,'ISConstants.h']]],
   ['swap64',['SWAP64',['../_i_s_constants_8h.html#a61d1368d1f9a0f6c0bebaacf28185652',1,'ISConstants.h']]],
-  ['sys_5fcfg_5fbits_5fmag_5frecal_5fmode',['SYS_CFG_BITS_MAG_RECAL_MODE',['../data__sets_8h.html#aa7adc9769079cbc37a80ce31d50d081d',1,'data_sets.h']]]
+  ['sys_5fcfg_5fbits_5fmag_5frecal_5fmode',['SYS_CFG_BITS_MAG_RECAL_MODE',['../data__sets_8h.html#aa7adc9769079cbc37a80ce31d50d081d',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fbus_5ffault',['SYS_FAULT_STATUS_BUS_FAULT',['../data__sets_8h.html#af62f78b0ecf55476a20706ecb0f2f46e',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fenable_5fbootloader',['SYS_FAULT_STATUS_ENABLE_BOOTLOADER',['../data__sets_8h.html#a545d3b625970d5011c26dd4bba7eb694',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fflash_5fmigration',['SYS_FAULT_STATUS_FLASH_MIGRATION',['../data__sets_8h.html#a816fb04f9599db1f9ceb53c5a567c3f1',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fflash_5fmigration_5ffailure',['SYS_FAULT_STATUS_FLASH_MIGRATION_FAILURE',['../data__sets_8h.html#af268f6cecc358b3954e742a9e5f44077',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fhard_5ffault',['SYS_FAULT_STATUS_HARD_FAULT',['../data__sets_8h.html#a2a86d0c12aaf8cdf0dc30d5b8002c4e4',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fhardware_5freset',['SYS_FAULT_STATUS_HARDWARE_RESET',['../data__sets_8h.html#ac962e5873abaffade10887f1197aefbd',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5finvalid_5fcode_5foperation',['SYS_FAULT_STATUS_INVALID_CODE_OPERATION',['../data__sets_8h.html#a5e18a243af14c887be153947f3ba3aee',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fmalloc_5ffailed',['SYS_FAULT_STATUS_MALLOC_FAILED',['../data__sets_8h.html#a62a81a253df880cfddbea697b31b9149',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fmask_5fcritical_5ferror',['SYS_FAULT_STATUS_MASK_CRITICAL_ERROR',['../data__sets_8h.html#a0b6c75c73152fce4bf8d50a34964e3d0',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fmask_5fgeneral_5ferror',['SYS_FAULT_STATUS_MASK_GENERAL_ERROR',['../data__sets_8h.html#a7d428c4db0531ea46f16b6501b050752',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fmem_5fmange',['SYS_FAULT_STATUS_MEM_MANGE',['../data__sets_8h.html#affdec52cd3b6efcff3bb53c879b23719',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fsoft_5freset',['SYS_FAULT_STATUS_SOFT_RESET',['../data__sets_8h.html#a0750744ad4031ca66c91f91688961c85',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fstack_5foverflow',['SYS_FAULT_STATUS_STACK_OVERFLOW',['../data__sets_8h.html#a6bceffabe183dca80782d87385314871',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fusage_5ffault',['SYS_FAULT_STATUS_USAGE_FAULT',['../data__sets_8h.html#ad8e16c6af0593533c69306f923583f31',1,'data_sets.h']]],
+  ['sys_5ffault_5fstatus_5fuser_5freset',['SYS_FAULT_STATUS_USER_RESET',['../data__sets_8h.html#a7e9ab1a68221e0d173b00a3e5c6542c2',1,'data_sets.h']]]
 ];

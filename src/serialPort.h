@@ -58,7 +58,7 @@ typedef int(*pfnSerialPortClose)(serial_port_t* serialPort);
 typedef int(*pfnSerialPortFlush)(serial_port_t* serialPort);
 typedef int(*pfnSerialPortGetByteCountAvailableToRead)(serial_port_t* serialPort);
 typedef int(*pfnSerialPortGetByteCountAvailableToWrite)(serial_port_t* serialPort);
-typedef int(*pfnSerialPortSleep)(serial_port_t* serialPort, int sleepMilliseconds);
+typedef int(*pfnSerialPortSleep)(int sleepMilliseconds);
 
 // Allows communicating over a serial port
 struct serial_port_t

@@ -19,7 +19,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISPose.h"
 #include "ISEarth.h"
 
-#if C11_IS_ENABLED
+#if PLATFORM_IS_EMBEDDED
+
+#include "../../hdw-src/EVB-2/IS_EVB-2/src/drivers/d_time.h"
+
+#elif CPP11_IS_ENABLED
 
 #include <thread>
 #include <mutex>
@@ -30,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <process.h>
 
 #elif PLATFORM_IS_LINUX
+
 
 #else
 
@@ -376,6 +381,10 @@ uint64_t getTickCount(void)
 
 	return GetTickCount64();
 
+#elif PLATFORM_IS_EVB_2
+
+    return time_ticks();
+
 #else
 
 	struct timespec now;
@@ -483,8 +492,11 @@ uint8_t getHexValue(unsigned char hex)
 
 void* threadCreateAndStart(void(*function)(void* info), void* info)
 {
+#if PLATFORM_IS_EMBEDDED
 
-#if C11_IS_ENABLED
+    return NULLPTR;
+
+#elif CPP11_IS_ENABLED
 
 	return new thread(function, info);
 
@@ -509,7 +521,11 @@ void threadJoinAndFree(void* handle)
 		return;
 	}
 
-#if C11_IS_ENABLED
+#if PLATFORM_IS_EMBEDDED
+
+    return;
+
+#elif CPP11_IS_ENABLED
 
 	((thread*)handle)->join();
 	delete (thread*)handle;
@@ -531,7 +547,11 @@ void threadJoinAndFree(void* handle)
 void* mutexCreate(void)
 {
 
-#if C11_IS_ENABLED
+#if PLATFORM_IS_EMBEDDED
+
+    return NULLPTR;
+
+#elif CPP11_IS_ENABLED
 
 	return new mutex();
 
@@ -554,7 +574,11 @@ void* mutexCreate(void)
 void mutexLock(void* handle)
 {
 
-#if C11_IS_ENABLED
+#if PLATFORM_IS_EMBEDDED
+
+    return;
+
+#elif CPP11_IS_ENABLED
 
 	((mutex*)handle)->lock();
 
@@ -573,7 +597,11 @@ void mutexLock(void* handle)
 void mutexUnlock(void* handle)
 {
 
-#if C11_IS_ENABLED
+#if PLATFORM_IS_EMBEDDED
+
+    return;
+
+#elif CPP11_IS_ENABLED
 
 	((mutex*)handle)->unlock();
 
@@ -596,7 +624,11 @@ void mutexFree(void* handle)
 		return;
 	}
 
-#if C11_IS_ENABLED
+#if PLATFORM_IS_EMBEDDED
+
+    return;
+
+#elif CPP11_IS_ENABLED
 
 	delete (mutex*)handle;
 
@@ -626,9 +658,9 @@ int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day)
         - 2400000;
 }
 
-int32_t convertGpsToMjd(int32_t gpsCycle, int32_t gpsWeek, int32_t gpsSeconds)
+int32_t convertGpsToMjd(int32_t gpsWeek, int32_t gpsSeconds)
 {
-    uint32_t gpsDays = ((gpsCycle * 1024) + gpsWeek) * 7 + (gpsSeconds / 86400);
+    uint32_t gpsDays = gpsWeek * 7 + (gpsSeconds / 86400);
     return convertDateToMjd(1980, 1, 6) + gpsDays;
 }
 
@@ -659,44 +691,21 @@ void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_
     *seconds = gpsSeconds % 60;
 }
 
-void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result)
+uint32_t dateToWeekDay(uint32_t ul_year, uint32_t ul_month, uint32_t ul_day)
 {
-    result->week		= ins2->week;
-    result->timeOfWeek	= ins2->timeOfWeek;
-    result->insStatus	= ins2->insStatus;
-    result->hdwStatus	= ins2->hdwStatus;
-    quat2euler(ins2->qn2b, result->theta);
-    memcpy(result->uvw, ins2->uvw, sizeof(Vector3));
-    memcpy(result->lla, ins2->lla, sizeof(Vector3d));
-    memset(result->ned, 0, sizeof(Vector3));
-}
+    uint32_t ul_week;
 
-void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result)
-{
-    result->week		= ins3->week;
-    result->timeOfWeek	= ins3->timeOfWeek;
-    result->insStatus	= ins3->insStatus;
-    result->hdwStatus	= ins3->hdwStatus;
-    quat2euler(ins3->qn2b, result->theta);
-    memcpy(result->uvw, ins3->uvw, sizeof(Vector3));
-    memcpy(result->lla, ins3->lla, sizeof(Vector3d));
-    memset(result->ned, 0, sizeof(Vector3));
-}
+    if (ul_month == 1 || ul_month == 2) {
+        ul_month += 12;
+        --ul_year;
+    }
 
-void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result)
-{
-    Vector3d llaRad;
+    ul_week = (ul_day + 2 * ul_month + 3 * (ul_month + 1) / 5 + ul_year +
+    ul_year / 4 - ul_year / 100 + ul_year / 400) % 7;
 
-    result->week		= ins4->week;
-    result->timeOfWeek	= ins4->timeOfWeek;
-    result->insStatus	= ins4->insStatus;
-    result->hdwStatus	= ins4->hdwStatus;
+    ++ul_week;
 
-    quatConjRot(result->uvw, ins4->qe2b, ins4->ve);
-    ecef2lla(ins4->ecef, llaRad, 1, 5);
-    qe2b2EulerNedLLA(result->theta, ins4->qe2b, llaRad);
-    lla_Rad2Deg_d(result->lla, llaRad);
-    memset(result->ned, 0, sizeof(Vector3));
+    return ul_week;
 }
 
 gen_1axis_sensor_t gen1AxisSensorData(double time, const float val)

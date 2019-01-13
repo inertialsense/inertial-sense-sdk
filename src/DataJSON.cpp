@@ -35,29 +35,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #	include "../../libs/IS_internal.h"
 #endif
 
-int cDataJSON::WriteDataToFile(FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix)
+int cDataJSON::WriteDataToFile(cISLogFileBase* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix)
 {
 	// Verify file pointer
-	if (pFile == NULL)
+	if (pFile == NULLPTR || cISDataMappings::GetSize(dataHdr.id) == 0)
 	{
 		return 0;
 	}
-	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(dataHdr.id);
-	if (offsetMap == cISDataMappings::GetMap().end())
-	{
-		return 0;
-	}
-	string s;
 
+	string s;
     if (!DataToStringJSON(dataHdr, dataBuf, s))
 	{
 		return 0;
 	}
     if (prefix != NULLPTR)
     {
-        fputs(prefix, pFile);
+        pFile->puts(prefix);
     }
-	fputs(s.c_str(), pFile);
+	pFile->puts(s.c_str());
     return (int)s.length();
 }
 
@@ -74,8 +69,8 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
     }
     uint32_t id = strtoul(s.c_str() + pos + 5, NULLPTR, 10);
     hdr.id = id;
-	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(hdr.id);
-    if (offsetMap == cISDataMappings::GetMap().end())
+	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(hdr.id);
+    if (offsetMap == NULLPTR)
 	{
 		return false;
 	}
@@ -118,9 +113,9 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
 		{
             if (fieldStart != 0)
 			{
-				offset = offsetMap->second.find(fieldName);
+				offset = offsetMap->find(fieldName);
                 string json = s.substr(fieldStart, i - fieldStart);
-                if (offset != offsetMap->second.end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, 10, true))
+                if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, 10, true))
 				{
 					return false;
 				}
@@ -139,8 +134,8 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
 bool cDataJSON::DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, string& json)
 {
     json.clear();
-	map_lookup_name_t::const_iterator offsetMap = cISDataMappings::GetMap().find(hdr.id);
-	if (offsetMap == cISDataMappings::GetMap().end())
+	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(hdr.id);
+	if (offsetMap == NULLPTR)
 	{
 		return false;
 	}
@@ -165,7 +160,7 @@ bool cDataJSON::DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, st
 
 	SNPRINTF(tmp, sizeof(tmp), "{\"id\":%d", (int)hdr.id);
 	json.append(tmp);
-	for (map_name_to_info_t::const_iterator offset = offsetMap->second.begin(); offset != offsetMap->second.end(); offset++)
+	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
 	{
 		cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp, true);
 		json.append(1, ',');

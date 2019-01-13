@@ -1,3 +1,6 @@
+#include "data_sets.h"
+#include "IS_internal.h"
+
 // support types
 PYBIND11_NUMPY_DTYPE(gps_sat_sv_t, gnssId, svId, cno, elev, azim, prRes, flags); 
 PYBIND11_NUMPY_DTYPE(sensors_mpu_w_temp_t, pqr, acc, mag, temp);
@@ -9,7 +12,7 @@ PYBIND11_NUMPY_DTYPE(sensors_mpu_t, pqr, acc, mag);
 
 // Public Typcs
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
-PYBIND11_NUMPY_DTYPE(crash_info_t, r0, r1, r2, r3, r12, lr, pc, psr);
+PYBIND11_NUMPY_DTYPE(system_fault_t, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr);
 PYBIND11_NUMPY_DTYPE(preintegrated_imu_t, time, theta1, theta2, vel1, vel2, dt);
 PYBIND11_NUMPY_DTYPE(ins_1_t, week, timeOfWeek, insStatus, hdwStatus, theta, uvw, lla, ned);
 PYBIND11_NUMPY_DTYPE(ins_2_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw, lla);
@@ -30,7 +33,7 @@ PYBIND11_NUMPY_DTYPE(sensors_t, mpu);
 PYBIND11_NUMPY_DTYPE(io_t, timeOfWeekMs, gpioStatus);
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, mpu, bar, barTemp, humidity, ana);
 PYBIND11_NUMPY_DTYPE(gps_vel_t, timeOfWeekMs, velEcef, sAcc);
-PYBIND11_NUMPY_DTYPE(rtos_info_t, task, freeHeapSize, mallocMinusFree);
+PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocMinusFree, task);
 PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc);
 PYBIND11_NUMPY_DTYPE(magnetometer_t, time, mag);
 PYBIND11_NUMPY_DTYPE(barometer_t, time, bar, mslBar, barTemp, humidity);
@@ -46,9 +49,8 @@ PYBIND11_NUMPY_DTYPE(strobe_in_time_t, week, timeOfWeekMs, pin, count);
 PYBIND11_NUMPY_DTYPE(velocity_sensor_t, time_ms, id, vel, cov, q, p, valid, reserved);
 PYBIND11_NUMPY_DTYPE(diag_msg_t, timeOfWeekMs, messageLength, message);
 PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla);
-PYBIND11_NUMPY_DTYPE(evb2_t, firmwareVer, comBridgeCfg, loggerState, loggerElapsedTimeMs, ipAddr);
+//PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);
 //PYBIND11_NUMPY_DTYPE(port_monitor_t, portNumber, txTimeMs, txBytesPerS, rxTimeMs, rxBytesPerS, status);
-
 
 // Internal Data types
 PYBIND11_NUMPY_DTYPE(feature_bits_t, key, featureBits, hash1, hash2);
@@ -64,3 +66,7 @@ PYBIND11_NUMPY_DTYPE(debug_array_t, i, f, lf);
 PYBIND11_NUMPY_DTYPE(ins_dev_1_t, week, timeOfWeek, insStatus, hdwStatus, euler, uvw, lla, ned, eulerErr, uvwErr, nedErr);
 PYBIND11_NUMPY_DTYPE(inl2_status_t, ahrs, zero_accel, zero_angrate, accel_motion, rot_motion, zero_vel, ahrs_gps_cnt, att_err, att_coarse, att_aligned, att_aligning, start_proc_done, mag_cal_good, mag_cal_done, stat_magfield);
 PYBIND11_NUMPY_DTYPE(inl2_misc_t, gps_time_last_valid);
+PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);
+PYBIND11_NUMPY_DTYPE(rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_ecef, qr, b, qb, sat_id);
+PYBIND11_NUMPY_DTYPE(rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v);
+PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, debug, double_debug);

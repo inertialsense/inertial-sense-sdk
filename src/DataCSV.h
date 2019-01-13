@@ -21,11 +21,42 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
+
+typedef enum
+{
+	DataTypeInt8,
+	DataTypeUInt8,
+	DataTypeInt16,
+	DataTypeUInt16,
+	DataTypeInt32,
+	DataTypeUInt32,
+	DataTypeInt64,
+	DataTypeUInt64,
+	DataTypeFloat,
+	DataTypeDouble,
+	DataTypeString,
+	DataTypeBinary,
+
+	DataTypeCount
+} eDataType;
+
+/*
+* Metadata about a specific field
+*/
+typedef struct
+{
+	uint32_t dataOffset;
+	uint32_t dataSize;
+	eDataType dataType;
+	string name;
+} data_info_t;
+
 class cDataCSV
 {
 public:
 	int WriteHeaderToFile(FILE* pFile, int id);
-	int ReadHeaderFromFile(FILE* pFile, int id, vector<string>& columnHeaders);
+	int ReadHeaderFromFile(FILE* pFile, int id, vector<data_info_t>& columnHeaders);
     int WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf);
 
 	/**
@@ -36,7 +67,7 @@ public:
 	* order id contains the value for ordering data
 	* returns true if success, false if no map found
 	*/
-	bool StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const vector<string>& columnHeaders);
+	bool StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const vector<data_info_t>& columnHeaders);
 
 	/**
 	* Convert data to a csv string

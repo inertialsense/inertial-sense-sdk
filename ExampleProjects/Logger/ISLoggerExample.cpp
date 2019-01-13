@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
 	// STEP 4: Enable data broadcasting
 	// broadcast the standard set of post processing messages (ins, imu, etc.)
-	inertialSense.BroadcastBinaryDataRmcPreset();
+	inertialSense.BroadcastBinaryDataRmcPreset(RMC_PRESET_INS_BITS);
 
 	// instead of the rmc preset (real-time message controller) you can request individual messages...
 	// inertialSense.BroadcastBinaryData(DID_DUAL_IMU, 10); // imu every 10 milliseconds (100 hz)

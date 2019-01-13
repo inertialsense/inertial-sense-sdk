@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -69,6 +69,21 @@ $(function() {
 <h3><a id="index_i"></a>- i -</h3><ul>
 <li>i_t
 : <a class="el" href="_i_s_constants_8h.html#a72a56cddd77907733a7766bd5e332f53">ISConstants.h</a>
+</li>
+<li>IMU_STATUS_SAMPLE_RATE_FAULT
+: <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297ca2feaf4385e108d96672f73b6f7dd07f7">data_sets.h</a>
+</li>
+<li>IMU_STATUS_SATURATION_IMU1_ACC
+: <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297ca72fa00183b26a68bcc57037ad3f39ccd">data_sets.h</a>
+</li>
+<li>IMU_STATUS_SATURATION_IMU1_GYR
+: <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297caf6997830f9d2f81a29876978fdf4428b">data_sets.h</a>
+</li>
+<li>IMU_STATUS_SATURATION_IMU2_ACC
+: <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297ca53c785bf94b3c92832ef1d9e27d647dc">data_sets.h</a>
+</li>
+<li>IMU_STATUS_SATURATION_IMU2_GYR
+: <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297ca3858e3b019216a995a81312134ac321c">data_sets.h</a>
 </li>
 <li>imu_t
 : <a class="el" href="data__sets_8h.html#a0ebde134add2aa075b3cf5889b9df6de">data_sets.h</a>
@@ -156,6 +171,9 @@ $(function() {
 </li>
 <li>INS_STATUS_NAV_MODE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caca48e59f7e4970fa795058a6387fc4fd">data_sets.h</a>
+</li>
+<li>INS_STATUS_OUTPUT_RESET_MASK
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cae0190dd7b78c7c53313f9ebe99ccc783">data_sets.h</a>
 </li>
 <li>INS_STATUS_POS_ALIGN_COARSE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca8ea44e265c5a498143f108b0f91822c4">data_sets.h</a>
@@ -308,9 +326,17 @@ $(function() {
 <li>IS_COM_BAUDRATE_DEFAULT
 : <a class="el" href="_i_s_comm_8h.html#a8f9086b9c33b305c89fc841a8f10a4a7">ISComm.h</a>
 </li>
+<li>is_comm_copy_to_struct()
+: <a class="el" href="_i_s_comm_8c.html#aaa0cd9f4ba5b1286230d4384ac54e865">ISComm.c</a>
+, <a class="el" href="_i_s_comm_8h.html#ab13c526b37c0122317e4016f7ff09a73">ISComm.h</a>
+</li>
+<li>is_comm_data()
+: <a class="el" href="_i_s_comm_8c.html#ad9a10fea96e7333d2e86c58ae06671a8">ISComm.c</a>
+, <a class="el" href="_i_s_comm_8h.html#ad9a10fea96e7333d2e86c58ae06671a8">ISComm.h</a>
+</li>
 <li>is_comm_get_data()
-: <a class="el" href="_i_s_comm_8c.html#ad7bd6017ae89ecf5af3ff11942397e36">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#ad7bd6017ae89ecf5af3ff11942397e36">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#ad7bd6017ae89ecf5af3ff11942397e36">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#ad7bd6017ae89ecf5af3ff11942397e36">ISComm.c</a>
 </li>
 <li>is_comm_get_data_rmc()
 : <a class="el" href="_i_s_comm_8c.html#a2c516e5e416c7601de415a45ca05841a">ISComm.c</a>
@@ -333,19 +359,19 @@ $(function() {
 , <a class="el" href="_i_s_comm_8h.html#abfd4fff6cd4bee421342a4d1b7fe65a4">ISComm.h</a>
 </li>
 <li>is_comm_stop_broadcasts_current_port()
-: <a class="el" href="_i_s_comm_8c.html#af3dce8a23c3413e9d104d776a7de9560">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#af3dce8a23c3413e9d104d776a7de9560">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#af3dce8a23c3413e9d104d776a7de9560">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#af3dce8a23c3413e9d104d776a7de9560">ISComm.c</a>
 </li>
 <li>IS_DATA_MAPPING_MAX_STRING_LENGTH
-: <a class="el" href="_i_s_data_mappings_8h.html#af2dd5abd54a80131d81441faf59d9c81">ISDataMappings.h</a>
+: <a class="el" href="_data_c_s_v_8h.html#af2dd5abd54a80131d81441faf59d9c81">DataCSV.h</a>
 </li>
 <li>is_decode_binary_packet()
-: <a class="el" href="_i_s_comm_8h.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.h</a>
-, <a class="el" href="_i_s_comm_8c.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.c</a>
+: <a class="el" href="_i_s_comm_8c.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.c</a>
+, <a class="el" href="_i_s_comm_8h.html#ac31f64bb01078edee96ed0326fae3fe4">ISComm.h</a>
 </li>
 <li>is_decode_binary_packet_byte()
-: <a class="el" href="_i_s_comm_8c.html#a60141b5d731b8140613373f96d82bd81">ISComm.c</a>
-, <a class="el" href="_i_s_comm_8h.html#a60141b5d731b8140613373f96d82bd81">ISComm.h</a>
+: <a class="el" href="_i_s_comm_8h.html#a60141b5d731b8140613373f96d82bd81">ISComm.h</a>
+, <a class="el" href="_i_s_comm_8c.html#a60141b5d731b8140613373f96d82bd81">ISComm.c</a>
 </li>
 <li>is_decode_binary_packet_footer()
 : <a class="el" href="_i_s_comm_8h.html#abd9a92256006a595860483725032f486">ISComm.h</a>
@@ -368,40 +394,40 @@ $(function() {
 : <a class="el" href="_i_s_tcp_client_8h.html#a5196fa5eeb6e5544f36b175aca758892">ISTcpClient.h</a>
 </li>
 <li>ISSocketCanRead()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#a34aab2247a2fe4604d233473bb3aa372">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#aa2cab0d9d9a8370937638b10e1d309a5">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#aa2cab0d9d9a8370937638b10e1d309a5">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#a34aab2247a2fe4604d233473bb3aa372">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketCanWrite()
-: <a class="el" href="_i_s_tcp_client_8h.html#a9e9991863976d2f32e55280d2463ec7f">ISTcpClient.h</a>
-, <a class="el" href="_i_s_tcp_client_8cpp.html#ab7423e409af14520d1eae17dbe0531fe">ISTcpClient.cpp</a>
+: <a class="el" href="_i_s_tcp_client_8cpp.html#ab7423e409af14520d1eae17dbe0531fe">ISTcpClient.cpp</a>
+, <a class="el" href="_i_s_tcp_client_8h.html#a9e9991863976d2f32e55280d2463ec7f">ISTcpClient.h</a>
 </li>
 <li>ISSocketClose()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#aac0d71ce54a5ebbe3bf32c3051bd7ea7">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketFrameworkInitialize()
 : <a class="el" href="_i_s_tcp_client_8h.html#ae367046426f61690f26864d75ce133cf">ISTcpClient.h</a>
 , <a class="el" href="_i_s_tcp_client_8cpp.html#ae367046426f61690f26864d75ce133cf">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketFrameworkShutdown()
-: <a class="el" href="_i_s_tcp_client_8h.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.h</a>
-, <a class="el" href="_i_s_tcp_client_8cpp.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.cpp</a>
+: <a class="el" href="_i_s_tcp_client_8cpp.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.cpp</a>
+, <a class="el" href="_i_s_tcp_client_8h.html#aa5ab81932189d23c3bba891a7e43b3d0">ISTcpClient.h</a>
 </li>
 <li>ISSocketRead()
 : <a class="el" href="_i_s_tcp_client_8cpp.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.cpp</a>
 , <a class="el" href="_i_s_tcp_client_8h.html#aeb708c80be96e34421481a46e135b5a5">ISTcpClient.h</a>
 </li>
 <li>ISSocketSetBlocking()
-: <a class="el" href="_i_s_tcp_client_8h.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.h</a>
-, <a class="el" href="_i_s_tcp_client_8cpp.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.cpp</a>
+: <a class="el" href="_i_s_tcp_client_8cpp.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.cpp</a>
+, <a class="el" href="_i_s_tcp_client_8h.html#aefd3ddfd6f9dede9ef81c7a39a455636">ISTcpClient.h</a>
 </li>
 <li>ISSocketSetReadTimeout()
 : <a class="el" href="_i_s_tcp_client_8h.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.h</a>
 , <a class="el" href="_i_s_tcp_client_8cpp.html#ab77cb7f0749e52bf5a187aaccb8294da">ISTcpClient.cpp</a>
 </li>
 <li>ISSocketWrite()
-: <a class="el" href="_i_s_tcp_client_8cpp.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISTcpClient.cpp</a>
-, <a class="el" href="_i_s_tcp_client_8h.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISTcpClient.h</a>
+: <a class="el" href="_i_s_tcp_client_8h.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISTcpClient.h</a>
+, <a class="el" href="_i_s_tcp_client_8cpp.html#aeea43f58df89ebaa95fe06ca170c6bf1">ISTcpClient.cpp</a>
 </li>
 </ul>
 </div><!-- contents -->

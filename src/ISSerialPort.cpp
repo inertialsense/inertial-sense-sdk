@@ -12,6 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISSerialPort.h"
 #include "ISLogger.h"
+#include "ISFileManager.h"
 
 cISSerialPort::cISSerialPort(serial_port_t* serial) : cISStream()
 {
@@ -73,7 +74,7 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
 #else
 
-	cISLogger::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
+	ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
 
 #endif
 

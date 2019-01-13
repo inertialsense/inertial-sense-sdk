@@ -7,18 +7,17 @@ var searchData=
   ['lastllatimeofweekms',['lastLlaTimeOfWeekMs',['../struct_p_a_c_k_e_d.html#a7a1739ed0a24e1b9e8fa677a04ac12cc',1,'PACKED']]],
   ['lastllaupdatedistance',['lastLlaUpdateDistance',['../struct_p_a_c_k_e_d.html#ac445e7128724dd159883836fb6495099',1,'PACKED']]],
   ['lastllaweek',['lastLlaWeek',['../struct_p_a_c_k_e_d.html#ab1909baaeaefe560e3ce23ae3e623772',1,'PACKED']]],
-  ['lastmodificationdate',['lastModificationDate',['../structfile__info__t.html#aab8140c4aae7a736c95c3e56cd9704ea',1,'file_info_t']]],
+  ['lastmodificationdate',['lastModificationDate',['../struct_i_s_file_manager_1_1file__info__t.html#a0e3d2f3d53614f94063e23690ce7a62a',1,'ISFileManager::file_info_t']]],
   ['lasttimestamp',['lastTimestamp',['../classc_log_stat_data_id.html#aea01cb13aa845588c11ea3fb9789901a',1,'cLogStatDataId']]],
   ['lasttimestampdelta',['lastTimestampDelta',['../classc_log_stat_data_id.html#a08b3ef360e75e1e8eb0de0476a852e82',1,'cLogStatDataId']]],
   ['leaps',['leaps',['../struction__model__utc__alm__t.html#a67212e6071a21d6c7ce9ae7a9b30df65',1,'ion_model_utc_alm_t']]],
   ['lla',['lla',['../struct_p_a_c_k_e_d.html#a2e508fba73cb511293d5d6bdc8e5459f',1,'PACKED::lla()'],['../structsurvey__in__t.html#a38feacc53e40b9c3dfd1b4a61f5fbe1f',1,'survey_in_t::lla()'],['../structs_kml_log_data.html#a978ebd86730ee147abf13973c6e19a3e',1,'sKmlLogData::lla()']]],
   ['lli',['LLI',['../struct_p_a_c_k_e_d.html#a84da3da799e50a7235fd8190419d72e7',1,'PACKED']]],
   ['location',['location',['../class_ti_xml_base.html#a0d992580f3bc264909f898e942677a3c',1,'TiXmlBase']]],
-  ['loggerelapsedtimems',['loggerElapsedTimeMs',['../structevb2__t.html#a86d26e30973e20846a7966b6dced233f',1,'evb2_t']]],
-  ['loggerstate',['loggerState',['../structevb2__t.html#a4c5555ee157eb72e34860a61a2a02f79',1,'evb2_t']]],
+  ['loggerelapsedtimems',['loggerElapsedTimeMs',['../structevb__status__t.html#a8190412aefe2d8ad2331ce299828bcc0',1,'evb_status_t']]],
+  ['loggermode',['loggerMode',['../structevb__status__t.html#a66de1bd6abf577b70375fd1459669b66',1,'evb_status_t']]],
   ['logpath',['logPath',['../structcmd__options__t.html#afd0992b8f11a9a104c0b34ec1e9fe591',1,'cmd_options_t']]],
   ['logsubfolder',['logSubFolder',['../structcmd__options__t.html#aa608255c9ba986d071a7f1f288e49050',1,'cmd_options_t']]],
   ['logtype',['logType',['../structcmd__options__t.html#aec00094d07f0afb7270d96a962c16216',1,'cmd_options_t']]],
-  ['lotnumber',['lotNumber',['../struct_p_a_c_k_e_d.html#a7e2a5fa899438f780589b00a485ccaa2',1,'PACKED']]],
-  ['lr',['lr',['../structcrash__info__t.html#a8154c9a8f755d75492ea811863936a2e',1,'crash_info_t']]]
+  ['lotnumber',['lotNumber',['../struct_p_a_c_k_e_d.html#a7e2a5fa899438f780589b00a485ccaa2',1,'PACKED']]]
 ];

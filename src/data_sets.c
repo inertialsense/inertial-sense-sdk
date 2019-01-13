@@ -251,7 +251,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 	{
 		0,						//  0: DID_NULL
 		0,						//  1: DID_DEV_INFO
-        0,						//  2: DID_CRASH_INFO
+        0,						//  2: DID_SYS_FAULT
 		offsetsOnlyTimeFirst,	//  3: DID_PREINTEGRATED_IMU
 		offsetsIns1,			//  4: DID_INS_1
 		offsetsIns2,			//  5: DID_INS_2
@@ -317,14 +317,22 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsIns3,			// 65: DID_INS_3
 		offsetsIns4,			// 66: DID_INS_4
 		0,						// 67: DID_INL2_NED_SIGMA
-		0,						// 68: DID_STROBE_IN_TIME
-		0,						// 69: DID_GPS1_RAW
-		0,						// 70: DID_GPS2_RAW
-		0,						// 71: DID_VELOCITY_SENSOR
-		0,						// 72: DID_DIAGNOSTIC_MESSAGE
-		offsetsSurveyIn, 		// 73: DID_SURVEY_IN
-        0,                      // 74: DID_EVB2
-        0                       // 75: DID_PORT_MONITOR
+        0,						// 68: DID_STROBE_IN_TIME
+        0,						// 69: DID_GPS1_RAW
+        0,						// 70: DID_GPS2_RAW
+        0,						// 71: DID_VELOCITY_SENSOR
+        0,						// 72: DID_DIAGNOSTIC_MESSAGE
+        offsetsSurveyIn, 		// 73: DID_SURVEY_IN
+        0,                      // 74: EMPTY
+        0,                      // 75: DID_PORT_MONITOR
+        0,                      // 76: DID_RTK_STATE
+        0,                      // 77: DID_RTK_RESIDUAL
+        0,                      // 78: DID_RTK_PHASE_RESIDUAL
+        0,                      // 79: DID_RTK_CODE_RESIDUAL
+        0,                      // 80: DID_EVB_STATUS
+        0,                      // 81: DID_EVB_CONFIG
+        offsetsDebugArray,      // 82: DID_EVB_DEBUG_ARRAY
+        0,                      // 83: DID_EVB_RTOS_INFO
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -387,7 +395,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 	{
 		0,						//  0: DID_NULL
         0,						//  1: DID_DEV_INFO
-        0,						//  2: DID_CRASH_INFO
+        0,						//  2: DID_SYS_FAULT
 		0,						//  3: DID_PREINTEGRATED_IMU
 		0,						//  4: DID_INS_1
 		0,						//  5: DID_INS_2
@@ -459,8 +467,16 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 71: DID_VELOCITY_SENSOR
 		diagMsgOffsets, 		// 72: DID_DIAGNOSTIC_MESSAGE
 		0,                      // 73: DID_SURVEY_IN
-		0,                      // 74: DID_EVB2
-        0                       // 75: DID_PORT_MONITOR
+        0,                      // 74: EMPTY
+        0,                      // 75: DID_PORT_MONITOR
+        0,                      // 76: DID_RTK_STATE
+        0,                      // 77: DID_RTK_RESIDUAL
+        0,                      // 78: DID_RTK_PHASE_RESIDUAL
+        0,                      // 79: DID_RTK_CODE_RESIDUAL
+        0,                      // 80: DID_EVB_STATUS
+        0,                      // 81: DID_EVB_CONFIG
+        0,                      // 82: DID_EVB_DEBUG_ARRAY
+        0,                      // 83: DID_EVB_RTOS_INFO
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -538,6 +554,10 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_GPS1_RTK_MISC:			return RMC_BITS_GPS1_RTK_MISC;
 		case DID_STROBE_IN_TIME:		return RMC_BITS_STROBE_IN_TIME;
 		case DID_DIAGNOSTIC_MESSAGE:	return RMC_BITS_DIAGNOSTIC_MESSAGE;		
+		case DID_INL2_NED_SIGMA:		return RMC_BITS_INL2_NED_SIGMA;
+        case DID_RTK_STATE:         	return RMC_BITS_RTK_STATE;
+        case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
+        case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
 		default:						return defaultRmcBits;
 	}
 }

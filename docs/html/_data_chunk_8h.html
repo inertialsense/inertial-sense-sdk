@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -76,9 +76,9 @@ $(function() {
 <div class="title">DataChunk.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;vector&gt;</code><br />
-<code>#include &lt;stdint.h&gt;</code><br />
+<div class="textblock"><code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="com__manager_8h_source.html">com_manager.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_i_s_log_file_base_8h_source.html">ISLogFileBase.h</a>&quot;</code><br />
 </div>
 <p><a href="_data_chunk_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -91,8 +91,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a523eaf5b650f38c307a6aab7f957fa2b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_data_chunk_8h.html#a523eaf5b650f38c307a6aab7f957fa2b">MAX_CHUNK_SIZE</a>&#160;&#160;&#160;100000</td></tr>
-<tr class="separator:a523eaf5b650f38c307a6aab7f957fa2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57b6b9aec20883f8d67aadf2fc183bcd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_data_chunk_8h.html#a57b6b9aec20883f8d67aadf2fc183bcd">DEFAULT_CHUNK_DATA_SIZE</a>&#160;&#160;&#160;131072</td></tr>
+<tr class="separator:a57b6b9aec20883f8d67aadf2fc183bcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6372be6793182e66c16be4143741bd8e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_data_chunk_8h.html#a6372be6793182e66c16be4143741bd8e">DATA_CHUNK_MARKER</a>&#160;&#160;&#160;0xFC05EA32</td></tr>
 <tr class="separator:a6372be6793182e66c16be4143741bd8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04d417fde6925e529e48ee91a4051139"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_data_chunk_8h.html#a04d417fde6925e529e48ee91a4051139">LOG_DEBUG_WRITE</a>&#160;&#160;&#160;0</td></tr>
@@ -122,6 +122,22 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00017">17</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
+
+</div>
+</div>
+<a id="a57b6b9aec20883f8d67aadf2fc183bcd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57b6b9aec20883f8d67aadf2fc183bcd">&#9670;&nbsp;</a></span>DEFAULT_CHUNK_DATA_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define DEFAULT_CHUNK_DATA_SIZE&#160;&#160;&#160;131072</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00016">16</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
 
 </div>
 </div>
@@ -173,22 +189,6 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a523eaf5b650f38c307a6aab7f957fa2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a523eaf5b650f38c307a6aab7f957fa2b">&#9670;&nbsp;</a></span>MAX_CHUNK_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define MAX_CHUNK_SIZE&#160;&#160;&#160;100000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8h_source.html#l00016">16</a> of file <a class="el" href="_data_chunk_8h_source.html">DataChunk.h</a>.</p>
-
-</div>
-</div>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a213531f4b1f15b494d412244329ecdec"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a213531f4b1f15b494d412244329ecdec">&#9670;&nbsp;</a></span>logStats()</h2>
@@ -218,7 +218,7 @@ Functions</h2></td></tr>
 
 <p>Chunk Header. </p>
 
-<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00260">260</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_data_chunk_8cpp_source.html#l00329">329</a> of file <a class="el" href="_data_chunk_8cpp_source.html">DataChunk.cpp</a>.</p>
 
 </div>
 </div>

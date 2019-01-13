@@ -334,10 +334,10 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 			}
 
             snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf ", lon, lat, alt);
-			if (strcmp("-111.65863637,40.05570543,1418.282 ", buf) == 0)
-			{
-				j++;
-			}
+// 			if (strcmp("-111.65863637,40.05570543,1418.282 ", buf) == 0)
+// 			{
+// 				j++;
+// 			}
 // 			qDebug() << string(buf);
 //			std::cout << "Value of str is : ";
 			coordinateStream << string(buf);
@@ -419,7 +419,10 @@ bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
         memcpy(ins1.lla, d.ins2.lla, 24);
 		p_data_hdr_t dHdr = { DID_INS_1 , sizeof(ins_1_t), 0 };
 		// Save data to file
-        WriteDateToFile(&dHdr, (uint8_t*)&ins1);
+        if (!WriteDateToFile(&dHdr, (uint8_t*)&ins1))
+        {
+            return false;
+        }
 		break;
 	}
 
@@ -452,7 +455,10 @@ bool cDeviceLogKML::WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t* 
 	if (log.fileSize >= m_maxFileSize)
 	{
 		// Close existing file
-		CloseWriteFile(kid, log);
+        if (!CloseWriteFile(kid, log))
+        {
+            return false;
+        }
 	}
 
 	return true;

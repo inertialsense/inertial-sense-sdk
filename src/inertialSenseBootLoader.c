@@ -209,13 +209,21 @@ static int bootloaderCycleBaudRate(int baudRate)
 // if nothing comes back, we are using version 1, otherwise the version is the number sent back
 static int bootloaderNegotiateVersion(bootloader_state_t* state)
 {
-	unsigned char v;
-    if (serialPortReadCharTimeout(state->param->port, &v, 500) == 0 || v == '1')
+	unsigned char v = 0;
+
+	do {
+		if (serialPortReadCharTimeout(state->param->port, &v, 500) == 0)
+		{
+			v = '1';
+		}
+	} while (v == 'U');
+
+    if (v == '1')
 	{
 		// version 1
 		state->version = 1;
 		state->firstPageSkipBytes = 8192;
-}
+	}
 	else if (v == '2')
 	{
 		// version 2
@@ -864,6 +872,7 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 	}
 
 	// send the "reboot to program mode" command and the device should start in program mode
+	printf("Rebooting unit...\n");
     serialPortWrite(state->param->port, (unsigned char*)":020000040300F7", 15);
     serialPortSleep(state->param->port, 250);
 
@@ -1051,6 +1060,9 @@ static int bootloaderSync(serial_port_t* s)
 {
 	static const unsigned char handshakerChar = 'U';
 
+	//Most usages of this function we do not know if we can communicate (still doing auto-baud or checking to see if the bootloader or application is running) so trying to reset unit here does not make sense.
+	//This was probably added because the PC bootloader was doing multiple syncs in a row but the hardware bootloader only allowed one.
+	//Will leave it just in case
 	// reboot the device in case it is stuck
 	bootloaderRestart(s);
 
@@ -1069,6 +1081,8 @@ static int bootloaderSync(serial_port_t* s)
 
 static int bootloaderHandshake(bootload_params_t* p)
 {
+	//Port should already be closed, but make sure
+	serialPortClose(p->port);
 
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
 
@@ -1084,7 +1098,6 @@ static int bootloaderHandshake(bootload_params_t* p)
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
 	{
-        serialPortClose(p->port);
         if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
         {
             // can't open the port, fail
@@ -1102,11 +1115,6 @@ static int bootloaderHandshake(bootload_params_t* p)
         // retry at a different baud rate
         serialPortClose(p->port);
         p->baudRate = bootloaderCycleBaudRate(p->baudRate);
-        if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
-        {
-            // can't open the port, fail
-            return 0;
-        }
 
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
@@ -1119,19 +1127,15 @@ static int bootloaderHandshake(bootload_params_t* p)
 
 static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 {
+	printf("Starting bootloader...\n");
 	if (!enableBootloader(p->port, p->baudRate, p->error, p->errorLength))
 	{
+		printf("Unable to find bootloader\n");
 		return 0;
 	}
 
-	// flush device input buffer with invalid chars to reset state machine
-	for (int i = 0; i < 64; i++)
-	{
-        serialPortWrite(p->port, (unsigned char*)"!!!!!!!!", 8);
-        serialPortSleep(p->port, 1);
-	}
-
-    if (!bootloaderHandshake(p))
+	// Sync with bootloader
+	if (!bootloaderHandshake(p))
 	{
 		return 0;
 	}
@@ -1500,48 +1504,50 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
 	p.port = port;
 
     // attempt to handshake in case we are in bootloader mode
-    if (!bootloaderHandshake(&p))
-    {
-        // in case we are in program mode, try and send the commands to go into bootloader mode
-        unsigned char c = 0;
-        for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
-        {
-            serialPortClose(port);
-            if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
-            {
-                return 0;
-            }
-            for (size_t loop = 0; loop < 10; loop++)
-            {
-                serialPortWriteAscii(port, "STPB", 4);
-                serialPortWriteAscii(port, "BLEN", 4);
-                c = 0;
-                if (serialPortReadCharTimeout(port, &c, 13) == 1)
-                {
-                    if (c == '$')
-                    {
-                        // done, we got into bootloader mode
-                        i = 9999;
-                        SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
-                        break;
-                    }
-                }
-                else
-                {
-                    serialPortFlush(port);
-                }
-            }
-        }
-    }
-    serialPortClose(port);
+	if (!bootloaderHandshake(&p))
+	{
+		// in case we are in program mode, try and send the commands to go into bootloader mode
+		unsigned char c = 0;
+		for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
+		{
+			serialPortClose(port);
+			if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
+			{
+				return 0;
+			}
+			for (size_t loop = 0; loop < 10; loop++)
+			{
+				serialPortWriteAscii(port, "STPB", 4);
+				serialPortWriteAscii(port, "BLEN", 4);
+				c = 0;
+				if (serialPortReadCharTimeout(port, &c, 13) == 1)
+				{
+					if (c == '$')
+					{
+						// done, we got into bootloader mode
+						i = 9999;
+						break;
+					}
+				}
+				else
+				{
+					serialPortFlush(port);
+				}
+			}
+		}
 
-    // if we can't handshake at this point, bootloader enable has failed
-	p.baudRate = (baudRate == IS_BAUD_RATE_BOOTLOADER_RS232 ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER);
-    if (!bootloaderHandshake(&p))
-    {
-        // failure
-        return 0;
-    }
+		serialPortClose(port);
+		SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
+
+		// if we can't handshake at this point, bootloader enable has failed
+		p.baudRate = (baudRate == IS_BAUD_RATE_BOOTLOADER_RS232 ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER);
+		if (!bootloaderHandshake(&p))
+		{
+			// failure
+			serialPortClose(port);
+			return 0;
+		}
+	}
 
 	// ensure bootloader restarts in fresh state
 	bootloaderRestart(port);

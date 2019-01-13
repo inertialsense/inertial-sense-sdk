@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(RTK_EMBEDDED)
 
-#include "../../libs/rtklib/src/rtklib.h"
+#include "../../libs-int/rtklib/src/rtklib.h"
 
 #else
 
@@ -192,6 +192,8 @@ void is_comm_init(is_comm_instance_t* instance)
 	instance->externalDataIdentifier = 0;
 	instance->dataOffset = 0;
 	instance->dataSize = 0;
+    instance->pktCounter = 0;
+    instance->ackNeeded = 0;
 }
 
 static uint32_t processInertialSenseByte(is_comm_instance_t* instance, uint8_t byte)
@@ -213,26 +215,37 @@ static uint32_t processInertialSenseByte(is_comm_instance_t* instance, uint8_t b
 		packet.body.size = instance->bufferSize;
 
 		// decode the packet in place on top of the receive buffer to save memory
-		if (is_decode_binary_packet(&packet, instance->buffer, (int)(instance->bufferPtr - instance->buffer)) == 0 && packet.hdr.pid == PID_DATA)
+		if (is_decode_binary_packet(&packet, instance->buffer, (int)(instance->bufferPtr - instance->buffer)) == 0 && (packet.hdr.pid == PID_DATA || packet.hdr.pid == PID_SET_DATA))
 		{
 			p_data_hdr_t* dataHdr = (p_data_hdr_t*)packet.body.ptr;
 			dataId = dataHdr->id;
 			instance->dataSize = dataHdr->size;
 			instance->dataOffset = dataHdr->offset;
+            instance->pktCounter = packet.hdr.counter;
 
-			// ensure offset and size are in bounds - check the size independant of offset because the size could be a
+			// ensure offset and size are in bounds - check the size independent of offset because the size could be a
 			//  negative number in case of corrupt data
 			if (dataId > DID_NULL && dataId < DID_COUNT && instance->dataSize <= MAX_DATASET_SIZE &&
 				instance->dataOffset <= MAX_DATASET_SIZE && instance->dataOffset + instance->dataSize <= MAX_DATASET_SIZE)
 			{
 				// copy over the actual data structure to the start of the buffer
 				memmove(instance->buffer + instance->dataOffset, packet.body.ptr + sizeof(p_data_hdr_t), instance->dataSize);
+                
+                if(packet.hdr.pid == PID_SET_DATA)
+                {   // acknowledge valid data received
+                    instance->ackNeeded = PID_ACK;
+                }                    
 			}
 			else
 			{
 				// corrupt data
 				dataId = DID_NULL;
 				instance->errorCount++;
+
+                if(packet.hdr.pid == PID_SET_DATA)
+                {   // negative acknowledge data received
+                    instance->ackNeeded = PID_NACK;
+                }
 			}
 		}
 		else
@@ -485,7 +498,7 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits)
 	return 	is_comm_set_data(instance, DID_RMC, offsetof(rmc_t,bits), sizeof(uint64_t), (void*)&rmcBits);
 }
 
-int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data)
+static int sendData(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data, uint32_t pid)
 {
 	int dataSize = size + sizeof(p_data_hdr_t);
 	uint8_t* toSend = (uint8_t*)MALLOC(dataSize);
@@ -497,13 +510,23 @@ int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t off
 
 	packet_hdr_t hdr;
 	hdr.flags = 0;
-	hdr.pid = PID_SET_DATA;
+	hdr.pid = pid;
 	hdr.counter = instance->counter++;
 
 	int result = is_encode_binary_packet(toSend, dataSize, &hdr, 0, instance->buffer, instance->bufferSize);
 	FREE(toSend);
 	return result;
 }
+
+int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data)
+{
+    return sendData(instance, dataId, offset, size, data, PID_SET_DATA);    
+}    
+
+int is_comm_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data)
+{
+    return sendData(instance, dataId, offset, size, data, PID_DATA);    
+}    
 
 int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance)
 {
@@ -524,6 +547,46 @@ int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance)
 
     return is_encode_binary_packet(0, 0, &hdr, 0, instance->buffer, instance->bufferSize);
 }
+
+#if 0
+/**
+* Encode a binary acknowledge packet in response to the last received packet
+* @param instance the comm instance passed to is_comm_init
+* @return 0 if success, otherwise an error code
+*/
+int is_comm_ack(is_comm_instance_t* instance, uint32_t did)
+{
+    if(did!=0 && instance->ackNeeded==0)
+    {
+        return 0;
+    }
+    
+    int ackSize;
+    bufPtr_t data;
+
+    // Create and Send request packet
+    p_ack_t ack;
+    ack.hdr.pktInfo = instance->ackNeeded;
+    ack.hdr.pktCounter = instance->pktCounter;
+    ackSize = sizeof(p_ack_hdr_t);
+
+    // Set ack body
+    //     switch (pid)
+    //     {
+    //     case PID_SET_DATA:
+    //         memcpy(&(ack.buf), (p_data_hdr_t*)(instance->buffer), sizeof(p_data_hdr_t));
+    //         ackSize += sizeof(p_data_hdr_t);
+    //         break;
+    //     }
+
+    data.ptr = (unsigned char*)&ack;
+    data.size = ackSize;
+
+    int result = is_encode_binary_packet(&ack, ackSize, &hdr, 0, instance->buffer, instance->bufferSize);
+
+    instance->ackNeeded = 0;
+}
+#endif
 
 void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum)
 {
@@ -815,6 +878,20 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
     if ((dataHdr->size + dataHdr->offset) <= maxsize)
     {
         memcpy((uint8_t*)sptr + dataHdr->offset, dataBuf, dataHdr->size);
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+/** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
+char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *instance, const unsigned int maxsize)
+{    
+    if ((instance->dataSize + instance->dataOffset) <= maxsize)
+    {
+        memcpy((uint8_t*)sptr + instance->dataOffset, instance->buffer + instance->dataOffset, instance->dataSize);
         return 0;
     }
     else

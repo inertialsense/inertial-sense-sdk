@@ -1,5 +1,11 @@
 var searchData=
 [
+  ['g1task',['g1Task',['../structsystem__fault__t.html#a15d3840e22871e31ba84109475364c94',1,'system_fault_t']]],
+  ['g2filenum',['g2FileNum',['../structsystem__fault__t.html#a14d6c98180ef105db7bae04b021365a9',1,'system_fault_t']]],
+  ['g3linenum',['g3LineNum',['../structsystem__fault__t.html#ac4e56a00b6515eb9f1e8b0720b160e83',1,'system_fault_t']]],
+  ['g4',['g4',['../structsystem__fault__t.html#aba8be1ae31d21dd7f69b721da0eeae84',1,'system_fault_t']]],
+  ['g5lr',['g5Lr',['../structsystem__fault__t.html#ab90399195e89eb8a3be34c0a3b49c098',1,'system_fault_t']]],
+  ['g_5fasciitolowermap',['g_asciiToLowerMap',['../_i_s_data_mappings_8cpp.html#a45d2641545e7d32d57fd9dfc0d86c964',1,'g_asciiToLowerMap():&#160;ISDataMappings.cpp'],['../_i_s_data_mappings_8h.html#a45d2641545e7d32d57fd9dfc0d86c964',1,'g_asciiToLowerMap():&#160;ISDataMappings.cpp']]],
   ['g_5fcomdatabuffer',['g_comDataBuffer',['../_i_s_comm_data_buffer_8cpp.html#a57f792bc9bbe1464eecddcce9f8a3880',1,'g_comDataBuffer():&#160;ISCommDataBuffer.cpp'],['../_i_s_comm_data_buffer_8h.html#a57f792bc9bbe1464eecddcce9f8a3880',1,'g_comDataBuffer():&#160;ISCommDataBuffer.cpp']]],
   ['g_5fcommandlineoptions',['g_commandLineOptions',['../cltool_8cpp.html#a84954f5c990f7f1847c32a29065b4427',1,'g_commandLineOptions():&#160;cltool.cpp'],['../cltool_8h.html#a84954f5c990f7f1847c32a29065b4427',1,'g_commandLineOptions():&#160;cltool.cpp']]],
   ['g_5fctrlcpressed',['g_ctrlCPressed',['../cltool_8h.html#a5dfb283df672d367721223d910d0b868',1,'cltool.h']]],

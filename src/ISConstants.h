@@ -33,6 +33,7 @@ extern "C" {
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
 #define PLATFORM_IS_WINDOWS 1
+#define PLATFORM_IS_EMBEDDED 0
 #ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
@@ -54,6 +55,8 @@ extern "C" {
 #define socket_t int
 
 #define PLATFORM_IS_APPLE 1
+#define PLATFORM_IS_EMBEDDED 0
+
 #if defined(__LITTLE_ENDIAN__)
 #define CPU_IS_LITTLE_ENDIAN 1
 #define CPU_IS_BIG_ENDIAN 0
@@ -71,9 +74,18 @@ extern "C" {
 #endif
 
 #define PLATFORM_IS_LINUX 1
+#define PLATFORM_IS_EMBEDDED 0
 #define socket_t int
 #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
+
+#elif defined(__INERTIAL_SENSE_EVB_2__)
+#define PLATFORM_IS_EMBEDDED 1
+#define PLATFORM_IS_ARM 1
+#define PLATFORM_IS_EVB_2 1
+#define CPU_IS_LITTLE_ENDIAN 1
+#define CPU_IS_BIG_ENDIAN 0
+
 
 #elif defined(ARM)
 
@@ -99,48 +111,48 @@ extern "C" {
 
 #error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
 
-#endif
+#endif // platform defines
 
 #if !defined(CPU_IS_LITTLE_ENDIAN) || !defined(CPU_IS_BIG_ENDIAN) || CPU_IS_LITTLE_ENDIAN == CPU_IS_BIG_ENDIAN
 
 #error Unsupported / unknown CPU architecture
 
-#endif
+#endif // Invalid CPU endianess
 
 #if defined(PLATFORM_IS_EMBEDDED) && PLATFORM_IS_EMBEDDED
 
 extern void* pvPortMalloc(size_t xWantedSize);
 extern void vPortFree(void* pv);
 #define MALLOC(m) pvPortMalloc(m)
-#define FREE(m) vPortFree(m)
 #define REALLOC(m, size) 0 // not supported
+#define FREE(m) vPortFree(m)
 
 #else
 
 #ifdef MALLOC_DEBUG
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  // MALLOC_DEBUG => __cplusplus
 extern void* malloc_debug(size_t size);
-extern void free_debug(void* mem);
 extern void* realloc_debug(void* mem, size_t newSize);
+extern void free_debug(void* mem);
 #ifdef __cplusplus
 }
-#endif
+#endif  // MALLOC_DEBUG => __cplusplus
 #define MALLOC(m) malloc_debug(m)
-#define FREE(m) free_debug(m)
 #define REALLOC(m, size) realloc_debug(m, size)
+#define FREE(m) free_debug(m)
 #else
 #define MALLOC(m) malloc(m)
-#define FREE(m) free(m)
 #define REALLOC(m, size) realloc(m, size)
-#endif
+#define FREE(m) free(m)
+#endif // MALLOC_DEBUG
 
-#endif
+#endif // defined(PLATFORM_IS_EMBEDDED) && PLATFORM_IS_EMBEDDED
 
 #ifndef SNPRINTF
 #define SNPRINTF snprintf
-#endif
+#endif // SNPRINTF
 
 #if defined(_MSC_VER)
 
@@ -172,12 +184,20 @@ extern void* realloc_debug(void* mem, size_t newSize);
 #define STRNCPY(a, b, c) strncpy((char*)a, (char*)b, c)
 #endif
 
-#endif
+#endif // defined(_MSC_VER)
 
-#if !defined(PLATFORM_IS_EMBEDDED) || !PLATFORM_IS_EMBEDDED
+#if PLATFORM_IS_EVB_2
+#define _MKDIR(dir) f_mkdir(dir)
+#define _RMDIR(dir) f_unlink(dir)
+#define _GETCWD(buf, len) f_getcwd(buf, len)
 
+#elif !defined(PLATFORM_IS_EMBEDDED) || !PLATFORM_IS_EMBEDDED
 #define BEGIN_CRITICAL_SECTION
 #define END_CRITICAL_SECTION
+#define DBGPIO_ENABLE(pin)
+#define DBGPIO_START(pin)
+#define DBGPIO_END(pin)
+#define DBGPIO_TOGGLE(pin)
 
 #if PLATFORM_IS_WINDOWS
 
@@ -189,7 +209,7 @@ extern void* realloc_debug(void* mem, size_t newSize);
 #define _UTIME _utime
 #define _UTIMEBUF struct _utimbuf
 
-#else
+#else // POSIX
 
 #include <unistd.h>
 #include <dirent.h>
@@ -224,6 +244,21 @@ extern void* realloc_debug(void* mem, size_t newSize);
 
 // #define PACKED_STRUCT typedef struct PACKED
 // #define PACKED_UNION typedef union PACKED
+
+#ifndef RAMFUNC
+
+/* Define RAMFUNC attribute */
+#if defined   ( __CC_ARM   ) /* Keil µVision 4 */
+#   define RAMFUNC __attribute__ ((section(".ramfunc")))
+#elif defined ( __ICCARM__ ) /* IAR Ewarm 5.41+ */
+#   define RAMFUNC __ramfunc
+#elif defined (  __GNUC__  ) /* GCC CS3 2009q3-68 */
+#   define RAMFUNC __attribute__ ((section(".ramfunc")))
+#else
+#	define RAMFUNC
+#endif
+
+#endif
 
 #ifndef UNMASK
 #define UNMASK(_word, _prefix) (((_word) & (_prefix##_MASK)) >> (_prefix##_SHIFT))
@@ -302,6 +337,16 @@ extern void* realloc_debug(void* mem, size_t newSize);
 #define MEMBERSIZE(type, member) sizeof(((type*)0)->member)
 #endif
 
+/* equivalent to `offsetof(type, member[i])`, but does not require that `i` is a constant expression.*/
+#ifndef OFFSET_OF_MEMBER_INDEX
+#define OFFSET_OF_MEMBER_INDEX(type, member, i) (offsetof(type, member) + (i) * MEMBERSIZE(type, member))
+#endif
+
+/* equivalent to `offsetof(type, member[i].submember)`, but does not require that `i` is a constant expression. */
+#ifndef OFFSET_OF_MEMBER_INDEX_SUBMEMBER
+#define OFFSET_OF_MEMBER_INDEX_SUBMEMBER(type, member, i, submember) (offsetof(type, member[0].submember) + (i) * MEMBERSIZE(type, member))
+#endif
+
 #ifndef STRINGIFY
 #define STRINGIFY(x) #x
 #endif
@@ -332,8 +377,8 @@ extern void* realloc_debug(void* mem, size_t newSize);
 
 #if ((defined(_MSC_VER) && _MSC_VER >= 1900) || (defined(__cplusplus) && ((__cplusplus >= 201103L || (__cplusplus < 200000 && __cplusplus > 199711L)))))
 
-#ifndef C11_IS_ENABLED
-#define C11_IS_ENABLED 1
+#ifndef CPP11_IS_ENABLED
+#define CPP11_IS_ENABLED 1
 #endif
 #ifndef CONST_EXPRESSION
 #define CONST_EXPRESSION constexpr static
@@ -358,8 +403,8 @@ extern void* realloc_debug(void* mem, size_t newSize);
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #endif
 
-#ifndef C11_IS_ENABLED
-#define C11_IS_ENABLED 0
+#ifndef CPP11_IS_ENABLED
+#define CPP11_IS_ENABLED 0
 #endif
 #ifndef CONST_EXPRESSION
 #define CONST_EXPRESSION static const

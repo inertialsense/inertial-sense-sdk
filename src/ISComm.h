@@ -114,6 +114,13 @@ typedef struct
 
     /** Size of last data id received. Internal state, do not modify */
 	uint32_t dataSize;
+
+    /** Packet counter value */
+    uint32_t pktCounter;
+
+    /** Acknowledge packet needed in response to the last packet received */
+    uint32_t ackNeeded;
+    
 } is_comm_instance_t;
 
 /**
@@ -155,7 +162,7 @@ int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t off
 int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 
 /**
-* Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init
+* Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet. 
 * @param instance the comm instance passed to is_comm_init
 * @param dataId the data id to set on the device (see DID_* at top of this file)
 * @param offset the offset to start setting data at on the data structure on the device
@@ -165,6 +172,11 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 * @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
 */
 int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
+
+/**
+* Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet. 
+*/
+int is_comm_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
 
 /**
 * Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
@@ -271,8 +283,8 @@ n-1			Packet end byte
 
 	
 #define PID_INVALID                         0   /** Invalid packet id */
-#define PID_ACK                             1   /** ACK */
-#define PID_NACK                            2   /** NACK */
+#define PID_ACK                             1   /** (ACK) received valid packet */
+#define PID_NACK                            2   /** (NACK) received invalid packet */
 #define PID_GET_DATA                        3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
 #define PID_DATA                            4   /** Data received from PID_GET_DATA, no ACK is sent back */
 #define PID_SET_DATA                        5   /** Set data on the device, such as configuration options, sends an ACK back */
@@ -332,7 +344,7 @@ typedef enum
 } asciiDataType;
 
 /** create a uint from an ASCII message id that is the same, regardless of CPU architecture */
-#define ASCII_MESSAGEID_TO_UINT(c4) ((uint32_t)c4[0] << 24 | ((uint32_t)c4[1] << 16) | ((uint32_t)c4[2] << 8) | ((uint32_t)c4[3]))
+#define ASCII_MESSAGEID_TO_UINT(c4) ((uint32_t)(c4)[0] << 24 | ((uint32_t)(c4)[1] << 16) | ((uint32_t)(c4)[2] << 8) | ((uint32_t)(c4)[3]))
 
 enum ePktHdrFlags
 {
@@ -562,6 +574,8 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
+/** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
+char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *com, const unsigned int maxsize);
 
 #ifdef __cplusplus
 }

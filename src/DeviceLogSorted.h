@@ -26,10 +26,7 @@ using namespace std;
 class cDeviceLogSorted : public cDeviceLog
 {
 public:
-	cDeviceLogSorted()
-	{
-		m_chunks.resize(0);
-	}
+    cDeviceLogSorted();
 
 	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) OVERRIDE;
 	void InitDeviceForReading() OVERRIDE;
@@ -39,16 +36,16 @@ public:
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	string LogFileExtention() OVERRIDE { return string(".sdat"); }
 
-	cSortedDataChunk m_currentReadChunk;
-    vector<list<cSortedDataChunk>> m_chunks;
+    cSortedDataChunk *m_chunks[DID_COUNT];
 
 	p_data_t* SerializeDataFromChunks();
 	bool ReadAllChunksFromFile();
-	bool ReadChunkFromFile();
+	bool ReadChunkFromFile(cSortedDataChunk *chunk);
 
 	uint32_t m_dataSerNum;
 	uint32_t m_lastSerNum;
 	p_data_t m_data;
+	cSortedDataChunk m_readChunk;
 };
 
 #endif // DEVICE_LOG_SORTED_H

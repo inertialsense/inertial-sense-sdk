@@ -21,11 +21,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <limits.h>
+#include <climits>
 
 #include "ISPose.h"
 #include "DeviceLogCSV.h"
-#include "ISLogger.h"
+#include "ISFileManager.h"
 #include "ISDataMappings.h"
 
 using namespace std;
@@ -51,9 +51,9 @@ void cDeviceLogCSV::InitDeviceForReading()
 		if (dataSet != NULL)
 		{
 			string dataSetRegex = string(dataSet) + "\\.csv$";
-			vector<file_info_t> infos;
+			vector<ISFileManager::file_info_t> infos;
 			vector<string> files;
-			cISLogger::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
+			ISFileManager::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
 			if (infos.size() != 0)
 			{
 				cCsvLog log;

@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <string.h>
 #include <vector>
+#include "ISLogFileBase.h"
 
 extern "C"
 {
@@ -66,24 +67,24 @@ protected:
 	string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
     void OnReadData(p_data_t* data);
 
-	vector<string>			m_fileNames;
-	FILE*					m_pFile;
-	string					m_directory;
-	string					m_timeStamp;
-	string					m_fileName;
-	dev_info_t				m_devInfo;
-	int						m_pHandle;
-	uint64_t				m_fileSize;
-	uint64_t				m_logSize;
-	uint32_t				m_fileCount;
-	uint64_t				m_maxDiskSpace;
-	uint32_t				m_maxFileSize;
-	uint32_t				m_maxChunkSize;
-	bool					m_altClampToGround;
-	bool					m_showTracks;
-	bool					m_showPoints;
-	bool					m_showPointTimestamps;
-	double					m_pointUpdatePeriodSec;
+	vector<string>          m_fileNames;
+	cISLogFileBase*         m_pFile;
+	string                  m_directory;
+	string                  m_timeStamp;
+	string                  m_fileName;
+	dev_info_t              m_devInfo;
+	int                     m_pHandle;
+	uint64_t                m_fileSize;
+	uint64_t                m_logSize;
+	uint32_t                m_fileCount;
+	uint64_t                m_maxDiskSpace;
+	uint32_t                m_maxFileSize;
+	uint32_t                m_maxChunkSize;
+	bool                    m_altClampToGround;
+	bool                    m_showTracks;
+	bool                    m_showPoints;
+	bool                    m_showPointTimestamps;
+	double                  m_pointUpdatePeriodSec;
 
 private:
     cLogStats*              m_logStats;

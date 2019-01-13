@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(RTK_EMBEDDED)
 
-#include "../../libs/rtklib/src/rtklib.h"
+#include "../../libs-int/rtklib/src/rtklib.h"
 
 #endif
 

@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.2</span>
+   &#160;<span id="projectnumber">Release 1.7.3</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -185,9 +185,9 @@ Macros</h2></td></tr>
 <tr class="separator:a4f5c35a4a8d7bc7011d154f678a44107"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51fcc1ce2e7a0c1f057fc1e2d54b5e2d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a51fcc1ce2e7a0c1f057fc1e2d54b5e2d">PID_INVALID</a>&#160;&#160;&#160;0   /** Invalid packet id */</td></tr>
 <tr class="separator:a51fcc1ce2e7a0c1f057fc1e2d54b5e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6a3b4bc4d7eefb123d1e6e954b7978b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#aa6a3b4bc4d7eefb123d1e6e954b7978b">PID_ACK</a>&#160;&#160;&#160;1   /** ACK */</td></tr>
+<tr class="memitem:aa6a3b4bc4d7eefb123d1e6e954b7978b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#aa6a3b4bc4d7eefb123d1e6e954b7978b">PID_ACK</a>&#160;&#160;&#160;1   /** (ACK) received valid packet */</td></tr>
 <tr class="separator:aa6a3b4bc4d7eefb123d1e6e954b7978b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1df21b0e8f59b5c8c30a48166a01482"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ab1df21b0e8f59b5c8c30a48166a01482">PID_NACK</a>&#160;&#160;&#160;2   /** NACK */</td></tr>
+<tr class="memitem:ab1df21b0e8f59b5c8c30a48166a01482"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ab1df21b0e8f59b5c8c30a48166a01482">PID_NACK</a>&#160;&#160;&#160;2   /** (NACK) received invalid packet */</td></tr>
 <tr class="separator:ab1df21b0e8f59b5c8c30a48166a01482"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27634099d972a0c65e8a3de17ea9d094"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>&#160;&#160;&#160;3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */</td></tr>
 <tr class="separator:a27634099d972a0c65e8a3de17ea9d094"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -205,7 +205,7 @@ Macros</h2></td></tr>
 <tr class="separator:aa38b0dd3d2020209980367367daca38e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36387dde5bf103230b02b507dc0a6dce"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a36387dde5bf103230b02b507dc0a6dce">PID_MAX_COUNT</a>&#160;&#160;&#160;32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */</td></tr>
 <tr class="separator:a36387dde5bf103230b02b507dc0a6dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1ddccee79d0dc498917329a1f99a268a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a1ddccee79d0dc498917329a1f99a268a">ASCII_MESSAGEID_TO_UINT</a>(c4)&#160;&#160;&#160;((uint32_t)c4[0] &lt;&lt; 24 | ((uint32_t)c4[1] &lt;&lt; 16) | ((uint32_t)c4[2] &lt;&lt; 8) | ((uint32_t)c4[3]))</td></tr>
+<tr class="memitem:a1ddccee79d0dc498917329a1f99a268a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a1ddccee79d0dc498917329a1f99a268a">ASCII_MESSAGEID_TO_UINT</a>(c4)&#160;&#160;&#160;((uint32_t)(c4)[0] &lt;&lt; 24 | ((uint32_t)(c4)[1] &lt;&lt; 16) | ((uint32_t)(c4)[2] &lt;&lt; 8) | ((uint32_t)(c4)[3]))</td></tr>
 <tr class="separator:a1ddccee79d0dc498917329a1f99a268a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
@@ -275,6 +275,8 @@ Functions</h2></td></tr>
 <tr class="separator:a2c516e5e416c7601de415a45ca05841a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac276c88fef83c901d29f5058dff79aa7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ac276c88fef83c901d29f5058dff79aa7">is_comm_set_data</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance, uint32_t dataId, uint32_t offset, uint32_t size, void *data)</td></tr>
 <tr class="separator:ac276c88fef83c901d29f5058dff79aa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9a10fea96e7333d2e86c58ae06671a8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ad9a10fea96e7333d2e86c58ae06671a8">is_comm_data</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance, uint32_t dataId, uint32_t offset, uint32_t size, void *data)</td></tr>
+<tr class="separator:ad9a10fea96e7333d2e86c58ae06671a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfd4fff6cd4bee421342a4d1b7fe65a4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#abfd4fff6cd4bee421342a4d1b7fe65a4">is_comm_stop_broadcasts_all_ports</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance)</td></tr>
 <tr class="separator:abfd4fff6cd4bee421342a4d1b7fe65a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3dce8a23c3413e9d104d776a7de9560"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#af3dce8a23c3413e9d104d776a7de9560">is_comm_stop_broadcasts_current_port</a> (<a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *instance)</td></tr>
@@ -295,6 +297,8 @@ Functions</h2></td></tr>
 <tr class="separator:a404354ab6f34767f2e7b90f2a3590051"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a417949645fb6514fe858da4ae5c52669"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#a417949645fb6514fe858da4ae5c52669">copyDataPToStructP2</a> (void *sptr, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize)</td></tr>
 <tr class="separator:a417949645fb6514fe858da4ae5c52669"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab13c526b37c0122317e4016f7ff09a73"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8h.html#ab13c526b37c0122317e4016f7ff09a73">is_comm_copy_to_struct</a> (void *sptr, const <a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *com, const unsigned int maxsize)</td></tr>
+<tr class="separator:ab13c526b37c0122317e4016f7ff09a73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -577,13 +581,13 @@ Variables</h2></td></tr>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname">c4</td><td>)</td>
-          <td>&#160;&#160;&#160;((uint32_t)c4[0] &lt;&lt; 24 | ((uint32_t)c4[1] &lt;&lt; 16) | ((uint32_t)c4[2] &lt;&lt; 8) | ((uint32_t)c4[3]))</td>
+          <td>&#160;&#160;&#160;((uint32_t)(c4)[0] &lt;&lt; 24 | ((uint32_t)(c4)[1] &lt;&lt; 16) | ((uint32_t)(c4)[2] &lt;&lt; 8) | ((uint32_t)(c4)[3]))</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>create a uint from an ASCII message id that is the same, regardless of CPU architecture </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00335">335</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00347">347</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -600,7 +604,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Binary checksum start value </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00210">210</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00222">222</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -665,7 +669,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>uINS default baud rate </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00184">184</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00196">196</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -682,7 +686,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>The maximum allowable dataset size </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00187">187</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00199">199</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -699,7 +703,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>The maximum size of a decoded ACK message </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00207">207</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00219">219</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -716,7 +720,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>The maximum size of decoded data in a packet body </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00204">204</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00216">216</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -733,7 +737,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>The maximum size of an decoded packet body </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00201">201</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00213">213</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -750,7 +754,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>The maximum encoded overhead size in sending a packet (7 bytes for header, 7 bytes for footer). The packet start and end bytes are never encoded. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00198">198</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00210">210</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -761,12 +765,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define PID_ACK&#160;&#160;&#160;1   /** ACK */</td>
+          <td class="memname">#define PID_ACK&#160;&#160;&#160;1   /** (ACK) received valid packet */</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00274">274</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00286">286</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -782,7 +786,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00282">282</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00294">294</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -798,7 +802,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00277">277</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00289">289</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -814,7 +818,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00276">276</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00288">288</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -830,7 +834,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00273">273</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00285">285</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -846,7 +850,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00283">283</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00295">295</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -857,12 +861,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define PID_NACK&#160;&#160;&#160;2   /** NACK */</td>
+          <td class="memname">#define PID_NACK&#160;&#160;&#160;2   /** (NACK) received invalid packet */</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00275">275</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00287">287</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -878,7 +882,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00278">278</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00290">290</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -894,7 +898,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00279">279</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00291">291</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -910,7 +914,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00281">281</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00293">293</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -926,7 +930,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00280">280</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00292">292</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -943,7 +947,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>The maximum buffer space that is used for sending and receiving packets </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00194">194</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00206">206</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -960,7 +964,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>The decoded overhead involved in sending a packet - 4 bytes for header, 4 bytes for footer </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00190">190</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00202">202</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -977,7 +981,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00215">215</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00227">227</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -993,7 +997,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00219">219</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00231">231</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1009,7 +1013,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00226">226</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00238">238</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1025,7 +1029,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00225">225</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00237">237</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1086,7 @@ Variables</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00319">319</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00331">331</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1110,7 +1114,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="aba14184fef722499ec8d81d880851c4aa7090300bb5d17c6d6dc7e3654a92a22c"></a>IS_BAUDRATE_COUNT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00232">232</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00244">244</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1134,7 +1138,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="ab0476659eb782bc338d77d1e1142abc3a598240ef76dd5a9f6688203693c9a123"></a>CM_PKT_FLAGS_CHECKSUM_24_BIT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00337">337</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00349">349</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1170,7 +1174,7 @@ Variables</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00363">363</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00375">375</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -1246,7 +1250,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Copies packet data into a data structure. Returns 0 on success, -1 on failure. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00799">799</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00862">862</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1289,7 +1293,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Copies packet data into a data structure. Returns 0 on success, -1 on failure. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00813">813</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00876">876</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1335,6 +1339,93 @@ Variables</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>the 32 bit unsigned integer value </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00080">80</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+
+</div>
+</div>
+<a id="ab13c526b37c0122317e4016f7ff09a73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab13c526b37c0122317e4016f7ff09a73">&#9670;&nbsp;</a></span>is_comm_copy_to_struct()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">char is_comm_copy_to_struct </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>sptr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *&#160;</td>
+          <td class="paramname"><em>instance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const unsigned int&#160;</td>
+          <td class="paramname"><em>maxsize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Copies is_comm_instance data into a data structure. Returns 0 on success, -1 on failure.</p>
+<p>Copies packet data into a data structure. Returns 0 on success, -1 on failure. </p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00890">890</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+
+</div>
+</div>
+<a id="ad9a10fea96e7333d2e86c58ae06671a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9a10fea96e7333d2e86c58ae06671a8">&#9670;&nbsp;</a></span>is_comm_data()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int is_comm_data </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structis__comm__instance__t.html">is_comm_instance_t</a> *&#160;</td>
+          <td class="paramname"><em>instance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>dataId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>size</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Same as <a class="el" href="_i_s_comm_8h.html#ac276c88fef83c901d29f5058dff79aa7">is_comm_set_data()</a> except NO acknowledge packet is sent in response to this packet. </p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00526">526</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1394,7 +1485,7 @@ Variables</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error </dd></dl>
 <dl class="section remark"><dt>Remarks</dt><dd>pass an offset and length of 0 to request the entire data structure </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00466">466</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00479">479</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1433,7 +1524,7 @@ Variables</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error </dd></dl>
 <dl class="section remark"><dt>Remarks</dt><dd>pass an offset and length of 0 to request the entire data structure </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00483">483</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00496">496</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1498,7 +1589,7 @@ Variables</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>the data id of the decoded data or DID_NULL (0) if a data structure is not yet available </dd></dl>
 <dl class="section remark"><dt>Remarks</dt><dd>when data is available, you can cast the buffer passed into is_comm_init into the appropriate data structure pointer (see binary messages above and <a class="el" href="data__sets_8h.html">data_sets.h</a>) </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00415">415</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00428">428</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1545,7 +1636,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init. An acknowledge packet is sent in response to this packet. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">instance</td><td>the comm instance passed to is_comm_init </td></tr>
     <tr><td class="paramname">dataId</td><td>the data id to set on the device (see DID_* at top of this file) </td></tr>
@@ -1558,7 +1649,7 @@ Variables</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error </dd></dl>
 <dl class="section remark"><dt>Remarks</dt><dd>pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00488">488</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00521">521</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1585,7 +1676,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, otherwise an error code </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00508">508</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00531">531</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1612,7 +1703,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, otherwise an error code </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00518">518</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00541">541</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1648,7 +1739,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00724">724</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00787">787</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1690,7 +1781,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00585">585</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00648">648</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1732,7 +1823,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00528">528</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00591">591</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -1787,7 +1878,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Pop off the packing argument, we can safely allow packing and shifting in memory at this point </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00616">616</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00679">679</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>

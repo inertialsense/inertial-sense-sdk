@@ -19,8 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\convert_ins.cpp" />
     <ClCompile Include="..\src\DataJSON.cpp" />
     <ClCompile Include="..\src\DeviceLogJSON.cpp" />
+    <ClCompile Include="..\src\ISFileManager.cpp" />
+    <ClCompile Include="..\src\ISLogFile.cpp" />
     <ClCompile Include="..\src\ring_buffer.c" />
     <ClCompile Include="..\src\cltool.cpp" />
     <ClCompile Include="..\src\cltool_main.cpp" />
@@ -60,8 +63,13 @@
     <ClCompile Include="..\src\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\convert_ins.h" />
     <ClInclude Include="..\src\DataJSON.h" />
     <ClInclude Include="..\src\DeviceLogJSON.h" />
+    <ClInclude Include="..\src\ISFileManager.h" />
+    <ClInclude Include="..\src\ISLogFile.h" />
+    <ClInclude Include="..\src\ISLogFileBase.h" />
+    <ClInclude Include="..\src\ISLogFileFactory.h" />
     <ClInclude Include="..\src\ring_buffer.h" />
     <ClInclude Include="..\src\cltool.h" />
     <ClInclude Include="..\src\com_manager.h" />
@@ -104,7 +112,7 @@
     <ProjectGuid>{B6DF5042-23C7-42D9-976B-D313E6EA092C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>InertialSenseLib</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

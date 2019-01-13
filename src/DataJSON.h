@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <regex>
 
 #include "com_manager.h"
+#include "ISLogFileBase.h"
 
 using namespace std;
 
@@ -48,7 +49,7 @@ public:
     * dataBuf data buffer
     * prefix prefix if data is written
     */
-    int WriteDataToFile(FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix);
+    int WriteDataToFile(cISLogFileBase* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix);
 
 	/**
     * Parse a json string into a data packet

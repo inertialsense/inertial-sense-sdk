@@ -33,7 +33,7 @@ typedef uint32_t eDataIDs;
 
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
-#define DID_CRASH_INFO                  (eDataIDs)2  /** (crash_info_t) Crash information */
+#define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
 #define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we will use the name "Preintegrated IMU" through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
@@ -105,18 +105,27 @@ typedef uint32_t eDataIDs;
 #define DID_VELOCITY_MEASUREMENT        (eDataIDs)71 /** (velocity_sensor_t) External generic velocity sensor to be fused with GPS-INS measurements. */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
 #define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. */
-#define DID_EVB2                        (eDataIDs)74 /** (evb2_t) EVB monitor, configuration and log control interface. */
+#define DID_EMPTY_1                     (eDataIDs)74 /** Unused */
 #define DID_PORT_MONITOR                (eDataIDs)75 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
+#define DID_RTK_STATE                   (eDataIDs)76 /** INTERNAL USE ONLY (rtk_state_t) */
+#define DID_RTK_PHASE_RESIDUAL          (eDataIDs)77 /** INTERNAL USE ONLY (rtk_residual_t) */
+#define DID_RTK_CODE_RESIDUAL           (eDataIDs)78 /** INTERNAL USE ONLY (rtk_residual_t) */
+#define DID_RTK_DEBUG                   (eDataIDs)79 /** INTERNAL USE ONLY (rtk_debug_t) */
+#define DID_EVB_STATUS                  (eDataIDs)80 /** (evb_status_t) EVB monitor and log control interface. */
+#define DID_EVB_CONFIG                  (eDataIDs)81 /** (evb_config_t) EVB configuration. */
+#define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
+#define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
 // 3] Add data id to ISDataMappings.cpp
 // 4] Increment DID_COUNT
-// 5] Test!
+// 5) Update the DIDs in IS-src/python/src/ci_hdw/data_sets.py
+// 6] Test!
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
-#define DID_COUNT (eDataIDs)76
+#define DID_COUNT (eDataIDs)84
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -135,7 +144,7 @@ typedef uint32_t eDataIDs;
 // #define PROTOCOL_VERSION_CHAR0 1        // Major (in com_manager.h)
 // #define PROTOCOL_VERSION_CHAR1 0
 #define PROTOCOL_VERSION_CHAR2 (0x000000FF&DID_COUNT)
-#define PROTOCOL_VERSION_CHAR3 7         // Minor (in data_sets.h)
+#define PROTOCOL_VERSION_CHAR3 8         // Minor (in data_sets.h)
 
 /** Latest known number of leap seconds */
 #define CURRENT_LEAP_SECONDS 18
@@ -201,8 +210,8 @@ enum eInsStatusFlags
 	INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,	// System is in navigation mode but the attitude uncertainty has exceeded the threshold.
 	INS_STATUS_SOLUTION_AHRS                    = 5,	// System is in AHRS mode and solution is good.
 	INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,	// System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
-	
-    /** Trying to perform Compassing with no baseline set in flashCfg. */
+
+	/** Trying to perform Compassing with no baseline set in flashCfg. */
     INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET     = (int)0x00100000,
     /** Specified Baseline Length is significantly different from precision solution. */
     INS_STATUS_RTK_COMPASSING_WRONG_BASELINE    = (int)0x00200000,
@@ -218,6 +227,7 @@ enum eInsStatusFlags
     INS_STATUS_NAV_FIX_STATUS_OFFSET			= 24,
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
+	/* NOTE: If you add or modify these INS_STATUS_RTK_ values, please update eInsStatusRtkBase in IS-src/python/src/ci_hdw/data_sets.py */
 	/** GPS base NO observations received (i.e. RTK differential corrections) */
     INS_STATUS_RTK_BASE_ERR_NO_OBSERV			= (int)0x08000000,
     /** GPS base NO position received */
@@ -231,17 +241,22 @@ enum eInsStatusFlags
 	INS_STATUS_RTOS_TASK_PERIOD_OVERRUN			= (int)0x40000000,
 	/** General fault (eGenFaultCodes) */
 	INS_STATUS_GENERAL_FAULT					= (int)0x80000000,
+
+	/** Output reset mask - these bits are cleared on output */
+	INS_STATUS_OUTPUT_RESET_MASK				= (0),
 };
 
 /** GPS navigation fix type */
+/* NOTE: If you modify this enum, please also modify the eNavFixStatus enum
+ *       in IS-src/python/src/ci_hdw/data_sets.py */
 enum eNavFixStatus
 {
-	NAV_FIX_STATUS_NONE							= (int)0x00000000,
-	NAV_FIX_STATUS_STANDARD						= (int)0x00000001,
-	NAV_FIX_STATUS_RTK_SINGLE					= (int)0x00000002,
-	NAV_FIX_STATUS_RTK_FLOAT					= (int)0x00000003,
-	NAV_FIX_STATUS_RTK_FIX						= (int)0x00000004,
-	NAV_FIX_STATUS_STANDARD_W_GPS_COMPASSING    = (int)0x00000005,
+	NAV_FIX_STATUS_NONE                         = (int)0x00000000,
+	NAV_FIX_STATUS_3D                           = (int)0x00000001,
+	NAV_FIX_STATUS_RTK_SINGLE                   = (int)0x00000002,
+	NAV_FIX_STATUS_RTK_FLOAT                    = (int)0x00000003,
+	NAV_FIX_STATUS_RTK_FIX                      = (int)0x00000004,
+	NAV_FIX_STATUS_3D_W_GPS_COMPASSING          = (int)0x00000005,
 };
 
 /** Hardware status flags */
@@ -283,12 +298,10 @@ enum eHdwStatusFlags
 	/** Sensor saturation offset */
 	HDW_STATUS_SATURATION_OFFSET				= 8,
 
-	/** Sensor saturation happened within in past 10 seconds */
-	HDW_STATUS_SATURATION_HISTORY				= (int)0x00001000,
-
-	HDW_STATUS_UNUSED_2				            = (int)0x00002000,
-	HDW_STATUS_UNUSED_3				            = (int)0x00004000,
-	HDW_STATUS_UNUSED_4				            = (int)0x00008000,
+	HDW_STATUS_UNUSED_2				            = (int)0x00001000,
+	HDW_STATUS_UNUSED_3				            = (int)0x00002000,
+	HDW_STATUS_UNUSED_4				            = (int)0x00004000,
+	HDW_STATUS_UNUSED_5				            = (int)0x00008000,
 
 	/** Communications Tx buffer limited */
 	HDW_STATUS_ERR_COM_TX_LIMITED				= (int)0x00010000,
@@ -311,7 +324,7 @@ enum eHdwStatusFlags
 	/** Vibrations effecting accuracy */
 // 	HDW_STATUS_ERR_VIBRATION					= (int)0x04000000,
 
-	HDW_STATUS_UNUSED_5				            = (int)0x08000000,
+	HDW_STATUS_UNUSED_6				            = (int)0x08000000,
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
@@ -324,8 +337,11 @@ enum eHdwStatusFlags
 	/** Reset from Hardware (NRST pin low) */
 	HDW_STATUS_FAULT_RESET_HDW					= (int)0x40000000,
 
-	/** CPU error */
-	HDW_STATUS_FAULT_CPU_ERR					= (int)0x80000000,
+	/** Critical System Fault - CPU error */
+	HDW_STATUS_FAULT_SYS_CRITICAL				= (int)0x80000000,
+
+	/** Output reset mask - these bits are cleared on output */
+	HDW_STATUS_OUTPUT_RESET_MASK				= (HDW_STATUS_SATURATION_MASK),
 };
 
 /** GPS Status */
@@ -579,6 +595,9 @@ typedef struct PACKED
 
 	/** Inertial Measurement Units (IMUs) */
 	imus_t                  I[2];
+
+	/** IMU Status (eImuStatus) */
+	uint32_t                status;
 } dual_imu_t;
 
 
@@ -633,8 +652,31 @@ typedef struct PACKED
 
 	/** Integral period in seconds for delta theta and delta velocity.  This is configured using DID_FLASH_CONFIG.startupNavDtMs. */
 	float					dt;
+
+	/** IMU Status (eImuStatus) */
+	uint32_t                status;
 } preintegrated_imu_t;
 
+/** IMU Status */
+enum eImuStatus
+{
+	/** Sensor saturation on IMU1 gyro */
+	IMU_STATUS_SATURATION_IMU1_GYR              = (int)0x00000001,
+	/** Sensor saturation on IMU2 gyro */
+	IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
+	/** Sensor saturation on IMU1 accelerometer */
+	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000004,
+	/** Sensor saturation on IMU2 accelerometer */
+	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000008,
+    
+    /** Sample rate fault */
+	IMU_STATUS_SAMPLE_RATE_FAULT                = (int)0x00000010,
+
+//     /** Sensor saturation happened within past 10 seconds */
+//     IMU_STATUS_SATURATION_HISTORY               = (int)0x00000100,
+//     /** Sample rate fault happened within past 10 seconds */
+//     IMU_STATUS_SAMPLE_RATE_FAULT_HISTORY        = (int)0x00000200,
+};
 
 /** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
 typedef struct PACKED
@@ -669,7 +711,7 @@ typedef struct PACKED
 	/** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
 	float                   cnoMean;
 
-	/** Time sync offset between local time since boot up to time of week in seconds */
+	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
 	double                  towOffset;
 } gps_pos_t;
 
@@ -1008,7 +1050,7 @@ typedef struct PACKED
 	f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
 } sys_sensors_adc_t;
 
-#define RMC_NUM_PORTS	2	// COM0_PORT_NUM and COM1_PORT_NUM.  No USB yet.
+#define NUM_COM_PORTS       3	// Number of communication ports.  (Ser0, Ser1, and USB).
 
 /** Realtime Message Controller (used in rmc_t). 
 	The data sets available through RMC are broadcast at the availability of the data.  A goal of RMC is 
@@ -1016,70 +1058,62 @@ typedef struct PACKED
 	provided so that broadcast of sensor data is done as soon as it becomes available.   The exception to
 	this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
 */
-#define RMC_OPTIONS_PORT_MASK           0x000000FF
-#define RMC_OPTIONS_PORT_ALL            RMC_OPTIONS_PORT_MASK
-#define RMC_OPTIONS_PORT_CURRENT        0x00000000
-#define RMC_OPTIONS_PORT_SER0           0x00000001
-#define RMC_OPTIONS_PORT_SER1           0x00000002	// also SPI
-#define RMC_OPTIONS_PORT_USB            0x00000004
-#define RMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+enum eRMCbits {
+	RMC_OPTIONS_PORT_MASK			= 0x000000FF,
+	RMC_OPTIONS_PORT_ALL			= (RMC_OPTIONS_PORT_MASK),
+	RMC_OPTIONS_PORT_CURRENT		= 0x00000000,
+	RMC_OPTIONS_PORT_SER0			= 0x00000001,
+	RMC_OPTIONS_PORT_SER1			= 0x00000002,	// also SPI
+	RMC_OPTIONS_PORT_USB			= 0x00000004,
+	RMC_OPTIONS_PRESERVE_CTRL		= 0x00000100,	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+	RMC_OPTIONS_PERSISTENT			= 0x00000200,	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
 
-																// RMC message data rates:
-#define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
-#define RMC_BITS_INS2                   0x0000000000000002      // "
-#define RMC_BITS_INS3                   0x0000000000000004      // "
-#define RMC_BITS_INS4                   0x0000000000000008      // "
-#define RMC_BITS_DUAL_IMU               0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-#define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
-#define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
-#define RMC_BITS_MAGNETOMETER1          0x0000000000000080      // ~10ms
-#define RMC_BITS_MAGNETOMETER2          0x0000000000000100      // "
+																	// RMC message data rates:
+	RMC_BITS_INS1                   = 0x0000000000000001,      // rmc.insPeriodMs (4ms default)
+	RMC_BITS_INS2                   = 0x0000000000000002,      // "
+	RMC_BITS_INS3                   = 0x0000000000000004,      // "
+	RMC_BITS_INS4                   = 0x0000000000000008,      // "
+	RMC_BITS_DUAL_IMU               = 0x0000000000000010,      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+	RMC_BITS_PREINTEGRATED_IMU      = 0x0000000000000020,      // "
+	RMC_BITS_BAROMETER              = 0x0000000000000040,      // ~8ms
+	RMC_BITS_MAGNETOMETER1          = 0x0000000000000080,      // ~10ms
+	RMC_BITS_MAGNETOMETER2          = 0x0000000000000100,      // "
 
-#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
-#define RMC_BITS_GPS2_POS               0x0000000000000800      // "
-#define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
-#define RMC_BITS_GPS2_RAW               0x0000000000002000      // "
-#define RMC_BITS_GPS1_SAT               0x0000000000004000      // 1s
-#define RMC_BITS_GPS2_SAT               0x0000000000008000      // "
-#define RMC_BITS_GPS_BASE_RAW           0x0000000000010000      // 
-#define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
-#define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
-#define RMC_BITS_DUAL_IMU_RAW           0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
-#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
-#define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
-#define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
-#define RMC_BITS_GPS1_RTK_POS           0x0000000000800000      // "
-#define RMC_BITS_GPS1_RTK_REL           0x0000000001000000      // "
-#define RMC_BITS_GPS1_RTK_MISC          0x0000000004000000      // "
+	RMC_BITS_GPS1_POS               = 0x0000000000000400,      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+	RMC_BITS_GPS2_POS               = 0x0000000000000800,      // "
+	RMC_BITS_GPS1_RAW               = 0x0000000000001000,      // "
+	RMC_BITS_GPS2_RAW               = 0x0000000000002000,      // "
+	RMC_BITS_GPS1_SAT               = 0x0000000000004000,      // 1s
+	RMC_BITS_GPS2_SAT               = 0x0000000000008000,      // "
+	RMC_BITS_GPS_BASE_RAW           = 0x0000000000010000,      // 
+	RMC_BITS_STROBE_IN_TIME         = 0x0000000000020000,      // On strobe input event
+	RMC_BITS_DIAGNOSTIC_MESSAGE     = 0x0000000000040000,
+	RMC_BITS_DUAL_IMU_RAW           = 0x0000000000080000,      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+	RMC_BITS_GPS1_VEL               = 0x0000000000100000,      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+	RMC_BITS_GPS2_VEL               = 0x0000000000200000,      // "
+	RMC_BITS_GPS1_UBX_POS           = 0x0000000000400000,      // "
+	RMC_BITS_GPS1_RTK_POS           = 0x0000000000800000,      // "
+	RMC_BITS_GPS1_RTK_REL           = 0x0000000001000000,      // "
+	RMC_BITS_GPS1_RTK_MISC          = 0x0000000004000000,      // "
+	RMC_BITS_INL2_NED_SIGMA         = 0x0000000008000000,
+	RMC_BITS_RTK_STATE              = 0x0000000010000000,
+	RMC_BITS_RTK_CODE_RESIDUAL      = 0x0000000020000000,
+	RMC_BITS_RTK_PHASE_RESIDUAL     = 0x0000000040000000,
+
+    RMC_PRESET_PPD_NAV_PERIOD_MULT	= 25,
+	RMC_PRESET_INS_NAV_PERIOD_MULT	= 1,   // fastest rate (nav filter update rate)
+};
+
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
-
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
-#define RMC_BITS_PRESET                 0x8000000000000000      // Indicate BITS is a preset
+#define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset
 
 // Preset: Post Processing Data
-#define RMC_PRESET_PPD_BITS_NO_IMU     (RMC_BITS_PRESET | \
-                                        RMC_BITS_INS2 | \
-                                        RMC_BITS_BAROMETER | \
-                                        RMC_BITS_MAGNETOMETER1 | \
-                                        RMC_BITS_MAGNETOMETER2 | \
-                                        RMC_BITS_GPS1_POS | \
-                                        RMC_BITS_GPS2_POS | \
-                                        RMC_BITS_GPS1_VEL | \
-                                        RMC_BITS_GPS2_VEL | \
-                                        RMC_BITS_GPS1_RAW | \
-                                        RMC_BITS_GPS2_RAW | \
-                                        RMC_BITS_GPS_BASE_RAW | \
-                                        RMC_BITS_GPS1_RTK_REL | \
-                                        RMC_BITS_INTERNAL_PPD | \
-                                        RMC_BITS_DIAGNOSTIC_MESSAGE )
-#define RMC_PRESET_PPD_BITS            (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_PREINTEGRATED_IMU )
-#define RMC_PRESET_PPD_BITS_RAW_IMU    (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_DUAL_IMU_RAW )
-#define RMC_PRESET_PPD_NAV_PERIOD_MULT  25
-#define RMC_PRESET_INS_BITS            (RMC_BITS_INS2 | \
-                                        RMC_BITS_GPS1_POS | \
-                                        RMC_BITS_PRESET )
-#define RMC_PRESET_INS_NAV_PERIOD_MULT  1   // fastest rate (nav filter update rate)
+#define RMC_PRESET_PPD_BITS_NO_IMU      (RMC_BITS_PRESET | RMC_BITS_INS2 | RMC_BITS_BAROMETER | RMC_BITS_MAGNETOMETER1 | RMC_BITS_MAGNETOMETER2 | RMC_BITS_GPS1_POS | RMC_BITS_GPS2_POS | RMC_BITS_GPS1_VEL | RMC_BITS_GPS2_VEL | RMC_BITS_GPS1_RAW | RMC_BITS_GPS2_RAW | RMC_BITS_GPS_BASE_RAW | RMC_BITS_GPS1_RTK_REL | RMC_BITS_INTERNAL_PPD | RMC_BITS_DIAGNOSTIC_MESSAGE)
+#define RMC_PRESET_PPD_BITS             (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_PREINTEGRATED_IMU)
+#define RMC_PRESET_INS_BITS             (RMC_BITS_INS2 | RMC_BITS_GPS1_POS | RMC_BITS_PRESET)
+#define RMC_PRESET_PPD_BITS_RAW_IMU     (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_DUAL_IMU_RAW)
+#define RMC_PRESET_PPD_BITS_RTK_DBG     (RMC_PRESET_PPD_BITS | RMC_BITS_RTK_STATE | RMC_BITS_RTK_CODE_RESIDUAL | RMC_BITS_RTK_PHASE_RESIDUAL)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -1153,6 +1187,8 @@ enum eHdwBitStatusFlags
 	HDW_BIT_FAILED_AHRS_MASK		= (int)0xFFFF0F00,
 	HDW_BIT_FAULT_NOISE_PQR			= (int)0x00000100,
 	HDW_BIT_FAULT_NOISE_ACC			= (int)0x00000200,
+	HDW_BIT_FAULT_MAGNETOMETER      = (int)0x00000400,
+	HDW_BIT_FAULT_BAROMETER         = (int)0x00000800,
 	HDW_BIT_FAULT_GPS_NO_COM		= (int)0x00001000,	// No GPS serial communications
 	HDW_BIT_FAULT_GPS_POOR_CNO		= (int)0x00002000,	// Poor GPS signal strength.  Check antenna
 	HDW_BIT_FAULT_GPS_POOR_ACCURACY	= (int)0x00002000,	// Low number of satellites, or bad accuracy 
@@ -1643,6 +1679,9 @@ typedef struct
 	/** max difference of time (sec) */
 	double maxtdiff;
 
+    /** reset sat biases after this long trying to get fix if not acquired */
+    int fix_reset_base_msgs;
+
     /** reject threshold of NIS */
     double maxinnocode;
     double maxinnophase;
@@ -1653,9 +1692,13 @@ typedef struct
 	/** reject threshold of gdop */
 	double maxgdop;
 
-	/** baseline length constraint {const,sigma} (m) */
-	double baseline[2];
+    /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
+    double baseline[3];
     double max_baseline_error;
+    double reset_baseline_error;
+
+    /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
+    double max_ubx_error;
 
 	/** rover position for fixed mode {x,y,z} (ecef) (m) */
 	double ru[3];
@@ -2299,66 +2342,220 @@ typedef struct
 	double lla[3];
 } survey_in_t;
 
+
+typedef enum
+{
+    /** SD card logger: card ready */
+    EVB_STATUS_SD_CARD_READY                = 0x00000001,
+
+    /** SD card Logger: running */
+    EVB_STATUS_SD_LOG_ENABLED               = 0x00000002,
+
+    /** SD card error: card file system */
+    EVB_STATUS_SD_ERR_CARD_FAULT            = 0x00000010,
+
+    /** SD card error: card full */
+    EVB_STATUS_SD_ERR_CARD_FULL             = 0x00000020,
+
+    /** SD card error: mask */
+    EVB_STATUS_SD_ERR_CARD_MASK             = 0x000000F0,
+
+    /** WiFi: enabled */
+    EVB_STATUS_WIFI_ENABLED                 = 0x00010000,
+
+    /** WiFi: connected to access point (hot spot) or another device */
+    EVB_STATUS_WIFI_CONNECTED               = 0x00020000,
+
+    /** XBee: enabled */
+    EVB_STATUS_XBEE_ENABLED                 = 0x00100000,
+
+    /** XBee: connected */
+    EVB_STATUS_XBEE_CONNECTED               = 0x00200000,
+
+    /** XBee: configured */
+    EVB_STATUS_XBEE_CONFIGURED              = 0x00400000,
+
+    /** XBee: failed to configure */
+    EVB_STATUS_XBEE_CONFIG_FAILURE          = 0x00800000,
+
+} eEvbStatus;
+
+/** EVB-2 communications ports. */
+typedef enum
+{
+    EVB2_PORT_UINS0     = 0,
+    EVB2_PORT_UINS1     = 1,
+    EVB2_PORT_XBEE      = 2,
+    EVB2_PORT_XRADIO    = 3,
+    EVB2_PORT_BLE       = 4,
+    EVB2_PORT_SP330     = 5,
+    EVB2_PORT_GPIO_H8   = 6,
+    EVB2_PORT_USB       = 7,
+    EVB2_PORT_WIFI      = 8,
+    EVB2_PORT_COUNT
+} eEvb2CommPorts;
+
+typedef enum
+{
+    EVB2_CB_OPTIONS_SP330_RS422       = 0x00000001,
+    EVB2_CB_OPTIONS_XBEE_ENABLE       = 0x00000010,
+    EVB2_CB_OPTIONS_WIFI_ENABLE       = 0x00000020,
+    EVB2_CB_OPTIONS_BLE_ENABLE        = 0x00000040,
+} eEvb2ComBridgeOptions;
+
 /**
-* (DID_EVB2) EVB-2 monitor, config, and logger control interface
+* (DID_EVB_STATUS) EVB-2 status and logger control interface
 */
 typedef struct
 {
-	/** Firmware (software) version */
-	uint8_t         firmwareVer[4];
-    
-    /** Communications bridge configuration. (see eEvb2ComBridgeCfg) */
-    uint32_t        comBridgeCfg;
+	/** Number of weeks since January 6th, 1980 */
+	uint32_t                week;
 
-    /** Data logger control state. (see eEvb2LoggerState) */
-    uint32_t        loggerState;
+	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	uint32_t                timeOfWeekMs;
+
+	/** Firmware (software) version */
+	uint8_t                 firmwareVer[4];
+
+    /** Status (eEvbStatus) */
+    uint32_t                evbStatus;
+
+    /** Data logger control state. (see eEvb2LoggerMode) */
+    uint32_t                loggerMode;
 
     /** logger */
-    uint32_t        loggerElapsedTimeMs;
+    uint32_t                loggerElapsedTimeMs;
 
-	/** IP address */
-	uint8_t         ipAddr[4];
-    
-} evb2_t;
+    /** WiFi IP address */
+    uint32_t                wifiIpAddr;
+
+} evb_status_t;
+
+#define WIFI_SSID_PSK_SIZE      40
+
+typedef struct
+{
+    /** WiFi SSID */
+    uint8_t                 ssid[WIFI_SSID_PSK_SIZE];
+
+    /** WiFi PSK */
+    uint8_t                 psk[WIFI_SSID_PSK_SIZE];
+
+} evb_wifi_t;
+
+typedef struct
+{  
+    /** Server IP address */
+    uint32_t                ipAddr;
+
+    /** Server port */
+    uint32_t                port;
+
+} evb_server_t;
+
+typedef enum
+{
+    EVB_CFG_BITS_WIFI_SELECT_MASK = 0x00000003,
+    EVB_CFG_BITS_WIFI_SELECT_OFFSET = 0,
+    EVB_CFG_BITS_SERVER_SELECT_MASK = 0x0000000C,
+    EVB_CFG_BITS_SERVER_SELECT_OFFSET = 2,
+} eEvb2ConfigBits;
+
+#define NUM_WIFI_PRESETS     3
+#define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {bits&=EVB_CFG_BITS_WIFI_SELECT_MASK; bits|=((idx<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
+#define EVB_CFG_BITS_SET_IDX_SERVER(bits,idx)   {bits&=EVB_CFG_BITS_SERVER_SELECT_MASK; bits|=((idx<<EVB_CFG_BITS_SERVER_SELECT_OFFSET)&EVB_CFG_BITS_SERVER_SELECT_MASK);}
+#define EVB_CFG_BITS_IDX_WIFI(bits)             ((bits&EVB_CFG_BITS_WIFI_SELECT_MASK)>>EVB_CFG_BITS_WIFI_SELECT_OFFSET)
+#define EVB_CFG_BITS_IDX_SERVER(bits)           ((bits&EVB_CFG_BITS_SERVER_SELECT_MASK)>>EVB_CFG_BITS_SERVER_SELECT_OFFSET)
+
+/**
+* (DID_EVB_CONFIG) EVB-2 monitor, config, and logger control interface
+*/
+typedef struct
+{  
+    /** Size of this struct */
+    uint32_t				size;
+
+    /** Checksum, excluding size and checksum */
+    uint32_t                checksum;
+
+    /** Manufacturer method for restoring flash defaults */
+    uint32_t                key;
+
+    /** Communications bridge preset. (see eEvb2ComBridgePreset) */
+    uint32_t                cbPreset;
+
+    /** Communications bridge forwarding */
+    uint32_t                cbf[EVB2_PORT_COUNT];
+
+    /** Communications bridge options (see eEvb2ComBridgeOptions) */
+    uint32_t                cbOptions;
+
+    /** Config bits (see eEvb2ConfigBits) */
+    uint32_t                bits;
+
+    /** Radio preamble ID (PID) - 0x0 to 0x9. Only radios with matching PIDs can communicate together. Different PIDs minimize interference between multiple sets of networks. Checked before the network ID. */
+    uint32_t                radioPID;
+
+    /** Radio network ID (NID) - 0x0 to 0x7FFF. Only radios with matching NID can communicate together. Checked after the preamble ID. */
+    uint32_t                radioNID;
+
+    /** Radio power level - Transmitter output power level. (XBee PRO SX 0=20dBm, 1=27dBm, 2=30dBm)  */
+    uint32_t                radioPowerLevel;
+
+    /** WiFi SSID and PSK */
+    evb_wifi_t              wifi[NUM_WIFI_PRESETS];
+
+    /** Server IP and port */
+    evb_server_t            server[NUM_WIFI_PRESETS];
+
+} evb_config_t;
 
 
 /** EVB-2 communications bridge configuration. */
 typedef enum
 {
-    /** Do not change.  Sending this value causes no effect. */
-    EVB2_CBC_NA                         = 0,
+    /** No change.  Sending this value causes no effect. */
+    EVB2_CB_PRESET_NA = 0,
 
-    /** USB-SER0 */
-    EVB2_CBD_USBxSER0                   = 1,
+    /** No connections.  Off: XBee, WiFi */
+	EVB2_CB_PRESET_ALL_OFF,
 
-    /** USB-SPI */
-    EVB2_CBC_USBxSPI                    = 2,
+    /** [uINS Hub] (uINS-SER0): USB, RS232, H8.  (uINS-SER1): XRadio.  Off: XBee, WiFi */
+    EVB2_CB_PRESET_RS232,
+
+    /** [uINS Hub] (uINS-SER0): USB, RS232, H8.  (uINS-SER1): XBee, XRadio.  Off: WiFi */
+    EVB2_CB_PRESET_RS232_XBEE,
+
+    /** [uINS Hub] (uINS-SER0): USB, RS422, H8.  (uINS-SER1): WiFi, XRadio.  Off: XBee */
+    EVB2_CB_PRESET_RS422_WIFI,
+
+    /** [USB Hub] (USB): RS232, H8, XBee, XRadio. */
+    EVB2_CB_PRESET_USB_HUB_RS232,
+
+    /** [USB Hub] (USB): RS232, H8, XBee, XRadio. */
+    EVB2_CB_PRESET_USB_HUB_RS422,
+
+    /** Number of bridge configuration presets */
+	EVB2_CB_PRESET_COUNT,
     
-} eEvb2ComBridgeCfg;
+} eEvb2ComBridgePreset;
 
-
-/** Data logger control state.  Values labeled CMD  */
+/** Data logger control.  Values labeled CMD  */
 typedef enum
 {
     /** Do not change.  Sending this value causes no effect. */
-    EVB2_LOG_STATE_NA                   = 0,
+    EVB2_LOG_NA                         = 0,
 
     /** Start new log */
-    EVB2_LOG_STATE_CMD_START            = 1,
+    EVB2_LOG_CMD_START                  = 2,
 
-    /** Logger running */
-    EVB2_LOG_STATE_RUNNING              = 2,
-
-    /** Pause current log */
-    EVB2_LOG_STATE_CMD_PAUSE            = 3,
-
-    /** Stop current log */
-    EVB2_LOG_STATE_CMD_STOP             = 4,
+    /** Stop logging */
+    EVB2_LOG_CMD_STOP                   = 4,
 
     /** Purge all data logs from drive */
-    EVB2_LOG_STATE_CMD_PURGE            = 1002,
+    EVB2_LOG_CMD_PURGE                  = 1002,
         
-} eEvb2LoggerState;
+} eEvb2LoggerMode;
 
 
 /** 
@@ -2386,52 +2583,54 @@ typedef struct
     
 } port_monitor_t;
 
-
-#define CRASH_INFO_NONE 0x00000000
-#define CRASH_INFO_USER_RESET 0xFFFFFFFA
-#define CRASH_INFO_ENABLE_BOOTLOADER 0xFFFFFFFB
-#define CRASH_INFO_INVALID_CODE_OPERATION 0xFFFFFFFC
-#define CRASH_INFO_MALLOC_FAILED 0xFFFFFFD
-#define CRASH_INFO_SOFT_RESET 0xFFFFFFE
-#define CRASH_INFO_STACK_OVERFLOW 0xFFFFFFFF
-
 /**
-* Crash Info message
-* Special values:
-* 0xFFFFFFFA: User reset
-* 0xFFFFFFFB: Enable bootloader
-* 0xFFFFFFFC: Invalid code operation
-* 0xFFFFFFFD: soft reset was issued
-* 0xFFFFFFFE: malloc failed
-* 0xFFFFFFFF: stack overflow
-* Others: Non-zero is Hard fault
-*/
+* (DID_SYS_FAULT) System Fault Information 
+* NOTE: If you modify these, please update crash_info_special_values in IS-src/python/src/ci_hdw/data_sets.py */
+#define SYS_FAULT_STATUS_HARDWARE_RESET           0x00000000
+#define SYS_FAULT_STATUS_USER_RESET               0x00000001
+#define SYS_FAULT_STATUS_ENABLE_BOOTLOADER        0x00000002
+// General:
+#define SYS_FAULT_STATUS_SOFT_RESET               0x00000010
+#define SYS_FAULT_STATUS_FLASH_MIGRATION          0x00000020
+#define SYS_FAULT_STATUS_MASK_GENERAL_ERROR       0xFFFFFFF0
+// Critical:
+#define SYS_FAULT_STATUS_HARD_FAULT               0x00010000
+#define SYS_FAULT_STATUS_USAGE_FAULT              0x00020000
+#define SYS_FAULT_STATUS_MEM_MANGE                0x00040000
+#define SYS_FAULT_STATUS_BUS_FAULT                0x00080000
+#define SYS_FAULT_STATUS_MALLOC_FAILED            0x00100000
+#define SYS_FAULT_STATUS_STACK_OVERFLOW           0x00200000
+#define SYS_FAULT_STATUS_INVALID_CODE_OPERATION   0x00400000
+#define SYS_FAULT_STATUS_FLASH_MIGRATION_FAILURE  0x00800000
+#define SYS_FAULT_STATUS_MASK_CRITICAL_ERROR      0xFFFF0000
+
 typedef struct 
 {
-	/** r0 value at time of HardFault */
-	uint32_t r0;
-	
-    /** r1 value at time of HardFault */
-	uint32_t r1;
+    /** System fault status */
+    uint32_t status;
+
+    /** Fault Type at HardFault */
+    uint32_t g1Task;
+
+    /** Multipurpose register - Line number of fault */
+    uint32_t g2FileNum;
     
-    /** r2 value at time of HardFault */
-	uint32_t r2;
+    /** Multipurpose register - File number at fault */
+    uint32_t g3LineNum;
+        
+    /** Multipurpose register - at time of fault.  */
+	uint32_t g4;
+
+    /** Multipurpose register - link register value at time of fault.  */
+    uint32_t g5Lr;
     
-    /** r3 value at time of HardFault */
-	uint32_t r3;
-    
-    /** r12 value at time of HardFault */
-	uint32_t r12;
-    
-    /** link register value at time of HardFault */
-	uint32_t lr;
-    
-    /** Program Counter value at time of HardFault */
+    /** Program Counter value at time of fault */
 	uint32_t pc;
     
-    /** Program Status Register value at time of HardFault */
-	uint32_t psr;	
-} crash_info_t;
+    /** Program Status Register value at time of fault */
+	uint32_t psr;
+    	
+} system_fault_t;
 
 /** Diagnostic information for internal use */
 typedef struct
@@ -2452,120 +2651,117 @@ typedef struct
 	uint32_t checksumFailCount[5];
 } internal_diagnostic_t;
 
-/**
-* Rtos task types
-*/
+/** RTOS tasks */
 typedef enum
 {
-	/**
-	* Sample task
-	*/
+	/** Sample task	*/
 	TASK_SAMPLE = 0,
 
-	/**
-	* Nav task
-	*/
+	/** Nav task */
 	TASK_NAV,
 
-	/**
-	* Communications task
-	*/
+	/** Communications task */
 	TASK_COMMUNICATIONS,
 
-	/**
-	* Maintenance task
-	*/
+	/** Maintenance task */
 	TASK_MAINTENANCE,
 
-	/**
-	* Idle task
-	*/
+	/** Idle task */
 	TASK_IDLE,
 
-	/**
-	* Timer task
-	*/
+	/** Timer task */
 	TASK_TIMER,
 
-	/**
-	* Number of rtos tasks
-	*/
+	/** Number of RTOS tasks */
 	RTOS_NUM_TASKS                       // Keep last
 } eRtosTask;
 
-/**
-* Max task name length - do not change
-*/
+/** EVB RTOS tasks */
+typedef enum
+{
+    /** Communications task */
+    EVB_TASK_COMMUNICATIONS,
+
+    /** Maintenance task */
+    EVB_TASK_MAINTENANCE,
+
+    /** WiFi task */
+    EVB_TASK_WIFI,
+
+    /** Idle task */
+    EVB_TASK_IDLE,
+
+    /** Timer task */
+    EVB_TASK_TIMER,
+
+    /** Number of RTOS tasks */
+    EVB_RTOS_NUM_TASKS                  // Keep last
+} eEvbRtosTask;
+
+/** Max task name length - do not change */
 #define MAX_TASK_NAME_LEN 12
 
-/**
-* Rtos task info
-*/
+/** RTOS task info */
 typedef struct PACKED
 {
-	/**
-	* Task name
-	*/
+	/** Task name */
 	char                    name[MAX_TASK_NAME_LEN];
 
-	/**
-	* Task priority (0 - 8)
-	*/
+	/** Task priority (0 - 8) */
 	uint32_t                priority;
 
-	/**
-	* Stack high water mark bytes
-	*/
+	/** Stack high water mark bytes */
 	uint32_t                stackUnused;
 
-	/**
-	* Task period ms
-	*/
+	/** Task period ms */
 	uint32_t                periodMs;
 
-	/**
-	* Last run time microseconds
-	*/
+	/** Last run time microseconds */
 	uint32_t                runTimeUs;
 
-	/**
-	* Max run time microseconds
-	*/
+	/** Max run time microseconds */
 	uint32_t                maxRunTimeUs;
 	
-	/**
-	* Rolling average over last 1000 executions
-	*/
+	/** Rolling average over last 1000 executions */
 	float					averageRunTimeUs;
 	
-	/**
-	* Counter of times task took too long to run
-	*/
+	/** Counter of times task took too long to run */
 	uint32_t				gapCount;
 
-	/**
-	* Cpu usage percent
-	*/
+	/** Cpu usage percent */
     float					cpuUsage;
 
-	/**
-	* Handle
-	*/
+	/** Handle */
 	uint32_t                handle;
 } rtos_task_t;
 
 /** (DID_RTOS_INFO) */
 typedef struct PACKED
 {
-	/** Tasks */
+    /** Heap high water mark bytes */
+    uint32_t                freeHeapSize;
+
+    /** Malloc - free counter */
+    uint32_t				mallocMinusFree;
+    
+    /** Tasks */
 	rtos_task_t             task[RTOS_NUM_TASKS];
 
-	/** Heap high water mark bytes */
-	uint32_t                freeHeapSize;
-
-	/** Malloc - free counter */
-	uint32_t				mallocMinusFree;
 } rtos_info_t;
+
+/** (DID_EVB_RTOS_INFO) */
+typedef struct PACKED
+{
+    /** Heap high water mark bytes */
+    uint32_t                freeHeapSize;
+
+    /** Malloc - free counter */
+    uint32_t				mallocMinusFree;
+
+    /** Tasks */
+    rtos_task_t             task[EVB_RTOS_NUM_TASKS];
+
+} evb_rtos_info_t;
 
 /** Union of datasets */
 typedef union PACKED

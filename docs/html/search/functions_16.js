@@ -1,8 +1,12 @@
 var searchData=
 [
   ['_7eccomdatabuffer',['~cComDataBuffer',['../classc_com_data_buffer.html#aa96cae98d0b228750e400074f8130332',1,'cComDataBuffer']]],
+  ['_7ecdatachunk',['~cDataChunk',['../classc_data_chunk.html#a34c8f00c19c86946fe98e4de0a0ae4dc',1,'cDataChunk']]],
   ['_7ecdevicelog',['~cDeviceLog',['../classc_device_log.html#a756e796984ae1ca5aaeb3c292604d0ee',1,'cDeviceLog']]],
   ['_7ecgpsparser',['~cGpsParser',['../classc_gps_parser.html#ae6439f349591135b2d842b5346f5be17',1,'cGpsParser']]],
+  ['_7ecisdatamappings',['~cISDataMappings',['../classc_i_s_data_mappings.html#a96a3c4ad57f54130dd43fd5fdfe51e7c',1,'cISDataMappings']]],
+  ['_7ecislogfile',['~cISLogFile',['../classc_i_s_log_file.html#af1f9eff9bf9c361b211b2e5659568db3',1,'cISLogFile']]],
+  ['_7ecislogfilebase',['~cISLogFileBase',['../classc_i_s_log_file_base.html#af64ccda460f66f43ea1c7a76abfbc104',1,'cISLogFileBase']]],
   ['_7ecislogger',['~cISLogger',['../classc_i_s_logger.html#aaddccc0fc89031c7b573f53fb158c8df',1,'cISLogger']]],
   ['_7ecisserialport',['~cISSerialPort',['../classc_i_s_serial_port.html#ab6aa6a4422bfc1ebe68b71a027c8a26a',1,'cISSerialPort']]],
   ['_7ecisstream',['~cISStream',['../classc_i_s_stream.html#acaee5a6520d6c61b0fe2d56f27c94759',1,'cISStream']]],

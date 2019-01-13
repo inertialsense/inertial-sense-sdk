@@ -18,26 +18,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "DeviceLogSerial.h"
+
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
 #include "DeviceLogSorted.h"
 #include "DeviceLogCSV.h"
 #include "DeviceLogJSON.h"
 #include "DeviceLogKML.h"
+#endif
+
+#if PLATFORM_IS_EVB_2
+#include "drivers/d_time.h"
+#endif
+
 #include "ISConstants.h"
 #include "ISDisplay.h"
+#include "ISLogFile.h"
 
 using namespace std;
 
 // default logging path if none specified
 #define DEFAULT_LOGS_DIRECTORY "IS_logs"
-
-typedef struct
-{
-	string name;
-	uint64_t size;
-	time_t lastModificationDate;
-} file_info_t;
 
 class cLogStats;
 
@@ -59,7 +62,7 @@ public:
 	virtual ~cISLogger();
 
 	// Setup logger to read from file.
-        bool LoadFromDirectory(const string& directory, eLogType logType = LOGTYPE_DAT, vector<string> serials = {});
+	bool LoadFromDirectory(const string& directory, eLogType logType = LOGTYPE_DAT, vector<string> serials = {});
 
 	// Setup logger for writing to file.
 	bool InitSave(eLogType logType = LOGTYPE_DAT, const string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
@@ -100,26 +103,6 @@ public:
 	* @param timeoutFlushSeconds the timeout flush logger parameter in seconds
 	*/
 	void SetTimeoutFlushSeconds(time_t timeoutFlushSeconds) { m_timeoutFlushSeconds = timeoutFlushSeconds; }
-
-	// get all files in a folder - files parameter is not cleared in this function
-	// files contains the full path to the file
-	// return false if no files found, true otherwise
-	static bool GetAllFilesInDirectory(const string& directory, bool recursive, vector<string>& files);
-	static bool GetAllFilesInDirectory(const string& directory, bool recursive, const string& regexPattern, vector<string>& files);
-
-	// delete a directory, and optionally all files and sub-directories
-	static void DeleteDirectory(const string& directory, bool recursive = true);
-
-	// get space used in a directory recursively - files is filled with all files in the directory, sorted by modification date, files is NOT cleared beforehand. sortByDate of false sorts by file name
-	static uint64_t GetDirectorySpaceUsed(const string& directory, bool recursive = true);
-	static uint64_t GetDirectorySpaceUsed(const string& directory, vector<file_info_t>& files, bool sortByDate = true, bool recursive = true);
-	static uint64_t GetDirectorySpaceUsed(const string& directory, string regexPattern, vector<file_info_t>& files, bool sortByDate = true, bool recursive = true);
-
-	// get free space for the disk that the specified directory exists on
-	static uint64_t GetDirectorySpaceAvailable(const string& directory);
-
-	// get just the file name from a path
-	static string GetFileName(const string& path);
 
     // check if a data header is corrupt
     static bool LogHeaderIsCorrupt(const p_data_hdr_t* hdr);
@@ -170,10 +153,24 @@ public:
 	}
 
 private:
+#if CPP11_IS_ENABLED
+    cISLogger(const cISLogger& copy) = delete;
+#else
 	cISLogger(const cISLogger& copy); // Disable copy constructors
+#endif
+
 	bool InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, bool useSubFolderTimestamp);
 	bool InitDevicesForWriting(int numDevices = 1);
 	void Cleanup();
+
+	static time_t GetTime()
+    {
+#if PLATFORM_IS_EVB_2
+        return static_cast<time_t>(time_msec() / 1000);
+#else
+        return time(NULLPTR);
+#endif
+    }
 
 	eLogType				m_logType;
 	bool					m_enabled;
@@ -184,7 +181,7 @@ private:
 	uint32_t				m_maxFileSize;
 	uint32_t				m_maxChunkSize;
 	cLogStats*				m_logStats;
-	FILE*					m_errorFile;
+	cISLogFileBase*         m_errorFile;
 
 	bool					m_altClampToGround;
 	bool					m_showSample;
@@ -204,7 +201,8 @@ public:
 	double totalTimeDelta; // sum of all time deltas
 	double lastTimestamp;
 	double lastTimestampDelta;
-	double maxTimestampDelta;
+    double minTimestampDelta;
+    double maxTimestampDelta;
 	uint64_t timestampDeltaCount;
 	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
 
@@ -216,7 +214,7 @@ public:
 class cLogStats
 {
 public:
-	map<uint32_t, cLogStatDataId> dataIdStats;
+	cLogStatDataId dataIdStats[DID_COUNT];
 	uint64_t count; // count of all data ids
 	uint64_t errorCount; // total error count
 

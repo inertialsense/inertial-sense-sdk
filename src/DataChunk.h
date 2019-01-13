@@ -13,13 +13,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef DATA_CHUNK_H
 #define DATA_CHUNK_H
 
-#define MAX_CHUNK_SIZE 100000
-#define DATA_CHUNK_MARKER 0xFC05EA32
+#define DEFAULT_CHUNK_DATA_SIZE     131072          // 100 KB
+#define DATA_CHUNK_MARKER           0xFC05EA32
 
-#include <vector>
 #include <stdint.h>
 
 #include "com_manager.h"
+#include "ISLogFileBase.h"
 
 #define LOG_DEBUG_WRITE		0		// Enable debug printout
 #define LOG_DEBUG_READ		0
@@ -70,17 +70,19 @@ POP_PACK
 class cDataChunk
 {
 public:
-	cDataChunk(uint32_t maxSize = MAX_CHUNK_SIZE, const char* name = "PDAT");
-	uint32_t GetMaxSize() { return m_maxSize; }
-	void SetMaxSize(uint32_t maxSize) { m_maxSize = maxSize; }
-	void SetName(const char *name);
+	cDataChunk();
+    virtual ~cDataChunk();
+
+	void Init(uint32_t maxSize = DEFAULT_CHUNK_DATA_SIZE, const char* name = "PDAT");
+	void Resize(uint32_t maxSize);
+    uint32_t GetBuffSize() { return (uint32_t)(m_buffTail - m_buffHead); }
+    uint32_t GetBuffFree() { return (uint32_t)(m_buffTail - m_dataTail); }
+    uint32_t GetDataSize() { return (uint32_t)(m_dataTail - m_dataHead); }
+    void SetName(const char *name);
 	uint8_t* GetDataPtr();
 	bool PopFront(uint32_t size);
-	uint32_t GetByteCountAvailableToRead() { return m_bytesRemaining; }
-	uint32_t GetByteCountAvailableToWrite() { return m_maxSize - (uint32_t)m_data.size(); }
-	uint32_t GetDataSize() { return (uint32_t)m_data.size(); }
-    int32_t WriteToFile(FILE* pFile, int groupNumber = 0); // Returns number of bytes written to file and clears the chunk
-	int32_t ReadFromFile(FILE* pFile);
+    int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0); // Returns number of bytes written to file and clears the chunk
+	int32_t ReadFromFile(cISLogFileBase* pFile);
 	bool PushBack(uint8_t* d1, uint32_t d1Size, uint8_t* d2 = NULL, uint32_t d2Size = 0);
 
 	virtual void Clear();
@@ -97,14 +99,15 @@ public:
 #endif
 
 protected:
-	virtual int32_t WriteAdditionalChunkHeader(FILE* pFile);
-	virtual int32_t ReadAdditionalChunkHeader(FILE* pFile);
+	virtual int32_t WriteAdditionalChunkHeader(cISLogFileBase* pFile);
+	virtual int32_t ReadAdditionalChunkHeader(cISLogFileBase* pFile);
 	virtual int32_t GetHeaderSize();
 
 private:
-	std::vector<uint8_t> m_data;
-	uint32_t m_maxSize;
-	uint32_t m_bytesRemaining;
+    uint8_t* m_buffHead;    // Start of buffer
+    uint8_t* m_buffTail;    // End of buffer
+    uint8_t* m_dataHead;    // Front of data in buffer.  This moves as data is read.
+    uint8_t* m_dataTail;    // End of data in buffer.  This moves as data is written.
 };
 
 
