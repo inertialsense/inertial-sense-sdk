@@ -136,10 +136,11 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
+	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
 
 #ifdef USE_IS_INTERNAL
 
-	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
+
 	sizeMap[DID_SENSORS_IS1] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_IS2] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_TC_BIAS] = sizeof(sensors_t);

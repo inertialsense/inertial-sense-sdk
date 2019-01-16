@@ -375,6 +375,25 @@ void comManagerRegisterASCIIInstance(CMHANDLE cmInstance, asciiMessageMap_t* asc
 
 /**
 Set a com manager pass through handler, handler can be 0 or null to remove the current handler
+
+	// setup pass-through handler for u-blox, rtcm3, etc.  This should be called following comManagerInit().
+	comManagerSetPassThrough(passThroughHandler);
+
+    // Example how to handle incoming ublox, rtcm, etc. data
+    void passThroughHandler(CMHANDLE handle, com_manager_pass_through_t type, int pHandle, const unsigned char* data, int dataLength)
+    {
+        if (type == COM_MANAGER_PASS_THROUGH_UBLOX)
+        {
+            if (g_nvmFlashCfg->RTKCfgBits & RTK_CFG_BITS_RTK_ROVER)
+            {
+                processUbloxRtkPacket(data, dataLength, pHandle);
+            }
+        }
+        else if (type == COM_MANAGER_PASS_THROUGH_RTCM3 && (g_nvmFlashCfg->RTKCfgBits & RTK_CFG_BITS_RTK_ROVER) != 0)
+        {
+            processRtcm3RtkPacket(data, dataLength, pHandle);
+        }
+    }
 */
 void comManagerSetPassThrough(pfnComManagerPassThrough handler);
 void comManagerSetPassThroughInstance(CMHANDLE cmInstance, pfnComManagerPassThrough handler);
