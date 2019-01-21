@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.3</span>
+   &#160;<span id="projectnumber">Release 1.7.4</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -2005,7 +2005,9 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Set a com manager pass through handler, handler can be 0 or null to remove the current handler </p>
+<p>Set a com manager pass through handler, handler can be 0 or null to remove the current handler</p>
+<p>setup pass-through handler for u-blox, rtcm3, etc. This should be called following <a class="el" href="com__manager_8h.html#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">comManagerInit()</a>. comManagerSetPassThrough(passThroughHandler);</p>
+<p>Example how to handle incoming ublox, rtcm, etc. data void passThroughHandler(CMHANDLE handle, com_manager_pass_through_t type, int pHandle, const unsigned char* data, int dataLength) { if (type == COM_MANAGER_PASS_THROUGH_UBLOX) { if (g_nvmFlashCfg-&gt;RTKCfgBits &amp; RTK_CFG_BITS_RTK_ROVER) { processUbloxRtkPacket(data, dataLength, pHandle); } } else if (type == COM_MANAGER_PASS_THROUGH_RTCM3 &amp;&amp; (g_nvmFlashCfg-&gt;RTKCfgBits &amp; RTK_CFG_BITS_RTK_ROVER) != 0) { processRtcm3RtkPacket(data, dataLength, pHandle); } } </p>
 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00640">640</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 

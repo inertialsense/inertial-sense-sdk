@@ -104,7 +104,7 @@ public:
 	/*
 	* Broadcast binary data
 	* @param dataId the data id (DID_* - see data_sets.h) to broadcast
-	* @param periodMultiple a scalar that the source period is multipled by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+	* @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
 	* @param callback optional callback for this dataId
 	* @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
 	*/ 

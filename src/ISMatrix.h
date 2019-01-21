@@ -285,6 +285,11 @@ void add_Vec3_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 );
 void add_Vec3d_Vec3d( Vector3d result, const Vector3d v1, const Vector3d v2 );
 
 /* Add
+ * result(3) = k1*v1(3) + k2*v2(3)
+ */
+void add_K1Vec3_K2Vec3(Vector3 result, const Vector3 v1, const Vector3 v2, float k1, float k2);
+
+/* Add
  * result(4) = v1(4) + v2(4)
  */
 void add_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 );
@@ -310,6 +315,9 @@ void div_Vec3_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 );
  * result(4) = v1(4) ./ v2(4)
  */
 void div_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 );
+
+/* Negate*/
+void neg_Vec3(Vector3 result, const Vector3 v);
 
 /* Min of vector elements
  * = min( v[0], v[1], v[2] }

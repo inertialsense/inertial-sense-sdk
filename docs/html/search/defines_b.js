@@ -25,6 +25,7 @@ var searchData=
   ['max_5fverify_5fchunk_5fsize',['MAX_VERIFY_CHUNK_SIZE',['../inertial_sense_boot_loader_8c.html#a4c548c41044465fad00d24c99eeced77',1,'inertialSenseBootLoader.c']]],
   ['maxrawlen',['MAXRAWLEN',['../_gps_parser_8cpp.html#a7e956e73ff783054bbd9326df6d69820',1,'GpsParser.cpp']]],
   ['maxrtcmlen',['MAXRTCMLEN',['../_gps_parser_8cpp.html#a0feeb55b1c694a25e067e3f15432eb66',1,'GpsParser.cpp']]],
+  ['member_5fitem_5fsize',['MEMBER_ITEM_SIZE',['../_i_s_constants_8h.html#a7b441f283e6a098ddd7d8588ff71ed88',1,'ISConstants.h']]],
   ['membersize',['MEMBERSIZE',['../_i_s_constants_8h.html#a4c99f8d4bd453862bc459dc13a2443e1',1,'ISConstants.h']]],
   ['min_5frequest_5fperiod_5fms',['MIN_REQUEST_PERIOD_MS',['../com__manager_8c.html#ae68296caef3ece6bdd0faeae69b6e4e1',1,'com_manager.c']]],
   ['msg_5fperiod_5fdisabled',['MSG_PERIOD_DISABLED',['../com__manager_8c.html#a530fd5a94ed593dd66ec7cdeee00b411',1,'com_manager.c']]],

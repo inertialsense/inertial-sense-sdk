@@ -14,6 +14,7 @@ var searchData=
   ['accuracypos',['accuracyPos',['../struct_p_a_c_k_e_d.html#a9704660b445fab213d4c80c8508271fb',1,'PACKED']]],
   ['ackneeded',['ackNeeded',['../structis__comm__instance__t.html#acc3565e30eacb58cb94cd2d6f288b760',1,'is_comm_instance_t']]],
   ['add',['Add',['../class_ti_xml_attribute_set.html#a745e50ddaae3bee93e4589321e0b9c1a',1,'TiXmlAttributeSet']]],
+  ['add_5fk1vec3_5fk2vec3',['add_K1Vec3_K2Vec3',['../_i_s_matrix_8c.html#ad2c313c04b77e3d9aab40ae5adedf670',1,'add_K1Vec3_K2Vec3(Vector3 result, const Vector3 v1, const Vector3 v2, float k1, float k2):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#ad2c313c04b77e3d9aab40ae5adedf670',1,'add_K1Vec3_K2Vec3(Vector3 result, const Vector3 v1, const Vector3 v2, float k1, float k2):&#160;ISMatrix.c']]],
   ['add_5fmap',['ADD_MAP',['../_i_s_data_mappings_8cpp.html#a0d377c08f2aab2a59b3dd2144157b2b6',1,'ISDataMappings.cpp']]],
   ['add_5fmap_5fno_5fvalidation',['ADD_MAP_NO_VALIDATION',['../_i_s_data_mappings_8cpp.html#a5e954755f926f994391c7388b665432e',1,'ISDataMappings.cpp']]],
   ['add_5fvec3_5fvec3',['add_Vec3_Vec3',['../_i_s_matrix_8c.html#aef01a75a8882ea625d71457da3ae8c51',1,'add_Vec3_Vec3(Vector3 result, const Vector3 v1, const Vector3 v2):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#aef01a75a8882ea625d71457da3ae8c51',1,'add_Vec3_Vec3(Vector3 result, const Vector3 v1, const Vector3 v2):&#160;ISMatrix.c']]],

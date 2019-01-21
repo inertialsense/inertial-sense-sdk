@@ -1418,8 +1418,8 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
     // try non-USB and then USB mode (0 and 1)
     for (int isUSB = 0; isUSB < 2; isUSB++)
     {
+		serialPortSleep(port, 250);
         serialPortClose(port);
-        serialPortSleep(port, 250);
         if (!serialPortOpen(port, port->port, SAM_BA_BAUDRATE, 1))
         {
             serialPortClose(port);

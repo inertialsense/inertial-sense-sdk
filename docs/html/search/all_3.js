@@ -293,6 +293,7 @@ var searchData=
   ['cfg_5fsys_5fcmd_5fenable_5fgps_5flow_5flevel_5fconfig',['CFG_SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32a4e7057fe1429fc6ff4ef460564b9c4f0',1,'data_sets.h']]],
   ['cfg_5fsys_5fcmd_5fenable_5frtos_5fstats',['CFG_SYS_CMD_ENABLE_RTOS_STATS',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32a172afeb141d4a320d6ce8aea2b093aa9',1,'data_sets.h']]],
   ['cfg_5fsys_5fcmd_5fenable_5fsensor_5fstats',['CFG_SYS_CMD_ENABLE_SENSOR_STATS',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32a72d3c5b2d07738208f20dc2971507f6d',1,'data_sets.h']]],
+  ['cfg_5fsys_5fcmd_5fsave_5fflash',['CFG_SYS_CMD_SAVE_FLASH',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32a984438118c318c3ec9c506c1ace79c55',1,'data_sets.h']]],
   ['cfg_5fsys_5fcmd_5fsave_5fgps_5fassist_5fto_5fflash_5freset',['CFG_SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32a3463329c5de3adca8b27f61bc509d6af',1,'data_sets.h']]],
   ['cfg_5fsys_5fcmd_5fsave_5fpersistent_5fmessages',['CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32ac0804a38cfc5d23b65788a07a8942463',1,'data_sets.h']]],
   ['cfg_5fsys_5fcmd_5fsoftware_5freset',['CFG_SYS_CMD_SOFTWARE_RESET',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32a6f2e4a8756ca81bac43d6932ca58c171',1,'data_sets.h']]],

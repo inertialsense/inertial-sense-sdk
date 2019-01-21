@@ -986,6 +986,7 @@ enum eConfigSystem {
     CFG_SYS_CMD_ENABLE_SENSOR_STATS                 = 3,
     CFG_SYS_CMD_ENABLE_RTOS_STATS                   = 4,
     CFG_SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
+    CFG_SYS_CMD_SAVE_FLASH                          = 97,
     CFG_SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
     CFG_SYS_CMD_SOFTWARE_RESET                      = 99,
 };

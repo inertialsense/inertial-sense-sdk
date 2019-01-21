@@ -622,6 +622,13 @@ void add_Vec3d_Vec3d( Vector3d result, const Vector3d v1, const Vector3d v2 )
     result[2] = v1[2] + v2[2];
 }
 
+void add_K1Vec3_K2Vec3(Vector3 result, const Vector3 v1, const Vector3 v2, float k1, float k2)
+{
+    result[0] = k1 * v1[0] + k2 * v2[0];
+    result[1] = k1 * v1[1] + k2 * v2[1];
+    result[2] = k1 * v1[2] + k2 * v2[2];
+}
+
 void add_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 )
 {
 	result[0] = v1[0] + v2[0];
@@ -673,6 +680,13 @@ void div_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 )
 	result[1] = v1[1] / v2[1];
 	result[2] = v1[2] / v2[2];
 	result[3] = v1[3] / v2[3];
+}
+
+void neg_Vec3(Vector3 result, const Vector3 v)
+{
+    result[0] = -v[0];
+    result[1] = -v[1];
+    result[2] = -v[2];
 }
 
 void cpy_MatRxC_MatMxN( f_t *result, i_t r, i_t c, i_t r_offset, i_t c_offset, f_t *A, i_t m, i_t n )

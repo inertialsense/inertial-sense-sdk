@@ -248,7 +248,7 @@ extern void free_debug(void* mem);
 #ifndef RAMFUNC
 
 /* Define RAMFUNC attribute */
-#if defined   ( __CC_ARM   ) /* Keil µVision 4 */
+#if defined   ( __CC_ARM   ) /* Keil ï¿½Vision 4 */
 #   define RAMFUNC __attribute__ ((section(".ramfunc")))
 #elif defined ( __ICCARM__ ) /* IAR Ewarm 5.41+ */
 #   define RAMFUNC __ramfunc
@@ -337,14 +337,18 @@ extern void free_debug(void* mem);
 #define MEMBERSIZE(type, member) sizeof(((type*)0)->member)
 #endif
 
+#ifndef MEMBER_ITEM_SIZE
+#define MEMBER_ITEM_SIZE(type, member) sizeof(((type*)NULL)->member[0])
+#endif
+
 /* equivalent to `offsetof(type, member[i])`, but does not require that `i` is a constant expression.*/
 #ifndef OFFSET_OF_MEMBER_INDEX
-#define OFFSET_OF_MEMBER_INDEX(type, member, i) (offsetof(type, member) + (i) * MEMBERSIZE(type, member))
+#define OFFSET_OF_MEMBER_INDEX(type, member, i) (offsetof(type, member) + (i) * MEMBER_ITEM_SIZE(type, member))
 #endif
 
 /* equivalent to `offsetof(type, member[i].submember)`, but does not require that `i` is a constant expression. */
 #ifndef OFFSET_OF_MEMBER_INDEX_SUBMEMBER
-#define OFFSET_OF_MEMBER_INDEX_SUBMEMBER(type, member, i, submember) (offsetof(type, member[0].submember) + (i) * MEMBERSIZE(type, member))
+#define OFFSET_OF_MEMBER_INDEX_SUBMEMBER(type, member, i, submember) (offsetof(type, member[0].submember) + (i) * MEMBER_ITEM_SIZE(type, member))
 #endif
 
 #ifndef STRINGIFY
