@@ -102,7 +102,7 @@ typedef uint32_t eDataIDs;
 #define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
 #define DID_GPS1_RAW                    (eDataIDs)69 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
 #define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
-#define DID_VELOCITY_MEASUREMENT        (eDataIDs)71 /** (velocity_sensor_t) External generic velocity sensor to be fused with GPS-INS measurements. */
+#define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) wheel encoder data to be fused with GPS-INS measurements, set DID_WHEEL_ENCODER_CONFIG for configuration before sending this message */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
 #define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. */
 #define DID_EMPTY_1                     (eDataIDs)74 /** Unused */
@@ -115,6 +115,7 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_CONFIG                  (eDataIDs)81 /** (evb_config_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
+#define DID_WHEEL_ENCODER_CONFIG        (eDataIDs)84 /** (wheel_encoder_config_t) static configuration for wheel encoder measurements
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -972,15 +973,16 @@ typedef struct PACKED
 /** (DID_CONFIG) Configuration functions */
 typedef struct PACKED
 {
-	/** System commands: 1=save current persistent messages, 99=software reset (eConfigSystem).  "invSystem" (following variable) must be set to bitwise inverse of this value.  */
+	/** System commands: 1=save current persistent messages, 97=save flash, 99=software reset (see eConfigSystem).  "invSystem" (following variable) must be set to bitwise inverse of this value for this command to be processed.  */
 	uint32_t                system;
 
-    /** Bitwise inverse of system variable for error checking.  */
+    /** Set to bitwise inverse of system variable for error checking.  */
     uint32_t                invSystem;
 
 } config_t;
 
-enum eConfigSystem {
+enum eConfigSystem 
+{
     CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES            = 1,
     CFG_SYS_CMD_ENABLE_BOOTLOADER_AND_RESET         = 2,
     CFG_SYS_CMD_ENABLE_SENSOR_STATS                 = 3,
@@ -1059,62 +1061,86 @@ typedef struct PACKED
 	provided so that broadcast of sensor data is done as soon as it becomes available.   The exception to
 	this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
 */
-enum eRMCbits {
-	RMC_OPTIONS_PORT_MASK			= 0x000000FF,
-	RMC_OPTIONS_PORT_ALL			= (RMC_OPTIONS_PORT_MASK),
-	RMC_OPTIONS_PORT_CURRENT		= 0x00000000,
-	RMC_OPTIONS_PORT_SER0			= 0x00000001,
-	RMC_OPTIONS_PORT_SER1			= 0x00000002,	// also SPI
-	RMC_OPTIONS_PORT_USB			= 0x00000004,
-	RMC_OPTIONS_PRESERVE_CTRL		= 0x00000100,	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-	RMC_OPTIONS_PERSISTENT			= 0x00000200,	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
 
-																	// RMC message data rates:
-	RMC_BITS_INS1                   = 0x0000000000000001,      // rmc.insPeriodMs (4ms default)
-	RMC_BITS_INS2                   = 0x0000000000000002,      // "
-	RMC_BITS_INS3                   = 0x0000000000000004,      // "
-	RMC_BITS_INS4                   = 0x0000000000000008,      // "
-	RMC_BITS_DUAL_IMU               = 0x0000000000000010,      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-	RMC_BITS_PREINTEGRATED_IMU      = 0x0000000000000020,      // "
-	RMC_BITS_BAROMETER              = 0x0000000000000040,      // ~8ms
-	RMC_BITS_MAGNETOMETER1          = 0x0000000000000080,      // ~10ms
-	RMC_BITS_MAGNETOMETER2          = 0x0000000000000100,      // "
+#define RMC_OPTIONS_PORT_MASK           0x000000FF
+#define RMC_OPTIONS_PORT_ALL            (RMC_OPTIONS_PORT_MASK)
+#define RMC_OPTIONS_PORT_CURRENT        0x00000000
+#define RMC_OPTIONS_PORT_SER0           0x00000001
+#define RMC_OPTIONS_PORT_SER1           0x00000002	// also SPI
+#define RMC_OPTIONS_PORT_USB            0x00000004
+#define RMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define RMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
 
-	RMC_BITS_GPS1_POS               = 0x0000000000000400,      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
-	RMC_BITS_GPS2_POS               = 0x0000000000000800,      // "
-	RMC_BITS_GPS1_RAW               = 0x0000000000001000,      // "
-	RMC_BITS_GPS2_RAW               = 0x0000000000002000,      // "
-	RMC_BITS_GPS1_SAT               = 0x0000000000004000,      // 1s
-	RMC_BITS_GPS2_SAT               = 0x0000000000008000,      // "
-	RMC_BITS_GPS_BASE_RAW           = 0x0000000000010000,      // 
-	RMC_BITS_STROBE_IN_TIME         = 0x0000000000020000,      // On strobe input event
-	RMC_BITS_DIAGNOSTIC_MESSAGE     = 0x0000000000040000,
-	RMC_BITS_DUAL_IMU_RAW           = 0x0000000000080000,      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
-	RMC_BITS_GPS1_VEL               = 0x0000000000100000,      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
-	RMC_BITS_GPS2_VEL               = 0x0000000000200000,      // "
-	RMC_BITS_GPS1_UBX_POS           = 0x0000000000400000,      // "
-	RMC_BITS_GPS1_RTK_POS           = 0x0000000000800000,      // "
-	RMC_BITS_GPS1_RTK_REL           = 0x0000000001000000,      // "
-	RMC_BITS_GPS1_RTK_MISC          = 0x0000000004000000,      // "
-	RMC_BITS_INL2_NED_SIGMA         = 0x0000000008000000,
-	RMC_BITS_RTK_STATE              = 0x0000000010000000,
-	RMC_BITS_RTK_CODE_RESIDUAL      = 0x0000000020000000,
-	RMC_BITS_RTK_PHASE_RESIDUAL     = 0x0000000040000000,
+// RMC message data rates:
+#define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
+#define RMC_BITS_INS2                   0x0000000000000002      // "
+#define RMC_BITS_INS3                   0x0000000000000004      // "
+#define RMC_BITS_INS4                   0x0000000000000008      // "
+#define RMC_BITS_DUAL_IMU               0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+#define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
+#define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
+#define RMC_BITS_MAGNETOMETER1          0x0000000000000080      // ~10ms
+#define RMC_BITS_MAGNETOMETER2          0x0000000000000100      // "
 
-    RMC_PRESET_PPD_NAV_PERIOD_MULT	= 25,
-	RMC_PRESET_INS_NAV_PERIOD_MULT	= 1,   // fastest rate (nav filter update rate)
-};
-
+#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS2_POS               0x0000000000000800      // "
+#define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
+#define RMC_BITS_GPS2_RAW               0x0000000000002000      // "
+#define RMC_BITS_GPS1_SAT               0x0000000000004000      // 1s
+#define RMC_BITS_GPS2_SAT               0x0000000000008000      // "
+#define RMC_BITS_GPS_BASE_RAW           0x0000000000010000      // 
+#define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
+#define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
+#define RMC_BITS_DUAL_IMU_RAW           0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
+#define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
+#define RMC_BITS_GPS1_RTK_POS           0x0000000000800000      // "
+#define RMC_BITS_GPS1_RTK_REL           0x0000000001000000      // "
+#define RMC_BITS_GPS1_RTK_MISC          0x0000000004000000      // "
+#define RMC_BITS_INL2_NED_SIGMA         0x0000000008000000
+#define RMC_BITS_RTK_STATE              0x0000000010000000
+#define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
+#define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
+#define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
+#define RMC_BITS_WHEEL_ENCODER_CONFIG   0x0000000100000000
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset
 
+#define RMC_PRESET_PPD_NAV_PERIOD_MULT	25
+#define RMC_PRESET_INS_NAV_PERIOD_MULT	1   // fastest rate (nav filter update rate)
+
 // Preset: Post Processing Data
-#define RMC_PRESET_PPD_BITS_NO_IMU      (RMC_BITS_PRESET | RMC_BITS_INS2 | RMC_BITS_BAROMETER | RMC_BITS_MAGNETOMETER1 | RMC_BITS_MAGNETOMETER2 | RMC_BITS_GPS1_POS | RMC_BITS_GPS2_POS | RMC_BITS_GPS1_VEL | RMC_BITS_GPS2_VEL | RMC_BITS_GPS1_RAW | RMC_BITS_GPS2_RAW | RMC_BITS_GPS_BASE_RAW | RMC_BITS_GPS1_RTK_REL | RMC_BITS_INTERNAL_PPD | RMC_BITS_DIAGNOSTIC_MESSAGE)
-#define RMC_PRESET_PPD_BITS             (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_PREINTEGRATED_IMU)
-#define RMC_PRESET_INS_BITS             (RMC_BITS_INS2 | RMC_BITS_GPS1_POS | RMC_BITS_PRESET)
-#define RMC_PRESET_PPD_BITS_RAW_IMU     (RMC_PRESET_PPD_BITS_NO_IMU | RMC_BITS_DUAL_IMU_RAW)
-#define RMC_PRESET_PPD_BITS_RTK_DBG     (RMC_PRESET_PPD_BITS | RMC_BITS_RTK_STATE | RMC_BITS_RTK_CODE_RESIDUAL | RMC_BITS_RTK_PHASE_RESIDUAL)
+#define RMC_PRESET_PPD_BITS_NO_IMU      (RMC_BITS_PRESET \
+										| RMC_BITS_INS2 \
+										| RMC_BITS_BAROMETER \
+										| RMC_BITS_MAGNETOMETER1 \
+										| RMC_BITS_MAGNETOMETER2 \
+										| RMC_BITS_GPS1_POS \
+										| RMC_BITS_GPS2_POS \
+										| RMC_BITS_GPS1_VEL \
+										| RMC_BITS_GPS2_VEL \
+										| RMC_BITS_GPS1_RAW \
+										| RMC_BITS_GPS2_RAW \
+										| RMC_BITS_GPS_BASE_RAW \
+										| RMC_BITS_GPS1_RTK_REL \
+										| RMC_BITS_INTERNAL_PPD \
+										| RMC_BITS_DIAGNOSTIC_MESSAGE)
+#define RMC_PRESET_PPD_BITS             (RMC_PRESET_PPD_BITS_NO_IMU \
+										| RMC_BITS_PREINTEGRATED_IMU)
+#define RMC_PRESET_INS_BITS             (RMC_BITS_INS2 \
+										| RMC_BITS_GPS1_POS \
+										| RMC_BITS_PRESET)
+#define RMC_PRESET_PPD_BITS_RAW_IMU     (RMC_PRESET_PPD_BITS_NO_IMU \
+										| RMC_BITS_DUAL_IMU_RAW)
+#define RMC_PRESET_PPD_BITS_RTK_DBG     (RMC_PRESET_PPD_BITS \
+										| RMC_BITS_RTK_STATE \
+										| RMC_BITS_RTK_CODE_RESIDUAL \
+										| RMC_BITS_RTK_PHASE_RESIDUAL)
+#define RMC_PRESET_PPD_ROBOT			(RMC_PRESET_PPD_BITS\
+										| RMC_BITS_WHEEL_ENCODER \
+										| RMC_BITS_WHEEL_ENCODER_CONFIG)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -2257,33 +2283,47 @@ typedef struct PACKED
   uGpsRawData data;
 } gps_raw_t;
 
+/** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
 typedef struct PACKED
 {
-	/** Time measure was taken */
-	uint32_t time_ms;
+	/** Time of measurement wrt current week */
+	uint32_t timeOfWeekMs;
 
-	/** ID of sensor **/
-	uint32_t id;
+	/** Status Word */
+	uint32_t status;
 
-	/** Velocity Measurement (xyz) */
-	float vel[3];
+	/** Left wheel angle (rad) */
+	float theta_l;
 
-	/** Covariance Matrix Diagonal (E[xx], E[yy], E[zz]) */
-	float cov[3];
+	/** Left wheel angular rate (rad/s) */
+	float omega_l;
 
-	/** Quaternion rotation from IMU frame to sensor frame {w, x, y, z} **/
-	float q[4];
+	/** Right wheel angle (rad) */
+	float theta_r;
 
-	/** Sensor origin position in IMU frame { x, y, z} **/
-	float p[3];
+	/** Right wheel angular rate (rad/s) */
+	float omega_r;
 
-	/** Valid velocity vector terms {x, y, z} **/
-	uint8_t valid[3];
+} wheel_encoder_t;
 
-	/** Used to keep 32-bit alignment **/
-	uint8_t reserved;
+/**
+	*	Configuration of wheel encoders
+	*/
+typedef struct PACKED
+{
+	/** quaternion describing the rotation from imu to left wheel */
+	float q_i2l[4];
 
-} velocity_sensor_t;
+	/** translation from the imu to the left wheel, expressed in the imu frame */
+	float t_i2l[3];
+
+	/** distance between the left wheel and the right wheel */
+	float distance;
+
+	/** estimate of wheel diameter */
+	float diameter;
+
+} wheel_encoder_config_t;
 
 /**
 * Diagnostic message
@@ -2778,6 +2818,8 @@ typedef union PACKED
 	magnetometer_t			mag;
 	mag_cal_t				magCal;
 	barometer_t				baro;
+    wheel_encoder_t         wheelEncoder;
+    wheel_encoder_config_t  wheelEncoderCfg;
 	preintegrated_imu_t		pImu;
 	gps_pos_t				gpsPos;
 	gps_vel_t				gpsVel;

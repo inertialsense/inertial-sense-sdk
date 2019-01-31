@@ -320,7 +320,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,						// 68: DID_STROBE_IN_TIME
         0,						// 69: DID_GPS1_RAW
         0,						// 70: DID_GPS2_RAW
-        0,						// 71: DID_VELOCITY_SENSOR
+        0,						// 71: DID_WHEEL_ENCODER
         0,						// 72: DID_DIAGNOSTIC_MESSAGE
         offsetsSurveyIn, 		// 73: DID_SURVEY_IN
         0,                      // 74: EMPTY
@@ -464,7 +464,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 68: DID_STROBE_IN_TIME
 		0,						// 69: DID_GPS1_RAW
 		0,						// 70: DID_GPS2_RAW
-		0,						// 71: DID_VELOCITY_SENSOR
+		0,						// 71: DID_WHEEL_ENCODER
 		diagMsgOffsets, 		// 72: DID_DIAGNOSTIC_MESSAGE
 		0,                      // 73: DID_SURVEY_IN
         0,                      // 74: EMPTY
@@ -558,6 +558,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_STATE:         	return RMC_BITS_RTK_STATE;
         case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
+        case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
+        case DID_WHEEL_ENCODER_CONFIG:  return RMC_BITS_WHEEL_ENCODER_CONFIG;
 		default:						return defaultRmcBits;
 	}
 }

@@ -1396,6 +1396,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
 
     if (!serialPortOpen(port, port->port, BAUDRATE_3000000, 1))
     {
+        bootloader_perror(&s, "Failed to open port.\n");
         serialPortClose(port);
         return 0;
     }
@@ -1405,6 +1406,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
     serialPortClose(port);
     if (!serialPortOpen(port, port->port, BAUDRATE_921600, 1))
     {
+        bootloader_perror(&s, "Failed to open port.\n");
         serialPortClose(port);
         return 0;
     }
@@ -1422,6 +1424,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
         serialPortClose(port);
         if (!serialPortOpen(port, port->port, SAM_BA_BAUDRATE, 1))
         {
+            bootloader_perror(&s, "Failed to open port.\n");
             serialPortClose(port);
             return 0;
         }
@@ -1435,6 +1438,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
         if (!count)
         {
             bootloader_perror(&s, "Failed to handshake with SAM-BA\n");
+            serialPortClose(port);
             return 0;
         }
 
@@ -1456,6 +1460,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
         if (file == 0)
         {
             bootloader_perror(&s, "Unable to load bootloader file\n");
+            serialPortClose(port);
             return 0;
         }
 
@@ -1467,6 +1472,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
         if (size != SAM_BA_BOOTLOADER_SIZE)
         {
             bootloader_perror(&s, "Invalid bootloader file\n");
+            serialPortClose(port);
             return 0;
         }
 
@@ -1481,6 +1487,7 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
                     break; // try USB mode
                 }
                 bootloader_perror(&s, "Failed to upload page at offset %d\n", (int)offset);
+                serialPortClose(port);
                 return 0;
             }
             for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
@@ -1512,17 +1519,18 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
     if (!samBaSetBootFromFlash(port))
     {
         bootloader_perror(&s, "Failed to set boot from flash GPNVM bit\n");
+        serialPortClose(port);
         return 0;
     }
 
     if (!samBaSoftReset(port))
     {
         bootloader_perror(&s, "Failed to reset device\n");
+        serialPortClose(port);
         return 0;
     }
 
     serialPortClose(port);
-
     return 1;
 }
 
@@ -1546,6 +1554,7 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
             serialPortClose(port);
             if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
             {
+                serialPortClose(port);
                 return 0;
             }
             for (size_t loop = 0; loop < 10; loop++)
@@ -1587,7 +1596,6 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
 
     // by this point the bootloader should be enabled
     serialPortClose(port);
-
     return 1;
 }
 

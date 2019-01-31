@@ -755,7 +755,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_INS_3:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_INS_4:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;

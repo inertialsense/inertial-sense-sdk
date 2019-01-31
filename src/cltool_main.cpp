@@ -187,7 +187,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.streamSysSensors)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_SYS_SENSORS, 100);
+		inertialSenseInterface.BroadcastBinaryData(DID_SYS_SENSORS, g_commandLineOptions.streamSysSensors);
 	}
 	if (g_commandLineOptions.streamDualIMU)
 	{

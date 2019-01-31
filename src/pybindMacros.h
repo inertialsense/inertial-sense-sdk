@@ -46,7 +46,8 @@ PYBIND11_NUMPY_DTYPE(ins_3_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw,
 PYBIND11_NUMPY_DTYPE(ins_4_t, week, timeOfWeek, insStatus, hdwStatus, qe2b, ve, ecef);
 PYBIND11_NUMPY_DTYPE(inl2_ned_sigma_t, timeOfWeekMs, PxyzNED, PvelNED, PattNED, PABias, PWBias, PBaroBias, PDeclination);
 PYBIND11_NUMPY_DTYPE(strobe_in_time_t, week, timeOfWeekMs, pin, count);
-PYBIND11_NUMPY_DTYPE(velocity_sensor_t, time_ms, id, vel, cov, q, p, valid, reserved);
+PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeekMs, theta_l, omega_l, theta_r, omega_r);
+PYBIND11_NUMPY_DTYPE(wheel_encoder_config_t, q_i2l, t_i2l, distance, diameter);
 PYBIND11_NUMPY_DTYPE(diag_msg_t, timeOfWeekMs, messageLength, message);
 PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla);
 //PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);

@@ -248,7 +248,7 @@ extern void free_debug(void* mem);
 #ifndef RAMFUNC
 
 /* Define RAMFUNC attribute */
-#if defined   ( __CC_ARM   ) /* Keil �Vision 4 */
+#if defined   ( __CC_ARM   ) /* Keil uVision 4 */
 #   define RAMFUNC __attribute__ ((section(".ramfunc")))
 #elif defined ( __ICCARM__ ) /* IAR Ewarm 5.41+ */
 #   define RAMFUNC __ramfunc

@@ -112,7 +112,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_MAGNETOMETER_2] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
 	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
-	sizeMap[DID_CONFIG] = sizeof(config_t);
+    sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
+    sizeMap[DID_CONFIG] = sizeof(config_t);
 	sizeMap[DID_INS_1] = sizeof(ins_1_t);
 	sizeMap[DID_INS_2] = sizeof(ins_2_t);
 	sizeMap[DID_INS_3] = sizeof(ins_3_t);
@@ -139,7 +140,6 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
 
 #ifdef USE_IS_INTERNAL
-
 
 	sizeMap[DID_SENSORS_IS1] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_IS2] = sizeof(sensors_w_temp_t);
@@ -557,6 +557,21 @@ static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DI
     ADD_MAP(m, totalSize, "vel2[2]", vel2[2], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef wheel_encoder_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_WHEEL_ENCODER];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "theta_l", theta_l, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "omega_l", omega_l, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "theta_r", theta_r, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "omega_r", omega_r, 0, DataTypeFloat, float);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1215,9 +1230,8 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     
     ADD_MAP(m, totalSize, "base_position_update", base_position_update, 0, DataTypeUInt8, uint8_t);
     ADD_MAP(m, totalSize, "rover_position_error", rover_position_error, 0, DataTypeUInt8, uint8_t);
-    ADD_MAP(m, totalSize, "debug[0]", debug[1], 0, DataTypeUInt8, uint8_t&);
-    ADD_MAP(m, totalSize, "debug[1]", debug[2], 0, DataTypeUInt8, uint8_t&);
-//    ADD_MAP(m, totalSize, "debug[2]", debug[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "reset_bias", reset_bias, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "debug", debug, 0, DataTypeUInt8, uint8_t);
 
     ADD_MAP(m, totalSize, "double_debug[0]", double_debug[0], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "double_debug[1]", double_debug[1], 0, DataTypeDouble, double&);
@@ -1248,10 +1262,11 @@ cISDataMappings::cISDataMappings()
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
 	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_1);
-	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
-	PopulateBarometerMappings(m_lookupInfo);
-	PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
-	PopulateConfigMappings(m_lookupInfo);
+    PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
+    PopulateBarometerMappings(m_lookupInfo);
+    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
+    PopulateWheelEncoderMappings(m_lookupInfo);
+    PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
 	PopulateRtkRelMappings(m_lookupInfo);
 	PopulateRtkMiscMappings(m_lookupInfo);
@@ -1368,7 +1383,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "strobeInTime",			// 68: DID_STROBE_IN_TIME
         "gps1Raw",				// 69: DID_GPS1_RAW
         "gps2Raw",				// 70: DID_GPS2_RAW
-        "velocityMeasurement",	// 71: DID_VELOCITY_MEASUREMENT
+        "wheelEncoder",         // 71: DID_WHEEL_ENCODER
         "diagnosticMsg",        // 72: DID_DIAGNOSTIC_MESSAGE
         "surveyIn",             // 73: DID_SURVEY_IN
         "empty",                // 74: EMPTY
