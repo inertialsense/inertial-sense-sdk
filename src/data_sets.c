@@ -320,7 +320,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,						// 68: DID_STROBE_IN_TIME
         0,						// 69: DID_GPS1_RAW
         0,						// 70: DID_GPS2_RAW
-        0,						// 71: DID_WHEEL_ENCODER
+        offsetsOnlyTimeFirst,	// 71: DID_WHEEL_ENCODER
         0,						// 72: DID_DIAGNOSTIC_MESSAGE
         offsetsSurveyIn, 		// 73: DID_SURVEY_IN
         0,                      // 74: EMPTY

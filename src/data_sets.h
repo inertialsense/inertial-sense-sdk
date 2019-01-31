@@ -2287,7 +2287,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** Time of measurement wrt current week */
-	uint32_t timeOfWeekMs;
+	double timeOfWeek;
 
 	/** Status Word */
 	uint32_t status;

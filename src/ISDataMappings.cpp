@@ -566,7 +566,7 @@ static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
     typedef wheel_encoder_t MAP_TYPE;
     map_name_to_info_t& m = mappings[DID_WHEEL_ENCODER];
     uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "theta_l", theta_l, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "omega_l", omega_l, 0, DataTypeFloat, float);
