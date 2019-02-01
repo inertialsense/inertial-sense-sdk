@@ -572,6 +572,8 @@ static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "omega_l", omega_l, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "theta_r", theta_r, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "omega_r", omega_r, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wrap_count_l", wrap_count_l, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wrap_count_r", wrap_count_r, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }

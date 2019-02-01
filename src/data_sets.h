@@ -2295,14 +2295,20 @@ typedef struct PACKED
 	/** Left wheel angle (rad) */
 	float theta_l;
 
+	/** Right wheel angle (rad) */
+	float theta_r;
+	
 	/** Left wheel angular rate (rad/s) */
 	float omega_l;
 
-	/** Right wheel angle (rad) */
-	float theta_r;
-
 	/** Right wheel angular rate (rad/s) */
 	float omega_r;
+
+	/** Left wheel revolution count */
+	uint32_t wrap_count_l;
+
+	/** Right wheel revolution count */
+	uint32_t wrap_count_r;
 
 } wheel_encoder_t;
 
