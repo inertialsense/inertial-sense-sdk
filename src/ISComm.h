@@ -555,6 +555,7 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 int is_decode_binary_packet(packet_t *pkt, unsigned char* pbuf, int pbufSize);
 int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
 void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
+void is_enable_packet_encoding(int enabled); // default is enabled
 
 #if defined(RTK_EMBEDDED)
 

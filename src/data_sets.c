@@ -333,6 +333,10 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_CONFIG
         offsetsDebugArray,      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
+        0,                      // 84: 
+        0,                      // 85: 
+        0,                      // 86: 
+        0,                      // 87: 
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -477,6 +481,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_CONFIG
         0,                      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
+        0,                      // 84: 
+        0,                      // 85: 
+        0,                      // 86: 
+        0,                      // 87: 
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -559,7 +567,6 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
         case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
-        case DID_WHEEL_ENCODER_CONFIG:  return RMC_BITS_WHEEL_ENCODER_CONFIG;
 		default:						return defaultRmcBits;
 	}
 }
@@ -751,6 +758,7 @@ int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength)
         break;
 
     case GPS_STATUS_FIX_RTK_FIX:
+    case GPS_STATUS_FIX_RTK_FIX_AND_HOLD:
         fixQuality = 4;
         break;
 

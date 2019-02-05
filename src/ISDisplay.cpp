@@ -1046,13 +1046,14 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 		switch (gps.status&GPS_STATUS_FIX_MASK)
 		{
 		default: 
-		case GPS_STATUS_FIX_NONE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);	break;
-		case GPS_STATUS_FIX_2D:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");		break;
-		case GPS_STATUS_FIX_3D:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");		break;
-		case GPS_STATUS_FIX_RTK_SINGLE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");	break;
-		case GPS_STATUS_FIX_RTK_FLOAT:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");	break;
-		case GPS_STATUS_FIX_RTK_FIX:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");		break;
-		}
+		case GPS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);	break;
+		case GPS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
+		case GPS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
+		case GPS_STATUS_FIX_RTK_SINGLE:         ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");   break;
+		case GPS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
+        case GPS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
+        case GPS_STATUS_FIX_RTK_FIX_AND_HOLD:   ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK F&H");      break;
+        }
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "),\thAcc: %.3f m     cno: %3.1f dBHz\n", gps.hAcc, gps.cnoMean);	// Position accuracy
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA: ");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,

@@ -33,11 +33,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 #if PLATFORM_IS_EVB_2
+#include "globals.h"
 #include "rtc.h"
-typedef struct
-{
-    uint32_t year, month, day, week, hour, minute, second;
-} date_time_t;
 #endif
 
 #if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
@@ -184,12 +181,16 @@ string cISLogger::CreateCurrentTimestamp()
 
 #if PLATFORM_IS_EVB_2
 	date_time_t rtc;
+#if USE_RTC_DATE_TIME   // use RTC
 	rtc_get_date(RTC, &rtc.year, &rtc.month, &rtc.day, &rtc.week);
 	rtc_get_time(RTC, &rtc.hour, &rtc.minute, &rtc.second);
+#else   // use uINS GPS time
+    rtc = g_gps_date_time;    
+#endif
 	snprintf(buf, _ARRAY_BYTE_COUNT(buf), "%.4d%.2d%.2d_%.2d%.2d%.2d",
 			rtc.year, rtc.month, rtc.day, rtc.hour, rtc.minute, rtc.second);
 #else
-// Create timestamp
+    // Create timestamp
 	time_t rawtime = GetTime();
 	struct tm * timeinfo = localtime(&rawtime);
 	strftime(buf, 80, "%Y%m%d_%H%M%S", timeinfo);

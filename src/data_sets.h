@@ -115,7 +115,6 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_CONFIG                  (eDataIDs)81 /** (evb_config_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-#define DID_WHEEL_ENCODER_CONFIG        (eDataIDs)84 /** (wheel_encoder_config_t) static configuration for wheel encoder measurements
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -125,8 +124,8 @@ typedef uint32_t eDataIDs;
 // 5) Update the DIDs in IS-src/python/src/ci_hdw/data_sets.py
 // 6] Test!
 
-/** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
-#define DID_COUNT (eDataIDs)84
+/** Count of data ids (including null DID_NULL 0) - MUST BE MULTPLE OF 4 and LARGER than (not equal to) last DID number! */
+#define DID_COUNT (eDataIDs)88
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -257,7 +256,8 @@ enum eNavFixStatus
 	NAV_FIX_STATUS_RTK_SINGLE                   = (int)0x00000002,
 	NAV_FIX_STATUS_RTK_FLOAT                    = (int)0x00000003,
 	NAV_FIX_STATUS_RTK_FIX                      = (int)0x00000004,
-	NAV_FIX_STATUS_3D_W_GPS_COMPASSING          = (int)0x00000005,
+	NAV_FIX_STATUS_RTK_FIX_AND_HOLD             = (int)0x00000005,
+	NAV_FIX_STATUS_3D_W_GPS_COMPASSING          = (int)0x00000006,
 };
 
 /** Hardware status flags */
@@ -364,6 +364,7 @@ enum eGpsStatus
 	GPS_STATUS_FIX_RTK_SINGLE					= (int)0x00000A00,
 	GPS_STATUS_FIX_RTK_FLOAT					= (int)0x00000B00,
 	GPS_STATUS_FIX_RTK_FIX						= (int)0x00000C00,	
+	GPS_STATUS_FIX_RTK_FIX_AND_HOLD				= (int)0x00000D00,	
 	GPS_STATUS_FIX_MASK							= (int)0x00001F00,
 	GPS_STATUS_FIX_BIT_OFFSET					= (int)8,
 
@@ -1434,7 +1435,6 @@ enum eSensorConfig
 	SENSOR_CFG_ACC_DLPF_5HZ				= (int)0x00006000,
 	SENSOR_CFG_ACC_DLPF_MASK			= (int)0x0000F000,
 	SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
-	
 };
 
 
@@ -1444,6 +1444,62 @@ enum eIoConfig
 	IO_CFG_INPUT_STROBE_TRIGGER_HIGH	= (int)0x00000001,
 };
 
+/** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
+typedef struct PACKED
+{
+    /** Time of measurement wrt current week */
+    double timeOfWeek;
+
+    /** Status Word */
+    uint32_t status;
+
+    /** Left wheel angle (rad) */
+    float theta_l;
+
+    /** Right wheel angle (rad) */
+    float theta_r;
+    
+    /** Left wheel angular rate (rad/s) */
+    float omega_l;
+
+    /** Right wheel angular rate (rad/s) */
+    float omega_r;
+
+    /** Left wheel revolution count */
+    uint32_t wrap_count_l;
+
+    /** Right wheel revolution count */
+    uint32_t wrap_count_r;
+
+} wheel_encoder_t;
+
+enum eWheelCfgBits
+{
+    WHEEL_CFG_BITS_ENABLE               = (int)0x00000001,      // Kinematic constraints
+    WHEEL_CFG_BITS_ENABLE_ENCODER       = (int)0x00000002,
+};
+
+/**
+	*	Configuration of wheel encoders
+	*/
+typedef struct PACKED
+{
+    /** Config bits (see eWheelCfgBits) */
+    uint32_t                bits;
+
+	/** euler angles describing the rotation from imu to left wheel */
+	float                   e_i2l[3];
+
+	/** translation from the imu to the left wheel, expressed in the imu frame */
+	float                   t_i2l[3];
+
+	/** distance between the left wheel and the right wheel */
+	float                   distance;
+
+	/** estimate of wheel diameter */
+	float                   diameter;
+
+} wheel_config_t;
 
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT! These fields should not be deleted, they can be deprecated and marked as reserved,
@@ -1534,6 +1590,9 @@ typedef struct PACKED
 
     /** Sensor config (see eSensorConfig) */
     uint32_t                sensorConfig;
+
+	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
+    wheel_config_t          wheelEncoder;
 
 } nvm_flash_cfg_t;
 
@@ -2116,12 +2175,10 @@ typedef struct PACKED
 	/** Time of week (since Sunday morning) in milliseconds, GMT */
 	uint32_t                timeOfWeekMs;
 
-	/** Accuracy - estimated standard deviations of the solution assuming a priori error model and error parameters by the positioning options.
-	[]: standard deviations {ECEF - x,y,z} or {north, east, down} (meters) */
+	/** Accuracy - estimated standard deviations of the solution assuming a priori error model and error parameters by the positioning options. []: standard deviations {ECEF - x,y,z} or {north, east, down} (meters) */
 	float					accuracyPos[3];
 
-	/** Accuracy - estimated standard deviations of the solution assuming a priori error model and error parameters by the positioning options.
-	[]: Absolute value of means square root of estimated covariance NE, EU, UN */
+	/** Accuracy - estimated standard deviations of the solution assuming a priori error model and error parameters by the positioning options. []: Absolute value of means square root of estimated covariance NE, EU, UN */
 	float					accuracyCov[3];
 
 	/** Ambiguity resolution threshold for validation */
@@ -2283,54 +2340,6 @@ typedef struct PACKED
   uGpsRawData data;
 } gps_raw_t;
 
-/** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
-typedef struct PACKED
-{
-	/** Time of measurement wrt current week */
-	double timeOfWeek;
-
-	/** Status Word */
-	uint32_t status;
-
-	/** Left wheel angle (rad) */
-	float theta_l;
-
-	/** Right wheel angle (rad) */
-	float theta_r;
-	
-	/** Left wheel angular rate (rad/s) */
-	float omega_l;
-
-	/** Right wheel angular rate (rad/s) */
-	float omega_r;
-
-	/** Left wheel revolution count */
-	uint32_t wrap_count_l;
-
-	/** Right wheel revolution count */
-	uint32_t wrap_count_r;
-
-} wheel_encoder_t;
-
-/**
-	*	Configuration of wheel encoders
-	*/
-typedef struct PACKED
-{
-	/** quaternion describing the rotation from imu to left wheel */
-	float q_i2l[4];
-
-	/** translation from the imu to the left wheel, expressed in the imu frame */
-	float t_i2l[3];
-
-	/** distance between the left wheel and the right wheel */
-	float distance;
-
-	/** estimate of wheel diameter */
-	float diameter;
-
-} wheel_encoder_config_t;
-
 /**
 * Diagnostic message
 */
@@ -2448,6 +2457,7 @@ typedef enum
     EVB2_CB_OPTIONS_XBEE_ENABLE       = 0x00000010,
     EVB2_CB_OPTIONS_WIFI_ENABLE       = 0x00000020,
     EVB2_CB_OPTIONS_BLE_ENABLE        = 0x00000040,
+    EVB2_CB_OPTIONS_SPI_ENABLE        = 0x00000080,
 } eEvb2ComBridgeOptions;
 
 /**
@@ -2575,6 +2585,9 @@ typedef enum
 
     /** [uINS Hub] (uINS-SER0): USB, RS422, H8.  (uINS-SER1): WiFi, XRadio.  Off: XBee */
     EVB2_CB_PRESET_RS422_WIFI,
+
+    /** [uINS Hub] (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee */
+    EVB2_CB_PRESET_SPI_RS232,
 
     /** [USB Hub] (USB): RS232, H8, XBee, XRadio. */
     EVB2_CB_PRESET_USB_HUB_RS232,
@@ -2825,7 +2838,6 @@ typedef union PACKED
 	mag_cal_t				magCal;
 	barometer_t				baro;
     wheel_encoder_t         wheelEncoder;
-    wheel_encoder_config_t  wheelEncoderCfg;
 	preintegrated_imu_t		pImu;
 	gps_pos_t				gpsPos;
 	gps_vel_t				gpsVel;

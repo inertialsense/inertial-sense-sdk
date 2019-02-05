@@ -137,7 +137,12 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
-	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
+#if 0   // TODO: fix DID_PREINTEGRATED_IMU_MAG
+    sizeMap[DID_DUAL_IMU_RAW_MAG] = sizeof(imu_mag_t);
+	sizeMap[DID_DUAL_IMU_MAG] = sizeof(imu_mag_t);
+	sizeMap[DID_PREINTEGRATED_IMU_MAG] = sizeof(pimu_mag_t);
+#endif
+    sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -638,6 +643,15 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "startupGPSDtMs", startupGPSDtMs, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wheelEncoder.bits", wheelEncoder.bits, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wheelEncoder.e_i2l[0]", wheelEncoder.e_i2l[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelEncoder.e_i2l[1]", wheelEncoder.e_i2l[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelEncoder.e_i2l[2]", wheelEncoder.e_i2l[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelEncoder.t_i2l[0]", wheelEncoder.t_i2l[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelEncoder.t_i2l[1]", wheelEncoder.t_i2l[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelEncoder.t_i2l[2]", wheelEncoder.t_i2l[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelEncoder.distance", wheelEncoder.distance, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelEncoder.diameter", wheelEncoder.diameter, 0, DataTypeFloat, float);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1398,6 +1412,10 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "evbConfig",            // 81: DID_EVB_CONFIG
         "evb2DebugArray",       // 82: DID_EVB_DEBUG_ARRAY
         "evbRtosInfo",          // 83: DID_EVB_RTOS_INFO
+		"imu_mag_raw",			// 84: DID_DUAL_IMU_RAW_MAG
+		"imu_mag",				// 85: DID_DUAL_IMU_MAG
+		"pimu_mag",				// 86: DID_PREINTEGRATED_IMU_MAG
+		"",
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);
