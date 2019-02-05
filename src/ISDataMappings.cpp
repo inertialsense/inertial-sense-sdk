@@ -643,15 +643,15 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "startupGPSDtMs", startupGPSDtMs, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "wheelEncoder.bits", wheelEncoder.bits, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "wheelEncoder.e_i2l[0]", wheelEncoder.e_i2l[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "wheelEncoder.e_i2l[1]", wheelEncoder.e_i2l[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "wheelEncoder.e_i2l[2]", wheelEncoder.e_i2l[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "wheelEncoder.t_i2l[0]", wheelEncoder.t_i2l[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "wheelEncoder.t_i2l[1]", wheelEncoder.t_i2l[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "wheelEncoder.t_i2l[2]", wheelEncoder.t_i2l[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "wheelEncoder.distance", wheelEncoder.distance, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "wheelEncoder.diameter", wheelEncoder.diameter, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[0]", wheelConfig.e_i2l[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[1]", wheelConfig.e_i2l[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[2]", wheelConfig.e_i2l[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[0]", wheelConfig.t_i2l[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[1]", wheelConfig.t_i2l[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[2]", wheelConfig.t_i2l[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.distance", wheelConfig.distance, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelConfig.diameter", wheelConfig.diameter, 0, DataTypeFloat, float);
 
     ASSERT_SIZE(totalSize);
 }

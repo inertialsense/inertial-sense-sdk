@@ -1592,7 +1592,7 @@ typedef struct PACKED
     uint32_t                sensorConfig;
 
 	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
-    wheel_config_t          wheelEncoder;
+    wheel_config_t          wheelConfig;
 
 } nvm_flash_cfg_t;
 
