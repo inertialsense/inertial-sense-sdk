@@ -755,7 +755,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_INS_3:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_INS_4:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -887,6 +887,7 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 			imu.theta2[1] * C_RAD2DEG_F,
 			imu.theta2[2] * C_RAD2DEG_F,
 			imu.vel2[0], imu.vel2[1], imu.vel2[2]);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", dt: %6.3f", imu.dt);
 	}
 	else
 	{	// Spacious format
@@ -910,6 +911,7 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 			imu.vel2[0],						// IMU2 X acceleration
 			imu.vel2[1],						// IMU2 Y acceleration
 			imu.vel2[2]);						// IMU2 Z acceleration
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tdt: %6.3f", imu.dt);
 	}
 
 	return buf;
@@ -1046,13 +1048,14 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 		switch (gps.status&GPS_STATUS_FIX_MASK)
 		{
 		default: 
-		case GPS_STATUS_FIX_NONE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);	break;
-		case GPS_STATUS_FIX_2D:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");		break;
-		case GPS_STATUS_FIX_3D:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");		break;
-		case GPS_STATUS_FIX_RTK_SINGLE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");	break;
-		case GPS_STATUS_FIX_RTK_FLOAT:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");	break;
-		case GPS_STATUS_FIX_RTK_FIX:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");		break;
-		}
+		case GPS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);	break;
+		case GPS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
+		case GPS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
+		case GPS_STATUS_FIX_RTK_SINGLE:         ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");   break;
+		case GPS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
+        case GPS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
+        case GPS_STATUS_FIX_RTK_FIX_AND_HOLD:   ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK F&H");      break;
+        }
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "),\thAcc: %.3f m     cno: %3.1f dBHz\n", gps.hAcc, gps.cnoMean);	// Position accuracy
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA: ");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,

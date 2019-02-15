@@ -7,7 +7,7 @@ var searchData=
   ['readchunkfromfile',['ReadChunkFromFile',['../classc_device_log_sorted.html#af6917621ecd79bcd9c8e9a80c668c438',1,'cDeviceLogSorted']]],
   ['readdata',['ReadData',['../classc_device_log.html#afbb93c22d7fdd05d28f9b28209b08df7',1,'cDeviceLog::ReadData()'],['../classc_device_log_c_s_v.html#aee1975c72c3a2b5cc39c1d114c605449',1,'cDeviceLogCSV::ReadData()'],['../classc_device_log_j_s_o_n.html#aaa5fbc4a935b8f8855a8fc3662f98567',1,'cDeviceLogJSON::ReadData()'],['../classc_device_log_k_m_l.html#a4dbfd592ed6848924eaac0e0cc7456a0',1,'cDeviceLogKML::ReadData()'],['../classc_device_log_serial.html#a4de1dcf1ff48be39911fb7aa2fdfde71',1,'cDeviceLogSerial::ReadData()'],['../classc_device_log_sorted.html#a86b40524a3ac25639cc139b5f94d58e6',1,'cDeviceLogSorted::ReadData()'],['../classc_com_data_buffer.html#a9f18ffe0eb29dea332a9b2b94821992e',1,'cComDataBuffer::ReadData()'],['../classc_i_s_logger.html#a04a048a0f5b937894ab25c90f9f7e420',1,'cISLogger::ReadData()']]],
   ['readfromfile',['ReadFromFile',['../classc_data_chunk.html#a395cc66fdecc690e993e1bf65acdd618',1,'cDataChunk']]],
-  ['readheaderfromfile',['ReadHeaderFromFile',['../classc_data_c_s_v.html#a5c571af28840ff057ecdc8ff707a7d24',1,'cDataCSV']]],
+  ['readheaderfromfile',['ReadHeaderFromFile',['../classc_data_c_s_v.html#ade89f44461eabe47da233997e8bbd55c',1,'cDataCSV']]],
   ['readkey',['ReadKey',['../classc_inertial_sense_display.html#ae14f6b8df04ca56106c25159c9659cb2',1,'cInertialSenseDisplay']]],
   ['readname',['ReadName',['../class_ti_xml_base.html#a1c21a6ab5f7b503acd91f35f183734b3',1,'TiXmlBase']]],
   ['readnextdata',['ReadNextData',['../classc_i_s_logger.html#aa20138539d26904c787968df5f7f1082',1,'cISLogger']]],

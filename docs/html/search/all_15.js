@@ -20,6 +20,8 @@ var searchData=
   ['unwrap_5fzero_5ftwopi_5ff32',['UNWRAP_ZERO_TWOPI_F32',['../_i_s_constants_8h.html#a73ae431949a210cc17fe10b15dfcc310',1,'ISConstants.h']]],
   ['unwrap_5fzero_5ftwopi_5ff64',['UNWRAP_ZERO_TWOPI_F64',['../_i_s_constants_8h.html#af3349a0998685f87a3955e5d5fabfe3f',1,'ISConstants.h']]],
   ['update',['Update',['../class_inertial_sense.html#a8f375c416f8b8fc007de5053e45f5e5b',1,'InertialSense::Update()'],['../classc_i_s_logger.html#aae12567eb73514a2e28fe3807956854c',1,'cISLogger::Update()'],['../classc_i_s_tcp_server.html#a0407d47a3a0f522e09f088d4a20e469b',1,'cISTcpServer::Update()']]],
+  ['updateappfirmwarefilename',['updateAppFirmwareFilename',['../structcmd__options__t.html#a3356af3f0cd53784bf1b9899a05b82ed',1,'cmd_options_t']]],
+  ['updatebootloaderfilename',['updateBootloaderFilename',['../structcmd__options__t.html#a2eefe1856cb9124bf0d2291c0a36a8a0',1,'cmd_options_t']]],
   ['updatepacketretryack',['updatePacketRetryAck',['../com__manager_8c.html#a993761774598a78d7bcb807aa493ed4a',1,'com_manager.c']]],
   ['updatepacketretrydata',['updatePacketRetryData',['../com__manager_8c.html#a8752fd18e0f3378d4feab9f8398fa172',1,'com_manager.c']]],
   ['uploadprogress',['uploadProgress',['../structbootload__params__t.html#a9944ba87605cde45e912eaa92a37f480',1,'bootload_params_t']]],

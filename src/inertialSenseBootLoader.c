@@ -250,6 +250,31 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
     return 1;
 }
 
+static int serialPortOpenRetry(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
+{
+    if (serialPort == 0 || port == 0)
+    {
+        return 0;
+    }
+    else if (serialPort->pfnOpen != 0)
+    {
+        int retry = 30;
+
+        while (serialPortOpen(serialPort, port, baudRate, blocking))
+        {
+            if (--retry == 0)
+            {
+                serialPortClose(serialPort);
+                return 0;
+            }
+
+            serialPortSleep(serialPort, 100);
+        }
+        return 1;
+    }
+    return 0;
+}
+
 static int serialPortOpenInternal(serial_port_t* s, int baudRate, char* error, int errorLength)
 {
     if (error != 0 && errorLength > 0)
@@ -259,7 +284,7 @@ static int serialPortOpenInternal(serial_port_t* s, int baudRate, char* error, i
     serialPortClose(s);
     s->error = error;
     s->errorLength = errorLength;
-    if (serialPortOpen(s, s->port, baudRate == 0 ? IS_BAUD_RATE_BOOTLOADER : baudRate, 1) == 0)
+    if (serialPortOpenRetry(s, s->port, baudRate == 0 ? IS_BAUD_RATE_BOOTLOADER : baudRate, 1) == 0)
     {
         bootloader_perror(s, "Unable to open serial port at %s\n", s->port);
         return 0;
@@ -1128,7 +1153,7 @@ static int bootloaderHandshake(bootload_params_t* p)
 static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 {
     printf("Starting bootloader...\n");
-    if (!enableBootloader(p->port, p->baudRate, p->error, p->errorLength))
+    if (!enableBootloader(p->port, p->baudRate, p->error, p->errorLength, p->bootloadEnableCmd))
     {
         printf("Unable to find bootloader\n");
         return 0;
@@ -1322,7 +1347,8 @@ static int samBaSoftReset(serial_port_t* port)
     return 0;
 }
 
-int bootloadFile(const char* fileName, serial_port_t* port, char* error, int errorLength, const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
+int bootloadFile(serial_port_t* port, const char* fileName, char* error, int errorLength,
+    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
     bootload_params_t params;
     memset(&params, 0, sizeof(params));
@@ -1335,6 +1361,7 @@ int bootloadFile(const char* fileName, serial_port_t* port, char* error, int err
     params.verifyProgress = verifyProgress;
     params.numberOfDevices = 1;
     params.flags.bitFields.enableVerify = (verifyProgress != 0);
+    strncpy(params.bootloadEnableCmd, "BLEN", 4);
 
     return bootloadFileEx(&params);
 }
@@ -1346,6 +1373,11 @@ int bootloadFileEx(bootload_params_t* params)
     if (params->error != 0 && params->errorLength > 0)
     {
         *params->error = '\0';
+    }
+    
+    if (strstr(params->fileName, "EVB") != NULL)
+    {   // Enable EVB-2 bootloader
+        strncpy(params->bootloadEnableCmd, "EBLE", 4);
     }
 
     // open the file
@@ -1385,30 +1417,52 @@ int bootloadFileEx(bootload_params_t* params)
 }
 
 int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* error, int errorLength,
-                             const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
+    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
-    bootload_params_t s;
-    s.error = error;
-    s.errorLength = errorLength;
-    serialPortWriteAscii(port, "NELB,!!SAM-BA!!", 16);
-    serialPortSleep(port, 250);
-    serialPortClose(port);
+    bootload_params_t params;
+    memset(&params, 0, sizeof(params));
+    params.fileName = fileName;
+    params.port = port;
+    params.error = error;
+    params.errorLength = errorLength;
+    params.obj = obj;
+    params.uploadProgress = uploadProgress;
+    params.verifyProgress = verifyProgress;
+    params.numberOfDevices = 1;
+    params.flags.bitFields.enableVerify = (verifyProgress != 0);
+    strncpy(params.bootloadEnableCmd, "NELB,!!SAM-BA!!\0", 16);
 
-    if (!serialPortOpen(port, port->port, BAUDRATE_3000000, 1))
+    return bootloadUpdateBootloaderEx(&params);
+}
+
+int bootloadUpdateBootloaderEx(bootload_params_t* p)
+{
+//     if (strstr(p->fileName, "EVB") != NULL)
+//     {   // Enable EVB-2 bootloader
+//         strncpy(p->bootloadEnableCmd, "ELBE,!!SAM-BA!!\0", 16);
+//     }
+
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+    serialPortSleep(p->port, 250);
+    serialPortClose(p->port);
+
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_3000000, 1))
     {
-        serialPortClose(port);
+        bootloader_perror(p, "Failed to open port.\n");
+        serialPortClose(p->port);
         return 0;
     }
-    serialPortWriteAscii(port, "NELB,!!SAM-BA!!", 16);
-    serialPortSleep(port, 250);
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+    serialPortSleep(p->port, 250);
 
-    serialPortClose(port);
-    if (!serialPortOpen(port, port->port, BAUDRATE_921600, 1))
+    serialPortClose(p->port);
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_921600, 1))
     {
-        serialPortClose(port);
+        bootloader_perror(p, "Failed to open port.\n");
+        serialPortClose(p->port);
         return 0;
     }
-    serialPortWriteAscii(port, "NELB,!!SAM-BA!!", 16);
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
 
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
@@ -1418,44 +1472,47 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
     // try non-USB and then USB mode (0 and 1)
     for (int isUSB = 0; isUSB < 2; isUSB++)
     {
-		serialPortSleep(port, 250);
-        serialPortClose(port);
-        if (!serialPortOpen(port, port->port, SAM_BA_BAUDRATE, 1))
+		serialPortSleep(p->port, 250);
+        serialPortClose(p->port);
+        if (!serialPortOpenRetry(p->port, p->port->port, SAM_BA_BAUDRATE, 1))
         {
-            serialPortClose(port);
+            bootloader_perror(p, "Failed to open port.\n");
+            serialPortClose(p->port);
             return 0;
         }
 
         // flush
-        serialPortWrite(port, (void*)"#", 2);
-        int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
+        serialPortWrite(p->port, (void*)"#", 2);
+        int count = serialPortReadTimeout(p->port, buf, sizeof(buf), 100);
 
         // non-interactive mode
-        count = serialPortWriteAndWaitFor(port, (void*)"N#", 2, (void*)"\n\r", 2);
+        count = serialPortWriteAndWaitFor(p->port, (void*)"N#", 2, (void*)"\n\r", 2);
         if (!count)
         {
-            bootloader_perror(&s, "Failed to handshake with SAM-BA\n");
+            bootloader_perror(p, "Failed to handshake with SAM-BA\n");
+            serialPortClose(p->port);
             return 0;
         }
 
         // set flash mode register
-        serialPortWrite(port, (const unsigned char*)"W400e0c00,04000600#", 19);
+        serialPortWrite(p->port, (const unsigned char*)"W400e0c00,04000600#", 19);
 
         FILE* file;
 
     #ifdef _MSC_VER
 
-        fopen_s(&file, fileName, "rb");
+        fopen_s(&file, p->fileName, "rb");
 
     #else
 
-        file = fopen(fileName, "rb");
+        file = fopen(p->fileName, "rb");
 
     #endif
 
         if (file == 0)
         {
-            bootloader_perror(&s, "Unable to load bootloader file\n");
+            bootloader_perror(p, "Unable to load bootloader file\n");
+            serialPortClose(p->port);
             return 0;
         }
 
@@ -1466,21 +1523,23 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
 
         if (size != SAM_BA_BOOTLOADER_SIZE)
         {
-            bootloader_perror(&s, "Invalid bootloader file\n");
+            bootloader_perror(p, "Invalid bootloader file\n");
+            serialPortClose(p->port);
             return 0;
         }
 
         uint32_t offset = 0;
         while (fread(buf, 1, SAM_BA_FLASH_PAGE_SIZE, file) == SAM_BA_FLASH_PAGE_SIZE)
         {
-            if (!samBaFlashEraseWritePage(port, offset, buf, isUSB))
+            if (!samBaFlashEraseWritePage(p->port, offset, buf, isUSB))
             {
                 if (!isUSB)
                 {
                     offset = 0;
                     break; // try USB mode
                 }
-                bootloader_perror(&s, "Failed to upload page at offset %d\n", (int)offset);
+                bootloader_perror(p, "Failed to upload page at offset %d\n", (int)offset);
+                serialPortClose(p->port);
                 return 0;
             }
             for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
@@ -1488,9 +1547,9 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
                 checksum ^= *ptr;
             }
             offset += SAM_BA_FLASH_PAGE_SIZE;
-            if (uploadProgress != 0)
+            if (p->uploadProgress != 0)
             {
-                uploadProgress(obj, (float)offset / (float)SAM_BA_BOOTLOADER_SIZE);
+                p->uploadProgress(p->obj, (float)offset / (float)SAM_BA_BOOTLOADER_SIZE);
             }
         }
         fclose(file);
@@ -1500,33 +1559,34 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
         }
     }
 
-    if (verifyProgress != 0)
+    if (p->verifyProgress != 0)
     {
-        switch (samBaVerify(port, checksum, obj, verifyProgress))
+        switch (samBaVerify(p->port, checksum, p->obj, p->verifyProgress))
         {
-        case -1: bootloader_perror(&s, "Flash read error\n"); return 0;
-        case -2: bootloader_perror(&s, "Flash checksum error\n"); return 0;
+        case -1: bootloader_perror(p, "Flash read error\n"); return 0;
+        case -2: bootloader_perror(p, "Flash checksum error\n"); return 0;
         }
     }
 
-    if (!samBaSetBootFromFlash(port))
+    if (!samBaSetBootFromFlash(p->port))
     {
-        bootloader_perror(&s, "Failed to set boot from flash GPNVM bit\n");
+        bootloader_perror(p, "Failed to set boot from flash GPNVM bit\n");
+        serialPortClose(p->port);
         return 0;
     }
 
-    if (!samBaSoftReset(port))
+    if (!samBaSoftReset(p->port))
     {
-        bootloader_perror(&s, "Failed to reset device\n");
+        bootloader_perror(p, "Failed to reset device\n");
+        serialPortClose(p->port);
         return 0;
     }
 
-    serialPortClose(port);
-
+    serialPortClose(p->port);
     return 1;
 }
 
-int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength)
+int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd)
 {
     // raspberry PI and other Linux have trouble with 3000000 baud, so start with 921600
     static const int baudRates[] = { 921600, 3000000, 460800, 230400, 115200 };
@@ -1546,12 +1606,13 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
             serialPortClose(port);
             if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
             {
+                serialPortClose(port);
                 return 0;
             }
             for (size_t loop = 0; loop < 10; loop++)
             {
                 serialPortWriteAscii(port, "STPB", 4);
-                serialPortWriteAscii(port, "BLEN", 4);
+                serialPortWriteAscii(port, bootloadEnableCmd, 4);
                 c = 0;
                 if (serialPortReadCharTimeout(port, &c, 13) == 1)
                 {
@@ -1587,7 +1648,6 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
 
     // by this point the bootloader should be enabled
     serialPortClose(port);
-
     return 1;
 }
 

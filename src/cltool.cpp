@@ -60,7 +60,7 @@ static bool startsWith(const char* str, const char* pre)
 #define CL_DEFAULT_MAX_LOG_SPACE_PERCENT	0.5f 
 #define CL_DEFAULT_MAX_LOG_MEMORY			131072
 #define CL_DEFAULT_REPLAY_SPEED				1.0
-#define CL_DEFAULT_BOOTLOAD_VERIFY			true
+#define CL_DEFAULT_BOOTLOAD_VERIFY			false
 
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
@@ -96,19 +96,23 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	for (int i = 1; i < argc; i++)
 	{
 		const char* a = argv[i];
-		if (startsWith(a, "-baud="))
+        if (startsWith(a, "-asciiMessages="))
+        {
+            g_commandLineOptions.asciiMessages = &a[15];
+        }
+        else if (startsWith(a, "-baud="))
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
 		}
-		else if (startsWith(a, "-b="))
-		{
-			g_commandLineOptions.bootloaderFileName = &a[3];
-		}
 		else if (startsWith(a, "-bv="))
 		{
-			g_commandLineOptions.bootloaderVerify = a[4] == '1';
+			g_commandLineOptions.bootloaderVerify = (a[4] == '1');
 		}
-		else if (startsWith(a, "-c="))
+        else if (startsWith(a, "-b="))
+        {
+            g_commandLineOptions.updateAppFirmwareFilename = &a[3];
+        }
+        else if (startsWith(a, "-c="))
 		{
 			g_commandLineOptions.comPort = &a[3];
 		}
@@ -145,7 +149,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.maxLogMemory = (uint32_t)strtoul(&a[5], NULL, 10);
 		}
-		else if (startsWith(a, "-lts="))
+        else if (startsWith(a, "-log-flush-timeout="))
+        {
+            g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
+        }
+        else if (startsWith(a, "-lts="))
 		{
 			const char* subFolder = &a[5];
 			if (*subFolder == '1' || startsWith(subFolder, "true"))
@@ -277,13 +285,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamMag2 = 50;
 		}
-		else if (startsWith(a, "-msgPIMU="))
-		{
-			g_commandLineOptions.streamDThetaVel = (int)atof(&a[9]);
-		}
 		else if (startsWith(a, "-msgPIMU"))
 		{
-			g_commandLineOptions.streamDThetaVel = 50;
+			g_commandLineOptions.streamDThetaVel = 1;
 		}
 		else if (startsWith(a, "-msgPresetPPD"))
 		{
@@ -351,11 +355,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
 		}
+        else if (startsWith(a, "-reset"))
+        {
+            g_commandLineOptions.softwareReset = true;
+        }
 		else if (startsWith(a, "-r"))
 		{
 			g_commandLineOptions.replayDataLog = true;
 		}
-		else if (startsWith(a, "-stats"))
+        else if (startsWith(a, "-stats"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
@@ -367,14 +375,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
 		}
-		else if (startsWith(a, "-log-flush-timeout="))
-		{
-			g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
-		}
-		else if (startsWith(a, "-asciiMessages="))
-		{
-			g_commandLineOptions.asciiMessages = &a[15];
-		}
+        else if (startsWith(a, "-ub="))
+        {
+            g_commandLineOptions.updateBootloaderFilename = &a[4];
+        }
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
@@ -389,12 +393,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		cltool_outputUsage();
 		return false;
 	}
-	else if (g_commandLineOptions.bootloaderFileName.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
 	{
 		cout << "Use COM_PORT option \"-c=\" with bootloader" << endl;
 		return false;
 	}
-
+    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+    {
+        cout << "Use COM_PORT option \"-c=\" with bootloader" << endl;
+        return false;
+    }
+        
 	return true;
 }
 
@@ -445,7 +454,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b= " << EXAMPLE_FIRMWARE_FILE          << boldOff << " # bootload firmware" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b= " << EXAMPLE_FIRMWARE_FILE          << boldOff << " # bootload application firmware" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=* -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
@@ -453,19 +462,21 @@ void cltool_outputUsage()
 	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
 	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
-	cout << "    -b=" << boldOff << "FILEPATH     bootload firmware using .hex file FILEPATH" << endlbOn;
-	cout << "    -q" << boldOff << "              quite mode, no display" << endlbOn;
-	cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
+	cout << "    -b=" << boldOff << "FILEPATH     update application firmware using .hex file FILEPATH" << endlbOn;
+    cout << "    -magRecal[n]" << boldOff << "    recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
+    cout << "    -q" << boldOff << "              quite mode, no display" << endlbOn;
+    cout << "    -reset         " << boldOff << " issue software reset.  Use caution." << endlbOn;
+    cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
 	cout << "    -stats" << boldOff << "          display statistics of data received" << endlbOn;
-	cout << "    -magRecal[n]" << boldOff << "    recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -survey=[s],[d]" << boldOff << " survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
+    cout << "    -ub=" << boldOff << "FILEPATH    update bootloader firmware using SAM-BA and .bin file FILEPATH" << endlbOn;
     cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
 	cout << "    -msgPresetPPD " << boldOff << "  stream preset: post processing data sets" << endlbOn;
 	cout << "    -msgPresetINS2" << boldOff << "  stream preset: INS2 sets" << endlbOn;
 	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
 	cout << "    -msgDualIMU *  " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
-	cout << "    -msgPIMU *     " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
+	cout << "    -msgPIMU       " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
 	cout << "    -msgMag[n] *   " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
 	cout << "    -msgBaro *     " << boldOff << "  stream DID_BAROMETER" << endlbOn;
 	cout << "    -msgGPS *      " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
@@ -473,7 +484,7 @@ void cltool_outputUsage()
 	cout << "    -msgRtkPos *   " << boldOff << "  stream DID_GPS1_RTK_POS" << endlbOn;
 	cout << "    -msgRtkRel *   " << boldOff << "  stream DID_GPS1_RTK_REL" << endlbOn;
     cout << "    -persistent   " << boldOff << "  save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "                * Message can be appended with =<PERIODMULTIPLE> to change message frequency. Period is then equal to message" << endlbOn;
+	cout << "                * Message can be appended with =<PERIODMULTIPLE> to change message frequency. Period is then equal to message" << endlbOn; 
 	cout << "                  source times the PERIODMULTIPLE. If not appended the data will stream at a default rate." << endlbOn;
 	cout << "                  Example: -msgINS2=10 will stream data at startupNavDtMs x 10" << endlbOn;
     cout << endlbOn;

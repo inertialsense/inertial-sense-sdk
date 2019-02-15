@@ -24,12 +24,12 @@ var searchData=
   ['enavfixstatus',['eNavFixStatus',['../data__sets_8h.html#a1cd19951a12c6aa43e54310a3150abe6',1,'data_sets.h']]],
   ['epkthdrflags',['ePktHdrFlags',['../_i_s_comm_8h.html#ab0476659eb782bc338d77d1e1142abc3',1,'ISComm.h']]],
   ['erawdatatype',['eRawDataType',['../data__sets_8h.html#a534377a848e290b847dc1830258b216f',1,'data_sets.h']]],
-  ['ermcbits',['eRMCbits',['../data__sets_8h.html#a3416f79ef6d6aa37fc5b3b12f4a2bddf',1,'data_sets.h']]],
   ['ertkconfigbits',['eRTKConfigBits',['../data__sets_8h.html#a3dd13b023dd89f3c598733e70cfd0e02',1,'data_sets.h']]],
   ['ertksolstatus',['eRtkSolStatus',['../data__sets_8h.html#a1eadb5c9bdfb1b3f6afd2499c703281f',1,'data_sets.h']]],
   ['ertostask',['eRtosTask',['../data__sets_8h.html#ab35ac489ad3a332c0a1ed5894a1e892e',1,'data_sets.h']]],
   ['esatsvflags',['eSatSvFlags',['../data__sets_8h.html#a2b43fc2aa26e8e97cd130f8c14f617be',1,'data_sets.h']]],
   ['esensorconfig',['eSensorConfig',['../data__sets_8h.html#ab3168be6810eb262cd4e4881e49171df',1,'data_sets.h']]],
   ['esurveyinstatus',['eSurveyInStatus',['../data__sets_8h.html#a83bd7219c131eb152addd83d0473caf6',1,'data_sets.h']]],
-  ['esysconfigbits',['eSysConfigBits',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85',1,'data_sets.h']]]
+  ['esysconfigbits',['eSysConfigBits',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85',1,'data_sets.h']]],
+  ['ewheelcfgbits',['eWheelCfgBits',['../data__sets_8h.html#a905ce0d4d2ec77f5f45ebd3d7d96f23d',1,'data_sets.h']]]
 ];

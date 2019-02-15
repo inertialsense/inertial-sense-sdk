@@ -112,7 +112,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_MAGNETOMETER_2] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
 	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
-	sizeMap[DID_CONFIG] = sizeof(config_t);
+    sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
+    sizeMap[DID_CONFIG] = sizeof(config_t);
 	sizeMap[DID_INS_1] = sizeof(ins_1_t);
 	sizeMap[DID_INS_2] = sizeof(ins_2_t);
 	sizeMap[DID_INS_3] = sizeof(ins_3_t);
@@ -136,10 +137,14 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
-	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
+#if 0   // TODO: fix DID_PREINTEGRATED_IMU_MAG
+    sizeMap[DID_DUAL_IMU_RAW_MAG] = sizeof(imu_mag_t);
+	sizeMap[DID_DUAL_IMU_MAG] = sizeof(imu_mag_t);
+	sizeMap[DID_PREINTEGRATED_IMU_MAG] = sizeof(pimu_mag_t);
+#endif
+    sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
 
 #ifdef USE_IS_INTERNAL
-
 
 	sizeMap[DID_SENSORS_IS1] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_IS2] = sizeof(sensors_w_temp_t);
@@ -561,6 +566,23 @@ static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DI
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef wheel_encoder_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_WHEEL_ENCODER];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "theta_l", theta_l, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "omega_l", omega_l, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "theta_r", theta_r, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "omega_r", omega_r, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wrap_count_l", wrap_count_l, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wrap_count_r", wrap_count_r, 0, DataTypeUInt32, uint32_t);
+
+    ASSERT_SIZE(totalSize);
+}
+
 static void PopulateConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 {
     typedef config_t MAP_TYPE;
@@ -621,6 +643,15 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "startupGPSDtMs", startupGPSDtMs, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[0]", wheelConfig.e_i2l[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[1]", wheelConfig.e_i2l[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[2]", wheelConfig.e_i2l[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[0]", wheelConfig.t_i2l[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[1]", wheelConfig.t_i2l[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[2]", wheelConfig.t_i2l[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelConfig.distance", wheelConfig.distance, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelConfig.diameter", wheelConfig.diameter, 0, DataTypeFloat, float);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1215,9 +1246,32 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     
     ADD_MAP(m, totalSize, "base_position_update", base_position_update, 0, DataTypeUInt8, uint8_t);
     ADD_MAP(m, totalSize, "rover_position_error", rover_position_error, 0, DataTypeUInt8, uint8_t);
-    ADD_MAP(m, totalSize, "debug[0]", debug[1], 0, DataTypeUInt8, uint8_t&);
-    ADD_MAP(m, totalSize, "debug[1]", debug[2], 0, DataTypeUInt8, uint8_t&);
-//    ADD_MAP(m, totalSize, "debug[2]", debug[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "reset_bias", reset_bias, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "start_relpos", start_relpos, 0, DataTypeUInt8, uint8_t);
+
+    ADD_MAP(m, totalSize, "end_relpos", end_relpos, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "start_rtkpos", start_rtkpos, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "pnt_pos_error", pnt_pos_error, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "no_base_obs_data", no_base_obs_data, 0, DataTypeUInt8, uint8_t);
+
+    ADD_MAP(m, totalSize, "diff_age_error", diff_age_error, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "moveb_time_sync_error", moveb_time_sync_error, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "waiting_for_rover_packet", waiting_for_rover_packet, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "waiting_for_base_data", waiting_for_base_data, 0, DataTypeUInt8, uint8_t);
+
+    ADD_MAP(m, totalSize, "waiting_for_base_packet", waiting_for_base_packet, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "lsq_error", lsq_error, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "lack_of_valid_sats", lack_of_valid_sats, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "divergent_pnt_pos_iteration", divergent_pnt_pos_iteration, 0, DataTypeUInt8, uint8_t);
+
+    ADD_MAP(m, totalSize, "chi_square_error", chi_square_error, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "gdop_error", gdop_error, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "debug[0]", debug[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "debug[1]", debug[1], 0, DataTypeUInt8, uint8_t&);
+
+    ADD_MAP(m, totalSize, "cycle_slips", cycle_slips, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "ubx_error", ubx_error, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "dist2base", dist2base, 0, DataTypeDouble, double);
 
     ADD_MAP(m, totalSize, "double_debug[0]", double_debug[0], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "double_debug[1]", double_debug[1], 0, DataTypeDouble, double&);
@@ -1248,10 +1302,11 @@ cISDataMappings::cISDataMappings()
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
 	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_1);
-	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
-	PopulateBarometerMappings(m_lookupInfo);
-	PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
-	PopulateConfigMappings(m_lookupInfo);
+    PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
+    PopulateBarometerMappings(m_lookupInfo);
+    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
+    PopulateWheelEncoderMappings(m_lookupInfo);
+    PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
 	PopulateRtkRelMappings(m_lookupInfo);
 	PopulateRtkMiscMappings(m_lookupInfo);
@@ -1368,7 +1423,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "strobeInTime",			// 68: DID_STROBE_IN_TIME
         "gps1Raw",				// 69: DID_GPS1_RAW
         "gps2Raw",				// 70: DID_GPS2_RAW
-        "velocityMeasurement",	// 71: DID_VELOCITY_MEASUREMENT
+        "wheelEncoder",         // 71: DID_WHEEL_ENCODER
         "diagnosticMsg",        // 72: DID_DIAGNOSTIC_MESSAGE
         "surveyIn",             // 73: DID_SURVEY_IN
         "empty",                // 74: EMPTY
@@ -1378,9 +1433,13 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "rtkCodeResidual",      // 78: DID_RTK_CODE_RESIDUAL
         "rtkDebug",             // 79: DID_RTK_DEBUG
         "evbStatus",            // 80: DID_EVB_STATUS
-        "evbConfig",            // 81: DID_EVB_CONFIG
+        "evbFlashCfg",          // 81: DID_EVB_FLASH_CFG
         "evb2DebugArray",       // 82: DID_EVB_DEBUG_ARRAY
         "evbRtosInfo",          // 83: DID_EVB_RTOS_INFO
+		"imu_mag_raw",			// 84: DID_DUAL_IMU_RAW_MAG
+		"imu_mag",				// 85: DID_DUAL_IMU_MAG
+		"pimu_mag",				// 86: DID_PREINTEGRATED_IMU_MAG
+		"",
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);

@@ -2,6 +2,7 @@ var searchData=
 [
   ['evb2_5fcb_5foptions_5fble_5fenable',['EVB2_CB_OPTIONS_BLE_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010add6cf842bd7b9657d9dc4c8f7a3f147e',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5fsp330_5frs422',['EVB2_CB_OPTIONS_SP330_RS422',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010ad2415f31451e0f32097529a9620c5a1a',1,'data_sets.h']]],
+  ['evb2_5fcb_5foptions_5fspi_5fenable',['EVB2_CB_OPTIONS_SPI_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010a28cf7fa1553c3f36748e0fbe6193afbe',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5fwifi_5fenable',['EVB2_CB_OPTIONS_WIFI_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010ae7519e1fc990d09de859bcb4ec3ce444',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5fxbee_5fenable',['EVB2_CB_OPTIONS_XBEE_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010a98bd49e1bd104a15491164697eaa0830',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5fall_5foff',['EVB2_CB_PRESET_ALL_OFF',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea88c3ed9bd5971ec1684af00cbcdf24e8',1,'data_sets.h']]],
@@ -10,6 +11,7 @@ var searchData=
   ['evb2_5fcb_5fpreset_5frs232',['EVB2_CB_PRESET_RS232',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea116eedf7f4542b3844f8303b7845c2ad',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5frs232_5fxbee',['EVB2_CB_PRESET_RS232_XBEE',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea1e3f34e953f46a95d95c415d8dde1b92',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5frs422_5fwifi',['EVB2_CB_PRESET_RS422_WIFI',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051deafca3debc7959dd32bad321613df86619',1,'data_sets.h']]],
+  ['evb2_5fcb_5fpreset_5fspi_5frs232',['EVB2_CB_PRESET_SPI_RS232',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea7f86bfa4939cd8d06b4fb60f47fea8fe',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5fusb_5fhub_5frs232',['EVB2_CB_PRESET_USB_HUB_RS232',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea8b2003b0024265bc3cc398b81f9cfed5',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5fusb_5fhub_5frs422',['EVB2_CB_PRESET_USB_HUB_RS422',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea4a49f5aa0b397ef5dcf2205b469e12f5',1,'data_sets.h']]],
   ['evb2_5flog_5fcmd_5fpurge',['EVB2_LOG_CMD_PURGE',['../data__sets_8h.html#a8e7485a1febe61eaaf9269f256a7c464abcc9e9c0af491787bb1944ffd3d7ae91',1,'data_sets.h']]],

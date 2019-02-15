@@ -24,6 +24,7 @@ var searchData=
   ['_5fdid_5fmagnetometer_5f2',['_DID_MAGNETOMETER_2',['../_i_s_comm_8h.html#a61cd51d79fc0714dd55ec91321855bf3',1,'ISComm.h']]],
   ['_5fdid_5frmc',['_DID_RMC',['../_i_s_comm_8h.html#a69d000dba2ddc6f6b6b4d796ffec31bd',1,'ISComm.h']]],
   ['_5fdid_5fstrobe_5fin_5ftime',['_DID_STROBE_IN_TIME',['../_i_s_comm_8h.html#a3d97f25d798cabccac8118ddc794415f',1,'ISComm.h']]],
+  ['_5fdid_5fwheel_5fencoder',['_DID_WHEEL_ENCODER',['../_i_s_comm_8h.html#a7f3081d9f8256332e9d0a02598e32a1f',1,'ISComm.h']]],
   ['_5ffabs',['_FABS',['../_i_s_constants_8h.html#a2ff592b66049641ac02483e9562c7c84',1,'ISConstants.h']]],
   ['_5ffile_5foffset_5fbits',['_FILE_OFFSET_BITS',['../_i_s_logger_8h.html#a44d01ba0a136b8e27ad362f5a823d14e',1,'_FILE_OFFSET_BITS():&#160;ISLogger.h'],['../_i_s_stream_8cpp.html#a44d01ba0a136b8e27ad362f5a823d14e',1,'_FILE_OFFSET_BITS():&#160;ISStream.cpp']]],
   ['_5fgetcwd',['_GETCWD',['../_i_s_constants_8h.html#a80cd8c26d7909920cce954432a086a4e',1,'ISConstants.h']]],

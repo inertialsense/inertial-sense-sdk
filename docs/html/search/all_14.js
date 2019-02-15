@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['t_5fi2l',['t_i2l',['../struct_p_a_c_k_e_d.html#ae12a03dfa502c0ec008eafc6db8a9528',1,'PACKED']]],
   ['tabsize',['TabSize',['../class_ti_xml_document.html#a81e6ffeee8f5d025a171eabf79abdad7',1,'TiXmlDocument']]],
   ['tail',['tail',['../structlinked__list__t.html#af224bad3085c3a239ee4fa9b7cdda120',1,'linked_list_t::tail()'],['../structringbuf__t.html#a4b07ea4d8900ecccd822815e94d51ee2',1,'ringbuf_t::tail()']]],
   ['task',['task',['../struct_p_a_c_k_e_d.html#a80fb90dbbd019bee02bb8a9b79ff779b',1,'PACKED']]],
@@ -23,6 +24,8 @@ var searchData=
   ['theta',['theta',['../struct_p_a_c_k_e_d.html#a4575904dbef3efe8275fab4781e43bfb',1,'PACKED::theta()'],['../structs_kml_log_data.html#af4f44338a6684e257329680085a93498',1,'sKmlLogData::theta()']]],
   ['theta1',['theta1',['../struct_p_a_c_k_e_d.html#a314d7850f21eecd1de73f4dca6d53f27',1,'PACKED']]],
   ['theta2',['theta2',['../struct_p_a_c_k_e_d.html#aeac3e8cba2f4de60b6e805598e74dd84',1,'PACKED']]],
+  ['theta_5fl',['theta_l',['../struct_p_a_c_k_e_d.html#ae9c79a8079595bb423b32ce0c87db7e2',1,'PACKED']]],
+  ['theta_5fr',['theta_r',['../struct_p_a_c_k_e_d.html#ad5a4b351a24880ba3c663cac0467f02d',1,'PACKED']]],
   ['thread',['thread',['../structbootloader__state__t.html#a2e610c3c085ab6acc48e2dcf09aef562',1,'bootloader_state_t']]],
   ['threadcreateandstart',['threadCreateAndStart',['../_i_s_utilities_8cpp.html#af86294fec13e0223d1b36a2b4e57b61f',1,'threadCreateAndStart(void(*function)(void *info), void *info):&#160;ISUtilities.cpp'],['../_i_s_utilities_8h.html#af86294fec13e0223d1b36a2b4e57b61f',1,'threadCreateAndStart(void(*function)(void *info), void *info):&#160;ISUtilities.cpp']]],
   ['threadjoinandfree',['threadJoinAndFree',['../_i_s_utilities_8cpp.html#accf248be103fbab76b6bbdfae67b6d52',1,'threadJoinAndFree(void *handle):&#160;ISUtilities.cpp'],['../_i_s_utilities_8h.html#accf248be103fbab76b6bbdfae67b6d52',1,'threadJoinAndFree(void *handle):&#160;ISUtilities.cpp']]],
@@ -31,7 +34,6 @@ var searchData=
   ['time',['time',['../struct_p_a_c_k_e_d.html#a39e83f5579274f696cd10fc70644d0d5',1,'PACKED::time()'],['../structgtime__t.html#a56a0300ca49d82b1d2e7604027ec920b',1,'gtime_t::time()'],['../struct_p_a_c_k_e_d.html#a62b68fa976a686ca5e2670628543c4e7',1,'PACKED::time()'],['../structs_kml_log_data.html#affe95e5988d8b90f6c5ba28b7d7e15a0',1,'sKmlLogData::time()']]],
   ['time_5fconversion_2ec',['time_conversion.c',['../time__conversion_8c.html',1,'']]],
   ['time_5fconversion_2eh',['time_conversion.h',['../time__conversion_8h.html',1,'']]],
-  ['time_5fms',['time_ms',['../struct_p_a_c_k_e_d.html#a173f449f95952c0b5fbc5b3baf213f7a',1,'PACKED']]],
   ['timeconv_5fdays_5fin_5fapr',['TIMECONV_DAYS_IN_APR',['../time__conversion_8c.html#aba36e3ab69f559d3b52debc184272328',1,'time_conversion.c']]],
   ['timeconv_5fdays_5fin_5faug',['TIMECONV_DAYS_IN_AUG',['../time__conversion_8c.html#a0a3f216b4cbb6d655932ce4b3163df8e',1,'time_conversion.c']]],
   ['timeconv_5fdays_5fin_5fdec',['TIMECONV_DAYS_IN_DEC',['../time__conversion_8c.html#a095fa85dc5338779534ca168ce65431e',1,'time_conversion.c']]],

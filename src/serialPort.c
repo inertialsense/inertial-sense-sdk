@@ -31,22 +31,12 @@ int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, in
 	{
 		return 0;
 	}
-	else if (serialPort->pfnOpen != 0)
+	
+    if (serialPort->pfnOpen != 0)
 	{
-		int retry = 30;
-
-		while (!serialPort->pfnOpen(serialPort, port, baudRate, blocking))
-		{
-			if (--retry == 0)
-			{
-				serialPortClose(serialPort);
-				return 0;
-			}
-
-            serialPortSleep(serialPort, 100);
-		}
-		return 1;
+        return serialPort->pfnOpen(serialPort, port, baudRate, blocking);
 	}
+
 	return 0;
 }
 

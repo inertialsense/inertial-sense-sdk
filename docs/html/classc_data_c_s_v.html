@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.4</span>
+   &#160;<span id="projectnumber">Release 1.7.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -76,10 +76,10 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a0c05401c33c07ac357b583aff4332825"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#a0c05401c33c07ac357b583aff4332825">WriteHeaderToFile</a> (FILE *pFile, int id)</td></tr>
-<tr class="separator:a0c05401c33c07ac357b583aff4332825"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c571af28840ff057ecdc8ff707a7d24"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#a5c571af28840ff057ecdc8ff707a7d24">ReadHeaderFromFile</a> (FILE *pFile, int id, vector&lt; <a class="el" href="structdata__info__t.html">data_info_t</a> &gt; &amp;columnHeaders)</td></tr>
-<tr class="separator:a5c571af28840ff057ecdc8ff707a7d24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2d23715d01524f04a20bb16d07b28e9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#ac2d23715d01524f04a20bb16d07b28e9">WriteHeaderToFile</a> (FILE *pFile, uint32_t id)</td></tr>
+<tr class="separator:ac2d23715d01524f04a20bb16d07b28e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade89f44461eabe47da233997e8bbd55c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#ade89f44461eabe47da233997e8bbd55c">ReadHeaderFromFile</a> (FILE *pFile, uint32_t id, vector&lt; <a class="el" href="structdata__info__t.html">data_info_t</a> &gt; &amp;columnHeaders)</td></tr>
+<tr class="separator:ade89f44461eabe47da233997e8bbd55c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ea0890017d9f42ae884d9eb303af4af"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#a1ea0890017d9f42ae884d9eb303af4af">WriteDataToFile</a> (uint64_t orderId, FILE *pFile, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;dataHdr, const uint8_t *dataBuf)</td></tr>
 <tr class="separator:a1ea0890017d9f42ae884d9eb303af4af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32948b0f5e0ff6a3a91f73590285ce52"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_data_c_s_v.html#a32948b0f5e0ff6a3a91f73590285ce52">StringCSVToData</a> (string &amp;s, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> &amp;hdr, uint8_t *buf, uint32_t bufSize, const vector&lt; <a class="el" href="structdata__info__t.html">data_info_t</a> &gt; &amp;columnHeaders)</td></tr>
@@ -128,8 +128,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a5c571af28840ff057ecdc8ff707a7d24"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c571af28840ff057ecdc8ff707a7d24">&#9670;&nbsp;</a></span>ReadHeaderFromFile()</h2>
+<a id="ade89f44461eabe47da233997e8bbd55c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade89f44461eabe47da233997e8bbd55c">&#9670;&nbsp;</a></span>ReadHeaderFromFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -143,7 +143,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">uint32_t&#160;</td>
           <td class="paramname"><em>id</em>, </td>
         </tr>
         <tr>
@@ -255,8 +255,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0c05401c33c07ac357b583aff4332825"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c05401c33c07ac357b583aff4332825">&#9670;&nbsp;</a></span>WriteHeaderToFile()</h2>
+<a id="ac2d23715d01524f04a20bb16d07b28e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2d23715d01524f04a20bb16d07b28e9">&#9670;&nbsp;</a></span>WriteHeaderToFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -270,7 +270,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">uint32_t&#160;</td>
           <td class="paramname"><em>id</em>&#160;</td>
         </tr>
         <tr>

@@ -59,6 +59,7 @@ extern "C" {
 #define _DID_MAGNETOMETER_1			DID_MAGNETOMETER_1		/** (see magnetometer_t) Magnetometer sensor 1 output */
 #define _DID_MAGNETOMETER_2			DID_MAGNETOMETER_2		/** (see magnetometer_t) Magnetometer sensor 2 output */
 #define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
+#define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */
 
 /** Utilities */
 #define _DID_DEV_INFO				DID_DEV_INFO			/** (see dev_info_t) Device information */
@@ -554,6 +555,7 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 int is_decode_binary_packet(packet_t *pkt, unsigned char* pbuf, int pbufSize);
 int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
 void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
+void is_enable_packet_encoding(int enabled); // default is enabled
 
 #if defined(RTK_EMBEDDED)
 

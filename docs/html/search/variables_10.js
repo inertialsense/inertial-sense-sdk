@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['radionid',['radioNID',['../structevb__config__t.html#a101c23df29697485e7c660f1fcb57aaf',1,'evb_config_t']]],
-  ['radiopid',['radioPID',['../structevb__config__t.html#af1ce246a0a300c6d873e39294ce7c6a4',1,'evb_config_t']]],
-  ['radiopowerlevel',['radioPowerLevel',['../structevb__config__t.html#aaafeab940c6ac52e9353db596043ff41',1,'evb_config_t']]],
+  ['radionid',['radioNID',['../structevb__flash__cfg__t.html#a25a2e562de6ddacd068a09833b2a33d2',1,'evb_flash_cfg_t']]],
+  ['radiopid',['radioPID',['../structevb__flash__cfg__t.html#ac0775c04552f3b83405c19f158125dd0',1,'evb_flash_cfg_t']]],
+  ['radiopowerlevel',['radioPowerLevel',['../structevb__flash__cfg__t.html#a409be232d85c612e9d623a9ca86d3012',1,'evb_flash_cfg_t']]],
   ['rb',['rb',['../structprcopt__t.html#af28f0730feba407b68f9625166552240',1,'prcopt_t']]],
   ['rcv',['rcv',['../struct_p_a_c_k_e_d.html#acc5234ecdd35b25f79485517be8eed92',1,'PACKED']]],
   ['rcvstds',['rcvstds',['../structprcopt__t.html#aa1d2bd9e74bd58326313ea4efafefb66',1,'prcopt_t']]],

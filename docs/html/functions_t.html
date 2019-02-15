@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.4</span>
+   &#160;<span id="projectnumber">Release 1.7.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -67,6 +67,9 @@ $(function() {
 <div class="textblock">Here is a list of all class members with links to the classes they belong to:</div>
 
 <h3><a id="index_t"></a>- t -</h3><ul>
+<li>t_i2l
+: <a class="el" href="struct_p_a_c_k_e_d.html#ae12a03dfa502c0ec008eafc6db8a9528">PACKED</a>
+</li>
 <li>TabSize()
 : <a class="el" href="class_ti_xml_document.html#a81e6ffeee8f5d025a171eabf79abdad7">TiXmlDocument</a>
 </li>
@@ -117,6 +120,12 @@ $(function() {
 <li>theta2
 : <a class="el" href="struct_p_a_c_k_e_d.html#aeac3e8cba2f4de60b6e805598e74dd84">PACKED</a>
 </li>
+<li>theta_l
+: <a class="el" href="struct_p_a_c_k_e_d.html#ae9c79a8079595bb423b32ce0c87db7e2">PACKED</a>
+</li>
+<li>theta_r
+: <a class="el" href="struct_p_a_c_k_e_d.html#ad5a4b351a24880ba3c663cac0467f02d">PACKED</a>
+</li>
 <li>thread
 : <a class="el" href="structbootloader__state__t.html#a2e610c3c085ab6acc48e2dcf09aef562">bootloader_state_t</a>
 </li>
@@ -131,16 +140,13 @@ $(function() {
 , <a class="el" href="struct_p_a_c_k_e_d.html#a39e83f5579274f696cd10fc70644d0d5">PACKED</a>
 , <a class="el" href="structs_kml_log_data.html#affe95e5988d8b90f6c5ba28b7d7e15a0">sKmlLogData</a>
 </li>
-<li>time_ms
-: <a class="el" href="struct_p_a_c_k_e_d.html#a173f449f95952c0b5fbc5b3baf213f7a">PACKED</a>
-</li>
 <li>timeOfWeek
 : <a class="el" href="struct_p_a_c_k_e_d.html#a5a7e7eae6261b166891d3ae53374afc0">PACKED</a>
 </li>
 <li>timeOfWeekMs
 : <a class="el" href="structdiag__msg__t.html#a6a45f93095d4d89f68ecdee62774a2ad">diag_msg_t</a>
 , <a class="el" href="structevb__status__t.html#ac4320cebd86d4e420ff974aa98ac1552">evb_status_t</a>
-, <a class="el" href="struct_p_a_c_k_e_d.html#a8efb568e0b8e56c1232fd7add374fd05">PACKED</a>
+, <a class="el" href="struct_p_a_c_k_e_d.html#a65f0c314fea9db9106a0fd8426982f4e">PACKED</a>
 </li>
 <li>timeoutFlushLoggerSeconds
 : <a class="el" href="structcmd__options__t.html#a3924052ad532343213cef9544656934e">cmd_options_t</a>
@@ -227,7 +233,7 @@ $(function() {
 : <a class="el" href="class_ti_xml_base.html#a0ece57ce1f3253db59ce82377c75c295a750a76ca602241c416d5ec357d55fba1">TiXmlBase</a>
 </li>
 <li>TiXmlAttribute()
-: <a class="el" href="class_ti_xml_attribute.html#a9cfa3c8179873fd485d83003b114f8e1">TiXmlAttribute</a>
+: <a class="el" href="class_ti_xml_attribute.html#a052213522caac3979960e0714063861d">TiXmlAttribute</a>
 </li>
 <li>TiXmlAttributeSet
 : <a class="el" href="class_ti_xml_attribute.html#a35a7b7f89f708527677d5078d41ce0bf">TiXmlAttribute</a>
@@ -253,7 +259,7 @@ $(function() {
 </li>
 <li>TiXmlElement
 : <a class="el" href="class_ti_xml_base.html#ab6592e32cb9132be517cc12a70564c4b">TiXmlBase</a>
-, <a class="el" href="class_ti_xml_element.html#a1ca4465f3c2eac6a60e641cd7f1d9f7e">TiXmlElement</a>
+, <a class="el" href="class_ti_xml_element.html#a01bc3ab372d35da08efcbbe65ad90c60">TiXmlElement</a>
 , <a class="el" href="class_ti_xml_node.html#ab6592e32cb9132be517cc12a70564c4b">TiXmlNode</a>
 , <a class="el" href="class_ti_xml_text.html#ab6592e32cb9132be517cc12a70564c4b">TiXmlText</a>
 </li>
@@ -268,7 +274,7 @@ $(function() {
 : <a class="el" href="class_ti_xml_printer.html#a6539b864026c8667cd0bd5fdf4b41f43">TiXmlPrinter</a>
 </li>
 <li>TiXmlString()
-: <a class="el" href="class_ti_xml_string.html#a342f61e0fc2244df300b73aedf6d3fef">TiXmlString</a>
+: <a class="el" href="class_ti_xml_string.html#ac80fe17693a438c9ab2591664743fcb6">TiXmlString</a>
 </li>
 <li>TiXmlText()
 : <a class="el" href="class_ti_xml_text.html#af659e77c6b87d684827f35a8f4895960">TiXmlText</a>
@@ -291,20 +297,20 @@ $(function() {
 </li>
 <li>ToDeclaration()
 : <a class="el" href="class_ti_xml_declaration.html#aab62703b620d9b9391b482dc1835ecf6">TiXmlDeclaration</a>
-, <a class="el" href="class_ti_xml_node.html#a4027136ca820ff4a636b607231b6a6df">TiXmlNode</a>
+, <a class="el" href="class_ti_xml_node.html#a0dc0831e89d499ca911a3be61a413d45">TiXmlNode</a>
 </li>
 <li>ToDocument()
-: <a class="el" href="class_ti_xml_document.html#a468e582640e3c4f740f7168d8b4a6e4a">TiXmlDocument</a>
-, <a class="el" href="class_ti_xml_node.html#a6a4c8ac28ee7a745d059db6691e03bae">TiXmlNode</a>
+: <a class="el" href="class_ti_xml_document.html#a1025d942a1f328fd742d545e37efdd42">TiXmlDocument</a>
+, <a class="el" href="class_ti_xml_node.html#a775a904618cad6e4a8049bda4f5a6aa9">TiXmlNode</a>
 </li>
 <li>toe
 : <a class="el" href="structeph__t.html#a728c608850a08c9826e5a18d7e8c8e7d">eph_t</a>
 , <a class="el" href="structgeph__t.html#a51e073c0a74e30e7be94ef2618eef750">geph_t</a>
 </li>
 <li>ToElement()
-: <a class="el" href="class_ti_xml_element.html#a9def86337ea7a755eb41cac980f60c7a">TiXmlElement</a>
+: <a class="el" href="class_ti_xml_element.html#a940fc8aa953e0ef0de6e110b7d98b8ee">TiXmlElement</a>
 , <a class="el" href="class_ti_xml_handle.html#a0e3a5333550237d899b1df2b965611a1">TiXmlHandle</a>
-, <a class="el" href="class_ti_xml_node.html#aa65d000223187d22a4dcebd7479e9ebc">TiXmlNode</a>
+, <a class="el" href="class_ti_xml_node.html#a4080428f2cac46e92ef4d284202fad0b">TiXmlNode</a>
 </li>
 <li>toes
 : <a class="el" href="structeph__t.html#a8a286982500a5b40d79a1d6e02a92b59">eph_t</a>
@@ -323,7 +329,7 @@ $(function() {
 </li>
 <li>ToText()
 : <a class="el" href="class_ti_xml_handle.html#abde286bce1d5db0d20ec30e573278cdf">TiXmlHandle</a>
-, <a class="el" href="class_ti_xml_node.html#a2591700660b308571c09166559a39332">TiXmlNode</a>
+, <a class="el" href="class_ti_xml_node.html#a3ddfbcac78fbea041fad57e5c6d60a03">TiXmlNode</a>
 , <a class="el" href="class_ti_xml_text.html#ae7c3a8fd3e4dbf6c0c4363a943d72f5b">TiXmlText</a>
 </li>
 <li>ToUnknown()

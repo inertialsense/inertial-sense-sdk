@@ -90,6 +90,7 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 #endif
 
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = { IS_BAUDRATE_3000000, IS_BAUDRATE_921600, IS_BAUDRATE_460800, IS_BAUDRATE_230400, IS_BAUDRATE_115200, IS_BAUDRATE_57600, IS_BAUDRATE_38400, IS_BAUDRATE_19200 };
+static int s_packetEncodingEnabled = 1;
 
 // Replace special character with encoded equivalent and add to buffer
 static uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest)
@@ -103,8 +104,15 @@ static uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest)
 	case PSC_RESERVED_KEY:
 	case UBLOX_START_BYTE1:
 	case RTCM3_START_BYTE:
-		*ptrDest++ = PSC_RESERVED_KEY;
-		*ptrDest++ = ~val;
+		if (s_packetEncodingEnabled)
+		{
+			*ptrDest++ = PSC_RESERVED_KEY;
+			*ptrDest++ = ~val;
+		}
+		else
+		{
+			*ptrDest++ = val;
+		}
 		break;
 	default:
 		*ptrDest++ = val;
@@ -884,6 +892,11 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
     {
         return -1;
     }
+}
+
+void is_enable_packet_encoding(int enabled)
+{
+	s_packetEncodingEnabled = enabled;
 }
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */

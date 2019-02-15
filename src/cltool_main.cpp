@@ -187,7 +187,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.streamSysSensors)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_SYS_SENSORS, 100);
+		inertialSenseInterface.BroadcastBinaryData(DID_SYS_SENSORS, g_commandLineOptions.streamSysSensors);
 	}
 	if (g_commandLineOptions.streamDualIMU)
 	{
@@ -248,21 +248,21 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {   // Enable mult-axis 
         inertialSenseInterface.SendRawData(DID_SURVEY_IN, (uint8_t*)&g_commandLineOptions.surveyIn, sizeof(survey_in_t), 0);
     }
-
 	if (g_commandLineOptions.rmcPreset)
 	{
 		inertialSenseInterface.BroadcastBinaryDataRmcPreset(g_commandLineOptions.rmcPreset, RMC_OPTIONS_PRESERVE_CTRL);
 	}
     if (g_commandLineOptions.persistentMessages)
-    {   // Save persistent messages 
-        inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&g_commandLineOptions.surveyIn, sizeof(survey_in_t), 0);
-    }
-
-
-    if (g_commandLineOptions.persistentMessages)
     {   // Save persistent messages to flash
         config_t cfg;
         cfg.system = CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+        cfg.invSystem = ~cfg.system;
+        inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&cfg, sizeof(config_t), 0);
+    }
+    if (g_commandLineOptions.softwareReset)
+    {   // Issue software reset
+        config_t cfg;
+        cfg.system = CFG_SYS_CMD_SOFTWARE_RESET;
         cfg.invSystem = ~cfg.system;
         inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&cfg, sizeof(config_t), 0);
     }
@@ -291,11 +291,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	return true;
 }
 
-static int cltool_runBootloader()
+static int cltool_updateAppFirmware()
 {
 	// [BOOTLOADER INSTRUCTION] Update firmware
-	cout << "Bootloading file at " << g_commandLineOptions.bootloaderFileName << endl;
-	vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, g_commandLineOptions.bootloaderFileName, g_commandLineOptions.baudRate, bootloadUploadProgress,
+	cout << "Updating application firmware using file at " << g_commandLineOptions.updateAppFirmwareFilename << endl;
+	vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, 
+        g_commandLineOptions.updateAppFirmwareFilename, 
+        g_commandLineOptions.baudRate, 
+        bootloadUploadProgress,
 		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0));
 	cout << endl << "Results:" << endl;
 	int errorCount = 0;
@@ -309,6 +312,29 @@ static int cltool_runBootloader()
 		cout << endl << errorCount << " ports failed." << endl;
 	}
 	return (errorCount == 0 ? 0 : -1);
+}
+
+static int cltool_updateBootloader()
+{
+    cout << "Updating bootloader using file at " << g_commandLineOptions.updateBootloaderFilename << endl;
+    vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, 
+        g_commandLineOptions.updateBootloaderFilename, 
+        g_commandLineOptions.baudRate, 
+        bootloadUploadProgress,
+        (g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0), 
+        true);
+    cout << endl << "Results:" << endl;
+    int errorCount = 0;
+    for (size_t i = 0; i < results.size(); i++)
+    {
+        cout << results[i].port << ": " << (results[i].error.size() == 0 ? "Success\n" : results[i].error);
+        errorCount += (int)(results[i].error.size() != 0);
+    }
+    if (errorCount != 0)
+    {
+        cout << endl << errorCount << " ports failed." << endl;
+    }
+    return (errorCount == 0 ? 0 : -1);
 }
 
 static int cltool_createHost()
@@ -358,13 +384,30 @@ static int inertialSenseMain()
 		// [REPLAY INSTRUCTION] 1.) Replay data log
 		return !cltool_replayDataLog();
 	}
-	// if bootloader was specified on the command line, do that now and return
-	else if (g_commandLineOptions.bootloaderFileName.length() != 0)
+	// if app firmware was specified on the command line, do that now and return
+	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
 	{
+        if (g_commandLineOptions.updateAppFirmwareFilename.substr(g_commandLineOptions.updateAppFirmwareFilename.length() - 4) != ".hex")
+        {
+            cout << "Incorrect file extension." << endl;
+            return -1;
+        }
+
 		// [BOOTLOADER INSTRUCTION] 1.) Run bootloader
-		return cltool_runBootloader();
+		return cltool_updateAppFirmware();
 	}
-	// if host was specified on the command line, create a tcp server
+    // if bootloader filename was specified on the command line, do that now and return
+    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)
+    {
+        if (g_commandLineOptions.updateBootloaderFilename.substr(g_commandLineOptions.updateBootloaderFilename.length() - 4) != ".bin")
+        {
+            cout << "Incorrect file extension." << endl;
+            return -1;
+        }
+
+        return cltool_updateBootloader();
+    }
+    // if host was specified on the command line, create a tcp server
 	else if (g_commandLineOptions.host.length() != 0)
 	{
 		return cltool_createHost();

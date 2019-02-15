@@ -9,6 +9,7 @@ var searchData=
   ['gps_5fstatus_5ffix_5fmask',['GPS_STATUS_FIX_MASK',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a2717bdaf2658e7cd21218a20e1640dd3',1,'data_sets.h']]],
   ['gps_5fstatus_5ffix_5fnone',['GPS_STATUS_FIX_NONE',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a6223937fed01e5cafc5978e95369fd08',1,'data_sets.h']]],
   ['gps_5fstatus_5ffix_5frtk_5ffix',['GPS_STATUS_FIX_RTK_FIX',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a921298a1d5d40fc0e832f1adb9c9135c',1,'data_sets.h']]],
+  ['gps_5fstatus_5ffix_5frtk_5ffix_5fand_5fhold',['GPS_STATUS_FIX_RTK_FIX_AND_HOLD',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ad8cf991d172ba8f2c3b1d7f8a2d5a3f8',1,'data_sets.h']]],
   ['gps_5fstatus_5ffix_5frtk_5ffloat',['GPS_STATUS_FIX_RTK_FLOAT',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108aeb25f67210cc8ad87004dce3b6b342c9',1,'data_sets.h']]],
   ['gps_5fstatus_5ffix_5frtk_5fsingle',['GPS_STATUS_FIX_RTK_SINGLE',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108ab4eb83f50faaaff3ce86147bb7ac690b',1,'data_sets.h']]],
   ['gps_5fstatus_5ffix_5fsbas',['GPS_STATUS_FIX_SBAS',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a85c4f044b6e38da61df043e2574c7e4d',1,'data_sets.h']]],

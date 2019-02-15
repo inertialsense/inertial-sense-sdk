@@ -55,8 +55,8 @@ typedef struct
 class cDataCSV
 {
 public:
-	int WriteHeaderToFile(FILE* pFile, int id);
-	int ReadHeaderFromFile(FILE* pFile, int id, vector<data_info_t>& columnHeaders);
+	int WriteHeaderToFile(FILE* pFile, uint32_t id);
+	int ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& columnHeaders);
     int WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf);
 
 	/**

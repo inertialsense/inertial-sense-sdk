@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['t_5fi2l',['t_i2l',['../struct_p_a_c_k_e_d.html#ae12a03dfa502c0ec008eafc6db8a9528',1,'PACKED']]],
   ['tail',['tail',['../structlinked__list__t.html#af224bad3085c3a239ee4fa9b7cdda120',1,'linked_list_t::tail()'],['../structringbuf__t.html#a4b07ea4d8900ecccd822815e94d51ee2',1,'ringbuf_t::tail()']]],
   ['task',['task',['../struct_p_a_c_k_e_d.html#a80fb90dbbd019bee02bb8a9b79ff779b',1,'PACKED']]],
   ['taun',['taun',['../structgeph__t.html#ad811669bf379a2b80bf4b68217c6f97b',1,'geph_t']]],
@@ -14,11 +15,12 @@ var searchData=
   ['theta',['theta',['../struct_p_a_c_k_e_d.html#a4575904dbef3efe8275fab4781e43bfb',1,'PACKED::theta()'],['../structs_kml_log_data.html#af4f44338a6684e257329680085a93498',1,'sKmlLogData::theta()']]],
   ['theta1',['theta1',['../struct_p_a_c_k_e_d.html#a314d7850f21eecd1de73f4dca6d53f27',1,'PACKED']]],
   ['theta2',['theta2',['../struct_p_a_c_k_e_d.html#aeac3e8cba2f4de60b6e805598e74dd84',1,'PACKED']]],
+  ['theta_5fl',['theta_l',['../struct_p_a_c_k_e_d.html#ae9c79a8079595bb423b32ce0c87db7e2',1,'PACKED']]],
+  ['theta_5fr',['theta_r',['../struct_p_a_c_k_e_d.html#ad5a4b351a24880ba3c663cac0467f02d',1,'PACKED']]],
   ['thread',['thread',['../structbootloader__state__t.html#a2e610c3c085ab6acc48e2dcf09aef562',1,'bootloader_state_t']]],
   ['thresar',['thresar',['../structprcopt__t.html#aaf323d727fed3c89871a03d51210cf67',1,'prcopt_t']]],
   ['thresslip',['thresslip',['../structprcopt__t.html#a58872dac1b387d8009d7b8a1dd518cd9',1,'prcopt_t']]],
   ['time',['time',['../struct_p_a_c_k_e_d.html#a39e83f5579274f696cd10fc70644d0d5',1,'PACKED::time()'],['../structgtime__t.html#a56a0300ca49d82b1d2e7604027ec920b',1,'gtime_t::time()'],['../struct_p_a_c_k_e_d.html#a62b68fa976a686ca5e2670628543c4e7',1,'PACKED::time()'],['../structs_kml_log_data.html#affe95e5988d8b90f6c5ba28b7d7e15a0',1,'sKmlLogData::time()']]],
-  ['time_5fms',['time_ms',['../struct_p_a_c_k_e_d.html#a173f449f95952c0b5fbc5b3baf213f7a',1,'PACKED']]],
   ['timeofweek',['timeOfWeek',['../struct_p_a_c_k_e_d.html#a5a7e7eae6261b166891d3ae53374afc0',1,'PACKED']]],
   ['timeofweekms',['timeOfWeekMs',['../struct_p_a_c_k_e_d.html#a8efb568e0b8e56c1232fd7add374fd05',1,'PACKED::timeOfWeekMs()'],['../struct_p_a_c_k_e_d.html#a65f0c314fea9db9106a0fd8426982f4e',1,'PACKED::timeOfWeekMs()'],['../structdiag__msg__t.html#a6a45f93095d4d89f68ecdee62774a2ad',1,'diag_msg_t::timeOfWeekMs()'],['../structevb__status__t.html#ac4320cebd86d4e420ff974aa98ac1552',1,'evb_status_t::timeOfWeekMs()']]],
   ['timeoutflushloggerseconds',['timeoutFlushLoggerSeconds',['../structcmd__options__t.html#a3924052ad532343213cef9544656934e',1,'cmd_options_t']]],
