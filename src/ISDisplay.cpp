@@ -887,6 +887,7 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 			imu.theta2[1] * C_RAD2DEG_F,
 			imu.theta2[2] * C_RAD2DEG_F,
 			imu.vel2[0], imu.vel2[1], imu.vel2[2]);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", dt: %6.3f", imu.dt);
 	}
 	else
 	{	// Spacious format
@@ -910,6 +911,7 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 			imu.vel2[0],						// IMU2 X acceleration
 			imu.vel2[1],						// IMU2 Y acceleration
 			imu.vel2[2]);						// IMU2 Z acceleration
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tdt: %6.3f", imu.dt);
 	}
 
 	return buf;

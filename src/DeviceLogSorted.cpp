@@ -30,7 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 cDeviceLogSorted::cDeviceLogSorted()
 {
-    for (int i = 0; i < DID_COUNT; i++)
+    for (uint32_t i = 0; i < DID_COUNT; i++)
     {
         m_chunks[i] = NULLPTR;
     }
@@ -39,7 +39,7 @@ cDeviceLogSorted::cDeviceLogSorted()
 
 void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)
 {
-    for (int i = 0; i < DID_COUNT; i++)
+    for (uint32_t i = 0; i < DID_COUNT; i++)
     {
         if (m_chunks[i])
         {
@@ -55,7 +55,7 @@ void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, 
 
 void cDeviceLogSorted::InitDeviceForReading()
 {
-    for (int i = 0; i < DID_COUNT; i++)
+    for (uint32_t i = 0; i < DID_COUNT; i++)
     {
         if (m_chunks[i])
         {
@@ -224,7 +224,7 @@ p_data_t* cDeviceLogSorted::ReadData()
 		}
 
 		// No more data.  Clear existing chunk array
-        for (int id = 0; id < DID_COUNT; id++)
+        for (uint32_t id = 0; id < DID_COUNT; id++)
         {
             if (m_chunks[id] != NULLPTR)
             {

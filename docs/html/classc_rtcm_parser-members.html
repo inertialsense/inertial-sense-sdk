@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.4</span>
+   &#160;<span id="projectnumber">Release 1.7.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -75,11 +75,13 @@ $(function() {
   <tr><td class="entry"><a class="el" href="classc_gps_parser.html#aeef2b134ff51e193c5723eb26ffead58">CreateParser</a>(eGpsParserType type, iGpsParserDelegate *delegate)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classc_rtcm_parser.html#afaaa681ef1eb70c3e0acf6550269f589">cRtcmParser</a>(iGpsParserDelegate *delegate)</td><td class="entry"><a class="el" href="classc_rtcm_parser.html">cRtcmParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
   <tr><td class="entry"><a class="el" href="classc_rtcm_parser.html#af1f219fc554775a8241c7c7fcdd9c118">DECLARE_RTCM_DESTRUCTOR</a>(cRtcmParser)</td><td class="entry"><a class="el" href="classc_rtcm_parser.html">cRtcmParser</a></td><td class="entry"></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#a3bb55b5835ba5fcea42b9a8fa824c945">GetDelegate</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#a64d628afd753e74659ebb00a9f09fa37">GetReceiverIndex</a>() const</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#ab77b0f3444b0cb9a52b36981566e27d3">GetCorruptPacketCount</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#a3bb55b5835ba5fcea42b9a8fa824c945">GetDelegate</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#a64d628afd753e74659ebb00a9f09fa37">GetReceiverIndex</a>() const</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#ab163e893a00283fd78a7798ecb5d0076">m_corruptPacketCount</a></td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">protected</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classc_rtcm_parser.html#ae85ccd9e816c808f696f730f10b34b45">ParseMessage</a>(const uint8_t *data, int dataLength) OVERRIDE</td><td class="entry"><a class="el" href="classc_rtcm_parser.html">cRtcmParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr><td class="entry"><a class="el" href="classc_gps_parser.html#a544933ba7a8deb8397c7a1d062979280">SetReceiverIndex</a>(int32_t index)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#aec8b26614dcf909d991d3e1854c00165">Write</a>(const uint8_t *data, int dataLength)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#a72dc4c37857825d80c468c6d61f9e43a">Write</a>(const uint8_t *data, int dataLength)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr><td class="entry"><a class="el" href="classc_rtcm_parser.html#aa49ac9396fcf583ddbb1f7bcf2e6af71">WriteByte</a>(uint8_t b) OVERRIDE</td><td class="entry"><a class="el" href="classc_rtcm_parser.html">cRtcmParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#ae6439f349591135b2d842b5346f5be17">~cGpsParser</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
 </table></div><!-- contents -->

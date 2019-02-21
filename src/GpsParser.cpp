@@ -11,7 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "GpsParser.h"
-#include "com_manager.h"
+#include "ISComm.h"
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -58,55 +58,104 @@ extern "C"
 
 class cInertialSenseParser : public cGpsParser
 {
+
 public:
 	cInertialSenseParser(iGpsParserDelegate* delegate) : cGpsParser(delegate)
 	{
-		m_len = 0;
+		commBuffer = NULLPTR;
+	}
+
+	~cInertialSenseParser() OVERRIDE
+	{
+		if (commBuffer != NULLPTR)
+		{
+			FREE(commBuffer);
+		}
 	}
 
 	void WriteByte(uint8_t b) OVERRIDE
 	{
-		// note that no checksum is done, we assume a valid packet which should be the case 99.99% of the time
-		// other types of parsers cannot do this because they do not have the concept of an end packet byte
-		if (b == PSC_START_BYTE)
+		// create comm lazily, some cases just use ParseMessage and never call WriteByte
+		if (commBuffer == NULLPTR)
 		{
-			// write the start byte if we haven't written any bytes
-			if (m_len == 0)
-			{
-				// write the start byte
-				m_buf[m_len++] = b;
-			}
-			else
-			{
-				// clear, corrupt data
-				m_len = 0;
-			}
+			commBuffer = (uint8_t*)MALLOC(2048);
+			comm.buffer = commBuffer;
+			comm.bufferSize = 2048;
+			is_comm_init(&comm);
 		}
-		else if (m_len == _ARRAY_ELEMENT_COUNT(m_buf))
-		{
-			// corrupt data
-			m_len = 0;
-		}
-		else
-		{
-			// write the byte
-			m_buf[m_len++] = b;
 
-			if (b == PSC_END_BYTE)
-			{
-				// data packet must be 4 bytes header + 4 bytes footer + 12 bytes data header + min 4 bytes data
-				if (m_len >= 24)
-				{
-					GetDelegate()->OnPacketReceived(this, m_buf, m_len);
-				}
-				m_len = 0;
-			}
+		switch (is_comm_parse(&comm, b))
+		{
+		case DID_GPS1_RAW:
+		case DID_GPS2_RAW:
+		case DID_GPS_BASE_RAW:
+			ParseMessage(comm.buffer, sizeof(gps_raw_t));
+			break;
 		}
-	}
+		m_corruptPacketCount = comm.errorCount;
+    }
+
+	void ParseMessage(const uint8_t* data, int dataLength) OVERRIDE
+    {
+
+#if defined(RTK_EMBEDDED)
+
+		// data ptr is always a packet of gps_raw_t
+		gps_raw_t* raw = (gps_raw_t*)data;
+		int prn;
+
+        switch (raw->dataType)
+        {
+        case raw_data_type_observation:
+		{
+			obs_t obs;
+			obs.n = raw->obsCount;
+			obs.nmax = MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE;
+			obs.data = raw->data.obs;
+
+			// ensure each obs has the correct receiver index
+			for (obsd_t* ptr = obs.data, *ptrEnd = obs.data + obs.n; ptr != ptrEnd; ptr++)
+			{
+				ptr->rcv = raw->receiverIndex;
+			}
+			GetDelegate()->OnObservationReceived(this, &obs);
+		} break;
+
+        case raw_data_type_ephemeris:
+            switch (satsys(raw->data.eph.sat, &prn))
+            {
+            case SYS_GPS:
+            case SYS_GAL:
+            case SYS_QZS:
+            case SYS_CMP:
+                GetDelegate()->OnGpsEphemerisReceived(this, &(raw->data.eph), prn);
+                break;
+            }
+            break;
+
+        case raw_data_type_glonass_ephemeris:
+            if (satsys(raw->data.eph.sat, &prn) == SYS_GLO)
+            {
+                GetDelegate()->OnGlonassEphemerisReceived(this, &(raw->data.gloEph), prn);
+            }
+            break;
+
+        case raw_data_type_sbas:
+            GetDelegate()->OnSbsReceived(this, &(raw->data.sbas));
+            break;
+
+        case raw_data_type_base_station_antenna_position:
+            GetDelegate()->OnStationReceived(this, &(raw->data.sta));
+            break;
+        }
+
+#endif
+
+    }
 
 private:
-	uint8_t m_buf[PKT_BUF_SIZE];
-	uint32_t m_len;
+	is_comm_instance_t comm;
+	uint8_t* commBuffer;
 };
 
 class cRtcmParser : public cGpsParser
@@ -134,7 +183,7 @@ public:
 				// 0xD3 is the first byte in an RTCM3 message
 				if (b != 0xD3)
 				{
-					// corrupt data
+					// no rtcm3 start byte yet...
 					return;
 				}
 			}
@@ -144,6 +193,7 @@ public:
 				if (msgLength > 1023)
 				{
 					// corrupt data
+					m_corruptPacketCount++;
 					m_rtcm.len = 0;
 					return;
 				}
@@ -192,6 +242,7 @@ public:
 				else
 				{
 					// corrupt data
+					m_corruptPacketCount++;
 				}
 			}
 			m_rtcm.len = 0;
@@ -289,15 +340,11 @@ private:
 
 class cUbloxParser : public cGpsParser
 {
-private:
-	uint64_t checksumFailures;
-
 public:
 	cUbloxParser(iGpsParserDelegate* delegate) : cGpsParser(delegate)
 	{
 		Reset();
 		INIT_M_RAW(STRFMT_UBX);
-		checksumFailures = 0;
 	}
 
 	DECLARE_RAW_DESTRUCTOR(cUbloxParser);
@@ -341,6 +388,7 @@ public:
 			if (m_raw.nbyte < UBLOX_CHECKSUM_SIZE || m_raw.nbyte > (MAXRAWLEN - UBLOX_HEADER_SIZE))
 			{
 				// corrupt data
+				m_corruptPacketCount++;
 				Reset();
 				return;
 			}
@@ -365,7 +413,7 @@ public:
 			else
 			{
 				// corrupt data
-				checksumFailures++;
+				m_corruptPacketCount++;
 			}
 			Reset();
 		}
@@ -499,6 +547,7 @@ cGpsParser::cGpsParser(iGpsParserDelegate* delegate)
 	assert(delegate != NULL);
 
 	m_delegate = delegate;
+	m_corruptPacketCount = 0;
 }
 
 #if defined(__GNUC__)

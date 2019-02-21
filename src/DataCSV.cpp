@@ -35,7 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #	include "../../libs/IS_internal.h"
 #endif
 
-int cDataCSV::WriteHeaderToFile(FILE* pFile, int id)
+int cDataCSV::WriteHeaderToFile(FILE* pFile, uint32_t id)
 {
 	// Verify file pointer
 	if (pFile == NULL || id >= DID_COUNT)
@@ -61,7 +61,7 @@ int cDataCSV::WriteHeaderToFile(FILE* pFile, int id)
 }
 
 
-int cDataCSV::ReadHeaderFromFile(FILE* pFile, int id, vector<data_info_t>& columnHeaders)
+int cDataCSV::ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& columnHeaders)
 {
 #if PLATFORM_IS_EMBEDDED    
 

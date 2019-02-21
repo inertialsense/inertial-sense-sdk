@@ -776,8 +776,8 @@ extern void free_debug(void* mem);
 
 typedef float       f_t;
 typedef int			i_t;
-typedef double      Vector2d[3];    // V = | 0 1 |
-typedef f_t         Vector2[3];     // V = | 0 1 |
+typedef double      Vector2d[2];    // V = | 0 1 |
+typedef f_t         Vector2[2];     // V = | 0 1 |
 typedef double      Vector3d[3];    // V = | 0 1 2 |
 typedef f_t         Vector3[3];     // V = | 0 1 2 |
 typedef double      Vector4d[4];    // V = | 0 1 2 3 |

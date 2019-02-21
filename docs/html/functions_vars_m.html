@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.4</span>
+   &#160;<span id="projectnumber">Release 1.7.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -67,10 +67,6 @@ $(function() {
 &#160;
 
 <h3><a id="index_m"></a>- m -</h3><ul>
-<li>M0
-: <a class="el" href="structalm__t.html#a432eef10c6060ab69ca419c3d51d253d">alm_t</a>
-, <a class="el" href="structeph__t.html#a537ac0b9d94ba65af72592d2c418ff78">eph_t</a>
-</li>
 <li>m_altClampToGround
 : <a class="el" href="classc_device_log.html#ab266bf4e6d44831b1510600bfb05d3db">cDeviceLog</a>
 </li>
@@ -79,6 +75,9 @@ $(function() {
 </li>
 <li>m_chunks
 : <a class="el" href="classc_device_log_sorted.html#ad9e910fbbf2aaed3a3cb7c02594c89a0">cDeviceLogSorted</a>
+</li>
+<li>m_corruptPacketCount
+: <a class="el" href="classc_gps_parser.html#ab163e893a00283fd78a7798ecb5d0076">cGpsParser</a>
 </li>
 <li>m_data
 : <a class="el" href="classc_device_log_sorted.html#aa36b92a90f7e4af135d1d81dde1ec3a4">cDeviceLogSorted</a>
@@ -149,62 +148,17 @@ $(function() {
 <li>m_timeStamp
 : <a class="el" href="classc_device_log.html#ae1977b4b1e2c4aac2e69ce83909c5440">cDeviceLog</a>
 </li>
-<li>mag
-: <a class="el" href="struct_p_a_c_k_e_d.html#ac311f3c734c3808caae1ef15cc55676e">PACKED</a>
-</li>
-<li>magCal
-: <a class="el" href="struct_p_a_c_k_e_d.html#a212962f4fab8086e0099b773e13b2369">PACKED</a>
-</li>
-<li>magDec
-: <a class="el" href="struct_p_a_c_k_e_d.html#a9ec0a1c8935866ab3e20657195041ef3">PACKED</a>
-</li>
-<li>magDeclination
-: <a class="el" href="struct_p_a_c_k_e_d.html#a9238edd824b0b832851977fd2af97120">PACKED</a>
-</li>
-<li>magInc
-: <a class="el" href="struct_p_a_c_k_e_d.html#acf8185e1140a8bb50aac7c33e9ff278d">PACKED</a>
-</li>
-<li>magInclination
-: <a class="el" href="struct_p_a_c_k_e_d.html#af0e0f0dd16688b71d6c8ec9342816dd3">PACKED</a>
-</li>
 <li>magRecal
 : <a class="el" href="structcmd__options__t.html#a20ad9f21f58a25045d451fe139d91fd8">cmd_options_t</a>
 </li>
 <li>magRecalMode
 : <a class="el" href="structcmd__options__t.html#af0b61a0d715e1c1edb9b4043c4baf0cb">cmd_options_t</a>
 </li>
-<li>mallocMinusFree
-: <a class="el" href="struct_p_a_c_k_e_d.html#ad380b2310b8fb5fd0f659fdd7a560cdd">PACKED</a>
-</li>
-<li>manufacturer
-: <a class="el" href="struct_p_a_c_k_e_d.html#a27b1d31aeee03fea7ccd29b572b3d19e">PACKED</a>
-</li>
 <li>marker
 : <a class="el" href="structs_chunk_header.html#a0e2069aee0c8ae5acb8f2e00cabadd16">sChunkHeader</a>
 </li>
-<li>max_baseline_error
-: <a class="el" href="structprcopt__t.html#ab9ffeae6991867dcca91a9037cdcb083">prcopt_t</a>
-</li>
-<li>max_ubx_error
-: <a class="el" href="structprcopt__t.html#ac3d3a897b2535e9beebbb3cdb882fa2d">prcopt_t</a>
-</li>
-<li>maxaveep
-: <a class="el" href="structprcopt__t.html#ad7be37d4c54750ff553439345e8842c8">prcopt_t</a>
-</li>
-<li>maxDurationSec
-: <a class="el" href="structsurvey__in__t.html#a7c2c49ffff06e6e0d1ee39b82aa01062">survey_in_t</a>
-</li>
 <li>maxEnsuredPackets
 : <a class="el" href="structcom__manager__t.html#af1204df7157bed57959a9daa3f83884c">com_manager_t</a>
-</li>
-<li>maxgdop
-: <a class="el" href="structprcopt__t.html#a409d97b38eef4fb164f7a86b37156cb3">prcopt_t</a>
-</li>
-<li>maxinnocode
-: <a class="el" href="structprcopt__t.html#af8d629c5ea3dc45eb6b7686209991a1a">prcopt_t</a>
-</li>
-<li>maxinnophase
-: <a class="el" href="structprcopt__t.html#a001090bfb1027f93106dfa6bdc9a0e73">prcopt_t</a>
 </li>
 <li>maxLogFileSize
 : <a class="el" href="structcmd__options__t.html#a243fefd69ecd065433fbb5a47e1688bd">cmd_options_t</a>
@@ -215,74 +169,14 @@ $(function() {
 <li>maxLogSpacePercent
 : <a class="el" href="structcmd__options__t.html#a9dc6ca08f10839c014e4aec8f88835b3">cmd_options_t</a>
 </li>
-<li>maxout
-: <a class="el" href="structprcopt__t.html#ab1128a1dd52fb90af011b8566cae5b97">prcopt_t</a>
-</li>
-<li>maxrej
-: <a class="el" href="structprcopt__t.html#af7a8514ea6ac3ecce2738c4cc0200696">prcopt_t</a>
-</li>
-<li>maxrejc
-: <a class="el" href="structprcopt__t.html#afab75870614d4c56be6ce6232a2bf023">prcopt_t</a>
-</li>
-<li>maxRunTimeUs
-: <a class="el" href="struct_p_a_c_k_e_d.html#abf0d12b5eb0b6f8884e1783172fec592">PACKED</a>
-</li>
-<li>maxtdiff
-: <a class="el" href="structprcopt__t.html#ae3772bc718a906f26f02b7db873a5740">prcopt_t</a>
-</li>
 <li>maxTimestampDelta
 : <a class="el" href="classc_log_stat_data_id.html#a91edad967d04a00326f68f34afe12c40">cLogStatDataId</a>
-</li>
-<li>mcuTemp
-: <a class="el" href="struct_p_a_c_k_e_d.html#ae340e7bca95edf4a89d51764734a0de3">PACKED</a>
-</li>
-<li>message
-: <a class="el" href="structdiag__msg__t.html#ae7d3c3db3a71c9ba76e0ba859642ff5a">diag_msg_t</a>
 </li>
 <li>messageId
 : <a class="el" href="structascii_message_map__t.html#a321bf44d43b7484a7b206741225a0a1a">asciiMessageMap_t</a>
 </li>
-<li>messageLength
-: <a class="el" href="structdiag__msg__t.html#af7b62402b38b1d87d8547d72514675d2">diag_msg_t</a>
-</li>
-<li>minAccuracy
-: <a class="el" href="structsurvey__in__t.html#a6034b4c5d068367e419135d757d1d9c3">survey_in_t</a>
-</li>
-<li>mindropsats
-: <a class="el" href="structprcopt__t.html#ac4535dba0dc4134bf46460e6bab97d6b">prcopt_t</a>
-</li>
-<li>minfix
-: <a class="el" href="structprcopt__t.html#a57b2837fa31456bf8a180d28a1f3e320">prcopt_t</a>
-</li>
-<li>minfixsats
-: <a class="el" href="structprcopt__t.html#af3f83b7247746c8d03ceaa1d87a73b42">prcopt_t</a>
-</li>
-<li>minholdsats
-: <a class="el" href="structprcopt__t.html#a0eb4698bc9252d734db96ca091f11d8d">prcopt_t</a>
-</li>
-<li>minlock
-: <a class="el" href="structprcopt__t.html#a346c6bf96cba80167b199ee5cd076f03">prcopt_t</a>
-</li>
 <li>minTimestampDelta
 : <a class="el" href="classc_log_stat_data_id.html#a0807289336c212ee58e2ea57e4beccfc">cLogStatDataId</a>
-</li>
-<li>mode
-: <a class="el" href="structprcopt__t.html#a80b995a9753003772603d1800612ac52">prcopt_t</a>
-</li>
-<li>modear
-: <a class="el" href="structprcopt__t.html#a8567f4e05c4db09831f0ee2f46e67888">prcopt_t</a>
-</li>
-<li>mpu
-: <a class="el" href="struct_p_a_c_k_e_d.html#ab10772e98735d858b74d758579d0e814">PACKED</a>
-</li>
-<li>msg
-: <a class="el" href="structsbsmsg__t.html#a2bdb759f4c9a2de63d5ee899ad9b2a77">sbsmsg_t</a>
-</li>
-<li>msl
-: <a class="el" href="struct_p_a_c_k_e_d.html#ac89360fd6842093781e324fc4f2a6d77">PACKED</a>
-</li>
-<li>mslBar
-: <a class="el" href="struct_p_a_c_k_e_d.html#ab05803bd68103a21b4d34d06b58a117e">PACKED</a>
 </li>
 </ul>
 </div><!-- contents -->

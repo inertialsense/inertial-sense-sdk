@@ -239,8 +239,9 @@ static uint32_t processInertialSenseByte(is_comm_instance_t* instance, uint8_t b
 				// copy over the actual data structure to the start of the buffer
 				memmove(instance->buffer + instance->dataOffset, packet.body.ptr + sizeof(p_data_hdr_t), instance->dataSize);
                 
-                if(packet.hdr.pid == PID_SET_DATA)
-                {   // acknowledge valid data received
+                if (packet.hdr.pid == PID_SET_DATA)
+                {   
+					// acknowledge valid data received
                     instance->ackNeeded = PID_ACK;
                 }                    
 			}
@@ -250,8 +251,9 @@ static uint32_t processInertialSenseByte(is_comm_instance_t* instance, uint8_t b
 				dataId = DID_NULL;
 				instance->errorCount++;
 
-                if(packet.hdr.pid == PID_SET_DATA)
-                {   // negative acknowledge data received
+                if (packet.hdr.pid == PID_SET_DATA)
+                {   
+					// negative acknowledge data received
                     instance->ackNeeded = PID_NACK;
                 }
 			}

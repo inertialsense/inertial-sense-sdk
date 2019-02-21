@@ -36,7 +36,7 @@ bool cISSerialPort::Open(const std::string& portName, int baudRate, int timeout,
 {
 	m_timeout = timeout;
 	m_blocking = blocking;
-	return (serialPortOpen(&m_serial, portName.c_str(), baudRate, (int)m_blocking) != 0);
+    return (serialPortOpen(&m_serial, portName.c_str(), baudRate, (int)m_blocking) != 0);
 }
 
 int cISSerialPort::Close()
@@ -54,7 +54,7 @@ int cISSerialPort::Write(const void* data, int dataLength)
 	return serialPortWrite(&m_serial, (const unsigned char*)data, dataLength);
 }
 
-void cISSerialPort::GetComPorts(vector<string>& ports)
+void cISSerialPort:: GetComPorts(vector<string>& ports)
 {
 	ports.clear();
 
@@ -63,7 +63,7 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 	char comPort[64];
 	char targetPath[256];
 
-	for (int i = 0; i < 255; i++) // checking ports from COM0 to COM255
+    for (int i = 0; i < 256; i++) // checking ports from COM0 to COM255
 	{
 		SNPRINTF(comPort, sizeof(comPort), "COM%d", i);
 		if (QueryDosDeviceA(comPort, targetPath, 256))

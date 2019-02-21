@@ -47,10 +47,12 @@ typedef struct
 {
 	// parsed
 	string comPort; // -c=com_port
-	string bootloaderFileName; // -b=file_name
-	bool bootloaderVerify; // -bv
-	bool replayDataLog;
-	bool magRecal;
+	string updateAppFirmwareFilename; // -b=file_name
+    string updateBootloaderFilename; // -ub=file_name
+    bool bootloaderVerify; // -bv
+    bool replayDataLog;
+    bool softwareReset;
+    bool magRecal;
     uint32_t magRecalMode;
     survey_in_t surveyIn;
     string asciiMessages;

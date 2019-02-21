@@ -15,8 +15,9 @@ var searchData=
   ['getclientserverbytecount',['GetClientServerByteCount',['../class_inertial_sense.html#a1f322fc19679bb0f0c536a8ae30bd243',1,'InertialSense']]],
   ['getcomports',['GetComPorts',['../classc_i_s_serial_port.html#ab9db3ea68b2737f399a4ea5903f3b23f',1,'cISSerialPort']]],
   ['getconfig',['GetConfig',['../class_inertial_sense.html#ae0423e863329742d89f5c7362b7db89d',1,'InertialSense']]],
+  ['getcorruptpacketcount',['GetCorruptPacketCount',['../classc_gps_parser.html#ab77b0f3444b0cb9a52b36981566e27d3',1,'cGpsParser']]],
   ['getdataptr',['GetDataPtr',['../classc_data_chunk.html#a2f524fe986c98eb2dcb13a47dc7cf1e3',1,'cDataChunk']]],
-  ['getdatasetname',['GetDatasetName',['../classc_data_k_m_l.html#a7e25975562ede87d6785d8df8a7c98f5',1,'cDataKML::GetDatasetName()'],['../classc_i_s_data_mappings.html#a66835f41924e0fe99213d520f3b0c3cd',1,'cISDataMappings::GetDataSetName()']]],
+  ['getdatasetname',['GetDataSetName',['../classc_i_s_data_mappings.html#a66835f41924e0fe99213d520f3b0c3cd',1,'cISDataMappings::GetDataSetName()'],['../classc_data_k_m_l.html#a7e25975562ede87d6785d8df8a7c98f5',1,'cDataKML::GetDatasetName()']]],
   ['getdatasize',['GetDataSize',['../classc_data_chunk.html#afd794c02715ccb64c0eb9bcb9a558018',1,'cDataChunk']]],
   ['getdatatypesize',['GetDataTypeSize',['../_i_s_data_mappings_8cpp.html#a87f56ccf9de31716dc3bc668383c0ca7',1,'GetDataTypeSize(eDataType dataType):&#160;ISDataMappings.cpp'],['../_i_s_data_mappings_8h.html#a87f56ccf9de31716dc3bc668383c0ca7',1,'GetDataTypeSize(eDataType dataType):&#160;ISDataMappings.cpp']]],
   ['getdelegate',['GetDelegate',['../classc_gps_parser.html#a3bb55b5835ba5fcea42b9a8fa824c945',1,'cGpsParser']]],
@@ -26,7 +27,7 @@ var searchData=
   ['getdirectoryspaceused',['GetDirectorySpaceUsed',['../namespace_i_s_file_manager.html#a7b5479bf6651539400dc1e4246761e6a',1,'ISFileManager::GetDirectorySpaceUsed(const std::string &amp;directory, bool recursive)'],['../namespace_i_s_file_manager.html#a32c69d5b798764a213d73e6872813ea8',1,'ISFileManager::GetDirectorySpaceUsed(const std::string &amp;directory, std::vector&lt; file_info_t &gt; &amp;files, bool sortByDate, bool recursive)'],['../namespace_i_s_file_manager.html#ab15a85adca9bf97ddf6ddf95ba18122c',1,'ISFileManager::GetDirectorySpaceUsed(const std::string &amp;directory, std::string regexPattern, std::vector&lt; file_info_t &gt; &amp;files, bool sortByDate, bool recursive)']]],
   ['getdisplaymode',['GetDisplayMode',['../classc_inertial_sense_display.html#a75729e05b9ac07b32dfaa03c12dbdcb1',1,'cInertialSenseDisplay']]],
   ['getdocument',['GetDocument',['../class_ti_xml_node.html#adcb070acefcbaedaa0673d82e530538b',1,'TiXmlNode::GetDocument() const'],['../class_ti_xml_node.html#a7b2372c0e7adfb32f5b6902fe49a39b2',1,'TiXmlNode::GetDocument()']]],
-  ['getdoubleoffsets',['getDoubleOffsets',['../data__sets_8c.html#a0122a1839deb452c354e595f01022949',1,'getDoubleOffsets(eDataIDs dataId, uint16_t *offsetsLength):&#160;data_sets.c'],['../data__sets_8h.html#a0122a1839deb452c354e595f01022949',1,'getDoubleOffsets(eDataIDs dataId, uint16_t *offsetsLength):&#160;data_sets.c']]],
+  ['getdoubleoffsets',['getDoubleOffsets',['../data__sets_8c.html#a0122a1839deb452c354e595f01022949',1,'data_sets.c']]],
   ['getentity',['GetEntity',['../class_ti_xml_base.html#ac5c08bf3deffcda0bf8ce2958372b584',1,'TiXmlBase']]],
   ['getfilename',['GetFileName',['../namespace_i_s_file_manager.html#ae44201e77f40d81feb1751149a691d11',1,'ISFileManager']]],
   ['getflashconfig',['GetFlashConfig',['../class_inertial_sense.html#a2c554ab4ba28ea547a1a57929af8b871',1,'InertialSense']]],
@@ -40,7 +41,7 @@ var searchData=
   ['getserialport',['GetSerialPort',['../class_inertial_sense.html#a230544b627763135b50b6cdd3ac59e58',1,'InertialSense']]],
   ['getsize',['GetSize',['../classc_i_s_data_mappings.html#a31cd5b7fc9a05b14335ac744f2f368a5',1,'cISDataMappings']]],
   ['getstats',['GetStats',['../classc_i_s_logger.html#a1323eb650c6397ba493a0fa44d1461b4',1,'cISLogger']]],
-  ['getstringoffsetslengths',['getStringOffsetsLengths',['../data__sets_8c.html#ab2d8b5b7edd3dafa82f37ac180c16a3e',1,'getStringOffsetsLengths(eDataIDs dataId, uint16_t *offsetsLength):&#160;data_sets.c'],['../data__sets_8h.html#ab2d8b5b7edd3dafa82f37ac180c16a3e',1,'getStringOffsetsLengths(eDataIDs dataId, uint16_t *offsetsLength):&#160;data_sets.c']]],
+  ['getstringoffsetslengths',['getStringOffsetsLengths',['../data__sets_8c.html#ab2d8b5b7edd3dafa82f37ac180c16a3e',1,'data_sets.c']]],
   ['gettext',['GetText',['../class_ti_xml_element.html#af0f814ecbd43d50d4cdbdf4354d3da39',1,'TiXmlElement']]],
   ['gettickcount',['getTickCount',['../_i_s_utilities_8cpp.html#a7753cfb1634d2212c80ada357fc7215b',1,'getTickCount(void):&#160;ISUtilities.cpp'],['../_i_s_utilities_8h.html#a7753cfb1634d2212c80ada357fc7215b',1,'getTickCount(void):&#160;ISUtilities.cpp']]],
   ['gettimeoutflushloggerseconds',['GetTimeoutFlushLoggerSeconds',['../class_inertial_sense.html#aca5846c8272ad642aa09ca1dd3407afd',1,'InertialSense']]],
@@ -52,6 +53,6 @@ var searchData=
   ['goodbye',['Goodbye',['../classc_inertial_sense_display.html#a93655a1878681b71d15c5c3d73711eb2',1,'cInertialSenseDisplay']]],
   ['gotocolumnandrow',['GoToColumnAndRow',['../classc_inertial_sense_display.html#ab5fbbf17d6d694a5690e9addb9baa17e',1,'cInertialSenseDisplay']]],
   ['gotorow',['GoToRow',['../classc_inertial_sense_display.html#a3a9dc9daac0a34e427a327504f67b6b3',1,'cInertialSenseDisplay']]],
-  ['gpstojulian',['gpsToJulian',['../data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c'],['../data__sets_8h.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds):&#160;data_sets.c']]],
-  ['gpstonmeagga',['gpsToNmeaGGA',['../data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca',1,'gpsToNmeaGGA(const gps_pos_t *gps, char *buffer, int bufferLength):&#160;data_sets.c'],['../data__sets_8h.html#ae56e9a11cab85685b6388a6bda1065ca',1,'gpsToNmeaGGA(const gps_pos_t *gps, char *buffer, int bufferLength):&#160;data_sets.c']]]
+  ['gpstojulian',['gpsToJulian',['../data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1',1,'data_sets.c']]],
+  ['gpstonmeagga',['gpsToNmeaGGA',['../data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca',1,'data_sets.c']]]
 ];

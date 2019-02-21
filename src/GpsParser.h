@@ -17,8 +17,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(RTK_EMBEDDED)
 
+extern "C"
+{
 #include "../../libs-int/rtklib/src/rtklib.h"
-
+}
 #endif
 
 extern "C"
@@ -172,7 +174,7 @@ public:
 	* @param data the data to write
 	* @param dataLength the number of bytes in data
 	*/
-	void Write(const uint8_t* data, int dataLength)
+    virtual void Write(const uint8_t* data, int dataLength)
 	{
 		for (const uint8_t* ptr = data, *ptrEnd = data + dataLength; ptr != ptrEnd; ptr++)
 		{
@@ -211,12 +213,23 @@ public:
 	*/
     virtual void ParseMessage(const uint8_t* data, int dataLength) { (void)data; (void)dataLength; }
 
+	/**
+	* Get a count of corrupt packets received by this parser
+	* @return count of corrupt packets
+	*/
+	uint32_t GetCorruptPacketCount() { return m_corruptPacketCount; }
+		
 protected:
 	/**
 	* Constructor
 	* @param delegate the delegate to receive callbacks on packets, must not be NULL
 	*/
 	cGpsParser(iGpsParserDelegate* delegate);
+	
+	/**
+	* Count of corrupt packets
+	*/
+	uint32_t m_corruptPacketCount;
 
 private:
 	iGpsParserDelegate* m_delegate;

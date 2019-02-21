@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.4</span>
+   &#160;<span id="projectnumber">Release 1.7.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -650,7 +650,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<p>Example that makes a request to receive the device info just once: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a2f5355ba3c4e3467fd3eba423904324b">comManagerGetData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, 0, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --><p>Example that broadcasts INS data every 50 milliseconds: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a2f5355ba3c4e3467fd3eba423904324b">comManagerGetData</a>(0, <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, 0, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">ins_1_t</a>), 50);</div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
+<p>Example that makes a request to receive the device info just once: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a2f5355ba3c4e3467fd3eba423904324b">comManagerGetData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, 0, <span class="keyword">sizeof</span>(dev_info_t), 0);</div></div><!-- fragment --><p>Example that broadcasts INS data every 50 milliseconds: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a2f5355ba3c4e3467fd3eba423904324b">comManagerGetData</a>(0, <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, 0, <span class="keyword">sizeof</span>(ins_1_t), 50);</div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">dataId</td><td>Data structure ID </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Byte offset into data structure. 0 = data start. </td></tr>
@@ -830,7 +830,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<p>Example that enables streaming of all data messages necessary for post processing: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code" href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">RMC_PRESET_PPD_BITS</a>, 0);</div></div><!-- fragment --><p>Example that broadcasts INS and GPS data at full rate: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code" href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a>, 0);</div></div><!-- fragment --> 
+<p>Example that enables streaming of all data messages necessary for post processing: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, RMC_PRESET_PPD_BITS, 0);</div></div><!-- fragment --><p>Example that broadcasts INS and GPS data at full rate: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, RMC_PRESET_INS_BITS, 0);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00721">721</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
@@ -1262,7 +1262,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<p>Example: </p><div class="fragment"><div class="line">registerComManager(<a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, prepMsgINS, writeMsgINS, &amp;g_insData, &amp;g_insData, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">ins_1_t</a>));</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line">registerComManager(<a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, prepMsgINS, writeMsgINS, &amp;g_insData, &amp;g_insData, <span class="keyword">sizeof</span>(ins_1_t));</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00387">387</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
@@ -1487,7 +1487,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="structp__data__get__t.html">p_data_get_t</a> request;</div><div class="line"><a class="code" href="structbuf_ptr__t.html">bufPtr_t</a> data;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8">id</a> = <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">offset</a> = 0;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">size</a> = <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>);</div><div class="line">request.bc_period_ms = 50;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c">ptr</a> = (uint8_t*)&amp;request;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">size</a> = <span class="keyword">sizeof</span>(request);</div><div class="line"><a class="code" href="com__manager_8c.html#a9ffb3e89b6bb53a26e590903ac97b8e9">comManagerSend</a>(pHandle, <a class="code" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, 0, &amp;data)</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="structp__data__get__t.html">p_data_get_t</a> request;</div><div class="line"><a class="code" href="structbuf_ptr__t.html">bufPtr_t</a> data;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8">id</a> = <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">offset</a> = 0;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">size</a> = <span class="keyword">sizeof</span>(ins_1_t);</div><div class="line">request.bc_period_ms = 50;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c">ptr</a> = (uint8_t*)&amp;request;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">size</a> = <span class="keyword">sizeof</span>(request);</div><div class="line"><a class="code" href="com__manager_8c.html#a9ffb3e89b6bb53a26e590903ac97b8e9">comManagerSend</a>(pHandle, <a class="code" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, 0, &amp;data)</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00821">821</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
@@ -1547,7 +1547,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a4f2c449501f06efa1689f82b88a1db64">comManagerSendData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a4f2c449501f06efa1689f82b88a1db64">comManagerSendData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(dev_info_t), 0);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00735">735</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
@@ -1931,7 +1931,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a750c925ebe5c23deeecd6c3dc47df2c9">comManagerSendRawData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a3d011d24efce3a4784f920ebe39c546d">dev_info_t</a>), 0);</div></div><!-- fragment --> 
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a750c925ebe5c23deeecd6c3dc47df2c9">comManagerSendRawData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(dev_info_t), 0);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00783">783</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>

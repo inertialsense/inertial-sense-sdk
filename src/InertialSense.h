@@ -284,7 +284,7 @@ public:
 	* @param verifyProgress optional callback for verify progress
 	* @return ports and errors, error will be empty if success
 	*/
-	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR);
+    static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
 
 protected:
 	bool OnPacketReceived(const cGpsParser* parser, const uint8_t* data, uint32_t dataLength) OVERRIDE;

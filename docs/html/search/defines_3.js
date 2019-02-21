@@ -246,22 +246,9 @@ var searchData=
   ['c_5fwie_5ff',['C_WIE_F',['../_i_s_constants_8h.html#a6815be2566a9df73fda99ef1ab81043c',1,'ISConstants.h']]],
   ['c_5fyd2m',['C_YD2M',['../_i_s_constants_8h.html#a93547fbc36099d5067aa356a6ab35b04',1,'ISConstants.h']]],
   ['c_5fyd2m_5ff',['C_YD2M_F',['../_i_s_constants_8h.html#af94030438e98a4d3159442ebf58c7687',1,'ISConstants.h']]],
-  ['cal_5fbit_5fmode',['CAL_BIT_MODE',['../data__sets_8h.html#a57ac37e30169130e084f5711159648d5',1,'data_sets.h']]],
   ['char_5fbit',['CHAR_BIT',['../_i_s_data_mappings_8h.html#a308d9dd2c0028ddb184b455bbd7865de',1,'ISDataMappings.h']]],
   ['checksum_5fseed',['CHECKSUM_SEED',['../_i_s_comm_8h.html#af0bddc5454e28256ae355ae805eb9ad6',1,'ISComm.h']]],
-  ['cl_5fdefault_5fbaud_5frate',['CL_DEFAULT_BAUD_RATE',['../cltool_8cpp.html#af096728027c4f1efc070841f3f5ac0d1',1,'cltool.cpp']]],
-  ['cl_5fdefault_5fbootload_5fverify',['CL_DEFAULT_BOOTLOAD_VERIFY',['../cltool_8cpp.html#aa5006ab292abf35b2572535a903818f0',1,'cltool.cpp']]],
-  ['cl_5fdefault_5fcom_5fport',['CL_DEFAULT_COM_PORT',['../cltool_8cpp.html#a0e4444231b65e27eb68cfba3612c659f',1,'cltool.cpp']]],
-  ['cl_5fdefault_5fdisplay_5fmode',['CL_DEFAULT_DISPLAY_MODE',['../cltool_8cpp.html#a588944a06187f3f196bbf482f24e9e2c',1,'cltool.cpp']]],
-  ['cl_5fdefault_5fenable_5flogging',['CL_DEFAULT_ENABLE_LOGGING',['../cltool_8cpp.html#a9bdfa352a7f5106255928eedb01c5e2c',1,'cltool.cpp']]],
-  ['cl_5fdefault_5flog_5ftype',['CL_DEFAULT_LOG_TYPE',['../cltool_8cpp.html#a337109003b0d7bce3da4fd3a6eb39cfa',1,'cltool.cpp']]],
-  ['cl_5fdefault_5flogs_5fdirectory',['CL_DEFAULT_LOGS_DIRECTORY',['../cltool_8cpp.html#af5cb30fc22ed12aa863621911a1aaaea',1,'cltool.cpp']]],
-  ['cl_5fdefault_5fmax_5flog_5ffile_5fsize',['CL_DEFAULT_MAX_LOG_FILE_SIZE',['../cltool_8cpp.html#a5afa89c0d8aa324ae5a1b5f731330843',1,'cltool.cpp']]],
-  ['cl_5fdefault_5fmax_5flog_5fmemory',['CL_DEFAULT_MAX_LOG_MEMORY',['../cltool_8cpp.html#aa04793aecd9cef548e1ab8460fea2111',1,'cltool.cpp']]],
-  ['cl_5fdefault_5fmax_5flog_5fspace_5fpercent',['CL_DEFAULT_MAX_LOG_SPACE_PERCENT',['../cltool_8cpp.html#a4018cd18b8a91abe5584d3c20b69d10c',1,'cltool.cpp']]],
-  ['cl_5fdefault_5freplay_5fspeed',['CL_DEFAULT_REPLAY_SPEED',['../cltool_8cpp.html#ac01049f5f99f85d4161e5dab73ce65ed',1,'cltool.cpp']]],
   ['const_5fexpression',['CONST_EXPRESSION',['../_i_s_constants_8h.html#a11b905653ff9accefbb7afcfe5901d4c',1,'ISConstants.h']]],
   ['cpp11_5fis_5fenabled',['CPP11_IS_ENABLED',['../_i_s_constants_8h.html#a85f9027a99b5419f1d0d5d83b5eb3abc',1,'ISConstants.h']]],
-  ['crc_5fpoly',['CRC_POLY',['../inertial_sense_boot_loader_8c.html#a3a57af5c3275b2f53fa64274b11e8d52',1,'inertialSenseBootLoader.c']]],
-  ['current_5fleap_5fseconds',['CURRENT_LEAP_SECONDS',['../data__sets_8h.html#a3cea95f95355911bacdfb8d3795106a8',1,'data_sets.h']]]
+  ['crc_5fpoly',['CRC_POLY',['../inertial_sense_boot_loader_8c.html#a3a57af5c3275b2f53fa64274b11e8d52',1,'inertialSenseBootLoader.c']]]
 ];

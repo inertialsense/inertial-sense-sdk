@@ -27,27 +27,31 @@ void serialPortSetPort(serial_port_t* serialPort, const char* port)
 
 int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
 {
-	if (serialPort == 0 || port == 0)
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
 	{
 		return 0;
 	}
-	else if (serialPort->pfnOpen != 0)
-	{
-		int retry = 30;
+    return serialPort->pfnOpen(serialPort, port, baudRate, blocking);
+}
 
-		while (!serialPort->pfnOpen(serialPort, port, baudRate, blocking))
-		{
-			if (--retry == 0)
-			{
-				serialPortClose(serialPort);
-				return 0;
-			}
+int serialPortOpenRetry(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
+{
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
+    {
+        return 0;
+    }
 
-            serialPortSleep(serialPort, 100);
-		}
-		return 1;
-	}
-	return 0;
+    serialPortClose(serialPort);
+    for (int retry = 0; retry < 30; retry++)
+    {
+        if (serialPortOpen(serialPort, port, baudRate, blocking))
+        {
+            return 1;
+        }
+        serialPortSleep(serialPort, 100);
+    }
+    serialPortClose(serialPort);
+    return 0;
 }
 
 int serialPortIsOpen(serial_port_t* serialPort)

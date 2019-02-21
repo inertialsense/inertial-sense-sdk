@@ -42,6 +42,12 @@ add_library(InertialSense
   src/tinyxmlparser.cpp
   )
 
+if(DEFINED INCLUDE_RTK)
+  target_link_libraries(InertialSense rtklib)
+else()
+  target_link_libraries(InertialSense)
+endif(DEFINED INCLUDE_RTK)
+
 add_definitions(
   -Wno-format-extra-args
   -Wno-extended-offsetof

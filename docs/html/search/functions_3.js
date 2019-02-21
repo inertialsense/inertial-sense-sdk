@@ -34,7 +34,7 @@ var searchData=
   ['deletedirectory',['DeleteDirectory',['../namespace_i_s_file_manager.html#afa0fe620ac3510ab3074e562f64e7650',1,'ISFileManager']]],
   ['deletefile',['DeleteFile',['../namespace_i_s_file_manager.html#a2c22bfe2a0d327a0d54e50a34496c8da',1,'ISFileManager']]],
   ['did_5fto_5fkid',['DID_TO_KID',['../classc_data_k_m_l.html#a2e396d7510154bb134964afcc46d8058',1,'cDataKML']]],
-  ['didtormcbit',['didToRmcBit',['../data__sets_8c.html#a92f6edead84a44514c9c896af5f09fbe',1,'didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c'],['../data__sets_8h.html#a92f6edead84a44514c9c896af5f09fbe',1,'didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits):&#160;data_sets.c']]],
+  ['didtormcbit',['didToRmcBit',['../data__sets_8c.html#a92f6edead84a44514c9c896af5f09fbe',1,'data_sets.c']]],
   ['disablebootloader',['disableBootloader',['../inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487',1,'disableBootloader(serial_port_t *port, char *error, int errorLength):&#160;inertialSenseBootLoader.c'],['../inertial_sense_boot_loader_8h.html#a1ba2459e76f174c6fed632130578a487',1,'disableBootloader(serial_port_t *port, char *error, int errorLength):&#160;inertialSenseBootLoader.c']]],
   ['disablebroadcastmsg',['disableBroadcastMsg',['../com__manager_8c.html#a305a8082a720fd5b3bc521012df55202',1,'com_manager.c']]],
   ['disabledidbroadcast',['disableDidBroadcast',['../com__manager_8c.html#ae1ab50b97d65b1cc6e1bd806ff0187dc',1,'com_manager.c']]],

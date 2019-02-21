@@ -687,7 +687,7 @@ cLogStats::cLogStats()
 void cLogStats::Clear()
 {
 	memset(dataIdStats, 0, sizeof(dataIdStats));
-    for (int id = 0; id < DID_COUNT; id++)
+    for (uint32_t id = 0; id < DID_COUNT; id++)
     {
         dataIdStats[id].minTimestampDelta = 1.0E6;
     }

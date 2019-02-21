@@ -1,16 +1,9 @@
 var searchData=
 [
   ['obj',['obj',['../structbootload__params__t.html#accd28a17ec2d3b1b8123a8af0428bdd6',1,'bootload_params_t']]],
-  ['obs',['obs',['../struct_p_a_c_k_e_d.html#aab9207c118fc708020907d9b1e70740d',1,'PACKED']]],
-  ['obs_5ft',['obs_t',['../structobs__t.html',1,'']]],
-  ['obscount',['obsCount',['../struct_p_a_c_k_e_d.html#a56850797a0ab0be4c8c7ee6dc291b06b',1,'PACKED']]],
-  ['obsd_5ft',['obsd_t',['../data__sets_8h.html#a793ac2cd653754cb8651d510bfb6f452',1,'data_sets.h']]],
   ['offset',['offset',['../structp__data__hdr__t.html#a5671779d9843a522942f60cbca2dee18',1,'p_data_hdr_t::offset()'],['../structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8',1,'p_data_get_t::offset()']]],
   ['offset_5fof_5fmember_5findex',['OFFSET_OF_MEMBER_INDEX',['../_i_s_constants_8h.html#a64355bc22a5100398a6ccc0623f80a50',1,'ISConstants.h']]],
   ['offset_5fof_5fmember_5findex_5fsubmember',['OFFSET_OF_MEMBER_INDEX_SUBMEMBER',['../_i_s_constants_8h.html#a0a3fc680e0f7bfc8bf2f875b38063101',1,'ISConstants.h']]],
-  ['omg',['omg',['../structeph__t.html#a1de6fc83e37743cf8fc63b9ab4920912',1,'eph_t::omg()'],['../structalm__t.html#ad622d2be16266fd191cd51135c2ddbc4',1,'alm_t::omg()']]],
-  ['omg0',['OMG0',['../structeph__t.html#a0f98239f73c3a66a8aa6ce8201eafb08',1,'eph_t::OMG0()'],['../structalm__t.html#a8d8708be0645b2753a21d15317126b05',1,'alm_t::OMG0()']]],
-  ['omgd',['OMGd',['../structeph__t.html#a2ba68a7c2a99555bad213aa6f0d4b6af',1,'eph_t::OMGd()'],['../structalm__t.html#a86c95b8f36d84f7474a74aef61184527',1,'alm_t::OMGd()']]],
   ['onclientconnected',['OnClientConnected',['../class_inertial_sense.html#a14816a23373f073abdf09ef4ff5cad26',1,'InertialSense::OnClientConnected()'],['../classi_i_s_tcp_server_delegate.html#a3fa2dd49f1908319ac510dae47d04069',1,'iISTcpServerDelegate::OnClientConnected()']]],
   ['onclientconnectfailed',['OnClientConnectFailed',['../class_inertial_sense.html#af8c69dc2c40e39503fbb447847df0d5a',1,'InertialSense::OnClientConnectFailed()'],['../classi_i_s_tcp_server_delegate.html#a067eae89a124bff9d8fa9217914f7b6e',1,'iISTcpServerDelegate::OnClientConnectFailed()']]],
   ['onclientconnecting',['OnClientConnecting',['../class_inertial_sense.html#ad55ff70e5c606085075e60d7a32b7159',1,'InertialSense::OnClientConnecting()'],['../classi_i_s_tcp_server_delegate.html#aceb1a642bda5b29807e2b1fe41285730',1,'iISTcpServerDelegate::OnClientConnecting()']]],
@@ -25,7 +18,7 @@ var searchData=
   ['onreaddata',['OnReadData',['../classc_device_log.html#a14a7bf3e27904cf6024ca25c1dbd5c1b',1,'cDeviceLog']]],
   ['onsbsreceived',['OnSbsReceived',['../classi_gps_parser_delegate.html#a94a8e9fc5ffaf0635a5c19d468701a48',1,'iGpsParserDelegate']]],
   ['onstationreceived',['OnStationReceived',['../classi_gps_parser_delegate.html#a1fea12f01b07177946f1ce10cd26eb9a',1,'iGpsParserDelegate']]],
-  ['open',['Open',['../class_inertial_sense.html#a3b5a9e3f7cb22df9ff9cf59558c1a3c2',1,'InertialSense::Open()'],['../classc_i_s_serial_port.html#a735210cebab2ac21b483a482dac6c5fe',1,'cISSerialPort::Open()'],['../classc_i_s_file_stream.html#adda8edcb4f36c3eb6f37ebf6d02e1f1a',1,'cISFileStream::Open()'],['../classc_i_s_tcp_client.html#a385f76475fb6d6534bf6b5818fd9917a',1,'cISTcpClient::Open()'],['../classc_i_s_tcp_server.html#aac4d54da90e343a68ab167afbe500cae',1,'cISTcpServer::Open()'],['../classc_i_s_log_file.html#ae96cc335be81acec61669bec0224503c',1,'cISLogFile::open()'],['../classc_i_s_log_file_base.html#af9a792675d7d4e4d5c778b8ef7a41da2',1,'cISLogFileBase::open()']]],
+  ['open',['open',['../classc_i_s_log_file.html#ae96cc335be81acec61669bec0224503c',1,'cISLogFile::open()'],['../classc_i_s_log_file_base.html#af9a792675d7d4e4d5c778b8ef7a41da2',1,'cISLogFileBase::open()'],['../class_inertial_sense.html#a3b5a9e3f7cb22df9ff9cf59558c1a3c2',1,'InertialSense::Open()'],['../classc_i_s_serial_port.html#a735210cebab2ac21b483a482dac6c5fe',1,'cISSerialPort::Open()'],['../classc_i_s_file_stream.html#adda8edcb4f36c3eb6f37ebf6d02e1f1a',1,'cISFileStream::Open()'],['../classc_i_s_tcp_client.html#a385f76475fb6d6534bf6b5818fd9917a',1,'cISTcpClient::Open()'],['../classc_i_s_tcp_server.html#aac4d54da90e343a68ab167afbe500cae',1,'cISTcpServer::Open()']]],
   ['openfile',['openFile',['../_i_s_utilities_8cpp.html#a60b2db98c3a583edb8b7edeb1e1aba41',1,'openFile(const char *path, const char *mode):&#160;ISUtilities.cpp'],['../_i_s_utilities_8h.html#a60b2db98c3a583edb8b7edeb1e1aba41',1,'openFile(const char *path, const char *mode):&#160;ISUtilities.cpp']]],
   ['opennewsavefile',['OpenNewSaveFile',['../classc_device_log.html#ada2c92f64039381a6bf584075a595427',1,'cDeviceLog']]],
   ['opennextreadfile',['OpenNextReadFile',['../classc_device_log.html#a61ab2a7ade3f7ffd45f884ad870afef5',1,'cDeviceLog']]],
@@ -44,8 +37,6 @@ var searchData=
   ['operator_3e_3d',['operator&gt;=',['../tinystr_8h.html#ad5a4ecbced1596c900ac7d7a51660357',1,'tinystr.h']]],
   ['operator_3e_3e',['operator&gt;&gt;',['../class_ti_xml_node.html#ab57bd426563c926844f65a78412e18b9',1,'TiXmlNode::operator&gt;&gt;()'],['../tinyxml_8cpp.html#ab57bd426563c926844f65a78412e18b9',1,'operator&gt;&gt;():&#160;tinyxml.cpp']]],
   ['operator_5b_5d',['operator[]',['../class_ti_xml_string.html#a06e8c84831fc146610369405f4aa4200',1,'TiXmlString']]],
-  ['options',['options',['../struct_p_a_c_k_e_d.html#a2fc5b85d6ca7828bedab08e5f019c2f6',1,'PACKED']]],
   ['orderid',['orderId',['../classc_csv_log.html#a55fd099b3166a73aad8c0855ac129615',1,'cCsvLog']]],
-  ['outsingle',['outsingle',['../structprcopt__t.html#a9516076388346a269e57d8b99116dc96',1,'prcopt_t']]],
   ['override',['OVERRIDE',['../_i_s_constants_8h.html#a5dea698950629d9e51d19c1a25be1c30',1,'ISConstants.h']]]
 ];

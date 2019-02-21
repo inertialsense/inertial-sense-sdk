@@ -63,6 +63,7 @@ typedef struct
             unsigned int enableVerify : 1; // whether to enable the verify phase
         } bitFields;
     } flags;
+    char bootloadEnableCmd[16];
 
 } bootload_params_t;
 
@@ -78,8 +79,8 @@ Boot load a .hex or .bin file to a device
 
 @return 0 if failure, non-zero if success
 */
-int bootloadFile(const char* fileName, serial_port_t* port, char* error, int errorLength, const void* obj,
-                 pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
+int bootloadFile(serial_port_t* port, const char* fileName, char* error, int errorLength,
+    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
 
 /**
@@ -94,7 +95,8 @@ Boot load a new bootloader .bin file to device. Device must be in application or
 @retur 0 if failure, non-zero if success
 */
 int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* error, int errorLength,
-                             const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
+    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
+int bootloadUpdateBootloaderEx(bootload_params_t* p);
 
 /**
 Enable bootloader mode for a device
@@ -106,7 +108,7 @@ Enable bootloader mode for a device
 
 @return 0 if failure, non-zero if success
 */
-int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength);
+int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd);
 
 /**
 Disables the bootloader and goes back to program mode
