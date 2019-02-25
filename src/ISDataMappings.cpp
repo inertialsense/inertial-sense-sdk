@@ -137,12 +137,10 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
-#if 0   // TODO: fix DID_PREINTEGRATED_IMU_MAG
-    sizeMap[DID_DUAL_IMU_RAW_MAG] = sizeof(imu_mag_t);
+	sizeMap[DID_DUAL_IMU_RAW_MAG] = sizeof(imu_mag_t);
 	sizeMap[DID_DUAL_IMU_MAG] = sizeof(imu_mag_t);
 	sizeMap[DID_PREINTEGRATED_IMU_MAG] = sizeof(pimu_mag_t);
-#endif
-    sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
+	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -564,6 +562,69 @@ static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DI
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateIMUDeltaThetaVelocityMagMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef pimu_mag_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU_MAG];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "imutime", pimu.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "theta1[0]", pimu.theta1[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "theta1[1]", pimu.theta1[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "theta1[2]", pimu.theta1[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel1[0]", pimu.vel1[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel1[1]", pimu.vel1[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel1[2]", pimu.vel1[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "theta2[0]", pimu.theta2[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "theta2[1]", pimu.theta2[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "theta2[2]", pimu.theta2[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel2[0]", pimu.vel2[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel2[1]", pimu.vel2[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel2[2]", pimu.vel2[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "dt", pimu.dt, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "imustatus", pimu.status, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "mag1time", mag1.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag[0]", mag1.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[1]", mag1.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[2]", mag1.mag[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2time", mag2.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag[0]", mag2.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[1]", mag2.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[2]", mag2.mag[2], 0, DataTypeFloat, float&);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateIMUMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+{
+	typedef imu_mag_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[id];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "time", imu.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "pqr1[0]", imu.I[0].pqr[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "pqr1[1]", imu.I[0].pqr[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "pqr1[2]", imu.I[0].pqr[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "acc1[0]", imu.I[0].acc[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "acc1[1]", imu.I[0].acc[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "acc1[2]", imu.I[0].acc[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "pqr2[0]", imu.I[1].pqr[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "pqr2[1]", imu.I[1].pqr[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "pqr2[2]", imu.I[1].pqr[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "acc2[0]", imu.I[1].acc[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "acc2[1]", imu.I[1].acc[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "acc2[2]", imu.I[1].acc[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "imustatus", imu.status, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "mag1time", mag1.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag[0]", mag1.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[1]", mag1.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[2]", mag1.mag[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2time", mag2.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag[0]", mag2.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[1]", mag2.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag[2]", mag2.mag[2], 0, DataTypeFloat, float&);
+
+	ASSERT_SIZE(totalSize);
 }
 
 static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -1332,6 +1393,9 @@ cISDataMappings::cISDataMappings()
     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_CODE_RESIDUAL);
     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_PHASE_RESIDUAL);
     PopulateRtkDebugMappings(m_lookupInfo);
+	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
+	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_RAW_MAG);
+	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_MAG);
 
 #endif
 

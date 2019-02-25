@@ -115,7 +115,10 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_config_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-
+#define DID_DUAL_IMU_RAW_MAG			(eDataIDs)84 /** (imu_mag_t) DID_DUAL_IMU_RAW + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
+#define DID_DUAL_IMU_MAG				(eDataIDs)85 /** (imu_mag_t) DID_DUAL_IMU + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
+#define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
+#define DID_WHEEL_ENCODER_CONFIG		(eDataIDs)87 /** (wheel_encoder_config_t) static configuration for wheel encoder measurements
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
@@ -124,7 +127,7 @@ typedef uint32_t eDataIDs;
 // 5) Update the DIDs in IS-src/python/src/ci_hdw/data_sets.py
 // 6] Test!
 
-/** Count of data ids (including null DID_NULL 0) - MUST BE MULTPLE OF 4 and LARGER than (not equal to) last DID number! */
+/** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
 #define DID_COUNT (eDataIDs)88
 
 /** Maximum number of data ids */
@@ -659,6 +662,31 @@ typedef struct PACKED
 	uint32_t                status;
 } preintegrated_imu_t;
 
+
+/** DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, dual imu + mag1 + mag2 */
+typedef struct PACKED
+{
+	/** dual imu - raw or pre-integrated depending on data id */
+	dual_imu_t imu;
+	
+	/** mag 1 */
+	magnetometer_t mag1;
+	magnetometer_t mag2;
+} imu_mag_t;
+
+
+/** DID DID_PREINTEGRATED_IMU_MAG, dual pre-integrated imu + mag1 + mag2 */
+typedef struct PACKED
+{
+	/** dual preintegrated imu */
+	preintegrated_imu_t pimu;
+	
+	/** mag 1 */
+	magnetometer_t mag1;
+	magnetometer_t mag2;
+} pimu_mag_t;
+
+
 /** IMU Status */
 enum eImuStatus
 {
@@ -673,6 +701,12 @@ enum eImuStatus
     
     /** Sample rate fault */
 	IMU_STATUS_SAMPLE_RATE_FAULT                = (int)0x00000010,
+	
+	/** Reserved */
+	IMU_STATUS_RESERVED1						= (int)0x00000020,
+	
+	/** Reserved */
+	IMU_STATUS_RESERVED2						= (int)0x00000040,
 
 //     /** Sensor saturation happened within past 10 seconds */
 //     IMU_STATUS_SATURATION_HISTORY               = (int)0x00000100,
@@ -1105,6 +1139,9 @@ typedef struct PACKED
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
 #define RMC_BITS_WHEEL_ENCODER_CONFIG   0x0000000100000000
+#define RMC_BITS_DUAL_IMU_MAG_RAW       0x0000000080000000
+#define RMC_BITS_DUAL_IMU_MAG			0x0000000100000000
+#define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000200000000
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset
@@ -1318,7 +1355,10 @@ enum eSysConfigBits
 	SYS_CFG_BITS_ENABLED_ZERO_VELOCITY_UPDATES			= (int)0x00010000,
 
 	/** Enable Nav update strobe output pulse on GPIO 9 (uINS pin 10) indicating preintegrated IMU and nav updates */
-	SYS_CFG_BITS_ENABLE_NAV_STROBE_OUT_GPIO_9			= (int)0x00100000
+	SYS_CFG_BITS_ENABLE_NAV_STROBE_OUT_GPIO_9			= (int)0x00200000,
+	
+	/** Disable packet encoding, binary data will have all bytes as is */
+	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000
 };
 
 /** RTK Configuration */
@@ -2758,6 +2798,9 @@ typedef enum
 
     /** Timer task */
     EVB_TASK_TIMER,
+
+    /** SPI to uINS task */
+    EVB_SPI_UINS_COMMUNICATIONS,
 
     /** Number of RTOS tasks */
     EVB_RTOS_NUM_TASKS                  // Keep last

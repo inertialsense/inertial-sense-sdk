@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['linked_5flist_5fnode_5ft',['linked_list_node_t',['../structlinked__list__node__t.html',1,'']]],
-  ['linked_5flist_5ft',['linked_list_t',['../structlinked__list__t.html',1,'']]]
+  ['nocase_5fcompare',['nocase_compare',['../structs_case_insensitive_compare_1_1nocase__compare.html',1,'sCaseInsensitiveCompare']]]
 ];
