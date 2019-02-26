@@ -36,7 +36,6 @@ var searchData=
   ['invdatasize',['invDataSize',['../structs_chunk_header.html#a433d971f7b18da7583ee207ad9e6715d',1,'sChunkHeader']]],
   ['invname',['invName',['../structs_chunk_header.html#a8b03b44078292c8fa56d58143824d7f5',1,'sChunkHeader']]],
   ['is_5fbaud_5frate_5fbootloader',['IS_BAUD_RATE_BOOTLOADER',['../inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489',1,'inertialSenseBootLoader.h']]],
-  ['is_5fbaud_5frate_5fbootloader_5fcom',['IS_BAUD_RATE_BOOTLOADER_COM',['../inertial_sense_boot_loader_8h.html#a3e211cb8d6486021564796897143d675',1,'inertialSenseBootLoader.h']]],
   ['is_5fbaud_5frate_5fbootloader_5flegacy',['IS_BAUD_RATE_BOOTLOADER_LEGACY',['../inertial_sense_boot_loader_8h.html#a404c96d6000a762c614a00847fd6a821',1,'inertialSenseBootLoader.h']]],
   ['is_5fbaud_5frate_5fbootloader_5frs232',['IS_BAUD_RATE_BOOTLOADER_RS232',['../inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d',1,'inertialSenseBootLoader.h']]],
   ['is_5fbaudrate_5f115200',['IS_BAUDRATE_115200',['../_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4aa16304421a9e3bef7be3f86e181343796',1,'ISComm.h']]],

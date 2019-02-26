@@ -71,7 +71,8 @@ extern "C" {
 #define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
 
 /** External data identifier */
-#define _DID_EXTERNAL				0xFFFFFFFF				
+#define _DID_EXTERNAL				0xFFFFFFFF
+#define _DID_GET_DATA				0x7FFFFFFF              /** Request for a DID data set to be sent in response */
 
 #define EXTERNAL_DATA_ID_UBLOX UBLOX_START_BYTE1
 #define EXTERNAL_DATA_ID_RTCM3 RTCM3_START_BYTE

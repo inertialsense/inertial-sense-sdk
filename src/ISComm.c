@@ -223,39 +223,46 @@ static uint32_t processInertialSenseByte(is_comm_instance_t* instance, uint8_t b
 		packet.body.size = instance->bufferSize;
 
 		// decode the packet in place on top of the receive buffer to save memory
-		if (is_decode_binary_packet(&packet, instance->buffer, (int)(instance->bufferPtr - instance->buffer)) == 0 && (packet.hdr.pid == PID_DATA || packet.hdr.pid == PID_SET_DATA))
+		if (is_decode_binary_packet(&packet, instance->buffer, (int)(instance->bufferPtr - instance->buffer)) == 0)
 		{
-			p_data_hdr_t* dataHdr = (p_data_hdr_t*)packet.body.ptr;
-			dataId = dataHdr->id;
-			instance->dataSize = dataHdr->size;
-			instance->dataOffset = dataHdr->offset;
+            p_data_hdr_t* dataHdr = (p_data_hdr_t*)packet.body.ptr;
+            dataId = dataHdr->id;
+            instance->dataSize = dataHdr->size;
+            instance->dataOffset = dataHdr->offset;
             instance->pktCounter = packet.hdr.counter;
 
 			// ensure offset and size are in bounds - check the size independent of offset because the size could be a
 			//  negative number in case of corrupt data
-			if (dataId > DID_NULL && dataId < DID_COUNT && instance->dataSize <= MAX_DATASET_SIZE &&
-				instance->dataOffset <= MAX_DATASET_SIZE && instance->dataOffset + instance->dataSize <= MAX_DATASET_SIZE)
-			{
-				// copy over the actual data structure to the start of the buffer
-				memmove(instance->buffer + instance->dataOffset, packet.body.ptr + sizeof(p_data_hdr_t), instance->dataSize);
+            if (dataId > DID_NULL && 
+                dataId < DID_COUNT && 
+                instance->dataSize <= MAX_DATASET_SIZE &&
+                instance->dataOffset <= MAX_DATASET_SIZE && 
+                instance->dataOffset + instance->dataSize <= MAX_DATASET_SIZE)
+            {
+                switch(packet.hdr.pid)
+                {
+                case PID_DATA:
+                case PID_SET_DATA:
+                    // copy over the actual data structure to the start of the buffer
+                    memmove(instance->buffer + instance->dataOffset, packet.body.ptr + sizeof(p_data_hdr_t), instance->dataSize);
                 
-                if (packet.hdr.pid == PID_SET_DATA)
-                {   
-					// acknowledge valid data received
+                    // acknowledge valid data received
                     instance->ackNeeded = PID_ACK;
+                    break;
+                
+                case PID_GET_DATA:
+                    // copy the requested data set info
+                    memcpy(instance->buffer, dataHdr, sizeof(p_data_hdr_t));
+                    return _DID_GET_DATA;
                 }                    
-			}
-			else
-			{
-				// corrupt data
-				dataId = DID_NULL;
-				instance->errorCount++;
+            }
+            else                
+			{	// corrupt data
+    			dataId = DID_NULL;
+    			instance->errorCount++;
 
-                if (packet.hdr.pid == PID_SET_DATA)
-                {   
-					// negative acknowledge data received
-                    instance->ackNeeded = PID_NACK;
-                }
+        		// negative acknowledge data received
+        		instance->ackNeeded = PID_NACK;
 			}
 		}
 		else

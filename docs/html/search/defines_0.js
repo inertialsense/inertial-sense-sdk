@@ -13,6 +13,7 @@ var searchData=
   ['_5fdid_5fdev_5finfo',['_DID_DEV_INFO',['../_i_s_comm_8h.html#a567d0d6afee7d5c2f6e645491910392c',1,'ISComm.h']]],
   ['_5fdid_5fexternal',['_DID_EXTERNAL',['../_i_s_comm_8h.html#a44aac08fd42256d05e9c7aad5a3a8962',1,'ISComm.h']]],
   ['_5fdid_5fflash_5fconfig',['_DID_FLASH_CONFIG',['../_i_s_comm_8h.html#a806384071fe28420188364439eb3c062',1,'ISComm.h']]],
+  ['_5fdid_5fget_5fdata',['_DID_GET_DATA',['../_i_s_comm_8h.html#a2b30e95e3c9009187a70c47a9d72e41b',1,'ISComm.h']]],
   ['_5fdid_5fgps1_5fpos',['_DID_GPS1_POS',['../_i_s_comm_8h.html#a6d418f86e5027a1c5ed56e9caa838fa2',1,'ISComm.h']]],
   ['_5fdid_5fimu_5fdual',['_DID_IMU_DUAL',['../_i_s_comm_8h.html#a0fb5789e8c0ae80c61dc32122f0b26ff',1,'ISComm.h']]],
   ['_5fdid_5fimu_5fpreintegrated_5fimu',['_DID_IMU_PREINTEGRATED_IMU',['../_i_s_comm_8h.html#a644bcfc4ca597330575f5500bb9b7728',1,'ISComm.h']]],

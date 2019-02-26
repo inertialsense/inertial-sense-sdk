@@ -6,7 +6,6 @@ var searchData=
   ['inv_5fdeg2rad_5fearth_5fradius_5ff',['INV_DEG2RAD_EARTH_RADIUS_F',['../_i_s_earth_8h.html#a86ae5c66468b5f5ca096b6da3e03adb5',1,'ISEarth.h']]],
   ['inv_5fearth_5fradius_5ff',['INV_EARTH_RADIUS_F',['../_i_s_earth_8h.html#aa5292e524b0355c08354ae730ec4fbf5',1,'ISEarth.h']]],
   ['is_5fbaud_5frate_5fbootloader',['IS_BAUD_RATE_BOOTLOADER',['../inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489',1,'inertialSenseBootLoader.h']]],
-  ['is_5fbaud_5frate_5fbootloader_5fcom',['IS_BAUD_RATE_BOOTLOADER_COM',['../inertial_sense_boot_loader_8h.html#a3e211cb8d6486021564796897143d675',1,'inertialSenseBootLoader.h']]],
   ['is_5fbaud_5frate_5fbootloader_5flegacy',['IS_BAUD_RATE_BOOTLOADER_LEGACY',['../inertial_sense_boot_loader_8h.html#a404c96d6000a762c614a00847fd6a821',1,'inertialSenseBootLoader.h']]],
   ['is_5fbaud_5frate_5fbootloader_5frs232',['IS_BAUD_RATE_BOOTLOADER_RS232',['../inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d',1,'inertialSenseBootLoader.h']]],
   ['is_5fcom_5fbaudrate_5fdefault',['IS_COM_BAUDRATE_DEFAULT',['../_i_s_comm_8h.html#a8f9086b9c33b305c89fc841a8f10a4a7',1,'ISComm.h']]],

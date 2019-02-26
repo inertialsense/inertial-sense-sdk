@@ -872,7 +872,7 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 	lastTime = imu.time;
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", imu.time);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs, dt:%6.3f", imu.time, imu.dt);
 #endif
 
 	if (m_displayMode == DMODE_SCROLL)
@@ -887,31 +887,29 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 			imu.theta2[1] * C_RAD2DEG_F,
 			imu.theta2[2] * C_RAD2DEG_F,
 			imu.vel2[0], imu.vel2[1], imu.vel2[2]);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", dt: %6.3f", imu.dt);
 	}
 	else
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta1\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta1\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
 			imu.theta1[0] * C_RAD2DEG_F,		// IMU1 P angular rate
 			imu.theta1[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
 			imu.theta1[2] * C_RAD2DEG_F);		// IMU1 R angular rate
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel1\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.vel1[0],						// IMU1 X acceleration
-			imu.vel1[1],						// IMU1 Y acceleration
-			imu.vel1[2]);						// IMU1 Z acceleration
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU2 theta2\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 theta2\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
 			imu.theta2[0] * C_RAD2DEG_F,		// IMU2 P angular rate
 			imu.theta2[1] * C_RAD2DEG_F,		// IMU2 Q angular rate
 			imu.theta2[2] * C_RAD2DEG_F);		// IMU2 R angular rate
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 vel2\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel1\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+            imu.vel1[0],						// IMU1 X acceleration
+            imu.vel1[1],						// IMU1 Y acceleration
+            imu.vel1[2]);						// IMU1 Z acceleration
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 vel2\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
 			imu.vel2[0],						// IMU2 X acceleration
 			imu.vel2[1],						// IMU2 Y acceleration
 			imu.vel2[2]);						// IMU2 Z acceleration
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tdt: %6.3f", imu.dt);
 	}
 
 	return buf;
@@ -941,7 +939,7 @@ string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", mag[%6.2f,%6.2f,%6.2f]",
 			mag.mag[0],					// X magnetometer
 			mag.mag[1],					// Y magnetometer
-			mag.mag[2]);					// Z magnetometer
+			mag.mag[2]);				// Z magnetometer
 	}
 	else
 	{	// Spacious format
@@ -949,7 +947,7 @@ string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,
 			mag.mag[0],					// X magnetometer
 			mag.mag[1],					// Y magnetometer
-			mag.mag[2]);					// Z magnetometer
+			mag.mag[2]);				// Z magnetometer
 	}
 
 	return buf;

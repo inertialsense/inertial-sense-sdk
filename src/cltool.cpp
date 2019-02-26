@@ -501,9 +501,9 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration)" << endl;
-	cout << "    -flashConfig" << boldOff << "    read and print to screen flash config \"keys\" and \"values\"" << endlbOn;
-	cout << "    -flashConfig=key=value|key=value " << boldOff <<  endlbOn;
-	cout << "        " << boldOff << "            set key / value pairs in flash config. (Run -flashConfig to list all keys)" << endlbOn;
+	cout << "    -flashConfig" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-flashConfig=key=value|key=value\" " << boldOff <<  endlbOn;
+	cout << "        " << boldOff << "            set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashConfig values" << endlbOn;
