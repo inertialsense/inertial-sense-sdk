@@ -582,12 +582,12 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_STATE:         	return RMC_BITS_RTK_STATE;
         case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
-		case DID_DUAL_IMU_MAG:			return RMC_BITS_DUAL_IMU_MAG;
-		case DID_DUAL_IMU_RAW_MAG:		return RMC_BITS_DUAL_IMU_MAG_RAW;
-		case DID_PREINTEGRATED_IMU_MAG:	return RMC_BITS_PREINTEGRATED_IMU_MAG;
-		case DID_WHEEL_ENCODER:			return RMC_BITS_WHEEL_ENCODER;
-		case DID_WHEEL_ENCODER_CONFIG:  return RMC_BITS_WHEEL_ENCODER_CONFIG;
-		default:						return defaultRmcBits;
+		case DID_DUAL_IMU_MAG:          return RMC_BITS_DUAL_IMU_MAG;
+		case DID_DUAL_IMU_RAW_MAG:      return RMC_BITS_DUAL_IMU_MAG_RAW;
+		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;
+		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
+		case DID_WHEEL_CONFIG:          return RMC_BITS_WHEEL_CONFIG;
+		default:                        return defaultRmcBits;
 	}
 }
 

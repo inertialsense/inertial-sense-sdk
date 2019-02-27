@@ -102,7 +102,7 @@ typedef uint32_t eDataIDs;
 #define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
 #define DID_GPS1_RAW                    (eDataIDs)69 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
 #define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. */
-#define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) wheel encoder data to be fused with GPS-INS measurements, set DID_WHEEL_ENCODER_CONFIG for configuration before sending this message */
+#define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) wheel encoder data to be fused with GPS-INS measurements, set DID_WHEEL_CONFIG for configuration before sending this message */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
 #define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. */
 #define DID_EMPTY_1                     (eDataIDs)74 /** Unused */
@@ -118,7 +118,7 @@ typedef uint32_t eDataIDs;
 #define DID_DUAL_IMU_RAW_MAG			(eDataIDs)84 /** (imu_mag_t) DID_DUAL_IMU_RAW + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
 #define DID_DUAL_IMU_MAG				(eDataIDs)85 /** (imu_mag_t) DID_DUAL_IMU + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
 #define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
-#define DID_WHEEL_ENCODER_CONFIG		(eDataIDs)87 /** (wheel_encoder_config_t) static configuration for wheel encoder measurements
+#define DID_WHEEL_CONFIG		(eDataIDs)87 /** (wheel_config_t) static configuration for wheel encoder measurements
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
@@ -1138,10 +1138,10 @@ typedef struct PACKED
 #define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
-#define RMC_BITS_WHEEL_ENCODER_CONFIG   0x0000000100000000
-#define RMC_BITS_DUAL_IMU_MAG_RAW       0x0000000080000000
-#define RMC_BITS_DUAL_IMU_MAG			0x0000000100000000
-#define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000200000000
+#define RMC_BITS_WHEEL_CONFIG           0x0000000100000000
+#define RMC_BITS_DUAL_IMU_MAG_RAW       0x0000000200000000
+#define RMC_BITS_DUAL_IMU_MAG			0x0000000400000000
+#define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset
@@ -1178,7 +1178,7 @@ typedef struct PACKED
 										| RMC_BITS_RTK_PHASE_RESIDUAL)
 #define RMC_PRESET_PPD_ROBOT			(RMC_PRESET_PPD_BITS\
 										| RMC_BITS_WHEEL_ENCODER \
-										| RMC_BITS_WHEEL_ENCODER_CONFIG)
+										| RMC_BITS_WHEEL_CONFIG)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED

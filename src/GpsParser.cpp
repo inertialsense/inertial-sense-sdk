@@ -149,6 +149,9 @@ public:
             break;
         }
 
+#else
+        (void)data;
+        (void)dataLength;
 #endif
 
     }
