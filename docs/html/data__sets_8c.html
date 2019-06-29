@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.5</span>
+   &#160;<span id="projectnumber">Release 1.7.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -82,14 +82,12 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aed6af7a0ffad6afc3fa0ead07fdbcf47"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#aed6af7a0ffad6afc3fa0ead07fdbcf47">checksum32</a> (const void *data, int count)</td></tr>
-<tr class="separator:aed6af7a0ffad6afc3fa0ead07fdbcf47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a048670b591284025cf419036a90c3149"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a048670b591284025cf419036a90c3149">flipFloat</a> (uint8_t *ptr)</td></tr>
 <tr class="separator:a048670b591284025cf419036a90c3149"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48eedd91d1a0e8559475175b1b52f826"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a48eedd91d1a0e8559475175b1b52f826">flipFloatCopy</a> (float val)</td></tr>
 <tr class="separator:a48eedd91d1a0e8559475175b1b52f826"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe53c4451e1b5eb6df61375d268e9917"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#abe53c4451e1b5eb6df61375d268e9917">flipDouble</a> (uint8_t *ptr)</td></tr>
-<tr class="separator:abe53c4451e1b5eb6df61375d268e9917"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaab189d82161c2399031ba7bd586a24a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#aaab189d82161c2399031ba7bd586a24a">flipDouble</a> (void *ptr)</td></tr>
+<tr class="separator:aaab189d82161c2399031ba7bd586a24a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5454be85a9ae32de3118331684f10005"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a5454be85a9ae32de3118331684f10005">flipDoubleCopy</a> (double val)</td></tr>
 <tr class="separator:a5454be85a9ae32de3118331684f10005"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a280f1679879d2af685a121279a0df1f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a280f1679879d2af685a121279a0df1f4">flipEndianess32</a> (uint8_t *data, int dataLength)</td></tr>
@@ -102,18 +100,26 @@ Functions</h2></td></tr>
 <tr class="separator:a0122a1839deb452c354e595f01022949"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2d8b5b7edd3dafa82f37ac180c16a3e"><td class="memItemLeft" align="right" valign="top">uint16_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ab2d8b5b7edd3dafa82f37ac180c16a3e">getStringOffsetsLengths</a> (<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a> dataId, uint16_t *offsetsLength)</td></tr>
 <tr class="separator:ab2d8b5b7edd3dafa82f37ac180c16a3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed6af7a0ffad6afc3fa0ead07fdbcf47"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#aed6af7a0ffad6afc3fa0ead07fdbcf47">checksum32</a> (const void *data, int count)</td></tr>
+<tr class="separator:aed6af7a0ffad6afc3fa0ead07fdbcf47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab78ef4a124a2099a5c7b22798eb5a876"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ab78ef4a124a2099a5c7b22798eb5a876">serialNumChecksum32</a> (const void *data, int size)</td></tr>
 <tr class="separator:ab78ef4a124a2099a5c7b22798eb5a876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1d697adf4fcd3a4798840c93abf7bac"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ab1d697adf4fcd3a4798840c93abf7bac">flashChecksum32</a> (const void *data, int size)</td></tr>
 <tr class="separator:ab1d697adf4fcd3a4798840c93abf7bac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92f6edead84a44514c9c896af5f09fbe"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a92f6edead84a44514c9c896af5f09fbe">didToRmcBit</a> (uint32_t dataId, uint64_t defaultRmcBits)</td></tr>
 <tr class="separator:a92f6edead84a44514c9c896af5f09fbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6881ffc1ffb4af759ca1e934216323e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ac6881ffc1ffb4af759ca1e934216323e">julianToDate</a> (double julian, int32_t *year, int32_t *month, int32_t *day, int32_t *hours, int32_t *minutes, int32_t *seconds, int32_t *milliseconds)</td></tr>
-<tr class="separator:ac6881ffc1ffb4af759ca1e934216323e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa09e5edb76b1cd3c9199889cdcd16b1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#aaa09e5edb76b1cd3c9199889cdcd16b1">gpsToJulian</a> (int32_t gpsWeek, int32_t gpsMilliseconds)</td></tr>
-<tr class="separator:aaa09e5edb76b1cd3c9199889cdcd16b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae56e9a11cab85685b6388a6bda1065ca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca">gpsToNmeaGGA</a> (const gps_pos_t *gps, char *buffer, int bufferLength)</td></tr>
+<tr class="memitem:a749719b28f0ca0d469340af1fd120a28"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a749719b28f0ca0d469340af1fd120a28">julianToDate</a> (double julian, int32_t *year, int32_t *month, int32_t *day, int32_t *hour, int32_t *minute, int32_t *second, int32_t *millisecond)</td></tr>
+<tr class="separator:a749719b28f0ca0d469340af1fd120a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a203cc0f0918751aa0ea9276329db328b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a203cc0f0918751aa0ea9276329db328b">gpsToJulian</a> (int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds)</td></tr>
+<tr class="separator:a203cc0f0918751aa0ea9276329db328b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae56e9a11cab85685b6388a6bda1065ca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca">gpsToNmeaGGA</a> (const <a class="el" href="data__sets_8h.html#a50a853d6862de52ccc8bc68265860cb2">gps_pos_t</a> *gps, char *buffer, int bufferLength)</td></tr>
 <tr class="separator:ae56e9a11cab85685b6388a6bda1065ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcdd50f7e9d7265441087789b611694d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#adcdd50f7e9d7265441087789b611694d">ubxSys</a> (int gnssID)</td></tr>
+<tr class="separator:adcdd50f7e9d7265441087789b611694d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb7af9eceaa42b2a263c0c7264bba8be"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#acb7af9eceaa42b2a263c0c7264bba8be">satNo</a> (int sys, int prn)</td></tr>
+<tr class="separator:acb7af9eceaa42b2a263c0c7264bba8be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41229d05e477e60e9cdea65ccd2cbc1d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a41229d05e477e60e9cdea65ccd2cbc1d">satNumCalc</a> (int gnssID, int svID)</td></tr>
+<tr class="separator:a41229d05e477e60e9cdea65ccd2cbc1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="aed6af7a0ffad6afc3fa0ead07fdbcf47"></a>
@@ -141,8 +147,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Creates a 32 bit checksum from data</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>the data to create a checksum for </td></tr>
+    <tr><td class="paramname">count</td><td>the number of bytes in data</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the 32 bit checksum for data </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00520">520</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00516">516</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -171,8 +186,9 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Convert DID to realtime message bits </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00552">552</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00548">548</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -202,12 +218,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00546">546</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00542">542</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
-<a id="abe53c4451e1b5eb6df61375d268e9917"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe53c4451e1b5eb6df61375d268e9917">&#9670;&nbsp;</a></span>flipDouble()</h2>
+<a id="aaab189d82161c2399031ba7bd586a24a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaab189d82161c2399031ba7bd586a24a">&#9670;&nbsp;</a></span>flipDouble()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -215,14 +231,21 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void flipDouble </td>
           <td>(</td>
-          <td class="paramtype">uint8_t *&#160;</td>
+          <td class="paramtype">void *&#160;</td>
           <td class="paramname"><em>ptr</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Flip the bytes of a double in place (8 bytes) - ptr is assumed to be at least 8 bytes Only flips each 4 byte pair, does not flip the individual bytes within the pair</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ptr</td><td>the double to flip </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00050">50</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00047">47</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -241,8 +264,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Flip the bytes of a double in place (8 bytes) Unlike flipDouble, this also flips the individual bytes in each 4 byte pair</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">val</td><td>the double to flip </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the flipped double </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00063">63</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00060">60</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -289,8 +320,19 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Flip double (64 bit) floating point values in data</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>the data to flip doubles in </td></tr>
+    <tr><td class="paramname">dataLength</td><td>the number of bytes in data </td></tr>
+    <tr><td class="paramname">offset</td><td>offset into data to start flipping at </td></tr>
+    <tr><td class="paramname">offsets</td><td>a list of offsets of all doubles in data, starting at position 0 </td></tr>
+    <tr><td class="paramname">offsetsLength</td><td>the number of items in offsets </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00093">93</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00090">90</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -319,8 +361,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Flip the endianess of 32 bit values in data</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>the data to flip 32 bit values in </td></tr>
+    <tr><td class="paramname">dataLength</td><td>the number of bytes in data </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00075">75</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00072">72</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -339,8 +389,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Flip the bytes of a float in place (4 bytes) - ptr is assumed to be at least 4 bytes</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ptr</td><td>the float to flip </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00022">22</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00019">19</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -359,8 +416,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Flip the bytes of a float (4 bytes) - ptr is assumed to be at least 4 bytes</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">val</td><td>the float to flip </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the flipped float </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00034">34</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00031">31</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -407,8 +472,19 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Flip string values in data - this compensates for the fact that flipEndianess32 is called on all the data</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>the data to flip string values in </td></tr>
+    <tr><td class="paramname">dataLength</td><td>the number of bytes in data </td></tr>
+    <tr><td class="paramname">offset</td><td>the offset into data to start flipping strings at </td></tr>
+    <tr><td class="paramname">offsets</td><td>a list of offsets and byte lengths into data where strings start at </td></tr>
+    <tr><td class="paramname">offsetsLength</td><td>the number of items in offsets, should be 2 times the string count </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00119">119</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00116">116</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -437,8 +513,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Get the offsets of double / int64 (64 bit) values given a data id</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dataId</td><td>the data id to get double offsets for </td></tr>
+    <tr><td class="paramname">offsetsLength</td><td>receives the number of double offsets</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a list of offets of doubles or 0 if none, offset will have high bit set if it is an int64 instead of a double </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00145">145</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00140">140</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -467,13 +552,22 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Gets the offsets and lengths of strings given a data id</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dataId</td><td>the data id to get string offsets and lengths for </td></tr>
+    <tr><td class="paramname">offsetsLength</td><td>receives the number of items in the return value</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a list of offsets and lengths of strings for the data id or 0 if none </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00379">379</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00371">371</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
-<a id="aaa09e5edb76b1cd3c9199889cdcd16b1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa09e5edb76b1cd3c9199889cdcd16b1">&#9670;&nbsp;</a></span>gpsToJulian()</h2>
+<a id="a203cc0f0918751aa0ea9276329db328b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a203cc0f0918751aa0ea9276329db328b">&#9670;&nbsp;</a></span>gpsToJulian()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -488,7 +582,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int32_t&#160;</td>
-          <td class="paramname"><em>gpsMilliseconds</em>&#160;</td>
+          <td class="paramname"><em>gpsMilliseconds</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int32_t&#160;</td>
+          <td class="paramname"><em>leapSeconds</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -497,8 +597,9 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Convert GPS Week and Seconds to Julian Date. Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00686">686</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00682">682</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -511,7 +612,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int gpsToNmeaGGA </td>
           <td>(</td>
-          <td class="paramtype">const gps_pos_t *&#160;</td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a50a853d6862de52ccc8bc68265860cb2">gps_pos_t</a> *&#160;</td>
           <td class="paramname"><em>gps</em>, </td>
         </tr>
         <tr>
@@ -534,12 +635,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00724">724</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00719">719</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
-<a id="ac6881ffc1ffb4af759ca1e934216323e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6881ffc1ffb4af759ca1e934216323e">&#9670;&nbsp;</a></span>julianToDate()</h2>
+<a id="a749719b28f0ca0d469340af1fd120a28"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a749719b28f0ca0d469340af1fd120a28">&#9670;&nbsp;</a></span>julianToDate()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -572,25 +673,56 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int32_t *&#160;</td>
-          <td class="paramname"><em>hours</em>, </td>
+          <td class="paramname"><em>hour</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int32_t *&#160;</td>
-          <td class="paramname"><em>minutes</em>, </td>
+          <td class="paramname"><em>minute</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int32_t *&#160;</td>
-          <td class="paramname"><em>seconds</em>, </td>
+          <td class="paramname"><em>second</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int32_t *&#160;</td>
-          <td class="paramname"><em>milliseconds</em>&#160;</td>
+          <td class="paramname"><em>millisecond</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Convert Julian Date to calendar date. </p>
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00590">590</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+
+</div>
+</div>
+<a id="acb7af9eceaa42b2a263c0c7264bba8be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb7af9eceaa42b2a263c0c7264bba8be">&#9670;&nbsp;</a></span>satNo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int satNo </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>sys</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>prn</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -600,7 +732,37 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00594">594</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00843">843</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+
+</div>
+</div>
+<a id="a41229d05e477e60e9cdea65ccd2cbc1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41229d05e477e60e9cdea65ccd2cbc1d">&#9670;&nbsp;</a></span>satNumCalc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int satNumCalc </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>gnssID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>svID</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00883">883</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -630,7 +792,27 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00540">540</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00536">536</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+
+</div>
+</div>
+<a id="adcdd50f7e9d7265441087789b611694d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcdd50f7e9d7265441087789b611694d">&#9670;&nbsp;</a></span>ubxSys()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ubxSys </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>gnssID</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00824">824</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>

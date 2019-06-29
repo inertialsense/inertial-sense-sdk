@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.5</span>
+   &#160;<span id="projectnumber">Release 1.7.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -70,9 +70,33 @@ $(function() {
 <li>obj
 : <a class="el" href="structbootload__params__t.html#accd28a17ec2d3b1b8123a8af0428bdd6">bootload_params_t</a>
 </li>
+<li>obs
+: <a class="el" href="struct_p_a_c_k_e_d.html#aab9207c118fc708020907d9b1e70740d">PACKED</a>
+</li>
+<li>obsCount
+: <a class="el" href="struct_p_a_c_k_e_d.html#a56850797a0ab0be4c8c7ee6dc291b06b">PACKED</a>
+</li>
 <li>offset
 : <a class="el" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">p_data_get_t</a>
 , <a class="el" href="structp__data__hdr__t.html#a5671779d9843a522942f60cbca2dee18">p_data_hdr_t</a>
+</li>
+<li>omega_l
+: <a class="el" href="struct_p_a_c_k_e_d.html#a01db9d8ffc36e962e06cb5045d72904d">PACKED</a>
+</li>
+<li>omega_r
+: <a class="el" href="struct_p_a_c_k_e_d.html#a464840f7a80ab502fbf14c40d78517b4">PACKED</a>
+</li>
+<li>omg
+: <a class="el" href="structalm__t.html#ad622d2be16266fd191cd51135c2ddbc4">alm_t</a>
+, <a class="el" href="structeph__t.html#a1de6fc83e37743cf8fc63b9ab4920912">eph_t</a>
+</li>
+<li>OMG0
+: <a class="el" href="structalm__t.html#a8d8708be0645b2753a21d15317126b05">alm_t</a>
+, <a class="el" href="structeph__t.html#a0f98239f73c3a66a8aa6ce8201eafb08">eph_t</a>
+</li>
+<li>OMGd
+: <a class="el" href="structalm__t.html#a86c95b8f36d84f7474a74aef61184527">alm_t</a>
+, <a class="el" href="structeph__t.html#a2ba68a7c2a99555bad213aa6f0d4b6af">eph_t</a>
 </li>
 <li>OnClientConnected()
 : <a class="el" href="classi_i_s_tcp_server_delegate.html#a3fa2dd49f1908319ac510dae47d04069">iISTcpServerDelegate</a>
@@ -93,33 +117,11 @@ $(function() {
 : <a class="el" href="classi_i_s_tcp_server_delegate.html#a6afee213d15d230882e8057ffb15d93b">iISTcpServerDelegate</a>
 , <a class="el" href="class_inertial_sense.html#ade1eb02ed38bcb28759df421803b31e6">InertialSense</a>
 </li>
-<li>OnError()
-: <a class="el" href="classi_gps_parser_delegate.html#a235705085991ff760cf10cb49317a743">iGpsParserDelegate</a>
-</li>
-<li>OnGlonassEphemerisReceived()
-: <a class="el" href="classi_gps_parser_delegate.html#ab711598d3e65ae1b7ba4e7a04afedc29">iGpsParserDelegate</a>
-</li>
-<li>OnGpsEphemerisReceived()
-: <a class="el" href="classi_gps_parser_delegate.html#ad51fee5d3324537e4a9a8664237b8626">iGpsParserDelegate</a>
-</li>
-<li>OnIonosphereModelUtcAlmanacReceived()
-: <a class="el" href="classi_gps_parser_delegate.html#a938592121441395308150fa8d1a9faf3">iGpsParserDelegate</a>
-</li>
-<li>OnObservationReceived()
-: <a class="el" href="classi_gps_parser_delegate.html#a3d84621cccf117972b96af70c6e2c86a">iGpsParserDelegate</a>
-</li>
 <li>OnPacketReceived()
-: <a class="el" href="classi_gps_parser_delegate.html#a592450747817cba6ca018c4fe99281b4">iGpsParserDelegate</a>
-, <a class="el" href="class_inertial_sense.html#a36cd41e8ab948ad1357242c87d6c06ba">InertialSense</a>
+: <a class="el" href="class_inertial_sense.html#a352ebef762136664fea66ccefe50a837">InertialSense</a>
 </li>
 <li>OnReadData()
 : <a class="el" href="classc_device_log.html#a14a7bf3e27904cf6024ca25c1dbd5c1b">cDeviceLog</a>
-</li>
-<li>OnSbsReceived()
-: <a class="el" href="classi_gps_parser_delegate.html#a94a8e9fc5ffaf0635a5c19d468701a48">iGpsParserDelegate</a>
-</li>
-<li>OnStationReceived()
-: <a class="el" href="classi_gps_parser_delegate.html#a1fea12f01b07177946f1ce10cd26eb9a">iGpsParserDelegate</a>
 </li>
 <li>Open()
 : <a class="el" href="classc_i_s_file_stream.html#adda8edcb4f36c3eb6f37ebf6d02e1f1a">cISFileStream</a>
@@ -159,14 +161,14 @@ $(function() {
 , <a class="el" href="structs_case_insensitive_compare.html#a1b41a91cc782a4b2220762263f071df1">sCaseInsensitiveCompare</a>
 </li>
 <li>operator+=()
-: <a class="el" href="class_ti_xml_string.html#ab56336ac2aa2a08d24a71eb9a2b502a5">TiXmlString</a>
+: <a class="el" href="class_ti_xml_string.html#a6aa09d5240470b76d54ec709e04f8c13">TiXmlString</a>
 </li>
 <li>operator&lt;()
 : <a class="el" href="class_ti_xml_attribute.html#a80dcb758cc5ab27ce9865301e2da1335">TiXmlAttribute</a>
 </li>
 <li>operator&lt;&lt;
 : <a class="el" href="class_ti_xml_node.html#a86cd49cfb17a844c0010b3136ac966c7">TiXmlNode</a>
-, <a class="el" href="class_ti_xml_out_stream.html#a3640dcb1c0903be3bc6966cdc9a79db6">TiXmlOutStream</a>
+, <a class="el" href="class_ti_xml_out_stream.html#af2117e5a8cbfcb69544804ad2859bfb6">TiXmlOutStream</a>
 </li>
 <li>operator=()
 : <a class="el" href="class_ti_xml_comment.html#aeceedc15f8b8f9ca0b6136696339b3ac">TiXmlComment</a>
@@ -174,7 +176,7 @@ $(function() {
 , <a class="el" href="class_ti_xml_document.html#aa56fd4dbe8917d2033d865909e2d737e">TiXmlDocument</a>
 , <a class="el" href="class_ti_xml_element.html#ad58d300f4cfc0016ffa6861ebb718a0b">TiXmlElement</a>
 , <a class="el" href="class_ti_xml_handle.html#ad8e5dcf6a87882674203157f29f8e4db">TiXmlHandle</a>
-, <a class="el" href="class_ti_xml_string.html#ab1f1f5d3eceaa0f22d0a7e6055ea81b0">TiXmlString</a>
+, <a class="el" href="class_ti_xml_string.html#ae0bc6147afc0ec2aa0da3a3c0a8fcfb0">TiXmlString</a>
 , <a class="el" href="class_ti_xml_text.html#aed5b13f9c1b804c616fd533882c29f57">TiXmlText</a>
 , <a class="el" href="class_ti_xml_unknown.html#a60560b5aacb4bdc8b2b5f02f0a99c5c0">TiXmlUnknown</a>
 </li>
@@ -184,8 +186,14 @@ $(function() {
 <li>operator&gt;()
 : <a class="el" href="class_ti_xml_attribute.html#a697c2dde7ac60fccaa7049cee906eb3e">TiXmlAttribute</a>
 </li>
+<li>options
+: <a class="el" href="struct_p_a_c_k_e_d.html#a2fc5b85d6ca7828bedab08e5f019c2f6">PACKED</a>
+</li>
 <li>orderId
 : <a class="el" href="classc_csv_log.html#a55fd099b3166a73aad8c0855ac129615">cCsvLog</a>
+</li>
+<li>outsingle
+: <a class="el" href="structprcopt__t.html#a9516076388346a269e57d8b99116dc96">prcopt_t</a>
 </li>
 </ul>
 </div><!-- contents -->

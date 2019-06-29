@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -501,9 +501,9 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration)" << endl;
-	cout << "    -flashConfig" << boldOff << "    read and print to screen flash config \"keys\" and \"values\"" << endlbOn;
-	cout << "    -flashConfig=key=value|key=value " << boldOff <<  endlbOn;
-	cout << "        " << boldOff << "            set key / value pairs in flash config. (Run -flashConfig to list all keys)" << endlbOn;
+	cout << "    -flashConfig" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-flashConfig=key=value|key=value\" " << boldOff <<  endlbOn;
+	cout << "        " << boldOff << "            set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashConfig values" << endlbOn;
@@ -529,7 +529,7 @@ void cltool_outputHelp()
 
 bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
 {
-	const nvm_flash_cfg_t& flashConfig = inertialSenseInterface.GetFlashConfig();
+	nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	if (flashConfigString.length() < 2)
@@ -548,7 +548,6 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 	}
 	else
 	{
-		nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
 		vector<string> keyValues;
 		splitString(flashConfigString, "|", keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)

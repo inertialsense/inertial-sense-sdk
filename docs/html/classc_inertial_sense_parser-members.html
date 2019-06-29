@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.5</span>
+   &#160;<span id="projectnumber">Release 1.7.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -74,13 +74,16 @@ $(function() {
   <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#a5600c0ca39301545821df51a0292d270">cGpsParser</a>(iGpsParserDelegate *delegate)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">protected</span></td></tr>
   <tr><td class="entry"><a class="el" href="classc_inertial_sense_parser.html#a7a2539213977fbca6f25899e144c0e5f">cInertialSenseParser</a>(iGpsParserDelegate *delegate)</td><td class="entry"><a class="el" href="classc_inertial_sense_parser.html">cInertialSenseParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#aeef2b134ff51e193c5723eb26ffead58">CreateParser</a>(eGpsParserType type, iGpsParserDelegate *delegate)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">static</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#a3bb55b5835ba5fcea42b9a8fa824c945">GetDelegate</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#a64d628afd753e74659ebb00a9f09fa37">GetReceiverIndex</a>() const</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#ac5aa480f135a3405b720bc7bc370a5ac">ParseMessage</a>(const uint8_t *data, int dataLength)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#ab77b0f3444b0cb9a52b36981566e27d3">GetCorruptPacketCount</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#a3bb55b5835ba5fcea42b9a8fa824c945">GetDelegate</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#a64d628afd753e74659ebb00a9f09fa37">GetReceiverIndex</a>() const</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#ab163e893a00283fd78a7798ecb5d0076">m_corruptPacketCount</a></td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">protected</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classc_inertial_sense_parser.html#a3ffee82704c03bc803c5826f44601d8d">ParseMessage</a>(const uint8_t *data, int dataLength) OVERRIDE</td><td class="entry"><a class="el" href="classc_inertial_sense_parser.html">cInertialSenseParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classc_gps_parser.html#a544933ba7a8deb8397c7a1d062979280">SetReceiverIndex</a>(int32_t index)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#aec8b26614dcf909d991d3e1854c00165">Write</a>(const uint8_t *data, int dataLength)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classc_gps_parser.html#a72dc4c37857825d80c468c6d61f9e43a">Write</a>(const uint8_t *data, int dataLength)</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classc_inertial_sense_parser.html#a946b92985b6663bccd5f02d6afee1776">WriteByte</a>(uint8_t b) OVERRIDE</td><td class="entry"><a class="el" href="classc_inertial_sense_parser.html">cInertialSenseParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr><td class="entry"><a class="el" href="classc_gps_parser.html#ae6439f349591135b2d842b5346f5be17">~cGpsParser</a>()</td><td class="entry"><a class="el" href="classc_gps_parser.html">cGpsParser</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classc_inertial_sense_parser.html#ad876e557da9a8ec270c3131fbe460008">~cInertialSenseParser</a>() OVERRIDE</td><td class="entry"><a class="el" href="classc_inertial_sense_parser.html">cInertialSenseParser</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
 </table></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -176,8 +176,8 @@ $ cmake ..
  ```
 4. If necessary, add current user to the "dialout" group in order to read and write to the USB serial communication ports:
 ```bash
-$ sudousermod -a -G dialout $USER
-$ sudousermod -a -G plugdev $USER
+$ sudo usermod -a -G dialout $USER
+$ sudo usermod -a -G plugdev $USER
 (reboot computer)
 ```
 5. Run executable

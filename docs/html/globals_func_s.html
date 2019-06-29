@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.5</span>
+   &#160;<span id="projectnumber">Release 1.7.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -67,6 +67,14 @@ $(function() {
 &#160;
 
 <h3><a id="index_s"></a>- s -</h3><ul>
+<li>satNo()
+: <a class="el" href="data__sets_8c.html#acb7af9eceaa42b2a263c0c7264bba8be">data_sets.c</a>
+, <a class="el" href="data__sets_8h.html#acb7af9eceaa42b2a263c0c7264bba8be">data_sets.h</a>
+</li>
+<li>satNumCalc()
+: <a class="el" href="data__sets_8h.html#a41229d05e477e60e9cdea65ccd2cbc1d">data_sets.h</a>
+, <a class="el" href="data__sets_8c.html#a41229d05e477e60e9cdea65ccd2cbc1d">data_sets.c</a>
+</li>
 <li>sendAck()
 : <a class="el" href="com__manager_8c.html#a0f161b11e9a91492c7515c9d59ce8016">com_manager.c</a>
 </li>
@@ -78,14 +86,15 @@ $(function() {
 </li>
 <li>serialNumChecksum32()
 : <a class="el" href="data__sets_8c.html#ab78ef4a124a2099a5c7b22798eb5a876">data_sets.c</a>
+, <a class="el" href="data__sets_8h.html#ab78ef4a124a2099a5c7b22798eb5a876">data_sets.h</a>
 </li>
 <li>serialPortClose()
 : <a class="el" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPort.c</a>
 , <a class="el" href="serial_port_8h.html#a25ebaeafcc060a447ec1a38a8085943d">serialPort.h</a>
 </li>
 <li>serialPortFlush()
-: <a class="el" href="serial_port_8h.html#af4b519e1c32d49d8937677b4b62ea99d">serialPort.h</a>
-, <a class="el" href="serial_port_8c.html#af4b519e1c32d49d8937677b4b62ea99d">serialPort.c</a>
+: <a class="el" href="serial_port_8c.html#af4b519e1c32d49d8937677b4b62ea99d">serialPort.c</a>
+, <a class="el" href="serial_port_8h.html#af4b519e1c32d49d8937677b4b62ea99d">serialPort.h</a>
 </li>
 <li>serialPortGetByteCountAvailableToRead()
 : <a class="el" href="serial_port_8c.html#af67c7001267cdff5586dce162e764ac7">serialPort.c</a>
@@ -100,8 +109,12 @@ $(function() {
 , <a class="el" href="serial_port_8h.html#a1a70fde2df9b4376c6790e67a772a5ef">serialPort.h</a>
 </li>
 <li>serialPortOpen()
-: <a class="el" href="serial_port_8h.html#a85707d7328266b2196d994598e0465fe">serialPort.h</a>
-, <a class="el" href="serial_port_8c.html#a85707d7328266b2196d994598e0465fe">serialPort.c</a>
+: <a class="el" href="serial_port_8c.html#a85707d7328266b2196d994598e0465fe">serialPort.c</a>
+, <a class="el" href="serial_port_8h.html#a85707d7328266b2196d994598e0465fe">serialPort.h</a>
+</li>
+<li>serialPortOpenRetry()
+: <a class="el" href="serial_port_8c.html#a88df870918d4791ddaac45c562abf6cf">serialPort.c</a>
+, <a class="el" href="serial_port_8h.html#a88df870918d4791ddaac45c562abf6cf">serialPort.h</a>
 </li>
 <li>serialPortPlatformInit()
 : <a class="el" href="serial_port_platform_8c.html#aeec6b758f4697c6c913d4b3955c0c8c4">serialPortPlatform.c</a>
@@ -132,24 +145,24 @@ $(function() {
 , <a class="el" href="serial_port_8h.html#a3ae2be1f5185bad961eaacbd466200c1">serialPort.h</a>
 </li>
 <li>serialPortReadLineTimeout()
-: <a class="el" href="serial_port_8h.html#a090d107fe0d1d5eddf31e60e0ed00112">serialPort.h</a>
-, <a class="el" href="serial_port_8c.html#a090d107fe0d1d5eddf31e60e0ed00112">serialPort.c</a>
+: <a class="el" href="serial_port_8c.html#a090d107fe0d1d5eddf31e60e0ed00112">serialPort.c</a>
+, <a class="el" href="serial_port_8h.html#a090d107fe0d1d5eddf31e60e0ed00112">serialPort.h</a>
 </li>
 <li>serialPortReadTimeout()
 : <a class="el" href="serial_port_8c.html#a7426c48831273ec45889f652623d00df">serialPort.c</a>
 , <a class="el" href="serial_port_8h.html#a7426c48831273ec45889f652623d00df">serialPort.h</a>
 </li>
 <li>serialPortReadTimeoutAsync()
-: <a class="el" href="serial_port_8c.html#ad4dd6ed4bb036978a450e343de0d8f40">serialPort.c</a>
-, <a class="el" href="serial_port_8h.html#acd2974044ff46dc1f124df727b8050f7">serialPort.h</a>
+: <a class="el" href="serial_port_8h.html#acd2974044ff46dc1f124df727b8050f7">serialPort.h</a>
+, <a class="el" href="serial_port_8c.html#ad4dd6ed4bb036978a450e343de0d8f40">serialPort.c</a>
 </li>
 <li>serialPortSetPort()
 : <a class="el" href="serial_port_8c.html#adf63e1ee60b5ec17eec7fe5b8d42fc1c">serialPort.c</a>
 , <a class="el" href="serial_port_8h.html#adf63e1ee60b5ec17eec7fe5b8d42fc1c">serialPort.h</a>
 </li>
 <li>serialPortSleep()
-: <a class="el" href="serial_port_8c.html#a8c06177e7cce0225011a591265ad3517">serialPort.c</a>
-, <a class="el" href="serial_port_8h.html#a8c06177e7cce0225011a591265ad3517">serialPort.h</a>
+: <a class="el" href="serial_port_8h.html#a8c06177e7cce0225011a591265ad3517">serialPort.h</a>
+, <a class="el" href="serial_port_8c.html#a8c06177e7cce0225011a591265ad3517">serialPort.c</a>
 </li>
 <li>serialPortWaitFor()
 : <a class="el" href="serial_port_8c.html#a53999fe6bdd8ef94c2852409f73dff8e">serialPort.c</a>
@@ -168,12 +181,12 @@ $(function() {
 , <a class="el" href="serial_port_8c.html#af23d6a9f9842e06d1e974a265ff04edd">serialPort.c</a>
 </li>
 <li>serialPortWriteAndWaitForTimeout()
-: <a class="el" href="serial_port_8c.html#a315998701c41541c53f4041b4e3f8403">serialPort.c</a>
-, <a class="el" href="serial_port_8h.html#a315998701c41541c53f4041b4e3f8403">serialPort.h</a>
+: <a class="el" href="serial_port_8h.html#a315998701c41541c53f4041b4e3f8403">serialPort.h</a>
+, <a class="el" href="serial_port_8c.html#a315998701c41541c53f4041b4e3f8403">serialPort.c</a>
 </li>
 <li>serialPortWriteAscii()
-: <a class="el" href="serial_port_8c.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPort.c</a>
-, <a class="el" href="serial_port_8h.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPort.h</a>
+: <a class="el" href="serial_port_8h.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPort.h</a>
+, <a class="el" href="serial_port_8c.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPort.c</a>
 </li>
 <li>serialPortWriteLine()
 : <a class="el" href="serial_port_8h.html#ad54a6dedb90dae407b13deb25e138340">serialPort.h</a>
@@ -189,8 +202,8 @@ $(function() {
 : <a class="el" href="_i_s_utilities_8cpp.html#a4c1f7d73045c4de7962de3948360fea5">ISUtilities.cpp</a>
 </li>
 <li>sqrt_Vec3()
-: <a class="el" href="_i_s_matrix_8h.html#a9ec12f84bd6908aa35a59495f0bf8347">ISMatrix.h</a>
-, <a class="el" href="_i_s_matrix_8c.html#a9ec12f84bd6908aa35a59495f0bf8347">ISMatrix.c</a>
+: <a class="el" href="_i_s_matrix_8c.html#a9ec12f84bd6908aa35a59495f0bf8347">ISMatrix.c</a>
+, <a class="el" href="_i_s_matrix_8h.html#a9ec12f84bd6908aa35a59495f0bf8347">ISMatrix.h</a>
 </li>
 <li>sqrt_Vec4()
 : <a class="el" href="_i_s_matrix_8h.html#a9789a7589874226b421dd9c46d794f56">ISMatrix.h</a>
@@ -210,8 +223,8 @@ $(function() {
 : <a class="el" href="com__manager_8c.html#ae62f18ac3c8c1dcde204cb554fba53e3">com_manager.c</a>
 </li>
 <li>sub_Vec3_Vec3()
-: <a class="el" href="_i_s_matrix_8h.html#afec964aea133098cd1a3dfa5be204a37">ISMatrix.h</a>
-, <a class="el" href="_i_s_matrix_8c.html#afec964aea133098cd1a3dfa5be204a37">ISMatrix.c</a>
+: <a class="el" href="_i_s_matrix_8c.html#afec964aea133098cd1a3dfa5be204a37">ISMatrix.c</a>
+, <a class="el" href="_i_s_matrix_8h.html#afec964aea133098cd1a3dfa5be204a37">ISMatrix.h</a>
 </li>
 <li>sub_Vec3d_Vec3d()
 : <a class="el" href="_i_s_matrix_8h.html#a8637160e4291d6b6e7ca07c49ddde44b">ISMatrix.h</a>

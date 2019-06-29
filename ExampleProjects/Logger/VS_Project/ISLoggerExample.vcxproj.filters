@@ -100,9 +100,6 @@
     <ClCompile Include="..\..\..\src\ISSerialPort.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\GpsParser.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
@@ -208,9 +205,6 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISSerialPort.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\GpsParser.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h">

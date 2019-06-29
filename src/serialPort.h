@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -116,6 +116,14 @@ void serialPortSetPort(serial_port_t* serialPort, const char* port);
 // blocking simply determines the default timeout value of the serialPortRead function
 // returns 1 if success, 0 if failure
 int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, int blocking);
+
+// open a serial port with retry
+// port is null terminated, i.e. COM1\0, COM2\0, etc.
+// use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
+// uses such as a boot loader where a write would then require n bytes to be read in a single operation.
+// blocking simply determines the default timeout value of the serialPortRead function
+// returns 1 if success, 0 if failure
+int serialPortOpenRetry(serial_port_t* serialPort, const char* port, int baudRate, int blocking);
 
 // check if the port is open
 // returns 1 if open, 0 if not open

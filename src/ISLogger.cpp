@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -188,7 +188,8 @@ string cISLogger::CreateCurrentTimestamp()
     rtc = g_gps_date_time;    
 #endif
 	snprintf(buf, _ARRAY_BYTE_COUNT(buf), "%.4d%.2d%.2d_%.2d%.2d%.2d",
-			rtc.year, rtc.month, rtc.day, rtc.hour, rtc.minute, rtc.second);
+			(int)rtc.year, (int)rtc.month, (int)rtc.day, 
+			(int)rtc.hour, (int)rtc.minute, (int)rtc.second);
 #else
     // Create timestamp
 	time_t rawtime = GetTime();
@@ -769,7 +770,7 @@ void cLogStats::WriteToFile(const string &file_name)
 
             statsFile->printf("Data Id: %d (%s)\r\n", id, cISDataMappings::GetDataSetName(id));
             statsFile->printf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
-            statsFile->printf("Timestamp Delta (ave, min, max): %d, %d, %d\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
+            statsFile->printf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
             statsFile->printf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
             statsFile->printf("\r\n");
         }

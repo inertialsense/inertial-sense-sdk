@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -27,17 +27,31 @@ void serialPortSetPort(serial_port_t* serialPort, const char* port)
 
 int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
 {
-	if (serialPort == 0 || port == 0)
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
 	{
 		return 0;
 	}
-	
-    if (serialPort->pfnOpen != 0)
-	{
-        return serialPort->pfnOpen(serialPort, port, baudRate, blocking);
-	}
+    return serialPort->pfnOpen(serialPort, port, baudRate, blocking);
+}
 
-	return 0;
+int serialPortOpenRetry(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
+{
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
+    {
+        return 0;
+    }
+
+    serialPortClose(serialPort);
+    for (int retry = 0; retry < 30; retry++)
+    {
+        if (serialPortOpen(serialPort, port, baudRate, blocking))
+        {
+            return 1;
+        }
+        serialPortSleep(serialPort, 100);
+    }
+    serialPortClose(serialPort);
+    return 0;
 }
 
 int serialPortIsOpen(serial_port_t* serialPort)

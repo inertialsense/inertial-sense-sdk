@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -13,9 +13,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "data_sets.h"
 #include <stddef.h>
 #include <math.h>
-
-// prototype for checmsun32 function
-uint32_t checksum32(const void* data, int count);
 
 // Reversed bytes in a float.
 // compiler will likely inline this as it's a tiny function
@@ -47,7 +44,7 @@ float flipFloatCopy(float val)
 	return flippedFloat;
 }
 
-void flipDouble(uint8_t* ptr)
+void flipDouble(void* ptr)
 {
 	const uint32_t* w = (const uint32_t*)(ptr);
 	union
@@ -80,8 +77,8 @@ void flipEndianess32(uint8_t* data, int dataLength)
 		return;
 	}
 	
-	uint32_t* dataPtr = (uint32_t*)data;
-	uint32_t* dataPtrEnd = (uint32_t*)(data + dataLength);
+	uint32_t* dataPtr = (void*)data;
+	uint32_t* dataPtrEnd = (void*)(data + dataLength);
 	uint32_t tmp;
 	while (dataPtr < dataPtrEnd)
 	{
@@ -109,7 +106,7 @@ void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
             }
             else
             {
-                uint64_t* ptr = (uint64_t*)(data + offsetToDouble);
+                uint64_t* ptr = (void*)(data + offsetToDouble);
                 *ptr = SWAP64(*ptr);
             }
 		}
@@ -136,10 +133,8 @@ void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 }
 
 #ifdef _MSC_VER
-
 #pragma warning(push)
 #pragma warning(disable: 4267)
-
 #endif
 
 uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
@@ -223,11 +218,6 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         // 0x8000 denotes a 64 bit int vs a double
 		offsetof(rmc_t, bits) | 0x8000
     };
-
-	static uint16_t offsetsInl2Status[] =
-	{
-		1, 24
-	};
 
 	static uint16_t offsetsInl2States[] =
 	{
@@ -353,6 +343,10 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsDualImuMag,		// 85: DID_DUAL_IMU_MAG
         offsetsPreImuMag,		// 86: DID_PREINTEGRATED_IMU_MAG
 		0,
+		0,
+		0,
+		0,
+		0
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -371,9 +365,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 }
 
 #ifdef _MSC_VER
-
 #pragma warning(pop)
-
 #endif
 
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
@@ -500,6 +492,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 84: DID_DUAL_IMU_RAW_MAG
 		0,						// 85: DID_DUAL_IMU_MAG
 		0,						// 86: DID_PREINTEGRATED_IMU_MAG
+		0,
+		0,
+		0,
+		0,
 		0
     };
 
@@ -582,16 +578,16 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_STATE:         	return RMC_BITS_RTK_STATE;
         case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
-		case DID_DUAL_IMU_MAG:			return RMC_BITS_DUAL_IMU_MAG;
-		case DID_DUAL_IMU_RAW_MAG:		return RMC_BITS_DUAL_IMU_MAG_RAW;
-		case DID_PREINTEGRATED_IMU_MAG:	return RMC_BITS_PREINTEGRATED_IMU_MAG;
-		case DID_WHEEL_ENCODER:			return RMC_BITS_WHEEL_ENCODER;
-		case DID_WHEEL_ENCODER_CONFIG:  return RMC_BITS_WHEEL_ENCODER_CONFIG;
-		default:						return defaultRmcBits;
+		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
+		case DID_WHEEL_CONFIG:          return RMC_BITS_WHEEL_CONFIG;
+		case DID_DUAL_IMU_MAG:          return RMC_BITS_DUAL_IMU_MAG;
+		case DID_DUAL_IMU_RAW_MAG:      return RMC_BITS_DUAL_IMU_MAG_RAW;
+		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;
+		default:                        return defaultRmcBits;
 	}
 }
 
-void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hours, int32_t* minutes, int32_t* seconds, int32_t* milliseconds)
+void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond)
 {
 	double j1, j2, j3, j4, j5;
 	double intgr = floor(julian);
@@ -665,28 +661,28 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 	{
 		*day = (int32_t)d;
 	}
-	if (hours)
+	if (hour)
 	{
-		*hours = (int32_t)hr;
+		*hour = (int32_t)hr;
 	}
-	if (minutes)
+	if (minute)
 	{
-		*minutes = (int32_t)mn;
+		*minute = (int32_t)mn;
 	}
-	if (seconds)
+	if (second)
 	{
-		*seconds = (int32_t)sc;
+		*second = (int32_t)sc;
 	}
-	if (milliseconds)
+	if (millisecond)
 	{
-		*milliseconds = (int32_t)((sc - floor(sc)) * 1000.0);
+		*millisecond = (int32_t)((sc - floor(sc)) * 1000.0);
 	}
 }
 
-double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds)
+double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds)
 {
 	double gpsDays = (double)gpsWeek * 7.0;
-	gpsDays += ((((double)gpsMilliseconds / 1000.0) - (double)CURRENT_LEAP_SECONDS) / 86400.0);
+	gpsDays += ((((double)gpsMilliseconds / 1000.0) - (double)leapSeconds) / 86400.0);
 	return (2444244.500000) + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
 }
 
@@ -703,8 +699,7 @@ static void appendGPSTimeOfLastFix(const gps_pos_t* gps, char** buffer, int* buf
 
 static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLength, double v, const char* degreesFormat, char posC, char negC)
 {
-    (void*)gps;
-
+	(void*)gps;
     int degrees = (int)(v);
     double minutes = (v - ((double)degrees)) * 60.0;
 
@@ -823,4 +818,70 @@ int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength)
     written = SNPRINTF(buffer, bufferLength, "*%.2x\r\n", checkSum);
     buffer += written;
     return (int)(buffer - bufferStart);
+}
+
+/* ubx gnss indicator (ref [2] 25) -------------------------------------------*/
+int ubxSys(int gnssID)
+{
+	switch (gnssID) {
+	case 0: return SYS_GPS;
+	case 1: return SYS_SBS;
+	case 2: return SYS_GAL;
+	case 3: return SYS_CMP;
+	case 5: return SYS_QZS;
+	case 6: return SYS_GLO;
+	}
+	return 0;
+}
+
+/* satellite system+prn/slot number to satellite number ------------------------
+* convert satellite system+prn/slot number to satellite number
+* args   : int    sys       I   satellite system (SYS_GPS,SYS_GLO,...)
+*          int    prn       I   satellite prn/slot number
+* return : satellite number (0:error)
+*-----------------------------------------------------------------------------*/
+int satNo(int sys, int prn)
+{
+	if (prn <= 0) return 0;
+	switch (sys) {
+	case SYS_GPS:
+		if (prn < MINPRNGPS || MAXPRNGPS < prn) return 0;
+		return prn - MINPRNGPS + 1;
+	case SYS_GLO:
+		if (prn < MINPRNGLO || MAXPRNGLO < prn) return 0;
+		return NSATGPS + prn - MINPRNGLO + 1;
+	case SYS_GAL:
+		if (prn < MINPRNGAL || MAXPRNGAL < prn) return 0;
+		return NSATGPS + NSATGLO + prn - MINPRNGAL + 1;
+	case SYS_QZS:
+		if (prn < MINPRNQZS || MAXPRNQZS < prn) return 0;
+		return NSATGPS + NSATGLO + NSATGAL + prn - MINPRNQZS + 1;
+	case SYS_CMP:
+		if (prn < MINPRNCMP || MAXPRNCMP < prn) return 0;
+		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + prn - MINPRNCMP + 1;
+	case SYS_IRN:
+		if (prn < MINPRNIRN || MAXPRNIRN < prn) return 0;
+		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + prn - MINPRNIRN + 1;
+	case SYS_LEO:
+		if (prn < MINPRNLEO || MAXPRNLEO < prn) return 0;
+		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + NSATIRN +
+			prn - MINPRNLEO + 1;
+	case SYS_SBS:
+		if (prn < MINPRNSBS || MAXPRNSBS < prn) return 0;
+		return NSATGPS + NSATGLO + NSATGAL + NSATQZS + NSATCMP + NSATIRN + NSATLEO +
+			prn - MINPRNSBS + 1;
+	}
+	return 0;
+}
+
+/* satellite gnssID+svID to satellite number ------------------------
+* convert satellite gnssID + svID to satellite number
+* args   : int    gnssID     I   satellite system
+*          int    svID       I   satellite vehicle ID within system
+* return : satellite number (0:error)
+*-----------------------------------------------------------------------------*/
+int satNumCalc(int gnssID, int svID) {
+	int sys = ubxSys(gnssID);
+	int prn = svID + (sys == SYS_QZS ? 192 : 0);
+	return satNo(sys, prn);
 }

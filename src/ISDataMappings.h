@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -88,8 +88,8 @@ struct sCaseInsensitiveCompare
 
 		for (size_t i = 0; i < minSize; i++)
 		{
-			c1 = g_asciiToLowerMap[ptr1[i]];
-			c2 = g_asciiToLowerMap[ptr2[i]];
+			c1 = g_asciiToLowerMap[(int)ptr1[i]];
+			c2 = g_asciiToLowerMap[(int)ptr2[i]];
 			if (c1 != c2)
 			{
 				return (c1 < c2);

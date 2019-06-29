@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -1025,7 +1025,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 {
 	p_data_t			*data;
 	p_data_hdr_t		*dataHdr;
-	uint8_t				*dataBuf;
+// 	uint8_t				*dataBuf;
 	registered_data_t	*regd;
 	uint8_t		pid = (uint8_t)(pkt->hdr.pid);
 
@@ -1044,7 +1044,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 	case PID_DATA:
 		data = (p_data_t*)(pkt->body.ptr);
 		dataHdr = &(data->hdr);
-		dataBuf = data->buf;
+// 		dataBuf = data->buf;
 
 		// Validate Data
 		if (dataHdr->id >= DID_COUNT)
@@ -1362,7 +1362,7 @@ void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t* msg, int per
 
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg)
 {
-	(void*)cmInstance;
+	(void)cmInstance;
 
 	// Remove item from linked list
 	msg->period = MSG_PERIOD_DISABLED;
@@ -1601,7 +1601,7 @@ int processAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* da
 	{
 		// Error parsing packet
 		cmInstance->status[pHandle].readCounter += 32;
-		cmInstance->status[pHandle].rxError = -1;
+		cmInstance->status[pHandle].rxError = (uint32_t)-1;
 		cmInstance->status[pHandle].communicationErrorCount++;
 		return 1;
 	}
@@ -1627,7 +1627,7 @@ int processBinaryPacket(com_manager_t* cmInstance, int pHandle, unsigned char* d
 
 	// Error parsing packet
 	cmInstance->status[pHandle].readCounter += 32;
-	cmInstance->status[pHandle].rxError = -1;
+	cmInstance->status[pHandle].rxError = (uint32_t)-1;
 	cmInstance->status[pHandle].communicationErrorCount++;
 	cmInstance->status[pHandle].startByte = 0;
 

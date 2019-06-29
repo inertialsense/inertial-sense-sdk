@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -141,7 +141,7 @@ static int xModemSend(serial_port_t* s, uint8_t* buf, size_t len)
     {
         size_t z = 0;
         int next = 0;
-        char status;
+//         char status;
 
         z = _MIN(len, sizeof(chunk.payload));
         memcpy(chunk.payload, buf, z);
@@ -165,16 +165,16 @@ static int xModemSend(serial_port_t* s, uint8_t* buf, size_t len)
         switch (answer)
         {
         case X_NAK:
-            status = 'N';
+//             status = 'N';
             break;
         case X_ACK:
-            status = '.';
+//             status = '.';
             next = 1;
             break;
         case X_CAN:
             return -1;
         default:
-            status = '?';
+//             status = '?';
             break;
         }
 
@@ -199,9 +199,9 @@ static int bootloaderCycleBaudRate(int baudRate)
 {
     switch (baudRate)
     {
+    case IS_BAUD_RATE_BOOTLOADER_RS232: return IS_BAUD_RATE_BOOTLOADER;
     case IS_BAUD_RATE_BOOTLOADER: return IS_BAUD_RATE_BOOTLOADER_LEGACY;
-    case IS_BAUD_RATE_BOOTLOADER_LEGACY: return IS_BAUD_RATE_BOOTLOADER_RS232;
-    default: return IS_BAUD_RATE_BOOTLOADER;
+    default: return IS_BAUD_RATE_BOOTLOADER_RS232;
     }
 }
 
@@ -248,31 +248,6 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
 #endif
 
     return 1;
-}
-
-static int serialPortOpenRetry(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
-{
-    if (serialPort == 0 || port == 0)
-    {
-        return 0;
-    }
-    else if (serialPort->pfnOpen != 0)
-    {
-        int retry = 30;
-
-        while (serialPortOpen(serialPort, port, baudRate, blocking))
-        {
-            if (--retry == 0)
-            {
-                serialPortClose(serialPort);
-                return 0;
-            }
-
-            serialPortSleep(serialPort, 100);
-        }
-        return 1;
-    }
-    return 0;
 }
 
 static int serialPortOpenInternal(serial_port_t* s, int baudRate, char* error, int errorLength)
@@ -393,7 +368,7 @@ static int bootloaderReadLine(FILE* file, char line[1024])
     while (currentPtr != endPtr)
     {
         // read one char
-        c = fgetc(file);
+        c = (char)fgetc(file);
         if (c == '\r')
         {
             // eat '\r' chars
@@ -568,7 +543,7 @@ static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* stat
     int verifyByte = -1;
     unsigned char chunkBuffer[(MAX_VERIFY_CHUNK_SIZE * 2) + 64]; // extra space for overhead
     float percent = 0.0f;
-    unsigned char c;
+    unsigned char c=0;
     FILE* verifyFile = 0;
 
     if (state->param->verifyFileName != 0)
@@ -950,7 +925,7 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
 
     while (ftell(file) != fileSize)
     {
-        commandType = fgetc(file);
+        commandType = (unsigned char)fgetc(file);
         commandCount = fgetc(file) | (fgetc(file) << 8);
 
         if (commandType == 0)
@@ -966,7 +941,7 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
                 // write the data - we use the fact that the checksum byte is after the data bytes to loop it in with this loop
                 while (dataLength-- > -1)
                 {
-                    c = fgetc(file);
+                    c = (unsigned char)fgetc(file);
                     buf[0] = hexLookupTable[(c >> 4) & 0x0F];
                     buf[1] = hexLookupTable[(c & 0x0F)];
                     serialPortWrite(p->port, buf, 2);
@@ -987,14 +962,14 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
             while (commandCount-- > 0)
             {
                 commandLength = fgetc(file);
-                c = fgetc(file);
+                c = (unsigned char)fgetc(file);
 
                 // handshake char, ignore
                 if (commandLength == 1 && c == 'U')
                 {
                     // read sleep interval and timeout interval, ignored
-                    c = fgetc(file);
-                    c = fgetc(file);
+                    c = (unsigned char)fgetc(file);
+                    c = (unsigned char)fgetc(file);
                     continue;
                 }
 
@@ -1002,12 +977,12 @@ static int bootloaderProcessBinFile(FILE* file, bootload_params_t* p)
                 serialPortWrite(p->port, &c, 1);
                 while (--commandLength > 0)
                 {
-                    c = fgetc(file);
+                    c = (unsigned char)fgetc(file);
                     serialPortWrite(p->port, &c, 1);
                 }
 
                 // read sleep interval and sleep
-                c = fgetc(file);
+                c = (unsigned char)fgetc(file);
                 commandLength = fgetc(file) * 250;
                 if (commandLength != 0)
                 {
@@ -1361,13 +1336,13 @@ int bootloadFile(serial_port_t* port, const char* fileName, char* error, int err
     params.verifyProgress = verifyProgress;
     params.numberOfDevices = 1;
     params.flags.bitFields.enableVerify = (verifyProgress != 0);
-    strncpy(params.bootloadEnableCmd, "BLEN", 4);
 
     return bootloadFileEx(&params);
 }
 
 int bootloadFileEx(bootload_params_t* params)
 {
+    strncpy(params->bootloadEnableCmd, "BLEN", 4);
     int result = 0;
 
     if (params->error != 0 && params->errorLength > 0)
@@ -1430,18 +1405,13 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* er
     params.verifyProgress = verifyProgress;
     params.numberOfDevices = 1;
     params.flags.bitFields.enableVerify = (verifyProgress != 0);
-    strncpy(params.bootloadEnableCmd, "NELB,!!SAM-BA!!\0", 16);
 
     return bootloadUpdateBootloaderEx(&params);
 }
 
 int bootloadUpdateBootloaderEx(bootload_params_t* p)
 {
-//     if (strstr(p->fileName, "EVB") != NULL)
-//     {   // Enable EVB-2 bootloader
-//         strncpy(p->bootloadEnableCmd, "ELBE,!!SAM-BA!!\0", 16);
-//     }
-
+	strncpy(p->bootloadEnableCmd, "NELB,!!SAM-BA!!\0", 16);
     serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
     serialPortSleep(p->port, 250);
     serialPortClose(p->port);
@@ -1455,8 +1425,35 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
     serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
     serialPortSleep(p->port, 250);
 
+	if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_921600, 1))
+	{
+		bootloader_perror(p, "Failed to open port.\n");
+		serialPortClose(p->port);
+		return 0;
+	}
+	serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+	serialPortSleep(p->port, 250);
+
+	if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_460800, 1))
+	{
+		bootloader_perror(p, "Failed to open port.\n");
+		serialPortClose(p->port);
+		return 0;
+	}
+	serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+	serialPortSleep(p->port, 250);
+
+	if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_230400, 1))
+	{
+		bootloader_perror(p, "Failed to open port.\n");
+		serialPortClose(p->port);
+		return 0;
+	}
+	serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+	serialPortSleep(p->port, 250);
+
     serialPortClose(p->port);
-    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_921600, 1))
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_115200, 1))
     {
         bootloader_perror(p, "Failed to open port.\n");
         serialPortClose(p->port);
@@ -1589,12 +1586,13 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
 int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd)
 {
     // raspberry PI and other Linux have trouble with 3000000 baud, so start with 921600
-    static const int baudRates[] = { 921600, 3000000, 460800, 230400, 115200 };
+    int baudRates[] = { baudRate, 921600, 3000000, 460800, 230400, 115200 };
 
     // detect if device is already in bootloader mode
     bootload_params_t p;
     memset(&p, 0, sizeof(p));
     p.port = port;
+	p.baudRate = (baudRate < IS_BAUD_RATE_BOOTLOADER ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER);
 
     // attempt to handshake in case we are in bootloader mode
     if (!bootloaderHandshake(&p))
@@ -1634,7 +1632,7 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
         SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
 
         // if we can't handshake at this point, bootloader enable has failed
-        p.baudRate = (baudRate == IS_BAUD_RATE_BOOTLOADER_RS232 ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER);
+        
         if (!bootloaderHandshake(&p))
         {
             // failure

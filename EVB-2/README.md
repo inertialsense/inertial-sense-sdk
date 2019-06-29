@@ -1,0 +1,97 @@
+# EVB-2
+
+The Inertial Sense EVB 2.x is a development board which contains the Inertial Sense µINS, µAHRS, or µIMU module. The EVB 2.x builds on the foundation established by the EVB 1.x, but adds these and other new features:
+
+- 915MHz Xbee radio for RTK (real-time-kinematics)
+- Wi-Fi and Bluetooth Low energy (BLE) for remote data viewing and logging operation
+- Onboard logging to micro SD card.
+- Dual antenna ports for GPS compassing
+- Companion Microchip SAME70 processor that serves as a communication bridge between the µINS, µAHRS, or µIMU and all other interfaces.
+
+More details on the EVB-2 can be found in the [Inertial Sense online documentation](<https://docs.inertialsense.com/user-manual/hardware/EVB2/>)
+
+## Firmware
+
+The source code for the EVB-2 firmware  is available in the SDK to serve as example to of how  to implement Inertial Sense devices into other systems. The EVB-2 itself can be customized by users to meet various needs.
+
+
+
+### Compiling EVB-2 Firmware
+
+##### Atmel Studio
+
+###### Install
+
+Installer link: https://www.microchip.com/avr-support/atmel-studio-7
+(Downloads are near the bottom of the page.)
+Download the installer and take all of the default options during installation.
+
+###### Building
+
+1. Open SDK\EVB-2\IS_EVB-2.atsln
+1. Click Build Menu -> Build Soution (F7)
+	a. If using JTAG programmer the firmware will be flashed to EVB-2.
+
+##### **Ubuntu**
+
+###### **Install toolchain**
+
+In order to build you need to install the gcc-arm embedded toolchain. Run these commands to install it:
+
+```bash
+# Install 32-bit dependencies
+sudo apt install -y lib32ncurses5 
+
+# download toolchain version 5_4-2016q3
+wget <https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q3-update/+download/gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2>
+
+# unzip file
+tar -xvf gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2 
+
+# move it to the opt directory
+sudo mv gcc-arm-none-eabi-5_4-2016q3 /opt/. 
+
+# Add the compiler to the path
+echo "export PATH=\$PATH:/opt/gcc-arm-none-eabi-5_4-2016q3/bin" >> ~/.bashrc 
+
+# delete the downloaded file
+rm -rf gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2 
+
+# Re-source your .bashrc to get the updated $PATH
+source ~/.bashrc 
+```
+
+###### **Building**
+
+Run `make` within the EVB-2 directory .
+
+### Loading Firmware onto EVB-2
+
+The EVB USB port on the EVB-2 must be used to update the EVB-2 firmware.
+
+##### EvalTool
+
+1. Enter the Settings tab
+2. Open the COM ports of the units that need to be updated
+   1. If the units don't open up, the baud rate may need changed
+3. Click, "Update Firmware"
+4. Navigate to the directory where the newly built .hex file is located
+5. Select it and press "Open"
+6. Wait for the firmware to fully load
+
+##### CLTool
+
+Use the -b command line flag. See the CLTool [help menu](<https://docs.inertialsense.com/user-manual/software/cltool/#help-menu>).
+
+##### SDK
+
+Use the function bootloadFile() to load firmware onto the EVB-2. See [SDK Docs](<https://docs.inertialsense.com/user-manual/software/SDK/#sdk>).
+
+## SPI
+
+SPI communication has been implemented between the EVB-2 communications hub and the uINS device to demonstrate how to properly communicate with a uINS using SPI. Details of the SPI communications protocol can be found in the [Inertial Sense Online Documentation](https://docs.inertialsense.com/user-manual/com-protocol/SPI/).
+
+SPI communication between the uINS and the EVB-2 processor is enabled by setting the appropriate bit of DID_EVB_FLASH_CFG.[cbOptions](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_evb_flash_cfg). 
+
+The main implementation of the SPI protocol exists in spiTouINS.c.
+

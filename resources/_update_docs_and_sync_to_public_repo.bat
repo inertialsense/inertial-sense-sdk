@@ -40,6 +40,11 @@ echo Sync SDK into %COMDIR% repo
 robocopy . ..\%COMDIR% data_sets.c data_sets.h ISComm.c ISComm.h ISConstants.h
 
 echo.
+echo Sync inertial_sense_ros repo
+cd ..\..\..\catkin_ws\src\inertial_sense_ros
+update_and_sync_ros_node.bat
+
+echo.
 echo Done.
 echo.
 

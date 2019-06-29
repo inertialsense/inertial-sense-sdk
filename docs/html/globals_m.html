@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.5</span>
+   &#160;<span id="projectnumber">Release 1.7.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -70,6 +70,21 @@ $(function() {
 <li>M_PI
 : <a class="el" href="_i_s_constants_8h.html#ae71449b1cc6e6250b91f539153a7a0d3">ISConstants.h</a>
 </li>
+<li>mag_cal_t
+: <a class="el" href="data__sets_8h.html#a68043a4edcfd178227c2afd61bd9f586">data_sets.h</a>
+</li>
+<li>MAG_RECAL_MODE_ABORT
+: <a class="el" href="data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2adf485a659548a646e4408a37a2d01c7c">data_sets.h</a>
+</li>
+<li>MAG_RECAL_MODE_COMPLETE
+: <a class="el" href="data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2a337eb9305eec3681a81ac8ad61a49616">data_sets.h</a>
+</li>
+<li>MAG_RECAL_MODE_MULTI_AXIS
+: <a class="el" href="data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2a9cf68bc281222a4e4d607af8d5d062b5">data_sets.h</a>
+</li>
+<li>MAG_RECAL_MODE_SINGLE_AXIS
+: <a class="el" href="data__sets_8h.html#a2ec3a8f9613524f7da783819d46d9ba2ab09984fd4c2f9364327da0a59871a71f">data_sets.h</a>
+</li>
 <li>mag_Vec2
 : <a class="el" href="_i_s_matrix_8h.html#a0827a6a5959f642d9e06127ca3bfdd17">ISMatrix.h</a>
 </li>
@@ -88,8 +103,14 @@ $(function() {
 <li>mag_Vec4d
 : <a class="el" href="_i_s_matrix_8h.html#a73a66c39e2a569fd88c518152144abcb">ISMatrix.h</a>
 </li>
+<li>magnetometer_t
+: <a class="el" href="data__sets_8h.html#a4be00f4285847c80d813a66ec60492ef">data_sets.h</a>
+</li>
 <li>MALLOC
 : <a class="el" href="_i_s_constants_8h.html#a43880057a63fb01126278a533081c603">ISConstants.h</a>
+</li>
+<li>manufacturing_info_t
+: <a class="el" href="data__sets_8h.html#af0077fa3982cfd6365eb7f3286145d1a">data_sets.h</a>
 </li>
 <li>map_name_to_info_t
 : <a class="el" href="_i_s_data_mappings_8h.html#ab539505899fa9fc79a929a8d14fbd609">ISDataMappings.h</a>
@@ -109,6 +130,9 @@ $(function() {
 <li>Matrix3_t
 : <a class="el" href="_i_s_pose_8h.html#a6c75f5ccb8c0004129ac0ebb034a8d1f">ISPose.h</a>
 </li>
+<li>Matrix3d
+: <a class="el" href="_i_s_constants_8h.html#a53ac704d54359835801bdc5a37b566f8">ISConstants.h</a>
+</li>
 <li>Matrix4
 : <a class="el" href="_i_s_constants_8h.html#aac0bca53b178ffcc315c9738fef959ea">ISConstants.h</a>
 </li>
@@ -126,6 +150,12 @@ $(function() {
 </li>
 <li>MAX_NUM_BCAST_MSGS
 : <a class="el" href="com__manager_8c.html#a08d1326bfd508f5c35f3a8853488ad04">com_manager.c</a>
+</li>
+<li>MAX_NUM_SAT_CHANNELS
+: <a class="el" href="data__sets_8h.html#aa32e4265587af2b4e8879ab032514e7d">data_sets.h</a>
+</li>
+<li>MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE
+: <a class="el" href="data__sets_8h.html#ad9a80974e60c35748e602c96a84aea25">data_sets.h</a>
 </li>
 <li>MAX_P_ACK_BODY_SIZE
 : <a class="el" href="_i_s_comm_8h.html#a7024c54ae2bd455dcb782f3c0aaea0d6">ISComm.h</a>
@@ -148,14 +178,50 @@ $(function() {
 <li>MAX_SERIAL_PORT_NAME_LENGTH
 : <a class="el" href="serial_port_8h.html#aa3fc5507f8d5a81ab6d3fd7e2cc5181e">serialPort.h</a>
 </li>
+<li>MAX_TASK_NAME_LEN
+: <a class="el" href="data__sets_8h.html#adf3646113f28c2a7a596413fd879545a">data_sets.h</a>
+</li>
 <li>MAX_VERIFY_CHUNK_SIZE
 : <a class="el" href="inertial_sense_boot_loader_8c.html#a4c548c41044465fad00d24c99eeced77">inertialSenseBootLoader.c</a>
 </li>
-<li>MAXRAWLEN
-: <a class="el" href="_gps_parser_8cpp.html#a7e956e73ff783054bbd9326df6d69820">GpsParser.cpp</a>
+<li>MAXERRMSG
+: <a class="el" href="data__sets_8h.html#a6d875141188d039246ad7be71599220d">data_sets.h</a>
 </li>
-<li>MAXRTCMLEN
-: <a class="el" href="_gps_parser_8cpp.html#a0feeb55b1c694a25e067e3f15432eb66">GpsParser.cpp</a>
+<li>MAXOBS
+: <a class="el" href="data__sets_8h.html#a318cc83bb535de71ad2c2c0e4f3f668e">data_sets.h</a>
+</li>
+<li>MAXPRNCMP
+: <a class="el" href="data__sets_8h.html#ae4fb03b846c8d5bc56af1f88eb1d2828">data_sets.h</a>
+</li>
+<li>MAXPRNGAL
+: <a class="el" href="data__sets_8h.html#a5bd1927f2549ecb399f7fafd9e7d3e09">data_sets.h</a>
+</li>
+<li>MAXPRNGLO
+: <a class="el" href="data__sets_8h.html#ae99f41997b3e8060016ddd7d54af8de9">data_sets.h</a>
+</li>
+<li>MAXPRNGPS
+: <a class="el" href="data__sets_8h.html#a89e74486a147eb0b947df0d378186a6a">data_sets.h</a>
+</li>
+<li>MAXPRNIRN
+: <a class="el" href="data__sets_8h.html#a522b561314908d68228ed3bd183ef649">data_sets.h</a>
+</li>
+<li>MAXPRNLEO
+: <a class="el" href="data__sets_8h.html#ab1e8f20abdeb09e6bfde24e68a329bff">data_sets.h</a>
+</li>
+<li>MAXPRNQZS
+: <a class="el" href="data__sets_8h.html#a441af14d5fffc8f2ac26165fecb82fca">data_sets.h</a>
+</li>
+<li>MAXPRNQZS_S
+: <a class="el" href="data__sets_8h.html#a1be6b8e76de0f7a4517622cb46314896">data_sets.h</a>
+</li>
+<li>MAXPRNSBS
+: <a class="el" href="data__sets_8h.html#a34884c1c98ef2b6d97ebdb1f6ec6f54b">data_sets.h</a>
+</li>
+<li>MAXRAWLEN
+: <a class="el" href="data__sets_8h.html#a7e956e73ff783054bbd9326df6d69820">data_sets.h</a>
+</li>
+<li>MAXSUBFRMLEN
+: <a class="el" href="data__sets_8h.html#ac74f4921b8a6c4789e224d3ebb4cd134">data_sets.h</a>
 </li>
 <li>MEMBER_ITEM_SIZE
 : <a class="el" href="_i_s_constants_8h.html#a7b441f283e6a098ddd7d8588ff71ed88">ISConstants.h</a>
@@ -165,6 +231,33 @@ $(function() {
 </li>
 <li>MIN_REQUEST_PERIOD_MS
 : <a class="el" href="com__manager_8c.html#ae68296caef3ece6bdd0faeae69b6e4e1">com_manager.c</a>
+</li>
+<li>MINPRNCMP
+: <a class="el" href="data__sets_8h.html#a2be21570c4692372fde08a547ade69b6">data_sets.h</a>
+</li>
+<li>MINPRNGAL
+: <a class="el" href="data__sets_8h.html#aa76db0073c61928c7efbe6b32bfdd9c7">data_sets.h</a>
+</li>
+<li>MINPRNGLO
+: <a class="el" href="data__sets_8h.html#ab26f0fc7bec05b255ee14b0d628ddb29">data_sets.h</a>
+</li>
+<li>MINPRNGPS
+: <a class="el" href="data__sets_8h.html#a7c40539f680a2db337aa142f1015dea9">data_sets.h</a>
+</li>
+<li>MINPRNIRN
+: <a class="el" href="data__sets_8h.html#a233e37501634b5f0fe0581d532fcca70">data_sets.h</a>
+</li>
+<li>MINPRNLEO
+: <a class="el" href="data__sets_8h.html#a3b3cc63fd5485862abf2974cac02683f">data_sets.h</a>
+</li>
+<li>MINPRNQZS
+: <a class="el" href="data__sets_8h.html#a32accb0fd042e7a9864f1cfe0339e6e5">data_sets.h</a>
+</li>
+<li>MINPRNQZS_S
+: <a class="el" href="data__sets_8h.html#a3cb3baaa1775391d732bd4ef78001704">data_sets.h</a>
+</li>
+<li>MINPRNSBS
+: <a class="el" href="data__sets_8h.html#a78850fac8e4c0fadbfeda7c1ab112026">data_sets.h</a>
 </li>
 <li>MSG_PERIOD_DISABLED
 : <a class="el" href="com__manager_8c.html#a530fd5a94ed593dd66ec7cdeee00b411">com_manager.c</a>
@@ -181,20 +274,32 @@ $(function() {
 , <a class="el" href="_i_s_matrix_8h.html#a9a317df4c1266de68f09309834194583">ISMatrix.h</a>
 </li>
 <li>mul_Mat2x2_Vec2x1()
-: <a class="el" href="_i_s_matrix_8c.html#a1ad54ed75b822e2d4acbda64d6e6bb46">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a1ad54ed75b822e2d4acbda64d6e6bb46">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a1ad54ed75b822e2d4acbda64d6e6bb46">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a1ad54ed75b822e2d4acbda64d6e6bb46">ISMatrix.c</a>
 </li>
 <li>mul_Mat3x3_Mat3x3()
 : <a class="el" href="_i_s_matrix_8c.html#a9d0612c08c4f1495f3ea3de90c67318a">ISMatrix.c</a>
 , <a class="el" href="_i_s_matrix_8h.html#a9d0612c08c4f1495f3ea3de90c67318a">ISMatrix.h</a>
 </li>
+<li>mul_Mat3x3_Mat3x3_d()
+: <a class="el" href="_i_s_matrix_8h.html#a6b4f798f6d8003af29c9d26b92983dd0">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a6b4f798f6d8003af29c9d26b92983dd0">ISMatrix.c</a>
+</li>
 <li>mul_Mat3x3_Mat3x3_Trans()
 : <a class="el" href="_i_s_matrix_8c.html#a08da266b6718c4d5a24f6d3b90c125cc">ISMatrix.c</a>
 , <a class="el" href="_i_s_matrix_8h.html#a08da266b6718c4d5a24f6d3b90c125cc">ISMatrix.h</a>
 </li>
+<li>mul_Mat3x3_Mat3x3_Trans_d()
+: <a class="el" href="_i_s_matrix_8c.html#aea0d7d304d8f0a056889f65c8cf6700e">ISMatrix.c</a>
+, <a class="el" href="_i_s_matrix_8h.html#aea0d7d304d8f0a056889f65c8cf6700e">ISMatrix.h</a>
+</li>
 <li>mul_Mat3x3_Trans_Mat3x3()
-: <a class="el" href="_i_s_matrix_8h.html#abf295011b3295cc03a864e1eb942978d">ISMatrix.h</a>
-, <a class="el" href="_i_s_matrix_8c.html#abf295011b3295cc03a864e1eb942978d">ISMatrix.c</a>
+: <a class="el" href="_i_s_matrix_8c.html#abf295011b3295cc03a864e1eb942978d">ISMatrix.c</a>
+, <a class="el" href="_i_s_matrix_8h.html#abf295011b3295cc03a864e1eb942978d">ISMatrix.h</a>
+</li>
+<li>mul_Mat3x3_Trans_Mat3x3_d()
+: <a class="el" href="_i_s_matrix_8h.html#a4c5aafb432df4a314969243f592955f0">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a4c5aafb432df4a314969243f592955f0">ISMatrix.c</a>
 </li>
 <li>mul_Mat3x3_Trans_Vec3x1()
 : <a class="el" href="_i_s_matrix_8c.html#af7e6d622f544a18f4a9ceca8bc50fa00">ISMatrix.c</a>
@@ -225,24 +330,24 @@ $(function() {
 , <a class="el" href="_i_s_pose_8c.html#a180a1f019689a3531eb2f328ca9eac6d">ISPose.c</a>
 </li>
 <li>mul_Vec2_X()
-: <a class="el" href="_i_s_matrix_8c.html#ada3a6d3ba5d05d9f549c9c3e9cbe2b4f">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#ada3a6d3ba5d05d9f549c9c3e9cbe2b4f">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#ada3a6d3ba5d05d9f549c9c3e9cbe2b4f">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#ada3a6d3ba5d05d9f549c9c3e9cbe2b4f">ISMatrix.c</a>
 </li>
 <li>mul_Vec2d_X()
 : <a class="el" href="_i_s_matrix_8c.html#adb56fc18ca1429e690a817cbfb74f7dd">ISMatrix.c</a>
 , <a class="el" href="_i_s_matrix_8h.html#adb56fc18ca1429e690a817cbfb74f7dd">ISMatrix.h</a>
 </li>
 <li>mul_Vec3_Vec3()
-: <a class="el" href="_i_s_matrix_8c.html#a23fc0b8087fddd24bc3d4ffd7172d7ab">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a23fc0b8087fddd24bc3d4ffd7172d7ab">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a23fc0b8087fddd24bc3d4ffd7172d7ab">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a23fc0b8087fddd24bc3d4ffd7172d7ab">ISMatrix.c</a>
 </li>
 <li>mul_Vec3_X()
-: <a class="el" href="_i_s_matrix_8c.html#a7278cd306a2eff9276dfaa145c20ad2d">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a7278cd306a2eff9276dfaa145c20ad2d">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a7278cd306a2eff9276dfaa145c20ad2d">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a7278cd306a2eff9276dfaa145c20ad2d">ISMatrix.c</a>
 </li>
 <li>mul_Vec3d_X()
-: <a class="el" href="_i_s_matrix_8h.html#a21c21f295358f2dd2ea846e78ab0cd13">ISMatrix.h</a>
-, <a class="el" href="_i_s_matrix_8c.html#a21c21f295358f2dd2ea846e78ab0cd13">ISMatrix.c</a>
+: <a class="el" href="_i_s_matrix_8c.html#a21c21f295358f2dd2ea846e78ab0cd13">ISMatrix.c</a>
+, <a class="el" href="_i_s_matrix_8h.html#a21c21f295358f2dd2ea846e78ab0cd13">ISMatrix.h</a>
 </li>
 <li>mul_Vec3x1_Vec1x3()
 : <a class="el" href="_i_s_matrix_8c.html#acdd741abb60a2f90aad2ae526a3bdf2e">ISMatrix.c</a>
@@ -261,20 +366,20 @@ $(function() {
 , <a class="el" href="_i_s_matrix_8h.html#a5255c49c820747b1d8cdae3873a0adf3">ISMatrix.h</a>
 </li>
 <li>mutexCreate()
-: <a class="el" href="_i_s_utilities_8h.html#a3a9e72873993ddfc1d20505743b3dfc8">ISUtilities.h</a>
-, <a class="el" href="_i_s_utilities_8cpp.html#a3a9e72873993ddfc1d20505743b3dfc8">ISUtilities.cpp</a>
+: <a class="el" href="_i_s_utilities_8cpp.html#a3a9e72873993ddfc1d20505743b3dfc8">ISUtilities.cpp</a>
+, <a class="el" href="_i_s_utilities_8h.html#a3a9e72873993ddfc1d20505743b3dfc8">ISUtilities.h</a>
 </li>
 <li>mutexFree()
-: <a class="el" href="_i_s_utilities_8h.html#a280763cfaa283e2c2eeb096e3d1c7f32">ISUtilities.h</a>
-, <a class="el" href="_i_s_utilities_8cpp.html#a280763cfaa283e2c2eeb096e3d1c7f32">ISUtilities.cpp</a>
+: <a class="el" href="_i_s_utilities_8cpp.html#a280763cfaa283e2c2eeb096e3d1c7f32">ISUtilities.cpp</a>
+, <a class="el" href="_i_s_utilities_8h.html#a280763cfaa283e2c2eeb096e3d1c7f32">ISUtilities.h</a>
 </li>
 <li>mutexLock()
 : <a class="el" href="_i_s_utilities_8h.html#a804883db4437a10a8fed50cbdff62ec7">ISUtilities.h</a>
 , <a class="el" href="_i_s_utilities_8cpp.html#a804883db4437a10a8fed50cbdff62ec7">ISUtilities.cpp</a>
 </li>
 <li>mutexUnlock()
-: <a class="el" href="_i_s_utilities_8h.html#a490cf2b5ce4e6a2309726d432a952ff1">ISUtilities.h</a>
-, <a class="el" href="_i_s_utilities_8cpp.html#a490cf2b5ce4e6a2309726d432a952ff1">ISUtilities.cpp</a>
+: <a class="el" href="_i_s_utilities_8cpp.html#a490cf2b5ce4e6a2309726d432a952ff1">ISUtilities.cpp</a>
+, <a class="el" href="_i_s_utilities_8h.html#a490cf2b5ce4e6a2309726d432a952ff1">ISUtilities.h</a>
 </li>
 </ul>
 </div><!-- contents -->

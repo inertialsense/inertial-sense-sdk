@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -335,6 +335,22 @@ void mul_Mat3x3_Mat3x3( Matrix3 result, const Matrix3 m1, const Matrix3 m2 )
 	result[8] = m1[6]*m2[2] + m1[7]*m2[5] + m1[8]*m2[8];
 }
 
+void mul_Mat3x3_Mat3x3_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2)
+{
+    // Row 1
+    result[0] = m1[0] * m2[0] + m1[1] * m2[3] + m1[2] * m2[6];
+    result[1] = m1[0] * m2[1] + m1[1] * m2[4] + m1[2] * m2[7];
+    result[2] = m1[0] * m2[2] + m1[1] * m2[5] + m1[2] * m2[8];
+    // Row 2
+    result[3] = m1[3] * m2[0] + m1[4] * m2[3] + m1[5] * m2[6];
+    result[4] = m1[3] * m2[1] + m1[4] * m2[4] + m1[5] * m2[7];
+    result[5] = m1[3] * m2[2] + m1[4] * m2[5] + m1[5] * m2[8];
+    // Row 3
+    result[6] = m1[6] * m2[0] + m1[7] * m2[3] + m1[8] * m2[6];
+    result[7] = m1[6] * m2[1] + m1[7] * m2[4] + m1[8] * m2[7];
+    result[8] = m1[6] * m2[2] + m1[7] * m2[5] + m1[8] * m2[8];
+}
+
 void mul_Mat3x3_Trans_Mat3x3( Matrix3 result, const Matrix3 m1, const Matrix3 m2 )
 {
     // Row 1
@@ -351,6 +367,22 @@ void mul_Mat3x3_Trans_Mat3x3( Matrix3 result, const Matrix3 m1, const Matrix3 m2
     result[8] = m1[2]*m2[2] + m1[5]*m2[5] + m1[8]*m2[8];
 }
 
+void mul_Mat3x3_Trans_Mat3x3_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2)
+{
+    // Row 1
+    result[0] = m1[0] * m2[0] + m1[3] * m2[3] + m1[6] * m2[6];
+    result[1] = m1[0] * m2[1] + m1[3] * m2[4] + m1[6] * m2[7];
+    result[2] = m1[0] * m2[2] + m1[3] * m2[5] + m1[6] * m2[8];
+    // Row 2
+    result[3] = m1[1] * m2[0] + m1[4] * m2[3] + m1[7] * m2[6];
+    result[4] = m1[1] * m2[1] + m1[4] * m2[4] + m1[7] * m2[7];
+    result[5] = m1[1] * m2[2] + m1[4] * m2[5] + m1[7] * m2[8];
+    // Row 3
+    result[6] = m1[2] * m2[0] + m1[5] * m2[3] + m1[8] * m2[6];
+    result[7] = m1[2] * m2[1] + m1[5] * m2[4] + m1[8] * m2[7];
+    result[8] = m1[2] * m2[2] + m1[5] * m2[5] + m1[8] * m2[8];
+}
+
 void mul_Mat3x3_Mat3x3_Trans( Matrix3 result, const Matrix3 m1, const Matrix3 m2 )
 {
     // Row 1
@@ -365,6 +397,22 @@ void mul_Mat3x3_Mat3x3_Trans( Matrix3 result, const Matrix3 m1, const Matrix3 m2
     result[6] = m1[6]*m2[0] + m1[7]*m2[1] + m1[8]*m2[2];
     result[7] = m1[6]*m2[3] + m1[7]*m2[4] + m1[8]*m2[5];
     result[8] = m1[6]*m2[6] + m1[7]*m2[7] + m1[8]*m2[8];
+}
+
+void mul_Mat3x3_Mat3x3_Trans_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2)
+{
+    // Row 1
+    result[0] = m1[0] * m2[0] + m1[1] * m2[1] + m1[2] * m2[2];
+    result[1] = m1[0] * m2[3] + m1[1] * m2[4] + m1[2] * m2[5];
+    result[2] = m1[0] * m2[6] + m1[1] * m2[7] + m1[2] * m2[8];
+    // Row 2
+    result[3] = m1[3] * m2[0] + m1[4] * m2[1] + m1[5] * m2[2];
+    result[4] = m1[3] * m2[3] + m1[4] * m2[4] + m1[5] * m2[5];
+    result[5] = m1[3] * m2[6] + m1[4] * m2[7] + m1[5] * m2[8];
+    // Row 3
+    result[6] = m1[6] * m2[0] + m1[7] * m2[1] + m1[8] * m2[2];
+    result[7] = m1[6] * m2[3] + m1[7] * m2[4] + m1[8] * m2[5];
+    result[8] = m1[6] * m2[6] + m1[7] * m2[7] + m1[8] * m2[8];
 }
 
 void mul_Mat2x2_Vec2x1( Vector2 result, const Matrix2 m, const Vector2 v )

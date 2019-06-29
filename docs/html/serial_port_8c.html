@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.5</span>
+   &#160;<span id="projectnumber">Release 1.7.6</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -86,6 +86,8 @@ Functions</h2></td></tr>
 <tr class="separator:adf63e1ee60b5ec17eec7fe5b8d42fc1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85707d7328266b2196d994598e0465fe"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="serial_port_8c.html#a85707d7328266b2196d994598e0465fe">serialPortOpen</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *serialPort, const char *port, int baudRate, int blocking)</td></tr>
 <tr class="separator:a85707d7328266b2196d994598e0465fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88df870918d4791ddaac45c562abf6cf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="serial_port_8c.html#a88df870918d4791ddaac45c562abf6cf">serialPortOpenRetry</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *serialPort, const char *port, int baudRate, int blocking)</td></tr>
+<tr class="separator:a88df870918d4791ddaac45c562abf6cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a70fde2df9b4376c6790e67a772a5ef"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="serial_port_8c.html#a1a70fde2df9b4376c6790e67a772a5ef">serialPortIsOpen</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *serialPort)</td></tr>
 <tr class="separator:a1a70fde2df9b4376c6790e67a772a5ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25ebaeafcc060a447ec1a38a8085943d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *serialPort)</td></tr>
@@ -153,7 +155,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00052">52</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00066">66</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -173,7 +175,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00061">61</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00075">75</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -193,7 +195,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00315">315</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00329">329</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -213,7 +215,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00325">325</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00339">339</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -233,7 +235,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00043">43</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00057">57</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -279,6 +281,48 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a88df870918d4791ddaac45c562abf6cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a88df870918d4791ddaac45c562abf6cf">&#9670;&nbsp;</a></span>serialPortOpenRetry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int serialPortOpenRetry </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structserial__port__t.html">serial_port_t</a> *&#160;</td>
+          <td class="paramname"><em>serialPort</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>port</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>baudRate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>blocking</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00037">37</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+
+</div>
+</div>
 <a id="a41dbe152baba9cab417513fd8289a9a6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a41dbe152baba9cab417513fd8289a9a6">&#9670;&nbsp;</a></span>serialPortRead()</h2>
 
@@ -311,7 +355,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00070">70</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00084">84</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -353,7 +397,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00131">131</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00145">145</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -401,7 +445,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00136">136</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00150">150</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -431,7 +475,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00177">177</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00191">191</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -467,7 +511,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00182">182</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00196">196</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -503,7 +547,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00102">102</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00116">116</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -545,7 +589,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00107">107</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00121">121</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -587,7 +631,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00075">75</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00089">89</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -629,7 +673,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00092">92</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00106">106</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -689,7 +733,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00335">335</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00349">349</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -725,7 +769,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00289">289</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00303">303</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -767,7 +811,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00294">294</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00308">308</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -803,7 +847,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00187">187</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00201">201</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -851,7 +895,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00267">267</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00281">281</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -905,7 +949,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00272">272</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00286">286</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -941,7 +985,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00216">216</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00230">230</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
@@ -977,7 +1021,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00204">204</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="serial_port_8c_source.html#l00218">218</a> of file <a class="el" href="serial_port_8c_source.html">serialPort.c</a>.</p>
 
 </div>
 </div>
