@@ -33,7 +33,6 @@
     <ClCompile Include="..\..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSorted.cpp" />
-    <ClCompile Include="..\..\..\src\GpsParser.cpp" />
     <ClCompile Include="..\..\..\src\InertialSense.cpp" />
     <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
@@ -73,7 +72,6 @@
     <ClInclude Include="..\..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSorted.h" />
-    <ClInclude Include="..\..\..\src\GpsParser.h" />
     <ClInclude Include="..\..\..\src\InertialSense.h" />
     <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
@@ -102,20 +100,20 @@
     <ProjectGuid>{2F1DB5F4-5AF6-4536-AB32-A5441FECD677}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ISSimpleExample</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
     <ProjectName>ISLoggerExample</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -179,10 +177,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4003;4100;4204;4505;4706</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -210,12 +209,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4003;4100;4204;4505;4706</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

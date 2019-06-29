@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -34,7 +34,7 @@ typedef uint32_t eDataIDs;
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
-#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we will use the name "Preintegrated IMU" through the User Manual. They are integrated by the IMU at IMU update rates (1KHz). These integrals are reset each time they are output. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay. It is most effective for systems that have higher dynamics and lower communications data rates. */
+#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we use the name "Preintegrated IMU" through the User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs, default 4ms) and cannot be output at any other rate. If a different output data rate is desired, DID_DUAL_IMU which is derived from DID_PREINTEGRATED_IMU can be used instead. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates. */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GPS1_UBX_POS                (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from ublox receiver. */
@@ -118,7 +118,8 @@ typedef uint32_t eDataIDs;
 #define DID_DUAL_IMU_RAW_MAG			(eDataIDs)84 /** (imu_mag_t) DID_DUAL_IMU_RAW + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
 #define DID_DUAL_IMU_MAG				(eDataIDs)85 /** (imu_mag_t) DID_DUAL_IMU + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
 #define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
-#define DID_WHEEL_CONFIG		(eDataIDs)87 /** (wheel_config_t) static configuration for wheel encoder measurements
+#define DID_WHEEL_CONFIG				(eDataIDs)87 /** (wheel_config_t) static configuration for wheel encoder measurements*/
+#define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate*/
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
@@ -128,7 +129,7 @@ typedef uint32_t eDataIDs;
 // 6] Test!
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
-#define DID_COUNT (eDataIDs)88
+#define DID_COUNT (eDataIDs)92
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -148,9 +149,6 @@ typedef uint32_t eDataIDs;
 // #define PROTOCOL_VERSION_CHAR1 0
 #define PROTOCOL_VERSION_CHAR2 (0x000000FF&DID_COUNT)
 #define PROTOCOL_VERSION_CHAR3 8         // Minor (in data_sets.h)
-
-/** Latest known number of leap seconds */
-#define CURRENT_LEAP_SECONDS 18
 
 /** Rtk rover receiver index */
 #define RECEIVER_INDEX_GPS1 1 // DO NOT CHANGE
@@ -214,11 +212,11 @@ enum eInsStatusFlags
 	INS_STATUS_SOLUTION_AHRS                    = 5,	// System is in AHRS mode and solution is good.
 	INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,	// System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
 
-	/** Trying to perform Compassing with no baseline set in flashCfg. */
-    INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET     = (int)0x00100000,
-    /** Specified Baseline Length is significantly different from precision solution. */
-    INS_STATUS_RTK_COMPASSING_WRONG_BASELINE    = (int)0x00200000,
-    INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_ANT_POS_UNSET|INS_STATUS_RTK_COMPASSING_WRONG_BASELINE),
+	/** GPS compassing antenna offsets are not set in flashCfg. */
+    INS_STATUS_RTK_COMPASSING_BASELINE_UNSET    = (int)0x00100000,
+    /** GPS antenna baseline specified in flashCfg and measured by GPS do not match. */
+    INS_STATUS_RTK_COMPASSING_BASELINE_BAD      = (int)0x00200000,
+    INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
     
 	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. */
 	INS_STATUS_MAG_RECALIBRATING				= (int)0x00400000,
@@ -231,14 +229,14 @@ enum eInsStatusFlags
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
 	/* NOTE: If you add or modify these INS_STATUS_RTK_ values, please update eInsStatusRtkBase in IS-src/python/src/ci_hdw/data_sets.py */
-	/** GPS base NO observations received (i.e. RTK differential corrections) */
-    INS_STATUS_RTK_BASE_ERR_NO_OBSERV			= (int)0x08000000,
-    /** GPS base NO position received */
-    INS_STATUS_RTK_BASE_ERR_NO_POSITION			= (int)0x10000000,
-    /** GPS base position is moving */
-    INS_STATUS_RTK_BASE_POSITION_MOVING			= (int)0x20000000,
+	/** RTK error: Observations invalid or not received  (i.e. RTK differential corrections) */
+    INS_STATUS_RTK_RAW_GPS_DATA_ERROR			= (int)0x08000000,
+    /** RTK error: NO base position received */
+    INS_STATUS_RTK_ERR_NO_BASE_POSITION			= (int)0x10000000,
+    /** RTK error: base position moved when it should be stationary */
+    INS_STATUS_RTK_ERR_BASE_POSITION_MOVING		= (int)0x20000000,
 	/** GPS base mask */
-	INS_STATUS_RTK_BASE_MASK					= (INS_STATUS_RTK_BASE_ERR_NO_OBSERV|INS_STATUS_RTK_BASE_ERR_NO_POSITION|INS_STATUS_RTK_BASE_POSITION_MOVING),
+	INS_STATUS_RTK_ERROR_MASK					= (INS_STATUS_RTK_RAW_GPS_DATA_ERROR|INS_STATUS_RTK_ERR_NO_BASE_POSITION|INS_STATUS_RTK_ERR_BASE_POSITION_MOVING),
 	
 	/** RTOS task ran longer than allotted period */
 	INS_STATUS_RTOS_TASK_PERIOD_OVERRUN			= (int)0x40000000,
@@ -379,19 +377,19 @@ enum eGpsStatus
 	GPS_STATUS_FLAGS_RTK_ENABLED				= (int)0x00100000,
 	GPS_STATUS_FLAGS_STATIC_MODE				= (int)0x00200000,		// Static mode
 	GPS_STATUS_FLAGS_GPS_COMPASSING_ENABLED		= (int)0x00400000,
-    GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM       = (int)0x00800000,		// GPS base observations and ephemeris received (i.e. RTK differential corrections)
-    GPS_STATUS_FLAGS_BASE_NO_POSITION           = (int)0x01000000,		// GPS base position received
-    GPS_STATUS_FLAGS_BASE_POSITION_MOVING       = (int)0x02000000,		// GPS Base position moving
-    GPS_STATUS_FLAGS_BASE_MASK                  = (GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM|
-                                                   GPS_STATUS_FLAGS_BASE_NO_POSITION|
-                                                   GPS_STATUS_FLAGS_BASE_POSITION_MOVING),
+    GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR		= (int)0x00800000,		// RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)
+    GPS_STATUS_FLAGS_RTK_NO_BASE_POSITION       = (int)0x01000000,		// RTK error: base position not received
+    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING   = (int)0x02000000,		// RTK error: base position moved when it should be stationary
+    GPS_STATUS_FLAGS_ERROR_MASK                 = (GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR|
+                                                   GPS_STATUS_FLAGS_RTK_NO_BASE_POSITION|
+                                                   GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING),
 	GPS_STATUS_FLAGS_HIGH_ACCURACY_POSITION	    = (int)0x04000000,      // 1= using RTK position, 0= using ublox position
 	GPS_STATUS_FLAGS_GPS_COMPASSING_VALID	    = (int)0x08000000,
-    GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE   = (int)0x00002000,
-    GPS_STATUS_FLAGS_GPS_COMPASS_NO_BASELINE    = (int)0x00004000,
+    GPS_STATUS_FLAGS_GPS_COMPASS_BASELINE_BAD   = (int)0x00002000,
+    GPS_STATUS_FLAGS_GPS_COMPASS_BASELINE_UNSET = (int)0x00004000,
     GPS_STATUS_FLAGS_GPS_COMPASS_MASK           = (GPS_STATUS_FLAGS_GPS_COMPASSING_VALID|
-                                                   GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE|
-                                                   GPS_STATUS_FLAGS_GPS_COMPASS_BAD_BASELINE),
+                                                   GPS_STATUS_FLAGS_GPS_COMPASS_BASELINE_BAD|
+                                                   GPS_STATUS_FLAGS_GPS_COMPASS_BASELINE_UNSET),
 	GPS_STATUS_FLAGS_UNUSED_3                   = (int)0x00008000,
 	GPS_STATUS_FLAGS_MASK						= (int)0x0FFFE000,    
 	GPS_STATUS_FLAGS_BIT_OFFSET					= (int)16,
@@ -405,6 +403,28 @@ enum eGpsStatus
 };
 
 PUSH_PACK_1
+
+/** (DID_POSITION_MEASUREMENT) External position estimate*/
+typedef struct PACKED
+{
+	/** GPS time of week (since Sunday morning) in seconds */
+	double					timeOfWeek;
+
+	/** Position in ECEF (earth-centered earth-fixed) frame in meters */
+	double					ecef[3];
+	
+	/** Heading with respect to NED frame (rad)*/
+	float psi;
+	
+	/** The Upper Diagonal of accuracy covariance matrix*/
+	float					accuracyCovUD[6]; // Matrix accuracyCovUD Described below
+	// 0 1 2
+	// _ 3 4
+	// _ _ 5
+
+
+}pos_measurement_t;
+
 
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
@@ -463,10 +483,10 @@ typedef struct PACKED
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
 typedef struct PACKED
 {
-	/** Weeks since January 6th, 1980 */
+	/** GPS number of weeks since January 6th, 1980 */
 	uint32_t				week;
 	
-	/** Time of week (since Sunday morning) in seconds, GMT */
+	/** GPS time of week (since Sunday morning) in seconds */
 	double					timeOfWeek;
 
 	/** INS status flags (eInsStatusFlags). Copy of DID_SYS_PARAMS.insStatus */
@@ -492,10 +512,10 @@ typedef struct PACKED
 /** (DID_INS_2) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 typedef struct PACKED
 {
-	/** Weeks since January 6th, 1980 */
+	/** GPS number of weeks since January 6th, 1980 */
 	uint32_t				week;
 	
-	/** Time of week (since Sunday morning) in seconds, GMT */
+	/** GPS time of week (since Sunday morning) in seconds */
 	double					timeOfWeek;
 
 	/** INS status flags (eInsStatusFlags). Copy of DID_SYS_PARAMS.insStatus */
@@ -518,10 +538,10 @@ typedef struct PACKED
 /** (DID_INS_3) INS output: quaternion rotation w/ respect to NED, msl altitude */
 typedef struct PACKED
 {
-	/** Weeks since January 6th, 1980 */
+	/** GPS number of weeks since January 6th, 1980 */
 	uint32_t				week;
 	
-	/** Time of week (since Sunday morning) in seconds, GMT */
+	/** GPS time of week (since Sunday morning) in seconds */
 	double					timeOfWeek;
 
 	/** INS status flags (eInsStatusFlags). Copy of DID_SYS_PARAMS.insStatus */
@@ -547,10 +567,10 @@ typedef struct PACKED
 /** (DID_INS_4) INS output: quaternion rotation w/ respect to ECEF, ECEF position */
 typedef struct PACKED
 {
-	/** Weeks since January 6th, 1980 */
+	/** GPS number of weeks since January 6th, 1980 */
 	uint32_t				week;
 	
-	/** Time of week (since Sunday morning) in seconds, GMT */
+	/** GPS time of week (since Sunday morning) in seconds */
 	double					timeOfWeek;
 
 	/** INS status flags (eInsStatusFlags). Copy of DID_SYS_PARAMS.insStatus */
@@ -717,10 +737,10 @@ enum eImuStatus
 /** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
 typedef struct PACKED
 {
-	/** Number of weeks since January 6th, 1980 */
+	/** GPS number of weeks since January 6th, 1980 */
 	uint32_t                week;
 
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;
 
 	/** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
@@ -749,13 +769,20 @@ typedef struct PACKED
 
 	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
 	double                  towOffset;
+	
+	/** GPS leap second (GPS-UTC) offset. Receiver's best knowledge of the leap seconds offset from UTC to GPS time. Subtract from GPS time of week to get UTC time of week. (18 seconds as of December 31, 2016) */
+	uint8_t					leapS;
+
+	/** Reserved for future use */
+	uint8_t					reserved[3];
+	
 } gps_pos_t;
 
 
 /** (DID_GPS1_VEL, DID_GPS2_VEL) GPS velocity data */
 typedef struct PACKED
 {
-    /** Time of week (since Sunday morning) in milliseconds, GMT */
+    /** GPS time of week (since Sunday morning) in milliseconds */
     uint32_t                timeOfWeekMs;
 
 	/** Position in ECEF {vx,vy,vz} (m/s) */
@@ -812,7 +839,7 @@ enum eSatSvFlags
 /** (DID_GPS1_SAT) GPS satellite signal strength */
 typedef struct PACKED
 {
-    /** Time of week (since Sunday morning) in milliseconds, GMT */
+    /** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;				
     /** Number of satellites in the sky */
 	uint32_t				numSats;					
@@ -837,7 +864,7 @@ typedef struct PACKED
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
 typedef struct PACKED
 {
-    /** Time of week (since Sunday morning) in seconds, GMT */
+    /** GPS time of week (since Sunday morning) in seconds */
 	double                  timeOfWeek;					
 
     /** Quaternion body rotation with respect to ECEF */
@@ -954,7 +981,7 @@ typedef struct PACKED
 /** INS output */
 typedef struct PACKED
 {
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;
 
 	/** Latitude, longitude and height above ellipsoid (rad, rad, m) */
@@ -970,7 +997,7 @@ typedef struct PACKED
 /** (DID_SYS_PARAMS) System parameters */
 typedef struct PACKED
 {
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;
 
 	/** System status 1 flags (eInsStatusFlags) */
@@ -1196,7 +1223,7 @@ typedef struct PACKED
 /** (DID_IO) Input/Output */
 typedef struct PACKED
 {
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;
 
 	/** General purpose I/O status */
@@ -1348,17 +1375,24 @@ enum eSysConfigBits
 	SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION			= (int)0x00001000,
 	/** Disable barometer fusion */
 	SYS_CFG_BITS_DISABLE_BAROMETER_FUSION				= (int)0x00002000,
-	/** Disable GPS fusion */
-	SYS_CFG_BITS_DISABLE_GPS_FUSION						= (int)0x00004000,
+	/** Disable GPS 1 fusion */
+	SYS_CFG_BITS_DISABLE_GPS1_FUSION					= (int)0x00004000,
+	/** Disable GPS 2 fusion */
+	SYS_CFG_BITS_DISABLE_GPS2_FUSION					= (int)0x00008000,
 
-	/** Enable Zero Velocity Updates */
-	SYS_CFG_BITS_ENABLED_ZERO_VELOCITY_UPDATES			= (int)0x00010000,
+	/** Disable Zero Velocity updates.  Useful for degraded GPS environments or applications with very slow velocities. */
+	SYS_CFG_BITS_DISABLE_ZERO_VELOCITY_UPDATES			= (int)0x00010000,
+	/** Disable Zero Angular rate updates.  Useful for applications with small/slow angular rates. */
+	SYS_CFG_BITS_DISABLE_ZERO_ANGULAR_RATE_UPDATES		= (int)0x00020000,
+	/** Disable INS EKF updates */
+	SYS_CFG_BITS_DISABLE_INS_EKF						= (int)0x00040000,
+	/** Prevent built-in test (BIT) from running automatically on startup */
+	SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
 
 	/** Enable Nav update strobe output pulse on GPIO 9 (uINS pin 10) indicating preintegrated IMU and nav updates */
-	SYS_CFG_BITS_ENABLE_NAV_STROBE_OUT_GPIO_9			= (int)0x00200000,
-	
+	SYS_CFG_BITS_ENABLE_NAV_STROBE_OUT_GPIO_9			= (int)0x00200000,	
 	/** Disable packet encoding, binary data will have all bytes as is */
-	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000
+	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
 };
 
 /** RTK Configuration */
@@ -1427,26 +1461,35 @@ enum eRTKConfigBits
 		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB ),
 									
-	/** All base station bits for serial 0 */
-	RTK_CFG_BITS_RTK_BASE_SER0 = (
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0),
-	
-	/** All base station bits for serial 1 */
-	RTK_CFG_BITS_RTK_BASE_SER1 = (
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1),
+    /** Base station bits for GPS1 Ublox */
+    RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS1_UBLOX = (
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB ),
 
-	/** All base station bits for USB */
-	RTK_CFG_BITS_RTK_BASE_USB = (
-        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB |
-        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
-							
+    /** Base station bits for GPS2 Ublox */
+    RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS2_UBLOX = (
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB ),
+
+    /** Base station bits for GPS1 RTCM */
+	RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS1_RTCM = (
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 | 
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB ),
+
+    /** Base station bits for GPS2 RTCM */
+    RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS2_RTCM = (
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
+
 	/** All rover bits */
 	RTK_CFG_BITS_RTK_ROVER = (RTK_CFG_BITS_GPS1_RTK_ROVER | RTK_CFG_BITS_GPS2_RTK_ROVER),
 
 	/** Mask of RTK modes */
-	RTK_CFG_BITS_RTK_MODE_MASK = (RTK_CFG_BITS_RTK_ROVER | RTK_CFG_BITS_COMPASSING),
+	RTK_CFG_BITS_RTK_MODES_MASK = (RTK_CFG_BITS_RTK_ROVER | RTK_CFG_BITS_COMPASSING),
 	
 	/** RTK Enabled */
 	RTK_CFG_BITS_RTK = (RTK_CFG_BITS_RTK_ROVER | RTK_CFG_BITS_RTK_BASE)
@@ -1503,6 +1546,10 @@ enum eSensorConfig
 enum eIoConfig
 {
 	IO_CFG_INPUT_STROBE_TRIGGER_HIGH	= (int)0x00000001,
+	IO_CFG_STROBE_PIN_2_INTERRUPT_ENABLE= (int)0x00000002,
+	IO_CFG_STROBE_PIN_5_INTERRUPT_ENABLE= (int)0x00000004,
+	IO_CFG_STROBE_PIN_8_INTERRUPT_ENABLE= (int)0x00000008,
+	IO_CFG_STROBE_PIN_9_INTERRUPT_ENABLE= (int)0x00000010
 };
 
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
@@ -1549,19 +1596,32 @@ typedef struct PACKED
     /** Config bits (see eWheelCfgBits) */
     uint32_t                bits;
 
-	/** euler angles describing the rotation from imu to left wheel */
+	/** Euler angles describing the rotation from imu to left wheel */
 	float                   e_i2l[3];
 
-	/** translation from the imu to the left wheel, expressed in the imu frame */
+	/** Translation from the imu to the left wheel, expressed in the imu frame */
 	float                   t_i2l[3];
 
-	/** distance between the left wheel and the right wheel */
+	/** Distance between the left wheel and the right wheel */
 	float                   distance;
 
-	/** estimate of wheel diameter */
+	/** Estimate of wheel diameter */
 	float                   diameter;
 
 } wheel_config_t;
+
+typedef enum
+{
+    DYN_PORTABLE = 0,
+    DYN_STATIONARY = 2,
+    DYN_PEDESTRIAN = 3,
+    DYN_AUTOMOTIVE = 4,
+    DYN_SEA = 5,
+    DYN_AIRBORNE_1G = 6,
+    DYN_AIRBORNE_2G = 7,
+    DYN_AIRBORNE_4G = 8,
+    DYN_WRIST = 9
+} eInsDynModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT! These fields should not be deleted, they can be deprecated and marked as reserved,
@@ -1611,10 +1671,10 @@ typedef struct PACKED
     /** Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup (deg, deg, m) */
     double					lastLla[3];
 
-    /** Last LLA time since week start (Sunday morning) in milliseconds */
+    /** Last LLA GPS time since week start (Sunday morning) in milliseconds */
     uint32_t				lastLlaTimeOfWeekMs;
 
-    /** Last LLA number of weeks since January 6th, 1980 */
+    /** Last LLA GPS number of weeks since January 6th, 1980 */
     uint32_t				lastLlaWeek;
 
     /** Distance between current and last LLA that triggers an update of lastLla  */
@@ -1682,10 +1742,10 @@ typedef struct PACKED
 /** (DID_STROBE_IN_TIME) Timestamp for input strobe. */
 typedef struct PACKED
 {
-	/** Weeks since January 6th, 1980 */
+	/** GPS number of weeks since January 6th, 1980 */
 	uint32_t				week;
 
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t				timeOfWeekMs;
 
 	/** Strobe input pin */
@@ -1834,9 +1894,6 @@ typedef struct
     double maxinnocode;
     double maxinnophase;
 
-    /** max number of measurement rejections before bias reset */
-    double maxrejc;
-
 	/** reject threshold of gdop */
 	double maxgdop;
 
@@ -1846,7 +1903,7 @@ typedef struct
     double reset_baseline_error;
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
-    double max_ubx_error;
+    float max_ubx_error;
 
 	/** rover position for fixed mode {x,y,z} (ecef) (m) */
 	double ru[3];
@@ -1909,10 +1966,10 @@ typedef struct PACKED
 typedef struct
 {
 	/** number of observation slots used */
-	int32_t n;
+	uint32_t n;
 
 	/** number of observation slots allocated */
-	int32_t nmax;
+	uint32_t nmax;
 
 	/** observation data buffer */
 	obsd_t* data;
@@ -2212,7 +2269,7 @@ typedef enum
 /** (DID_GPS1_RTK_REL) */
 typedef struct PACKED
 {
-    /** Time of week (since Sunday morning) in milliseconds, GMT */
+    /** GPS time of week (since Sunday morning) in milliseconds */
     uint32_t                timeOfWeekMs;
 
     /** Age of differential (seconds) */
@@ -2221,20 +2278,20 @@ typedef struct PACKED
     /** Ambiguity resolution ratio factor for validation */
     float					arRatio;
 
-	/** Vector to base (m) in ECEF - If Compassing enabled, this is the 3-vector from antenna 2 to antenna 1 */
-	float					vectorToBase[3];
+	/** Vector from base to rover (m) in ECEF - If Compassing enabled, this is the 3-vector from antenna 2 to antenna 1 */
+	float					baseToRoverVector[3];
 
-    /** Distance to Base (m) */
-    float                   distanceToBase;
+    /** Distance from base to rover (m) */
+    float                   baseToRoverDistance;
     
-    /** Angle from north to vectorToBase in local tangent plane. (rad) */
-    float                   headingToBase;
+    /** Angle from north to baseToRoverVector in local tangent plane. (rad) */
+    float                   baseToRoverHeading;
 } gps_rtk_rel_t;
 
 /** (DID_GPS1_RTK_MISC) - requires little endian CPU */
 typedef struct PACKED
 {
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;
 
 	/** Accuracy - estimated standard deviations of the solution assuming a priori error model and error parameters by the positioning options. []: standard deviations {ECEF - x,y,z} or {north, east, down} (meters) */
@@ -2336,8 +2393,8 @@ typedef struct PACKED
 	/** Number of checksum failures from received corrections */
 	uint32_t				correctionChecksumFailures;
 
-	/** Time to get RTK fix from when raw GPS data is first received. */
-	uint32_t				timeToFixMs;
+	/** Time while not in RTK fix.  Starts when raw GPS data is first received. */
+	uint32_t				timeNotInFixMs;
     
 } gps_rtk_misc_t;
 
@@ -2406,7 +2463,7 @@ typedef struct PACKED
 	uint8_t reserved;
 
     /** Interpret based on dataType (see eRawDataType) */    
-  uGpsRawData data;
+    uGpsRawData data;
 } gps_raw_t;
 
 /**
@@ -2414,7 +2471,7 @@ typedef struct PACKED
 */
 typedef struct 
 {
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t timeOfWeekMs;
 	
 	/** Message length, including null terminator */
@@ -2534,10 +2591,10 @@ typedef enum
 */
 typedef struct
 {
-	/** Number of weeks since January 6th, 1980 */
+	/** GPS number of weeks since January 6th, 1980 */
 	uint32_t                week;
 
-	/** Time of week (since Sunday morning) in milliseconds, GMT */
+	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;
 
 	/** Firmware (software) version */
@@ -2584,11 +2641,12 @@ typedef struct
 
 typedef enum
 {
-    EVB_CFG_BITS_WIFI_SELECT_MASK = 0x00000003,
-    EVB_CFG_BITS_WIFI_SELECT_OFFSET = 0,
-    EVB_CFG_BITS_SERVER_SELECT_MASK = 0x0000000C,
-    EVB_CFG_BITS_SERVER_SELECT_OFFSET = 2,
-} eEvb2ConfigBits;
+    EVB_CFG_BITS_WIFI_SELECT_MASK           = 0x00000003,
+    EVB_CFG_BITS_WIFI_SELECT_OFFSET         = 0,
+    EVB_CFG_BITS_SERVER_SELECT_MASK         = 0x0000000C,
+    EVB_CFG_BITS_SERVER_SELECT_OFFSET       = 2,
+    EVB_CFG_BITS_ENABLE_WHEEL_ENCODER       = 0x00000100,
+} eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3
 #define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {bits&=EVB_CFG_BITS_WIFI_SELECT_MASK; bits|=((idx<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
@@ -2619,7 +2677,7 @@ typedef struct
     /** Communications bridge options (see eEvb2ComBridgeOptions) */
     uint32_t                cbOptions;
 
-    /** Config bits (see eEvb2ConfigBits) */
+    /** Config bits (see eEvbFlashCfgBits) */
     uint32_t                bits;
 
     /** Radio preamble ID (PID) - 0x0 to 0x9. Only radios with matching PIDs can communicate together. Different PIDs minimize interference between multiple sets of networks. Checked before the network ID. */
@@ -2636,6 +2694,9 @@ typedef struct
 
     /** Server IP and port */
     evb_server_t            server[NUM_WIFI_PRESETS];
+
+    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi) */
+    float                   encoderTickToWheelRad;
 
 } evb_flash_cfg_t;
 
@@ -2671,6 +2732,8 @@ typedef enum
 	EVB2_CB_PRESET_COUNT,
     
 } eEvb2ComBridgePreset;
+
+#define EVB2_CB_PRESET_DEFAULT      EVB2_CB_PRESET_RS232
 
 /** Data logger control.  Values labeled CMD  */
 typedef enum
@@ -2725,8 +2788,9 @@ typedef struct
 #define SYS_FAULT_STATUS_SOFT_RESET                     0x00000010
 #define SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          0x00000020
 #define SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      0x00000040
+#define SYS_FAULT_STATUS_RTK_MISC_ERROR                 0x00000080
 #define SYS_FAULT_STATUS_MASK_GENERAL_ERROR             0xFFFFFFF0
-// Critical:
+// Critical: (usually associated with system reset)
 #define SYS_FAULT_STATUS_HARD_FAULT                     0x00010000
 #define SYS_FAULT_STATUS_USAGE_FAULT                    0x00020000
 #define SYS_FAULT_STATUS_MEM_MANGE                      0x00040000
@@ -2735,6 +2799,8 @@ typedef struct
 #define SYS_FAULT_STATUS_STACK_OVERFLOW                 0x00200000
 #define SYS_FAULT_STATUS_INVALID_CODE_OPERATION         0x00400000
 #define SYS_FAULT_STATUS_FLASH_MIGRATION_MARKER_UPDATED 0x00800000
+#define SYS_FAULT_STATUS_WATCHDOG_RESET                 0x01000000
+#define SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               0x02000000
 #define SYS_FAULT_STATUS_MASK_CRITICAL_ERROR            0xFFFF0000
 
 typedef struct 
@@ -2806,7 +2872,7 @@ typedef enum
 	TASK_TIMER,
 
 	/** Number of RTOS tasks */
-	RTOS_NUM_TASKS                       // Keep last
+	UINS_RTOS_NUM_TASKS                 // Keep last
 } eRtosTask;
 
 /** EVB RTOS tasks */
@@ -2815,11 +2881,14 @@ typedef enum
     /** Communications task */
     EVB_TASK_COMMUNICATIONS,
 
-    /** Maintenance task */
-    EVB_TASK_MAINTENANCE,
+    /** Logger task */
+    EVB_TASK_LOGGER,
 
     /** WiFi task */
     EVB_TASK_WIFI,
+
+    /** Maintenance task */
+    EVB_TASK_MAINTENANCE,
 
     /** Idle task */
     EVB_TASK_IDLE,
@@ -2828,7 +2897,7 @@ typedef enum
     EVB_TASK_TIMER,
 
     /** SPI to uINS task */
-    EVB_SPI_UINS_COMMUNICATIONS,
+    EVB_TASK_SPI_UINS_COM,
 
     /** Number of RTOS tasks */
     EVB_RTOS_NUM_TASKS                  // Keep last
@@ -2881,7 +2950,7 @@ typedef struct PACKED
     uint32_t				mallocMinusFree;
     
     /** Tasks */
-	rtos_task_t             task[RTOS_NUM_TASKS];
+	rtos_task_t             task[UINS_RTOS_NUM_TASKS];
 
 } rtos_info_t;
 
@@ -2913,6 +2982,7 @@ typedef union PACKED
 	mag_cal_t				magCal;
 	barometer_t				baro;
     wheel_encoder_t         wheelEncoder;
+	pos_measurement_t		posMeasurement;
 	preintegrated_imu_t		pImu;
 	gps_pos_t				gpsPos;
 	gps_vel_t				gpsVel;
@@ -2949,6 +3019,7 @@ Creates a 32 bit checksum from data
 
 @return the 32 bit checksum for data
 */
+uint32_t checksum32(const void* data, int count);
 uint32_t serialNumChecksum32(const void* data, int size);
 uint32_t flashChecksum32(const void* data, int size);
 
@@ -2981,7 +3052,7 @@ Only flips each 4 byte pair, does not flip the individual bytes within the pair
 
 @param ptr the double to flip
 */
-void flipDouble(uint8_t* ptr);
+void flipDouble(void* ptr);
 
 /**
 Flip the bytes of a double in place (8 bytes)
@@ -3060,10 +3131,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits);
 
 /** Convert Julian Date to calendar date. */
-void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hours, int32_t* minutes, int32_t* seconds, int32_t* milliseconds);
+void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond);
 
-/** Convert GPS Week and Seconds to Julian Date. */
-double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds);
+/** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
+double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds);
 
 /*
 Convert gps pos to nmea gga
@@ -3074,6 +3145,210 @@ Convert gps pos to nmea gga
 @return number of chars written to buffer, not including the null terminator
 */
 int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength);
+
+#ifndef RTKLIB_H
+#define SYS_NONE    0x00                /* navigation system: none */
+#define SYS_GPS     0x01                /* navigation system: GPS */
+#define SYS_SBS     0x02                /* navigation system: SBAS */
+#define SYS_GLO     0x04                /* navigation system: GLONASS */
+#define SYS_GAL     0x08                /* navigation system: Galileo */
+#define SYS_QZS     0x10                /* navigation system: QZSS */
+#define SYS_CMP     0x20                /* navigation system: BeiDou */
+#define SYS_IRN     0x40                /* navigation system: IRNS */
+#define SYS_LEO     0x80                /* navigation system: LEO */
+#define SYS_ALL     0xFF                /* navigation system: all */
+#endif
+
+/*
+Convert gnssID to ubx gnss indicator (ref [2] 25)
+
+@param gnssID gnssID of satellite
+@return ubx gnss indicator
+*/
+int ubxSys(int gnssID);
+
+#ifndef __RTKLIB_EMBEDDED_DEFINES_H_
+
+#undef ENAGLO
+#define ENAGLO
+
+#undef ENAGAL
+#define ENAGAL
+
+#undef ENAQZS
+//#define ENAQZS
+
+#undef ENASBS
+#define ENASBS
+
+#undef MAXSUBFRMLEN
+#define MAXSUBFRMLEN 152
+
+#undef MAXRAWLEN
+#define MAXRAWLEN 2048
+
+#undef NFREQ
+#define NFREQ 1
+
+#undef NFREQGLO
+#ifdef ENAGLO
+#define NFREQGLO 1
+#else
+#define NFREQGLO 0
+#endif
+
+#undef NFREQGAL
+#ifdef ENAGAL
+#define NFREQGAL 1
+#else
+#define NFREQGAL 0
+#endif
+
+#undef NEXOBS
+#define NEXOBS 0
+
+#undef MAXOBS
+#define MAXOBS 56               // Also defined inside rtklib_defines.h
+#define HALF_MAXOBS (MAXOBS/2)
+
+#undef NUMSATSOL
+#define NUMSATSOL 22
+
+#undef MAXERRMSG
+#define MAXERRMSG 0
+
+#ifdef ENASBS
+
+// sbas waas only satellites
+#undef MINPRNSBS
+#define MINPRNSBS 133                 /* min satellite PRN number of SBAS */
+
+#undef MAXPRNSBS
+#define MAXPRNSBS 138                 /* max satellite PRN number of SBAS */
+
+#undef NSATSBS
+#define NSATSBS (MAXPRNSBS - MINPRNSBS + 1) /* number of SBAS satellites */
+
+#define SBAS_EPHEMERIS_ARRAY_SIZE NSATSBS
+
+#else
+
+#define SBAS_EPHEMERIS_ARRAY_SIZE 0
+
+#endif
+
+
+#endif
+
+#ifndef RTKLIB_H
+
+#define MINPRNGPS   1                   /* min satellite PRN number of GPS */
+#define MAXPRNGPS   32                  /* max satellite PRN number of GPS */
+#define NSATGPS     (MAXPRNGPS-MINPRNGPS+1) /* number of GPS satellites */
+#define NSYSGPS     1
+
+#ifdef ENAGLO
+#define MINPRNGLO   1                   /* min satellite slot number of GLONASS */
+#define MAXPRNGLO   27                  /* max satellite slot number of GLONASS */
+#define NSATGLO     (MAXPRNGLO-MINPRNGLO+1) /* number of GLONASS satellites */
+#define NSYSGLO     1
+#else
+#define MINPRNGLO   0
+#define MAXPRNGLO   0
+#define NSATGLO     0
+#define NSYSGLO     0
+#endif
+#ifdef ENAGAL
+#define MINPRNGAL   1                   /* min satellite PRN number of Galileo */
+#define MAXPRNGAL   30                  /* max satellite PRN number of Galileo */
+#define NSATGAL    (MAXPRNGAL-MINPRNGAL+1) /* number of Galileo satellites */
+#define NSYSGAL     1
+#else
+#define MINPRNGAL   0
+#define MAXPRNGAL   0
+#define NSATGAL     0
+#define NSYSGAL     0
+#endif
+#ifdef ENAQZS
+#define MINPRNQZS   193                 /* min satellite PRN number of QZSS */
+#define MAXPRNQZS   199                 /* max satellite PRN number of QZSS */
+#define MINPRNQZS_S 183                 /* min satellite PRN number of QZSS SAIF */
+#define MAXPRNQZS_S 189                 /* max satellite PRN number of QZSS SAIF */
+#define NSATQZS     (MAXPRNQZS-MINPRNQZS+1) /* number of QZSS satellites */
+#define NSYSQZS     1
+#else
+#define MINPRNQZS   0
+#define MAXPRNQZS   0
+#define MINPRNQZS_S 0
+#define MAXPRNQZS_S 0
+#define NSATQZS     0
+#define NSYSQZS     0
+#endif
+#ifdef ENACMP
+#define MINPRNCMP   1                   /* min satellite sat number of BeiDou */
+#define MAXPRNCMP   35                  /* max satellite sat number of BeiDou */
+#define NSATCMP     (MAXPRNCMP-MINPRNCMP+1) /* number of BeiDou satellites */
+#define NSYSCMP     1
+#else
+#define MINPRNCMP   0
+#define MAXPRNCMP   0
+#define NSATCMP     0
+#define NSYSCMP     0
+#endif
+#ifdef ENAIRN
+#define MINPRNIRN   1                   /* min satellite sat number of IRNSS */
+#define MAXPRNIRN   7                   /* max satellite sat number of IRNSS */
+#define NSATIRN     (MAXPRNIRN-MINPRNIRN+1) /* number of IRNSS satellites */
+#define NSYSIRN     1
+#else
+#define MINPRNIRN   0
+#define MAXPRNIRN   0
+#define NSATIRN     0
+#define NSYSIRN     0
+#endif
+#ifdef ENALEO
+#define MINPRNLEO   1                   /* min satellite sat number of LEO */
+#define MAXPRNLEO   10                  /* max satellite sat number of LEO */
+#define NSATLEO     (MAXPRNLEO-MINPRNLEO+1) /* number of LEO satellites */
+#define NSYSLEO     1
+#else
+#define MINPRNLEO   0
+#define MAXPRNLEO   0
+#define NSATLEO     0
+#define NSYSLEO     0
+#endif
+#define NSYS        (NSYSGPS+NSYSGLO+NSYSGAL+NSYSQZS+NSYSCMP+NSYSIRN+NSYSLEO) /* number of systems */
+#ifndef NSATSBS
+#ifdef ENASBS
+#define MINPRNSBS   120                 /* min satellite PRN number of SBAS */
+#define MAXPRNSBS   142                 /* max satellite PRN number of SBAS */
+#define NSATSBS     (MAXPRNSBS-MINPRNSBS+1) /* number of SBAS satellites */
+#else
+#define MINPRNSBS   0
+#define MAXPRNSBS   0
+#define NSATSBS     0
+#endif
+#endif
+
+#endif
+/*
+Convert satellite constelation and prn/slot number to satellite number
+
+@param sys satellite system (SYS_GPS,SYS_GLO,...)
+@param prn satellite prn/slot number
+@return satellite number (0:error)
+*/
+int satNo(int sys, int prn);
+
+/*
+convert satellite gnssID + svID to satellite number
+
+@param gnssID satellite system 
+@param svID satellite prn/slot number
+@return satellite number (0:error)
+*/
+int satNumCalc(int gnssID, int svID);
+
 
 #ifdef __cplusplus
 }

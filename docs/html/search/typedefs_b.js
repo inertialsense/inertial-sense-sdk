@@ -26,5 +26,7 @@ var searchData=
   ['pfnserialportsleep',['pfnSerialPortSleep',['../serial_port_8h.html#a6217b1baca5f2db1b47b3e287f71c696',1,'serialPort.h']]],
   ['pfnserialportwrite',['pfnSerialPortWrite',['../serial_port_8h.html#a616f80693347849a9e4f731cbf70f2d0',1,'serialPort.h']]],
   ['pfnsteplogfunction',['pfnStepLogFunction',['../_inertial_sense_8h.html#ae91e5ac049ad4acb571f0fafd9af22f5',1,'InertialSense.h']]],
+  ['pimu_5fmag_5ft',['pimu_mag_t',['../data__sets_8h.html#a78390bf92999e8d243943cfdf170f76a',1,'data_sets.h']]],
+  ['pos_5fmeasurement_5ft',['pos_measurement_t',['../data__sets_8h.html#a713b33bbe892992b28336fc8909d89f3',1,'data_sets.h']]],
   ['preintegrated_5fimu_5ft',['preintegrated_imu_t',['../data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa',1,'data_sets.h']]]
 ];

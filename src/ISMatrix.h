@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -152,16 +152,19 @@ void trans_MatMxN( f_t *result, const f_t *M, int m, int n );
  * result(3x3) = m1(3x3) * m2(3x3)
  */
 void mul_Mat3x3_Mat3x3( Matrix3 result, const Matrix3 m1, const Matrix3 m2 );
+void mul_Mat3x3_Mat3x3_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2);
 
 /* Matrix Multiply w/ Transpose
  * result(3x3) = m1.T(3x3) * m2(3x3)
  */
 void mul_Mat3x3_Trans_Mat3x3( Matrix3 result, const Matrix3 m1, const Matrix3 m2 );
+void mul_Mat3x3_Trans_Mat3x3_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2);
 
 /* Matrix Multiply w/ Transpose
  * result(3x3) = m1(3x3) * m2.T(3x3)
  */
 void mul_Mat3x3_Mat3x3_Trans( Matrix3 result, const Matrix3 m1, const Matrix3 m2 );
+void mul_Mat3x3_Mat3x3_Trans_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2);
 
 /* Matrix Multiply
  * result(1x2) = m(2x2) * v(2x1)
@@ -625,6 +628,10 @@ static __inline int isNan_array_d( double *a, int size )
     return 0;
 }
 
+#if defined(PLATFORM_IS_WINDOWS)
+#pragma warning( push )
+#pragma warning( disable : 4723)
+#endif
 
 /* Array contains INF
  * return 1 if INF found in array, 0 if not
@@ -665,6 +672,9 @@ static __inline int isInf_array_d(double *a, int size)
 	return 0;
 }
 
+#if defined(PLATFORM_IS_WINDOWS)
+#pragma warning( pop ) 
+#endif
 
 /* Array does not contain NAN or INF
  * return 0 if NAN or INF found in array, 1 if not

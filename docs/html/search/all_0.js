@@ -23,6 +23,7 @@ var searchData=
   ['_5fdid_5fmag_5fcal',['_DID_MAG_CAL',['../_i_s_comm_8h.html#a5f18802d5fb21b024dfe4af064c7102e',1,'ISComm.h']]],
   ['_5fdid_5fmagnetometer_5f1',['_DID_MAGNETOMETER_1',['../_i_s_comm_8h.html#af3230dbd62fc9fcc5e41bba384f70260',1,'ISComm.h']]],
   ['_5fdid_5fmagnetometer_5f2',['_DID_MAGNETOMETER_2',['../_i_s_comm_8h.html#a61cd51d79fc0714dd55ec91321855bf3',1,'ISComm.h']]],
+  ['_5fdid_5fpos_5fmeasurement',['_DID_POS_MEASUREMENT',['../_i_s_comm_8h.html#a4ada1c3aa16f6a46b905bb3c3965bd45',1,'ISComm.h']]],
   ['_5fdid_5frmc',['_DID_RMC',['../_i_s_comm_8h.html#a69d000dba2ddc6f6b6b4d796ffec31bd',1,'ISComm.h']]],
   ['_5fdid_5fstrobe_5fin_5ftime',['_DID_STROBE_IN_TIME',['../_i_s_comm_8h.html#a3d97f25d798cabccac8118ddc794415f',1,'ISComm.h']]],
   ['_5fdid_5fwheel_5fencoder',['_DID_WHEEL_ENCODER',['../_i_s_comm_8h.html#a7f3081d9f8256332e9d0a02598e32a1f',1,'ISComm.h']]],

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -23,6 +23,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISEarth.h"
 #include "ISDataMappings.h"
 #include "DataCSV.h"
+
+#if PLATFORM_IS_WINDOWS
+
+#include <conio.h>
+
+#endif
 
 #if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
 
@@ -224,7 +230,9 @@ int cInertialSenseDisplay::ReadKey()
 
 #if PLATFORM_IS_WINDOWS
 
-	INPUT_RECORD ip;
+#if 0
+    // This isn't working
+    INPUT_RECORD ip;
 	DWORD numRead = 0;
 	PeekConsoleInputA(m_windowsConsoleIn, &ip, 1, &numRead);
 	if (numRead == 1)
@@ -235,6 +243,12 @@ int cInertialSenseDisplay::ReadKey()
 			return ip.Event.KeyEvent.uChar.AsciiChar;
 		}
 	}
+#else
+    if (_kbhit())
+    {
+        return _getch();
+    }
+#endif
 
 #else
 
@@ -388,6 +402,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 	{
 	default:
 		m_displayMode = DMODE_PRETTY;
+		// fall through
 	case DMODE_PRETTY:
 
 		// Data stays at fixed location (no scroll history)
@@ -476,7 +491,7 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 	printf("                Name  DID    Count        dt\n");
 	for (int i = 0; i < (int)m_didStats.size(); i++)
 	{
-		sDidStats &s = m_didStats[i];
+		s = m_didStats[i];
 		if (s.count)
 		{
 			printf("%20s %4d %9d %9.3lf\n", cISDataMappings::GetDataSetName(i), i, s.count, s.dtMs*0.001);
@@ -1068,10 +1083,10 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 			}
 			else
 			{
-				if (gps.status&GPS_STATUS_FLAGS_BASE_POSITION_MOVING) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, "); }
+				if (gps.status&GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, "); }
 			}
-			if (gps.status&GPS_STATUS_FLAGS_BASE_NO_OBSERV_EPHEM) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No obs/ephem, "); }
-			if (gps.status&GPS_STATUS_FLAGS_BASE_NO_POSITION) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No base position, "); }
+			if (gps.status&GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error, "); }
+			if (gps.status&GPS_STATUS_FLAGS_RTK_NO_BASE_POSITION) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No base position, "); }
 		}
 	}
 
@@ -1099,18 +1114,18 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", V2B[%10.3f,%10.3f,%9.2f], %4.1f age, %4.1f arRatio, %4.3f dist, %4.2f bear",
-			rel.vectorToBase[0], rel.vectorToBase[1], rel.vectorToBase[2],
-			rel.differentialAge, rel.arRatio, rel.distanceToBase, rel.headingToBase);
+			rel.baseToRoverVector[0], rel.baseToRoverVector[1], rel.baseToRoverVector[2],
+			rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.baseToRoverHeading);
 	}
 	else
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tVectorToBase: ");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tvectorToRover: ");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			rel.vectorToBase[0],				// Vector to base in ECEF
-			rel.vectorToBase[1],				// Vector to base in ECEF
-			rel.vectorToBase[2]);				// Vector to base in ECEF
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge: %3.1fs  arRatio: %4.1f  dist:%5.2fm  bear:%4.1f\n", 
-			rel.differentialAge, rel.arRatio, rel.distanceToBase, rel.headingToBase*C_RAD2DEG_F);
+			rel.baseToRoverVector[0],				// Vector to base in ECEF
+			rel.baseToRoverVector[1],				// Vector to base in ECEF
+			rel.baseToRoverVector[2]);				// Vector to base in ECEF
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge:%5.1fs  arRatio: %4.1f  dist:%7.2fm  bear:%6.1f\n", 
+			rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.baseToRoverHeading*C_RAD2DEG_F);
 	}
 
 	return buf;
@@ -1161,7 +1176,7 @@ string cInertialSenseDisplay::DataToStringSurveyIn(const survey_in_t &survey, co
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
-    int i = 0;
+//     int i = 0;
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_SURVEY_IN:");
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " state: %d ", survey.state);

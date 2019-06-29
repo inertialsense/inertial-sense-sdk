@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -26,9 +26,6 @@ extern "C" {
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
-
-#define PRE_PROC_COMBINE1(X, Y) X##Y
-#define PRE_PROC_COMBINE(X, Y) PRE_PROC_COMBINE1(X, Y)
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
@@ -186,7 +183,7 @@ extern void free_debug(void* mem);
 
 #endif // defined(_MSC_VER)
 
-#if PLATFORM_IS_EVB_2
+#if defined(PLATFORM_IS_EVB_2)
 #define _MKDIR(dir) f_mkdir(dir)
 #define _RMDIR(dir) f_unlink(dir)
 #define _GETCWD(buf, len) f_getcwd(buf, len)
@@ -402,10 +399,10 @@ extern void free_debug(void* mem);
 
 #else
 
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
-#endif
+// #if defined(__GNUC__)
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
+// #endif
 
 #ifndef CPP11_IS_ENABLED
 #define CPP11_IS_ENABLED 0
@@ -413,11 +410,14 @@ extern void free_debug(void* mem);
 #ifndef CONST_EXPRESSION
 #define CONST_EXPRESSION static const
 #endif
+#define PRE_PROC_COMBINE(X, Y) X##Y
 #ifndef STATIC_ASSERT
-#define STATIC_ASSERT(exp) typedef char PRE_PROC_COMBINE(STATIC_ASSERT_FAILED_, __LINE__)[(exp) ? 1 : -1]
+// #define STATIC_ASSERT(exp) typedef char PRE_PROC_COMBINE(STATIC_ASSERT_FAILED_, __LINE__)[(exp) ? 1 : -1]
+#define STATIC_ASSERT(exp) static_assert(exp, "STATIC ASSERT FAILED!")
 #endif
 #ifndef STATIC_ASSERT_MSG
-#define STATIC_ASSERT_MSG(exp, msg) typedef char PRE_PROC_COMBINE(msg, __LINE__)[(exp) ? 1 : -1]
+// #define STATIC_ASSERT_MSG(exp, msg) typedef char PRE_PROC_COMBINE(msg, __LINE__)[(exp) ? 1 : -1]
+#define STATIC_ASSERT_MSG(exp, msg) static_assert(exp, msg)
 #endif
 #ifndef OVERRIDE
 #define OVERRIDE
@@ -426,9 +426,9 @@ extern void free_debug(void* mem);
 #define NULLPTR 0
 #endif
 
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
+// #if defined(__GNUC__)
+// #pragma GCC diagnostic pop
+// #endif
 
 #endif
 
@@ -790,6 +790,7 @@ typedef f_t         Matrix2[4];
 typedef f_t         Matrix3[9];
 typedef f_t         Matrix4[16];
 typedef f_t         Matrix5[25];
+typedef double      Matrix3d[9];
 
 #ifdef __cplusplus
 } // extern "C"

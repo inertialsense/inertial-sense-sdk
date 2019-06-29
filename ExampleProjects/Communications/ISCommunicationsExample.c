@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -162,14 +162,14 @@ int main(int argc, char* argv[])
 	int error;
 
 	// STEP 4: Stop any message broadcasting
-	if (error = stop_message_broadcasting(&serialPort, &comm))
+	if ((error = stop_message_broadcasting(&serialPort, &comm)))
 	{
 		return error;
 	}
 
 
 #if 0	// STEP 5: Set configuration
-	if (error = set_configuration(&serialPort, &comm))
+	if ((error = set_configuration(&serialPort, &comm)))
 	{
 		return error; 
 	}
@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
 
 	
     // STEP 6: Enable message broadcasting
-	if (error = enable_message_broadcasting_get_data(&serialPort, &comm))
+	if ((error = enable_message_broadcasting_get_data(&serialPort, &comm)))
 	{
 		return error;
 	}

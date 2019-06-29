@@ -1,3 +1,18 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
+
+project(InertialSenseSDK)
+
+#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers")
+
+
+SET(BUILD_INERTIAL_SENSE_SDK 1)
+
+add_definitions(-DRTK_EMBEDDED)
+find_package(Threads REQUIRED)
+
 add_library(InertialSense
   src/cltool.cpp
   src/cltool_main.cpp
@@ -15,7 +30,6 @@ add_library(InertialSense
   src/DeviceLogKML.cpp
   src/DeviceLogSerial.cpp
   src/DeviceLogSorted.cpp
-  src/GpsParser.cpp
   src/InertialSense.cpp
   src/inertialSenseBootLoader.c
   src/ISComm.c
@@ -41,17 +55,10 @@ add_library(InertialSense
   src/tinyxmlerror.cpp
   src/tinyxmlparser.cpp
   )
+target_include_directories(InertialSense PUBLIC src external)
+target_link_libraries(InertialSense pthread)
+target_compile_options(InertialSense PUBLIC -fPIC)
 
-if(DEFINED INCLUDE_RTK)
-  target_link_libraries(InertialSense rtklib)
-else()
-  target_link_libraries(InertialSense)
-endif(DEFINED INCLUDE_RTK)
+add_subdirectory(CLTool)
+add_subdirectory(ExampleProjects)
 
-add_definitions(
-  -Wno-format-extra-args
-  -Wno-extended-offsetof
-  )
-
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions -fPIC -O3")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions -fPIC -O3")

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -529,7 +529,7 @@ void cltool_outputHelp()
 
 bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
 {
-	const nvm_flash_cfg_t& flashConfig = inertialSenseInterface.GetFlashConfig();
+	nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	if (flashConfigString.length() < 2)
@@ -548,7 +548,6 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 	}
 	else
 	{
-		nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
 		vector<string> keyValues;
 		splitString(flashConfigString, "|", keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)

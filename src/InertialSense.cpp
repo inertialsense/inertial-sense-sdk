@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -124,11 +124,10 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 {
 	m_logThread = NULLPTR;
 	m_lastLogReInit = time(0);
-	m_parser = NULLPTR;
 	m_clientStream = NULLPTR;
 	m_clientBufferBytesToSend = 0;
 	m_clientServerByteCount = 0;
-	m_disableBroadcastsOnClose = false;
+    m_disableBroadcastsOnClose = false;
 	memset(m_comManagerState.binaryCallback, 0, sizeof(m_comManagerState.binaryCallback));
 	m_comManagerState.binaryCallbackGlobal = callback;
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
@@ -282,7 +281,15 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 	return false;
 }
 
-bool InertialSense::SetLoggerEnabled(bool enable, const string& path, cISLogger::eLogType logType, uint64_t rmcPreset, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
+bool InertialSense::SetLoggerEnabled(
+    bool enable, 
+    const string& path, 
+    cISLogger::eLogType logType, 
+    uint64_t rmcPreset, 
+    float maxDiskSpacePercent, 
+    uint32_t maxFileSize, 
+    uint32_t chunkSize, 
+    const string& subFolder)
 {
 	if (enable)
 	{
@@ -316,20 +323,6 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 		return opened;
 	}
 
-	eGpsParserType type;
-	if (pieces[0] == "RTCM3")
-	{
-		type = GpsParserTypeRtcm3;
-	}
-	else if (pieces[0] == "IS")
-	{
-		type = GpsParserTypeInertialSense;
-	}
-	else
-	{
-		type = GpsParserTypeUblox;
-	}
-
 	if (pieces[1] == "SERIAL")
 	{
 		if (pieces.size() < 4)
@@ -355,7 +348,6 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 	if (opened)
 	{
 		// configure as RTK rover
-		m_parser = cGpsParser::CreateParser(type, this);
 		uint32_t cfgBits = RTK_CFG_BITS_GPS1_RTK_ROVER;
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
@@ -372,11 +364,6 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 
 void InertialSense::CloseServerConnection()
 {
-	if (m_parser != NULLPTR)
-	{
-		delete m_parser;
-		m_parser = NULLPTR;
-	}
 	m_tcpClient.Close();
 	m_tcpServer.Close();
 	m_serialServer.Close();
@@ -440,8 +427,8 @@ bool InertialSense::Update()
 			if (count > 0)
 			{
 				m_clientServerByteCount += count;
-				m_parser->Write(buffer, count);
-			}
+                OnPacketReceived(buffer, count);
+            }
 
 			// send data to client if available, i.e. nmea gga pos
 			if (m_clientServerByteCount > 0)
@@ -671,9 +658,8 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 	return results;
 }
 
-bool InertialSense::OnPacketReceived(const cGpsParser* parser, const uint8_t* data, uint32_t dataLength)
+bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)
 {
-	(void)parser;
 	for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 	{
 		// sleep in between to allow test bed to send the serial data
@@ -686,6 +672,7 @@ bool InertialSense::OnPacketReceived(const cGpsParser* parser, const uint8_t* da
 
 void InertialSense::OnClientConnecting(cISTcpServer* server)
 {
+	(void)server;
 	cout << endl << "Client connecting..." << endl;
 }
 

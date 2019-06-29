@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -29,7 +29,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDisplay.h"
 #include "ISUtilities.h"
 #include "ISSerialPort.h"
-#include "GpsParser.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
 
@@ -63,7 +62,7 @@ using namespace std;
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
 */
-class InertialSense : public iGpsParserDelegate, iISTcpServerDelegate
+class InertialSense : public iISTcpServerDelegate
 {
 public:
 	struct com_manager_cpp_state_t
@@ -158,7 +157,15 @@ public:
 	* @param subFolder timestamp sub folder or empty for none
 	* @return true if success, false if failure
 	*/
-	bool SetLoggerEnabled(bool enable, const string& path = cISLogger::g_emptyString, cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT, uint64_t rmcPreset = RMC_PRESET_PPD_BITS, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t chunkSize = 131072, const string& subFolder = cISLogger::g_emptyString);
+	bool SetLoggerEnabled(
+        bool enable, 
+        const string& path = cISLogger::g_emptyString, 
+        cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT, 
+        uint64_t rmcPreset = RMC_PRESET_PPD_BITS, 
+        float maxDiskSpacePercent = 0.5f, 
+        uint32_t maxFileSize = 1024 * 1024 * 5, 
+        uint32_t chunkSize = 131072, 
+        const string& subFolder = cISLogger::g_emptyString);
 
 	/**
 	* Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
@@ -287,7 +294,7 @@ public:
     static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
 
 protected:
-	bool OnPacketReceived(const cGpsParser* parser, const uint8_t* data, uint32_t dataLength) OVERRIDE;
+	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
 	void OnClientConnecting(cISTcpServer* server) OVERRIDE;
 	void OnClientConnected(cISTcpServer* server, socket_t socket) OVERRIDE;
 	void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
@@ -306,7 +313,6 @@ private:
 	cISTcpServer m_tcpServer;
 	cISSerialPort m_serialServer;
 	cISStream* m_clientStream;
-	cGpsParser* m_parser; // parser so we can forward messages from a server to the uINS all at once - that way they aren't broken up in between other data set to the uINS
 	uint64_t m_clientServerByteCount;
 	bool m_disableBroadcastsOnClose;
 

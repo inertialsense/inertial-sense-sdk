@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -11,12 +11,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISComm.h"
-
-#if defined(RTK_EMBEDDED)
-
-#include "../../libs-int/rtklib/src/rtklib.h"
-
-#else
 
 /**
 * Calculate 24 bit crc used in formats like RTCM3 - note that no bounds checking is done on buffer
@@ -87,13 +81,11 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 	return bits;
 }
 
-#endif
-
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = { IS_BAUDRATE_3000000, IS_BAUDRATE_921600, IS_BAUDRATE_460800, IS_BAUDRATE_230400, IS_BAUDRATE_115200, IS_BAUDRATE_57600, IS_BAUDRATE_38400, IS_BAUDRATE_19200 };
 static int s_packetEncodingEnabled = 1;
 
 // Replace special character with encoded equivalent and add to buffer
-static uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest)
+static uint8_t* encodeByteAddToBuffer(uint32_t val, uint8_t* ptrDest)
 {
 	switch (val)
 	{
@@ -107,15 +99,15 @@ static uint8_t* encodeByteAddToBuffer(unsigned val, uint8_t* ptrDest)
 		if (s_packetEncodingEnabled)
 		{
 			*ptrDest++ = PSC_RESERVED_KEY;
-			*ptrDest++ = ~val;
+			*ptrDest++ = (uint8_t)~val;
 		}
 		else
 		{
-			*ptrDest++ = val;
+			*ptrDest++ = (uint8_t)val;
 		}
 		break;
 	default:
-		*ptrDest++ = val;
+		*ptrDest++ = (uint8_t)val;
 		break;
 	}
 
@@ -334,16 +326,21 @@ static uint32_t processUbloxByte(is_comm_instance_t* instance, uint8_t byte)
 			instance->hasStartByte = 0;
 			return DID_NULL;
 		}
+		// fall through
 	case 2: // class id
+		// fall through
 	case 3: // message id
+		// fall through
 	case 4: // length byte 1
+		// fall through
 	case 0:
 		instance->externalParseState++;
 		break;
 
 	case 5: // length byte 2
 	{
-        uint32_t len = BE_SWAP16(*(uint16_t*)(instance->bufferPtr - 2));
+
+        uint32_t len = BE_SWAP16(*((uint16_t*)(void*)(instance->bufferPtr - 2)));
 
 		// if length is greater than available buffer, we cannot parse this ublox packet - ublox header is 6 bytes
         if (len > instance->bufferSize - 6)
@@ -505,7 +502,7 @@ int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t off
 	packet_hdr_t hdr;
 	hdr.flags = 0;
 	hdr.pid = PID_GET_DATA;
-	hdr.counter = instance->counter++;
+	hdr.counter = (uint8_t)instance->counter++;
 
 	return is_encode_binary_packet(&request, sizeof(request), &hdr, 0, instance->buffer, instance->bufferSize);
 }
@@ -527,8 +524,8 @@ static int sendData(is_comm_instance_t* instance, uint32_t dataId, uint32_t offs
 
 	packet_hdr_t hdr;
 	hdr.flags = 0;
-	hdr.pid = pid;
-	hdr.counter = instance->counter++;
+	hdr.pid = (uint8_t)pid;
+	hdr.counter = (uint8_t)instance->counter++;
 
 	int result = is_encode_binary_packet(toSend, dataSize, &hdr, 0, instance->buffer, instance->bufferSize);
 	FREE(toSend);
@@ -550,7 +547,7 @@ int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance)
     packet_hdr_t hdr;
     hdr.flags = 0;
     hdr.pid = PID_STOP_BROADCASTS_ALL_PORTS;
-    hdr.counter = instance->counter++;
+    hdr.counter = (uint8_t)instance->counter++;
 
     return is_encode_binary_packet(0, 0, &hdr, 0, instance->buffer, instance->bufferSize);
 }
@@ -560,7 +557,7 @@ int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance)
     packet_hdr_t hdr;
     hdr.flags = 0;
     hdr.pid = PID_STOP_BROADCASTS_CURRENT_PORT;
-    hdr.counter = instance->counter++;
+    hdr.counter = (uint8_t)instance->counter++;
 
     return is_encode_binary_packet(0, 0, &hdr, 0, instance->buffer, instance->bufferSize);
 }
@@ -609,7 +606,7 @@ void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t*
 {
 	int state = 0;
 	uint8_t* currentPtr = (*ptrSrcEnd) - 1;
-	*(uint32_t*)ftr = 0;
+	memset(ftr, 0, sizeof(uint32_t));
 
 	// we need a state machine to ensure we don't overrun ptrSrcEnd
 	while (state != 7 && currentPtr > ptrSrc)
@@ -682,11 +679,10 @@ int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t
 	case PSC_RESERVED_KEY:
 		// skip special byte
 		val = (~(*ptrSrc++) & 0x000000FF);
-		// fall through intentional
-
+		// fall through
 	default:
 		*checksum ^= (val << shift);
-		*((*_ptrDest)++) = val;
+		*((*_ptrDest)++) = (uint8_t)val;
 	}
 	*_ptrSrc = ptrSrc;
 

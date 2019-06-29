@@ -9,7 +9,6 @@ var searchData=
   ['varholdamb',['varholdamb',['../structprcopt__t.html#ac906b7837156a23a13b65a93c5074c90',1,'prcopt_t']]],
   ['vdop',['vDop',['../struct_p_a_c_k_e_d.html#a813b2407ee5457da8acb52573459f2c0',1,'PACKED']]],
   ['ve',['ve',['../struct_p_a_c_k_e_d.html#aa568d2b2de7ef3d003276d7854d57704',1,'PACKED']]],
-  ['vectortobase',['vectorToBase',['../struct_p_a_c_k_e_d.html#a23099d7c1e1522b5a5e02ae15295a916',1,'PACKED']]],
   ['vel',['vel',['../structgeph__t.html#a02a84c277664f6b8d2fbab748396292d',1,'geph_t']]],
   ['vel1',['vel1',['../struct_p_a_c_k_e_d.html#a164bbc04b57064e73cb65e16fd081974',1,'PACKED']]],
   ['vel2',['vel2',['../struct_p_a_c_k_e_d.html#afd17f2379658858811ef7f42447b63b9',1,'PACKED']]],
