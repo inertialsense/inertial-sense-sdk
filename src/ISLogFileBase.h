@@ -33,7 +33,7 @@ public:
     virtual int putch(char ch) = 0;
     virtual int puts(const char* str) = 0;
     virtual std::size_t write(const void* bytes, std::size_t len) = 0;
-    virtual int printf(const char* format, ...) = 0;
+    virtual int lprintf(const char* format, ...) = 0;
     virtual int vprintf(const char* format, va_list args) = 0;
 
     virtual int getch() = 0;

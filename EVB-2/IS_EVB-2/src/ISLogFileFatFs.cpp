@@ -182,7 +182,7 @@ std::size_t cISLogFileFatFs::write(const void* bytes, std::size_t len)
     return bytes_written;
 }
 
-int cISLogFileFatFs::printf(const char* format, ...)
+int cISLogFileFatFs::lprintf(const char* format, ...)
 {
     int result;
     va_list args;
@@ -191,6 +191,7 @@ int cISLogFileFatFs::printf(const char* format, ...)
     va_end(args);
     return result;
 }
+
 int cISLogFileFatFs::vprintf(const char* format, va_list args)
 {
     return f_vprintf(&m_file, format, args);

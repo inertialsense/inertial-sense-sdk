@@ -1,12 +1,12 @@
 var searchData=
 [
-  ['cm_5fpkt_5fflags_5fchecksum_5f24_5fbit',['CM_PKT_FLAGS_CHECKSUM_24_BIT',['../_i_s_comm_8h.html#ab0476659eb782bc338d77d1e1142abc3a598240ef76dd5a9f6688203693c9a123',1,'ISComm.h']]],
-  ['cm_5fpkt_5fflags_5fendianness_5fmask',['CM_PKT_FLAGS_ENDIANNESS_MASK',['../_i_s_comm_8h.html#ab0476659eb782bc338d77d1e1142abc3a48ec2445c6c9077fce4b24a25206c98b',1,'ISComm.h']]],
-  ['cm_5fpkt_5fflags_5flittle_5fendian',['CM_PKT_FLAGS_LITTLE_ENDIAN',['../_i_s_comm_8h.html#ab0476659eb782bc338d77d1e1142abc3ad69249a6d24cd128427ff5a88b2c6818',1,'ISComm.h']]],
-  ['cm_5fpkt_5fflags_5fmore_5fdata_5favailable',['CM_PKT_FLAGS_MORE_DATA_AVAILABLE',['../_i_s_comm_8h.html#ab0476659eb782bc338d77d1e1142abc3a48ce7c163309a8193e5cfbf5512071a8',1,'ISComm.h']]],
-  ['cm_5fpkt_5fflags_5fraw_5fdata_5fno_5fswap',['CM_PKT_FLAGS_RAW_DATA_NO_SWAP',['../_i_s_comm_8h.html#ab0476659eb782bc338d77d1e1142abc3af50f893f1117ff75e69c84617c928775',1,'ISComm.h']]],
-  ['cm_5fpkt_5fflags_5frx_5fvalid_5fdata',['CM_PKT_FLAGS_RX_VALID_DATA',['../_i_s_comm_8h.html#ab0476659eb782bc338d77d1e1142abc3ad74e332e6cd1df17a285332390c72323',1,'ISComm.h']]],
-  ['com_5fmanager_5fpass_5fthrough_5fnone',['COM_MANAGER_PASS_THROUGH_NONE',['../com__manager_8h.html#a15acaf47bda1a0cd59aeb1d0072df930a61dd70877b73318cce10a0697cd74fbb',1,'com_manager.h']]],
-  ['com_5fmanager_5fpass_5fthrough_5frtcm3',['COM_MANAGER_PASS_THROUGH_RTCM3',['../com__manager_8h.html#a15acaf47bda1a0cd59aeb1d0072df930aad914e30b2939b00f22d06dd60f54c5c',1,'com_manager.h']]],
-  ['com_5fmanager_5fpass_5fthrough_5fublox',['COM_MANAGER_PASS_THROUGH_UBLOX',['../com__manager_8h.html#a15acaf47bda1a0cd59aeb1d0072df930aad5c730e94de40b4a6872f070579df43',1,'com_manager.h']]]
+  ['bit_5fstate_5fcmd_5fbasic_5fmoving',['BIT_STATE_CMD_BASIC_MOVING',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844a5c9864a2a013b9e41e07b7e6305a259a',1,'data_sets.h']]],
+  ['bit_5fstate_5fcmd_5ffull_5fstationary',['BIT_STATE_CMD_FULL_STATIONARY',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844a3d6aeba6e0fdff5d710b4c5701a78641',1,'data_sets.h']]],
+  ['bit_5fstate_5fcommand_5foff',['BIT_STATE_COMMAND_OFF',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844a76f850d1fa970501cadde6bc7cff672b',1,'data_sets.h']]],
+  ['bit_5fstate_5fdone',['BIT_STATE_DONE',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844ae4bb4cdac558c53fda6e78bc795fb44b',1,'data_sets.h']]],
+  ['bit_5fstate_5ffinish',['BIT_STATE_FINISH',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844a2ec4fe6d3196262b4f964d8deb80dbef',1,'data_sets.h']]],
+  ['bit_5fstate_5foff',['BIT_STATE_OFF',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844ab2f5861a4d68a9addb164ce238b7ee7e',1,'data_sets.h']]],
+  ['bit_5fstate_5freserved_5f1',['BIT_STATE_RESERVED_1',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844abd971310f68aa80002c179749d0c66e3',1,'data_sets.h']]],
+  ['bit_5fstate_5freserved_5f2',['BIT_STATE_RESERVED_2',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844aad9da1630bdff5bf3798f9064261a9d1',1,'data_sets.h']]],
+  ['bit_5fstate_5frunning',['BIT_STATE_RUNNING',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844ab2de0fb5602b66c16ca1b2e5874e4e90',1,'data_sets.h']]]
 ];

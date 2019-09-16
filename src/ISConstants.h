@@ -84,7 +84,7 @@ extern "C" {
 #define CPU_IS_BIG_ENDIAN 0
 
 
-#elif defined(ARM)
+#elif defined(ARM) || defined(__SAM3X8E__)
 
 #define PLATFORM_IS_EMBEDDED 1
 #define PLATFORM_IS_ARM 1
@@ -116,7 +116,14 @@ extern "C" {
 
 #endif // Invalid CPU endianess
 
-#if defined(PLATFORM_IS_EMBEDDED) && PLATFORM_IS_EMBEDDED
+
+// "PLATFORM_IS_EMBEDDED" must be defined
+#if !defined(PLATFORM_IS_EMBEDDED) 
+#error "Missing PLATFORM_IS_EMBEDDED macro!!!"
+#endif
+
+
+#if PLATFORM_IS_EMBEDDED
 
 extern void* pvPortMalloc(size_t xWantedSize);
 extern void vPortFree(void* pv);
@@ -126,30 +133,19 @@ extern void vPortFree(void* pv);
 
 #else
 
-#ifdef MALLOC_DEBUG
-#ifdef __cplusplus
-extern "C" {
-#endif  // MALLOC_DEBUG => __cplusplus
-extern void* malloc_debug(size_t size);
-extern void* realloc_debug(void* mem, size_t newSize);
-extern void free_debug(void* mem);
-#ifdef __cplusplus
-}
-#endif  // MALLOC_DEBUG => __cplusplus
-#define MALLOC(m) malloc_debug(m)
-#define REALLOC(m, size) realloc_debug(m, size)
-#define FREE(m) free_debug(m)
-#else
 #define MALLOC(m) malloc(m)
 #define REALLOC(m, size) realloc(m, size)
 #define FREE(m) free(m)
-#endif // MALLOC_DEBUG
 
-#endif // defined(PLATFORM_IS_EMBEDDED) && PLATFORM_IS_EMBEDDED
+#endif 
 
-#ifndef SNPRINTF
+#if PLATFORM_IS_EMBEDDED
+#include "../hw-libs/printf-master/printf.h"	// Use embedded-safe SNPRINTF
+#define SNPRINTF snprintf_
+#else
 #define SNPRINTF snprintf
-#endif // SNPRINTF
+#endif
+
 
 #if defined(_MSC_VER)
 
@@ -188,7 +184,7 @@ extern void free_debug(void* mem);
 #define _RMDIR(dir) f_unlink(dir)
 #define _GETCWD(buf, len) f_getcwd(buf, len)
 
-#elif !defined(PLATFORM_IS_EMBEDDED) || !PLATFORM_IS_EMBEDDED
+#elif !PLATFORM_IS_EMBEDDED
 #define BEGIN_CRITICAL_SECTION
 #define END_CRITICAL_SECTION
 #define DBGPIO_ENABLE(pin)

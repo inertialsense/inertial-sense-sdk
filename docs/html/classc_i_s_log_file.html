@@ -109,8 +109,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9bcadf6cf270f5e3cf483409e5e512c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89dc15f19e916a1cc136704d6ff50cb2"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file.html#a89dc15f19e916a1cc136704d6ff50cb2">write</a> (const void *bytes, std::size_t len) <a class="el" href="_i_s_constants_8h.html#a5dea698950629d9e51d19c1a25be1c30">OVERRIDE</a></td></tr>
 <tr class="separator:a89dc15f19e916a1cc136704d6ff50cb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe8fe995f71f8c85761df29df0a8b078"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file.html#afe8fe995f71f8c85761df29df0a8b078">printf</a> (const char *format,...) <a class="el" href="_i_s_constants_8h.html#a5dea698950629d9e51d19c1a25be1c30">OVERRIDE</a></td></tr>
-<tr class="separator:afe8fe995f71f8c85761df29df0a8b078"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86094aa81f69435e9f5311e8353f9b7b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file.html#a86094aa81f69435e9f5311e8353f9b7b">lprintf</a> (const char *format,...) <a class="el" href="_i_s_constants_8h.html#a5dea698950629d9e51d19c1a25be1c30">OVERRIDE</a></td></tr>
+<tr class="separator:a86094aa81f69435e9f5311e8353f9b7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16c211e80f3a0948a1803074441317a7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file.html#a16c211e80f3a0948a1803074441317a7">vprintf</a> (const char *format, va_list args) <a class="el" href="_i_s_constants_8h.html#a5dea698950629d9e51d19c1a25be1c30">OVERRIDE</a></td></tr>
 <tr class="separator:a16c211e80f3a0948a1803074441317a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09e558e84cc01240b4db44a02959c27c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file.html#a09e558e84cc01240b4db44a02959c27c">getch</a> () <a class="el" href="_i_s_constants_8h.html#a5dea698950629d9e51d19c1a25be1c30">OVERRIDE</a></td></tr>
@@ -369,6 +369,46 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a86094aa81f69435e9f5311e8353f9b7b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86094aa81f69435e9f5311e8353f9b7b">&#9670;&nbsp;</a></span>lprintf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int cISLogFile::lprintf </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>format</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classc_i_s_log_file_base.html#a4a1b449f8c94fae7f14feb751cc06a76">cISLogFileBase</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_log_file_8cpp_source.html#l00119">119</a> of file <a class="el" href="_i_s_log_file_8cpp_source.html">ISLogFile.cpp</a>.</p>
+
+</div>
+</div>
 <a id="ae96cc335be81acec61669bec0224503c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae96cc335be81acec61669bec0224503c">&#9670;&nbsp;</a></span>open()</h2>
 
@@ -406,46 +446,6 @@ Public Member Functions</h2></td></tr>
 <p>Implements <a class="el" href="classc_i_s_log_file_base.html#af9a792675d7d4e4d5c778b8ef7a41da2">cISLogFileBase</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="_i_s_log_file_8cpp_source.html#l00035">35</a> of file <a class="el" href="_i_s_log_file_8cpp_source.html">ISLogFile.cpp</a>.</p>
-
-</div>
-</div>
-<a id="afe8fe995f71f8c85761df29df0a8b078"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe8fe995f71f8c85761df29df0a8b078">&#9670;&nbsp;</a></span>printf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int cISLogFile::printf </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>format</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>...</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="classc_i_s_log_file_base.html#a38e9113dfbc1458abc6b39249b112891">cISLogFileBase</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="_i_s_log_file_8cpp_source.html#l00119">119</a> of file <a class="el" href="_i_s_log_file_8cpp_source.html">ISLogFile.cpp</a>.</p>
 
 </div>
 </div>

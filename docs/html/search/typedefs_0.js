@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['cmhandle',['CMHANDLE',['../com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde',1,'com_manager.h']]]
+  ['ascii_5fmsgs_5ft',['ascii_msgs_t',['../data__sets_8h.html#a174ed931a6a6cc2559cb56e18cb20b95',1,'data_sets.h']]]
 ];

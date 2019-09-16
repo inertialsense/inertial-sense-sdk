@@ -187,7 +187,7 @@ string cISLogger::CreateCurrentTimestamp()
 #else   // use uINS GPS time
     rtc = g_gps_date_time;    
 #endif
-	snprintf(buf, _ARRAY_BYTE_COUNT(buf), "%.4d%.2d%.2d_%.2d%.2d%.2d",
+	SNPRINTF(buf, _ARRAY_BYTE_COUNT(buf), "%.4d%.2d%.2d_%.2d%.2d%.2d",
 			(int)rtc.year, (int)rtc.month, (int)rtc.day, 
 			(int)rtc.hour, (int)rtc.minute, (int)rtc.second);
 #else
@@ -349,22 +349,22 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 
 	if (!m_enabled)
 	{
-        m_errorFile->printf("Logger is not enabled\r\n");
+        m_errorFile->lprintf("Logger is not enabled\r\n");
 		return false;
 	}
 	else if (device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
-        m_errorFile->printf("Invalid device handle or NULL data\r\n");
+        m_errorFile->lprintf("Invalid device handle or NULL data\r\n");
 		return false;
 	}
 	else if (LogHeaderIsCorrupt(dataHdr))
 	{
-        m_errorFile->printf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
+        m_errorFile->lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
 		m_logStats->LogError(dataHdr);
 	}
     else if (!m_devices[device]->SaveData(dataHdr, dataBuf))
     {
-        m_errorFile->printf("Underlying log implementation failed to save\r\n");
+        m_errorFile->lprintf("Underlying log implementation failed to save\r\n");
         m_logStats->LogError(dataHdr);
     }
 #if 1
@@ -407,7 +407,7 @@ p_data_t* cISLogger::ReadData(unsigned int device)
 	p_data_t* data = NULL;
 	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
 	{
-	    m_errorFile->printf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
+	    m_errorFile->lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
 		m_logStats->LogError(&data->hdr);
 		data = NULL;
 	}
@@ -759,7 +759,7 @@ void cLogStats::WriteToFile(const string &file_name)
         // flush log stats to disk
 #if 1
         cISLogFileBase *statsFile = CreateISLogFile(file_name, "wb");        
-        statsFile->printf("Total count: %d,   Total errors: \r\n\r\n", count, errorCount);
+        statsFile->lprintf("Total count: %d,   Total errors: \r\n\r\n", count, errorCount);
         for (uint32_t id = 0; id < DID_COUNT; id++)
         {
             cLogStatDataId& stat = dataIdStats[id];
@@ -768,11 +768,11 @@ void cLogStats::WriteToFile(const string &file_name)
                 continue;
             }
 
-            statsFile->printf("Data Id: %d (%s)\r\n", id, cISDataMappings::GetDataSetName(id));
-            statsFile->printf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
-            statsFile->printf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
-            statsFile->printf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
-            statsFile->printf("\r\n");
+            statsFile->lprintf("Data Id: %d (%s)\r\n", id, cISDataMappings::GetDataSetName(id));
+            statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
+            statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
+            statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
+            statsFile->lprintf("\r\n");
         }
         CloseISLogFile(statsFile);
 #else

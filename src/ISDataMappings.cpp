@@ -32,13 +32,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #if PLATFORM_IS_EMBEDDED
-
 cISDataMappings* cISDataMappings::s_map;
-
 #else
-
 cISDataMappings cISDataMappings::s_map;
-
 #endif
 
 const unsigned char g_asciiToLowerMap[256] =

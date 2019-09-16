@@ -116,7 +116,7 @@ std::size_t cISLogFile::write(const void* bytes, std::size_t len)
     }
 }
 
-int cISLogFile::printf(const char* format, ...)
+int cISLogFile::lprintf(const char* format, ...)
 {
     int result;
     va_list args;

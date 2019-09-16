@@ -550,7 +550,6 @@
     <ListValues>
       <Value>BOARD=USER_BOARD</Value>
       <Value>ARM_MATH_CM7=true</Value>
-      <Value>printf=iprintf</Value>
       <Value>__FREERTOS__</Value>
       <Value>scanf=iscanf</Value>
       <Value>UDD_ENABLE</Value>
@@ -860,7 +859,6 @@ call "$(MSBuildProjectDirectory)\..\..\..\libs\scripts\update_build_info.bat" ..
     <ListValues>
       <Value>BOARD=USER_BOARD</Value>
       <Value>ARM_MATH_CM7=true</Value>
-      <Value>printf=iprintf</Value>
       <Value>__FREERTOS__</Value>
       <Value>scanf=iscanf</Value>
       <Value>UDD_ENABLE</Value>
@@ -1291,9 +1289,21 @@ call "$(MSBuildProjectDirectory)\..\..\..\libs\scripts\update_build_info.bat" ..
     <Folder Include="src\SDK\hw-libs\misc" />
     <Folder Include="src\SDK\hw-libs\drivers" />
     <Folder Include="src\SDK\" />
+    <Folder Include="src\SDK\hw-libs\printf-master" />
     <Folder Include="src\SDK\src\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\hw-libs\printf-master\printf.c">
+      <SubType>compile</SubType>
+      <Link>src\SDK\hw-libs\printf-master\printf.c</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\printf-master\printf.h">
+      <SubType>compile</SubType>
+      <Link>src\SDK\hw-libs\printf-master\printf.h</Link>
+    </Compile>
+    <Compile Include="src\ASF\sam\drivers\mcan\mcan.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="..\..\..\SDK\src\com_manager.c">
       <SubType>compile</SubType>
       <Link>src\SDK\src\com_manager.c</Link>
@@ -2325,9 +2335,6 @@ call "$(MSBuildProjectDirectory)\..\..\..\libs\scripts\update_build_info.bat" ..
     <Compile Include="src\ASF\common\services\storage\ctrl_access\ctrl_access.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\ASF\sam\drivers\mcan\mcan.c">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="src\ASF\sam\drivers\rtc\rtc.c">
       <SubType>compile</SubType>
     </Compile>
@@ -2554,12 +2561,6 @@ call "$(MSBuildProjectDirectory)\..\..\..\libs\scripts\update_build_info.bat" ..
       <SubType>compile</SubType>
     </None>
     <None Include="src\ASF\thirdparty\fatfs\fatfs-r0.09\src\00readme.txt">
-      <SubType>compile</SubType>
-    </None>
-    <None Include="src\config\conf_mcan.h">
-      <SubType>compile</SubType>
-    </None>
-    <None Include="src\ASF\sam\drivers\mcan\mcan.h">
       <SubType>compile</SubType>
     </None>
     <None Include="src\config\conf_access.h">

@@ -103,8 +103,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a02198a5df4444a383b5c85c510719373"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37151c752d816b668d865d0fc8e62ddb"><td class="memItemLeft" align="right" valign="top">virtual std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file_base.html#a37151c752d816b668d865d0fc8e62ddb">write</a> (const void *bytes, std::size_t len)=0</td></tr>
 <tr class="separator:a37151c752d816b668d865d0fc8e62ddb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a38e9113dfbc1458abc6b39249b112891"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file_base.html#a38e9113dfbc1458abc6b39249b112891">printf</a> (const char *format,...)=0</td></tr>
-<tr class="separator:a38e9113dfbc1458abc6b39249b112891"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a1b449f8c94fae7f14feb751cc06a76"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file_base.html#a4a1b449f8c94fae7f14feb751cc06a76">lprintf</a> (const char *format,...)=0</td></tr>
+<tr class="separator:a4a1b449f8c94fae7f14feb751cc06a76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7729b8c68f45a2ead70fe0a0887db2c"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file_base.html#ae7729b8c68f45a2ead70fe0a0887db2c">vprintf</a> (const char *format, va_list args)=0</td></tr>
 <tr class="separator:ae7729b8c68f45a2ead70fe0a0887db2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a134a438812905553f85c301f5f16323d"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_i_s_log_file_base.html#a134a438812905553f85c301f5f16323d">getch</a> ()=0</td></tr>
@@ -279,6 +279,44 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a4a1b449f8c94fae7f14feb751cc06a76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a1b449f8c94fae7f14feb751cc06a76">&#9670;&nbsp;</a></span>lprintf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual int cISLogFileBase::lprintf </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>format</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classc_i_s_log_file.html#a86094aa81f69435e9f5311e8353f9b7b">cISLogFile</a>.</p>
+
+</div>
+</div>
 <a id="af9a792675d7d4e4d5c778b8ef7a41da2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af9a792675d7d4e4d5c778b8ef7a41da2">&#9670;&nbsp;</a></span>open()</h2>
 
@@ -314,44 +352,6 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classc_i_s_log_file.html#ae96cc335be81acec61669bec0224503c">cISLogFile</a>.</p>
-
-</div>
-</div>
-<a id="a38e9113dfbc1458abc6b39249b112891"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a38e9113dfbc1458abc6b39249b112891">&#9670;&nbsp;</a></span>printf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual int cISLogFileBase::printf </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>format</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>...</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classc_i_s_log_file.html#afe8fe995f71f8c85761df29df0a8b078">cISLogFile</a>.</p>
 
 </div>
 </div>

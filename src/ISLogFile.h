@@ -26,7 +26,7 @@ public:
     int putch(char ch) OVERRIDE;
     int puts(const char* str) OVERRIDE;
     std::size_t write(const void* bytes, std::size_t len) OVERRIDE;
-    int printf(const char* format, ...) OVERRIDE;
+    int lprintf(const char* format, ...) OVERRIDE;
     int vprintf(const char* format, va_list args) OVERRIDE;
 
     int getch() OVERRIDE;
