@@ -39,14 +39,11 @@ typedef struct
 } ringbuf_t;
 
 /*
-* Create a new ring buffer with the given capacity (usable
-* bytes). Note that the actual internal buffer size may be one or
-* more bytes larger than the usable capacity, for bookkeeping.
-*
-* Returns the new ring buffer object, or 0 if there's not enough
-* memory to fulfill the request for the given capacity.
+* Create a new ring buffer with the given buffer and buffer size 
+* Note that the actual buffer capacity may be one more bytes smaller 
+* than the usable capacity, for bookkeeping.
 */
-ringbuf_t* ringbuf_new(size_t capacity);
+void ringbuf_init(ringbuf_t *rb, uint8_t *buf, size_t bufSize);
 
 /*
 * The size of the internal buffer, in bytes. One or more bytes may be
@@ -57,12 +54,6 @@ ringbuf_t* ringbuf_new(size_t capacity);
 * ringbuf_capacity function.
 */
 size_t ringbuf_buffer_size(const ringbuf_t* rb);
-
-/*
-* Deallocate a ring buffer, and, as a side effect, set the pointer to
-* 0.
-*/
-void ringbuf_free(ringbuf_t** rb);
 
 /*
 * Reset a ring buffer to its initial state (empty).

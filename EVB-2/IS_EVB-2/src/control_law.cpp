@@ -36,37 +36,58 @@ void velocity_control(is_comm_instance_t &comm)
     {   // Wheel encoders disabled
         return;
     }
-    
+
 	int chL, chR;
 	bool dirL, dirR;
 	int n=0;
+	int speedL, speedR;
 	static int encoderSendTimeMs=0;
 	static wheel_encoder_t wheelEncoderLast = {0};
 
-	
-	if(abs(g_comm_time_ms-encoderSendTimeMs)>20)
+	if(abs(g_comm_time_ms-encoderSendTimeMs)>=20)
 	{	// Send data at 50Hz
 		encoderSendTimeMs = g_comm_time_ms;
 		
-		//call read encoders
-		quadEncReadAll(&chL, &dirL, &chR, &dirR);
+		// Call read encoders
+		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
+		quadEncReadSpeedAll((uint32_t*)&speedL, (uint32_t*)&speedR);
 		g_wheelEncoder.timeOfWeek = time_seclf();
-		
-		//convert encoder ticks to Rad
+
+		// Set velocity direction
+		if(dirL)
+		{
+			speedL = -speedL;
+		}
+		if(dirR)
+		{
+			speedR = -speedR;
+		}
+				
+		// Convert encoder ticks to radians.
 		g_wheelEncoder.theta_l = chL * g_flashCfg->encoderTickToWheelRad;
 		g_wheelEncoder.theta_r = chR * g_flashCfg->encoderTickToWheelRad;
-		
-		//updated dt and compare to last
-		float dt = (float)(g_wheelEncoder.timeOfWeek - wheelEncoderLast.timeOfWeek);
-		if(dt!=0.0f)
+
+        // Convert TC pulse period to rad/sec.  20us per TC LSB x 2 (measure between every edge).
+        if(speedL)
+        {
+            g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / (0.00001f * (float)speedL);
+        }
+        else
+        {
+            g_wheelEncoder.omega_l = 0.0f;
+        }
+        if(speedR)
 		{
-			g_wheelEncoder.omega_l = (g_wheelEncoder.theta_l-wheelEncoderLast.theta_l)/dt;
-			g_wheelEncoder.omega_r = (g_wheelEncoder.theta_r-wheelEncoderLast.theta_r)/dt;
-		}
+            g_wheelEncoder.omega_r = g_flashCfg->encoderTickToWheelRad / (0.00001f * (float)speedR);
+        }
+        else
+        {
+            g_wheelEncoder.omega_r = 0.0f;
+        }
 		
-		//encoder Wrap count (currently counting revolutions) 
-		g_wheelEncoder.wrap_count_l = g_wheelEncoder.theta_l / (2*PI);
-		g_wheelEncoder.wrap_count_r = g_wheelEncoder.theta_r / (2*PI);	
+		// Encoder Wrap count (currently counting revolutions) 
+//		g_wheelEncoder.wrap_count_l = g_wheelEncoder.theta_l / (2*PI);
+//		g_wheelEncoder.wrap_count_r = g_wheelEncoder.theta_r / (2*PI);	
 				
 		n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 		comWrite(EVB2_PORT_UINS0, comm.buffer, n, LED_INS_TXD_PIN);

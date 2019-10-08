@@ -113,10 +113,8 @@ static void vTaskLogger(void *pvParameters)
     vTaskDelay(800);
 
 #if STREAM_INS_FOR_TIME_SYNC  // Stream INS message on startup.  Necessary to update EVB RTC for correct data log date and time.
-    // This interferes with RTK corrections.
-    // Consider using DID_INS_3 and then disable once the first valid time sync happens.
-    uINS0_stream_stop_all(comm);
-    uINS0_stream_enable_std(comm);
+    //uINS0_stream_stop_all(comm);
+    //uINS0_stream_enable_std(comm);
 #endif
 
     cISLogger logger;

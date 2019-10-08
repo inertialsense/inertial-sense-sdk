@@ -6,7 +6,7 @@ extern "C" {
 
 #include <stdint.h>
 
-// uINS 3 flash layout
+// uINS-3 flash layout - uINS Flash Memory Map
 /*
   page size:           512  (0x200)
   block size:          8192 (0x2000)

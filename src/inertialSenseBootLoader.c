@@ -68,9 +68,9 @@ POP_PACK
 #endif
 
 #define bootloader_perror(s, ...) \
-    if ((s)->error != 0 && (s)->errorLength > 0) \
+    if ((s)->error != 0 && BOOTLOADER_ERROR_LENGTH > 0) \
     { \
-        bootloader_snprintf((s)->error + strlen((s)->error), (s)->errorLength - strlen((s)->error), __VA_ARGS__); \
+        bootloader_snprintf((s)->error + strlen((s)->error), BOOTLOADER_ERROR_LENGTH - strlen((s)->error), __VA_ARGS__); \
     }
 
 #define bootloader_min(a, b) (a < b ? a : b)
@@ -1098,7 +1098,7 @@ static int bootloaderHandshake(bootload_params_t* p)
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
     {
-        if (serialPortOpenInternal(p->port, p->baudRate, p->error, p->errorLength) == 0)
+        if (serialPortOpenInternal(p->port, p->baudRate, p->error, BOOTLOADER_ERROR_LENGTH) == 0)
         {
             // can't open the port, fail
             return 0;
@@ -1128,7 +1128,7 @@ static int bootloaderHandshake(bootload_params_t* p)
 static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 {
     printf("Starting bootloader...\n");
-    if (!enableBootloader(p->port, p->baudRate, p->error, p->errorLength, p->bootloadEnableCmd))
+    if (!enableBootloader(p->port, p->baudRate, p->error, BOOTLOADER_ERROR_LENGTH, p->bootloadEnableCmd))
     {
         printf("Unable to find bootloader\n");
         return 0;
@@ -1322,15 +1322,14 @@ static int samBaSoftReset(serial_port_t* port)
     return 0;
 }
 
-int bootloadFile(serial_port_t* port, const char* fileName, char* error, int errorLength,
+int bootloadFile(serial_port_t* port, const char* fileName, 
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
     bootload_params_t params;
     memset(&params, 0, sizeof(params));
     params.fileName = fileName;
     params.port = port;
-    params.error = error;
-    params.errorLength = errorLength;
+	memset(params.error, 0, sizeof(BOOTLOADER_ERROR_LENGTH));
     params.obj = obj;
     params.uploadProgress = uploadProgress;
     params.verifyProgress = verifyProgress;
@@ -1345,7 +1344,7 @@ int bootloadFileEx(bootload_params_t* params)
     strncpy(params->bootloadEnableCmd, "BLEN", 4);
     int result = 0;
 
-    if (params->error != 0 && params->errorLength > 0)
+    if (params->error != 0 && BOOTLOADER_ERROR_LENGTH > 0)
     {
         *params->error = '\0';
     }
@@ -1372,7 +1371,7 @@ int bootloadFileEx(bootload_params_t* params)
     {
         if (params->error != 0)
         {
-            bootloader_snprintf(params->error, params->errorLength, "Unable to open file: %s", params->fileName);
+            bootloader_snprintf(params->error, BOOTLOADER_ERROR_LENGTH, "Unable to open file: %s", params->fileName);
         }
         return result;
     }
@@ -1391,15 +1390,14 @@ int bootloadFileEx(bootload_params_t* params)
     return result;
 }
 
-int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* error, int errorLength,
+int bootloadUpdateBootloader(serial_port_t* port, const char* fileName,
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
     bootload_params_t params;
     memset(&params, 0, sizeof(params));
     params.fileName = fileName;
     params.port = port;
-    params.error = error;
-    params.errorLength = errorLength;
+	memset(params.error, 0, sizeof(BOOTLOADER_ERROR_LENGTH));
     params.obj = obj;
     params.uploadProgress = uploadProgress;
     params.verifyProgress = verifyProgress;

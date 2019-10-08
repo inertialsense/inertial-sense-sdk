@@ -427,7 +427,7 @@ void TC3_Handler    (void) { for (;;); }
 void TC4_Handler    (void) { for (;;); }
 #endif /* _SAME70_TC1_INSTANCE_ */
 #ifdef _SAME70_TC1_INSTANCE_
-void TC5_Handler    (void) { for (;;); }
+// void TC5_Handler    (void) { for (;;); }
 #endif /* _SAME70_TC1_INSTANCE_ */
 // void AFEC0_Handler  (void) { for (;;); }
 #ifdef _SAME70_DACC_INSTANCE_

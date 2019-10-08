@@ -29,9 +29,10 @@ void quadEncInit(void);
 /**
  * \brief Reads the current position of the encoders.
  */
-void quadEncReadAll(int *pos0, bool *dir0, int *pos1, bool *dir1);
+void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1);
+void quadEncReadSpeedAll(uint32_t *speed0, uint32_t *speed1);
+
 void test_quad_encoders(void);
-void Read_quad_encoders(void);
 
 #ifdef __cplusplus
 	}

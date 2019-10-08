@@ -116,8 +116,8 @@ to exclude the API function. */
 #define INCLUDE_xTimerPendFunctionCall	1
 
 extern evb_rtos_info_t                  g_rtos;
-#define traceMALLOC(pvAddress, uiSize)  g_rtos.mallocMinusFree += uiSize
-#define traceFREE(pvAddress, uiSize)    g_rtos.mallocMinusFree -= uiSize
+#define traceMALLOC(pvAddress, uiSize)  g_rtos.mallocSize += uiSize
+#define traceFREE(pvAddress, uiSize)    g_rtos.freeSize += uiSize
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS

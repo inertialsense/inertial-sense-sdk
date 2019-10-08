@@ -12,6 +12,7 @@ var searchData=
   ['eevbflashcfgbits',['eEvbFlashCfgBits',['../data__sets_8h.html#a41cde3ac915560ce3dbcd2b0ac609be2',1,'data_sets.h']]],
   ['eevbrtostask',['eEvbRtosTask',['../data__sets_8h.html#a2fceec9c79fed79e54487e096c24b314',1,'data_sets.h']]],
   ['eevbstatus',['eEvbStatus',['../data__sets_8h.html#ab19039ede2e85ab4981d519cebed29ee',1,'data_sets.h']]],
+  ['egenfaultcodes',['eGenFaultCodes',['../data__sets_8h.html#a6f762b26aa575261e27028117a7f92fa',1,'data_sets.h']]],
   ['egpsstatus',['eGpsStatus',['../data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108',1,'data_sets.h']]],
   ['ehdwbitstatusflags',['eHdwBitStatusFlags',['../data__sets_8h.html#a20228ceb9caa12db76b8599ff714ea67',1,'data_sets.h']]],
   ['ehdwstatusflags',['eHdwStatusFlags',['../data__sets_8h.html#afb6a6339c59446adc3c95423d9c00128',1,'data_sets.h']]],

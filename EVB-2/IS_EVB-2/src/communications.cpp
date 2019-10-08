@@ -228,7 +228,7 @@ void callback_cdc_set_dtr(uint8_t port, bool b_enable)
 
 void uINS0_stream_stop_all(is_comm_instance_t &comm)
 {
-    int len = is_comm_stop_broadcasts_all_ports(&comm);
+    int len = is_comm_stop_broadcasts_current_port(&comm);
     comWrite(EVB2_PORT_UINS0, comm.buffer, len, LED_INS_TXD_PIN);
 }
 
@@ -355,6 +355,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     if (newCfg.cbPreset != g_flashCfg->cbPreset)
     {
         initCbPreset = true;
+        initIOconfig = true;
     }
     if (newCfg.radioPID != g_flashCfg->radioPID ||
         newCfg.radioNID != g_flashCfg->radioNID ||
@@ -396,7 +397,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
         com_bridge_select_preset(g_flashCfg);
     }
     if(initIOconfig)
-    {
+    {	// Update EVB IO config
         board_IO_config();
     }
     if(reinitXBee)

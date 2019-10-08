@@ -53,7 +53,7 @@ cDeviceLog::~cDeviceLog()
     delete m_logStats;
 }
 
-void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)
+void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
     m_pHandle = pHandle;
 	m_timeStamp = timestamp;
@@ -61,7 +61,6 @@ void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::s
 	m_fileCount = 0;
 	m_maxDiskSpace = maxDiskSpace;
 	m_maxFileSize = maxFileSize;
-	m_maxChunkSize = chunkSize;
 	m_logSize = 0;
 }
 
@@ -230,7 +229,7 @@ string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, con
 	// file name 
 #if 1
     char filename[200];
-    snprintf(filename, sizeof(filename), "%s/%s%d_%s_%04d%s%s", 
+    SNPRINTF(filename, sizeof(filename), "%s/%s%d_%s_%04d%s%s", 
         m_directory.c_str(), 
         IS_LOG_FILE_PREFIX, 
         (int)serialNumber, 

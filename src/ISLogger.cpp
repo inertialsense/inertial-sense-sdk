@@ -117,7 +117,7 @@ void cISLogger::Update()
 }
 
 
-bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
 	static const int minFileCount = 50;
 	static const int maxFileCount = 10000;
@@ -144,9 +144,6 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 	{
 		m_maxFileSize = maxFileSize;
 	}
-
-	// make sure chunk size is valid
-	m_maxChunkSize = _MIN(maxChunkSize, m_maxFileSize);
 
 	// create root dir
 	_MKDIR(m_directory.c_str());
@@ -201,14 +198,14 @@ string cISLogger::CreateCurrentTimestamp()
 }
 
 
-bool cISLogger::InitSave(eLogType logType, const string& directory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSave(eLogType logType, const string& directory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
 	m_timeStamp = CreateCurrentTimestamp();
-	return InitSaveCommon(logType, directory, g_emptyString, numDevices, maxDiskSpacePercent, maxFileSize, maxChunkSize, useSubFolderTimestamp);
+	return InitSaveCommon(logType, directory, g_emptyString, numDevices, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
 }
 
 
-bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directory, const string& subDirectory, int numDevices, eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directory, const string& subDirectory, int numDevices, eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
 	if (timeStamp.length() == 0)
 	{
@@ -220,7 +217,7 @@ bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directo
 		m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
 	}
 
-	return InitSaveCommon(logType, directory, subDirectory, numDevices, maxDiskSpacePercent, maxFileSize, maxChunkSize, useSubFolderTimestamp);
+	return InitSaveCommon(logType, directory, subDirectory, numDevices, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
 }
 
 
@@ -246,7 +243,7 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 #endif
 		}
 
-		m_devices[i]->InitDeviceForWriting(i, m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize, m_maxChunkSize);
+		m_devices[i]->InitDeviceForWriting(i, m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
 	}
 
 	m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
@@ -536,10 +533,10 @@ const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
 	return m_devices[device]->GetDeviceInfo();
 }
 
-bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, uint32_t maxChunkSize, bool useSubFolderTimestamp)
+bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
 	m_logStats->Clear();
-	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxLogSpacePercent, maxFileSize, maxChunkSize, useSubFolderTimestamp))
+	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
 	{
 		return false;
 	}

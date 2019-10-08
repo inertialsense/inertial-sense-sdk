@@ -35,6 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #	include "../../libs/IS_internal.h"
 #endif
 
+
 int cDataCSV::WriteHeaderToFile(FILE* pFile, uint32_t id)
 {
 	// Verify file pointer

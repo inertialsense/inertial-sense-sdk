@@ -25,6 +25,7 @@ var searchData=
   ['clogstatdataid',['cLogStatDataId',['../classc_log_stat_data_id.html',1,'']]],
   ['clogstats',['cLogStats',['../classc_log_stats.html',1,'']]],
   ['cmd_5foptions_5ft',['cmd_options_t',['../structcmd__options__t.html',1,'']]],
+  ['com_5fmanager_5fbuffers_5ft',['com_manager_buffers_t',['../structcom__manager__buffers__t.html',1,'']]],
   ['com_5fmanager_5fcpp_5fstate_5ft',['com_manager_cpp_state_t',['../struct_inertial_sense_1_1com__manager__cpp__state__t.html',1,'InertialSense']]],
   ['com_5fmanager_5fstatus_5ft',['com_manager_status_t',['../structcom__manager__status__t.html',1,'']]],
   ['com_5fmanager_5ft',['com_manager_t',['../structcom__manager__t.html',1,'']]],

@@ -235,7 +235,7 @@ int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
 	this->m_host = host;
 	m_port = port;
 	char portString[64];
-	SNPRINTF(portString, sizeof(portString), "%ld", (long)m_port);
+	snprintf(portString, sizeof(portString), "%ld", (long)m_port);
 	addrinfo* result = NULL;
 	addrinfo hints = addrinfo();
 	hints.ai_family = AF_INET;

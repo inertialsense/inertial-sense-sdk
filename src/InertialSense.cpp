@@ -26,7 +26,7 @@ static void bootloaderThread(void* state)
 {
 	bootloader_state_t* s = (bootloader_state_t*)state;
 	serialPortOpen(&s->serial, s->serial.port, s->param.baudRate, 1);
-	if (!enableBootloader(&s->serial, s->param.baudRate, s->param.error, s->param.errorLength, s->param.bootloadEnableCmd))
+	if (!enableBootloader(&s->serial, s->param.baudRate, s->param.error, BOOTLOADER_ERROR_LENGTH, s->param.bootloadEnableCmd))
 	{
 		serialPortClose(&s->serial);
 		s->result = false;
@@ -136,6 +136,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	m_comManagerState.clientBufferSize = sizeof(m_clientBuffer);
 	m_comManagerState.clientBytesToSend = &m_clientBufferBytesToSend;
 	comManagerAssignUserPointer(comManagerGetGlobal(), &m_comManagerState);
+	memset(&m_cmBuffers, 0, sizeof(com_manager_buffers_t));
 }
 
 InertialSense::~InertialSense()
@@ -144,10 +145,10 @@ InertialSense::~InertialSense()
 	Close();
 }
 
-bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder)
+bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder)
 {
 	cMutexLocker logMutexLocker(&m_logMutex);
-	if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, (int)m_comManagerState.serialPorts.size(), logType, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder.length() != 0))
+	if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, (int)m_comManagerState.serialPorts.size(), logType, maxDiskSpacePercent, maxFileSize, subFolder.length() != 0))
 	{
 		return false;
 	}
@@ -288,7 +289,6 @@ bool InertialSense::SetLoggerEnabled(
     uint64_t rmcPreset, 
     float maxDiskSpacePercent, 
     uint32_t maxFileSize, 
-    uint32_t chunkSize, 
     const string& subFolder)
 {
 	if (enable)
@@ -303,7 +303,7 @@ bool InertialSense::SetLoggerEnabled(
 		{ 
 			BroadcastBinaryDataRmcPreset(rmcPreset);
 		}
-		return EnableLogging(path, logType, maxDiskSpacePercent, maxFileSize, chunkSize, subFolder);
+		return EnableLogging(path, logType, maxDiskSpacePercent, maxFileSize, subFolder);
 	}
 
 	// !enable, shutdown logger gracefully
@@ -610,9 +610,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 		// for each port requested, setup a thread to do the bootloader for that port
 		for (size_t i = 0; i < state.size(); i++)
 		{
-			state[i].param.error = (char*)MALLOC(1024);
-            memset(state[i].param.error, 0, 1024);
-			state[i].param.errorLength = 1024;
+            memset(state[i].param.error, 0, BOOTLOADER_ERROR_LENGTH);
 			serialPortPlatformInit(&state[i].serial);
 			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
 			state[i].param.uploadProgress = uploadProgress;
@@ -644,14 +642,6 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 		for (size_t i = 0; i < state.size(); i++)
 		{
 			results.push_back({ state[i].serial.port, state[i].param.error });
-		}
-	}
-
-	for (size_t i = 0; i < state.size(); i++)
-	{
-		if (state[i].param.error != NULLPTR)
-		{
-			FREE(state[i].param.error);
 		}
 	}
 
@@ -737,8 +727,23 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	}
 
 	// [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
-	// serial port read and write and for successfully parsed data.
-	comManagerInit((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
+	// serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
+	if (m_cmBuffers.ringBuffer != NULLPTR){	delete m_cmBuffers.ringBuffer; }
+	if (m_cmBuffers.status != NULLPTR){	delete m_cmBuffers.status; }
+	if (m_cmBuffers.broadcastMsg != NULLPTR){ delete m_cmBuffers.broadcastMsg; }
+	m_cmBuffers.ringBufferSize = (uint32_t)COM_MANAGER_BUF_SIZE_RING_BUFFER(m_comManagerState.serialPorts.size());
+	m_cmBuffers.ringBuffer = new ring_buffer_t[m_comManagerState.serialPorts.size()];
+	m_cmBuffers.statusSize = (uint32_t)COM_MANAGER_BUF_SIZE_STATUS(m_comManagerState.serialPorts.size());
+	m_cmBuffers.status = new com_manager_status_t[m_comManagerState.serialPorts.size()];
+	m_cmBuffers.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
+	m_cmBuffers.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
+#define NUM_ENSURED_PKTS 10
+	m_cmBuffers.ensuredPacketsSize = COM_MANAGER_BUF_SIZE_ENSURED_PKTS(NUM_ENSURED_PKTS);
+	m_cmBuffers.ensuredPackets = new ensured_pkt_t[NUM_ENSURED_PKTS];
+	if (comManagerInit((int)m_comManagerState.serialPorts.size(), NUM_ENSURED_PKTS, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmBuffers) == -1)
+	{	// Error
+		return false;
+	}
 
 	// re-initialize data sets
 	config_t configTemplate;
@@ -799,7 +804,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	// setup com manager again if serial ports dropped out with new count of serial ports
 	if (removedSerials)
 	{
-		comManagerInit((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0);
+		comManagerInit((int)m_comManagerState.serialPorts.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmBuffers);
 	}
 
     return m_comManagerState.serialPorts.size() != 0;

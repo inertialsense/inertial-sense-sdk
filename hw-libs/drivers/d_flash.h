@@ -19,6 +19,8 @@ extern "C" {
 #define FLASH_GPNVM_SECURITY_BIT  0
 #define FLASH_GPNVM_BOOTMODE_BIT  1 // clear:ROM, set:Flash
 
+// uINS-3 flash layout - uINS Flash Memory Map at top of bootloaderShared.h
+
 // write data at the given 8KB aligned flash address
 // address the 8KB aligned flash address to write at
 // newData is the new bytes to put in the block starting at offset - must be exactly 8K (flash block size) in size

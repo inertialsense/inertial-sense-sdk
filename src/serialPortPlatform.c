@@ -573,13 +573,13 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 
 #if PLATFORM_IS_WINDOWS
 
-    readFileExCompletionStruct* c = (readFileExCompletionStruct*)MALLOC(sizeof(readFileExCompletionStruct));
-    c->externalCompletion = completion;
-    c->serialPort = serialPort;
-    c->buffer = buffer;
-    memset(&c->ov, 0, sizeof(c->ov));
+	readFileExCompletionStruct c;
+	c.externalCompletion = completion;
+    c.serialPort = serialPort;
+    c.buffer = buffer;
+    memset(&(c.ov), 0, sizeof(c.ov));
 
-    if (!ReadFileEx(handle->platformHandle, buffer, readCount, (LPOVERLAPPED)c, readFileExCompletion))
+    if (!ReadFileEx(handle->platformHandle, buffer, readCount, (LPOVERLAPPED)&c, readFileExCompletion))
     {
         return 0;
     }

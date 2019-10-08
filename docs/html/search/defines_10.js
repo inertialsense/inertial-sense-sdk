@@ -8,6 +8,8 @@ var searchData=
   ['sbas_5fephemeris_5farray_5fsize',['SBAS_EPHEMERIS_ARRAY_SIZE',['../data__sets_8h.html#a07838cd2ba4b21e916dd50e92e3a6154',1,'data_sets.h']]],
   ['seconds_5fin_5fday',['SECONDS_IN_DAY',['../time__conversion_8h.html#ab8e2596e9eb4c7f02aa52caa4c07ff90',1,'time_conversion.h']]],
   ['seconds_5fin_5fweek',['SECONDS_IN_WEEK',['../time__conversion_8h.html#a7e7087a54da1e633ceb9057a83bcbbec',1,'time_conversion.h']]],
+  ['seconds_5fper_5fday',['SECONDS_PER_DAY',['../data__sets_8h.html#a427ffe4394306d962b8972b3bc952e1c',1,'data_sets.h']]],
+  ['seconds_5fper_5fweek',['SECONDS_PER_WEEK',['../data__sets_8h.html#ac7581c009f2a6a7eaeabbc22875d3e88',1,'data_sets.h']]],
   ['set_5fvec3_5fx',['set_Vec3_X',['../_i_s_matrix_8h.html#a4140bd125e757250417860a26a3844b8',1,'ISMatrix.h']]],
   ['set_5fvec4_5fx',['set_Vec4_X',['../_i_s_matrix_8h.html#ac9395a32633830c7557ad5237a2235ab',1,'ISMatrix.h']]],
   ['sleep_5fms',['SLEEP_MS',['../_i_s_utilities_8h.html#a038783cd27cbb54e9c8d8708f147168e',1,'ISUtilities.h']]],

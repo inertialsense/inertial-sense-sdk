@@ -35,7 +35,6 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 		g_commandLineOptions.rmcPreset, // Stream rmc preset
 		g_commandLineOptions.maxLogSpacePercent, // max space in percentage of free space to use, 0 for unlimited
 		g_commandLineOptions.maxLogFileSize, // each log file will be no larger than this in bytes
-		g_commandLineOptions.maxLogMemory, // logger will try and keep under this amount of memory
 		g_commandLineOptions.logSubFolder // log sub folder name
 	);
 
@@ -58,7 +57,6 @@ static bool startsWith(const char* str, const char* pre)
 #define CL_DEFAULT_ENABLE_LOGGING			false 
 #define CL_DEFAULT_MAX_LOG_FILE_SIZE		1024 * 1024 * 5
 #define CL_DEFAULT_MAX_LOG_SPACE_PERCENT	0.5f 
-#define CL_DEFAULT_MAX_LOG_MEMORY			131072
 #define CL_DEFAULT_REPLAY_SPEED				1.0
 #define CL_DEFAULT_BOOTLOAD_VERIFY			false
 
@@ -74,7 +72,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	g_commandLineOptions.logPath = CL_DEFAULT_LOGS_DIRECTORY;
 	g_commandLineOptions.maxLogFileSize = CL_DEFAULT_MAX_LOG_FILE_SIZE;
 	g_commandLineOptions.maxLogSpacePercent = CL_DEFAULT_MAX_LOG_SPACE_PERCENT;
-	g_commandLineOptions.maxLogMemory = CL_DEFAULT_MAX_LOG_MEMORY;
 	g_commandLineOptions.replaySpeed = CL_DEFAULT_REPLAY_SPEED;
 	g_commandLineOptions.bootloaderVerify = CL_DEFAULT_BOOTLOAD_VERIFY;
 	g_commandLineOptions.timeoutFlushLoggerSeconds = 3;
@@ -144,10 +141,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-lmf="))
 		{
 			g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
-		}
-		else if (startsWith(a, "-lmm="))
-		{
-			g_commandLineOptions.maxLogMemory = (uint32_t)strtoul(&a[5], NULL, 10);
 		}
         else if (startsWith(a, "-log-flush-timeout="))
         {
@@ -494,7 +487,6 @@ void cltool_outputUsage()
 	cout << "    -lp=" << boldOff << "PATH        log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
-	cout << "    -lmm=" << boldOff << "BYTES      log max memory in bytes (default: "<< CL_DEFAULT_MAX_LOG_MEMORY << ")" << endlbOn;
 	cout << "    -lts=" << boldOff << "0          log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
 	cout << "    -r" << boldOff << "              replay data log from default path" << endlbOn;
 	cout << "    -rp=" << boldOff << "PATH        replay data log from PATH" << endlbOn;

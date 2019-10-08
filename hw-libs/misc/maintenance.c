@@ -308,7 +308,7 @@ void save_persistent_messages(void)
         // Copy ASCII
         g_nvmInternalFlashCfg->startupAsciiPeriod[port] = g_asciiPeriod[port];
 
-        nvr_write_needed_flash_config(1);
-	    nvr_flash_config_write_enable(1);
+        nvr_flash_config_write_needed();
+	    nvr_flash_config_write_enable();
     }   
 }

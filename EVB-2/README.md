@@ -14,8 +14,6 @@ More details on the EVB-2 can be found in the [Inertial Sense online documentati
 
 The source code for the EVB-2 firmware  is available in the SDK to serve as example to of how  to implement Inertial Sense devices into other systems. The EVB-2 itself can be customized by users to meet various needs.
 
-
-
 ### Compiling EVB-2 Firmware
 
 ##### Atmel Studio
@@ -42,23 +40,27 @@ In order to build you need to install the gcc-arm embedded toolchain. Run these 
 # Install 32-bit dependencies
 sudo apt install -y lib32ncurses5 
 
-# download toolchain version 5_4-2016q3
-wget <https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q3-update/+download/gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2>
+# Download toolchain version
+# wget <https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q3-update/+download/gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2>
+wget -O gcc-arm-none-eabi-linux.tar.bz2 https://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en603996
 
-# unzip file
-tar -xvf gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2 
+# Unzip file
+tar -xvf gcc-arm-none-eabi-linux.tar.bz2 
 
-# move it to the opt directory
-sudo mv gcc-arm-none-eabi-5_4-2016q3 /opt/. 
+# Move it to the opt directory
+sudo mv arm-none-eabi /opt/gcc-arm-none-eabi 
 
 # Add the compiler to the path
-echo "export PATH=\$PATH:/opt/gcc-arm-none-eabi-5_4-2016q3/bin" >> ~/.bashrc 
+echo "export PATH=\$PATH:/opt/gcc-arm-none-eabi/bin" >> ~/.bashrc 
 
-# delete the downloaded file
-rm -rf gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2 
+# Delete the downloaded file
+rm -rf gcc-arm-none-eabi-linux.tar.bz2 
 
 # Re-source your .bashrc to get the updated $PATH
-source ~/.bashrc 
+source ~/.bashrc
+
+# Print gcc toolchain version info
+arm-none-eabi-gcc --version
 ```
 
 ###### **Building**

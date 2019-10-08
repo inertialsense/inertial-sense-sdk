@@ -37,6 +37,10 @@ extern "C" {
 #define BOOTLOADER_RETRIES         1
 #endif
 
+#ifndef BOOTLOADER_ERROR_LENGTH
+#define BOOTLOADER_ERROR_LENGTH	512		// Set to zero to disable
+#endif
+
 /** Bootloader callback function prototype, return value unused currently so return 0 */
 typedef int(*pfnBootloadProgress)(const void* obj, float percent);
 
@@ -44,8 +48,7 @@ typedef struct
 {
 	const char* fileName; // read from this file
 	serial_port_t* port; // connect with this serial port
-	char* error; // error buffer, optional
-	int errorLength; // number of bytes in error
+	char error[BOOTLOADER_ERROR_LENGTH];
 	const void* obj; // user defined pointer
 	pfnBootloadProgress uploadProgress; // upload progress
 	pfnBootloadProgress verifyProgress; // verify progress
@@ -76,7 +79,7 @@ Boot load a .hex or .bin file to a device
 
 @return 0 if failure, non-zero if success
 */
-int bootloadFile(serial_port_t* port, const char* fileName, char* error, int errorLength,
+int bootloadFile(serial_port_t* port, const char* fileName, 
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
 
@@ -91,7 +94,7 @@ Boot load a new bootloader .bin file to device. Device must be in application or
 @param verifyProgress called periodically during firmware verification - can be NULL
 @retur 0 if failure, non-zero if success
 */
-int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, char* error, int errorLength,
+int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, 
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadUpdateBootloaderEx(bootload_params_t* p);
 

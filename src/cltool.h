@@ -84,7 +84,6 @@ typedef struct
 	string logPath; // -lp=path
 	float maxLogSpacePercent; // -lms=max_space_mb
 	uint32_t maxLogFileSize; // -lmf=max_file_size
-	uint32_t maxLogMemory; // -lmm=max_memory
 	string logSubFolder; // -lts=1
 	int baudRate; // -baud=3000000
 	bool disableBroadcastsOnClose;

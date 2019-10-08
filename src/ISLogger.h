@@ -65,8 +65,8 @@ public:
 	bool LoadFromDirectory(const string& directory, eLogType logType = LOGTYPE_DAT, vector<string> serials = {});
 
 	// Setup logger for writing to file.
-	bool InitSave(eLogType logType = LOGTYPE_DAT, const string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
-	bool InitSaveTimestamp(const string& timeStamp, const string& directory = g_emptyString, const string& subDirectory = g_emptyString, int numDevices = 1, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
+	bool InitSave(eLogType logType = LOGTYPE_DAT, const string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool InitSaveTimestamp(const string& timeStamp, const string& directory = g_emptyString, const string& subDirectory = g_emptyString, int numDevices = 1, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
 	// update internal state, handle timeouts, etc.
 	void Update();
@@ -88,7 +88,7 @@ public:
 	uint32_t GetDeviceCount() { return (uint32_t)m_devices.size(); }
 	bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
 	const dev_info_t* GetDeviceInfo(unsigned int device = 0);
-	bool CopyLog(cISLogger& log, const string& timestamp = g_emptyString, const string& outputDir = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, uint32_t maxChunkSize = 131072, bool useSubFolderTimestamp = true);
+	bool CopyLog(cISLogger& log, const string& timestamp = g_emptyString, const string& outputDir = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 	const cLogStats& GetStats() { return *m_logStats; }
 	eLogType GetType() { return m_logType; }
 
@@ -159,7 +159,7 @@ private:
 	cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-	bool InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, bool useSubFolderTimestamp);
+	bool InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
 	bool InitDevicesForWriting(int numDevices = 1);
 	void Cleanup();
 
@@ -179,7 +179,6 @@ private:
 	vector<cDeviceLog*>		m_devices;
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;
-	uint32_t				m_maxChunkSize;
 	cLogStats*				m_logStats;
 	cISLogFileBase*         m_errorFile;
 

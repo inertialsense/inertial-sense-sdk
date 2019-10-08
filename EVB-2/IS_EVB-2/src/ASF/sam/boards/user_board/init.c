@@ -78,6 +78,7 @@
 /**
  * \brief Set input mode for one single IOPORT pin.
  * It will configure port mode and disable pin mode (but enable peripheral).
+ * The "ioport_enable_pin(pin);" line is necessary to allow tristate. (whj)
  * \param pin IOPORT pin to configure
  * \param mode Mode masks to configure for the specified pin (\ref ioport_modes)
  * \param sense Sense for interrupt detection (\ref ioport_sense)
@@ -85,6 +86,7 @@
 #undef ioport_set_pin_input_mode
 #define ioport_set_pin_input_mode(pin, mode, sense) \
 	do {\
+ 		ioport_enable_pin(pin);\
 		ioport_set_pin_dir(pin, IOPORT_DIR_INPUT);\
 		ioport_set_pin_mode(pin, mode);\
 		ioport_set_pin_sense_mode(pin, sense);\
@@ -388,9 +390,35 @@ void refresh_CFG_LED(void)
 
 
 void board_IO_config(void)
-{
-    // UINS ser1 
-    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE)
+{	
+	// uINS ser0
+    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO)
+    {	// I/O tristate
+		ioport_set_pin_input_mode(UART_INS_SER0_TXD_PIN, 0, 0);
+		ioport_set_pin_input_mode(UART_INS_SER0_RXD_PIN, 0, 0);
+	}
+	else
+	{
+#ifdef CONF_BOARD_SERIAL_UINS_SER0
+		ioport_set_pin_peripheral_mode(UART_INS_SER0_RXD_PIN, UART_INS_SER0_RXD_FLAGS);
+		ioport_set_pin_peripheral_mode(UART_INS_SER0_TXD_PIN, UART_INS_SER0_TXD_FLAGS);
+		serInit(EVB2_PORT_UINS0, 921600, NULL);
+#endif		
+	}
+	
+    // uINS ser1 
+    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO)
+	{	// I/O tristate - (Enable pin and set as input)
+	    ioport_set_pin_input_mode(UART_INS_SER1_TXD_PIN, 0, 0);
+	    ioport_set_pin_input_mode(UART_INS_SER1_RXD_PIN, 0, 0);
+
+	    ioport_set_pin_input_mode(SPI_INS_MISO_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_MOSI_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_SCLK_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_CS_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_EN, 0, 0);
+	}
+    else if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE)
     {
 #ifdef CONF_BOARD_SPI_UINS
 	    ioport_set_pin_peripheral_mode(SPI_INS_MISO_PIN, SPI_INS_MISO_FLAGS);
@@ -415,11 +443,12 @@ void board_IO_config(void)
     else
     {
 #ifdef CONF_BOARD_SERIAL_UINS_SER1
-        ioport_set_pin_peripheral_mode(UART_INS_SER1_RXD_PIN, UART_INS_SER1_RXD_FLAGS);
         ioport_set_pin_peripheral_mode(UART_INS_SER1_TXD_PIN, UART_INS_SER1_TXD_FLAGS);
+        ioport_set_pin_peripheral_mode(UART_INS_SER1_RXD_PIN, UART_INS_SER1_RXD_FLAGS);
         serInit(EVB2_PORT_UINS1, 115200, NULL);
-	    ioport_set_pin_dir(SPI_INS_SCLK_PIN, IOPORT_DIR_INPUT);
-	    ioport_set_pin_dir(SPI_INS_CS_PIN, IOPORT_DIR_INPUT);
+		ioport_set_pin_input_mode(SPI_INS_SCLK_PIN, 0, 0);
+		ioport_set_pin_input_mode(SPI_INS_CS_PIN, 0, 0);
+		ioport_set_pin_input_mode(SPI_INS_EN, 0, 0);
 #endif
     }        
 
@@ -438,8 +467,19 @@ void board_IO_config(void)
 #endif
 
 #ifdef CONF_BOARD_SERIAL_XBEE
-    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_XBEE_ENABLE )
+    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_XBEE_ENABLE)
     {   // XBee enabled
+		ioport_set_pin_peripheral_mode(UART_XBEE_RXD_PIN, UART_XBEE_RXD_FLAGS);
+		ioport_set_pin_peripheral_mode(UART_XBEE_TXD_PIN, UART_XBEE_TXD_FLAGS);
+		ioport_set_pin_peripheral_mode(UART_XBEE_N_CTS_PIN, UART_XBEE_N_CTS_FLAGS);
+		serInit(EVB2_PORT_XBEE, 115200, NULL);
+#if 0
+		ioport_set_pin_peripheral_mode(UART_XBEE_N_RTS_PIN, UART_XBEE_N_RTS_FLAGS);
+		ioport_set_pin_peripheral_mode(UART_XBEE_DTR_PIN, UART_XBEE_DTR_FLAGS);
+#else
+		ioport_set_pin_output_mode(UART_XBEE_N_DTR_PIN, IOPORT_PIN_LEVEL_LOW);          // Low assert
+		ioport_set_pin_output_mode(UART_XBEE_N_RTS_PIN, IOPORT_PIN_LEVEL_LOW);          // Low assert
+#endif		
 // 	    ioport_set_pin_output_mode(XBEE_VUSB_DISABLE_PIN, IOPORT_PIN_LEVEL_LOW);    // Enable VBUS
         ioport_set_pin_output_mode(XBEE_RST_PIN, IOPORT_PIN_LEVEL_HIGH);            // Reset off (low asserted)
         ioport_set_pin_output_mode(XBEE_SUPPLY_EN_PIN, IOPORT_PIN_LEVEL_HIGH);      // Enable supply
@@ -447,8 +487,14 @@ void board_IO_config(void)
     }
     else
     {   // XBee disabled
-        ioport_set_pin_output_mode(XBEE_SUPPLY_EN_PIN, IOPORT_PIN_LEVEL_LOW);       // Disable supply
+		ioport_set_pin_input_mode(UART_XBEE_TXD_PIN, 0, 0);
+		ioport_set_pin_input_mode(UART_XBEE_RXD_PIN, 0, 0);
+		ioport_set_pin_input_mode(UART_XBEE_N_CTS_PIN, 0, 0);
+		ioport_set_pin_input_mode(UART_XBEE_N_DTR_PIN, 0, 0);
+		ioport_set_pin_input_mode(UART_XBEE_N_RTS_PIN, 0, 0);
         ioport_set_pin_input_mode(XBEE_RST_PIN, 0, 0);
+
+        ioport_set_pin_output_mode(XBEE_SUPPLY_EN_PIN, IOPORT_PIN_LEVEL_LOW);       // Disable supply
         g_status.evbStatus &= ~EVB_STATUS_XBEE_ENABLED;
 
         LED_OFF(LED_XBEE_RXD_PIN);
@@ -480,10 +526,13 @@ void board_IO_config(void)
 #endif
 
     // Reset default baud rates
-    serSetBaudRate(EVB2_PORT_UINS0, 921600);
-    if(!(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE))
-    {
-        serSetBaudRate(EVB2_PORT_UINS1, 115200);
+    if(!(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO))
+    {	// I/O not tristate		
+		serSetBaudRate(EVB2_PORT_UINS0, 921600);
+		if(!(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE))
+		{
+			serSetBaudRate(EVB2_PORT_UINS1, 115200);
+		}
     }
     serSetBaudRate(EVB2_PORT_BLE, 115200);
     serSetBaudRate(EVB2_PORT_XRADIO, 115200);
@@ -609,28 +658,7 @@ void board_init(void)
 // 	ioport_set_pin_peripheral_mode(USART1_TXD_GPIO, USART1_TXD_FLAGS);
 // #endif
 
-#ifdef CONF_BOARD_SERIAL_UINS_SER0      // UINS ser0
-	ioport_set_pin_peripheral_mode(UART_INS_SER0_RXD_PIN, UART_INS_SER0_RXD_FLAGS);
-	ioport_set_pin_peripheral_mode(UART_INS_SER0_TXD_PIN, UART_INS_SER0_TXD_FLAGS);
-    serInit(EVB2_PORT_UINS0, 921600, NULL);
-#endif
-
-    // UINS ser1 - In board_IO_init() in main.cpp
-
-#ifdef CONF_BOARD_SERIAL_XBEE           // XBee
-    ioport_set_pin_peripheral_mode(UART_XBEE_RXD_PIN, UART_XBEE_RXD_FLAGS);
-    ioport_set_pin_peripheral_mode(UART_XBEE_TXD_PIN, UART_XBEE_TXD_FLAGS);
-    ioport_set_pin_peripheral_mode(UART_XBEE_N_CTS_PIN, UART_XBEE_N_CTS_FLAGS);
-    serInit(EVB2_PORT_XBEE, 115200, NULL);
-#if 0
-    ioport_set_pin_peripheral_mode(UART_XBEE_N_RTS_PIN, UART_XBEE_N_RTS_FLAGS);
-    ioport_set_pin_peripheral_mode(UART_XBEE_DTR_PIN, UART_XBEE_DTR_FLAGS);
-#else
-    ioport_set_pin_output_mode(UART_XBEE_N_DTR_PIN, IOPORT_PIN_LEVEL_LOW);          // Low assert
-    ioport_set_pin_output_mode(UART_XBEE_N_RTS_PIN, IOPORT_PIN_LEVEL_LOW);          // Low assert
-#endif
-	ioport_set_pin_output_mode(XBEE_SUPPLY_EN_PIN, IOPORT_PIN_LEVEL_LOW);           // Disable supply
-#endif
+    // UINS ser0 and ser1 - In board_IO_init() in main.cpp
 
 #ifdef CONF_BOARD_SERIAL_EXT_RADIO      // External Radio
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_RXD_PIN, UART_EXT_RADIO_RXD_FLAGS);

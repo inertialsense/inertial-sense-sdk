@@ -95,8 +95,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3af7a7e42881de50089fe6a8a0ffd1bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a756e796984ae1ca5aaeb3c292604d0ee"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#a756e796984ae1ca5aaeb3c292604d0ee">~cDeviceLog</a> ()</td></tr>
 <tr class="separator:a756e796984ae1ca5aaeb3c292604d0ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac4e0fefa7cd2ec299addac8e5de192e2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#ac4e0fefa7cd2ec299addac8e5de192e2">InitDeviceForWriting</a> (int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)</td></tr>
-<tr class="separator:ac4e0fefa7cd2ec299addac8e5de192e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a38d0948669529102f912cfb07b2241"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#a6a38d0948669529102f912cfb07b2241">InitDeviceForWriting</a> (int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)</td></tr>
+<tr class="separator:a6a38d0948669529102f912cfb07b2241"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9fe5ca33ef0ff0d0bd94e0575507f74"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#ac9fe5ca33ef0ff0d0bd94e0575507f74">InitDeviceForReading</a> ()</td></tr>
 <tr class="separator:ac9fe5ca33ef0ff0d0bd94e0575507f74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85a3eb1a21162f524b1a1f8b9e1b0129"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#a85a3eb1a21162f524b1a1f8b9e1b0129">CloseAllFiles</a> ()</td></tr>
@@ -165,8 +165,6 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a5f181b2d0294da639550437c3293ed66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c9d8555d03e54df253552ce181d27bd"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#a2c9d8555d03e54df253552ce181d27bd">m_maxFileSize</a></td></tr>
 <tr class="separator:a2c9d8555d03e54df253552ce181d27bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a933a6c736c9540ef27e1e92d7363f1fc"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#a933a6c736c9540ef27e1e92d7363f1fc">m_maxChunkSize</a></td></tr>
-<tr class="separator:a933a6c736c9540ef27e1e92d7363f1fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab266bf4e6d44831b1510600bfb05d3db"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#ab266bf4e6d44831b1510600bfb05d3db">m_altClampToGround</a></td></tr>
 <tr class="separator:ab266bf4e6d44831b1510600bfb05d3db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac37e8ea5001bdf811f6948cd99497198"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classc_device_log.html#ac37e8ea5001bdf811f6948cd99497198">m_showTracks</a></td></tr>
@@ -254,7 +252,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classc_device_log_c_s_v.html#aa3ce46153c6369de06d396beadbcdb3c">cDeviceLogCSV</a>, <a class="el" href="classc_device_log_k_m_l.html#ac7f757992500638cd16729fee0d27a86">cDeviceLogKML</a>, <a class="el" href="classc_device_log_serial.html#ae2b90c49aa015cc840bfe3bddbe380dd">cDeviceLogSerial</a>, <a class="el" href="classc_device_log_sorted.html#a5f7d29c41824b9bba40534e20b32cd84">cDeviceLogSorted</a>, and <a class="el" href="classc_device_log_j_s_o_n.html#ae6e551b54b214bdf468563b45397b1e1">cDeviceLogJSON</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00077">77</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00076">76</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -408,7 +406,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00228">228</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00227">227</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -437,12 +435,12 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classc_device_log_c_s_v.html#a3654b051c50e8b7a248a46cf4a0916fa">cDeviceLogCSV</a>, and <a class="el" href="classc_device_log_sorted.html#a8b1b0b03f41be28fe54a5bd67dbb0a3a">cDeviceLogSorted</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00069">69</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00068">68</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ac4e0fefa7cd2ec299addac8e5de192e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4e0fefa7cd2ec299addac8e5de192e2">&#9670;&nbsp;</a></span>InitDeviceForWriting()</h2>
+<a id="a6a38d0948669529102f912cfb07b2241"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a38d0948669529102f912cfb07b2241">&#9670;&nbsp;</a></span>InitDeviceForWriting()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -478,13 +476,7 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>maxFileSize</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>chunkSize</em>&#160;</td>
+          <td class="paramname"><em>maxFileSize</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -581,7 +573,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00267">267</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00266">266</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -608,7 +600,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00137">137</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00136">136</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -635,7 +627,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00198">198</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00197">197</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -665,7 +657,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classc_device_log_k_m_l.html#abfa380696f43a534966231155d370df0">cDeviceLogKML</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00091">91</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00090">90</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -732,7 +724,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classc_device_log_k_m_l.html#a85535e62413604d6c2603fcfda099182">cDeviceLogKML</a>, <a class="el" href="classc_device_log_c_s_v.html#aed949f1a36559db98ea4cae213c118be">cDeviceLogCSV</a>, <a class="el" href="classc_device_log_serial.html#a930a065f8db9fc0fa4183ae32ee8709c">cDeviceLogSerial</a>, <a class="el" href="classc_device_log_sorted.html#aa5a21b81cb0339493f421d5ef5302988">cDeviceLogSorted</a>, and <a class="el" href="classc_device_log_j_s_o_n.html#a13cb5b0f039986d7097eb497e19aa651">cDeviceLogJSON</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00106">106</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00105">105</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -752,7 +744,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00256">256</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00255">255</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -872,7 +864,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00116">116</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8cpp_source.html#l00115">115</a> of file <a class="el" href="_device_log_8cpp_source.html">DeviceLog.cpp</a>.</p>
 
 </div>
 </div>
@@ -897,7 +889,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00083">83</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00082">82</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
 
 </div>
 </div>
@@ -1069,30 +1061,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a933a6c736c9540ef27e1e92d7363f1fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a933a6c736c9540ef27e1e92d7363f1fc">&#9670;&nbsp;</a></span>m_maxChunkSize</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t cDeviceLog::m_maxChunkSize</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00082">82</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
-
-</div>
-</div>
 <a id="a5f181b2d0294da639550437c3293ed66"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5f181b2d0294da639550437c3293ed66">&#9670;&nbsp;</a></span>m_maxDiskSpace</h2>
 
@@ -1209,7 +1177,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00087">87</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00086">86</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
 
 </div>
 </div>
@@ -1233,7 +1201,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00085">85</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00084">84</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
 
 </div>
 </div>
@@ -1257,7 +1225,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00086">86</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00085">85</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
 
 </div>
 </div>
@@ -1281,7 +1249,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00084">84</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_device_log_8h_source.html#l00083">83</a> of file <a class="el" href="_device_log_8h_source.html">DeviceLog.h</a>.</p>
 
 </div>
 </div>

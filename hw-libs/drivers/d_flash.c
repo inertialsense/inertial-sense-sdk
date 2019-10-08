@@ -122,7 +122,7 @@ uint32_t flash_set_user_signature(const volatile void *ptr, uint32_t size)
 	// get copy of user signature in critical section
 	BEGIN_CRITICAL_SECTION
 	
-	uint32_t* ptrCopy = (uint32_t*)MALLOC(size);
+	uint32_t* ptrCopy = (uint32_t*)pvPortMalloc(size);
 	memcpy(ptrCopy, (const void*)ptr, size);
 	
 	END_CRITICAL_SECTION
@@ -133,7 +133,7 @@ uint32_t flash_set_user_signature(const volatile void *ptr, uint32_t size)
 	// perform flash write with copy of data outside critical section, size for this function is
 	//  number of 32 bit words.
 	uint32_t result = flash_write_user_signature(ptrCopy, size / sizeof(uint32_t));
-	FREE(ptrCopy);
+	vPortFree(ptrCopy);
 	return result;
 }
 

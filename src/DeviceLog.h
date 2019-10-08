@@ -37,7 +37,7 @@ class cDeviceLog
 public:
     cDeviceLog();
     virtual ~cDeviceLog();
-	virtual void InitDeviceForWriting(int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize);
+	virtual void InitDeviceForWriting(int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize);
 	virtual void InitDeviceForReading();
     virtual bool CloseAllFiles();
 	virtual bool OpenWithSystemApp();
@@ -79,7 +79,6 @@ protected:
 	uint32_t                m_fileCount;
 	uint64_t                m_maxDiskSpace;
 	uint32_t                m_maxFileSize;
-	uint32_t                m_maxChunkSize;
 	bool                    m_altClampToGround;
 	bool                    m_showTracks;
 	bool                    m_showPoints;

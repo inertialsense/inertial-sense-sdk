@@ -40,6 +40,8 @@ var searchData=
   ['bootloadenablecmd',['bootloadEnableCmd',['../structbootload__params__t.html#a0d32da48ece6e00d21a5b7be5c84a31d',1,'bootload_params_t']]],
   ['bootloaderverify',['bootloaderVerify',['../structcmd__options__t.html#a86075aac41712b9d96dd1e52aee0667b',1,'cmd_options_t']]],
   ['broadcastmessages',['broadcastMessages',['../structcom__manager__t.html#a01a38214bdf57c48d70a7b6c7dbdf32c',1,'com_manager_t']]],
+  ['broadcastmsg',['broadcastMsg',['../structcom__manager__buffers__t.html#a477681448e22b6f844d039f5e14d3839',1,'com_manager_buffers_t']]],
+  ['broadcastmsgsize',['broadcastMsgSize',['../structcom__manager__buffers__t.html#afa906788fb790e91801c0e2d3fc4fbf2',1,'com_manager_buffers_t']]],
   ['buf',['buf',['../structring__buffer__t.html#a35b6546f057e9b211c1f51f8537388dc',1,'ring_buffer_t::buf()'],['../struct_p_a_c_k_e_d.html#a221094b18969bf326b317836327fddb9',1,'PACKED::buf()'],['../structp__cnk__data__t.html#a0965a9f3807d47219798032f5d866019',1,'p_cnk_data_t::buf()'],['../structbuffer__t.html#ac75c7fd252491f31cc9fa3458aafad8d',1,'buffer_t::buf()'],['../structp__data__t.html#a006c80696cc8ad6e3699d853da9c9c07',1,'p_data_t::buf()'],['../structp__ack__t.html#a2c304755ebea9c13682813a6edd44a1a',1,'p_ack_t::buf()'],['../structringbuf__t.html#ae9f480f21158821b73099cd8a2552cba',1,'ringbuf_t::buf()']]],
   ['buffer',['buffer',['../structis__comm__instance__t.html#a9d0ddeeff9552b068e88ada137f1a144',1,'is_comm_instance_t']]],
   ['bufferptr',['bufferPtr',['../structis__comm__instance__t.html#afc06093fa4fa6ffa4f46c46e0ef469b2',1,'is_comm_instance_t']]],

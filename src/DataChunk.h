@@ -13,7 +13,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef DATA_CHUNK_H
 #define DATA_CHUNK_H
 
-#define DEFAULT_CHUNK_DATA_SIZE     131072          // 100 KB
+#include "ISConstants.h"
+#if PLATFORM_IS_EVB_2
+#define DEFAULT_CHUNK_DATA_SIZE     16384			// 16 KB (EVB)
+#else
+#define DEFAULT_CHUNK_DATA_SIZE     131072          // 128 KB
+#endif
+
 #define DATA_CHUNK_MARKER           0xFC05EA32
 
 #include <stdint.h>
@@ -73,12 +79,10 @@ public:
 	cDataChunk();
     virtual ~cDataChunk();
 
-	void Init(uint32_t maxSize = DEFAULT_CHUNK_DATA_SIZE, const char* name = "PDAT");
-	void Resize(uint32_t maxSize);
     uint32_t GetBuffSize() { return (uint32_t)(m_buffTail - m_buffHead); }
     uint32_t GetBuffFree() { return (uint32_t)(m_buffTail - m_dataTail); }
     uint32_t GetDataSize() { return (uint32_t)(m_dataTail - m_dataHead); }
-    void SetName(const char *name);
+    void SetName(const char name[4]);
 	uint8_t* GetDataPtr();
 	bool PopFront(uint32_t size);
     int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0); // Returns number of bytes written to file and clears the chunk
@@ -104,7 +108,7 @@ protected:
 	virtual int32_t GetHeaderSize();
 
 private:
-    uint8_t* m_buffHead;    // Start of buffer
+    uint8_t m_buffHead[DEFAULT_CHUNK_DATA_SIZE];    // Start of buffer
     uint8_t* m_buffTail;    // End of buffer
     uint8_t* m_dataHead;    // Front of data in buffer.  This moves as data is read.
     uint8_t* m_dataTail;    // End of data in buffer.  This moves as data is written.

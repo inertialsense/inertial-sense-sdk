@@ -96,7 +96,10 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
         break;
     }        
 
-    // USB Hub
+    // Clear existing
+    cfg->cbOptions = 0;
+
+	// WiFi Enabled
     switch(cfg->cbPreset)
     {
     case EVB2_CB_PRESET_RS422_WIFI:
@@ -105,8 +108,17 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
         break;
     }        
 
-    // Clear existing
-    cfg->cbOptions = 0;
+	// USB Hub
+	switch(cfg->cbPreset)
+	{
+	case EVB2_CB_PRESET_USB_HUB_RS232:
+	case EVB2_CB_PRESET_USB_HUB_RS422:
+		cfg->cbOptions |= EVB2_CB_OPTIONS_TRISTATE_UINS_IO;
+		break;
+	default:
+		cfg->cbOptions &= ~EVB2_CB_OPTIONS_TRISTATE_UINS_IO;
+		break;
+	}
         
     // SP330 Options
     switch(cfg->cbPreset)
@@ -162,7 +174,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
     cfg->server[0].port = 7778;
     cfg->server[1].ipAddr = nmi_inet_addr((void*)"192.168.1.144");
     cfg->server[1].port = 2000;
-    cfg->encoderTickToWheelRad = .02708f;
+    cfg->encoderTickToWheelRad = .0179999f;	// Husqvarna lawnmower
 
     com_bridge_select_preset(cfg);
     

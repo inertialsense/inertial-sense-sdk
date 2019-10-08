@@ -515,7 +515,12 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits)
 static int sendData(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data, uint32_t pid)
 {
 	int dataSize = size + sizeof(p_data_hdr_t);
-	uint8_t* toSend = (uint8_t*)MALLOC(dataSize);
+	uint8_t toSend[MAX_DATASET_SIZE];
+	if(dataSize > MAX_DATASET_SIZE)
+	{
+		return -1;
+	}
+	
 	memcpy(toSend + sizeof(p_data_hdr_t), data, size);
 	p_data_hdr_t* dataHdr = (p_data_hdr_t*)toSend;
 	dataHdr->id = dataId;
@@ -528,7 +533,6 @@ static int sendData(is_comm_instance_t* instance, uint32_t dataId, uint32_t offs
 	hdr.counter = (uint8_t)instance->counter++;
 
 	int result = is_encode_binary_packet(toSend, dataSize, &hdr, 0, instance->buffer, instance->bufferSize);
-	FREE(toSend);
 	return result;
 }
 

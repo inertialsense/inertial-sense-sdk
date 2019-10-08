@@ -44,7 +44,7 @@ void update_led_log(void)
         {   // Logging
             if(g_indicateFsWriteMs > 0)
             {   // writing to disk
-                g_indicateFsWriteMs -= g_rtos.task[TASK_MAINTENANCE].periodMs;
+                g_indicateFsWriteMs -= g_rtos.task[EVB_TASK_LOGGER].periodMs;
                 LED_LOG_YELLOW();
 //                 ioport_set_pin_level(SKI_BOX_STATUS_LED_PIN,IOPORT_PIN_LEVEL_HIGH);     // LED ON
             }

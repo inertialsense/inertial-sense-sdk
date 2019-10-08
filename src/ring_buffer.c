@@ -22,25 +22,18 @@
 
 #include "ISConstants.h"
 
-ringbuf_t* ringbuf_new(size_t capacity)
+void ringbuf_init(ringbuf_t *rb, uint8_t *buf, size_t bufSize)
 {
-    ringbuf_t* rb = (ringbuf_t*)MALLOC(sizeof(ringbuf_t));
 	if (rb)
 	{
 		/* One byte is used for detecting the full condition. */
-		rb->size = capacity + 1;
-        rb->buf = (uint8_t*)MALLOC(rb->size);
+		rb->size = bufSize-1;
+		rb->buf = buf;
 		if (rb->buf)
 		{
 			ringbuf_reset(rb);
 		}
-		else
-		{
-            FREE(rb);
-			return 0;
-		}
 	}
-	return rb;
 }
 
 size_t ringbuf_buffer_size(const ringbuf_t *rb)
@@ -51,16 +44,6 @@ size_t ringbuf_buffer_size(const ringbuf_t *rb)
 void ringbuf_reset(ringbuf_t* rb)
 {
 	rb->head = rb->tail = rb->buf;
-}
-
-void ringbuf_free(ringbuf_t** rb)
-{
-    if (rb != 0 && *rb != 0)
-    {
-        FREE((*rb)->buf);
-        FREE(*rb);
-        *rb = 0;
-    }
 }
 
 size_t ringbuf_capacity(const ringbuf_t* rb)

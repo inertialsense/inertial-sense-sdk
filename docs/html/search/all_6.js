@@ -41,5 +41,6 @@ var searchData=
   ['flush',['Flush',['../classc_device_log.html#adc19819b087a015d49979b7af6ed81d0',1,'cDeviceLog::Flush()'],['../classc_device_log_serial.html#abb91be376ea7012b465780eae64be8eb',1,'cDeviceLogSerial::Flush()'],['../classc_i_s_stream.html#acb54b1d2a0b896b24c3bc5463cdd2655',1,'cISStream::Flush()'],['../classc_i_s_file_stream.html#a198c60e189606a1b73842b9deac45498',1,'cISFileStream::Flush()'],['../classc_i_s_log_file.html#a86afb0694247620a29e387c30e54b952',1,'cISLogFile::flush()'],['../classc_i_s_log_file_base.html#aad3aa5147da55e0d12a11ed8913d57b9',1,'cISLogFileBase::flush()']]],
   ['free',['FREE',['../_i_s_constants_8h.html#a08df5b6fa6b8d02fce35aedf8776e435',1,'ISConstants.h']]],
   ['freeheapsize',['freeHeapSize',['../struct_p_a_c_k_e_d.html#a1f22827b3509e0d6c0784decd176606b',1,'PACKED']]],
+  ['freesize',['freeSize',['../struct_p_a_c_k_e_d.html#abff8578bc7af2919d290025f44f51c25',1,'PACKED']]],
   ['frq',['frq',['../structgeph__t.html#ae7fc742d01d96b4757bd037aa1e43bc9',1,'geph_t']]]
 ];

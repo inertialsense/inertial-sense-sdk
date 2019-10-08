@@ -156,6 +156,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_DUAL_IMU_MAG] = sizeof(imu_mag_t);
 	sizeMap[DID_PREINTEGRATED_IMU_MAG] = sizeof(pimu_mag_t);
 	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
+	sizeMap[DID_RTK_DEBUG_2] = sizeof(rtk_debug_2_t);
 
 #endif
 
@@ -254,10 +255,9 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "reserved1", reserved1, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double);
 	ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "reserved2[2]", reserved2[2], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "reserved2[3]", reserved2[3], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
@@ -888,7 +888,8 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "handle[5]", task[5].handle, 0, DataTypeUInt32, uint32_t);
 
     ADD_MAP(m, totalSize, "freeHeapSize", freeHeapSize, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "mallocMinusFree", mallocMinusFree, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "mallocSize", mallocSize, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "freeSize", freeSize, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1318,7 +1319,7 @@ static void PopulateRtkResidualMappings(map_name_to_info_t mappings[DID_COUNT], 
 static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
 {
     typedef rtk_debug_t MAP_TYPE;
-    map_name_to_info_t& m = mappings[DID_RTK_PHASE_RESIDUAL];
+    map_name_to_info_t& m = mappings[DID_RTK_DEBUG];
     uint32_t totalSize = 0;
 
     ADD_MAP(m, totalSize, "time.time", time.time, 0, DataTypeInt64, int64_t);
@@ -1371,7 +1372,7 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "dist2base", dist2base, 0, DataTypeFloat, float);
 
 	ADD_MAP(m, totalSize, "reserved1", reserved1, 0, DataTypeUInt8, uint8_t);
-	ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "gdop_error", gdop_error, 0, DataTypeUInt8, uint8_t);
 	ADD_MAP(m, totalSize, "warning_code", warning_code, 0, DataTypeUInt8, uint8_t);
 	ADD_MAP(m, totalSize, "warning_count", warning_count, 0, DataTypeUInt8, uint8_t);
 
@@ -1380,10 +1381,10 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "double_debug[2]", double_debug[2], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "double_debug[3]", double_debug[3], 0, DataTypeDouble, double&);
 
-	ADD_MAP(m, totalSize, "gdop_error", gdop_error, 0, DataTypeUInt8, uint8_t);
 	ADD_MAP(m, totalSize, "debug[0]", debug[0], 0, DataTypeUInt8, uint8_t&);
 	ADD_MAP(m, totalSize, "debug[1]", debug[1], 0, DataTypeUInt8, uint8_t&);
-	ADD_MAP(m, totalSize, "obs_pairs", obs_pairs, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "obs_count_bas", obs_count_bas, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "obs_count_rov", obs_count_rov, 0, DataTypeUInt8, uint8_t);
 
 	ADD_MAP(m, totalSize, "obs_pairs_filtered", obs_pairs_filtered, 0, DataTypeUInt8, uint8_t);
 	ADD_MAP(m, totalSize, "obs_pairs_used", obs_pairs_used, 0, DataTypeUInt8, uint8_t);
@@ -1391,7 +1392,195 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "raw_dat_queue_overrun", raw_dat_queue_overrun, 0, DataTypeUInt8, uint8_t);
 }
 
+
+static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef rtk_debug_2_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_RTK_DEBUG_2];
+	uint32_t totalSize = 0;
+
+	ADD_MAP(m, totalSize, "time.time", time.time, 0, DataTypeInt64, int64_t);
+	ADD_MAP(m, totalSize, "time.sec", time.sec, 0, DataTypeDouble, double);
+
+#if 0	// This doesn't work in Linux
+
+	char str[50];
+	for (int i = 0; i < NUMSATSOL; i++)
+	{
+		SNPRINTF(str, sizeof(str), "satBiasFloat[%d]", i);
+		ADD_MAP(m, totalSize, str, satBiasFloat[i], 0, DataTypeFloat, float&);
+	}
+
+	for (int i = 0; i < NUMSATSOL; i++)
+	{
+		SNPRINTF(str, sizeof(str), "satBiasFix[%d]", i);
+		ADD_MAP(m, totalSize, str, satBiasFix[i], 0, DataTypeFloat, float&);
+	}
+
+	for (int i = 0; i < NUMSATSOL; i++)
+	{
+		SNPRINTF(str, sizeof(str), "qualL[%d]", i);
+		ADD_MAP(m, totalSize, str, qualL[i], 0, DataTypeUInt8, uint8_t&);
+	}
+
+    for (int i = 0; i < NUMSATSOL; i++)
+    {
+        SNPRINTF(str, sizeof(str), "sat[%d]", i);
+        ADD_MAP(m, totalSize, str, sat[i], 0, DataTypeUInt8, uint8_t&);
+    }
+
+    for (int i = 0; i < NUMSATSOL; i++)
+    {
+        SNPRINTF(str, sizeof(str), "satBiasCov[%d]", i);
+        ADD_MAP(m, totalSize, str, satBiasStd[i], 0, DataTypeFloat, float&);
+    }
+
+#else
+
+	ADD_MAP(m, totalSize, "satBiasFloat[0]", satBiasFloat[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[1]", satBiasFloat[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[2]", satBiasFloat[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[3]", satBiasFloat[3], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[4]", satBiasFloat[4], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[5]", satBiasFloat[5], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[6]", satBiasFloat[6], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[7]", satBiasFloat[7], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[8]", satBiasFloat[8], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[9]", satBiasFloat[9], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[10]", satBiasFloat[10], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[11]", satBiasFloat[11], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[12]", satBiasFloat[12], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[13]", satBiasFloat[13], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[14]", satBiasFloat[14], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[15]", satBiasFloat[15], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[16]", satBiasFloat[16], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[17]", satBiasFloat[17], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[18]", satBiasFloat[18], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[19]", satBiasFloat[19], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[20]", satBiasFloat[20], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFloat[21]", satBiasFloat[21], 0, DataTypeFloat, float&);
+
+	ADD_MAP(m, totalSize, "satBiasFix[0]", satBiasFix[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[1]", satBiasFix[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[2]", satBiasFix[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[3]", satBiasFix[3], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[4]", satBiasFix[4], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[5]", satBiasFix[5], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[6]", satBiasFix[6], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[7]", satBiasFix[7], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[8]", satBiasFix[8], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[9]", satBiasFix[9], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[10]", satBiasFix[10], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[11]", satBiasFix[11], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[12]", satBiasFix[12], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[13]", satBiasFix[13], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[14]", satBiasFix[14], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[15]", satBiasFix[15], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[16]", satBiasFix[16], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[17]", satBiasFix[17], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[18]", satBiasFix[18], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[19]", satBiasFix[19], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[20]", satBiasFix[20], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasFix[21]", satBiasFix[21], 0, DataTypeFloat, float&);
+
+	ADD_MAP(m, totalSize, "qualL[0]", qualL[0], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[1]", qualL[1], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[2]", qualL[2], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[3]", qualL[3], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[4]", qualL[4], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[5]", qualL[5], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[6]", qualL[6], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[7]", qualL[7], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[8]", qualL[8], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[9]", qualL[9], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[10]", qualL[10], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[11]", qualL[11], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[12]", qualL[12], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[13]", qualL[13], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[14]", qualL[14], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[15]", qualL[15], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[16]", qualL[16], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[17]", qualL[17], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[18]", qualL[18], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[19]", qualL[19], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[20]", qualL[20], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "qualL[21]", qualL[21], 0, DataTypeUInt8, uint8_t&);
+
+	ADD_MAP(m, totalSize, "sat[0]", sat[0], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[1]", sat[1], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[2]", sat[2], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[3]", sat[3], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[4]", sat[4], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[5]", sat[5], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[6]", sat[6], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[7]", sat[7], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[8]", sat[8], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[9]", sat[9], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[10]", sat[10], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[11]", sat[11], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[12]", sat[12], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[13]", sat[13], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[14]", sat[14], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[15]", sat[15], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[16]", sat[16], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[17]", sat[17], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[18]", sat[18], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[19]", sat[19], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[20]", sat[20], 0, DataTypeUInt8, uint8_t&);
+	ADD_MAP(m, totalSize, "sat[21]", sat[21], 0, DataTypeUInt8, uint8_t&);
+
+	ADD_MAP(m, totalSize, "satBiasStd[0]", satBiasStd[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[1]", satBiasStd[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[2]", satBiasStd[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[3]", satBiasStd[3], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[4]", satBiasStd[4], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[5]", satBiasStd[5], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[6]", satBiasStd[6], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[7]", satBiasStd[7], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[8]", satBiasStd[8], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[9]", satBiasStd[9], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[10]", satBiasStd[10], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[11]", satBiasStd[11], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[12]", satBiasStd[12], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[13]", satBiasStd[13], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[14]", satBiasStd[14], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[15]", satBiasStd[15], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[16]", satBiasStd[16], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[17]", satBiasStd[17], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[18]", satBiasStd[18], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[19]", satBiasStd[19], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[20]", satBiasStd[20], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "satBiasStd[21]", satBiasStd[21], 0, DataTypeFloat, float&);
+
+    ADD_MAP(m, totalSize, "satLockCnt[0]", satLockCnt[0], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[1]", satLockCnt[1], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[2]", satLockCnt[2], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[3]", satLockCnt[3], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[4]", satLockCnt[4], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[5]", satLockCnt[5], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[6]", satLockCnt[6], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[7]", satLockCnt[7], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[8]", satLockCnt[8], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[9]", satLockCnt[9], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[10]", satLockCnt[10], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[11]", satLockCnt[11], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[12]", satLockCnt[12], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[13]", satLockCnt[13], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[14]", satLockCnt[14], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[15]", satLockCnt[15], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[16]", satLockCnt[16], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[17]", satLockCnt[17], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[18]", satLockCnt[18], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[19]", satLockCnt[19], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[20]", satLockCnt[20], 0, DataTypeInt8, int8_t&);
+    ADD_MAP(m, totalSize, "satLockCnt[21]", satLockCnt[21], 0, DataTypeInt8, int8_t&);
+
 #endif
+
+    ADD_MAP(m, totalSize, "num_biases", num_biases, 0, DataTypeUInt8, uint8_t);
+}
+
+#endif // USE_IS_INTERNAL
 
 cISDataMappings::cISDataMappings()
 {
@@ -1444,7 +1633,8 @@ cISDataMappings::cISDataMappings()
     PopulateRtkStateMappings(m_lookupInfo);
     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_CODE_RESIDUAL);
     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_PHASE_RESIDUAL);
-    PopulateRtkDebugMappings(m_lookupInfo);
+	PopulateRtkDebugMappings(m_lookupInfo);
+	PopulateRtkDebug2Mappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
 	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_RAW_MAG);
 	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_MAG);
@@ -1555,10 +1745,10 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"imu_mag_raw",			// 84: DID_DUAL_IMU_RAW_MAG
 		"imu_mag",				// 85: DID_DUAL_IMU_MAG
 		"pimu_mag",				// 86: DID_PREINTEGRATED_IMU_MAG
+		"wheelConfig",          // 87: DID_WHEEL_CONFIG
+		"positionMeasurement",  // 88: DID_POSITION_MEASUREMENT
+		"rtkDebug2",            // 89: DID_RTK_DEBUG_2
 		"",
-        "",
-        "",
-        "",
         ""
     };
 

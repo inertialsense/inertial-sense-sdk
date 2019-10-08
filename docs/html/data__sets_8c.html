@@ -110,6 +110,8 @@ Functions</h2></td></tr>
 <tr class="separator:a92f6edead84a44514c9c896af5f09fbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a749719b28f0ca0d469340af1fd120a28"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a749719b28f0ca0d469340af1fd120a28">julianToDate</a> (double julian, int32_t *year, int32_t *month, int32_t *day, int32_t *hour, int32_t *minute, int32_t *second, int32_t *millisecond)</td></tr>
 <tr class="separator:a749719b28f0ca0d469340af1fd120a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a39f7689edfe1d3467ddf13d633c9e6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a4a39f7689edfe1d3467ddf13d633c9e6">gpsToUnix</a> (uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds)</td></tr>
+<tr class="separator:a4a39f7689edfe1d3467ddf13d633c9e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a203cc0f0918751aa0ea9276329db328b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a203cc0f0918751aa0ea9276329db328b">gpsToJulian</a> (int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds)</td></tr>
 <tr class="separator:a203cc0f0918751aa0ea9276329db328b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae56e9a11cab85685b6388a6bda1065ca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca">gpsToNmeaGGA</a> (const <a class="el" href="data__sets_8h.html#a50a853d6862de52ccc8bc68265860cb2">gps_pos_t</a> *gps, char *buffer, int bufferLength)</td></tr>
@@ -157,7 +159,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the 32 bit checksum for data </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00516">516</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00522">522</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -188,7 +190,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert DID to realtime message bits </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00548">548</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00554">554</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -218,7 +220,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00542">542</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00548">548</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -562,7 +564,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a list of offsets and lengths of strings for the data id or 0 if none </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00371">371</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00377">377</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -599,7 +601,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert GPS Week and Seconds to Julian Date. Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00682">682</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00697">697</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -635,7 +637,44 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00719">719</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00734">734</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+
+</div>
+</div>
+<a id="a4a39f7689edfe1d3467ddf13d633c9e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a39f7689edfe1d3467ddf13d633c9e6">&#9670;&nbsp;</a></span>gpsToUnix()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double gpsToUnix </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>gpsWeek</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>gpsTimeofWeekMS</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>leapSeconds</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Convert GPS Week and Ms and leapSeconds to Unix seconds </p>
+
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00688">688</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -702,7 +741,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Convert Julian Date to calendar date. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00590">590</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00596">596</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -732,7 +771,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00843">843</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00858">858</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -762,7 +801,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00883">883</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00898">898</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -792,7 +831,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00536">536</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00542">542</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -812,7 +851,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00824">824</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00839">839</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>

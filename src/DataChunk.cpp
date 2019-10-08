@@ -24,78 +24,31 @@ cDataChunk::cDataChunk()
 	m_hdr.marker = DATA_CHUNK_MARKER;
 	m_hdr.version = 1;
 	m_hdr.classification = ' ' << 8 | 'U';
-	m_hdr.grpNum = 0; //!< Chunk group number
-	m_hdr.devSerialNum = 0; //!< Serial number
-	m_hdr.reserved = 0; //!< Reserved 
-    m_buffHead = m_buffTail = NULLPTR;
-    m_dataHead = m_dataTail = NULLPTR;
+	m_hdr.grpNum = 0;				//!< Chunk group number
+	m_hdr.devSerialNum = 0;			//!< Serial number
+	m_hdr.reserved = 0;				//!< Reserved 
+    m_buffTail = m_buffHead + DEFAULT_CHUNK_DATA_SIZE;
+	m_dataHead = m_buffHead;
+	m_dataTail = m_buffHead;
+
+	SetName("PDAT");
 }
+
 
 cDataChunk::~cDataChunk()
 {
-    if (m_buffHead != NULLPTR)
-    {
-        FREE(m_buffHead);
-        m_buffHead = m_buffTail = NULLPTR;
-        m_dataHead = m_dataTail = NULLPTR;
-    }
+	
 }
 
 
-void cDataChunk::Init(uint32_t bufSize, const char* name)
-{
-	if (m_buffHead == NULLPTR)
-	{
-		SetName(name);
-	}
-
-#if !PLATFORM_IS_EMBEDDED
-
-	// on non-embedded, just malloc the default chunk size to avoid having to free and do the malloc again as the data grows
-	bufSize = _MAX(bufSize, DEFAULT_CHUNK_DATA_SIZE);
-
-#else
-
-    bufSize = _MAX(bufSize, 512);
-
-#endif
-
-	uint32_t existingSize = GetBuffSize();
-
-	if (bufSize > existingSize)
-	{
-		// cannot use realloc, it is not available on all platfoms and this needs to run on embedded systems
-		uint32_t existingDataSize = GetDataSize();
-		uint32_t existingDataStart = (uint32_t)(m_dataHead - m_buffHead);
-		uint8_t* newPtr = (uint8_t*)MALLOC(bufSize);
-		if (m_buffHead != NULLPTR)
-		{
-			memcpy(newPtr, m_buffHead, existingDataSize);
-			FREE(m_buffHead);
-		}
-		m_buffHead = newPtr;
-		m_buffTail = m_buffHead + bufSize;
-		m_dataHead = m_buffHead + existingDataStart;
-		m_dataTail = m_buffHead + existingDataSize;
-	}
-}
-
-
-// Only increases buffer size if needed
-void cDataChunk::Resize(uint32_t bufSize)
-{
-    Init(bufSize);
-}
-
-
-void cDataChunk::SetName(const char *name)
+void cDataChunk::SetName(const char name[4])
 {
 	if (name == NULL)
 	{
 		return;
 	}
 
-	strncpy(m_hdr.name, name, 4);
+	memcpy(m_hdr.name, name, 4);
 	m_hdr.invName[0] = ~m_hdr.name[0];
 	m_hdr.invName[1] = ~m_hdr.name[1];
 	m_hdr.invName[2] = ~m_hdr.name[2];
@@ -107,11 +60,8 @@ bool cDataChunk::PushBack(uint8_t* d1, uint32_t d1Size, uint8_t* d2, uint32_t d2
 {
 	// Ensure data will fit
 	uint32_t count = d1Size + d2Size;
-	if (m_dataHead == NULLPTR)
-	{
-		Init(count);
-	}
-	else if (count > GetBuffFree())
+	if (m_dataHead == NULLPTR ||
+		count > GetBuffFree())
 	{
 		return false;
 	}
@@ -243,7 +193,6 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile)
 //     }
 
 	// Read chunk data
-    Resize(m_hdr.dataSize);
 	m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
 	nBytes += GetDataSize();
 

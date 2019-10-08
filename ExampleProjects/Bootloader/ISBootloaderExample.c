@@ -68,15 +68,9 @@ int main(int argc, char* argv[])
 
 	// bootloader parameters
 	bootload_params_t param;
-	// buffer to show any errors
-	char errorBuffer[512] = { 0 };
 
 	// very important - initialize the bootloader params to zeros
 	memset(&param, 0, sizeof(param));
-
-	// error buffer, useful if something fails
-	param.error = errorBuffer;
-	param.errorLength = sizeof(errorBuffer);
 
 	// the file to bootload, *.hex
 	param.fileName = argv[2];
@@ -108,8 +102,8 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		if(errorBuffer[0] != 0)
-			printf("Bootloader failed! Error: %s\n", errorBuffer);
+		if(param.error[0] != 0)
+			printf("Bootloader failed! Error: %s\n", param.error);
 		else
 			printf("Bootloader failed!\n");
 		return -1;

@@ -293,9 +293,11 @@
 	} while (0)
 #endif // ioport_set_pin_peripheral_mode
 
+// The following "ioport_enable_pin(pin);" line is necessary to allow tristate. (whj)
 #ifndef ioport_set_pin_input_mode
 #define ioport_set_pin_input_mode(pin, mode, sense) \
 	do {\
+ 		ioport_enable_pin(pin);\
 		ioport_set_pin_dir(pin, IOPORT_DIR_INPUT);\
 		ioport_set_pin_mode(pin, mode);\
 		ioport_set_pin_sense_mode(pin, (ioport_sense)sense);\

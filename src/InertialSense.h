@@ -164,7 +164,6 @@ public:
         uint64_t rmcPreset = RMC_PRESET_PPD_BITS, 
         float maxDiskSpacePercent = 0.5f, 
         uint32_t maxFileSize = 1024 * 1024 * 5, 
-        uint32_t chunkSize = 131072, 
         const string& subFolder = cISLogger::g_emptyString);
 
 	/**
@@ -315,9 +314,10 @@ private:
 	cISStream* m_clientStream;
 	uint64_t m_clientServerByteCount;
 	bool m_disableBroadcastsOnClose;
+	com_manager_buffers_t m_cmBuffers;
 
 	// returns false if logger failed to open
-	bool EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, uint32_t chunkSize, const string& subFolder);
+	bool EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder);
 	void DisableLogging();
 	bool HasReceivedResponseFromDevice(size_t index);
 	bool HasReceivedResponseFromAllDevices();

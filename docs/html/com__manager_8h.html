@@ -70,6 +70,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
@@ -85,8 +86,41 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structbroadcast__msg__t.html">broadcast_msg_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structring__buffer__t.html">ring_buffer_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structensured__pkt__t.html">ensured_pkt_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__buffers__t.html">com_manager_buffers_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structregistered__data__t.html">registered_data_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structcom__manager__t.html">com_manager_t</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:abad56c80e8b607f7bde8cf41282850fa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#abad56c80e8b607f7bde8cf41282850fa">ENABLE_PACKET_CONTINUATION</a>&#160;&#160;&#160;0</td></tr>
+<tr class="separator:abad56c80e8b607f7bde8cf41282850fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a779b513296068d2a6186659183ff3c2c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a779b513296068d2a6186659183ff3c2c">RING_BUFFER_SIZE</a>&#160;&#160;&#160;<a class="el" href="_i_s_comm_8h.html#adcb8d04d0e267c9a6e5b6f47717e8629">PKT_BUF_SIZE</a></td></tr>
+<tr class="separator:a779b513296068d2a6186659183ff3c2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb9aa926cea56bd3907b418e3c62a7e7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aeb9aa926cea56bd3907b418e3c62a7e7">RING_BUFFER_FLUSH_THRESHOLD</a>&#160;&#160;&#160;(<a class="el" href="com__manager_8h.html#a779b513296068d2a6186659183ff3c2c">RING_BUFFER_SIZE</a> / 3)</td></tr>
+<tr class="separator:aeb9aa926cea56bd3907b418e3c62a7e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08d1326bfd508f5c35f3a8853488ad04"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a08d1326bfd508f5c35f3a8853488ad04">MAX_NUM_BCAST_MSGS</a>&#160;&#160;&#160;8</td></tr>
+<tr class="separator:a08d1326bfd508f5c35f3a8853488ad04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a389c19dc7e581fceacb2828389d54fd2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a389c19dc7e581fceacb2828389d54fd2">COM_MANAGER_BUF_SIZE_RING_BUFFER</a>(numHandles)&#160;&#160;&#160;((numHandles)*sizeof(<a class="el" href="structring__buffer__t.html">ring_buffer_t</a>))</td></tr>
+<tr class="separator:a389c19dc7e581fceacb2828389d54fd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc5755cbc1eac0f807fd7a93bac869f0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#acc5755cbc1eac0f807fd7a93bac869f0">COM_MANAGER_BUF_SIZE_STATUS</a>(numHandles)&#160;&#160;&#160;((numHandles)*sizeof(<a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a>))</td></tr>
+<tr class="separator:acc5755cbc1eac0f807fd7a93bac869f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94b57baf71498218c44b4d81e3e3f0a0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a94b57baf71498218c44b4d81e3e3f0a0">COM_MANAGER_BUF_SIZE_BCAST_MSG</a>(max_num_bcast_msgs)&#160;&#160;&#160;((max_num_bcast_msgs)*sizeof(<a class="el" href="structbroadcast__msg__t.html">broadcast_msg_t</a>))</td></tr>
+<tr class="separator:a94b57baf71498218c44b4d81e3e3f0a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0545344d4561b3d4aa1a603e7f634bb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aa0545344d4561b3d4aa1a603e7f634bb">COM_MANAGER_BUF_SIZE_ENSURED_PKTS</a>(max_num_ensured_pkts)&#160;&#160;&#160;((max_num_ensured_pkts)*sizeof(<a class="el" href="structensured__pkt__t.html">ensured_pkt_t</a>))</td></tr>
+<tr class="separator:aa0545344d4561b3d4aa1a603e7f634bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae16f35cdf4ed5d9fa40006518b9f3b61"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae16f35cdf4ed5d9fa40006518b9f3b61">COM_MANAGER_BUF_SIZE_PKT_CONTINUATION</a>(numHandles)&#160;&#160;&#160;((numHandles)*sizeof(<a class="el" href="structp__data__t.html">p_data_t</a>))</td></tr>
+<tr class="separator:ae16f35cdf4ed5d9fa40006518b9f3b61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -125,10 +159,10 @@ Enumerations</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a4336f36a840ad97152a693893866ca2e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a4336f36a840ad97152a693893866ca2e">comManagerGetGlobal</a> (void)</td></tr>
 <tr class="separator:a4336f36a840ad97152a693893866ca2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9bcc76cd2eb01c8e91ca97fd1e1a25d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">comManagerInit</a> (int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc)</td></tr>
-<tr class="separator:a9bcc76cd2eb01c8e91ca97fd1e1a25d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58733da275ce5a71a734317170b3c18d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a58733da275ce5a71a734317170b3c18d">comManagerInitInstance</a> (int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc)</td></tr>
-<tr class="separator:a58733da275ce5a71a734317170b3c18d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef0ad84b52912d62c84e234f23b920fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aef0ad84b52912d62c84e234f23b920fd">comManagerInit</a> (int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc, <a class="el" href="structcom__manager__buffers__t.html">com_manager_buffers_t</a> *buffers)</td></tr>
+<tr class="separator:aef0ad84b52912d62c84e234f23b920fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96f45191814da82deddfedfa0bdabb78"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a96f45191814da82deddfedfa0bdabb78">comManagerInitInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int numHandles, int maxEnsuredPackets, int stepPeriodMilliseconds, int retryCount, <a class="el" href="com__manager_8h.html#aa4d655efaad55f4d6669667462d6d822">pfnComManagerRead</a> readFnc, <a class="el" href="com__manager_8h.html#a4ae6f964df346995494b68893bb4dec4">pfnComManagerSend</a> sendFnc, <a class="el" href="com__manager_8h.html#a0d626c2c2ae7b974b2daa2fc3080029d">pfnComManagerSendBufferAvailableBytes</a> txFreeFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, <a class="el" href="com__manager_8h.html#a018afe7c16e51b37e48d536d977fbc75">pfnComManagerPostAck</a> pstAckFnc, <a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a> disableBcastFnc, <a class="el" href="structcom__manager__buffers__t.html">com_manager_buffers_t</a> *buffers)</td></tr>
+<tr class="separator:a96f45191814da82deddfedfa0bdabb78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5153eef615e1ad8cd2025156d1be51d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a5153eef615e1ad8cd2025156d1be51d7">comManagerStep</a> (void)</td></tr>
 <tr class="separator:a5153eef615e1ad8cd2025156d1be51d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab21b64f82a4af5312ef06ad41de5257f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ab21b64f82a4af5312ef06ad41de5257f">comManagerStepInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
@@ -198,8 +232,6 @@ Functions</h2></td></tr>
 <tr class="separator:a4ad33af42c470295b3e053956cd3a6b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f293526ff6f68cdedfb57181d456bd8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a7f293526ff6f68cdedfb57181d456bd8">comManagerSetRmcCallbackInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, <a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a> handler)</td></tr>
 <tr class="separator:a7f293526ff6f68cdedfb57181d456bd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aefaf81cd9fc365d9cb5bdec7c9dd44de"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aefaf81cd9fc365d9cb5bdec7c9dd44de">comManagerFreeInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
-<tr class="separator:aefaf81cd9fc365d9cb5bdec7c9dd44de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a99656c76c4e36420c61a9887081286"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a5a99656c76c4e36420c61a9887081286">comManagerAssignUserPointer</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, void *userPointer)</td></tr>
 <tr class="separator:a5a99656c76c4e36420c61a9887081286"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2cd08328452b51eb95fdfdaaac1f869"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae2cd08328452b51eb95fdfdaaac1f869">comManagerGetUserPointer</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance)</td></tr>
@@ -207,6 +239,172 @@ Functions</h2></td></tr>
 <tr class="memitem:a202229d24b4a3d1a7ec9880ec5e309b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a202229d24b4a3d1a7ec9880ec5e309b8">comManagerValidateBaudRate</a> (unsigned int baudRate)</td></tr>
 <tr class="separator:a202229d24b4a3d1a7ec9880ec5e309b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a94b57baf71498218c44b4d81e3e3f0a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94b57baf71498218c44b4d81e3e3f0a0">&#9670;&nbsp;</a></span>COM_MANAGER_BUF_SIZE_BCAST_MSG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define COM_MANAGER_BUF_SIZE_BCAST_MSG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">max_num_bcast_msgs</td><td>)</td>
+          <td>&#160;&#160;&#160;((max_num_bcast_msgs)*sizeof(<a class="el" href="structbroadcast__msg__t.html">broadcast_msg_t</a>))</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00146">146</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="aa0545344d4561b3d4aa1a603e7f634bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0545344d4561b3d4aa1a603e7f634bb">&#9670;&nbsp;</a></span>COM_MANAGER_BUF_SIZE_ENSURED_PKTS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define COM_MANAGER_BUF_SIZE_ENSURED_PKTS</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">max_num_ensured_pkts</td><td>)</td>
+          <td>&#160;&#160;&#160;((max_num_ensured_pkts)*sizeof(<a class="el" href="structensured__pkt__t.html">ensured_pkt_t</a>))</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00147">147</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="ae16f35cdf4ed5d9fa40006518b9f3b61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae16f35cdf4ed5d9fa40006518b9f3b61">&#9670;&nbsp;</a></span>COM_MANAGER_BUF_SIZE_PKT_CONTINUATION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define COM_MANAGER_BUF_SIZE_PKT_CONTINUATION</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">numHandles</td><td>)</td>
+          <td>&#160;&#160;&#160;((numHandles)*sizeof(<a class="el" href="structp__data__t.html">p_data_t</a>))</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00148">148</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="a389c19dc7e581fceacb2828389d54fd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a389c19dc7e581fceacb2828389d54fd2">&#9670;&nbsp;</a></span>COM_MANAGER_BUF_SIZE_RING_BUFFER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define COM_MANAGER_BUF_SIZE_RING_BUFFER</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">numHandles</td><td>)</td>
+          <td>&#160;&#160;&#160;((numHandles)*sizeof(<a class="el" href="structring__buffer__t.html">ring_buffer_t</a>))</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00144">144</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="acc5755cbc1eac0f807fd7a93bac869f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc5755cbc1eac0f807fd7a93bac869f0">&#9670;&nbsp;</a></span>COM_MANAGER_BUF_SIZE_STATUS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define COM_MANAGER_BUF_SIZE_STATUS</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">numHandles</td><td>)</td>
+          <td>&#160;&#160;&#160;((numHandles)*sizeof(<a class="el" href="structcom__manager__status__t.html">com_manager_status_t</a>))</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00145">145</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="abad56c80e8b607f7bde8cf41282850fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abad56c80e8b607f7bde8cf41282850fa">&#9670;&nbsp;</a></span>ENABLE_PACKET_CONTINUATION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ENABLE_PACKET_CONTINUATION&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00025">25</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="a08d1326bfd508f5c35f3a8853488ad04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08d1326bfd508f5c35f3a8853488ad04">&#9670;&nbsp;</a></span>MAX_NUM_BCAST_MSGS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define MAX_NUM_BCAST_MSGS&#160;&#160;&#160;8</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Maximum number of messages that may be broadcast simultaneously, per port. Since most messages use the RMC (real-time message controller) now, this can be fairly low </p>
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00141">141</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="aeb9aa926cea56bd3907b418e3c62a7e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb9aa926cea56bd3907b418e3c62a7e7">&#9670;&nbsp;</a></span>RING_BUFFER_FLUSH_THRESHOLD</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define RING_BUFFER_FLUSH_THRESHOLD&#160;&#160;&#160;(<a class="el" href="com__manager_8h.html#a779b513296068d2a6186659183ff3c2c">RING_BUFFER_SIZE</a> / 3)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00061">61</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
+<a id="a779b513296068d2a6186659183ff3c2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a779b513296068d2a6186659183ff3c2c">&#9670;&nbsp;</a></span>RING_BUFFER_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define RING_BUFFER_SIZE&#160;&#160;&#160;<a class="el" href="_i_s_comm_8h.html#adcb8d04d0e267c9a6e5b6f47717e8629">PKT_BUF_SIZE</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00060">60</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="aa4c7b70d216e3ec5adc54f13afc5ffde"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa4c7b70d216e3ec5adc54f13afc5ffde">&#9670;&nbsp;</a></span>CMHANDLE</h2>
@@ -220,7 +418,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00071">71</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00151">151</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -236,7 +434,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00102">102</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00182">182</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -252,7 +450,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00096">96</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00176">176</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -268,7 +466,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00090">90</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00170">170</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -284,7 +482,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00099">99</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00179">179</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -300,7 +498,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00087">87</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00167">167</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -316,7 +514,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00084">84</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00164">164</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +530,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00093">93</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00173">173</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -348,7 +546,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00075">75</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00155">155</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -364,7 +562,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00078">78</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00158">158</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -380,7 +578,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00081">81</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00161">161</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -406,7 +604,7 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00027">27</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8h_source.html#l00030">30</a> of file <a class="el" href="com__manager_8h_source.html">com_manager.h</a>.</p>
 
 </div>
 </div>
@@ -438,7 +636,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Attach user defined data to a com manager instance </p>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00666">666</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00509">509</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -464,7 +662,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01371">1371</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01215">1215</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -494,7 +692,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01376">1376</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01220">1220</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -533,7 +731,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
 <p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a8e579189eb6108310736f30327a0cd0b">comManagerDisableData</a>(0, <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>);</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00807">807</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00650">650</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -569,28 +767,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00812">812</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
-
-</div>
-</div>
-<a id="aefaf81cd9fc365d9cb5bdec7c9dd44de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aefaf81cd9fc365d9cb5bdec7c9dd44de">&#9670;&nbsp;</a></span>comManagerFreeInstance()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void comManagerFreeInstance </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
-          <td class="paramname"><em>cmInstance</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Free a com manager instance. This instance should never be used again. The default global com manager can never be freed. </p>
-
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00600">600</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00655">655</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -661,7 +838,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on successful request. -1 on failure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00698">698</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00541">541</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -715,7 +892,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00703">703</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00546">546</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -747,7 +924,7 @@ Functions</h2></td></tr>
 <p>Internal use mostly, process a get data request for a message that needs to be broadcasted</p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, anything else is failure </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01217">1217</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01061">1061</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -783,7 +960,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01222">1222</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01066">1066</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -831,7 +1008,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <p>Example that enables streaming of all data messages necessary for post processing: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code" href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">RMC_PRESET_PPD_BITS</a>, 0);</div></div><!-- fragment --><p>Example that broadcasts INS and GPS data at full rate: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code" href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a>, 0);</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00721">721</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00564">564</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -873,7 +1050,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00726">726</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00569">569</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -893,7 +1070,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00225">225</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00079">79</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -915,7 +1092,7 @@ Functions</h2></td></tr>
 <p>Internal use mostly, get data info for a the specified pre-registered dataId</p>
 <dl class="section return"><dt>Returns</dt><dd>0 on failure, pointer on success </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01200">1200</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01044">1044</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -945,7 +1122,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01205">1205</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01049">1049</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -967,7 +1144,7 @@ Functions</h2></td></tr>
 <p>Get the most recent status of the com manager</p>
 <dl class="section return"><dt>Returns</dt><dd>com manager status, this pointer is owned by the com manager </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00676">676</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00519">519</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -997,7 +1174,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00681">681</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00524">524</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1018,18 +1195,18 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Get user defined data to from a com manager instance </p>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00671">671</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00514">514</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a9bcc76cd2eb01c8e91ca97fd1e1a25d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">&#9670;&nbsp;</a></span>comManagerInit()</h2>
+<a id="aef0ad84b52912d62c84e234f23b920fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef0ad84b52912d62c84e234f23b920fd">&#9670;&nbsp;</a></span>comManagerInit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void comManagerInit </td>
+          <td class="memname">int comManagerInit </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>numHandles</em>, </td>
@@ -1086,7 +1263,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a>&#160;</td>
-          <td class="paramname"><em>disableBcastFnc</em>&#160;</td>
+          <td class="paramname"><em>disableBcastFnc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structcom__manager__buffers__t.html">com_manager_buffers_t</a> *&#160;</td>
+          <td class="paramname"><em>buffers</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1107,24 +1290,31 @@ Functions</h2></td></tr>
     <tr><td class="paramname">txFreeFnc</td><td>optional, return the number of free bytes in the send buffer for the serial port represented by pHandle </td></tr>
     <tr><td class="paramname">pstRxFnc</td><td>optional, called after new data is available (successfully parsed and checksum passed) from the serial port represented by pHandle </td></tr>
     <tr><td class="paramname">pstAckFnc</td><td>optional, called after an ACK is received by the serial port represented by pHandle </td></tr>
-    <tr><td class="paramname">disableBcastFnc</td><td>mostly for internal use, this can be left as 0 or NULL</td></tr>
+    <tr><td class="paramname">disableBcastFnc</td><td>mostly for internal use, this can be left as 0 or NULL </td></tr>
   </table>
   </dd>
 </dl>
-<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">comManagerInit</a>(20, 20, 10, 25, staticReadPacket, staticSendPacket, NULL, staticProcessRxData, staticProcessAck, 0);</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00228">228</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on failure</dd></dl>
+<p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#aef0ad84b52912d62c84e234f23b920fd">comManagerInit</a>(20, 20, 10, 25, staticReadPacket, staticSendPacket, NULL, staticProcessRxData, staticProcessAck, 0);</div></div><!-- fragment --> 
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00082">82</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
-<a id="a58733da275ce5a71a734317170b3c18d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58733da275ce5a71a734317170b3c18d">&#9670;&nbsp;</a></span>comManagerInitInstance()</h2>
+<a id="a96f45191814da82deddfedfa0bdabb78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96f45191814da82deddfedfa0bdabb78">&#9670;&nbsp;</a></span>comManagerInitInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> comManagerInitInstance </td>
+          <td class="memname">int comManagerInitInstance </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a>&#160;</td>
+          <td class="paramname"><em>cmHandle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>numHandles</em>, </td>
         </tr>
@@ -1180,7 +1370,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a>&#160;</td>
-          <td class="paramname"><em>disableBcastFnc</em>&#160;</td>
+          <td class="paramname"><em>disableBcastFnc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structcom__manager__buffers__t.html">com_manager_buffers_t</a> *&#160;</td>
+          <td class="paramname"><em>buffers</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1190,7 +1386,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00245">245</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00112">112</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1263,7 +1459,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <p>Example: </p><div class="fragment"><div class="line">registerComManager(<a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, prepMsgINS, writeMsgINS, &amp;g_insData, &amp;g_insData, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">ins_1_t</a>));</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00387">387</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00270">270</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1315,7 +1511,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00367">367</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00250">250</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1363,7 +1559,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00372">372</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00255">255</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1429,7 +1625,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00392">392</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00275">275</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1488,7 +1684,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
 <p>Example: </p><div class="fragment"><div class="line"><a class="code" href="structp__data__get__t.html">p_data_get_t</a> request;</div><div class="line"><a class="code" href="structbuf_ptr__t.html">bufPtr_t</a> data;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#ab12d63b4fd0d9d6f5a27e8b0856af7a8">id</a> = <a class="code" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a0123a3db2bf728e0d199bcb606123ec8">offset</a> = 0;</div><div class="line">request.<a class="code" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">size</a> = <span class="keyword">sizeof</span>(<a class="code" href="data__sets_8h.html#a38b581a535340cba5d8e194a9fc0d680">ins_1_t</a>);</div><div class="line">request.bc_period_ms = 50;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#ad4295aa9699eea57f6219a92475a327c">ptr</a> = (uint8_t*)&amp;request;</div><div class="line">data.<a class="code" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">size</a> = <span class="keyword">sizeof</span>(request);</div><div class="line"><a class="code" href="com__manager_8c.html#a9ffb3e89b6bb53a26e590903ac97b8e9">comManagerSend</a>(pHandle, <a class="code" href="_i_s_comm_8h.html#a27634099d972a0c65e8a3de17ea9d094">PID_GET_DATA</a>, 0, &amp;data)</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00821">821</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00664">664</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1548,7 +1744,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
 <p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a4f2c449501f06efa1689f82b88a1db64">comManagerSendData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">dev_info_t</a>), 0);</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00735">735</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00578">578</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1602,7 +1798,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00740">740</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00583">583</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1663,7 +1859,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00759">759</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00602">602</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1717,7 +1913,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00764">764</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00607">607</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1770,7 +1966,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00848">848</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00691">691</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1818,7 +2014,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00853">853</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00696">696</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1872,7 +2068,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00826">826</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00669">669</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1932,7 +2128,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if success, anything else if failure</dd></dl>
 <p>Example: </p><div class="fragment"><div class="line"><a class="code" href="com__manager_8c.html#a750c925ebe5c23deeecd6c3dc47df2c9">comManagerSendRawData</a>(0, <a class="code" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, &amp;g_devInfo, <span class="keyword">sizeof</span>(<a class="code" href="struct_p_a_c_k_e_d.html">dev_info_t</a>), 0);</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00783">783</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00626">626</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -1986,7 +2182,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00788">788</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00631">631</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -2006,10 +2202,10 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Set a com manager pass through handler, handler can be 0 or null to remove the current handler</p>
-<p>setup pass-through handler for u-blox, rtcm3, etc. This should be called following <a class="el" href="com__manager_8h.html#a9bcc76cd2eb01c8e91ca97fd1e1a25d5">comManagerInit()</a>. comManagerSetPassThrough(passThroughHandler);</p>
+<p>setup pass-through handler for u-blox, rtcm3, etc. This should be called following <a class="el" href="com__manager_8h.html#aef0ad84b52912d62c84e234f23b920fd">comManagerInit()</a>. comManagerSetPassThrough(passThroughHandler);</p>
 <p>Example how to handle incoming ublox, rtcm, etc. data void passThroughHandler(CMHANDLE handle, com_manager_pass_through_t type, int pHandle, const unsigned char* data, int dataLength) { if (type == COM_MANAGER_PASS_THROUGH_UBLOX) { if (g_nvmFlashCfg-&gt;RTKCfgBits &amp; RTK_CFG_BITS_RTK_ROVER) { processUbloxRtkPacket(data, dataLength, pHandle); } } else if (type == COM_MANAGER_PASS_THROUGH_RTCM3 &amp;&amp; (g_nvmFlashCfg-&gt;RTKCfgBits &amp; RTK_CFG_BITS_RTK_ROVER) != 0) { processRtcm3RtkPacket(data, dataLength, pHandle); } } </p>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00640">640</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00483">483</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -2039,7 +2235,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00645">645</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00488">488</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -2060,7 +2256,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Set a com manager broadcast message handler, handler can be 0 or null to remove the current handler </p>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00653">653</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00496">496</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -2090,7 +2286,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00658">658</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00501">501</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -2111,7 +2307,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Performs one round of sending and receiving message. This should be called as often as you want to send and receive data. </p>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00421">421</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00304">304</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -2131,7 +2327,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00426">426</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00309">309</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -2158,7 +2354,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if baud rate is valid, -1 if not </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l02029">2029</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01873">1873</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>

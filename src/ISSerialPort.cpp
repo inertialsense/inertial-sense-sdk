@@ -65,7 +65,7 @@ void cISSerialPort:: GetComPorts(vector<string>& ports)
 
     for (int i = 0; i < 256; i++) // checking ports from COM0 to COM255
 	{
-		SNPRINTF(comPort, sizeof(comPort), "COM%d", i);
+		snprintf(comPort, sizeof(comPort), "COM%d", i);
 		if (QueryDosDeviceA(comPort, targetPath, 256))
 		{
 			ports.push_back(comPort);

@@ -27,12 +27,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-void cDeviceLogSerial::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)
+void cDeviceLogSerial::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
-    m_chunk.Init(chunkSize);
+//     m_chunk.Init(chunkSize);
 	m_chunk.m_hdr.pHandle = pHandle;
 
-	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize, chunkSize);
+	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
@@ -101,7 +101,7 @@ bool cDeviceLogSerial::WriteChunkToFile()
 		return false;
 	}
 
-	// Create first file it it doesn't exist
+	// Create first file if it doesn't exist
 	if (m_pFile == NULLPTR)
 	{
 		OpenNewSaveFile();

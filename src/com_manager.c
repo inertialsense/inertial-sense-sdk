@@ -14,13 +14,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 
-/** Maximum number of messages that may be broadcast simultaneously, per port.
-Since most messages use the RMC (real-time message controller) now, this can be fairly low */
-#define MAX_NUM_BCAST_MSGS 8
-
-// allow packet continuation or not. If enabled, an extra 1K buffer is allocated globally for each pHandle instance.
-#define ENABLE_PACKET_CONTINUATION 0
-
 // enable filtering of duplicate packets
 #define ENABLE_FILTER_DUPLICATE_PACKETS 1
 
@@ -35,161 +28,22 @@ Since most messages use the RMC (real-time message controller) now, this can be 
 #define MSG_PERIOD_SEND_ONCE		-1
 #define MSG_PERIOD_DISABLED			0
 
-/* Contains callback information for a before and after send for a data structure */
-typedef struct
-{
-	/* Pointer and size of entire data struct (not sub portion that is communicated) */
-	bufTxRxPtr_t dataSet;
-
-	/* Callback function pointer, used to prepare data before send */
-	pfnComManagerPreSend preTxFnc;
-
-	/* Callback function pointer, used to prepare data after received */
-	pfnComManagerPostRead pstRxFnc;
-	
-	/* Packet type to use */
-	uint8_t pktFlags;
-} registered_data_t;
-
-/* Contains data that determines what messages are being broadcast */
-typedef struct
-{
-	pkt_info_t              pkt;
-
-	/* Broadcast specific data header (i.e. data id, size and offset) */
-	p_data_hdr_t            dataHdr;
-
-	/* Broadcast period counter */
-	int32_t                 counter;
-
-	/* Millisecond broadcast period intervals.  -1 = send once.  0 = disabled/unused/don't send. */
-	int32_t                 period;
-
-	/* Port to broadcast on. */
-	int32_t                 pHandle;
-} broadcast_msg_t;
-
-/* Contains data to implement ensured packet delivery */
-typedef struct
-{
-	/* Packet struct */
-	packet_t                pkt;
-
-	/* Packet contents/body */
-	uint8_t                 pktBody[PKT_BUF_SIZE];
-
-	/* Count down counter between retries.  < 0 means disabled. -2 means no more enabled beyond this. */
-	int                     counter;
-
-	/* Port packet was sent on */
-	int                     pHandle;
-} ensured_pkt_t;
-
-// ring buffer storage size
-#define RING_BUFFER_SIZE PKT_BUF_SIZE
-
-// if ring buffer start index is less than this and no space is left, clear the entire ring buffer
-#define RING_BUFFER_FLUSH_THRESHOLD (RING_BUFFER_SIZE / 3)
-
-// ring buffer struct for each pHandle in com manager
-typedef struct
-{
-	unsigned char buf[RING_BUFFER_SIZE];
-	uint32_t startIndex;
-	uint32_t endIndex;
-	uint32_t scanIndex;
-} ring_buffer_t;
-
-typedef struct
-{
-	// identifier for packets
-	uint8_t pktCounter;
-
-	// reads n bytes into buffer from the source (usually a serial port)
-	pfnComManagerRead readCallback;
-
-	// write data to the destination (usually a serial port)
-	pfnComManagerSend sendPacketCallback;
-
-	// bytes free in Tx buffer (used to check if packet, keeps us from overflowing the Tx buffer)
-	pfnComManagerSendBufferAvailableBytes txFreeCallback;
-
-	// Callback function pointer, used to respond to data input
-	pfnComManagerPostRead pstRxFnc;
-
-	// Callback function pointer, used to respond to ack
-	pfnComManagerPostAck pstAckFnc;
-
-	// Callback function pointer, used when disabling all broadcast messages
-	pfnComManagerDisableBroadcasts disableBcastFnc;
-
-	// Pointer to local data and data specific callback functions
-	registered_data_t regData[DID_COUNT];
-
-	// numHandles elements
-	ring_buffer_t* ringBuffers;
-
-	// ensured packets
-	ensured_pkt_t* ensuredPackets;
-
-	// handle ASCII messages not handled elsewhere
-	pfnComManagerAsciiMessageHandler asciiMessageHandler;
-	pfnComManagerAsciiMessageHandler asciiMessageHandlerPost;
-
-	asciiMessageMap_t* asciiMessages;
-	uint32_t asciiMessagesCount;
-	broadcast_msg_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
-	
-	int32_t lastEnsuredPacketIndex;
-
-	// Number of communication ports
-	int32_t numHandes;
-
-	// default is 2, max number of packets to ensured delivery at one time.  Adjust based on available memory.
-	int32_t maxEnsuredPackets;
-
-	// default is 2 - processing interval
-	int32_t stepPeriodMilliseconds;
-
-	// default is 3 - Ensure retry count
-	int32_t ensureRetryCount;
-
-	// current status, malloc for each possible port
-	com_manager_status_t* status;
-
-	// user defined pointer
-	void* userPointer;
-
-	// pass through handler
-	pfnComManagerPassThrough passThroughHandler;
-
-	// broadcast message handler
-	pfnComManagerAsapMsg rmcHandler;
-
-#if ENABLE_PACKET_CONTINUATION
-
-	// continuation data for packets
-	p_data_t* con;
-
-#endif
-
-} com_manager_t;
-
 static com_manager_t g_cm;
 
-void initComManagerInstanceInternal
+int initComManagerInstanceInternal
 (
-com_manager_t* cmInstance,
-int numHandles,
-int maxEnsuredPackets,
-int stepPeriodMilliseconds,
-int retryCount,
-pfnComManagerRead readFnc,
-pfnComManagerSend sendFnc,
-pfnComManagerSendBufferAvailableBytes txFreeFnc,
-pfnComManagerPostRead pstRxFnc,
-pfnComManagerPostAck pstAckFnc,
-pfnComManagerDisableBroadcasts disableBcastFnc
+	com_manager_t* cmInstance,
+	int numHandles,
+	int maxEnsuredPackets,
+	int stepPeriodMilliseconds,
+	int retryCount,
+	pfnComManagerRead readFnc,
+	pfnComManagerSend sendFnc,
+	pfnComManagerSendBufferAvailableBytes txFreeFnc,
+	pfnComManagerPostRead pstRxFnc,
+	pfnComManagerPostAck pstAckFnc,
+	pfnComManagerDisableBroadcasts disableBcastFnc,
+	com_manager_buffers_t *buffers
 );
 int processAsciiRxPacket(com_manager_t* cmInstance, int pHandle, unsigned char* start, int count);
 void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count);
@@ -224,81 +78,94 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
 
 CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
 
-void comManagerInit
+int comManagerInit
 (
-int numHandles,
-int maxEnsuredPackets,
-int stepPeriodMilliseconds,
-int retryCount,
-pfnComManagerRead readFnc,
-pfnComManagerSend sendFnc,
-pfnComManagerSendBufferAvailableBytes txFreeFnc,
-pfnComManagerPostRead pstRxFnc,
-pfnComManagerPostAck pstAckFnc,
-pfnComManagerDisableBroadcasts disableBcastFnc
+	int numHandles,
+	int maxEnsuredPackets,
+	int stepPeriodMilliseconds,
+	int retryCount,
+	pfnComManagerRead readFnc,
+	pfnComManagerSend sendFnc,
+	pfnComManagerSendBufferAvailableBytes txFreeFnc,
+	pfnComManagerPostRead pstRxFnc,
+	pfnComManagerPostAck pstAckFnc,
+	pfnComManagerDisableBroadcasts disableBcastFnc,
+	com_manager_buffers_t *buffers
 )
 {
-	initComManagerInstanceInternal(&g_cm, numHandles, maxEnsuredPackets, stepPeriodMilliseconds, retryCount, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc);
+	return initComManagerInstanceInternal(
+		&g_cm, 
+		numHandles, 
+		maxEnsuredPackets, 
+		stepPeriodMilliseconds, 
+		retryCount, 
+		readFnc, 
+		sendFnc, 
+		txFreeFnc, 
+		pstRxFnc, 
+		pstAckFnc, 
+		disableBcastFnc, 
+		buffers);
 }
 
-CMHANDLE comManagerInitInstance
+int comManagerInitInstance
 (
-int numHandles,
-int maxEnsuredPackets,
-int stepPeriodMilliseconds,
-int retryCount,
-pfnComManagerRead readFnc,
-pfnComManagerSend sendFnc,
-pfnComManagerSendBufferAvailableBytes txFreeFnc,
-pfnComManagerPostRead pstRxFnc,
-pfnComManagerPostAck pstAckFnc,
-pfnComManagerDisableBroadcasts disableBcastFnc
+	CMHANDLE cmHandle,
+	int numHandles,
+	int maxEnsuredPackets,
+	int stepPeriodMilliseconds,
+	int retryCount,
+	pfnComManagerRead readFnc,
+	pfnComManagerSend sendFnc,
+	pfnComManagerSendBufferAvailableBytes txFreeFnc,
+	pfnComManagerPostRead pstRxFnc,
+	pfnComManagerPostAck pstAckFnc,
+	pfnComManagerDisableBroadcasts disableBcastFnc,
+	com_manager_buffers_t *buffers
 )
 {
-	com_manager_t* cmInstance = (com_manager_t*)MALLOC(sizeof(com_manager_t));
+	int result = 0;
+
+	com_manager_t* cmInstance = (com_manager_t*)cmHandle;
 	if (cmInstance != 0)
 	{
 		memset(cmInstance, 0, sizeof(com_manager_t));
-		initComManagerInstanceInternal(cmInstance, numHandles, maxEnsuredPackets, stepPeriodMilliseconds, retryCount, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc);
+		result = initComManagerInstanceInternal(
+			cmInstance, 
+			numHandles, 
+			maxEnsuredPackets, 
+			stepPeriodMilliseconds, 
+			retryCount, 
+			readFnc, 
+			sendFnc, 
+			txFreeFnc, 
+			pstRxFnc, 
+			pstAckFnc, 
+			disableBcastFnc,
+			buffers);
 	}
-	return cmInstance;
+	return result;
 }
 
-void initComManagerInstanceInternal
+int initComManagerInstanceInternal
 (
-com_manager_t* cmInstance,
-int numHandles,
-int maxEnsuredPackets,
-int stepPeriodMilliseconds,
-int retryCount,
-pfnComManagerRead readFnc,
-pfnComManagerSend sendFnc,
-pfnComManagerSendBufferAvailableBytes txFreeFnc,
-pfnComManagerPostRead pstRxFnc,
-pfnComManagerPostAck pstAckFnc,
-pfnComManagerDisableBroadcasts disableBcastFnc
+	com_manager_t* cmInstance,
+	int numHandles,
+	int maxEnsuredPackets,
+	int stepPeriodMilliseconds,
+	int retryCount,
+	pfnComManagerRead readFnc,
+	pfnComManagerSend sendFnc,
+	pfnComManagerSendBufferAvailableBytes txFreeFnc,
+	pfnComManagerPostRead pstRxFnc,
+	pfnComManagerPostAck pstAckFnc,
+	pfnComManagerDisableBroadcasts disableBcastFnc,
+	com_manager_buffers_t *buffers
 )
 {
 	int32_t i;
 
 	numHandles = _CLAMP(numHandles, 1, 1024);
-
-	// free ring buffers and ensured packet memory
-	if (cmInstance->ringBuffers != 0)
-	{
-		FREE(cmInstance->ringBuffers);
-		cmInstance->ringBuffers = 0;
-	}
-	if (cmInstance->ensuredPackets != 0)
-	{
-		FREE(cmInstance->ensuredPackets);
-		cmInstance->ensuredPackets = 0;
-	}
-	if (cmInstance->status != 0)
-	{
-		FREE(cmInstance->status);
-		cmInstance->status = 0;
-	}
 
 	// assign new variables
 	cmInstance->maxEnsuredPackets = maxEnsuredPackets;
@@ -311,49 +178,65 @@ pfnComManagerDisableBroadcasts disableBcastFnc
 	cmInstance->numHandes = numHandles;
 	cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
 	cmInstance->ensureRetryCount = retryCount;
-	
-	// allocate space for message broadcasts, in the future allow max broadcasts to be dynamically configured
-	cmInstance->broadcastMessages = (broadcast_msg_t*)MALLOC(MAX_NUM_BCAST_MSGS * sizeof(broadcast_msg_t));
-	memset(cmInstance->broadcastMessages, 0, MAX_NUM_BCAST_MSGS * sizeof(broadcast_msg_t));
-	
-	// Allocate ring buffers for serial reads / writes
-	cmInstance->ringBuffers = (ring_buffer_t*)MALLOC(sizeof(ring_buffer_t) * numHandles);
-	if (cmInstance->ringBuffers != 0)
+
+	if (buffers == NULL)
 	{
-		memset(cmInstance->ringBuffers, 0, sizeof(ring_buffer_t) * numHandles);
+		return -1;
 	}
 
-	// Allocate memory for ensured packets
+	// Buffer: message broadcasts
+	if (buffers->broadcastMsg == NULL || buffers->broadcastMsgSize < COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS))
+	{
+		return -1;
+	}
+	cmInstance->broadcastMessages = (broadcast_msg_t*)buffers->broadcastMsg;
+	memset(cmInstance->broadcastMessages, 0, buffers->broadcastMsgSize);
+	
+	// Buffer: ring buffers for serial reads / writes
+	if (buffers->ringBuffer == NULL || buffers->ringBufferSize < COM_MANAGER_BUF_SIZE_RING_BUFFER(numHandles))
+	{
+		return -1;
+	}
+	cmInstance->ringBuffers = (ring_buffer_t*)buffers->ringBuffer;
+	memset(cmInstance->ringBuffers, 0, buffers->ringBufferSize);
+
+	// Buffer: ensured packets
 	if (cmInstance->maxEnsuredPackets > 0)
 	{
-		cmInstance->ensuredPackets = MALLOC(sizeof(ensured_pkt_t) * cmInstance->maxEnsuredPackets);
-		if (cmInstance->ensuredPackets != 0)
+		if (buffers->ensuredPackets == NULL || buffers->ensuredPacketsSize < COM_MANAGER_BUF_SIZE_ENSURED_PKTS(cmInstance->maxEnsuredPackets))
 		{
-			memset(cmInstance->ensuredPackets, 0, sizeof(ensured_pkt_t) * cmInstance->maxEnsuredPackets);
-			for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
-			{
-				cmInstance->ensuredPackets[i].counter = -2; // indicates no retries are enabled
-				cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
-			}
+			return -1;
+		}
+		cmInstance->ensuredPackets = (ensured_pkt_t*)buffers->ensuredPackets;
+		memset(cmInstance->ensuredPackets, 0, buffers->ensuredPacketsSize);
+		for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
+		{
+			cmInstance->ensuredPackets[i].counter = -2; // indicates no retries are enabled
+			cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
 		}
 	}
 
-	cmInstance->status = MALLOC(sizeof(com_manager_status_t) * numHandles);
-	if (cmInstance->status != 0)
+	// Buffer: status
+	if (buffers->status == NULL || buffers->statusSize < COM_MANAGER_BUF_SIZE_STATUS(numHandles))
 	{
-		memset(cmInstance->status, 0, sizeof(com_manager_status_t) * numHandles);
+		return -1;
 	}
+	cmInstance->status = (com_manager_status_t*)buffers->status;
+	memset(cmInstance->status, 0, buffers->statusSize);
 
 #if ENABLE_PACKET_CONTINUATION
-
-	cmInstance->con = MALLOC(sizeof(p_data_t) * numHandles);
-	if (cmInstance->con != 0)
+		
+	// Buffer: status
+	if (buffers->packetContinuation == NULL || buffers->packetContinuationSize < COM_MANAGER_BUF_SIZE_PKT_CONTINUATION(numHandles))
 	{
-		memset(cmInstance->con, 0, sizeof(p_data_t) * numHandles);
+		return -1;
 	}
-
+	cmInstance->con = (p_data_t*)buffers->packetContinuation;
+	memset(cmInstance->con, 0, buffers->packetContinuationSize);
+	
 #endif
 
+	return 0;
 }
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
@@ -595,46 +478,6 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 
 	// Resend data (if necessary)
 	stepPacketRetry(cmInstance);
-}
-
-void comManagerFreeInstance(CMHANDLE cmInstance_)
-{
-	if (cmInstance_ != 0 && cmInstance_ != &g_cm)
-	{
-		com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-		if (cmInstance->broadcastMessages != 0)
-		{
-			FREE(cmInstance->broadcastMessages);
-			cmInstance->broadcastMessages = 0;
-		}
-		if (cmInstance->ringBuffers != 0)
-		{
-			FREE(cmInstance->ringBuffers);
-			cmInstance->ringBuffers = 0;
-		}
-		if (cmInstance->ensuredPackets != 0)
-		{
-			FREE(cmInstance->ensuredPackets);
-			cmInstance->ensuredPackets = 0;
-		}
-		if (cmInstance->status != 0)
-		{
-			FREE(cmInstance->status);
-			cmInstance->status = 0;
-		}
-
-#if ENABLE_PACKET_CONTINUATION
-
-		if (cmInstance->con != 0)
-		{
-			FREE(cmInstance->con);
-			cmInstance->con = 0;
-		}
-
-#endif
-
-		FREE(cmInstance);
-	}
 }
 
 void comManagerSetPassThrough(pfnComManagerPassThrough handler)
@@ -930,10 +773,11 @@ void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf
 	// message id is right after the $ char
 	messageId = ++ptr;
 
-	// in order to parse the fields from the ascii message, we need to not have a global handler and
-	//  have at least one ascii message defined and
+	// in order to parse the fields from the ascii message there must be:
+	//  Global handler didn't parse any data AND
+	//  have at least one ascii message defined AND
 	//  have a map for this message id
-	if
+	if 
 	(
 		(cmInstance->asciiMessageHandler == 0 || cmInstance->asciiMessageHandler(cmInstance, pHandle, messageId, buf, count) == 0) &&
 		(cmInstance->asciiMessages != 0 && cmInstance->asciiMessagesCount > 0) &&
@@ -1089,7 +933,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt,
 			if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
 			{
 				// Add data to buffer
-				memcpy(con->buf + con->hdr.size, dataBuf, dataHdr->size);
+				memcpy(con->buf + con->hdr.size, data->buf, dataHdr->size);
 				con->hdr.size += dataHdr->size;
 			}
 			else

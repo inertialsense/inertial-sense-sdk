@@ -102,6 +102,8 @@ Macros</h2></td></tr>
 <tr class="separator:ae9af5fb05b7c83d516ab4683ca1faf86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94bf881abdc00f884f3580b5b7823ede"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a94bf881abdc00f884f3580b5b7823ede">BOOTLOADER_RETRIES</a>&#160;&#160;&#160;30</td></tr>
 <tr class="separator:a94bf881abdc00f884f3580b5b7823ede"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab22aca14c8a64bf08273664ce796c2d5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#ab22aca14c8a64bf08273664ce796c2d5">BOOTLOADER_ERROR_LENGTH</a>&#160;&#160;&#160;512</td></tr>
+<tr class="separator:ab22aca14c8a64bf08273664ce796c2d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -110,12 +112,12 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a91794248ce8ca255674e71e2c37afbf1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a91794248ce8ca255674e71e2c37afbf1">bootloadFile</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *port, const char *fileName, char *error, int errorLength, const void *obj, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> uploadProgress, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> verifyProgress)</td></tr>
-<tr class="separator:a91794248ce8ca255674e71e2c37afbf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b80e7334f27ae8aca1a9a80f491f911"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a5b80e7334f27ae8aca1a9a80f491f911">bootloadFile</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *port, const char *fileName, const void *obj, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> uploadProgress, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> verifyProgress)</td></tr>
+<tr class="separator:a5b80e7334f27ae8aca1a9a80f491f911"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0fb19b81296391f0e36ba02b0a85d485"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a0fb19b81296391f0e36ba02b0a85d485">bootloadFileEx</a> (<a class="el" href="structbootload__params__t.html">bootload_params_t</a> *params)</td></tr>
 <tr class="separator:a0fb19b81296391f0e36ba02b0a85d485"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ef04ac337637bdfdf9d6e63da0605f7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a5ef04ac337637bdfdf9d6e63da0605f7">bootloadUpdateBootloader</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *port, const char *fileName, char *error, int errorLength, const void *obj, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> uploadProgress, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> verifyProgress)</td></tr>
-<tr class="separator:a5ef04ac337637bdfdf9d6e63da0605f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00dfb6cc969afab4928a548390023c45"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a00dfb6cc969afab4928a548390023c45">bootloadUpdateBootloader</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *port, const char *fileName, const void *obj, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> uploadProgress, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> verifyProgress)</td></tr>
+<tr class="separator:a00dfb6cc969afab4928a548390023c45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d0a3f320636ea0382f6eaf596d21f57"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a1d0a3f320636ea0382f6eaf596d21f57">bootloadUpdateBootloaderEx</a> (<a class="el" href="structbootload__params__t.html">bootload_params_t</a> *p)</td></tr>
 <tr class="separator:a1d0a3f320636ea0382f6eaf596d21f57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98c0ef9d938083384803b4d7d90d3373"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="inertial_sense_boot_loader_8h.html#a98c0ef9d938083384803b4d7d90d3373">enableBootloader</a> (<a class="el" href="structserial__port__t.html">serial_port_t</a> *port, int baudRate, char *error, int errorLength, const char *bootloadEnableCmd)</td></tr>
@@ -124,6 +126,22 @@ Functions</h2></td></tr>
 <tr class="separator:a1ba2459e76f174c6fed632130578a487"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="ab22aca14c8a64bf08273664ce796c2d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab22aca14c8a64bf08273664ce796c2d5">&#9670;&nbsp;</a></span>BOOTLOADER_ERROR_LENGTH</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define BOOTLOADER_ERROR_LENGTH&#160;&#160;&#160;512</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8h_source.html#l00041">41</a> of file <a class="el" href="inertial_sense_boot_loader_8h_source.html">inertialSenseBootLoader.h</a>.</p>
+
+</div>
+</div>
 <a id="a36f9c553bf1daf7c7df99886e2f0eaa0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a36f9c553bf1daf7c7df99886e2f0eaa0">&#9670;&nbsp;</a></span>BOOTLOADER_REFRESH_DELAY</h2>
 
@@ -253,13 +271,13 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Bootloader callback function prototype, return value unused currently so return 0 </p>
 
-<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8h_source.html#l00041">41</a> of file <a class="el" href="inertial_sense_boot_loader_8h_source.html">inertialSenseBootLoader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8h_source.html#l00045">45</a> of file <a class="el" href="inertial_sense_boot_loader_8h_source.html">inertialSenseBootLoader.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a91794248ce8ca255674e71e2c37afbf1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91794248ce8ca255674e71e2c37afbf1">&#9670;&nbsp;</a></span>bootloadFile()</h2>
+<a id="a5b80e7334f27ae8aca1a9a80f491f911"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b80e7334f27ae8aca1a9a80f491f911">&#9670;&nbsp;</a></span>bootloadFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -275,18 +293,6 @@ Functions</h2></td></tr>
           <td></td>
           <td class="paramtype">const char *&#160;</td>
           <td class="paramname"><em>fileName</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char *&#160;</td>
-          <td class="paramname"><em>error</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>errorLength</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -347,12 +353,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01343">1343</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01342">1342</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
 
 </div>
 </div>
-<a id="a5ef04ac337637bdfdf9d6e63da0605f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ef04ac337637bdfdf9d6e63da0605f7">&#9670;&nbsp;</a></span>bootloadUpdateBootloader()</h2>
+<a id="a00dfb6cc969afab4928a548390023c45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00dfb6cc969afab4928a548390023c45">&#9670;&nbsp;</a></span>bootloadUpdateBootloader()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -368,18 +374,6 @@ Functions</h2></td></tr>
           <td></td>
           <td class="paramtype">const char *&#160;</td>
           <td class="paramname"><em>fileName</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char *&#160;</td>
-          <td class="paramname"><em>error</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>errorLength</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -419,7 +413,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01394">1394</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01393">1393</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
 
 </div>
 </div>
@@ -439,7 +433,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01412">1412</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01410">1410</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
 
 </div>
 </div>
@@ -478,7 +472,7 @@ Functions</h2></td></tr>
 <p>@port the port to go back to program mode on @error a buffer to store any error messages - can be NULL @errorLength the number of bytes available in error</p>
 <dl class="section return"><dt>Returns</dt><dd>0 if failure, non-zero if success </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01668">1668</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01666">1666</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
 
 </div>
 </div>
@@ -537,7 +531,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if failure, non-zero if success </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01586">1586</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="inertial_sense_boot_loader_8c_source.html#l01584">1584</a> of file <a class="el" href="inertial_sense_boot_loader_8c_source.html">inertialSenseBootLoader.c</a>.</p>
 
 </div>
 </div>

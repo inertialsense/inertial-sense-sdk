@@ -5,7 +5,7 @@ var searchData=
   ['enable_5ffilter_5fduplicate_5fpackets',['ENABLE_FILTER_DUPLICATE_PACKETS',['../com__manager_8c.html#aa4f64c2456c2ae641614ebf622e839d8',1,'com_manager.c']]],
   ['enable_5ffilter_5fduplicate_5fpackets_5fmatch_5fall_5fcharacters',['ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS',['../com__manager_8c.html#a58158e674661f2ffc7c66939747af5cf',1,'com_manager.c']]],
   ['enable_5fhex_5fboot_5floader',['ENABLE_HEX_BOOT_LOADER',['../inertial_sense_boot_loader_8c.html#a6035ec7e07061b8d624a59a4c6ef599b',1,'inertialSenseBootLoader.c']]],
-  ['enable_5fpacket_5fcontinuation',['ENABLE_PACKET_CONTINUATION',['../com__manager_8c.html#abad56c80e8b607f7bde8cf41282850fa',1,'com_manager.c']]],
+  ['enable_5fpacket_5fcontinuation',['ENABLE_PACKET_CONTINUATION',['../com__manager_8h.html#abad56c80e8b607f7bde8cf41282850fa',1,'com_manager.h']]],
   ['enagal',['ENAGAL',['../data__sets_8h.html#ab21bdbdc81c6751f28995b50a3a083ef',1,'data_sets.h']]],
   ['enaglo',['ENAGLO',['../data__sets_8h.html#ad624d6d224cdfa24d0efae4319914ee9',1,'data_sets.h']]],
   ['enasbs',['ENASBS',['../data__sets_8h.html#abae7b5babe46b854fdc7c79cf5ec9f07',1,'data_sets.h']]],

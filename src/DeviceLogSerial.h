@@ -29,7 +29,7 @@ class cDeviceLogSerial : public cDeviceLog
 public:
     cDeviceLogSerial(){}
 
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize, uint32_t chunkSize) OVERRIDE;
+	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;

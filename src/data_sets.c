@@ -184,6 +184,12 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetof(ins_4_t, ecef[2])
 	};
 
+	static uint16_t offsetsSysParams[] =
+	{
+		1,
+		offsetof(sys_params_t, sensorTruePeriod),
+	};
+
     static uint16_t offsetsPreImuMag[] =
     {
         3,
@@ -265,7 +271,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,  					//  7: DID_CONFIG
 		0,						//  8: DID_ASCII_BCAST_PERIOD
 		offsetsRmc,				//  9: DID_RMC
-		0,						// 10: DID_SYS_PARAMS
+		offsetsSysParams,		// 10: DID_SYS_PARAMS
 		offsetsOnlyTimeFirst,	// 11: DID_SYS_SENSORS
 		offsetsFlashConfig,		// 12: DID_FLASH_CONFIG
 		offsetsGps,				// 13: DID_GPS1_UBX_POS
@@ -677,6 +683,15 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 	{
 		*millisecond = (int32_t)((sc - floor(sc)) * 1000.0);
 	}
+}
+
+double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds)
+{
+	double gpsSeconds = gpsWeek * SECONDS_PER_WEEK;
+	gpsSeconds += (gpsTimeofWeekMS / 1000);
+	double unixSeconds = gpsSeconds + GPS_TO_UNIX_OFFSET - leapSeconds;
+
+	return unixSeconds;
 }
 
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds)

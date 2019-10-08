@@ -177,6 +177,7 @@ var searchData=
   ['did_5frmc',['DID_RMC',['../data__sets_8h.html#a9b78d38da66e91d33bd5fef049125f51',1,'data_sets.h']]],
   ['did_5frtk_5fcode_5fresidual',['DID_RTK_CODE_RESIDUAL',['../data__sets_8h.html#a4f7dbe726920db60bcea9a4542f9c79c',1,'data_sets.h']]],
   ['did_5frtk_5fdebug',['DID_RTK_DEBUG',['../data__sets_8h.html#ae88ccf6756ad17b3d23f8e0b58fa5b50',1,'data_sets.h']]],
+  ['did_5frtk_5fdebug_5f2',['DID_RTK_DEBUG_2',['../data__sets_8h.html#aca15fe461b36d5ff2655459eba2ed80e',1,'data_sets.h']]],
   ['did_5frtk_5fphase_5fresidual',['DID_RTK_PHASE_RESIDUAL',['../data__sets_8h.html#ad8c16200693b2b6a1e1f0bd0aa818d1e',1,'data_sets.h']]],
   ['did_5frtk_5fstate',['DID_RTK_STATE',['../data__sets_8h.html#a128df1fe23522afe3012f4e59dfe5cc9',1,'data_sets.h']]],
   ['did_5frtos_5finfo',['DID_RTOS_INFO',['../data__sets_8h.html#ad642a00e622f8fbaf5ac0882b29e7cf7',1,'data_sets.h']]],

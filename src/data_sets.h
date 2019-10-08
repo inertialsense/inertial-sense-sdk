@@ -120,6 +120,7 @@ typedef uint32_t eDataIDs;
 #define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER_1 + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously*/
 #define DID_WHEEL_CONFIG				(eDataIDs)87 /** (wheel_config_t) static configuration for wheel encoder measurements*/
 #define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate*/
+#define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
@@ -556,7 +557,7 @@ typedef struct PACKED
 	/** Velocity U, V, W in meters per second.  Convert to NED velocity using "quatRot(vel_ned, qn2b, uvw)". */
 	float					uvw[3];
 
-	/** WGS84 latitude, longitude, height above mean sea level (MSL) in meters */
+	/** WGS84 latitude, longitude, height above ellipsoid in meters (not MSL) */
 	double					lla[3];
 
 	/** height above mean sea level (MSL) in meters */
@@ -1024,12 +1025,50 @@ typedef struct PACKED
 	/** Nav filter update period in milliseconds. Zero disables nav filter. */
 	uint32_t				navPeriodMs;
 	
-	/** Reserved */
-	float					reserved2[4];
+	/** Actual sample period relative to GPS PPS */
+	double					sensorTruePeriod;
 
-	/** General fault code descriptor (eGenFaultCodes) */
+	/** Reserved */
+	float					reserved2[2];
+
+	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
 } sys_params_t;
+
+/*! General Fault Code descriptor */
+enum eGenFaultCodes
+{
+	/*! INS state limit overrun - UVW */
+	GFC_INS_STATE_ORUN_UVW				= 0x00000001,
+	/*! INS state limit overrun - Latitude */
+	GFC_INS_STATE_ORUN_LAT				= 0x00000002,
+	/*! INS state limit overrun - Altitude */
+	GFC_INS_STATE_ORUN_ALT				= 0x00000004,
+	/*! Unhandled interrupt */
+	GFC_UNHANDLED_INTERRUPT				= 0x00000010,
+	/*! Fault: sensor initialization  */
+	GFC_INIT_SENSORS					= 0x00000100,
+	/*! Fault: SPI initialization  */
+	GFC_INIT_SPI						= 0x00000200,
+	/*! Fault: SPI configuration  */
+	GFC_CONFIG_SPI						= 0x00000400,
+	/*! Fault: GPS1 init  */
+	GFC_INIT_GPS1						= 0x00000800,
+	/*! Fault: GPS2 init  */
+	GFC_INIT_GPS2                       = 0x00001000,
+	/*! WMM value out of bounds */
+	GFC_WMM_BOUNDS						= 0x00002000,
+	/*! Flash checksum failure */
+	GFC_FLASH_CHECKSUM_FAILURE			= 0x00004000,
+	/*! Flash write failure */
+	GFC_FLASH_WRITE_FAILURE				= 0x00008000,
+	/*! System Fault: general */
+	GFC_SYS_FAULT_GENERAL				= 0x00010000,
+	/*! System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
+	GFC_SYS_FAULT_CRITICAL			    = 0x00020000,
+	/*! Sensor(s) saturated */
+	GFC_SENSOR_SATURATION 				= 0x00040000,
+};
 
 
 /** (DID_CONFIG) Configuration functions */
@@ -1710,12 +1749,12 @@ typedef struct PACKED
 	/** RTK configuration bits (see eRTKConfigBits). */
     uint32_t				RTKCfgBits;
 
-    /** Sensor config (see eSensorConfig) */
+    /** Sensor config (see eSensorConfig in data_sets.h) */
     uint32_t                sensorConfig;
 
 	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
     wheel_config_t          wheelConfig;
-
+	
 } nvm_flash_cfg_t;
 
 /** INL2 - Estimate error variances */
@@ -2579,7 +2618,8 @@ typedef enum
 
 typedef enum
 {
-    EVB2_CB_OPTIONS_SP330_RS422       = 0x00000001,
+    EVB2_CB_OPTIONS_TRISTATE_UINS_IO  = 0x00000001,
+    EVB2_CB_OPTIONS_SP330_RS422       = 0x00000002,
     EVB2_CB_OPTIONS_XBEE_ENABLE       = 0x00000010,
     EVB2_CB_OPTIONS_WIFI_ENABLE       = 0x00000020,
     EVB2_CB_OPTIONS_BLE_ENABLE        = 0x00000040,
@@ -2710,23 +2750,26 @@ typedef enum
     /** No connections.  Off: XBee, WiFi */
 	EVB2_CB_PRESET_ALL_OFF,
 
-    /** [uINS Hub] (uINS-SER0): USB, RS232, H8.  (uINS-SER1): XRadio.  Off: XBee, WiFi */
+    /** [uINS Hub] LED-GRN (uINS-SER0): USB, RS232, H8.  (uINS-SER1): XRadio.  Off: XBee, WiFi */
     EVB2_CB_PRESET_RS232,
 
-    /** [uINS Hub] (uINS-SER0): USB, RS232, H8.  (uINS-SER1): XBee, XRadio.  Off: WiFi */
+    /** [uINS Hub] LED-BLU (uINS-SER0): USB, RS232, H8.  (uINS-SER1): XBee, XRadio.  Off: WiFi */
     EVB2_CB_PRESET_RS232_XBEE,
 
-    /** [uINS Hub] (uINS-SER0): USB, RS422, H8.  (uINS-SER1): WiFi, XRadio.  Off: XBee */
+    /** [uINS Hub] LED-PUR (uINS-SER0): USB, RS422, H8.  (uINS-SER1): WiFi, XRadio.  Off: XBee */
     EVB2_CB_PRESET_RS422_WIFI,
 
-    /** [uINS Hub] (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee */
+    /** [uINS Hub] LED-CYA (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee */
     EVB2_CB_PRESET_SPI_RS232,
 
-    /** [USB Hub] (USB): RS232, H8, XBee, XRadio. */
+    /** [USB Hub]  LED-YEL (USB): RS232, H8, XRadio. */
     EVB2_CB_PRESET_USB_HUB_RS232,
 
-    /** [USB Hub] (USB): RS232, H8, XBee, XRadio. */
+    /** [USB Hub]  LED-WHT (USB): RS485/RS422, H8, XRadio. */
     EVB2_CB_PRESET_USB_HUB_RS422,
+	
+// 	/** [uINS Hub] LED-RED (uINS-SER0): USB, RS232, H8.  (uINS-SER1): CAN.  Off: XRadio, XBee, WiFi */
+//     EVB2_CB_PRESET_CAN,
 
     /** Number of bridge configuration presets */
 	EVB2_CB_PRESET_COUNT,
@@ -2946,10 +2989,13 @@ typedef struct PACKED
     /** Heap high water mark bytes */
     uint32_t                freeHeapSize;
 
-    /** Malloc - free counter */
-    uint32_t				mallocMinusFree;
+    /** Total memory allocated using malloc() */
+    uint32_t				mallocSize;
     
-    /** Tasks */
+	/** Total memory freed using free() */
+	uint32_t				freeSize;
+
+	/** Tasks */
 	rtos_task_t             task[UINS_RTOS_NUM_TASKS];
 
 } rtos_info_t;
@@ -2960,8 +3006,11 @@ typedef struct PACKED
     /** Heap high water mark bytes */
     uint32_t                freeHeapSize;
 
-    /** Malloc - free counter */
-    uint32_t				mallocMinusFree;
+	/** Total memory allocated using malloc() */
+	uint32_t				mallocSize;
+
+	/** Total memory freed using free() */
+	uint32_t				freeSize;
 
     /** Tasks */
     rtos_task_t             task[EVB_RTOS_NUM_TASKS];
@@ -3129,6 +3178,13 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
 /** Convert DID to realtime message bits */
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits);
+
+//Time conversion constants
+#define SECONDS_PER_WEEK        604800
+#define SECONDS_PER_DAY         86400
+#define GPS_TO_UNIX_OFFSET      315964800
+/** Convert GPS Week and Ms and leapSeconds to Unix seconds**/
+double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds);
 
 /** Convert Julian Date to calendar date. */
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond);

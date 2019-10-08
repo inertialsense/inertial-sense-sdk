@@ -131,7 +131,7 @@ void LU( const f_t *M, i_t n, f_t *L, f_t *U )
 {
 	int in, kn;
 
-	f_t *A = MALLOC( sizeof( f_t )*n*n );
+	f_t *A = (f_t*)MALLOC( sizeof( f_t )*n*n );
 	if (A == 0) { return; }
 
 	cpy_MatMxN( A, M, n, n );
@@ -259,11 +259,11 @@ char inv_MatN( f_t *result, const f_t *M, i_t n )
 {
 	char error		= 0;
 
-	f_t *L			= MALLOC( sizeof( f_t )*n*n );
-	f_t *U			= MALLOC( sizeof( f_t )*n*n );
-	f_t *invL		= MALLOC( sizeof( f_t )*n*n );
-	f_t *invU		= MALLOC( sizeof( f_t )*n*n );
-	f_t	*identCol	= MALLOC( sizeof( f_t )*n );
+	f_t *L			= (f_t*)MALLOC( sizeof( f_t )*n*n );
+	f_t *U			= (f_t*)MALLOC( sizeof( f_t )*n*n );
+	f_t *invL		= (f_t*)MALLOC( sizeof( f_t )*n*n );
+	f_t *invU		= (f_t*)MALLOC( sizeof( f_t )*n*n );
+	f_t	*identCol	= (f_t*)MALLOC( sizeof( f_t )*n );
 	while( L==NULL || U==NULL || invL==NULL || invU==NULL || identCol==NULL ) { /* Error check malloc */ }
 	memset( identCol, 0, sizeof( f_t )*n );
 

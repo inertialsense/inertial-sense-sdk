@@ -48,7 +48,7 @@ int cISTcpServer::Open(const string& ipAddress, int port)
 	m_port = port;
 	int status;
 	char portString[64];
-	SNPRINTF(portString, sizeof(portString), "%ld", (long)m_port);
+	snprintf(portString, sizeof(portString), "%ld", (long)m_port);
 	addrinfo* result = NULL;
 	addrinfo hints = addrinfo();
 	hints.ai_family = AF_INET;

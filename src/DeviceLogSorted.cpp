@@ -37,7 +37,7 @@ cDeviceLogSorted::cDeviceLogSorted()
 }
 
 
-void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize)
+void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
     for (uint32_t i = 0; i < DID_COUNT; i++)
     {
@@ -49,7 +49,7 @@ void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, 
     }
 	m_dataSerNum = 0;
 	m_lastSerNum = 0xFFFFFFFF;
-	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize, chunkSize);
+	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
@@ -366,10 +366,10 @@ bool cDeviceLogSorted::ReadAllChunksFromFile()
 		chunk->m_subHdr.dCount += m_readChunk.m_subHdr.dCount;
 
 		// Resize chunk if necessary
-        if (m_readChunk.GetDataSize() > chunk->GetBuffFree())
-        {
-            chunk->Resize(chunk->GetDataSize() + m_readChunk.GetDataSize());
-        }
+//         if (m_readChunk.GetDataSize() > chunk->GetBuffFree())
+//         {
+//             chunk->Resize(chunk->GetDataSize() + m_readChunk.GetDataSize());
+//         }
 
 		// Append data
 		chunk->PushBack(m_readChunk.GetDataPtr(), m_readChunk.GetDataSize());

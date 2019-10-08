@@ -24,6 +24,7 @@ var searchData=
   ['be_5fswap32f',['BE_SWAP32F',['../data__sets_8h.html#af646fbefc4b47bd8454c5b2f74b072bc',1,'data_sets.h']]],
   ['be_5fswap64f',['BE_SWAP64F',['../data__sets_8h.html#a3bca87956d9790c5e11bd635c8d2abfc',1,'data_sets.h']]],
   ['begin_5fcritical_5fsection',['BEGIN_CRITICAL_SECTION',['../_i_s_constants_8h.html#abb13c4ee4ab68ba9b80f1f527dff29a0',1,'ISConstants.h']]],
+  ['bootloader_5ferror_5flength',['BOOTLOADER_ERROR_LENGTH',['../inertial_sense_boot_loader_8h.html#ab22aca14c8a64bf08273664ce796c2d5',1,'inertialSenseBootLoader.h']]],
   ['bootloader_5fmax',['bootloader_max',['../inertial_sense_boot_loader_8c.html#a6c1bfff95bfbb2d369f6f137f7f3a8a8',1,'inertialSenseBootLoader.c']]],
   ['bootloader_5fmin',['bootloader_min',['../inertial_sense_boot_loader_8c.html#a9f2d5fb9b4f02d9e5c7627bb1195c856',1,'inertialSenseBootLoader.c']]],
   ['bootloader_5fperror',['bootloader_perror',['../inertial_sense_boot_loader_8c.html#ae25458f6abaf963108f26ee9168485ac',1,'inertialSenseBootLoader.c']]],

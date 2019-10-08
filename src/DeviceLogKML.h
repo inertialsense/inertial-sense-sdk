@@ -41,7 +41,7 @@ struct sKmlLog
 class cDeviceLogKML : public cDeviceLog
 {
 public:
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize, uint32_t chunkSize) OVERRIDE;
+	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
 	bool CloseWriteFile(int kid, sKmlLog& log);
 	bool OpenWithSystemApp(void) OVERRIDE;
