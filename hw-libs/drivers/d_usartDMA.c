@@ -883,7 +883,7 @@ static int serEnable(int serialNum)
 
 	// Re-init UART
 	if (ser->uinfo.isUsartNotUart)
-	{
+	{	// Initialize USART
 		if (ser->uinfo.isSpiUsart)
 		{
 			// Initialize the USART in SPI slave mode.
@@ -906,11 +906,11 @@ static int serEnable(int serialNum)
 		usart_enable_rx((Usart*)ser->usart);
 	}
 	else
-	{
+	{	// Initialize UART
 		sam_uart_opt_t p_uart_opt =
 		{
 			.ul_mck = sysclk_get_peripheral_hz(),
-			.ul_baudrate = ser->usart_options.baudrate,
+			.ul_baudrate = ser->usart_options.baudrate,			// baudrate = sysclk / (16 * UART_BRGR).   Example: 150000000 Hz / (16 * 10) = 937500 bps   
 			.ul_mode =				             // Mode register:
 				UART_MR_PAR_NO |				     // No parity.
 				UART_MR_FILTER_DISABLED |	   // Don't filter Rx line.

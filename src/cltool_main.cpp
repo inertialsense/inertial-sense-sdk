@@ -133,10 +133,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	case DID_GPS_NAV:				
 		d.gpsNav;       
 		break;
-	case DID_MAGNETOMETER_1:		
-		d.mag;          
-		break;
-	case DID_MAGNETOMETER_2:		
+	case DID_MAGNETOMETER:		
 		d.mag;          
 		break;
 	case DID_BAROMETER:				
@@ -208,13 +205,9 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {
         inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_REL, g_commandLineOptions.streamRtkRel);
     }
-    if (g_commandLineOptions.streamMag1)
+    if (g_commandLineOptions.streamMag)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_1, g_commandLineOptions.streamMag1);
-	}
-	if (g_commandLineOptions.streamMag2)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_2, g_commandLineOptions.streamMag2);
+		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER, g_commandLineOptions.streamMag);
 	}
 	if (g_commandLineOptions.streamBaro)
 	{
@@ -223,10 +216,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	if (g_commandLineOptions.streamRTOS)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_RTOS_INFO, g_commandLineOptions.streamRTOS);
-        config_t cfg;
-        cfg.system = CFG_SYS_CMD_ENABLE_RTOS_STATS;
-        cfg.invSystem = ~cfg.system;
-		inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&cfg, sizeof(config_t), 0);
+        system_command_t cfg;
+        cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+        cfg.invCommand = ~cfg.command;
+		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
 	}
 	if (g_commandLineOptions.streamSensorsADC)
 	{
@@ -238,10 +231,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.magRecal)
 	{	
-		// Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.enMagRecal == 100).
+		// Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.recalCmd == 100).
 		inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL, 100);
 		// Enable mag recal
-		inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, enMagRecal));
+		inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, recalCmd));
 	}
     if (g_commandLineOptions.surveyIn.state)
     {   // Enable mult-axis 
@@ -253,17 +246,17 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
     if (g_commandLineOptions.persistentMessages)
     {   // Save persistent messages to flash
-        config_t cfg;
-        cfg.system = CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES;
-        cfg.invSystem = ~cfg.system;
-        inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&cfg, sizeof(config_t), 0);
+        system_command_t cfg;
+        cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+        cfg.invCommand = ~cfg.command;
+        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
     if (g_commandLineOptions.softwareReset)
     {   // Issue software reset
-        config_t cfg;
-        cfg.system = CFG_SYS_CMD_SOFTWARE_RESET;
-        cfg.invSystem = ~cfg.system;
-        inertialSenseInterface.SendRawData(DID_CONFIG, (uint8_t*)&cfg, sizeof(config_t), 0);
+        system_command_t cfg;
+        cfg.command = SYS_CMD_SOFTWARE_RESET;
+        cfg.invCommand = ~cfg.command;
+        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
 
 	if (g_commandLineOptions.serverConnection.length() != 0)
@@ -296,9 +289,11 @@ static int cltool_updateAppFirmware()
 	cout << "Updating application firmware using file at " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 	vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, 
         g_commandLineOptions.updateAppFirmwareFilename, 
+		g_commandLineOptions.updateBootloaderFilename,
         g_commandLineOptions.baudRate, 
         bootloadUploadProgress,
-		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0));
+		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0),
+		bootloadStatusInfo);
 	cout << endl << "Results:" << endl;
 	int errorCount = 0;
 	for (size_t i = 0; i < results.size(); i++)
@@ -317,10 +312,12 @@ static int cltool_updateBootloader()
 {
     cout << "Updating bootloader using file at " << g_commandLineOptions.updateBootloaderFilename << endl;
     vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, 
-        g_commandLineOptions.updateBootloaderFilename, 
+        g_commandLineOptions.updateBootloaderFilename,
+		"",
         g_commandLineOptions.baudRate, 
         bootloadUploadProgress,
         (g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0), 
+		bootloadStatusInfo,
         true);
     cout << endl << "Results:" << endl;
     int errorCount = 0;

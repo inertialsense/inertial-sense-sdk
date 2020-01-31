@@ -154,6 +154,7 @@ uint64_t getTickCount(void);
 
 int bootloadUploadProgress(const void* port, float percent);
 int bootloadVerifyProgress(const void* port, float percent);
+void bootloadStatusInfo(const void* port, const char* str);
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec);
 
 FILE* openFile(const char* path, const char* mode);

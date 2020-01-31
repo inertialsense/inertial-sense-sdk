@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -73,9 +73,6 @@ $(function() {
 <li>IMU_STATUS_RESERVED2
 : <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297ca1b3369b67f5eed7c91f0f19e9e047d95">data_sets.h</a>
 </li>
-<li>IMU_STATUS_SAMPLE_RATE_FAULT
-: <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297ca2feaf4385e108d96672f73b6f7dd07f7">data_sets.h</a>
-</li>
 <li>IMU_STATUS_SATURATION_IMU1_ACC
 : <a class="el" href="data__sets_8h.html#a55b96d2d2b9c3ed6b68533e396c6297ca72fa00183b26a68bcc57037ad3f39ccd">data_sets.h</a>
 </li>
@@ -99,6 +96,9 @@ $(function() {
 </li>
 <li>INS_STATUS_ATT_ALIGN_FINE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caea1f69c3aebfbec7c009be2c93338b62">data_sets.h</a>
+</li>
+<li>INS_STATUS_DO_NOT_MOVE
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caa35099b4dbad6bf04f4cc1cccfbf1bfb">data_sets.h</a>
 </li>
 <li>INS_STATUS_GENERAL_FAULT
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4e0d0beebd5d854e00bb62ff1fed941a">data_sets.h</a>
@@ -151,11 +151,17 @@ $(function() {
 <li>INS_STATUS_RTK_COMPASSING_MASK
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca8945cb111b094d8ab63ecd921cf1a5e5">data_sets.h</a>
 </li>
+<li>INS_STATUS_RTK_ERR_BASE_DATA_MISSING
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cae998841f2227170d190a43ae2ec99c39">data_sets.h</a>
+</li>
+<li>INS_STATUS_RTK_ERR_BASE_MASK
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cab913d65a0ff6c25e638c0e38f848c75b">data_sets.h</a>
+</li>
+<li>INS_STATUS_RTK_ERR_BASE_POSITION_INVALID
+: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf74bde1516ac031640e990e4812fd590">data_sets.h</a>
+</li>
 <li>INS_STATUS_RTK_ERR_BASE_POSITION_MOVING
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caed810c536092a1461f0dd6c7e0e0d7bd">data_sets.h</a>
-</li>
-<li>INS_STATUS_RTK_ERR_NO_BASE_POSITION
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca3df1867d2e8d5e849cd13682f125e9b4">data_sets.h</a>
 </li>
 <li>INS_STATUS_RTK_ERROR_MASK
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca91fc4e9bb738a55c316b115e16bf761a">data_sets.h</a>
@@ -196,9 +202,6 @@ $(function() {
 <li>INS_STATUS_UNUSED_1
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4d8a6a64194a8e6cf3ee09d9ef101154">data_sets.h</a>
 </li>
-<li>INS_STATUS_UNUSED_2
-: <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caaa49c155b56786a6f3c70b9aa0a36668">data_sets.h</a>
-</li>
 <li>INS_STATUS_UNUSED_3
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca31b79b773a80eb605d6d22f43c6634e2">data_sets.h</a>
 </li>
@@ -210,6 +213,12 @@ $(function() {
 </li>
 <li>INS_STATUS_VEL_ALIGN_FINE
 : <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caae2ffc3dcad5780c1af7e2ded3d58e39">data_sets.h</a>
+</li>
+<li>IO_CFG_IMU_1_DISABLE
+: <a class="el" href="data__sets_8h.html#aa151b96a32b57f6c700233cff1602f8aa04a9b405bc32331b65c55a663028025d">data_sets.h</a>
+</li>
+<li>IO_CFG_IMU_2_DISABLE
+: <a class="el" href="data__sets_8h.html#aa151b96a32b57f6c700233cff1602f8aa3283d482ec8ba63ff43f565263c0f257">data_sets.h</a>
 </li>
 <li>IO_CFG_INPUT_STROBE_TRIGGER_HIGH
 : <a class="el" href="data__sets_8h.html#aa151b96a32b57f6c700233cff1602f8aa698c1455374b3f220e76283f749906a6">data_sets.h</a>

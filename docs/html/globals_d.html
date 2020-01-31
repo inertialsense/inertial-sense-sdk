@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -140,6 +140,9 @@ $(function() {
 : <a class="el" href="_i_s_pose_8c.html#adfbcc3649f6607c631d18f9a88d02dbb">ISPose.c</a>
 , <a class="el" href="_i_s_pose_8h.html#adfbcc3649f6607c631d18f9a88d02dbb">ISPose.h</a>
 </li>
+<li>DEBUG_PRINTF
+: <a class="el" href="test__com__manager_8cpp.html#a2cc88864f2aaa74f3d4d09d76ac2961b">test_com_manager.cpp</a>
+</li>
 <li>DEFAULT_CHUNK_DATA_SIZE
 : <a class="el" href="_data_chunk_8h.html#a57b6b9aec20883f8d67aadf2fc183bcd">DataChunk.h</a>
 </li>
@@ -185,11 +188,14 @@ $(function() {
 <li>DID_CAL_SC2
 : <a class="el" href="data__sets_8h.html#a0ee94bf8bf49c96c773c4bedbda2c1ff">data_sets.h</a>
 </li>
+<li>DID_CAL_SC_INFO
+: <a class="el" href="data__sets_8h.html#a603a4d65096f79b9daf3b39bdf55f2a5">data_sets.h</a>
+</li>
+<li>DID_CAN_CONFIG
+: <a class="el" href="data__sets_8h.html#a59bc9e5b763c6953b01e80d4acc4e221">data_sets.h</a>
+</li>
 <li>DID_COMMUNICATIONS_LOOPBACK
 : <a class="el" href="data__sets_8h.html#aab5cd350c03dc726b5e9cce49d4848cc">data_sets.h</a>
-</li>
-<li>DID_CONFIG
-: <a class="el" href="data__sets_8h.html#a8327fa833ec7b23e61d1d0013d28a5c9">data_sets.h</a>
 </li>
 <li>DID_COUNT
 : <a class="el" href="data__sets_8h.html#a777819ed9aeeb6f96e9a74764d75064a">data_sets.h</a>
@@ -217,9 +223,6 @@ $(function() {
 </li>
 <li>DID_DUAL_IMU_RAW_MAG
 : <a class="el" href="data__sets_8h.html#a9f8b4cf8527483c5d73693d1aa765b50">data_sets.h</a>
-</li>
-<li>DID_EMPTY_1
-: <a class="el" href="data__sets_8h.html#aea3b26f85d13e8f420b72995a139a5c8">data_sets.h</a>
 </li>
 <li>DID_EVB_DEBUG_ARRAY
 : <a class="el" href="data__sets_8h.html#a1bcd890a6fcfdefc5cbae4f484a2e56c">data_sets.h</a>
@@ -332,11 +335,8 @@ $(function() {
 <li>DID_MAG_CAL
 : <a class="el" href="data__sets_8h.html#a2aae40551331ebfc4d8fc83c6f4ee14d">data_sets.h</a>
 </li>
-<li>DID_MAGNETOMETER_1
-: <a class="el" href="data__sets_8h.html#a9f09473ee1cf9a46c1c64dcf579a91fb">data_sets.h</a>
-</li>
-<li>DID_MAGNETOMETER_2
-: <a class="el" href="data__sets_8h.html#aae4821c8b7883ae2e880d92736b01a25">data_sets.h</a>
+<li>DID_MAGNETOMETER
+: <a class="el" href="data__sets_8h.html#a87c90d215c8b17d74485ef57ad01df2f">data_sets.h</a>
 </li>
 <li>DID_MANUFACTURING_INFO
 : <a class="el" href="data__sets_8h.html#aee99f0f218defe4469b9d0e00c2e3670">data_sets.h</a>
@@ -425,6 +425,9 @@ $(function() {
 <li>DID_SURVEY_IN
 : <a class="el" href="data__sets_8h.html#a5c08b1d9933f6d05b1955a2ec9e64bd0">data_sets.h</a>
 </li>
+<li>DID_SYS_CMD
+: <a class="el" href="data__sets_8h.html#a34433a6f8530254b5e16a4401e48ad75">data_sets.h</a>
+</li>
 <li>DID_SYS_FAULT
 : <a class="el" href="data__sets_8h.html#a7b2b5fb1f2ec35d8874c23d5fb0d96bc">data_sets.h</a>
 </li>
@@ -437,6 +440,9 @@ $(function() {
 <li>DID_SYS_SENSORS_SIGMA
 : <a class="el" href="data__sets_8h.html#a68de7a4475f32f96fbaf68f0bbb23d27">data_sets.h</a>
 </li>
+<li>DID_UNUSED_55
+: <a class="el" href="data__sets_8h.html#ac97ca03a99b3a0ddcf0850fd470c3d8e">data_sets.h</a>
+</li>
 <li>DID_WHEEL_CONFIG
 : <a class="el" href="data__sets_8h.html#a9501c548dffa2db36595726116759230">data_sets.h</a>
 </li>
@@ -444,15 +450,18 @@ $(function() {
 : <a class="el" href="data__sets_8h.html#a6cf9a36f261cf1dd2bd4484142f6a47b">data_sets.h</a>
 </li>
 <li>didToRmcBit()
-: <a class="el" href="data__sets_8c.html#a92f6edead84a44514c9c896af5f09fbe">data_sets.c</a>
-, <a class="el" href="data__sets_8h.html#a92f6edead84a44514c9c896af5f09fbe">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#a92f6edead84a44514c9c896af5f09fbe">data_sets.h</a>
+, <a class="el" href="data__sets_8c.html#a92f6edead84a44514c9c896af5f09fbe">data_sets.c</a>
 </li>
 <li>disableBootloader()
-: <a class="el" href="inertial_sense_boot_loader_8h.html#a1ba2459e76f174c6fed632130578a487">inertialSenseBootLoader.h</a>
-, <a class="el" href="inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487">inertialSenseBootLoader.c</a>
+: <a class="el" href="inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487">inertialSenseBootLoader.c</a>
+, <a class="el" href="inertial_sense_boot_loader_8h.html#a1ba2459e76f174c6fed632130578a487">inertialSenseBootLoader.h</a>
 </li>
 <li>disableBroadcastMsg()
 : <a class="el" href="com__manager_8c.html#a305a8082a720fd5b3bc521012df55202">com_manager.c</a>
+</li>
+<li>disableBroadcasts()
+: <a class="el" href="test__com__manager_8cpp.html#ac6254bf0a6483f9a5651abf46d1779b5">test_com_manager.cpp</a>
 </li>
 <li>disableDidBroadcast()
 : <a class="el" href="com__manager_8c.html#ae1ab50b97d65b1cc6e1bd806ff0187dc">com_manager.c</a>
@@ -461,24 +470,24 @@ $(function() {
 : <a class="el" href="_i_s_display_8cpp.html#ac0f4b3b133ea3f79e15c735125d7d3dd">ISDisplay.cpp</a>
 </li>
 <li>div_Quat_Quat()
-: <a class="el" href="_i_s_pose_8c.html#a02cee11a19b25808bc4ee4fce5ce0fc3">ISPose.c</a>
-, <a class="el" href="_i_s_pose_8h.html#a02cee11a19b25808bc4ee4fce5ce0fc3">ISPose.h</a>
+: <a class="el" href="_i_s_pose_8h.html#a02cee11a19b25808bc4ee4fce5ce0fc3">ISPose.h</a>
+, <a class="el" href="_i_s_pose_8c.html#a02cee11a19b25808bc4ee4fce5ce0fc3">ISPose.c</a>
 </li>
 <li>div_Vec3_Vec3()
-: <a class="el" href="_i_s_matrix_8c.html#a351496f6bd66379b82981ba3500cb084">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a351496f6bd66379b82981ba3500cb084">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a351496f6bd66379b82981ba3500cb084">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a351496f6bd66379b82981ba3500cb084">ISMatrix.c</a>
 </li>
 <li>div_Vec3_X()
-: <a class="el" href="_i_s_matrix_8c.html#aa06e71ea8abaf89098c60abcd1cb4fe8">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#aa06e71ea8abaf89098c60abcd1cb4fe8">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#aa06e71ea8abaf89098c60abcd1cb4fe8">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#aa06e71ea8abaf89098c60abcd1cb4fe8">ISMatrix.c</a>
 </li>
 <li>div_Vec4_Vec4()
 : <a class="el" href="_i_s_matrix_8c.html#a14fe321c7f0074790e5c4b80b69a625a">ISMatrix.c</a>
 , <a class="el" href="_i_s_matrix_8h.html#a14fe321c7f0074790e5c4b80b69a625a">ISMatrix.h</a>
 </li>
 <li>div_Vec4_X()
-: <a class="el" href="_i_s_matrix_8c.html#ae1b1cadaf79657ef96f7b2adbd0f3080">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#ae1b1cadaf79657ef96f7b2adbd0f3080">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#ae1b1cadaf79657ef96f7b2adbd0f3080">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#ae1b1cadaf79657ef96f7b2adbd0f3080">ISMatrix.c</a>
 </li>
 <li>div_Vec4d_X()
 : <a class="el" href="_i_s_matrix_8h.html#a007f8569fd3b6f262d6a0642c285314e">ISMatrix.h</a>
@@ -499,8 +508,8 @@ $(function() {
 , <a class="el" href="_i_s_matrix_8c.html#ae2372de406c82ddcabe421c74563dc0f">ISMatrix.c</a>
 </li>
 <li>dot_Vec3d_Vec3d()
-: <a class="el" href="_i_s_matrix_8c.html#a09801bac177dfb87b53db5b3db2f93e3">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a09801bac177dfb87b53db5b3db2f93e3">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a09801bac177dfb87b53db5b3db2f93e3">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a09801bac177dfb87b53db5b3db2f93e3">ISMatrix.c</a>
 </li>
 <li>dot_Vec4
 : <a class="el" href="_i_s_matrix_8h.html#afbc93906f86ceeb6750bf8e700d8c496">ISMatrix.h</a>
@@ -510,8 +519,8 @@ $(function() {
 , <a class="el" href="_i_s_matrix_8c.html#ae87c1d88a83c17285a314d95af9d1a1a">ISMatrix.c</a>
 </li>
 <li>dpsi_dq()
-: <a class="el" href="_i_s_pose_8h.html#a324135e9f590de761e855803b8de6df0">ISPose.h</a>
-, <a class="el" href="_i_s_pose_8c.html#a324135e9f590de761e855803b8de6df0">ISPose.c</a>
+: <a class="el" href="_i_s_pose_8c.html#a324135e9f590de761e855803b8de6df0">ISPose.c</a>
+, <a class="el" href="_i_s_pose_8h.html#a324135e9f590de761e855803b8de6df0">ISPose.h</a>
 </li>
 <li>DT_TO_HZ
 : <a class="el" href="_i_s_constants_8h.html#a3585c754221286fda034cf89fb1aadca">ISConstants.h</a>

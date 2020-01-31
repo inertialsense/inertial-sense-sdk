@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
+Copyright 2014-2018 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -21,10 +21,10 @@ static int running = 1;
 
 static void handleInsMessage(ins_1_t* ins)
 {
-	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n", 
+	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
 		ins->timeOfWeek,
-		ins->lla[0], ins->lla[1], ins->lla[2], 
-		ins->theta[0] * C_RAD2DEG_F, ins->theta[1] * C_RAD2DEG_F, ins->theta[2] * C_RAD2DEG_F );
+		ins->lla[0], ins->lla[1], ins->lla[2],
+		ins->theta[0] * C_RAD2DEG_F, ins->theta[1] * C_RAD2DEG_F, ins->theta[2] * C_RAD2DEG_F);
 }
 
 static void handleGpsMessage(gps_pos_t* pos)
@@ -34,8 +34,8 @@ static void handleGpsMessage(gps_pos_t* pos)
 
 static void handleImuMessage(dual_imu_t* imu)
 {
-	printf("IMU Time: %.3fs, PQR: %5.1f,%5.1f,%5.1f, ACC: %5.1f,%5.1f,%5.1f,\r\n", 
-		imu->time, 
+	printf("IMU Time: %.3fs, PQR: %5.1f,%5.1f,%5.1f, ACC: %5.1f,%5.1f,%5.1f,\r\n",
+		imu->time,
 		imu->I[0].pqr[0], imu->I[0].pqr[1], imu->I[0].pqr[2],
 		imu->I[0].acc[0], imu->I[0].acc[1], imu->I[0].acc[2]);
 }
@@ -71,17 +71,17 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 
 int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
-    config_t cfg;
-    cfg.system = CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES;
-    cfg.invSystem = ~cfg.system;
+	system_command_t cfg;
+	cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+	cfg.invCommand = ~cfg.command;
 
-    int messageSize = is_comm_set_data(comm, DID_CONFIG, 0, sizeof(config_t), &cfg);
-    if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-    {
-        printf("Failed to write save persistent message\r\n");
-        return -3;
-    }
-    return 0;
+	int messageSize = is_comm_set_data(comm, DID_SYS_CMD, 0, sizeof(system_command_t), &cfg);
+	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+	{
+		printf("Failed to write save persistent message\r\n");
+		return -3;
+	}
+	return 0;
 }
 
 
@@ -171,12 +171,12 @@ int main(int argc, char* argv[])
 #if 0	// STEP 5: Set configuration
 	if ((error = set_configuration(&serialPort, &comm)))
 	{
-		return error; 
+		return error;
 	}
 #endif
 
-	
-    // STEP 6: Enable message broadcasting
+
+	// STEP 6: Enable message broadcasting
 	if ((error = enable_message_broadcasting_get_data(&serialPort, &comm)))
 	{
 		return error;
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
 
 
 #if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
-    save_persistent_messages(&serialPort, &comm);
+	save_persistent_messages(&serialPort, &comm);
 #endif
 
 

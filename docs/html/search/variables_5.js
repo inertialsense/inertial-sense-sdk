@@ -16,9 +16,10 @@ var searchData=
   ['fit',['fit',['../structeph__t.html#a7e977d73382148280a6ddf9ab76ad563',1,'eph_t']]],
   ['fix_5freset_5fbase_5fmsgs',['fix_reset_base_msgs',['../structprcopt__t.html#ac2247d26fc5a8fedecb2f561631b4bc9',1,'prcopt_t']]],
   ['flag',['flag',['../structeph__t.html#a109faf0a9ce07ee1f2cba57f1f7594e3',1,'eph_t']]],
-  ['flags',['flags',['../structcom__manager__status__t.html#a8212909888b506491643d391cd7da2c3',1,'com_manager_status_t::flags()'],['../struct_p_a_c_k_e_d.html#a4c3fa9f54c4da8295b2cdf3ca5f843ac',1,'PACKED::flags()'],['../structbootload__params__t.html#a83a8f3a67d30d7a655169c44a9e5995d',1,'bootload_params_t::flags()'],['../structpacket__hdr__t.html#a2f70c5610514823dd705571fd68df9d7',1,'packet_hdr_t::flags()']]],
+  ['flags',['flags',['../structcom__manager__status__t.html#a8212909888b506491643d391cd7da2c3',1,'com_manager_status_t::flags()'],['../struct_p_a_c_k_e_d.html#a4c3fa9f54c4da8295b2cdf3ca5f843ac',1,'PACKED::flags()'],['../structbootload__params__t.html#ad4846bc93321b20d04d3cb46d3bcf474',1,'bootload_params_t::flags()'],['../structpacket__hdr__t.html#a2f70c5610514823dd705571fd68df9d7',1,'packet_hdr_t::flags()']]],
   ['flashcfg',['flashCfg',['../struct_p_a_c_k_e_d.html#a401dd1a523b1d4c59259e14644668a70',1,'PACKED']]],
   ['flashconfig',['flashConfig',['../structcmd__options__t.html#a5140db6acdf2f29beabbe45745bdecda',1,'cmd_options_t::flashConfig()'],['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#a72d0d105a61a62b3acfc22d6215be7a2',1,'InertialSense::com_manager_cpp_state_t::flashConfig()']]],
+  ['forcebootloaderupdate',['forceBootloaderUpdate',['../structbootload__params__t.html#a6cdc14dfbcd28d03c3c68bf965f43720',1,'bootload_params_t']]],
   ['freeheapsize',['freeHeapSize',['../struct_p_a_c_k_e_d.html#a1f22827b3509e0d6c0784decd176606b',1,'PACKED']]],
   ['freesize',['freeSize',['../struct_p_a_c_k_e_d.html#abff8578bc7af2919d290025f44f51c25',1,'PACKED']]],
   ['frq',['frq',['../structgeph__t.html#ae7fc742d01d96b4757bd037aa1e43bc9',1,'geph_t']]]

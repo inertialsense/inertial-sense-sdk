@@ -26,9 +26,9 @@ var searchData=
   ['m_5fshowtracks',['m_showTracks',['../classc_device_log.html#ac37e8ea5001bdf811f6948cd99497198',1,'cDeviceLog']]],
   ['m_5fsubhdr',['m_subHdr',['../classc_sorted_data_chunk.html#afbd625c8c72d1b38f9d288b23e6cbac4',1,'cSortedDataChunk']]],
   ['m_5ftimestamp',['m_timeStamp',['../classc_device_log.html#ae1977b4b1e2c4aac2e69ce83909c5440',1,'cDeviceLog']]],
-  ['mag',['mag',['../struct_p_a_c_k_e_d.html#ac311f3c734c3808caae1ef15cc55676e',1,'PACKED::mag()'],['../struct_p_a_c_k_e_d.html#abd3adb2075e0443217012a736e1af999',1,'PACKED::mag()'],['../struct_p_a_c_k_e_d.html#ad1135fac89d3e02fbb37ab9cc63f30ba',1,'PACKED::mag()']]],
-  ['mag1',['mag1',['../struct_p_a_c_k_e_d.html#a60dda584add9377c068a189b01e547ff',1,'PACKED']]],
-  ['mag2',['mag2',['../struct_p_a_c_k_e_d.html#aa3bc65fb3f28ceb2755859a05e6603ff',1,'PACKED']]],
+  ['mag',['mag',['../struct_p_a_c_k_e_d.html#a7fb9049e13a543e4260d7c896078fe48',1,'PACKED::mag()'],['../struct_p_a_c_k_e_d.html#ad1135fac89d3e02fbb37ab9cc63f30ba',1,'PACKED::mag()'],['../struct_p_a_c_k_e_d.html#abd3adb2075e0443217012a736e1af999',1,'PACKED::mag()']]],
+  ['mag_5fcal_5fdone',['mag_cal_done',['../struct_p_a_c_k_e_d.html#ae4f44c67dce3ff0498115073e069f764',1,'PACKED']]],
+  ['mag_5fcal_5fgood',['mag_cal_good',['../struct_p_a_c_k_e_d.html#ab50caecc02c3eced347364aba00fd6a9',1,'PACKED']]],
   ['magcal',['magCal',['../struct_p_a_c_k_e_d.html#a212962f4fab8086e0099b773e13b2369',1,'PACKED']]],
   ['magdec',['magDec',['../struct_p_a_c_k_e_d.html#a9ec0a1c8935866ab3e20657195041ef3',1,'PACKED']]],
   ['magdeclination',['magDeclination',['../struct_p_a_c_k_e_d.html#a9238edd824b0b832851977fd2af97120',1,'PACKED']]],
@@ -67,8 +67,9 @@ var searchData=
   ['mintimestampdelta',['minTimestampDelta',['../classc_log_stat_data_id.html#a0807289336c212ee58e2ea57e4beccfc',1,'cLogStatDataId']]],
   ['mode',['mode',['../structprcopt__t.html#a80b995a9753003772603d1800612ac52',1,'prcopt_t']]],
   ['modear',['modear',['../structprcopt__t.html#a8567f4e05c4db09831f0ee2f46e67888',1,'prcopt_t']]],
-  ['mpu',['mpu',['../struct_p_a_c_k_e_d.html#ab10772e98735d858b74d758579d0e814',1,'PACKED']]],
+  ['mpu',['mpu',['../struct_p_a_c_k_e_d.html#a486edc5c366b5f8033bf8d4d394e5bf7',1,'PACKED']]],
   ['msg',['msg',['../structsbsmsg__t.html#a2bdb759f4c9a2de63d5ee899ad9b2a77',1,'sbsmsg_t']]],
+  ['msgs',['msgs',['../structtest__data__t.html#a81e157dca540754a81e260a06c794e9d',1,'test_data_t']]],
   ['msl',['msl',['../struct_p_a_c_k_e_d.html#ac89360fd6842093781e324fc4f2a6d77',1,'PACKED']]],
   ['mslbar',['mslBar',['../struct_p_a_c_k_e_d.html#ab05803bd68103a21b4d34d06b58a117e',1,'PACKED']]]
 ];

@@ -6,5 +6,6 @@ var searchData=
   ['wifi',['wifi',['../structevb__flash__cfg__t.html#a90c50d4fb4cde29197da9b50f4d399df',1,'evb_flash_cfg_t']]],
   ['wifiipaddr',['wifiIpAddr',['../structevb__status__t.html#a2bcc4f1104b74a8cba9252d289ee7f2c',1,'evb_status_t']]],
   ['wrap_5fcount_5fl',['wrap_count_l',['../struct_p_a_c_k_e_d.html#ae5153731432e5a05215c640980633df5',1,'PACKED']]],
-  ['wrap_5fcount_5fr',['wrap_count_r',['../struct_p_a_c_k_e_d.html#a0b43c86733e5641f9f4bfb7de71d4bcb',1,'PACKED']]]
+  ['wrap_5fcount_5fr',['wrap_count_r',['../struct_p_a_c_k_e_d.html#a0b43c86733e5641f9f4bfb7de71d4bcb',1,'PACKED']]],
+  ['wrptr',['wrPtr',['../structring__buf__t.html#a42500f31fd38c11013691af4dd8ebb0f',1,'ring_buf_t']]]
 ];

@@ -40,21 +40,20 @@ In order to build you need to install the gcc-arm embedded toolchain. Run these 
 # Install 32-bit dependencies
 sudo apt install -y lib32ncurses5 
 
-# Download toolchain version
-# wget <https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q3-update/+download/gcc-arm-none-eabi-5_4-2016q3-20160926-linux.tar.bz2>
-wget -O gcc-arm-none-eabi-linux.tar.bz2 https://www.microchip.com/mymicrochip/filehandler.aspx?ddocname=en603996
+# Download toolchain version 6.3.1 6-2017-q2
+wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2
 
 # Unzip file
-tar -xvf gcc-arm-none-eabi-linux.tar.bz2 
+tar -xf gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2
 
 # Move it to the opt directory
-sudo mv arm-none-eabi /opt/gcc-arm-none-eabi 
+sudo mv gcc-arm-none-eabi-6-2017-q2-update /opt/
 
 # Add the compiler to the path
-echo "export PATH=\$PATH:/opt/gcc-arm-none-eabi/bin" >> ~/.bashrc 
+echo "export PATH=\$PATH:/opt/gcc-arm-none-eabi-6-2017-q2-update/bin/" >> ~/.bashrc
 
 # Delete the downloaded file
-rm -rf gcc-arm-none-eabi-linux.tar.bz2 
+rm -rf gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2
 
 # Re-source your .bashrc to get the updated $PATH
 source ~/.bashrc

@@ -3,6 +3,8 @@ var searchData=
   ['identify',['Identify',['../class_ti_xml_node.html#ac1e3a8e7578be463b04617786120c2bb',1,'TiXmlNode']]],
   ['indent',['Indent',['../class_ti_xml_printer.html#abb33ec7d4bad6aaeb57f4304394b133d',1,'TiXmlPrinter']]],
   ['inertialsense',['InertialSense',['../class_inertial_sense.html#ab3c49f0986bdb06367a72d641dec0ecf',1,'InertialSense']]],
+  ['init',['init',['../test__com__manager_8cpp.html#a0463d7a5ed94b98e9d29512e2b433d60',1,'test_com_manager.cpp']]],
+  ['initcommanager',['initComManager',['../test__com__manager_8cpp.html#a3550b9a1c2e2e502a991905e6314189e',1,'test_com_manager.cpp']]],
   ['initcommanagerinstanceinternal',['initComManagerInstanceInternal',['../com__manager_8c.html#a8a84f49889437055ac05a506c5b9a292',1,'com_manager.c']]],
   ['initdeviceforreading',['InitDeviceForReading',['../classc_device_log.html#ac9fe5ca33ef0ff0d0bd94e0575507f74',1,'cDeviceLog::InitDeviceForReading()'],['../classc_device_log_c_s_v.html#a3654b051c50e8b7a248a46cf4a0916fa',1,'cDeviceLogCSV::InitDeviceForReading()'],['../classc_device_log_sorted.html#a8b1b0b03f41be28fe54a5bd67dbb0a3a',1,'cDeviceLogSorted::InitDeviceForReading()']]],
   ['initdeviceforwriting',['InitDeviceForWriting',['../classc_device_log.html#a6a38d0948669529102f912cfb07b2241',1,'cDeviceLog::InitDeviceForWriting()'],['../classc_device_log_c_s_v.html#acfd80804133f013281d5d444173d16ad',1,'cDeviceLogCSV::InitDeviceForWriting()'],['../classc_device_log_k_m_l.html#ab3cc92a5920db4f2bbd57a7bf88df667',1,'cDeviceLogKML::InitDeviceForWriting()'],['../classc_device_log_serial.html#ab46bd155ec3f038b26748f4b99884209',1,'cDeviceLogSerial::InitDeviceForWriting()'],['../classc_device_log_sorted.html#ad99cbfc25851a9e4e5441befd5340ba6',1,'cDeviceLogSorted::InitDeviceForWriting()']]],

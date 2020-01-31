@@ -116,6 +116,8 @@ C_SRCS += \
           $(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
           $(HW_LIBS_DIR)/misc/bootloaderApp.c                                                            \
           $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
+          $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
+          $(SRC_DIR)/CAN.cpp                                                                             \
           $(SRC_DIR)/communications.cpp                                                                  \
           $(SRC_DIR)/control_law.cpp                                                                     \
           $(SRC_DIR)/drivers/d_time.c                                                                    \
@@ -151,13 +153,12 @@ INCLUDES += $(LIBS_DIR) \
 INCLUDES += $(SDK_DIR)/src
 
 INCLUDES += $(HW_LIBS_DIR)                \
-            $(HW_LIBS_DIR)/config         \
             $(HW_LIBS_DIR)/communications \
+            $(HW_LIBS_DIR)/config         \
             $(HW_LIBS_DIR)/drivers        \
             $(HW_LIBS_DIR)/hardware       \
-            $(HW_LIBS_DIR)/libusb/inclue
-
-
+            $(HW_LIBS_DIR)/libusb/include \
+            $(HW_LIBS_DIR)/printf-master  
 
 INCLUDES += $(ASF_DIR)/common/boards                                                        \
             $(ASF_DIR)/common/boards/user_board                                             \
@@ -275,7 +276,7 @@ endif
 
 CFLAGS = -c  $(DEFS)  $(addprefix -I,$(INCLUDES)) $(DEBUG_FLAGS) $(OPTIMIZE) $(FILE_SIZE_FLAGS) $(MCFLAGS) -pipe -fno-strict-aliasing $(WARN_FLAGS)  --param max-inline-insns-single=500
 
-CXXFLAGS = -c $(DEFS) $(addprefix -I,$(INCLUDES)) $(DEBUG_FLAGS) $(OPTIMIZE) $(FILE_SIZE_FLAGS) -fno-rtti $(WARN_FLAGS) $(MCFLAGS) -std=gnu++11
+CXXFLAGS = -c $(DEFS) $(addprefix -I,$(INCLUDES)) $(DEBUG_FLAGS) $(OPTIMIZE) $(FILE_SIZE_FLAGS) -fno-rtti $(WARN_FLAGS) $(MCFLAGS) -std=c++11
 
 #LDFLAGS = -mthumb -Wl,-Map="IS_EVB-2.map" --specs=nano.specs -Wl,--start-group  -Wl,--end-group -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--cref -T$(LDSCRIPT) $(MCFLAGS) -u _printf_float $(LTO_FLAGS) -Wl,-Map=main.map
 LDFLAGS = -mthumb -Wl,-Map="IS_EVB-2.map" --specs=nano.specs  -Wl,--start-group  -Wl,--end-group -Wl,--gc-sections -Wl,--cref -T$(LDSCRIPT) $(MCFLAGS) -u _printf_float $(LTO_FLAGS)

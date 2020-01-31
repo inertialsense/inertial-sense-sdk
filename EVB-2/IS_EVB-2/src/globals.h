@@ -91,6 +91,8 @@ extern evb_msg_t                g_msg;
 extern debug_array_t            g_debug;
 extern evb_rtos_info_t          g_rtos;
 extern date_time_t              g_gps_date_time;
+//extern uint32_t					g_CANbaud_kbps;
+//extern uint32_t					g_can_receive_address;
 extern bool                     g_gpsTimeSync;
 extern int                      g_comm_time_ms;
 extern bool                     g_loggerEnabled;

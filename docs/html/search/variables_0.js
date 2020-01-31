@@ -2,6 +2,7 @@ var searchData=
 [
   ['a',['A',['../structeph__t.html#a552c43589298f592f94e14ecf799b0ff',1,'eph_t::A()'],['../structalm__t.html#a5b341d33d238554358be7d5064f1d9ff',1,'alm_t::A()']]],
   ['acc',['acc',['../struct_p_a_c_k_e_d.html#ad024b9a181a0fda19585a0eea7cacf33',1,'PACKED::acc()'],['../struct_p_a_c_k_e_d.html#a7c7b01e8ecc19436c30d429ac3633a99',1,'PACKED::acc()'],['../structgeph__t.html#aab07e1cd48e783dc2f2c76d02b75962c',1,'geph_t::acc()']]],
+  ['accel_5fmotion',['accel_motion',['../struct_p_a_c_k_e_d.html#a2061667be98d7a925779a916b2f9a20a',1,'PACKED']]],
   ['accsigma',['accSigma',['../struct_p_a_c_k_e_d.html#a7df6cbe92e24ae3dcada77ec0f3a1171',1,'PACKED']]],
   ['accuracycov',['accuracyCov',['../struct_p_a_c_k_e_d.html#a19e95789795b674cb3782d2c09b66641',1,'PACKED']]],
   ['accuracycovud',['accuracyCovUD',['../struct_p_a_c_k_e_d.html#a7431beb5aaf3fc78c009bc68155035d1',1,'PACKED']]],
@@ -10,6 +11,8 @@ var searchData=
   ['addinfo',['addInfo',['../struct_p_a_c_k_e_d.html#a4e76ab8edbeae0b39c220e56201c7d86',1,'PACKED']]],
   ['adot',['Adot',['../structeph__t.html#a9cc9730893dce4a099d7689516e9a1ac',1,'eph_t']]],
   ['age',['age',['../structgeph__t.html#aca3a89109fef659030f7cf47f28e4d26',1,'geph_t']]],
+  ['ahrs',['ahrs',['../struct_p_a_c_k_e_d.html#aa15f179b0ec44ab2fb2200d84a064b6a',1,'PACKED']]],
+  ['ahrs_5fgps_5fcnt',['ahrs_gps_cnt',['../struct_p_a_c_k_e_d.html#ae511565b58537fe963d21adedea48f9c',1,'PACKED']]],
   ['alm',['alm',['../struction__model__utc__alm__t.html#a56243805d77e73eb0bca91ed562d16d4',1,'ion_model_utc_alm_t']]],
   ['alpha',['alpha',['../structs_lpf_o0.html#af7a05a69313f3471d6200125034d5aac',1,'sLpfO0::alpha()'],['../structs_lpf_o1.html#a8ce12024c314694e2bc4aa2e2deeefd9',1,'sLpfO1::alpha()']]],
   ['ana',['ana',['../struct_p_a_c_k_e_d.html#a3157d6014eb1191a2f2b60fef3c0684d',1,'PACKED']]],
@@ -24,6 +27,11 @@ var searchData=
   ['asciimessagehandlerpost',['asciiMessageHandlerPost',['../structcom__manager__t.html#ad62909fc9a34160f2b2707506b8c12f4',1,'com_manager_t']]],
   ['asciimessages',['asciiMessages',['../structcmd__options__t.html#aa390d7ddd4bd07431b44fdf8ced5dcaf',1,'cmd_options_t::asciiMessages()'],['../structcom__manager__t.html#a7b82b19bdc580ff201c26478dccf4bcf',1,'com_manager_t::asciiMessages()']]],
   ['asciimessagescount',['asciiMessagesCount',['../structcom__manager__t.html#acdd39e362d1688f6af6f80ca5399cb1f',1,'com_manager_t']]],
+  ['asciimsgs',['asciiMsgs',['../structtest__data__t.html#ae2dabe2ded0b54dda8adeb31d763f0d0',1,'test_data_t']]],
+  ['att_5faligned',['att_aligned',['../struct_p_a_c_k_e_d.html#a30de52616cf8129c2de2b9922c39178f',1,'PACKED']]],
+  ['att_5faligning',['att_aligning',['../struct_p_a_c_k_e_d.html#a988a787224d1ac0d14af405b472e2185',1,'PACKED']]],
+  ['att_5fcoarse',['att_coarse',['../struct_p_a_c_k_e_d.html#ac853ee64c7b10260f5fd8e2221d165e9',1,'PACKED']]],
+  ['att_5ferr',['att_err',['../struct_p_a_c_k_e_d.html#ac7de241afad073e9596ba25f05d3e7f4',1,'PACKED']]],
   ['averageruntimeus',['averageRunTimeUs',['../struct_p_a_c_k_e_d.html#a9f0b6367e5461c297e970335387c0376',1,'PACKED']]],
   ['averagetimedelta',['averageTimeDelta',['../classc_log_stat_data_id.html#ab79272b160e738798b86c8ceaf6b3620',1,'cLogStatDataId']]],
   ['azim',['azim',['../struct_p_a_c_k_e_d.html#a85144f5f45b15680625a5b31c3b9efaf',1,'PACKED']]]

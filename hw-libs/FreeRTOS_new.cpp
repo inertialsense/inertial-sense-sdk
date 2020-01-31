@@ -11,7 +11,6 @@
 #include <new>
 #include <cstdlib>
 #include <compiler.h>
-#include "globals.h"
 
 extern "C"	void *	pvPortMalloc(size_t xWantedSize);
 extern "C"	void 	vPortFree(void * pv);

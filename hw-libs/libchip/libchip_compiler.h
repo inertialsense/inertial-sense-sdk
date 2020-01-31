@@ -39,6 +39,8 @@
 	#include "include/same70/same70.h"
 #elif defined(__SAMS70N20__)
 	#include "sams70.h"
+#elif defined(__SAME70Q20B__)
+	#include "sams70.h"
 #else
 	#error "please define correct macro for the chip first!"
 #endif

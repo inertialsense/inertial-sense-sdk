@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -74,403 +74,124 @@ $(function() {
 <div class="title">ring_buffer.c File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="ring__buffer_8h_source.html">ring_buffer.h</a>&quot;</code><br />
-<code>#include &lt;stdint.h&gt;</code><br />
-<code>#include &lt;stdlib.h&gt;</code><br />
-<code>#include &lt;string.h&gt;</code><br />
-<code>#include &lt;assert.h&gt;</code><br />
-<code>#include &quot;<a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>&quot;</code><br />
+<div class="textblock"><code>#include &lt;string.h&gt;</code><br />
+<code>#include &quot;<a class="el" href="ring__buffer_8h_source.html">ring_buffer.h</a>&quot;</code><br />
 </div>
 <p><a href="ring__buffer_8c_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a605323d20f7d7bd9bf9fc57d2da475eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a605323d20f7d7bd9bf9fc57d2da475eb">ringbuf_init</a> (<a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb, uint8_t *buf, size_t bufSize)</td></tr>
-<tr class="separator:a605323d20f7d7bd9bf9fc57d2da475eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46c3c9ccdb7a448ef1cb3d7c09dd4634"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a46c3c9ccdb7a448ef1cb3d7c09dd4634">ringbuf_buffer_size</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:a46c3c9ccdb7a448ef1cb3d7c09dd4634"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a781d13edbca764a820dc8b30afa5dc3c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a781d13edbca764a820dc8b30afa5dc3c">ringbuf_reset</a> (<a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:a781d13edbca764a820dc8b30afa5dc3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e14bd0ccff22b0445e633876b97dd1c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a3e14bd0ccff22b0445e633876b97dd1c">ringbuf_capacity</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:a3e14bd0ccff22b0445e633876b97dd1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6957f919393ec028d55d0199700da194"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a6957f919393ec028d55d0199700da194">ringbuf_bytes_free</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:a6957f919393ec028d55d0199700da194"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea2fb74dc65bdb6b235c324ae6a27754"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#aea2fb74dc65bdb6b235c324ae6a27754">ringbuf_bytes_used</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:aea2fb74dc65bdb6b235c324ae6a27754"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10ae17951a0ef937bdba950abe8ccd72"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a10ae17951a0ef937bdba950abe8ccd72">ringbuf_is_full</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:a10ae17951a0ef937bdba950abe8ccd72"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a93c5f35f462c00f28bd87a8478c41d53"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a93c5f35f462c00f28bd87a8478c41d53">ringbuf_is_empty</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:a93c5f35f462c00f28bd87a8478c41d53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb9d8a6ff3a073c98d3d371c5d693b6d"><td class="memItemLeft" align="right" valign="top">const void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#aeb9d8a6ff3a073c98d3d371c5d693b6d">ringbuf_tail</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:aeb9d8a6ff3a073c98d3d371c5d693b6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9bd8206c2d4b7eb59cf091e72683bad"><td class="memItemLeft" align="right" valign="top">const void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#ad9bd8206c2d4b7eb59cf091e72683bad">ringbuf_head</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb)</td></tr>
-<tr class="separator:ad9bd8206c2d4b7eb59cf091e72683bad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad0bd16799763e119690c8dbcf3ca53f6"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#ad0bd16799763e119690c8dbcf3ca53f6">ringbuf_findchr</a> (const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *rb, int c, size_t offset)</td></tr>
-<tr class="separator:ad0bd16799763e119690c8dbcf3ca53f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72b29e74d9480904ac42dcb2ce4bf580"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a72b29e74d9480904ac42dcb2ce4bf580">ringbuf_memset</a> (<a class="el" href="structringbuf__t.html">ringbuf_t</a> *dst, int c, size_t len)</td></tr>
-<tr class="separator:a72b29e74d9480904ac42dcb2ce4bf580"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6ee7683665ffdafc02cd706c4203e6c"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#af6ee7683665ffdafc02cd706c4203e6c">ringbuf_memcpy_into</a> (<a class="el" href="structringbuf__t.html">ringbuf_t</a> *dst, const void *src, size_t count, size_t *countCopied)</td></tr>
-<tr class="separator:af6ee7683665ffdafc02cd706c4203e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5b2957494464fa01177c41aa5d8fd6e"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#ac5b2957494464fa01177c41aa5d8fd6e">ringbuf_memcpy_from</a> (void *dst, <a class="el" href="structringbuf__t.html">ringbuf_t</a> *src, size_t count, size_t *countCopied)</td></tr>
-<tr class="separator:ac5b2957494464fa01177c41aa5d8fd6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbd09a70947ff7f98259f76d3667ec33"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#afbd09a70947ff7f98259f76d3667ec33">ringbuf_copy</a> (<a class="el" href="structringbuf__t.html">ringbuf_t</a> *dst, <a class="el" href="structringbuf__t.html">ringbuf_t</a> *src, size_t count)</td></tr>
-<tr class="separator:afbd09a70947ff7f98259f76d3667ec33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4bea592f4d54419a5b4fc54c29339dc9"><td class="memItemLeft" align="right" valign="top">unsigned char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a4bea592f4d54419a5b4fc54c29339dc9">ringfindChar</a> (unsigned char *bufPtr, unsigned char *endPtr, unsigned char character)</td></tr>
+<tr class="memdesc:a4bea592f4d54419a5b4fc54c29339dc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns a pointer to one past the first occurrence of the character in the string.  <a href="#a4bea592f4d54419a5b4fc54c29339dc9">More...</a><br /></td></tr>
+<tr class="separator:a4bea592f4d54419a5b4fc54c29339dc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac90dbae0a6de118ae0021ec46b4b065e"><td class="memItemLeft" align="right" valign="top">unsigned char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#ac90dbae0a6de118ae0021ec46b4b065e">ringfindChar2</a> (unsigned char *bufPtr, unsigned char *endPtr, unsigned char character1, unsigned char character2)</td></tr>
+<tr class="memdesc:ac90dbae0a6de118ae0021ec46b4b065e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns a pointer to one past the first occurrence of the character in the string.  <a href="#ac90dbae0a6de118ae0021ec46b4b065e">More...</a><br /></td></tr>
+<tr class="separator:ac90dbae0a6de118ae0021ec46b4b065e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b3d4242da6f3bccadc65ae100b2ccd8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a0b3d4242da6f3bccadc65ae100b2ccd8">ringBufInit</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf, unsigned char *buf, int bufSize)</td></tr>
+<tr class="memdesc:a0b3d4242da6f3bccadc65ae100b2ccd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize ring buffer pointers.  <a href="#a0b3d4242da6f3bccadc65ae100b2ccd8">More...</a><br /></td></tr>
+<tr class="separator:a0b3d4242da6f3bccadc65ae100b2ccd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abea5f0ec914daef07fe2eb83d977bd71"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#abea5f0ec914daef07fe2eb83d977bd71">ringBufUsed</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf)</td></tr>
+<tr class="memdesc:abea5f0ec914daef07fe2eb83d977bd71"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns the number of bytes currently in ring buffer.  <a href="#abea5f0ec914daef07fe2eb83d977bd71">More...</a><br /></td></tr>
+<tr class="separator:abea5f0ec914daef07fe2eb83d977bd71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9187c9c96af0c04057ac5ba7bdbfa839"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a9187c9c96af0c04057ac5ba7bdbfa839">ringBufFree</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf)</td></tr>
+<tr class="memdesc:a9187c9c96af0c04057ac5ba7bdbfa839"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns the number of bytes free in UART Rx buffer.  <a href="#a9187c9c96af0c04057ac5ba7bdbfa839">More...</a><br /></td></tr>
+<tr class="separator:a9187c9c96af0c04057ac5ba7bdbfa839"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b97a4c8ded765abd307bc53b3cec74a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a2b97a4c8ded765abd307bc53b3cec74a">ringBufWrite</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rb, unsigned char *buf, int numBytes)</td></tr>
+<tr class="memdesc:a2b97a4c8ded765abd307bc53b3cec74a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function writes data to the ring buffer.  <a href="#a2b97a4c8ded765abd307bc53b3cec74a">More...</a><br /></td></tr>
+<tr class="separator:a2b97a4c8ded765abd307bc53b3cec74a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a137abde7dd5120a6940250d1ed1e4397"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a137abde7dd5120a6940250d1ed1e4397">ringBufRead</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf, unsigned char *buf, int len)</td></tr>
+<tr class="memdesc:a137abde7dd5120a6940250d1ed1e4397"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function reads data from the ring buffer.  <a href="#a137abde7dd5120a6940250d1ed1e4397">More...</a><br /></td></tr>
+<tr class="separator:a137abde7dd5120a6940250d1ed1e4397"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72c6816bcec228a925481ab563b3c8f1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a72c6816bcec228a925481ab563b3c8f1">ringBufPeek</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf, unsigned char *buf, int len, int offset)</td></tr>
+<tr class="memdesc:a72c6816bcec228a925481ab563b3c8f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function reads data from the ring buffer without removing any data. Same as ringBufPop without moving pointers.  <a href="#a72c6816bcec228a925481ab563b3c8f1">More...</a><br /></td></tr>
+<tr class="separator:a72c6816bcec228a925481ab563b3c8f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee37415ace8aec4c65265c954860c352"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#aee37415ace8aec4c65265c954860c352">ringBufReadToChar</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf, unsigned char *buf, int len, unsigned char character)</td></tr>
+<tr class="memdesc:aee37415ace8aec4c65265c954860c352"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns everything up to and including the first occurrence of a character. If the character is not found, then nothing (zero) is returned.  <a href="#aee37415ace8aec4c65265c954860c352">More...</a><br /></td></tr>
+<tr class="separator:aee37415ace8aec4c65265c954860c352"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8fbc44e78ae789219d4c1d4dbc959c3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#aa8fbc44e78ae789219d4c1d4dbc959c3">ringBufReadToChar2</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf, unsigned char *buf, int len, unsigned char character1, unsigned char character2)</td></tr>
+<tr class="memdesc:aa8fbc44e78ae789219d4c1d4dbc959c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns everything up to and including the first occurrence of a character. If the character is not found, then nothing (zero) is returned.  <a href="#aa8fbc44e78ae789219d4c1d4dbc959c3">More...</a><br /></td></tr>
+<tr class="separator:aa8fbc44e78ae789219d4c1d4dbc959c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c197a53f5931fdc552c29f592c787d3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a7c197a53f5931fdc552c29f592c787d3">ringBufFind</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf, const unsigned char *str, int len)</td></tr>
+<tr class="memdesc:a7c197a53f5931fdc552c29f592c787d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function finds the index of the first matching string in the ring buffer. Returns -1 if not found.  <a href="#a7c197a53f5931fdc552c29f592c787d3">More...</a><br /></td></tr>
+<tr class="separator:a7c197a53f5931fdc552c29f592c787d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5bf7d413ad0fe60da9dc5ce48590588"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#ae5bf7d413ad0fe60da9dc5ce48590588">ringBufRemove</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf, int len)</td></tr>
+<tr class="memdesc:ae5bf7d413ad0fe60da9dc5ce48590588"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function removes data from the ring buffer.  <a href="#ae5bf7d413ad0fe60da9dc5ce48590588">More...</a><br /></td></tr>
+<tr class="separator:ae5bf7d413ad0fe60da9dc5ce48590588"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9972f78eddb6284538fd373dc43cbcbf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#a9972f78eddb6284538fd373dc43cbcbf">ringBufClear</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf)</td></tr>
+<tr class="memdesc:a9972f78eddb6284538fd373dc43cbcbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear the entire buffer.  <a href="#a9972f78eddb6284538fd373dc43cbcbf">More...</a><br /></td></tr>
+<tr class="separator:a9972f78eddb6284538fd373dc43cbcbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8319fbba7990d7c82e39aa72a2e72e5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ring__buffer_8c.html#ad8319fbba7990d7c82e39aa72a2e72e5">ringBufEmpty</a> (<a class="el" href="structring__buf__t.html">ring_buf_t</a> *rbuf)</td></tr>
+<tr class="memdesc:ad8319fbba7990d7c82e39aa72a2e72e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns 1 if the buffer is empty, 0 if not empty.  <a href="#ad8319fbba7990d7c82e39aa72a2e72e5">More...</a><br /></td></tr>
+<tr class="separator:ad8319fbba7990d7c82e39aa72a2e72e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a46c3c9ccdb7a448ef1cb3d7c09dd4634"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46c3c9ccdb7a448ef1cb3d7c09dd4634">&#9670;&nbsp;</a></span>ringbuf_buffer_size()</h2>
+<a id="a9972f78eddb6284538fd373dc43cbcbf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9972f78eddb6284538fd373dc43cbcbf">&#9670;&nbsp;</a></span>ringBufClear()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">size_t ringbuf_buffer_size </td>
+          <td class="memname">int ringBufClear </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00039">39</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+<p>Clear the entire buffer. </p>
+<dl class="section return"><dt>Returns</dt><dd>Number of bytes removed. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00463">463</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
 
 </div>
 </div>
-<a id="a6957f919393ec028d55d0199700da194"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6957f919393ec028d55d0199700da194">&#9670;&nbsp;</a></span>ringbuf_bytes_free()</h2>
+<a id="ad8319fbba7990d7c82e39aa72a2e72e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8319fbba7990d7c82e39aa72a2e72e5">&#9670;&nbsp;</a></span>ringBufEmpty()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">size_t ringbuf_bytes_free </td>
+          <td class="memname">int ringBufEmpty </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00064">64</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+<p>This function returns 1 if the buffer is empty, 0 if not empty. </p>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00477">477</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
 
 </div>
 </div>
-<a id="aea2fb74dc65bdb6b235c324ae6a27754"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea2fb74dc65bdb6b235c324ae6a27754">&#9670;&nbsp;</a></span>ringbuf_bytes_used()</h2>
+<a id="a7c197a53f5931fdc552c29f592c787d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c197a53f5931fdc552c29f592c787d3">&#9670;&nbsp;</a></span>ringBufFind()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">size_t ringbuf_bytes_used </td>
+          <td class="memname">int ringBufFind </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00076">76</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="a3e14bd0ccff22b0445e633876b97dd1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e14bd0ccff22b0445e633876b97dd1c">&#9670;&nbsp;</a></span>ringbuf_capacity()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t ringbuf_capacity </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00049">49</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="afbd09a70947ff7f98259f76d3667ec33"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afbd09a70947ff7f98259f76d3667ec33">&#9670;&nbsp;</a></span>ringbuf_copy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void* ringbuf_copy </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>dst</em>, </td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>src</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>count</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00281">281</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="ad0bd16799763e119690c8dbcf3ca53f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0bd16799763e119690c8dbcf3ca53f6">&#9670;&nbsp;</a></span>ringbuf_findchr()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t ringbuf_findchr </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em>, </td>
+          <td class="paramtype">const unsigned char *&#160;</td>
+          <td class="paramname"><em>str</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>c</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>offset</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00117">117</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="ad9bd8206c2d4b7eb59cf091e72683bad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9bd8206c2d4b7eb59cf091e72683bad">&#9670;&nbsp;</a></span>ringbuf_head()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const void* ringbuf_head </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00096">96</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="a605323d20f7d7bd9bf9fc57d2da475eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a605323d20f7d7bd9bf9fc57d2da475eb">&#9670;&nbsp;</a></span>ringbuf_init()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ringbuf_init </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint8_t *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>bufSize</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00025">25</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="a93c5f35f462c00f28bd87a8478c41d53"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93c5f35f462c00f28bd87a8478c41d53">&#9670;&nbsp;</a></span>ringbuf_is_empty()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int ringbuf_is_empty </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00086">86</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="a10ae17951a0ef937bdba950abe8ccd72"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10ae17951a0ef937bdba950abe8ccd72">&#9670;&nbsp;</a></span>ringbuf_is_full()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int ringbuf_is_full </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00081">81</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="ac5b2957494464fa01177c41aa5d8fd6e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5b2957494464fa01177c41aa5d8fd6e">&#9670;&nbsp;</a></span>ringbuf_memcpy_from()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void* ringbuf_memcpy_from </td>
-          <td>(</td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>dst</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>src</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>count</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t *&#160;</td>
-          <td class="paramname"><em>countCopied</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00226">226</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="af6ee7683665ffdafc02cd706c4203e6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6ee7683665ffdafc02cd706c4203e6c">&#9670;&nbsp;</a></span>ringbuf_memcpy_into()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void* ringbuf_memcpy_into </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>dst</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>src</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>count</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t *&#160;</td>
-          <td class="paramname"><em>countCopied</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00164">164</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
-
-</div>
-</div>
-<a id="a72b29e74d9480904ac42dcb2ce4bf580"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a72b29e74d9480904ac42dcb2ce4bf580">&#9670;&nbsp;</a></span>ringbuf_memset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t ringbuf_memset </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>dst</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>c</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>len</em>&#160;</td>
         </tr>
         <tr>
@@ -481,47 +202,503 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00135">135</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+<p>This function finds the index of the first matching string in the ring buffer. Returns -1 if not found. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rbuf</td><td>Ring buffer struct pointer. </td></tr>
+    <tr><td class="paramname">len</td><td>Length of data to attempt reading. </td></tr>
+    <tr><td class="paramname">str</td><td>Character string to search for.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Index of the first matching string. -1 if not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00383">383</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
 
 </div>
 </div>
-<a id="a781d13edbca764a820dc8b30afa5dc3c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a781d13edbca764a820dc8b30afa5dc3c">&#9670;&nbsp;</a></span>ringbuf_reset()</h2>
+<a id="a9187c9c96af0c04057ac5ba7bdbfa839"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9187c9c96af0c04057ac5ba7bdbfa839">&#9670;&nbsp;</a></span>ringBufFree()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ringbuf_reset </td>
+          <td class="memname">int ringBufFree </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00044">44</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+<p>This function returns the number of bytes free in UART Rx buffer. </p>
+<p>Important: Buffer size is one less than init buffer size so pointers don't wrap. </p>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00060">60</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
 
 </div>
 </div>
-<a id="aeb9d8a6ff3a073c98d3d371c5d693b6d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb9d8a6ff3a073c98d3d371c5d693b6d">&#9670;&nbsp;</a></span>ringbuf_tail()</h2>
+<a id="a0b3d4242da6f3bccadc65ae100b2ccd8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b3d4242da6f3bccadc65ae100b2ccd8">&#9670;&nbsp;</a></span>ringBufInit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const void* ringbuf_tail </td>
+          <td class="memname">void ringBufInit </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="structringbuf__t.html">ringbuf_t</a> *&#160;</td>
-          <td class="paramname"><em>rb</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>bufSize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize ring buffer pointers. </p>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00029">29</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="a72c6816bcec228a925481ab563b3c8f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72c6816bcec228a925481ab563b3c8f1">&#9670;&nbsp;</a></span>ringBufPeek()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ringBufPeek </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>len</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>offset</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function reads data from the ring buffer without removing any data. Same as ringBufPop without moving pointers. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rbuf</td><td>Ring buffer struct pointer. </td></tr>
+    <tr><td class="paramname">buf</td><td>Buffer to copy data to. </td></tr>
+    <tr><td class="paramname">len</td><td>Length of data to attempt reading.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Actual number of bytes read. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00188">188</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="a137abde7dd5120a6940250d1ed1e4397"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a137abde7dd5120a6940250d1ed1e4397">&#9670;&nbsp;</a></span>ringBufRead()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ringBufRead </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function reads data from the ring buffer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rbuf</td><td>Ring buffer struct pointer. </td></tr>
+    <tr><td class="paramname">buf</td><td>Buffer to copy data to. </td></tr>
+    <tr><td class="paramname">len</td><td>Length of data to attempt reading.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Actual number of bytes read. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00136">136</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="aee37415ace8aec4c65265c954860c352"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee37415ace8aec4c65265c954860c352">&#9670;&nbsp;</a></span>ringBufReadToChar()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ringBufReadToChar </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>len</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char&#160;</td>
+          <td class="paramname"><em>character</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function returns everything up to and including the first occurrence of a character. If the character is not found, then nothing (zero) is returned. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rbuf</td><td>Ring buffer struct pointer. </td></tr>
+    <tr><td class="paramname">buf</td><td>Buffer to copy data to. </td></tr>
+    <tr><td class="paramname">len</td><td>Length of data to attempt reading. </td></tr>
+    <tr><td class="paramname">character</td><td>Value to search for.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of bytes read. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00284">284</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="aa8fbc44e78ae789219d4c1d4dbc959c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8fbc44e78ae789219d4c1d4dbc959c3">&#9670;&nbsp;</a></span>ringBufReadToChar2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ringBufReadToChar2 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>len</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char&#160;</td>
+          <td class="paramname"><em>character1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char&#160;</td>
+          <td class="paramname"><em>character2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function returns everything up to and including the first occurrence of a character. If the character is not found, then nothing (zero) is returned. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rbuf</td><td>Ring buffer struct pointer. </td></tr>
+    <tr><td class="paramname">buf</td><td>Buffer to copy data to. </td></tr>
+    <tr><td class="paramname">len</td><td>Length of data to attempt reading. </td></tr>
+    <tr><td class="paramname">character1</td><td>Value to search for. </td></tr>
+    <tr><td class="paramname">character2</td><td>Value to search for.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of bytes read. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00302">302</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="ae5bf7d413ad0fe60da9dc5ce48590588"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5bf7d413ad0fe60da9dc5ce48590588">&#9670;&nbsp;</a></span>ringBufRemove()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ringBufRemove </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function removes data from the ring buffer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rbuf</td><td>Ring buffer struct pointer. </td></tr>
+    <tr><td class="paramname">len</td><td>Number of bytes to remove.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Actual number of bytes removed. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00428">428</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="abea5f0ec914daef07fe2eb83d977bd71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abea5f0ec914daef07fe2eb83d977bd71">&#9670;&nbsp;</a></span>ringBufUsed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ringBufUsed </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rbuf</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00091">91</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+<p>This function returns the number of bytes currently in ring buffer. </p>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00042">42</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="a2b97a4c8ded765abd307bc53b3cec74a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b97a4c8ded765abd307bc53b3cec74a">&#9670;&nbsp;</a></span>ringBufWrite()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ringBufWrite </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structring__buf__t.html">ring_buf_t</a> *&#160;</td>
+          <td class="paramname"><em>rb</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>numBytes</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function writes data to the ring buffer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rbuf</td><td>Ring buffer struct pointer. </td></tr>
+    <tr><td class="paramname">buf</td><td>Buffer to copy data from. </td></tr>
+    <tr><td class="paramname">len</td><td>Length of data to copy.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Actual number of bytes pushed. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00075">75</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="a4bea592f4d54419a5b4fc54c29339dc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4bea592f4d54419a5b4fc54c29339dc9">&#9670;&nbsp;</a></span>ringfindChar()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char * ringfindChar </td>
+          <td>(</td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>bufPtr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>endPtr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char&#160;</td>
+          <td class="paramname"><em>character</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function returns a pointer to one past the first occurrence of the character in the string. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">bufPtr</td><td>Pointer to start of string. </td></tr>
+    <tr><td class="paramname">endPtr</td><td>Pointer to one past end of string to be searched. </td></tr>
+    <tr><td class="paramname">val</td><td>Value to be located.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to one past the first occurrence of character in string. NULL if not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00236">236</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
+
+</div>
+</div>
+<a id="ac90dbae0a6de118ae0021ec46b4b065e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac90dbae0a6de118ae0021ec46b4b065e">&#9670;&nbsp;</a></span>ringfindChar2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char * ringfindChar2 </td>
+          <td>(</td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>bufPtr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>endPtr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char&#160;</td>
+          <td class="paramname"><em>character1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned char&#160;</td>
+          <td class="paramname"><em>character2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function returns a pointer to one past the first occurrence of the character in the string. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">bufPtr</td><td>Pointer to start of string. </td></tr>
+    <tr><td class="paramname">endPtr</td><td>Pointer to one past end of string to be searched. </td></tr>
+    <tr><td class="paramname">val</td><td>Value to be located.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to one past the first occurrence of character in string. NULL if not found. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="ring__buffer_8c_source.html#l00259">259</a> of file <a class="el" href="ring__buffer_8c_source.html">ring_buffer.c</a>.</p>
 
 </div>
 </div>

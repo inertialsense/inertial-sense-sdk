@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+#include "../../src/ISConstants.h"
 #include "task.h"
 #include "../drivers/d_time.h"
 #if !defined(PLATFORM_IS_EVB_2)

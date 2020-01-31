@@ -53,14 +53,14 @@ int main(int argc, char* argv[])
 		printf("Failed to encode stop broadcasts message\r\n");
 		return -3;
 	}
-
+#if 0
     // Query device version information
 	if (!serialPortWriteAscii(&serialPort, "INFO", 4))
 	{
 		printf("Failed to encode stop broadcasts message\r\n");
 		return -3;
 	}
-
+#endif
     // STEP 4: Enable message broadcasting
 
 	// ASCII protocol is based on NMEA protocol https://en.wikipedia.org/wiki/NMEA_0183
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 	// please see the user manual for additional updates and notes
 
     // Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same
-    const char* asciiMessage = "ASCB,,,,100,,,,,,,";
+    const char* asciiMessage = "ASCB,512,,,1000,,,,,,,";
 
     // Get PINS1 @ 50Hz and PGPSP @ 5Hz on the connected serial port, leave all other broadcasts the same
 //     const char* asciiMessage = "ASCB,,,,20,,200,,,,,";

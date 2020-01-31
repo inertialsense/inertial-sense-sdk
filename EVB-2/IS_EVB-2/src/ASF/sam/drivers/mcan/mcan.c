@@ -107,6 +107,18 @@ static void _mcan_message_memory_init(Mcan *hw)
 		hw->MCAN_TXEFC = ((uint32_t)mcan0_tx_event_fifo & BIT_2_TO_15_MASK) |
 				MCAN_TXEFC_EFS(CONF_MCAN0_TX_EVENT_FIFO);
 	} else if (hw == MCAN1) {
+		if((uint32_t)&mcan1_rx_standard_filter > 0x2040ffff || 
+		   (uint32_t)&mcan1_rx_extended_filter > 0x2040ffff ||
+		   (uint32_t)&mcan1_rx_fifo_0 > 0x2040ffff ||
+		   (uint32_t)&mcan1_rx_fifo_1 > 0x2040ffff ||
+		   (uint32_t)&mcan1_rx_buffer > 0x2040ffff ||
+		   (uint32_t)&mcan1_tx_buffer > 0x2040ffff ||
+		   (uint32_t)mcan1_tx_event_fifo > 0x2040ffff)
+		{
+			//Error, memory needs to be at beginning of RAM to function with CAN module
+				while(1);
+		}
+		
 		hw->MCAN_SIDFC = ((uint32_t)mcan1_rx_standard_filter & BIT_2_TO_15_MASK) |
 				MCAN_SIDFC_LSS(CONF_MCAN1_RX_STANDARD_ID_FILTER_NUM);
 		hw->MCAN_XIDFC = ((uint32_t)mcan1_rx_extended_filter & BIT_2_TO_15_MASK) |
@@ -267,8 +279,8 @@ void mcan_init(struct mcan_module *const module_inst, Mcan *hw,
 	module_inst->hw = hw;
 
 	pmc_disable_pck(PMC_PCK_5);
-
-	pmc_switch_pck_to_pllack(PMC_PCK_5, PMC_PCK_PRES(9));
+	pmc_enable_upll_clock();
+	pmc_switch_pck_to_upllck(PMC_PCK_5, PMC_PCK_PRES(23)); //PCK5 (CAN Core Clock) at 20 MHz ("Selected clock is divided by PRES+1" - datasheet)
 	pmc_enable_pck(PMC_PCK_5);
 
 	/* Enable peripheral clock */
@@ -302,9 +314,10 @@ void mcan_set_baudrate(Mcan *hw, uint32_t baudrate)
 	uint32_t mcan_nbtp_nbrp_value;
 	uint32_t mcan_nbtp_nsgw_value = 3, mcan_nbtp_ntseg1_value = 10, mcan_nbtp_ntseg2_value = 7;
 
-	gclk_mcan_value = sysclk_get_peripheral_hz();
+	gclk_mcan_value = 20000000;	//See PCK5 setup above on line 271 - CAN Core clock speed
 
-	mcan_nbtp_nbrp_value = gclk_mcan_value / baudrate / (3 + mcan_nbtp_ntseg1_value + mcan_nbtp_ntseg2_value);
+	//bit time is [NTSEG1 + NTSEG2 + 3] and does not factor in mcan_nbtp_nsgw_value
+	mcan_nbtp_nbrp_value = gclk_mcan_value / baudrate / (3 + mcan_nbtp_ntseg1_value + mcan_nbtp_ntseg2_value)-1;
 #if (SAMV71B || SAME70B || SAMV70B)
 	hw->MCAN_NBTP = MCAN_NBTP_NBRP(mcan_nbtp_nbrp_value) |
 			MCAN_NBTP_NSJW(mcan_nbtp_nsgw_value) |

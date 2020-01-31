@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // print out upload progress
 static int bootloaderUploadProgress(const void* obj, float percent)
 {
-	printf("Bootloader upload: %d percent...         \r", (int)(percent * 100.0f));
+	printf("Upload: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)
 	{
 		printf("\n");
@@ -32,7 +32,7 @@ static int bootloaderUploadProgress(const void* obj, float percent)
 // print out verify progress
 static int bootloaderVerifyProgress(const void* obj, float percent)
 {
-	printf("Bootloader verify: %d percent...         \r", (int)(percent * 100.0f));
+	printf("Verify: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)
 	{
 		printf("\n");
@@ -40,16 +40,20 @@ static int bootloaderVerifyProgress(const void* obj, float percent)
 	return 1; // return zero to abort
 }
 
+static void bootloaderStatusText(const void* obj, const char* info)
+{
+	printf("%s\n", info);
+}
+
 int main(int argc, char* argv[])
 {
-	if (argc < 3)
+	if (argc < 3 || argc > 4)
 	{
-		printf("Please pass the com port and then file name to bootload as the only arguments\r\n");
-		printf("usage: %s {COMx} {file}\r\n", argv[0]);
+		printf("Please pass the com port, firmware file name to bootload, and optionally bootloader file name as the only arguments\r\n");
+		printf("usage: %s {COMx} {Firmware file} {Bootloader file (optional)}\r\n", argv[0]);
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 IS_uINS-3.hex" 
 		return -1;
 	}
-
 
 	// STEP 2: Initialize and open serial port
 
@@ -63,7 +67,6 @@ int main(int argc, char* argv[])
 	// set the port - the bootloader uses this to open the port and enable bootload mode, etc.
 	serialPortSetPort(&serialPort, argv[1]);
 
-
 	// STEP 3: Set bootloader parameters
 
 	// bootloader parameters
@@ -75,23 +78,32 @@ int main(int argc, char* argv[])
 	// the file to bootload, *.hex
 	param.fileName = argv[2];
 
+	// optional - bootloader file, *.bin
+	param.forceBootloaderUpdate = 0;	//do not force update of bootloader
+	if (argc == 4)
+		param.bootName = argv[3];
+	else
+		param.bootName = 0;
+
 	// the serial port
 	param.port = &serialPort;
 
 	// progress indicators
 	param.uploadProgress = bootloaderUploadProgress;
 	param.verifyProgress = bootloaderVerifyProgress;
+	param.statusText = bootloaderStatusText;
 
 	// enable verify to read back the firmware and ensure it is correct
-	param.flags.bitFields.enableVerify = 0;
+	param.flags.bitFields.enableVerify = 1;
+
 	// optional - define baudrate. If not defined standard baud rates will be attempted.
-	//If using a system with known baud limits it is best to specify.
-	//param.baudRate = 230400;
-	
+	// The default bootloader baudrate is 921600.  If using a system with known baud limits it is best to specify a lower baudrate.
+//	param.baudRate = IS_BAUD_RATE_BOOTLOADER_RS232;
+// 	param.baudRate = IS_BAUD_RATE_BOOTLOADER_SLOW;
+
 	// enable auto-baud, in the event that fast serial communications is not available,
 	//  the bootloader will attempt to fall back to a slower speed
 	// 	param.flags.bitFields.enableAutoBaud = 1;
-
 
 	// STEP 4: Run bootloader
 

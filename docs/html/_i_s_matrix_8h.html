@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -132,6 +132,8 @@ Macros</h2></td></tr>
 <tr class="separator:a1155ea53fdb1bf75d6e7eeec38c44356"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4339e44b5f90a3dfbf4339a7a8421b23"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#a4339e44b5f90a3dfbf4339a7a8421b23">Vec3_IsAnyZero</a>(v)&#160;&#160;&#160;( ((v[0])==(0.0f))  || ((v[1])==(0.0f))  || ((v[2])==(0.0f)) )</td></tr>
 <tr class="separator:a4339e44b5f90a3dfbf4339a7a8421b23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af85dc865a5454cff541581bb9ef6d41f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#af85dc865a5454cff541581bb9ef6d41f">Vec3_IsAnyNonZero</a>(v)&#160;&#160;&#160;( ((v[0])!=(0.0f))  || ((v[1])!=(0.0f))  || ((v[2])!=(0.0f)) )</td></tr>
+<tr class="separator:af85dc865a5454cff541581bb9ef6d41f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4140bd125e757250417860a26a3844b8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#a4140bd125e757250417860a26a3844b8">set_Vec3_X</a>(v,  x)&#160;&#160;&#160;{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }</td></tr>
 <tr class="separator:a4140bd125e757250417860a26a3844b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9395a32633830c7557ad5237a2235ab"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_matrix_8h.html#ac9395a32633830c7557ad5237a2235ab">set_Vec4_X</a>(v,  x)&#160;&#160;&#160;{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }</td></tr>
@@ -571,7 +573,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_matrix_8h_source.html#l00061">61</a> of file <a class="el" href="_i_s_matrix_8h_source.html">ISMatrix.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_matrix_8h_source.html#l00062">62</a> of file <a class="el" href="_i_s_matrix_8h_source.html">ISMatrix.h</a>.</p>
 
 </div>
 </div>
@@ -601,7 +603,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_matrix_8h_source.html#l00062">62</a> of file <a class="el" href="_i_s_matrix_8h_source.html">ISMatrix.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_matrix_8h_source.html#l00063">63</a> of file <a class="el" href="_i_s_matrix_8h_source.html">ISMatrix.h</a>.</p>
 
 </div>
 </div>
@@ -702,6 +704,26 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_i_s_matrix_8h_source.html#l00058">58</a> of file <a class="el" href="_i_s_matrix_8h_source.html">ISMatrix.h</a>.</p>
+
+</div>
+</div>
+<a id="af85dc865a5454cff541581bb9ef6d41f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af85dc865a5454cff541581bb9ef6d41f">&#9670;&nbsp;</a></span>Vec3_IsAnyNonZero</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define Vec3_IsAnyNonZero</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">v</td><td>)</td>
+          <td>&#160;&#160;&#160;( ((v[0])!=(0.0f))  || ((v[1])!=(0.0f))  || ((v[2])!=(0.0f)) )</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_matrix_8h_source.html#l00060">60</a> of file <a class="el" href="_i_s_matrix_8h_source.html">ISMatrix.h</a>.</p>
 
 </div>
 </div>

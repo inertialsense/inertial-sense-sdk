@@ -17,5 +17,7 @@ var searchData=
   ['writeadditionalchunkheader',['WriteAdditionalChunkHeader',['../classc_data_chunk.html#a06a920e465d9da2486dfe2d999f29698',1,'cDataChunk::WriteAdditionalChunkHeader()'],['../classc_sorted_data_chunk.html#a86ec601c6a98ef2f074baea7b8b24a14',1,'cSortedDataChunk::WriteAdditionalChunkHeader()']]],
   ['writedatatofile',['WriteDataToFile',['../classc_data_c_s_v.html#a1ea0890017d9f42ae884d9eb303af4af',1,'cDataCSV::WriteDataToFile()'],['../classc_data_j_s_o_n.html#a6913478ef715539733e3ff7e77eaef78',1,'cDataJSON::WriteDataToFile()'],['../classc_data_k_m_l.html#a6a0eda57365a1b7902bef0c59c33035a',1,'cDataKML::WriteDataToFile()']]],
   ['writeheadertofile',['WriteHeaderToFile',['../classc_data_c_s_v.html#ac2d23715d01524f04a20bb16d07b28e9',1,'cDataCSV']]],
-  ['writetofile',['WriteToFile',['../classc_data_chunk.html#a2b2c124f16bf0f36691fdc9c31d9afb7',1,'cDataChunk::WriteToFile()'],['../classc_log_stats.html#a75558f35257f13a5c4ea9bcaba6c656e',1,'cLogStats::WriteToFile()']]]
+  ['writenvruserpageflashcfg',['writeNvrUserpageFlashCfg',['../test__com__manager_8cpp.html#a37f281c9e6e851cf12ed10f7c7ee94c8',1,'test_com_manager.cpp']]],
+  ['writetofile',['WriteToFile',['../classc_data_chunk.html#a2b2c124f16bf0f36691fdc9c31d9afb7',1,'cDataChunk::WriteToFile()'],['../classc_log_stats.html#a75558f35257f13a5c4ea9bcaba6c656e',1,'cLogStats::WriteToFile()']]],
+  ['wrptr',['wrPtr',['../structring__buf__t.html#a42500f31fd38c11013691af4dd8ebb0f',1,'ring_buf_t']]]
 ];

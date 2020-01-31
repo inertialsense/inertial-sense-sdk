@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -133,10 +133,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:abb6f052b9425dd24bd82224fe0e1cfa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a550459d30065b11c67465681d018a476"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="data__sets_8h.html#a578a8aa5a524481dfc3d383184f628e5">dev_info_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a550459d30065b11c67465681d018a476">GetDeviceInfo</a> (int pHandle=0)</td></tr>
 <tr class="separator:a550459d30065b11c67465681d018a476"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0423e863329742d89f5c7362b7db89d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="data__sets_8h.html#ad3bb6f462703a39533f06439c4dea81e">config_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ae0423e863329742d89f5c7362b7db89d">GetConfig</a> (int pHandle=0)</td></tr>
-<tr class="separator:ae0423e863329742d89f5c7362b7db89d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36186f0fbbee8348dbaefe7872a6b3f8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a36186f0fbbee8348dbaefe7872a6b3f8">SetConfig</a> (const <a class="el" href="data__sets_8h.html#ad3bb6f462703a39533f06439c4dea81e">config_t</a> &amp;config, int pHandle=0)</td></tr>
-<tr class="separator:a36186f0fbbee8348dbaefe7872a6b3f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc7c0cdd9e76d3c30e9617dcf3a4c37d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="data__sets_8h.html#a3f99bdb11013898e89e44eddfbbd2319">system_command_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#acc7c0cdd9e76d3c30e9617dcf3a4c37d">GetSysCmd</a> (int pHandle=0)</td></tr>
+<tr class="separator:acc7c0cdd9e76d3c30e9617dcf3a4c37d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f2f9b60a912bb26f90c1e68c8afd630"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a7f2f9b60a912bb26f90c1e68c8afd630">SetSysCmd</a> (const <a class="el" href="data__sets_8h.html#a3f99bdb11013898e89e44eddfbbd2319">system_command_t</a> &amp;sysCmd, int pHandle=0)</td></tr>
+<tr class="separator:a7f2f9b60a912bb26f90c1e68c8afd630"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c554ab4ba28ea547a1a57929af8b871"><td class="memItemLeft" align="right" valign="top"><a class="el" href="data__sets_8h.html#a2da4c900f67c180a00158238ba77bacc">nvm_flash_cfg_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a2c554ab4ba28ea547a1a57929af8b871">GetFlashConfig</a> (int pHandle=0)</td></tr>
 <tr class="separator:a2c554ab4ba28ea547a1a57929af8b871"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5867626b72b1a92e06440372354a74d8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a5867626b72b1a92e06440372354a74d8">SetFlashConfig</a> (const <a class="el" href="data__sets_8h.html#a2da4c900f67c180a00158238ba77bacc">nvm_flash_cfg_t</a> &amp;flashConfig, int pHandle=0)</td></tr>
@@ -152,6 +152,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
+<tr class="memitem:ac71f49f2f3a5427c9e7fe5ef37c45f74"><td class="memItemLeft" align="right" valign="top">static vector&lt; <a class="el" href="struct_inertial_sense_1_1bootloader__result__t.html">bootloader_result_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ac71f49f2f3a5427c9e7fe5ef37c45f74">BootloadFile</a> (const string &amp;comPort, const string &amp;fileName, const string &amp;bootloaderFileName, int baudRate=<a class="el" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> uploadProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> verifyProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#a871ef77795d0f1bfb333352cb3bdfb8f">pfnBootloadStatus</a> infoProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, bool updateBootloader=false)</td></tr>
+<tr class="separator:ac71f49f2f3a5427c9e7fe5ef37c45f74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff0c177ac526f3fb71102e9eb479b90f"><td class="memItemLeft" align="right" valign="top">static vector&lt; <a class="el" href="struct_inertial_sense_1_1bootloader__result__t.html">bootloader_result_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#aff0c177ac526f3fb71102e9eb479b90f">BootloadFile</a> (const string &amp;comPort, const string &amp;fileName, int baudRate=<a class="el" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> uploadProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> verifyProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, bool updateBootloader=false)</td></tr>
 <tr class="separator:aff0c177ac526f3fb71102e9eb479b90f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -231,8 +233,93 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ac71f49f2f3a5427c9e7fe5ef37c45f74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac71f49f2f3a5427c9e7fe5ef37c45f74">&#9670;&nbsp;</a></span>BootloadFile() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">vector&lt; <a class="el" href="struct_inertial_sense_1_1bootloader__result__t.html">InertialSense::bootloader_result_t</a> &gt; InertialSense::BootloadFile </td>
+          <td>(</td>
+          <td class="paramtype">const string &amp;&#160;</td>
+          <td class="paramname"><em>comPort</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const string &amp;&#160;</td>
+          <td class="paramname"><em>fileName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const string &amp;&#160;</td>
+          <td class="paramname"><em>bootloaderFileName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>baudRate</em> = <code><a class="el" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a>&#160;</td>
+          <td class="paramname"><em>uploadProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a>&#160;</td>
+          <td class="paramname"><em>verifyProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="inertial_sense_boot_loader_8h.html#a871ef77795d0f1bfb333352cb3bdfb8f">pfnBootloadStatus</a>&#160;</td>
+          <td class="paramname"><em>infoProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>updateBootloader</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device. Please ensure that all other connections to the com port are closed before calling this function. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">the</td><td>com port to bootload, can be comma separated for multiple </td></tr>
+    <tr><td class="paramname">fileName</td><td>the path of the file to bootload </td></tr>
+    <tr><td class="paramname">baudRate</td><td>the baud rate to bootload at </td></tr>
+    <tr><td class="paramname">uploadProgress</td><td>optional callback for upload progress </td></tr>
+    <tr><td class="paramname">verifyProgress</td><td>optional callback for verify progress </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>ports and errors, error will be empty if success </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00584">584</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+
+</div>
+</div>
 <a id="aff0c177ac526f3fb71102e9eb479b90f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aff0c177ac526f3fb71102e9eb479b90f">&#9670;&nbsp;</a></span>BootloadFile()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aff0c177ac526f3fb71102e9eb479b90f">&#9670;&nbsp;</a></span>BootloadFile() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -288,17 +375,6 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device. Please ensure that all other connections to the com port are closed before calling this function. </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>com port to bootload, can be comma separated for multiple </td></tr>
-    <tr><td class="paramname">fileName</td><td>the path of the file to bootload </td></tr>
-    <tr><td class="paramname">baudRate</td><td>the baud rate to bootload at </td></tr>
-    <tr><td class="paramname">uploadProgress</td><td>optional callback for upload progress </td></tr>
-    <tr><td class="paramname">verifyProgress</td><td>optional callback for verify progress </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>ports and errors, error will be empty if success </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00579">579</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
@@ -471,41 +547,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae0423e863329742d89f5c7362b7db89d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0423e863329742d89f5c7362b7db89d">&#9670;&nbsp;</a></span>GetConfig()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="data__sets_8h.html#ad3bb6f462703a39533f06439c4dea81e">config_t</a> InertialSense::GetConfig </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>pHandle</em> = <code>0</code></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Get current device configuration </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">pHandle</td><td>the pHandle to get config for </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>current device configuration </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00235">235</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
-
-</div>
-</div>
 <a id="a73d4f861a31cb73d2b5d7610b653711e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a73d4f861a31cb73d2b5d7610b653711e">&#9670;&nbsp;</a></span>GetDeviceCount()</h2>
 
@@ -651,6 +692,41 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="acc7c0cdd9e76d3c30e9617dcf3a4c37d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc7c0cdd9e76d3c30e9617dcf3a4c37d">&#9670;&nbsp;</a></span>GetSysCmd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="data__sets_8h.html#a3f99bdb11013898e89e44eddfbbd2319">system_command_t</a> InertialSense::GetSysCmd </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pHandle</em> = <code>0</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Get current device system command </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pHandle</td><td>the pHandle to get sysCmd for </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>current device system command </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00235">235</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+
+</div>
+</div>
 <a id="aca5846c8272ad642aa09ca1dd3407afd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aca5846c8272ad642aa09ca1dd3407afd">&#9670;&nbsp;</a></span>GetTimeoutFlushLoggerSeconds()</h2>
 
@@ -770,7 +846,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#a3fa2dd49f1908319ac510dae47d04069">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00669">669</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00676">676</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -806,7 +882,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#a067eae89a124bff9d8fa9217914f7b6e">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00674">674</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00681">681</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -842,7 +918,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#aceb1a642bda5b29807e2b1fe41285730">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00663">663</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00670">670</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -889,7 +965,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#a6afee213d15d230882e8057ffb15d93b">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00679">679</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00686">686</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -927,7 +1003,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00651">651</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00658">658</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1105,43 +1181,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a36186f0fbbee8348dbaefe7872a6b3f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36186f0fbbee8348dbaefe7872a6b3f8">&#9670;&nbsp;</a></span>SetConfig()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void InertialSense::SetConfig </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="data__sets_8h.html#ad3bb6f462703a39533f06439c4dea81e">config_t</a> &amp;&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>pHandle</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Set device configuration </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">pHandle</td><td>the pHandle to set config for </td></tr>
-    <tr><td class="paramname">config</td><td>new device configuration </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00525">525</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a5867626b72b1a92e06440372354a74d8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5867626b72b1a92e06440372354a74d8">&#9670;&nbsp;</a></span>SetFlashConfig()</h2>
 
@@ -1250,6 +1289,43 @@ Protected Member Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>true if success, false if failure </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00285">285</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7f2f9b60a912bb26f90c1e68c8afd630"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f2f9b60a912bb26f90c1e68c8afd630">&#9670;&nbsp;</a></span>SetSysCmd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void InertialSense::SetSysCmd </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a3f99bdb11013898e89e44eddfbbd2319">system_command_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>sysCmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pHandle</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Set device configuration </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pHandle</td><td>the pHandle to set sysCmd for </td></tr>
+    <tr><td class="paramname">sysCmd</td><td>new device configuration </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00525">525</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>

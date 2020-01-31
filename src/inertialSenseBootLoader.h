@@ -22,14 +22,17 @@ extern "C" {
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
 
-/** uINS bootloader baud rate - legacy */
-#define IS_BAUD_RATE_BOOTLOADER_LEGACY 2000000
-
 /** uINS rs232 bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER_RS232 230400
 
+/** uINS slow bootloader baud rate */
+#define IS_BAUD_RATE_BOOTLOADER_SLOW 115200
+
+/** uINS bootloader baud rate - legacy */
+#define IS_BAUD_RATE_BOOTLOADER_LEGACY 2000000
+
 #define ENABLE_BOOTLOADER_BAUD_DETECTION 1
-#define BOOTLOADER_REFRESH_DELAY   250
+#define BOOTLOADER_REFRESH_DELAY   500
 #define BOOTLOADER_RESPONSE_DELAY  10
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
 #define BOOTLOADER_RETRIES         30
@@ -41,17 +44,23 @@ extern "C" {
 #define BOOTLOADER_ERROR_LENGTH	512		// Set to zero to disable
 #endif
 
-/** Bootloader callback function prototype, return value unused currently so return 0 */
+/** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
 typedef int(*pfnBootloadProgress)(const void* obj, float percent);
+
+/** Bootloader information string function prototype. */
+typedef void(*pfnBootloadStatus)(const void* obj, const char* infoString);
 
 typedef struct
 {
 	const char* fileName; // read from this file
+    const char* bootName; // optional bootloader file
+    int forceBootloaderUpdate;
 	serial_port_t* port; // connect with this serial port
 	char error[BOOTLOADER_ERROR_LENGTH];
 	const void* obj; // user defined pointer
 	pfnBootloadProgress uploadProgress; // upload progress
 	pfnBootloadProgress verifyProgress; // verify progress
+    pfnBootloadStatus statusText;       // receives status text for progress
 	const char* verifyFileName; // optional, writes verify file to the path if not 0
 	int numberOfDevices; // number of devices if bootloading in parallel
 	int baudRate; // baud rate to connect to
@@ -79,7 +88,7 @@ Boot load a .hex or .bin file to a device
 
 @return 0 if failure, non-zero if success
 */
-int bootloadFile(serial_port_t* port, const char* fileName, 
+int bootloadFile(serial_port_t* port, const char* fileName, const char* bootName,
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
 
@@ -97,6 +106,17 @@ Boot load a new bootloader .bin file to device. Device must be in application or
 int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, 
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadUpdateBootloaderEx(bootload_params_t* p);
+
+/**
+Retrieve the bootloader version from .bin file
+
+@param fileName for the new bootloader .bin file
+@param pointer to int to store major version
+@param pointer to char to store minor version
+
+@return 0 if failure, 1 if success
+*/
+int bootloadGetBootloaderVersionFromFile(const char* bootName, int* verMajor, char* verMinor);
 
 /**
 Enable bootloader mode for a device
@@ -120,6 +140,11 @@ Disables the bootloader and goes back to program mode
 @return 0 if failure, non-zero if success
 */
 int disableBootloader(serial_port_t* port, char* error, int errorLength);
+
+
+int bootloaderCycleBaudRate(int baudRate);
+int bootloaderClosestBaudRate(int baudRate);
+
 
 #ifdef __cplusplus
 }

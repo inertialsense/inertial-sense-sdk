@@ -36,6 +36,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
 #define FLASH_PAGE_SIZE 65536
 
+static int bootloadUpdateBootloaderSendFile(bootload_params_t* p);
+
 typedef struct
 {
     int version;
@@ -77,6 +79,9 @@ POP_PACK
 #define bootloader_max(a, b) (a > b ? a : b)
 
 static const unsigned char hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+// Fastest to slowest
+static const int s_baudRateList[] = { IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };											
 
 static uint16_t crc_update(uint16_t crc_in, int incr)
 {
@@ -195,14 +200,35 @@ static int xModemSend(serial_port_t* s, uint8_t* buf, size_t len)
     return 0;
 }
 
-static int bootloaderCycleBaudRate(int baudRate)
+int bootloaderCycleBaudRate(int baudRate)
 {
-    switch (baudRate)
-    {
-    case IS_BAUD_RATE_BOOTLOADER_RS232: return IS_BAUD_RATE_BOOTLOADER;
-    case IS_BAUD_RATE_BOOTLOADER: return IS_BAUD_RATE_BOOTLOADER_LEGACY;
-    default: return IS_BAUD_RATE_BOOTLOADER_RS232;
-    }
+	for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
+	{	// Find current baudrate
+		if (baudRate == s_baudRateList[i])
+		{
+			// Get next baudrate
+			if (i + 1 < _ARRAY_ELEMENT_COUNT(s_baudRateList))
+			{
+				return s_baudRateList[i + 1];
+			}
+		}
+	}
+
+	return s_baudRateList[0];
+}
+
+// Finds the closest bootloader supported baudrate 
+int bootloaderClosestBaudRate(int baudRate)
+{
+	for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
+	{
+		if (baudRate >= s_baudRateList[i])
+		{
+			return s_baudRateList[i];
+		}
+	}
+
+	return IS_BAUD_RATE_BOOTLOADER_SLOW;
 }
 
 // negotiate the bootloader version, once a 'U' character has been read, we read another character, timing out after 500 milliseconds
@@ -224,10 +250,10 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
         state->version = 1;
         state->firstPageSkipBytes = 8192;
     }
-    else if (v == '2')
+    else if (v >= '2' && v <= '4')
     {
-        // version 2
-        state->version = 2;
+        // version 2, 3 (which sent v2), 4
+        state->version = v-'0';
         state->firstPageSkipBytes = 16384;
     }
     else
@@ -865,6 +891,9 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
 
     if (state->param->flags.bitFields.enableVerify && state->param->verifyProgress != 0)
     {
+        if (state->param->statusText)
+            state->param->statusText(state->param->obj, "Verifying flash...");
+
         if (state->param->verifyProgress != 0 && bootloaderVerify(currentPage, verifyCheckSum, state) == 0)
         {
             return 0;
@@ -872,7 +901,8 @@ static int bootloaderProcessHexFile(FILE* file, bootloader_state_t* state)
     }
 
     // send the "reboot to program mode" command and the device should start in program mode
-    printf("Rebooting unit...\n");
+    if(state->param->statusText)
+        state->param->statusText(state->param->obj, "Rebooting unit...");
     serialPortWrite(state->param->port, (unsigned char*)":020000040300F7", 15);
     serialPortSleep(state->param->port, 250);
 
@@ -1041,7 +1071,7 @@ static void bootloaderRestartAssist(serial_port_t* s)
     // USE WITH CAUTION! This will put in bootloader assist mode allowing a new bootloader to be put on, i.e. SAM-BA
 
     // restart bootloader assist command
-    serialPortWrite(s, (unsigned char*)":020000040700F5", 15);
+    serialPortWrite(s, (unsigned char*)":020000040700F3", 15);
 
     // give the device time to start up
     serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
@@ -1093,7 +1123,7 @@ static int bootloaderHandshake(bootload_params_t* p)
     }
 
     // try handshaking at each baud rate
-    for (int i = 0; i < 3; i++)
+    for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
 
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
@@ -1125,12 +1155,71 @@ static int bootloaderHandshake(bootload_params_t* p)
     return 0;
 }
 
+static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* sambaAvaliable)
+{
+	//purge buffer
+#define BUF_SIZE    100
+	unsigned char buf[BUF_SIZE];
+    while (serialPortRead(s, buf, BUF_SIZE));
+
+	//Send command
+	serialPortWrite(s, (unsigned char*)":020000041000EA", 15);
+
+	//Read Version, SAM-BA Available, and ok (.\r\n) response
+	int count = serialPortReadTimeout(s, buf, 8, 1000);
+
+    if (count != 8 || buf[0] != 0xAA || buf[1] != 0x55 || buf[5] != '.' || buf[6] != '\r' || buf[7] != '\n')
+    {
+        *major = 0;
+        *minor = 0;
+        *sambaAvaliable = 1;
+        return;
+    }
+
+    *major = buf[2];
+    *minor = buf[3];
+    *sambaAvaliable = buf[4] == 0x1;
+}
+
 static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 {
-    printf("Starting bootloader...\n");
+    if (p->statusText)
+        p->statusText(p->obj, "Starting bootloader...");
     if (!enableBootloader(p->port, p->baudRate, p->error, BOOTLOADER_ERROR_LENGTH, p->bootloadEnableCmd))
     {
-        printf("Unable to find bootloader\n");
+        //If we have an error, exit
+        if (p->error[0] != 0)
+            return 0;
+
+        if (p->statusText)
+            p->statusText(p->obj, "Unable to find bootloader.");
+
+        if (p->bootName != 0)
+        {
+            if (p->statusText)
+                p->statusText(p->obj, "Attempting to reload bootloader...");
+
+            //Send file
+            bootload_params_t params;
+            memset(&params, 0, sizeof(params));
+            params.fileName = p->bootName;
+            params.port = p->port;
+            memset(params.error, 0, sizeof(BOOTLOADER_ERROR_LENGTH));
+            params.obj = p->obj;
+            params.uploadProgress = p->uploadProgress;
+            params.verifyProgress = p->verifyProgress;
+            params.statusText = p->statusText;
+            params.numberOfDevices = 1;
+            params.flags.bitFields.enableVerify = 1;
+
+            if (!bootloadUpdateBootloaderSendFile(&params))
+                return 0;
+
+            //Restart process now bootloader is updated
+            SLEEP_MS(1000);
+            return -1;
+        }
+
         return 0;
     }
 
@@ -1143,8 +1232,12 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
     int fileNameLength = (int)strnlen(p->fileName, 255);
     if (fileNameLength > 4 && strncmp(p->fileName + fileNameLength - 4, ".bin", 4) == 0)
     {
+        //At this time, binary files are not supported for updating firmware
+        bootloader_snprintf(p->error, BOOTLOADER_ERROR_LENGTH, "Binary firmware files are not supported.");
+        return 0;
+
         // it's a .bin file, we will use a far more optimized and memory efficient uploader
-        return bootloaderProcessBinFile(file, p);
+        //return bootloaderProcessBinFile(file, p);
     }
     else
     {
@@ -1155,20 +1248,91 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
         memset(&state, 0, sizeof(state));
         state.param = p;
 
-        if
-        (
-            // negotiate version
-            !bootloaderNegotiateVersion(&state) ||
-            // erase all flash
-            !bootloaderEraseFlash(p->port) ||
-            // select the first page
-            !bootloaderSelectPage(p->port, 0) ||
-            // begin programming the first page
-            !bootloaderBeginProgramForCurrentPage(p->port, state.firstPageSkipBytes, FLASH_PAGE_SIZE - 1)
-        )
+		if(!bootloaderNegotiateVersion(&state)) // negotiate version
+		{
+			return 0;
+		}
+
+        int blVerMajor, sambaSupport;
+        char blVerMinor;
+        bootloadGetVersion(p->port, &blVerMajor, &blVerMinor, &sambaSupport);
+        if (blVerMajor > 0 && p->statusText)
         {
-            return 0;
+            char str[100];
+            bootloader_snprintf(str, 100, "Bootloader version %d%c found. SAM-BA is %s on port.", blVerMajor, blVerMinor, sambaSupport == 1 ? "supported" : "NOT supported");
+                p->statusText(p->obj, str);
         }
+
+        if ((p->bootName != 0))
+        {
+            int fileVerMajor = 0;
+            char fileVerMinor = 0;
+            //Retrieve version from file
+            //Only check if we find valid version info in file
+            if (bootloadGetBootloaderVersionFromFile(p->bootName, &fileVerMajor, &fileVerMinor) || p->forceBootloaderUpdate > 0)
+            {
+                //printf("Bootloader file version: %d%c.\n", fileVerMajor, fileVerMinor);
+
+                //Check bootloader version against file
+                if (blVerMajor < fileVerMajor || blVerMinor < fileVerMinor || p->forceBootloaderUpdate > 0)
+                {
+                    if (sambaSupport)
+                    {
+                        if (p->statusText)
+                        {
+                            char str[100];
+                            if(blVerMajor > 0)
+                                bootloader_snprintf(str, 100, "Updating bootloader to version %d%c...", fileVerMajor, fileVerMinor);
+                            else
+                                bootloader_snprintf(str, 100, "Updating bootloader...");
+                            p->statusText(p->obj, str);
+                        }
+
+                        //Start SAM-BA
+                        bootloaderRestartAssist(p->port);
+
+                        //Send file
+                        bootload_params_t params;
+                        memset(&params, 0, sizeof(params));
+                        params.fileName = p->bootName;
+                        params.port = p->port;
+                        memset(params.error, 0, sizeof(BOOTLOADER_ERROR_LENGTH));
+                        params.obj = p->obj;
+                        params.uploadProgress = p->uploadProgress;
+                        params.verifyProgress = p->verifyProgress;
+                        params.statusText = p->statusText;
+                        params.numberOfDevices = 1;
+                        params.flags.bitFields.enableVerify = 1;
+
+                        if (!bootloadUpdateBootloaderSendFile(&params))
+                            return 0;
+
+                        //Restart process now bootloader is updated
+                        SLEEP_MS(1000);
+                        return -1;
+                    }
+                    else
+                    {   //Bootloader is out of date but SAM-BA is not supported on port
+                        if (p->statusText)
+                            p->statusText(p->obj, "WARNING!  Bootloader is out of date. Port used to communicate with bootloader does not support updating the bootloader. To force firmware update, run update without including the bootloader file.");
+                        bootloader_snprintf(p->error, BOOTLOADER_ERROR_LENGTH, "Bootloader is out of date but current port does not support updating bootloader. To force update, run firmware update without including the bootloader file.\n");
+                        return 0;
+                    }
+                }
+            }            
+        }
+ 
+        if (p->statusText)
+            p->statusText(p->obj, "Erasing flash...");
+        if ( !bootloaderEraseFlash(p->port) /*erase all flash */ || !bootloaderSelectPage(p->port, 0) /*select the first page*/)
+            return 0;
+
+
+        if (p->statusText)
+            p->statusText(p->obj, "Programming flash...");
+        // begin programming the first page
+        if(!bootloaderBeginProgramForCurrentPage(p->port, state.firstPageSkipBytes, FLASH_PAGE_SIZE - 1))
+            return 0;
 
         return bootloaderProcessHexFile(file, &state);
 
@@ -1322,12 +1486,14 @@ static int samBaSoftReset(serial_port_t* port)
     return 0;
 }
 
-int bootloadFile(serial_port_t* port, const char* fileName, 
+int bootloadFile(serial_port_t* port, const char* fileName, const char * bootName,
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
     bootload_params_t params;
     memset(&params, 0, sizeof(params));
     params.fileName = fileName;
+    params.bootName = bootName;
+    params.forceBootloaderUpdate = 0;
     params.port = port;
 	memset(params.error, 0, sizeof(BOOTLOADER_ERROR_LENGTH));
     params.obj = obj;
@@ -1376,7 +1542,38 @@ int bootloadFileEx(bootload_params_t* params)
         return result;
     }
 
+    // If bootloader file was specified, check it is openable
+    if (params->bootName && params->bootName[0] != 0)
+    {
+        FILE* blfile = 0;
+
+#ifdef _MSC_VER
+
+        fopen_s(&blfile, params->bootName, "rb");
+
+#else
+
+        blfile = fopen(params->bootName, "rb");
+
+#endif
+        if (blfile == 0)
+        {
+            bootloader_snprintf(params->error, BOOTLOADER_ERROR_LENGTH, "Unable to open bootloader file: %s", params->bootName);
+            return result;
+        }
+
+        fclose(blfile);
+    }
+
     result = bootloadFileInternal(file, params);
+
+    //Restart if we updated bootloader
+    if (result == -1)
+    {
+        params->forceBootloaderUpdate = 0;
+        result = bootloadFileInternal(file, params);
+    }
+
     if (result == 0)
     {
         // reboot the device back into boot-loader mode
@@ -1388,6 +1585,42 @@ int bootloadFileEx(bootload_params_t* params)
     serialPortClose(params->port);
 
     return result;
+}
+
+int bootloadGetBootloaderVersionFromFile(const char* bootName, int* verMajor, char* verMinor)
+{
+    FILE* blfile = 0;
+
+#ifdef _MSC_VER
+
+    fopen_s(&blfile, bootName, "rb");
+
+#else
+
+    blfile = fopen(bootName, "rb");
+
+#endif
+
+    if (blfile == 0)
+        return 0;
+
+    fseek(blfile, 0x3DFC, SEEK_SET);
+    unsigned char ver_info[4];
+    fread(ver_info, 1, 4, blfile);
+    fclose(blfile);
+
+    //Check for marker for valid version info
+    if (ver_info[0] == 0xAA && ver_info[1] == 0x55)
+    {
+        if (verMajor)
+            *verMajor = ver_info[2];
+        if (verMinor)
+            *verMinor = ver_info[3];
+        return 1;
+    }
+
+    //No version found
+    return 0;
 }
 
 int bootloadUpdateBootloader(serial_port_t* port, const char* fileName,
@@ -1407,49 +1640,9 @@ int bootloadUpdateBootloader(serial_port_t* port, const char* fileName,
     return bootloadUpdateBootloaderEx(&params);
 }
 
-int bootloadUpdateBootloaderEx(bootload_params_t* p)
+static int bootloadUpdateBootloaderSendFile(bootload_params_t* p)
 {
-	strncpy(p->bootloadEnableCmd, "NELB,!!SAM-BA!!\0", 16);
-    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
-    serialPortSleep(p->port, 250);
-    serialPortClose(p->port);
-
-    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_3000000, 1))
-    {
-        bootloader_perror(p, "Failed to open port.\n");
-        serialPortClose(p->port);
-        return 0;
-    }
-    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
-    serialPortSleep(p->port, 250);
-
-	if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_921600, 1))
-	{
-		bootloader_perror(p, "Failed to open port.\n");
-		serialPortClose(p->port);
-		return 0;
-	}
-	serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
-	serialPortSleep(p->port, 250);
-
-	if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_460800, 1))
-	{
-		bootloader_perror(p, "Failed to open port.\n");
-		serialPortClose(p->port);
-		return 0;
-	}
-	serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
-	serialPortSleep(p->port, 250);
-
-	if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_230400, 1))
-	{
-		bootloader_perror(p, "Failed to open port.\n");
-		serialPortClose(p->port);
-		return 0;
-	}
-	serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
-	serialPortSleep(p->port, 250);
-
+    //Setup serial port for correct baud rate
     serialPortClose(p->port);
     if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_115200, 1))
     {
@@ -1457,7 +1650,6 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
         serialPortClose(p->port);
         return 0;
     }
-    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
 
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
@@ -1467,7 +1659,7 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
     // try non-USB and then USB mode (0 and 1)
     for (int isUSB = 0; isUSB < 2; isUSB++)
     {
-		serialPortSleep(p->port, 250);
+        serialPortSleep(p->port, 250);
         serialPortClose(p->port);
         if (!serialPortOpenRetry(p->port, p->port->port, SAM_BA_BAUDRATE, 1))
         {
@@ -1494,15 +1686,15 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
 
         FILE* file;
 
-    #ifdef _MSC_VER
+#ifdef _MSC_VER
 
         fopen_s(&file, p->fileName, "rb");
 
-    #else
+#else
 
         file = fopen(p->fileName, "rb");
 
-    #endif
+#endif
 
         if (file == 0)
         {
@@ -1522,6 +1714,9 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
             serialPortClose(p->port);
             return 0;
         }
+
+        if (p->statusText)
+            p->statusText(p->obj, "Writting Bootloader...");
 
         uint32_t offset = 0;
         while (fread(buf, 1, SAM_BA_FLASH_PAGE_SIZE, file) == SAM_BA_FLASH_PAGE_SIZE)
@@ -1556,6 +1751,9 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
 
     if (p->verifyProgress != 0)
     {
+        if (p->statusText)
+            p->statusText(p->obj, "Verifying bootloader...");
+
         switch (samBaVerify(p->port, checksum, p->obj, p->verifyProgress))
         {
         case -1: bootloader_perror(p, "Flash read error\n"); return 0;
@@ -1581,16 +1779,72 @@ int bootloadUpdateBootloaderEx(bootload_params_t* p)
     return 1;
 }
 
+int bootloadUpdateBootloaderEx(bootload_params_t* p)
+{
+    strncpy(p->bootloadEnableCmd, "NELB,!!SAM-BA!!\0", 16);
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+    serialPortSleep(p->port, 250);
+    serialPortClose(p->port);
+
+    //Send command to enter SAM-BA mode across different baud rates
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_3000000, 1))
+    {
+        bootloader_perror(p, "Failed to open port.\n");
+        serialPortClose(p->port);
+        return 0;
+    }
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+    serialPortSleep(p->port, 250);
+
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_921600, 1))
+    {
+        bootloader_perror(p, "Failed to open port.\n");
+        serialPortClose(p->port);
+        return 0;
+    }
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+    serialPortSleep(p->port, 250);
+
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_460800, 1))
+    {
+        bootloader_perror(p, "Failed to open port.\n");
+        serialPortClose(p->port);
+        return 0;
+    }
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+    serialPortSleep(p->port, 250);
+
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_230400, 1))
+    {
+        bootloader_perror(p, "Failed to open port.\n");
+        serialPortClose(p->port);
+        return 0;
+    }
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+    serialPortSleep(p->port, 250);
+
+    serialPortClose(p->port);
+    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_115200, 1))
+    {
+        bootloader_perror(p, "Failed to open port.\n");
+        serialPortClose(p->port);
+        return 0;
+    }
+    serialPortWriteAscii(p->port, p->bootloadEnableCmd, 16);
+
+    //Should be in SAM-BA mode, start sending data
+    return bootloadUpdateBootloaderSendFile(p);
+}
+
 int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd)
 {
-    // raspberry PI and other Linux have trouble with 3000000 baud, so start with 921600
-    int baudRates[] = { baudRate, 921600, 3000000, 460800, 230400, 115200 };
+    int baudRates[] = { baudRate, IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
 
     // detect if device is already in bootloader mode
     bootload_params_t p;
     memset(&p, 0, sizeof(p));
     p.port = port;
-	p.baudRate = (baudRate < IS_BAUD_RATE_BOOTLOADER ? IS_BAUD_RATE_BOOTLOADER_RS232 : IS_BAUD_RATE_BOOTLOADER);
+	p.baudRate = bootloaderClosestBaudRate(baudRate);
 
     // attempt to handshake in case we are in bootloader mode
     if (!bootloaderHandshake(&p))
@@ -1630,7 +1884,6 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
         SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
 
         // if we can't handshake at this point, bootloader enable has failed
-        
         if (!bootloaderHandshake(&p))
         {
             // failure
@@ -1668,5 +1921,6 @@ int disableBootloader(serial_port_t* port, char* error, int errorLength)
     int result = 0;
     result |= disableBootloaderInternal(port, error, errorLength, IS_BAUD_RATE_BOOTLOADER);
     result |= disableBootloaderInternal(port, error, errorLength, IS_BAUD_RATE_BOOTLOADER_RS232);
-    return result;
+	result |= disableBootloaderInternal(port, error, errorLength, IS_BAUD_RATE_BOOTLOADER_SLOW);
+	return result;
 }

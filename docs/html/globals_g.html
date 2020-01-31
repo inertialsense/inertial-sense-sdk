@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -90,6 +90,12 @@ $(function() {
 : <a class="el" href="cltool_8cpp.html#a85159f1b38f56e4b083dd256cc04c7d7">cltool.cpp</a>
 , <a class="el" href="cltool_8h.html#a85159f1b38f56e4b083dd256cc04c7d7">cltool.h</a>
 </li>
+<li>g_testRxDeque
+: <a class="el" href="test__com__manager_8cpp.html#acda863db1b76e547ccdd928f5498ff27">test_com_manager.cpp</a>
+</li>
+<li>g_testTxDeque
+: <a class="el" href="test__com__manager_8cpp.html#a9f890db563a2ea1054f14b578ace21b7">test_com_manager.cpp</a>
+</li>
 <li>g_validBaudRates
 : <a class="el" href="_i_s_comm_8c.html#a5844b6fb9de7d000eb3f72ab4dc55f4e">ISComm.c</a>
 , <a class="el" href="_i_s_comm_8h.html#a5844b6fb9de7d000eb3f72ab4dc55f4e">ISComm.h</a>
@@ -122,13 +128,16 @@ $(function() {
 : <a class="el" href="_i_s_utilities_8cpp.html#ae4ed7b419be8399ec1c4f2355b65b674">ISUtilities.cpp</a>
 , <a class="el" href="_i_s_utilities_8h.html#ae4ed7b419be8399ec1c4f2355b65b674">ISUtilities.h</a>
 </li>
+<li>generateData()
+: <a class="el" href="test__com__manager_8cpp.html#ae422edf5ff912fb427da0e5390ebf038">test_com_manager.cpp</a>
+</li>
 <li>getBitsAsUInt32()
 : <a class="el" href="_i_s_comm_8c.html#a272de13a614209d508c335242a1094ae">ISComm.c</a>
 , <a class="el" href="_i_s_comm_8h.html#a272de13a614209d508c335242a1094ae">ISComm.h</a>
 </li>
 <li>GetDataTypeSize()
-: <a class="el" href="_i_s_data_mappings_8cpp.html#a87f56ccf9de31716dc3bc668383c0ca7">ISDataMappings.cpp</a>
-, <a class="el" href="_i_s_data_mappings_8h.html#a87f56ccf9de31716dc3bc668383c0ca7">ISDataMappings.h</a>
+: <a class="el" href="_i_s_data_mappings_8h.html#a87f56ccf9de31716dc3bc668383c0ca7">ISDataMappings.h</a>
+, <a class="el" href="_i_s_data_mappings_8cpp.html#a87f56ccf9de31716dc3bc668383c0ca7">ISDataMappings.cpp</a>
 </li>
 <li>getDoubleOffsets()
 : <a class="el" href="data__sets_8c.html#a0122a1839deb452c354e595f01022949">data_sets.c</a>
@@ -303,14 +312,20 @@ $(function() {
 <li>GPS_STATUS_FLAGS_MASK
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a74138adacc04177b787dee3171197e0d">data_sets.h</a>
 </li>
+<li>GPS_STATUS_FLAGS_RTK_BASE_DATA_MISSING
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a645bda2b9d6300057604cb98f97a083a">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FLAGS_RTK_BASE_POSITION_INVALID
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a007a44e9f3e3df5af6b8238801ebd1c8">data_sets.h</a>
+</li>
+<li>GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK
+: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a8a3da85799eee1e907b99308179fd670">data_sets.h</a>
+</li>
 <li>GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a05a4fbe3aacbb13b3a02ac68c1692a1e">data_sets.h</a>
 </li>
 <li>GPS_STATUS_FLAGS_RTK_ENABLED
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a7059fc3a6e630b76b17c0ea5ff5a8865">data_sets.h</a>
-</li>
-<li>GPS_STATUS_FLAGS_RTK_NO_BASE_POSITION
-: <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a0c4d25f80b0d6c43567dadfb05439991">data_sets.h</a>
 </li>
 <li>GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR
 : <a class="el" href="data__sets_8h.html#ae6d4500b717d1fde25cfaf3caf0c0108a44ba3a1dfea45f96820e17930a3b8cea">data_sets.h</a>
@@ -359,12 +374,12 @@ $(function() {
 , <a class="el" href="data__sets_8c.html#a203cc0f0918751aa0ea9276329db328b">data_sets.c</a>
 </li>
 <li>gpsToNmeaGGA()
-: <a class="el" href="data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca">data_sets.c</a>
-, <a class="el" href="data__sets_8h.html#ae56e9a11cab85685b6388a6bda1065ca">data_sets.h</a>
+: <a class="el" href="data__sets_8h.html#ae56e9a11cab85685b6388a6bda1065ca">data_sets.h</a>
+, <a class="el" href="data__sets_8c.html#ae56e9a11cab85685b6388a6bda1065ca">data_sets.c</a>
 </li>
 <li>gpsToUnix()
-: <a class="el" href="data__sets_8h.html#a4a39f7689edfe1d3467ddf13d633c9e6">data_sets.h</a>
-, <a class="el" href="data__sets_8c.html#a4a39f7689edfe1d3467ddf13d633c9e6">data_sets.c</a>
+: <a class="el" href="data__sets_8c.html#a4a39f7689edfe1d3467ddf13d633c9e6">data_sets.c</a>
+, <a class="el" href="data__sets_8h.html#a4a39f7689edfe1d3467ddf13d633c9e6">data_sets.h</a>
 </li>
 </ul>
 </div><!-- contents -->

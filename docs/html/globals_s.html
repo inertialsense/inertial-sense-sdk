@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -343,8 +343,8 @@ $(function() {
 , <a class="el" href="serial_port_8h.html#ad2240e52502e49f931504565cc1d39d0">serialPort.h</a>
 </li>
 <li>serialPortWriteAndWaitFor()
-: <a class="el" href="serial_port_8h.html#af23d6a9f9842e06d1e974a265ff04edd">serialPort.h</a>
-, <a class="el" href="serial_port_8c.html#af23d6a9f9842e06d1e974a265ff04edd">serialPort.c</a>
+: <a class="el" href="serial_port_8c.html#af23d6a9f9842e06d1e974a265ff04edd">serialPort.c</a>
+, <a class="el" href="serial_port_8h.html#af23d6a9f9842e06d1e974a265ff04edd">serialPort.h</a>
 </li>
 <li>serialPortWriteAndWaitForTimeout()
 : <a class="el" href="serial_port_8c.html#a315998701c41541c53f4041b4e3f8403">serialPort.c</a>
@@ -426,8 +426,8 @@ $(function() {
 , <a class="el" href="_i_s_matrix_8h.html#afec964aea133098cd1a3dfa5be204a37">ISMatrix.h</a>
 </li>
 <li>sub_Vec3d_Vec3d()
-: <a class="el" href="_i_s_matrix_8c.html#a8637160e4291d6b6e7ca07c49ddde44b">ISMatrix.c</a>
-, <a class="el" href="_i_s_matrix_8h.html#a8637160e4291d6b6e7ca07c49ddde44b">ISMatrix.h</a>
+: <a class="el" href="_i_s_matrix_8h.html#a8637160e4291d6b6e7ca07c49ddde44b">ISMatrix.h</a>
+, <a class="el" href="_i_s_matrix_8c.html#a8637160e4291d6b6e7ca07c49ddde44b">ISMatrix.c</a>
 </li>
 <li>sub_Vec4_Vec4()
 : <a class="el" href="_i_s_matrix_8c.html#adc688d3297adb01d7fdbd81fb6e9ce55">ISMatrix.c</a>
@@ -481,6 +481,12 @@ $(function() {
 <li>SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP
 : <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85adbb47d50bf7467175de5cf2e218d3070">data_sets.h</a>
 </li>
+<li>SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES
+: <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85af9efe5ab841714fa7b1e9613324b051f">data_sets.h</a>
+</li>
+<li>SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES
+: <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a3204dc3dc557258cf1c08af841427a26">data_sets.h</a>
+</li>
 <li>SYS_CFG_BITS_DISABLE_AUTOBAUD_SER0
 : <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a0e5884f5e57a9c5fc0903bcedbaced72">data_sets.h</a>
 </li>
@@ -511,12 +517,6 @@ $(function() {
 <li>SYS_CFG_BITS_DISABLE_PACKET_ENCODING
 : <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a9ea642ce171af1360a4a03fb0bca7e37">data_sets.h</a>
 </li>
-<li>SYS_CFG_BITS_DISABLE_ZERO_ANGULAR_RATE_UPDATES
-: <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a4b37aad7472a8507ad50fda3c397c116">data_sets.h</a>
-</li>
-<li>SYS_CFG_BITS_DISABLE_ZERO_VELOCITY_UPDATES
-: <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a7c24ed5641d4f1c5730ec5023d04af8f">data_sets.h</a>
-</li>
 <li>SYS_CFG_BITS_ENABLE_NAV_STROBE_OUT_GPIO_9
 : <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85a488c7d3b414fa6e136459e9b11b1224c">data_sets.h</a>
 </li>
@@ -528,6 +528,36 @@ $(function() {
 </li>
 <li>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET
 : <a class="el" href="data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85ab8933133087071da25a499cb25279517">data_sets.h</a>
+</li>
+<li>SYS_CMD_ENABLE_BOOTLOADER_AND_RESET
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8eae0f96753341d9a65192b6a2b1bc63251">data_sets.h</a>
+</li>
+<li>SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8eae22daf63b95ce325210021a164d92a8b">data_sets.h</a>
+</li>
+<li>SYS_CMD_ENABLE_RTOS_STATS
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8eab7248b0925d9a56ba7a8dc25bd77dcb1">data_sets.h</a>
+</li>
+<li>SYS_CMD_ENABLE_SENSOR_STATS
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8ea6b85583a7242931c1448551be9176416">data_sets.h</a>
+</li>
+<li>SYS_CMD_ERASE_FLASH_CONFIG_AND_RESET
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8eac58663ba7e988974c831a8909acbf98b">data_sets.h</a>
+</li>
+<li>SYS_CMD_SAVE_FLASH
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8ea96c88dab7223cb7b7f828ff1ebb02956">data_sets.h</a>
+</li>
+<li>SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8eacafa908b29f6229d4f2019157a5f1eab">data_sets.h</a>
+</li>
+<li>SYS_CMD_SAVE_PERSISTENT_MESSAGES
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8eabc44d0759d8dabac499a420df2d4c72b">data_sets.h</a>
+</li>
+<li>SYS_CMD_SOFTWARE_RESET
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8ea3727cef8390e404305a5d72d913c74c7">data_sets.h</a>
+</li>
+<li>SYS_CMD_ZERO_MOTION
+: <a class="el" href="data__sets_8h.html#a301048209010e12baf519f36c5fffe8eae5ca8287843e30817da1ad4eb8587d4b">data_sets.h</a>
 </li>
 <li>SYS_CMP
 : <a class="el" href="data__sets_8h.html#ac3e957aece456dcb8acd44437e37cbf1">data_sets.h</a>
@@ -549,6 +579,9 @@ $(function() {
 </li>
 <li>SYS_FAULT_STATUS_HARD_FAULT
 : <a class="el" href="data__sets_8h.html#a2a86d0c12aaf8cdf0dc30d5b8002c4e4">data_sets.h</a>
+</li>
+<li>SYS_FAULT_STATUS_HARDWARE_DETECTION
+: <a class="el" href="data__sets_8h.html#a73d7bcddbe2afd8c2d4cb7f061b683a7">data_sets.h</a>
 </li>
 <li>SYS_FAULT_STATUS_HARDWARE_RESET
 : <a class="el" href="data__sets_8h.html#ac962e5873abaffade10887f1197aefbd">data_sets.h</a>
@@ -573,6 +606,9 @@ $(function() {
 </li>
 <li>SYS_FAULT_STATUS_RTK_MISC_ERROR
 : <a class="el" href="data__sets_8h.html#a42be29a17a120a6b7a3155860d05a971">data_sets.h</a>
+</li>
+<li>SYS_FAULT_STATUS_SENSOR_CALIBRATION
+: <a class="el" href="data__sets_8h.html#ab75f8403afc317ca6385f1799b3c9bfa">data_sets.h</a>
 </li>
 <li>SYS_FAULT_STATUS_SOFT_RESET
 : <a class="el" href="data__sets_8h.html#a0750744ad4031ca66c91f91688961c85">data_sets.h</a>
@@ -621,6 +657,9 @@ $(function() {
 </li>
 <li>sys_sensors_t
 : <a class="el" href="data__sets_8h.html#ae76a29dfc404f721487cff4d70d2745d">data_sets.h</a>
+</li>
+<li>system_command_t
+: <a class="el" href="data__sets_8h.html#a3f99bdb11013898e89e44eddfbbd2319">data_sets.h</a>
 </li>
 </ul>
 </div><!-- contents -->

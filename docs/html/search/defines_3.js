@@ -124,6 +124,7 @@ var searchData=
   ['c_5fdivpi',['C_DIVPI',['../_i_s_constants_8h.html#ac5fcfa1235a91538a2841cbcd17e4237',1,'ISConstants.h']]],
   ['c_5fdivpi_5ff',['C_DIVPI_F',['../_i_s_constants_8h.html#aad5aeb73cd86559a1471fad89ad4a336',1,'ISConstants.h']]],
   ['c_5fdivroot2',['C_DIVROOT2',['../_i_s_constants_8h.html#aaec179544917526fdfb8c91d76fb7eb5',1,'ISConstants.h']]],
+  ['c_5fdivroot_5ff',['C_DIVROOT_F',['../_i_s_constants_8h.html#a15cb97513349ed670e35c3968cf327b8',1,'ISConstants.h']]],
   ['c_5fdivtwopi',['C_DIVTWOPI',['../_i_s_constants_8h.html#a8307943a7dd6b759968b066637e651c6',1,'ISConstants.h']]],
   ['c_5fdivtwopi_5ff',['C_DIVTWOPI_F',['../_i_s_constants_8h.html#ae68b69a59eb1723a03d8daca3e84c24c',1,'ISConstants.h']]],
   ['c_5fdofa',['C_DOFA',['../_i_s_constants_8h.html#a4f9a30f9fc5bea01994c947f979dee37',1,'ISConstants.h']]],
@@ -264,6 +265,7 @@ var searchData=
   ['com_5fmanager_5fbuf_5fsize_5fpkt_5fcontinuation',['COM_MANAGER_BUF_SIZE_PKT_CONTINUATION',['../com__manager_8h.html#ae16f35cdf4ed5d9fa40006518b9f3b61',1,'com_manager.h']]],
   ['com_5fmanager_5fbuf_5fsize_5fring_5fbuffer',['COM_MANAGER_BUF_SIZE_RING_BUFFER',['../com__manager_8h.html#a389c19dc7e581fceacb2828389d54fd2',1,'com_manager.h']]],
   ['com_5fmanager_5fbuf_5fsize_5fstatus',['COM_MANAGER_BUF_SIZE_STATUS',['../com__manager_8h.html#acc5755cbc1eac0f807fd7a93bac869f0',1,'com_manager.h']]],
+  ['comm_5fbuffer_5fsize',['COMM_BUFFER_SIZE',['../test__com__manager_8cpp.html#a4503eff96c7f6b63c6c22d56b9760cc7',1,'COMM_BUFFER_SIZE():&#160;test_com_manager.cpp'],['../test__com__manager_8cpp.html#a4503eff96c7f6b63c6c22d56b9760cc7',1,'COMM_BUFFER_SIZE():&#160;test_com_manager.cpp'],['../test__ring__buffer_8cpp.html#a4503eff96c7f6b63c6c22d56b9760cc7',1,'COMM_BUFFER_SIZE():&#160;test_ring_buffer.cpp']]],
   ['const_5fexpression',['CONST_EXPRESSION',['../_i_s_constants_8h.html#a11b905653ff9accefbb7afcfe5901d4c',1,'ISConstants.h']]],
   ['cpp11_5fis_5fenabled',['CPP11_IS_ENABLED',['../_i_s_constants_8h.html#a85f9027a99b5419f1d0d5d83b5eb3abc',1,'ISConstants.h']]],
   ['crc_5fpoly',['CRC_POLY',['../inertial_sense_boot_loader_8c.html#a3a57af5c3275b2f53fa64274b11e8d52',1,'inertialSenseBootLoader.c']]]

@@ -32,6 +32,7 @@ using namespace std;
 #define EXAMPLE_PORT            "COM5"
 #define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549    "
 #define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex"
+#define EXAMPLE_BOOTLOADER_FILE "c:\\fw\\SAMx70-Bootloader.bin"
 #define EXAMPLE_SPACE_1         "    "
 #define EXAMPLE_SPACE_2         ""
 #else
@@ -39,6 +40,7 @@ using namespace std;
 #define EXAMPLE_PORT            "/dev/ttyS2"
 #define EXAMPLE_LOG_DIR         "logs/20170117_222549           "
 #define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex "
+#define EXAMPLE_BOOTLOADER_FILE "fw/SAMx70-Bootloader.bin "
 #define EXAMPLE_SPACE_1         "  "
 #define EXAMPLE_SPACE_2			"    "
 #endif
@@ -71,8 +73,7 @@ typedef struct
     int streamGPS;
     int streamRtkPos;
     int streamRtkRel;
-    int streamMag1;
-	int streamMag2;
+    int streamMag;
 	int streamBaro;
 	int streamSysSensors;
 	int streamDThetaVel;

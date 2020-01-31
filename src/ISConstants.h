@@ -523,12 +523,12 @@ extern void vPortFree(void* pv);
 #define C_ROOT2         1.41421356237309504880168872420969807856967187537695
 #define C_ROOT3         1.73205080756887729352744634150587236694280525381039
 #define C_E             2.71828182845904523536028747135266249775724709369996
-
 #define C_DIVROOT2      0.70710678118654752440084436210485
 
 #define C_ROOT2_F       1.41421356237309504880168872420969807856967187537695f
 #define C_ROOT3_F       1.73205080756887729352744634150587236694280525381039f
 #define C_E_F           2.71828182845904523536028747135266249775724709369996f
+#define C_DIVROOT_F     0.70710678118654752440084436210485f
 
 #define C_PIDIV16       0.19634954084936207740391521145497		// 11.25 deg
 #define C_PIDIV8        0.39269908169872415480783042290994		// 22.5 deg
@@ -749,6 +749,8 @@ extern void vPortFree(void* pv);
 // Angle Unwrap
 #define UNWRAP_DEG_F64(x)			{ if((x) < (-180.0 )) { (x) += (360.0 );    } if((x) > (180.0 ))    { (x) -= (360.0 );    } }	// unwrap to +- 180
 #define UNWRAP_DEG_F32(x)			{ if((x) < (-180.0f)) { (x) += (360.0f);    } if((x) > (180.0f))    { (x) -= (360.0f);    } }	// unwrap to +- 180
+#define UNWRAP_90DEG_F64(x)			{ if((x) < (-90.0 ))  { (x) += (180.0 );    } if((x) > (90.0 ))     { (x) -= (180.0 );    } }	// unwrap to +- 90
+#define UNWRAP_90DEG_F32(x)			{ if((x) < (-90.0f))  { (x) += (180.0f);    } if((x) > (90.0f))     { (x) -= (180.0f);    } }	// unwrap to +- 90
 #define UNWRAP_F64(x)				{ if((x) < (-C_PI))   { (x) += (C_TWOPI);   } if((x) > (C_PI))      { (x) -= (C_TWOPI);   } }	// unwrap to +- PI
 #define UNWRAP_F32(x)				{ if((x) < (-C_PI_F)) { (x) += (C_TWOPI_F); } if((x) > (C_PI_F))    { (x) -= (C_TWOPI_F); } }	// unwrap to +- PI
 #define UNWRAP_ZERO_TWOPI_F64(x)	{ if((x) < (0.0))     { (x) += (C_TWOPI);   } if((x) > (C_TWOPI))   { (x) -= (C_TWOPI);   } }	// unwrap to 0 to TWOPI

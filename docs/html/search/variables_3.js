@@ -1,7 +1,7 @@
 var searchData=
 [
   ['d',['D',['../struct_p_a_c_k_e_d.html#a64c97f3cd23cd2bf3d6c6bee635b3202',1,'PACKED']]],
-  ['data',['data',['../structobs__t.html#a3cff1d90b248369f3c0d31b34cfb6344',1,'obs_t::data()'],['../struct_p_a_c_k_e_d.html#a42fe1fcebdd514c95fccd45b8bb8fb03',1,'PACKED::data()'],['../structs_kml_log.html#a7c32f0b6f93301a137d2e149544cc2e8',1,'sKmlLog::data()']]],
+  ['data',['data',['../structobs__t.html#a3cff1d90b248369f3c0d31b34cfb6344',1,'obs_t::data()'],['../struct_p_a_c_k_e_d.html#a42fe1fcebdd514c95fccd45b8bb8fb03',1,'PACKED::data()'],['../structs_kml_log.html#a7c32f0b6f93301a137d2e149544cc2e8',1,'sKmlLog::data()'],['../structdata__holder__t.html#a206c6d79e8b9c32460d3feb5f06a17c1',1,'data_holder_t::data()']]],
   ['datahdr',['dataHdr',['../structbroadcast__msg__t.html#aa892836a942a0dc14a32e498880013dd',1,'broadcast_msg_t']]],
   ['dataid',['dataId',['../classc_csv_log.html#ac630e3a811e7c01fe10aea5edb5808c3',1,'cCsvLog']]],
   ['dataidstats',['dataIdStats',['../classc_log_stats.html#a5eaa56f4e48c9b4f0fdacf541d0a5065',1,'cLogStats']]],
@@ -16,10 +16,11 @@ var searchData=
   ['del',['del',['../structsta__t.html#a646a3c3c5ac127e710828b03e0911da5',1,'sta_t']]],
   ['deln',['deln',['../structeph__t.html#ad8a28bc7d7a4bfd57fb02b2deab4104c',1,'eph_t']]],
   ['deltype',['deltype',['../structsta__t.html#af78add2645d6347b71177640ea57e792',1,'sta_t']]],
-  ['devinfo',['devInfo',['../struct_p_a_c_k_e_d.html#a9d5ce213ea815d96eb37c0f3f01a4b8f',1,'PACKED::devInfo()'],['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#a57dbc6eef2efbaf13089f1f7c9607f90',1,'InertialSense::com_manager_cpp_state_t::devInfo()']]],
+  ['devinfo',['devInfo',['../struct_p_a_c_k_e_d.html#a9d5ce213ea815d96eb37c0f3f01a4b8f',1,'PACKED::devInfo()'],['../struct_inertial_sense_1_1com__manager__cpp__state__t.html#a57dbc6eef2efbaf13089f1f7c9607f90',1,'InertialSense::com_manager_cpp_state_t::devInfo()'],['../structtest__data__t.html#a8a57165481a4df8b052b8ff6edd34456',1,'test_data_t::devInfo()']]],
   ['devserialnum',['devSerialNum',['../structs_chunk_header.html#a6e4e26578361cd701671d8e54a32de74',1,'sChunkHeader']]],
   ['dhdr',['dHdr',['../structs_chunk_sub_header.html#a70fde36606d93938a4589b1fa744d0ea',1,'sChunkSubHeader']]],
   ['diameter',['diameter',['../struct_p_a_c_k_e_d.html#a591f479755b5b9653134b6b0ca20ec5f',1,'PACKED']]],
+  ['did',['did',['../structdata__holder__t.html#a36f60e6c41d7316fc16183ab26fcd77c',1,'data_holder_t']]],
   ['differentialage',['differentialAge',['../struct_p_a_c_k_e_d.html#ad0615ac2daecdcad17448134f56888aa',1,'PACKED']]],
   ['disablebcastfnc',['disableBcastFnc',['../structcom__manager__t.html#a8ec022c21b008d2c9c3c706470e47e26',1,'com_manager_t']]],
   ['disablebroadcastsonclose',['disableBroadcastsOnClose',['../structcmd__options__t.html#a95f70dd338c2306ba569295a50e8a20f',1,'cmd_options_t']]],

@@ -7,7 +7,6 @@ extern "C" {
 // prototypes
 void led_maintenance(void);
 void led_sys_heartbeat(void);
-void maint_monitor(void);
 void rtos_maintenance(void);
 void save_persistent_messages(void);
 

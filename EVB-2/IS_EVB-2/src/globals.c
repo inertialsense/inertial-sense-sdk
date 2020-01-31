@@ -25,6 +25,8 @@ evb_msg_t                   g_msg = {0};
 debug_array_t               g_debug = {0};
 evb_rtos_info_t             g_rtos = {0};
 date_time_t                 g_gps_date_time = {0};
+//uint32_t					g_CANbaud_kbps = 500;
+//uint32					g_can_receive_address = 0;
 bool                        g_gpsTimeSync=false;
 int                         g_comm_time_ms=0;
 bool                        g_loggerEnabled=false;
@@ -47,71 +49,102 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
     switch(cfg->cbPreset)
     {
     case EVB2_CB_PRESET_RS232:
-        cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB) | (1<<EVB2_PORT_SP330);
-        cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0); 
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+		// UINS-SER0
+		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
+		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
 
-        cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XRADIO);
-        cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_UINS1);
-        break;
+		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
+		cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+
+		// UINS-SER1
+		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XRADIO);
+		cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_UINS1);
+		break;
         
     case EVB2_CB_PRESET_RS232_XBEE:
-        cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB) | (1<<EVB2_PORT_SP330);
-        cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0); 
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+		// UINS-SER0
+		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
+		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
 
-        cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XBEE) | (1<<EVB2_PORT_XRADIO);
-        cfg->cbf[EVB2_PORT_XBEE]   |= (1<<EVB2_PORT_UINS1);
-        cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_UINS1);
+		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
+		cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+
+		// UINS-SER1
+		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XRADIO);
+		cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_UINS1);
+
+		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XBEE);
+		cfg->cbf[EVB2_PORT_XBEE]   |= (1<<EVB2_PORT_UINS1);
         break;
         
     case EVB2_CB_PRESET_RS422_WIFI:
-        cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB) | (1<<EVB2_PORT_SP330);
-        cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+		// UINS-SER0
+        cfg->cbf[EVB2_PORT_UINS0]   |= (1<<EVB2_PORT_USB);
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_UINS0);
 
-        cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_WIFI) | (1<<EVB2_PORT_XRADIO);
-        cfg->cbf[EVB2_PORT_WIFI]   |= (1<<EVB2_PORT_UINS1);
-        cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_UINS1);
+        cfg->cbf[EVB2_PORT_UINS0]   |= (1<<EVB2_PORT_SP330);
+        cfg->cbf[EVB2_PORT_SP330]   |= (1<<EVB2_PORT_UINS0);
+
+		// UINS-SER1
+        cfg->cbf[EVB2_PORT_UINS1]   |= (1<<EVB2_PORT_XRADIO);
+        cfg->cbf[EVB2_PORT_WIFI]    |= (1<<EVB2_PORT_UINS1);
+
+        cfg->cbf[EVB2_PORT_UINS1]   |= (1<<EVB2_PORT_XRADIO);
+        cfg->cbf[EVB2_PORT_XRADIO]  |= (1<<EVB2_PORT_UINS1);
         break;
 
     case EVB2_CB_PRESET_SPI_RS232:
-        cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_USB) | (1<<EVB2_PORT_SP330);
-        cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS1);
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS1);
+		// UINS-SER1 (SPI mode)
+        cfg->cbf[EVB2_PORT_UINS1]   |= (1<<EVB2_PORT_USB);
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_UINS1);
+
+        cfg->cbf[EVB2_PORT_UINS1]   |= (1<<EVB2_PORT_SP330);
+        cfg->cbf[EVB2_PORT_SP330]   |= (1<<EVB2_PORT_UINS1);
         break;
         
     case EVB2_CB_PRESET_USB_HUB_RS232:
-		cfg->cbf[EVB2_PORT_USB]   |= (1<<EVB2_PORT_XBEE);
-		cfg->cbf[EVB2_PORT_XBEE]  |= (1<<EVB2_PORT_USB);
+		 cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_XBEE);
+		 cfg->cbf[EVB2_PORT_XBEE]   |= (1<<EVB2_PORT_USB);
+		 
+    case EVB2_CB_PRESET_USB_HUB_RS422:		
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_XRADIO);
+        cfg->cbf[EVB2_PORT_XRADIO]  |= (1<<EVB2_PORT_USB);
+
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_SP330);
+        cfg->cbf[EVB2_PORT_SP330]   |= (1<<EVB2_PORT_USB);
+
+//         cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_BLE);
+//         cfg->cbf[EVB2_PORT_BLE]     |= (1<<EVB2_PORT_USB);
+
+//         cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_GPIO_H8);
+//         cfg->cbf[EVB2_PORT_GPIO_H8] |= (1<<EVB2_PORT_USB);
 		break;
          
-    case EVB2_CB_PRESET_USB_HUB_RS422:
-        cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_XBEE) | (1<<EVB2_PORT_XRADIO) | (1<<EVB2_PORT_BLE) | (1<<EVB2_PORT_SP330) | (1<<EVB2_PORT_GPIO_H8);
-        cfg->cbf[EVB2_PORT_XBEE]   |= (1<<EVB2_PORT_USB);
-        cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_USB);
-        cfg->cbf[EVB2_PORT_BLE]    |= (1<<EVB2_PORT_USB);
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_USB);
-        cfg->cbf[EVB2_PORT_GPIO_H8]|= (1<<EVB2_PORT_USB);
-        break;
+#ifdef CONF_BOARD_CAN1
+	case  EVB2_CB_PRESET_CAN:
+		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
+		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
+
+		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
+        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+
+		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_CAN);
+		cfg->cbf[EVB2_PORT_CAN]	   |= (1<<EVB2_PORT_USB);
+		break;
+#endif
     }        
 
     // Clear existing
     cfg->cbOptions = 0;
 
-	// WiFi Enabled
-    switch(cfg->cbPreset)
-    {
-    case EVB2_CB_PRESET_RS422_WIFI:
-        cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_WIFI);
-        cfg->cbf[EVB2_PORT_WIFI]   |= (1<<EVB2_PORT_UINS1); 
-        break;
-    }        
-
 	// USB Hub
 	switch(cfg->cbPreset)
 	{
+	case EVB2_CB_PRESET_ALL_OFF:
 	case EVB2_CB_PRESET_USB_HUB_RS232:
+	     cfg->cbOptions |= EVB2_CB_OPTIONS_XBEE_ENABLE;
+	     break;
+		 
 	case EVB2_CB_PRESET_USB_HUB_RS422:
 		cfg->cbOptions |= EVB2_CB_OPTIONS_TRISTATE_UINS_IO;
 		break;
@@ -133,8 +166,8 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
     switch(cfg->cbPreset)
     {
     case EVB2_CB_PRESET_RS232_XBEE:
-    case EVB2_CB_PRESET_USB_HUB_RS232:
-    case EVB2_CB_PRESET_USB_HUB_RS422:
+//     case EVB2_CB_PRESET_USB_HUB_RS232:
+//     case EVB2_CB_PRESET_USB_HUB_RS422:
         cfg->cbOptions |= EVB2_CB_OPTIONS_XBEE_ENABLE;
         break;
 
@@ -152,6 +185,16 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
         break;
     }
 #endif
+
+	// Enable CAN
+#ifdef CONF_BOARD_CAN1
+	switch(cfg->cbPreset)
+	{
+		case EVB2_CB_PRESET_CAN:
+		cfg->cbOptions |= EVB2_CB_OPTIONS_CAN_ENABLE;
+		break;
+	}
+#endif
 }
 
 
@@ -162,7 +205,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 1;						// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 2;						// increment key to force config to revert to defaults (overwrites customer's settings)
 
     cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 

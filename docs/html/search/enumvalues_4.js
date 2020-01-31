@@ -1,12 +1,14 @@
 var searchData=
 [
   ['evb2_5fcb_5foptions_5fble_5fenable',['EVB2_CB_OPTIONS_BLE_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010add6cf842bd7b9657d9dc4c8f7a3f147e',1,'data_sets.h']]],
+  ['evb2_5fcb_5foptions_5fcan_5fenable',['EVB2_CB_OPTIONS_CAN_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010ae5d4b07a52150775fc5b712ca33fb388',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5fsp330_5frs422',['EVB2_CB_OPTIONS_SP330_RS422',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010ad2415f31451e0f32097529a9620c5a1a',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5fspi_5fenable',['EVB2_CB_OPTIONS_SPI_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010a28cf7fa1553c3f36748e0fbe6193afbe',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5ftristate_5fuins_5fio',['EVB2_CB_OPTIONS_TRISTATE_UINS_IO',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010ab3eef4a843df9b14233fb0dc569d6c60',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5fwifi_5fenable',['EVB2_CB_OPTIONS_WIFI_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010ae7519e1fc990d09de859bcb4ec3ce444',1,'data_sets.h']]],
   ['evb2_5fcb_5foptions_5fxbee_5fenable',['EVB2_CB_OPTIONS_XBEE_ENABLE',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010a98bd49e1bd104a15491164697eaa0830',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5fall_5foff',['EVB2_CB_PRESET_ALL_OFF',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea88c3ed9bd5971ec1684af00cbcdf24e8',1,'data_sets.h']]],
+  ['evb2_5fcb_5fpreset_5fcan',['EVB2_CB_PRESET_CAN',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea7579d37346105fc1f0cfa13700c38b95',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5fcount',['EVB2_CB_PRESET_COUNT',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea11a5439d561a9111dcacb64096261854',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5fna',['EVB2_CB_PRESET_NA',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea1f96e5fbfae3a2dd339849700c31df7b',1,'data_sets.h']]],
   ['evb2_5fcb_5fpreset_5frs232',['EVB2_CB_PRESET_RS232',['../data__sets_8h.html#a7c75356a91d4ff1c024404a70c8051dea116eedf7f4542b3844f8303b7845c2ad',1,'data_sets.h']]],
@@ -20,6 +22,7 @@ var searchData=
   ['evb2_5flog_5fcmd_5fstop',['EVB2_LOG_CMD_STOP',['../data__sets_8h.html#a8e7485a1febe61eaaf9269f256a7c464ab118644dcb49938abda31ee4b5c7735e',1,'data_sets.h']]],
   ['evb2_5flog_5fna',['EVB2_LOG_NA',['../data__sets_8h.html#a8e7485a1febe61eaaf9269f256a7c464a7623d8b985fb41dd48dc508b70cee58c',1,'data_sets.h']]],
   ['evb2_5fport_5fble',['EVB2_PORT_BLE',['../data__sets_8h.html#a24b0cd0ece7127e5c183103cb4c22022a741442e51f10f3b6c941181b9ee2271f',1,'data_sets.h']]],
+  ['evb2_5fport_5fcan',['EVB2_PORT_CAN',['../data__sets_8h.html#a24b0cd0ece7127e5c183103cb4c22022aad156d9a635543159efcb8599c31fd34',1,'data_sets.h']]],
   ['evb2_5fport_5fcount',['EVB2_PORT_COUNT',['../data__sets_8h.html#a24b0cd0ece7127e5c183103cb4c22022a1ed9aa657f19f9f11acf3ec83a69e7c1',1,'data_sets.h']]],
   ['evb2_5fport_5fgpio_5fh8',['EVB2_PORT_GPIO_H8',['../data__sets_8h.html#a24b0cd0ece7127e5c183103cb4c22022a3636865fda4317526cb3c279ad3ed651',1,'data_sets.h']]],
   ['evb2_5fport_5fsp330',['EVB2_PORT_SP330',['../data__sets_8h.html#a24b0cd0ece7127e5c183103cb4c22022a792cda3eb80e4ca11690e02f51ab494a',1,'data_sets.h']]],

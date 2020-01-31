@@ -499,7 +499,7 @@
 </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800054377</avrtoolserialnumber>
+    <avrtoolserialnumber>J41800098687</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020C01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -534,7 +534,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800054377</ToolNumber>
+      <ToolNumber>J41800098687</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
   </PropertyGroup>
@@ -1293,6 +1293,10 @@ call "$(MSBuildProjectDirectory)\..\..\..\libs\scripts\update_build_info.bat" ..
     <Folder Include="src\SDK\src\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\hw-libs\communications\CAN_comm.h">
+      <SubType>compile</SubType>
+      <Link>src\SDK\CAN_comm.h</Link>
+    </Compile>
     <Compile Include="..\..\hw-libs\printf-master\printf.c">
       <SubType>compile</SubType>
       <Link>src\SDK\hw-libs\printf-master\printf.c</Link>
@@ -1464,6 +1468,12 @@ call "$(MSBuildProjectDirectory)\..\..\..\libs\scripts\update_build_info.bat" ..
     <None Include="src\ASF\sam\services\flash_efc\flash_efc.h">
       <SubType>compile</SubType>
     </None>
+    <Compile Include="src\CAN.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\CAN.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\config\conf_d_quadEnc.h">
       <SubType>compile</SubType>
     </Compile>
@@ -2561,6 +2571,12 @@ call "$(MSBuildProjectDirectory)\..\..\..\libs\scripts\update_build_info.bat" ..
       <SubType>compile</SubType>
     </None>
     <None Include="src\ASF\thirdparty\fatfs\fatfs-r0.09\src\00readme.txt">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\config\conf_mcan.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\sam\drivers\mcan\mcan.h">
       <SubType>compile</SubType>
     </None>
     <None Include="src\config\conf_access.h">

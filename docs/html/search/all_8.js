@@ -63,7 +63,7 @@ var searchData=
   ['hdw_5fstatus_5funused_5f6',['HDW_STATUS_UNUSED_6',['../data__sets_8h.html#afb6a6339c59446adc3c95423d9c00128a5418fdf6cab3c840d6b70352989bdec2',1,'data_sets.h']]],
   ['hdwbitstatus',['hdwBitStatus',['../struct_p_a_c_k_e_d.html#ace9c601ca29e0046ba62acea57d1f137',1,'PACKED']]],
   ['hdwstatus',['hdwStatus',['../struct_p_a_c_k_e_d.html#a538ce0dab5c1397faf494cc36cfadb14',1,'PACKED']]],
-  ['head',['head',['../structlinked__list__t.html#a157440ab0d4b9109e85fb4b1ab825e47',1,'linked_list_t::head()'],['../structringbuf__t.html#a66f8065ebd3650235d488f31bb31efa8',1,'ringbuf_t::head()']]],
+  ['head',['head',['../structlinked__list__t.html#a157440ab0d4b9109e85fb4b1ab825e47',1,'linked_list_t']]],
   ['hello',['Hello',['../classc_inertial_sense_display.html#aaadefa46510922ae9e1a881be9c54321',1,'cInertialSenseDisplay']]],
   ['hgt',['hgt',['../structsta__t.html#a59a606679d669c19288a7a365e39360c',1,'sta_t']]],
   ['hmsl',['hMSL',['../struct_p_a_c_k_e_d.html#a7e4949b26766385e625964f61b445309',1,'PACKED']]],

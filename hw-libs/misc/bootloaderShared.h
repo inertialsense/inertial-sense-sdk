@@ -31,9 +31,10 @@ extern "C" {
   -------------------- 0x00100000 (0x00500000)
 */
 
-#define CONF_UART_BAUDRATE_LEGACY   2000000
+// #define CONF_UART_BAUDRATE_LEGACY   2000000
 #define CONF_UART_BAUDRATE          921600
 #define CONF_UART_BAUDRATE_RS232    230400
+#define CONF_UART_BAUDRATE_SLOW     115200
 
 // total size of all flash memory
 #ifndef BOOTLOADER_FLASH_TOTAL_SIZE
@@ -155,7 +156,7 @@ typedef union
 		char jumpSignature[BOOTLOADER_JUMP_SIGNATURE_SIZE]; // indicates whether to stay in bootloader or user application
 		uint32_t signatureFound; // was a signature found, must be exactly BOOTLOADER_SIGNATURE_FOUND_MARKER to be true, no other value is true
 		uint32_t hashCode; // hash code for user application
-		uint32_t version; // bootloader version
+		char version[4]; // bootloader version
 	} data;
 	uint8_t bytes[BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE]; // any additional bytes are reserved space
 } bootloader_header_t;

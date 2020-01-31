@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -125,12 +125,12 @@ $(function() {
 : <a class="el" href="structbuffer__t.html#ab1ce0deb7a33566b5c9e2705ae822007">buffer_t</a>
 , <a class="el" href="structbuf_ptr__t.html#a89121516bb8e4f198c13eaf8e1d23457">bufPtr_t</a>
 , <a class="el" href="structbuf_tx_rx_ptr__t.html#aa35ef37b9fa29843a3f96140484c3dce">bufTxRxPtr_t</a>
+, <a class="el" href="structdata__holder__t.html#adb8936813f131a2ae895ec8ee5d998a9">data_holder_t</a>
 , <a class="el" href="structevb__flash__cfg__t.html#a0ec0fa66259668c555440f0b806c3b2f">evb_flash_cfg_t</a>
 , <a class="el" href="struct_i_s_file_manager_1_1file__info__t.html#a6bdf6547fd4dee11a68bb66886fa5aca">ISFileManager::file_info_t</a>
 , <a class="el" href="structp__data__get__t.html#a11afc3ecb51275d65121ed378d24267a">p_data_get_t</a>
 , <a class="el" href="structp__data__hdr__t.html#ae4e77713f907776d843284114634d642">p_data_hdr_t</a>
 , <a class="el" href="struct_p_a_c_k_e_d.html#ab92b12c3d0123d7a4122c89f3926d680">PACKED</a>
-, <a class="el" href="structringbuf__t.html#af5cc4f655d68a1046747e48e860960b0">ringbuf_t</a>
 </li>
 <li>SNR
 : <a class="el" href="struct_p_a_c_k_e_d.html#a7f30c96e9054c79ade81262fbe2e2e58">PACKED</a>
@@ -156,12 +156,18 @@ $(function() {
 <li>start
 : <a class="el" href="structxmodem__chunk__t.html#a7a2ab607af54ab9ea0dc8606350b916b">xmodem_chunk_t</a>
 </li>
+<li>start_proc_done
+: <a class="el" href="struct_p_a_c_k_e_d.html#ab275238da4716295b41a120ee3944268">PACKED</a>
+</li>
 <li>startByte
 : <a class="el" href="structcom__manager__status__t.html#a799659757d78ea8a857bc35994b9cb8a">com_manager_status_t</a>
 , <a class="el" href="structpacket__hdr__t.html#aae0969a547bd5ea711e2fe7e2d9a5f4e">packet_hdr_t</a>
 </li>
 <li>startIndex
 : <a class="el" href="structring__buffer__t.html#a2923f0836c88d3d7055f20b25edc2fd8">ring_buffer_t</a>
+</li>
+<li>startPtr
+: <a class="el" href="structring__buf__t.html#a514432f665279d8335efecb6816629ab">ring_buf_t</a>
 </li>
 <li>startupGPSDtMs
 : <a class="el" href="struct_p_a_c_k_e_d.html#a26d57ebcfbf2fab650480194600a966e">PACKED</a>
@@ -171,6 +177,9 @@ $(function() {
 </li>
 <li>startupNavDtMs
 : <a class="el" href="struct_p_a_c_k_e_d.html#a1458cdc80f7709c9a267236bebd190ed">PACKED</a>
+</li>
+<li>stat_magfield
+: <a class="el" href="struct_p_a_c_k_e_d.html#a7153a95c73a3a8683445678a759c60b5">PACKED</a>
 </li>
 <li>state
 : <a class="el" href="struct_p_a_c_k_e_d.html#a19b03bdcc2cd6d03f3c4c73d3329a942">PACKED</a>
@@ -183,11 +192,14 @@ $(function() {
 : <a class="el" href="structcom__manager__buffers__t.html#a4045c290e509f8bcc7eec6f7c2d9948e">com_manager_buffers_t</a>
 , <a class="el" href="structcom__manager__t.html#ae1c22dddc776abe38f50a78ff1f76893">com_manager_t</a>
 , <a class="el" href="struct_p_a_c_k_e_d.html#ab41d8d9020ee7438142779e6ddb7147e">PACKED</a>
-, <a class="el" href="structport__monitor__t.html#a4cf3b3930c5fc5879cd0ce549af52dc2">port_monitor_t</a>
+, <a class="el" href="structport__monitor__set__t.html#a6550a9920b870813f0ff1c40e69fc5c9">port_monitor_set_t</a>
 , <a class="el" href="structsystem__fault__t.html#aefd616026bddf0ac2417e1e3e285ec1b">system_fault_t</a>
 </li>
 <li>statusSize
 : <a class="el" href="structcom__manager__buffers__t.html#a93c0d4cd565b3d1189cdcfecccc65e6d">com_manager_buffers_t</a>
+</li>
+<li>statusText
+: <a class="el" href="structbootload__params__t.html#a4cd007a6c3a06662496716821f36e827">bootload_params_t</a>
 </li>
 <li>std
 : <a class="el" href="structprcopt__t.html#adce5b4f02f20896cb1ea5237f2c4c4c3">prcopt_t</a>
@@ -231,11 +243,8 @@ $(function() {
 <li>streamINS4
 : <a class="el" href="structcmd__options__t.html#a768d89dfe7b08ab93cf8603bf1b11d91">cmd_options_t</a>
 </li>
-<li>streamMag1
-: <a class="el" href="structcmd__options__t.html#a0aaa74d70eaa283965f07b7af6f22688">cmd_options_t</a>
-</li>
-<li>streamMag2
-: <a class="el" href="structcmd__options__t.html#adea09b8dbdafadc16d65c39311235c52">cmd_options_t</a>
+<li>streamMag
+: <a class="el" href="structcmd__options__t.html#a5c0efff2591cf68b47a909b63bafdfd7">cmd_options_t</a>
 </li>
 <li>streamRtkPos
 : <a class="el" href="structcmd__options__t.html#a067723ec4f88b9b21ec9716c89c726b5">cmd_options_t</a>
@@ -277,6 +286,9 @@ $(function() {
 <li>sysCfgBits
 : <a class="el" href="struct_p_a_c_k_e_d.html#a51604b9a8324c7ead4cb841e0d709b5f">PACKED</a>
 </li>
+<li>sysCmd
+: <a class="el" href="struct_inertial_sense_1_1com__manager__cpp__state__t.html#ac33ed3357f2064d69ce0d0192171612d">InertialSense::com_manager_cpp_state_t</a>
+</li>
 <li>sysCommand
 : <a class="el" href="structevb__status__t.html#a1f788fadc549b952916e292cd3687bbc">evb_status_t</a>
 </li>
@@ -285,9 +297,6 @@ $(function() {
 </li>
 <li>sysSensors
 : <a class="el" href="struct_p_a_c_k_e_d.html#a4158612f97731abaf37f2042149c1aa9">PACKED</a>
-</li>
-<li>system
-: <a class="el" href="struct_p_a_c_k_e_d.html#afc9ee477d3ff9ab537ef8eb5ebc9010a">PACKED</a>
 </li>
 </ul>
 </div><!-- contents -->

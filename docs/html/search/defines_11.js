@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['task_5fperiod_5fms',['TASK_PERIOD_MS',['../test__com__manager_8cpp.html#a8f177e3d19b18fe361a5a069c7ba664a',1,'test_com_manager.cpp']]],
   ['timeconv_5fdays_5fin_5fapr',['TIMECONV_DAYS_IN_APR',['../time__conversion_8c.html#aba36e3ab69f559d3b52debc184272328',1,'time_conversion.c']]],
   ['timeconv_5fdays_5fin_5faug',['TIMECONV_DAYS_IN_AUG',['../time__conversion_8c.html#a0a3f216b4cbb6d655932ce4b3163df8e',1,'time_conversion.c']]],
   ['timeconv_5fdays_5fin_5fdec',['TIMECONV_DAYS_IN_DEC',['../time__conversion_8c.html#a095fa85dc5338779534ca168ce65431e',1,'time_conversion.c']]],

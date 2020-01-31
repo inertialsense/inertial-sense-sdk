@@ -70,7 +70,7 @@ public:
 		// per device vars
 		vector<serial_port_t> serialPorts;
 		vector<dev_info_t> devInfo;
-		vector<config_t> config;
+		vector<system_command_t> sysCmd;
 		vector<nvm_flash_cfg_t> flashConfig;
 
 		// common vars
@@ -228,18 +228,18 @@ public:
 	const dev_info_t& GetDeviceInfo(int pHandle = 0) { return m_comManagerState.devInfo[pHandle]; }
 
 	/**
-	* Get current device configuration
-	* @param pHandle the pHandle to get config for
-	* @return current device configuration
+	* Get current device system command
+	* @param pHandle the pHandle to get sysCmd for
+	* @return current device system command
 	*/
-	config_t GetConfig(int pHandle = 0) { return m_comManagerState.config[pHandle]; }
+	system_command_t GetSysCmd(int pHandle = 0) { return m_comManagerState.sysCmd[pHandle]; }
 
 	/**
 	* Set device configuration
-	* @param pHandle the pHandle to set config for
-	* @param config new device configuration
+	* @param pHandle the pHandle to set sysCmd for
+	* @param sysCmd new device configuration
 	*/
-	void SetConfig(const config_t& config, int pHandle = 0);
+	void SetSysCmd(const system_command_t& sysCmd, int pHandle = 0);
 
 	/**
 	* Get the flash config, returns the latest flash config read from the uINS flash memory
@@ -290,7 +290,8 @@ public:
 	* @param verifyProgress optional callback for verify progress
 	* @return ports and errors, error will be empty if success
 	*/
-    static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
+	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, const string& bootloaderFileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, pfnBootloadStatus infoProgress = NULLPTR, bool updateBootloader = false);
+	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
 
 protected:
 	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);

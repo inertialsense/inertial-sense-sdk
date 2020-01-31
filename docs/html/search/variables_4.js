@@ -12,7 +12,7 @@ var searchData=
   ['enableverify',['enableVerify',['../structbootload__params__t.html#aa4b5da1935d4043076710d22ae005117',1,'bootload_params_t']]],
   ['encoderticktowheelrad',['encoderTickToWheelRad',['../structevb__flash__cfg__t.html#aefbb0d56e80489e966b5982246af8ed3',1,'evb_flash_cfg_t']]],
   ['endindex',['endIndex',['../structring__buffer__t.html#a5bfd66636fb127b97f58ddd9eecb960d',1,'ring_buffer_t']]],
-  ['enmagrecal',['enMagRecal',['../struct_p_a_c_k_e_d.html#ac9b4510f172281ed7df577c6fa4aab85',1,'PACKED']]],
+  ['endptr',['endPtr',['../structring__buf__t.html#aa0f0f9d7ae336783caa3337bbcdbf6d0',1,'ring_buf_t']]],
   ['ensuredpackets',['ensuredPackets',['../structcom__manager__buffers__t.html#a2679dfcb91d2fdd6b27dc803e02e1328',1,'com_manager_buffers_t::ensuredPackets()'],['../structcom__manager__t.html#a7fc3af964301b311635445291553551a',1,'com_manager_t::ensuredPackets()']]],
   ['ensuredpacketssize',['ensuredPacketsSize',['../structcom__manager__buffers__t.html#a0ee871f443915dd29829988bff07904a',1,'com_manager_buffers_t']]],
   ['ensureretrycount',['ensureRetryCount',['../structcom__manager__t.html#a2a4da8b8846be0d82a1d83af2adb7698',1,'com_manager_t']]],

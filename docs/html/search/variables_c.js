@@ -15,5 +15,6 @@ var searchData=
   ['npos',['npos',['../class_ti_xml_string.html#a8f4422d227088dc7bec96f479b275d0a',1,'TiXmlString']]],
   ['numberofdevices',['numberOfDevices',['../structbootload__params__t.html#a9503237f9c9e527a60158ee62822ab76',1,'bootload_params_t']]],
   ['numhandes',['numHandes',['../structcom__manager__t.html#ab98e59906ef79731a315b0f404f17bc3',1,'com_manager_t']]],
-  ['numsats',['numSats',['../struct_p_a_c_k_e_d.html#ae1e425949e40c3901b694e8ecd061dfe',1,'PACKED']]]
+  ['numsats',['numSats',['../struct_p_a_c_k_e_d.html#ae1e425949e40c3901b694e8ecd061dfe',1,'PACKED']]],
+  ['nvmflashcfg',['nvmFlashCfg',['../structtest__data__t.html#a630170b4faba28bcc0283573b746ffc4',1,'test_data_t']]]
 ];

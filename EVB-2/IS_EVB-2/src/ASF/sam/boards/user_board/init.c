@@ -46,6 +46,7 @@
 #include "../../../../xbee.h"
 #include "../../../../wifi.h"
 #include "../../../../globals.h"
+#include "../../../../CAN.h"
 #ifdef CONF_BOARD_CONFIG_MPU_AT_INIT
 #include "mpu.h"
 #endif
@@ -385,6 +386,9 @@ void refresh_CFG_LED(void)
         case EVB2_CB_PRESET_SPI_RS232:          LED_CFG_CYAN();     break;
         case EVB2_CB_PRESET_USB_HUB_RS232:      LED_CFG_YELLOW();   break;
         case EVB2_CB_PRESET_USB_HUB_RS422:      LED_CFG_WHITE();    break;
+#ifdef CONF_BOARD_CAN1
+		case EVB2_CB_PRESET_CAN:				LED_CFG_RED();		break;
+#endif
     }
 }
 
@@ -505,9 +509,9 @@ void board_IO_config(void)
     switch(g_flashCfg->cbPreset)
     {
     case EVB2_CB_PRESET_RS232_XBEE:
-    case EVB2_CB_PRESET_USB_HUB_RS232:
-    case EVB2_CB_PRESET_USB_HUB_RS422:
-        xbee_init();
+	case EVB2_CB_PRESET_USB_HUB_RS232:
+		xbee_init();
+	
     }
 #endif
 
@@ -537,6 +541,13 @@ void board_IO_config(void)
     serSetBaudRate(EVB2_PORT_BLE, 115200);
     serSetBaudRate(EVB2_PORT_XRADIO, 115200);
     serSetBaudRate(EVB2_PORT_GPIO_H8, 115200);
+#ifdef CONF_BOARD_CAN1
+	if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_CAN_ENABLE)
+	{
+		serSetBaudRate(EVB2_PORT_UINS1, 921600);
+		CAN_init();
+	}
+#endif
 }
 
 
@@ -544,24 +555,23 @@ void board_IO_config(void)
 void board_init(void)
 {
 	// Hardware Detection - PCB version
-	ioport_set_pin_dir(HDW_DETECT_0_GPIO, IOPORT_DIR_INPUT);
-	ioport_set_pin_dir(HDW_DETECT_1_GPIO, IOPORT_DIR_INPUT);
-	ioport_set_pin_dir(HDW_DETECT_2_GPIO, IOPORT_DIR_INPUT);
-	ioport_set_pin_mode(HDW_DETECT_0_GPIO, IOPORT_MODE_PULLUP);
-	ioport_set_pin_mode(HDW_DETECT_1_GPIO, IOPORT_MODE_PULLUP);
-	ioport_set_pin_mode(HDW_DETECT_2_GPIO, IOPORT_MODE_PULLUP);
-	
+	ioport_set_pin_dir(EVB_HDW_DETECT_0_GPIO, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(EVB_HDW_DETECT_1_GPIO, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(EVB_HDW_DETECT_2_GPIO, IOPORT_DIR_INPUT);
+	ioport_set_pin_mode(EVB_HDW_DETECT_0_GPIO, IOPORT_MODE_PULLUP);
+	ioport_set_pin_mode(EVB_HDW_DETECT_1_GPIO, IOPORT_MODE_PULLUP);
+	ioport_set_pin_mode(EVB_HDW_DETECT_2_GPIO, IOPORT_MODE_PULLUP);	
 	waitPinPullup();
 	
 	g_hdw_detect = ~(0xF8 |
-	    ((ioport_get_pin_level(HDW_DETECT_0_GPIO)&0x1) <<0) |
-	    ((ioport_get_pin_level(HDW_DETECT_1_GPIO)&0x1) <<1) |
-	    ((ioport_get_pin_level(HDW_DETECT_2_GPIO)&0x1) <<2));
+	    ((ioport_get_pin_level(EVB_HDW_DETECT_0_GPIO)&0x1) <<0) |
+	    ((ioport_get_pin_level(EVB_HDW_DETECT_1_GPIO)&0x1) <<1) |
+	    ((ioport_get_pin_level(EVB_HDW_DETECT_2_GPIO)&0x1) <<2));
 	
-	// Disable hardware detect pullup/pulldown
-	ioport_set_pin_mode(HDW_DETECT_0_GPIO, 0);
-	ioport_set_pin_mode(HDW_DETECT_1_GPIO, 0);
-	ioport_set_pin_mode(HDW_DETECT_2_GPIO, 0);
+	// Disable hardware detect pullup/pulldown (tri-state pins)
+	ioport_set_pin_input_mode(EVB_HDW_DETECT_0_GPIO, 0, 0);
+	ioport_set_pin_input_mode(EVB_HDW_DETECT_1_GPIO, 0, 0);
+	ioport_set_pin_input_mode(EVB_HDW_DETECT_2_GPIO, 0, 0);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Init system clocks
@@ -663,7 +673,6 @@ void board_init(void)
 #ifdef CONF_BOARD_SERIAL_EXT_RADIO      // External Radio
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_RXD_PIN, UART_EXT_RADIO_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_TXD_PIN, UART_EXT_RADIO_TXD_FLAGS);
-    ioport_set_pin_mode(UART_EXT_RADIO_RXD_PIN, IOPORT_MODE_PULLUP);                // prevent rx pin from floating
     serInit(EVB2_PORT_XRADIO, 115200, NULL);
 //     ioport_set_pin_dir(EXT_RADIO_RST, IOPORT_DIR_OUTPUT);
 //     ioport_set_pin_level(EXT_RADIO_RST, IOPORT_PIN_LEVEL_HIGH);         // Low assert
@@ -690,7 +699,6 @@ void board_init(void)
 	ioport_set_pin_output_mode(GPIO_UART_INV_PIN, IOPORT_PIN_LEVEL_LOW);    // Non-inverting
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_RXD_PIN, GPIO_H8_UART_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_TXD_PIN, GPIO_H8_UART_TXD_FLAGS);
-    ioport_set_pin_mode(GPIO_H8_UART_RXD_PIN, IOPORT_MODE_PULLUP);                // prevent rx pin from floating
     serInit(EVB2_PORT_GPIO_H8, 115200, NULL);
 #endif
     

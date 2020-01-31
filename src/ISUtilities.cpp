@@ -403,7 +403,7 @@ int bootloadUploadProgress(const void* port, float percent)
 	// Suppress compiler warnings
 	(void)port;
 
-	printf("\rBootloader upload: %d%%     \r", (int)(percent * 100.0f));
+	printf("\rUpload: %d%%     \r", (int)(percent * 100.0f));
 	if (percent == 1.0f)
 	{
 		printf("\r\n");
@@ -418,7 +418,7 @@ int bootloadVerifyProgress(const void* port, float percent)
 	// Suppress compiler warnings
 	(void)port;
 
-	printf("\rBootloader verify: %d%%     \r", (int)(percent * 100.0f));
+	printf("\rVerify: %d%%     \r", (int)(percent * 100.0f));
 	if (percent == 1.0f)
 	{
 		printf("\r\n");
@@ -426,6 +426,11 @@ int bootloadVerifyProgress(const void* port, float percent)
 	fflush(stdout);	// stdout stream is buffered (in Linux) so output is only seen after a newline '\n' or fflush().  
 
 	return 1; // could return 0 to abort
+}
+
+void bootloadStatusInfo(const void* port, const char* str)
+{
+	cout << str << endl;
 }
 
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec)

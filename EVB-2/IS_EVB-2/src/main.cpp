@@ -47,6 +47,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define COMM_BUFFER_SIZE                2048
 
 
+#include "CAN.h"
+
 static void vTaskComm(void *pvParameters)
 {
 	UNUSED(pvParameters);
@@ -57,12 +59,18 @@ static void vTaskComm(void *pvParameters)
     comm.buffer = comm_buffer;
     comm.bufferSize = COMM_BUFFER_SIZE;
     is_comm_init(&comm);
+	
+#ifdef CONF_BOARD_CAN_TEST
+	//if(/*g_can_test == CAN_TEST_MASTER - or something like that*/ 1)
+		//mcan_test_master();
+	if(/*g_can_test == CAN_TEST_SLAVE - or something like that*/ 1)
+		mcan_test_slave();
+#endif
 
     udc_start();
 
     vTaskDelay(200);
     refresh_CFG_LED();
-
 	while(1)
 	{
         vTaskDelay(task->periodMs);

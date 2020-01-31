@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -310,6 +310,8 @@ Macros</h2></td></tr>
 <tr class="separator:a855e79dc789878f7bd76868973ce4115"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ff25ff02bb2d6ed7e9d0bfc74e10ca9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#a8ff25ff02bb2d6ed7e9d0bfc74e10ca9">C_E_F</a>&#160;&#160;&#160;2.71828182845904523536028747135266249775724709369996f</td></tr>
 <tr class="separator:a8ff25ff02bb2d6ed7e9d0bfc74e10ca9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15cb97513349ed670e35c3968cf327b8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#a15cb97513349ed670e35c3968cf327b8">C_DIVROOT_F</a>&#160;&#160;&#160;0.70710678118654752440084436210485f</td></tr>
+<tr class="separator:a15cb97513349ed670e35c3968cf327b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6c551078e008edaf3d7847a2d492b24"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#ad6c551078e008edaf3d7847a2d492b24">C_PIDIV16</a>&#160;&#160;&#160;0.19634954084936207740391521145497</td></tr>
 <tr class="separator:ad6c551078e008edaf3d7847a2d492b24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac548c585e9ec152139c93345386b43a8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#ac548c585e9ec152139c93345386b43a8">C_PIDIV8</a>&#160;&#160;&#160;0.39269908169872415480783042290994</td></tr>
@@ -708,6 +710,10 @@ Macros</h2></td></tr>
 <tr class="separator:a4f04b87812a44a1e822803df744a7207"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abea419b04c358ebac72798052720ac34"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#abea419b04c358ebac72798052720ac34">UNWRAP_DEG_F32</a>(x)&#160;&#160;&#160;{ if((x) &lt; (-180.0f)) { (x) += (360.0f);    } if((x) &gt; (180.0f))    { (x) -= (360.0f);    } }</td></tr>
 <tr class="separator:abea419b04c358ebac72798052720ac34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a860d18a6056cba6c6189e9b3183a2a84"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#a860d18a6056cba6c6189e9b3183a2a84">UNWRAP_90DEG_F64</a>(x)&#160;&#160;&#160;{ if((x) &lt; (-90.0 ))  { (x) += (180.0 );    } if((x) &gt; (90.0 ))     { (x) -= (180.0 );    } }</td></tr>
+<tr class="separator:a860d18a6056cba6c6189e9b3183a2a84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b2ddf00226174ef345e2b679b12bcfb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#a0b2ddf00226174ef345e2b679b12bcfb">UNWRAP_90DEG_F32</a>(x)&#160;&#160;&#160;{ if((x) &lt; (-90.0f))  { (x) += (180.0f);    } if((x) &gt; (90.0f))     { (x) -= (180.0f);    } }</td></tr>
+<tr class="separator:a0b2ddf00226174ef345e2b679b12bcfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63375579eafc2071f44c8eea1a33c9ca"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#a63375579eafc2071f44c8eea1a33c9ca">UNWRAP_F64</a>(x)&#160;&#160;&#160;{ if((x) &lt; (-<a class="el" href="_i_s_constants_8h.html#af36cd16ea70fed9041c16dd92aae3e8c">C_PI</a>))   { (x) += (<a class="el" href="_i_s_constants_8h.html#af07f3ccc520c01bee32d06de9282eac2">C_TWOPI</a>);   } if((x) &gt; (<a class="el" href="_i_s_constants_8h.html#af36cd16ea70fed9041c16dd92aae3e8c">C_PI</a>))      { (x) -= (<a class="el" href="_i_s_constants_8h.html#af07f3ccc520c01bee32d06de9282eac2">C_TWOPI</a>);   } }</td></tr>
 <tr class="separator:a63375579eafc2071f44c8eea1a33c9ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6554fd819e4c693f333f4aa5282cc5c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_constants_8h.html#af6554fd819e4c693f333f4aa5282cc5c">UNWRAP_F32</a>(x)&#160;&#160;&#160;{ if((x) &lt; (-<a class="el" href="_i_s_constants_8h.html#a8bf83bef3179ea8b7796612cc14d59e7">C_PI_F</a>)) { (x) += (<a class="el" href="_i_s_constants_8h.html#a81fdacb0d5baece274f3bf151345ff92">C_TWOPI_F</a>); } if((x) &gt; (<a class="el" href="_i_s_constants_8h.html#a8bf83bef3179ea8b7796612cc14d59e7">C_PI_F</a>))    { (x) -= (<a class="el" href="_i_s_constants_8h.html#a81fdacb0d5baece274f3bf151345ff92">C_TWOPI_F</a>); } }</td></tr>
@@ -793,7 +799,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00761">761</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00763">763</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -849,7 +855,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00760">760</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00762">762</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -865,7 +871,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00762">762</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00764">764</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -917,7 +923,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00758">758</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00760">760</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -933,7 +939,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00767">767</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00769">769</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -949,7 +955,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00764">764</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00766">766</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -1081,7 +1087,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00765">765</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00767">767</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -1223,7 +1229,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00768">768</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00770">770</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1285,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00757">757</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00759">759</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -1295,7 +1301,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00763">763</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00765">765</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -1311,7 +1317,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00759">759</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00761">761</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -1359,7 +1365,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00769">769</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00771">771</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -3379,7 +3385,23 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00527">527</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00526">526</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+
+</div>
+</div>
+<a id="a15cb97513349ed670e35c3968cf327b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15cb97513349ed670e35c3968cf327b8">&#9670;&nbsp;</a></span>C_DIVROOT_F</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define C_DIVROOT_F&#160;&#160;&#160;0.70710678118654752440084436210485f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00531">531</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -3507,7 +3529,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00531">531</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00530">530</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -4835,7 +4857,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00529">529</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00528">528</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -4867,7 +4889,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00530">530</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00529">529</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -5531,7 +5553,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00771">771</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00773">773</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6257,6 +6279,46 @@ Typedefs</h2></td></tr>
 
 </div>
 </div>
+<a id="a0b2ddf00226174ef345e2b679b12bcfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b2ddf00226174ef345e2b679b12bcfb">&#9670;&nbsp;</a></span>UNWRAP_90DEG_F32</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define UNWRAP_90DEG_F32</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">x</td><td>)</td>
+          <td>&#160;&#160;&#160;{ if((x) &lt; (-90.0f))  { (x) += (180.0f);    } if((x) &gt; (90.0f))     { (x) -= (180.0f);    } }</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00753">753</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+
+</div>
+</div>
+<a id="a860d18a6056cba6c6189e9b3183a2a84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a860d18a6056cba6c6189e9b3183a2a84">&#9670;&nbsp;</a></span>UNWRAP_90DEG_F64</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define UNWRAP_90DEG_F64</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">x</td><td>)</td>
+          <td>&#160;&#160;&#160;{ if((x) &lt; (-90.0 ))  { (x) += (180.0 );    } if((x) &gt; (90.0 ))     { (x) -= (180.0 );    } }</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00752">752</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+
+</div>
+</div>
 <a id="abea419b04c358ebac72798052720ac34"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abea419b04c358ebac72798052720ac34">&#9670;&nbsp;</a></span>UNWRAP_DEG_F32</h2>
 
@@ -6313,7 +6375,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00753">753</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00755">755</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6333,7 +6395,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00752">752</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00754">754</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6353,7 +6415,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00755">755</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00757">757</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6373,7 +6435,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00754">754</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00756">756</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6390,7 +6452,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00784">784</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00786">786</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6406,7 +6468,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00773">773</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00775">775</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6422,7 +6484,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00774">774</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00776">776</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6438,7 +6500,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00785">785</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00787">787</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6454,7 +6516,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00786">786</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00788">788</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6470,7 +6532,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00789">789</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00791">791</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6486,7 +6548,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00787">787</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00789">789</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6502,7 +6564,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00788">788</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00790">790</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6518,7 +6580,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00783">783</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00785">785</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6534,7 +6596,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00776">776</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00778">778</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6550,7 +6612,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00775">775</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00777">777</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6566,7 +6628,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00778">778</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00780">780</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6582,7 +6644,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00777">777</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00779">779</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6598,7 +6660,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00780">780</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00782">782</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6614,7 +6676,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00779">779</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00781">781</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6630,7 +6692,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00781">781</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00783">783</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>
@@ -6646,7 +6708,7 @@ Typedefs</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00782">782</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_constants_8h_source.html#l00784">784</a> of file <a class="el" href="_i_s_constants_8h_source.html">ISConstants.h</a>.</p>
 
 </div>
 </div>

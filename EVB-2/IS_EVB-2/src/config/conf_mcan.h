@@ -61,11 +61,11 @@
 /** Range: 1..64 */
 #define CONF_MCAN1_RX_FIFO_1_NUM         16  
 /** Range: 1..64 */          
-#define CONF_MCAN1_RX_BUFFER_NUM         16      
+#define CONF_MCAN1_RX_BUFFER_NUM         0	//16      
 /** Range: 1..16 */     
-#define CONF_MCAN1_TX_BUFFER_NUM         4 
+#define CONF_MCAN1_TX_BUFFER_NUM         0 
 /** Range: 1..16 */     
-#define CONF_MCAN1_TX_FIFO_QUEUE_NUM     4     
+#define CONF_MCAN1_TX_FIFO_QUEUE_NUM     8     
 /** Range: 1..32 */        
 #define CONF_MCAN1_TX_EVENT_FIFO         8             
 /** Range: 1..128 */
@@ -77,13 +77,13 @@
 #define CONF_MCAN_ELEMENT_DATA_SIZE         8
 
 /**
- * The setting of the nominal bit rate is based on the PCK5 which is 30M which you can
+ * The setting of the nominal bit rate is based on the PCK5 which is 480M which you can
  * change in the conf_clock.h. Below is the default configuration. The
- * time quanta is 30MHz / (2+1) =  10MHz. And each bit is (1 + NTSEG1 + 1 + NTSEG2 + 1) = 20 time
+ * time quanta is 20MHz / (1+1) =  10MHz. And each bit is (1 + NTSEG1 + 1 + NTSEG2 + 1) = 20 time
  * quanta which means the bit rate is 10MHz/20=500KHz.
  */
 /** Nominal bit Baud Rate Prescaler */
-#define CONF_MCAN_NBTP_NBRP_VALUE    2
+#define CONF_MCAN_NBTP_NBRP_VALUE    1
 /** Nominal bit (Re)Synchronization Jump Width */
 #define CONF_MCAN_NBTP_NSJW_VALUE    3
 /** Nominal bit Time segment before sample point */

@@ -93,14 +93,14 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 			handlerGlobal(s->inertialSenseInterface, data, pHandle);
 		}
 
-		// if we got dev info, config or flash config, set it
+		// if we got dev info, sysCmd or flash config, set it
 		if (data->hdr.id == DID_DEV_INFO)
 		{
 			s->devInfo[pHandle] = *(dev_info_t*)data->buf;
 		}
-		else if (data->hdr.id == DID_CONFIG)
+		else if (data->hdr.id == DID_SYS_CMD)
 		{
-			s->config[pHandle] = *(config_t*)data->buf;
+			s->sysCmd[pHandle] = *(system_command_t*)data->buf;
 		}
 		else if (data->hdr.id == DID_FLASH_CONFIG)
 		{
@@ -180,7 +180,7 @@ bool InertialSense::HasReceivedResponseFromDevice(size_t index)
 
 bool InertialSense::HasReceivedResponseFromAllDevices()
 {
-	if (m_comManagerState.devInfo.size() != m_comManagerState.config.size() || m_comManagerState.config.size() != m_comManagerState.flashConfig.size())
+	if (m_comManagerState.devInfo.size() != m_comManagerState.sysCmd.size() || m_comManagerState.sysCmd.size() != m_comManagerState.flashConfig.size())
 	{
 		return false;
 	}
@@ -200,7 +200,7 @@ void InertialSense::RemoveDevice(size_t index)
 	serialPortClose(&m_comManagerState.serialPorts[index]);
 	m_comManagerState.serialPorts.erase(m_comManagerState.serialPorts.begin() + index);
 	m_comManagerState.devInfo.erase(m_comManagerState.devInfo.begin() + index);
-	m_comManagerState.config.erase(m_comManagerState.config.begin() + index);
+	m_comManagerState.sysCmd.erase(m_comManagerState.sysCmd.begin() + index);
 	m_comManagerState.flashConfig.erase(m_comManagerState.flashConfig.begin() + index);
 }
 
@@ -477,7 +477,7 @@ void InertialSense::Close()
 		serialPortClose(&m_comManagerState.serialPorts[i]);
 	}
 	m_comManagerState.serialPorts.clear();
-	m_comManagerState.config.clear();
+	m_comManagerState.sysCmd.clear();
 	m_comManagerState.devInfo.clear();
 	m_comManagerState.flashConfig.clear();
 	CloseServerConnection();
@@ -522,11 +522,11 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 	}
 }
 
-void InertialSense::SetConfig(const config_t& config, int pHandle)
+void InertialSense::SetSysCmd(const system_command_t& sysCmd, int pHandle)
 {
-	m_comManagerState.config[pHandle] = config;
-	// [C COMM INSTRUCTION]  Update the entire DID_CONFIG data set in the uINS.  
-	comManagerSendData(pHandle, DID_CONFIG, &m_comManagerState.config[pHandle], sizeof(config), 0);
+	m_comManagerState.sysCmd[pHandle] = sysCmd;
+	// [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.  
+	comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.sysCmd[pHandle], sizeof(sysCmd), 0);
 }
 
 void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHandle)
@@ -578,6 +578,11 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 
 vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, bool updateBootloader)
 {
+	return BootloadFile(comPort, fileName, "", baudRate, uploadProgress, verifyProgress, NULLPTR, updateBootloader);
+}
+
+vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, const string& bootloaderFileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, bool updateBootloader)
+{
 	vector<bootloader_result_t> results;
 	vector<string> portStrings;
 	vector<bootloader_state_t> state;
@@ -615,7 +620,9 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
 			state[i].param.uploadProgress = uploadProgress;
 			state[i].param.verifyProgress = verifyProgress;
+			state[i].param.statusText = infoProgress;
 			state[i].param.fileName = fileName.c_str();
+			state[i].param.bootName = bootloaderFileName.c_str();
 			state[i].param.port = &state[i].serial;
 			state[i].param.verifyFileName = NULLPTR;
 			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
@@ -746,9 +753,9 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	}
 
 	// re-initialize data sets
-	config_t configTemplate;
+	system_command_t configTemplate;
 	memset(&configTemplate, 0, sizeof(configTemplate));
-	m_comManagerState.config.resize(m_comManagerState.serialPorts.size(), configTemplate);
+	m_comManagerState.sysCmd.resize(m_comManagerState.serialPorts.size(), configTemplate);
 	dev_info_t devInfoTemplate;
 	memset(&devInfoTemplate, 0, sizeof(devInfoTemplate));
 	m_comManagerState.devInfo.resize(m_comManagerState.serialPorts.size(), devInfoTemplate);
@@ -766,7 +773,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	{
 		for (size_t i = 0; i < m_comManagerState.serialPorts.size(); i++)
 		{
-			comManagerGetData((int)i, DID_CONFIG, 0, 0, 0);
+			comManagerGetData((int)i, DID_SYS_CMD, 0, 0, 0);
 			comManagerGetData((int)i, DID_DEV_INFO, 0, 0, 0);
 			comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
 		}

@@ -63,10 +63,11 @@ double flipDoubleCopy(double val)
 	{
 		double v;
 		uint32_t w[2];
-	} u;
-	u.w[1] = SWAP32(*(uint32_t*)&val);
-	u.w[0] = SWAP32(*((uint32_t*)&val + 1));
-	return u.v;
+	} u1, u2;
+	u1.v = val;
+	u2.w[1] = SWAP32(u1.w[0]);
+	u2.w[0] = SWAP32(u1.w[1]);
+	return u2.v;
 }
 
 void flipEndianess32(uint8_t* data, int dataLength)
@@ -192,18 +193,16 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
     static uint16_t offsetsPreImuMag[] =
     {
-        3,
+        2,
         offsetof(pimu_mag_t, pimu.time),
-        offsetof(pimu_mag_t, mag1.time),
-        offsetof(pimu_mag_t, mag2.time)
+        offsetof(pimu_mag_t, mag.time),
     };
 
     static uint16_t offsetsDualImuMag[] =
     {
-        3,
+        2,
         offsetof(imu_mag_t, imu.time),
-        offsetof(imu_mag_t, mag1.time),
-        offsetof(imu_mag_t, mag2.time)
+        offsetof(imu_mag_t, mag.time),
     };
 
 	static uint16_t offsetsGps[] =
@@ -268,7 +267,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsIns1,			//  4: DID_INS_1
 		offsetsIns2,			//  5: DID_INS_2
 		offsetsGps,				//  6: DID_GPS1_POS
-        0,  					//  7: DID_CONFIG
+        0,  					//  7: DID_SYS_CMD
 		0,						//  8: DID_ASCII_BCAST_PERIOD
 		offsetsRmc,				//  9: DID_RMC
 		offsetsSysParams,		// 10: DID_SYS_PARAMS
@@ -313,7 +312,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
 		0,                      // 51: DID_INL2_STATUS,
-		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER_1
+		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER
 		offsetsOnlyTimeFirst,	// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
 		offsetsOnlyTimeFirst,	// 55: DID_MAGNETOMETER_2
@@ -418,7 +417,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  4: DID_INS_1
 		0,						//  5: DID_INS_2
 		0,						//  6: DID_GPS1_POS
-		0,						//  7: DID_CONFIG
+		0,						//  7: DID_SYS_CMD
 		0,						//  8: DID_ASCII_BCAST_PERIOD
 		0,						//  9: DID_RMC
 		0,						// 10: DID_SYS_PARAMS
@@ -463,7 +462,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
 		0,                      // 51: DID_INL2_STATUS
-		0,						// 52: DID_MAGNETOMETER_1
+		0,						// 52: DID_MAGNETOMETER
 		0,						// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
 		0,						// 55: DID_MAGNETOMETER_2
@@ -485,7 +484,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 71: DID_WHEEL_ENCODER
 		diagMsgOffsets, 		// 72: DID_DIAGNOSTIC_MESSAGE
 		0,                      // 73: DID_SURVEY_IN
-        0,                      // 74: EMPTY
+        0,                      // 74: DID_CAL_SC_INFO
         0,                      // 75: DID_PORT_MONITOR
         0,                      // 76: DID_RTK_STATE
         0,                      // 77: DID_RTK_RESIDUAL
@@ -498,11 +497,11 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 84: DID_DUAL_IMU_RAW_MAG
 		0,						// 85: DID_DUAL_IMU_MAG
 		0,						// 86: DID_PREINTEGRATED_IMU_MAG
-		0,
-		0,
-		0,
-		0,
-		0
+		0,						// 87: DID_WHEEL_CONFIG
+		0,						// 88: DID_POSITION_MEASUREMENT
+		0,						// 89: DID_RTK_DEBUG_2
+		0,						// 90: DID_CAN_CONFIG
+		0						// 91: 
     };
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -563,8 +562,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_DUAL_IMU:				return RMC_BITS_DUAL_IMU;
 		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
-		case DID_MAGNETOMETER_1:		return RMC_BITS_MAGNETOMETER1;
-		case DID_MAGNETOMETER_2:		return RMC_BITS_MAGNETOMETER2;
+		case DID_MAGNETOMETER:			return RMC_BITS_MAGNETOMETER;
 		case DID_GPS1_POS:				return RMC_BITS_GPS1_POS;
 		case DID_GPS2_POS:				return RMC_BITS_GPS2_POS;
 		case DID_GPS1_VEL:				return RMC_BITS_GPS1_VEL;
@@ -714,7 +712,7 @@ static void appendGPSTimeOfLastFix(const gps_pos_t* gps, char** buffer, int* buf
 
 static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLength, double v, const char* degreesFormat, char posC, char negC)
 {
-	(void*)gps;
+	(void)gps;
     int degrees = (int)(v);
     double minutes = (v - ((double)degrees)) * 60.0;
 

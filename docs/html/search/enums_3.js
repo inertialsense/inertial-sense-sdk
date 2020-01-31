@@ -2,7 +2,6 @@ var searchData=
 [
   ['ebitstate',['eBitState',['../data__sets_8h.html#aba5f1c941f1d2ee0acde1f3dd3921844',1,'data_sets.h']]],
   ['ecalbitstatusflags',['eCalBitStatusFlags',['../data__sets_8h.html#a2382ce9663b8b75e2819f77d6b8da742',1,'data_sets.h']]],
-  ['econfigsystem',['eConfigSystem',['../data__sets_8h.html#af636f701dd6262687813b9dfefcd0f32',1,'data_sets.h']]],
   ['edatatype',['eDataType',['../_data_c_s_v_8h.html#acc461328b82c34604e8b428326a52183',1,'DataCSV.h']]],
   ['edisplaymode',['eDisplayMode',['../classc_inertial_sense_display.html#a7fc8e1c31c742b8a345603c9a0ab28a8',1,'cInertialSenseDisplay']]],
   ['eevb2combridgeoptions',['eEvb2ComBridgeOptions',['../data__sets_8h.html#a7fccaf5eb5dc1f495292e989f19fd010',1,'data_sets.h']]],
@@ -32,5 +31,6 @@ var searchData=
   ['esensorconfig',['eSensorConfig',['../data__sets_8h.html#ab3168be6810eb262cd4e4881e49171df',1,'data_sets.h']]],
   ['esurveyinstatus',['eSurveyInStatus',['../data__sets_8h.html#a83bd7219c131eb152addd83d0473caf6',1,'data_sets.h']]],
   ['esysconfigbits',['eSysConfigBits',['../data__sets_8h.html#a3c82b64b5533be2134a096f86d099d85',1,'data_sets.h']]],
+  ['esystemcommand',['eSystemCommand',['../data__sets_8h.html#a301048209010e12baf519f36c5fffe8e',1,'data_sets.h']]],
   ['ewheelcfgbits',['eWheelCfgBits',['../data__sets_8h.html#a905ce0d4d2ec77f5f45ebd3d7d96f23d',1,'data_sets.h']]]
 ];

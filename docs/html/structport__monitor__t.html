@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -76,85 +76,27 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a36ddb61880040a5135209e4bf909d6ab"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structport__monitor__t.html#a36ddb61880040a5135209e4bf909d6ab">portNumber</a></td></tr>
-<tr class="separator:a36ddb61880040a5135209e4bf909d6ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9f953baec88caa41bd9c52c0eb20fd9"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structport__monitor__t.html#ac9f953baec88caa41bd9c52c0eb20fd9">txBytesPerS</a></td></tr>
-<tr class="separator:ac9f953baec88caa41bd9c52c0eb20fd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c00538b32a7542f4b996bf973943f91"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structport__monitor__t.html#a2c00538b32a7542f4b996bf973943f91">rxBytesPerS</a></td></tr>
-<tr class="separator:a2c00538b32a7542f4b996bf973943f91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cf3b3930c5fc5879cd0ce549af52dc2"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structport__monitor__t.html#a4cf3b3930c5fc5879cd0ce549af52dc2">status</a></td></tr>
-<tr class="separator:a4cf3b3930c5fc5879cd0ce549af52dc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15b289a2228961dd344b0ff45e895889"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structport__monitor__set__t.html">port_monitor_set_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structport__monitor__t.html#a15b289a2228961dd344b0ff45e895889">port</a> [<a class="el" href="data__sets_8h.html#a05779bed141f5ca2d7aee78aab15dad7">NUM_COM_PORTS</a>]</td></tr>
+<tr class="separator:a15b289a2228961dd344b0ff45e895889"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>(DID_PORT_MONITOR) Data rate and status monitoring for each communications port. </p>
-
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02802">2802</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02867">2867</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="a36ddb61880040a5135209e4bf909d6ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36ddb61880040a5135209e4bf909d6ab">&#9670;&nbsp;</a></span>portNumber</h2>
+<a id="a15b289a2228961dd344b0ff45e895889"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15b289a2228961dd344b0ff45e895889">&#9670;&nbsp;</a></span>port</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t port_monitor_t::portNumber</td>
+          <td class="memname"><a class="el" href="structport__monitor__set__t.html">port_monitor_set_t</a> port_monitor_t::port[<a class="el" href="data__sets_8h.html#a05779bed141f5ca2d7aee78aab15dad7">NUM_COM_PORTS</a>]</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Com port number </p>
+<p>Port monitor set </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02805">2805</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
-
-</div>
-</div>
-<a id="a2c00538b32a7542f4b996bf973943f91"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c00538b32a7542f4b996bf973943f91">&#9670;&nbsp;</a></span>rxBytesPerS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t port_monitor_t::rxBytesPerS</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Rx time ms Rx rate (bytes/s) </p>
-
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02817">2817</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
-
-</div>
-</div>
-<a id="a4cf3b3930c5fc5879cd0ce549af52dc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4cf3b3930c5fc5879cd0ce549af52dc2">&#9670;&nbsp;</a></span>status</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t port_monitor_t::status</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Status </p>
-
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02820">2820</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
-
-</div>
-</div>
-<a id="ac9f953baec88caa41bd9c52c0eb20fd9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac9f953baec88caa41bd9c52c0eb20fd9">&#9670;&nbsp;</a></span>txBytesPerS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t port_monitor_t::txBytesPerS</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Tx time ms Tx rate (bytes/s) </p>
-
-<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02811">2811</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8h_source.html#l02870">2870</a> of file <a class="el" href="data__sets_8h_source.html">data_sets.h</a>.</p>
 
 </div>
 </div>

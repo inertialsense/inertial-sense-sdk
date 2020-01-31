@@ -336,7 +336,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			break;
 
 			// Time since boot - double
-		case DID_MAGNETOMETER_1:
+		case DID_MAGNETOMETER:
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
 		case DID_PREINTEGRATED_IMU:
@@ -514,8 +514,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
 	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
-	case DID_MAGNETOMETER_1:
-	case DID_MAGNETOMETER_2:    str = DataToStringMag(d.mag, data->hdr);                break;
+	case DID_MAGNETOMETER:
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
 	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);              break;
 	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_POS");		break;
@@ -934,9 +933,7 @@ string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	int i = 0;
-	if (hdr.id == DID_MAGNETOMETER_2) i = 1;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_MAGNETOMETER_%d:", i + 1);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_MAGNETOMETER:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime[2] = { 0 };
@@ -974,12 +971,12 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 	char* ptrEnd = buf + BUF_SIZE;
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_MAG_CAL:");
 
-	switch (mag.enMagRecal)
+	switch (mag.recalCmd)
 	{
-	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d,               ", mag.enMagRecal);	break;
-	case MAG_RECAL_MODE_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d (MULTI-AXIS ), ", mag.enMagRecal);	break;
-	case MAG_RECAL_MODE_SINGLE_AXIS:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d (SINGLE-AXIS), ", mag.enMagRecal);	break;
-	case MAG_RECAL_MODE_COMPLETE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  enMagRecal %3d (COMPLETE!  ), ", mag.enMagRecal);	break;
+	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d,               ", mag.recalCmd);	break;
+	case MAG_RECAL_CMD_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (MULTI-AXIS ), ", mag.recalCmd);	break;
+	case MAG_RECAL_CMD_SINGLE_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (SINGLE-AXIS), ", mag.recalCmd);	break;
+	case MAG_RECAL_CMD_ABORT:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (ABORT      ), ", mag.recalCmd);	break;
 	}
 
 	{	// Single line format
@@ -1079,12 +1076,13 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 			{ 
 				ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing, "); 
 			}
-			else
+			if (gps.status&GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR)		{ ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error, "); }
+			switch (gps.status&GPS_STATUS_FLAGS_ERROR_MASK)
 			{
-				if (gps.status&GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, "); }
+			case GPS_STATUS_FLAGS_RTK_BASE_DATA_MISSING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing, ");	break;
+			case GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, ");	break;
+			case GPS_STATUS_FLAGS_RTK_BASE_POSITION_INVALID:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");	break;
 			}
-			if (gps.status&GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error, "); }
-			if (gps.status&GPS_STATUS_FLAGS_RTK_NO_BASE_POSITION) { ptr += SNPRINTF(ptr, ptrEnd - ptr, "No base position, "); }
 		}
 	}
 
@@ -1352,7 +1350,7 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 	{    // Spacious format
 		ss << "\n";
 #define SADC_WIDTH	5
-		for (size_t i = 0; i < NUM_MPU_DEVICES; ++i)
+		for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
 		{
 			auto &mpu = sensorsADC.mpu[i];
 			ss << "\tmpu[" << i << "]: " << setprecision(0);
@@ -1365,7 +1363,7 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 	}
 	else
 	{
-		for (size_t i = 0; i < NUM_MPU_DEVICES; ++i)
+		for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
 		{
 			auto &mpu = sensorsADC.mpu[i];
 			ss << "mpu[" << i << "]: " << setprecision(0);

@@ -42,7 +42,7 @@ bool cISLogFileFatFs::open(const char* filePath, const char* mode)
     bool append = false;
     char fullFilePath[256];
     strncpy(fullFilePath, DRIVE, sizeof(fullFilePath));
-    strncat(fullFilePath, filePath, strnlen(fullFilePath, sizeof(fullFilePath)));
+    strncat(fullFilePath, filePath, _MIN(strlen(fullFilePath), sizeof(fullFilePath)));
 	
     if (strncmp(mode, "r", MAX_MODE_LEN) == 0)
     {

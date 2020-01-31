@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.7.6</span>
+   &#160;<span id="projectnumber">Release 1.8.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -85,8 +85,14 @@ $(function() {
 <li>parseAsciiPacket()
 : <a class="el" href="com__manager_8c.html#aaa0cccdf3490b0effcce07fed8460953">com_manager.c</a>
 </li>
+<li>parseDataPortTxBuf()
+: <a class="el" href="test__com__manager_8cpp.html#a6c0e5cd5398214ecb741d424a0b17f2e">test_com_manager.cpp</a>
+</li>
 <li>pfnBootloadProgress
 : <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">inertialSenseBootLoader.h</a>
+</li>
+<li>pfnBootloadStatus
+: <a class="el" href="inertial_sense_boot_loader_8h.html#a871ef77795d0f1bfb333352cb3bdfb8f">inertialSenseBootLoader.h</a>
 </li>
 <li>pfnComManagerAsapMsg
 : <a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">com_manager.h</a>
@@ -158,8 +164,8 @@ $(function() {
 : <a class="el" href="_inertial_sense_8h.html#ae91e5ac049ad4acb571f0fafd9af22f5">InertialSense.h</a>
 </li>
 <li>phiThetaDCM()
-: <a class="el" href="_i_s_pose_8h.html#a7eddd51a3b2904561be462b22eeb03b6">ISPose.h</a>
-, <a class="el" href="_i_s_pose_8c.html#a7eddd51a3b2904561be462b22eeb03b6">ISPose.c</a>
+: <a class="el" href="_i_s_pose_8c.html#a7eddd51a3b2904561be462b22eeb03b6">ISPose.c</a>
+, <a class="el" href="_i_s_pose_8h.html#a7eddd51a3b2904561be462b22eeb03b6">ISPose.h</a>
 </li>
 <li>PID_ACK
 : <a class="el" href="_i_s_comm_8h.html#aa6a3b4bc4d7eefb123d1e6e954b7978b">ISComm.h</a>
@@ -209,8 +215,17 @@ $(function() {
 <li>POP_PACK
 : <a class="el" href="_i_s_constants_8h.html#a2149ebad4d6576b844e9c8ec46e63247">ISConstants.h</a>
 </li>
+<li>portRead()
+: <a class="el" href="test__com__manager_8cpp.html#a11d68905ae8796b2df312d6f41ab6dad">test_com_manager.cpp</a>
+</li>
+<li>portWrite()
+: <a class="el" href="test__com__manager_8cpp.html#a6e2a9f24a37e641557ac2069a5fbae56">test_com_manager.cpp</a>
+</li>
 <li>pos_measurement_t
 : <a class="el" href="data__sets_8h.html#a713b33bbe892992b28336fc8909d89f3">data_sets.h</a>
+</li>
+<li>postRxRead()
+: <a class="el" href="test__com__manager_8cpp.html#ae037fdf43960ed7936190b25b3f00499">test_com_manager.cpp</a>
 </li>
 <li>POWA2
 : <a class="el" href="_i_s_earth_8c.html#a56e72ee0750724089d9a2cb081dc10ba">ISEarth.c</a>
@@ -229,6 +244,9 @@ $(function() {
 </li>
 <li>preintegrated_imu_t
 : <a class="el" href="data__sets_8h.html#af59a568f18fff81da1fe67d0fbdb91fa">data_sets.h</a>
+</li>
+<li>prepDevInfo()
+: <a class="el" href="test__com__manager_8cpp.html#aca55aaf0d023660b7fbf56fbd7759385">test_com_manager.cpp</a>
 </li>
 <li>PRINTV3_LLA
 : <a class="el" href="_i_s_display_8cpp.html#a218f596ed1b3d0b609e7b585364a7df1">ISDisplay.cpp</a>
@@ -297,8 +315,8 @@ $(function() {
 : <a class="el" href="_i_s_comm_8h.html#a739834da5d5205125ac7115741c30c63ab65949193083fea6f789b9b447df716f">ISComm.h</a>
 </li>
 <li>psiDCM()
-: <a class="el" href="_i_s_pose_8h.html#a4dfac86062da16bf4a30d46478978dc1">ISPose.h</a>
-, <a class="el" href="_i_s_pose_8c.html#a4dfac86062da16bf4a30d46478978dc1">ISPose.c</a>
+: <a class="el" href="_i_s_pose_8c.html#a4dfac86062da16bf4a30d46478978dc1">ISPose.c</a>
+, <a class="el" href="_i_s_pose_8h.html#a4dfac86062da16bf4a30d46478978dc1">ISPose.h</a>
 </li>
 <li>PUSH_PACK_1
 : <a class="el" href="_i_s_constants_8h.html#a5cf8424fec96baad5919dfb1c4a8dc71">ISConstants.h</a>
@@ -310,7 +328,7 @@ $(function() {
 : <a class="el" href="_i_s_constants_8h.html#a06fc0272607b15fe95c9dd4504339918">ISConstants.h</a>
 </li>
 <li>PYBIND11_NUMPY_DTYPE()
-: <a class="el" href="pybind_macros_8h.html#a813801e21dab69cecc08550baf28d636">pybindMacros.h</a>
+: <a class="el" href="pybind_macros_8h.html#a685f5ff13707757150928ad075beb5a3">pybindMacros.h</a>
 </li>
 </ul>
 </div><!-- contents -->

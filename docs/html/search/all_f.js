@@ -44,5 +44,6 @@ var searchData=
   ['options',['options',['../struct_p_a_c_k_e_d.html#a2fc5b85d6ca7828bedab08e5f019c2f6',1,'PACKED']]],
   ['orderid',['orderId',['../classc_csv_log.html#a55fd099b3166a73aad8c0855ac129615',1,'cCsvLog']]],
   ['outsingle',['outsingle',['../structprcopt__t.html#a9516076388346a269e57d8b99116dc96',1,'prcopt_t']]],
+  ['overlap_5fsize',['OVERLAP_SIZE',['../test__ring__buffer_8cpp.html#a9d756b507dc8649cb7dc34d4453e6897',1,'test_ring_buffer.cpp']]],
   ['override',['OVERRIDE',['../_i_s_constants_8h.html#a5dea698950629d9e51d19c1a25be1c30',1,'ISConstants.h']]]
 ];

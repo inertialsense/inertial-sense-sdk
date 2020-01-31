@@ -58,13 +58,17 @@ var searchData=
   ['nsysqzs',['NSYSQZS',['../data__sets_8h.html#a9258a7cf7827cca88765cd2092079aed',1,'data_sets.h']]],
   ['nullptr',['NULLPTR',['../_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab',1,'ISConstants.h']]],
   ['num_5fana_5fchannels',['NUM_ANA_CHANNELS',['../data__sets_8h.html#adc0ebc53352a35cff03fc0605e7adb32',1,'data_sets.h']]],
+  ['num_5fcids',['NUM_CIDS',['../data__sets_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba930ea0c5e5973d40d090ed551c257902',1,'data_sets.h']]],
   ['num_5fcom_5fports',['NUM_COM_PORTS',['../data__sets_8h.html#a05779bed141f5ca2d7aee78aab15dad7',1,'data_sets.h']]],
+  ['num_5fdata_5fsets',['NUM_DATA_SETS',['../test__com__manager_8cpp.html#a092a77a3a2e72e5277041132ec1f52a3',1,'test_com_manager.cpp']]],
   ['num_5fensured_5fpkts',['NUM_ENSURED_PKTS',['../_inertial_sense_8cpp.html#aaabb5477eff7d77a3bef686aec624bb2',1,'InertialSense.cpp']]],
-  ['num_5fmpu_5fdevices',['NUM_MPU_DEVICES',['../data__sets_8h.html#a592571c372ff07778a04afdf3b397c04',1,'data_sets.h']]],
+  ['num_5fimu_5fdevices',['NUM_IMU_DEVICES',['../data__sets_8h.html#a7dc08dfda4a663c58539344430561bcb',1,'data_sets.h']]],
   ['num_5fwifi_5fpresets',['NUM_WIFI_PRESETS',['../data__sets_8h.html#acd9d958b26ea6c7f2e160652058a4b55',1,'data_sets.h']]],
+  ['number_5fof_5fascii_5fbroadcast_5fmessages',['NUMBER_OF_ASCII_BROADCAST_MESSAGES',['../test__com__manager_8cpp.html#a5468ef8d35909886c677226056bce7e3',1,'test_com_manager.cpp']]],
   ['numberofdevices',['numberOfDevices',['../structbootload__params__t.html#a9503237f9c9e527a60158ee62822ab76',1,'bootload_params_t']]],
   ['numhandes',['numHandes',['../structcom__manager__t.html#ab98e59906ef79731a315b0f404f17bc3',1,'com_manager_t']]],
   ['numsats',['numSats',['../struct_p_a_c_k_e_d.html#ae1e425949e40c3901b694e8ecd061dfe',1,'PACKED']]],
   ['numsatsol',['NUMSATSOL',['../data__sets_8h.html#a583574347befba372f5b412b2246e00b',1,'data_sets.h']]],
-  ['nvm_5fflash_5fcfg_5ft',['nvm_flash_cfg_t',['../data__sets_8h.html#a2da4c900f67c180a00158238ba77bacc',1,'data_sets.h']]]
+  ['nvm_5fflash_5fcfg_5ft',['nvm_flash_cfg_t',['../data__sets_8h.html#a2da4c900f67c180a00158238ba77bacc',1,'data_sets.h']]],
+  ['nvmflashcfg',['nvmFlashCfg',['../structtest__data__t.html#a630170b4faba28bcc0283573b746ffc4',1,'test_data_t']]]
 ];

@@ -65,10 +65,19 @@
  */
 //! @{
 
-// Hardware Detection Pins
-#define HDW_DETECT_0_GPIO           (PIO_PC0_IDX)
-#define HDW_DETECT_1_GPIO           (PIO_PC1_IDX)
-#define HDW_DETECT_2_GPIO           (PIO_PC2_IDX)
+// Hardware Versions
+// SAMS70N20B <=IMX-3.1
+// SAME70Q20B >=IMX3.2
+// SAME70Q20B EVB-2
+
+// EVB-2 Hardware Detection Pins
+#define EVB_HDW_DETECT_0_GPIO       (PIO_PC0_IDX)
+#define EVB_HDW_DETECT_1_GPIO       (PIO_PC1_IDX)
+#define EVB_HDW_DETECT_2_GPIO       (PIO_PC2_IDX)
+
+#define HDW_DETECT_VER_EVB_2_0_0	0
+#define HDW_DETECT_VER_EVB_2_0_1	1
+
 
 // uINS Ser0 UART
 #define UART_INS_SER0_RXD_PIN       (PIO_PA5_IDX)
@@ -151,7 +160,7 @@
 
 // External Radio UART
 #define UART_EXT_RADIO_RXD_PIN		(PIO_PD25_IDX)
-#define UART_EXT_RADIO_RXD_FLAGS	(IOPORT_MODE_MUX_C)
+#define UART_EXT_RADIO_RXD_FLAGS	(IOPORT_MODE_MUX_C | IOPORT_MODE_PULLUP)
 #define UART_EXT_RADIO_TXD_PIN		(PIO_PD26_IDX)
 #define UART_EXT_RADIO_TXD_FLAGS	(IOPORT_MODE_MUX_C)
 #define EXT_RADIO_RST				(PIO_PD7_IDX)
@@ -211,7 +220,7 @@
 
 // GPIO UART
 #define GPIO_H8_UART_RXD_PIN		(PIO_PA21_IDX)
-#define GPIO_H8_UART_RXD_FLAGS	    (IOPORT_MODE_MUX_A)
+#define GPIO_H8_UART_RXD_FLAGS	    (IOPORT_MODE_MUX_A | IOPORT_MODE_PULLUP)
 #define GPIO_H8_UART_TXD_PIN		(PIO_PB4_IDX)
 #define GPIO_H8_UART_TXD_FLAGS	    (IOPORT_MODE_MUX_D)
 
@@ -222,7 +231,7 @@
 #define LED_OFF(led)                ioport_set_pin_level(led,IOPORT_PIN_LEVEL_HIGH)
 #define LED_ON(led)                 ioport_set_pin_level(led,IOPORT_PIN_LEVEL_LOW)
 #define LED_TOGGLE(led)             ioport_toggle_pin_level(led)
-// LED - Config
+// EVB - LED - Config
 #define LED_CFG_RED_PIN			    (PIO_PD6_IDX)
 #define LED_CFG_GRN_PIN			    (PIO_PA13_IDX)
 #define LED_CFG_BLU_PIN			    (PIO_PD3_IDX)
@@ -235,7 +244,7 @@
 #define LED_CFG_WHITE()             { LED_ON(LED_CFG_RED_PIN); LED_ON(LED_CFG_GRN_PIN); LED_ON(LED_CFG_BLU_PIN); }
 #define LED_CFG_OFF()               { LED_OFF(LED_CFG_RED_PIN); LED_OFF(LED_CFG_GRN_PIN); LED_OFF(LED_CFG_BLU_PIN); }
 
-// LED - Logger
+// EVB - LED - Logger
 #define LED_LOG_RED_PIN			    (PIO_PA11_IDX)
 #define LED_LOG_GRN_PIN			    (PIO_PD23_IDX)
 #define LED_LOG_BLU_PIN			    (PIO_PA12_IDX)
@@ -307,8 +316,9 @@
 #ifndef ioport_set_pin_output_mode
 #define ioport_set_pin_output_mode(pin, level) \
 	do {\
-		ioport_set_pin_dir(pin, IOPORT_DIR_OUTPUT);\
+ 		ioport_enable_pin(pin);\
 		ioport_set_pin_level(pin, level);\
+		ioport_set_pin_dir(pin, IOPORT_DIR_OUTPUT);\
 	} while (0)
 #endif // ioport_set_pin_output_mode
 
@@ -322,13 +332,13 @@
 #define CONSOLE_UART_ID     (ID_USART1)
 /** USART1 pins definitions, PA21,PB4. */
 #define USART1_RXD_GPIO     (PIO_PA21_IDX)
-#define USART1_RXD_FLAGS    (IOPORT_MODE_MUX_A)
+#define USART1_RXD_FLAGS    (IOPORT_MODE_MUX_A | IOPORT_MODE_PULLUP)
 #define USART1_TXD_GPIO     (PIO_PB4_IDX)
 #define USART1_TXD_FLAGS    (IOPORT_MODE_MUX_D)
 
 // /** USART0 pins definitions, PB0,PB1. */
 // #define USART0_RXD_GPIO   (PIO_PB0_IDX
-// #define USART0_RXD_FLAGS  (IOPORT_MODE_MUX_C)
+// #define USART0_RXD_FLAGS  (IOPORT_MODE_MUX_C | IOPORT_MODE_PULLUP)
 // #define USART0_TXD_GPIO   (PIO_PB1_IDX)
 // #define USART0_TXD_FLAGS  (IOPORT_MODE_MUX_C)
 

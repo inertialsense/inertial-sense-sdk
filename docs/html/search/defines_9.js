@@ -8,6 +8,7 @@ var searchData=
   ['is_5fbaud_5frate_5fbootloader',['IS_BAUD_RATE_BOOTLOADER',['../inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489',1,'inertialSenseBootLoader.h']]],
   ['is_5fbaud_5frate_5fbootloader_5flegacy',['IS_BAUD_RATE_BOOTLOADER_LEGACY',['../inertial_sense_boot_loader_8h.html#a404c96d6000a762c614a00847fd6a821',1,'inertialSenseBootLoader.h']]],
   ['is_5fbaud_5frate_5fbootloader_5frs232',['IS_BAUD_RATE_BOOTLOADER_RS232',['../inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d',1,'inertialSenseBootLoader.h']]],
+  ['is_5fbaud_5frate_5fbootloader_5fslow',['IS_BAUD_RATE_BOOTLOADER_SLOW',['../inertial_sense_boot_loader_8h.html#a3dd40c53dede7af6b3ef8ac95805fd41',1,'inertialSenseBootLoader.h']]],
   ['is_5fcom_5fbaudrate_5fdefault',['IS_COM_BAUDRATE_DEFAULT',['../_i_s_comm_8h.html#a8f9086b9c33b305c89fc841a8f10a4a7',1,'ISComm.h']]],
   ['is_5fdata_5fmapping_5fmax_5fstring_5flength',['IS_DATA_MAPPING_MAX_STRING_LENGTH',['../_data_c_s_v_8h.html#af2dd5abd54a80131d81441faf59d9c81',1,'DataCSV.h']]],
   ['is_5flog_5ffile_5fprefix',['IS_LOG_FILE_PREFIX',['../_device_log_8h.html#a95335e05336c16fb604061b4cd451120',1,'DeviceLog.h']]],
