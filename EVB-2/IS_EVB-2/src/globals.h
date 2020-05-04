@@ -18,9 +18,9 @@ extern "C" {
 #endif
 
 #include <asf.h>
-#include "../../../../SDK/src/ISComm.h"
-#include "../../../../SDK/src/data_sets.h"
-#include "../../../../SDK/src/ISConstants.h"
+#include "../../../src/ISComm.h"
+#include "../../../src/data_sets.h"
+#include "../../../src/ISConstants.h"
 #include "../../../hw-libs/misc/bootloaderShared.h"
 #include "../../../hw-libs/misc/rtos.h"
 #include "../../../hw-libs/drivers/d_usartDMA.h"

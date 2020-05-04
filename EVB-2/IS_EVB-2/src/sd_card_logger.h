@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __SD_CARD_LOGGER_H_
 
 #include "globals.h"
-#include "../../../../SDK/src/ISLogger.h"
+#include "../../../src/ISLogger.h"
 
 void update_led_log(void);
 

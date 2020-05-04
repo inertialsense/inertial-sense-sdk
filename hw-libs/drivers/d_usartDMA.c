@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "d_dma.h"
 #include "usart.h"
-#include "../../../SDK/src/ISComm.h"
+#include "../../src/ISComm.h"
 #include "board_opt.h"
 #include "globals.h"
 

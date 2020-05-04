@@ -11,8 +11,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <asf.h>
-#include "../../../../SDK/src/ISUtilities.h"
-#include "../../../../SDK/src/ISLogger.h"
+#include "../../../src/ISUtilities.h"
+#include "../../../src/ISLogger.h"
 #include "globals.h"
 #include "ISLogFileFatFs.h"
 #include "communications.h"

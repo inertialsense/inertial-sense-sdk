@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "sd_card_logger.h"
 #include "communications.h"
 #include "CAN.h"
-#include "../../SDK/hw-libs/communications/CAN_comm.h"
+#include "../hw-libs/communications/CAN_comm.h"
 
 StreamBufferHandle_t        g_xStreamBufferUINS;
 StreamBufferHandle_t        g_xStreamBufferWiFiRx;

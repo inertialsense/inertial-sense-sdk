@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <asf.h>
 #include <string.h>
-#include "../../../SDK/src/data_sets.h"
+#include "../../src/data_sets.h"
 #include "../../hw-libs/misc/rtos.h"
 #include "bootloaderApp.h"
 

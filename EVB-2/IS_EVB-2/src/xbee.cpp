@@ -15,7 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "conf_board.h"
 #include "drivers/d_usartDMA.h"
 #include "globals.h"
-#include "../../../../SDK/src/ISComm.h"
+#include "../../../src/ISComm.h"
 #include "xbee.h"
 
 using namespace std;

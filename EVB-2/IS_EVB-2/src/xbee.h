@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __XBEE_H__
 #define __XBEE_H__
 
-#include "../../../../SDK/src/ISComm.h"
+#include "../../../src/ISComm.h"
 
 #ifdef __cplusplus
 extern "C" {

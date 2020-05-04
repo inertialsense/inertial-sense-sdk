@@ -50,7 +50,7 @@
 #endif
 #include "sysclk.h"
 #include "../drivers/d_time.h"
-#include "../../../../../SDK/src/data_sets.h"
+#include "../../../../src/data_sets.h"
 
 #define configUSE_PREEMPTION					1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION	1

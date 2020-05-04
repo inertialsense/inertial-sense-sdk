@@ -16,8 +16,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include "globals.h"
 #include "spiTouINS.h"
-#include "../../../../SDK/src/ISLogger.h"
-#include "../../SDK/hw-libs/communications/CAN_comm.h"
+#include "../../../src/ISLogger.h"
+#include "../hw-libs/communications/CAN_comm.h"
 
 
 extern bool                     g_usb_cdc_open;

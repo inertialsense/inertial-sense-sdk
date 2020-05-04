@@ -39,7 +39,7 @@
 #include "conf_board.h"
 #include "ioport.h"
 #include "pio.h"
-#include "../../../../../../../../SDK/src/data_sets.h"
+#include "../../../../../../../src/data_sets.h"
 #include "../../../../../../../hw-libs/drivers/d_usartDMA.h"
 #include "../../../../drivers/d_time.h"
 #include "../../../../spiTouINS.h"
