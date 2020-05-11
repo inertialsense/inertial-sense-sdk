@@ -283,7 +283,7 @@ void qe2b2EulerNedEcef(Vector3 eul, const Vector4 qe2b, const Vector3d ecef)
 	Vector3d lla;
 
 // 	ecef2lla_d(ecef, lla);
-	ecef2lla(ecef, lla, 1, 5);
+	ecef2lla(ecef, lla, 5);
 	qe2b2EulerNedLLA(eul, qe2b, lla);
 }
 
@@ -698,7 +698,6 @@ void eulerReferenceToBody(const Euler_t e, const Euler_t rot, Euler_t result)
 
 /*
  * Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
- * Rotates unit vector (1,0,0) from current frame to result in IF frame.
  */
 void vectorBodyToReference(const Vector3_t v, const Euler_t rot, Vector3_t result)
 {

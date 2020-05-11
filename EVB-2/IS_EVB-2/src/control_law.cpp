@@ -90,7 +90,7 @@ void velocity_control(is_comm_instance_t &comm)
 //		g_wheelEncoder.wrap_count_r = g_wheelEncoder.theta_r / (2*PI);	
 				
 		n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
-		comWrite(EVB2_PORT_UINS0, comm.buffer, n, LED_INS_TXD_PIN);
+		comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
 
 		// Update history
 		wheelEncoderLast = g_wheelEncoder;

@@ -94,6 +94,7 @@ C_SRCS += \
           $(ASF_DIR)/sam/drivers/uart/uart.c                                                             \
           $(ASF_DIR)/sam/drivers/usart/usart.c                                                           \
           $(ASF_DIR)/sam/drivers/usbhs/usbhs_device.c                                                    \
+          $(ASF_DIR)/sam/drivers/wdt/wdt.c                                                               \
           $(ASF_DIR)/sam/drivers/xdmac/xdmac.c                                                           \
           $(ASF_DIR)/sam/services/flash_efc/flash_efc.c                                                  \
           $(ASF_DIR)/sam/utils/cmsis/same70/source/templates/gcc/startup_same70.c                        \
@@ -197,6 +198,7 @@ INCLUDES += $(ASF_DIR)/common/boards                                            
             $(ASF_DIR)/sam/drivers/uart                                                     \
             $(ASF_DIR)/sam/drivers/usart                                                    \
             $(ASF_DIR)/sam/drivers/usbhs                                                    \
+            $(ASF_DIR)/sam/drivers/wdt                                                      \
             $(ASF_DIR)/sam/drivers/xdmac                                                    \
             $(ASF_DIR)/sam/services/flash_efc                                               \
             $(ASF_DIR)/sam/utils/cmsis/same70/include                                       \

@@ -122,8 +122,11 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS2_SAT] = sizeof(gps_sat_t);
 	sizeMap[DID_GPS1_VERSION] = sizeof(gps_version_t);
 	sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
-	sizeMap[DID_GPS1_RTK_REL] = sizeof(gps_rtk_rel_t);
-	sizeMap[DID_GPS1_RTK_MISC] = sizeof(gps_rtk_misc_t);
+	sizeMap[DID_GPS1_RTK_POS] = sizeof(gps_pos_t);
+	sizeMap[DID_GPS1_RTK_POS_REL] = sizeof(gps_rtk_rel_t);
+	sizeMap[DID_GPS1_RTK_CMP_REL] = sizeof(gps_rtk_rel_t);
+	sizeMap[DID_GPS1_RTK_POS_MISC] = sizeof(gps_rtk_misc_t);
+	sizeMap[DID_GPS1_RTK_CMP_MISC] = sizeof(gps_rtk_misc_t);
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
@@ -144,7 +147,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SCOMP] = sizeof(sensor_compensation_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
     sizeMap[DID_RTK_DEBUG] = sizeof(rtk_debug_t);
-    sizeMap[DID_RTK_STATE] = sizeof(rtk_state_t);
+//     sizeMap[DID_RTK_STATE] = sizeof(rtk_state_t);
     sizeMap[DID_RTK_CODE_RESIDUAL] = sizeof(rtk_residual_t);
     sizeMap[DID_RTK_PHASE_RESIDUAL] = sizeof(rtk_residual_t);
 	sizeMap[DID_NVR_USERPAGE_G0] = sizeof(nvm_group_0_t);
@@ -396,10 +399,11 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	map_name_to_info_t& m = mappings[id];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "velEcef[0]", velEcef[0], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "velEcef[1]", velEcef[1], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "velEcef[2]", velEcef[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel[0]", vel[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel[1]", vel[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "vel[2]", vel[2], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "sAcc", sAcc, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -670,8 +674,10 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gps1AntOffset[0]", gps1AntOffset[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "gps1AntOffset[1]", gps1AntOffset[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "gps1AntOffset[2]", gps1AntOffset[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "insDynModel", insDynModel, 0, DataTypeUInt32, uint32_t);
-    ADD_MAP(m, totalSize, "sysCfgBits", sysCfgBits, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "insDynModel", insDynModel, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t);
+	ADD_MAP(m, totalSize, "gnssSatSigConst", gnssSatSigConst, 0, DataTypeUInt16, uint16_t);
+	ADD_MAP(m, totalSize, "sysCfgBits", sysCfgBits, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "refLla[0]", refLla[0], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "refLla[1]", refLla[1], 0, DataTypeDouble, double&);
     ADD_MAP(m, totalSize, "refLla[2]", refLla[2], 0, DataTypeDouble, double&);
@@ -715,7 +721,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 static void PopulateRtkRelMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef gps_rtk_rel_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_GPS1_RTK_REL];
+	map_name_to_info_t& m = mappings[DID_GPS1_RTK_POS_REL];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "baseToRoverVector[0]", baseToRoverVector[0], 0, DataTypeFloat, float&);
@@ -725,6 +731,8 @@ static void PopulateRtkRelMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "arRatio", arRatio, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "baseToRoverDistance", baseToRoverDistance, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "baseToRoverHeading", baseToRoverHeading, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "baseToRoverHeadingAcc", baseToRoverHeadingAcc, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -732,7 +740,7 @@ static void PopulateRtkRelMappings(map_name_to_info_t mappings[DID_COUNT])
 static void PopulateRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef gps_rtk_misc_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_GPS1_RTK_MISC];
+	map_name_to_info_t& m = mappings[DID_GPS1_RTK_POS_MISC];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "accuracyPos[0]", accuracyPos[0], 0, DataTypeFloat, float&);
@@ -1334,30 +1342,30 @@ static void PopulateInl2StatesMappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateRtkStateMappings(map_name_to_info_t mappings[DID_COUNT])
-{
-    typedef rtk_state_t MAP_TYPE;
-    map_name_to_info_t& m = mappings[DID_RTK_STATE];
-    uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "time.time", time.time, 0, DataTypeInt64, int64_t);
-    ADD_MAP(m, totalSize, "time.sec", time.sec, 0, DataTypeDouble, double);
-    ADD_MAP(m, totalSize, "rp[0]", rp_ecef[0], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "rp[1]", rp_ecef[1], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "rp[2]", rp_ecef[2], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "rv[0]", rv_ecef[0], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "rv[1]", rv_ecef[1], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "rv[2]", rv_ecef[2], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "ra[0]", ra_ecef[0], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "ra[1]", ra_ecef[1], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "ra[2]", ra_ecef[2], 0, DataTypeDouble, double&);
-
-    ADD_MAP(m, totalSize, "bp[0]", bp_ecef[0], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "bp[1]", bp_ecef[1], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "bp[2]", bp_ecef[2], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "bv[0]", bv_ecef[0], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "bv[1]", bv_ecef[1], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "bv[2]", bv_ecef[2], 0, DataTypeDouble, double&);
-}
+// static void PopulateRtkStateMappings(map_name_to_info_t mappings[DID_COUNT])
+// {
+//     typedef rtk_state_t MAP_TYPE;
+//     map_name_to_info_t& m = mappings[DID_RTK_STATE];
+//     uint32_t totalSize = 0;
+//     ADD_MAP(m, totalSize, "time.time", time.time, 0, DataTypeInt64, int64_t);
+//     ADD_MAP(m, totalSize, "time.sec", time.sec, 0, DataTypeDouble, double);
+//     ADD_MAP(m, totalSize, "rp[0]", rp_ecef[0], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "rp[1]", rp_ecef[1], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "rp[2]", rp_ecef[2], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "rv[0]", rv_ecef[0], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "rv[1]", rv_ecef[1], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "rv[2]", rv_ecef[2], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "ra[0]", ra_ecef[0], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "ra[1]", ra_ecef[1], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "ra[2]", ra_ecef[2], 0, DataTypeDouble, double&);
+// 
+//     ADD_MAP(m, totalSize, "bp[0]", bp_ecef[0], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "bp[1]", bp_ecef[1], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "bp[2]", bp_ecef[2], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "bv[0]", bv_ecef[0], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "bv[1]", bv_ecef[1], 0, DataTypeDouble, double&);
+//     ADD_MAP(m, totalSize, "bv[2]", bv_ecef[2], 0, DataTypeDouble, double&);
+// }
 
 static void PopulateRtkResidualMappings(map_name_to_info_t mappings[DID_COUNT], int DID)
 {
@@ -1683,9 +1691,9 @@ cISDataMappings::cISDataMappings()
 	PopulateUserPage1Mappings(m_lookupInfo);
 	PopulateInl2MagObsInfo(m_lookupInfo);
 	PopulateInl2StatesMappings(m_lookupInfo);
-    PopulateRtkStateMappings(m_lookupInfo);
-    PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_CODE_RESIDUAL);
-    PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_PHASE_RESIDUAL);
+//     PopulateRtkStateMappings(m_lookupInfo);
+//     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_CODE_RESIDUAL);
+//     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_PHASE_RESIDUAL);
 	PopulateRtkDebugMappings(m_lookupInfo);
 	PopulateRtkDebug2Mappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
@@ -1732,8 +1740,8 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "gps2Version",			// 18: DID_GPS2_VERSION
         "magCal",				// 19: DID_MAG_CAL
         "diagnosticInfo",		// 20: DID_INTERNAL_DIAGNOSTIC
-        "gpsRtkRel",			// 21: DID_GPS1_RTK_REL
-        "gpsRtkMisc",			// 22: DID_GPS1_RTK_MISC
+        "gpsRtkPosRel",			// 21: DID_GPS1_RTK_POS_REL
+        "gpsRtkPosMisc",		// 22: DID_GPS1_RTK_POS_MISC
         "featureBits",			// 23: DID_FEATURE_BITS
         "sensorIS1",			// 24: DID_SENSORS_IS1
         "sensorIS2",			// 25: DID_SENSORS_IS2
@@ -1766,7 +1774,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "magnetometer",			// 52: DID_MAGNETOMETER
         "barometer",			// 53: DID_BAROMETER
         "gpsRtkPos",			// 54: DID_GPS1_RTK_POS
-        "DID_55_unused",		// 55: Unused (was DID_MAGNETOMETER_2)
+        "unused_55",			// 55: unused (was DID_MAGNETOMETER_2)
         "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
         "imuDualRaw",			// 57: DID_DUAL_IMU_RAW
         "imuDual",				// 58: DID_DUAL_IMU
@@ -1801,9 +1809,13 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"wheelConfig",          // 87: DID_WHEEL_CONFIG
 		"positionMeasurement",  // 88: DID_POSITION_MEASUREMENT
 		"rtkDebug2",            // 89: DID_RTK_DEBUG_2
-		"canconfig",
-        ""
-    };
+		"canconfig",			// 90: 
+		"gpsRtkCmpRel",			// 91: DID_GPS1_RTK_CMP_REL
+		"gpsRtkCmpMisc",		// 92: DID_GPS1_RTK_CMP_MISC
+		"unused_93",			// 93: 
+		"unused_94",			// 94: 
+		"unused_95"				// 95: 
+	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);
 

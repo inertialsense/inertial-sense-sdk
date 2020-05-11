@@ -43,6 +43,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
+// #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
+
+
 const string cISLogger::g_emptyString;
 
 bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
@@ -54,8 +57,10 @@ bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
         hdr->id == 0 ||
         hdr->id >= DID_COUNT ||
         hdr->offset % 4 != 0 ||
-        hdr->size % 4 != 0 ||
-        (cISDataMappings::GetSize(hdr->id) > 0 && hdr->offset + hdr->size > cISDataMappings::GetSize(hdr->id))
+        hdr->size % 4 != 0 
+#if !defined(DONT_CHECK_LOG_DATA_SET_SIZE)
+		|| (cISDataMappings::GetSize(hdr->id) > 0 && hdr->offset + hdr->size > cISDataMappings::GetSize(hdr->id))
+#endif
     ));
 	return corrupt;
 }

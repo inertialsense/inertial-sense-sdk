@@ -457,6 +457,22 @@ void mul_Mat4x4_Trans_Vec4x1( Vector4 result, const Matrix4 m, const Vector4 v )
     result[3] =  m[3]*v[0] + m[7]*v[1] + m[11]*v[2] + m[15]*v[3];
 }
 
+void neg_Mat3x3(Matrix3 result, const Matrix3 m)
+{
+    // Row 1
+    result[0] = -m[0];
+    result[1] = -m[1];
+    result[2] = -m[2];
+    // Row 2
+    result[3] = -m[3];
+    result[4] = -m[4];
+    result[5] = -m[5];
+    // Row 3
+    result[6] = -m[6];
+    result[7] = -m[7];
+    result[8] = -m[8];
+}
+
 void mul_Vec3x1_Vec1x3( Matrix3 result, const Vector3 v1, const  Vector3 v2 )
 {
 	// Row 1

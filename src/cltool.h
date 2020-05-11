@@ -72,8 +72,9 @@ typedef struct
 	int streamIMU2;
     int streamGPS;
     int streamRtkPos;
-    int streamRtkRel;
-    int streamMag;
+	int streamRtkPosRel;
+	int streamRtkCmpRel;
+	int streamMag;
 	int streamBaro;
 	int streamSysSensors;
 	int streamDThetaVel;

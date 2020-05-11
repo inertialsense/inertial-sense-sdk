@@ -1,7 +1,7 @@
 @echo off
 
 set SDKDIR=..\..\..\InertialSenseSDK
-set COMDIR=..\..\..\inertialsense_serial_protocol
+rem set COMDIR=..\..\..\inertialsense_serial_protocol
 
 echo.
 echo Prepare SDK for release.
@@ -35,9 +35,19 @@ robocopy %SDKDIR%tmp\.git %SDKDIR%\.git /MIR /XA:H
 
 cd src 
 
+rem echo.
+rem echo Sync SDK into %COMDIR% repo
+rem robocopy . ..\%COMDIR% data_sets.c data_sets.h ISComm.c ISComm.h ISConstants.h
+
 echo.
-echo Sync SDK into %COMDIR% repo
-robocopy . ..\%COMDIR% data_sets.c data_sets.h ISComm.c ISComm.h ISConstants.h
+echo Sync logInspector into SDK
+cd ..\..\..\python\src\logInspector
+robocopy . %SDKDIR%\logInspector assets /MIR
+robocopy . %SDKDIR%\logInspector docs /MIR
+robocopy . %SDKDIR%\logInspector include /MIR
+robocopy . %SDKDIR%\logInspector src /MIR
+robocopy . %SDKDIR%\logInspector assets /MIR
+robocopy . %SDKDIR%\logInspector _build_log_inspector.bat _clean_log_inspector.bat CMakeLists.txt __init__.py logInspector.py logPlotter.py logReader.py README.md setup.py
 
 echo.
 echo Sync inertial_sense_ros repo

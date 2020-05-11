@@ -117,7 +117,7 @@ void led_maintenance(void)
 			}
 			else
 			{
-				LED_COLOR_ORANGE();
+				LED_COLOR_YELLOW();
 			}
 			break;
 
@@ -149,7 +149,7 @@ void led_maintenance(void)
 		{
 		case INS_STATUS_SOLUTION_OFF:
 			//LEDS_ALL_OFF();
-			LED_COLOR_ORANGE();
+			LED_COLOR_YELLOW();
 			break;
 			
 		case INS_STATUS_SOLUTION_ALIGNING:
@@ -159,7 +159,7 @@ void led_maintenance(void)
 		case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:
 		case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:
 		case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:
-			LED_COLOR_ORANGE();
+			LED_COLOR_YELLOW();
 			break;
 		
 		case INS_STATUS_SOLUTION_NAV:
@@ -229,6 +229,5 @@ void save_persistent_messages(void)
 	// Copy CAN
 	g_nvmInternalFlashCfg->startupCAN = g_CAN;
 
-	nvr_flash_config_write_needed();
-	nvr_flash_config_write_enable();     
+	nvr_flash_config_write_needed_enable();     
 }

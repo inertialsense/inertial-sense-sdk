@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../misc/bootloaderShared.h"
 #include "../misc/rtos.h"
 #include "d_flash.h"
+#include "user_board.h"
 
 static int s_flashWriteInProgress;
 
@@ -108,8 +109,51 @@ uint32_t flash_erase_block(uint32_t address)
 	{
 		return FLASH_RC_INVALID;
 	}
+	
+	WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;	// restart watchdog
+
 	flash_unlock(address, address + BOOTLOADER_FLASH_BLOCK_SIZE - 1, 0, 0);
 	return flash_erase_page(address, IFLASH_ERASE_PAGES_16);
+}
+
+extern uint32_t efc_perform_fcr(Efc *p_efc, uint32_t ul_fcr); 
+__no_inline RAMFUNC void flash_erase_chip(void)
+{
+	LED_COLOR_RED();
+
+	cpu_irq_disable();
+	WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;	// restart watchdog
+		
+	// Make sure all blocks are unlocked
+	flash_unlock(IFLASH_ADDR, IFLASH_ADDR + IFLASH_SIZE, NULL, NULL);
+	
+	// Issue erase - After this we cannot access any functions in flash as it will be gone.
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FCMD(EFC_FCMD_EA);
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+
+	//Clear GPNVM Bits
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(0) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Protect bit
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+	
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(1) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Enter SAM-BA
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+	
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(7) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//TCM config
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+	
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(8) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//TCM config
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+			
+	LEDS_ALL_OFF();
+
+	//Reset Device
+	RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;
+	while(1);
 }
 
 uint32_t flash_get_user_signature(volatile void* ptr, uint32_t size)

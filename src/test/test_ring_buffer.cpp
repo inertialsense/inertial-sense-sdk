@@ -11,12 +11,12 @@ TEST(RingBuffer, U8_1for1_Test)
 	ring_buf_t rb;
 	std::deque<uint8_t> myDeque;
 
-	ringBufInit(&rb, buffer, sizeof(buffer));
+	ringBufInit(&rb, buffer, sizeof(buffer), 1);
 
 	uint8_t val, ref;
 	for (uint8_t i = 0; i < 255; i++)
 	{
-		ringBufWrite(&rb, &i, 1);
+		EXPECT_FALSE(ringBufWrite(&rb, &i, 1));
 		myDeque.push_back(i);
 
 		ringBufRead(&rb, &val, 1);
@@ -33,12 +33,12 @@ TEST(RingBuffer, U32_1for1_Test)
 	ring_buf_t rb;
 	std::deque<uint32_t> myDeque;
 
-	ringBufInit(&rb, buffer, sizeof(buffer));
+	ringBufInit(&rb, buffer, sizeof(buffer), 1);
 
 	uint32_t val, ref;
 	for (uint32_t i = 0; i < 1000000; i++)
 	{
-		ringBufWrite(&rb, (uint8_t*)&i, 4);
+		EXPECT_FALSE(ringBufWrite(&rb, (uint8_t*)&i, 4));
 		myDeque.push_back(i);
 
 		ringBufRead(&rb, (uint8_t*)&val, 4);
@@ -48,7 +48,7 @@ TEST(RingBuffer, U32_1for1_Test)
 	}
 
 	// Ensure buffer is empty
-	EXPECT_TRUE(ringBufEmpty(&rb) == true && myDeque.empty() == true);
+	EXPECT_TRUE((bool)(ringBufEmpty(&rb)) == true && myDeque.empty() == true);
 }
 
 
@@ -58,14 +58,14 @@ TEST(RingBuffer, WriteReadWriteReadTest)
 	ring_buf_t rb;
 	std::deque<uint8_t> myDeque;
 
-	ringBufInit(&rb, buffer, BUFFER_SIZE);
+	ringBufInit(&rb, buffer, BUFFER_SIZE, 1);
 
 	uint8_t val, ref;
 
 	// Write 201
 	for (uint8_t i = 0; i < 201; i++)
 	{
-		ringBufWrite(&rb, &i, 1);
+		EXPECT_FALSE(ringBufWrite(&rb, &i, 1));
 		myDeque.push_back(i);
 	}
 
@@ -81,7 +81,7 @@ TEST(RingBuffer, WriteReadWriteReadTest)
 	// Write 104 causing 255 total in buffer
 	for (uint8_t i = 0; i < 104; i++)
 	{
-		ringBufWrite(&rb, &i, 1);
+		EXPECT_FALSE(ringBufWrite(&rb, &i, 1));
 		myDeque.push_back(i);
 	}
 
@@ -103,7 +103,7 @@ TEST(RingBuffer, WriteReadWriteReadTest)
 	myDeque.pop_front();
 
 	// Ensure buffer is empty
-	EXPECT_TRUE(ringBufEmpty(&rb)==true && myDeque.empty()==true);
+	EXPECT_TRUE((bool)(ringBufEmpty(&rb))==true && myDeque.empty()==true);
 }
 
 
@@ -113,12 +113,12 @@ TEST(RingBuffer, U32TestWriteThenReadTest)
 	ring_buf_t rb;
 	std::deque<uint32_t> myDeque;
 
-	ringBufInit(&rb, (uint8_t*)buffer, sizeof(buffer));
+	ringBufInit(&rb, (uint8_t*)buffer, sizeof(buffer), 1);
 
 	uint32_t val, ref;
 	for (uint32_t i = 0; i < BUFFER_SIZE-1; i++)
 	{
-		ringBufWrite(&rb, (uint8_t*)&i, 4);
+		EXPECT_FALSE(ringBufWrite(&rb, (uint8_t*)&i, 4));
 		myDeque.push_back(i);
 	}
 
@@ -135,12 +135,9 @@ TEST(RingBuffer, U32TestWriteThenReadTest)
 
 TEST(RingBuffer, PacketTest)
 {
-#define COMM_BUFFER_SIZE        2048
 	static is_comm_instance_t   comm;
-	static uint8_t              comm_buffer[COMM_BUFFER_SIZE];
-	comm.buffer = comm_buffer;
-	comm.bufferSize = COMM_BUFFER_SIZE;
-	is_comm_init(&comm);
+	static uint8_t              comm_buffer[2048];
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
 
 	ins_1_t ins1 = { 0 };
 	int n;
@@ -149,7 +146,7 @@ TEST(RingBuffer, PacketTest)
 	ring_buf_t rb;
 	std::deque<uint8_t> myDeque;
 
-	ringBufInit(&rb, buffer, sizeof(buffer));
+	ringBufInit(&rb, buffer, sizeof(buffer), 1);
 
 	// Write until buffer is full
 	for (int i = 0;; i++)
@@ -181,10 +178,10 @@ TEST(RingBuffer, PacketTest)
 			break;
 		}
 
-		ringBufWrite(&rb, comm.buffer, n);
+		EXPECT_FALSE(ringBufWrite(&rb, comm.buf.start, n));
 		for (int j = 0; j < n; j++)
 		{
-			myDeque.push_back(comm.buffer[j]);
+			myDeque.push_back(comm.buf.start[j]);
 		}
 	}
 
@@ -196,7 +193,7 @@ TEST(RingBuffer, PacketTest)
 		{	// Buffer is empty
 
 			// Ensure buffer is empty
-			EXPECT_TRUE(ringBufEmpty(&rb) == true && myDeque.empty() == true);
+			EXPECT_TRUE((bool)(ringBufEmpty(&rb)) == true && myDeque.empty() == true);
 			break;
 		}
 
@@ -215,19 +212,19 @@ TEST(RingBuffer, WriteOverflowTest)
 	uint8_t buffer[BUFFERX_SIZE];
 	ring_buf_t rb;
 
-	ringBufInit(&rb, buffer, BUFFERX_SIZE);
+	ringBufInit(&rb, buffer, sizeof(buffer), 1);
 
 	// Buffer should one less than was allocated
-	EXPECT_TRUE(ringBufFree(&rb) == BUFFERX_SIZE-1);
+	EXPECT_TRUE(ringBufFree(&rb) == sizeof(buffer)-1);
 
 	// Write BUFFER_X_SIZE + OVERLAP_SIZE
-	for (uint32_t i = 0; i < BUFFERX_SIZE+OVERLAP_SIZE; i++)
+	for (uint32_t i = 0; i < sizeof(buffer)+OVERLAP_SIZE; i++)
 	{
 		ringBufWrite(&rb, (uint8_t*)&i, 1);
 	}
 
 	// Ensure buffer should have BUFFER_X_SIZE-1 bytes
-	EXPECT_TRUE(ringBufUsed(&rb) == BUFFERX_SIZE-1);
+	EXPECT_TRUE(ringBufUsed(&rb) == sizeof(buffer)-1);
 
 	// Check that overlap happened correctly
 	uint8_t val;
@@ -239,6 +236,39 @@ TEST(RingBuffer, WriteOverflowTest)
 	}
 
 	// Ensure buffer is empty
-	EXPECT_TRUE(ringBufEmpty(&rb) == true);
+	EXPECT_TRUE((bool)(ringBufEmpty(&rb)) == true);
 }
 
+
+TEST(RingBuffer, FloatArrayWithOverflow)
+{
+#define BUFFERA_SIZE	4
+#define OVRLAPA_SIZE	3
+	float buffer[BUFFERA_SIZE] = {};
+	ring_buf_t rb;
+
+	ringBufInit(&rb, (uint8_t*)buffer, sizeof(buffer), sizeof(float));
+
+	// Buffer should wordSize less than was allocated
+	EXPECT_TRUE(ringBufFree(&rb) == sizeof(buffer) - sizeof(float));
+
+	// Write BUFFER_X_SIZE + OVERLAP_SIZE
+	for (float f = 0; f < BUFFERA_SIZE + OVRLAPA_SIZE; f++)
+	{
+		ringBufWrite(&rb, (uint8_t*)&f, sizeof(float));
+	}
+
+	// Ensure buffer should have BUFFER_X_SIZE-wordSize bytes
+	EXPECT_TRUE(ringBufUsed(&rb) == sizeof(buffer) - sizeof(float));
+
+	// Check that overlap happened correctly
+	float val=0;
+	for (float f = OVRLAPA_SIZE + 1; ringBufUsed(&rb); f++)
+	{
+		ringBufRead(&rb, (uint8_t*)&val, sizeof(float));
+		EXPECT_EQ(f, val);
+	}
+
+	// Ensure buffer is empty
+	EXPECT_TRUE(ringBufEmpty(&rb) == 1);
+}

@@ -7,6 +7,10 @@ add_library(SDK_test
 	../com_manager.c
 	../data_sets.c
 	../ISComm.c
+	../ISEarth.c
+	../ISMatrix.c
+	../ISPose.c
+	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c
 	)
@@ -19,6 +23,10 @@ if (${GTEST_FOUND})
 	../com_manager.c
 	../data_sets.c
 	../ISComm.c
+	../ISEarth.c
+	../ISMatrix.c
+	../ISPose.c
+	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c
 	)

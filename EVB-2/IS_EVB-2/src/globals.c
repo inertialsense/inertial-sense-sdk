@@ -37,7 +37,73 @@ void globals_init(void)
 }
 
 
-void com_bridge_select_preset(evb_flash_cfg_t* cfg)
+void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg);
+void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg)
+{
+	if(cfg->uinsComPort >= EVB2_PORT_COUNT)
+	{
+		return;
+	}
+		
+	if(g_flashCfg->uinsComPort != EVB2_PORT_USB)
+	{
+		cfg->cbf[g_flashCfg->uinsComPort] |= (1<<EVB2_PORT_USB);
+		cfg->cbf[EVB2_PORT_USB]           |= (1<<g_flashCfg->uinsComPort);
+	}
+
+	if(g_flashCfg->uinsComPort != EVB2_PORT_SP330)
+	{
+		cfg->cbf[g_flashCfg->uinsComPort] |= (1<<EVB2_PORT_SP330);
+		cfg->cbf[EVB2_PORT_SP330]         |= (1<<g_flashCfg->uinsComPort);
+	}
+}
+
+
+void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg);
+void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg)
+{
+// 	if (cfg->uinsComPort == cfg->uinsAuxPort)
+// 	{	// Using UINS-AUX as primary communication link.  Skip this section. 
+// 		return;
+// 	}
+	
+	if (cfg->uinsAuxPort >= EVB2_PORT_COUNT)
+	{	// Port disabled
+		return;
+	}
+
+	// XRadio Forwarding		
+    if (cfg->uinsAuxPort != EVB2_PORT_XRADIO)
+    {
+		switch(cfg->cbPreset)
+		{
+		case EVB2_CB_PRESET_RS232:
+		case EVB2_CB_PRESET_RS232_XBEE:
+		case EVB2_CB_PRESET_RS422_WIFI:
+			cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_XRADIO);
+			cfg->cbf[EVB2_PORT_XRADIO] |= (1<<cfg->uinsAuxPort);
+		}
+	}
+
+	// XBee Forwarding
+    if ((cfg->uinsAuxPort != EVB2_PORT_XBEE) &&
+		(cfg->cbPreset == EVB2_CB_PRESET_RS232_XBEE))
+    {
+		cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_XBEE);
+		cfg->cbf[EVB2_PORT_XBEE]   |= (1<<cfg->uinsAuxPort);
+	}
+	
+	// WiFi Forwarding
+    if ((cfg->uinsAuxPort != EVB2_PORT_WIFI) &&
+		(cfg->cbPreset == EVB2_CB_PRESET_RS422_WIFI))
+    {
+		cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_WIFI);
+		cfg->cbf[EVB2_PORT_WIFI]   |= (1<<cfg->uinsAuxPort);
+	}
+}
+
+
+void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 {
     if(cfg->cbPreset==EVB2_CB_PRESET_NA)
     {   // Do nothing
@@ -48,53 +114,15 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
     memset(cfg->cbf, 0, sizeof(cfg->cbf));      // Clear com bridge settings
     switch(cfg->cbPreset)
     {
-    case EVB2_CB_PRESET_RS232:
-		// UINS-SER0
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
-		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
-
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
-		cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
-
-		// UINS-SER1
-		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XRADIO);
-		cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_UINS1);
-		break;
-        
+    case EVB2_CB_PRESET_RS232:		
     case EVB2_CB_PRESET_RS232_XBEE:
-		// UINS-SER0
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
-		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
-
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
-		cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
-
-		// UINS-SER1
-		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XRADIO);
-		cfg->cbf[EVB2_PORT_XRADIO] |= (1<<EVB2_PORT_UINS1);
-
-		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_XBEE);
-		cfg->cbf[EVB2_PORT_XBEE]   |= (1<<EVB2_PORT_UINS1);
-        break;
-        
     case EVB2_CB_PRESET_RS422_WIFI:
-		// UINS-SER0
-        cfg->cbf[EVB2_PORT_UINS0]   |= (1<<EVB2_PORT_USB);
-        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_UINS0);
-
-        cfg->cbf[EVB2_PORT_UINS0]   |= (1<<EVB2_PORT_SP330);
-        cfg->cbf[EVB2_PORT_SP330]   |= (1<<EVB2_PORT_UINS0);
-
-		// UINS-SER1
-        cfg->cbf[EVB2_PORT_UINS1]   |= (1<<EVB2_PORT_XRADIO);
-        cfg->cbf[EVB2_PORT_WIFI]    |= (1<<EVB2_PORT_UINS1);
-
-        cfg->cbf[EVB2_PORT_UINS1]   |= (1<<EVB2_PORT_XRADIO);
-        cfg->cbf[EVB2_PORT_XRADIO]  |= (1<<EVB2_PORT_UINS1);
+		com_bridge_apply_preset_uins_com(cfg);		// UINS communication port used for SD logging.
+		com_bridge_apply_preset_uins_aux(cfg);		// UINS auxiliary port used for RTK corrections.
         break;
 
     case EVB2_CB_PRESET_SPI_RS232:
-		// UINS-SER1 (SPI mode)
+		// SPI mode must be on port UINS1
         cfg->cbf[EVB2_PORT_UINS1]   |= (1<<EVB2_PORT_USB);
         cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_UINS1);
 
@@ -137,19 +165,15 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
     // Clear existing
     cfg->cbOptions = 0;
 
-	// USB Hub
+	// Tri-state uINS
 	switch(cfg->cbPreset)
 	{
+	case EVB2_CB_PRESET_NA:
 	case EVB2_CB_PRESET_ALL_OFF:
 	case EVB2_CB_PRESET_USB_HUB_RS232:
-	     cfg->cbOptions |= EVB2_CB_OPTIONS_XBEE_ENABLE;
-	     break;
-		 
 	case EVB2_CB_PRESET_USB_HUB_RS422:
+	case EVB2_CB_PRESET_COUNT:
 		cfg->cbOptions |= EVB2_CB_OPTIONS_TRISTATE_UINS_IO;
-		break;
-	default:
-		cfg->cbOptions &= ~EVB2_CB_OPTIONS_TRISTATE_UINS_IO;
 		break;
 	}
         
@@ -166,8 +190,7 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
     switch(cfg->cbPreset)
     {
     case EVB2_CB_PRESET_RS232_XBEE:
-//     case EVB2_CB_PRESET_USB_HUB_RS232:
-//     case EVB2_CB_PRESET_USB_HUB_RS422:
+    case EVB2_CB_PRESET_USB_HUB_RS232:
         cfg->cbOptions |= EVB2_CB_OPTIONS_XBEE_ENABLE;
         break;
 
@@ -195,33 +218,6 @@ void com_bridge_select_preset(evb_flash_cfg_t* cfg)
 		break;
 	}
 #endif
-}
-
-
-void reset_config_defaults( evb_flash_cfg_t *cfg )
-{
-	if (cfg == NULL)
-		return;
-
-	memset(cfg, 0, sizeof(evb_flash_cfg_t));
-	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 2;						// increment key to force config to revert to defaults (overwrites customer's settings)
-
-    cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
-
-    cfg->radioPID = 2;          // 0x0 to 0x9
-    cfg->radioNID = 72;         // 0x0 to 0x7FFF 
-    cfg->radioPowerLevel = 2;
-    
-    cfg->server[0].ipAddr = nmi_inet_addr((void*)"69.167.49.43");
-    cfg->server[0].port = 7778;
-    cfg->server[1].ipAddr = nmi_inet_addr((void*)"192.168.1.144");
-    cfg->server[1].port = 2000;
-    cfg->encoderTickToWheelRad = .0179999f;	// Husqvarna lawnmower
-
-    com_bridge_select_preset(cfg);
-    
-	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));
 }
 
 
@@ -385,3 +381,36 @@ int error_check_config(evb_flash_cfg_t *cfg)
     return failure;
 }
 
+
+void reset_config_defaults( evb_flash_cfg_t *cfg )
+{
+	if (cfg == NULL)
+	return;
+
+	memset(cfg, 0, sizeof(evb_flash_cfg_t));
+	cfg->size						= sizeof(evb_flash_cfg_t);
+	cfg->key						= 6;			// increment key to force config to revert to defaults (overwrites customer's settings)
+
+	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
+
+	cfg->uinsComPort = EVB2_PORT_UINS0;				// Default port for uINS communications and SD card logging
+	cfg->uinsAuxPort = EVB2_PORT_UINS0;				// Default port for RTK corrections and wireless interface
+	cfg->portOptions = EVB2_PORT_OPTIONS_DEFAULT;	// Enable radio RTK filter
+	cfg->h3sp330BaudRate = 921600;
+	cfg->h4xRadioBaudRate = 115200;
+	cfg->h8gpioBaudRate = 921600;
+
+	cfg->radioPID = 2;          // 0x0 to 0x9
+	cfg->radioNID = 72;         // 0x0 to 0x7FFF
+	cfg->radioPowerLevel = 1;	// 1=27dBm use middle power so radio can run from USB supply.  2=30dBm is too powerful for USB supply.
+	
+	cfg->server[0].ipAddr = nmi_inet_addr((void*)"69.167.49.43");
+	cfg->server[0].port = 7778;
+	cfg->server[1].ipAddr = nmi_inet_addr((void*)"192.168.1.144");
+	cfg->server[1].port = 2000;
+	cfg->encoderTickToWheelRad = .0179999f;	// Husqvarna lawnmower
+
+	com_bridge_apply_preset(cfg);
+	
+	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));
+}

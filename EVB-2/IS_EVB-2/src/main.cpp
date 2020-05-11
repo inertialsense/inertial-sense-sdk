@@ -44,8 +44,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define TASK_WIFI_PRIORITY			    (tskIDLE_PRIORITY + 2)
 #define TASK_MAINT_PRIORITY             (tskIDLE_PRIORITY + 1)
 
-#define COMM_BUFFER_SIZE                2048
-
 
 #include "CAN.h"
 
@@ -55,10 +53,8 @@ static void vTaskComm(void *pvParameters)
 	rtos_task_t *task = &g_rtos.task[EVB_TASK_COMMUNICATIONS];
 
     static is_comm_instance_t   comm;
-    static uint8_t              comm_buffer[COMM_BUFFER_SIZE];
-    comm.buffer = comm_buffer;
-    comm.bufferSize = COMM_BUFFER_SIZE;
-    is_comm_init(&comm);
+    static uint8_t              comm_buffer[PKT_BUF_SIZE];
+    is_comm_init(&comm, comm_buffer, PKT_BUF_SIZE);
 	
 #ifdef CONF_BOARD_CAN_TEST
 	//if(/*g_can_test == CAN_TEST_MASTER - or something like that*/ 1)
@@ -77,6 +73,11 @@ static void vTaskComm(void *pvParameters)
 
         g_comm_time_ms = time_msec();
         
+#ifdef ENABLE_WDT
+		// Feed Watchdog to prevent reset
+		wdt_restart(WDT);
+#endif
+		
         // Turn off communications LEDs - first thing after vTaskDelay()
         LED_OFF(LED_INS_RXD_PIN);
         LED_OFF(LED_INS_TXD_PIN);
@@ -84,7 +85,10 @@ static void vTaskComm(void *pvParameters)
         // Forward data between communications ports
 		step_com_bridge(comm);
 		velocity_control(comm);
-		
+	
+	    // Read buttons and update LEDs
+	    step_user_interface();
+	
 		//////////////////////////////////////////////////////////////////////////
 		// Suggested USER CODE Section
 		// Update period:	1ms			(Adjust by changing TASK_COMM_PERIOD_MS)
@@ -109,12 +113,10 @@ static void vTaskLogger(void *pvParameters)
 	rtos_task_t *task = &g_rtos.task[EVB_TASK_LOGGER];
 
     static is_comm_instance_t   comm;
-    static uint8_t              comm_buffer[COMM_BUFFER_SIZE];
-    comm.buffer = comm_buffer;
-    comm.bufferSize = COMM_BUFFER_SIZE;
-    is_comm_init(&comm);
+    static uint8_t              comm_buffer[PKT_BUF_SIZE];
+    is_comm_init(&comm, comm_buffer, PKT_BUF_SIZE);
 
-    uINS0_stream_stop_all(comm);
+    uINS_stream_stop_all(comm);
 
     vTaskDelay(200);
     LED_LOG_OFF();
@@ -131,7 +133,7 @@ static void vTaskLogger(void *pvParameters)
 	{
     	vTaskDelay(task->periodMs);
 
-        step_logger(logger, comm);
+        step_logger_control(logger, comm);
         
         // Ready uINS data from com task.  Log to file.
         parse_uINS_data(logger, comm);
@@ -159,10 +161,6 @@ static void vTaskMaint(void *pvParameters)
         
         //////////////////////////////////////////////////////////////////////////
         // Fast Maintenance - 10ms period
-
-        // Read buttons and update LEDs
-        step_user_interface();
-
 
 		//////////////////////////////////////////////////////////////////////////
 		// Suggested USER CODE Section
@@ -209,6 +207,11 @@ static void vTaskMaint(void *pvParameters)
 
 int main(void)
 {
+	//XDMAC channel interrupt enables do not get cleared by a software reset. Clear them before they cause issues.
+	XDMAC->XDMAC_GID = 0xFFFFFFFF;
+	for(int i=0;i<XDMACCHID_NUMBER;i++)
+		XDMAC->XDMAC_CHID[i].XDMAC_CID = 0xFFFFFFFF;
+		
 	// Force USB to disconnect. Helps to make sure the USB port starts up correctly when debugging.
 	udc_stop();
 	    
@@ -242,6 +245,12 @@ int main(void)
 	strncpy(g_rtos.task[EVB_TASK_TIMER].name,       "TIMER",  MAX_TASK_NAME_LEN);
 	strncpy(g_rtos.task[EVB_TASK_SPI_UINS_COM].name,"INSSPI", MAX_TASK_NAME_LEN);
 
+#ifdef ENABLE_WDT
+	// Setup Watchdog
+	uint32_t timeout_value = wdt_get_timeout_value(1000000, BOARD_FREQ_SLCK_XTAL);	//Timeout in us, configured for 1 second.
+	wdt_init(WDT, WDT_MR_WDRSTEN | WDT_MR_WDDBGHLT, timeout_value, timeout_value);
+#endif
+		
 	// Start the scheduler
 	printf("Starting FreeRTOS\n\r");
 	vTaskStartScheduler((TaskHandle_t*)&g_rtos.task[EVB_TASK_IDLE].handle, (TaskHandle_t*)&g_rtos.task[EVB_TASK_TIMER].handle);

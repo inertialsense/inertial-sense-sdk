@@ -70,6 +70,11 @@ int serRxFree( int serialNum );
 int serTxFree( int serialNum );
 
 /**
+ * \brief Returns number of characters in buffer before specified character.
+ */
+int serFindCharacter( int serialNum, uint8_t ch);
+
+/**
  * \brief Change USART baudrate.  0 on success, -1 on failure.
  */
 int serSetBaudRate( int serialNum, int baudrate );

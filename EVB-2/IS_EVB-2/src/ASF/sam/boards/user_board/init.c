@@ -386,9 +386,6 @@ void refresh_CFG_LED(void)
         case EVB2_CB_PRESET_SPI_RS232:          LED_CFG_CYAN();     break;
         case EVB2_CB_PRESET_USB_HUB_RS232:      LED_CFG_YELLOW();   break;
         case EVB2_CB_PRESET_USB_HUB_RS422:      LED_CFG_WHITE();    break;
-#ifdef CONF_BOARD_CAN1
-		case EVB2_CB_PRESET_CAN:				LED_CFG_RED();		break;
-#endif
     }
 }
 
@@ -396,7 +393,9 @@ void refresh_CFG_LED(void)
 void board_IO_config(void)
 {	
 	// uINS ser0
-    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO)
+    if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO ||
+		(g_flashCfg->uinsComPort != EVB2_PORT_UINS0 &&
+		 g_flashCfg->uinsAuxPort != EVB2_PORT_UINS0))
     {	// I/O tristate
 		ioport_set_pin_input_mode(UART_INS_SER0_TXD_PIN, 0, 0);
 		ioport_set_pin_input_mode(UART_INS_SER0_RXD_PIN, 0, 0);
@@ -410,21 +409,10 @@ void board_IO_config(void)
 #endif		
 	}
 	
-    // uINS ser1 
-    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO)
-	{	// I/O tristate - (Enable pin and set as input)
-	    ioport_set_pin_input_mode(UART_INS_SER1_TXD_PIN, 0, 0);
-	    ioport_set_pin_input_mode(UART_INS_SER1_RXD_PIN, 0, 0);
-
-	    ioport_set_pin_input_mode(SPI_INS_MISO_PIN, 0, 0);
-	    ioport_set_pin_input_mode(SPI_INS_MOSI_PIN, 0, 0);
-	    ioport_set_pin_input_mode(SPI_INS_SCLK_PIN, 0, 0);
-	    ioport_set_pin_input_mode(SPI_INS_CS_PIN, 0, 0);
-	    ioport_set_pin_input_mode(SPI_INS_EN, 0, 0);
-	}
-    else if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE)
+    // uINS ser1
+    if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE)
     {
-#ifdef CONF_BOARD_SPI_UINS
+	    #ifdef CONF_BOARD_SPI_UINS
 	    ioport_set_pin_peripheral_mode(SPI_INS_MISO_PIN, SPI_INS_MISO_FLAGS);
 	    ioport_set_pin_peripheral_mode(SPI_INS_MOSI_PIN, SPI_INS_MOSI_FLAGS);
 	    ioport_set_pin_peripheral_mode(SPI_INS_SCLK_PIN, SPI_INS_SCLK_FLAGS);
@@ -436,20 +424,33 @@ void board_IO_config(void)
 	    //Indicate to uINS that SPI is requested
 	    ioport_set_pin_output_mode(SPI_INS_EN, IOPORT_PIN_LEVEL_LOW);
 	    ioport_enable_pin(SPI_INS_EN);
-	
+	    
 	    //Setup data ready pin
 	    ioport_set_pin_dir(INS_DATA_RDY_PIN_IDX, IOPORT_DIR_INPUT);
 	    ioport_set_pin_mode(INS_DATA_RDY_PIN_IDX, IOPORT_MODE_PULLDOWN);
 
-        spiTouINS_init();
-#endif
-    }
+	    spiTouINS_init();
+	    #endif
+    }	
+    else if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO ||
+		(g_flashCfg->uinsComPort != EVB2_PORT_UINS1 &&
+		 g_flashCfg->uinsAuxPort != EVB2_PORT_UINS1))
+	{	// I/O tristate - (Enable pin and set as input)
+	    ioport_set_pin_input_mode(UART_INS_SER1_TXD_PIN, 0, 0);
+	    ioport_set_pin_input_mode(UART_INS_SER1_RXD_PIN, 0, 0);
+
+	    ioport_set_pin_input_mode(SPI_INS_MISO_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_MOSI_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_SCLK_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_CS_PIN, 0, 0);
+	    ioport_set_pin_input_mode(SPI_INS_EN, 0, 0);
+	}
     else
     {
 #ifdef CONF_BOARD_SERIAL_UINS_SER1
         ioport_set_pin_peripheral_mode(UART_INS_SER1_TXD_PIN, UART_INS_SER1_TXD_FLAGS);
         ioport_set_pin_peripheral_mode(UART_INS_SER1_RXD_PIN, UART_INS_SER1_RXD_FLAGS);
-        serInit(EVB2_PORT_UINS1, 115200, NULL);
+        serInit(EVB2_PORT_UINS1, 921600, NULL);
 		ioport_set_pin_input_mode(SPI_INS_SCLK_PIN, 0, 0);
 		ioport_set_pin_input_mode(SPI_INS_CS_PIN, 0, 0);
 		ioport_set_pin_input_mode(SPI_INS_EN, 0, 0);
@@ -457,7 +458,7 @@ void board_IO_config(void)
     }        
 
 #ifdef CONF_BOARD_SERIAL_SP330
-    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SP330_RS422)
+    if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SP330_RS422)
     {   // RS422 mode
         ioport_set_pin_output_mode(SP330_N485_RXEN_PIN, IOPORT_PIN_LEVEL_LOW);      // Enable RS485 receiver
         ioport_set_pin_output_mode(SP330_485_N232_PIN, IOPORT_PIN_LEVEL_HIGH);      // Enable RS422/RS485 mode
@@ -467,11 +468,11 @@ void board_IO_config(void)
 	    ioport_set_pin_output_mode(SP330_N485_RXEN_PIN, IOPORT_PIN_LEVEL_HIGH);     // Disable RS485 receiver
     	ioport_set_pin_output_mode(SP330_485_N232_PIN, IOPORT_PIN_LEVEL_LOW);       // Enable RS232 mode
     }
-    serSetBaudRate(EVB2_PORT_SP330, 921600);
+    serSetBaudRate(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate);
 #endif
 
 #ifdef CONF_BOARD_SERIAL_XBEE
-    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_XBEE_ENABLE)
+    if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_XBEE_ENABLE)
     {   // XBee enabled
 		ioport_set_pin_peripheral_mode(UART_XBEE_RXD_PIN, UART_XBEE_RXD_FLAGS);
 		ioport_set_pin_peripheral_mode(UART_XBEE_TXD_PIN, UART_XBEE_TXD_FLAGS);
@@ -516,7 +517,7 @@ void board_IO_config(void)
 #endif
 
 #ifdef CONF_BOARD_SPI_ATWINC_WIFI
-    if(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_WIFI_ENABLE )
+    if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_WIFI_ENABLE )
     {   // WiFi enabled
         wifi_enable(true);  // power on wifi.  Connect to hot spot and TCP socket
     }
@@ -530,17 +531,17 @@ void board_IO_config(void)
 #endif
 
     // Reset default baud rates
-    if(!(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO))
+    if (!(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO))
     {	// I/O not tristate		
 		serSetBaudRate(EVB2_PORT_UINS0, 921600);
-		if(!(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE))
+		if (!(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE))
 		{
-			serSetBaudRate(EVB2_PORT_UINS1, 115200);
+			serSetBaudRate(EVB2_PORT_UINS1, 921600);
 		}
     }
     serSetBaudRate(EVB2_PORT_BLE, 115200);
-    serSetBaudRate(EVB2_PORT_XRADIO, 115200);
-    serSetBaudRate(EVB2_PORT_GPIO_H8, 115200);
+    serSetBaudRate(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate);
+    serSetBaudRate(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate);
 #ifdef CONF_BOARD_CAN1
 	if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_CAN_ENABLE)
 	{
@@ -575,6 +576,13 @@ void board_init(void)
 
 	//////////////////////////////////////////////////////////////////////////
 	// Init system clocks
+	// If running on PLL, disable it so second PLL initialization does not hang device
+	if((PMC->PMC_MCKR & PMC_MCKR_CSS_Msk) == PMC_MCKR_CSS_PLLA_CLK)
+	{
+		pmc_switch_mck_to_mainck(0);
+		pll_disable(PLLA_ID);
+	}	
+	
     pmc_switch_sclk_to_32kxtal(PMC_OSC_XTAL);   // set SLCK to use external 32kHz crystal rather than internal 32kHz RC oscillator.
     sysclk_init();
 
@@ -661,19 +669,13 @@ void board_init(void)
     
     //////////////////////////////////////////////////////////////////////////
     // Serial Ports
-// #ifdef CONF_BOARD_UART_CONSOLE
-// 	/* Configure UART pins */
-// 	ioport_set_pin_peripheral_mode(USART1_RXD_GPIO, USART1_RXD_FLAGS);
-// 	MATRIX->CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
-// 	ioport_set_pin_peripheral_mode(USART1_TXD_GPIO, USART1_TXD_FLAGS);
-// #endif
 
     // UINS ser0 and ser1 - In board_IO_init() in main.cpp
 
 #ifdef CONF_BOARD_SERIAL_EXT_RADIO      // External Radio
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_RXD_PIN, UART_EXT_RADIO_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_TXD_PIN, UART_EXT_RADIO_TXD_FLAGS);
-    serInit(EVB2_PORT_XRADIO, 115200, NULL);
+    serInit(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate, NULL);
 //     ioport_set_pin_dir(EXT_RADIO_RST, IOPORT_DIR_OUTPUT);
 //     ioport_set_pin_level(EXT_RADIO_RST, IOPORT_PIN_LEVEL_HIGH);         // Low assert
 #endif
@@ -689,17 +691,21 @@ void board_init(void)
 #ifdef CONF_BOARD_SERIAL_SP330          // RS232/RS422/RS485 converter
     ioport_set_pin_peripheral_mode(UART_SP330_RXD_PIN, UART_SP330_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_SP330_TXD_PIN, UART_SP330_TXD_FLAGS);
-    serInit(EVB2_PORT_SP330, 921600, NULL);
+    serInit(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate, NULL);
 	ioport_set_pin_output_mode(SP330_NSLEW_PIN, IOPORT_PIN_LEVEL_HIGH);         // Don't limit data rate to less than 250 Kbps
 	ioport_set_pin_output_mode(SP330_NFULL_DPLX_PIN, IOPORT_PIN_LEVEL_LOW);    // RS485 full duplex (RS232 N/A)
 	ioport_set_pin_output_mode(SP330_NSHDN_PIN, IOPORT_PIN_LEVEL_HIGH);         // Enable device
 #endif
 
 #ifdef CONF_BOARD_SERIAL_GPIO_H8       // GPIO TTL
-	ioport_set_pin_output_mode(GPIO_UART_INV_PIN, IOPORT_PIN_LEVEL_LOW);    // Non-inverting
+	ioport_set_pin_output_mode(GPIO_UART_INV_PIN, IOPORT_PIN_LEVEL_LOW);    // Non-inverting	
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_RXD_PIN, GPIO_H8_UART_RXD_FLAGS);
+	MATRIX->CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_TXD_PIN, GPIO_H8_UART_TXD_FLAGS);
-    serInit(EVB2_PORT_GPIO_H8, 115200, NULL);
+    serInit(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate, NULL);
+	
+// 	char buf[3] = "123";
+// 	serWrite(EVB2_PORT_GPIO_H8, buf, 3, NULL);
 #endif
     
 

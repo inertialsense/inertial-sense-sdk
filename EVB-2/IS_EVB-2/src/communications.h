@@ -31,9 +31,9 @@ void callback_cdc_set_config(uint8_t port, usb_cdc_line_coding_t * cfg);
 void callback_cdc_disable(void);
 void callback_cdc_set_dtr(uint8_t port, bool b_enable);
 
-void uINS0_stream_stop_all(is_comm_instance_t &comm);
-void uINS0_stream_enable_std(is_comm_instance_t &comm);
-void uINS0_stream_enable_PPD(is_comm_instance_t &comm);
+void uINS_stream_stop_all(is_comm_instance_t &comm);
+void uINS_stream_enable_std(is_comm_instance_t &comm);
+void uINS_stream_enable_PPD(is_comm_instance_t &comm);
 
 void parse_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
 void parse_EVB_data(int len, is_comm_instance_t *comm, uint8_t *buf);

@@ -22,7 +22,8 @@ static bool s_ignoreLogButtonRelease=false;
 
 static void on_cfg_button_pressed()
 {
-    
+	// Indicate button is pressed by turning off LED
+	LED_CFG_OFF();
 }
 
 
@@ -48,7 +49,7 @@ static void on_cfg_button_release()
         g_flashCfg->cbPreset = 1;
     }
         
-    com_bridge_select_preset(g_flashCfg);
+    com_bridge_apply_preset(g_flashCfg);
     board_IO_config();
     g_nvr_manage_config.flash_write_needed = true;
 	g_nvr_manage_config.flash_write_enable = true;
@@ -64,7 +65,8 @@ bool logger_ready()
 
 static void on_log_button_pressed()
 {
-    
+	// Indicate button is pressed by turning off LED
+	LED_LOG_OFF();    
 }
 
 
@@ -91,6 +93,7 @@ static void on_both_buttons_pressed()
 static void on_both_buttons_release()
 {   // De-assert uINS reset
     ioport_set_pin_input_mode(INS_RESET_PIN_PIN, 0, 0);
+    refresh_CFG_LED();
 }
 
 

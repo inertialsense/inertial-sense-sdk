@@ -26,20 +26,21 @@ unsigned char* ringfindChar2(unsigned char* bufPtr, unsigned char* endPtr, unsig
 /**
  * \brief Initialize ring buffer pointers
  */
-void ringBufInit(ring_buf_t *rbuf, unsigned char* buf, int bufSize)
+void ringBufInit(ring_buf_t *rbuf, unsigned char* buf, int bufSize, int wordByteSize)
 {
 	rbuf->startPtr = buf;
 	rbuf->endPtr = buf + bufSize;
 	rbuf->rdPtr = buf;
 	rbuf->wrPtr = buf;
 	rbuf->bufSize = bufSize;
+    rbuf->wordByteSize = wordByteSize;
 }
 
 
 /**
  * \brief This function returns the number of bytes currently in ring buffer.
  */
-int ringBufUsed(ring_buf_t *rbuf)
+int ringBufUsed(const ring_buf_t *rbuf)
 {
 	int bytesUsed;
 
@@ -57,9 +58,9 @@ int ringBufUsed(ring_buf_t *rbuf)
  * \brief This function returns the number of bytes free in UART Rx buffer.  
  * Important: Buffer size is one less than init buffer size so pointers don't wrap.
  */
-int ringBufFree(ring_buf_t *rbuf)
+int ringBufFree(const ring_buf_t *rbuf)
 {
-	return (rbuf->bufSize - 1 - ringBufUsed(rbuf));
+    return (rbuf->bufSize - rbuf->wordByteSize - ringBufUsed(rbuf));
 }
 
 
@@ -70,14 +71,13 @@ int ringBufFree(ring_buf_t *rbuf)
  * \param buf   Buffer to copy data from.
  * \param len   Length of data to copy.
  *
- * \return Actual number of bytes pushed.
+ * \return 0 on success, 1 on overflow.
  */
 int ringBufWrite(ring_buf_t *rb, unsigned char *buf, int numBytes)
 {
 	if (numBytes <= 0)
 		return 0;
 
-	int bytesWritten = numBytes;
 	int overflow = numBytes > ringBufFree(rb);
 
 	// Copy data into buffer
@@ -112,7 +112,7 @@ int ringBufWrite(ring_buf_t *rb, unsigned char *buf, int numBytes)
 
 	if (overflow)
 	{	// Move read pointer for overflow
-		rb->rdPtr = rb->wrPtr + 1;
+        rb->rdPtr = rb->wrPtr + rb->wordByteSize;
 
 		if (rb->rdPtr >= rb->endPtr)
 		{	// Handle wrap
@@ -120,7 +120,7 @@ int ringBufWrite(ring_buf_t *rb, unsigned char *buf, int numBytes)
 		}
 	}
 
-	return bytesWritten;
+	return overflow;
 }
 
 
@@ -185,7 +185,7 @@ int ringBufRead(ring_buf_t *rbuf, unsigned char *buf, int len)
  *
  * \return Actual number of bytes read.
  */
-int ringBufPeek(ring_buf_t *rbuf, unsigned char *buf, int len, int offset)
+int ringBufPeek(const ring_buf_t *rbuf, unsigned char *buf, int len, int offset)
 {
 	int bytesToRead, bytesRead1, bytesRead2;
 	int bytesUsed = ringBufUsed(rbuf);
@@ -201,6 +201,10 @@ int ringBufPeek(ring_buf_t *rbuf, unsigned char *buf, int len, int offset)
 		bytesToRead = len;
 
 	unsigned char *rdPtr = rbuf->rdPtr + offset;
+    // Handle read pointer wrapping
+    if (rdPtr >= rbuf->endPtr) {
+        rdPtr -= rbuf->bufSize;
+    }
 
 	// Will Data Read Need to Wrap?
 	// If ( used part of Rx buffer wraps  &&  data to be read is more than to buffer's end )
@@ -380,7 +384,7 @@ int ringBufReadToChar2(ring_buf_t *rbuf, unsigned char *buf, int len, unsigned c
  *
  * \return Index of the first matching string.  -1 if not found.
  */
-int ringBufFind(ring_buf_t *rbuf, const unsigned char *str, int len)
+int ringBufFind(const ring_buf_t *rbuf, const unsigned char *str, int len)
 {
 	int i;
 	int used = ringBufUsed(rbuf);
@@ -474,7 +478,7 @@ int ringBufClear(ring_buf_t *rbuf)
 /**
  * \brief This function returns 1 if the buffer is empty, 0 if not empty.
  */
-int ringBufEmpty(ring_buf_t *rbuf)
+int ringBufEmpty(const ring_buf_t *rbuf)
 {
 	return ringBufUsed(rbuf) == 0;
 }

@@ -33,6 +33,7 @@
         <options>
           <option id="common.boards" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.components.memory.sd_mmc" value="Add" config="mci" content-id="Atmel.ASF" />
+          <option id="common.components.wifi.winc3400" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.basic.clock" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.basic.gpio" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.ioport" value="Add" config="" content-id="Atmel.ASF" />
@@ -47,10 +48,10 @@
           <option id="sam.drivers.tc.appnote" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.drivers.twihs" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.drivers.xdmac" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="sam.services.flash" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.fs.fatfs" value="Add" config="" content-id="Atmel.ASF" />
           <option id="thirdparty.os.freertos.version" value="Add" config="7.3.0" content-id="Atmel.ASF" />
-          <option id="sam.services.flash" value="Add" config="" content-id="Atmel.ASF" />
-          <option id="common.components.wifi.winc3400" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="sam.drivers.wdt" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.freertos.sam_example" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.utils.cmsis.same70.source.template" value="Add" config="" content-id="Atmel.ASF" />
         </options>
@@ -488,6 +489,8 @@
           <file path="src/ASF/sam/services/flash_efc/flash_efc.c" framework="" version="3.36.2" source="sam\services\flash_efc\flash_efc.c" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam/services/flash_efc/flash_efc.h" framework="" version="3.36.2" source="sam\services\flash_efc\flash_efc.h" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam/drivers/efc/efc.c" framework="" version="3.36.2" source="sam\drivers\efc\efc.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/wdt/wdt.c" framework="" version="3.39.0" source="sam\drivers\wdt\wdt.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/wdt/wdt.h" framework="" version="3.39.0" source="sam\drivers\wdt\wdt.h" changed="False" content-id="Atmel.ASF" />
         </files>
         <documentation help="http://asf.atmel.com/docs/3.44.1/common.services.freertos.sam_example.same70_xplained/html/index.html" />
         <offline-documentation help="" />
@@ -499,7 +502,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800098687</avrtoolserialnumber>
+    <avrtoolserialnumber>J41800076763</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020C01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -534,7 +537,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800098687</ToolNumber>
+      <ToolNumber>J41800076763</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
   </PropertyGroup>
@@ -618,6 +621,7 @@
             <Value>../src/ASF/common/components/wifi/winc3400/wifi_drv</Value>
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcc.compiler.directories.IncludePaths>
         <armgcc.compiler.optimization.level>Optimize most (-O3)</armgcc.compiler.optimization.level>
@@ -697,6 +701,7 @@
             <Value>../src/ASF/common/components/wifi/winc3400/wifi_drv</Value>
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcccpp.compiler.directories.IncludePaths>
         <armgcccpp.compiler.optimization.level>Optimize most (-O3)</armgcccpp.compiler.optimization.level>
@@ -774,6 +779,7 @@
             <Value>../src/ASF/common/components/wifi/winc3400/wifi_drv</Value>
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcccpp.assembler.general.IncludePaths>
         <armgcccpp.preprocessingassembler.general.AssemblerFlags>-DARM_MATH_CM7=true -DBOARD=USER_BOARD -D__FREERTOS__ -D__SAME70Q20B__ -DUDD_ENABLE -DSD_MMC_ENABLE -D__SAME70Q21B__ -DBOARD=SAME70_XPLAINED -Dprintf=iprintf -Dscanf=iscanf -DCONF_PERIPH</armgcccpp.preprocessingassembler.general.AssemblerFlags>
@@ -833,6 +839,7 @@
             <Value>../src/ASF/common/components/wifi/winc3400/wifi_drv</Value>
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcccpp.preprocessingassembler.general.IncludePaths>
         <armgcccpp.preprocessingassembler.symbols.DefSymbols>
@@ -928,6 +935,7 @@
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../../../hw-libs/drivers</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcc.compiler.directories.IncludePaths>
         <armgcc.compiler.optimization.OtherFlags>-fdata-sections</armgcc.compiler.optimization.OtherFlags>
@@ -1008,6 +1016,7 @@
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../src/drivers</Value>
             <Value>../../../hw-libs/drivers</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcccpp.compiler.directories.IncludePaths>
         <armgcccpp.compiler.optimization.OtherFlags>-fdata-sections</armgcccpp.compiler.optimization.OtherFlags>
@@ -1087,6 +1096,7 @@
             <Value>../src/ASF/common/components/wifi/winc3400/wifi_drv</Value>
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcccpp.assembler.general.IncludePaths>
         <armgcccpp.assembler.debugging.DebugLevel>Default (-g)</armgcccpp.assembler.debugging.DebugLevel>
@@ -1147,6 +1157,7 @@
             <Value>../src/ASF/common/components/wifi/winc3400/wifi_drv</Value>
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
+            <Value>../src/ASF/sam/drivers/wdt</Value>
           </ListValues>
         </armgcccpp.preprocessingassembler.general.IncludePaths>
         <armgcccpp.preprocessingassembler.symbols.DefSymbols>
@@ -1237,6 +1248,7 @@
     <Folder Include="src\ASF\sam\drivers\uart\" />
     <Folder Include="src\ASF\sam\drivers\usart\" />
     <Folder Include="src\ASF\sam\drivers\usbhs\" />
+    <Folder Include="src\ASF\sam\drivers\wdt\" />
     <Folder Include="src\ASF\sam\drivers\xdmac\" />
     <Folder Include="src\ASF\sam\services\" />
     <Folder Include="src\ASF\sam\services\flash_efc\" />
@@ -1285,176 +1297,184 @@
     <Folder Include="src\ASF\thirdparty\freertos\freertos-10.0.0\Source\portable\MemMang\" />
     <Folder Include="src\config\" />
     <Folder Include="src\drivers\" />
-    <Folder Include="hw-libs\" />
-    <Folder Include="hw-libs\misc" />
-    <Folder Include="hw-libs\drivers" />
+    <Folder Include="src\SDK\hw-libs\" />
+    <Folder Include="src\SDK\hw-libs\misc" />
+    <Folder Include="src\SDK\hw-libs\drivers" />
     <Folder Include="src\SDK\" />
-    <Folder Include="hw-libs\printf-master" />
-    <Folder Include="src\" />
+    <Folder Include="src\SDK\hw-libs\printf-master" />
+    <Folder Include="src\SDK\src\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\hw-libs\communications\CAN_comm.h">
       <SubType>compile</SubType>
-      <Link>CAN_comm.h</Link>
+      <Link>src\SDK\CAN_comm.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\printf-master\printf.c">
       <SubType>compile</SubType>
-      <Link>hw-libs\printf-master\printf.c</Link>
+      <Link>src\SDK\hw-libs\printf-master\printf.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\printf-master\printf.h">
       <SubType>compile</SubType>
-      <Link>hw-libs\printf-master\printf.h</Link>
+      <Link>src\SDK\hw-libs\printf-master\printf.h</Link>
+    </Compile>
+    <Compile Include="..\..\src\protocol_nmea.cpp">
+      <SubType>compile</SubType>
+      <Link>src\SDK\src\protocol_nmea.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\src\protocol_nmea.h">
+      <SubType>compile</SubType>
+      <Link>src\SDK\src\protocol_nmea.h</Link>
     </Compile>
     <Compile Include="src\ASF\sam\drivers\mcan\mcan.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="..\..\src\com_manager.c">
       <SubType>compile</SubType>
-      <Link>src\com_manager.c</Link>
+      <Link>src\SDK\src\com_manager.c</Link>
     </Compile>
     <Compile Include="..\..\src\com_manager.h">
       <SubType>compile</SubType>
-      <Link>src\com_manager.h</Link>
+      <Link>src\SDK\src\com_manager.h</Link>
     </Compile>
     <Compile Include="..\..\src\DataCSV.cpp">
       <SubType>compile</SubType>
-      <Link>src\DataCSV.cpp</Link>
+      <Link>src\SDK\src\DataCSV.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\DataCSV.h">
       <SubType>compile</SubType>
-      <Link>src\DataCSV.h</Link>
+      <Link>src\SDK\src\DataCSV.h</Link>
     </Compile>
     <Compile Include="..\..\src\data_sets.c">
       <SubType>compile</SubType>
-      <Link>src\data_sets.c</Link>
+      <Link>src\SDK\src\data_sets.c</Link>
     </Compile>
     <Compile Include="..\..\src\data_sets.h">
       <SubType>compile</SubType>
-      <Link>src\data_sets.h</Link>
+      <Link>src\SDK\src\data_sets.h</Link>
     </Compile>
     <Compile Include="..\..\src\DeviceLogSerial.cpp">
       <SubType>compile</SubType>
-      <Link>src\DeviceLogSerial.cpp</Link>
+      <Link>src\SDK\src\DeviceLogSerial.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISComm.c">
       <SubType>compile</SubType>
-      <Link>src\ISComm.c</Link>
+      <Link>src\SDK\src\ISComm.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISComm.h">
       <SubType>compile</SubType>
-      <Link>src\ISComm.h</Link>
+      <Link>src\SDK\src\ISComm.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISDataMappings.cpp">
       <SubType>compile</SubType>
-      <Link>src\ISDataMappings.cpp</Link>
+      <Link>src\SDK\src\ISDataMappings.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISFileManager.cpp">
       <SubType>compile</SubType>
-      <Link>src\ISFileManager.cpp</Link>
+      <Link>src\SDK\src\ISFileManager.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISFileManager.h">
       <SubType>compile</SubType>
-      <Link>src\ISFileManager.h</Link>
+      <Link>src\SDK\src\ISFileManager.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISLogger.cpp">
       <SubType>compile</SubType>
-      <Link>src\ISLogger.cpp</Link>
+      <Link>src\SDK\src\ISLogger.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISLogger.h">
       <SubType>compile</SubType>
-      <Link>src\ISLogger.h</Link>
+      <Link>src\SDK\src\ISLogger.h</Link>
     </Compile>
     <Compile Include="..\..\src\DeviceLog.cpp">
       <SubType>compile</SubType>
-      <Link>src\DeviceLog.cpp</Link>
+      <Link>src\SDK\src\DeviceLog.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\DeviceLogSerial.h">
       <SubType>compile</SubType>
-      <Link>src\DeviceLogSerial.h</Link>
+      <Link>src\SDK\src\DeviceLogSerial.h</Link>
     </Compile>
     <Compile Include="..\..\src\DataChunk.cpp">
       <SubType>compile</SubType>
-      <Link>src\DataChunk.cpp</Link>
+      <Link>src\SDK\src\DataChunk.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISDataMappings.h">
       <SubType>compile</SubType>
-      <Link>src\ISDataMappings.h</Link>
+      <Link>src\SDK\src\ISDataMappings.h</Link>
     </Compile>
     <Compile Include="..\..\src\convert_ins.h">
       <SubType>compile</SubType>
-      <Link>src\convert_ins.h</Link>
+      <Link>src\SDK\src\convert_ins.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISConstants.h">
       <SubType>compile</SubType>
-      <Link>src\ISConstants.h</Link>
+      <Link>src\SDK\src\ISConstants.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISMatrix.c">
       <SubType>compile</SubType>
-      <Link>src\ISMatrix.c</Link>
+      <Link>src\SDK\src\ISMatrix.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISMatrix.h">
       <SubType>compile</SubType>
-      <Link>src\ISMatrix.h</Link>
+      <Link>src\SDK\src\ISMatrix.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISPose.c">
       <SubType>compile</SubType>
-      <Link>src\ISPose.c</Link>
+      <Link>src\SDK\src\ISPose.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISPose.h">
       <SubType>compile</SubType>
-      <Link>src\ISPose.h</Link>
+      <Link>src\SDK\src\ISPose.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISEarth.c">
       <SubType>compile</SubType>
-      <Link>src\ISEarth.c</Link>
+      <Link>src\SDK\src\ISEarth.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISEarth.h">
       <SubType>compile</SubType>
-      <Link>src\ISEarth.h</Link>
+      <Link>src\SDK\src\ISEarth.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISUtilities.cpp">
       <SubType>compile</SubType>
-      <Link>src\ISUtilities.c</Link>
+      <Link>src\SDK\src\ISUtilities.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISUtilities.h">
       <SubType>compile</SubType>
-      <Link>src\ISUtilities.h</Link>
+      <Link>src\SDK\src\ISUtilities.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.c">
       <SubType>compile</SubType>
-      <Link>hw-libs\drivers\d_flash.c</Link>
+      <Link>src\SDK\hw-libs\drivers\d_flash.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.h">
       <SubType>compile</SubType>
-      <Link>hw-libs\drivers\d_flash.h</Link>
+      <Link>src\SDK\hw-libs\drivers\d_flash.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_usartDMA.c">
       <SubType>compile</SubType>
-      <Link>hw-libs\drivers\d_usartDMA.c</Link>
+      <Link>src\SDK\hw-libs\drivers\d_usartDMA.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_usartDMA.h">
       <SubType>compile</SubType>
-      <Link>hw-libs\drivers\d_usartDMA.h</Link>
+      <Link>src\SDK\hw-libs\drivers\d_usartDMA.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\FreeRTOS_new.cpp">
       <SubType>compile</SubType>
-      <Link>hw-libs\FreeRTOS_new.cpp</Link>
+      <Link>src\SDK\hw-libs\FreeRTOS_new.cpp</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\bootloaderApp.c">
       <SubType>compile</SubType>
-      <Link>hw-libs\misc\bootloaderApp.c</Link>
+      <Link>src\SDK\hw-libs\misc\bootloaderApp.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\bootloaderApp.h">
       <SubType>compile</SubType>
-      <Link>hw-libs\misc\bootloaderApp.h</Link>
+      <Link>src\SDK\hw-libs\misc\bootloaderApp.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\rtos.c">
       <SubType>compile</SubType>
-      <Link>hw-libs\misc\rtos.c</Link>
+      <Link>src\SDK\hw-libs\misc\rtos.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\rtos.h">
       <SubType>compile</SubType>
-      <Link>hw-libs\misc\rtos.h</Link>
+      <Link>src\SDK\hw-libs\misc\rtos.h</Link>
     </Compile>
     <None Include="src\ASF\sam\drivers\efc\efc.h">
       <SubType>compile</SubType>
@@ -1462,6 +1482,12 @@
     <Compile Include="src\ASF\sam\drivers\efc\efc.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\ASF\sam\drivers\wdt\wdt.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\sam\drivers\wdt\wdt.h">
+      <SubType>compile</SubType>
+    </None>
     <Compile Include="src\ASF\sam\services\flash_efc\flash_efc.c">
       <SubType>compile</SubType>
     </Compile>

@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 void update_led_log(void);
 
 void enable_logger(bool enable);
-void step_logger(cISLogger& logger, is_comm_instance_t &comm);
+void step_logger_control(cISLogger& logger, is_comm_instance_t &comm);
 void log_ublox_raw_to_SD(cISLogger& logger, is_comm_instance_t &comm);
 
 void time_sync_from_uINS(void);

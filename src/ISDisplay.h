@@ -72,8 +72,8 @@ public:
 	string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
 	string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
 	string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const string didName);
-	string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
-	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
+	string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr, const string didName);
+	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr, const string didName);
 	string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
     string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
 	string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);

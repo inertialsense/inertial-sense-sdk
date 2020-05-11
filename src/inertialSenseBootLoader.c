@@ -1160,7 +1160,7 @@ static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* s
 	//purge buffer
 #define BUF_SIZE    100
 	unsigned char buf[BUF_SIZE];
-    while (serialPortRead(s, buf, BUF_SIZE));
+	while (serialPortRead(s, buf, BUF_SIZE)){}
 
 	//Send command
 	serialPortWrite(s, (unsigned char*)":020000041000EA", 15);
@@ -1606,7 +1606,8 @@ int bootloadGetBootloaderVersionFromFile(const char* bootName, int* verMajor, ch
 
     fseek(blfile, 0x3DFC, SEEK_SET);
     unsigned char ver_info[4];
-    fread(ver_info, 1, 4, blfile);
+	size_t n = fread(ver_info, 1, 4, blfile);
+	(void)n;
     fclose(blfile);
 
     //Check for marker for valid version info
@@ -1716,7 +1717,7 @@ static int bootloadUpdateBootloaderSendFile(bootload_params_t* p)
         }
 
         if (p->statusText)
-            p->statusText(p->obj, "Writting Bootloader...");
+            p->statusText(p->obj, "Writing bootloader...");
 
         uint32_t offset = 0;
         while (fread(buf, 1, SAM_BA_FLASH_PAGE_SIZE, file) == SAM_BA_FLASH_PAGE_SIZE)

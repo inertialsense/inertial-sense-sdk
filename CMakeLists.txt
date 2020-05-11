@@ -47,6 +47,7 @@ add_library(InertialSense
   src/ISTcpServer.cpp
   src/ISUtilities.cpp
   src/linked_list.c
+  src/ring_buffer.c
   src/serialPort.c
   src/serialPortPlatform.c
   src/time_conversion.c

@@ -430,6 +430,7 @@ int bootloadVerifyProgress(const void* port, float percent)
 
 void bootloadStatusInfo(const void* port, const char* str)
 {
+	(void)port;
 	cout << str << endl;
 }
 

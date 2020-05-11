@@ -439,7 +439,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size, int* overrun)
 		*overrun = 0;
 	}
 	
-	if (size <= 0)
+	if (size <= 0 || serialNum < 0 || serialNum >= MAX_NUMBER_SERIAL_PORTS)
 	{
 		return 0;
 	}
@@ -511,7 +511,8 @@ int serWrite(int serialNum, const unsigned char *buf, int size, int* overrun)
 		}
 		return 0;
 	}
-#endif
+#endif // #ifdef USB_PORT_NUM
+
 	// Get the DMA buffer pointer
 	dmaBuffer_tx_t	*dma = getTxDma(serialNum);
 	if (!dma || (uint32_t)size > dma->size)	return 0;
@@ -712,7 +713,7 @@ void XDMAC_Handler(void)
 		volatile dmaBuffer_tx_t	*dma = &(g_usartDMA[i].dmaTx);
 
 		//See if interrupt is active on this channel
-		if ((dma->dmaChId->XDMAC_CIS & XDMAC_CIS_BIS) && (dma->dmaChId->XDMAC_CIM & XDMAC_CIE_BIE))
+		if ((dma->dmaChId->XDMAC_CIS & XDMAC_CIS_BIS) && (dma->dmaChId->XDMAC_CIM & XDMAC_CIM_BIM))
 		{
 #if CONF_BOARD_USART_SPI_DATAREADY_ENABLE == 1
 			//See if we are in SPI mode on this USART
@@ -779,7 +780,7 @@ int serRead(int serialNum, unsigned char *buf, int size, int* overrun)
 		*overrun = 0;
 	}
 		
-	if (size <= 0)
+	if (size <= 0 || serialNum < 0 || serialNum > MAX_NUMBER_SERIAL_PORTS)
 	{
 		return 0;
 	}
@@ -875,6 +876,50 @@ int serRead(int serialNum, unsigned char *buf, int size, int* overrun)
 #endif	
 
     return size;
+}
+
+int serFindCharacter( int serialNum, uint8_t ch)
+{
+#ifdef USB_PORT_NUM
+
+	//No support for USB port at this time
+	if(serialNum == USB_PORT_NUM)
+		return 0;
+
+#endif
+
+	// Get the DMA buffer pointer
+	dmaBuffer_rx_t	*dma = getRxDma(serialNum);
+	if (!dma) return 0;
+
+	// Bytes in DMA buffer
+	uint32_t dmaUsed = serRxUsedDma(dma);
+
+	// Return if no data is available
+	if(dmaUsed == 0) return 0;
+		
+	// Flush FIFO, content of the FIFO is written to memory
+	xdmac_channel_software_flush_request(XDMAC, dma->dmaChNumber);
+	
+	// Clean & invalidate memory so we can see what is there
+	SCB_CLEANINVALIDATE_DCACHE_BY_ADDR_32BYTE_ALIGNED(dma->buf, dma->size);
+
+	//Look for character
+	uint32_t chCount = 0;
+	volatile uint8_t *ptr = dma->ptr;
+	while(++chCount <= dmaUsed)
+	{
+		if(*ptr == ch)
+			return (int)chCount;		
+			
+		//move pointer
+		ptr++;
+		if(ptr >= dma->end)	//Roll over to beginning if we reach the end
+			ptr = dma->buf;
+	}
+	
+	//Not found, return zero
+	return 0;
 }
 
 static int serEnable(int serialNum)
@@ -1143,7 +1188,7 @@ static void serLoopback(int portNum)
 			}
 
             // Toggle LED for Rx
-            LED_TOGGLE(LED_GREEN);
+            LED_TOGGLE(LED_GRN);
 
 			timeout = 0;
 		}
@@ -1225,7 +1270,7 @@ static void serLoopback(int portNum)
 				}
 
 				// Toggle LED for Rx
-				LED_TOGGLE(LED_GREEN);
+				LED_TOGGLE(LED_GRN);
 			}
 
 			watchdog_maintenance_force(); // ensure watch dog does not kill us
@@ -1536,6 +1581,10 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options)
 	// Re-init UART
 	serSetBaudRate(serialNum, ser->usart_options.baudrate);
 
+	// Enable interrupt for errors
+	usart_enable_interrupt((Usart *)ser->usart, UART_IER_OVRE | UART_IER_FRAME | UART_IER_PARE);
+	NVIC_EnableIRQ(ser->uinfo.ul_id);
+	
 	/* Initialize and enable DMA controller */
 	pmc_enable_periph_clk(ID_XDMAC);
 
@@ -1568,3 +1617,13 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options)
 
 	return 0;
 }
+
+//Interrupts get enabled for errors. Clear error in interrupt.
+void UART0_Handler(void) { UART0->UART_CR = UART_CR_RSTSTA; }
+void UART1_Handler(void) { UART1->UART_CR = UART_CR_RSTSTA; }
+void UART2_Handler(void) { UART2->UART_CR = UART_CR_RSTSTA; }
+void UART3_Handler(void) { UART3->UART_CR = UART_CR_RSTSTA; }
+void UART4_Handler(void) { UART4->UART_CR = UART_CR_RSTSTA; }
+void USART0_Handler(void) { USART0->US_CR = US_CR_RSTSTA; }
+void USART1_Handler(void) { USART1->US_CR = US_CR_RSTSTA; }
+void USART2_Handler(void) { USART2->US_CR = US_CR_RSTSTA; }

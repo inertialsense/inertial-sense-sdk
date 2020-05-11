@@ -65,13 +65,18 @@ using namespace std;
 class InertialSense : public iISTcpServerDelegate
 {
 public:
+	struct is_device_t
+	{
+		serial_port_t serialPort;
+		dev_info_t devInfo;
+		system_command_t sysCmd;
+		nvm_flash_cfg_t flashConfig;
+	};
+
 	struct com_manager_cpp_state_t
 	{
 		// per device vars
-		vector<serial_port_t> serialPorts;
-		vector<dev_info_t> devInfo;
-		vector<system_command_t> sysCmd;
-		vector<nvm_flash_cfg_t> flashConfig;
+		vector<is_device_t> devices;
 
 		// common vars
 		pfnHandleBinaryData binaryCallbackGlobal;
@@ -225,14 +230,28 @@ public:
 	* @param pHandle the pHandle to get device info for
 	* @return the device info
 	*/
-	const dev_info_t& GetDeviceInfo(int pHandle = 0) { return m_comManagerState.devInfo[pHandle]; }
+	const dev_info_t GetDeviceInfo(int pHandle = 0)
+	{
+		if ((size_t)pHandle >= m_comManagerState.devices.size())
+		{
+			pHandle = 0;
+		}
+		return m_comManagerState.devices[pHandle].devInfo;
+	}
 
 	/**
 	* Get current device system command
 	* @param pHandle the pHandle to get sysCmd for
 	* @return current device system command
 	*/
-	system_command_t GetSysCmd(int pHandle = 0) { return m_comManagerState.sysCmd[pHandle]; }
+	system_command_t GetSysCmd(int pHandle = 0) 
+	{ 
+		if ((size_t)pHandle >= m_comManagerState.devices.size())
+		{
+			pHandle = 0;
+		}
+		return m_comManagerState.devices[pHandle].sysCmd;
+	}
 
 	/**
 	* Set device configuration
@@ -246,7 +265,14 @@ public:
 	* @param pHandle the pHandle to get flash config for
 	* @return the flash config
 	*/
-	nvm_flash_cfg_t GetFlashConfig(int pHandle = 0) { return m_comManagerState.flashConfig[pHandle]; }
+	nvm_flash_cfg_t GetFlashConfig(int pHandle = 0) 
+	{
+		if ((size_t)pHandle >= m_comManagerState.devices.size())
+		{
+			pHandle = 0;
+		}
+		return m_comManagerState.devices[pHandle].flashConfig;
+	}
 
 	/**
 	* Set the flash config and update flash config on the uINS flash memory
@@ -266,7 +292,14 @@ public:
 	* @param pHandle the pHandle to get the serial port for
 	* @return the serial port
 	*/
-	serial_port_t* GetSerialPort(int pHandle = 0) { return &m_comManagerState.serialPorts[pHandle]; }
+	serial_port_t* GetSerialPort(int pHandle = 0) 
+	{
+		if ((size_t)pHandle >= m_comManagerState.devices.size())
+		{
+			return NULL;
+		}
+		return &(m_comManagerState.devices[pHandle].serialPort);
+	}
 
 	/**
 	* Get the timeout flush logger parameter in seconds
@@ -315,7 +348,10 @@ private:
 	cISStream* m_clientStream;
 	uint64_t m_clientServerByteCount;
 	bool m_disableBroadcastsOnClose;
-	com_manager_buffers_t m_cmBuffers;
+	com_manager_init_t m_cmInit;
+	com_manager_port_t *m_cmPorts;
+	is_comm_instance_t m_gpComm;
+	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 
 	// returns false if logger failed to open
 	bool EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder);

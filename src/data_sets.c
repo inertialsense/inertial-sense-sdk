@@ -281,8 +281,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
 		0,						// 20: DID_INTERNAL_DIAGNOSTIC
-        0,                      // 21: DID_GPS1_RTK_POS
-        offsetsRtkNav,          // 22: DID_GPS1_RTK_MISC,
+        0,                      // 21: DID_GPS1_RTK_POS_REL
+        offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
 		0,						// 23: DID_FEATURE_BITS
 		0,						// 24: DID_SENSORS_IS1
 		0,						// 25: DID_SENSORS_IS2
@@ -315,7 +315,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER
 		offsetsOnlyTimeFirst,	// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		offsetsOnlyTimeFirst,	// 55: DID_MAGNETOMETER_2
+		0,						// 55: unused (was DID_MAGNETOMETER_2)
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		offsetsOnlyTimeFirst,	// 57: DID_DUAL_IMU_RAW
 		offsetsOnlyTimeFirst,	// 58: DID_DUAL_IMU
@@ -347,12 +347,16 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsDualImuMag,		// 84: DID_DUAL_IMU_RAW_MAG
         offsetsDualImuMag,		// 85: DID_DUAL_IMU_MAG
         offsetsPreImuMag,		// 86: DID_PREINTEGRATED_IMU_MAG
-		0,
-		0,
-		0,
-		0,
-		0
-    };
+		0,                      // 87: 
+		0,                      // 88: 
+		0,                      // 89: 
+		0,                      // 90: 
+		0,                      // 91: DID_GPS1_RTK_CMP_REL
+		offsetsRtkNav,          // 92: DID_GPS1_RTK_CMP_MISC
+		0,                      // 93: 
+		0,                      // 94: 
+		0                       // 95: 
+	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
     STATIC_ASSERT((DID_COUNT%4) == 0);
@@ -431,8 +435,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
 		0,						// 20: DID_INTERNAL_DIAGNOSTIC
-        0,                      // 21: DID_GPS1_RTK_REL
-        0,                      // 22: DID_GPS1_RTK_MISC,
+        0,                      // 21: DID_GPS1_RTK_POS_REL
+        0,                      // 22: DID_GPS1_RTK_POS_MISC,
 		0,						// 23: DID_FEATURE_BITS
 		0,						// 24: DID_SENSORS_IS1
 		0,						// 25: DID_SENSORS_IS2
@@ -465,7 +469,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 52: DID_MAGNETOMETER
 		0,						// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		0,						// 55: DID_MAGNETOMETER_2
+		0,						// 55: unused (was DID_MAGNETOMETER_2)
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		0,						// 57: DID_DUAL_IMU_RAW
 		0,						// 58: DID_DUAL_IMU
@@ -501,8 +505,12 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 88: DID_POSITION_MEASUREMENT
 		0,						// 89: DID_RTK_DEBUG_2
 		0,						// 90: DID_CAN_CONFIG
-		0						// 91: 
-    };
+		0,                      // 91: DID_GPS1_RTK_CMP_REL
+		0,                      // 92: DID_GPS1_RTK_CMP_MISC
+		0,                      // 93: 
+		0,                      // 94: 
+		0                       // 95: 
+	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
 
@@ -574,8 +582,10 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE_RAW;
 		case DID_GPS1_UBX_POS:			return RMC_BITS_GPS1_UBX_POS;
 		case DID_GPS1_RTK_POS:			return RMC_BITS_GPS1_RTK_POS;
-		case DID_GPS1_RTK_REL:			return RMC_BITS_GPS1_RTK_REL;
-		case DID_GPS1_RTK_MISC:			return RMC_BITS_GPS1_RTK_MISC;
+		case DID_GPS1_RTK_POS_REL:		return RMC_BITS_GPS1_RTK_POS_REL;
+		case DID_GPS1_RTK_POS_MISC:		return RMC_BITS_GPS1_RTK_POS_MISC;
+		case DID_GPS1_RTK_CMP_REL:		return RMC_BITS_GPS1_RTK_HDG_REL;
+		case DID_GPS1_RTK_CMP_MISC:		return RMC_BITS_GPS1_RTK_HDG_MISC;
 		case DID_STROBE_IN_TIME:		return RMC_BITS_STROBE_IN_TIME;
 		case DID_DIAGNOSTIC_MESSAGE:	return RMC_BITS_DIAGNOSTIC_MESSAGE;		
 		case DID_INL2_NED_SIGMA:		return RMC_BITS_INL2_NED_SIGMA;

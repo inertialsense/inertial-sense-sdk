@@ -35,7 +35,7 @@ extern "C" {
 
 #define STREAM_INS_FOR_TIME_SYNC        1
 #define SKI_BOX_STATUS_LED_PIN          GPIO_10_PIN
-#define UBLOX_LOG_ENABLE			    1
+#define UBLOX_LOG_ENABLE			    0
 
 /* (DID_DEBUG_ARRAY) */
 typedef struct PACKED
@@ -99,7 +99,7 @@ extern bool                     g_loggerEnabled;
 
 
 void globals_init(void);
-void com_bridge_select_preset(evb_flash_cfg_t* cfg);
+void com_bridge_apply_preset(evb_flash_cfg_t* cfg);
 void reset_config_defaults(evb_flash_cfg_t* cfg);
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin );
 int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
@@ -110,7 +110,7 @@ void nvr_slow_maintenance(void);
 
 int error_check_config(evb_flash_cfg_t *cfg);
 
-void parse_EVB_data(int len, is_comm_instance_t *comm, uint8_t *buf);
+void parse_EVB_data(is_comm_instance_t *comm, uint8_t *buf, int len);
 
 
 #ifdef __cplusplus

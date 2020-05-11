@@ -286,6 +286,10 @@ extern void vPortFree(void* pv);
 #define SWAP64(v) ((uint64_t)(((uint64_t)SWAP32((uint64_t)(v) >> 32)) | ((uint64_t)SWAP32((uint64_t)(v)) << 32)))
 #endif
 
+#ifndef _ABS
+#define _ABS(a) (a < 0 ? -a : a)
+#endif
+
 #ifndef _MAX 
 #define _MAX(a,b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -439,6 +443,8 @@ extern void vPortFree(void* pv);
 #define C_WEEKS_TO_SECONDS        604800.0      // Seconds per week
 #define C_WEEKS_TO_MILLISECONDS   604800000     // Milliseconds per week
 
+#define MS2SEC_D(ms)    ((static_cast<double>(ms))*1.0E-3)	// Convert milliseconds to seconds
+
 //////////////////////////////////////////////////////////////////////////
 // Distance
 
@@ -462,6 +468,8 @@ extern void vPortFree(void* pv);
 
 #define C_METERS_KNOTS	1.943844		// Meters/sec squared to knots
 #define C_METERS_KNOTS_F 1.943844f		// Meters/sec squared to knots
+
+#define C_KNOTS_METERS_F 0.514444444f	// Knots to meters/sec
 
 //////////////////////////////////////////////////////////////////////////
 // Acceleration / Force
@@ -557,6 +565,9 @@ extern void vPortFree(void* pv);
 #define C_MM2M_F         0.001f
 #define C_M2MM        1000.0
 #define C_M2MM_F      1000.0f
+
+#define C_CM2M           0.01
+#define C_CM2M_F         0.01f
 
 #define C_IN2M           0.0254
 #define C_IN2M_F         0.0254f

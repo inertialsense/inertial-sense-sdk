@@ -324,12 +324,12 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			isTowMode = true; 
 			break;
 
-		case DID_GPS1_RTK_REL:
+		case DID_GPS1_RTK_POS_REL:
 			msgTimeMs = d.gpsRtkRel.timeOfWeekMs;
 			isTowMode = true;
 			break;
 
-		case DID_GPS1_RTK_MISC:
+		case DID_GPS1_RTK_POS_MISC:
 			msgTimeMs = d.gpsPos.timeOfWeekMs;
 			gpsTowMsOffset = (int)(1000.0*d.gpsPos.towOffset);
 			isTowMode = false;
@@ -514,14 +514,16 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
 	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
-	case DID_MAGNETOMETER:
+	case DID_MAGNETOMETER:      str = DataToStringMag(d.mag, data->hdr);                break;
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
 	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);              break;
-	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_POS");		break;
-	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS2_POS");		break;
-	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_RTK_POS");	break;
-	case DID_GPS1_RTK_REL:      str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);		break;
-	case DID_GPS1_RTK_MISC:     str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
+	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_POS");				break;
+	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS2_POS");				break;
+	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_RTK_POS");			break;
+	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr, "DID_GPS1_RTK_POS_REL");	break;
+	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr, "RTK_POS_MISC");			break;
+	case DID_GPS1_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr, "DID_GPS1_RTK_CMP_REL");	break;
+	case DID_GPS1_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr, "RTK_CMP_MISC");			break;
 	case DID_GPS1_RAW:
 	case DID_GPS2_RAW:
 	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);          break;
@@ -1070,9 +1072,9 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 			gps.lla[0],					// GPS Latitude
 			gps.lla[1],					// GPS Longitude
 			gps.lla[2]);				// GPS Ellipsoid altitude (meters)
-		if (gps.status&GPS_STATUS_FLAGS_RTK_ENABLED)
+		if (gps.status&GPS_STATUS_FLAGS_RTK_POSITION_ENABLED)
 		{
-			if (gps.status&GPS_STATUS_FLAGS_GPS_COMPASSING_ENABLED) 
+			if (gps.status&GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED) 
 			{ 
 				ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing, "); 
 			}
@@ -1089,14 +1091,14 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const p_data_hdr_t& hdr, const string didName)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_GPS1_RTK_REL:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "%s:", didName.c_str());
 
 #if DISPLAY_DELTA_TIME==1
 	static int lastTimeMs = 0;
@@ -1127,14 +1129,15 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, const p_data_hdr_t& hdr, const string didName)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
 	const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
-	ptr += SNPRINTF(buf, ptrEnd - ptr, "RTK MISC: T=%d, lla[%4.7f,%4.7f,%7.3f], A[%3.3f,%3.3f,%3.3f], AR:%3.3f, dop(g,h,v)[%3.3f,%3.3f,%3.3f] %s",
+	ptr += SNPRINTF(buf, ptrEnd - ptr, "%s: T=%d, lla[%4.7f,%4.7f,%7.3f], A[%3.3f,%3.3f,%3.3f], AR:%3.3f, dop(g,h,v)[%3.3f,%3.3f,%3.3f] %s",
+		didName.c_str(),
 		rtk.timeOfWeekMs, rtk.baseLla[0], rtk.baseLla[1], rtk.baseLla[2],
 		rtk.accuracyPos[0], rtk.accuracyPos[1], rtk.accuracyPos[2],
 		rtk.arThreshold,

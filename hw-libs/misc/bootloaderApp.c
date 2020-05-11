@@ -79,8 +79,8 @@ void set_reset_pin_enabled(int enabled)
 }
 
 
-void enable_bootloader(void)
-{
+void enable_bootloader(int pHandle)
+{	
     // update the bootloader header jump signature to indicate we want to go to bootloader
     bootloader_header_t header;
     memcpy(&header, (void*)BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE);
@@ -95,6 +95,13 @@ void enable_bootloader(void)
     // unlock flash in case of firmware downgrade
     unlockUserFlash();
     
+	// Let the bootloader know which port to use for the firmware update.  Set key and port number.
+	GPBR->SYS_GPBR[3] = PORT_SEL_KEY_SYS_GPBR_3;
+	GPBR->SYS_GPBR[4] = PORT_SEL_KEY_SYS_GPBR_4;
+	GPBR->SYS_GPBR[5] = PORT_SEL_KEY_SYS_GPBR_5;
+	GPBR->SYS_GPBR[6] = PORT_SEL_KEY_SYS_GPBR_6;
+	GPBR->SYS_GPBR[7] = pHandle;
+
     // reset processor
     soft_reset_backup_register(SYS_FAULT_STATUS_ENABLE_BOOTLOADER);
 }

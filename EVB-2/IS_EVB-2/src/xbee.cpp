@@ -187,7 +187,7 @@ static void xbee_receive(is_comm_instance_t *comm)
     }
 
     // Parse EVB data from USB
-    parse_EVB_data(len, comm, buf);
+    parse_EVB_data(comm, buf, len);
 	
     if( xbee_runtime_mode()  
 //         || g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS232

@@ -42,13 +42,17 @@
 
 #define CONF_BOARD_CONFIG_MPU_AT_INIT
 
+// Setup to use the Watchdog
+#define ENABLE_WDT
+
+#ifdef ENABLE_WDT
+	#define CONF_BOARD_KEEP_WATCHDOG_AT_INIT    // Don't change WDT mode register in init.c
+#endif
+
 /* Enable ICache and DCache */
 #if CONF_BOARD_ENABLE_DCACHE == 1
 	#define CONF_BOARD_ENABLE_CACHE_AT_INIT
 #endif
-
-/** Enable Com Port. */
-// #define CONF_BOARD_UART_CONSOLE
 
 /** Enable SD MMC interface pins through HSMCI */
 #define CONF_BOARD_SD_MMC_HSMCI

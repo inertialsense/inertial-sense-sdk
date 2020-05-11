@@ -102,19 +102,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
 		}
-		else if (startsWith(a, "-bv"))
-		{
-			g_commandLineOptions.bootloaderVerify = true;
-		}
-        else if (startsWith(a, "-b="))
-        {
-            g_commandLineOptions.updateAppFirmwareFilename = &a[3];
-        }
-		else if (startsWith(a, "-bl="))
-		{
-			g_commandLineOptions.updateBootloaderFilename = &a[4];
-		}
-        else if (startsWith(a, "-c="))
+		else if (startsWith(a, "-c="))
 		{
 			g_commandLineOptions.comPort = &a[3];
 		}
@@ -291,18 +279,26 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamRtkPos = (int)atof(&a[11]);
 		}
-        else if (startsWith(a, "-msgRtkPos"))
-        {
-            g_commandLineOptions.streamRtkPos = 1;
-        }
-		else if (startsWith(a, "-msgRtkRel="))
+		else if (startsWith(a, "-msgRtkPos"))
 		{
-			g_commandLineOptions.streamRtkRel = (int)atof(&a[11]);
+			g_commandLineOptions.streamRtkPos = 1;
 		}
-        else if (startsWith(a, "-msgRtkRel"))
-        {
-            g_commandLineOptions.streamRtkRel = 1;
-        }
+		else if (startsWith(a, "-msgRtkPosRel="))
+		{
+			g_commandLineOptions.streamRtkPosRel = (int)atof(&a[11]);
+		}
+		else if (startsWith(a, "-msgRtkPosRel"))
+		{
+			g_commandLineOptions.streamRtkPosRel = 1;
+		}
+		else if (startsWith(a, "-msgRtkCmpRel="))
+		{
+			g_commandLineOptions.streamRtkCmpRel = (int)atof(&a[11]);
+		}
+		else if (startsWith(a, "-msgRtkCmpRel"))
+		{
+			g_commandLineOptions.streamRtkCmpRel = 1;
+		}
 		else if (startsWith(a, "-msgRTOS="))
 		{
 			g_commandLineOptions.streamRTOS = (int)atof(&a[9]);
@@ -365,10 +361,18 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
 		}
-        else if (startsWith(a, "-ub="))
+		else if (startsWith(a, "-ub="))
+		{
+			g_commandLineOptions.updateBootloaderFilename = &a[4];
+		}
+        else if (startsWith(a, "-uf="))
         {
-            g_commandLineOptions.updateBootloaderFilename = &a[4];
+            g_commandLineOptions.updateAppFirmwareFilename = &a[4];
         }
+		else if (startsWith(a, "-uv"))
+		{
+			g_commandLineOptions.bootloaderVerify = true;
+		}
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
@@ -452,17 +456,17 @@ void cltool_outputUsage()
 	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
 	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
-	cout << "    -b=" << boldOff << "FILEPATH     update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
-	cout << "    -bl=" << boldOff << "BLFILEPATH  use in conjunction with -b option to check and update bootloader if needed using .bin file BLFILEPATH. " << endlbOn;
-	cout << "    -bv" << boldOff << "             enable verify after firmware update." << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -q" << boldOff << "              quiet mode, no display" << endlbOn;
     cout << "    -reset         " << boldOff << " issue software reset.  Use caution." << endlbOn;
     cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
 	cout << "    -stats" << boldOff << "          display statistics of data received" << endlbOn;
     cout << "    -survey=[s],[d]" << boldOff << " survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
-    cout << "    -ub=" << boldOff << "FILEPATH    update bootloader firmware using SAM-BA and .bin file FILEPATH" << endlbOn;
-    cout << endlbOn;
+	cout << "    -uf=" << boldOff << "FILEPATH    update firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
+	cout << "    -ub=" << boldOff << "BLFILEPATH  update bootloader using .bin file BLFILEPATH. Combine with -b option to check version and updated if needed." << endlbOn;
+	cout << "    -uv" << boldOff << "             verify after firmware update." << endlbOn;
+
+	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
 	cout << "    -msgPresetPPD " << boldOff << "  stream preset: post processing data sets" << endlbOn;
 	cout << "    -msgPresetINS2" << boldOff << "  stream preset: INS2 sets" << endlbOn;
@@ -474,8 +478,9 @@ void cltool_outputUsage()
 	cout << "    -msgGPS *      " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
 	cout << "    -msgSensors *  " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
 	cout << "    -msgRtkPos *   " << boldOff << "  stream DID_GPS1_RTK_POS" << endlbOn;
-	cout << "    -msgRtkRel *   " << boldOff << "  stream DID_GPS1_RTK_REL" << endlbOn;
-    cout << "    -persistent   " << boldOff << "  save current streams as persistent messages enabled on startup" << endlbOn;
+	cout << "    -msgRtkPosRel *" << boldOff << "  stream DID_GPS1_RTK_POS_REL" << endlbOn;
+	cout << "    -msgRtkCmpRel *" << boldOff << "  stream DID_GPS1_RTK_CMP_REL" << endlbOn;
+	cout << "    -persistent   " << boldOff << "  save current streams as persistent messages enabled on startup" << endlbOn;
 	cout << "                * Message can be appended with =<PERIODMULTIPLE> to change message frequency. Period is then equal to message" << endlbOn; 
 	cout << "                  source times the PERIODMULTIPLE. If not appended the data will stream at a default rate." << endlbOn;
 	cout << "                  Example: -msgINS2=10 will stream data at startupNavDtMs x 10" << endlbOn;

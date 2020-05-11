@@ -149,6 +149,16 @@ extern "C" {
 // bootloader sets all bytes in header to this value on deploy
 #define BOOTLOADER_HEADER_INITIAL_FILL_UINT_32 ((uint32_t)0xFEFEFEFE)
 
+// Serial port selection key
+#define PORT_SEL_KEY_SYS_GPBR_3		0x09ea4f06
+#define PORT_SEL_KEY_SYS_GPBR_4		0x13d6007e
+#define PORT_SEL_KEY_SYS_GPBR_5		0x93f035fe
+#define PORT_SEL_KEY_SYS_GPBR_6		0xd096ae0f
+
+#define PORT_SEL_SER0	0
+#define PORT_SEL_SER1	1
+#define PORT_SEL_USB	2
+
 typedef union
 {
 	struct  

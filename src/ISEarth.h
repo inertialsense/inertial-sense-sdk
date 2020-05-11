@@ -52,11 +52,15 @@ typedef Matrix4     Matrix4_t;
 
 //_____ P R O T O T Y P E S ________________________________________________
 
-/* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude */
-void ecef2lla(const double *Pe, double *LLA, const bool metric, const int Niter);
+/* 
+ * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude
+ */
+void ecef2lla(const double *Pe, double *LLA, const int Niter);
 
-/* Coordinate transformation from latitude/longitude/altitude to ECEF coordinates */
-void lla2ecef(const double *LLA, double *Pe, const bool metric);
+/*
+ * Coordinate transformation from latitude/longitude/altitude to ECEF coordinates
+ */
+void lla2ecef(const double *LLA, double *Pe);
 
 /*
  *  Find NED (north, east, down) from LLAref to LLA
@@ -131,7 +135,6 @@ void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt);
  */
 f_t baro2msl( f_t pKPa );
 
-
 /*
  *  Find linear distance between lat,lon,alt (rad,rad,m) coordinates.
  *
@@ -140,7 +143,6 @@ f_t baro2msl( f_t pKPa );
 f_t llaRadDistance( double lla1[3], double lla2[3] );
 f_t llaDegDistance( double lla1[3], double lla2[3] );
 
-
 /*
  *  Check if lat,lon,alt (deg,deg,m) coordinates are valid.
  *
@@ -148,6 +150,10 @@ f_t llaDegDistance( double lla1[3], double lla2[3] );
  */
 int llaDegValid( double lla[3] );
 
+/* 
+ * IGF-80 gravity model with WGS-84 ellipsoid refinement 
+*/
+float gravity_igf80(double lat, double alt);
 
 #ifdef __cplusplus
 }

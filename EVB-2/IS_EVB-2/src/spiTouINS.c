@@ -393,7 +393,8 @@ static uint32_t getTxFree(void)
 int spiTouINS_serWrite(const unsigned char *buf, int size)
 {
 	if (size <= 0) return 0;
-
+	if (g_rtos.task[EVB_TASK_SPI_UINS_COM].handle == 0) return 0;	//Block executing if we have not been configured
+	
 	//Disable interrupt so we don't get double writes
 	pio_disable_interrupt(INS_DATA_RDY_PIN_PIO, INS_DATA_RDY_PIN_MASK);
 	spi_disable_interrupt(SPI_INS_BASE, SPI_IER_TDRE);

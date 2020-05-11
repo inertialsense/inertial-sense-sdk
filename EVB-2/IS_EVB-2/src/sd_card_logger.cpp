@@ -85,7 +85,7 @@ static void start_logger(cISLogger& logger, is_comm_instance_t &comm)
     update_led_log();
 
 //     uINS0_stream_stop_all(comm);
-    uINS0_stream_enable_PPD(comm);
+    uINS_stream_enable_PPD(comm);
 
 //     logger.InitSave(LOGTYPE_DAT, cISLogger::g_emptyString, 1, 0.5f, 1024 * 1024 * 5, 131072);
     logger.InitSave(cISLogger::LOGTYPE_DAT, "IS_logs", 1, 0.5f, 1024 * 1024 * 5, 16384);
@@ -130,7 +130,7 @@ void enable_logger(bool enable)
 }
 
 
-void step_logger(cISLogger& logger, is_comm_instance_t &comm)
+void step_logger_control(cISLogger& logger, is_comm_instance_t &comm)
 {
     switch(s_enableLogger)
     {
@@ -157,7 +157,7 @@ void log_ublox_raw_to_SD(cISLogger& logger, is_comm_instance_t &comm)
             std::string ubloxFile = (logger.LogDirectory() + "/raw_ublox.ubx");
             s_ubloxLog = new cISLogFileFatFs(ubloxFile.c_str(), "wb");
         }
-        s_ubloxLog->write(comm.buffer, comm.bufferPtr - comm.buffer);
+        s_ubloxLog->write(comm.buf.head, comm.buf.tail - comm.buf.head);
     }
 
 #endif

@@ -35,72 +35,69 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define POWA2	40680631590769.000	// = pow(6378137.0,2)
 #define POWB2	40408299984661.453	// = pow(6356752.31424518,2)
-
 #define POWA2_F	40680631590769.000f	// = pow(6378137.0,2)
 #define POWB2_F	40408299984661.453f	// = pow(6356752.31424518,2)
 
-
+#define ONE_MINUS_F 0.996647189335253 // (1 - f), where f = 1.0 / 298.257223563 is Earth flattening
+#define E_SQ  0.006694379990141 // e2 = 1 - (1-f)*(1-f) - square of first eccentricity
+#define REQ 6378137.0         // Re - Equatorial radius, m
+#define REP 6356752.314245179 // Rp - Polar radius, m
+#define E2xREQ 42697.67270717795 // e2 * Re
+#define E2xREQdivIFE 42841.31151331153 // e2 * Re / (1 -f)
+#define GEQ 9.7803253359        // Equatorial gravity
+#define K_GRAV 0.00193185265241 // defined gravity constants
+#define K3_GRAV 3.0877e-6       // 
+#define K4_GRAV 4.0e-9          //
+#define K5_GRAV 7.2e-14         //
 
 /* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude */
-void ecef2lla(const double *Pe, double *LLA, const bool metric, const int Niter)
+void ecef2lla(const double *Pe, double *LLA, const int Niter)
 {
     int i;
-    double f = 1.0 / 298.257223563; // Earth flattening
-    double R, e2, s, A, B, Rn, sinmu, beta;
+    double s, Rn, sinmu, beta;
 
     // Earth equatorial radius
-    if (metric) {
-        R = 6378137; // m
-    } else {
-        R = 20925646.3255; // ft
-    }
-
+    // Re = 6378137; // m
     // Square of first eccentricity
-    e2 = 1 - (1-f)*(1-f);
+    // e2 = 1 - (1-f)*(1-f);
 
     // Longitude
     LLA[1] = atan2(Pe[1], Pe[0]);
 
     // Latitude computation using Bowring's method, 
     // which typically converges after 2 or 3 iterations
-    s = sqrt(Pe[0]*Pe[0] + Pe[1]*Pe[1]);
-    beta = atan2(Pe[2], (1-f)*s); // reduced latitude, initial guess
+    s = sqrt(Pe[0] * Pe[0] + Pe[1] * Pe[1]);
+    beta = atan2(Pe[2], ONE_MINUS_F * s); // reduced latitude, initial guess
 
     // Precompute these values to speed-up computation
-    B = e2 * R;
-    A = B / (1-f);
+    // B = e2 * Re; // >>> this is now E2xREQ
+    // A = e2 * Re / (1 - f); // >>> this is now E2xREQdivIFE
     for (i = 0; i < Niter; i++) {
         // iterative latitude computation
-        LLA[0] = atan2(Pe[2]+A*pow(sin(beta),3), s-B*pow(cos(beta),3));
-        beta   = atan((1-f)*tan(LLA[0]));
+        LLA[0] = atan2(Pe[2] + E2xREQdivIFE * pow(sin(beta), 3), s - E2xREQ * pow(cos(beta), 3));
+        beta   = atan(ONE_MINUS_F * tan(LLA[0]));
     }
 
     // Radius of curvature in the vertical prime
     sinmu = sin(LLA[0]);
-    Rn = R / sqrt(1 - e2*sinmu*sinmu);
+    Rn = REQ / sqrt(1.0 - E_SQ * sinmu * sinmu);
 
     // Altitude above planetary ellipsoid
-    LLA[2] = s*cos(LLA[0]) + (Pe[2]+e2*Rn*sinmu)*sinmu - Rn;
+    LLA[2] = s * cos(LLA[0]) + (Pe[2] + E_SQ * Rn * sinmu) * sinmu - Rn;
 }
 
 
 /* Coordinate transformation from latitude/longitude/altitude to ECEF coordinates */
-void lla2ecef(const double *LLA, double *Pe, const bool metric)
+void lla2ecef(const double *LLA, double *Pe)
 {
-    double e = 0.08181919084262;  // Earth first eccentricity: e = sqrt((R^2-b^2)/R^2);
-    double R, b, Rn, Smu, Cmu, Sl, Cl;
+    //double e = 0.08181919084262;  // Earth first eccentricity: e = sqrt((R^2-b^2)/R^2);
+    double Rn, Smu, Cmu, Sl, Cl;
 
     /* Earth equatorial and polar radii 
       (from flattening, f = 1/298.257223563; */
-    if (metric) {
-        R = 6378137; // m
-        // Earth polar radius b = R * (1-f)
-        b = 6356752.31424518;
-    } else {
-        R = 20925646.3255; // ft
-        // Earth polar radius b = R * (1-f)
-        b = 20855486.5953;
-    }
+    // R = 6378137; // m
+    // Earth polar radius b = R * (1-f)
+    // b = 6356752.31424518;
 
     Smu = sin(LLA[0]);
     Cmu = cos(LLA[0]);
@@ -108,11 +105,11 @@ void lla2ecef(const double *LLA, double *Pe, const bool metric)
     Cl  = cos(LLA[1]);
     
     // Radius of curvature at a surface point:
-    Rn = R / sqrt(1 - e*e*Smu*Smu);
+    Rn = REQ / sqrt(1.0 - E_SQ * Smu * Smu);
 
     Pe[0] = (Rn + LLA[2]) * Cmu * Cl;
     Pe[1] = (Rn + LLA[2]) * Cmu * Sl;
-    Pe[2] = (Rn*b*b/R/R + LLA[2]) * Smu;
+    Pe[2] = (Rn * POWB2 / POWA2 + LLA[2]) * Smu;
 }
 
 
@@ -349,5 +346,24 @@ int llaDegValid( double lla[3] )
     {    // Valid
         return 1;
     }
+}
+
+/* IGF-80 gravity model with WGS-84 ellipsoid refinement */
+float gravity_igf80(double lat, double alt)
+{
+    double g0, sinmu2;
+
+    // Equatorial gravity
+    //float ge = 9.7803253359f;
+    // Defined constant k = (b*gp - a*ge) / a / ge;
+    //double k = 0.00193185265241;
+    // Square of first eccentricity e^2 = 1 - (1 - f)^2 = 1 - (b/a)^2;
+    //double e2 = 0.00669437999013;
+
+    sinmu2 = sin(lat) * sin(lat);
+    g0 = GEQ * (1.0 + K_GRAV * sinmu2) / sqrt(1.0 - E_SQ * sinmu2);
+
+    // Free air correction
+    return (float)( g0 - (K3_GRAV - K4_GRAV * sinmu2 - K5_GRAV * alt) * alt );
 }
 

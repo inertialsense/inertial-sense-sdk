@@ -72,8 +72,8 @@ int main(int argc, char* argv[])
 	// Instead of a 0 for a message, it can be left blank (,,) to not modify the period for that message
 	// please see the user manual for additional updates and notes
 
-    // Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same
-    const char* asciiMessage = "ASCB,512,,,1000,,,,,,,";
+    // Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same, and save persistent messages.
+	const char* asciiMessage = "ASCB,512,,,1000,,,,,,,";
 
     // Get PINS1 @ 50Hz and PGPSP @ 5Hz on the connected serial port, leave all other broadcasts the same
 //     const char* asciiMessage = "ASCB,,,,20,,200,,,,,";

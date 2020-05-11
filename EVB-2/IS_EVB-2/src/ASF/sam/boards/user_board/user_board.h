@@ -221,6 +221,7 @@
 // GPIO UART
 #define GPIO_H8_UART_RXD_PIN		(PIO_PA21_IDX)
 #define GPIO_H8_UART_RXD_FLAGS	    (IOPORT_MODE_MUX_A | IOPORT_MODE_PULLUP)
+// #define GPIO_H8_UART_RXD_FLAGS	    (IOPORT_MODE_MUX_A)
 #define GPIO_H8_UART_TXD_PIN		(PIO_PB4_IDX)
 #define GPIO_H8_UART_TXD_FLAGS	    (IOPORT_MODE_MUX_D)
 
@@ -244,6 +245,14 @@
 #define LED_CFG_WHITE()             { LED_ON(LED_CFG_RED_PIN); LED_ON(LED_CFG_GRN_PIN); LED_ON(LED_CFG_BLU_PIN); }
 #define LED_CFG_OFF()               { LED_OFF(LED_CFG_RED_PIN); LED_OFF(LED_CFG_GRN_PIN); LED_OFF(LED_CFG_BLU_PIN); }
 
+#define LED_COLOR_RED()				LED_CFG_RED();
+#define LED_COLOR_GREEN()			LED_CFG_GREEN();
+#define LED_COLOR_BLUE()			LED_CFG_BLUE();
+#define LED_COLOR_CYAN()			LED_CFG_CYAN();
+#define LED_COLOR_YELLOW()			LED_CFG_YELLOW();
+#define LED_COLOR_PURPLE()			LED_CFG_PURPLE();
+#define LED_COLOR_WHITE()			LED_CFG_WHITE();
+
 // EVB - LED - Logger
 #define LED_LOG_RED_PIN			    (PIO_PA11_IDX)
 #define LED_LOG_GRN_PIN			    (PIO_PD23_IDX)
@@ -260,6 +269,8 @@
 #define LEDS_ALL_ON()               { LED_ON(LED_LOG_RED_PIN); LED_ON(LED_LOG_GRN_PIN); LED_ON(LED_LOG_BLU_PIN); }
 #define LEDS_ALL_OFF()              { LED_OFF(LED_LOG_RED_PIN); LED_OFF(LED_LOG_GRN_PIN); LED_OFF(LED_LOG_BLU_PIN); }
 #define LEDS_ALL_TOGGLE()           { LED_TOGGLE(LED_LOG_RED_PIN); LED_TOGGLE(LED_LOG_GRN_PIN); LED_TOGGLE(LED_LOG_BLU_PIN); }
+
+
 
 // LED - INS Communications
 #define LED_INS_RXD_PIN			    (PIO_PC8_IDX)       // green
@@ -328,13 +339,13 @@
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-#define CONSOLE_UART        (USART1)
-#define CONSOLE_UART_ID     (ID_USART1)
-/** USART1 pins definitions, PA21,PB4. */
-#define USART1_RXD_GPIO     (PIO_PA21_IDX)
-#define USART1_RXD_FLAGS    (IOPORT_MODE_MUX_A | IOPORT_MODE_PULLUP)
-#define USART1_TXD_GPIO     (PIO_PB4_IDX)
-#define USART1_TXD_FLAGS    (IOPORT_MODE_MUX_D)
+// #define CONSOLE_UART        (USART1)
+// #define CONSOLE_UART_ID     (ID_USART1)
+// /** USART1 pins definitions, PA21,PB4. */
+// #define USART1_RXD_GPIO     (PIO_PA21_IDX)
+// #define USART1_RXD_FLAGS    (IOPORT_MODE_MUX_A | IOPORT_MODE_PULLUP)
+// #define USART1_TXD_GPIO     (PIO_PB4_IDX)
+// #define USART1_TXD_FLAGS    (IOPORT_MODE_MUX_D)
 
 // /** USART0 pins definitions, PB0,PB1. */
 // #define USART0_RXD_GPIO   (PIO_PB0_IDX

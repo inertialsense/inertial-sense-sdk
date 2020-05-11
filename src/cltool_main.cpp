@@ -201,11 +201,15 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {
         inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS, g_commandLineOptions.streamRtkPos);
     }
-    if (g_commandLineOptions.streamRtkRel)
+    if (g_commandLineOptions.streamRtkPosRel)
     {
-        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_REL, g_commandLineOptions.streamRtkRel);
+        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS_REL, g_commandLineOptions.streamRtkPosRel);
     }
-    if (g_commandLineOptions.streamMag)
+	if (g_commandLineOptions.streamRtkCmpRel)
+	{
+		inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_CMP_REL, g_commandLineOptions.streamRtkCmpRel);
+	}
+	if (g_commandLineOptions.streamMag)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER, g_commandLineOptions.streamMag);
 	}

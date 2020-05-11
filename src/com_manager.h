@@ -27,17 +27,17 @@ extern "C" {
 /**
 Types of pass through data where the com manager will simply forward the data on to a pass through handler
 */
-typedef enum
-{
-	/** No pass through */
-	COM_MANAGER_PASS_THROUGH_NONE = 0,
-
-	/** UBLOX pass through */
-	COM_MANAGER_PASS_THROUGH_UBLOX = UBLOX_START_BYTE1,
-
-	/** RTCM3 pass through */
-	COM_MANAGER_PASS_THROUGH_RTCM3 = RTCM3_START_BYTE
-} com_manager_pass_through_t;
+// typedef enum
+// {
+// 	/** No pass through */
+// 	COM_MANAGER_PASS_THROUGH_NONE = 0,
+// 
+// 	/** UBLOX pass through */
+// 	COM_MANAGER_PASS_THROUGH_UBLOX = UBLOX_START_BYTE1,
+// 
+// 	/** RTCM3 pass through */
+// 	COM_MANAGER_PASS_THROUGH_RTCM3 = RTCM3_START_BYTE
+// } com_manager_pass_through_t;
 
 /* Contains data that determines what messages are being broadcast */
 typedef struct
@@ -56,18 +56,6 @@ typedef struct
 	/* Port to broadcast on. */
 	int32_t                 pHandle;
 } broadcast_msg_t;
-
-#define RING_BUFFER_SIZE PKT_BUF_SIZE							// ring buffer storage size
-#define RING_BUFFER_FLUSH_THRESHOLD (RING_BUFFER_SIZE / 3)		// if ring buffer start index is less than this and no space is left, clear the entire ring buffer
-
-// ring buffer struct for each pHandle in com manager
-typedef struct
-{
-	unsigned char buf[RING_BUFFER_SIZE];
-	uint32_t startIndex;
-	uint32_t endIndex;
-	uint32_t scanIndex;
-} ring_buffer_t;
 
 /* Contains data to implement ensured packet delivery */
 typedef struct
@@ -91,14 +79,11 @@ typedef struct
 	/** bytes read without a valid message */
 	uint32_t readCounter;
 
-	/** 0 if no errors encountered, otherwise non-zero */
-	uint32_t rxError;
-
 	/** Number of packets read successfully */
 	uint32_t rxPktCount;
 
-	/** Number of packets written */
-	uint32_t txPktCount;
+	/** 0 if no errors encountered, otherwise non-zero.  Used in conjunction with communicationErrorCount. */
+	uint32_t rxError;
 
 	/** number of communication errors - can be reset to 0 if desired */
 	uint32_t communicationErrorCount;
@@ -109,53 +94,36 @@ typedef struct
 	*/
 	uint8_t flags;
 
-	/** keep track of the start byte for binary parsing - do not modify */
-	uint8_t startByte;
-
-	/** keep track of the number of pass through bytes remaining - do not modify */
-	uint32_t passThroughBytes;
 } com_manager_status_t;
 
 /** Buffers used in com manager */
 typedef struct
 {
-	ring_buffer_t* ringBuffer;
-	uint32_t ringBufferSize;			// numHandles * sizeof(ring_buffer_t)
-
-	com_manager_status_t* status;
-	uint32_t statusSize;				// numHandles * sizeof(com_manager_status_t)
-
 	broadcast_msg_t* broadcastMsg;
 	uint32_t broadcastMsgSize;			// MAX_NUM_BCAST_MSGS * sizeof(broadcast_msg_t)
 
 	ensured_pkt_t* ensuredPackets;		
 	uint32_t ensuredPacketsSize;		// cmInstance->maxEnsuredPackets * sizeof(ensured_pkt_t)
 
-	void* packetContinuation;
-	uint32_t packetContinuationSize;	// numHandles * sizeof(p_data_t)
-		
-} com_manager_buffers_t;
+} com_manager_init_t;
 
 /** Maximum number of messages that may be broadcast simultaneously, per port.
 Since most messages use the RMC (real-time message controller) now, this can be fairly low */
 #define MAX_NUM_BCAST_MSGS 8
 
 // Convenience macros for creating Com Manager buffers
-#define COM_MANAGER_BUF_SIZE_RING_BUFFER(numHandles)			((numHandles)*sizeof(ring_buffer_t))
-#define COM_MANAGER_BUF_SIZE_STATUS(numHandles)					((numHandles)*sizeof(com_manager_status_t))
 #define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)		((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
 #define COM_MANAGER_BUF_SIZE_ENSURED_PKTS(max_num_ensured_pkts)	((max_num_ensured_pkts)*sizeof(ensured_pkt_t))
-#define COM_MANAGER_BUF_SIZE_PKT_CONTINUATION(numHandles)		((numHandles)*sizeof(p_data_t))
 
 // com manager instance / handle is a void*
 typedef void* CMHANDLE;
 
 // com manager callback prototypes
 // readFnc read data from the serial port represented by pHandle - return number of bytes read
-typedef int(*pfnComManagerRead)(CMHANDLE cmHandle, int pHandle, unsigned char* readIntoBytes, int numberOfBytes);
+typedef int(*pfnComManagerRead)(CMHANDLE cmHandle, int pHandle, uint8_t *buffer, int numberOfBytes);
 
 // sendFnc send data to the serial port represented by pHandle - return number of bytes written
-typedef int(*pfnComManagerSend)(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend);
+typedef int(*pfnComManagerSend)(CMHANDLE cmHandle, int pHandle, unsigned char* buffer, int numberOfBytes);
 
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
 typedef int(*pfnComManagerSendBufferAvailableBytes)(CMHANDLE cmHandle, int pHandle);
@@ -173,10 +141,13 @@ typedef void(*pfnComManagerDisableBroadcasts)(CMHANDLE cmHandle, int pHandle);
 typedef void(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle);
 
 // ASCII message handler function, return 1 if message handled
-typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
+// typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
+
+// Generic message handler function, return 1 if message handled
+typedef int(*pfnComManagerGenMsgHandler)(CMHANDLE cmHandle, int pHandle, const unsigned char* msg, int msgSize);
 
 // pass through handler
-typedef void(*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_through_t passThroughType, int pHandle, const unsigned char* data, int dataLength);
+// typedef int(*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_through_t passThroughType, int pHandle, const unsigned char* data, int dataLength);
 
 // broadcast message handler
 typedef int(*pfnComManagerAsapMsg)(CMHANDLE cmHandle, int pHandle, p_data_get_t* req);
@@ -199,9 +170,26 @@ typedef struct
 
 typedef struct
 {
-	// identifier for packets
-	uint8_t pktCounter;
+	// Comm instances 
+	is_comm_instance_t comm;
 
+	// Comm instance data buffer
+	uint8_t comm_buffer[PKT_BUF_SIZE];
+
+	// Current status
+	com_manager_status_t status;
+
+#if ENABLE_PACKET_CONTINUATION
+
+	// Continuation data for packets
+	p_data_t con;
+
+#endif
+	
+} com_manager_port_t;
+	
+typedef struct
+{
 	// reads n bytes into buffer from the source (usually a serial port)
 	pfnComManagerRead readCallback;
 
@@ -222,53 +210,43 @@ typedef struct
 
 	// Pointer to local data and data specific callback functions
 	registered_data_t regData[DID_COUNT];
-
-	// numHandles elements
-	ring_buffer_t* ringBuffers;
-
+	
+	// Array of port
+	com_manager_port_t *ports;
+		
 	// ensured packets
 	ensured_pkt_t* ensuredPackets;
 
-	// handle ASCII messages not handled elsewhere.  Returns 1 on success, 0 on failure.
-	pfnComManagerAsciiMessageHandler asciiMessageHandler;
-	pfnComManagerAsciiMessageHandler asciiMessageHandlerPost;
-
-	asciiMessageMap_t* asciiMessages;
-	uint32_t asciiMessagesCount;
 	broadcast_msg_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
 
 	int32_t lastEnsuredPacketIndex;
 
 	// Number of communication ports
-	int32_t numHandes;
+	int32_t numHandles;
 
-	// default is 2, max number of packets to ensured delivery at one time.  Adjust based on available memory.
+	// max number of packets to ensured delivery at one time.  Adjust based on available memory.
 	int32_t maxEnsuredPackets;
 
-	// default is 2 - processing interval
+	// processing interval
 	int32_t stepPeriodMilliseconds;
 
-	// default is 3 - Ensure retry count
+	// Ensure retry count
 	int32_t ensureRetryCount;
-
-	// current status, malloc for each possible port
-	com_manager_status_t* status;
 
 	// user defined pointer
 	void* userPointer;
 
-	// pass through handler
-	pfnComManagerPassThrough passThroughHandler;
+	// Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
+	pfnComManagerAsapMsg cmMsgHandlerRmc;
 
-	// broadcast message handler
-	pfnComManagerAsapMsg rmcHandler;
+	// Message handler - ASCII
+	pfnComManagerGenMsgHandler cmMsgHandlerAscii;
 
-#if ENABLE_PACKET_CONTINUATION
+	// Message handler - Ublox
+	pfnComManagerGenMsgHandler cmMsgHandlerUblox;
 
-	// continuation data for packets
-	p_data_t* con;
-
-#endif
+	// Message handler - RTCM3
+	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
 
 } com_manager_t;
 
@@ -310,7 +288,8 @@ int comManagerInit
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
-	com_manager_buffers_t *buffers
+	com_manager_init_t *buffers,
+	com_manager_port_t *cmPorts
 );
 
 // Initialize an instance to a com manager that can be passed to instance functions and can later be freed with freeComManagerInstance
@@ -328,14 +307,17 @@ int comManagerInitInstance
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
-	com_manager_buffers_t *buffers
+	com_manager_init_t *buffers,
+	com_manager_port_t *cmPorts
 );
 
 /**
 Performs one round of sending and receiving message. This should be called as often as you want to send and receive data.
 */
 void comManagerStep(void);
-void comManagerStepInstance(CMHANDLE cmInstance);
+void comManagerStepInstance(CMHANDLE cmInstance_);
+void comManagerStepRxInstance(CMHANDLE cmInstance);
+void comManagerStepTxInstance(CMHANDLE cmInstance);
 
 /**
 Make a request to a port handle to broadcast a piece of data at a set interval.
@@ -538,47 +520,23 @@ void comManagerRegister(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManag
 void comManagerRegisterInstance(CMHANDLE cmInstance, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags);
 
 /**
-Register handlers for when ASCII messages are received. This is also an internal function,
-but you can implement it if you are writing your own receiver on a device.
+Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
 
-@param asciiMessages the ASCII messages to handle, ownership is assumed to be elsewhere (usually this will be a static variable)
-@param asciiMessagesCount the number of items in asciiMessages
-@param msgFunc handler for messages that were not in the asciiMessages array
-@param msgFuncPost handle for messages that were not in the asciiMessages array after they are parsed out
+@param msgFunc handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
+@param msgFunc handler for ASCII messages.
+@param msgFunc handler for ublox messages.
+@param msgFunc handler for RTCM3 messages.
 */
-void comManagerRegisterASCII(asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc, pfnComManagerAsciiMessageHandler msgFncPost);
-void comManagerRegisterASCIIInstance(CMHANDLE cmInstance, asciiMessageMap_t* asciiMessages, int asciiMessagesCount, pfnComManagerAsciiMessageHandler msgFnc, pfnComManagerAsciiMessageHandler msgFncPost);
-
-/**
-Set a com manager pass through handler, handler can be 0 or null to remove the current handler
-
-	// setup pass-through handler for u-blox, rtcm3, etc.  This should be called following comManagerInit().
-	comManagerSetPassThrough(passThroughHandler);
-
-    // Example how to handle incoming ublox, rtcm, etc. data
-    void passThroughHandler(CMHANDLE handle, com_manager_pass_through_t type, int pHandle, const unsigned char* data, int dataLength)
-    {
-        if (type == COM_MANAGER_PASS_THROUGH_UBLOX)
-        {
-            if (g_nvmFlashCfg->RTKCfgBits & RTK_CFG_BITS_RTK_ROVER)
-            {
-                processUbloxRtkPacket(data, dataLength, pHandle);
-            }
-        }
-        else if (type == COM_MANAGER_PASS_THROUGH_RTCM3 && (g_nvmFlashCfg->RTKCfgBits & RTK_CFG_BITS_RTK_ROVER) != 0)
-        {
-            processRtcm3RtkPacket(data, dataLength, pHandle);
-        }
-    }
-*/
-void comManagerSetPassThrough(pfnComManagerPassThrough handler);
-void comManagerSetPassThroughInstance(CMHANDLE cmInstance, pfnComManagerPassThrough handler);
-
-/**
-Set a com manager broadcast message handler, handler can be 0 or null to remove the current handler
-*/
-void comManagerSetRmcCallback(pfnComManagerAsapMsg handler);
-void comManagerSetRmcCallbackInstance(CMHANDLE cmInstance, pfnComManagerAsapMsg handler);
+void comManagerSetCallbacks(
+	pfnComManagerAsapMsg rmcHandler,
+	pfnComManagerGenMsgHandler asciiHandler,
+	pfnComManagerGenMsgHandler ubloxHandler, 
+	pfnComManagerGenMsgHandler rtcm3Handler);
+void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
+	pfnComManagerAsapMsg rmcHandler,
+	pfnComManagerGenMsgHandler asciiHandler,
+	pfnComManagerGenMsgHandler ubloxHandler,
+	pfnComManagerGenMsgHandler rtcm3Handler);
 
 /**
 Attach user defined data to a com manager instance

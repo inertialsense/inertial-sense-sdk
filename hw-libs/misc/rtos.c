@@ -184,10 +184,11 @@ void vApplicationMallocFailedHook(uint32_t size, uint32_t remaining, uint32_t pr
     GPBR->SYS_GPBR[GPBR_IDX_G4_FLASH_MIG] = size;
     GPBR->SYS_GPBR[GPBR_IDX_G5_LR] = remaining;
 
-    // Capture call stack
-    GPBR->SYS_GPBR[GPBR_IDX_PC]  = prevLR;        // program counter of call to malloc
+	// Capture call stack
+    GPBR->SYS_GPBR[GPBR_IDX_PC]  = prevLR;		// program counter of call to malloc
 
-    soft_reset_no_backup_register();
+	soft_reset_no_backup_register();
+
 #endif
 }
 
@@ -405,11 +406,11 @@ void RTC_Handler    (void) { for (;;); }
 void WDT_Handler    (void) { for (;;); }
 void PMC_Handler    (void) { for (;;); }
 void EFC_Handler    (void) { for (;;); }
-void UART0_Handler  (void) { for (;;); }
-void UART1_Handler  (void) { for (;;); }
-void USART0_Handler (void) { for (;;); }
-void USART1_Handler (void) { for (;;); }
-void USART2_Handler (void) { for (;;); }
+//void UART0_Handler  (void) { for (;;); }
+//void UART1_Handler  (void) { for (;;); }
+//void USART0_Handler (void) { for (;;); }
+//void USART1_Handler (void) { for (;;); }
+//void USART2_Handler (void) { for (;;); }
 #ifdef _SAME70_HSMCI_INSTANCE_
 void HSMCI_Handler  (void) { for (;;); }
 #endif /* _SAME70_HSMCI_INSTANCE_ */
@@ -448,9 +449,9 @@ void TWIHS2_Handler (void) { for (;;); }
 #endif /* _SAME70_TWIHS2_INSTANCE_ */
 void SPI1_Handler   (void) { for (;;); }
 void QSPI_Handler   (void) { for (;;); }
-void UART2_Handler  (void) { for (;;); }
-void UART3_Handler  (void) { for (;;); }
-void UART4_Handler  (void) { for (;;); }
+//void UART2_Handler  (void) { for (;;); }
+//void UART3_Handler  (void) { for (;;); }
+//void UART4_Handler  (void) { for (;;); }
 #ifdef _SAME70_TC2_INSTANCE_
 void TC6_Handler    (void) { for (;;); }
 #endif /* _SAME70_TC2_INSTANCE_ */

@@ -198,6 +198,10 @@ void mul_Mat4x4_Vec4x1( Vector4 result, const Matrix4 m, const Vector4 v );
  */
 void mul_Mat4x4_Trans_Vec4x1( Vector4 result, const Matrix4 m, const Vector4 v );
 
+/* Negate 
+*/
+void neg_Mat3x3(Matrix3 result, const Matrix3 m);
+
 /* Multiply
  * result(3x3) = v1(3x1) * v2(1x3)
  */
