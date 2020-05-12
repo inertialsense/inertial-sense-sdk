@@ -1852,7 +1852,7 @@ typedef struct PACKED
     /** INS dynamic platform model.  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t					insDynModel;
 
-	// Reserved
+	/** Reserved */
 	uint8_t					reserved;
 
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
@@ -2955,28 +2955,28 @@ enum eEvb2ComBridgePreset
     EVB2_CB_PRESET_NA = 0,
 
     /** No connections.  Off: XBee, WiFi */
-	EVB2_CB_PRESET_ALL_OFF,
+	EVB2_CB_PRESET_ALL_OFF = 1,
 
     /** [uINS Hub] LED-GRN (uINS-COM): USB, RS232, H8.  (uINS-AUX): XRadio.  Off: XBee, WiFi */
-    EVB2_CB_PRESET_RS232,
+    EVB2_CB_PRESET_RS232 = 2,
 
     /** [uINS Hub] LED-BLU (uINS-COM): USB, RS232, H8.  (uINS-AUX): XBee, XRadio.  Off: WiFi */
-    EVB2_CB_PRESET_RS232_XBEE,
+    EVB2_CB_PRESET_RS232_XBEE = 3,
 
     /** [uINS Hub] LED-PUR (uINS-COM): USB, RS422, H8.  (uINS-AUX): WiFi, XRadio.  Off: XBee */
-    EVB2_CB_PRESET_RS422_WIFI,
+    EVB2_CB_PRESET_RS422_WIFI = 4,
 
     /** [uINS Hub] LED-CYA (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee */
-    EVB2_CB_PRESET_SPI_RS232,
+    EVB2_CB_PRESET_SPI_RS232 = 5,
 
     /** [USB Hub]  LED-YEL (USB): RS232, H8, XBee, XRadio. */
-    EVB2_CB_PRESET_USB_HUB_RS232,
+    EVB2_CB_PRESET_USB_HUB_RS232 = 6,
 
     /** [USB Hub]  LED-WHT (USB): RS485/RS422, H8, XRadio. */
-    EVB2_CB_PRESET_USB_HUB_RS422,
+    EVB2_CB_PRESET_USB_HUB_RS422 = 7,
 	
     /** Number of bridge configuration presets */
-	EVB2_CB_PRESET_COUNT,
+	EVB2_CB_PRESET_COUNT = 8,
     
 };
 

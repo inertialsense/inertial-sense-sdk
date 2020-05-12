@@ -37,68 +37,68 @@ void globals_init(void)
 }
 
 
-void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg);
-void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg)
+void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg, uint8_t uinsComPort);
+void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg, uint8_t uinsComPort)
 {
-	if(cfg->uinsComPort >= EVB2_PORT_COUNT)
+	if(uinsComPort >= EVB2_PORT_COUNT)
 	{
 		return;
 	}
 		
-	if(g_flashCfg->uinsComPort != EVB2_PORT_USB)
+	if(uinsComPort != EVB2_PORT_USB)
 	{
-		cfg->cbf[g_flashCfg->uinsComPort] |= (1<<EVB2_PORT_USB);
-		cfg->cbf[EVB2_PORT_USB]           |= (1<<g_flashCfg->uinsComPort);
+		cfg->cbf[uinsComPort]		|= (1<<EVB2_PORT_USB);
+		cfg->cbf[EVB2_PORT_USB]     |= (1<<uinsComPort);
 	}
 
-	if(g_flashCfg->uinsComPort != EVB2_PORT_SP330)
+	if(uinsComPort != EVB2_PORT_SP330)
 	{
-		cfg->cbf[g_flashCfg->uinsComPort] |= (1<<EVB2_PORT_SP330);
-		cfg->cbf[EVB2_PORT_SP330]         |= (1<<g_flashCfg->uinsComPort);
+		cfg->cbf[uinsComPort]		|= (1<<EVB2_PORT_SP330);
+		cfg->cbf[EVB2_PORT_SP330]   |= (1<<uinsComPort);
 	}
 }
 
 
-void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg);
-void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg)
+void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg, uint8_t uinsAuxPort);
+void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg, uint8_t uinsAuxPort)
 {
-// 	if (cfg->uinsComPort == cfg->uinsAuxPort)
+// 	if (cfg->uinsComPort == uinsAuxPort)
 // 	{	// Using UINS-AUX as primary communication link.  Skip this section. 
 // 		return;
 // 	}
 	
-	if (cfg->uinsAuxPort >= EVB2_PORT_COUNT)
+	if (uinsAuxPort >= EVB2_PORT_COUNT)
 	{	// Port disabled
 		return;
 	}
 
 	// XRadio Forwarding		
-    if (cfg->uinsAuxPort != EVB2_PORT_XRADIO)
+    if (uinsAuxPort != EVB2_PORT_XRADIO)
     {
 		switch(cfg->cbPreset)
 		{
 		case EVB2_CB_PRESET_RS232:
 		case EVB2_CB_PRESET_RS232_XBEE:
 		case EVB2_CB_PRESET_RS422_WIFI:
-			cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_XRADIO);
-			cfg->cbf[EVB2_PORT_XRADIO] |= (1<<cfg->uinsAuxPort);
+			cfg->cbf[uinsAuxPort]		|= (1<<EVB2_PORT_XRADIO);
+			cfg->cbf[EVB2_PORT_XRADIO]	|= (1<<uinsAuxPort);
 		}
 	}
 
 	// XBee Forwarding
-    if ((cfg->uinsAuxPort != EVB2_PORT_XBEE) &&
+    if ((uinsAuxPort != EVB2_PORT_XBEE) &&
 		(cfg->cbPreset == EVB2_CB_PRESET_RS232_XBEE))
     {
-		cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_XBEE);
-		cfg->cbf[EVB2_PORT_XBEE]   |= (1<<cfg->uinsAuxPort);
+		cfg->cbf[uinsAuxPort]		|= (1<<EVB2_PORT_XBEE);
+		cfg->cbf[EVB2_PORT_XBEE]	|= (1<<uinsAuxPort);
 	}
 	
 	// WiFi Forwarding
-    if ((cfg->uinsAuxPort != EVB2_PORT_WIFI) &&
+    if ((uinsAuxPort != EVB2_PORT_WIFI) &&
 		(cfg->cbPreset == EVB2_CB_PRESET_RS422_WIFI))
     {
-		cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_WIFI);
-		cfg->cbf[EVB2_PORT_WIFI]   |= (1<<cfg->uinsAuxPort);
+		cfg->cbf[uinsAuxPort]		|= (1<<EVB2_PORT_WIFI);
+		cfg->cbf[EVB2_PORT_WIFI]	|= (1<<uinsAuxPort);
 	}
 }
 
@@ -117,8 +117,8 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
     case EVB2_CB_PRESET_RS232:		
     case EVB2_CB_PRESET_RS232_XBEE:
     case EVB2_CB_PRESET_RS422_WIFI:
-		com_bridge_apply_preset_uins_com(cfg);		// UINS communication port used for SD logging.
-		com_bridge_apply_preset_uins_aux(cfg);		// UINS auxiliary port used for RTK corrections.
+		com_bridge_apply_preset_uins_com(cfg, cfg->uinsComPort);		// UINS communication port used for SD logging.
+		com_bridge_apply_preset_uins_aux(cfg, cfg->uinsAuxPort);		// UINS auxiliary port used for RTK corrections.
         break;
 
     case EVB2_CB_PRESET_SPI_RS232:
@@ -389,7 +389,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 6;			// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 7;			// increment key to force config to revert to defaults (overwrites customer's settings)
 
 	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 
