@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "globals.h"
 
 
+dev_info_t                  g_evbDevInfo = {0};
 wheel_encoder_t				g_wheelEncoder = {0};
 evb_status_t                g_status = {0};
 evb_flash_cfg_t*            g_flashCfg;
@@ -27,78 +28,118 @@ evb_rtos_info_t             g_rtos = {0};
 date_time_t                 g_gps_date_time = {0};
 //uint32_t					g_CANbaud_kbps = 500;
 //uint32					g_can_receive_address = 0;
-bool                        g_gpsTimeSync=false;
-int                         g_comm_time_ms=0;
-bool                        g_loggerEnabled=false;
+bool                        g_gpsTimeSync = false;
+uint32_t                    g_comm_time_ms = 0;
+bool                        g_loggerEnabled = false;
+uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
+bool                        g_enRtosStats = 0;
 
 
 void globals_init(void)
 {
+	// Init Device Info struct
+	g_evbDevInfo.hardwareVer[0] = 2;
+	g_evbDevInfo.hardwareVer[1] = 0;
+	switch(g_hdw_detect)
+	{
+	case HDW_DETECT_VER_EVB_2_0_0:				g_evbDevInfo.hardwareVer[2] = 0;	break;
+	default: /* HDW_DETECT_VER_EVB_2_0_1 */		g_evbDevInfo.hardwareVer[2] = 1;	break;
+	}
+	g_evbDevInfo.hardwareVer[3] = 0;
+
+// 	g_evbDevInfo.firmwareVer[0] = FIRMWARE_VERSION_CHAR0;      // Major
+// 	g_evbDevInfo.firmwareVer[1] = FIRMWARE_VERSION_CHAR1;      // Minor
+// 	g_evbDevInfo.firmwareVer[2] = FIRMWARE_VERSION_CHAR2;      // Revision
+// 	g_evbDevInfo.firmwareVer[3] = FIRMWARE_VERSION_CHAR3;		// firmware specific revision
+
+	g_evbDevInfo.protocolVer[0] = PROTOCOL_VERSION_CHAR0;		// in com_manager.h
+	g_evbDevInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
+	g_evbDevInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;		// in data_sets.h
+	g_evbDevInfo.protocolVer[3] = PROTOCOL_VERSION_CHAR3;
+
+// 	g_evbDevInfo.repoRevision = REPO_HEAD_COUNT;
+// 	g_evbDevInfo.buildNumber  = BUILD_NUMBER;
+
+#if defined(DEBUG)
+	g_evbDevInfo.buildDate[0] = 'd';					// Debug
+#else
+	g_evbDevInfo.buildDate[0] = 'r';					// Release
+#endif
+// 	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
+// 	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
+// 	g_evbDevInfo.buildDate[3] = BUILD_DATE_DAY;
+
+// 	g_evbDevInfo.buildTime[0] = BUILD_TIME_HOUR;
+// 	g_evbDevInfo.buildTime[1] = BUILD_TIME_MINUTE;
+// 	g_evbDevInfo.buildTime[2] = BUILD_TIME_SECOND;
+// 	g_evbDevInfo.buildTime[3] = (uint8_t)BUILD_TIME_MILLISECOND;
+// 
+	strncpy(g_evbDevInfo.manufacturer, "Inertial Sense INC", DEVINFO_MANUFACTURER_STRLEN);
 }
 
 
-void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg);
-void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg)
+void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg, uint8_t uinsComPort);
+void com_bridge_apply_preset_uins_com(evb_flash_cfg_t* cfg, uint8_t uinsComPort)
 {
-	if(cfg->uinsComPort >= EVB2_PORT_COUNT)
+	if(uinsComPort >= EVB2_PORT_COUNT)
 	{
 		return;
 	}
 		
-	if(g_flashCfg->uinsComPort != EVB2_PORT_USB)
+	if(uinsComPort != EVB2_PORT_USB)
 	{
-		cfg->cbf[g_flashCfg->uinsComPort] |= (1<<EVB2_PORT_USB);
-		cfg->cbf[EVB2_PORT_USB]           |= (1<<g_flashCfg->uinsComPort);
+		cfg->cbf[uinsComPort]		|= (1<<EVB2_PORT_USB);
+		cfg->cbf[EVB2_PORT_USB]     |= (1<<uinsComPort);
 	}
 
-	if(g_flashCfg->uinsComPort != EVB2_PORT_SP330)
+	if(uinsComPort != EVB2_PORT_SP330)
 	{
-		cfg->cbf[g_flashCfg->uinsComPort] |= (1<<EVB2_PORT_SP330);
-		cfg->cbf[EVB2_PORT_SP330]         |= (1<<g_flashCfg->uinsComPort);
+		cfg->cbf[uinsComPort]		|= (1<<EVB2_PORT_SP330);
+		cfg->cbf[EVB2_PORT_SP330]   |= (1<<uinsComPort);
 	}
 }
 
 
-void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg);
-void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg)
+void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg, uint8_t uinsAuxPort);
+void com_bridge_apply_preset_uins_aux(evb_flash_cfg_t* cfg, uint8_t uinsAuxPort)
 {
-// 	if (cfg->uinsComPort == cfg->uinsAuxPort)
+// 	if (cfg->uinsComPort == uinsAuxPort)
 // 	{	// Using UINS-AUX as primary communication link.  Skip this section. 
 // 		return;
 // 	}
 	
-	if (cfg->uinsAuxPort >= EVB2_PORT_COUNT)
+	if (uinsAuxPort >= EVB2_PORT_COUNT)
 	{	// Port disabled
 		return;
 	}
 
 	// XRadio Forwarding		
-    if (cfg->uinsAuxPort != EVB2_PORT_XRADIO)
+    if (uinsAuxPort != EVB2_PORT_XRADIO)
     {
 		switch(cfg->cbPreset)
 		{
 		case EVB2_CB_PRESET_RS232:
 		case EVB2_CB_PRESET_RS232_XBEE:
 		case EVB2_CB_PRESET_RS422_WIFI:
-			cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_XRADIO);
-			cfg->cbf[EVB2_PORT_XRADIO] |= (1<<cfg->uinsAuxPort);
+			cfg->cbf[uinsAuxPort]		|= (1<<EVB2_PORT_XRADIO);
+			cfg->cbf[EVB2_PORT_XRADIO]	|= (1<<uinsAuxPort);
 		}
 	}
 
 	// XBee Forwarding
-    if ((cfg->uinsAuxPort != EVB2_PORT_XBEE) &&
+    if ((uinsAuxPort != EVB2_PORT_XBEE) &&
 		(cfg->cbPreset == EVB2_CB_PRESET_RS232_XBEE))
     {
-		cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_XBEE);
-		cfg->cbf[EVB2_PORT_XBEE]   |= (1<<cfg->uinsAuxPort);
+		cfg->cbf[uinsAuxPort]		|= (1<<EVB2_PORT_XBEE);
+		cfg->cbf[EVB2_PORT_XBEE]	|= (1<<uinsAuxPort);
 	}
 	
 	// WiFi Forwarding
-    if ((cfg->uinsAuxPort != EVB2_PORT_WIFI) &&
+    if ((uinsAuxPort != EVB2_PORT_WIFI) &&
 		(cfg->cbPreset == EVB2_CB_PRESET_RS422_WIFI))
     {
-		cfg->cbf[cfg->uinsAuxPort] |= (1<<EVB2_PORT_WIFI);
-		cfg->cbf[EVB2_PORT_WIFI]   |= (1<<cfg->uinsAuxPort);
+		cfg->cbf[uinsAuxPort]		|= (1<<EVB2_PORT_WIFI);
+		cfg->cbf[EVB2_PORT_WIFI]	|= (1<<uinsAuxPort);
 	}
 }
 
@@ -117,8 +158,8 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
     case EVB2_CB_PRESET_RS232:		
     case EVB2_CB_PRESET_RS232_XBEE:
     case EVB2_CB_PRESET_RS422_WIFI:
-		com_bridge_apply_preset_uins_com(cfg);		// UINS communication port used for SD logging.
-		com_bridge_apply_preset_uins_aux(cfg);		// UINS auxiliary port used for RTK corrections.
+		com_bridge_apply_preset_uins_com(cfg, cfg->uinsComPort);		// UINS communication port used for SD logging.
+		com_bridge_apply_preset_uins_aux(cfg, cfg->uinsAuxPort);		// UINS auxiliary port used for RTK corrections.
         break;
 
     case EVB2_CB_PRESET_SPI_RS232:
@@ -389,7 +430,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 6;			// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 7;			// increment key to force config to revert to defaults (overwrites customer's settings)
 
 	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 
@@ -408,7 +449,9 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->server[0].port = 7778;
 	cfg->server[1].ipAddr = nmi_inet_addr((void*)"192.168.1.144");
 	cfg->server[1].port = 2000;
-	cfg->encoderTickToWheelRad = .0179999f;	// Husqvarna lawnmower
+// 	cfg->encoderTickToWheelRad = 0.0179999f;	// Husqvarna lawnmower
+	cfg->encoderTickToWheelRad = 0.054164998f;	// Husqvarna lawnmower
+	
 
 	com_bridge_apply_preset(cfg);
 	

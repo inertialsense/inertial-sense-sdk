@@ -124,9 +124,9 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
 	sizeMap[DID_GPS1_RTK_POS] = sizeof(gps_pos_t);
 	sizeMap[DID_GPS1_RTK_POS_REL] = sizeof(gps_rtk_rel_t);
-	sizeMap[DID_GPS1_RTK_CMP_REL] = sizeof(gps_rtk_rel_t);
 	sizeMap[DID_GPS1_RTK_POS_MISC] = sizeof(gps_rtk_misc_t);
-	sizeMap[DID_GPS1_RTK_CMP_MISC] = sizeof(gps_rtk_misc_t);
+	sizeMap[DID_GPS2_RTK_CMP_REL] = sizeof(gps_rtk_rel_t);
+	sizeMap[DID_GPS2_RTK_CMP_MISC] = sizeof(gps_rtk_misc_t);
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
@@ -1773,7 +1773,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "inl2Misc",				// 51: DID_INL2_MISC
         "magnetometer",			// 52: DID_MAGNETOMETER
         "barometer",			// 53: DID_BAROMETER
-        "gpsRtkPos",			// 54: DID_GPS1_RTK_POS
+        "gps1RtkPos",			// 54: DID_GPS1_RTK_POS
         "unused_55",			// 55: unused (was DID_MAGNETOMETER_2)
         "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
         "imuDualRaw",			// 57: DID_DUAL_IMU_RAW
@@ -1810,8 +1810,8 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"positionMeasurement",  // 88: DID_POSITION_MEASUREMENT
 		"rtkDebug2",            // 89: DID_RTK_DEBUG_2
 		"canconfig",			// 90: 
-		"gpsRtkCmpRel",			// 91: DID_GPS1_RTK_CMP_REL
-		"gpsRtkCmpMisc",		// 92: DID_GPS1_RTK_CMP_MISC
+		"gps2RtkCmpRel",		// 91: DID_GPS2_RTK_CMP_REL
+		"gps2RtkCmpMisc",		// 92: DID_GPS2_RTK_CMP_MISC
 		"unused_93",			// 93: 
 		"unused_94",			// 94: 
 		"unused_95"				// 95: 

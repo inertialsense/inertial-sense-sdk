@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="Logo_Full_color_300x61.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.8.1</span>
+   &#160;<span id="projectnumber">Release 1.8.2</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -92,6 +92,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ac30f7aaf495c4654169ccd8a7aa7060d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa41f8ba97357c75e2238577d03c0b93a"><td class="memItemLeft" align="right" valign="top">uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#aa41f8ba97357c75e2238577d03c0b93a">dataPtr</a></td></tr>
 <tr class="separator:aa41f8ba97357c75e2238577d03c0b93a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8956382dbc23280e11b18a14e639bb7"><td class="memItemLeft" align="right" valign="top">uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#af8956382dbc23280e11b18a14e639bb7">pktPtr</a></td></tr>
+<tr class="separator:af8956382dbc23280e11b18a14e639bb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae90af7445993edae2ea21bfe37d66c42"><td class="memItemLeft" align="right" valign="top">uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#ae90af7445993edae2ea21bfe37d66c42">altDecodeBuf</a></td></tr>
+<tr class="separator:ae90af7445993edae2ea21bfe37d66c42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc3565e30eacb58cb94cd2d6f288b760"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#acc3565e30eacb58cb94cd2d6f288b760">ackNeeded</a></td></tr>
 <tr class="separator:acc3565e30eacb58cb94cd2d6f288b760"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4aca1e38b35d7fc5e49e853b7fa1afeb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structpacket__t.html">packet_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structis__comm__instance__t.html#a4aca1e38b35d7fc5e49e853b7fa1afeb">pkt</a></td></tr>
@@ -100,7 +104,7 @@ Public Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An instance of an is_comm interface. Do not modify these values. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00478">478</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00481">481</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="acc3565e30eacb58cb94cd2d6f288b760"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acc3565e30eacb58cb94cd2d6f288b760">&#9670;&nbsp;</a></span>ackNeeded</h2>
@@ -115,7 +119,25 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Acknowledge packet needed in response to the last packet received </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00508">508</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00517">517</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="ae90af7445993edae2ea21bfe37d66c42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae90af7445993edae2ea21bfe37d66c42">&#9670;&nbsp;</a></span>altDecodeBuf</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t* is_comm_instance_t::altDecodeBuf</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Alternate buffer location to decode packets. This buffer must be PKT_BUF_SIZE in size. NULL value will caused packet decode to occurr at head of <a class="el" href="structis__comm__instance__t.html#af4797293c9ba54891399bd0c92ad10f5">is_comm_instance_t.buf</a>. Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge). <br  />
+ </p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00514">514</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -132,7 +154,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>The buffer to use for communications send and receive - this buffer should be large enough to handle the largest data structure you expect * 2 + 32 for worst case packet encoding A minimum of 128 is recommended. Set once before calling init. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00484">484</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00487">487</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -149,7 +171,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Enable/disable protocol parsing </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00487">487</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00490">490</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -166,7 +188,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Data identifier (DID), size and offset </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00502">502</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00505">505</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -181,9 +203,9 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Data pointer to start of valid packet </p>
+<p>Data pointer to start of valid data set </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00505">505</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00508">508</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -200,7 +222,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Start byte </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00496">496</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00499">499</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -217,7 +239,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Used to validate ublox, RTCM, and ASCII packets </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00499">499</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00502">502</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -233,6 +255,23 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>IS binary packet </p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00520">520</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+
+</div>
+</div>
+<a id="af8956382dbc23280e11b18a14e639bb7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8956382dbc23280e11b18a14e639bb7">&#9670;&nbsp;</a></span>pktPtr</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t* is_comm_instance_t::pktPtr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Packet pointer to start of valid packet </p>
 
 <p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00511">511</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
@@ -251,7 +290,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Communications error counter </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00493">493</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00496">496</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>
@@ -268,7 +307,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <p>Number of packets written </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00490">490</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8h_source.html#l00493">493</a> of file <a class="el" href="_i_s_comm_8h_source.html">ISComm.h</a>.</p>
 
 </div>
 </div>

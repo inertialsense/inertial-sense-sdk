@@ -34,9 +34,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define TASK_MAINT_PERIOD_MS            10
 #define TASK_MAINT_SLOW_SEC_PERIOD_MS   1000
 
-#define TASK_COMM_STACK_SIZE            (4096/sizeof(portSTACK_TYPE))
+// #define TASK_COMM_STACK_SIZE            (4096/sizeof(portSTACK_TYPE))
+#define TASK_COMM_STACK_SIZE            (8192/sizeof(portSTACK_TYPE))
 #define TASK_MAINT_STACK_SIZE           (4096/sizeof(portSTACK_TYPE))
-#define TASK_LOGGER_STACK_SIZE          (4096/sizeof(portSTACK_TYPE))
+// #define TASK_LOGGER_STACK_SIZE          (4096/sizeof(portSTACK_TYPE))
+#define TASK_LOGGER_STACK_SIZE          (8192/sizeof(portSTACK_TYPE))
 #define TASK_WIFI_STACK_SIZE            (2048/sizeof(portSTACK_TYPE))
 
 #define TASK_COMM_PRIORITY			    (tskIDLE_PRIORITY + 4)  // Highest
@@ -63,7 +65,10 @@ static void vTaskComm(void *pvParameters)
 		mcan_test_slave();
 #endif
 
-    udc_start();
+	// Start USB CDC after everything is running
+#ifdef USB_PORT_NUM
+	serInit(USB_PORT_NUM, 0, NULL, 0);
+#endif
 
     vTaskDelay(200);
     refresh_CFG_LED();
@@ -136,7 +141,7 @@ static void vTaskLogger(void *pvParameters)
         step_logger_control(logger, comm);
         
         // Ready uINS data from com task.  Log to file.
-        parse_uINS_data(logger, comm);
+        log_uINS_data(logger, comm);
         
         // Mount/unmount SD card
         sd_card_maintenance();
@@ -189,7 +194,18 @@ static void vTaskMaint(void *pvParameters)
         nvr_slow_maintenance();
 
         // Update RTOS stats
-        rtos_monitor(EVB_RTOS_NUM_TASKS);
+		if (g_enRtosStats)
+		{
+			rtos_monitor(EVB_RTOS_NUM_TASKS);
+		}
+		
+		if (g_uInsBootloaderEnableTimeMs)
+		{	// uINS bootloader mode enabled
+			if ( (g_comm_time_ms-g_uInsBootloaderEnableTimeMs) > 180000 )
+			{	// Automatically disable uINS after 3 minutes 
+				g_uInsBootloaderEnableTimeMs = 0;
+			}			
+		}
 
 		//////////////////////////////////////////////////////////////////////////
 		// Suggested USER CODE Section

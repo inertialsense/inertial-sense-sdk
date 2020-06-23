@@ -177,27 +177,22 @@ static bool send_next_at_command()
 
 static void xbee_receive(is_comm_instance_t *comm) 
 {
-#define BUF_SIZE 256    //USB CDC buffer size is 320
-    uint8_t buf[BUF_SIZE];
-    int len;
-
-	if((len = comRead(EVB2_PORT_XBEE, buf, BUF_SIZE, LED_XBEE_RXD_PIN)) <= 0)
-	{   // No data
-        return;
-    }
-
-    // Parse EVB data from USB
-    parse_EVB_data(comm, buf, len);
-	
     if( xbee_runtime_mode()  
 //         || g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS232
 //         || g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422
     )
     {   // Normal communications
-		com_bridge_forward(EVB2_PORT_XBEE, buf, len);
+		com_bridge_smart_forward(EVB2_PORT_XBEE, LED_XBEE_RXD_PIN);
 	}
     else 
     {   // XBee configuration/command mode
+#define BUF_SIZE 256    //USB CDC buffer size is 320
+		uint8_t buf[BUF_SIZE];
+		int len;
+		if((len = comRead(EVB2_PORT_XBEE, buf, BUF_SIZE, LED_XBEE_RXD_PIN)) <= 0)
+		{   // No data
+			return;
+		}
 
         // Look for AT "OK\r" response
         while(buf[0] == 0x4F && len < 3)

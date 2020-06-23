@@ -165,7 +165,7 @@ $ sudo usermod -a -G plugdev $USER
 ```
 5. Run executable
 ``` bash
-$ ./bin/cltool
+$ ./cltool
 ```
 
 ## Compile & Run (Windows MS Visual Studio)

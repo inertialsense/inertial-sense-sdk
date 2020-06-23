@@ -205,7 +205,8 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
     instance->ackNeeded = 0;
 	memset(&instance->pkt, 0, sizeof(packet_t));
 	instance->pkt.body.ptr = instance->buf.start;
-	instance->pkt.body.size = instance->buf.size;
+	instance->pkt.body.size = 0;
+	instance->altDecodeBuf = NULL;
 }
 
 static __inline void reset_parser(is_comm_instance_t *instance)
@@ -216,14 +217,27 @@ static __inline void reset_parser(is_comm_instance_t *instance)
 
 static protocol_type_t processInertialSensePkt(is_comm_instance_t* instance)
 {
-	uint8_t* head = instance->buf.head;
-	reset_parser(instance);
-
 	// Packet to decode into
 	packet_t *pkt = &(instance->pkt);
+	int pktSize = (int)(instance->buf.scan - instance->buf.head);
+	uint8_t* head;
 
-	// decode the packet in place on top of the receive buffer to save memory
-	if (is_decode_binary_packet(pkt, head, (int)(instance->buf.scan - head)) == 0)
+	// Set location where to decode packet. 
+	if(instance->altDecodeBuf)
+	{	// Decode to alternate buffer
+		memcpy(instance->altDecodeBuf, instance->buf.head, pktSize);
+		head = pkt->body.ptr = instance->altDecodeBuf;
+	}
+	else
+	{	// Decode packet in place on top of the receive buffer to save memory
+		head = instance->buf.head;
+		instance->pkt.body.ptr = instance->buf.start;
+	}
+
+	instance->pktPtr = instance->buf.head;
+	reset_parser(instance);
+
+	if (is_decode_binary_packet(pkt, head, pktSize) == 0)
 	{
 		instance->ackNeeded = 0;
 		instance->dataPtr = NULL;
@@ -249,7 +263,7 @@ static protocol_type_t processInertialSensePkt(is_comm_instance_t* instance)
 				}
 					
 				// Update data pointer
-				instance->dataPtr = instance->buf.start + sizeof(p_data_hdr_t);
+				instance->dataPtr = pkt->body.ptr + sizeof(p_data_hdr_t);
 				return _PTYPE_INERTIAL_SENSE_DATA;
 			}
 			else
@@ -262,13 +276,13 @@ static protocol_type_t processInertialSensePkt(is_comm_instance_t* instance)
             // copy the requested data set info
 			instance->dataHdr = *((p_data_hdr_t*)pkt->body.ptr);
 			return _PTYPE_INERTIAL_SENSE_CMD;
-
-		case PID_ACK:
-		case PID_NACK:
 		case PID_STOP_BROADCASTS_ALL_PORTS:
 		case PID_STOP_DID_BROADCAST:
 		case PID_STOP_BROADCASTS_CURRENT_PORT:
 			return _PTYPE_INERTIAL_SENSE_CMD;
+		case PID_ACK:
+		case PID_NACK:
+			return _PTYPE_INERTIAL_SENSE_ACK;
         }                    
 	}
 
@@ -298,7 +312,7 @@ static protocol_type_t processAsciiPkt(is_comm_instance_t* instance)
 		if (actualCheckSum == dataCheckSum)
 		{	// valid ASCII Data
 			// Update data pointer and info
-			instance->dataPtr = head;
+			instance->dataPtr = instance->pktPtr = head;
 			instance->dataHdr.id = 0;
 			instance->dataHdr.size = (uint32_t)(instance->buf.scan - head);
 			instance->dataHdr.offset = 0;
@@ -372,6 +386,7 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 				instance->dataHdr.id = 0;
 				instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
 				instance->dataHdr.offset = 0;
+				instance->pktPtr = instance->buf.head;
 				reset_parser(instance);
 				return _PTYPE_UBLOX;
 			}
@@ -428,6 +443,7 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 				instance->dataHdr.id = 0;
 				instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
 				instance->dataHdr.offset = 0;
+				instance->pktPtr = instance->buf.head;
 				reset_parser(instance);
 				return _PTYPE_RTCM3;
 			}
@@ -880,6 +896,7 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
     return (int)(ptrDest - (uint8_t*)encodedPacket);
 }
 
+// This function will decode a packet in place if altBuf is NULL.
 int is_decode_binary_packet(packet_t* pkt, unsigned char* pbuf, int pbufSize)
 {
 	// before we even get in this method, we can be assured that pbuf starts with a packet start byte and ends with a packet end byte
@@ -892,7 +909,6 @@ int is_decode_binary_packet(packet_t* pkt, unsigned char* pbuf, int pbufSize)
 
 	// decode the body and calculate checksum
 	uint8_t* ptrSrc = pbuf;
-	uint8_t* ptrDest = (uint8_t*)&pkt->hdr;
 	uint8_t* ptrSrcEnd = pbuf + pbufSize;
 	packet_ftr_t ftr;
 	uint32_t actualCheckSumValue;
@@ -902,6 +918,7 @@ int is_decode_binary_packet(packet_t* pkt, unsigned char* pbuf, int pbufSize)
 	uint32_t checkSumValue = CHECKSUM_SEED;
 
 	// start packet byte
+	uint8_t* ptrDest = (uint8_t*)&pkt->hdr;
 	*ptrDest++ = *ptrSrc++;
 
 	if

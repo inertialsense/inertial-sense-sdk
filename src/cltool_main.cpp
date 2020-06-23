@@ -207,7 +207,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
 	if (g_commandLineOptions.streamRtkCmpRel)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_CMP_REL, g_commandLineOptions.streamRtkCmpRel);
+		inertialSenseInterface.BroadcastBinaryData(DID_GPS2_RTK_CMP_REL, g_commandLineOptions.streamRtkCmpRel);
 	}
 	if (g_commandLineOptions.streamMag)
 	{

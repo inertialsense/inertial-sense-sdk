@@ -58,6 +58,7 @@ typedef struct
 		uDatasets	set;
 	}				data;
 	uint32_t		size;		// size of data
+	uint32_t		pktSize;	// size of encoded packet (pkt header, data header, data, pkt footer)
 } data_holder_t;
 
 test_data_t tcm = {};
@@ -522,7 +523,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 
 	for (int i = 0; i < testDeque.size(); i++)
 	{
-		data_holder_t td = testDeque[i];
+		data_holder_t &td = testDeque[i];
 		int n = 0;
 
 		// Add packetized data to ring buffer
@@ -531,12 +532,14 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		case _PTYPE_INERTIAL_SENSE_DATA:
 			// Packetize data 
 			n = is_comm_data(&comm, td.did, 0, td.size, (void*)&(td.data));
+			td.pktSize = n;
 			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
 			break;
 
 		case _PTYPE_ASCII_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
+			td.pktSize = td.size;
 			EXPECT_FALSE(ringBufWrite(rbuf, td.data.buf, td.size));
 			break;
 		}
@@ -757,3 +760,244 @@ TEST(ComManager, RxWithGarbageTest)
 	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
 }
 #endif
+
+
+#if 1
+TEST(ComManager, Evb2AltDecodeBufferTest)
+{
+	// This test ensures that packets can be read and decoded to the alternate buffer (not in the default comm.buf.start buffer).
+
+	// Init Port Buffers
+	ringBufInit(&(tcm.portTxBuf), tcm.portTxBuffer, sizeof(tcm.portTxBuffer), 1);
+	ringBufInit(&(tcm.portRxBuf), tcm.portRxBuffer, sizeof(tcm.portRxBuffer), 1);
+	initComManager(tcm);
+
+	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
+	uint8_t altDecodBuf[PKT_BUF_SIZE] = {};
+	comm.altDecodeBuf = altDecodBuf;
+
+	// Generate and add data to deque
+	generateData(g_testRxDeque);
+
+	// Add deque data to Rx port ring buffer
+	addDequeToRingBuf(g_testRxDeque, &tcm.portRxBuf);
+
+	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&tcm.portRxBuf));
+
+	while (!ringBufEmpty(&tcm.portRxBuf))
+	{
+		// Get available size of comm buffer
+		int n = is_comm_free(&comm);
+
+		// Read 5 bytes at a time
+		n = _MIN(n, 5);
+
+		// Read data directly into comm buffer
+		if ((n = ringBufRead(&tcm.portRxBuf, comm.buf.tail, n)))
+		{
+			// Update comm buffer tail pointer
+			comm.buf.tail += n;
+
+			protocol_type_t ptype = _PTYPE_NONE;
+			uDatasets dataWritten;
+
+			// Search comm buffer for valid packets
+			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+			{
+				uint8_t error = 0;
+				uint8_t *dataPtr = comm.dataPtr + comm.dataHdr.offset;
+				uint32_t dataSize = comm.dataHdr.size;
+
+				data_holder_t td = g_testRxDeque.front();
+				g_testRxDeque.pop_front();
+
+				switch (ptype)
+				{
+				case _PTYPE_INERTIAL_SENSE_DATA:
+					// Found data
+					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
+
+					is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
+
+					EXPECT_EQ(td.did, comm.dataHdr.id);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size)==0);
+					break;
+
+				case _PTYPE_UBLOX:
+				case _PTYPE_RTCM3:
+					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					break;
+
+				case _PTYPE_ASCII_NMEA:
+					DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					break;
+
+				default:
+					EXPECT_TRUE(false);
+					break;
+				}
+			}
+		}
+
+	}
+
+	// Check that no data was left behind 
+	EXPECT_TRUE(g_testRxDeque.empty());
+	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
+}
+#endif
+
+
+
+#if 1
+TEST(ComManager, Evb2DataForwardTest)
+{
+	// This test ensures that packets can be read, decoded, and forwarded for EVB-2 com_bridge without corrupting the data.
+
+	// Init Port Buffers
+	ringBufInit(&(tcm.portTxBuf), tcm.portTxBuffer, sizeof(tcm.portTxBuffer), 1);
+	ringBufInit(&(tcm.portRxBuf), tcm.portRxBuffer, sizeof(tcm.portRxBuffer), 1);
+	initComManager(tcm);
+
+	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
+	uint8_t altDecodBuf[PKT_BUF_SIZE] = {};
+	comm.altDecodeBuf = altDecodBuf;
+
+	// Generate and add data to deque
+	generateData(g_testRxDeque);
+
+	ring_buf_t evbRbuf;
+	uint8_t evbRBuffer[PORT_BUFFER_SIZE] = {};
+	ringBufInit(&evbRbuf, evbRBuffer, PORT_BUFFER_SIZE, 1);
+
+	// Add deque data to EVB port ring buffer
+	addDequeToRingBuf(g_testRxDeque, &evbRbuf);
+
+
+	DEBUG_PRINTF("===============  EVB input Data.  Size: %d  ===============\n", ringBufUsed(&evbRbuf));
+
+	int originalRingBufferUsed = ringBufUsed(&evbRbuf);
+
+	std::deque<data_holder_t> testRxDequeCopy = g_testRxDeque;
+
+	while (!ringBufEmpty(&evbRbuf))
+	{
+		// Get available size of comm buffer
+		int n = is_comm_free(&comm);
+
+		// Read 5 bytes at a time
+		n = _MIN(n, 5);
+
+		// Read data directly into comm buffer
+		if ((n = ringBufRead(&evbRbuf, comm.buf.tail, n)))
+		{
+			// Update comm buffer tail pointer
+			comm.buf.tail += n;
+
+			protocol_type_t ptype = _PTYPE_NONE;
+
+			// Search comm buffer for valid packets
+			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+			{
+				uint8_t error = 0;
+				uint8_t *dataPtr = comm.dataPtr + comm.dataHdr.offset;
+				uint32_t dataSize = comm.dataHdr.size;
+
+				data_holder_t td = testRxDequeCopy.front();
+				testRxDequeCopy.pop_front();
+
+				switch (ptype)
+				{
+				case _PTYPE_INERTIAL_SENSE_DATA:
+				case _PTYPE_ASCII_NMEA:
+				case _PTYPE_UBLOX:
+				case _PTYPE_RTCM3:
+				{
+					uint32_t pktSize = (uint32_t)_MIN(comm.buf.scan - comm.pktPtr, PKT_BUF_SIZE);
+					ringBufWrite(&tcm.portRxBuf, comm.pktPtr, pktSize);
+
+					if (td.pktSize != pktSize)
+					{
+						ASSERT_TRUE(false);
+					}
+				}
+					break;
+
+				default:
+					ASSERT_TRUE(false);
+				}
+			}
+		}
+	}
+
+	int forwardRingBufferUsed = ringBufUsed(&tcm.portRxBuf);
+	ASSERT_TRUE(forwardRingBufferUsed == originalRingBufferUsed);
+	
+
+	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&tcm.portRxBuf));
+
+	while (!ringBufEmpty(&tcm.portRxBuf))
+	{
+		// Get available size of comm buffer
+		int n = is_comm_free(&comm);
+
+		// Read 5 bytes at a time
+		n = _MIN(n, 5);
+
+		// Read data directly into comm buffer
+		if ((n = ringBufRead(&tcm.portRxBuf, comm.buf.tail, n)))
+		{
+			// Update comm buffer tail pointer
+			comm.buf.tail += n;
+
+			protocol_type_t ptype = _PTYPE_NONE;
+			uDatasets dataWritten;
+
+			// Search comm buffer for valid packets
+			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+			{
+				uint8_t error = 0;
+				uint8_t *dataPtr = comm.dataPtr + comm.dataHdr.offset;
+				uint32_t dataSize = comm.dataHdr.size;
+
+				data_holder_t td = g_testRxDeque.front();
+				g_testRxDeque.pop_front();
+
+				switch (ptype)
+				{
+				case _PTYPE_INERTIAL_SENSE_DATA:
+					// Found data
+					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
+
+					is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
+
+					EXPECT_EQ(td.did, comm.dataHdr.id);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					break;
+
+				case _PTYPE_UBLOX:
+				case _PTYPE_RTCM3:
+					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					break;
+
+				case _PTYPE_ASCII_NMEA:
+					DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					break;
+
+				default:
+					EXPECT_TRUE(false);
+					break;
+				}
+			}
+		}
+
+	}
+
+	// Check that no data was left behind 
+	EXPECT_TRUE(g_testRxDeque.empty());
+	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
+}
+#endif
+

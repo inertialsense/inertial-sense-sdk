@@ -18,17 +18,31 @@ extern "C" {
 #endif
 
 #include "../ASF/sam/drivers/usart/usart.h"
+#include "conf_d_usartDMA.h"
+
+typedef struct
+{
+	uint32_t                timeMsLast;
+	uint32_t                txByteCount;
+	uint32_t                rxByteCount;
+	uint32_t                txBytesPerS;
+	uint32_t                rxBytesPerS;
+	uint32_t                status;
+} port_monitor_helper_t;
+
+extern port_monitor_helper_t g_portMonitorHelper[MAX_NUMBER_SERIAL_PORTS];
+
 
 //_____ P R O T O T Y P E S ________________________________________________
 
-bool my_callback_cdc_enable(void);
-void my_callback_cdc_disable(void);
-void my_callback_cdc_tx_empty_notify(void);
+bool d_usartDMA_callback_cdc_enable(void);
+void d_usartDMA_callback_cdc_disable(void);
+void d_usartDMA_callback_cdc_tx_empty_notify(void);
 
 /** 
  * \brief Write data on USART.  Returns number of bytes written.
  */
-int serWrite( int serialNum, const unsigned char *buf, int size, int* overrun );
+int serWrite( int serialNum, const unsigned char *buf, int size );
 
 /**
  * \brief Read data on USART.  Returns number of bytes read.  With use of the PDCA ring buffer,
@@ -36,7 +50,7 @@ int serWrite( int serialNum, const unsigned char *buf, int size, int* overrun );
  */
 // Buffer overrun can be detected when serRxUsed decreases outside of a serRead(), because
 // the Rx PDCA (DMA) wrote past the read pointer.
-int serRead( int serialNum, unsigned char *buf, int size, int* overrun );
+int serRead( int serialNum, unsigned char *buf, int size );
 
 /**
  * \brief Removes removes data from USART Rx buffer.  Returns number of bytes removed.  Length 
@@ -85,9 +99,9 @@ int serSetBaudRate( int serialNum, int baudrate );
 int serGetBaudRate( int serialNum );
 
 /**
- * \brief Initialize serial port with specific USART/UART and DMA settings.
+ * \brief Initialize serial port with specific USART/UART and DMA settings.  If not NULL, the overrun status will have bits HDW_STATUS_ERR_COM_TX_LIMITED and HDW_STATUS_ERR_COM_RX_OVERRUN set during buffer limitation.  
  */
-int serInit( int serialNum, uint32_t baudRate, sam_usart_opt_t *options );
+int serInit( int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t* overrunStatus );
 
 #ifdef __cplusplus
 }

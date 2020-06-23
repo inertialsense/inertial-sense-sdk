@@ -81,21 +81,24 @@ POP_PACK
 
 #define STREAM_BUFFER_SIZE      4096
 
-extern uint8_t                  g_hdw_detect;
-extern wheel_encoder_t			g_wheelEncoder;
-extern evb_status_t             g_status;
-extern evb_flash_cfg_t*         g_flashCfg;
-extern nvr_manage_t             g_nvr_manage_config;
-extern nvm_config_t             g_userPage;
-extern evb_msg_t                g_msg;
-extern debug_array_t            g_debug;
-extern evb_rtos_info_t          g_rtos;
-extern date_time_t              g_gps_date_time;
+extern uint8_t                      g_hdw_detect;
+extern dev_info_t                   g_evbDevInfo;
+extern wheel_encoder_t              g_wheelEncoder;
+extern evb_status_t                 g_status;
+extern evb_flash_cfg_t*             g_flashCfg;
+extern nvr_manage_t                 g_nvr_manage_config;
+extern nvm_config_t                 g_userPage;
+extern evb_msg_t                    g_msg;
+extern debug_array_t                g_debug;
+extern evb_rtos_info_t              g_rtos;
+extern date_time_t                  g_gps_date_time;
 //extern uint32_t					g_CANbaud_kbps;
 //extern uint32_t					g_can_receive_address;
-extern bool                     g_gpsTimeSync;
-extern int                      g_comm_time_ms;
-extern bool                     g_loggerEnabled;
+extern bool                         g_gpsTimeSync;
+extern uint32_t                     g_comm_time_ms;
+extern bool                         g_loggerEnabled;
+extern uint32_t                     g_uInsBootloaderEnableTimeMs;
+extern bool                         g_enRtosStats;
 
 
 void globals_init(void);
@@ -104,14 +107,12 @@ void reset_config_defaults(evb_flash_cfg_t* cfg);
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin );
 int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
+void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
 
 void nvr_init(void);
 void nvr_slow_maintenance(void);
 
 int error_check_config(evb_flash_cfg_t *cfg);
-
-void parse_EVB_data(is_comm_instance_t *comm, uint8_t *buf, int len);
-
 
 #ifdef __cplusplus
 }

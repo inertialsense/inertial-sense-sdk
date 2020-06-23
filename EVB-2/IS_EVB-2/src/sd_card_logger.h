@@ -20,7 +20,7 @@ void update_led_log(void);
 
 void enable_logger(bool enable);
 void step_logger_control(cISLogger& logger, is_comm_instance_t &comm);
-void log_ublox_raw_to_SD(cISLogger& logger, is_comm_instance_t &comm);
+void log_ublox_raw_to_SD(cISLogger& logger, uint8_t *dataPtr, uint32_t dataSize);
 
 void time_sync_from_uINS(void);
 

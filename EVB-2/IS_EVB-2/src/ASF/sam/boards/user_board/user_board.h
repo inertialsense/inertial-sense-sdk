@@ -188,6 +188,9 @@
 #define XBEE_RST_PIN			    (PIO_PA29_IDX)
 #define XBEE_SLEEP_RQ_PIN			(PIO_PD1_IDX)
 
+// USB
+#define USB_PORT_NUM		EVB2_PORT_USB
+	
 // CAN Transceiver
 #define CAN_RXD_PIN				    (PIO_PC12_IDX)
 #define CAN_RXD_FLAGS			    (IOPORT_MODE_MUX_C)

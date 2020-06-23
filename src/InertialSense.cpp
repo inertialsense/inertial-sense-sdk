@@ -349,21 +349,24 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 	{
 		opened = (m_tcpClient.Open(pieces[1], atoi(pieces[2].c_str())) == 0);
 		string url = (pieces.size() > 3 ? pieces[3] : "");
-		string user = (pieces.size() > 4 ? pieces[4] : "");
-		string pwd = (pieces.size() > 5 ? pieces[5] : "");
+		string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
+		string username = (pieces.size() > 4 ? pieces[4] : "");
+		string password = (pieces.size() > 5 ? pieces[5] : "");
 		if (url.size() != 0)
 		{
-			m_tcpClient.HttpGet(url, "Inertial Sense", user, pwd);
+			m_tcpClient.HttpGet(url, userAgent, username, password);
 		}
 	}
 	if (opened)
 	{
+#if 0
 		// configure as RTK rover
 		uint32_t cfgBits = RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING;
 		for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 		{
 			comManagerSendData((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
 		}
+#endif
 		if (m_clientStream == NULLPTR)
 		{
 			m_clientStream = &m_tcpClient;
@@ -735,7 +738,7 @@ bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
 		// sleep in between to allow test bed to send the serial data
-		// TODO: This was 10ms, but that was to long for thr CI test.
+		// TODO: This was 10ms, but that was to long for the CI test.
 		SLEEP_MS(1);
 		serialPortWrite(&m_comManagerState.devices[i].serialPort, data, dataLength);
 	}

@@ -94,7 +94,7 @@ double time2gpst(gtime_t t, int *week)
 int dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 {
 //     unsigned int checkSum = 0;
-//     comWrite(portNum, (unsigned char*)"$", 1);
+//     serWrite(portNum, (unsigned char*)"$", 1);
 //     ASCII_PORT_WRITE_NO_FORMAT(portNum, "INFO", checkSum, 4);
 //     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.serialNumber);      // 1
 //     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.hardwareVer[0]);    // 2
@@ -416,7 +416,7 @@ int gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 	*/
 
 // 	unsigned int checkSum = 0;
-// 	comWrite( portNum, (unsigned char*)"$", 1);
+// 	serWrite( portNum, (unsigned char*)"$", 1);
 // 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGGA", checkSum, 5);
 // 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);										// 1
 // 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');		// 2,3
@@ -464,7 +464,7 @@ int gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	*/
 
 // 	unsigned int checkSum = 0;
-// 	comWrite( portNum, (unsigned char*)"$", 1);
+// 	serWrite( portNum, (unsigned char*)"$", 1);
 // 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGLL", checkSum, 5);
 // 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');		// 1,2
 // 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[1], ",%03d", 'E', 'W');		// 3,4
@@ -522,7 +522,7 @@ int gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 	*/
 
 // 	unsigned int checkSum = 0;
-// 	comWrite( portNum, (unsigned char*)"$", 1);
+// 	serWrite( portNum, (unsigned char*)"$", 1);
 // 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGSA", checkSum, 5);
 // 	ASCII_PORT_WRITE_NO_FORMAT(portNum, ",A", checkSum, 2);							// 1
 // 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%02u", (unsigned)(fixQuality));		// 2
@@ -580,7 +580,7 @@ int gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, f
 	quatConjRot(vel_ned_, qe2n, vel.vel);
 
 	// 	unsigned int checkSum = 0;
-	// 	comWrite(portNum, (unsigned char*)"$", 1);
+	// 	serWrite(portNum, (unsigned char*)"$", 1);
 	// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPRMC", checkSum, 5);
 	// 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);									// 1	// time of last fix
 	// 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
@@ -889,11 +889,12 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	//HDOP
 	ptr = ASCII_find_next_field(ptr);
 		
-	//Altitude (appears to be equivalent to hMSL)
+	//MSL Altitude (altitude above mean sea level)
 	lla[2] = atof(ptr);
+	gpsPos->hMSL = (float)lla[2];
 	ptr = ASCII_find_next_field(ptr);
 
-	//Geoid separation
+	//Geoid separation (difference between ellipsoid and mean sea level)
 	double sep = atof(ptr);
 		
 	//Store data		
@@ -905,7 +906,6 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];
 	gpsPos->lla[2] = lla[2] + sep;
-	gpsPos->hMSL = (float)lla[2];
 
 	//Change LLA to radians
 	lla[0] = DEG2RAD(lla[0]);
@@ -1007,8 +1007,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	//HDOP
 	ptr = ASCII_find_next_field(ptr);
 			
-	//Altitude (appears to be equivalent to hMSL)
+	//MSL Altitude (altitude above mean sea level)
 	lla[2] = atof(ptr);
+	gpsPos->hMSL = (float)lla[2];
 	ptr = ASCII_find_next_field(ptr);
 
 	//altUnit
@@ -1026,7 +1027,6 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];
 	gpsPos->lla[2] = lla[2] + sep;
-	gpsPos->hMSL = (float)lla[2];
 
 	//Change LLA to radians
 	lla[0] = DEG2RAD(lla[0]);

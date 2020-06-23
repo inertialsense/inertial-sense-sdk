@@ -50,6 +50,16 @@ robocopy . %SDKDIR%\logInspector assets /MIR
 robocopy . %SDKDIR%\logInspector _build_log_inspector.bat _clean_log_inspector.bat CMakeLists.txt __init__.py logInspector.py logPlotter.py logReader.py README.md setup.py
 
 echo.
+echo Sync logInspector into SDK
+cd ..\..\..\python\src\logInspector
+robocopy . %SDKDIR%\logInspector assets /MIR
+robocopy . %SDKDIR%\logInspector docs /MIR
+robocopy . %SDKDIR%\logInspector include /MIR
+robocopy . %SDKDIR%\logInspector src /MIR
+robocopy . %SDKDIR%\logInspector assets /MIR
+robocopy . %SDKDIR%\logInspector _build_log_inspector.bat _clean_log_inspector.bat CMakeLists.txt __init__.py logInspector.py logPlotter.py logReader.py README.md setup.py
+
+echo.
 echo Sync inertial_sense_ros repo
 cd ..\..\..\catkin_ws\src\inertial_sense_ros
 update_and_sync_ros_node.bat

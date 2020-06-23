@@ -73,13 +73,14 @@ extern "C" {
 /** Protocol Type */
 typedef enum
 {
-	_PTYPE_NONE					= 0,						/** No complete valid data available yet */
-	_PTYPE_PARSE_ERROR			= 0xFFFFFFFF,				/** Invalid data or checksum error */
-	_PTYPE_INERTIAL_SENSE_DATA	= 0xEFFFFFFF,				/** Protocol Type: Inertial Sense binary data */
-	_PTYPE_INERTIAL_SENSE_CMD	= 0xDFFFFFFF,				/** Protocol Type: Inertial Sense binary command */
-	_PTYPE_ASCII_NMEA			= 0xCFFFFFFF,				/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
-	_PTYPE_UBLOX				= 0xBFFFFFFF,				/** Protocol Type: uBlox binary */
-	_PTYPE_RTCM3				= 0xAFFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+	_PTYPE_NONE                 = 0,						/** No complete valid data available yet */
+	_PTYPE_PARSE_ERROR          = 0xFFFFFFFF,				/** Invalid data or checksum error */
+	_PTYPE_INERTIAL_SENSE_DATA  = 0xEFFFFFFF,				/** Protocol Type: Inertial Sense binary data */
+	_PTYPE_INERTIAL_SENSE_CMD   = 0xDFFFFFFF,				/** Protocol Type: Inertial Sense binary command */
+	_PTYPE_INERTIAL_SENSE_ACK   = 0xCFFFFFFF,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (nack)  */
+	_PTYPE_ASCII_NMEA           = 0xBFFFFFFF,				/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
+	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
+	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
 } protocol_type_t;
 
 /** uINS default baud rate */
@@ -171,18 +172,20 @@ n-2			Checksum low byte
 n-1			Packet end byte
 */
 
-	
-#define PID_INVALID                         0   /** Invalid packet id */
-#define PID_ACK                             1   /** (ACK) received valid packet */
-#define PID_NACK                            2   /** (NACK) received invalid packet */
-#define PID_GET_DATA                        3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
-#define PID_DATA                            4   /** Data sent in response to PID_GET_DATA (no PID_ACK is sent) */
-#define PID_SET_DATA                        5   /** Data sent, such as configuration options.  PID_ACK is sent in response. */
-#define PID_STOP_BROADCASTS_ALL_PORTS       6   /** Stop all data broadcasts on all ports. Responds with an ACK */
-#define PID_STOP_DID_BROADCAST              7   /** Stop a specific broadcast */
-#define PID_STOP_BROADCASTS_CURRENT_PORT    8   /** Stop all data broadcasts on current port. Responds with an ACK */
-#define PID_COUNT                           9   /** The number of packet identifiers, keep this at the end! */
-#define PID_MAX_COUNT                       32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
+// Packet IDs	
+typedef uint32_t ePacketIDs;
+
+#define PID_INVALID                         (ePacketIDs)0   /** Invalid packet id */
+#define PID_ACK                             (ePacketIDs)1   /** (ACK) received valid packet */
+#define PID_NACK                            (ePacketIDs)2   /** (NACK) received invalid packet */
+#define PID_GET_DATA                        (ePacketIDs)3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
+#define PID_DATA                            (ePacketIDs)4   /** Data sent in response to PID_GET_DATA (no PID_ACK is sent) */
+#define PID_SET_DATA                        (ePacketIDs)5   /** Data sent, such as configuration options.  PID_ACK is sent in response. */
+#define PID_STOP_BROADCASTS_ALL_PORTS       (ePacketIDs)6   /** Stop all data broadcasts on all ports. Responds with an ACK */
+#define PID_STOP_DID_BROADCAST              (ePacketIDs)7   /** Stop a specific broadcast */
+#define PID_STOP_BROADCASTS_CURRENT_PORT    (ePacketIDs)8   /** Stop all data broadcasts on current port. Responds with an ACK */
+#define PID_COUNT                           (ePacketIDs)9   /** The number of packet identifiers, keep this at the end! */
+#define PID_MAX_COUNT                       (ePacketIDs)32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
 typedef struct
@@ -314,7 +317,7 @@ typedef struct
 	/** Packet start byte, always 0xFF */
 	uint8_t             startByte;
 
-	/** Packet identifier */
+	/** Packet identifier (see ePacketIDs) */
 	uint8_t             pid;
 
 	/** Packet counter, for ACK and retry */
@@ -367,7 +370,7 @@ typedef struct
 /** Specifies the data id, size and offset of a PID_DATA and PID_DATA_SET packet */
 typedef struct
 {
-	/** Data identifier */
+	/** Data identifier (see eDataIDs) */
 	uint32_t            id;
 
 	/** Size of data, for partial requests this will be less than the size of the data structure */
@@ -448,13 +451,13 @@ typedef struct
 	/** Size of buffer */
 	uint32_t size;
 
-	/** Start of current data */
+	/** Start of data in buffer */
 	uint8_t* head;
 
-	/** End of current data */
+	/** End of data in buffer */
 	uint8_t* tail;
 
-	/** Search pointer */
+	/** Search pointer in data (head <= scan <= tail) */
 	uint8_t* scan;
 
 } is_comm_buffer_t;
@@ -501,8 +504,14 @@ typedef struct
 	/** Data identifier (DID), size and offset */
 	p_data_hdr_t dataHdr;
 
-	/** Data pointer to start of valid packet */
+	/** Data pointer to start of valid data set */
 	uint8_t* dataPtr;
+
+	/** Packet pointer to start of valid packet */
+	uint8_t* pktPtr;
+	
+	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occurr at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
+	uint8_t* altDecodeBuf;
 
 	/** Acknowledge packet needed in response to the last packet received */
 	uint32_t ackNeeded;
@@ -541,6 +550,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
 			case _PTYPE_INERTIAL_SENSE_CMD:
+			case _PTYPE_INERTIAL_SENSE_ACK:
 				break;
 			case _PTYPE_UBLOX:
 				break;
@@ -580,6 +590,7 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
 			case _PTYPE_INERTIAL_SENSE_CMD:
+			case _PTYPE_INERTIAL_SENSE_ACK:
 				break;
 			case _PTYPE_UBLOX:
 				break;

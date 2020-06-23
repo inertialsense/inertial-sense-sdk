@@ -522,8 +522,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_RTK_POS");			break;
 	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr, "DID_GPS1_RTK_POS_REL");	break;
 	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr, "RTK_POS_MISC");			break;
-	case DID_GPS1_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr, "DID_GPS1_RTK_CMP_REL");	break;
-	case DID_GPS1_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr, "RTK_CMP_MISC");			break;
+	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr, "DID_GPS2_RTK_CMP_REL");	break;
+	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr, "RTK_CMP_MISC");			break;
 	case DID_GPS1_RAW:
 	case DID_GPS2_RAW:
 	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);          break;

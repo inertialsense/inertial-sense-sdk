@@ -24,10 +24,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../hw-libs/communications/CAN_comm.h"
 #include "../src/protocol_nmea.h"
 
+typedef struct
+{
+	// Comm instances
+	is_comm_instance_t comm;
+
+	// Comm instance data buffer
+	uint8_t comm_buffer[PKT_BUF_SIZE];
+
+} comm_rx_port_t;
+
+
+#define COM_RX_PORT_COUNT	(EVB2_PORT_COUNT-1)		// exclude CAN port
+comm_rx_port_t              g_comRxPort[COM_RX_PORT_COUNT] = {};
+static uint8_t				s_rxDecodeBuffer[PKT_BUF_SIZE] = {};
+
 StreamBufferHandle_t        g_xStreamBufferUINS;
 StreamBufferHandle_t        g_xStreamBufferWiFiRx;
 StreamBufferHandle_t        g_xStreamBufferWiFiTx;
-bool                        g_usb_cdc_open=false;
 
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin )
 {
@@ -38,7 +52,7 @@ int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin 
     }
     else
     {
-        len = serWrite(serialNum, buf, size, 0);
+        len = serWrite(serialNum, buf, size);
     }
     
     if(len)
@@ -68,7 +82,7 @@ int comRead(int serialNum, unsigned char *buf, int bufSize, uint32_t ledPin)
 		usedLast[serialNum] = used;		
 #else
 		// Normal read	
-        len = serRead(serialNum, buf, bufSize, 0);
+        len = serRead(serialNum, buf, bufSize);
 #endif
     }
     
@@ -185,20 +199,15 @@ void callback_cdc_set_config(uint8_t port, usb_cdc_line_coding_t * cfg)
 
 }
 
-void callback_cdc_disable(void)
-{
-    g_usb_cdc_open = false;
-}
-
 void callback_cdc_set_dtr(uint8_t port, bool b_enable)
 {
     if (b_enable)
     {	// Host terminal has open COM
-        g_usb_cdc_open = true;
+		d_usartDMA_callback_cdc_enable();
     }
     else
     {	// Host terminal has close COM
-        g_usb_cdc_open = false;
+		d_usartDMA_callback_cdc_disable();
     }
 
     if(g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_XBEE))
@@ -269,90 +278,88 @@ void uINS_stream_enable_PPD(is_comm_instance_t &comm)
 }
 
 
-extern void log_ublox_raw_to_SD(cISLogger& logger, is_comm_instance_t &comm); 
-
-void parse_uINS_data(cISLogger &logger, is_comm_instance_t &comm)
+void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 {
-    static uint8_t buf[STREAM_BUFFER_SIZE];
-    protocol_type_t ptype;
-    int len = xStreamBufferReceive(g_xStreamBufferUINS, (void*)buf, STREAM_BUFFER_SIZE, 0);
-    static uDatasets d;    
+	uDatasets d;
 
-
-#if 0	// One byte (simple method)
-	for( int i=0; i<len; i++)
+	// Save uINS data to global variables
+	switch(dataHdr.id)
 	{
-		if((ptype = is_comm_parse_byte(&comm, buf[i])) != _PTYPE_NONE)
-		{
-			
-#else	// Set of bytes (fast method)
-	for(uint8_t *ptr = buf; len>0; ) 
-	{
-		// Number of bytes to copy
-		int n = _MIN(len, is_comm_free(&comm));
+	case DID_DEV_INFO:
+		copyDataPToStructP2(&g_msg.uInsInfo, &dataHdr, data, sizeof(dev_info_t));
+		break;
 
-		// Copy data into buffer
-		memcpy(comm.buf.tail, ptr, n);
-		comm.buf.tail += n;
-		len -= n;
-		ptr += n;
-		
-		while((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
-		{			
-#endif		
-        	// Parse Data
-			switch(ptype)
+	case DID_INS_1:
+		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_1_t));
+		g_status.week = d.ins1.week;
+		g_status.timeOfWeekMs = (uint32_t)(d.ins1.timeOfWeek*1000);
+		break;
+	                    
+	case DID_INS_2:
+		copyDataPToStructP2(&g_msg.ins2, &dataHdr, data, sizeof(ins_2_t));
+		g_status.week = g_msg.ins2.week;
+		g_status.timeOfWeekMs = (uint32_t)(g_msg.ins2.timeOfWeek*1000);
+		break;
+
+	case DID_INS_3:
+		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_3_t));
+		g_status.week = d.ins1.week;
+		g_status.timeOfWeekMs = (uint32_t)(d.ins3.timeOfWeek*1000);
+		break;
+
+	case DID_INS_4:
+		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_4_t));
+		g_status.week = d.ins4.week;
+		g_status.timeOfWeekMs = (uint32_t)(d.ins4.timeOfWeek*1000);
+		break;
+	}
+}
+
+
+void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm)
+{
+	is_evb_log_stream stm = {};
+	uint8_t data[MAX_DATASET_SIZE];
+	p_data_hdr_t dataHdr = {};
+	
+    while (xStreamBufferReceive(g_xStreamBufferUINS, (void*)&stm, sizeof(is_evb_log_stream), 0) == sizeof(is_evb_log_stream))
+    {	
+		if (stm.marker==DATA_CHUNK_MARKER)
+		{	
+			switch (stm.ptype)
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
-        		switch(comm.dataHdr.id)
-        		{
-				case DID_DEV_INFO:
-					is_comm_copy_to_struct(&g_msg.uInsInfo, &comm, sizeof(dev_info_t));
-					break;
-
-				case DID_INS_1:
-					is_comm_copy_to_struct(&d, &comm, sizeof(ins_1_t));
-					g_status.week = d.ins1.week;
-					g_status.timeOfWeekMs = (uint32_t)(d.ins1.timeOfWeek*1000);
-					break;
-                    
-				case DID_INS_2:
-					is_comm_copy_to_struct(&g_msg.ins2, &comm, sizeof(ins_2_t));
-					g_status.week = g_msg.ins2.week;
-					g_status.timeOfWeekMs = (uint32_t)(g_msg.ins2.timeOfWeek*1000);
-					break;
-
-				case DID_INS_3:
-					is_comm_copy_to_struct(&d, &comm, sizeof(ins_3_t));
-					g_status.week = d.ins1.week;
-					g_status.timeOfWeekMs = (uint32_t)(d.ins3.timeOfWeek*1000);
-					break;
-
-				case DID_INS_4:
-					is_comm_copy_to_struct(&d, &comm, sizeof(ins_4_t));
-					g_status.week = d.ins4.week;
-					g_status.timeOfWeekMs = (uint32_t)(d.ins4.timeOfWeek*1000);
-					break;
-				}
-
-				// Log Inertial Sense Binary data to SD Card
-				if(g_loggerEnabled)
+				if (xStreamBufferReceive(g_xStreamBufferUINS, (void*)&dataHdr, sizeof(p_data_hdr_t), 0) == sizeof(p_data_hdr_t))
 				{
-					logger.LogData(0, &comm.dataHdr, comm.dataPtr);
+					if (dataHdr.id < DID_COUNT && dataHdr.size < MAX_DATASET_SIZE)
+					{
+						if (xStreamBufferReceive(g_xStreamBufferUINS, (void*)data, dataHdr.size, 0) == dataHdr.size)
+						{
+							// Log Inertial Sense Binary data to SD Card
+							if(g_loggerEnabled)
+							{
+								logger.LogData(0, &dataHdr, data);
+							}
+						}
+					}	
 				}
 				break;
 				
-            case _PTYPE_UBLOX:                    
+			case _PTYPE_ASCII_NMEA:
+				break;
+
+			case _PTYPE_UBLOX:
 #if UBLOX_LOG_ENABLE
-                log_ublox_raw_to_SD(logger, comm);
+				if (xStreamBufferReceive(g_xStreamBufferUINS, (void*)&data, stm.size, 0) == stm.size)
+				{
+extern void log_ublox_raw_to_SD(cISLogger& logger, uint8_t *dataPtr, uint32_t dataSize);
+					log_ublox_raw_to_SD(logger, data, stm.size);
+				}
 #endif
-                break;
-                    
-            case _PTYPE_ASCII_NMEA:
-                break;
-        	}        	    
-    	}
-	}    
+				break;
+			}	
+		}
+	}
 }
 
 
@@ -453,117 +460,104 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 }
 
 
-
-void parse_EVB_data(is_comm_instance_t *comm, uint8_t *data, int dataSize)
+void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype)
 {
-	protocol_type_t ptype;
-
-#if 0	// One byte (simple method)
-	for( int i=0; i<dataSize; i++)
+	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
+	
+	switch(ptype)
 	{
-		if((ptype = is_comm_parse_byte(comm, data[i])) != _PTYPE_NONE)
+	case _PTYPE_INERTIAL_SENSE_DATA:
+		switch(comm->dataHdr.id)
+		{	// From host to EVB
+		case DID_EVB_STATUS:
+			is_comm_copy_to_struct(&g_status, comm, sizeof(evb_status_t));
+			break;
+				
+		case DID_EVB_FLASH_CFG:
+			evb_flash_cfg_t newCfg;
+			newCfg = *g_flashCfg;
+			is_comm_copy_to_struct(&newCfg, comm, sizeof(evb_flash_cfg_t));
+				
+			update_flash_cfg(newCfg);				
+			break;
+				
+		case DID_EVB_DEBUG_ARRAY:
+			is_comm_copy_to_struct(&g_debug, comm, sizeof(debug_array_t));
+			break;
+		}
+
+		// Disable uINS bootloader if host sends IS binary data
+		g_uInsBootloaderEnableTimeMs = 0;
+		break;
+
+	case _PTYPE_INERTIAL_SENSE_CMD:
+		if(comm->pkt.hdr.pid == PID_GET_DATA)
 		{
-			
-#else	// Set of bytes (optimal method)
-	for(uint8_t *ptr=data; dataSize>0; ) 
-	{
-		// Number of bytes to copy
-		int n = _MIN(dataSize, is_comm_free(comm));
-
-		// Copy data into buffer
-		memcpy(comm->buf.tail, ptr, n);
-		comm->buf.tail += n;
-		dataSize -= n;
-		ptr += n;
-		
-		while((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-		{			
-#endif			
-			uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
-
-			// Parse Data
-			switch(ptype)
+			int n=0;
+			is_comm_instance_t commTx;
+			uint8_t buffer[MAX_DATASET_SIZE];
+			is_comm_init(&commTx, buffer, sizeof(buffer));
+			switch(comm->dataHdr.id)
 			{
-			case _PTYPE_INERTIAL_SENSE_DATA:
-				switch(comm->dataHdr.id)
-				{
-				case DID_EVB_STATUS:
-					is_comm_copy_to_struct(&g_status, comm, sizeof(evb_status_t));
-					break;
-				
-				case DID_EVB_FLASH_CFG:
-					evb_flash_cfg_t newCfg;
-					newCfg = *g_flashCfg;
-					is_comm_copy_to_struct(&newCfg, comm, sizeof(evb_flash_cfg_t));
-				
-					update_flash_cfg(newCfg);				
-					break;
-				
-				case DID_EVB_DEBUG_ARRAY:
-					is_comm_copy_to_struct(&g_debug, comm, sizeof(debug_array_t));
-					break;
-				}
-				break;
+				case DID_DEV_INFO:          n = is_comm_data(&commTx, DID_EVB_DEV_INFO, 0, sizeof(dev_info_t), (void*)&(g_evbDevInfo));         break;
+				case DID_EVB_STATUS:        n = is_comm_data(&commTx, DID_EVB_STATUS, 0, sizeof(evb_status_t), (void*)&(g_status));             break;
+				case DID_EVB_FLASH_CFG:     n = is_comm_data(&commTx, DID_EVB_FLASH_CFG, 0, sizeof(evb_flash_cfg_t), (void*)(g_flashCfg));      break;
+				case DID_EVB_DEBUG_ARRAY:   n = is_comm_data(&commTx, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));        break;
+				case DID_EVB_RTOS_INFO:     n = is_comm_data(&commTx, DID_EVB_RTOS_INFO, 0, sizeof(evb_rtos_info_t), (void*)&(g_rtos));         g_enRtosStats = true;	break;
+			}
+			if(n>0)
+			{
+				serWrite(EVB2_PORT_USB, commTx.buf.start, n);
+			}			
 
-			case _PTYPE_INERTIAL_SENSE_CMD:
-				if(comm->pkt.hdr.pid == PID_GET_DATA)
-				{
-					if(g_usb_cdc_open && udi_cdc_is_tx_ready())
-					{
-						int n=0;
-						is_comm_instance_t commTx;
-						uint8_t buffer[MAX_DATASET_SIZE];
-						is_comm_init(&commTx, buffer, sizeof(buffer));
-						switch(comm->dataHdr.id)
-						{
-							case DID_EVB_STATUS:        n = is_comm_data(&commTx, DID_EVB_STATUS, 0, sizeof(evb_status_t), (void*)&(g_status));             break;
-							case DID_EVB_FLASH_CFG:     n = is_comm_data(&commTx, DID_EVB_FLASH_CFG, 0, sizeof(evb_flash_cfg_t), (void*)(g_flashCfg));      break;
-							case DID_EVB_DEBUG_ARRAY:   n = is_comm_data(&commTx, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));        break;
-							case DID_EVB_RTOS_INFO:     n = is_comm_data(&commTx, DID_EVB_RTOS_INFO, 0, sizeof(evb_rtos_info_t), (void*)&(g_rtos));         break;
-						}
-						if(n>0)
-						{
-							udi_cdc_write_buf(commTx.buf.start, n);
-						}
-					}
-				}
-				break;
+			// Disable uINS bootloader mode if host sends IS binary command
+			g_uInsBootloaderEnableTimeMs = 0;
+		}
+		break;
 
-			case _PTYPE_ASCII_NMEA:
+	case _PTYPE_ASCII_NMEA:
+		{
+			uint32_t messageIdUInt = ASCII_MESSAGEID_TO_UINT(&(dataPtr[1]));
+			if(comm->dataHdr.size == 10)
+			{	// 4 character commands (i.e. "$STPB*14\r\n")
+				switch (messageIdUInt)
 				{
-					uint32_t messageIdUInt = ASCII_MESSAGEID_TO_UINT(&(dataPtr[1]));
-					if(comm->dataHdr.size == 10)
-					{	// 4 character commands (i.e. "$STPB*14\r\n")
-						switch (messageIdUInt)
-						{
-						case ASCII_MSG_ID_BLEN: // Enable bootloader (uINS)
-							break;
+				case ASCII_MSG_ID_BLEN: // Enable bootloader (uINS)
+					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
+					break;
 							
-						case ASCII_MSG_ID_EBLE: // Enable bootloader (EVB)
-							enable_bootloader(PORT_SEL_USB);
-							break;							
-						}
-						break;							
-					}
-					else
-					{	// General ASCII							
-						switch (messageIdUInt)
-						{
-						case ASCII_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
-							if (comm->dataHdr.size == 22 &&
-// 									(pHandle == EVB2_PORT_USB) && 
-								strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
-							{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-								enable_bootloader_assistant();
-							}
-							break;
-						}
-					}
+				case ASCII_MSG_ID_EBLE: // Enable bootloader (EVB)
+					// Disable uINS bootloader if host enables EVB bootloader
+					g_uInsBootloaderEnableTimeMs = 0;
+					
+					enable_bootloader(PORT_SEL_USB);
+					break;					
 				}
-				break;
+				break;							
+			}
+			else
+			{	// General ASCII							
+				switch (messageIdUInt)
+				{
+				case ASCII_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
+					if (comm->dataHdr.size == 22 &&
+// 									(pHandle == EVB2_PORT_USB) && 
+						strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
+					{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
+						enable_bootloader_assistant();
+					}
+					break;
+					
+				default:
+					// Disable uINS bootloader if host sends larger ASCII sentence
+					g_uInsBootloaderEnableTimeMs = 0;
+					break;
+				}				
 			}
 		}
+		break;
 	}
+
 }
 
 
@@ -618,97 +612,119 @@ void sendRadio(uint8_t *data, int dataSize, bool sendXbee, bool sendXrad)
 }
 
 
-#define BUF_SIZE PKT_BUF_SIZE
-uint8_t g_bufRx[BUF_SIZE];
-#define USB_BUF_SIZE 256    //USB CDC buffer size is 320
-uint8_t g_bufRxUsb[USB_BUF_SIZE];
-
-void step_com_bridge(is_comm_instance_t &comm)
+// This function only forwards data after complete valid packets are received 
+void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 {	
-    int len;
-
-    // USB CDC Rx   =======================================================
-	while(udi_cdc_is_rx_ready())
+	if(srcPort>=COM_RX_PORT_COUNT)
 	{
-		len = udi_cdc_read_no_polling(g_bufRxUsb, USB_BUF_SIZE);
-
-        // Parse EVB data from USB
-        parse_EVB_data(&comm, g_bufRxUsb, len);
-
-        // This follows data parsing to prevent uINS from receiving bootloader enabled command
-        com_bridge_forward(EVB2_PORT_USB, g_bufRxUsb, len);
+		return;
 	}
+	
+	is_comm_instance_t &comm = g_comRxPort[srcPort].comm;
 
-	// uINS Ser0 Rx   =======================================================
-	if((len = comRead(EVB2_PORT_UINS0, g_bufRx, BUF_SIZE, LED_INS_RXD_PIN)) > 0)
+	// Get available size of comm buffer
+	int n = is_comm_free(&comm);
+
+	if ((n = comRead(srcPort, comm.buf.tail, n, ledPin)) > 0)
 	{
-		com_bridge_forward(EVB2_PORT_UINS0, g_bufRx, len);
-	}
+		if (g_uInsBootloaderEnableTimeMs)
+		{	// When uINS bootloader is enabled forwarding is disabled below is_comm_parse(), so forward bootloader data here.
+			switch (srcPort)
+			{
+				case EVB2_PORT_USB:		comWrite(EVB2_PORT_UINS0, comm.buf.tail, n, LED_INS_TXD_PIN);	break;
+				case EVB2_PORT_UINS0:	comWrite(EVB2_PORT_USB, comm.buf.tail, n, 0);					break;
+			}					
+		}
+		
+		// Update comm buffer tail pointer
+		comm.buf.tail += n;
+				
+		// Search comm buffer for valid packets
+		protocol_type_t ptype;
+		while((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+		{
+			switch(srcPort)
+			{
+			case EVB2_PORT_USB:
+			case EVB2_PORT_XBEE:
+				handle_data_from_host(&comm, ptype);
+				break;
+			}			
 
-	// uINS Ser1 (TTL or SPI) Rx   =======================================================
-	memset(g_bufRx,0,BUF_SIZE);
-	if((len = comRead(EVB2_PORT_UINS1, g_bufRx, BUF_SIZE, LED_INS_RXD_PIN)) > 0)
-	{
-        com_bridge_forward(EVB2_PORT_UINS1, g_bufRx, len);
-	}
-    
-#ifdef CONF_BOARD_SERIAL_XBEE           // XBee Rx   =======================================================
-    xbee_step(&comm);
+			if (ptype!=_PTYPE_NONE && 
+				ptype!=_PTYPE_PARSE_ERROR &&
+				g_uInsBootloaderEnableTimeMs==0)
+			{	// Forward data
+				uint32_t pktSize = _MIN(comm.buf.scan - comm.pktPtr, PKT_BUF_SIZE);
+				com_bridge_forward(srcPort, comm.pktPtr, pktSize);
+
+				// Send uINS data to Logging task
+				if (srcPort == g_flashCfg->uinsComPort)
+				{
+					is_evb_log_stream stm;
+					stm.marker = DATA_CHUNK_MARKER;
+					stm.ptype = ptype;
+					switch (ptype)
+					{
+					case _PTYPE_INERTIAL_SENSE_DATA:
+						handle_data_from_uINS(comm.dataHdr, comm.dataPtr);
+					
+						stm.size = sizeof(p_data_hdr_t) + comm.dataHdr.size;
+						xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
+						xStreamBufferSend(g_xStreamBufferUINS, (void*)&(comm.dataHdr), sizeof(p_data_hdr_t), 0);
+						xStreamBufferSend(g_xStreamBufferUINS, (void*)(comm.dataPtr), comm.dataHdr.size, 0);
+						break;
+					case _PTYPE_UBLOX:
+#if UBLOX_LOG_ENABLE
+						stm.size = pktSize;
+						xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
+						xStreamBufferSend(g_xStreamBufferUINS, (void*)(comm.pktPtr), pktSize, 0);
 #endif
+						break;
+					}
+				}
+			}
+		}
+	}	
+}
 
-#ifdef CONF_BOARD_SERIAL_EXT_RADIO      // External Radio Rx   =======================================================
-	if((len = comRead(EVB2_PORT_XRADIO, g_bufRx, BUF_SIZE, 0)) > 0)
+
+void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xStreamBuffer);
+void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xStreamBuffer)
+{	
+	if(srcPort>=COM_RX_PORT_COUNT)
 	{
-        com_bridge_forward(EVB2_PORT_XRADIO, g_bufRx, len);
+		return;
 	}
-#endif
+	
+	is_comm_instance_t &comm = g_comRxPort[srcPort].comm;
 
-#ifdef CONF_BOARD_SERIAL_ATWINC_BLE     // ATWINC BLE Rx   =======================================================
-	if((len = comRead(EVB2_PORT_BLE, g_bufRx, BUF_SIZE, LED_WIFI_RXD_PIN)) > 0)
+	// Get available size of comm buffer
+	int n = is_comm_free(&comm);
+
+	if ((n = xStreamBufferReceive(xStreamBuffer, comm.buf.tail, n, 0)) > 0)
 	{
-        com_bridge_forward(EVB2_PORT_BLE, g_bufRx, len);
+		// Update comm buffer tail pointer
+		comm.buf.tail += n;
+		
+		// Search comm buffer for valid packets
+		protocol_type_t ptype;
+		while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+		{
+			if (srcPort == EVB2_PORT_USB)
+			{
+				handle_data_from_host(&comm, ptype);
+			}
+			
+			if (ptype!=_PTYPE_NONE && 
+				ptype!=_PTYPE_PARSE_ERROR &&
+				g_uInsBootloaderEnableTimeMs==0)
+			{	// Forward data
+				uint32_t pktSize = _MIN(comm.buf.scan - comm.pktPtr, PKT_BUF_SIZE);
+				com_bridge_forward(srcPort, comm.pktPtr, pktSize);
+			}
+		}
 	}
-#endif
-
-#ifdef CONF_BOARD_SERIAL_SP330          // SP330 RS232/RS422 converter Rx   =======================================================
-	if((len = comRead(EVB2_PORT_SP330, g_bufRx, BUF_SIZE, g_flashCfg->uinsComPort==EVB2_PORT_SP330?LED_INS_RXD_PIN:0)) > 0)
-	{
-        com_bridge_forward(EVB2_PORT_SP330, g_bufRx, len);
-	}
-#endif
-
-#ifdef CONF_BOARD_SERIAL_GPIO_H8        // H8 Header GPIO TTL Rx   =======================================================
-	if((len = comRead(EVB2_PORT_GPIO_H8, g_bufRx, BUF_SIZE, g_flashCfg->uinsComPort==EVB2_PORT_GPIO_H8?LED_INS_RXD_PIN:0)) > 0)
-	{        
-        com_bridge_forward(EVB2_PORT_GPIO_H8, g_bufRx, len);
-	}
-#endif
-
-#ifdef CONF_BOARD_SPI_ATWINC_WIFI       // WiFi Rx   =======================================================
-    if(len = xStreamBufferReceive(g_xStreamBufferWiFiRx, (void*)g_bufRx, STREAM_BUFFER_SIZE, 0))
-    {
-        com_bridge_forward(EVB2_PORT_WIFI, g_bufRx, len);
-    }
-#endif
-
-#ifdef CONF_BOARD_CAN1
-	uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
-	uint32_t id;
-	uint8_t lenCAN;
-	is_can_message msg;
-	msg.startByte = CAN_HDR;
-	msg.endByte = CAN_FTR;
-	if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
-	{
-		msg.address = id;
-		msg.payload = *(is_can_payload*)can_rx_message;
-		msg.dlc = lenCAN;
-		com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
-	}
-	/*Test CAN*/
-		//static uint8_t tx_message_1[8] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};
-		//mcan_send_message(0x100000A5, tx_message_1, CONF_MCAN_ELEMENT_DATA_SIZE);
-#endif	
 }
 
 
@@ -720,23 +736,23 @@ void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len)
     {
         return;
     }        
+
+	if (g_uInsBootloaderEnableTimeMs==0)
+	{	// uINS bootloader mode enabled - don't allow forwarding on these ports
+		if(dstCbf & (1<<EVB2_PORT_USB))
+		{
+			comWrite(EVB2_PORT_USB, buf, len, 0);
+		}
     
-    if(dstCbf & (1<<EVB2_PORT_UINS0))
-    {
-        comWrite(EVB2_PORT_UINS0, buf, len, LED_INS_TXD_PIN);
-    }
+		if(dstCbf & (1<<EVB2_PORT_UINS0))
+		{
+			comWrite(EVB2_PORT_UINS0, buf, len, LED_INS_TXD_PIN);
+		}		
+	}
 
     if(dstCbf & (1<<EVB2_PORT_UINS1))
     {
         comWrite(EVB2_PORT_UINS1, buf, len, LED_INS_TXD_PIN);
-    }
-
-    if(dstCbf & (1<<EVB2_PORT_USB))
-    {
-        if(g_usb_cdc_open && udi_cdc_is_tx_ready())
-		{
-     	    udi_cdc_write_buf(buf, len);
-		}
     }
 	
 	bool sendXbee   = dstCbf & (1<<EVB2_PORT_XBEE) && xbee_runtime_mode();	// Disable XBee communications when being configured
@@ -767,12 +783,62 @@ void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len)
         xStreamBufferSend(g_xStreamBufferWiFiTx, (void*)buf, len, 0);
     }    
 #endif
+}
 
-	// Send uINS data to Maintenance task
-	if(srcPort == g_flashCfg->uinsComPort)
+
+void step_com_bridge(is_comm_instance_t &comm)
+{	
+	// USB CDC Rx   =======================================================
+	com_bridge_smart_forward(EVB2_PORT_USB, 0);
+
+	// uINS Ser0 Rx   =======================================================
+	com_bridge_smart_forward(EVB2_PORT_UINS0, LED_INS_RXD_PIN);
+
+	// uINS Ser1 (TTL or SPI) Rx   =======================================================
+	com_bridge_smart_forward(EVB2_PORT_UINS1, LED_INS_RXD_PIN);
+    
+#ifdef CONF_BOARD_SERIAL_XBEE           // XBee Rx   =======================================================
+    xbee_step(&comm);
+#endif
+
+#ifdef CONF_BOARD_SERIAL_EXT_RADIO      // External Radio Rx   =======================================================
+	com_bridge_smart_forward(EVB2_PORT_XRADIO, 0);
+#endif
+
+#ifdef CONF_BOARD_SERIAL_ATWINC_BLE     // ATWINC BLE Rx   =======================================================
+	com_bridge_smart_forward(EVB2_PORT_BLE, LED_WIFI_RXD_PIN);
+#endif
+
+#ifdef CONF_BOARD_SERIAL_SP330          // SP330 RS232/RS422 converter Rx   =======================================================
+	com_bridge_smart_forward(EVB2_PORT_SP330, g_flashCfg->uinsComPort==EVB2_PORT_SP330?LED_INS_RXD_PIN:0);
+#endif
+
+#ifdef CONF_BOARD_SERIAL_GPIO_H8        // H8 Header GPIO TTL Rx   =======================================================
+	com_bridge_smart_forward(EVB2_PORT_GPIO_H8, g_flashCfg->uinsComPort==EVB2_PORT_GPIO_H8?LED_INS_RXD_PIN:0);
+#endif
+
+#ifdef CONF_BOARD_SPI_ATWINC_WIFI       // WiFi Rx   =======================================================
+	com_bridge_smart_forward_xstream(EVB2_PORT_WIFI, g_xStreamBufferWiFiRx);
+#endif
+
+#ifdef CONF_BOARD_CAN1
+	uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
+	uint32_t id;
+	uint8_t lenCAN;
+	is_can_message msg;
+	msg.startByte = CAN_HDR;
+	msg.endByte = CAN_FTR;
+	if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
 	{
-		xStreamBufferSend(g_xStreamBufferUINS, (void*)buf, len, 0);
+		msg.address = id;
+		msg.payload = *(is_can_payload*)can_rx_message;
+		msg.dlc = lenCAN;
+		com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
 	}
+	/*Test CAN*/
+		//static uint8_t tx_message_1[8] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};
+		//mcan_send_message(0x100000A5, tx_message_1, CONF_MCAN_ELEMENT_DATA_SIZE);
+#endif	
 }
 
 
@@ -782,4 +848,12 @@ void communications_init(void)
     g_xStreamBufferUINS = xStreamBufferCreate( STREAM_BUFFER_SIZE, xTriggerLevel );
     g_xStreamBufferWiFiRx = xStreamBufferCreate( STREAM_BUFFER_SIZE, xTriggerLevel );
     g_xStreamBufferWiFiTx = xStreamBufferCreate( STREAM_BUFFER_SIZE, xTriggerLevel );
+
+	for(int i=0; i<COM_RX_PORT_COUNT; i++)
+	{
+		is_comm_init(&(g_comRxPort[i].comm), g_comRxPort[i].comm_buffer, PKT_BUF_SIZE);
+
+		// Use alternate decode buffer on EVB so we can preserve and forward original packet received.
+		g_comRxPort[i].comm.altDecodeBuf = s_rxDecodeBuffer;
+	}
 }

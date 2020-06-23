@@ -109,7 +109,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** WGS84 height above ellipsoid (meters) */
-	float					alt;								//8 bytes (more than 8 decimal places precision)	
+	float					alt;								//4 bytes (more than 8 decimal places precision)	
 	/** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
 	uint32_t                status;
 } is_can_ins_alt;
@@ -119,6 +119,7 @@ typedef struct PACKED
 {
 	/** North offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
 	float					ned1;								//4 bytes
+	/** East offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
 	float					ned2;								//4 bytes
 	
 } is_can_north_east;
@@ -128,7 +129,8 @@ typedef struct PACKED
 {
 	/** Down offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
 	float					ned3;								//4 bytes
-	uint32_t				insStatus	;						//4 bytes
+	/** INS status flags (eInsStatusFlags). Copy of DID_SYS_PARAMS.insStatus */
+	uint32_t				insStatus;							//4 bytes
 	
 } is_can_down;
 
@@ -136,7 +138,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** X Position in ECEF (earth-centered earth-fixed) frame in meters */
-	double					ecef1;								//4 bytes
+	double					ecef1;								//8 bytes
 	
 } is_can_ecef_x;
 
@@ -144,7 +146,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** Y Position in ECEF (earth-centered earth-fixed) frame in meters */
-	double					ecef2;								//4 bytes
+	double					ecef2;								//8 bytes
 	
 } is_can_ecef_y;
 
@@ -152,17 +154,18 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** Z Position in ECEF (earth-centered earth-fixed) frame in meters */
-	double					ecef3;								//4 bytes
+	double					ecef3;								//8 bytes
 	
 } is_can_ecef_z;
 
 /** Height above Mean Sea Level */
 typedef struct PACKED
 {
-	/** height above mean sea level (MSL) in meters */
+	/** Height above mean sea level (MSL) in meters */
 	float					msl;								//4 bytes
 } is_can_msl;
 
+/**Preintegrated IMU values delta theta and delta velocity (X axis), and Integral period in body/IMU frame of accelerometer 0.**/
 typedef struct PACKED
 {
 	int16_t					theta0;									//2 bytes (scaled by 1000 3 decimal places precision)
@@ -171,6 +174,7 @@ typedef struct PACKED
 	uint16_t				dt;										//2 bytes
 } is_can_preint_imu_px;
 
+/**Preintegrated IMU values delta theta and delta velocity (Y axis), and Integral period in body/IMU frame of accelerometer 0.**/
 typedef struct PACKED
 {
 	int16_t					theta1;									//2 bytes (scaled by 1000 3 decimal places precision)
@@ -180,6 +184,7 @@ typedef struct PACKED
 	
 } is_can_preint_imu_qy;
 
+/**Preintegrated IMU values delta theta and delta velocity (Z axis), and Integral period in body/IMU frame of accelerometer 0.**/
 typedef struct PACKED
 {
 	int16_t					theta2;									//2 bytes (scaled by 1000 3 decimal places precision)

@@ -35,9 +35,9 @@ void uINS_stream_stop_all(is_comm_instance_t &comm);
 void uINS_stream_enable_std(is_comm_instance_t &comm);
 void uINS_stream_enable_PPD(is_comm_instance_t &comm);
 
-void parse_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
-void parse_EVB_data(int len, is_comm_instance_t *comm, uint8_t *buf);
+void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
 
+void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
 void step_com_bridge(is_comm_instance_t &comm);
 void communications_init(void);
@@ -52,6 +52,13 @@ typedef struct PACKED
 	uint8_t endByte;
 		
 } is_can_message;
+
+typedef struct PACKED
+{
+	uint32_t			marker;
+	protocol_type_t		ptype;
+	uint32_t			size;
+} is_evb_log_stream;
 
 
 #endif // __COMMUNICATIONS_H_

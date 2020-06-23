@@ -16,7 +16,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 
 #include "d_usartDMA.h"
-#include "conf_d_usartDMA.h"
 
 #ifdef CONF_BOARD_SPI_UINS
 	#include "spiTouINS.h"
@@ -139,28 +138,37 @@ typedef struct
 #endif
 
 #if MAX_NUMBER_SERIAL_PORTS >= 8
+	COMPILER_ALIGNED(32) static uint8_t g_serTxDmaBuf_port7[ARGN(2, PORT7_CONFIG)];
+	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port7[ARGN(4, PORT7_CONFIG)];
+#endif
+
+#if MAX_NUMBER_SERIAL_PORTS >= 9
 	#error "Need to add more support"
 #endif
 
 //Variables for general use
 COMPILER_ALIGNED(32) static uint8_t noData_indicator[1] = {0};
 static volatile usartDMA_t g_usartDMA[MAX_NUMBER_SERIAL_PORTS];
+static uint32_t	*s_overrunStatus=NULLPTR;
+port_monitor_helper_t g_portMonitorHelper[MAX_NUMBER_SERIAL_PORTS] = {0};
+
+
 
 /*********************************       USB CDC       ********************************************************************************************************/
 static bool usb_cdc_open = false;
 
-bool my_callback_cdc_enable(void)
+bool d_usartDMA_callback_cdc_enable(void)
 {
 	usb_cdc_open = true;
 	return true;
 }
 
-void my_callback_cdc_disable(void)
+void d_usartDMA_callback_cdc_disable(void)
 {
 	usb_cdc_open = false;
 }
 
-void my_callback_cdc_tx_empty_notify(void)
+void d_usartDMA_callback_cdc_tx_empty_notify(void)
 {
 #ifdef USB_PORT_NUM	
 	dmaBuffer_tx_t *dma = (dmaBuffer_tx_t*)&g_usartDMA[USB_PORT_NUM].dmaTx;
@@ -432,13 +440,8 @@ int serRxClear( int serialNum, int size)
 
 // We assume worst case scenario, USART is writing data...
 // Add new data to buffer that is not being written from.
-int serWrite(int serialNum, const unsigned char *buf, int size, int* overrun)
-{
-	if (overrun)
-	{
-		*overrun = 0;
-	}
-	
+int serWrite(int serialNum, const unsigned char *buf, int size)
+{	
 	if (size <= 0 || serialNum < 0 || serialNum >= MAX_NUMBER_SERIAL_PORTS)
 	{
 		return 0;
@@ -457,9 +460,9 @@ int serWrite(int serialNum, const unsigned char *buf, int size, int* overrun)
 			//Prevent loading more data than buffer size
 			if ((uint32_t)size > dma->size)
             { 
-		        if (overrun)
-		        {
-    		        *overrun = 1;
+		        if (s_overrunStatus)
+		        {	// Buffer overrun
+					*s_overrunStatus |= HDW_STATUS_ERR_COM_TX_LIMITED;
 		        }
                 return 0;
             }                
@@ -503,10 +506,12 @@ int serWrite(int serialNum, const unsigned char *buf, int size, int* overrun)
 				}
 
 				//Send what fits to USB immediately (also makes sure external buffer didn't empty while we were in here)
-				my_callback_cdc_tx_empty_notify();
+				d_usartDMA_callback_cdc_tx_empty_notify();
 			}
 			
 			taskEXIT_CRITICAL();
+			
+			g_portMonitorHelper[serialNum].txByteCount += size;
 			return size;
 		}
 		return 0;
@@ -525,9 +530,9 @@ int serWrite(int serialNum, const unsigned char *buf, int size, int* overrun)
 	{
 		// tx overrun
 		serTxClear(serialNum);
-		if (overrun)
+		if (s_overrunStatus)
 		{
-			*overrun = 1;
+			*s_overrunStatus |= HDW_STATUS_ERR_COM_TX_LIMITED;
 		}
 #ifndef __INERTIAL_SENSE_EVB_2__
 		g_internal_diagnostic.txOverflowCount[serialNum]++;
@@ -692,6 +697,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size, int* overrun)
 
 	taskEXIT_CRITICAL();
 
+	g_portMonitorHelper[serialNum].txByteCount += size;
 	return size;
 }
 
@@ -773,14 +779,9 @@ void XDMAC_Handler(void)
 	}
 }
 
-int serRead(int serialNum, unsigned char *buf, int size, int* overrun)
+int serRead(int serialNum, unsigned char *buf, int size)
 {
-	if (overrun)
-	{
-		*overrun = 0;
-	}
-		
-	if (size <= 0 || serialNum < 0 || serialNum > MAX_NUMBER_SERIAL_PORTS)
+	if (size <= 0 || serialNum < 0 || serialNum >= MAX_NUMBER_SERIAL_PORTS)
 	{
 		return 0;
 	}
@@ -814,9 +815,9 @@ int serRead(int serialNum, unsigned char *buf, int size, int* overrun)
 		// rx overrun
 		serRxClear(serialNum, -1);
 		dma->lastUsedRx = 0;
-		if (overrun)
+		if (s_overrunStatus)
 		{
-			*overrun = 1;
+			*s_overrunStatus |= HDW_STATUS_ERR_COM_RX_OVERRUN;
 		}
 #ifndef __INERTIAL_SENSE_EVB_2__
 		g_internal_diagnostic.rxOverflowCount[serialNum]++;
@@ -875,6 +876,8 @@ int serRead(int serialNum, unsigned char *buf, int size, int* overrun)
 	}
 #endif	
 
+	// Increment port monitor count
+	g_portMonitorHelper[serialNum].rxByteCount += size;
     return size;
 }
 
@@ -1419,6 +1422,17 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 			ser->dmaRx.buf = g_serRxDmaBuf_port6;
 			break;
 #endif
+#if MAX_NUMBER_SERIAL_PORTS >= 8
+		case 7:
+			ser->usart = ARGN(0, PORT7_CONFIG);
+			ser->dmaTx.size			= ARGN(2, PORT7_CONFIG);
+			ser->dmaRx.size			= ARGN(4, PORT7_CONFIG);
+			ser->dmaTx.dmaChNumber  = ARGN(1, PORT7_CONFIG);
+			ser->dmaRx.dmaChNumber  = ARGN(3, PORT7_CONFIG);
+			ser->dmaTx.buf = g_serTxDmaBuf_port7;
+			ser->dmaRx.buf = g_serRxDmaBuf_port7;
+			break;
+#endif
 	}
 
 	// Setup hardware specific items
@@ -1543,7 +1557,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 	return 0;
 }
 
-int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options)
+int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t* overrunStatus)
 {
 #ifdef USB_PORT_NUM
 	if(serialNum == USB_PORT_NUM)
@@ -1561,6 +1575,11 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options)
 		return 0;
 	}
 #endif
+
+	if(overrunStatus)
+	{	// Set buffer overrun status pointer
+		s_overrunStatus = overrunStatus;
+	}
 	
 	// Validate port number
 	while( serialNum >= MAX_NUMBER_SERIAL_PORTS ) { /* Invalid port number */ }

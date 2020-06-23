@@ -146,7 +146,7 @@ void step_logger_control(cISLogger& logger, is_comm_instance_t &comm)
 
 
 
-void log_ublox_raw_to_SD(cISLogger& logger, is_comm_instance_t &comm)
+void log_ublox_raw_to_SD(cISLogger& logger, uint8_t *dataPtr, uint32_t dataSize)
 {
 #if UBLOX_LOG_ENABLE
 
@@ -157,7 +157,10 @@ void log_ublox_raw_to_SD(cISLogger& logger, is_comm_instance_t &comm)
             std::string ubloxFile = (logger.LogDirectory() + "/raw_ublox.ubx");
             s_ubloxLog = new cISLogFileFatFs(ubloxFile.c_str(), "wb");
         }
-        s_ubloxLog->write(comm.buf.head, comm.buf.tail - comm.buf.head);
+		if (dataSize <= MAX_DATASET_SIZE)
+		{
+	        s_ubloxLog->write(dataPtr, dataSize);
+		}
     }
 
 #endif

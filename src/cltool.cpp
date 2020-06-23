@@ -275,14 +275,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
 		}
-		else if (startsWith(a, "-msgRtkPos="))
-		{
-			g_commandLineOptions.streamRtkPos = (int)atof(&a[11]);
-		}
-		else if (startsWith(a, "-msgRtkPos"))
-		{
-			g_commandLineOptions.streamRtkPos = 1;
-		}
 		else if (startsWith(a, "-msgRtkPosRel="))
 		{
 			g_commandLineOptions.streamRtkPosRel = (int)atof(&a[11]);
@@ -298,6 +290,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-msgRtkCmpRel"))
 		{
 			g_commandLineOptions.streamRtkCmpRel = 1;
+		}
+		else if (startsWith(a, "-msgRtkPos="))
+		{
+		g_commandLineOptions.streamRtkPos = (int)atof(&a[11]);
+		}
+		else if (startsWith(a, "-msgRtkPos"))
+		{
+		g_commandLineOptions.streamRtkPos = 1;
 		}
 		else if (startsWith(a, "-msgRTOS="))
 		{
@@ -479,7 +479,7 @@ void cltool_outputUsage()
 	cout << "    -msgSensors *  " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
 	cout << "    -msgRtkPos *   " << boldOff << "  stream DID_GPS1_RTK_POS" << endlbOn;
 	cout << "    -msgRtkPosRel *" << boldOff << "  stream DID_GPS1_RTK_POS_REL" << endlbOn;
-	cout << "    -msgRtkCmpRel *" << boldOff << "  stream DID_GPS1_RTK_CMP_REL" << endlbOn;
+	cout << "    -msgRtkCmpRel *" << boldOff << "  stream DID_GPS2_RTK_CMP_REL" << endlbOn;
 	cout << "    -persistent   " << boldOff << "  save current streams as persistent messages enabled on startup" << endlbOn;
 	cout << "                * Message can be appended with =<PERIODMULTIPLE> to change message frequency. Period is then equal to message" << endlbOn; 
 	cout << "                  source times the PERIODMULTIPLE. If not appended the data will stream at a default rate." << endlbOn;
