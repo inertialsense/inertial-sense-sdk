@@ -79,20 +79,21 @@ public:
 		if (commBuffer == NULLPTR)
 		{
 			commBuffer = (uint8_t*)MALLOC(2048);
-			comm.buffer = commBuffer;
-			comm.bufferSize = 2048;
-			is_comm_init(&comm);
+			is_comm_init(&comm,commBuffer,sizeof(commBuffer));
 		}
 
-		switch (is_comm_parse(&comm, b))
+		if (is_comm_parse_byte(&comm, b) == _PTYPE_INERTIAL_SENSE_DATA)
 		{
-		case DID_GPS1_RAW:
-		case DID_GPS2_RAW:
-		case DID_GPS_BASE_RAW:
-			ParseMessage(comm.buffer, sizeof(gps_raw_t));
-			break;
+			switch(comm.dataHdr.id)
+			{
+				case DID_GPS1_RAW:
+				case DID_GPS2_RAW:
+				case DID_GPS_BASE_RAW:
+					ParseMessage(comm.dataPtr, sizeof(gps_raw_t));
+					break;
+			}
 		}
-		m_corruptPacketCount = comm.errorCount;
+		m_corruptPacketCount = comm.rxErrorCount;
     }
 
 	void ParseMessage(const uint8_t* data, int dataLength) OVERRIDE
