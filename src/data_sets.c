@@ -193,16 +193,18 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
     static uint16_t offsetsPreImuMag[] =
     {
-        2,
+        3,
         offsetof(pimu_mag_t, pimu.time),
-        offsetof(pimu_mag_t, mag.time),
+        offsetof(pimu_mag_t, mag1.time),
+        offsetof(pimu_mag_t, mag2.time)
     };
 
     static uint16_t offsetsDualImuMag[] =
     {
-        2,
+        3,
         offsetof(imu_mag_t, imu.time),
-        offsetof(imu_mag_t, mag.time),
+        offsetof(imu_mag_t, mag1.time),
+        offsetof(imu_mag_t, mag2.time)
     };
 
 	static uint16_t offsetsGps[] =
@@ -312,10 +314,10 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
 		0,                      // 51: DID_INL2_STATUS,
-		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER
+		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER_1
 		offsetsOnlyTimeFirst,	// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		0,						// 55: unused (was DID_MAGNETOMETER_2)
+		offsetsOnlyTimeFirst,	// 55: DID_MAGNETOMETER_2
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		offsetsOnlyTimeFirst,	// 57: DID_DUAL_IMU_RAW
 		offsetsOnlyTimeFirst,	// 58: DID_DUAL_IMU
@@ -466,10 +468,10 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
 		0,                      // 51: DID_INL2_STATUS
-		0,						// 52: DID_MAGNETOMETER
+		0,						// 52: DID_MAGNETOMETER_1
 		0,						// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		0,						// 55: unused (was DID_MAGNETOMETER_2)
+		0,						// 55: DID_MAGNETOMETER_2
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		0,						// 57: DID_DUAL_IMU_RAW
 		0,						// 58: DID_DUAL_IMU
@@ -570,7 +572,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_DUAL_IMU:				return RMC_BITS_DUAL_IMU;
 		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
-		case DID_MAGNETOMETER:			return RMC_BITS_MAGNETOMETER;
+		case DID_MAGNETOMETER_1:		return RMC_BITS_MAGNETOMETER1;
+		case DID_MAGNETOMETER_2:		return RMC_BITS_MAGNETOMETER2;
 		case DID_GPS1_POS:				return RMC_BITS_GPS1_POS;
 		case DID_GPS2_POS:				return RMC_BITS_GPS2_POS;
 		case DID_GPS1_VEL:				return RMC_BITS_GPS1_VEL;
@@ -796,7 +799,6 @@ int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength)
         break;
 
     case GPS_STATUS_FIX_RTK_FIX:
-    case GPS_STATUS_FIX_RTK_FIX_AND_HOLD:
         fixQuality = 4;
         break;
 

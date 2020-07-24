@@ -133,7 +133,10 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	case DID_GPS_NAV:				
 		d.gpsNav;       
 		break;
-	case DID_MAGNETOMETER:		
+	case DID_MAGNETOMETER_1:		
+		d.mag;          
+		break;
+	case DID_MAGNETOMETER_2:		
 		d.mag;          
 		break;
 	case DID_BAROMETER:				
@@ -209,9 +212,13 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_GPS2_RTK_CMP_REL, g_commandLineOptions.streamRtkCmpRel);
 	}
-	if (g_commandLineOptions.streamMag)
+    if (g_commandLineOptions.streamMag1)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER, g_commandLineOptions.streamMag);
+		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_1, g_commandLineOptions.streamMag1);
+	}
+	if (g_commandLineOptions.streamMag2)
+	{
+		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_2, g_commandLineOptions.streamMag2);
 	}
 	if (g_commandLineOptions.streamBaro)
 	{

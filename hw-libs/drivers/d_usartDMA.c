@@ -977,7 +977,7 @@ static int serEnable(int serialNum)
 }
 
 #ifndef __INERTIAL_SENSE_EVB_2__
-static int validateBaudRate(unsigned int baudRate)
+int validateBaudRate(unsigned int baudRate)
 {
 	// Valid baudrates for InertialSense hardware
 	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)

@@ -74,7 +74,8 @@ typedef struct
     int streamRtkPos;
 	int streamRtkPosRel;
 	int streamRtkCmpRel;
-	int streamMag;
+    int streamMag1;
+	int streamMag2;
 	int streamBaro;
 	int streamSysSensors;
 	int streamDThetaVel;

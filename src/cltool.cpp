@@ -255,13 +255,21 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamINS4 = 50;
 		}
-		else if (startsWith(a, "-msgMag="))
+		else if (startsWith(a, "-msgMag1="))
 		{
-			g_commandLineOptions.streamMag = (int)atof(&a[9]);
+			g_commandLineOptions.streamMag1 = (int)atof(&a[9]);
 		}
-		else if (startsWith(a, "-msgMag"))
+		else if (startsWith(a, "-msgMag1"))
 		{
-			g_commandLineOptions.streamMag = 50;
+			g_commandLineOptions.streamMag1 = 50;
+		}
+		else if (startsWith(a, "-msgMag2="))
+		{
+			g_commandLineOptions.streamMag2 = (int)atof(&a[9]);
+		}
+		else if (startsWith(a, "-msgMag2"))
+		{
+			g_commandLineOptions.streamMag2 = 50;
 		}
 		else if (startsWith(a, "-msgPIMU"))
 		{
@@ -473,7 +481,7 @@ void cltool_outputUsage()
 	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
 	cout << "    -msgDualIMU *  " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
 	cout << "    -msgPIMU       " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
-	cout << "    -msgMag *      " << boldOff << "  stream DID_MAGNETOMETER" << endlbOn;
+	cout << "    -msgMag[n] *   " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
 	cout << "    -msgBaro *     " << boldOff << "  stream DID_BAROMETER" << endlbOn;
 	cout << "    -msgGPS *      " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
 	cout << "    -msgSensors *  " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;

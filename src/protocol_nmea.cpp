@@ -382,9 +382,8 @@ int gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 	case GPS_STATUS_FIX_RTK_SINGLE:
 	case GPS_STATUS_FIX_3D:                     fixQuality = 1;	break;
 	case GPS_STATUS_FIX_DGPS:                   fixQuality = 2;	break;
-	case GPS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;	break;
-	case GPS_STATUS_FIX_RTK_FIX:   
-    case GPS_STATUS_FIX_RTK_FIX_AND_HOLD:       fixQuality = 4;	break;
+	case GPS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;	break;   
+    case GPS_STATUS_FIX_RTK_FIX:                fixQuality = 4;	break;
 	case GPS_STATUS_FIX_RTK_FLOAT:              fixQuality = 5;	break;	
 	case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
 	case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:     fixQuality = 6;	break;
@@ -497,7 +496,6 @@ int gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 	case GPS_STATUS_FIX_SBAS:
 	case GPS_STATUS_FIX_DGPS:					
 	case GPS_STATUS_FIX_RTK_FIX:
-	case GPS_STATUS_FIX_RTK_FIX_AND_HOLD:
 	case GPS_STATUS_FIX_RTK_SINGLE:
 	case GPS_STATUS_FIX_RTK_FLOAT:				
 		fixQuality = 3;	break;

@@ -104,7 +104,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
-	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
+	sizeMap[DID_MAGNETOMETER_1] = sizeof(magnetometer_t);
+	sizeMap[DID_MAGNETOMETER_2] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
 	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
     sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
@@ -590,10 +591,14 @@ static void PopulateIMUDeltaThetaVelocityMagMappings(map_name_to_info_t mappings
 	ADD_MAP(m, totalSize, "vel2[2]", pimu.vel2[2], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "dt", pimu.dt, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "imustatus", pimu.status, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "magtime", mag.time, 0, DataTypeDouble, double);
-	ADD_MAP(m, totalSize, "mag[0]", mag.mag[0], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "mag[1]", mag.mag[1], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag1time", mag1.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag1[0]", mag1.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag1[1]", mag1.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag1[2]", mag1.mag[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2time", mag2.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag2[0]", mag2.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2[1]", mag2.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2[2]", mag2.mag[2], 0, DataTypeFloat, float&);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -617,10 +622,14 @@ static void PopulateIMUMagnetometerMappings(map_name_to_info_t mappings[DID_COUN
 	ADD_MAP(m, totalSize, "acc2[1]", imu.I[1].acc[1], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "acc2[2]", imu.I[1].acc[2], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "imustatus", imu.status, 0, DataTypeUInt32, uint32_t);
-	ADD_MAP(m, totalSize, "magtime", mag.time, 0, DataTypeDouble, double);
-	ADD_MAP(m, totalSize, "mag[0]", mag.mag[0], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "mag[1]", mag.mag[1], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag1time", mag1.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag1[0]", mag1.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag1[1]", mag1.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag1[2]", mag1.mag[2], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2time", mag2.time, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "mag2[0]", mag2.mag[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2[1]", mag2.mag[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "mag2[2]", mag2.mag[2], 0, DataTypeFloat, float&);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -1663,7 +1672,8 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS2_VEL);
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
-	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
+	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_1);
+    PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
     PopulateBarometerMappings(m_lookupInfo);
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
     PopulateWheelEncoderMappings(m_lookupInfo);
@@ -1771,10 +1781,10 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "inl2CovarianceUD",		// 49: DID_INL2_COVARIANCE_UD
         "inl2Status",			// 50: DID_INL2_STATUS
         "inl2Misc",				// 51: DID_INL2_MISC
-        "magnetometer",			// 52: DID_MAGNETOMETER
+        "magnetometer1",		// 52: DID_MAGNETOMETER_1
         "barometer",			// 53: DID_BAROMETER
         "gps1RtkPos",			// 54: DID_GPS1_RTK_POS
-        "unused_55",			// 55: unused (was DID_MAGNETOMETER_2)
+        "magnetometer2",		// 55: DID_MAGNETOMETER_2
         "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
         "imuDualRaw",			// 57: DID_DUAL_IMU_RAW
         "imuDual",				// 58: DID_DUAL_IMU
