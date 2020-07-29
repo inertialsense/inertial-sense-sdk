@@ -155,7 +155,7 @@ $(function() {
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> hexLookupTable[16] = { <span class="charliteral">&#39;0&#39;</span>, <span class="charliteral">&#39;1&#39;</span>, <span class="charliteral">&#39;2&#39;</span>, <span class="charliteral">&#39;3&#39;</span>, <span class="charliteral">&#39;4&#39;</span>, <span class="charliteral">&#39;5&#39;</span>, <span class="charliteral">&#39;6&#39;</span>, <span class="charliteral">&#39;7&#39;</span>, <span class="charliteral">&#39;8&#39;</span>, <span class="charliteral">&#39;9&#39;</span>, <span class="charliteral">&#39;A&#39;</span>, <span class="charliteral">&#39;B&#39;</span>, <span class="charliteral">&#39;C&#39;</span>, <span class="charliteral">&#39;D&#39;</span>, <span class="charliteral">&#39;E&#39;</span>, <span class="charliteral">&#39;F&#39;</span> };</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="comment">// Fastest to slowest</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">int</span> s_baudRateList[] = { <a class="code" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a>, <a class="code" href="inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d">IS_BAUD_RATE_BOOTLOADER_RS232</a>, <a class="code" href="inertial_sense_boot_loader_8h.html#a3dd40c53dede7af6b3ef8ac95805fd41">IS_BAUD_RATE_BOOTLOADER_SLOW</a> };                                           </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">int</span> s_baudRateList[] = { <a class="code" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a>, <a class="code" href="inertial_sense_boot_loader_8h.html#a404c96d6000a762c614a00847fd6a821">IS_BAUD_RATE_BOOTLOADER_LEGACY</a>, <a class="code" href="inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d">IS_BAUD_RATE_BOOTLOADER_RS232</a>, <a class="code" href="inertial_sense_boot_loader_8h.html#a3dd40c53dede7af6b3ef8ac95805fd41">IS_BAUD_RATE_BOOTLOADER_SLOW</a> };</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">static</span> uint16_t crc_update(uint16_t crc_in, <span class="keywordtype">int</span> incr)</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;{</div>
@@ -1197,7 +1197,7 @@ $(function() {
 <div class="line"><a name="l01123"></a><span class="lineno"> 1123</span>&#160;    }</div>
 <div class="line"><a name="l01124"></a><span class="lineno"> 1124</span>&#160; </div>
 <div class="line"><a name="l01125"></a><span class="lineno"> 1125</span>&#160;    <span class="comment">// try handshaking at each baud rate</span></div>
-<div class="line"><a name="l01126"></a><span class="lineno"> 1126</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="_i_s_constants_8h.html#ae165d3d36e78851434995cd9e9fc8d78">_ARRAY_ELEMENT_COUNT</a>(s_baudRateList); i++)</div>
+<div class="line"><a name="l01126"></a><span class="lineno"> 1126</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="_i_s_constants_8h.html#ae165d3d36e78851434995cd9e9fc8d78">_ARRAY_ELEMENT_COUNT</a>(s_baudRateList) + 1; i++)</div>
 <div class="line"><a name="l01127"></a><span class="lineno"> 1127</span>&#160; </div>
 <div class="line"><a name="l01128"></a><span class="lineno"> 1128</span>&#160;#endif <span class="comment">// ENABLE_BOOTLOADER_BAUD_DETECTION</span></div>
 <div class="line"><a name="l01129"></a><span class="lineno"> 1129</span>&#160; </div>
@@ -1922,83 +1922,89 @@ $(function() {
 <div class="line"><a name="l01848"></a><span class="lineno"> 1848</span>&#160;    p.<a class="code" href="structbootload__params__t.html#a239112373f6613392f1a0726b06045b4">baudRate</a> = <a class="code" href="inertial_sense_boot_loader_8c.html#abc522a3dc48d8eec055d0ce46e86af48">bootloaderClosestBaudRate</a>(baudRate);</div>
 <div class="line"><a name="l01849"></a><span class="lineno"> 1849</span>&#160; </div>
 <div class="line"><a name="l01850"></a><span class="lineno"> 1850</span>&#160;    <span class="comment">// attempt to handshake in case we are in bootloader mode</span></div>
-<div class="line"><a name="l01851"></a><span class="lineno"> 1851</span>&#160;    <span class="keywordflow">if</span> (!bootloaderHandshake(&amp;p))</div>
-<div class="line"><a name="l01852"></a><span class="lineno"> 1852</span>&#160;    {</div>
-<div class="line"><a name="l01853"></a><span class="lineno"> 1853</span>&#160;        <span class="comment">// in case we are in program mode, try and send the commands to go into bootloader mode</span></div>
-<div class="line"><a name="l01854"></a><span class="lineno"> 1854</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c = 0;</div>
-<div class="line"><a name="l01855"></a><span class="lineno"> 1855</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; <a class="code" href="_i_s_constants_8h.html#ae165d3d36e78851434995cd9e9fc8d78">_ARRAY_ELEMENT_COUNT</a>(baudRates); i++)</div>
-<div class="line"><a name="l01856"></a><span class="lineno"> 1856</span>&#160;        {</div>
-<div class="line"><a name="l01857"></a><span class="lineno"> 1857</span>&#160;            <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
-<div class="line"><a name="l01858"></a><span class="lineno"> 1858</span>&#160;            <span class="keywordflow">if</span> (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)</div>
-<div class="line"><a name="l01859"></a><span class="lineno"> 1859</span>&#160;            {</div>
-<div class="line"><a name="l01860"></a><span class="lineno"> 1860</span>&#160;                <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
-<div class="line"><a name="l01861"></a><span class="lineno"> 1861</span>&#160;                <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l01862"></a><span class="lineno"> 1862</span>&#160;            }</div>
-<div class="line"><a name="l01863"></a><span class="lineno"> 1863</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> loop = 0; loop &lt; 10; loop++)</div>
-<div class="line"><a name="l01864"></a><span class="lineno"> 1864</span>&#160;            {</div>
-<div class="line"><a name="l01865"></a><span class="lineno"> 1865</span>&#160;                <a class="code" href="serial_port_8c.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPortWriteAscii</a>(port, <span class="stringliteral">&quot;STPB&quot;</span>, 4);</div>
-<div class="line"><a name="l01866"></a><span class="lineno"> 1866</span>&#160;                <a class="code" href="serial_port_8c.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPortWriteAscii</a>(port, bootloadEnableCmd, 4);</div>
-<div class="line"><a name="l01867"></a><span class="lineno"> 1867</span>&#160;                c = 0;</div>
-<div class="line"><a name="l01868"></a><span class="lineno"> 1868</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="serial_port_8c.html#a3cb89cb0314c641149ddefc46dd1f94d">serialPortReadCharTimeout</a>(port, &amp;c, 13) == 1)</div>
-<div class="line"><a name="l01869"></a><span class="lineno"> 1869</span>&#160;                {</div>
-<div class="line"><a name="l01870"></a><span class="lineno"> 1870</span>&#160;                    <span class="keywordflow">if</span> (c == <span class="charliteral">&#39;$&#39;</span>)</div>
-<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;                    {</div>
-<div class="line"><a name="l01872"></a><span class="lineno"> 1872</span>&#160;                        <span class="comment">// done, we got into bootloader mode</span></div>
-<div class="line"><a name="l01873"></a><span class="lineno"> 1873</span>&#160;                        i = 9999;</div>
-<div class="line"><a name="l01874"></a><span class="lineno"> 1874</span>&#160;                        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01875"></a><span class="lineno"> 1875</span>&#160;                    }</div>
-<div class="line"><a name="l01876"></a><span class="lineno"> 1876</span>&#160;                }</div>
-<div class="line"><a name="l01877"></a><span class="lineno"> 1877</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01878"></a><span class="lineno"> 1878</span>&#160;                {</div>
-<div class="line"><a name="l01879"></a><span class="lineno"> 1879</span>&#160;                    <a class="code" href="serial_port_8c.html#af4b519e1c32d49d8937677b4b62ea99d">serialPortFlush</a>(port);</div>
-<div class="line"><a name="l01880"></a><span class="lineno"> 1880</span>&#160;                }</div>
-<div class="line"><a name="l01881"></a><span class="lineno"> 1881</span>&#160;            }</div>
-<div class="line"><a name="l01882"></a><span class="lineno"> 1882</span>&#160;        }</div>
-<div class="line"><a name="l01883"></a><span class="lineno"> 1883</span>&#160; </div>
-<div class="line"><a name="l01884"></a><span class="lineno"> 1884</span>&#160;        <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
-<div class="line"><a name="l01885"></a><span class="lineno"> 1885</span>&#160;        <a class="code" href="_i_s_utilities_8h.html#a038783cd27cbb54e9c8d8708f147168e">SLEEP_MS</a>(<a class="code" href="inertial_sense_boot_loader_8h.html#a36f9c553bf1daf7c7df99886e2f0eaa0">BOOTLOADER_REFRESH_DELAY</a>);</div>
-<div class="line"><a name="l01886"></a><span class="lineno"> 1886</span>&#160; </div>
-<div class="line"><a name="l01887"></a><span class="lineno"> 1887</span>&#160;        <span class="comment">// if we can&#39;t handshake at this point, bootloader enable has failed</span></div>
-<div class="line"><a name="l01888"></a><span class="lineno"> 1888</span>&#160;        <span class="keywordflow">if</span> (!bootloaderHandshake(&amp;p))</div>
-<div class="line"><a name="l01889"></a><span class="lineno"> 1889</span>&#160;        {</div>
-<div class="line"><a name="l01890"></a><span class="lineno"> 1890</span>&#160;            <span class="comment">// failure</span></div>
-<div class="line"><a name="l01891"></a><span class="lineno"> 1891</span>&#160;            <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
-<div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160;            <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;        }</div>
-<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;    }</div>
-<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160; </div>
-<div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;    <span class="comment">// ensure bootloader restarts in fresh state</span></div>
-<div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;    bootloaderRestart(port);</div>
-<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160; </div>
-<div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;    <span class="comment">// by this point the bootloader should be enabled</span></div>
-<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;    <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
-<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;    <span class="keywordflow">return</span> 1;</div>
-<div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;}</div>
-<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160; </div>
-<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;<span class="keyword">static</span> <span class="keywordtype">int</span> disableBootloaderInternal(<a class="code" href="structserial__port__t.html">serial_port_t</a>* port, <span class="keywordtype">char</span>* error, <span class="keywordtype">int</span> errorLength, <span class="keywordtype">int</span> baud)</div>
-<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;{</div>
-<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;    <span class="comment">// open the serial port</span></div>
-<div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;    <span class="keywordflow">if</span> (serialPortOpenInternal(port, baud, error, errorLength) == 0)</div>
-<div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;    {</div>
-<div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160;        <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;    }</div>
-<div class="line"><a name="l01911"></a><span class="lineno"> 1911</span>&#160; </div>
-<div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;    <span class="comment">// send the &quot;reboot to program mode&quot; command and the device should start in program mode</span></div>
-<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;    <a class="code" href="serial_port_8c.html#ad2240e52502e49f931504565cc1d39d0">serialPortWrite</a>(port, (<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot;:020000040300F7&quot;</span>, 15);</div>
-<div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160;    <a class="code" href="serial_port_8c.html#a8c06177e7cce0225011a591265ad3517">serialPortSleep</a>(port, 250);</div>
-<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;    <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
-<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;    <span class="keywordflow">return</span> 1;</div>
-<div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160;}</div>
-<div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160; </div>
-<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160; </div>
-<div class="line"><a name="l01920"></a><span class="lineno"><a class="line" href="inertial_sense_boot_loader_8h.html#a1ba2459e76f174c6fed632130578a487"> 1920</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487">disableBootloader</a>(<a class="code" href="structserial__port__t.html">serial_port_t</a>* port, <span class="keywordtype">char</span>* error, <span class="keywordtype">int</span> errorLength)</div>
-<div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;{</div>
-<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;    <span class="keywordtype">int</span> result = 0;</div>
-<div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;    result |= disableBootloaderInternal(port, error, errorLength, <a class="code" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a>);</div>
-<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;    result |= disableBootloaderInternal(port, error, errorLength, <a class="code" href="inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d">IS_BAUD_RATE_BOOTLOADER_RS232</a>);</div>
-<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;    result |= disableBootloaderInternal(port, error, errorLength, <a class="code" href="inertial_sense_boot_loader_8h.html#a3dd40c53dede7af6b3ef8ac95805fd41">IS_BAUD_RATE_BOOTLOADER_SLOW</a>);</div>
-<div class="line"><a name="l01926"></a><span class="lineno"> 1926</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160;}</div>
+<div class="line"><a name="l01851"></a><span class="lineno"> 1851</span>&#160;    <span class="comment">//When we handshake with legacy bootloader baudrate it prevents us from entering the bootloader when the uINS is running its firmware.</span></div>
+<div class="line"><a name="l01852"></a><span class="lineno"> 1852</span>&#160;    <span class="comment">//Instead of checking for the bootloader first, we will send the command to enter the bootloader without checking.</span></div>
+<div class="line"><a name="l01853"></a><span class="lineno"> 1853</span>&#160;    <span class="comment">//After the command is sent, it will try to handsake again and will find the bootloader even if the bootloader is alreay running before sending the command to enter.</span></div>
+<div class="line"><a name="l01854"></a><span class="lineno"> 1854</span>&#160;    <span class="comment">//if (!bootloaderHandshake(&amp;p))</span></div>
+<div class="line"><a name="l01855"></a><span class="lineno"> 1855</span>&#160;    {</div>
+<div class="line"><a name="l01856"></a><span class="lineno"> 1856</span>&#160;        <span class="comment">// in case we are in program mode, try and send the commands to go into bootloader mode</span></div>
+<div class="line"><a name="l01857"></a><span class="lineno"> 1857</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c = 0;</div>
+<div class="line"><a name="l01858"></a><span class="lineno"> 1858</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; <a class="code" href="_i_s_constants_8h.html#ae165d3d36e78851434995cd9e9fc8d78">_ARRAY_ELEMENT_COUNT</a>(baudRates); i++)</div>
+<div class="line"><a name="l01859"></a><span class="lineno"> 1859</span>&#160;        {</div>
+<div class="line"><a name="l01860"></a><span class="lineno"> 1860</span>&#160;            <span class="keywordflow">if</span> (baudRates[i] == 0)</div>
+<div class="line"><a name="l01861"></a><span class="lineno"> 1861</span>&#160;                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l01862"></a><span class="lineno"> 1862</span>&#160; </div>
+<div class="line"><a name="l01863"></a><span class="lineno"> 1863</span>&#160;            <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
+<div class="line"><a name="l01864"></a><span class="lineno"> 1864</span>&#160;            <span class="keywordflow">if</span> (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)</div>
+<div class="line"><a name="l01865"></a><span class="lineno"> 1865</span>&#160;            {</div>
+<div class="line"><a name="l01866"></a><span class="lineno"> 1866</span>&#160;                <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
+<div class="line"><a name="l01867"></a><span class="lineno"> 1867</span>&#160;                <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l01868"></a><span class="lineno"> 1868</span>&#160;            }</div>
+<div class="line"><a name="l01869"></a><span class="lineno"> 1869</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> loop = 0; loop &lt; 10; loop++)</div>
+<div class="line"><a name="l01870"></a><span class="lineno"> 1870</span>&#160;            {</div>
+<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;                <a class="code" href="serial_port_8c.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPortWriteAscii</a>(port, <span class="stringliteral">&quot;STPB&quot;</span>, 4);</div>
+<div class="line"><a name="l01872"></a><span class="lineno"> 1872</span>&#160;                <a class="code" href="serial_port_8c.html#a85e247f1f47c653e9d44c2c049c7ce55">serialPortWriteAscii</a>(port, bootloadEnableCmd, 4);</div>
+<div class="line"><a name="l01873"></a><span class="lineno"> 1873</span>&#160;                c = 0;</div>
+<div class="line"><a name="l01874"></a><span class="lineno"> 1874</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="serial_port_8c.html#a3cb89cb0314c641149ddefc46dd1f94d">serialPortReadCharTimeout</a>(port, &amp;c, 13) == 1)</div>
+<div class="line"><a name="l01875"></a><span class="lineno"> 1875</span>&#160;                {</div>
+<div class="line"><a name="l01876"></a><span class="lineno"> 1876</span>&#160;                    <span class="keywordflow">if</span> (c == <span class="charliteral">&#39;$&#39;</span>)</div>
+<div class="line"><a name="l01877"></a><span class="lineno"> 1877</span>&#160;                    {</div>
+<div class="line"><a name="l01878"></a><span class="lineno"> 1878</span>&#160;                        <span class="comment">// done, we got into bootloader mode</span></div>
+<div class="line"><a name="l01879"></a><span class="lineno"> 1879</span>&#160;                        i = 9999;</div>
+<div class="line"><a name="l01880"></a><span class="lineno"> 1880</span>&#160;                        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01881"></a><span class="lineno"> 1881</span>&#160;                    }</div>
+<div class="line"><a name="l01882"></a><span class="lineno"> 1882</span>&#160;                }</div>
+<div class="line"><a name="l01883"></a><span class="lineno"> 1883</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01884"></a><span class="lineno"> 1884</span>&#160;                {</div>
+<div class="line"><a name="l01885"></a><span class="lineno"> 1885</span>&#160;                    <a class="code" href="serial_port_8c.html#af4b519e1c32d49d8937677b4b62ea99d">serialPortFlush</a>(port);</div>
+<div class="line"><a name="l01886"></a><span class="lineno"> 1886</span>&#160;                }</div>
+<div class="line"><a name="l01887"></a><span class="lineno"> 1887</span>&#160;            }</div>
+<div class="line"><a name="l01888"></a><span class="lineno"> 1888</span>&#160;        }</div>
+<div class="line"><a name="l01889"></a><span class="lineno"> 1889</span>&#160; </div>
+<div class="line"><a name="l01890"></a><span class="lineno"> 1890</span>&#160;        <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
+<div class="line"><a name="l01891"></a><span class="lineno"> 1891</span>&#160;        <a class="code" href="_i_s_utilities_8h.html#a038783cd27cbb54e9c8d8708f147168e">SLEEP_MS</a>(<a class="code" href="inertial_sense_boot_loader_8h.html#a36f9c553bf1daf7c7df99886e2f0eaa0">BOOTLOADER_REFRESH_DELAY</a>);</div>
+<div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160; </div>
+<div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;        <span class="comment">// if we can&#39;t handshake at this point, bootloader enable has failed</span></div>
+<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;        <span class="keywordflow">if</span> (!bootloaderHandshake(&amp;p))</div>
+<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;        {</div>
+<div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;            <span class="comment">// failure</span></div>
+<div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;            <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
+<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160;            <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;        }</div>
+<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;    }</div>
+<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160; </div>
+<div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;    <span class="comment">// ensure bootloader restarts in fresh state</span></div>
+<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;    bootloaderRestart(port);</div>
+<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160; </div>
+<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;    <span class="comment">// by this point the bootloader should be enabled</span></div>
+<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;    <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
+<div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;    <span class="keywordflow">return</span> 1;</div>
+<div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;}</div>
+<div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160; </div>
+<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;<span class="keyword">static</span> <span class="keywordtype">int</span> disableBootloaderInternal(<a class="code" href="structserial__port__t.html">serial_port_t</a>* port, <span class="keywordtype">char</span>* error, <span class="keywordtype">int</span> errorLength, <span class="keywordtype">int</span> baud)</div>
+<div class="line"><a name="l01911"></a><span class="lineno"> 1911</span>&#160;{</div>
+<div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;    <span class="comment">// open the serial port</span></div>
+<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;    <span class="keywordflow">if</span> (serialPortOpenInternal(port, baud, error, errorLength) == 0)</div>
+<div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160;    {</div>
+<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;        <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;    }</div>
+<div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160; </div>
+<div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160;    <span class="comment">// send the &quot;reboot to program mode&quot; command and the device should start in program mode</span></div>
+<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160;    <a class="code" href="serial_port_8c.html#ad2240e52502e49f931504565cc1d39d0">serialPortWrite</a>(port, (<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot;:020000040300F7&quot;</span>, 15);</div>
+<div class="line"><a name="l01920"></a><span class="lineno"> 1920</span>&#160;    <a class="code" href="serial_port_8c.html#a8c06177e7cce0225011a591265ad3517">serialPortSleep</a>(port, 250);</div>
+<div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;    <a class="code" href="serial_port_8c.html#a25ebaeafcc060a447ec1a38a8085943d">serialPortClose</a>(port);</div>
+<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;    <span class="keywordflow">return</span> 1;</div>
+<div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;}</div>
+<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160; </div>
+<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160; </div>
+<div class="line"><a name="l01926"></a><span class="lineno"><a class="line" href="inertial_sense_boot_loader_8h.html#a1ba2459e76f174c6fed632130578a487"> 1926</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487">disableBootloader</a>(<a class="code" href="structserial__port__t.html">serial_port_t</a>* port, <span class="keywordtype">char</span>* error, <span class="keywordtype">int</span> errorLength)</div>
+<div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160;{</div>
+<div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;    <span class="keywordtype">int</span> result = 0;</div>
+<div class="line"><a name="l01929"></a><span class="lineno"> 1929</span>&#160;    result |= disableBootloaderInternal(port, error, errorLength, <a class="code" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a>);</div>
+<div class="line"><a name="l01930"></a><span class="lineno"> 1930</span>&#160;    result |= disableBootloaderInternal(port, error, errorLength, <a class="code" href="inertial_sense_boot_loader_8h.html#a7012a6cc174590fc4e38331c34c5d63d">IS_BAUD_RATE_BOOTLOADER_RS232</a>);</div>
+<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;    result |= disableBootloaderInternal(port, error, errorLength, <a class="code" href="inertial_sense_boot_loader_8h.html#a3dd40c53dede7af6b3ef8ac95805fd41">IS_BAUD_RATE_BOOTLOADER_SLOW</a>);</div>
+<div class="line"><a name="l01932"></a><span class="lineno"> 1932</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l01933"></a><span class="lineno"> 1933</span>&#160;}</div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ainertial_sense_boot_loader_8c_html_abac28520efbc61d0cb08abc48263753c"><div class="ttname"><a href="inertial_sense_boot_loader_8c.html#abac28520efbc61d0cb08abc48263753c">SAM_BA_BOOTLOADER_SIZE</a></div><div class="ttdeci">#define SAM_BA_BOOTLOADER_SIZE</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8c_source.html#l00027">inertialSenseBootLoader.c:26</a></div></div>
 <div class="ttc" id="ainertial_sense_boot_loader_8c_html_ae25458f6abaf963108f26ee9168485ac"><div class="ttname"><a href="inertial_sense_boot_loader_8c.html#ae25458f6abaf963108f26ee9168485ac">bootloader_perror</a></div><div class="ttdeci">#define bootloader_perror(s,...)</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8c_source.html#l00073">inertialSenseBootLoader.c:72</a></div></div>
@@ -2017,6 +2023,7 @@ $(function() {
 <div class="ttc" id="ainertial_sense_boot_loader_8c_html_a6b20d41d6252e9871430c242cb1a56e7"><div class="ttname"><a href="inertial_sense_boot_loader_8c.html#a6b20d41d6252e9871430c242cb1a56e7">BUFFER_SIZE</a></div><div class="ttdeci">#define BUFFER_SIZE</div></div>
 <div class="ttc" id="astructbootloader__state__t_html"><div class="ttname"><a href="structbootloader__state__t.html">bootloader_state_t</a></div><div class="ttdef"><b>Definition:</b> <a href="_inertial_sense_8cpp_source.html#l00017">InertialSense.cpp:18</a></div></div>
 <div class="ttc" id="a_i_s_constants_8h_html_a5cf8424fec96baad5919dfb1c4a8dc71"><div class="ttname"><a href="_i_s_constants_8h.html#a5cf8424fec96baad5919dfb1c4a8dc71">PUSH_PACK_1</a></div><div class="ttdeci">#define PUSH_PACK_1</div><div class="ttdef"><b>Definition:</b> <a href="_i_s_constants_8h_source.html#l00232">ISConstants.h:231</a></div></div>
+<div class="ttc" id="ainertial_sense_boot_loader_8h_html_a404c96d6000a762c614a00847fd6a821"><div class="ttname"><a href="inertial_sense_boot_loader_8h.html#a404c96d6000a762c614a00847fd6a821">IS_BAUD_RATE_BOOTLOADER_LEGACY</a></div><div class="ttdeci">#define IS_BAUD_RATE_BOOTLOADER_LEGACY</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8h_source.html#l00033">inertialSenseBootLoader.h:32</a></div></div>
 <div class="ttc" id="astructbootload__params__t_html_a9944ba87605cde45e912eaa92a37f480"><div class="ttname"><a href="structbootload__params__t.html#a9944ba87605cde45e912eaa92a37f480">bootload_params_t::uploadProgress</a></div><div class="ttdeci">pfnBootloadProgress uploadProgress</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8h_source.html#l00061">inertialSenseBootLoader.h:61</a></div></div>
 <div class="ttc" id="a_i_s_constants_8h_html_a2149ebad4d6576b844e9c8ec46e63247"><div class="ttname"><a href="_i_s_constants_8h.html#a2149ebad4d6576b844e9c8ec46e63247">POP_PACK</a></div><div class="ttdeci">#define POP_PACK</div><div class="ttdef"><b>Definition:</b> <a href="_i_s_constants_8h_source.html#l00235">ISConstants.h:234</a></div></div>
 <div class="ttc" id="astructbootload__params__t_html_a9503237f9c9e527a60158ee62822ab76"><div class="ttname"><a href="structbootload__params__t.html#a9503237f9c9e527a60158ee62822ab76">bootload_params_t::numberOfDevices</a></div><div class="ttdeci">int numberOfDevices</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8h_source.html#l00065">inertialSenseBootLoader.h:65</a></div></div>
@@ -2048,7 +2055,7 @@ $(function() {
 <div class="ttc" id="ainertial_sense_boot_loader_8c_html_a676b4a362ff2f2909cf5e47805548daa"><div class="ttname"><a href="inertial_sense_boot_loader_8c.html#a676b4a362ff2f2909cf5e47805548daa">bootloader_snprintf</a></div><div class="ttdeci">#define bootloader_snprintf</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8c_source.html#l00069">inertialSenseBootLoader.c:68</a></div></div>
 <div class="ttc" id="astructbootloader__state__t_html_a5349b92ca1d8e6d4c7849c81cfce6e44"><div class="ttname"><a href="structbootloader__state__t.html#a5349b92ca1d8e6d4c7849c81cfce6e44">bootloader_state_t::verifyChunkSize</a></div><div class="ttdeci">int verifyChunkSize</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8c_source.html#l00045">inertialSenseBootLoader.c:45</a></div></div>
 <div class="ttc" id="astructbootloader__state__t_html_abab13e665511c2336481b3405b92bd2c"><div class="ttname"><a href="structbootloader__state__t.html#abab13e665511c2336481b3405b92bd2c">bootloader_state_t::param</a></div><div class="ttdeci">bootload_params_t param</div><div class="ttdef"><b>Definition:</b> <a href="_inertial_sense_8cpp_source.html#l00019">InertialSense.cpp:19</a></div></div>
-<div class="ttc" id="ainertial_sense_boot_loader_8c_html_a1ba2459e76f174c6fed632130578a487"><div class="ttname"><a href="inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487">disableBootloader</a></div><div class="ttdeci">int disableBootloader(serial_port_t *port, char *error, int errorLength)</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8c_source.html#l01920">inertialSenseBootLoader.c:1920</a></div></div>
+<div class="ttc" id="ainertial_sense_boot_loader_8c_html_a1ba2459e76f174c6fed632130578a487"><div class="ttname"><a href="inertial_sense_boot_loader_8c.html#a1ba2459e76f174c6fed632130578a487">disableBootloader</a></div><div class="ttdeci">int disableBootloader(serial_port_t *port, char *error, int errorLength)</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8c_source.html#l01926">inertialSenseBootLoader.c:1926</a></div></div>
 <div class="ttc" id="aserial_port_8c_html_a714672a76f64069f76e025ec8d2fc66a"><div class="ttname"><a href="serial_port_8c.html#a714672a76f64069f76e025ec8d2fc66a">serialPortReadChar</a></div><div class="ttdeci">int serialPortReadChar(serial_port_t *serialPort, unsigned char *c)</div><div class="ttdef"><b>Definition:</b> <a href="serial_port_8c_source.html#l00191">serialPort.c:191</a></div></div>
 <div class="ttc" id="astructxmodem__chunk__t_html_ac8e4ae3c656fb62e025100bcb3be1af7"><div class="ttname"><a href="structxmodem__chunk__t.html#ac8e4ae3c656fb62e025100bcb3be1af7">xmodem_chunk_t::crc</a></div><div class="ttdeci">uint16_t crc</div><div class="ttdef"><b>Definition:</b> <a href="inertial_sense_boot_loader_8c_source.html#l00057">inertialSenseBootLoader.c:57</a></div></div>
 <div class="ttc" id="aserial_port_8c_html_a3cb89cb0314c641149ddefc46dd1f94d"><div class="ttname"><a href="serial_port_8c.html#a3cb89cb0314c641149ddefc46dd1f94d">serialPortReadCharTimeout</a></div><div class="ttdeci">int serialPortReadCharTimeout(serial_port_t *serialPort, unsigned char *c, int timeoutMilliseconds)</div><div class="ttdef"><b>Definition:</b> <a href="serial_port_8c_source.html#l00196">serialPort.c:196</a></div></div>

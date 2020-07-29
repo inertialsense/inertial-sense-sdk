@@ -236,7 +236,7 @@ enum eInsStatusFlags
     INS_STATUS_GPS_NAV_FIX_OFFSET				= 24,
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
 
-	/** RTK compassing heading is accurate */
+	/** RTK compassing heading is accurate.  (RTK fix and hold status) */
 	INS_STATUS_RTK_COMPASSING_VALID				= (int)0x04000000,
 
 	/* NOTE: If you add or modify these INS_STATUS_RTK_ values, please update eInsStatusRtkBase in IS-src/python/src/ci_hdw/data_sets.py */

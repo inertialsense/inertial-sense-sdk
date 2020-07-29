@@ -81,7 +81,7 @@ POP_PACK
 static const unsigned char hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 // Fastest to slowest
-static const int s_baudRateList[] = { IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };											
+static const int s_baudRateList[] = { IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_LEGACY, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
 
 static uint16_t crc_update(uint16_t crc_in, int incr)
 {
@@ -1123,7 +1123,7 @@ static int bootloaderHandshake(bootload_params_t* p)
     }
 
     // try handshaking at each baud rate
-    for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
+    for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList) + 1; i++)
 
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
@@ -1848,12 +1848,18 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
 	p.baudRate = bootloaderClosestBaudRate(baudRate);
 
     // attempt to handshake in case we are in bootloader mode
-    if (!bootloaderHandshake(&p))
+    //When we handshake with legacy bootloader baudrate it prevents us from entering the bootloader when the uINS is running its firmware.
+    //Instead of checking for the bootloader first, we will send the command to enter the bootloader without checking.
+    //After the command is sent, it will try to handsake again and will find the bootloader even if the bootloader is alreay running before sending the command to enter.
+    //if (!bootloaderHandshake(&p))
     {
         // in case we are in program mode, try and send the commands to go into bootloader mode
         unsigned char c = 0;
         for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
         {
+            if (baudRates[i] == 0)
+                continue;
+
             serialPortClose(port);
             if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
             {
