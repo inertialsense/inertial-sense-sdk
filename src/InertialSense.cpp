@@ -739,7 +739,7 @@ bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)
 	{
 		// sleep in between to allow test bed to send the serial data
 		// TODO: This was 10ms, but that was to long for the CI test.
-		SLEEP_MS(1);
+// 		SLEEP_MS(1);	// This is commented out because it causes problems when using testbad with CLTool on single board computer.
 		serialPortWrite(&m_comManagerState.devices[i].serialPort, data, dataLength);
 	}
 	return false; // do not parse, since we are just forwarding it on

@@ -813,7 +813,7 @@ $(function() {
 <div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;    {</div>
 <div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;        <span class="comment">// sleep in between to allow test bed to send the serial data</span></div>
 <div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;        <span class="comment">// TODO: This was 10ms, but that was to long for the CI test.</span></div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;        <a class="code" href="_i_s_utilities_8h.html#a038783cd27cbb54e9c8d8708f147168e">SLEEP_MS</a>(1);</div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;<span class="comment">//      SLEEP_MS(1);    // This is commented out because it causes problems when using testbad with CLTool on single board computer.</span></div>
 <div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        <a class="code" href="serial_port_8c.html#ad2240e52502e49f931504565cc1d39d0">serialPortWrite</a>(&amp;m_comManagerState.<a class="code" href="struct_inertial_sense_1_1com__manager__cpp__state__t.html#ae597781a0e75787be54a08676f5007ef">devices</a>[i].serialPort, data, dataLength);</div>
 <div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;    }</div>
 <div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>; <span class="comment">// do not parse, since we are just forwarding it on</span></div>
