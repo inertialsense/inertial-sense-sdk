@@ -361,7 +361,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
-		else if (startsWith(a, "-svr="))
+		else if (startsWith(a, "-svr=") || startsWith(a, "-srv="))
 		{
 			g_commandLineOptions.serverConnection = &a[5];
 		}
@@ -514,7 +514,7 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Client / Server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;
-	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:COM9:57600         (port, baud rate)" << endl;
+	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
 	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:user:password" << endl;
 	cout << "                                                              (URL, user, password optional)" << endl;
 	cout << "        - UBLOX data:    -svr=UBLOX:192.168.1.100:7777        (no URL, user or password)" << endl;
