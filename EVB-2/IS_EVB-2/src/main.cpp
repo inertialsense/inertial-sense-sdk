@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "user_interface.h"
 #include "sd_card_logger.h"
 #include "control_law.h"
+#include "lunaFaultMaintenance.h"
 
 #undef printf
 #define printf(...)
@@ -81,6 +82,11 @@ static void vTaskComm(void *pvParameters)
 #ifdef ENABLE_WDT
 		// Feed Watchdog to prevent reset
 		wdt_restart(WDT);
+#endif
+#ifdef ENABLE_EVB_LUNA
+
+		//Check Luna fault status
+        lunaFaultMaintenance(); 
 #endif
 		
         // Turn off communications LEDs - first thing after vTaskDelay()

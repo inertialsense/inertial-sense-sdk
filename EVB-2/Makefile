@@ -131,7 +131,8 @@ C_SRCS += \
           $(SRC_DIR)/user_interface.cpp                                                                  \
           $(SRC_DIR)/wifi.c                                                                              \
           $(SRC_DIR)/xbee.cpp                                                                            \
-          $(SRC_DIR)/main.cpp
+          $(SRC_DIR)/main.cpp                                                                            \
+          $(SRC_DIR)/lunaFaultMaintenance.cpp
 
 
 # Set Include Directories

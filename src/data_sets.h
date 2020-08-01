@@ -2768,7 +2768,20 @@ typedef enum
     /** XBee: failed to configure */
     EVB_STATUS_XBEE_CONFIG_FAILURE          = 0x00800000,
 
+    /** EVB_FAULT_CODES_MASK */
+    EVB_STATUS_LUNA_FAULT_MASK              = 0x0F000000,
+
+    /** EVB_FAULT_CODES_OFFSET */
+    EVB_STATUS_LUNA_FAULT_OFFSET             = 24,
+
 } eEvbStatus;
+
+typedef enum
+{
+    /**Geofence boundary exceeded*/
+    EVB_LUNA_FAULT_GEOFENCE_BOUNDARY_EXCEEDED    = 0x1,
+    
+} eEvb2FaultCodes;
 
 /** EVB-2 communications ports. */
 enum eEvb2CommPorts
@@ -2947,6 +2960,20 @@ typedef struct
 	/** Baud rate for EVB serial port H8 (TLL). */
 	uint32_t               h8gpioBaudRate;
 	
+#ifdef ENABLE_EVB_LUNA
+    /**Geofence Max Latitude**/
+    double                  maxLatGeofence;
+
+    /**Geofence Min Latitude**/
+    double                  minLatGeofence;
+    
+    /**Geofence Max Longitude**/
+    double                  maxLonGeofence;
+    
+    /**Geofence Min Latitude**/
+    double                  minLonGeofence;
+#endif
+
 } evb_flash_cfg_t;
 
 

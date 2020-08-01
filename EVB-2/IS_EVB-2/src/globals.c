@@ -452,6 +452,12 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 // 	cfg->encoderTickToWheelRad = 0.0179999f;	// Husqvarna lawnmower
 	cfg->encoderTickToWheelRad = 0.054164998f;	// Husqvarna lawnmower
 	
+#ifdef ENABLE_EVB_LUNA
+    cfg->maxLatGeofence = 40.330233;
+    cfg->minLatGeofence = 40.330110;
+    cfg->maxLonGeofence = -111.725720;
+    cfg->minLonGeofence = -111.726082;
+#endif	
 
 	com_bridge_apply_preset(cfg);
 	

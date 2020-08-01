@@ -108,5 +108,7 @@
 // CAN interface
  //#define CONF_BOARD_CAN1
  //#define CONF_BOARD_CAN_TEST
+ //Geofence
+//  #define ENABLE_EVB_LUNA
 
 #endif /* CONF_BOARD_H_INCLUDED */

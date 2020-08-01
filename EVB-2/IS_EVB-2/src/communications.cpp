@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "CAN.h"
 #include "../hw-libs/communications/CAN_comm.h"
 #include "../src/protocol_nmea.h"
+#include "lunaFaultMaintenance.h"
 
 typedef struct
 {
@@ -293,24 +294,36 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_1_t));
 		g_status.week = d.ins1.week;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins1.timeOfWeek*1000);
+#ifdef ENABLE_EVB_LUNA
+        checkGeofenceBoundary(d.ins1.lla);
+#endif					
 		break;
 	                    
 	case DID_INS_2:
 		copyDataPToStructP2(&g_msg.ins2, &dataHdr, data, sizeof(ins_2_t));
 		g_status.week = g_msg.ins2.week;
 		g_status.timeOfWeekMs = (uint32_t)(g_msg.ins2.timeOfWeek*1000);
+#ifdef ENABLE_EVB_LUNA
+		checkGeofenceBoundary(d.ins2.lla);
+#endif
 		break;
 
 	case DID_INS_3:
 		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_3_t));
 		g_status.week = d.ins1.week;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins3.timeOfWeek*1000);
+#ifdef ENABLE_EVB_LUNA
+		checkGeofenceBoundary(d.ins3.lla);
+#endif
 		break;
 
 	case DID_INS_4:
 		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_4_t));
 		g_status.week = d.ins4.week;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins4.timeOfWeek*1000);
+#ifdef ENABLE_EVB_LUNA
+		checkGeofenceBoundary(d.ins4.lla);
+#endif
 		break;
 	}
 }
