@@ -1338,6 +1338,24 @@ typedef struct PACKED
 	float					declination;
 } mag_cal_t;
 
+typedef struct PACKED
+{											// INL2 - Magnetometer observer info 
+	uint32_t				timeOfWeekMs;	// Timestamp in milliseconds
+	uint32_t				Ncal_samples;
+	uint32_t				ready;			// Data ready to be processed
+	uint32_t				calibrated;		// Calibration data present.  Set to -1 to force mag recalibration.
+	uint32_t				auto_recal;		// Allow mag to auto-recalibrate
+	uint32_t				outlier;		// Bad sample data
+	float					magHdg;			// Heading from magnetometer
+	float					insHdg;			// Heading from INS
+	float					magInsHdgDelta;	// Difference between mag heading and (INS heading plus mag declination)
+	float					nis;			// Normalized innovation squared (likelihood metric)
+	float					nis_threshold;	// Threshold for maximum NIS
+	float					Wcal[9];		// Magnetometer calibration matrix. Must be initialized with a unit matrix, not zeros!
+	uint32_t				activeCalSet;	// active calibration set (0 or 1)
+	float					magHdgOffset;	// Offset between magnetometer heading and estimate heading
+    float                   Tcal;           // Scaled computed variance between calibrated magnetometer samples. 
+} inl2_mag_obs_info_t;
 
 /** Built-in test state */
 enum eBitState
@@ -1960,6 +1978,26 @@ typedef struct PACKED
 	uint32_t				count;
 } strobe_in_time_t;
 
+#define DEBUG_I_ARRAY_SIZE		9
+#define DEBUG_F_ARRAY_SIZE		9
+#define DEBUG_LF_ARRAY_SIZE		3
+
+/* (DID_DEBUG_ARRAY) */
+typedef struct PACKED
+{
+	int32_t					i[DEBUG_I_ARRAY_SIZE];
+	f_t						f[DEBUG_F_ARRAY_SIZE];
+	double                  lf[DEBUG_LF_ARRAY_SIZE];
+} debug_array_t;
+
+#define DEBUG_STRING_SIZE		80
+
+/* (DID_DEBUG_STRING) */
+typedef struct PACKED
+{
+	uint8_t					s[DEBUG_STRING_SIZE];
+} debug_string_t;
+
 POP_PACK
 
 PUSH_PACK_8
@@ -1973,6 +2011,97 @@ typedef struct
 	/** fraction of second under 1 s */
 	double sec;         
 } gtime_t;
+
+typedef struct PACKED
+{
+	gtime_t time;
+	double rp_ecef[3]; // Rover position
+	double rv_ecef[3]; // Rover velocity
+	double ra_ecef[3]; // Rover acceleration
+	double bp_ecef[3]; // Base position
+	double bv_ecef[3]; // Base velocity
+	double qr[6]; // rover position and velocity covariance main diagonal
+	double b[24]; // satellite bias
+	double qb[24]; // main diagonal of sat bias covariances
+	uint8_t sat_id[24]; // satellite id of b[]
+} rtk_state_t;
+
+typedef struct PACKED
+{
+	gtime_t time;
+	int32_t nv; // number of measurements
+	uint8_t sat_id_i[24]; // sat id of measurements (reference sat)
+	uint8_t sat_id_j[24]; // sat id of measurements
+	uint8_t type[24]; // type (0 = dd-range, 1 = dd-phase, 2 = baseline)
+	double v[24]; // residual
+} rtk_residual_t;
+
+typedef struct PACKED
+{
+    gtime_t time;
+
+    uint8_t rej_ovfl;
+    uint8_t code_outlier;
+    uint8_t phase_outlier;
+    uint8_t code_large_residual;
+
+    uint8_t phase_large_residual;
+    uint8_t invalid_base_position;
+    uint8_t bad_baseline_holdamb;
+    uint8_t base_position_error;
+
+    uint8_t outc_ovfl;
+    uint8_t reset_timer;
+    uint8_t use_ubx_position;
+    uint8_t large_v2b;
+
+    uint8_t base_position_update;
+    uint8_t rover_position_error;
+    uint8_t reset_bias;
+    uint8_t start_relpos;
+
+    uint8_t end_relpos;
+    uint8_t start_rtkpos;
+    uint8_t pnt_pos_error;
+    uint8_t no_base_obs_data;
+
+    uint8_t diff_age_error;
+    uint8_t moveb_time_sync_error;
+    uint8_t waiting_for_rover_packet;
+    uint8_t waiting_for_base_packet;
+
+	uint8_t lsq_error;
+    uint8_t lack_of_valid_sats;
+    uint8_t divergent_pnt_pos_iteration;
+    uint8_t chi_square_error;
+
+    uint32_t cycle_slips;
+
+    float ubx_error;
+
+	uint8_t solStatus;
+	uint8_t rescode_err_marker;
+	uint8_t error_count;
+	uint8_t error_code;
+
+    float dist2base;
+
+	uint8_t reserved1;
+	uint8_t gdop_error;
+	uint8_t warning_count;
+	uint8_t warning_code;
+
+    double double_debug[4];
+
+	uint8_t debug[2];
+	uint8_t obs_count_bas;
+	uint8_t obs_count_rov;
+
+	uint8_t obs_pairs_filtered;
+	uint8_t obs_pairs_used;
+	uint8_t raw_ptr_queue_overrun;
+    uint8_t raw_dat_queue_overrun;
+} rtk_debug_t;
 
 POP_PACK
 
