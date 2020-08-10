@@ -70,7 +70,6 @@ ext_modules = [
             'include',
             '../src',
             '../../src',
-            # '../../../cpp/libs',
             get_pybind_include(),
             get_pybind_include(user=True)
         ],

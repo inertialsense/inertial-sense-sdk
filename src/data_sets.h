@@ -1978,6 +1978,26 @@ typedef struct PACKED
 	uint32_t				count;
 } strobe_in_time_t;
 
+#define DEBUG_I_ARRAY_SIZE		9
+#define DEBUG_F_ARRAY_SIZE		9
+#define DEBUG_LF_ARRAY_SIZE		3
+
+/* (DID_DEBUG_ARRAY) */
+typedef struct PACKED
+{
+	int32_t					i[DEBUG_I_ARRAY_SIZE];
+	f_t						f[DEBUG_F_ARRAY_SIZE];
+	double                  lf[DEBUG_LF_ARRAY_SIZE];
+} debug_array_t;
+
+#define DEBUG_STRING_SIZE		80
+
+/* (DID_DEBUG_STRING) */
+typedef struct PACKED
+{
+	uint8_t					s[DEBUG_STRING_SIZE];
+} debug_string_t;
+
 POP_PACK
 
 PUSH_PACK_8

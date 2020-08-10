@@ -13,3 +13,5 @@ Release
 .vs
 *.pyd
 *.pyc
+*.so
+*.o

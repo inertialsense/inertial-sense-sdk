@@ -4,7 +4,6 @@
 
 #include "InertialSense.h"
 #include "ISLogger.h"
-// #include "IS_internal.h"
 
 //#include "Eigen/Core"
 //#include "Eigen/St    dVector"
