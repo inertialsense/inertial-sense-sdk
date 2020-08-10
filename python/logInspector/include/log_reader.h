@@ -65,8 +65,8 @@ struct DeviceLog
     // vector<nvm_group_sn_t> nvrUserpageSn;
     // vector<nvm_group_0_t> nvrUserpageG0;
     // vector<nvm_group_1_t> nvrUserpageG1;
-    // vector<debug_string_t> debugString;
     // vector<rtos_info_t> rtosInfo;
+    vector<debug_string_t> debugString;
     vector<debug_array_t> debugArray;
     vector<sensors_mpu_w_temp_t> sensorsCal1;
     vector<sensors_mpu_w_temp_t> sensorsCal2;

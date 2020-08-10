@@ -29,21 +29,9 @@ extern "C" {
 
 #define USE_RTC_DATE_TIME       1   // Use RTC for system data and time
 
-#define DEBUG_I_ARRAY_SIZE		9
-#define DEBUG_F_ARRAY_SIZE		9
-#define DEBUG_LF_ARRAY_SIZE		3
-
 #define STREAM_INS_FOR_TIME_SYNC        1
 #define SKI_BOX_STATUS_LED_PIN          GPIO_10_PIN
 #define UBLOX_LOG_ENABLE			    0
-
-/* (DID_DEBUG_ARRAY) */
-typedef struct PACKED
-{
-    int32_t					i[DEBUG_I_ARRAY_SIZE];
-    f_t						f[DEBUG_F_ARRAY_SIZE];
-    double                  lf[DEBUG_LF_ARRAY_SIZE];
-} debug_array_t;
 
 typedef struct
 {
