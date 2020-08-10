@@ -7,3 +7,7 @@ obj/
 *.map
 
 
+*.obj
+x64
+Release
+.vs
