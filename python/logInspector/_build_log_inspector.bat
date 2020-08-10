@@ -11,4 +11,4 @@ cd logInspector
 
 python setup.py build_ext --inplace
 
-timeout 5 /nobreak
+REM timeout 5 /nobreak

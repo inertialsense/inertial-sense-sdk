@@ -24,7 +24,7 @@ DEG2RAD = 3.14159 / 180.0
 sys.path.append('..')
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
-from ci_hdw.data_sets import *
+from pylib.data_sets import *
 from pylib.pose import quat2eulerArray, lla2ned, rotate_ecef2ned, quatRotVectArray
 import datetime
 

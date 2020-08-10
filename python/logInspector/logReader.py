@@ -13,7 +13,8 @@ import sys
 sys.path.append('..')
 from log_reader import LogReader
 import yaml
-from ci_hdw.data_sets import *
+# from ci_hdw.data_sets import *
+from pylib.data_sets import *
 from pylib.pose import *
 import datetime
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime

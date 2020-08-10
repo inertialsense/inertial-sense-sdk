@@ -11,3 +11,5 @@ obj/
 x64
 Release
 .vs
+*.pyd
+*.pyc

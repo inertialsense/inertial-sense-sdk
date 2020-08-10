@@ -4,7 +4,7 @@
 
 #include "InertialSense.h"
 #include "ISLogger.h"
-#include "IS_internal.h"
+// #include "IS_internal.h"
 
 //#include "Eigen/Core"
 //#include "Eigen/St    dVector"
@@ -52,34 +52,34 @@ struct DeviceLog
     vector<gps_rtk_rel_t> gps1RtkCmpRel;
     vector<gps_rtk_misc_t> gps1RtkPosMisc;
     vector<gps_rtk_misc_t> gps1RtkCmpMisc;
-    vector<feature_bits_t> featureBits;
-    vector<sensors_w_temp_t> sensorsIs1;
-    vector<sensors_w_temp_t> sensorsIs2;
-    vector<sensors_t> sensorsTcBias;
+    // vector<feature_bits_t> featureBits;
+    // vector<sensors_w_temp_t> sensorsIs1;
+    // vector<sensors_w_temp_t> sensorsIs2;
+    // vector<sensors_t> sensorsTcBias;
     vector<io_t> io;
-    vector<sys_sensors_adc_t> sensorsAdc;
-    vector<sensor_compensation_t> scomp;
+    // vector<sys_sensors_adc_t> sensorsAdc;
+    // vector<sensor_compensation_t> scomp;
     vector<gps_vel_t> gps1Vel;
     vector<gps_vel_t> gps2Vel;
-    vector<hdw_params_t> hdwParams;
-    vector<nvr_manage_t> nvrManageUserpage;
-//    vector<nvm_group_sn_t> nvrUserpageSn;
-//    vector<nvm_group_0_t> nvrUserpageG0;
-//    vector<nvm_group_1_t> nvrUserpageG1;
-    vector<debug_string_t> debugString;
-    vector<rtos_info_t> rtosInfo;
+    // vector<hdw_params_t> hdwParams;
+    // vector<nvr_manage_t> nvrManageUserpage;
+    // vector<nvm_group_sn_t> nvrUserpageSn;
+    // vector<nvm_group_0_t> nvrUserpageG0;
+    // vector<nvm_group_1_t> nvrUserpageG1;
+    // vector<debug_string_t> debugString;
+    // vector<rtos_info_t> rtosInfo;
     vector<debug_array_t> debugArray;
     vector<sensors_mpu_w_temp_t> sensorsCal1;
     vector<sensors_mpu_w_temp_t> sensorsCal2;
-//    vector<sensor_cal_t> calSc;
-//    vector<sensor_cal_mpu_t> calSc1;
-//    vector<sensor_cal_mpu_t> calSc2;
+    // vector<sensor_cal_t> calSc;
+    // vector<sensor_cal_mpu_t> calSc1;
+    // vector<sensor_cal_mpu_t> calSc2;
     vector<sys_sensors_t> sysSensorsSigma;
     vector<sys_sensors_adc_t> sensorsAdcSigma;
-    vector<ins_dev_1_t> insDev1;
+    // vector<ins_dev_1_t> insDev1;
     vector<inl2_states_t> inl2States;
     vector<inl2_status_t> inl2Status;
-    vector<inl2_misc_t> inl2Misc;
+    // vector<inl2_misc_t> inl2Misc;
     vector<magnetometer_t> magnetometer;
     vector<barometer_t> barometer;
     vector<gps_pos_t> gps1RtkPos;
@@ -101,11 +101,11 @@ struct DeviceLog
     vector<diag_msg_t> diagnosticMessage;
     vector<survey_in_t> surveyIn;
 //    vector<evb2_t> evb2;
-    vector<rtk_state_t> rtkState;
+    // vector<rtk_state_t> rtkState;
     vector<rtk_residual_t> rtkCodeResidual;
     vector<rtk_residual_t> rtkPhaseResidual;
     vector<rtk_debug_t> rtkDebug;
-    vector<rtk_debug_2_t> rtkDebug2;
+    // vector<rtk_debug_2_t> rtkDebug2;
 //    vector<port_monitor_t> portMonitor;
 };
 
