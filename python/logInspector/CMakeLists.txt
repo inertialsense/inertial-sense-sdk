@@ -6,21 +6,19 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
-    
-add_subdirectory(../../../../pybind11 build)
+
+find_package(pybind11 REQUIRED)
 find_package(Threads)
 
 
 add_definitions(-DPYBIND11_PYTHON_VERSION=3.6.6)
 
-set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../cpp/SDK)
+set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../)
 add_subdirectory(${SDK_DIR} SDK)
 
 include_directories(
     include
     ${SDK_DIR}/src
-    ../../../cpp/libs
-#    ../../../cpp/utilities/UnitTests/Eigen
 )
 
 
@@ -30,9 +28,8 @@ pybind11_add_module(log_reader
 )
 target_link_libraries(log_reader InertialSense)
 
-
 # Don't prepend wrapper library name with lib and add to Python libs.
-set_target_properties(log_reader PROPERTIES 
+set_target_properties(log_reader PROPERTIES
     PREFIX ""
     OUTPUT_NAME "log_reader"
     SUFFIX ".so"
