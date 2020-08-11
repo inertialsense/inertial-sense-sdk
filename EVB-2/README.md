@@ -19,8 +19,8 @@ The EVB-2 project source code is open source and available in the inertial-sense
 - RTK positioning, base or rover with 900MHz radio and WiFi radios.
 - RTK compassing, moving baseline RTK for a dual GNSS heading solution.
 - External uBlox [ZED-F9P multi-frequency GNSS](https://docs.inertialsense.com/user-manual/gnss/multi_frequency_gnss/) for simultaneous RTK positioning and RTK compassing.
-- [uINS SPI](https://docs.inertialsense.com/user-manual/hardware/EVB2/#spi) interface
-- [uINS CAN](https://docs.inertialsense.com/user-manual/com-protocol/CAN/) interface
+- [uINS SPI](https://docs.inertialsense.com/user-manual/hardware/EVB2/#spi) interface.
+- [uINS CAN](https://docs.inertialsense.com/user-manual/com-protocol/CAN/) interface.
 
 Because the EVB-2 project is open source, itself can be customized by users to meet various needs.
 
