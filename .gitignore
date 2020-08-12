@@ -15,3 +15,5 @@ Release
 *.pyc
 *.so
 *.o
+IS_logs/
+*.user
