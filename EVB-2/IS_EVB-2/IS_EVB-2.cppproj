@@ -1525,10 +1525,10 @@
     <Compile Include="src\drivers\d_quadEnc.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\lunaFaultMaintenance.cpp">
+    <Compile Include="src\evb_tasks.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\lunaFaultMaintenance.h">
+    <Compile Include="src\evb_tasks.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\globals.c">

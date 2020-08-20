@@ -23,7 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "CAN.h"
 #include "../hw-libs/communications/CAN_comm.h"
 #include "../src/protocol_nmea.h"
-#include "lunaFaultMaintenance.h"
 
 typedef struct
 {
