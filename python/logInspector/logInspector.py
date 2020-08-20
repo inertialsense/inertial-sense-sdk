@@ -537,18 +537,21 @@ class LogInspectorWindow(QMainWindow):
         if action == nppActionHot:
             cleanFolder(selected_directory)
             setDataInformationDirectory(selected_directory, startMode=START_MODE_HOT)
+            sys.path.insert(1, '../../../../python/src')
             from supernpp.supernpp import SuperNPP
             spp = SuperNPP(selected_directory, self.config['serials'])
             spp.run()
         if action == nppActionCold:
             cleanFolder(selected_directory)
             setDataInformationDirectory(selected_directory, startMode=START_MODE_COLD)
+            sys.path.insert(1, '../../../../python/src')
             from supernpp.supernpp import SuperNPP
             spp = SuperNPP(selected_directory, self.config['serials'], startMode=START_MODE_COLD)
             spp.run()
         if action == nppActionFactory:
             cleanFolder(selected_directory)
             setDataInformationDirectory(selected_directory, startMode=START_MODE_FACTORY)
+            sys.path.insert(1, '../../../../python/src')
             from supernpp.supernpp import SuperNPP
             spp = SuperNPP(selected_directory, self.config['serials'], startMode=START_MODE_FACTORY)
             spp.run()
