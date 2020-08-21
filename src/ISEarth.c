@@ -50,7 +50,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define K4_GRAV 4.0e-9          //
 #define K5_GRAV 7.2e-14         //
 
-/* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude */
+/* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m) */
 void ecef2lla(const double *Pe, double *LLA, const int Niter)
 {
     int i;
@@ -87,7 +87,7 @@ void ecef2lla(const double *Pe, double *LLA, const int Niter)
 }
 
 
-/* Coordinate transformation from latitude/longitude/altitude to ECEF coordinates */
+/* Coordinate transformation from latitude/longitude/altitude (rad,rad,m) to ECEF coordinates */
 void lla2ecef(const double *LLA, double *Pe)
 {
     //double e = 0.08181919084262;  // Earth first eccentricity: e = sqrt((R^2-b^2)/R^2);

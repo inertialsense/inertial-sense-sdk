@@ -43,6 +43,9 @@ StreamBufferHandle_t        g_xStreamBufferUINS;
 StreamBufferHandle_t        g_xStreamBufferWiFiRx;
 StreamBufferHandle_t        g_xStreamBufferWiFiTx;
 
+static pfnHandleUinsData s_pfnHandleUinsData = NULLPTR;
+
+
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin )
 {
     int len;
@@ -282,6 +285,11 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 {
 	uDatasets d;
 
+	if( copyDataPToStructP2(&d, &dataHdr, data, sizeof(uDatasets)) )
+	{	// Invalid
+		return;
+	}
+
 	// Save uINS data to global variables
 	switch(dataHdr.id)
 	{
@@ -290,40 +298,35 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		break;
 
 	case DID_INS_1:
-		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_1_t));
+		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins1.timeOfWeek*1000);
-#ifdef ENABLE_EVB_LUNA
-        checkGeofenceBoundary(d.ins1.lla);
-#endif					
 		break;
 	                    
 	case DID_INS_2:
-		copyDataPToStructP2(&g_msg.ins2, &dataHdr, data, sizeof(ins_2_t));
+		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
+		g_msg.ins2 = d.ins2;
 		g_status.week = g_msg.ins2.week;
-		g_status.timeOfWeekMs = (uint32_t)(g_msg.ins2.timeOfWeek*1000);
-#ifdef ENABLE_EVB_LUNA
-		checkGeofenceBoundary(d.ins2.lla);
-#endif
+		g_status.timeOfWeekMs = (uint32_t)(d.ins2.timeOfWeek*1000);
 		break;
 
 	case DID_INS_3:
-		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_3_t));
+		if(dataHdr.size+dataHdr.offset > sizeof(ins_3_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins3.timeOfWeek*1000);
-#ifdef ENABLE_EVB_LUNA
-		checkGeofenceBoundary(d.ins3.lla);
-#endif
 		break;
 
 	case DID_INS_4:
-		copyDataPToStructP2(&d, &dataHdr, data, sizeof(ins_4_t));
+		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
 		g_status.week = d.ins4.week;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins4.timeOfWeek*1000);
-#ifdef ENABLE_EVB_LUNA
-		checkGeofenceBoundary(d.ins4.lla);
-#endif
 		break;
+	}
+	
+	// Pass to call back
+	if(s_pfnHandleUinsData)
+	{
+		s_pfnHandleUinsData(dataHdr, d);
 	}
 }
 
@@ -851,6 +854,18 @@ void step_com_bridge(is_comm_instance_t &comm)
 		//static uint8_t tx_message_1[8] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};
 		//mcan_send_message(0x100000A5, tx_message_1, CONF_MCAN_ELEMENT_DATA_SIZE);
 #endif	
+}
+
+
+void communications_set_uINS_callback(void)
+{
+
+}
+
+
+void setHandleUinsDataFB( pfnHandleUinsData pfn )
+{
+	s_pfnHandleUinsData = pfn;
 }
 
 

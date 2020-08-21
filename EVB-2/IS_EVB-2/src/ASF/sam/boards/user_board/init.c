@@ -549,15 +549,6 @@ void board_IO_config(void)
 		CAN_init();
 	}
 #endif
-
-#ifdef ENABLE_EVB_LUNA
-   ioport_set_pin_output_mode(XBEE_RST_PIN, IOPORT_PIN_LEVEL_HIGH);            // Reset off (low asserted)
-   //Setup data ready pin
-    ioport_set_pin_dir(GPIO_10_PIN, IOPORT_DIR_OUTPUT);
-    ioport_set_pin_mode(GPIO_10_PIN, IOPORT_MODE_PULLDOWN);
-    ioport_set_pin_level(GPIO_10_PIN, IOPORT_PIN_LEVEL_LOW);
-
-#endif
 }
 
 

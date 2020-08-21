@@ -94,7 +94,9 @@ static void vTaskMaint(void *pvParameters)
 
 int main(void)
 {
-	int result = evbMain(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
+	evbMainInit(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
+	
+	int result = evbMain();
 	
 	// Will only get here if there was insufficient memory to create the idle task.
 	return result;

@@ -62,6 +62,16 @@ typedef struct PACKED
 	    uint32_t padding[BOOTLOADER_FLASH_BLOCK_SIZE / sizeof(uint32_t)];  // 8 Kb
 // 	    uint32_t padding[IFLASH_PAGE_SIZE / sizeof(uint32_t)];  // 512 bytes
     } g0;
+	
+#ifdef ENABLE_EVB_LUNA
+    union
+    {
+	    evb_flash_cfg_t m;
+	    uint32_t padding[BOOTLOADER_FLASH_BLOCK_SIZE / sizeof(uint32_t)];  // 8 Kb
+	    // 	    uint32_t padding[IFLASH_PAGE_SIZE / sizeof(uint32_t)];  // 512 bytes
+    } g1;
+#endif
+
 } nvm_config_t;
 
 POP_PACK

@@ -150,10 +150,10 @@ int evbTaskMaint(rtos_task_t &task)
 }
 
 
-int evbMain(pdTASK_CODE pxTaskComm,
-			pdTASK_CODE pxTaskLogg,
-			pdTASK_CODE pxTaskWifi,
-			pdTASK_CODE pxTaskMant )
+void evbMainInit(pdTASK_CODE pxTaskComm,
+				pdTASK_CODE pxTaskLogg,
+				pdTASK_CODE pxTaskWifi,
+				pdTASK_CODE pxTaskMant )
 {
 	//XDMAC channel interrupt enables do not get cleared by a software reset. Clear them before they cause issues.
 	XDMAC->XDMAC_GID = 0xFFFFFFFF;
@@ -200,7 +200,11 @@ int evbMain(pdTASK_CODE pxTaskComm,
 	uint32_t timeout_value = wdt_get_timeout_value(1000000, BOARD_FREQ_SLCK_XTAL);	//Timeout in us, configured for 1 second.
 	wdt_init(WDT, WDT_MR_WDRSTEN | WDT_MR_WDDBGHLT, timeout_value, timeout_value);
 #endif
-		
+}
+
+
+int evbMain(void)
+{		
 	// Start the scheduler
 	printf("Starting FreeRTOS\n\r");
 	vTaskStartScheduler((TaskHandle_t*)&g_rtos.task[EVB_TASK_IDLE].handle, (TaskHandle_t*)&g_rtos.task[EVB_TASK_TIMER].handle);
@@ -208,3 +212,7 @@ int evbMain(pdTASK_CODE pxTaskComm,
 	// Will only get here if there was insufficient memory to create the idle task.
     return 0;
 }
+
+
+
+
