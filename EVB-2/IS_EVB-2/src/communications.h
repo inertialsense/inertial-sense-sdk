@@ -23,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern bool                     g_usb_cdc_open;
 
 typedef int(*pfnHandleUinsData)(p_data_hdr_t &dataHdr, uDatasets &data);
-
+typedef void(*pfnHandleHostData)(is_comm_instance_t *comm, protocol_type_t ptype);
 
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin );
 int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
@@ -42,7 +42,8 @@ void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
 void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
 void step_com_bridge(is_comm_instance_t &comm);
-void setHandleUinsDataFB( pfnHandleUinsData pfn );
+void comunications_set_uins_data_callback( pfnHandleUinsData pfn );
+void comunications_set_host_data_callback( pfnHandleHostData pfn );
 void communications_init(void);
 
 /*CAN Message*/

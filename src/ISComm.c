@@ -251,7 +251,7 @@ static protocol_type_t processInertialSensePkt(is_comm_instance_t* instance)
 			// ensure offset and size are in bounds - check the size independent of offset because the size could be a
 			//  negative number in case of corrupt data
 			if (instance->dataHdr.id > DID_NULL &&
-				instance->dataHdr.id < DID_COUNT &&
+// 				instance->dataHdr.id < DID_COUNT &&		// Commented out to allow support for Luna EVB data sets
 				instance->dataHdr.size <= MAX_DATASET_SIZE //&&
 // 					instance->dataHdr.offset <= MAX_DATASET_SIZE &&
 // 					instance->dataHdr.offset + instance->dataHdr.size <= MAX_DATASET_SIZE

@@ -44,6 +44,7 @@ StreamBufferHandle_t        g_xStreamBufferWiFiRx;
 StreamBufferHandle_t        g_xStreamBufferWiFiTx;
 
 static pfnHandleUinsData s_pfnHandleUinsData = NULLPTR;
+static pfnHandleHostData s_pfnHandleHostData = NULLPTR;
 
 
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin )
@@ -323,7 +324,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		break;
 	}
 	
-	// Pass to call back
+	// Pass to callback
 	if(s_pfnHandleUinsData)
 	{
 		s_pfnHandleUinsData(dataHdr, d);
@@ -573,6 +574,11 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype)
 		break;
 	}
 
+	// Pass to callback
+	if (s_pfnHandleHostData)
+	{
+		s_pfnHandleHostData(comm, ptype);
+	}
 }
 
 
@@ -857,15 +863,15 @@ void step_com_bridge(is_comm_instance_t &comm)
 }
 
 
-void communications_set_uINS_callback(void)
+void comunications_set_uins_data_callback( pfnHandleUinsData pfn )
 {
-
+	s_pfnHandleUinsData = pfn;
 }
 
 
-void setHandleUinsDataFB( pfnHandleUinsData pfn )
+void comunications_set_host_data_callback( pfnHandleHostData pfn )
 {
-	s_pfnHandleUinsData = pfn;
+	s_pfnHandleHostData = pfn;
 }
 
 
