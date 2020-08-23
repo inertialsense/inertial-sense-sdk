@@ -38,17 +38,17 @@ typedef struct
     /** Manufacturer method for restoring flash defaults */
     uint32_t                key;
 
-    /**Geofence Max Latitude**/
+	/** Geofence Min Latitude **/
+	double                  minLatGeofence;
+	
+	/** Geofence Max Latitude **/
     double                  maxLatGeofence;
 
-    /**Geofence Min Latitude**/
-    double                  minLatGeofence;
-    
-    /**Geofence Max Longitude**/
-    double                  maxLonGeofence;
-    
-    /**Geofence Min Latitude**/
-    double                  minLonGeofence;
+	/** Geofence Min Latitude **/
+	double                  minLonGeofence;
+
+    /** Geofence Max Longitude **/
+    double                  maxLonGeofence;    
 
 } evb_luna_flash_cfg_t;
 
