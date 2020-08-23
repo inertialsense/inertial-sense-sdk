@@ -57,21 +57,16 @@ PUSH_PACK_1
 typedef struct PACKED
 {
     union
-    {
+    {	// Standard EVB-2
 	    evb_flash_cfg_t m;
-	    uint32_t padding[BOOTLOADER_FLASH_BLOCK_SIZE / sizeof(uint32_t)];  // 8 Kb
-// 	    uint32_t padding[IFLASH_PAGE_SIZE / sizeof(uint32_t)];  // 512 bytes
+	    uint32_t padding[BOOTLOADER_FLASH_BLOCK_SIZE / 2 / sizeof(uint32_t)];  // 4096 bytes
     } g0;
-	
-#ifdef ENABLE_EVB_LUNA
-    union
-    {
-	    evb_flash_cfg_t m;
-	    uint32_t padding[BOOTLOADER_FLASH_BLOCK_SIZE / sizeof(uint32_t)];  // 8 Kb
-	    // 	    uint32_t padding[IFLASH_PAGE_SIZE / sizeof(uint32_t)];  // 512 bytes
-    } g1;
-#endif
 
+    union
+    {	// Reserved for Luna
+	    uint32_t padding[BOOTLOADER_FLASH_BLOCK_SIZE / 2 / sizeof(uint32_t)];  // 4096 bytes
+    } g1;
+	
 } nvm_config_t;
 
 POP_PACK
@@ -107,6 +102,7 @@ int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
 void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
 
+void nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
 void nvr_init(void);
 void nvr_slow_maintenance(void);
 

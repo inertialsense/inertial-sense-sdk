@@ -262,26 +262,26 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 }
 
 
-static void nvr_validate_config_integrity(void)
+void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 {
     evb_flash_cfg_t defaults;
     memset(&defaults, 0, sizeof(evb_flash_cfg_t));
     
     reset_config_defaults(&defaults);
     
-    if (g_flashCfg->checksum != flashChecksum32(g_flashCfg, sizeof(evb_flash_cfg_t)) || g_flashCfg->key != defaults.key)
+    if (cfg->checksum != flashChecksum32(cfg, sizeof(evb_flash_cfg_t)) || cfg->key != defaults.key)
     {   // Reset to defaults
-        *g_flashCfg = defaults;
+        *cfg = defaults;
         g_nvr_manage_config.flash_write_needed = true;
 		g_nvr_manage_config.flash_write_enable = true;
     }   
     
     // Disable cbPresets is necessary
 #ifndef CONF_BOARD_SPI_ATWINC_WIFI
-    if (g_flashCfg->cbPreset == EVB2_CB_PRESET_RS422_WIFI){ g_flashCfg->cbPreset = EVB2_CB_PRESET_DEFAULT; }
+    if (cfg->cbPreset == EVB2_CB_PRESET_RS422_WIFI){ cfg->cbPreset = EVB2_CB_PRESET_DEFAULT; }
 #endif
 #ifndef CONF_BOARD_SPI_UINS
-    if (g_flashCfg->cbPreset == EVB2_CB_PRESET_SPI_RS232){ g_flashCfg->cbPreset = EVB2_CB_PRESET_DEFAULT; }
+    if (cfg->cbPreset == EVB2_CB_PRESET_SPI_RS232){ cfg->cbPreset = EVB2_CB_PRESET_DEFAULT; }
 #endif
 
 }
@@ -299,8 +299,9 @@ void nvr_init(void)
     memcpy(&g_userPage, (void*)BOOTLOADER_FLASH_CONFIG_BASE_ADDRESS, sizeof(g_userPage));
 
     // Reset to defaults if checksum or keys don't match
-    nvr_validate_config_integrity();
+    nvr_validate_config_integrity(g_flashCfg);
     
+	// Ensure values are within valid ranges
     error_check_config(g_flashCfg);
 
     // Disable flash writes.  We require the user to initiate each write with this option.
@@ -426,7 +427,7 @@ int error_check_config(evb_flash_cfg_t *cfg)
 void reset_config_defaults( evb_flash_cfg_t *cfg )
 {
 	if (cfg == NULL)
-	return;
+		return;
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
@@ -452,13 +453,6 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 // 	cfg->encoderTickToWheelRad = 0.0179999f;	// Husqvarna lawnmower
 	cfg->encoderTickToWheelRad = 0.054164998f;	// Husqvarna lawnmower
 	
-#ifdef ENABLE_EVB_LUNA
-    cfg->maxLatGeofence = 40.330233;
-    cfg->minLatGeofence = 40.330110;
-    cfg->maxLonGeofence = -111.725720;
-    cfg->minLonGeofence = -111.726082;
-#endif	
-
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));

@@ -3089,20 +3089,6 @@ typedef struct
 	/** Baud rate for EVB serial port H8 (TLL). */
 	uint32_t               h8gpioBaudRate;
 	
-#ifdef ENABLE_EVB_LUNA
-    /**Geofence Max Latitude**/
-    double                  maxLatGeofence;
-
-    /**Geofence Min Latitude**/
-    double                  minLatGeofence;
-    
-    /**Geofence Max Longitude**/
-    double                  maxLonGeofence;
-    
-    /**Geofence Min Latitude**/
-    double                  minLonGeofence;
-#endif
-
 } evb_flash_cfg_t;
 
 
