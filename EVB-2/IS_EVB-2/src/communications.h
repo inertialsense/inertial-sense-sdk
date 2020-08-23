@@ -22,7 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 extern bool                     g_usb_cdc_open;
 
-typedef int(*pfnHandleUinsData)(p_data_hdr_t &dataHdr, uDatasets &data);
+typedef void(*pfnHandleUinsData)(p_data_hdr_t &dataHdr, uDatasets &data);
 typedef void(*pfnHandleHostData)(is_comm_instance_t *comm, protocol_type_t ptype);
 
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin );
