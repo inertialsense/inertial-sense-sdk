@@ -24,13 +24,11 @@ A2L=arm-none-eabi-addr2line
 ROOT          = .
 SRC_DIR       = $(ROOT)/IS_EVB-2/src
 ASF_DIR       = $(SRC_DIR)/ASF
-SDK_DIR       = ../../SDK
-LIBS_DIR      = ../../libs
+SDK_DIR       = ..
 HW_LIBS_DIR   = ../hw-libs
-RTK_DIR  = ../hw-libs/
 
-OBJECT_DIR	 = $(ROOT)/obj
-BIN_DIR		 = $(ROOT)/obj
+OBJECT_DIR    = $(ROOT)/obj
+BIN_DIR       = $(ROOT)/obj
 
 
 #################################
@@ -132,7 +130,7 @@ C_SRCS += \
           $(SRC_DIR)/wifi.c                                                                              \
           $(SRC_DIR)/xbee.cpp                                                                            \
           $(SRC_DIR)/main.cpp                                                                            \
-          $(SRC_DIR)/lunaFaultMaintenance.cpp
+          $(SRC_DIR)/evb_tasks.cpp
 
 
 # Set Include Directories
@@ -140,17 +138,6 @@ C_SRCS += \
 INCLUDES +=	$(SRC_DIR) \
             $(SRC_DIR)/config \
             $(SRC_DIR)/drivers 
-
-
-INCLUDES += $(LIBS_DIR) \
-            $(LIBS_DIR)/nav-common \
-            $(LIBS_DIR)/nav-inl2 \
-            $(LIBS_DIR)/nav-ecl \
-            $(LIBS_DIR)/nav-ecl/EKF \
-            $(LIBS_DIR)/math \
-            $(LIBS_DIR)/rtklib/embedded \
-            $(LIBS_DIR)/rtklib/src \
-            $(LIBS_DIR)/rtklib/src/rcv
 
 INCLUDES += $(SDK_DIR)/src
 
@@ -251,9 +238,9 @@ DEFS=   -D__INERTIAL_SENSE_EVB_2__ \
         -DARM_MATH_CM7=true \
         -D__FREERTOS__ \
         -DARM \
-        -DUSE_IS_INTERNAL \
         -DPOSIX_SHARED \
         -DSD_MMC_ENABLE
+        # -DUSE_IS_INTERNAL \
 
 
 FILE_SIZE_FLAGS=    -ffunction-sections \
