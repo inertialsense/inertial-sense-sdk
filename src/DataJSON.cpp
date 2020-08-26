@@ -32,7 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 
 #ifdef USE_IS_INTERNAL
-#	include "../../libs/IS_internal.h"
+#	include "../../cpp/libs/IS_internal.h"
 #endif
 
 int cDataJSON::WriteDataToFile(cISLogFileBase* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix)
