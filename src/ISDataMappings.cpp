@@ -28,7 +28,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "data_sets.h"
 
 #ifdef USE_IS_INTERNAL
-#include "../../libs/IS_internal.h"
+#include "../../cpp/libs/IS_internal.h"
 #endif
 
 #if PLATFORM_IS_EMBEDDED
