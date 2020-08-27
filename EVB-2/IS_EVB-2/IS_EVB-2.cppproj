@@ -1297,184 +1297,185 @@
     <Folder Include="src\ASF\thirdparty\freertos\freertos-10.0.0\Source\portable\MemMang\" />
     <Folder Include="src\config\" />
     <Folder Include="src\drivers\" />
-    <Folder Include="src\SDK\hw-libs\" />
-    <Folder Include="src\SDK\hw-libs\misc" />
-    <Folder Include="src\SDK\hw-libs\drivers" />
-    <Folder Include="src\SDK\" />
-    <Folder Include="src\SDK\hw-libs\printf-master" />
-    <Folder Include="src\SDK\src\" />
+    <Folder Include="src\inertial-sense-sdk\hw-libs" />
+    <Folder Include="src\inertial-sense-sdk\hw-libs\communications" />
+    <Folder Include="src\inertial-sense-sdk\hw-libs\misc" />
+    <Folder Include="src\inertial-sense-sdk\hw-libs\drivers" />
+    <Folder Include="src\inertial-sense-sdk" />
+    <Folder Include="src\inertial-sense-sdk\hw-libs\printf-master" />
+    <Folder Include="src\inertial-sense-sdk\src\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\hw-libs\communications\CAN_comm.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\CAN_comm.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\communications\CAN_comm.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\printf-master\printf.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\printf-master\printf.c</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\printf-master\printf.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\printf-master\printf.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\printf-master\printf.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\printf-master\printf.h</Link>
     </Compile>
     <Compile Include="..\..\src\protocol_nmea.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\protocol_nmea.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\protocol_nmea.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\protocol_nmea.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\protocol_nmea.h</Link>
+      <Link>src\inertial-sense-sdk\src\protocol_nmea.h</Link>
     </Compile>
     <Compile Include="src\ASF\sam\drivers\mcan\mcan.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="..\..\src\com_manager.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\com_manager.c</Link>
+      <Link>src\inertial-sense-sdk\src\com_manager.c</Link>
     </Compile>
     <Compile Include="..\..\src\com_manager.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\com_manager.h</Link>
+      <Link>src\inertial-sense-sdk\src\com_manager.h</Link>
     </Compile>
     <Compile Include="..\..\src\DataCSV.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\DataCSV.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\DataCSV.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\DataCSV.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\DataCSV.h</Link>
+      <Link>src\inertial-sense-sdk\src\DataCSV.h</Link>
     </Compile>
     <Compile Include="..\..\src\data_sets.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\data_sets.c</Link>
+      <Link>src\inertial-sense-sdk\src\data_sets.c</Link>
     </Compile>
     <Compile Include="..\..\src\data_sets.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\data_sets.h</Link>
+      <Link>src\inertial-sense-sdk\src\data_sets.h</Link>
     </Compile>
     <Compile Include="..\..\src\DeviceLogSerial.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\DeviceLogSerial.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\DeviceLogSerial.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISComm.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISComm.c</Link>
+      <Link>src\inertial-sense-sdk\src\ISComm.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISComm.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISComm.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISComm.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISDataMappings.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISDataMappings.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\ISDataMappings.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISFileManager.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISFileManager.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\ISFileManager.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISFileManager.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISFileManager.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISFileManager.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISLogger.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISLogger.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\ISLogger.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISLogger.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISLogger.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISLogger.h</Link>
     </Compile>
     <Compile Include="..\..\src\DeviceLog.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\DeviceLog.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\DeviceLog.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\DeviceLogSerial.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\DeviceLogSerial.h</Link>
+      <Link>src\inertial-sense-sdk\src\DeviceLogSerial.h</Link>
     </Compile>
     <Compile Include="..\..\src\DataChunk.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\DataChunk.cpp</Link>
+      <Link>src\inertial-sense-sdk\src\DataChunk.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISDataMappings.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISDataMappings.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISDataMappings.h</Link>
     </Compile>
     <Compile Include="..\..\src\convert_ins.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\convert_ins.h</Link>
+      <Link>src\inertial-sense-sdk\src\convert_ins.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISConstants.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISConstants.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISConstants.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISMatrix.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISMatrix.c</Link>
+      <Link>src\inertial-sense-sdk\src\ISMatrix.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISMatrix.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISMatrix.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISMatrix.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISPose.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISPose.c</Link>
+      <Link>src\inertial-sense-sdk\src\ISPose.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISPose.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISPose.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISPose.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISEarth.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISEarth.c</Link>
+      <Link>src\inertial-sense-sdk\src\ISEarth.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISEarth.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISEarth.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISEarth.h</Link>
     </Compile>
     <Compile Include="..\..\src\ISUtilities.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISUtilities.c</Link>
+      <Link>src\inertial-sense-sdk\src\ISUtilities.c</Link>
     </Compile>
     <Compile Include="..\..\src\ISUtilities.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\src\ISUtilities.h</Link>
+      <Link>src\inertial-sense-sdk\src\ISUtilities.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\drivers\d_flash.c</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_flash.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\drivers\d_flash.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_flash.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_usartDMA.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\drivers\d_usartDMA.c</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_usartDMA.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_usartDMA.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\drivers\d_usartDMA.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_usartDMA.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\FreeRTOS_new.cpp">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\FreeRTOS_new.cpp</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\FreeRTOS_new.cpp</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\bootloaderApp.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\misc\bootloaderApp.c</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\misc\bootloaderApp.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\bootloaderApp.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\misc\bootloaderApp.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\misc\bootloaderApp.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\rtos.c">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\misc\rtos.c</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\misc\rtos.c</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\misc\rtos.h">
       <SubType>compile</SubType>
-      <Link>src\SDK\hw-libs\misc\rtos.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\misc\rtos.h</Link>
     </Compile>
     <None Include="src\ASF\sam\drivers\efc\efc.h">
       <SubType>compile</SubType>
@@ -1524,10 +1525,10 @@
     <Compile Include="src\drivers\d_quadEnc.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\lunaFaultMaintenance.cpp">
+    <Compile Include="src\evb_tasks.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\lunaFaultMaintenance.h">
+    <Compile Include="src\evb_tasks.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\globals.c">

@@ -130,7 +130,7 @@ C_SRCS += \
           $(SRC_DIR)/wifi.c                                                                              \
           $(SRC_DIR)/xbee.cpp                                                                            \
           $(SRC_DIR)/main.cpp                                                                            \
-          $(SRC_DIR)/lunaFaultMaintenance.cpp                                                            \
+          $(SRC_DIR)/evb_tasks.cpp                                                                       \
 
 
 # Set Include Directories

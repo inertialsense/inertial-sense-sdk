@@ -53,12 +53,12 @@ typedef Matrix4     Matrix4_t;
 //_____ P R O T O T Y P E S ________________________________________________
 
 /* 
- * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude
+ * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m)
  */
 void ecef2lla(const double *Pe, double *LLA, const int Niter);
 
 /*
- * Coordinate transformation from latitude/longitude/altitude to ECEF coordinates
+ * Coordinate transformation from latitude/longitude/altitude (rad,rad,m) to ECEF coordinates
  */
 void lla2ecef(const double *LLA, double *Pe);
 
