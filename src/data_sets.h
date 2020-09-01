@@ -2899,8 +2899,6 @@ typedef enum
 
 } eEvbStatus;
 
-typedef enum
-
 /** EVB-2 communications ports. */
 enum eEvb2CommPorts
 {
