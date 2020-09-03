@@ -1020,7 +1020,13 @@ class logPlot:
 
             dtImu = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
             dtImu = dtImu / self.d
-            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + self.getData(d, DID_GPS1_POS, 'towOffset')[-1])
+
+            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+            if np.size(towOffset) > 0:
+                towOffset = towOffset[-1]
+            else:
+                towOffset = 0
+            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
