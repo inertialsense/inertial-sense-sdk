@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include <deque>
 #include "../com_manager.h"
 #include "../ring_buffer.h"
