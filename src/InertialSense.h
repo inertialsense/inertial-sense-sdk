@@ -80,7 +80,7 @@ public:
 
 		// common vars
 		pfnHandleBinaryData binaryCallbackGlobal;
-		pfnHandleBinaryData binaryCallback[DID_COUNT];
+		pfnHandleBinaryData binaryCallback[256];
 		pfnStepLogFunction stepLogFunction;
 		InertialSense* inertialSenseInterface;
 		char* clientBuffer;

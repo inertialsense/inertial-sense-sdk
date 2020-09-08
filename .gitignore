@@ -6,10 +6,10 @@ build/
 obj/
 *.map
 
-
 *.obj
 x64
-Release
+Release/
+Debug/
 .vs
 *.pyd
 *.pyc

@@ -617,7 +617,7 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHand
 
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)
 {
-	if (m_comManagerState.devices.size() == 0 || dataId >= DID_COUNT)
+	if (m_comManagerState.devices.size() == 0 || dataId >= (sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)))
 	{
 		return false;
 	}
