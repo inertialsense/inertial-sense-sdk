@@ -108,6 +108,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
 	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
 	case DID_FLASH_CONFIG:		s->devices[pHandle].flashConfig = *(nvm_flash_cfg_t*)data->buf;	break;
+	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashConfig = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
 		// every 5 seconds, put in a new gps position message
 		static time_t nextGpsMessageTime;
@@ -612,6 +613,19 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHand
 	m_comManagerState.devices[pHandle].flashConfig = flashConfig;
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
 	comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashConfig, sizeof(nvm_flash_cfg_t), 0);
+	Update();
+}
+
+void InertialSense::SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pHandle)
+{
+	if ((size_t)pHandle >= m_comManagerState.devices.size())
+	{
+		return;
+	}
+
+	m_comManagerState.devices[pHandle].evbFlashConfig = evbFlashCfg;
+	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
+	comManagerSendData(pHandle, DID_EVB_FLASH_CFG, &m_comManagerState.devices[pHandle].evbFlashConfig, sizeof(evb_flash_cfg_t), 0);
 	Update();
 }
 

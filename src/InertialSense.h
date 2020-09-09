@@ -71,6 +71,7 @@ public:
 		dev_info_t devInfo;
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashConfig;
+		evb_flash_cfg_t evbFlashConfig;
 	};
 
 	struct com_manager_cpp_state_t
@@ -275,11 +276,32 @@ public:
 	}
 
 	/**
+	* Get the EVB flash config, returns the latest flash config read from the uINS flash memory
+	* @param pHandle the pHandle to get flash config for
+	* @return the EVB flash config
+	*/
+	evb_flash_cfg_t GetEvbFlashConfig(int pHandle = 0) 
+	{
+		if ((size_t)pHandle >= m_comManagerState.devices.size())
+		{
+			pHandle = 0;
+		}
+		return m_comManagerState.devices[pHandle].evbFlashConfig;
+	}
+
+	/**
 	* Set the flash config and update flash config on the uINS flash memory
 	* @param flashConfig the flash config
 	* @param pHandle the pHandle to set flash config for
 	*/
 	void SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHandle = 0);
+
+	/**
+	* Set the EVB flash config and update flash config on the EVB-2 flash memory
+	* @param evbFlashCfg the flash config
+	* @param pHandle the pHandle to set flash config for
+	*/
+	void SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pHandle = 0);
 
 	/**
 	* Get the number of bytes read or written to/from client or server connections
