@@ -289,7 +289,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.flashConfig.length() != 0)
 	{
-		return cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig);
+		return cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig, DID_FLASH_CONFIG);
+	}
+	if (g_commandLineOptions.evbFlashConfig.length() != 0)
+	{
+		return cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.evbFlashConfig, DID_EVB_FLASH_CFG);
 	}
 	return true;
 }
@@ -352,9 +356,14 @@ static int cltool_createHost()
 		cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
 		return -1;
 	}
-	else if (g_commandLineOptions.flashConfig.length() != 0 && !cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig))
+	else if (g_commandLineOptions.flashConfig.length() != 0 && !cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashConfig, DID_FLASH_CONFIG))
 	{
 		cout << "Failed to update flash config" << endl;
+		return -1;
+	}
+	else if (g_commandLineOptions.evbFlashConfig.length() != 0 && !cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.evbFlashConfig, DID_EVB_FLASH_CFG))
+	{
+		cout << "Failed to update EVB flash config" << endl;
 		return -1;
 	}
 	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.host))
