@@ -432,9 +432,10 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 				bcPtr->counter = 0;    // reset counter
 
 				// Prep data if callback exists
-				if (cmInstance->regData[bcPtr->dataHdr.id].preTxFnc)
+				int id = bcPtr->dataHdr.id;
+				if (id<DID_COUNT && cmInstance->regData[id].preTxFnc)
 				{
-					cmInstance->regData[bcPtr->dataHdr.id].preTxFnc(cmInstance, bcPtr->pHandle);
+					cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
 				}
 				sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
 			}
@@ -698,7 +699,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 {
 	p_data_t			*data = (p_data_t*)(pkt->body.ptr);
 	p_data_hdr_t		*dataHdr;
-	registered_data_t	*regd;
+	registered_data_t	*regd = NULL;
 	uint8_t		pid = (uint8_t)(pkt->hdr.pid);
 
 	com_manager_port_t *port = &(cmInstance->ports[pHandle]);
@@ -718,27 +719,25 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		dataHdr = &(data->hdr);
 
 		// Validate Data
-		if (dataHdr->id >= DID_COUNT)
+		if (dataHdr->id < DID_COUNT)
 		{
-			return -1;
-		}
+			regd = &(cmInstance->regData[dataHdr->id]);
 
-		regd = &(cmInstance->regData[dataHdr->id]);
-
-		// Validate and constrain Rx data size to fit within local data struct
-		if (regd->dataSet.size && (dataHdr->offset + dataHdr->size) > regd->dataSet.size)
-		{
-			// trim the size down so it fits
-			int size = (int)(regd->dataSet.size - dataHdr->offset);
-			if (size < 4)
+			// Validate and constrain Rx data size to fit within local data struct
+			if (regd->dataSet.size && (dataHdr->offset + dataHdr->size) > regd->dataSet.size)
 			{
-				// we are completely out of bounds, we cannot process this message at all
-				// the minimum data struct size is 4 bytes
-				return -1;
-			}
+				// trim the size down so it fits
+				int size = (int)(regd->dataSet.size - dataHdr->offset);
+				if (size < 4)
+				{
+					// we are completely out of bounds, we cannot process this message at all
+					// the minimum data struct size is 4 bytes
+					return -1;
+				}
 
-			// Update Rx data size
-			dataHdr->size = _MIN(dataHdr->size, (uint8_t)size);
+				// Update Rx data size
+				dataHdr->size = _MIN(dataHdr->size, (uint8_t)size);
+			}
 		}
 
 #if ENABLE_PACKET_CONTINUATION
@@ -785,16 +784,19 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 
 #endif
 
-		// Write to data structure if it was registered
-		if (regd->dataSet.rxPtr)
+		if (regd)
 		{
-			copyDataPToStructP(regd->dataSet.rxPtr, data, regd->dataSet.size);
-		}
+			// Write to data structure if it was registered
+			if (regd->dataSet.rxPtr)
+			{
+				copyDataPToStructP(regd->dataSet.rxPtr, data, regd->dataSet.size);
+			}
 
-		// Call data specific callback after data has been written to
-		if (regd->pstRxFnc)
-		{
-			regd->pstRxFnc(cmInstance, pHandle, data);
+			// Call data specific callback after data has been written to
+			if (regd->pstRxFnc)
+			{
+				regd->pstRxFnc(cmInstance, pHandle, data);
+			}
 		}
 
 		// Call general/global callback
@@ -876,13 +878,13 @@ bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint32_t dataId)
 
 bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint32_t dataId)
 {
-	if (dataId >= DID_COUNT)
+	if (dataId < DID_COUNT)
 	{
-		return 0;
+		com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
+		return &cmInstance->regData[dataId].dataSet;
 	}
 
-	com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
-	return &cmInstance->regData[dataId].dataSet;
+	return 0;
 }
 
 // 0 on success. -1 on failure.
@@ -909,7 +911,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		return 0;
 	}
 	// if size is 0 and offset is 0, set size to full data struct size
-	else if (req->size == 0 && req->offset == 0 && req->id < _ARRAY_ELEMENT_COUNT(cmInstance->regData))
+	else if (req->size == 0 && req->offset == 0 && req->id < DID_COUNT)
 	{
 		req->size = cmInstance->regData[req->id].dataSet.size;
 	}
@@ -968,16 +970,16 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	msg->dataHdr.id = req->id;
 	msg->dataHdr.size = req->size;
 	msg->dataHdr.offset = req->offset;
-	msg->pkt.hdr.flags = cmInstance->regData[msg->dataHdr.id].pktFlags;
+	msg->pkt.hdr.flags = cmInstance->regData[req->id].pktFlags;
 	msg->pkt.bodyHdr.ptr = (uint8_t *)&msg->dataHdr;
 	msg->pkt.bodyHdr.size = sizeof(msg->dataHdr);
 	msg->pkt.txData.size = req->size;
 	msg->pkt.txData.ptr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
 
 	// Prep data if callback exists
-	if (cmInstance->regData[msg->dataHdr.id].preTxFnc)
+	if (cmInstance->regData[req->id].preTxFnc)
 	{
-		cmInstance->regData[msg->dataHdr.id].preTxFnc(cmInstance, pHandle);
+		cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle);
 	}
 	
 	// Constrain request broadcast period if necessary
