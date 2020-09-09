@@ -2996,7 +2996,7 @@ typedef struct
     uint8_t                ipAddr[4];
 
     /** Server port */
-    uint8_t                port[4];
+    uint32_t                port;
 
 } evb_server_t;
 
