@@ -82,8 +82,8 @@ inline uint32_t GetDataTypeSize(eDataType dataType)
 #define ADD_MAP(map, totalSize, name, member, dataSize, dataType, memberType) \
     ADD_MAP_NO_VALIDATION(map, totalSize, name, member, dataSize, dataType, memberType); \
     static_assert(is_same<decltype(MAP_TYPE::member), memberType>::value, "Member type is an unexpected type"); \
-	static_assert((uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize) == sizeof(memberType), "Member type is an unexpected size"); \
-    static_assert((uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize) == sizeof(MAP_TYPE::member), "Member type is an unexpected size"); \
+	static_assert((uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize) == sizeof(memberType), "Member type is an unexpected size, sizeof(memberType)"); \
+    static_assert((uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize) == sizeof(MAP_TYPE::member), "Member type is an unexpected size, sizeof(MAP_TYPE::member)"); \
 	static_assert(s_eDataTypeSizes[dataType] == 0 || (uint32_t)(dataSize == 0 ? sizeof(memberType) : dataSize) == s_eDataTypeSizes[dataType], "Data type size does not match member size");
 #define ASSERT_SIZE(s) assert(s == sizeof(MAP_TYPE))
 
@@ -723,6 +723,81 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "wheelConfig.distance", wheelConfig.distance, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "wheelConfig.diameter", wheelConfig.diameter, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef evb_flash_cfg_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_EVB_FLASH_CFG];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "size", size, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "checksum", checksum, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "key", key, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "cbPreset", cbPreset, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "reserved1[0]", reserved1[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "reserved1[1]", reserved1[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "reserved1[2]", reserved1[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "cbf[0]", cbf[0], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[1]", cbf[1], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[2]", cbf[2], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[3]", cbf[3], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[4]", cbf[4], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[5]", cbf[5], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[6]", cbf[6], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[7]", cbf[7], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[8]", cbf[8], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbf[9]", cbf[9], 0, DataTypeUInt32, uint32_t&);
+    ADD_MAP(m, totalSize, "cbOptions", cbOptions, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "bits", bits, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "radioPID", radioPID, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "radioNID", radioNID, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "radioPowerLevel", radioPowerLevel, 0, DataTypeUInt32, uint32_t);
+
+    ADD_MAP(m, totalSize, "wifi[0].ssid", wifi[0].ssid, WIFI_SSID_PSK_SIZE, DataTypeString, char[WIFI_SSID_PSK_SIZE]);
+    ADD_MAP(m, totalSize, "wifi[0].psk", wifi[0].psk, WIFI_SSID_PSK_SIZE, DataTypeString, char[WIFI_SSID_PSK_SIZE]);
+    ADD_MAP(m, totalSize, "wifi[1].ssid", wifi[1].ssid, WIFI_SSID_PSK_SIZE, DataTypeString, char[WIFI_SSID_PSK_SIZE]);
+    ADD_MAP(m, totalSize, "wifi[1].psk", wifi[1].psk, WIFI_SSID_PSK_SIZE, DataTypeString, char[WIFI_SSID_PSK_SIZE]);
+    ADD_MAP(m, totalSize, "wifi[2].ssid", wifi[2].ssid, WIFI_SSID_PSK_SIZE, DataTypeString, char[WIFI_SSID_PSK_SIZE]);
+    ADD_MAP(m, totalSize, "wifi[2].psk", wifi[2].psk, WIFI_SSID_PSK_SIZE, DataTypeString, char[WIFI_SSID_PSK_SIZE]);
+    ADD_MAP(m, totalSize, "server[0].ipAddr[0]", server[0].ipAddr[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[0].ipAddr[1]", server[0].ipAddr[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[0].ipAddr[2]", server[0].ipAddr[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[0].ipAddr[3]", server[0].ipAddr[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[0].port[0]", server[0].port[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[0].port[1]", server[0].port[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[0].port[2]", server[0].port[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[0].port[3]", server[0].port[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].ipAddr[0]", server[1].ipAddr[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].ipAddr[1]", server[1].ipAddr[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].ipAddr[2]", server[1].ipAddr[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].ipAddr[3]", server[1].ipAddr[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].port[0]", server[1].port[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].port[1]", server[1].port[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].port[2]", server[1].port[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[1].port[3]", server[1].port[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].ipAddr[0]", server[2].ipAddr[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].ipAddr[1]", server[2].ipAddr[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].ipAddr[2]", server[2].ipAddr[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].ipAddr[3]", server[2].ipAddr[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].port[0]", server[2].port[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].port[1]", server[2].port[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].port[2]", server[2].port[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "server[2].port[3]", server[2].port[3], 0, DataTypeUInt8, uint8_t&);
+
+    ADD_MAP(m, totalSize, "encoderTickToWheelRad", encoderTickToWheelRad, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "CANbaud_kbps", CANbaud_kbps, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "can_receive_address", can_receive_address, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "uinsComPort", uinsComPort, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "uinsAuxPort", uinsAuxPort, 0, DataTypeUInt8, uint8_t);
+    ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "portOptions", portOptions, 0, DataTypeUInt32, uint32_t);
+
+    ADD_MAP(m, totalSize, "h3sp330BaudRate", h3sp330BaudRate, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "h4xRadioBaudRate", h4xRadioBaudRate, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "h8gpioBaudRate", h8gpioBaudRate, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1679,6 +1754,7 @@ cISDataMappings::cISDataMappings()
     PopulateWheelEncoderMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
+	PopulateEvbFlashCfgMappings(m_lookupInfo);
 	PopulateRtkRelMappings(m_lookupInfo);
 	PopulateRtkMiscMappings(m_lookupInfo);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
