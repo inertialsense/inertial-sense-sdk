@@ -432,7 +432,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 				bcPtr->counter = 0;    // reset counter
 
 				// Prep data if callback exists
-				int id = bcPtr->dataHdr.id;
+				unsigned int id = bcPtr->dataHdr.id;
 				if (id<DID_COUNT && cmInstance->regData[id].preTxFnc)
 				{
 					cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
