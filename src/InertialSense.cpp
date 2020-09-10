@@ -183,8 +183,9 @@ bool InertialSense::HasReceivedResponseFromDevice(size_t index)
 		return false;
 	}
 
-	return (m_comManagerState.devices[index].flashConfig.size != 0 && 
-		m_comManagerState.devices[index].devInfo.serialNumber != 0 && 
+	return (
+		m_comManagerState.devices[index].flashConfig.size != 0 &&
+		m_comManagerState.devices[index].devInfo.serialNumber != 0 &&
 		m_comManagerState.devices[index].devInfo.manufacturer[0] != 0);
 }
 
