@@ -446,9 +446,9 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->radioNID = 72;         // 0x0 to 0x7FFF
 	cfg->radioPowerLevel = 1;	// 1=27dBm use middle power so radio can run from USB supply.  2=30dBm is too powerful for USB supply.
 	
-	cfg->server[0].ipAddr = nmi_inet_addr((void*)"69.167.49.43");
+	cfg->server[0].ipAddr.u32 = nmi_inet_addr((void*)"69.167.49.43");
 	cfg->server[0].port = 7778;
-	cfg->server[1].ipAddr = nmi_inet_addr((void*)"192.168.1.144");
+	cfg->server[1].ipAddr.u32 = nmi_inet_addr((void*)"192.168.1.144");
 	cfg->server[1].port = 2000;
 // 	cfg->encoderTickToWheelRad = 0.0179999f;	// Husqvarna lawnmower
 	cfg->encoderTickToWheelRad = 0.054164998f;	// Husqvarna lawnmower

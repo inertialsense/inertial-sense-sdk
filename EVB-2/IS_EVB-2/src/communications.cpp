@@ -418,14 +418,14 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     int i = EVB_CFG_BITS_IDX_WIFI(newCfg.bits);        
     if (strncmp((const char*)(newCfg.wifi[i].ssid), (const char*)(g_flashCfg->wifi[i].ssid), WIFI_SSID_PSK_SIZE)!=0 ||
         strncmp((const char*)(newCfg.wifi[i].psk),  (const char*)(g_flashCfg->wifi[i].psk),  WIFI_SSID_PSK_SIZE)!=0 ||
-        newCfg.server[i].ipAddr != g_flashCfg->server[i].ipAddr ||
-        newCfg.server[i].port   != g_flashCfg->server[i].port)
+        newCfg.server[i].ipAddr.u32 != g_flashCfg->server[i].ipAddr.u32 ||
+        newCfg.server[i].port		!= g_flashCfg->server[i].port)
     {   // WiFi or TCP settings changed
         reinitWiFi = true;            
     }
     i = EVB_CFG_BITS_IDX_SERVER(newCfg.bits);
-    if (newCfg.server[i].ipAddr != g_flashCfg->server[i].ipAddr ||
-        newCfg.server[i].port   != g_flashCfg->server[i].port)
+    if (newCfg.server[i].ipAddr.u32 != g_flashCfg->server[i].ipAddr.u32 ||
+        newCfg.server[i].port		!= g_flashCfg->server[i].port)
     {   // TCP settings changed
         reinitWiFi = true;
     }

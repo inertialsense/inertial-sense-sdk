@@ -71,7 +71,7 @@ public:
 		dev_info_t devInfo;
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashConfig;
-		evb_flash_cfg_t evbFlashConfig;
+		evb_flash_cfg_t evbFlashCfg;
 	};
 
 	struct com_manager_cpp_state_t
@@ -286,7 +286,7 @@ public:
 		{
 			pHandle = 0;
 		}
-		return m_comManagerState.devices[pHandle].evbFlashConfig;
+		return m_comManagerState.devices[pHandle].evbFlashCfg;
 	}
 
 	/**

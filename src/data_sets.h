@@ -2970,17 +2970,20 @@ typedef struct
 typedef struct
 {
     /** WiFi SSID */
-    uint8_t                 ssid[WIFI_SSID_PSK_SIZE];
+    char                    ssid[WIFI_SSID_PSK_SIZE];
 
     /** WiFi PSK */
-    uint8_t                 psk[WIFI_SSID_PSK_SIZE];
+    char                    psk[WIFI_SSID_PSK_SIZE];
 
 } evb_wifi_t;
 
 typedef struct
 {  
     /** Server IP address */
-    uint32_t                ipAddr;
+    union {
+		uint32_t	u32;
+		uint8_t		u8[4];
+	} ipAddr;
 
     /** Server port */
     uint32_t                port;
