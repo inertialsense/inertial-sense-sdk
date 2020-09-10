@@ -272,7 +272,7 @@ static void init_wifi(void)
     
     /* Initialize socket address structure. */
     g_addr.sin_family = AF_INET;
-    g_addr.sin_addr.s_addr = g_flashCfg->server[EVB_CFG_BITS_IDX_SERVER(g_flashCfg->bits)].ipAddr;
+    g_addr.sin_addr.s_addr = g_flashCfg->server[EVB_CFG_BITS_IDX_SERVER(g_flashCfg->bits)].ipAddr.u32;
     g_addr.sin_port = _htons(g_flashCfg->server[EVB_CFG_BITS_IDX_SERVER(g_flashCfg->bits)].port);
 
     /* Initialize Wi-Fi driver with data and status callbacks. */

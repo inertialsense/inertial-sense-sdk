@@ -2993,7 +2993,10 @@ typedef struct
 typedef struct
 {  
     /** Server IP address */
-    uint8_t                ipAddr[4];
+    union {
+		uint32_t	u32;
+		uint8_t		u8[4];
+	} ipAddr;
 
     /** Server port */
     uint32_t                port;
