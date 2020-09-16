@@ -485,17 +485,17 @@
           <file path="src/ASF/common/components/wifi/winc3400/wifi_drv/driver/source/nmflash.h" framework="" version="3.44.1" source="common\components\wifi\winc3400\wifi_drv\driver\source\nmflash.h" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/common/components/wifi/winc3400/wifi_drv/driver/include/m2m_periph.h" framework="" version="3.44.1" source="common\components\wifi\winc3400\wifi_drv\driver\include\m2m_periph.h" changed="False" content-id="Atmel.ASF" />
           <file path="src/Config/conf_winc.h" framework="" version="3.44.1" source="common\components\wifi\winc3400\wifi_drv\module_config\same70\conf_winc.h" changed="False" content-id="Atmel.ASF" />
-          <file path="src/ASF/sam/drivers/efc/efc.h" framework="" version="3.36.2" source="sam\drivers\efc\efc.h" changed="False" content-id="Atmel.ASF" />
-          <file path="src/ASF/sam/services/flash_efc/flash_efc.c" framework="" version="3.36.2" source="sam\services\flash_efc\flash_efc.c" changed="False" content-id="Atmel.ASF" />
-          <file path="src/ASF/sam/services/flash_efc/flash_efc.h" framework="" version="3.36.2" source="sam\services\flash_efc\flash_efc.h" changed="False" content-id="Atmel.ASF" />
-          <file path="src/ASF/sam/drivers/efc/efc.c" framework="" version="3.36.2" source="sam\drivers\efc\efc.c" changed="False" content-id="Atmel.ASF" />
-          <file path="src/ASF/sam/drivers/wdt/wdt.c" framework="" version="3.39.0" source="sam\drivers\wdt\wdt.c" changed="False" content-id="Atmel.ASF" />
-          <file path="src/ASF/sam/drivers/wdt/wdt.h" framework="" version="3.39.0" source="sam\drivers\wdt\wdt.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/efc/efc.h" framework="" version="3.44.1" source="sam\drivers\efc\efc.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/services/flash_efc/flash_efc.c" framework="" version="3.44.1" source="sam\services\flash_efc\flash_efc.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/services/flash_efc/flash_efc.h" framework="" version="3.44.1" source="sam\services\flash_efc\flash_efc.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/efc/efc.c" framework="" version="3.44.1" source="sam\drivers\efc\efc.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/wdt/wdt.c" framework="" version="3.44.1" source="sam\drivers\wdt\wdt.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/wdt/wdt.h" framework="" version="3.44.1" source="sam\drivers\wdt\wdt.h" changed="False" content-id="Atmel.ASF" />
         </files>
         <documentation help="http://asf.atmel.com/docs/3.44.1/common.services.freertos.sam_example.same70_xplained/html/index.html" />
         <offline-documentation help="" />
         <dependencies>
-          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.39.0" />
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.44.1" />
         </dependencies>
         <project id="common.services.freertos.sam_example.same70_xplained" value="Add" config="" content-id="Atmel.ASF" />
         <board id="board.same70_xplained" value="Add" config="" content-id="Atmel.ASF" />
