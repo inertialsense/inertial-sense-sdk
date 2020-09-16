@@ -123,5 +123,27 @@ SPI communication between the uINS and the EVB-2 processor is enabled by setting
 
 The main implementation of the SPI protocol exists in spiTouINS.c.
 
+## Updating ASF drivers in project
 
+If additional peripherals are needed in the project, you may need to add drivers using the Atmel Studio Framework (ASF). This can be done using Atmel Studio's ASF Wizard. Currently the EVB-2 project uses ASF version 3.44.1.
+
+1. Open ASF Wizard and select the project if needed.
+
+   ![](images\ASF_project.png)
+
+2. Verify version is showing as 3.44.1 by clicking on the version tab. If the version is not showing correctly, see note below.
+
+   ![](images\ASF_version.png)
+
+3. Return to the Extensions tab. For each item that needs added, select it and press add.
+
+4. Once everything is modified, click the apply button.
+
+5. Using a Git diff tool, discard the following two changes to the EVB-2/IS_EVB-2/src/asf.h file.
+
+   ![](images\ASF_discard.png)
+
+6. The project will now be ready to use the new drivers.
+
+Note: Sometimes the project gets inconsistent ASF versions entered into the project file. If the ASF Wizard does not show the correct version, open the EVB-2/IS_EVB-2/IS_EVB-2.cppproj file with a text editor, locate versions that are not 3.44.1 and change them to 3.44.1. Typically there will only be a few that will be incorrect.
 

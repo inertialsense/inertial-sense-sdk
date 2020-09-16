@@ -47,11 +47,12 @@
           <option id="sam.drivers.rtt" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.drivers.tc.appnote" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.drivers.twihs" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="sam.drivers.wdt" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.drivers.xdmac" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.services.flash" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.fs.fatfs" value="Add" config="" content-id="Atmel.ASF" />
           <option id="thirdparty.os.freertos.version" value="Add" config="7.3.0" content-id="Atmel.ASF" />
-          <option id="sam.drivers.wdt" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="sam.drivers.afec" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.freertos.sam_example" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam.utils.cmsis.same70.source.template" value="Add" config="" content-id="Atmel.ASF" />
         </options>
@@ -491,6 +492,8 @@
           <file path="src/ASF/sam/drivers/efc/efc.c" framework="" version="3.44.1" source="sam\drivers\efc\efc.c" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam/drivers/wdt/wdt.c" framework="" version="3.44.1" source="sam\drivers\wdt\wdt.c" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam/drivers/wdt/wdt.h" framework="" version="3.44.1" source="sam\drivers\wdt\wdt.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/afec/afec.c" framework="" version="3.44.1" source="sam\drivers\afec\afec.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/sam/drivers/afec/afec.h" framework="" version="3.44.1" source="sam\drivers\afec\afec.h" changed="False" content-id="Atmel.ASF" />
         </files>
         <documentation help="http://asf.atmel.com/docs/3.44.1/common.services.freertos.sam_example.same70_xplained/html/index.html" />
         <offline-documentation help="" />
@@ -502,7 +505,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800054309</avrtoolserialnumber>
+    <avrtoolserialnumber>J41800076763</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020C01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -537,9 +540,20 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800054309</ToolNumber>
+      <ToolNumber>J41800076763</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
+    <com_atmel_avrdbg_tool_samice>
+      <ToolOptions>
+        <InterfaceProperties>
+          <SwdClock>0</SwdClock>
+        </InterfaceProperties>
+        <InterfaceName>SWD</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.samice</ToolType>
+      <ToolNumber>980100526</ToolNumber>
+      <ToolName>J-Link</ToolName>
+    </com_atmel_avrdbg_tool_samice>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
@@ -622,6 +636,7 @@
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcc.compiler.directories.IncludePaths>
         <armgcc.compiler.optimization.level>Optimize most (-O3)</armgcc.compiler.optimization.level>
@@ -702,6 +717,7 @@
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcccpp.compiler.directories.IncludePaths>
         <armgcccpp.compiler.optimization.level>Optimize most (-O3)</armgcccpp.compiler.optimization.level>
@@ -780,6 +796,7 @@
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcccpp.assembler.general.IncludePaths>
         <armgcccpp.preprocessingassembler.general.AssemblerFlags>-DARM_MATH_CM7=true -DBOARD=USER_BOARD -D__FREERTOS__ -D__SAME70Q20B__ -DUDD_ENABLE -DSD_MMC_ENABLE -D__SAME70Q21B__ -DBOARD=SAME70_XPLAINED -Dprintf=iprintf -Dscanf=iscanf -DCONF_PERIPH</armgcccpp.preprocessingassembler.general.AssemblerFlags>
@@ -840,6 +857,7 @@
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcccpp.preprocessingassembler.general.IncludePaths>
         <armgcccpp.preprocessingassembler.symbols.DefSymbols>
@@ -936,6 +954,7 @@
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../../../hw-libs/drivers</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcc.compiler.directories.IncludePaths>
         <armgcc.compiler.optimization.OtherFlags>-fdata-sections</armgcc.compiler.optimization.OtherFlags>
@@ -1017,6 +1036,7 @@
             <Value>../src/drivers</Value>
             <Value>../../../hw-libs/drivers</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcccpp.compiler.directories.IncludePaths>
         <armgcccpp.compiler.optimization.OtherFlags>-fdata-sections</armgcccpp.compiler.optimization.OtherFlags>
@@ -1097,6 +1117,7 @@
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcccpp.assembler.general.IncludePaths>
         <armgcccpp.assembler.debugging.DebugLevel>Default (-g)</armgcccpp.assembler.debugging.DebugLevel>
@@ -1158,6 +1179,7 @@
             <Value>../src/ASF/sam/drivers/efc</Value>
             <Value>../src/ASF/sam/services/flash_efc</Value>
             <Value>../src/ASF/sam/drivers/wdt</Value>
+            <Value>../src/ASF/sam/drivers/afec</Value>
           </ListValues>
         </armgcccpp.preprocessingassembler.general.IncludePaths>
         <armgcccpp.preprocessingassembler.symbols.DefSymbols>
@@ -1233,6 +1255,7 @@
     <Folder Include="src\ASF\sam\boards\same70_xplained\" />
     <Folder Include="src\ASF\sam\boards\user_board\" />
     <Folder Include="src\ASF\sam\drivers\" />
+    <Folder Include="src\ASF\sam\drivers\afec\" />
     <Folder Include="src\ASF\sam\drivers\efc\" />
     <Folder Include="src\ASF\sam\drivers\hsmci\" />
     <Folder Include="src\ASF\sam\drivers\mcan\" />
@@ -1326,6 +1349,12 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\protocol_nmea.h</Link>
     </Compile>
+    <Compile Include="src\ASF\sam\drivers\afec\afec.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\sam\drivers\afec\afec.h">
+      <SubType>compile</SubType>
+    </None>
     <Compile Include="src\ASF\sam\drivers\mcan\mcan.c">
       <SubType>compile</SubType>
     </Compile>
@@ -1517,6 +1546,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\control_law.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\drivers\d_adc.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\drivers\d_adc.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\drivers\d_quadEnc.c">
