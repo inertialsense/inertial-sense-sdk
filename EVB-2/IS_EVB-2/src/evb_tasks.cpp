@@ -183,7 +183,8 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
 	init_control();	
     sd_card_logger_init();
     communications_init();
-
+	adc_init();
+	
 	// Create RTOS tasks
 	createTask(EVB_TASK_COMMUNICATIONS, pxTaskComm,  "COMM",   TASK_COMM_STACK_SIZE,  NULL, TASK_COMM_PRIORITY,  TASK_COMM_PERIOD_MS);
 	createTask(EVB_TASK_LOGGER,         pxTaskLogg,"LOGGER", TASK_LOGGER_STACK_SIZE, NULL, TASK_LOGGER_PRIORITY, TASK_LOGGER_PERIOD_MS);

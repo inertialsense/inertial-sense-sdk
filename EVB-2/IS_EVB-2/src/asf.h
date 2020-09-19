@@ -52,6 +52,9 @@
  * running the ASF driver selector tool. Any changes will be discarded.
  */
 
+// From module: AFEC - Analog-Front-End Controller
+#include <afec.h>
+
 // From module: CAN - Control Area Network Controller
 #include <mcan.h>
 
