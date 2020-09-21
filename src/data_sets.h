@@ -1355,6 +1355,7 @@ typedef struct PACKED
 	uint32_t				activeCalSet;	// active calibration set (0 or 1)
 	float					magHdgOffset;	// Offset between magnetometer heading and estimate heading
     float                   Tcal;           // Scaled computed variance between calibrated magnetometer samples. 
+	float                   bias_cal[3];    // Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal)
 } inl2_mag_obs_info_t;
 
 /** Built-in test state */
