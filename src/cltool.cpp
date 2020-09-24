@@ -112,7 +112,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-evbFlashConfig="))
 		{
-			g_commandLineOptions.evbFlashConfig = &a[13];
+			g_commandLineOptions.evbFlashConfig = &a[16];
 		}
 		else if (startsWith(a, "-evbFlashConfig"))
 		{
