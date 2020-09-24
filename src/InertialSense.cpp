@@ -720,8 +720,16 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 			state[i].param.verifyFileName = NULLPTR;
 			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
             state[i].param.numberOfDevices = (int)state.size();
-            state[i].param.baudRate = baudRate;
-            strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
+            state[i].param.baudRate = baudRate;			
+			if (strstr(state[i].param.fileName, "EVB") != NULL)
+			{   // Enable EVB-2 bootloader
+				strncpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
+			}
+			else
+			{	// Enable uINS bootloader
+				strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
+			}
+
             if (updateBootloader)
             {   // Update bootloader firmware
                 state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
