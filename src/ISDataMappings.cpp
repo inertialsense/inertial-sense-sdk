@@ -1385,6 +1385,9 @@ static void PopulateInl2MagObsInfo(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "activeCalSet", activeCalSet, 0, DataTypeUInt32, uint32_t);
 	ADD_MAP(m, totalSize, "magHdgOffset", magHdgOffset, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "Tcal", Tcal, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "bias_cal[0]", bias_cal[0], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "bias_cal[1]", bias_cal[1], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "bias_cal[2]", bias_cal[2], 0, DataTypeFloat, float&);
 
 	ASSERT_SIZE(totalSize);
 }
