@@ -1507,18 +1507,22 @@ int bootloadFile(serial_port_t* port, const char* fileName, const char * bootNam
 
 int bootloadFileEx(bootload_params_t* params)
 {
-    strncpy(params->bootloadEnableCmd, "BLEN", 4);
-    int result = 0;
+	if (strstr(params->fileName, "EVB") != NULL)
+	{   // Enable EVB bootloader
+		strncpy(params->bootloadEnableCmd, "EBLE", 4);
+	}
+	else
+	{	// Enable uINS bootloader
+		strncpy(params->bootloadEnableCmd, "BLEN", 4);
+	}
+
+	int result = 0;
 
     if (params->error != 0 && BOOTLOADER_ERROR_LENGTH > 0)
     {
         *params->error = '\0';
     }
     
-    if (strstr(params->fileName, "EVB") != NULL)
-    {   // Enable EVB-2 bootloader
-        strncpy(params->bootloadEnableCmd, "EBLE", 4);
-    }
 
     // open the file
     FILE* file = 0;

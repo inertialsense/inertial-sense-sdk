@@ -722,7 +722,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
             state[i].param.numberOfDevices = (int)state.size();
             state[i].param.baudRate = baudRate;			
 			if (strstr(state[i].param.fileName, "EVB") != NULL)
-			{   // Enable EVB-2 bootloader
+			{   // Enable EVB bootloader
 				strncpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
 			}
 			else
