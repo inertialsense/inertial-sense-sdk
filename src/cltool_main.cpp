@@ -236,6 +236,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, g_commandLineOptions.streamSensorsADC);
 	}
+	if (g_commandLineOptions.streamWheelEncoder)
+	{
+		inertialSenseInterface.BroadcastBinaryData(DID_WHEEL_ENCODER, g_commandLineOptions.streamWheelEncoder);
+	}
 	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
 	{
 		inertialSenseInterface.SetTimeoutFlushLoggerSeconds(g_commandLineOptions.timeoutFlushLoggerSeconds);

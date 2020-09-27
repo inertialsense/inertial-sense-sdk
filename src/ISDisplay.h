@@ -81,6 +81,7 @@ public:
 	string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
 	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 	string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
+	string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
 
 private:
 	string VectortoString();

@@ -533,6 +533,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);  break;
 	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);          break;
 	case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);  break;
+	case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr); break;
 	default:
 #if 0	// List all DIDs 
 		char buf[128];
@@ -1382,6 +1383,34 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 	return ss.str();
 }
 
+string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wheel, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_WHEEL_ENCODER:");
+
+#if DISPLAY_DELTA_TIME==1
+	static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", wheel.timeOfWeek);
+#endif
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", (rad) theta[%6.2f,%6.2f]  vel[%6.2f,%6.2f]  wrap[%d,%d]\n",
+		wheel.theta_l,			// Left wheel angle
+		wheel.theta_r,			// Right wheel angle
+		wheel.omega_l,			// Left wheel angular velocity
+		wheel.omega_r,			// Right wheel angular velocity
+		wheel.wrap_count_l,		// Left wheel angle wrap
+		wheel.wrap_count_r		// Right wheel angle wrap
+	);
+	
+	return buf;
+}
 
 ostream& boldOn(ostream& os)
 {

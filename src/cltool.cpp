@@ -339,6 +339,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamSysSensors = 50;
 		}
+		else if (startsWith(a, "-msgWheel"))
+		{
+			g_commandLineOptions.streamWheelEncoder = 1;
+		}
         else if (startsWith(a, "-persistent"))
         {
             g_commandLineOptions.persistentMessages = true;

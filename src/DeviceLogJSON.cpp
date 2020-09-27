@@ -54,10 +54,11 @@ bool cDeviceLogJSON::GetNextItemForFile()
 		return false;
 	}
 	int stack = 0;
-	char c;
 	int pc = 0;
-	while ((c = (char)m_pFile->getch()) >= 0)
+	int i;
+	while ((i = m_pFile->getch()) != EOF)
 	{
+		char c = (char)i;
 		if (c == '{' && pc != '\\')
 		{
 			stack++;

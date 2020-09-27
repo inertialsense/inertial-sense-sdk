@@ -81,6 +81,7 @@ typedef struct
 	int streamDThetaVel;
 	int streamRTOS;
 	int streamSensorsADC;
+	int streamWheelEncoder;
 
 	bool enableLogging;
 	string logType; // -lt=dat
