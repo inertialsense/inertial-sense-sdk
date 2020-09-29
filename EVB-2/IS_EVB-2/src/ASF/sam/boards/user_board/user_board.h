@@ -288,10 +288,10 @@
 // Buttons
 #define BUTTON_CFG_PIN              (g_hdw_detect==0?PIO_PC5_IDX:PIO_PC3_IDX)       // EVB 2.0.0 = PC5, all others are PC3
 #define BUTTON_CFG_FLAGS            (IOPORT_MODE_PULLUP | IOPORT_MODE_DEBOUNCE)
-#define BUTTON_CFG_SENSE            (IOPORT_SENSE_RISING)
+#define BUTTON_CFG_SENSE            (IOPORT_SENSE_LEVEL_LOW)
 #define BUTTON_LOG_PIN              (g_hdw_detect==0?PIO_PC6_IDX:PIO_PC7_IDX)       // EVB 2.0.0 = PC6, all others are PC7
 #define BUTTON_LOG_FLAGS            (IOPORT_MODE_PULLUP | IOPORT_MODE_DEBOUNCE)
-#define BUTTON_LOG_SENSE            (IOPORT_SENSE_RISING)
+#define BUTTON_LOG_SENSE            (IOPORT_SENSE_LEVEL_LOW)
 
 #define JTAG_TMS_SWDIO_PIN		    (PIO_PB6_IDX)
 #define JTAG_TCK_SWCLK_PIN		    (PIO_PB7_IDX)
