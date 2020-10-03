@@ -97,7 +97,8 @@ static void on_both_buttons_release()
 }
 
 
-void step_user_interface()
+#define BUTTON_DEBOUNCE_TIME_MS 100
+void step_user_interface(uint32_t time_ms)
 {
     bool cfgButtonDown = !ioport_get_pin_level(BUTTON_CFG_PIN);
     bool logButtonDown = !ioport_get_pin_level(BUTTON_LOG_PIN);
@@ -105,10 +106,14 @@ void step_user_interface()
     static bool cfgButtonDownLast = cfgButtonDown;
     static bool logButtonDownLast = logButtonDown;
     static bool bothButtonsDownLast = bothButtonsDown;
+	static uint32_t cfgButtonTimeMs = 0;	// for button debouncing
+	static uint32_t logButtonTimeMs = 0;
+	static uint32_t bothButtonTimeMs = 0;
 
-    if(cfgButtonDownLast != cfgButtonDown)
+    if (cfgButtonDownLast != cfgButtonDown && time_ms-cfgButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Button toggled        
         cfgButtonDownLast = cfgButtonDown;
+		cfgButtonTimeMs = time_ms;
         if(cfgButtonDown)
         {      
             on_cfg_button_pressed();    
@@ -123,9 +128,10 @@ void step_user_interface()
         }
     }
 
-    if(logButtonDownLast != logButtonDown)
+    if(logButtonDownLast != logButtonDown && time_ms-logButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Button toggled
         logButtonDownLast = logButtonDown;
+		logButtonTimeMs = time_ms;
         if(logButtonDown)
         {      
             on_log_button_pressed();    
@@ -140,9 +146,10 @@ void step_user_interface()
         }            
     }
     
-    if(bothButtonsDownLast != bothButtonsDown)
+    if(bothButtonsDownLast != bothButtonsDown && time_ms-bothButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Both buttons toggled
         bothButtonsDownLast = bothButtonsDown;
+		bothButtonTimeMs = time_ms;
         if(bothButtonsDown){    on_both_buttons_pressed();  }
         else{                   on_both_buttons_release();  }
     }

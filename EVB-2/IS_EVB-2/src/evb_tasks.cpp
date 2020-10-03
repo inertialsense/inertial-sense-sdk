@@ -59,7 +59,7 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
     velocity_control(comm);
 
     // Read buttons and update LEDs
-    step_user_interface();
+    step_user_interface(g_comm_time_ms);
 }
 
 

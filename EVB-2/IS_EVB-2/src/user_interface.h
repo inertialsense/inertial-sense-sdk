@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __USER_INTERFACE_H_
 
 
-void step_user_interface();
+void step_user_interface(uint32_t time_ms);
 
 
 #endif // __USER_INTERFACE_H_
