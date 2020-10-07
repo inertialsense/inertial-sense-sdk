@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "evb_tasks.h"
+#include "d_i2c.h"
 
 
 is_comm_instance_t& evbTaskCommInit(void *pvParameters)
@@ -184,6 +185,7 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
     sd_card_logger_init();
     communications_init();
 	adc_init();
+	i2cInit();
 	
 	// Create RTOS tasks
 	createTask(EVB_TASK_COMMUNICATIONS, pxTaskComm,  "COMM",   TASK_COMM_STACK_SIZE,  NULL, TASK_COMM_PRIORITY,  TASK_COMM_PERIOD_MS);
