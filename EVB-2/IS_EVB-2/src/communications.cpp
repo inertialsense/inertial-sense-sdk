@@ -476,7 +476,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 }
 
 
-void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype)
+void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
 	
@@ -523,7 +523,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype)
 			}
 			if(n>0)
 			{
-				serWrite(EVB2_PORT_USB, commTx.buf.start, n);
+				serWrite(srcPort, commTx.buf.start, n);
 			}			
 
 			// Disable uINS bootloader mode if host sends IS binary command
@@ -668,7 +668,8 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 			{
 			case EVB2_PORT_USB:
 			case EVB2_PORT_XBEE:
-				handle_data_from_host(&comm, ptype);
+			case EVB2_PORT_SP330:
+				handle_data_from_host(&comm, ptype, srcPort);
 				break;
 			}			
 
@@ -734,7 +735,7 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 		{
 			if (srcPort == EVB2_PORT_USB)
 			{
-				handle_data_from_host(&comm, ptype);
+				handle_data_from_host(&comm, ptype, srcPort);
 			}
 			
 			if (ptype!=_PTYPE_NONE && 
