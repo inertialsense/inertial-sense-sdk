@@ -577,7 +577,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 	// Pass to callback
 	if (s_pfnHandleHostData)
 	{
-		s_pfnHandleHostData(comm, ptype);
+		s_pfnHandleHostData(comm, ptype, srcPort);
 	}
 }
 
