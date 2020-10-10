@@ -1400,7 +1400,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", wheel.timeOfWeek);
 #endif
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", (rad) theta[%6.2f,%6.2f]  vel[%6.2f,%6.2f]  wrap[%d,%d]\n",
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", (rad) theta[%6.2f,%6.2f]  omega[%6.2f,%6.2f]  wrap[%d,%d]\n",
 		wheel.theta_l,			// Left wheel angle
 		wheel.theta_r,			// Right wheel angle
 		wheel.omega_l,			// Left wheel angular velocity
