@@ -76,12 +76,13 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 {
 	(void)cmHandle;
 
-	if (data->hdr.id >= DID_COUNT)
+	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
+
+	if (data->hdr.id >= (sizeof(s->binaryCallback)/sizeof(pfnHandleBinaryData)))
 	{
 		return;
 	}
 
-	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
 	pfnHandleBinaryData handler = s->binaryCallback[data->hdr.id];
 	s->stepLogFunction(s->inertialSenseInterface, data, pHandle);
 
