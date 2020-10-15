@@ -1,3 +1,5 @@
+![Inertial Sense Logo](https://inertialsense.com/wp-content/uploads/2019/05/is_logo_black_f01-1.jpg)
+
 # Inertial Sense SDK
 
 The [Inertial Sense software development kit (SDK)](https://github.com/inertialsense/InertialSenseSDK) is hosted on GitHub.
