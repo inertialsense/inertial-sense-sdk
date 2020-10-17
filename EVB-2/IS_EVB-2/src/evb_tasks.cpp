@@ -11,7 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "evb_tasks.h"
-#include "d_i2c.h"
+#include "distance.h"
 
 
 is_comm_instance_t& evbTaskCommInit(void *pvParameters)
