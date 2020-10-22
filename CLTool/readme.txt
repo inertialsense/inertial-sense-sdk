@@ -31,11 +31,11 @@ Linux Instructions
 
    $ make
 
-4. Add current user to the "dialout" group in order to read 
-   and write to the USB serial communication ports:
+4. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
 
    $ sudo usermod -a -G dialout $USER
    $ sudo usermod -a -G plugdev $USER
+   $ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
    (reboot computer)
 
 5. Run tool executable
