@@ -1479,6 +1479,14 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\drivers\d_flash.h</Link>
     </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_i2c.c">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_i2c.c</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_i2c.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_i2c.h</Link>
+    </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_usartDMA.c">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\drivers\d_usartDMA.c</Link>
