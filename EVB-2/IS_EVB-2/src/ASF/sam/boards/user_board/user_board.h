@@ -207,17 +207,17 @@
 #define GPS_TP_PIN				    (PIO_PC9_IDX)
 
 
-// GPIO Pins    - GPIO pins are all tied to multiple SAME70 pins.  Below is just one of these pins.
-#define GPIO_1_PIN				    (PIO_PA15_IDX)
-#define GPIO_2_PIN				    (PIO_PA16_IDX)
-#define GPIO_3_PIN				    (PIO_PA23_IDX)
-#define GPIO_4_PIN				    (PIO_PA24_IDX)
-#define GPIO_5_PIN				    (PIO_PB13_IDX)
-#define GPIO_6_PIN				    (PIO_PC30_IDX)
-#define GPIO_7_PIN				    (PIO_PE3_IDX)
-#define GPIO_8_PIN				    (PIO_PE4_IDX)
-#define GPIO_9_PIN				    (PIO_PE0_IDX)
-#define GPIO_10_PIN				    (PIO_PE1_IDX)
+// H8 GPIO Pins    - GPIO pins are all tied to multiple SAME70 pins.  Below is just one of these pins.
+#define GPIO_1_PIN				    (PIO_PB4_IDX)
+#define GPIO_2_PIN				    (PIO_PA16_IDX)		// + PA21
+#define GPIO_3_PIN				    (PIO_PA23_IDX)		// + PA0 + PE3
+#define GPIO_4_PIN				    (PIO_PA24_IDX)		// + PA1
+#define GPIO_5_PIN				    (PIO_PB13_IDX)		// + PC5 + PC29
+#define GPIO_6_PIN				    (PIO_PC6_IDX)		// + PD0 
+#define GPIO_7_PIN				    (PIO_PC9_IDX)
+#define GPIO_8_PIN				    (PIO_PE4_IDX)		// + PD27
+#define GPIO_9_PIN				    (PIO_PE0_IDX)		// + PA15 + PC13
+#define GPIO_10_PIN				    (PIO_PE1_IDX)		// + PC15
 // GPIO Inverted UART Control
 #define GPIO_UART_INV_PIN		    (PIO_PE2_IDX)
 
