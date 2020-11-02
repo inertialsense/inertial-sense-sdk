@@ -3066,19 +3066,19 @@ typedef struct
 	uint8_t                 uinsAuxPort;
 
 	// Ensure 32-bit alignment
-	uint8_t                reserved2[2];
+	uint8_t                	reserved2[2];
 
 	/** Enable radio RTK filtering, etc. (see eEvb2PortOptions) */
-	uint32_t               portOptions;
+	uint32_t                portOptions;
 
 	/** Baud rate for EVB serial port H3 (SP330 RS233 and RS485/422). */
-	uint32_t               h3sp330BaudRate;
+	uint32_t                h3sp330BaudRate;
 
 	/** Baud rate for EVB serial port H4 (TLL to external radio). */
-	uint32_t               h4xRadioBaudRate;
+	uint32_t                h4xRadioBaudRate;
 
 	/** Baud rate for EVB serial port H8 (TLL). */
-	uint32_t               h8gpioBaudRate;
+	uint32_t                h8gpioBaudRate;
 	
 } evb_flash_cfg_t;
 
