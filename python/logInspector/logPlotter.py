@@ -892,12 +892,12 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 2, sharex=True)
-        self.configureSubplot(ax[0,0], 'GyrX 0 ((deg/s)^2)', 'Hz')
-        self.configureSubplot(ax[0,1], 'GyrX 1 ((deg/s)^2)', 'Hz')
-        self.configureSubplot(ax[1,0], 'GyrY 0 ((deg/s)^2)', 'Hz')
-        self.configureSubplot(ax[1,1], 'GyrY 1 ((deg/s)^2)', 'Hz')
-        self.configureSubplot(ax[2,0], 'GyrZ 0 ((deg/s)^2)', 'Hz')
-        self.configureSubplot(ax[2,1], 'GyrZ 1 ((deg/s)^2)', 'Hz')
+        self.configureSubplot(ax[0,0], 'GyrX 0 Power/Freq. (dB/Hz)', 'Hz')
+        self.configureSubplot(ax[0,1], 'GyrX 1 Power/Freq. (dB/Hz)', 'Hz')
+        self.configureSubplot(ax[1,0], 'GyrY 0 Power/Freq. (dB/Hz)', 'Hz')
+        self.configureSubplot(ax[1,1], 'GyrY 1 Power/Freq. (dB/Hz)', 'Hz')
+        self.configureSubplot(ax[2,0], 'GyrZ 0 Power/Freq. (dB/Hz)', 'Hz')
+        self.configureSubplot(ax[2,1], 'GyrZ 1 Power/Freq. (dB/Hz)', 'Hz')
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             I1 = self.getData(d, DID_DUAL_IMU, 'I')[:,0]
@@ -911,6 +911,8 @@ class logPlot:
 
             if np.shape(I1)[0] != 0:
                 time = self.getData(d, DID_DUAL_IMU, 'time')
+                N = time.size
+                Nhalf = N // 2 + 1;
 
                 for i in range(0, len(I1)):
                     gyr0x.append(I1[i][0][0] * 180.0/np.pi)
@@ -936,22 +938,24 @@ class logPlot:
                 gyr1y = gyr1[:,1] / dt * 180.0/np.pi
                 gyr1z = gyr1[:,2] / dt * 180.0/np.pi
                 N = time.size
-                psd0 = np.zeros((N//2, 3))
-                psd1 = np.zeros((N//2, 3))
+                Nhalf = N // 2 + 1;
+                psd0 = np.zeros((Nhalf, 3))
+                psd1 = np.zeros((Nhalf, 3))
                 # 1/T = frequency
                 Fs = 1 / np.mean(dt)
-                f = np.linspace(0, 0.5*Fs, N // 2)
+                f = np.linspace(0, 0.5*Fs, Nhalf)
                 
                 for i in range(3):
-                    sp0 = np.fft.fft(gyr0[:,i] / dt / 9.8)
-                    sp0 = sp0[:N // 2]
+                    sp0 = np.fft.fft(gyr0[:,i] / dt * 180.0/np.pi)
+                    sp0 = sp0[:Nhalf]
                     # psd = abssp*abssp
                     # freq = np.fft.fftfreq(time.shape[-1])
 #                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
                     psd0[:,i] = 1/N/Fs * np.abs(sp0)**2
                     psd0[1:-1,i] = 2 * psd0[1:-1,i]
-                    sp1 = np.fft.fft(gyr1[:,i] / dt / 9.8)
-                    sp1 = sp1[:N // 2]
+
+                    sp1 = np.fft.fft(gyr1[:,i] / dt * 180.0/np.pi)
+                    sp1 = sp1[:Nhalf]
                     # psd = abssp*abssp
                     # freq = np.fft.fftfreq(time.shape[-1])
 #                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
@@ -961,21 +965,21 @@ class logPlot:
 
                 # plt.plot(freq, sp.real, freq, sp.imag)
 
-            ax[0,0].loglog(f, psd0[:,0])
-            ax[1,0].loglog(f, psd0[:,1])
-            ax[2,0].loglog(f, psd0[:,2])
-            ax[0,1].loglog(f, psd1[:,0])
-            ax[1,1].loglog(f, psd1[:,1])
-            ax[2,1].loglog(f, psd1[:,2])
+            ax[0,0].plot(f, 10*np.log10(psd0[:,0]))
+            ax[1,0].plot(f, 10*np.log10(psd0[:,1]))
+            ax[2,0].plot(f, 10*np.log10(psd0[:,2]))
+            ax[0,1].plot(f, 10*np.log10(psd1[:,0]))
+            ax[1,1].plot(f, 10*np.log10(psd1[:,1]))
+            ax[2,1].plot(f, 10*np.log10(psd1[:,2]))
 
             # Set x limits
-            xlim = [10, 500]
-            ax[0,0].set_xlim(xlim)
-            ax[1,0].set_xlim(xlim)
-            ax[2,0].set_xlim(xlim)
-            ax[0,1].set_xlim(xlim)
-            ax[1,1].set_xlim(xlim)
-            ax[2,1].set_xlim(xlim)
+            #xlim = [10, 500]
+            #ax[0,0].set_xlim(xlim)
+            #ax[1,0].set_xlim(xlim)
+            #ax[2,0].set_xlim(xlim)
+            #ax[0,1].set_xlim(xlim)
+            #ax[1,1].set_xlim(xlim)
+            #ax[2,1].set_xlim(xlim)
 
             # ax[0].plot(freq, sp.real, freq, sp.imag, label=self.log.serials[d])
             # ax[1].plot(time, gyr1x)
