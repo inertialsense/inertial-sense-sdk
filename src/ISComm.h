@@ -135,6 +135,7 @@ PUSH_PACK_1
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
+	IS_BAUDRATE_9600 = 9600,
 	IS_BAUDRATE_19200 = 19200,
 	IS_BAUDRATE_38400 = 38400,
 	IS_BAUDRATE_57600 = 57600,
@@ -144,7 +145,7 @@ typedef enum
 	IS_BAUDRATE_921600 = 921600,
 	IS_BAUDRATE_3000000 = 3000000,
 
-	IS_BAUDRATE_COUNT = 8
+	IS_BAUDRATE_COUNT = 9
 } baud_rate_t;
 
 /** List of valid baud rates */
