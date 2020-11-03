@@ -362,7 +362,8 @@ class LogInspectorWindow(QMainWindow):
         self.addButton('Device Info', lambda: self.showDeviceInfo())
         self.addButton('IMU PQR', lambda: self.plot('imuPQR'))
         self.addButton('IMU Accel', lambda: self.plot('imuAcc'))
-        self.addButton('IMU PSD', lambda: self.plot('imuPSD'))
+        self.addButton('PSD PQR', lambda: self.plot('gyroPSD'))
+        self.addButton('PSD Accel', lambda: self.plot('accelPSD'))
         self.addButton('Magnetometer', lambda: self.plot('magnetometer'))
         self.addButton('Temp', lambda: self.plot('temp'))
 
