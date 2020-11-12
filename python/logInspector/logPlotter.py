@@ -667,221 +667,140 @@ class logPlot:
 
         self.saveFig(fig, 'rtkRel')
 
+    def loadGyros(self, d):
+        return self.loadIMU(d, 0)
+
+    def loadAccels(self, d):
+        return self.loadIMU(d, 1)
+
+    def loadIMU(self, d, index):   # 0 = gyro, 1 = accelerometer
+        imu0 = []
+        imu1 = []
+
+        I1 = self.getData(d, DID_DUAL_IMU, 'I')[:, 0]
+        I2 = self.getData(d, DID_DUAL_IMU, 'I')[:, 1]
+        time = self.getData(d, DID_DUAL_IMU, 'time')
+        if np.shape(I1)[0] == 0:
+            I1 = self.getData(d, DID_DUAL_IMU_RAW, 'I')[:, 0]
+            I2 = self.getData(d, DID_DUAL_IMU_RAW, 'I')[:, 1]
+            time = self.getData(d, DID_DUAL_IMU_RAW, 'time')
+
+        if np.shape(I1)[0] != 0:  # DID_DUAL_IMU or DID_DUAL_IMU_RAW
+            dt = time[1:] - time[:-1]
+            dt = np.append(dt, dt[-1])
+            for i in range(0, len(I1)):
+                imu0.append(I1[i][index])
+                imu1.append(I2[i][index])
+            imu0 = np.array(imu0)
+            imu1 = np.array(imu1)
+        else:  # DID_PREINTEGRATED_IMU
+            if index==0:
+                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
+                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
+            else:
+                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
+                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
+            time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
+            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
+            dt = time[1:] - time[:-1]
+            dt = np.append(dt, dt[-1])
+            for i in range(3):
+                imu0[:, i] /= dt
+                imu1[:, i] /= dt
+
+        return (imu0, imu1, time, dt)
+
     def imuPQR(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(6, 1, sharex=True)
-        self.configureSubplot(ax[0], 'Roll Rate 1', 'deg/s')
-        self.configureSubplot(ax[1], 'Roll Rate 2', 'deg/s')
-        self.configureSubplot(ax[2], 'Pitch Rate 1', 'deg/s')
-        self.configureSubplot(ax[3], 'Pitch Rate 2', 'deg/s')
-        self.configureSubplot(ax[4], 'Yaw Rate 1', 'deg/s')
-        self.configureSubplot(ax[5], 'Yaw Rate 2', 'deg/s')
+        ax = fig.subplots(3, 2, sharex=True)
+        self.configureSubplot(ax[0, 0], 'Gyro0 P (deg/s)', 'sec')
+        self.configureSubplot(ax[0, 1], 'Gyro1 P (deg/s)', 'sec')
+        self.configureSubplot(ax[1, 0], 'Gyro0 Q (deg/s)', 'sec')
+        self.configureSubplot(ax[1, 1], 'Gyro1 Q (deg/s)', 'sec')
+        self.configureSubplot(ax[2, 0], 'Gyro0 R (deg/s)', 'sec')
+        self.configureSubplot(ax[2, 1], 'Gyro1 R (deg/s)', 'sec')
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        # ax[0].set_ylim([-.05, .05])
-        # ax[1].set_ylim([-.05, .05])
-        # ax[2].set_ylim([-.05, .05])
-        # ax[3].set_ylim([-.05, .05])
-        # ax[4].set_ylim([-.05, .05])
-        # ax[5].set_ylim([-.05, .05])
         for d in self.active_devs:
-            #imu = self.getData(d, DID_DUAL_IMU, 'I')
-            I1 = self.getData(d, DID_DUAL_IMU, 'I')[:,0]
-            I2 = self.getData(d, DID_DUAL_IMU, 'I')[:,1]
-            p0 = []
-            q0 = []
-            r0 = []
-            p1 = []
-            q1 = []
-            r1 = []
-            if np.shape(I1)[0] != 0:
-                time = self.getData(d, DID_DUAL_IMU, 'time') # + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
-                for i in range(0, len(I1)):
-                    p0.append(I1[i][0][0]*RAD2DEG)
-                    q0.append(I1[i][0][1]*RAD2DEG)
-                    r0.append(I1[i][0][2]*RAD2DEG)
-                    p1.append(I2[i][0][0]*RAD2DEG)
-                    q1.append(I2[i][0][1]*RAD2DEG)
-                    r1.append(I2[i][0][2]*RAD2DEG)
-            else:
-                time = self.getData(d, DID_PREINTEGRATED_IMU, 'time') # + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
-                dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt')
-                pqr0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
-                pqr1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
-                p0 = pqr0[:,0] / dt*RAD2DEG
-                q0 = pqr0[:,1] / dt*RAD2DEG
-                r0 = pqr0[:,2] / dt*RAD2DEG
-                p1 = pqr1[:,0] / dt*RAD2DEG
-                q1 = pqr1[:,1] / dt*RAD2DEG
-                r1 = pqr1[:,2] / dt*RAD2DEG
+            (pqr0, pqr1, time, dt) = self.loadGyros(d)
 
-            ax[0].plot(time, p0, label=self.log.serials[d])
-            ax[1].plot(time, p1, label=self.log.serials[d])
-            ax[2].plot(time, q0)
-            ax[3].plot(time, q1)
-            ax[4].plot(time, r0)
-            ax[5].plot(time, r1)
-        ax[0].legend(ncol=2)
-        for a in ax:
-            a.grid(True)
+            for i in range(3):
+                ax[i, 0].plot(time, pqr0[:, 0], label=self.log.serials[d])
+                ax[i, 1].plot(time, pqr1[:, 1], label=self.log.serials[d])
+
+        ax[0,0].legend(ncol=2)
+        for i in range(3):
+            for j in range(2):
+                ax[i,j].grid(True)
         self.saveFig(fig, 'pqrIMU')
 
     def imuAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(6, 1, sharex=True)
-        self.configureSubplot(ax[0], 'Acc X 0', 'm/s^2')
-        self.configureSubplot(ax[1], 'Acc X 1', 'm/s^2')
-        self.configureSubplot(ax[2], 'Acc Y 0', 'm/s^2')
-        self.configureSubplot(ax[3], 'Acc Y 1', 'm/s^2')
-        self.configureSubplot(ax[4], 'Acc Z 0', 'm/s^2')
-        self.configureSubplot(ax[5], 'Acc Z 1', 'm/s^2')
+        ax = fig.subplots(3, 2, sharex=True)
+        self.configureSubplot(ax[0,0], 'Acc0 X (m/s^2)', 'sec')
+        self.configureSubplot(ax[0,1], 'Acc1 X (m/s^2)', 'sec')
+        self.configureSubplot(ax[1,0], 'Acc0 Y (m/s^2)', 'sec')
+        self.configureSubplot(ax[1,1], 'Acc1 Y (m/s^2)', 'sec')
+        self.configureSubplot(ax[2,0], 'Acc0 Z (m/s^2)', 'sec')
+        self.configureSubplot(ax[2,1], 'Acc1 Z (m/s^2)', 'sec')
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            I1 = self.getData(d, DID_DUAL_IMU, 'I')[:,0]
-            I2 = self.getData(d, DID_DUAL_IMU, 'I')[:,1]
-            acc0x = []
-            acc0y = []
-            acc0z = []
-            acc1x = []
-            acc1y = []
-            acc1z = []
+            (acc0, acc1, time, dt) = self.loadAccels(d)
 
-            if np.shape(I1)[0] != 0:
-                if len(self.getData(d, DID_GPS1_POS, 'towOffset')) == 0:
-                    time = self.getData(d, DID_DUAL_IMU, 'time')
-                else:
-                    time = self.getData(d, DID_DUAL_IMU, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
-                for i in range(0, len(I1)):
-                    acc0x.append(I1[i][1][0])
-                    acc0y.append(I1[i][1][1])
-                    acc0z.append(I1[i][1][2])
-                    acc1x.append(I2[i][1][0])
-                    acc1y.append(I2[i][1][1])
-                    acc1z.append(I2[i][1][2])
-            else:
-                if len(self.getData(d, DID_GPS1_POS, 'towOffset')) == 0:
-                    time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-                else:
-                    time = self.getData(d, DID_PREINTEGRATED_IMU, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
-                dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt')
-                acc0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
-                acc1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
-                acc0x = acc0[:,0] / dt
-                acc0y = acc0[:,1] / dt
-                acc0z = acc0[:,2] / dt
-                acc1x = acc1[:,0] / dt
-                acc1y = acc1[:,1] / dt
-                acc1z = acc1[:,2] / dt
+            for i in range(3):
+                ax[i, 0].plot(time, acc0[:, 0], label=self.log.serials[d])
+                ax[i, 1].plot(time, acc1[:, 1], label=self.log.serials[d])
 
-            ax[0].plot(time, acc0x, label=self.log.serials[d])
-            ax[1].plot(time, acc1x)
-            ax[2].plot(time, acc0y)
-            ax[3].plot(time, acc1y)
-            ax[4].plot(time, acc0z)
-            ax[5].plot(time, acc1z)
-        ax[0].legend(ncol=2)
-        for a in ax:
-            a.grid(True)
+        ax[0,0].legend(ncol=2)
+        for i in range(3):
+            for j in range(2):
+                ax[i,j].grid(True)
         self.saveFig(fig, 'accIMU')
 
     def accelPSD(self, fig=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 2, sharex=True)
-        self.configureSubplot(ax[0,0], 'AccX 0 ((m/s^2)^2)', 'Hz')
-        self.configureSubplot(ax[0,1], 'AccX 1 ((m/s^2)^2)', 'Hz')
-        self.configureSubplot(ax[1,0], 'AccY 0 ((m/s^2)^2)', 'Hz')
-        self.configureSubplot(ax[1,1], 'AccY 1 ((m/s^2)^2)', 'Hz')
-        self.configureSubplot(ax[2,0], 'AccZ 0 ((m/s^2)^2)', 'Hz')
-        self.configureSubplot(ax[2,1], 'AccZ 1 ((m/s^2)^2)', 'Hz')
-        # self.configureSubplot(ax[2], 'PQR 0', '(rad/s)^2')
-        # self.configureSubplot(ax[2], 'PQR 1', '(rad/s)^2')
+        self.configureSubplot(ax[0,0], 'AccX 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
+        self.configureSubplot(ax[0,1], 'AccX 1 PSD (dB (m/s^2)^2/Hz)', 'Hz')
+        self.configureSubplot(ax[1,0], 'AccY 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
+        self.configureSubplot(ax[1,1], 'AccY 1 PSD (dB (m/s^2)^2/Hz)', 'Hz')
+        self.configureSubplot(ax[2,0], 'AccZ 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
+        self.configureSubplot(ax[2,1], 'AccZ 1 PSD (dB (m/s^2)^2/Hz)', 'Hz')
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            I1 = self.getData(d, DID_DUAL_IMU, 'I')[:,0]
-            I2 = self.getData(d, DID_DUAL_IMU, 'I')[:,1]
-            acc0x = []
-            acc0y = []
-            acc0z = []
-            acc1x = []
-            acc1y = []
-            acc1z = []
+            (acc0, acc1, time, dt) = self.loadAccels(d)
 
-            if np.shape(I1)[0] != 0:
-                time = self.getData(d, DID_DUAL_IMU, 'time')
+            N = time.size
+            psd0 = np.zeros((N//2, 3))
+            psd1 = np.zeros((N//2, 3))
+            # 1/T = frequency
+            Fs = 1 / np.mean(dt)
+            f = np.linspace(0, 0.5*Fs, N // 2)
 
-                for i in range(0, len(I1)):
-                    acc0x.append(I1[i][1][0])
-                    acc0y.append(I1[i][1][1])
-                    acc0z.append(I1[i][1][2])
-                    acc1x.append(I2[i][1][0])
-                    acc1y.append(I2[i][1][1])
-                    acc1z.append(I2[i][1][2])
-
-                    sp = np.fft.fft(acc0x)
-                    freq = np.fft.fftfreq(time.shape[-1])
-                    # plt.plot(freq, sp.real, freq, sp.imag)
-
-            else:
-                time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-                dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt')
-                acc0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
-                acc1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
-                acc0x = acc0[:,0] / dt
-                acc0y = acc0[:,1] / dt
-                acc0z = acc0[:,2] / dt
-                acc1x = acc1[:,0] / dt
-                acc1y = acc1[:,1] / dt
-                acc1z = acc1[:,2] / dt
-                N = time.size
-                psd0 = np.zeros((N//2, 3))
-                psd1 = np.zeros((N//2, 3))
-                # 1/T = frequency
-                Fs = 1 / np.mean(dt)
-                f = np.linspace(0, 0.5*Fs, N // 2)
-                
-                for i in range(3):
-                    sp0 = np.fft.fft(acc0[:,i] / dt / 9.8)
-                    sp0 = sp0[:N // 2]
-                    # psd = abssp*abssp
-                    # freq = np.fft.fftfreq(time.shape[-1])
+            for i in range(3):
+                sp0 = np.fft.fft(acc0[:,i] / 9.8)
+                sp0 = sp0[:N // 2]
+                # psd = abssp*abssp
+                # freq = np.fft.fftfreq(time.shape[-1])
 #                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                    psd0[:,i] = 1/N/Fs * np.abs(sp0)**2
-                    psd0[1:-1,i] = 2 * psd0[1:-1,i]
-                    sp1 = np.fft.fft(acc1[:,i] / dt / 9.8)
-                    sp1 = sp1[:N // 2]
-                    # psd = abssp*abssp
-                    # freq = np.fft.fftfreq(time.shape[-1])
+                psd0[:,i] = 1/N/Fs * np.abs(sp0)**2
+                psd0[1:-1,i] = 2 * psd0[1:-1,i]
+                sp1 = np.fft.fft(acc1[:,i] / 9.8)
+                sp1 = sp1[:N // 2]
+                # psd = abssp*abssp
+                # freq = np.fft.fftfreq(time.shape[-1])
 #                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                    psd1[:,i] = 1/N/Fs * np.abs(sp1)**2
-                    psd1[1:-1,i] = 2 * psd1[1:-1,i]
+                psd1[:,i] = 1/N/Fs * np.abs(sp1)**2
+                psd1[1:-1,i] = 2 * psd1[1:-1,i]
 
+            for i in range(3):
+                # ax[i, 0].loglog(f, psd0[:, i])
+                # ax[i, 1].loglog(f, psd1[:, i])
+                ax[i, 0].plot(f, 10*np.log10(psd0[:, i]))
+                ax[i, 1].plot(f, 10*np.log10(psd1[:, i]))
 
-                # plt.plot(freq, sp.real, freq, sp.imag)
-
-            ax[0,0].loglog(f, psd0[:,0])
-            ax[1,0].loglog(f, psd0[:,1])
-            ax[2,0].loglog(f, psd0[:,2])
-            ax[0,1].loglog(f, psd1[:,0])
-            ax[1,1].loglog(f, psd1[:,1])
-            ax[2,1].loglog(f, psd1[:,2])
-
-            # Set x limits
-            xlim = [10, 500]
-            ax[0,0].set_xlim(xlim)
-            ax[1,0].set_xlim(xlim)
-            ax[2,0].set_xlim(xlim)
-            ax[0,1].set_xlim(xlim)
-            ax[1,1].set_xlim(xlim)
-            ax[2,1].set_xlim(xlim)
-
-            # ax[0].plot(freq, sp.real, freq, sp.imag, label=self.log.serials[d])
-            # ax[1].plot(time, acc1x)
-            # ax[2].plot(time, acc0y)
-            # ax[3].plot(time, acc1y)
-            # ax[4].plot(time, acc0z)
-            # ax[5].plot(time, acc1z)
         ax[0,0].legend(ncol=2)
         for i in range(3):
             for j in range(2):
@@ -892,101 +811,45 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 2, sharex=True)
-        self.configureSubplot(ax[0,0], 'GyrX 0 Power/Freq. (dB/Hz)', 'Hz')
-        self.configureSubplot(ax[0,1], 'GyrX 1 Power/Freq. (dB/Hz)', 'Hz')
-        self.configureSubplot(ax[1,0], 'GyrY 0 Power/Freq. (dB/Hz)', 'Hz')
-        self.configureSubplot(ax[1,1], 'GyrY 1 Power/Freq. (dB/Hz)', 'Hz')
-        self.configureSubplot(ax[2,0], 'GyrZ 0 Power/Freq. (dB/Hz)', 'Hz')
-        self.configureSubplot(ax[2,1], 'GyrZ 1 Power/Freq. (dB/Hz)', 'Hz')
+        self.configureSubplot(ax[0,0], 'Gyr0 X PSD (dB dps^2/Hz)', 'Hz')
+        self.configureSubplot(ax[0,1], 'Gyr1 X PSD (dB dps^2/Hz)', 'Hz')
+        self.configureSubplot(ax[1,0], 'Gyr0 Y PSD (dB dps^2/Hz)', 'Hz')
+        self.configureSubplot(ax[1,1], 'Gyr1 Y PSD (dB dps^2/Hz)', 'Hz')
+        self.configureSubplot(ax[2,0], 'Gyr0 Z PSD (dB dps^2/Hz)', 'Hz')
+        self.configureSubplot(ax[2,1], 'Gyr1 Z PSD (dB dps^2/Hz)', 'Hz')
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            I1 = self.getData(d, DID_DUAL_IMU, 'I')[:,0]
-            I2 = self.getData(d, DID_DUAL_IMU, 'I')[:,1]
-            gyr0x = []
-            gyr0y = []
-            gyr0z = []
-            gyr1x = []
-            gyr1y = []
-            gyr1z = []
+            (pqr0, pqr1, time, dt) = self.loadGyros(d)
 
-            if np.shape(I1)[0] != 0:
-                time = self.getData(d, DID_DUAL_IMU, 'time')
-                N = time.size
-                Nhalf = N // 2 + 1;
+            N = time.size
+            Nhalf = N // 2 + 1
+            psd0 = np.zeros((Nhalf, 3))
+            psd1 = np.zeros((Nhalf, 3))
+            # 1/T = frequency
+            Fs = 1 / np.mean(dt)
+            f = np.linspace(0, 0.5*Fs, Nhalf)
+            
+            for i in range(3):
+                sp0 = np.fft.fft(pqr0[:,i] * 180.0/np.pi)
+                sp0 = sp0[:Nhalf]
+                # psd = abssp*abssp
+                # freq = np.fft.fftfreq(time.shape[-1])
+    #                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
+                psd0[:,i] = 1/N/Fs * np.abs(sp0)**2
+                psd0[1:-1,i] = 2 * psd0[1:-1,i]
 
-                for i in range(0, len(I1)):
-                    gyr0x.append(I1[i][0][0] * 180.0/np.pi)
-                    gyr0y.append(I1[i][0][1] * 180.0/np.pi)
-                    gyr0z.append(I1[i][0][2] * 180.0/np.pi)
-                    gyr1x.append(I2[i][0][0] * 180.0/np.pi)
-                    gyr1y.append(I2[i][0][1] * 180.0/np.pi)
-                    gyr1z.append(I2[i][0][2] * 180.0/np.pi)
+                sp1 = np.fft.fft(pqr1[:,i] * 180.0/np.pi)
+                sp1 = sp1[:Nhalf]
+                # psd = abssp*abssp
+                # freq = np.fft.fftfreq(time.shape[-1])
+    #                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
+                psd1[:,i] = 1/N/Fs * np.abs(sp1)**2
+                psd1[1:-1,i] = 2 * psd1[1:-1,i]
 
-                    sp = np.fft.fft(gyr0x)
-                    freq = np.fft.fftfreq(time.shape[-1])
-                    # plt.plot(freq, sp.real, freq, sp.imag)
+            for i in range(3):
+                ax[i, 0].plot(f, 10*np.log10(psd0[:, i]))
+                ax[i, 1].plot(f, 10*np.log10(psd1[:, i]))
 
-            else:
-                time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-                dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt')
-                gyr0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
-                gyr1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
-                gyr0x = gyr0[:,0] / dt * 180.0/np.pi
-                gyr0y = gyr0[:,1] / dt * 180.0/np.pi
-                gyr0z = gyr0[:,2] / dt * 180.0/np.pi
-                gyr1x = gyr1[:,0] / dt * 180.0/np.pi
-                gyr1y = gyr1[:,1] / dt * 180.0/np.pi
-                gyr1z = gyr1[:,2] / dt * 180.0/np.pi
-                N = time.size
-                Nhalf = N // 2 + 1;
-                psd0 = np.zeros((Nhalf, 3))
-                psd1 = np.zeros((Nhalf, 3))
-                # 1/T = frequency
-                Fs = 1 / np.mean(dt)
-                f = np.linspace(0, 0.5*Fs, Nhalf)
-                
-                for i in range(3):
-                    sp0 = np.fft.fft(gyr0[:,i] / dt * 180.0/np.pi)
-                    sp0 = sp0[:Nhalf]
-                    # psd = abssp*abssp
-                    # freq = np.fft.fftfreq(time.shape[-1])
-#                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                    psd0[:,i] = 1/N/Fs * np.abs(sp0)**2
-                    psd0[1:-1,i] = 2 * psd0[1:-1,i]
-
-                    sp1 = np.fft.fft(gyr1[:,i] / dt * 180.0/np.pi)
-                    sp1 = sp1[:Nhalf]
-                    # psd = abssp*abssp
-                    # freq = np.fft.fftfreq(time.shape[-1])
-#                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                    psd1[:,i] = 1/N/Fs * np.abs(sp1)**2
-                    psd1[1:-1,i] = 2 * psd1[1:-1,i]
-
-
-                # plt.plot(freq, sp.real, freq, sp.imag)
-
-            ax[0,0].plot(f, 10*np.log10(psd0[:,0]))
-            ax[1,0].plot(f, 10*np.log10(psd0[:,1]))
-            ax[2,0].plot(f, 10*np.log10(psd0[:,2]))
-            ax[0,1].plot(f, 10*np.log10(psd1[:,0]))
-            ax[1,1].plot(f, 10*np.log10(psd1[:,1]))
-            ax[2,1].plot(f, 10*np.log10(psd1[:,2]))
-
-            # Set x limits
-            #xlim = [10, 500]
-            #ax[0,0].set_xlim(xlim)
-            #ax[1,0].set_xlim(xlim)
-            #ax[2,0].set_xlim(xlim)
-            #ax[0,1].set_xlim(xlim)
-            #ax[1,1].set_xlim(xlim)
-            #ax[2,1].set_xlim(xlim)
-
-            # ax[0].plot(freq, sp.real, freq, sp.imag, label=self.log.serials[d])
-            # ax[1].plot(time, gyr1x)
-            # ax[2].plot(time, gyr0y)
-            # ax[3].plot(time, gyr1y)
-            # ax[4].plot(time, gyr0z)
-            # ax[5].plot(time, gyr1z)
         ax[0,0].legend(ncol=2)
         for i in range(3):
             for j in range(2):
@@ -998,12 +861,12 @@ class logPlot:
             fig = plt.figure()
         ax = fig.subplots(6, 1, sharex=True)
 
-        self.configureSubplot(ax[0], 'Mag X 0', 'gauss')
-        self.configureSubplot(ax[1], 'Mag X 1', 'gauss')
-        self.configureSubplot(ax[2], 'Mag Y 0', 'gauss')
-        self.configureSubplot(ax[3], 'Mag Y 1', 'gauss')
-        self.configureSubplot(ax[4], 'Mag Z 0', 'gauss')
-        self.configureSubplot(ax[5], 'Mag Z 1', 'gauss')
+        self.configureSubplot(ax[0], 'Mag0 X', 'gauss')
+        self.configureSubplot(ax[1], 'Mag1 X', 'gauss')
+        self.configureSubplot(ax[2], 'Mag0 Y', 'gauss')
+        self.configureSubplot(ax[3], 'Mag1 Y', 'gauss')
+        self.configureSubplot(ax[4], 'Mag0 Z', 'gauss')
+        self.configureSubplot(ax[5], 'Mag1 Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time0 = self.getData(d, DID_MAGNETOMETER_1, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
