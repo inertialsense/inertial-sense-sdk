@@ -487,9 +487,9 @@ def ned2lla( ned, llaRef ):
     deltaLLA = ned2DeltaLla( ned, llaRef )
     
     lla = np.zeros(np.shape(ned))
-    lla[:,0] = llaRef[:,0] + deltaLLA[:,0]
-    lla[:,1] = llaRef[:,1] + deltaLLA[:,1]
-    lla[:,2] = llaRef[:,2] + deltaLLA[:,2]
+    lla[:,0] = llaRef[0] + deltaLLA[:,0]
+    lla[:,1] = llaRef[1] + deltaLLA[:,1]
+    lla[:,2] = llaRef[2] + deltaLLA[:,2]
 
     return lla
 
