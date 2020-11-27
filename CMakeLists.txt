@@ -60,6 +60,8 @@ target_include_directories(InertialSense PUBLIC src external)
 target_link_libraries(InertialSense pthread)
 target_compile_options(InertialSense PUBLIC -fPIC)
 
+add_library( InertialSense::libinertialsense ALIAS InertialSense )
+
 add_subdirectory(CLTool)
 add_subdirectory(ExampleProjects)
 
