@@ -632,6 +632,19 @@ typedef struct PACKED
 } dual_imu_t;
 
 
+/*! Dual Inertial Measurement Units (IMUs) data valid flags */
+typedef struct PACKED
+{
+	dual_imu_t				imu;
+	
+	/*! IMU is valid */
+	uint8_t					imu1ok;
+	uint8_t					imu2ok;
+    uint8_t                 reserved1;
+    uint8_t                 reserved2;
+} dual_imu_ok_t;
+
+
 /** (DID_MAGNETOMETER_1, DID_MAGNETOMETER_2) Magnetometer sensor data */
 typedef struct PACKED
 {

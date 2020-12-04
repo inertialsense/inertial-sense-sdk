@@ -199,7 +199,7 @@ f_t variance_int64(int64_t *input, int size, int byteIncrement)
 
 	for (i = 0; i < size; i++)
 	{
-		dev = ((f_t)(*((int32_t*)ptr))) - ave;
+		dev = ((f_t)(*((int64_t*)ptr))) - ave;
 		sum += dev * dev;
 		ptr += byteIncrement;
 	}

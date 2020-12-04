@@ -31,6 +31,7 @@ add_library(InertialSense
   src/DeviceLogSerial.cpp
   src/DeviceLogSorted.cpp
   src/InertialSense.cpp
+  src/filters.cpp
   src/inertialSenseBootLoader.c
   src/ISComm.c
   src/ISDataMappings.cpp
@@ -50,6 +51,7 @@ add_library(InertialSense
   src/ring_buffer.c
   src/serialPort.c
   src/serialPortPlatform.c
+  src/statistics.cpp
   src/time_conversion.c
   src/tinystr.cpp
   src/tinyxml.cpp
