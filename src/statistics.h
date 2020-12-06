@@ -36,7 +36,7 @@ typedef struct
  */
 f_t mean( f_t *input, int size, int byteIncrement );
 f_t mean_int32(int32_t *input, int size, int byteIncrement);
-f_t mean_int64(int64_t *input, int size, int byteIncrement);
+double mean_int64(int64_t *input, int size, int byteIncrement);
 double mean(double *input, int size, int byteIncrement);
 
 /*
@@ -44,7 +44,7 @@ double mean(double *input, int size, int byteIncrement);
  */
 f_t variance(f_t *input, int size, int byteIncrement);
 f_t variance_int32(int32_t *input, int size, int byteIncrement);
-f_t variance_int64(int64_t *input, int size, int byteIncrement);
+double variance_int64(int64_t *input, int size, int byteIncrement);
 double variance(double *input, int size, int byteIncrement);
 f_t variance_mean( f_t *input, f_t *ave, int size, int byteIncrement );
 
@@ -63,7 +63,7 @@ f_t delta_mean(f_t *input, int size, int byteIncrement, float ave);
 f_t standard_deviation( f_t *input, int size, int byteIncrement );
 double standard_deviation_d(double *input, int size, int byteIncrement);
 f_t standard_deviation_int32(int32_t *input, int size, int byteIncrement);
-f_t standard_deviation_int64(int64_t *input, int size, int byteIncrement);
+double standard_deviation_int64(int64_t *input, int size, int byteIncrement);
 f_t standard_deviation_mean( f_t *input, f_t *mean, int size, int byteIncrement );
 void standard_deviation_Vec3( Vector3 result, Vector3 input, int size, int byteIncrement );
 void stardard_deviation_mean_Vec3( Vector3 result, Vector3 input, Vector3 mean, int size, int byteIncrement );

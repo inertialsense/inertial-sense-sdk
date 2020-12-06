@@ -86,10 +86,10 @@ f_t mean_int32(int32_t *input, int size, int byteIncrement)
 }
 
 
-f_t mean_int64(int64_t *input, int size, int byteIncrement)
+double mean_int64(int64_t *input, int size, int byteIncrement)
 {
 	int i;
-	f_t sum = 0;
+	double sum = 0;
 	char *ptr = (char*)input;
 
 	// Validate size
@@ -183,12 +183,12 @@ f_t variance_int32(int32_t *input, int size, int byteIncrement)
 }
 
 
-f_t variance_int64(int64_t *input, int size, int byteIncrement)
+double variance_int64(int64_t *input, int size, int byteIncrement)
 {
 	int i;
-	f_t dev;
-	f_t sum = 0;
-	f_t ave;
+	double dev;
+	double sum = 0;
+	double ave;
 	char *ptr = (char*)input;
 
 	// Validate size
@@ -199,7 +199,7 @@ f_t variance_int64(int64_t *input, int size, int byteIncrement)
 
 	for (i = 0; i < size; i++)
 	{
-		dev = ((f_t)(*((int64_t*)ptr))) - ave;
+		dev = ((double)(*((int64_t*)ptr))) - ave;
 		sum += dev * dev;
 		ptr += byteIncrement;
 	}
@@ -267,7 +267,7 @@ f_t standard_deviation_int32(int32_t *input, int size, int byteIncrement)
 }
 
 
-f_t standard_deviation_int64(int64_t *input, int size, int byteIncrement)
+double standard_deviation_int64(int64_t *input, int size, int byteIncrement)
 {
 	// Validate size
 	if (size <= 0)
@@ -275,7 +275,7 @@ f_t standard_deviation_int64(int64_t *input, int size, int byteIncrement)
 		return 0;
 	}
 
-	return _SQRT(variance_int64(input, size, byteIncrement));
+	return sqrt(variance_int64(input, size, byteIncrement));
 }
 
 
