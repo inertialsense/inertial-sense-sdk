@@ -195,7 +195,9 @@ extern void vPortFree(void* pv);
 #if PLATFORM_IS_WINDOWS
 
 #include <direct.h>
+#if ! defined ( __BORLANDC__ )
 #include <sys/utime.h>
+#endif
 #define _MKDIR(dir) _mkdir(dir)
 #define _RMDIR(dir) _rmdir(dir)
 #define _GETCWD(buf, len) _getcwd(buf, len)
