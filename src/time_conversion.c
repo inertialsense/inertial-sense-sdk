@@ -140,7 +140,7 @@ int TIMECONV_GetSystemTime(
 {
   int result;
 
-#ifdef WIN32
+#if defined WIN32 && ! defined ( __BORLANDC__ )
   struct _timeb timebuffer; // found in <sys/timeb.h>   
 #else
   struct timeb timebuffer;
@@ -149,7 +149,7 @@ int TIMECONV_GetSystemTime(
   double timebuffer_time_in_seconds;
   //char *timeline; // for debugging
 
-#ifdef WIN32
+#if defined WIN32 && ! defined ( __BORLANDC__ )
   _ftime( &timebuffer );
 #else
   ftime( &timebuffer );
