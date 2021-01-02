@@ -142,8 +142,7 @@ void usleep(__int64 usec);
 
 int current_timeSec();
 int current_timeMs();
-int current_weekMs();
-uint64_t current_weekUs();
+uint64_t current_timeUs();
 
 uint64_t timerUsStart();
 uint64_t timerUsEnd(uint64_t start);

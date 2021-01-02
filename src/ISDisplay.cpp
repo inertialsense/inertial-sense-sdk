@@ -287,7 +287,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		return;
 	}
 
-	int curTimeMs = current_weekMs();
+	int curTimeMs = current_timeMs();
 	m_rxCount++;
 
 	if (enableReplay)
@@ -359,7 +359,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		{
 			for (;;)
 			{
-				curTimeMs = current_weekMs();
+				curTimeMs = current_timeMs();
 
 				// Replay speed
 				int replayTimeMs = (int)(long)(((double)curTimeMs)*replaySpeedX);
@@ -478,7 +478,7 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 	}
 
 	// Update stats
-	int curTimeMs = current_weekMs();
+	int curTimeMs = current_timeMs();
 	sDidStats &s = m_didStats[id];
 	s.count++;
 	if(s.lastTimeMs)
