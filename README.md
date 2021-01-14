@@ -1,4 +1,4 @@
-![Inertial Sense Logo](https://inertialsense.com/wp-content/uploads/2019/05/is_logo_black_f01-1.jpg)
+![Inertial Sense Logo](https://inertialsense.com/wp-content/uploads/2019/09/logo-1.png)
 
 # Inertial Sense SDK
 
