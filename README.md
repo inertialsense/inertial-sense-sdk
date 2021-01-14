@@ -22,10 +22,10 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
  * [Software Releases](https://github.com/inertialsense/InertialSenseSDK/releases) - uINS, uAHRS, uIMU, and EVB-2 firmware and application installers.
  * [SDK & CLTool Source Code](https://github.com/inertialsense/InertialSenseSDK) - open source SDK repository with command line tool and example C/C++ source code.
 
-### Design Resources
+### Hardware Design Files
 
- * [uINS PCB Design Libraries](https://inertialsense.com/resources) - Schematic and layout files for printed circuit board designs.
- * [uINS, uAHRS, uIMU CAD Model](https://inertialsense.com/resources) - 3D step model of uINS and EVB used for CAD and circuit board designs.
+ * [uINS PCB Design Libraries](https://docs.inertialsense.com/downloads/PCB-Design-Libraries.zip) - Schematic and layout files for printed circuit board designs.
+ * [uINS, uAHRS, uIMU CAD Model](https://docs.inertialsense.com/downloads/CAD-Models-STEP.zip) - 3D step model of uINS and EVB used for CAD and circuit board designs.
 
 ### Support
 
