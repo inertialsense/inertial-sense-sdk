@@ -19,6 +19,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static bool s_ignoreCfgButtonRelease=false;
 static bool s_ignoreLogButtonRelease=false;
 
+static FuncPtrVoidVoid s_funcPtrCfgButtonPressed = NULL;
+static FuncPtrVoidVoid s_funcPtrCfgButtonRelease = NULL;
+static FuncPtrVoidVoid s_funcPtrLogButtonPressed = NULL;
+static FuncPtrVoidVoid s_funcPtrLogButtonRelease = NULL;
+static FuncPtrVoidVoid s_funcPtrBothButtonsPressed = NULL;
+static FuncPtrVoidVoid s_funcPtrBothButtonsRelease = NULL;
 
 static void on_cfg_button_pressed()
 {
@@ -116,13 +122,13 @@ void step_user_interface(uint32_t time_ms)
 		cfgButtonTimeMs = time_ms;
         if(cfgButtonDown)
         {      
-            on_cfg_button_pressed();    
+            if(s_funcPtrCfgButtonPressed){ s_funcPtrCfgButtonPressed(); }
         }
         else
         {
             if(!s_ignoreCfgButtonRelease)
             {
-                 on_cfg_button_release();
+                if(s_funcPtrCfgButtonRelease){ s_funcPtrCfgButtonRelease(); }
             }
             s_ignoreCfgButtonRelease = false;
         }
@@ -134,13 +140,13 @@ void step_user_interface(uint32_t time_ms)
 		logButtonTimeMs = time_ms;
         if(logButtonDown)
         {      
-            on_log_button_pressed();    
+            if(s_funcPtrLogButtonPressed){ s_funcPtrLogButtonPressed(); }
         }
         else
         {              
             if(!s_ignoreLogButtonRelease)
             {
-                on_log_button_release(); 
+                if(s_funcPtrLogButtonRelease){ s_funcPtrLogButtonRelease(); }
             }
             s_ignoreLogButtonRelease = false;
         }            
@@ -150,8 +156,14 @@ void step_user_interface(uint32_t time_ms)
     {   // Both buttons toggled
         bothButtonsDownLast = bothButtonsDown;
 		bothButtonTimeMs = time_ms;
-        if(bothButtonsDown){    on_both_buttons_pressed();  }
-        else{                   on_both_buttons_release();  }
+        if(bothButtonsDown)
+        {                
+            if(s_funcPtrBothButtonsPressed){ s_funcPtrBothButtonsPressed(); }  
+        }
+        else
+        {
+            if(s_funcPtrBothButtonsRelease){ s_funcPtrBothButtonsRelease(); }  
+        }
     }
     
     if( logger_ready() )
@@ -176,5 +188,28 @@ void step_user_interface(uint32_t time_ms)
     
 }
 
+
+void evbUiInit()
+{
+    s_funcPtrCfgButtonPressed = on_cfg_button_pressed;
+    s_funcPtrCfgButtonRelease = on_cfg_button_release;
+    s_funcPtrLogButtonPressed = on_log_button_pressed;
+    s_funcPtrLogButtonRelease = on_log_button_release;
+    s_funcPtrBothButtonsPressed = on_both_buttons_pressed;
+    s_funcPtrBothButtonsRelease = on_both_buttons_release;
+}
+
+void evbUiInit(
+    FuncPtrVoidVoid fpCfgButtonPressed, FuncPtrVoidVoid fpCfgButtonRelease, 
+    FuncPtrVoidVoid fpLogButtonPressed, FuncPtrVoidVoid fpLogButtonRelease, 
+    FuncPtrVoidVoid fpBothButtonsPressed, FuncPtrVoidVoid fpBothButtonsRelease )
+{
+    s_funcPtrCfgButtonPressed = fpCfgButtonPressed;
+    s_funcPtrCfgButtonRelease = fpCfgButtonRelease;
+    s_funcPtrLogButtonPressed = fpLogButtonPressed;
+    s_funcPtrLogButtonRelease = fpLogButtonRelease;
+    s_funcPtrBothButtonsPressed = fpBothButtonsPressed;
+    s_funcPtrBothButtonsRelease = fpBothButtonsRelease;
+}
 
 

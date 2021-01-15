@@ -207,7 +207,7 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
 
 
 int evbMain(void)
-{		
+{	
 	// Start the scheduler
 	printf("Starting FreeRTOS\n\r");
 	vTaskStartScheduler((TaskHandle_t*)&g_rtos.task[EVB_TASK_IDLE].handle, (TaskHandle_t*)&g_rtos.task[EVB_TASK_TIMER].handle);

@@ -98,6 +98,9 @@ static void vTaskMaint(void *pvParameters)
 int main(void)
 {
 	evbMainInit(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
+
+	// Setup button event callback pointers
+    evbUiInit();
 	
 	int result = evbMain();
 	
