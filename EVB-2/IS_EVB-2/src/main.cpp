@@ -99,8 +99,7 @@ int main(void)
 {
 	evbMainInit(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
 
-	// Setup button event callback pointers
-    evbUiInit();
+    evbUiButtonDefaults();
 	
 	int result = evbMain();
 	

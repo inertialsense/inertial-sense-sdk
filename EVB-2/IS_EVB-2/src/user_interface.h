@@ -17,8 +17,8 @@ typedef void (*FuncPtrVoidVoid)(void);
 
 void step_user_interface(uint32_t time_ms);
 
-void evbUiInit();
-void evbUiInit(
+void evbUiButtonDefaults();
+void evbUiButtonCallbacks(
     FuncPtrVoidVoid fpCfgButtonPressed, FuncPtrVoidVoid fpCfgButtonRelease, 
     FuncPtrVoidVoid fpLogButtonPressed, FuncPtrVoidVoid fpLogButtonRelease, 
     FuncPtrVoidVoid fpBothButtonsPressed, FuncPtrVoidVoid fpBothButtonsRelease );

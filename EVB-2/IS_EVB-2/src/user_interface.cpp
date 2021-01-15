@@ -26,12 +26,18 @@ static FuncPtrVoidVoid s_funcPtrLogButtonRelease = NULL;
 static FuncPtrVoidVoid s_funcPtrBothButtonsPressed = NULL;
 static FuncPtrVoidVoid s_funcPtrBothButtonsRelease = NULL;
 
+
+bool logger_ready()
+{
+    return (g_status.evbStatus&EVB_STATUS_SD_CARD_READY) && !(g_status.evbStatus&EVB_STATUS_SD_ERR_CARD_MASK);
+}
+
+
 static void on_cfg_button_pressed()
 {
 	// Indicate button is pressed by turning off LED
 	LED_CFG_OFF();
 }
-
 
 static void on_cfg_button_release()
 {    
@@ -62,19 +68,11 @@ static void on_cfg_button_release()
     refresh_CFG_LED();    
 }
 
-
-bool logger_ready()
-{
-    return (g_status.evbStatus&EVB_STATUS_SD_CARD_READY) && !(g_status.evbStatus&EVB_STATUS_SD_ERR_CARD_MASK);
-}
-
-
 static void on_log_button_pressed()
 {
 	// Indicate button is pressed by turning off LED
 	LED_LOG_OFF();    
 }
-
 
 static void on_log_button_release()
 {
@@ -87,14 +85,12 @@ static void on_log_button_release()
     }
 }
 
-
 static void on_both_buttons_pressed()
 {   // Reset uINS
 	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_LOW);
     s_ignoreCfgButtonRelease = true;
     s_ignoreLogButtonRelease = true;
 }
-
 
 static void on_both_buttons_release()
 {   // De-assert uINS reset
@@ -184,12 +180,11 @@ void step_user_interface(uint32_t time_ms)
         {   // Disable logger
             enable_logger(false);
         }
-    }
-    
+    }    
 }
 
 
-void evbUiInit()
+void evbUiButtonDefaults()
 {
     s_funcPtrCfgButtonPressed = on_cfg_button_pressed;
     s_funcPtrCfgButtonRelease = on_cfg_button_release;
@@ -199,7 +194,7 @@ void evbUiInit()
     s_funcPtrBothButtonsRelease = on_both_buttons_release;
 }
 
-void evbUiInit(
+void evbUiButtonCallbacks(
     FuncPtrVoidVoid fpCfgButtonPressed, FuncPtrVoidVoid fpCfgButtonRelease, 
     FuncPtrVoidVoid fpLogButtonPressed, FuncPtrVoidVoid fpLogButtonRelease, 
     FuncPtrVoidVoid fpBothButtonsPressed, FuncPtrVoidVoid fpBothButtonsRelease )
