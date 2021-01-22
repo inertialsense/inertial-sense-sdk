@@ -26,6 +26,8 @@ static FuncPtrVoidVoid s_funcPtrLogButtonRelease = NULL;
 static FuncPtrVoidVoid s_funcPtrBothButtonsPressed = NULL;
 static FuncPtrVoidVoid s_funcPtrBothButtonsRelease = NULL;
 
+static FuncPtrVoidVoid s_funcPtrRefreshLedCfg = NULL;
+static FuncPtrVoidVoid s_funcPtrRefreshLedLog = NULL;
 
 bool logger_ready()
 {
@@ -65,7 +67,7 @@ static void on_cfg_button_release()
     board_IO_config();
     g_nvr_manage_config.flash_write_needed = true;
 	g_nvr_manage_config.flash_write_enable = true;
-    refresh_CFG_LED();    
+	evbUiRefreshLedCfg();
 }
 
 static void on_log_button_pressed()
@@ -95,7 +97,7 @@ static void on_both_buttons_pressed()
 static void on_both_buttons_release()
 {   // De-assert uINS reset
     ioport_set_pin_input_mode(INS_RESET_PIN_PIN, 0, 0);
-    refresh_CFG_LED();
+	evbUiRefreshLedCfg();
 }
 
 
@@ -184,7 +186,7 @@ void step_user_interface(uint32_t time_ms)
 }
 
 
-void evbUiButtonDefaults()
+void evbUiDefaults()
 {
     s_funcPtrCfgButtonPressed = on_cfg_button_pressed;
     s_funcPtrCfgButtonRelease = on_cfg_button_release;
@@ -192,6 +194,9 @@ void evbUiButtonDefaults()
     s_funcPtrLogButtonRelease = on_log_button_release;
     s_funcPtrBothButtonsPressed = on_both_buttons_pressed;
     s_funcPtrBothButtonsRelease = on_both_buttons_release;
+
+    s_funcPtrRefreshLedCfg = refresh_led_cfg;
+    s_funcPtrRefreshLedLog = refresh_led_log;
 }
 
 void evbUiButtonCallbacks(
@@ -207,4 +212,19 @@ void evbUiButtonCallbacks(
     s_funcPtrBothButtonsRelease = fpBothButtonsRelease;
 }
 
+void evbUiLedCallbacks(FuncPtrVoidVoid fpLedCfg, FuncPtrVoidVoid fpLedLog )
+{
+    s_funcPtrRefreshLedCfg = fpLedCfg;
+    s_funcPtrRefreshLedLog = fpLedLog;
+}
+
+void evbUiRefreshLedCfg()
+{
+    if(s_funcPtrRefreshLedCfg){ s_funcPtrRefreshLedCfg(); }  
+}
+
+void evbUiRefreshLedLog()
+{
+    if(s_funcPtrRefreshLedLog){ s_funcPtrRefreshLedLog(); }  
+}
 

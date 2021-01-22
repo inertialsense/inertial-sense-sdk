@@ -16,7 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "globals.h"
 #include "../../../src/ISLogger.h"
 
-void update_led_log(void);
+void refresh_led_log(void);
 
 void enable_logger(bool enable);
 void step_logger_control(cISLogger& logger, is_comm_instance_t &comm);

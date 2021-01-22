@@ -374,7 +374,7 @@ static void waitPinPullup(void)
 }
 
 
-void refresh_CFG_LED(void)
+void refresh_led_cfg(void)
 {
     switch(g_flashCfg->cbPreset)
     {

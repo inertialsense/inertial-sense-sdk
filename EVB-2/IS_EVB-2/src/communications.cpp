@@ -19,10 +19,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "xbee.h"
 #include "wifi.h"
 #include "sd_card_logger.h"
-#include "communications.h"
 #include "CAN.h"
 #include "../hw-libs/communications/CAN_comm.h"
 #include "../src/protocol_nmea.h"
+#include "user_interface.h"
+#include "communications.h"
 
 typedef struct
 {
@@ -468,7 +469,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     {
         wifi_reinit();
     }
-    refresh_CFG_LED();
+	evbUiRefreshLedCfg();
     
 	// Enable flash write
 	g_nvr_manage_config.flash_write_needed = true;
