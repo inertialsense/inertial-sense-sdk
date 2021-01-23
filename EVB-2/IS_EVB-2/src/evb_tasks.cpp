@@ -118,7 +118,8 @@ int evbTaskMaint(rtos_task_t &task)
     
     //////////////////////////////////////////////////////////////////////////
     // Fast Maintenance - 10ms period
-
+	evbUiRefreshLedCfg();
+	evbUiRefreshLedLog();
 
     //////////////////////////////////////////////////////////////////////////
     // Slow Maintenance - 1000ms period 
@@ -202,6 +203,9 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
 	uint32_t timeout_value = wdt_get_timeout_value(1000000, BOARD_FREQ_SLCK_XTAL);	//Timeout in us, configured for 1 second.
 	wdt_init(WDT, WDT_MR_WDRSTEN | WDT_MR_WDDBGHLT, timeout_value, timeout_value);
 #endif
+
+    // Setup user interface buttons and leds
+    evbUiDefaults();
 }
 
 
