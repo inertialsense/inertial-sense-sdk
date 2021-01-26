@@ -19,13 +19,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static bool s_ignoreCfgButtonRelease=false;
 static bool s_ignoreLogButtonRelease=false;
 
+static FuncPtrVoidVoid s_funcPtrCfgButtonPressed = NULL;
+static FuncPtrVoidVoid s_funcPtrCfgButtonRelease = NULL;
+static FuncPtrVoidVoid s_funcPtrLogButtonPressed = NULL;
+static FuncPtrVoidVoid s_funcPtrLogButtonRelease = NULL;
+static FuncPtrVoidVoid s_funcPtrBothButtonsPressed = NULL;
+static FuncPtrVoidVoid s_funcPtrBothButtonsRelease = NULL;
+
+static FuncPtrVoidVoid s_funcPtrRefreshLedCfg = NULL;
+static FuncPtrVoidVoid s_funcPtrRefreshLedLog = NULL;
+
+bool logger_ready()
+{
+    return (g_status.evbStatus&EVB_STATUS_SD_CARD_READY) && !(g_status.evbStatus&EVB_STATUS_SD_ERR_CARD_MASK);
+}
+
 
 static void on_cfg_button_pressed()
 {
 	// Indicate button is pressed by turning off LED
 	LED_CFG_OFF();
 }
-
 
 static void on_cfg_button_release()
 {    
@@ -53,22 +67,14 @@ static void on_cfg_button_release()
     board_IO_config();
     g_nvr_manage_config.flash_write_needed = true;
 	g_nvr_manage_config.flash_write_enable = true;
-    refresh_CFG_LED();    
+	evbUiRefreshLedCfg();
 }
-
-
-bool logger_ready()
-{
-    return (g_status.evbStatus&EVB_STATUS_SD_CARD_READY) && !(g_status.evbStatus&EVB_STATUS_SD_ERR_CARD_MASK);
-}
-
 
 static void on_log_button_pressed()
 {
 	// Indicate button is pressed by turning off LED
 	LED_LOG_OFF();    
 }
-
 
 static void on_log_button_release()
 {
@@ -81,7 +87,6 @@ static void on_log_button_release()
     }
 }
 
-
 static void on_both_buttons_pressed()
 {   // Reset uINS
 	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_LOW);
@@ -89,11 +94,10 @@ static void on_both_buttons_pressed()
     s_ignoreLogButtonRelease = true;
 }
 
-
 static void on_both_buttons_release()
 {   // De-assert uINS reset
     ioport_set_pin_input_mode(INS_RESET_PIN_PIN, 0, 0);
-    refresh_CFG_LED();
+	evbUiRefreshLedCfg();
 }
 
 
@@ -116,13 +120,13 @@ void step_user_interface(uint32_t time_ms)
 		cfgButtonTimeMs = time_ms;
         if(cfgButtonDown)
         {      
-            on_cfg_button_pressed();    
+            if(s_funcPtrCfgButtonPressed){ s_funcPtrCfgButtonPressed(); }
         }
         else
         {
             if(!s_ignoreCfgButtonRelease)
             {
-                 on_cfg_button_release();
+                if(s_funcPtrCfgButtonRelease){ s_funcPtrCfgButtonRelease(); }
             }
             s_ignoreCfgButtonRelease = false;
         }
@@ -134,13 +138,13 @@ void step_user_interface(uint32_t time_ms)
 		logButtonTimeMs = time_ms;
         if(logButtonDown)
         {      
-            on_log_button_pressed();    
+            if(s_funcPtrLogButtonPressed){ s_funcPtrLogButtonPressed(); }
         }
         else
         {              
             if(!s_ignoreLogButtonRelease)
             {
-                on_log_button_release(); 
+                if(s_funcPtrLogButtonRelease){ s_funcPtrLogButtonRelease(); }
             }
             s_ignoreLogButtonRelease = false;
         }            
@@ -150,8 +154,14 @@ void step_user_interface(uint32_t time_ms)
     {   // Both buttons toggled
         bothButtonsDownLast = bothButtonsDown;
 		bothButtonTimeMs = time_ms;
-        if(bothButtonsDown){    on_both_buttons_pressed();  }
-        else{                   on_both_buttons_release();  }
+        if(bothButtonsDown)
+        {                
+            if(s_funcPtrBothButtonsPressed){ s_funcPtrBothButtonsPressed(); }  
+        }
+        else
+        {
+            if(s_funcPtrBothButtonsRelease){ s_funcPtrBothButtonsRelease(); }  
+        }
     }
     
     if( logger_ready() )
@@ -172,9 +182,49 @@ void step_user_interface(uint32_t time_ms)
         {   // Disable logger
             enable_logger(false);
         }
-    }
-    
+    }    
 }
 
 
+void evbUiDefaults()
+{
+    s_funcPtrCfgButtonPressed = on_cfg_button_pressed;
+    s_funcPtrCfgButtonRelease = on_cfg_button_release;
+    s_funcPtrLogButtonPressed = on_log_button_pressed;
+    s_funcPtrLogButtonRelease = on_log_button_release;
+    s_funcPtrBothButtonsPressed = on_both_buttons_pressed;
+    s_funcPtrBothButtonsRelease = on_both_buttons_release;
+
+    s_funcPtrRefreshLedCfg = refresh_led_cfg;
+    s_funcPtrRefreshLedLog = refresh_led_log;
+}
+
+void evbUiButtonCallbacks(
+    FuncPtrVoidVoid fpCfgButtonPressed, FuncPtrVoidVoid fpCfgButtonRelease, 
+    FuncPtrVoidVoid fpLogButtonPressed, FuncPtrVoidVoid fpLogButtonRelease, 
+    FuncPtrVoidVoid fpBothButtonsPressed, FuncPtrVoidVoid fpBothButtonsRelease )
+{
+    s_funcPtrCfgButtonPressed = fpCfgButtonPressed;
+    s_funcPtrCfgButtonRelease = fpCfgButtonRelease;
+    s_funcPtrLogButtonPressed = fpLogButtonPressed;
+    s_funcPtrLogButtonRelease = fpLogButtonRelease;
+    s_funcPtrBothButtonsPressed = fpBothButtonsPressed;
+    s_funcPtrBothButtonsRelease = fpBothButtonsRelease;
+}
+
+void evbUiLedCallbacks(FuncPtrVoidVoid fpLedCfg, FuncPtrVoidVoid fpLedLog )
+{
+    s_funcPtrRefreshLedCfg = fpLedCfg;
+    s_funcPtrRefreshLedLog = fpLedLog;
+}
+
+void evbUiRefreshLedCfg()
+{
+    if(s_funcPtrRefreshLedCfg){ s_funcPtrRefreshLedCfg(); }  
+}
+
+void evbUiRefreshLedLog()
+{
+    if(s_funcPtrRefreshLedLog){ s_funcPtrRefreshLedLog(); }  
+}
 

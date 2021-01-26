@@ -66,6 +66,8 @@ static void vTaskMaint(void *pvParameters)
 	{    
 		if(evbTaskMaint(task))
 		{
+	        nvr_slow_maintenance();
+
 			//////////////////////////////////////////////////////////////////////////
 			// Slow Maintenance - 1000ms period - Suggested USER CODE Section
 			// Update period:	1000ms		(Adjust by changing TASK_MAINT_SUB_TASK_PERIOD_MS)
@@ -98,6 +100,8 @@ static void vTaskMaint(void *pvParameters)
 int main(void)
 {
 	evbMainInit(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
+
+    evbUiDefaults();
 	
 	int result = evbMain();
 	

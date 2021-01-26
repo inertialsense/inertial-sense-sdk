@@ -34,7 +34,7 @@ is_comm_instance_t& evbTaskCommInit(void *pvParameters)
 #endif
 
     vTaskDelay(200);
-    refresh_CFG_LED();
+	evbUiRefreshLedCfg();
 
     return comm;
 }
@@ -100,7 +100,7 @@ void evbTaskLogger(rtos_task_t &task, is_comm_instance_t &comm)
     // Mount/unmount SD card
     sd_card_maintenance();
 
-    update_led_log();
+	evbUiRefreshLedLog();
 }
 
 
@@ -118,33 +118,33 @@ int evbTaskMaint(rtos_task_t &task)
     
     //////////////////////////////////////////////////////////////////////////
     // Fast Maintenance - 10ms period
-
+	evbUiRefreshLedCfg();
+	evbUiRefreshLedLog();
 
     //////////////////////////////////////////////////////////////////////////
     // Slow Maintenance - 1000ms period 
-    if ((m2sPeriodMs += TASK_MAINT_PERIOD_MS) < TASK_MAINT_SLOW_SEC_PERIOD_MS || g_loggerEnabled)
+    if ((m2sPeriodMs += TASK_MAINT_PERIOD_MS) > TASK_MAINT_SLOW_SEC_PERIOD_MS && !g_loggerEnabled)
     {
+        m2sPeriodMs = 0;
+        
+        // Sync local time from uINS
+        time_sync_from_uINS();
+
+        // Update RTOS stats
+        if (g_enRtosStats)
+        {
+            rtos_monitor(EVB_RTOS_NUM_TASKS);
+        }
+        
+        if (g_uInsBootloaderEnableTimeMs)
+        {	// uINS bootloader mode enabled
+            if ( (g_comm_time_ms-g_uInsBootloaderEnableTimeMs) > 180000 )
+            {	// Automatically disable uINS after 3 minutes 
+                g_uInsBootloaderEnableTimeMs = 0;
+            }			
+        }
+
         return 1;
-    }
-    m2sPeriodMs = 0;
-    
-    // Sync local time from uINS
-    time_sync_from_uINS();
-
-    nvr_slow_maintenance();
-
-    // Update RTOS stats
-    if (g_enRtosStats)
-    {
-        rtos_monitor(EVB_RTOS_NUM_TASKS);
-    }
-    
-    if (g_uInsBootloaderEnableTimeMs)
-    {	// uINS bootloader mode enabled
-        if ( (g_comm_time_ms-g_uInsBootloaderEnableTimeMs) > 180000 )
-        {	// Automatically disable uINS after 3 minutes 
-            g_uInsBootloaderEnableTimeMs = 0;
-        }			
     }
 
     return 0;
@@ -203,11 +203,14 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
 	uint32_t timeout_value = wdt_get_timeout_value(1000000, BOARD_FREQ_SLCK_XTAL);	//Timeout in us, configured for 1 second.
 	wdt_init(WDT, WDT_MR_WDRSTEN | WDT_MR_WDDBGHLT, timeout_value, timeout_value);
 #endif
+
+    // Setup user interface buttons and leds
+    evbUiDefaults();
 }
 
 
 int evbMain(void)
-{		
+{	
 	// Start the scheduler
 	printf("Starting FreeRTOS\n\r");
 	vTaskStartScheduler((TaskHandle_t*)&g_rtos.task[EVB_TASK_IDLE].handle, (TaskHandle_t*)&g_rtos.task[EVB_TASK_TIMER].handle);

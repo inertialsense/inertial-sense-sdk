@@ -418,7 +418,7 @@ extern "C" {
 #endif
 
 
-void refresh_CFG_LED(void);
+void refresh_led_cfg(void);
 void board_IO_config(void);
 
 

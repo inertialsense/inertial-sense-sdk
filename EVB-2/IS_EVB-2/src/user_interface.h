@@ -13,8 +13,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __USER_INTERFACE_H_
 #define __USER_INTERFACE_H_
 
+typedef void (*FuncPtrVoidVoid)(void);
 
 void step_user_interface(uint32_t time_ms);
+
+void evbUiDefaults();
+void evbUiButtonCallbacks(
+    FuncPtrVoidVoid fpCfgButtonPressed, FuncPtrVoidVoid fpCfgButtonRelease, 
+    FuncPtrVoidVoid fpLogButtonPressed, FuncPtrVoidVoid fpLogButtonRelease, 
+    FuncPtrVoidVoid fpBothButtonsPressed, FuncPtrVoidVoid fpBothButtonsRelease );
+void evbUiLedCallbacks(FuncPtrVoidVoid fpLedCfg, FuncPtrVoidVoid fpLedLog );
+
+void evbUiRefreshLedCfg();
+void evbUiRefreshLedLog();
 
 
 #endif // __USER_INTERFACE_H_
