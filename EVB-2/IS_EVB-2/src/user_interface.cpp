@@ -16,18 +16,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "user_interface.h"
 
 
-static bool s_ignoreCfgButtonRelease=false;
-static bool s_ignoreLogButtonRelease=false;
+static VoidFuncPtrVoid s_funcPtrCfgButtonPressed = NULL;
+static VoidFuncPtrVoid s_funcPtrCfgButtonRelease = NULL;
+static VoidFuncPtrVoid s_funcPtrLogButtonPressed = NULL;
+static VoidFuncPtrVoid s_funcPtrLogButtonRelease = NULL;
+static VoidFuncPtrVoid s_funcPtrBothButtonsPressed = NULL;
+static VoidFuncPtrVoid s_funcPtrBothButtonsRelease = NULL;
 
-static FuncPtrVoidVoid s_funcPtrCfgButtonPressed = NULL;
-static FuncPtrVoidVoid s_funcPtrCfgButtonRelease = NULL;
-static FuncPtrVoidVoid s_funcPtrLogButtonPressed = NULL;
-static FuncPtrVoidVoid s_funcPtrLogButtonRelease = NULL;
-static FuncPtrVoidVoid s_funcPtrBothButtonsPressed = NULL;
-static FuncPtrVoidVoid s_funcPtrBothButtonsRelease = NULL;
-
-static FuncPtrVoidVoid s_funcPtrRefreshLedCfg = NULL;
-static FuncPtrVoidVoid s_funcPtrRefreshLedLog = NULL;
+static VoidFuncPtrVoid s_funcPtrRefreshLedCfg = NULL;
+static VoidFuncPtrVoid s_funcPtrRefreshLedLog = NULL;
 
 bool logger_ready()
 {
@@ -90,8 +87,6 @@ static void on_log_button_release()
 static void on_both_buttons_pressed()
 {   // Reset uINS
 	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_LOW);
-    s_ignoreCfgButtonRelease = true;
-    s_ignoreLogButtonRelease = true;
 }
 
 static void on_both_buttons_release()
@@ -113,6 +108,8 @@ void step_user_interface(uint32_t time_ms)
 	static uint32_t cfgButtonTimeMs = 0;	// for button debouncing
 	static uint32_t logButtonTimeMs = 0;
 	static uint32_t bothButtonTimeMs = 0;
+    static bool ignoreEstopBtnRelease=false;
+    static bool ignorePauseBtnRelease=false;
 
     if (cfgButtonDownLast != cfgButtonDown && time_ms-cfgButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Button toggled        
@@ -124,11 +121,11 @@ void step_user_interface(uint32_t time_ms)
         }
         else
         {
-            if(!s_ignoreCfgButtonRelease)
+            if(!ignoreEstopBtnRelease)
             {
                 if(s_funcPtrCfgButtonRelease){ s_funcPtrCfgButtonRelease(); }
             }
-            s_ignoreCfgButtonRelease = false;
+            ignoreEstopBtnRelease = false;
         }
     }
 
@@ -142,11 +139,11 @@ void step_user_interface(uint32_t time_ms)
         }
         else
         {              
-            if(!s_ignoreLogButtonRelease)
+            if(!ignorePauseBtnRelease)
             {
                 if(s_funcPtrLogButtonRelease){ s_funcPtrLogButtonRelease(); }
             }
-            s_ignoreLogButtonRelease = false;
+            ignorePauseBtnRelease = false;
         }            
     }
     
@@ -156,7 +153,9 @@ void step_user_interface(uint32_t time_ms)
 		bothButtonTimeMs = time_ms;
         if(bothButtonsDown)
         {                
-            if(s_funcPtrBothButtonsPressed){ s_funcPtrBothButtonsPressed(); }  
+            if(s_funcPtrBothButtonsPressed){ s_funcPtrBothButtonsPressed(); } 
+            ignoreEstopBtnRelease = true;
+            ignorePauseBtnRelease = true;
         }
         else
         {
@@ -200,9 +199,9 @@ void evbUiDefaults()
 }
 
 void evbUiButtonCallbacks(
-    FuncPtrVoidVoid fpCfgButtonPressed, FuncPtrVoidVoid fpCfgButtonRelease, 
-    FuncPtrVoidVoid fpLogButtonPressed, FuncPtrVoidVoid fpLogButtonRelease, 
-    FuncPtrVoidVoid fpBothButtonsPressed, FuncPtrVoidVoid fpBothButtonsRelease )
+    VoidFuncPtrVoid fpCfgButtonPressed, VoidFuncPtrVoid fpCfgButtonRelease, 
+    VoidFuncPtrVoid fpLogButtonPressed, VoidFuncPtrVoid fpLogButtonRelease, 
+    VoidFuncPtrVoid fpBothButtonsPressed, VoidFuncPtrVoid fpBothButtonsRelease )
 {
     s_funcPtrCfgButtonPressed = fpCfgButtonPressed;
     s_funcPtrCfgButtonRelease = fpCfgButtonRelease;
@@ -212,7 +211,7 @@ void evbUiButtonCallbacks(
     s_funcPtrBothButtonsRelease = fpBothButtonsRelease;
 }
 
-void evbUiLedCallbacks(FuncPtrVoidVoid fpLedCfg, FuncPtrVoidVoid fpLedLog )
+void evbUiLedCallbacks(VoidFuncPtrVoid fpLedCfg, VoidFuncPtrVoid fpLedLog )
 {
     s_funcPtrRefreshLedCfg = fpLedCfg;
     s_funcPtrRefreshLedLog = fpLedLog;

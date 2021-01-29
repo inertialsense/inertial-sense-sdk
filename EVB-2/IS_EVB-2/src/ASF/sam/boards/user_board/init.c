@@ -51,30 +51,6 @@
 #include "mpu.h"
 #endif
 
-/**
- * \brief Set peripheral mode for IOPORT pins.
- * It will configure port mode and disable pin mode (but enable peripheral).
- * \param port IOPORT port to configure
- * \param masks IOPORT pin masks to configure
- * \param mode Mode masks to configure for the specified pin (\ref ioport_modes)
- */
-#define ioport_set_port_peripheral_mode(port, masks, mode) \
-	do {\
-		ioport_set_port_mode(port, masks, mode);\
-		ioport_disable_port(port, masks);\
-	} while (0)
-
-/**
- * \brief Set peripheral mode for one single IOPORT pin.
- * It will configure port mode and disable pin mode (but enable peripheral).
- * \param pin IOPORT pin to configure
- * \param mode Mode masks to configure for the specified pin (\ref ioport_modes)
- */
-#define ioport_set_pin_peripheral_mode(pin, mode) \
-	do {\
-		ioport_set_pin_mode(pin, mode);\
-		ioport_disable_pin(pin);\
-	} while (0)
 
 /**
  * \brief Set input mode for one single IOPORT pin.
@@ -87,10 +63,10 @@
 #undef ioport_set_pin_input_mode
 #define ioport_set_pin_input_mode(pin, mode, sense) \
 	do {\
- 		ioport_enable_pin(pin);\
-		ioport_set_pin_dir(pin, IOPORT_DIR_INPUT);\
-		ioport_set_pin_mode(pin, mode);\
-		ioport_set_pin_sense_mode(pin, sense);\
+ 		ioport_enable_pin((pin));\
+		ioport_set_pin_dir((pin), IOPORT_DIR_INPUT);\
+		ioport_set_pin_mode((pin), (mode));\
+		ioport_set_pin_sense_mode((pin), (sense));\
 	} while (0)
 
 
@@ -109,6 +85,8 @@
  */
 
 uint8_t g_hdw_detect;
+static VoidFuncPtrVoid s_pfnHandleBoardIoCfg = NULLPTR;
+
 
 /**
  * \brief Set up a memory region.
@@ -390,6 +368,11 @@ void refresh_led_cfg(void)
 }
 
 
+void init_set_board_IO_config_callback(VoidFuncPtrVoid fpIoCfg)
+{
+	s_pfnHandleBoardIoCfg = fpIoCfg;
+}
+
 void board_IO_config(void)
 {	
 	// uINS ser0
@@ -549,6 +532,11 @@ void board_IO_config(void)
 		CAN_init();
 	}
 #endif
+
+	if (s_pfnHandleBoardIoCfg)
+	{
+		s_pfnHandleBoardIoCfg();
+	}
 }
 
 

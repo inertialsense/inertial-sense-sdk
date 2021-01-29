@@ -33,6 +33,8 @@ extern "C" {
 #define SKI_BOX_STATUS_LED_PIN          GPIO_10_PIN
 #define UBLOX_LOG_ENABLE			    0
 
+typedef void (*VoidFuncPtrVoid)(void);
+
 typedef struct
 {
     uint32_t year, month, day, week, hour, minute, second;
@@ -71,6 +73,11 @@ typedef struct PACKED
 
 POP_PACK
 
+// Defined in init.c
+void init_set_board_IO_config_callback(VoidFuncPtrVoid fpIoCfg);
+void refresh_led_cfg(void);
+void board_IO_config(void);
+//
 
 #define STREAM_BUFFER_SIZE      4096
 
@@ -92,7 +99,6 @@ extern uint32_t                     g_comm_time_ms;
 extern bool                         g_loggerEnabled;
 extern uint32_t                     g_uInsBootloaderEnableTimeMs;
 extern bool                         g_enRtosStats;
-
 
 void globals_init(void);
 void com_bridge_apply_preset(evb_flash_cfg_t* cfg);
