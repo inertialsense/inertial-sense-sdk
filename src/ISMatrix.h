@@ -557,6 +557,16 @@ static __inline void normalize_Vec4d( Vector4d result, const Vector4d v )
 }
 
 /*
+* Check if 2 dimensional vectors are equal
+*/
+static __inline int is_equal_Vec2(const Vector2 v1, const Vector2 v2)
+{
+	return
+		(v1[0] == v2[0]) &&
+		(v1[1] == v2[1]);
+}
+
+/*
 * Check if 3 dimensional vectors are equal
 */
 static __inline int is_equal_Vec3(const Vector3 v1, const Vector3 v2)
