@@ -99,23 +99,23 @@ static void on_both_buttons_release()
 #define BUTTON_DEBOUNCE_TIME_MS 100
 void step_user_interface(uint32_t time_ms)
 {
-    bool cfgButtonDown = !ioport_get_pin_level(BUTTON_CFG_PIN);
-    bool logButtonDown = !ioport_get_pin_level(BUTTON_LOG_PIN);
-    bool bothButtonsDown = cfgButtonDown && logButtonDown;
-    static bool cfgButtonDownLast = cfgButtonDown;
-    static bool logButtonDownLast = logButtonDown;
-    static bool bothButtonsDownLast = bothButtonsDown;
-	static uint32_t cfgButtonTimeMs = 0;	// for button debouncing
-	static uint32_t logButtonTimeMs = 0;
-	static uint32_t bothButtonTimeMs = 0;
+    bool cfgBtnDown = !ioport_get_pin_level(BUTTON_CFG_PIN);
+    bool logBtnDown = !ioport_get_pin_level(BUTTON_LOG_PIN);
+    static bool bothBtnsDown = false;
+    static bool cfgBtnDownLast = cfgBtnDown;
+    static bool logBtnDownLast = logBtnDown;
+    static bool bothBtnsDownLast = bothBtnsDown;
+	static uint32_t cfgBtnTimeMs = 0;	// for button debouncing
+	static uint32_t logBtnTimeMs = 0;
+	static uint32_t bothBtnTimeMs = 0;
     static bool ignoreEstopBtnRelease=false;
     static bool ignorePauseBtnRelease=false;
 
-    if (cfgButtonDownLast != cfgButtonDown && time_ms-cfgButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
+    if (cfgBtnDownLast != cfgBtnDown && time_ms-cfgBtnTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Button toggled        
-        cfgButtonDownLast = cfgButtonDown;
-		cfgButtonTimeMs = time_ms;
-        if(cfgButtonDown)
+        cfgBtnDownLast = cfgBtnDown;
+		cfgBtnTimeMs = time_ms;
+        if(cfgBtnDown)
         {      
             if(s_funcPtrCfgButtonPressed){ s_funcPtrCfgButtonPressed(); }
         }
@@ -129,11 +129,11 @@ void step_user_interface(uint32_t time_ms)
         }
     }
 
-    if(logButtonDownLast != logButtonDown && time_ms-logButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
+    if(logBtnDownLast != logBtnDown && time_ms-logBtnTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Button toggled
-        logButtonDownLast = logButtonDown;
-		logButtonTimeMs = time_ms;
-        if(logButtonDown)
+        logBtnDownLast = logBtnDown;
+		logBtnTimeMs = time_ms;
+        if(logBtnDown)
         {      
             if(s_funcPtrLogButtonPressed){ s_funcPtrLogButtonPressed(); }
         }
@@ -147,11 +147,27 @@ void step_user_interface(uint32_t time_ms)
         }            
     }
     
-    if(bothButtonsDownLast != bothButtonsDown && time_ms-bothButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
+	// Only toggle down on both down and up on both up.
+	if (bothBtnsDown)
+	{
+		if(!cfgBtnDown && !logBtnDown)
+		{
+			bothBtnsDown = false;
+		}
+	}
+	else
+	{
+		if(cfgBtnDown && logBtnDown)
+		{
+			bothBtnsDown = true;
+		}
+	}
+
+    if(bothBtnsDownLast != bothBtnsDown && time_ms-bothBtnTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Both buttons toggled
-        bothButtonsDownLast = bothButtonsDown;
-		bothButtonTimeMs = time_ms;
-        if(bothButtonsDown)
+        bothBtnsDownLast = bothBtnsDown;
+		bothBtnTimeMs = time_ms;
+        if(bothBtnsDown)
         {                
             if(s_funcPtrBothButtonsPressed){ s_funcPtrBothButtonsPressed(); } 
             ignoreEstopBtnRelease = true;

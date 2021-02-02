@@ -685,17 +685,13 @@ void board_init(void)
 	ioport_set_pin_output_mode(SP330_NSHDN_PIN, IOPORT_PIN_LEVEL_HIGH);         // Enable device
 #endif
 
-#ifdef CONF_BOARD_SERIAL_GPIO_H8       // GPIO TTL
 	ioport_set_pin_output_mode(GPIO_UART_INV_PIN, IOPORT_PIN_LEVEL_LOW);    // Non-inverting	
+#ifdef CONF_BOARD_SERIAL_GPIO_H8       // GPIO TTL
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_RXD_PIN, GPIO_H8_UART_RXD_FLAGS);
 	MATRIX->CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_TXD_PIN, GPIO_H8_UART_TXD_FLAGS);
     serInit(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate, NULL, NULL);
-	
-// 	char buf[3] = "123";
-// 	serWrite(EVB2_PORT_GPIO_H8, buf, 3, NULL);
 #endif
-    
 
     //////////////////////////////////////////////////////////////////////////
     // SPI Interface

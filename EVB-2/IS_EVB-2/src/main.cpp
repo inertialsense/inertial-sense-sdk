@@ -99,9 +99,9 @@ static void vTaskMaint(void *pvParameters)
 
 int main(void)
 {
-	evbMainInit(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
-
-    evbUiDefaults();
+	evbMainInit();
+	evbMainInitHdw();
+	evbMainInitRTOS(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
 	
 	int result = evbMain();
 	
