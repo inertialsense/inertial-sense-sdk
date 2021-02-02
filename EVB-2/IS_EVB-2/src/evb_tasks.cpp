@@ -151,10 +151,7 @@ int evbTaskMaint(rtos_task_t &task)
 }
 
 
-void evbMainInit(pdTASK_CODE pxTaskComm,
-				pdTASK_CODE pxTaskLogg,
-				pdTASK_CODE pxTaskWifi,
-				pdTASK_CODE pxTaskMant )
+void evbMainInit(void)
 {
 	//XDMAC channel interrupt enables do not get cleared by a software reset. Clear them before they cause issues.
 	XDMAC->XDMAC_GID = 0xFFFFFFFF;
@@ -178,15 +175,27 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
     {   
         g_flashCfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
     }
-    
-	// Init hardware I/O, SD card logger, and communications
+
     board_IO_config();
-	init_control();	
+
+    // Setup user interface buttons and leds
+    evbUiDefaults();
+}
+
+void evbMainInitHdw(void)
+{
+	// Init hardware I/O, SD card logger, and communications
     sd_card_logger_init();
     communications_init();
-	adc_init();
+	// adc_init();
 	i2cInit();
-	
+}
+
+void evbMainInitRTOS(pdTASK_CODE pxTaskComm,
+				    pdTASK_CODE pxTaskLogg,
+				    pdTASK_CODE pxTaskWifi,
+				    pdTASK_CODE pxTaskMant )
+{
 	// Create RTOS tasks
 	createTask(EVB_TASK_COMMUNICATIONS, pxTaskComm,  "COMM",   TASK_COMM_STACK_SIZE,  NULL, TASK_COMM_PRIORITY,  TASK_COMM_PERIOD_MS);
 	createTask(EVB_TASK_LOGGER,         pxTaskLogg,"LOGGER", TASK_LOGGER_STACK_SIZE, NULL, TASK_LOGGER_PRIORITY, TASK_LOGGER_PERIOD_MS);
@@ -203,9 +212,6 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
 	uint32_t timeout_value = wdt_get_timeout_value(1000000, BOARD_FREQ_SLCK_XTAL);	//Timeout in us, configured for 1 second.
 	wdt_init(WDT, WDT_MR_WDRSTEN | WDT_MR_WDDBGHLT, timeout_value, timeout_value);
 #endif
-
-    // Setup user interface buttons and leds
-    evbUiDefaults();
 }
 
 

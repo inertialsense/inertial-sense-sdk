@@ -46,9 +46,11 @@ void evbTaskLogger(rtos_task_t &task, is_comm_instance_t &comm);
 void evbTaskMaintInit(void *pvParameters);
 int evbTaskMaint(rtos_task_t &task);
 
-void evbMainInit(pdTASK_CODE pxTaskComm,
-				pdTASK_CODE pxTaskLogg,
-				pdTASK_CODE pxTaskWifi,
-				pdTASK_CODE pxTaskMant);
+void evbMainInit(void);
+void evbMainInitHdw(void);
+void evbMainInitRTOS(pdTASK_CODE pxTaskComm,
+				    pdTASK_CODE pxTaskLogg,
+				    pdTASK_CODE pxTaskWifi,
+				    pdTASK_CODE pxTaskMant );
 
 int evbMain(void);
