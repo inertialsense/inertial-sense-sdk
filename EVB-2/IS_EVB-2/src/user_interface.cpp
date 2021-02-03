@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include "globals.h"
 #include "sd_card_logger.h"
+#include "communications.h"
 #include "user_interface.h"
 
 
@@ -59,7 +60,7 @@ static void on_cfg_button_release()
     {
         g_flashCfg->cbPreset = 1;
     }
-        
+
     com_bridge_apply_preset(g_flashCfg);
     board_IO_config();
     g_nvr_manage_config.flash_write_needed = true;
@@ -77,10 +78,11 @@ static void on_log_button_release()
 {
     if( logger_ready() )
     {
+        uINS_stream_stop_all();         // 
+        uINS_stream_enable_PPD();       // Consider commenting this out and using the uINS persistent message feature instead
+        
         // Toggle logger enable
         enable_logger(!g_loggerEnabled);
-//         if(g_loggerEnabled){    g_enableLogger = -1;    }
-//         else{                   g_enableLogger = 1;     }
     }
 }
 

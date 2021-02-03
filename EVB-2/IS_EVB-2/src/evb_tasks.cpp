@@ -17,9 +17,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 is_comm_instance_t& evbTaskCommInit(void *pvParameters)
 {	
     UNUSED(pvParameters);
-    static is_comm_instance_t   comm;
-    static uint8_t              comm_buffer[PKT_BUF_SIZE];
-    is_comm_init(&comm, comm_buffer, PKT_BUF_SIZE);
+    static uint8_t comm_buffer[PKT_BUF_SIZE];
+    is_comm_init(&g_commTx, comm_buffer, PKT_BUF_SIZE);
 
 #ifdef CONF_BOARD_CAN_TEST
 	//if(/*g_can_test == CAN_TEST_MASTER - or something like that*/ 1)
@@ -36,7 +35,7 @@ is_comm_instance_t& evbTaskCommInit(void *pvParameters)
     vTaskDelay(200);
 	evbUiRefreshLedCfg();
 
-    return comm;
+    return g_commTx;
 }
 
 
@@ -71,15 +70,15 @@ is_comm_instance_t& evbTaskLoggerInit(void *pvParameters)
     static uint8_t              comm_buffer[PKT_BUF_SIZE];
     is_comm_init(&comm, comm_buffer, PKT_BUF_SIZE);
 
-    uINS_stream_stop_all(comm);
+    // uINS_stream_stop_all(comm);  // this interferes with the uINS presistent messages
 
     vTaskDelay(200);
     LED_LOG_OFF();
     vTaskDelay(800);
 
 #if STREAM_INS_FOR_TIME_SYNC  // Stream INS message on startup.  Necessary to update EVB RTC for correct data log date and time.
-    //uINS0_stream_stop_all(comm);
-    //uINS0_stream_enable_std(comm);
+    //uINS_stream_stop_all(comm);
+    //uINS_stream_enable_std(comm);
 #endif
 
     return comm;
