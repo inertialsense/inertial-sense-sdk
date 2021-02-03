@@ -187,7 +187,7 @@ void evbMainInitHdw(void)
 	// Init hardware I/O, SD card logger, and communications
     sd_card_logger_init();
     communications_init();
-	// adc_init();
+	adc_init();
 	i2cInit();
 }
 
