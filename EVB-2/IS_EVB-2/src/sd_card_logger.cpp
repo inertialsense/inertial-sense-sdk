@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "globals.h"
 #include "ISLogFileFatFs.h"
 #include "communications.h"
+#include "user_interface.h"
 #include "sd_mmc_mem.h"
 
 #include "sd_card_logger.h"
@@ -35,7 +36,7 @@ static cISLogFileBase       *s_ubloxLog = NULLPTR;
 #endif
 
 
-void update_led_log(void)
+void refresh_led_log(void)
 {
     if(s_sd_card_ready)
     {   // SD ready
@@ -82,10 +83,10 @@ static void start_logger(cISLogger& logger, is_comm_instance_t &comm)
         
     g_loggerEnabled = true;
     g_status.evbStatus |= EVB_STATUS_SD_LOG_ENABLED;
-    update_led_log();
+	evbUiRefreshLedLog();
 
-//     uINS0_stream_stop_all(comm);
-    uINS_stream_enable_PPD(comm);
+//     uINS_stream_stop_all();
+    uINS_stream_enable_PPD();
 
 //     logger.InitSave(LOGTYPE_DAT, cISLogger::g_emptyString, 1, 0.5f, 1024 * 1024 * 5, 131072);
     logger.InitSave(cISLogger::LOGTYPE_DAT, "IS_logs", 1, 0.5f, 1024 * 1024 * 5, 16384);
@@ -99,10 +100,10 @@ static void stop_logger(cISLogger& logger, is_comm_instance_t &comm)
 {
     g_loggerEnabled = false;
     g_status.evbStatus &= ~EVB_STATUS_SD_LOG_ENABLED;
-    update_led_log();
+	evbUiRefreshLedLog();
 
-//     uINS0_stream_stop_all(comm);
-//     uINS0_stream_enable_std(comm);
+//     uINS_stream_stop_all(comm);
+//     uINS_stream_enable_std(comm);
 
     logger.EnableLogging(false);
     logger.CloseAllFiles();

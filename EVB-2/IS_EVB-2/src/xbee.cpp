@@ -48,7 +48,7 @@ enum xbee_frame_id
 #define  XBEE_NETWORK_ID			"ID"
 #define  XBEE_BCAST_MULTITX 		"MT"
 #define  XBEE_UCAST_RETRIES 		"RR"
-#define  XBEE_TX_OPTIONS			"TO"
+#define  XBEE_TRANSMIT_OPTIONS		"TO"
 #define  XBEE_TX_POWER_LEVEL		"PL"
 #define  XBEE_BAUD_RATE 			"BD"
 #define  XBEE_PACKETIZATION_TO 		"RO"
@@ -66,7 +66,7 @@ struct xbee_diff_commands
     uint16_t    network_id          = 45;
     uint8_t     bcast_multi_tx      = 0;
     uint8_t     ucast_retries       = 0;
-    uint8_t     tx_options          = 0x40;     // Point to point/multipoint
+    uint8_t     transmit_options    = 0x40;     // Point to point/multipoint
     uint8_t     tx_power_level      = 2;        // 2 = 30dBm (full power)
     uint8_t     baud_rate           = 7;        // 7 = 115,200
     uint8_t     packetization_to    = 0;        
@@ -125,7 +125,7 @@ static bool send_next_at_command()
     case 0:     send_at_command( XBEE_RESTORE_DEFAULTS );  break;
     case 1:     send_at_command( XBEE_PREAMBLE_ID + to_string(g_flashCfg->radioPID) );  break;
     case 2:     send_at_command( XBEE_NETWORK_ID + to_string(g_flashCfg->radioNID) );  break;
-    case 3:     send_at_command( XBEE_TX_OPTIONS + string("0x40") );  break;
+    case 3:     send_at_command( XBEE_TRANSMIT_OPTIONS + string("0x40") );  break;
     case 4:     send_at_command( XBEE_TX_POWER_LEVEL + to_string(g_flashCfg->radioPowerLevel) );  break;
 	case 5:		send_at_command( XBEE_BCAST_MULTITX + string("0") );   break;                // sets multi-transmit to off
 	case 6:		send_at_command( XBEE_UCAST_RETRIES + string("0") );   break;                // sets retry to off

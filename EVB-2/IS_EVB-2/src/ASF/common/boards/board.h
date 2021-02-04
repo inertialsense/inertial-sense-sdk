@@ -418,10 +418,6 @@ extern "C" {
 #endif
 
 
-void refresh_CFG_LED(void);
-void board_IO_config(void);
-
-
 #if (defined(__GNUC__) && defined(__AVR32__)) || (defined(__ICCAVR32__) || defined(__AAVR32__))
 #ifdef __AVR32_ABI_COMPILER__ // Automatically defined when compiling for AVR32, not when assembling.
 

@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: Parameters
 ::set sdkDir=docs
-::set inputfilename=release-notes-template.txt
+::set inputfilename=release-notes.txt
 
 :: Read Release version, date, and time
 ::set /p releaseversion=<version\releaseVersion.txt
