@@ -85,8 +85,8 @@ static void start_logger(cISLogger& logger, is_comm_instance_t &comm)
     g_status.evbStatus |= EVB_STATUS_SD_LOG_ENABLED;
 	evbUiRefreshLedLog();
 
-//     uINS0_stream_stop_all(comm);
-    uINS_stream_enable_PPD(comm);
+//     uINS_stream_stop_all();
+    uINS_stream_enable_PPD();
 
 //     logger.InitSave(LOGTYPE_DAT, cISLogger::g_emptyString, 1, 0.5f, 1024 * 1024 * 5, 131072);
     logger.InitSave(cISLogger::LOGTYPE_DAT, "IS_logs", 1, 0.5f, 1024 * 1024 * 5, 16384);
@@ -102,8 +102,8 @@ static void stop_logger(cISLogger& logger, is_comm_instance_t &comm)
     g_status.evbStatus &= ~EVB_STATUS_SD_LOG_ENABLED;
 	evbUiRefreshLedLog();
 
-//     uINS0_stream_stop_all(comm);
-//     uINS0_stream_enable_std(comm);
+//     uINS_stream_stop_all(comm);
+//     uINS_stream_enable_std(comm);
 
     logger.EnableLogging(false);
     logger.CloseAllFiles();
