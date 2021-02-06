@@ -1209,7 +1209,7 @@ typedef struct PACKED
 	f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
 } sys_sensors_adc_t;
 
-#define NUM_COM_PORTS       3	// Number of communication ports.  (Ser0, Ser1, and USB).
+#define NUM_COM_PORTS       3	// Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
 #ifndef NUM_SERIAL_PORTS
 #define NUM_SERIAL_PORTS	5
 #endif
@@ -1226,7 +1226,8 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_CURRENT        0x00000000
 #define RMC_OPTIONS_PORT_SER0           0x00000001
 #define RMC_OPTIONS_PORT_SER1           0x00000002	// also SPI
-#define RMC_OPTIONS_PORT_USB            0x00000004
+#define RMC_OPTIONS_PORT_SER2           0x00000004
+#define RMC_OPTIONS_PORT_USB            0x00000008
 #define RMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
 #define RMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
 
@@ -1569,56 +1570,70 @@ enum eRTKConfigBits
 
 	/** Enable RTK base and output ublox data from GPS 1 on serial port 1 */
 	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1			= (int)0x00000020,
-	
+
+	/** Enable RTK base and output ublox data from GPS 1 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2			= (int)0x00000040,
+
+	/** Enable RTK base and output ublox data from GPS 1 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB				= (int)0x00000080,
+
 	/** Enable RTK base and output RTCM3 data from GPS 1 on serial port 0 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0			= (int)0x00000040,
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0			= (int)0x00000100,
 	
 	/** Enable RTK base and output RTCM3 data from GPS 1 on serial port 1 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1			= (int)0x00000080,
-	
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1			= (int)0x00000200,
+
+	/** Enable RTK base and output RTCM3 data from GPS 1 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2			= (int)0x00000400,
+
+	/** Enable RTK base and output RTCM3 data from GPS 1 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB				= (int)0x00000800,
+
 	/** Enable RTK base and output ublox data from GPS 2 on serial port 0 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0			= (int)0x00000100,
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0			= (int)0x00001000,
 
 	/** Enable RTK base and output ublox data from GPS 2 on serial port 1 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1			= (int)0x00000200,
-	
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1			= (int)0x00002000,
+
+	/** Enable RTK base and output ublox data from GPS 2 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2			= (int)0x00004000,
+
+	/** Enable RTK base and output ublox data from GPS 2 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB				= (int)0x00008000,
+
 	/** Enable RTK base and output RTCM3 data from GPS 2 on serial port 0 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0			= (int)0x00000400,
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0			= (int)0x00010000,
 	
 	/** Enable RTK base and output RTCM3 data from GPS 2 on serial port 1 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1			= (int)0x00000800,	
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1			= (int)0x00020000,
 
-	/** Enable RTK base and output ublox data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB				= (int)0x00001000,
-	
-	/** Enable RTK base and output RTCM3 data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB				= (int)0x00002000,
+	/** Enable RTK base and output RTCM3 data from GPS 2 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2			= (int)0x00040000,
 
-	/** Enable RTK base and output ublox data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB				= (int)0x00004000,
-	
-	/** Enable RTK base and output RTCM3 data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB				= (int)0x00008000,
-	
+	/** Enable RTK base and output RTCM3 data from GPS 2 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB				= (int)0x00080000,
+
 	/** Enable base mode moving position. (For future use. Not implemented. This bit should always be 0 for now.) TODO: Implement moving base. */
-	RTK_CFG_BITS_BASE_POS_MOVING						= (int)0x00010000,
+	RTK_CFG_BITS_BASE_POS_MOVING						= (int)0x00100000,
 	
 	/** Reserved for future use */
-	RTK_CFG_BITS_RESERVED1								= (int)0x00020000,	
+	RTK_CFG_BITS_RESERVED1								= (int)0x00200000,	
 	
 	/** When using RTK, specifies whether the base station is identical hardware to this rover. If so, there are optimizations enabled to get fix faster. */
-	RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER			= (int)0x00040000,
+	RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER			= (int)0x00400000,
 
 	/** Forward all messages between the selected GPS and serial port.  Disable for RTK base use (to forward only GPS raw messages and use the surveyed location refLLA instead of current GPS position).  */
-	RTK_CFG_BITS_GPS_PORT_PASS_THROUGH					= (int)0x00080000,
+	RTK_CFG_BITS_GPS_PORT_PASS_THROUGH					= (int)0x00800000,
 
 	/** All base station bits */
 	RTK_CFG_BITS_BASE_MODE = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
-		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB ),
 
 	/** Base station bits enabled on Ser0 */
@@ -1630,29 +1645,38 @@ enum eRTKConfigBits
 	RTK_CFG_BITS_RTK_BASE_SER1 = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 ),
-									
+
+	/** Base station bits enabled on Ser2 */
+	RTK_CFG_BITS_RTK_BASE_SER2 = (
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 ),
+
     /** Base station bits for GPS1 Ublox */
     RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS1_UBLOX = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB ),
 
     /** Base station bits for GPS2 Ublox */
     RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS2_UBLOX = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB ),
 
     /** Base station bits for GPS1 RTCM */
 	RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS1_RTCM = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 | 
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 | 
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB ),
 
     /** Base station bits for GPS2 RTCM */
     RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS2_RTCM = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
 
 	/** Rover on-board RTK engine used */
@@ -1891,7 +1915,7 @@ typedef struct PACKED
     uint8_t					insDynModel;
 
 	/** Reserved */
-	uint8_t					reserved;
+	uint8_t					reserved2;
 
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t				gnssSatSigConst;
@@ -1952,6 +1976,9 @@ typedef struct PACKED
 
 	/** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
 	float                   gpsMinimumElevation;
+
+    /** Serial port 2 baud rate in bits per second */
+    // uint32_t				ser2BaudRate;
 
 } nvm_flash_cfg_t;
 
