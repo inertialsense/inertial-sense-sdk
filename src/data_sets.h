@@ -1152,6 +1152,50 @@ typedef struct PACKED
 	uint32_t				options;
 
 	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
+	uint16_t				pimu;
+
+	/** Broadcast period (ms) - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
+	uint16_t				ppimu;
+	
+	/** Broadcast period (ms) - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
+	uint16_t				pins1;
+
+	/** Broadcast period (ms) - ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
+	uint16_t				pins2;
+	
+	/** Broadcast period (ms) - ASCII GPS position data. 0 to disable. */
+	uint16_t				pgpsp;
+
+	/** Broadcast period (ms) - Reserved.  Leave zero. */
+	uint16_t				reserved;
+
+	/** Broadcast period (ms) - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
+	uint16_t				gpgga;
+
+	/** Broadcast period (ms) - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
+	uint16_t				gpgll;
+
+	/** Broadcast period (ms) - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
+	uint16_t				gpgsa;
+
+	/** Broadcast period (ms) - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
+	uint16_t				gprmc;
+	
+	/** Broadcast period (ms) - ASCII NMEA Data and Time. 0 to disable. */
+	uint16_t				gpzda;
+
+	/** Broadcast period (ms) - ASCII NMEA Inertial Attitude Data. 0 to disable. */
+	uint16_t				pashr;
+	
+} ascii_msgs_t;
+
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+typedef struct PACKED
+{
+	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
+	uint32_t				options;
+
+	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
 	uint32_t				pimu;
 
 	/** Broadcast period (ms) - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
@@ -1187,7 +1231,7 @@ typedef struct PACKED
 	/** Broadcast period (ms) - ASCII NMEA Inertial Attitude Data. 0 to disable. */
 	uint32_t				pashr;
 	
-} ascii_msgs_t;
+} ascii_msgs_u32_t;
 
 /* (DID_SENSORS_CAL1, DID_SENSORS_CAL2) */
 typedef struct PACKED
@@ -1915,7 +1959,7 @@ typedef struct PACKED
     uint8_t					insDynModel;
 
 	/** Reserved */
-	uint8_t					reserved2;
+	uint8_t					reserved;
 
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t				gnssSatSigConst;
@@ -1978,7 +2022,7 @@ typedef struct PACKED
 	float                   gpsMinimumElevation;
 
     /** Serial port 2 baud rate in bits per second */
-    // uint32_t				ser2BaudRate;
+    uint32_t				ser2BaudRate;
 
 } nvm_flash_cfg_t;
 
