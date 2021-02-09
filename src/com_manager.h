@@ -137,8 +137,8 @@ typedef void(*pfnComManagerPostAck)(CMHANDLE cmHandle, int pHandle, p_ack_t* ack
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL
 typedef void(*pfnComManagerDisableBroadcasts)(CMHANDLE cmHandle, int pHandle);
 
-// called right before data is sent
-typedef void(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle);
+// Called right before data is to be sent.  Data is not sent if this callback returns 0.
+typedef int(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle);
 
 // ASCII message handler function, return 1 if message handled
 // typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);

@@ -433,11 +433,15 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 
 				// Prep data if callback exists
 				unsigned int id = bcPtr->dataHdr.id;
+				int sendData = 1;
 				if (id<DID_COUNT && cmInstance->regData[id].preTxFnc)
 				{
-					cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
+					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
 				}
-				sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
+				if (sendData)
+				{
+					sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
+				}
 			}
 		}
 	}
