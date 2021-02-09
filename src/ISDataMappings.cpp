@@ -723,6 +723,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "wheelConfig.distance", wheelConfig.distance, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "wheelConfig.diameter", wheelConfig.diameter, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "ser2BaudRate", ser2BaudRate, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }

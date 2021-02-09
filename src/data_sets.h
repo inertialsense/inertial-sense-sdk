@@ -1828,6 +1828,8 @@ enum eIoConfig
 	IO_CONFIG_GPS_SOURCE_SER0					= (int)3,
 	/** GPS source - Serial 1 */
 	IO_CONFIG_GPS_SOURCE_SER1					= (int)4,
+	/** GPS source - Serial 2 */
+	IO_CONFIG_GPS_SOURCE_SER2					= (int)5,
 
 	/** GPS type MASK */
 	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000003,
