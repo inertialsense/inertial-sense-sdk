@@ -104,7 +104,7 @@ typedef struct
 //Buffers for serial ports
 #if MAX_NUMBER_SERIAL_PORTS >= 1
 	COMPILER_ALIGNED(32) static uint8_t g_serTxDmaBuf_port0[ARGN(2, PORT0_CONFIG)];
-	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port0[ARGN(2, PORT0_CONFIG)];
+	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port0[ARGN(4, PORT0_CONFIG)];
 #endif
 
 #if MAX_NUMBER_SERIAL_PORTS >= 2
