@@ -1253,7 +1253,7 @@ typedef struct PACKED
 	f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
 } sys_sensors_adc_t;
 
-#define NUM_COM_PORTS       3	// Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
+#define NUM_COM_PORTS       4	// Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
 #ifndef NUM_SERIAL_PORTS
 #define NUM_SERIAL_PORTS	6
 #endif
