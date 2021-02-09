@@ -97,8 +97,9 @@ void disableBroadcasts(CMHANDLE cmHandle, int pHandle)
 {
 }
 
-void prepDevInfo(CMHANDLE cmHandle, int pHandle)
+int prepDevInfo(CMHANDLE cmHandle, int pHandle)
 {
+	return 1;
 }
 
 void writeNvrUserpageFlashCfg(CMHANDLE cmHandle, int pHandle, p_data_t* data)
