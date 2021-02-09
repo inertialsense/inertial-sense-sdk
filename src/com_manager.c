@@ -981,10 +981,12 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	msg->pkt.txData.ptr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
 
 	// Prep data if callback exists
+	int sendData = 1;
 	if (cmInstance->regData[req->id].preTxFnc)
 	{
-		cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle);
+		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle);
 	}
+// 	sendData
 	
 	// Constrain request broadcast period if necessary
 	if (req->bc_period_multiple != 0)
@@ -999,7 +1001,10 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		// Send data immediately if possible
 		if (cmInstance->txFreeCallback == 0 || msg->pkt.txData.size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
 		{
-			sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			if (sendData)
+			{
+				sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			}
 		}
 
 		// Enable broadcast message
@@ -1011,7 +1016,10 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		// Send data immediately if possible
 		if (cmInstance->txFreeCallback == 0 || msg->pkt.txData.size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
 		{
-			sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			if (sendData)
+			{
+				sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			}
 			disableBroadcastMsg(cmInstance, msg);
 		}
 		else
