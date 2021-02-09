@@ -1520,9 +1520,8 @@ typedef struct PACKED
 /** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
 enum eSysConfigBits
 {
-	/*! Disable automatic baudrate detection on startup on serial port 0 and 1 */
-	SYS_CFG_BITS_DISABLE_AUTOBAUD_SER0                  = (int)0x00000001,
-	SYS_CFG_BITS_DISABLE_AUTOBAUD_SER1                  = (int)0x00000002,
+	UNUSED1                                             = (int)0x00000001,
+	UNUSED2                                             = (int)0x00000002,
 	/*! Enable automatic mag recalibration */
 	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
 	/*! Disable mag declination estimation */
