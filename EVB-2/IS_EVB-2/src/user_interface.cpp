@@ -78,8 +78,11 @@ static void on_log_button_release()
 {
     if( logger_ready() )
     {
-        uINS_stream_stop_all();         // 
-        uINS_stream_enable_PPD();       // Consider commenting this out and using the uINS persistent message feature instead
+        if (g_flashCfg->bits & EVB_CFG_BITS_STREAM_PPD_ON_LOG_BUTTON)
+        {
+            uINS_stream_stop_all();
+            uINS_stream_enable_PPD();
+        }
         
         // Toggle logger enable
         enable_logger(!g_loggerEnabled);

@@ -70,8 +70,6 @@ is_comm_instance_t& evbTaskLoggerInit(void *pvParameters)
     static uint8_t              comm_buffer[PKT_BUF_SIZE];
     is_comm_init(&comm, comm_buffer, PKT_BUF_SIZE);
 
-    // uINS_stream_stop_all(comm);  // this interferes with the uINS presistent messages
-
     vTaskDelay(200);
     LED_LOG_OFF();
     vTaskDelay(800);
