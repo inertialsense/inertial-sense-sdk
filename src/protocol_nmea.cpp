@@ -358,7 +358,7 @@ static int asciiSnprintfGPSDateOfLastFix(char* a, size_t aSize, gps_pos_t &pos)
 	int32_t year, month, day, hours, minutes, seconds, milliseconds;
 	julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
 	
-	return SNPRINTF(a, aSize, ",%02u%02u%02u", (unsigned int)day, (unsigned int)month, (unsigned int)year);
+	return SNPRINTF(a, aSize, ",%02u%02u%02u", (unsigned int)day, (unsigned int)month, (unsigned int)(year-2000));
 }
 
 static int asciiSnprintfGPSDateOfLastFixCSV(char* a, size_t aSize, gps_pos_t &pos)	//Comma Separated Values
@@ -367,7 +367,7 @@ static int asciiSnprintfGPSDateOfLastFixCSV(char* a, size_t aSize, gps_pos_t &po
 	int32_t year, month, day, hours, minutes, seconds, milliseconds;
 	julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
 	
-	return SNPRINTF(a, aSize, ",%02u,%02u,%02u", (unsigned int)day, (unsigned int)month, (unsigned int)year);
+	return SNPRINTF(a, aSize, ",%02u,%02u,%04u", (unsigned int)day, (unsigned int)month, (unsigned int)year);
 }
 
 int gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
