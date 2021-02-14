@@ -1553,8 +1553,6 @@ enum eSysConfigBits
 	/** Prevent built-in test (BIT) from running automatically on startup */
 	SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
 
-	/** Enable Nav update strobe output pulse on GPIO 9 (uINS pin 10) indicating preintegrated IMU and nav updates */
-	SYS_CFG_BITS_ENABLE_NAV_STROBE_OUT_GPIO_9			= (int)0x00200000,	
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
 };
@@ -1780,14 +1778,16 @@ enum eIoConfig
 {
 	/** Input strobe trigger on rising edge (0 = falling edge) */
 	IO_CONFIG_INPUT_STROBE_TRIGGER_HIGH			= (int)0x00000001,
-	/** Input strobe - enable on pin 2 */
-	IO_CONFIG_INPUT_STROBE_PIN_2_ENABLE			= (int)0x00000002,
-	/** Input strobe - enable on pin 5 */
-	IO_CONFIG_INPUT_STROBE_PIN_5_ENABLE			= (int)0x00000004,
-	/** Input strobe - enable on pin 8 */
-	IO_CONFIG_INPUT_STROBE_PIN_8_ENABLE			= (int)0x00000008,
-	/** Input strobe - enable on pin 9 */
-	IO_CONFIG_INPUT_STROBE_PIN_9_ENABLE			= (int)0x00000010,
+	/** Input strobe - enable on G2 */
+	IO_CONFIG_INPUT_STROBE_G2_ENABLE			= (int)0x00000002,
+	/** Input strobe - enable on G5 */
+	IO_CONFIG_INPUT_STROBE_G5_ENABLE			= (int)0x00000004,
+	/** Input strobe - enable on G8 */
+	IO_CONFIG_INPUT_STROBE_G8_ENABLE			= (int)0x00000008,
+	/** Input strobe - enable on G9 */
+	IO_CONFIG_INPUT_STROBE_G9_ENABLE			= (int)0x00000010,
+	/** Output strobe - enable Nav update strobe output pulse on G9 (uINS pin 10) indicating preintegrated IMU and nav updates */
+	IO_CONFIG_OUTPUT_STROBE_NAV_G9_ENABLE		= (int)0x10000000,	
 
 	/** External GPS TIMEPULSE source */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x000000E0,
@@ -1845,9 +1845,12 @@ enum eIoConfig
 #define IO_CONFIG_GPS2_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
 
 	/** IMU 1 disable */	
-	IO_CFG_IMU_1_DISABLE						= (int)0x00100000,
+	IO_CONFIG_IMU_1_DISABLE						= (int)0x00100000,
 	/** IMU 2 disable */
-	IO_CFG_IMU_2_DISABLE						= (int)0x00200000,
+	IO_CONFIG_IMU_2_DISABLE						= (int)0x00200000,
+
+	/** CAN Bus Enable */	
+	IO_CONFIG_CAN_BUS_ENABLE					= (int)0x01000000,
 };
 
 
