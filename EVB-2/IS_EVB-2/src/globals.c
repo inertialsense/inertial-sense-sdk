@@ -174,19 +174,29 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
     case EVB2_CB_PRESET_USB_HUB_RS232:
 		 cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_XBEE);
 		 cfg->cbf[EVB2_PORT_XBEE]   |= (1<<EVB2_PORT_USB);
-		 
-    case EVB2_CB_PRESET_USB_HUB_RS422:		
-        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_XRADIO);
-        cfg->cbf[EVB2_PORT_XRADIO]  |= (1<<EVB2_PORT_USB);
 
         cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_SP330);
         cfg->cbf[EVB2_PORT_SP330]   |= (1<<EVB2_PORT_USB);
 
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_GPIO_H8);
+        cfg->cbf[EVB2_PORT_GPIO_H8] |= (1<<EVB2_PORT_USB);
+
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_XRADIO);
+        cfg->cbf[EVB2_PORT_XRADIO]  |= (1<<EVB2_PORT_USB);
+		break;
+		 
+    case EVB2_CB_PRESET_USB_HUB_RS422:		
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_SP330);
+        cfg->cbf[EVB2_PORT_SP330]   |= (1<<EVB2_PORT_USB);
+
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_GPIO_H8);
+        cfg->cbf[EVB2_PORT_GPIO_H8] |= (1<<EVB2_PORT_USB);
+
+        cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_XRADIO);
+        cfg->cbf[EVB2_PORT_XRADIO]  |= (1<<EVB2_PORT_USB);
+
 //         cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_BLE);
 //         cfg->cbf[EVB2_PORT_BLE]     |= (1<<EVB2_PORT_USB);
-
-//         cfg->cbf[EVB2_PORT_USB]     |= (1<<EVB2_PORT_GPIO_H8);
-//         cfg->cbf[EVB2_PORT_GPIO_H8] |= (1<<EVB2_PORT_USB);
 		break;
          
 #ifdef CONF_BOARD_CAN1
