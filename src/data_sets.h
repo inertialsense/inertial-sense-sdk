@@ -3007,7 +3007,6 @@ enum eEvb2CommPorts
 /** EVB-2 Communications Bridge Options */
 enum eEvb2ComBridgeOptions
 {
-	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */
     EVB2_CB_OPTIONS_TRISTATE_UINS_IO  = 0x00000001,
     EVB2_CB_OPTIONS_SP330_RS422       = 0x00000002,
     EVB2_CB_OPTIONS_XBEE_ENABLE       = 0x00000010,
@@ -3015,6 +3014,7 @@ enum eEvb2ComBridgeOptions
     EVB2_CB_OPTIONS_BLE_ENABLE        = 0x00000040,
     EVB2_CB_OPTIONS_SPI_ENABLE        = 0x00000080,
 	EVB2_CB_OPTIONS_CAN_ENABLE	      = 0x00000100,
+	EVB2_CB_OPTIONS_I2C_ENABLE	      = 0x00000200,		// Tied to uINS G1,G2
 };
 
 enum eEvb2PortOptions
@@ -3087,6 +3087,7 @@ typedef enum
     EVB_CFG_BITS_SERVER_SELECT_OFFSET       = 2,
     EVB_CFG_BITS_STREAM_PPD_ON_LOG_BUTTON   = 0x00000010,
     EVB_CFG_BITS_ENABLE_WHEEL_ENCODER       = 0x00000100,
+    EVB_CFG_BITS_ENABLE_ADC                 = 0x00000200,
 } eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3

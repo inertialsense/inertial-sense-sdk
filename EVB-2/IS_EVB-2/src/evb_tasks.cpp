@@ -184,8 +184,13 @@ void evbMainInitHdw(void)
 	// Init hardware I/O, SD card logger, and communications
     sd_card_logger_init();
     communications_init();
-	adc_init();
-	i2cInit();
+
+#ifdef CONF_BOARD_ADC
+	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC)
+	{
+		adc_init();
+	}
+#endif
 }
 
 void evbMainInitRTOS(pdTASK_CODE pxTaskComm,
