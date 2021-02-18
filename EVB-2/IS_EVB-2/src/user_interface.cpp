@@ -78,7 +78,7 @@ static void on_log_button_release()
 {
     if( logger_ready() )
     {
-        if (!g_flashCfg->bits & EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON)
+        if (!(g_flashCfg->bits & EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON))
         {
             uINS_stream_enable_PPD();
         }
