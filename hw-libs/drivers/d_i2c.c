@@ -22,16 +22,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define BOARD_TWI		TWIHS0
 #define TWI_CLK			400000
 
-#define TWI_DATA_GPIO   PIO_PA3_IDX
-#define TWI_DATA_FLAGS  (IOPORT_MODE_MUX_A)
-#define TWI_CLK_GPIO    PIO_PA4_IDX
-#define TWI_CLK_FLAGS   (IOPORT_MODE_MUX_A)
 
 int i2cInit( void )
 {
 	//Configure pins
-	ioport_set_pin_peripheral_mode(TWI_DATA_GPIO, TWI_DATA_FLAGS);
-	ioport_set_pin_peripheral_mode(TWI_CLK_GPIO, TWI_CLK_FLAGS);
+	ioport_set_pin_peripheral_mode(I2C_0_SDA_PIN, I2C_0_SDA_FLAGS);
+	ioport_set_pin_peripheral_mode(I2C_0_SCL_PIN, I2C_0_SCL_FLAGS);
 	
 	/* Enable the peripheral clock for TWI */
 	pmc_enable_periph_clk(BOARD_ID_TWI);

@@ -375,7 +375,26 @@ void init_set_board_IO_config_callback(VoidFuncPtrVoid fpIoCfg)
 
 void board_IO_config(void)
 {	
-	// uINS ser0
+	//////////////////////////////////////////////////////////////////////////
+	// EVB  uINS G1,G2 (CAN, Ser2, I2C)
+	// EVB-PA3 - SDA
+	// EVB-PA4 - SCL
+#ifdef CONF_BOARD_I2C_UINS
+    if (!g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO &&
+		 g_flashCfg->cbOptions&EVB2_CB_OPTIONS_I2C_ENABLE)
+	{
+		i2cInit();		
+	}
+	else
+	{	// Disable pins
+		ioport_set_pin_input_mode(I2C_0_SDA_PIN, 0, 0);
+		ioport_set_pin_input_mode(I2C_0_SCL_PIN, 0, 0);
+	}
+#endif
+	
+	//////////////////////////////////////////////////////////////////////////
+	// uINS G3,G4 (Ser0)
+	// EVB-PA5,PA6
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO ||
 		(g_flashCfg->uinsComPort != EVB2_PORT_UINS0 &&
 		 g_flashCfg->uinsAuxPort != EVB2_PORT_UINS0))
@@ -392,7 +411,9 @@ void board_IO_config(void)
 #endif		
 	}
 	
-    // uINS ser1
+	/////////////////////////////////////////////////////////////
+	// uINS G6,G7 (Ser1, SPI, QDEC0)
+	// EVB-PA9,PA10
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE)
     {
 	    #ifdef CONF_BOARD_SPI_UINS
@@ -416,8 +437,7 @@ void board_IO_config(void)
 	    #endif
     }	
     else if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO ||
-		(g_flashCfg->uinsComPort != EVB2_PORT_UINS1 &&
-		 g_flashCfg->uinsAuxPort != EVB2_PORT_UINS1))
+			(g_flashCfg->uinsComPort != EVB2_PORT_UINS1 && g_flashCfg->uinsAuxPort != EVB2_PORT_UINS1))
 	{	// I/O tristate - (Enable pin and set as input)
 	    ioport_set_pin_input_mode(UART_INS_SER1_TXD_PIN, 0, 0);
 	    ioport_set_pin_input_mode(UART_INS_SER1_RXD_PIN, 0, 0);
@@ -440,6 +460,8 @@ void board_IO_config(void)
 #endif
     }        
 
+	/////////////////////////////////////////////////////////////
+	// SP330 - RS232/RS485 interface
 #ifdef CONF_BOARD_SERIAL_SP330
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SP330_RS422)
     {   // RS422 mode
@@ -454,6 +476,8 @@ void board_IO_config(void)
     serSetBaudRate(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate);
 #endif
 
+	//////////////////////////////////////////////////////////////////////////
+	// XBee
 #ifdef CONF_BOARD_SERIAL_XBEE
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_XBEE_ENABLE)
     {   // XBee enabled
@@ -499,6 +523,8 @@ void board_IO_config(void)
     }
 #endif
 
+	//////////////////////////////////////////////////////////////////////////
+	// WiFi
 #ifdef CONF_BOARD_SPI_ATWINC_WIFI
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_WIFI_ENABLE )
     {   // WiFi enabled
@@ -525,6 +551,9 @@ void board_IO_config(void)
     serSetBaudRate(EVB2_PORT_BLE, 115200);
     serSetBaudRate(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate);
     serSetBaudRate(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate);
+
+	//////////////////////////////////////////////////////////////////////////
+	// CAN
 #ifdef CONF_BOARD_CAN1
 	if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_CAN_ENABLE)
 	{

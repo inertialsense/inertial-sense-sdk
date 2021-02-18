@@ -198,10 +198,10 @@
 #define CAN_TXD_FLAGS			    (IOPORT_MODE_MUX_C)
 
 // I2C Bus
-#define I2C_0_SCL_PIN			    (PIO_PA3_IDX)
-#define I2C_0_SCL_FLAGS			    (IOPORT_MODE_MUX_A)
-#define I2C_0_SDA_PIN			    (PIO_PA4_IDX)
+#define I2C_0_SDA_PIN			    (PIO_PA3_IDX)
 #define I2C_0_SDA_FLAGS			    (IOPORT_MODE_MUX_A)
+#define I2C_0_SCL_PIN			    (PIO_PA4_IDX)
+#define I2C_0_SCL_FLAGS			    (IOPORT_MODE_MUX_A)
 
 // GPS Time Pulse Input
 #define GPS_TP_PIN				    (PIO_PC9_IDX)

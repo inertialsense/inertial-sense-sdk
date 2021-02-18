@@ -723,6 +723,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "wheelConfig.distance", wheelConfig.distance, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "wheelConfig.diameter", wheelConfig.diameter, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "ser2BaudRate", ser2BaudRate, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1848,7 +1849,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "sensorAdcSigma",		// 46: DID_SENSORS_ADC_SIGMA
         "insDev1",				// 47: DID_INS_DEV_1
         "inl2States",			// 48: DID_INL2_STATES
-        "inl2CovarianceUD",		// 49: DID_INL2_COVARIANCE_UD
+        "inl2CovarianceLD",		// 49: DID_INL2_COVARIANCE_LD
         "inl2Status",			// 50: DID_INL2_STATUS
         "inl2Misc",				// 51: DID_INL2_MISC
         "magnetometer1",		// 52: DID_MAGNETOMETER_1

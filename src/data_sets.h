@@ -1152,6 +1152,50 @@ typedef struct PACKED
 	uint32_t				options;
 
 	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
+	uint16_t				pimu;
+
+	/** Broadcast period (ms) - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
+	uint16_t				ppimu;
+	
+	/** Broadcast period (ms) - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
+	uint16_t				pins1;
+
+	/** Broadcast period (ms) - ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
+	uint16_t				pins2;
+	
+	/** Broadcast period (ms) - ASCII GPS position data. 0 to disable. */
+	uint16_t				pgpsp;
+
+	/** Broadcast period (ms) - Reserved.  Leave zero. */
+	uint16_t				reserved;
+
+	/** Broadcast period (ms) - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
+	uint16_t				gpgga;
+
+	/** Broadcast period (ms) - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
+	uint16_t				gpgll;
+
+	/** Broadcast period (ms) - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
+	uint16_t				gpgsa;
+
+	/** Broadcast period (ms) - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
+	uint16_t				gprmc;
+	
+	/** Broadcast period (ms) - ASCII NMEA Data and Time. 0 to disable. */
+	uint16_t				gpzda;
+
+	/** Broadcast period (ms) - ASCII NMEA Inertial Attitude Data. 0 to disable. */
+	uint16_t				pashr;
+	
+} ascii_msgs_t;
+
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+typedef struct PACKED
+{
+	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
+	uint32_t				options;
+
+	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
 	uint32_t				pimu;
 
 	/** Broadcast period (ms) - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
@@ -1187,7 +1231,7 @@ typedef struct PACKED
 	/** Broadcast period (ms) - ASCII NMEA Inertial Attitude Data. 0 to disable. */
 	uint32_t				pashr;
 	
-} ascii_msgs_t;
+} ascii_msgs_u32_t;
 
 /* (DID_SENSORS_CAL1, DID_SENSORS_CAL2) */
 typedef struct PACKED
@@ -1209,9 +1253,9 @@ typedef struct PACKED
 	f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
 } sys_sensors_adc_t;
 
-#define NUM_COM_PORTS       3	// Number of communication ports.  (Ser0, Ser1, and USB).
+#define NUM_COM_PORTS       4	// Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
 #ifndef NUM_SERIAL_PORTS
-#define NUM_SERIAL_PORTS	5
+#define NUM_SERIAL_PORTS	6
 #endif
 
 /** Realtime Message Controller (used in rmc_t). 
@@ -1226,7 +1270,8 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_CURRENT        0x00000000
 #define RMC_OPTIONS_PORT_SER0           0x00000001
 #define RMC_OPTIONS_PORT_SER1           0x00000002	// also SPI
-#define RMC_OPTIONS_PORT_USB            0x00000004
+#define RMC_OPTIONS_PORT_SER2           0x00000004
+#define RMC_OPTIONS_PORT_USB            0x00000008
 #define RMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
 #define RMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
 
@@ -1475,9 +1520,8 @@ typedef struct PACKED
 /** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
 enum eSysConfigBits
 {
-	/*! Disable automatic baudrate detection on startup on serial port 0 and 1 */
-	SYS_CFG_BITS_DISABLE_AUTOBAUD_SER0                  = (int)0x00000001,
-	SYS_CFG_BITS_DISABLE_AUTOBAUD_SER1                  = (int)0x00000002,
+	UNUSED1                                             = (int)0x00000001,
+	UNUSED2                                             = (int)0x00000002,
 	/*! Enable automatic mag recalibration */
 	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
 	/*! Disable mag declination estimation */
@@ -1509,8 +1553,6 @@ enum eSysConfigBits
 	/** Prevent built-in test (BIT) from running automatically on startup */
 	SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
 
-	/** Enable Nav update strobe output pulse on GPIO 9 (uINS pin 10) indicating preintegrated IMU and nav updates */
-	SYS_CFG_BITS_ENABLE_NAV_STROBE_OUT_GPIO_9			= (int)0x00200000,	
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
 };
@@ -1569,56 +1611,70 @@ enum eRTKConfigBits
 
 	/** Enable RTK base and output ublox data from GPS 1 on serial port 1 */
 	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1			= (int)0x00000020,
-	
+
+	/** Enable RTK base and output ublox data from GPS 1 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2			= (int)0x00000040,
+
+	/** Enable RTK base and output ublox data from GPS 1 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB				= (int)0x00000080,
+
 	/** Enable RTK base and output RTCM3 data from GPS 1 on serial port 0 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0			= (int)0x00000040,
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0			= (int)0x00000100,
 	
 	/** Enable RTK base and output RTCM3 data from GPS 1 on serial port 1 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1			= (int)0x00000080,
-	
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1			= (int)0x00000200,
+
+	/** Enable RTK base and output RTCM3 data from GPS 1 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2			= (int)0x00000400,
+
+	/** Enable RTK base and output RTCM3 data from GPS 1 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB				= (int)0x00000800,
+
 	/** Enable RTK base and output ublox data from GPS 2 on serial port 0 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0			= (int)0x00000100,
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0			= (int)0x00001000,
 
 	/** Enable RTK base and output ublox data from GPS 2 on serial port 1 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1			= (int)0x00000200,
-	
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1			= (int)0x00002000,
+
+	/** Enable RTK base and output ublox data from GPS 2 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2			= (int)0x00004000,
+
+	/** Enable RTK base and output ublox data from GPS 2 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB				= (int)0x00008000,
+
 	/** Enable RTK base and output RTCM3 data from GPS 2 on serial port 0 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0			= (int)0x00000400,
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0			= (int)0x00010000,
 	
 	/** Enable RTK base and output RTCM3 data from GPS 2 on serial port 1 */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1			= (int)0x00000800,	
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1			= (int)0x00020000,
 
-	/** Enable RTK base and output ublox data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB				= (int)0x00001000,
-	
-	/** Enable RTK base and output RTCM3 data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB				= (int)0x00002000,
+	/** Enable RTK base and output RTCM3 data from GPS 2 on serial port 2 */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2			= (int)0x00040000,
 
-	/** Enable RTK base and output ublox data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB				= (int)0x00004000,
-	
-	/** Enable RTK base and output RTCM3 data from GPS 1 on USB port */
-	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB				= (int)0x00008000,
-	
+	/** Enable RTK base and output RTCM3 data from GPS 2 on USB port */
+	RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB				= (int)0x00080000,
+
 	/** Enable base mode moving position. (For future use. Not implemented. This bit should always be 0 for now.) TODO: Implement moving base. */
-	RTK_CFG_BITS_BASE_POS_MOVING						= (int)0x00010000,
+	RTK_CFG_BITS_BASE_POS_MOVING						= (int)0x00100000,
 	
 	/** Reserved for future use */
-	RTK_CFG_BITS_RESERVED1								= (int)0x00020000,	
+	RTK_CFG_BITS_RESERVED1								= (int)0x00200000,	
 	
 	/** When using RTK, specifies whether the base station is identical hardware to this rover. If so, there are optimizations enabled to get fix faster. */
-	RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER			= (int)0x00040000,
+	RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER			= (int)0x00400000,
 
 	/** Forward all messages between the selected GPS and serial port.  Disable for RTK base use (to forward only GPS raw messages and use the surveyed location refLLA instead of current GPS position).  */
-	RTK_CFG_BITS_GPS_PORT_PASS_THROUGH					= (int)0x00080000,
+	RTK_CFG_BITS_GPS_PORT_PASS_THROUGH					= (int)0x00800000,
 
 	/** All base station bits */
 	RTK_CFG_BITS_BASE_MODE = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
-		RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB  |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB  | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB ),
 
 	/** Base station bits enabled on Ser0 */
@@ -1630,29 +1686,38 @@ enum eRTKConfigBits
 	RTK_CFG_BITS_RTK_BASE_SER1 = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 |
 		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 ),
-									
+
+	/** Base station bits enabled on Ser2 */
+	RTK_CFG_BITS_RTK_BASE_SER2 = (
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 |
+		RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 ),
+
     /** Base station bits for GPS1 Ublox */
     RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS1_UBLOX = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB ),
 
     /** Base station bits for GPS2 Ublox */
     RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS2_UBLOX = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB ),
 
     /** Base station bits for GPS1 RTCM */
 	RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS1_RTCM = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1 | 
+        RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2 | 
         RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB ),
 
     /** Base station bits for GPS2 RTCM */
     RTK_CFG_BITS_RTK_BASE_OUTPUT_GPS2_RTCM = (
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB),
 
 	/** Rover on-board RTK engine used */
@@ -1713,14 +1778,16 @@ enum eIoConfig
 {
 	/** Input strobe trigger on rising edge (0 = falling edge) */
 	IO_CONFIG_INPUT_STROBE_TRIGGER_HIGH			= (int)0x00000001,
-	/** Input strobe - enable on pin 2 */
-	IO_CONFIG_INPUT_STROBE_PIN_2_ENABLE			= (int)0x00000002,
-	/** Input strobe - enable on pin 5 */
-	IO_CONFIG_INPUT_STROBE_PIN_5_ENABLE			= (int)0x00000004,
-	/** Input strobe - enable on pin 8 */
-	IO_CONFIG_INPUT_STROBE_PIN_8_ENABLE			= (int)0x00000008,
-	/** Input strobe - enable on pin 9 */
-	IO_CONFIG_INPUT_STROBE_PIN_9_ENABLE			= (int)0x00000010,
+	/** Input strobe - enable on G2 */
+	IO_CONFIG_INPUT_STROBE_G2_ENABLE			= (int)0x00000002,
+	/** Input strobe - enable on G5 */
+	IO_CONFIG_INPUT_STROBE_G5_ENABLE			= (int)0x00000004,
+	/** Input strobe - enable on G8 */
+	IO_CONFIG_INPUT_STROBE_G8_ENABLE			= (int)0x00000008,
+	/** Input strobe - enable on G9 */
+	IO_CONFIG_INPUT_STROBE_G9_ENABLE			= (int)0x00000010,
+	/** Output strobe - enable Nav update strobe output pulse on G9 (uINS pin 10) indicating preintegrated IMU and nav updates */
+	IO_CONFIG_OUTPUT_STROBE_NAV_G9_ENABLE		= (int)0x10000000,	
 
 	/** External GPS TIMEPULSE source */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x000000E0,
@@ -1760,6 +1827,8 @@ enum eIoConfig
 	IO_CONFIG_GPS_SOURCE_SER0					= (int)3,
 	/** GPS source - Serial 1 */
 	IO_CONFIG_GPS_SOURCE_SER1					= (int)4,
+	/** GPS source - Serial 2 */
+	IO_CONFIG_GPS_SOURCE_SER2					= (int)5,
 
 	/** GPS type MASK */
 	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000003,
@@ -1776,9 +1845,12 @@ enum eIoConfig
 #define IO_CONFIG_GPS2_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
 
 	/** IMU 1 disable */	
-	IO_CFG_IMU_1_DISABLE						= (int)0x00100000,
+	IO_CONFIG_IMU_1_DISABLE						= (int)0x00100000,
 	/** IMU 2 disable */
-	IO_CFG_IMU_2_DISABLE						= (int)0x00200000,
+	IO_CONFIG_IMU_2_DISABLE						= (int)0x00200000,
+
+	/** CAN Bus Enable */	
+	IO_CONFIG_CAN_BUS_ENABLE					= (int)0x01000000,
 };
 
 
@@ -1952,6 +2024,9 @@ typedef struct PACKED
 
 	/** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
 	float                   gpsMinimumElevation;
+
+    /** Serial port 2 baud rate in bits per second */
+    uint32_t				ser2BaudRate;
 
 } nvm_flash_cfg_t;
 
@@ -2932,7 +3007,6 @@ enum eEvb2CommPorts
 /** EVB-2 Communications Bridge Options */
 enum eEvb2ComBridgeOptions
 {
-	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */
     EVB2_CB_OPTIONS_TRISTATE_UINS_IO  = 0x00000001,
     EVB2_CB_OPTIONS_SP330_RS422       = 0x00000002,
     EVB2_CB_OPTIONS_XBEE_ENABLE       = 0x00000010,
@@ -2940,6 +3014,7 @@ enum eEvb2ComBridgeOptions
     EVB2_CB_OPTIONS_BLE_ENABLE        = 0x00000040,
     EVB2_CB_OPTIONS_SPI_ENABLE        = 0x00000080,
 	EVB2_CB_OPTIONS_CAN_ENABLE	      = 0x00000100,
+	EVB2_CB_OPTIONS_I2C_ENABLE	      = 0x00000200,		// Tied to uINS G1,G2
 };
 
 enum eEvb2PortOptions
@@ -3012,6 +3087,7 @@ typedef enum
     EVB_CFG_BITS_SERVER_SELECT_OFFSET       = 2,
     EVB_CFG_BITS_STREAM_PPD_ON_LOG_BUTTON   = 0x00000010,
     EVB_CFG_BITS_ENABLE_WHEEL_ENCODER       = 0x00000100,
+    EVB_CFG_BITS_ENABLE_ADC                 = 0x00000200,
 } eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3
