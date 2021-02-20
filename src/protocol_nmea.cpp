@@ -572,8 +572,8 @@ int gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 
 int gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
 {
-	Quat_t qe2n;
-	Vector3_t vel_ned_;
+	ixQuat qe2n;
+	ixVector3 vel_ned_;
 	quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
 	quatConjRot(vel_ned_, qe2n, vel.vel);
 
@@ -833,7 +833,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	uint32_t iTOW = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 		
 	//Latitude
-	Vector3d lla;
+	ixVector3d lla;
 	lla[0] = ddmm2deg(atof(ptr));
 	ptr = ASCII_find_next_field(ptr);
 	if(*ptr == 'S')
@@ -911,7 +911,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	lla[2] = gpsPos->lla[2];	// Use ellipsoid alt
 		
 	//Convert LLA to ECEF.  Ensure LLA uses ellipsoid alt 
-	Vector3d ecef;
+	ixVector3d ecef;
 	lla2ecef(lla, ecef);
 				
 	gpsPos->timeOfWeekMs = iTOW;
@@ -957,7 +957,7 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	uint32_t iTOW = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 			
 	//Latitude
-	Vector3d lla;
+	ixVector3d lla;
 	lla[0] = ddmm2deg(atof(ptr));
 	ptr = ASCII_find_next_field(ptr);
 	if(*ptr == 'S')
@@ -1032,7 +1032,7 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	lla[2] = gpsPos->lla[2];	// Use ellipsoid alt
 			
 	//Convert LLA to ECEF.  Ensure LLA uses ellipsoid alt
-	Vector3d ecef;
+	ixVector3d ecef;
 	lla2ecef(lla, ecef);
 			
 	gpsPos->timeOfWeekMs = iTOW;

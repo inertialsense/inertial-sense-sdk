@@ -785,21 +785,21 @@ extern void vPortFree(void* pv);
 
 typedef float       f_t;
 typedef int			i_t;
-typedef double      Vector2d[2];    // V = | 0 1 |
-typedef f_t         Vector2[2];     // V = | 0 1 |
-typedef double      Vector3d[3];    // V = | 0 1 2 |
-typedef f_t         Vector3[3];     // V = | 0 1 2 |
-typedef double      Vector4d[4];    // V = | 0 1 2 3 |
-typedef f_t         Vector4[4];     // V = | 0 1 2 3 |
-typedef f_t         Vector5[5];     // V = | 0 1 2 3 4 |
-typedef f_t         Vector6[6];     // V = | 0 1 2 3 4 5 |
-typedef Vector4     Quat;		    // w,x,y,z
-typedef Vector3     Euler;          // roll,pitch,yaw
-typedef f_t         Matrix2[4];
-typedef f_t         Matrix3[9];
-typedef f_t         Matrix4[16];
-typedef f_t         Matrix5[25];
-typedef double      Matrix3d[9];
+typedef double      ixVector2d[2];    	// V = | 0 1 |
+typedef f_t         ixVector2[2];     	// V = | 0 1 |
+typedef double      ixVector3d[3];    	// V = | 0 1 2 |
+typedef f_t         ixVector3[3];     	// V = | 0 1 2 |
+typedef double      ixVector4d[4];    	// V = | 0 1 2 3 |
+typedef f_t         ixVector4[4];     	// V = | 0 1 2 3 |
+typedef f_t         ixVector5[5];     	// V = | 0 1 2 3 4 |
+typedef f_t         ixVector6[6];     	// V = | 0 1 2 3 4 5 |
+typedef ixVector4   ixQuat;		    	// w,x,y,z
+typedef ixVector3   ixEuler;    		// roll,pitch,yaw
+typedef f_t         ixMatrix2[4];
+typedef f_t         ixMatrix3[9];
+typedef f_t         ixMatrix4[16];
+typedef f_t         ixMatrix5[25];
+typedef double      ixMatrix3d[9];
 
 #ifdef __cplusplus
 } // extern "C"

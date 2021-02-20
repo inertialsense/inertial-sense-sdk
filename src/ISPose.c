@@ -31,13 +31,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /*
  * Initialize Quaternion q = [w, x, y, z]
  */
-void quat_init(Quat_t q)
+void quat_init(ixQuat q)
 {
 #if 1
 	q[0] = 1.0;
 	q[1] = q[2] = q[3] = 0.0;
 #else
-	Euler_t theta = { 0, 0, 0 };
+	ixEuler theta = { 0, 0, 0 };
 	euler2quat(theta, q);
 #endif
 }
@@ -46,7 +46,7 @@ void quat_init(Quat_t q)
 /* Quaternion Conjugate: q* = [ w, -x, -y, -z ] of quaterion q = [ w, x, y, z ] 
  * Rotation in opposite direction.
  */
-void quatConj(Quat_t result, const Quat_t q)
+void quatConj(ixQuat result, const ixQuat q)
 {
     result[0] =  q[0];
     result[1] = -q[1];
@@ -61,7 +61,7 @@ void quatConj(Quat_t result, const Quat_t q)
  * result = q1 * q2
  * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
  */
-void mul_Quat_Quat(Quat_t result, const Quat_t q1, const Quat_t q2)
+void mul_Quat_Quat(ixQuat result, const ixQuat q1, const ixQuat q2)
 {
     result[0] = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3];
     result[1] = q1[0]*q2[1] + q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2];
@@ -75,7 +75,7 @@ void mul_Quat_Quat(Quat_t result, const Quat_t q1, const Quat_t q2)
 * result = quatConj(q1) * q2
 * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 */
-void mul_ConjQuat_Quat(Quat_t result, const Quat_t qc, const Quat_t q2)
+void mul_ConjQuat_Quat(ixQuat result, const ixQuat qc, const ixQuat q2)
 {
     result[0] = qc[0]*q2[0] + qc[1]*q2[1] + qc[2]*q2[2] + qc[3]*q2[3];
     result[1] = qc[0]*q2[1] - qc[1]*q2[0] + qc[2]*q2[3] - qc[3]*q2[2];
@@ -89,7 +89,7 @@ void mul_ConjQuat_Quat(Quat_t result, const Quat_t qc, const Quat_t q2)
 * result = q1 * quatConj(q2)
 * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 */
-void mul_Quat_ConjQuat(Quat_t result, const Quat_t q1, const Quat_t qc)
+void mul_Quat_ConjQuat(ixQuat result, const ixQuat q1, const ixQuat qc)
 {
     result[0] =  q1[0]*qc[0] + q1[1]*qc[1] + q1[2]*qc[2] + q1[3]*qc[3];
     result[1] = -q1[0]*qc[1] + q1[1]*qc[0] + q1[2]*qc[3] - q1[3]*qc[2];
@@ -102,9 +102,9 @@ void mul_Quat_ConjQuat(Quat_t result, const Quat_t q1, const Quat_t qc)
  * result = q1 / q2. 
  * Reference: http://www.mathworks.com/help/aeroblks/quaterniondivision.html
  */
-void div_Quat_Quat(Quat_t result, const Quat_t q1, const Quat_t q2)
+void div_Quat_Quat(ixQuat result, const ixQuat q1, const ixQuat q2)
 {
-	q_t d = (q_t)1.0 / (q1[0] * q1[0] + q1[1] * q1[1] + q1[2] * q1[2] + q1[3] * q1[3]);
+	f_t d = (f_t)1.0 / (q1[0] * q1[0] + q1[1] * q1[1] + q1[2] * q1[2] + q1[3] * q1[3]);
 
     result[0] = (q1[0]*q2[0] + q1[1]*q2[1] + q1[2]*q2[2] + q1[3]*q2[3]) * d;
     result[1] = (q1[0]*q2[1] - q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2]) * d;
@@ -115,9 +115,9 @@ void div_Quat_Quat(Quat_t result, const Quat_t q1, const Quat_t q2)
 
 /* Quaternion rotation from vector v1 to vector v2.
  */
-void quat_Vec3_Vec3(Quat_t result, const Vector3_t v1, const Vector3_t v2)
+void quat_Vec3_Vec3(ixQuat result, const ixVector3 v1, const ixVector3 v2)
 {
-    Vector3_t w1, w2;
+    ixVector3 w1, w2;
     
     // Normalize input vectors
     mul_Vec3_X( w1, v1, recipNorm_Vec3(v1) );
@@ -127,7 +127,7 @@ void quat_Vec3_Vec3(Quat_t result, const Vector3_t v1, const Vector3_t v2)
 	cross_Vec3( &result[1], w1, w2 );
 
     // q[0]
-    result[0] = (q_t)(_SQRT( dot_Vec3(w1) * dot_Vec3(w1) ) + dot_Vec3_Vec3(w1, w2));
+    result[0] = (f_t)(_SQRT( dot_Vec3(w1) * dot_Vec3(w1) ) + dot_Vec3_Vec3(w1, w2));
 
 	// Normalize quaternion
 	div_Vec4_X( result, result, mag_Vec4(result) );
@@ -139,9 +139,9 @@ void quat_Vec3_Vec3(Quat_t result, const Vector3_t v1, const Vector3_t v2)
  * If quaternion describes current attitude, then rotation is body -> inertial frame.
  * Equivalent to a DCM.T * vector multiply.
  */
-void quatRot(Vector3_t result, const Quat_t q, const Vector3_t v)
+void quatRot(ixVector3 result, const ixQuat q, const ixVector3 v)
 {
-    Vector3_t t;
+    ixVector3 t;
     cross_Vec3( t, &q[1], v );
     mul_Vec3_X( t, t, (f_t)2.0 );
 
@@ -158,10 +158,10 @@ void quatRot(Vector3_t result, const Quat_t q, const Vector3_t v)
  * If quaternion describes current attitude, then rotation is inertial -> body frame.
  * Equivalent to a DCM * vector multiply.
  */
-void quatConjRot(Vector3_t result, const Quat_t q, const Vector3_t v)
+void quatConjRot(ixVector3 result, const ixQuat q, const ixVector3 v)
 {
-    Quat_t qC;
-    Vector3_t t;
+    ixQuat qC;
+    ixVector3 t;
 
     // Rotation in opposite direction
     quatConj( qC, q );
@@ -182,7 +182,7 @@ void quatConjRot(Vector3_t result, const Quat_t q, const Vector3_t v)
  *
  * Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
  */
-void quat2euler(const Quat_t q, Euler_t theta)
+void quat2euler(const ixQuat q, ixEuler theta)
 {
     float sinang = 2 * (q[0] * q[2] - q[3] * q[1]);
     if (sinang > 1.0f) { sinang = 1.0f; }
@@ -192,7 +192,7 @@ void quat2euler(const Quat_t q, Euler_t theta)
 	theta[1] = _ASIN (sinang);
 	theta[2] = _ATAN2(2 * (q[0]*q[3] + q[1]*q[2]), 1 - 2 * (q[2]*q[2] + q[3]*q[3]));
 }
-void quat2phiTheta(const Quat_t q, f_t *phi, f_t *theta)
+void quat2phiTheta(const ixQuat q, f_t *phi, f_t *theta)
 {
     float sinang = 2 * (q[0] * q[2] - q[3] * q[1]);
     if (sinang > 1.0f) { sinang = 1.0f; }
@@ -201,7 +201,7 @@ void quat2phiTheta(const Quat_t q, f_t *phi, f_t *theta)
 	*phi	= _ATAN2( 2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2]) );
 	*theta  = _ASIN (sinang);
 }
-void quat2psi(const Quat_t q, f_t *psi)
+void quat2psi(const ixQuat q, f_t *psi)
 {
 	float sinang = 2 * (q[0] * q[2] - q[3] * q[1]);
 	if (sinang > 1.0f) { sinang = 1.0f; }
@@ -215,7 +215,7 @@ void quat2psi(const Quat_t q, f_t *psi)
  * This will convert from euler angles to quaternion vector
  * euler(phi,theta,psi) (rad) -> q(W,X,Y,Z)
  */
-void euler2quat(const Euler_t euler, Quat_t q)
+void euler2quat(const ixEuler euler, ixQuat q)
 {
 	f_t hphi = euler[0] * (f_t)0.5;
 	f_t hthe = euler[1] * (f_t)0.5;
@@ -240,10 +240,10 @@ void euler2quat(const Euler_t euler, Quat_t q)
 /*
 * Quaternion rotation to NED with respect to ECEF at specified LLA
 */
-// void quatEcef2Ned(Vector4 Qe2n, const Vector3d lla)
+// void quatEcef2Ned(ixVector4 Qe2n, const ixVector3d lla)
 // {
-// 	Vector3 Ee2nLL;
-// 	Vector4 Qe2n0LL, Qe2nLL;
+// 	ixVector3 Ee2nLL;
+// 	ixVector4 Qe2n0LL, Qe2nLL;
 // 
 // 	//Qe2n0LL is reference attitude [NED w/r/t ECEF] at zero latitude and longitude (elsewhere qned0)
 // 	Qe2n0LL[0] = cosf(-C_PIDIV4_F);
@@ -278,9 +278,9 @@ void quat_ecef2ned(float lat, float lon, float *qe2n)
 /*
 * Convert ECEF quaternion to NED euler at specified ECEF
 */
-void qe2b2EulerNedEcef(Vector3 eul, const Vector4 qe2b, const Vector3d ecef)
+void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ecef)
 {
-	Vector3d lla;
+	ixVector3d lla;
 
 // 	ecef2lla_d(ecef, lla);
 	ecef2lla(ecef, lla, 5);
@@ -291,11 +291,11 @@ void qe2b2EulerNedEcef(Vector3 eul, const Vector4 qe2b, const Vector3d ecef)
 /*
 * Convert ECEF quaternion to NED euler at specified LLA (rad)
 */
-void qe2b2EulerNedLLA(Vector3 eul, const Vector4 qe2b, const Vector3d lla)
+void qe2b2EulerNedLLA(ixVector3 eul, const ixVector4 qe2b, const ixVector3d lla)
 {
-	Vector3 eulned;
-	Vector4 qe2n;
-	Vector4 qn2b;
+	ixVector3 eulned;
+	ixVector4 qe2n;
+	ixVector4 qn2b;
 
 	eulned[0] = 0.0f;
 	eulned[1] = ((float)-lla[0]) - 0.5f * C_PI_F;
@@ -313,7 +313,7 @@ void qe2b2EulerNedLLA(Vector3 eul, const Vector4 qe2b, const Vector3d lla)
  * body = tBL(2,2)*NE
  *
  */
-void psiDCM(const f_t psi, Matrix2_t m)
+void psiDCM(const f_t psi, ixMatrix2 m)
 {
 	f_t cpsi = _COS(psi);  // cos(psi)
 	f_t spsi = _SIN(psi);  // sin(psi)
@@ -352,7 +352,7 @@ f_t DCMpsi(const f_t *m )
  *
  * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
  */
-void eulerDCM(const Euler_t euler, Matrix3_t m)
+void eulerDCM(const ixEuler euler, ixMatrix3 m)
 {
 	f_t cphi = _COS(euler[0]);  // cos(phi)
 	f_t cthe = _COS(euler[1]);  // cos(theta)
@@ -377,7 +377,7 @@ void eulerDCM(const Euler_t euler, Matrix3_t m)
 }
 
 
-void phiThetaDCM(const Euler_t euler, Matrix3_t m )
+void phiThetaDCM(const ixEuler euler, ixMatrix3 m )
 {
 	f_t cphi = _COS( euler[0] );	// cos(phi)
 	f_t cthe = _COS( euler[1] );	// cos(theta)
@@ -410,7 +410,7 @@ void phiThetaDCM(const Euler_t euler, Matrix3_t m )
 *
 * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 */
-void eulerDCM_Trans(const Euler_t euler, Matrix3_t m )
+void eulerDCM_Trans(const ixEuler euler, ixMatrix3 m )
 {
 	f_t cphi = _COS( euler[0] );	// cos(phi)
 	f_t cthe = _COS( euler[1] );	// cos(theta)
@@ -444,7 +444,7 @@ void eulerDCM_Trans(const Euler_t euler, Matrix3_t m )
  *
  * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
  */
-void DCMeuler(const Matrix3_t m, Euler_t euler)
+void DCMeuler(const ixMatrix3 m, ixEuler euler)
 {
     euler[0] =  _ATAN2( m[5], m[8] );		// phi
     euler[1] =  _ASIN( -m[2] );				// theta
@@ -463,7 +463,7 @@ void DCMeuler(const Matrix3_t m, Euler_t euler)
  *
  * Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
  */
-void quatDCM(const Quat_t q, Matrix3_t mat)
+void quatDCM(const ixQuat q, ixMatrix3 mat)
 {
     f_t q0q1 = q[0]*q[1];
     f_t q0q2 = q[0]*q[2];
@@ -488,7 +488,7 @@ void quatDCM(const Quat_t q, Matrix3_t mat)
 	mat[7] =            (f_t)2 * (q2q3 - q0q1);
 	mat[8] = (f_t)1.0 - (f_t)2 * (q1q1 + q2q2);
 }
-void quatdDCM(const Vector4d q, Matrix3_t mat )
+void quatdDCM(const ixVector4d q, ixMatrix3 mat )
 {
 	f_t q0q1 = (f_t)(q[0] * q[1]);
 	f_t q0q2 = (f_t)(q[0] * q[2]);
@@ -524,7 +524,7 @@ void quatdDCM(const Vector4d q, Matrix3_t mat )
  *
  * Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
  */
-void DCMquat(const Matrix3_t mat, Quat_t q)
+void DCMquat(const ixMatrix3 mat, ixQuat q)
 {
     f_t d;
 
@@ -542,7 +542,7 @@ void DCMquat(const Matrix3_t mat, Quat_t q)
  * wx(3,3)
  * p, q, r (rad/sec)
  */
-void eulerWx(const Euler_t euler, Matrix3_t mat)
+void eulerWx(const ixEuler euler, ixMatrix3 mat)
 {
 	f_t p = euler[0];
 	f_t q = euler[1];
@@ -567,7 +567,7 @@ void eulerWx(const Euler_t euler, Matrix3_t mat)
  * W(4,4)
  * p, q, r (rad/sec)
  */
-void quatW(const Euler_t euler, Matrix4_t mat)
+void quatW(const ixEuler euler, ixMatrix4 mat)
 {
 	f_t p = euler[0] * (f_t)0.5;
 	f_t q = euler[1] * (f_t)0.5;
@@ -599,7 +599,7 @@ void quatW(const Euler_t euler, Matrix4_t mat)
 /*
 *   Convert quaternion to rotation axis (and angle).  Quaternion must be normalized.
 */
-void quatRotAxis(const Quat_t q, Vector3_t pqr)
+void quatRotAxis(const ixQuat q, ixVector3 pqr)
 {
     // Normalize quaternion
 //     mul_Vec4_X( q, q, 1/mag_Vec4(q) );
@@ -621,7 +621,7 @@ void quatRotAxis(const Quat_t q, Vector3_t pqr)
 
 
 /*
- *  Compute the derivative of the Euler_t angle psi with respect
+ *  Compute the derivative of the ixEuler angle psi with respect
  * to the quaternion Q.  The result is a row vector
  *
  * d(psi)/d(q0)
@@ -629,7 +629,7 @@ void quatRotAxis(const Quat_t q, Vector3_t pqr)
  * d(psi)/d(q2)
  * d(psi)/d(q3)
  */
-void dpsi_dq(const Quat_t q, Quat_t dq)
+void dpsi_dq(const ixQuat q, ixQuat dq)
 {
 	f_t t1 = 1 - 2 * (q[2]*q[2] + q[3]*q[2]);
 	f_t t2 = 2 * (q[1]*q[2] + q[0]*q[3]);
@@ -643,9 +643,9 @@ void dpsi_dq(const Quat_t q, Quat_t dq)
 
 
 /*
- * NED to Euler_t
+ * NED to ixEuler
  */
-void nedEuler(const Vector3_t ned, Euler_t e)
+void nedEuler(const ixVector3 ned, ixEuler e)
 {
 	e[0] = 0;
 	e[1] = _ATAN2( -ned[2], _SQRT( ned[0] * ned[0] + ned[1] * ned[1] ) );
@@ -654,11 +654,11 @@ void nedEuler(const Vector3_t ned, Euler_t e)
 
 
 /*
- * Euler_t to NED
+ * ixEuler to NED
  */
-void eulerNed(const Euler_t e, Vector3_t ned)
+void eulerNed(const ixEuler e, ixVector3 ned)
 {
-    Vector3_t v = { 1, 0, 0};
+    ixVector3 v = { 1, 0, 0};
     
     vectorBodyToReference( v, e, ned );
 }
@@ -667,9 +667,9 @@ void eulerNed(const Euler_t e, Vector3_t ned)
 /*
  * Rotate eulers from body to inertial frame by ins eulers, in order: phi, theta, psi
  */
-void eulerBodyToReference(const Euler_t e, const Euler_t rot, Euler_t result)
+void eulerBodyToReference(const ixEuler e, const ixEuler rot, ixEuler result)
 {
-	Matrix3_t Ai, At, AiAt;
+	ixMatrix3 Ai, At, AiAt;
 	// Create DCMs (rotation matrices)
 	eulerDCM(rot, Ai);
 	eulerDCM(e, At);
@@ -683,9 +683,9 @@ void eulerBodyToReference(const Euler_t e, const Euler_t rot, Euler_t result)
 /*
  * Rotate eulers from inertial to body frame by ins eulers, in order: psi, theta, phi
  */
-void eulerReferenceToBody(const Euler_t e, const Euler_t rot, Euler_t result)
+void eulerReferenceToBody(const ixEuler e, const ixEuler rot, ixEuler result)
 {
-	Matrix3_t Ai, At, AiAt;
+	ixMatrix3 Ai, At, AiAt;
 	// Create DCMs (rotation matrices)
 	eulerDCM(rot, Ai);
 	eulerDCM(e, At);
@@ -699,9 +699,9 @@ void eulerReferenceToBody(const Euler_t e, const Euler_t rot, Euler_t result)
 /*
  * Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
  */
-void vectorBodyToReference(const Vector3_t v, const Euler_t rot, Vector3_t result)
+void vectorBodyToReference(const ixVector3 v, const ixEuler rot, ixVector3 result)
 {
-	Matrix3_t DCM;
+	ixMatrix3 DCM;
     
 	// Create DCM (rotation matrix)
 	eulerDCM(rot, DCM);
@@ -714,9 +714,9 @@ void vectorBodyToReference(const Vector3_t v, const Euler_t rot, Vector3_t resul
 /*
  * Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
  */
-void vectorReferenceToBody(const Vector3_t v, const Euler_t rot, Vector3_t result)
+void vectorReferenceToBody(const ixVector3 v, const ixEuler rot, ixVector3 result)
 {
-	Matrix3_t DCM;
+	ixMatrix3 DCM;
     
 	// Create DCM (rotation matrix)
 	eulerDCM(rot, DCM);
