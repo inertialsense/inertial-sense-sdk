@@ -125,7 +125,8 @@ static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int ti
 	if(!pmc_is_pck_enabled(PMC_PCK_6))
 	{
 		pmc_disable_pck(PMC_PCK_6);
-		pmc_switch_pck_to_mainck(PMC_PCK_6, PMC_PCK_PRES(239));
+		// pmc_switch_pck_to_mainck(PMC_PCK_6, PMC_PCK_PRES(239));
+		pmc_switch_pck_to_mainck(PMC_PCK_6, PMC_PCK_PRES(50));
 		pmc_enable_pck(PMC_PCK_6);
 	}
 			
