@@ -65,7 +65,7 @@ string cDataKML::GetDatasetName(int kid)
 int cDataKML::WriteDataToFile(vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
 	uDatasets& d = (uDatasets&)(*dataBuf);
-	Euler theta;
+	ixEuler theta;
     sKmlLogData data;
 
 #ifdef USE_IS_INTERNAL

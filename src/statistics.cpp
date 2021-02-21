@@ -291,7 +291,7 @@ f_t standard_deviation_mean( f_t *input, f_t *mean, int size, int byteIncrement 
 }
 
 
-void standard_deviation_Vec3( Vector3 result, Vector3 input, int size, int byteIncrement )
+void standard_deviation_Vec3( ixVector3 result, ixVector3 input, int size, int byteIncrement )
 {
 	// Validate size
 	if (size <= 0)
@@ -305,7 +305,7 @@ void standard_deviation_Vec3( Vector3 result, Vector3 input, int size, int byteI
 }
 
 
-void stardard_deviation_mean_Vec3( Vector3 result, Vector3 input, Vector3 mean, int size, int byteIncrement )
+void stardard_deviation_mean_Vec3( ixVector3 result, ixVector3 input, ixVector3 mean, int size, int byteIncrement )
 {
 	// Validate size
 	if (size <= 0)
@@ -319,7 +319,7 @@ void stardard_deviation_mean_Vec3( Vector3 result, Vector3 input, Vector3 mean, 
 }
 
 
-void mean_Vec3( Vector3 ave, Vector3 input, int size, int byteIncrement )
+void mean_Vec3( ixVector3 ave, ixVector3 input, int size, int byteIncrement )
 {
 	ave[0] = mean(&input[0], size, byteIncrement);
 	ave[1] = mean(&input[1], size, byteIncrement);
@@ -328,7 +328,7 @@ void mean_Vec3( Vector3 ave, Vector3 input, int size, int byteIncrement )
 
 
 // Initialize Alpha Filter alpha and beta values
-void init_realtime_std_dev_Vec3( sRTSDVec3 *s, float dt, float aveCornerFreqHz, float varCornerFreqHz, Vector3 initVal )
+void init_realtime_std_dev_Vec3( sRTSDVec3 *s, float dt, float aveCornerFreqHz, float varCornerFreqHz, ixVector3 initVal )
 {
 	memset( s, 0, sizeof(sRTSDVec3) );
 	cpy_Vec3_Vec3( s->ave, initVal );
@@ -351,8 +351,8 @@ void realtime_std_dev_Vec3( f_t *input, sRTSDVec3 *s )
 	O0_LPF_Vec3( s->ave, input, s->aveAlph, s->aveBeta );
 
 	// Variance
-	Vector3 dev;
-	Vector3 var;
+	ixVector3 dev;
+	ixVector3 var;
 	sub_Vec3_Vec3( dev, input, s->ave );
 	mul_Vec3_Vec3( var, dev, dev );
 	O0_LPF_Vec3( s->var, var, s->varAlph, s->varBeta );
