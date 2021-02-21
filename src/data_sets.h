@@ -2044,7 +2044,7 @@ typedef struct PACKED
 	/** RTK configuration bits (see eRTKConfigBits). */
     uint32_t				RTKCfgBits;
 
-    /** Sensor config (see eSensorConfig in data_sets.h) */
+    /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig in data_sets.h) */
     uint32_t                sensorConfig;
 
 	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
