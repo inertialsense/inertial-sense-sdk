@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['udatasets_5659',['uDatasets',['../data__sets_8h.html#a72f7f9efc28cdf49025632b51e67600f',1,'data_sets.h']]],
-  ['ugpsrawdata_5660',['uGpsRawData',['../data__sets_8h.html#a30c511577dea41d95ab34a01c0c56899',1,'data_sets.h']]],
-  ['uinsoutdatasets_5661',['uInsOutDatasets',['../data__sets_8h.html#a56b1b004aa8820927393d67c379eade4',1,'data_sets.h']]]
+  ['wheel_5fconfig_5ft_5681',['wheel_config_t',['../data__sets_8h.html#a4dbe82abcd6587f6f28cc1880512bb42',1,'data_sets.h']]],
+  ['wheel_5fencoder_5ft_5682',['wheel_encoder_t',['../data__sets_8h.html#a2fc8b4106350edfbbd9fcdd1c3d0d02a',1,'data_sets.h']]]
 ];

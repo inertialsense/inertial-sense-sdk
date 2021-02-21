@@ -1,6 +1,9 @@
 var searchData=
 [
-  ['q_5ft_5642',['q_t',['../_i_s_pose_8h.html#a900b0246f4b87ab4d71aaf4b1f646db3',1,'ISPose.h']]],
-  ['quat_5643',['Quat',['../_i_s_constants_8h.html#a1385e22ba13fe7e60b33b7fb408019ac',1,'ISConstants.h']]],
-  ['quat_5ft_5644',['Quat_t',['../_i_s_pose_8h.html#abf997f89f0e095153f3b1a4830df46d0',1,'ISPose.h']]]
+  ['rmc_5ft_5664',['rmc_t',['../data__sets_8h.html#a2f9028388b0f9bb18f02683cd9ed58d1',1,'data_sets.h']]],
+  ['rtk_5fdebug_5ft_5665',['rtk_debug_t',['../data__sets_8h.html#a49da855159c7bd058b2905af5a243204',1,'data_sets.h']]],
+  ['rtk_5fresidual_5ft_5666',['rtk_residual_t',['../data__sets_8h.html#ac7736e8232446c4947b1bdf5dc66a91a',1,'data_sets.h']]],
+  ['rtk_5fstate_5ft_5667',['rtk_state_t',['../data__sets_8h.html#a25bacbfa5239039a6e36e3eac314614c',1,'data_sets.h']]],
+  ['rtos_5finfo_5ft_5668',['rtos_info_t',['../data__sets_8h.html#a5a306a73bf2d0586efb2854cf1c44e34',1,'data_sets.h']]],
+  ['rtos_5ftask_5ft_5669',['rtos_task_t',['../data__sets_8h.html#ac3251defc08bca699aeed6dd2df29f7d',1,'data_sets.h']]]
 ];

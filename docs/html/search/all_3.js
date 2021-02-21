@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['c1_588',['c1',['../structs_lpf_o1.html#a5067618b68d1061a63df60b206def075',1,'sLpfO1']]],
+  ['c1_588',['c1',['../structs_lpf_o1.html#acc777625e9d57658c5d2b1e070d77472',1,'sLpfO1']]],
   ['c_5f0p11_5fdeg2rad_5ff_589',['C_0p11_DEG2RAD_F',['../_i_s_constants_8h.html#a2c89e0581cdb957ce07bed9389d0e88d',1,'ISConstants.h']]],
   ['c_5f0p12_5fdeg2rad_5ff_590',['C_0p12_DEG2RAD_F',['../_i_s_constants_8h.html#ad98a226c2b21569ddeeb3d44c99340f4',1,'ISConstants.h']]],
   ['c_5f0p13_5fdeg2rad_5ff_591',['C_0p13_DEG2RAD_F',['../_i_s_constants_8h.html#a41efcb7b92120be295f74639e08e59ec',1,'ISConstants.h']]],
@@ -491,8 +491,8 @@ var searchData=
   ['createcurrenttimestamp_1076',['CreateCurrentTimestamp',['../classc_i_s_logger.html#ae9a98f041cc47b41676d589ea35c2a73',1,'cISLogger']]],
   ['createhost_1077',['CreateHost',['../class_inertial_sense.html#ad50c3a0f438115164ee04ae6e92d16c1',1,'InertialSense']]],
   ['createislogfile_1078',['CreateISLogFile',['../_i_s_log_file_factory_8h.html#ac72eb2de03ae548ecdbeb35ce4aa190e',1,'CreateISLogFile():&#160;ISLogFileFactory.h'],['../_i_s_log_file_factory_8h.html#a2248d2256ffd70553f8a0985a2174766',1,'CreateISLogFile(const char *filePath, const char *mode):&#160;ISLogFileFactory.h'],['../_i_s_log_file_factory_8h.html#a129b8a86b151a792fe33c85ea9c288bd',1,'CreateISLogFile(const std::string &amp;filePath, const char *mode):&#160;ISLogFileFactory.h']]],
-  ['cross_5fvec3_1079',['cross_Vec3',['../_i_s_matrix_8c.html#ae99b04072c707787d09ec602c7e28cdc',1,'cross_Vec3(Vector3 result, const Vector3 v1, const Vector3 v2):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#ae99b04072c707787d09ec602c7e28cdc',1,'cross_Vec3(Vector3 result, const Vector3 v1, const Vector3 v2):&#160;ISMatrix.c']]],
-  ['crossd_5fvec3_1080',['crossd_Vec3',['../_i_s_matrix_8c.html#a619cf8abe372c9329464b4d747038db2',1,'crossd_Vec3(Vector3d result, const Vector3 v1, const Vector3 v2):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#a619cf8abe372c9329464b4d747038db2',1,'crossd_Vec3(Vector3d result, const Vector3 v1, const Vector3 v2):&#160;ISMatrix.c']]],
+  ['cross_5fvec3_1079',['cross_Vec3',['../_i_s_matrix_8c.html#acb3a77e6542603ee333de06e871aea5e',1,'cross_Vec3(ixVector3 result, const ixVector3 v1, const ixVector3 v2):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#acb3a77e6542603ee333de06e871aea5e',1,'cross_Vec3(ixVector3 result, const ixVector3 v1, const ixVector3 v2):&#160;ISMatrix.c']]],
+  ['crossd_5fvec3_1080',['crossd_Vec3',['../_i_s_matrix_8c.html#a67395da3c2b7e8eb0d67d1e20bb26ee5',1,'crossd_Vec3(ixVector3d result, const ixVector3 v1, const ixVector3 v2):&#160;ISMatrix.c'],['../_i_s_matrix_8h.html#a67395da3c2b7e8eb0d67d1e20bb26ee5',1,'crossd_Vec3(ixVector3d result, const ixVector3 v1, const ixVector3 v2):&#160;ISMatrix.c']]],
   ['crs_1081',['crs',['../structeph__t.html#aae51b61e9bbe4cbc5a3fd11d26581897',1,'eph_t']]],
   ['csorteddatachunk_1082',['cSortedDataChunk',['../classc_sorted_data_chunk.html',1,'cSortedDataChunk'],['../classc_sorted_data_chunk.html#a3a9a91a4a9609c93d5f3e05dadb8a93c',1,'cSortedDataChunk::cSortedDataChunk()']]],
   ['cstr_1083',['CStr',['../class_ti_xml_printer.html#a859eede9597d3e0355b77757be48735e',1,'TiXmlPrinter']]],

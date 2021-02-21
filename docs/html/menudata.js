@@ -180,11 +180,9 @@ var menudata={children:[
 {text:"n",url:"globals_type.html#index_n"},
 {text:"o",url:"globals_type.html#index_o"},
 {text:"p",url:"globals_type.html#index_p"},
-{text:"q",url:"globals_type.html#index_q"},
 {text:"r",url:"globals_type.html#index_r"},
 {text:"s",url:"globals_type.html#index_s"},
 {text:"u",url:"globals_type.html#index_u"},
-{text:"v",url:"globals_type.html#index_v"},
 {text:"w",url:"globals_type.html#index_w"}]},
 {text:"Enumerations",url:"globals_enum.html",children:[
 {text:"a",url:"globals_enum.html#index_a"},
