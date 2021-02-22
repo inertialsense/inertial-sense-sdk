@@ -441,7 +441,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 7;			// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 8;			// increment key to force config to revert to defaults (overwrites customer's settings)
 
 	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 
@@ -454,7 +454,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	cfg->radioPID = 2;          // 0x0 to 0x9
 	cfg->radioNID = 72;         // 0x0 to 0x7FFF
-	cfg->radioPowerLevel = 1;	// 1=27dBm use middle power so radio can run from USB supply.  2=30dBm is too powerful for USB supply.
+	cfg->radioPowerLevel = 0;	// 0=20dBm use low power so radio can run from USB supply.  1=27dBm and 2=30dBm are too powerful for USB supply.
 	
 	cfg->server[0].ipAddr.u32 = nmi_inet_addr((void*)"69.167.49.43");
 	cfg->server[0].port = 7778;
