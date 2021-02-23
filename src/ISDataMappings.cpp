@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -723,6 +723,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "wheelConfig.distance", wheelConfig.distance, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "wheelConfig.diameter", wheelConfig.diameter, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "ser2BaudRate", ser2BaudRate, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1848,7 +1849,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "sensorAdcSigma",		// 46: DID_SENSORS_ADC_SIGMA
         "insDev1",				// 47: DID_INS_DEV_1
         "inl2States",			// 48: DID_INL2_STATES
-        "inl2CovarianceUD",		// 49: DID_INL2_COVARIANCE_UD
+        "inl2CovarianceLD",		// 49: DID_INL2_COVARIANCE_LD
         "inl2Status",			// 50: DID_INL2_STATUS
         "inl2Misc",				// 51: DID_INL2_MISC
         "magnetometer1",		// 52: DID_MAGNETOMETER_1

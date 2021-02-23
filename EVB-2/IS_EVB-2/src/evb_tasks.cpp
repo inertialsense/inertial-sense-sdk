@@ -17,9 +17,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 is_comm_instance_t& evbTaskCommInit(void *pvParameters)
 {	
     UNUSED(pvParameters);
-    static is_comm_instance_t   comm;
-    static uint8_t              comm_buffer[PKT_BUF_SIZE];
-    is_comm_init(&comm, comm_buffer, PKT_BUF_SIZE);
+    static uint8_t comm_buffer[PKT_BUF_SIZE];
+    is_comm_init(&g_commTx, comm_buffer, PKT_BUF_SIZE);
 
 #ifdef CONF_BOARD_CAN_TEST
 	//if(/*g_can_test == CAN_TEST_MASTER - or something like that*/ 1)
@@ -34,9 +33,9 @@ is_comm_instance_t& evbTaskCommInit(void *pvParameters)
 #endif
 
     vTaskDelay(200);
-    refresh_CFG_LED();
+	evbUiRefreshLedCfg();
 
-    return comm;
+    return g_commTx;
 }
 
 
@@ -71,15 +70,13 @@ is_comm_instance_t& evbTaskLoggerInit(void *pvParameters)
     static uint8_t              comm_buffer[PKT_BUF_SIZE];
     is_comm_init(&comm, comm_buffer, PKT_BUF_SIZE);
 
-    uINS_stream_stop_all(comm);
-
     vTaskDelay(200);
     LED_LOG_OFF();
     vTaskDelay(800);
 
 #if STREAM_INS_FOR_TIME_SYNC  // Stream INS message on startup.  Necessary to update EVB RTC for correct data log date and time.
-    //uINS0_stream_stop_all(comm);
-    //uINS0_stream_enable_std(comm);
+    //uINS_stream_stop_all(comm);
+    //uINS_stream_enable_std(comm);
 #endif
 
     return comm;
@@ -100,7 +97,7 @@ void evbTaskLogger(rtos_task_t &task, is_comm_instance_t &comm)
     // Mount/unmount SD card
     sd_card_maintenance();
 
-    update_led_log();
+	evbUiRefreshLedLog();
 }
 
 
@@ -118,43 +115,40 @@ int evbTaskMaint(rtos_task_t &task)
     
     //////////////////////////////////////////////////////////////////////////
     // Fast Maintenance - 10ms period
-
+	evbUiRefreshLedCfg();
+	evbUiRefreshLedLog();
 
     //////////////////////////////////////////////////////////////////////////
     // Slow Maintenance - 1000ms period 
-    if ((m2sPeriodMs += TASK_MAINT_PERIOD_MS) < TASK_MAINT_SLOW_SEC_PERIOD_MS || g_loggerEnabled)
+    if ((m2sPeriodMs += TASK_MAINT_PERIOD_MS) > TASK_MAINT_SLOW_SEC_PERIOD_MS && !g_loggerEnabled)
     {
+        m2sPeriodMs = 0;
+        
+        // Sync local time from uINS
+        time_sync_from_uINS();
+
+        // Update RTOS stats
+        if (g_enRtosStats)
+        {
+            rtos_monitor(EVB_RTOS_NUM_TASKS);
+        }
+        
+        if (g_uInsBootloaderEnableTimeMs)
+        {	// uINS bootloader mode enabled
+            if ( (g_comm_time_ms-g_uInsBootloaderEnableTimeMs) > 180000 )
+            {	// Automatically disable uINS after 3 minutes 
+                g_uInsBootloaderEnableTimeMs = 0;
+            }			
+        }
+
         return 1;
-    }
-    m2sPeriodMs = 0;
-    
-    // Sync local time from uINS
-    time_sync_from_uINS();
-
-    nvr_slow_maintenance();
-
-    // Update RTOS stats
-    if (g_enRtosStats)
-    {
-        rtos_monitor(EVB_RTOS_NUM_TASKS);
-    }
-    
-    if (g_uInsBootloaderEnableTimeMs)
-    {	// uINS bootloader mode enabled
-        if ( (g_comm_time_ms-g_uInsBootloaderEnableTimeMs) > 180000 )
-        {	// Automatically disable uINS after 3 minutes 
-            g_uInsBootloaderEnableTimeMs = 0;
-        }			
     }
 
     return 0;
 }
 
 
-void evbMainInit(pdTASK_CODE pxTaskComm,
-				pdTASK_CODE pxTaskLogg,
-				pdTASK_CODE pxTaskWifi,
-				pdTASK_CODE pxTaskMant )
+void evbMainInit(void)
 {
 	//XDMAC channel interrupt enables do not get cleared by a software reset. Clear them before they cause issues.
 	XDMAC->XDMAC_GID = 0xFFFFFFFF;
@@ -178,15 +172,32 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
     {   
         g_flashCfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
     }
-    
-	// Init hardware I/O, SD card logger, and communications
+
     board_IO_config();
-	init_control();	
+
+    // Setup user interface buttons and leds
+    evbUiDefaults();
+}
+
+void evbMainInitHdw(void)
+{
+	// Init hardware I/O, SD card logger, and communications
     sd_card_logger_init();
     communications_init();
-	adc_init();
-	i2cInit();
-	
+
+#ifdef CONF_BOARD_ADC
+	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC)
+	{
+		adc_init();
+	}
+#endif
+}
+
+void evbMainInitRTOS(pdTASK_CODE pxTaskComm,
+				    pdTASK_CODE pxTaskLogg,
+				    pdTASK_CODE pxTaskWifi,
+				    pdTASK_CODE pxTaskMant )
+{
 	// Create RTOS tasks
 	createTask(EVB_TASK_COMMUNICATIONS, pxTaskComm,  "COMM",   TASK_COMM_STACK_SIZE,  NULL, TASK_COMM_PRIORITY,  TASK_COMM_PERIOD_MS);
 	createTask(EVB_TASK_LOGGER,         pxTaskLogg,"LOGGER", TASK_LOGGER_STACK_SIZE, NULL, TASK_LOGGER_PRIORITY, TASK_LOGGER_PERIOD_MS);
@@ -207,7 +218,7 @@ void evbMainInit(pdTASK_CODE pxTaskComm,
 
 
 int evbMain(void)
-{		
+{	
 	// Start the scheduler
 	printf("Starting FreeRTOS\n\r");
 	vTaskStartScheduler((TaskHandle_t*)&g_rtos.task[EVB_TASK_IDLE].handle, (TaskHandle_t*)&g_rtos.task[EVB_TASK_TIMER].handle);

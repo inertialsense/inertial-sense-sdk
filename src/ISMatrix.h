@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -65,7 +65,7 @@ extern "C" {
 // Zero order low-pass filter 
 typedef struct
 {
-    Vector3               v;
+    ixVector3               v;
     f_t                   alpha;  // alpha gain
     f_t                   beta;   // beta  gain
 } sLpfO0;
@@ -73,8 +73,8 @@ typedef struct
 // First order low-pass filter
 typedef struct
 {
-	Vector3               v;
-	Vector3               c1;
+	ixVector3               v;
+	ixVector3               c1;
 	f_t                   alpha;  // alpha gain
 	f_t                   beta;   // beta  gain
 } sLpfO1;
@@ -152,185 +152,185 @@ void trans_MatMxN( f_t *result, const f_t *M, int m, int n );
 /* Matrix Multiply
  * result(3x3) = m1(3x3) * m2(3x3)
  */
-void mul_Mat3x3_Mat3x3( Matrix3 result, const Matrix3 m1, const Matrix3 m2 );
-void mul_Mat3x3_Mat3x3_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2);
+void mul_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2 );
+void mul_Mat3x3_Mat3x3_d(ixMatrix3d result, const ixMatrix3d m1, const ixMatrix3d m2);
 
 /* Matrix Multiply w/ Transpose
  * result(3x3) = m1.T(3x3) * m2(3x3)
  */
-void mul_Mat3x3_Trans_Mat3x3( Matrix3 result, const Matrix3 m1, const Matrix3 m2 );
-void mul_Mat3x3_Trans_Mat3x3_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2);
+void mul_Mat3x3_Trans_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2 );
+void mul_Mat3x3_Trans_Mat3x3_d(ixMatrix3d result, const ixMatrix3d m1, const ixMatrix3d m2);
 
 /* Matrix Multiply w/ Transpose
  * result(3x3) = m1(3x3) * m2.T(3x3)
  */
-void mul_Mat3x3_Mat3x3_Trans( Matrix3 result, const Matrix3 m1, const Matrix3 m2 );
-void mul_Mat3x3_Mat3x3_Trans_d(Matrix3d result, const Matrix3d m1, const Matrix3d m2);
+void mul_Mat3x3_Mat3x3_Trans(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2 );
+void mul_Mat3x3_Mat3x3_Trans_d(ixMatrix3d result, const ixMatrix3d m1, const ixMatrix3d m2);
 
 /* Matrix Multiply
  * result(1x2) = m(2x2) * v(2x1)
  */
-void mul_Mat2x2_Vec2x1( Vector2 result, const Matrix2 m, const Vector2 v );
+void mul_Mat2x2_Vec2x1( ixVector2 result, const ixMatrix2 m, const ixVector2 v );
 
 /* Matrix Multiply w/ Transpose
  * result(1x2) = m(2x2).T * v(2x1)
  */
-void mul_Mat2x2_Trans_Vec2x1( Vector2 result, const Matrix2 m, const Vector2 v );
+void mul_Mat2x2_Trans_Vec2x1( ixVector2 result, const ixMatrix2 m, const ixVector2 v );
 
 /* Matrix Multiply
  * result(1x3) = m(3x3) * v(3x1)
  * (9 multiplies, 6 adds)
  */
-void mul_Mat3x3_Vec3x1( Vector3 result, const Matrix3 m, const Vector3 v );
+void mul_Mat3x3_Vec3x1( ixVector3 result, const ixMatrix3 m, const ixVector3 v );
 
 /* Matrix Multiply w/ Transpose
  * result(1x3) = m(3x3).T * v(3x1)
  */
-void mul_Mat3x3_Trans_Vec3x1( Vector3 result, const Matrix3 m, const Vector3 v );
+void mul_Mat3x3_Trans_Vec3x1( ixVector3 result, const ixMatrix3 m, const ixVector3 v );
 
 /* Matrix Multiply
  * result(1x4) = m(4x4) * v(4x1)
  */
-void mul_Mat4x4_Vec4x1( Vector4 result, const Matrix4 m, const Vector4 v );
+void mul_Mat4x4_Vec4x1( ixVector4 result, const ixMatrix4 m, const ixVector4 v );
 
 /* Matrix Multiply w/ Transpose
  * result(1x4) = m(4x4).T * v(4x1)
  */
-void mul_Mat4x4_Trans_Vec4x1( Vector4 result, const Matrix4 m, const Vector4 v );
+void mul_Mat4x4_Trans_Vec4x1( ixVector4 result, const ixMatrix4 m, const ixVector4 v );
 
 /* Negate 
 */
-void neg_Mat3x3(Matrix3 result, const Matrix3 m);
+void neg_Mat3x3(ixMatrix3 result, const ixMatrix3 m);
 
 /* Multiply
  * result(3x3) = v1(3x1) * v2(1x3)
  */
-void mul_Vec3x1_Vec1x3( Matrix3 result, const Vector3 v1, const Vector3 v2 );
+void mul_Vec3x1_Vec1x3( ixMatrix3 result, const ixVector3 v1, const ixVector3 v2 );
 
 /* Multiply
  * result(3) = v1(3) * v2(3)
  */
-void mul_Vec3_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 );
+void mul_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 );
 
 /* Multiply
  * result(4) = v1(4) .* v2(4)
  */
-void mul_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 );
+void mul_Vec4_Vec4( ixVector4 result, const ixVector4 v1, const ixVector4 v2 );
 
 /* Square Root
  * result(3) = .sqrt(v(3))
  */
-void sqrt_Vec3( Vector3 result, const Vector3 v );
+void sqrt_Vec3( ixVector3 result, const ixVector3 v );
 
 /* Square Root
  * result(4) = .sqrt(v(4))
  */
-void sqrt_Vec4( Vector4 result, const Vector4 v );
+void sqrt_Vec4( ixVector4 result, const ixVector4 v );
 
 /* Absolute Value
  * result(n) = .abs(v(n))
  */
-void abs_Vec2( Vector2 result, const Vector2 v );
-void abs_Vec3(Vector3 result, const Vector3 v);
-void abs_Vec4( Vector4 result, const Vector4 v );
+void abs_Vec2(ixVector2 result, const ixVector2 v );
+void abs_Vec3(ixVector3 result, const ixVector3 v);
+void abs_Vec4(ixVector4 result, const ixVector4 v );
 
-void abs_Vec2d(Vector2d result, const Vector2d v);
-void abs_Vec3d(Vector3d result, const Vector3d v);
-void abs_Vec4d(Vector4d result, const Vector4d v);
+void abs_Vec2d(ixVector2d result, const ixVector2d v);
+void abs_Vec3d(ixVector3d result, const ixVector3d v);
+void abs_Vec4d(ixVector4d result, const ixVector4d v);
 
 /* Dot product
  * result = v1(n) dot v2(n)
  */
-f_t dot_Vec2_Vec2(const Vector2 v1, const Vector2 v2 );
-f_t dot_Vec3_Vec3(const Vector3 v1, const Vector3 v2 );
-f_t dot_Vec4_Vec4(const Vector4 v1, const Vector4 v2 );
-double dot_Vec3d_Vec3d(const Vector3d v1, const Vector3d v2);
+f_t dot_Vec2_Vec2(const ixVector2 v1, const ixVector2 v2 );
+f_t dot_Vec3_Vec3(const ixVector3 v1, const ixVector3 v2 );
+f_t dot_Vec4_Vec4(const ixVector4 v1, const ixVector4 v2 );
+double dot_Vec3d_Vec3d(const ixVector3d v1, const ixVector3d v2);
 
 /* Cross product
  * result(3) = v1(3) x v2(3)
  */
-void cross_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 );
-void crossd_Vec3( Vector3d result, const Vector3 v1, const Vector3 v2 );
+void cross_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 );
+void crossd_Vec3( ixVector3d result, const ixVector3 v1, const ixVector3 v2 );
 
 // /* Vector length
 //  * result(3) = sqrt( v[0]*v[0] + v[1]*v[1] + v[2]*v[2] )
 //  */
-// f_t length_Vec3( Vector3 v );
+// f_t length_Vec3( ixVector3 v );
 
 /* Multiply
  * result(2x1) = v(2) .* x
  */
-void mul_Vec2_X( Vector2 result, const Vector2 v, const f_t x );
-void mul_Vec2d_X( Vector2d result, const Vector2d v, const double x );
+void mul_Vec2_X( ixVector2 result, const ixVector2 v, const f_t x );
+void mul_Vec2d_X( ixVector2d result, const ixVector2d v, const double x );
 
 /* Multiply
  * result(3x1) = v(3) .* x
  */
-void mul_Vec3_X( Vector3 result, const Vector3 v, const  f_t x );
-void mul_Vec3d_X( Vector3d result, const Vector3d v, const double x );
+void mul_Vec3_X( ixVector3 result, const ixVector3 v, const  f_t x );
+void mul_Vec3d_X( ixVector3d result, const ixVector3d v, const double x );
 
 /* Multiply
  * result(4x1) = v(4) .* x
  */
-void mul_Vec4_X( Vector4 result, const Vector4 v, const f_t x );
-void mul_Vec4d_X( Vector4d result, const Vector4d v, const double x );
+void mul_Vec4_X( ixVector4 result, const ixVector4 v, const f_t x );
+void mul_Vec4d_X( ixVector4d result, const ixVector4d v, const double x );
 
 /* Divide
  * result(3x1) = v(3) ./ x
  */
-void div_Vec3_X( Vector3 result, const Vector3 v, const f_t x );
+void div_Vec3_X( ixVector3 result, const ixVector3 v, const f_t x );
 
 /* Divide
  * result(4x1) = v(4) ./ x
  */
-void div_Vec4_X( Vector4 result, const Vector4 v, const f_t x );
-void div_Vec4d_X( Vector4d result, const Vector4d v, const double x );
+void div_Vec4_X( ixVector4 result, const ixVector4 v, const f_t x );
+void div_Vec4d_X( ixVector4d result, const ixVector4d v, const double x );
 
 /* Add
  * result(3) = v1(3) + v2(3)
  */
-void add_Vec3_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 );
-void add_Vec3d_Vec3d( Vector3d result, const Vector3d v1, const Vector3d v2 );
+void add_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 );
+void add_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d v2 );
 
 /* Add
  * result(3) = k1*v1(3) + k2*v2(3)
  */
-void add_K1Vec3_K2Vec3(Vector3 result, const Vector3 v1, const Vector3 v2, float k1, float k2);
+void add_K1Vec3_K2Vec3(ixVector3 result, const ixVector3 v1, const ixVector3 v2, float k1, float k2);
 
 /* Add
  * result(4) = v1(4) + v2(4)
  */
-void add_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 );
-void add_Vec4d_Vec4d( Vector4d result, const Vector4d v1, const Vector4d v2 );
+void add_Vec4_Vec4( ixVector4 result, const ixVector4 v1, const ixVector4 v2 );
+void add_Vec4d_Vec4d( ixVector4d result, const ixVector4d v1, const ixVector4d v2 );
 
 /* Subtract
  * result(3) = v1(3) - v2(3)
  */
-void sub_Vec3_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 );
-void sub_Vec3d_Vec3d( Vector3d result, const Vector3d v1, const Vector3d v2 );
+void sub_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 );
+void sub_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d v2 );
 
 /* Subtract
  * result(4) = v1(4) +- v2(4)
  */
-void sub_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 );
+void sub_Vec4_Vec4( ixVector4 result, const ixVector4 v1, const ixVector4 v2 );
 
 /* Divide
  * result(3) = v1(3) ./ v2(3)
  */
-void div_Vec3_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 );
+void div_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 );
 
 /* Divide
  * result(4) = v1(4) ./ v2(4)
  */
-void div_Vec4_Vec4( Vector4 result, const Vector4 v1, const Vector4 v2 );
+void div_Vec4_Vec4( ixVector4 result, const ixVector4 v1, const ixVector4 v2 );
 
 /* Negate*/
-void neg_Vec3(Vector3 result, const Vector3 v);
+void neg_Vec3(ixVector3 result, const ixVector3 v);
 
 /* Min of vector elements
  * = min( v[0], v[1], v[2] }
  */
-static __inline f_t min_Vec3_X(const Vector3 v )
+static __inline f_t min_Vec3_X(const ixVector3 v )
 {
 	f_t val = v[0];
 	
@@ -346,7 +346,7 @@ static __inline f_t min_Vec3_X(const Vector3 v )
 /* Max of vector elements
  * = max( v[0], v[1], v[2] }
  */
-static __inline f_t max_Vec3_X(const Vector3 v )
+static __inline f_t max_Vec3_X(const ixVector3 v )
 {
 	f_t val = v[0];
 	
@@ -362,7 +362,7 @@ static __inline f_t max_Vec3_X(const Vector3 v )
 /* Max of vector elements
  * = max( v1, v[1], v[2] }
  */
-static __inline void min_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 )
+static __inline void min_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
 {
 	result[0] = _MIN(v1[0], v2[0]);
 	result[1] = _MIN(v1[1], v2[1]);
@@ -372,7 +372,7 @@ static __inline void min_Vec3( Vector3 result, const Vector3 v1, const Vector3 v
 /* Max of vector elements
  * = max( v1, v[1], v[2] }
  */
-static __inline void max_Vec3( Vector3 result, const Vector3 v1, const Vector3 v2 )
+static __inline void max_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
 {
 	result[0] = _MAX(v1[0], v2[0]);
 	result[1] = _MAX(v1[1], v2[1]);
@@ -382,25 +382,25 @@ static __inline void max_Vec3( Vector3 result, const Vector3 v1, const Vector3 v
 /* Zero vector
  * v(3) = { 0, 0, 0 }
  */
-static __inline void zero_Vec3( Vector3 v )
+static __inline void zero_Vec3( ixVector3 v )
 {
-    memset( v, 0, sizeof(Vector3) );
+    memset( v, 0, sizeof(ixVector3) );
 }
-static __inline void zero_Vec3d( Vector3d v )
+static __inline void zero_Vec3d( ixVector3d v )
 {
-    memset( v, 0, sizeof(Vector3d) );
+    memset( v, 0, sizeof(ixVector3d) );
 }
 
 /* Zero vector
  * v(4) = { 0, 0, 0 }
  */
-static __inline void zero_Vec4( Vector4 v )
+static __inline void zero_Vec4( ixVector4 v )
 {
-    memset( v, 0, sizeof(Vector4) );
+    memset( v, 0, sizeof(ixVector4) );
 }
-static __inline void zero_Vec4d( Vector4d v )
+static __inline void zero_Vec4d( ixVector4d v )
 {
-    memset( v, 0, sizeof(Vector4d) );
+    memset( v, 0, sizeof(ixVector4d) );
 }
 
 /* Zero vector
@@ -423,21 +423,21 @@ static __inline void zero_MatMxN( f_t *M, i_t m, i_t n )
 /* Copy vector
  * result(3) = v(3)
  */
-static __inline void cpy_Vec3_Vec3( Vector3 result, const Vector3 v )
+static __inline void cpy_Vec3_Vec3( ixVector3 result, const ixVector3 v )
 {
-    memcpy( result, v, sizeof(Vector3) );
+    memcpy( result, v, sizeof(ixVector3) );
 }
-static __inline void cpy_Vec3d_Vec3d( Vector3d result, const Vector3d v )
+static __inline void cpy_Vec3d_Vec3d( ixVector3d result, const ixVector3d v )
 {
-    memcpy( result, v, sizeof(Vector3d) );
+    memcpy( result, v, sizeof(ixVector3d) );
 }
-static __inline void cpy_Vec3d_Vec3( Vector3d result, const  Vector3 v )
+static __inline void cpy_Vec3d_Vec3( ixVector3d result, const  ixVector3 v )
 {
 	result[0] = (double)v[0];
 	result[1] = (double)v[1];
 	result[2] = (double)v[2];
 }
-static __inline void cpy_Vec3_Vec3d( Vector3 result, const Vector3d v )
+static __inline void cpy_Vec3_Vec3d( ixVector3 result, const ixVector3d v )
 {
 	result[0] = (f_t)v[0];
 	result[1] = (f_t)v[1];
@@ -455,22 +455,22 @@ static __inline void cpy_VecN_VecN( f_t *result, const f_t *v, i_t n )
 /* Copy vector
  * result(4) = v(4)
  */
-static __inline void cpy_Vec4_Vec4( Vector4 result, const Vector4 v )
+static __inline void cpy_Vec4_Vec4( ixVector4 result, const ixVector4 v )
 {
-    memcpy( result, v, sizeof(Vector4) );
+    memcpy( result, v, sizeof(ixVector4) );
 }
-static __inline void cpy_Vec4d_Vec4d( Vector4d result, const Vector4d v )
+static __inline void cpy_Vec4d_Vec4d( ixVector4d result, const ixVector4d v )
 {
-    memcpy( result, v, sizeof(Vector4d) );
+    memcpy( result, v, sizeof(ixVector4d) );
 }
-static __inline void cpy_Vec4d_Vec4( Vector4d result, const Vector4 v )
+static __inline void cpy_Vec4d_Vec4( ixVector4d result, const ixVector4 v )
 {
 	result[0] = (double)v[0];
 	result[1] = (double)v[1];
 	result[2] = (double)v[2];
 	result[3] = (double)v[3];
 }
-static __inline void cpy_Vec4_Vec4d( Vector4 result, const Vector4d v )
+static __inline void cpy_Vec4_Vec4d( ixVector4 result, const ixVector4d v )
 {
 	result[0] = (f_t)v[0];
 	result[1] = (f_t)v[1];
@@ -495,39 +495,39 @@ void cpy_MatRxC_MatMxN( f_t *result, i_t r, i_t c, i_t r_offset, i_t c_offset, f
 /* Matrix Transpose
  * result(2x2) = m(2x2)'
  */
-void transpose_Mat2( Matrix2 result, const Matrix2 m );
+void transpose_Mat2( ixMatrix2 result, const ixMatrix2 m );
 
 /* Matrix Transpose
  * result(3x3) = m(3x3)'
  */
-void transpose_Mat3( Matrix3 result, const Matrix3 m );
+void transpose_Mat3( ixMatrix3 result, const ixMatrix3 m );
 
 /* Matrix Transpose
  * result(4x4) = m(4x4)'
  */
-void transpose_Mat4( Matrix4 result, const Matrix4 m );
+void transpose_Mat4( ixMatrix4 result, const ixMatrix4 m );
 
 /*
  * Invert a 2x2 matrix.
  */
-char inv_Mat2( Matrix2 result, Matrix2 m );
+char inv_Mat2( ixMatrix2 result, ixMatrix2 m );
 
 /* Matrix Inverse
  * result(3x3) = m(3x3)^-1
  * return 0 on success, -1 on numerical error
  */
-char inv_Mat3( Matrix3 result, const Matrix3 m );
+char inv_Mat3( ixMatrix3 result, const ixMatrix3 m );
 
 /* Matrix Inverse
  * result(4x4) = m(4x4)^-1
  * return 0 on success, -1 on numerical error
  */
-char inv_Mat4( Matrix4 result, const Matrix4 m );
+char inv_Mat4( ixMatrix4 result, const ixMatrix4 m );
 
 /*
  * Normalize 2 dimensional vector
  */
-static __inline void normalize_Vec2( Vector2 v )
+static __inline void normalize_Vec2( ixVector2 v )
 {
     // Normalize vector
     mul_Vec2_X( v, v, recipNorm_Vec2(v) );
@@ -536,7 +536,7 @@ static __inline void normalize_Vec2( Vector2 v )
 /*
  * Normalize 3 dimensional vector
  */
-static __inline void normalize_Vec3( Vector3 result, const Vector3 v )
+static __inline void normalize_Vec3( ixVector3 result, const ixVector3 v )
 {
     // Normalize vector
 	mul_Vec3_X( result, v, recipNorm_Vec3(v) );
@@ -545,21 +545,31 @@ static __inline void normalize_Vec3( Vector3 result, const Vector3 v )
 /*
  * Normalize 4 dimensional vector
  */
-static __inline void normalize_Vec4( Vector4 result, const Vector4 v )
+static __inline void normalize_Vec4( ixVector4 result, const ixVector4 v )
 {
     // Normalize vector
     mul_Vec4_X( result, v, recipNorm_Vec4(v) );
 }
-static __inline void normalize_Vec4d( Vector4d result, const Vector4d v )
+static __inline void normalize_Vec4d( ixVector4d result, const ixVector4d v )
 {
 	// Normalize vector
 	mul_Vec4d_X( result, v, recipNorm_Vec4d(v) );
 }
 
 /*
+* Check if 2 dimensional vectors are equal
+*/
+static __inline int is_equal_Vec2(const ixVector2 v1, const ixVector2 v2)
+{
+	return
+		(v1[0] == v2[0]) &&
+		(v1[1] == v2[1]);
+}
+
+/*
 * Check if 3 dimensional vectors are equal
 */
-static __inline int is_equal_Vec3(const Vector3 v1, const Vector3 v2)
+static __inline int is_equal_Vec3(const ixVector3 v1, const ixVector3 v2)
 {
 	return
 		(v1[0] == v2[0]) &&
@@ -570,7 +580,7 @@ static __inline int is_equal_Vec3(const Vector3 v1, const Vector3 v2)
 /*
 * Check if 4 dimensional vectors are equal
 */
-static __inline int is_equal_Vec4(const Vector4 v1, const Vector4 v2)
+static __inline int is_equal_Vec4(const ixVector4 v1, const ixVector4 v2)
 {
 	return
 		(v1[0] == v2[0]) &&
@@ -582,7 +592,7 @@ static __inline int is_equal_Vec4(const Vector4 v1, const Vector4 v2)
 /*
 * Limit 3 dimensional vector to +- specified limit
 */
-static __inline void limit_Vec3( Vector3 v, f_t limit )
+static __inline void limit_Vec3( ixVector3 v, f_t limit )
 { 	
 	_LIMIT( v[0], limit );
 	_LIMIT( v[1], limit );
@@ -592,7 +602,7 @@ static __inline void limit_Vec3( Vector3 v, f_t limit )
 /*
 * Limit 3 dimensional vector to min and max values
 */
-static __inline void limit2_Vec3( Vector3 v, f_t min, f_t max )
+static __inline void limit2_Vec3( ixVector3 v, f_t min, f_t max )
 {
 	_LIMIT2( v[0], min, max );
 	_LIMIT2( v[1], min, max );
@@ -712,14 +722,14 @@ static __inline int isFinite_array_d(double *a, int size)
 
 
 // Low-Pass Alpha Filter
-void LPFO0_init_Vec3( sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const Vector3 initVal );
+void LPFO0_init_Vec3( sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const ixVector3 initVal );
 // output[n+1] = beta*output[n] + alpha*input
-void LPFO0_Vec3( sLpfO0 *lpf, const Vector3 input );
+void LPFO0_Vec3( sLpfO0 *lpf, const ixVector3 input );
 
 // Zero order Low-Pass Filter
-static __inline void O0_LPF_Vec3( Vector3 result, const Vector3 input, f_t alph, f_t beta )
+static __inline void O0_LPF_Vec3( ixVector3 result, const ixVector3 input, f_t alph, f_t beta )
 {
-	Vector3 tmp3;
+	ixVector3 tmp3;
 
 	// val[n+1] = beta*val[n] + alpha*input
 	mul_Vec3_X(		tmp3,	input,	alph );
@@ -729,9 +739,9 @@ static __inline void O0_LPF_Vec3( Vector3 result, const Vector3 input, f_t alph,
 
 
 // First order Low-Pass Filter
-static __inline void O1_LPF_Vec3( Vector3 result, const Vector3 input, Vector3 c1, f_t alph, f_t beta, f_t dt )
+static __inline void O1_LPF_Vec3( ixVector3 result, const ixVector3 input, ixVector3 c1, f_t alph, f_t beta, f_t dt )
 {
-	Vector3 tmp3;
+	ixVector3 tmp3;
 
 	// Estimate next models coefficients:			d1 = (input - result) / dt
 	sub_Vec3_Vec3( tmp3, input, result );

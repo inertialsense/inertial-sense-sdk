@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -433,11 +433,15 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 
 				// Prep data if callback exists
 				unsigned int id = bcPtr->dataHdr.id;
+				int sendData = 1;
 				if (id<DID_COUNT && cmInstance->regData[id].preTxFnc)
 				{
-					cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
+					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
 				}
-				sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
+				if (sendData)
+				{
+					sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
+				}
 			}
 		}
 	}
@@ -977,10 +981,12 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	msg->pkt.txData.ptr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
 
 	// Prep data if callback exists
+	int sendData = 1;
 	if (cmInstance->regData[req->id].preTxFnc)
 	{
-		cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle);
+		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle);
 	}
+// 	sendData
 	
 	// Constrain request broadcast period if necessary
 	if (req->bc_period_multiple != 0)
@@ -995,7 +1001,10 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		// Send data immediately if possible
 		if (cmInstance->txFreeCallback == 0 || msg->pkt.txData.size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
 		{
-			sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			if (sendData)
+			{
+				sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			}
 		}
 
 		// Enable broadcast message
@@ -1007,7 +1016,10 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		// Send data immediately if possible
 		if (cmInstance->txFreeCallback == 0 || msg->pkt.txData.size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
 		{
-			sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			if (sendData)
+			{
+				sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+			}
 			disableBroadcastMsg(cmInstance, msg);
 		}
 		else

@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../hw-libs/communications/CAN_comm.h"
 
 
+extern is_comm_instance_t 		g_commTx;
 extern bool                     g_usb_cdc_open;
 
 typedef void(*pfnHandleUinsData)(p_data_hdr_t &dataHdr, uDatasets &data);
@@ -33,9 +34,9 @@ void callback_cdc_set_config(uint8_t port, usb_cdc_line_coding_t * cfg);
 void callback_cdc_disable(void);
 void callback_cdc_set_dtr(uint8_t port, bool b_enable);
 
-void uINS_stream_stop_all(is_comm_instance_t &comm);
-void uINS_stream_enable_std(is_comm_instance_t &comm);
-void uINS_stream_enable_PPD(is_comm_instance_t &comm);
+void uINS_stream_stop_all(void);
+void uINS_stream_enable_std(void);
+void uINS_stream_enable_PPD(void);
 
 void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
 

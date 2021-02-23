@@ -109,4 +109,7 @@
  //#define CONF_BOARD_CAN1
  //#define CONF_BOARD_CAN_TEST
 
+// ADC interface
+#define CONF_BOARD_ADC
+
 #endif /* CONF_BOARD_H_INCLUDED */

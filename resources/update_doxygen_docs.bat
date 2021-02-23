@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: Parameters
 ::set sdkDir=docs
-::set inputfilename=release-notes-template.txt
+::set inputfilename=release-notes.txt
 
 :: Read Release version, date, and time
 ::set /p releaseversion=<version\releaseVersion.txt
@@ -25,7 +25,7 @@ echo Generating Doxygen Documentation
 
 :: Update Doxygen documentation
 ::doxygen resources\DoxyfileSDK
-( type resources\DoxyfileSDK & echo PROJECT_NUMBER="Release 1.8.3" ) | doxygen -
+( type resources\DoxyfileSDK & echo PROJECT_NUMBER="Release 1.8.4" ) | doxygen -
 ::( type resources\DoxyfileSDK & echo PROJECT_NUMBER="Release %releaseversion%,  %releasedate%,  %releasetime%" ) | doxygen -
 
 

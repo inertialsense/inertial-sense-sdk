@@ -392,6 +392,7 @@ class cDevice:
             ('startupGPSDtMs', u32),
             ('RTKCfgBits', u32),
             ('reserved', u32),
+            ('ser2BaudRate', u32),
         ]))
 
         self.di[13].set('gps1Pos', dtypeGpsPos)

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -221,37 +221,20 @@ int current_timeSec()
 
 }
 
+/** System time in milliseconds */
 int current_timeMs()
 {
 
 #if PLATFORM_IS_WINDOWS
 
-	SYSTEMTIME st;
-	GetSystemTime(&st);
-	return st.wMilliseconds;
-
-#else
-
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec / 1000;
-
-#endif
-
-}
-
-/** Time since week start (Sunday morning) in milliseconds, GMT */
-int current_weekMs()
-{
-
-#if PLATFORM_IS_WINDOWS
-
+	// Time since week start (Sunday morning) in milliseconds, GMT
 	SYSTEMTIME st;
 	GetSystemTime(&st);
 	return	st.wMilliseconds + 1000 * (st.wSecond + 60 * (st.wMinute + 60 * (st.wHour + 24 * st.wDayOfWeek)));
 
 #else
 
+	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec / 1000 + 1000 * tv.tv_sec;
@@ -260,11 +243,13 @@ int current_weekMs()
 
 }
 
-uint64_t current_weekUs()
+/** System time in milliseconds */
+uint64_t current_timeUs()
 {
 
 #if PLATFORM_IS_WINDOWS
 
+	// Time since week start (Sunday morning) in milliseconds, GMT
 	LARGE_INTEGER StartingTime;
 	LARGE_INTEGER Frequency;
 
@@ -278,6 +263,7 @@ uint64_t current_weekUs()
 
 #else
 
+	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec + 1000000 * tv.tv_sec;
@@ -297,6 +283,7 @@ uint64_t timerUsStart()
 
 #else
 
+	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec + 1000000 * tv.tv_sec;

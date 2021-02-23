@@ -22,10 +22,10 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
  * [Software Releases](https://github.com/inertialsense/InertialSenseSDK/releases) - uINS, uAHRS, uIMU, and EVB-2 firmware and application installers.
  * [SDK & CLTool Source Code](https://github.com/inertialsense/InertialSenseSDK) - open source SDK repository with command line tool and example C/C++ source code.
 
-### Design Resources
+### Hardware Design Files
 
- * [uINS PCB Design Libraries](https://inertialsense.com/resources) - Schematic and layout files for printed circuit board designs.
- * [uINS, uAHRS, uIMU CAD Model](https://inertialsense.com/resources) - 3D step model of uINS and EVB used for CAD and circuit board designs.
+ * [uINS PCB Design Libraries](https://docs.inertialsense.com/downloads/PCB-Design-Libraries.zip) - Schematic and layout files for printed circuit board designs.
+ * [uINS, uAHRS, uIMU CAD Model](https://docs.inertialsense.com/downloads/CAD-Models-STEP.zip) - 3D step model of uINS and EVB used for CAD and circuit board designs.
 
 ### Support
 
@@ -37,7 +37,7 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
 
 **MIT LICENSE**
 
-Copyright 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -47,4 +47,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
-(c) 2014-2020 Inertial Sense, Inc.
+(c) 2014-2021 Inertial Sense, Inc.

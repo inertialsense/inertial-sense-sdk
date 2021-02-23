@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -120,9 +120,9 @@ void lla2ecef(const double *LLA, double *Pe)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void lla2ned(Vector3_t llaRef, Vector3_t lla, Vector3_t result)
+void lla2ned(ixVector3 llaRef, ixVector3 lla, ixVector3 result)
 {
-    Vector3_t deltaLLA;
+    ixVector3 deltaLLA;
     deltaLLA[0] = lla[0] - llaRef[0];
     deltaLLA[1] = lla[1] - llaRef[1];
     deltaLLA[2] = lla[2] - llaRef[2];
@@ -144,9 +144,9 @@ void lla2ned(Vector3_t llaRef, Vector3_t lla, Vector3_t result)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void lla2ned_d(double llaRef[3], double lla[3], Vector3_t result)
+void lla2ned_d(double llaRef[3], double lla[3], ixVector3 result)
 {
-    Vector3_t deltaLLA;
+    ixVector3 deltaLLA;
     deltaLLA[0] = (f_t)(lla[0] - llaRef[0]);
     deltaLLA[1] = (f_t)(lla[1] - llaRef[1]);
     deltaLLA[2] = (f_t)(lla[2] - llaRef[2]);
@@ -167,9 +167,9 @@ void lla2ned_d(double llaRef[3], double lla[3], Vector3_t result)
  *  lla[1] = longitude (deg)
  *  lla[2] = msl altitude (m)
  */
-void llaDeg2ned_d(double llaRef[3], double lla[3], Vector3_t result)
+void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result)
 {
-    Vector3_t deltaLLA;
+    ixVector3 deltaLLA;
     deltaLLA[0] = (f_t)(lla[0] - llaRef[0]);
     deltaLLA[1] = (f_t)(lla[1] - llaRef[1]);
     deltaLLA[2] = (f_t)(lla[2] - llaRef[2]);
@@ -191,9 +191,9 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], Vector3_t result)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void ned2lla(Vector3_t ned, Vector3_t llaRef, Vector3_t result)
+void ned2lla(ixVector3 ned, ixVector3 llaRef, ixVector3 result)
 {
-    Vector3 deltaLLA;
+    ixVector3 deltaLLA;
     ned2DeltaLla( ned, llaRef, deltaLLA );
     
     // Find LLA
@@ -210,7 +210,7 @@ void ned2lla(Vector3_t ned, Vector3_t llaRef, Vector3_t result)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void ned2lla_d(Vector3_t ned, double llaRef[3], double result[3])
+void ned2lla_d(ixVector3 ned, double llaRef[3], double result[3])
 {
     double deltaLLA[3];
     ned2DeltaLla_d( ned, llaRef, deltaLLA );
@@ -229,7 +229,7 @@ void ned2lla_d(Vector3_t ned, double llaRef[3], double result[3])
 *  lla[1] = longitude (degrees)
 *  lla[2] = msl altitude (m)
 */
-void ned2llaDeg_d(Vector3_t ned, double llaRef[3], double result[3])
+void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3])
 {
 	double deltaLLA[3];
 	ned2DeltaLlaDeg_d(ned, llaRef, deltaLLA);
@@ -264,7 +264,7 @@ f_t baro2msl( f_t pKPa )
  */
 f_t llaRadDistance( double lla1[3], double lla2[3] )
 {
-	Vector3_t ned;
+	ixVector3 ned;
 	
 	lla2ned_d( lla1, lla2, ned );
 
@@ -278,28 +278,28 @@ f_t llaRadDistance( double lla1[3], double lla2[3] )
  */
 f_t llaDegDistance( double lla1[3], double lla2[3] )
 {
-	Vector3_t ned;
+	ixVector3 ned;
 	
 	llaDeg2ned_d( lla1, lla2, ned );
 
 	return _SQRT( ned[0]*ned[0] + ned[1]*ned[1] + ned[2]*ned[2] );
 }
 
-void ned2DeltaLla(Vector3_t ned, Vector3 llaRef, Vector3 deltaLLA)
+void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA)
 {
 	deltaLLA[0] =  ned[0] * INV_EARTH_RADIUS_F;
 	deltaLLA[1] =  ned[1] * INV_EARTH_RADIUS_F / _COS(((f_t)llaRef[0]));
 	deltaLLA[2] = -ned[2];
 }
 
-void ned2DeltaLla_d(Vector3_t ned, double llaRef[3], double deltaLLA[3])
+void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
 {
 	deltaLLA[0] = (double)( ned[0] * INV_EARTH_RADIUS_F);
 	deltaLLA[1] = (double)( ned[1] * INV_EARTH_RADIUS_F / _COS(((f_t)llaRef[0])) );
 	deltaLLA[2] = (double)(-ned[2]);
 }
 
-void ned2DeltaLlaDeg_d(Vector3_t ned, double llaRef[3], double deltaLLA[3])
+void ned2DeltaLlaDeg_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
 {
 	deltaLLA[0] = (double)(ned[0] * INV_EARTH_RADIUS_F * C_RAD2DEG_F);
 	deltaLLA[1] = (double)(ned[1] * INV_EARTH_RADIUS_F * C_RAD2DEG_F / _COS( (((f_t)llaRef[0])*C_DEG2RAD_F) ) );

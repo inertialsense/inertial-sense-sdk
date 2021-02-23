@@ -229,29 +229,24 @@ TARGET_HEX=$(BIN_DIR)/$(TARGET).hex
 #################################
 MCFLAGS= -mcpu=cortex-m7 \
         -mthumb \
-        -mfloat-abi=hard \
-        -mfpu=fpv5-sp-d16
-
+        -mfloat-abi=softfp \
+        
 
 MAP_FLAG = -Wl,-Map="IS_EVB-2.map"
 
-DEFS=   -D__INERTIAL_SENSE_EVB_2__ \
-        -D__SAME70Q20B__ \
-        -DBOARD=USER_BOARD \
-        -DPLATFORM_IS_AVR=false \
-        -DARM_MATH_CM7=true \
-        -D__FREERTOS__ \
-        -DARM \
-        -DPOSIX_SHARED \
-        -DSD_MMC_ENABLE
-        # -DUSE_IS_INTERNAL \
+DEFS=   -D__SAME70Q20B__ \
+	-DBOARD=USER_BOARD \
+	-DARM_MATH_CM7=true \
+	-D__FREERTOS__ \
+	-DUDD_ENABLE \
+	-DSD_MMC_ENABLE \
+	-DARM \
+	-D__INERTIAL_SENSE_EVB_2__ \
+	-DCONF_PERIPH \
 
 
 FILE_SIZE_FLAGS=    -ffunction-sections \
  		    -fdata-sections \
-		    -fno-exceptions
-
-
 
 
 ## BUILD CONFIGURATION
@@ -259,21 +254,23 @@ ifeq ($(DEBUG), GDB)
     $(info ***** Building Debug *****)
     DEBUG_FLAGS = -g3
     OPTIMIZE = -O0
+    LTO_FLAGS =
     DEFS += -DDEBUG
 else
     $(info ***** Building Release *****)
-    DEBUG_FLAGS = -g3
-    OPTIMIZE = -O2
+    DEBUG_FLAGS =
+    OPTIMIZE = -O3
     LTO_FLAGS =
     DEFS += -DNDEBUG
 endif
 
-CFLAGS = -c  $(DEFS)  $(addprefix -I,$(INCLUDES)) $(DEBUG_FLAGS) $(OPTIMIZE) $(FILE_SIZE_FLAGS) $(MCFLAGS) -pipe -fno-strict-aliasing $(WARN_FLAGS)  --param max-inline-insns-single=500
+CFLAGS = -c  $(DEFS)  $(addprefix -I,$(INCLUDES)) $(DEBUG_FLAGS) $(OPTIMIZE) $(FILE_SIZE_FLAGS) $(MCFLAGS) -pipe -fno-strict-aliasing $(WARN_FLAGS)  --param max-inline-insns-single=500 -mfpu=fpv5-sp-d16 -Dscanf=iscanf -std=gnu11 -mfloat-abi=softfp -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)" 
 
-CXXFLAGS = -c $(DEFS) $(addprefix -I,$(INCLUDES)) $(DEBUG_FLAGS) $(OPTIMIZE) $(FILE_SIZE_FLAGS) -fno-rtti $(WARN_FLAGS) $(MCFLAGS) -std=c++11
+CXXFLAGS = -c $(DEFS) $(addprefix -I,$(INCLUDES)) $(DEBUG_FLAGS) $(OPTIMIZE) $(FILE_SIZE_FLAGS) $(WARN_FLAGS) $(MCFLAGS) -fno-rtti -std=gnu++11 -mfpu=fpv5-d16 -fno-exceptions
 
-#LDFLAGS = -mthumb -Wl,-Map="IS_EVB-2.map" --specs=nano.specs -Wl,--start-group  -Wl,--end-group -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--cref -T$(LDSCRIPT) $(MCFLAGS) -u _printf_float $(LTO_FLAGS) -Wl,-Map=main.map
-LDFLAGS = -mthumb -Wl,-Map="IS_EVB-2.map" --specs=nano.specs  -Wl,--start-group  -Wl,--end-group -Wl,--gc-sections -Wl,--cref -T$(LDSCRIPT) $(MCFLAGS) -u _printf_float $(LTO_FLAGS)
+LDFLAGS = -mthumb -Wl,-Map="IS_EVB-2.map" -Wl,--start-group  -lm -Wl,--end-group -L"../src/ASF/thirdparty/CMSIS/Lib/GCC" -Wl,--gc-sections -mcpu=cortex-m7 -Wl,--entry=Reset_Handler -Wl,--cref -T$(LDSCRIPT) $(LTO_FLAGS)
+# -larm_cortexM7lfsp_math_softfp
+
 
 #################################
 # Build

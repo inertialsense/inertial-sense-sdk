@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -30,14 +30,14 @@ extern "C" {
 #define INV_EARTH_RADIUS_F		1.5706706731410E-07f				// = 1 / earth_radius_in_meters
 
 #if 0
-typedef Vector2     Vector2_t;
-typedef Vector3     Vector3_t;
-typedef Vector4     Vector4_t;
-typedef Vector3_t   Euler_t;        // phi, theta, psi (roll, pitch, yaw)
-typedef Vector4_t   Quat_t;         // w, x, y, z
-typedef Matrix2     Matrix2_t;
-typedef Matrix3     Matrix3_t;
-typedef Matrix4     Matrix4_t;
+typedef ixVector2     ixVector2;
+typedef ixVector3     ixVector3;
+typedef ixVector4     ixVector4;
+typedef ixVector3   ixEuler;        // phi, theta, psi (roll, pitch, yaw)
+typedef ixVector4   ixQuat;         // w, x, y, z
+typedef ixMatrix2     ixMatrix2;
+typedef ixMatrix3     ixMatrix3;
+typedef ixMatrix4     ixMatrix4;
 #else
 
 #endif
@@ -69,8 +69,8 @@ void lla2ecef(const double *LLA, double *Pe);
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void lla2ned( Vector3_t llaRef, Vector3_t lla, Vector3_t result );
-void lla2ned_d( double llaRef[3], double lla[3], Vector3_t result );     // double precision
+void lla2ned( ixVector3 llaRef, ixVector3 lla, ixVector3 result );
+void lla2ned_d( double llaRef[3], double lla[3], ixVector3 result );     // double precision
 
 /*
  *  Find NED (north, east, down) from LLAref to LLA
@@ -79,7 +79,7 @@ void lla2ned_d( double llaRef[3], double lla[3], Vector3_t result );     // doub
  *  lla[1] = longitude (degrees)
  *  lla[2] = msl altitude (m)
  */
-void llaDeg2ned_d(double llaRef[3], double lla[3], Vector3_t result);
+void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result);
 
 /*
  *  Find LLA of NED (north, east, down) from LLAref
@@ -88,8 +88,8 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], Vector3_t result);
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void ned2lla( Vector3_t ned, Vector3_t llaRef, Vector3_t result );
-void ned2lla_d( Vector3_t ned, double llaRef[3], double result[3] );     // double precision
+void ned2lla( ixVector3 ned, ixVector3 llaRef, ixVector3 result );
+void ned2lla_d( ixVector3 ned, double llaRef[3], double result[3] );     // double precision
 
 /*
 *  Find LLA of NED (north, east, down) from LLAref (WGS-84 standard)
@@ -98,7 +98,7 @@ void ned2lla_d( Vector3_t ned, double llaRef[3], double result[3] );     // doub
 *  lla[1] = longitude (degrees)
 *  lla[2] = msl altitude (m)
 */
-void ned2llaDeg_d(Vector3_t ned, double llaRef[3], double result[3]);
+void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3]);
 
 /*
  *  Find Delta LLA of NED (north, east, down) from LLAref
@@ -107,8 +107,8 @@ void ned2llaDeg_d(Vector3_t ned, double llaRef[3], double result[3]);
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
-void ned2DeltaLla(Vector3_t ned, Vector3 llaRef, Vector3 deltaLLA);
-void ned2DeltaLla_d(Vector3_t ned, double llaRef[3], double deltaLLA[3]);
+void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA);
+void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3]);
 
 /*
 *  Find Delta LLA of NED (north, east, down) from LLAref
@@ -117,7 +117,7 @@ void ned2DeltaLla_d(Vector3_t ned, double llaRef[3], double deltaLLA[3]);
 *  lla[1] = longitude (degrees)
 *  lla[2] = msl altitude (m)
 */
-void ned2DeltaLlaDeg_d(Vector3_t ned, double llaRef[3], double deltaLLA[3]);
+void ned2DeltaLlaDeg_d(ixVector3 ned, double llaRef[3], double deltaLLA[3]);
 
 // Convert LLA from radians to degrees
 void lla_Rad2Deg_d(double result[3], double lla[3]);

@@ -16,7 +16,7 @@
 
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
-void integrateDeltaThetaVelBortz(Vector3 theta, Vector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti);
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti);
 float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast );
 float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast );
 float deltaThetaDeltaVelBortz( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2 );
@@ -25,10 +25,10 @@ float integrateDeltaThetaVelRoscoe(
 	preintegrated_imu_t *output, 
 	dual_imu_t *imu, 
 	dual_imu_t *imuLast, 
-	Vector3 alpha_last, 
-	Vector3 veloc_last, 
-	Vector3 delta_alpha_last, 
-	Vector3 delta_veloc_last);
+	ixVector3 alpha_last, 
+	ixVector3 veloc_last, 
+	ixVector3 delta_alpha_last, 
+	ixVector3 delta_veloc_last);
 #endif
 
 //_____ F U N C T I O N S __________________________________________________
@@ -245,17 +245,17 @@ void integrateImu( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imu
     output->status |= imu->status;
 	
 	//  // Roscoe integral
-	// 	static Vector3 alpha_last = { 0 };
-	// 	static Vector3 veloc_last = { 0 };
-	// 	static Vector3 delta_alpha_last = { 0 };
-	// 	static Vector3 delta_veloc_last = { 0 };
+	// 	static ixVector3 alpha_last = { 0 };
+	// 	static ixVector3 veloc_last = { 0 };
+	// 	static ixVector3 delta_alpha_last = { 0 };
+	// 	static ixVector3 delta_veloc_last = { 0 };
 	// 	output->dt += integrateDeltaThetaVelRoscoe(output, imu, imu, alpha_last, veloc_last, delta_alpha_last, delta_veloc_last);
 }
 
 
 float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast )
 {
-	Vector3 tmp3;
+	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
 	
 	// Use Riemann Sum integral
@@ -279,7 +279,7 @@ float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, dual_imu_t *imu
 
 float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast )
 {
-	Vector3 tmp3;
+	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
 	
 	// Use Trapezoidal integral
@@ -303,9 +303,9 @@ float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, dual_imu_t *im
 }
 
 
-void integrateDeltaThetaVelBortz(Vector3 theta, Vector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti)
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti)
 {
-    Vector3 wb, ab, deltaW, deltaA, tmp1, tmp2, tmp3, tmp4;
+    ixVector3 wb, ab, deltaW, deltaA, tmp1, tmp2, tmp3, tmp4;
     float Kw, mag_theta2, mag_theta4, Kw0;
 
     // for jj = 1: Nint
@@ -376,22 +376,22 @@ float integrateDeltaThetaVelRoscoe(
 	preintegrated_imu_t *output, 
 	imu_t *imu, 
 	imu_t *imuLast, 	
-	Vector3 alpha_last,
-	Vector3 veloc_last,
-	Vector3 delta_alpha_last,
-	Vector3 delta_veloc_last
+	ixVector3 alpha_last,
+	ixVector3 veloc_last,
+	ixVector3 delta_alpha_last,
+	ixVector3 delta_veloc_last
  )
 {
-	Vector3 tmp3;
+	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
 		
 	// Roscoe (EQ-32) coning integral
-	Vector3 term1;
-	Vector3 term2;
-	Vector3 alpha;
-	Vector3 veloc;
-	Vector3 delta_alpha;
-	Vector3 delta_veloc;
+	ixVector3 term1;
+	ixVector3 term2;
+	ixVector3 alpha;
+	ixVector3 veloc;
+	ixVector3 delta_alpha;
+	ixVector3 delta_veloc;
 
 	//__________________________________________________________________________________________________________________
 	// Roscoe (EQ-32) coning integral:     [DELTA THETA = sum((1/2)*(alpha_last+(1/6)*delta_alpha_last) >< delta_alpha)]

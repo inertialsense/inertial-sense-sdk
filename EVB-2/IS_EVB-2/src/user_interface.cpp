@@ -13,11 +13,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include "globals.h"
 #include "sd_card_logger.h"
+#include "communications.h"
 #include "user_interface.h"
 
 
-static bool s_ignoreCfgButtonRelease=false;
-static bool s_ignoreLogButtonRelease=false;
+static VoidFuncPtrVoid s_funcPtrCfgButtonPressed = NULL;
+static VoidFuncPtrVoid s_funcPtrCfgButtonRelease = NULL;
+static VoidFuncPtrVoid s_funcPtrLogButtonPressed = NULL;
+static VoidFuncPtrVoid s_funcPtrLogButtonRelease = NULL;
+static VoidFuncPtrVoid s_funcPtrBothButtonsPressed = NULL;
+static VoidFuncPtrVoid s_funcPtrBothButtonsRelease = NULL;
+
+static VoidFuncPtrVoid s_funcPtrRefreshLedCfg = NULL;
+static VoidFuncPtrVoid s_funcPtrRefreshLedLog = NULL;
+
+bool logger_ready()
+{
+    return (g_status.evbStatus&EVB_STATUS_SD_CARD_READY) && !(g_status.evbStatus&EVB_STATUS_SD_ERR_CARD_MASK);
+}
 
 
 static void on_cfg_button_pressed()
@@ -25,7 +38,6 @@ static void on_cfg_button_pressed()
 	// Indicate button is pressed by turning off LED
 	LED_CFG_OFF();
 }
-
 
 static void on_cfg_button_release()
 {    
@@ -48,20 +60,13 @@ static void on_cfg_button_release()
     {
         g_flashCfg->cbPreset = 1;
     }
-        
+
     com_bridge_apply_preset(g_flashCfg);
     board_IO_config();
     g_nvr_manage_config.flash_write_needed = true;
 	g_nvr_manage_config.flash_write_enable = true;
-    refresh_CFG_LED();    
+	evbUiRefreshLedCfg();
 }
-
-
-bool logger_ready()
-{
-    return (g_status.evbStatus&EVB_STATUS_SD_CARD_READY) && !(g_status.evbStatus&EVB_STATUS_SD_ERR_CARD_MASK);
-}
-
 
 static void on_log_button_pressed()
 {
@@ -69,89 +74,113 @@ static void on_log_button_pressed()
 	LED_LOG_OFF();    
 }
 
-
 static void on_log_button_release()
 {
     if( logger_ready() )
     {
+        if (!(g_flashCfg->bits & EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON))
+        {
+            uINS_stream_enable_PPD();
+        }
+        
         // Toggle logger enable
         enable_logger(!g_loggerEnabled);
-//         if(g_loggerEnabled){    g_enableLogger = -1;    }
-//         else{                   g_enableLogger = 1;     }
     }
 }
-
 
 static void on_both_buttons_pressed()
 {   // Reset uINS
 	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_LOW);
-    s_ignoreCfgButtonRelease = true;
-    s_ignoreLogButtonRelease = true;
 }
-
 
 static void on_both_buttons_release()
 {   // De-assert uINS reset
     ioport_set_pin_input_mode(INS_RESET_PIN_PIN, 0, 0);
-    refresh_CFG_LED();
+	evbUiRefreshLedCfg();
 }
 
 
 #define BUTTON_DEBOUNCE_TIME_MS 100
 void step_user_interface(uint32_t time_ms)
 {
-    bool cfgButtonDown = !ioport_get_pin_level(BUTTON_CFG_PIN);
-    bool logButtonDown = !ioport_get_pin_level(BUTTON_LOG_PIN);
-    bool bothButtonsDown = cfgButtonDown && logButtonDown;
-    static bool cfgButtonDownLast = cfgButtonDown;
-    static bool logButtonDownLast = logButtonDown;
-    static bool bothButtonsDownLast = bothButtonsDown;
-	static uint32_t cfgButtonTimeMs = 0;	// for button debouncing
-	static uint32_t logButtonTimeMs = 0;
-	static uint32_t bothButtonTimeMs = 0;
+    bool cfgBtnDown = !ioport_get_pin_level(BUTTON_CFG_PIN);
+    bool logBtnDown = !ioport_get_pin_level(BUTTON_LOG_PIN);
+    static bool bothBtnsDown = false;
+    static bool cfgBtnDownLast = cfgBtnDown;
+    static bool logBtnDownLast = logBtnDown;
+    static bool bothBtnsDownLast = bothBtnsDown;
+	static uint32_t cfgBtnTimeMs = 0;	// for button debouncing
+	static uint32_t logBtnTimeMs = 0;
+	static uint32_t bothBtnTimeMs = 0;
+    static bool ignoreEstopBtnRelease=false;
+    static bool ignorePauseBtnRelease=false;
 
-    if (cfgButtonDownLast != cfgButtonDown && time_ms-cfgButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
+    if (cfgBtnDownLast != cfgBtnDown && time_ms-cfgBtnTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Button toggled        
-        cfgButtonDownLast = cfgButtonDown;
-		cfgButtonTimeMs = time_ms;
-        if(cfgButtonDown)
+        cfgBtnDownLast = cfgBtnDown;
+		cfgBtnTimeMs = time_ms;
+        if(cfgBtnDown)
         {      
-            on_cfg_button_pressed();    
+            if(s_funcPtrCfgButtonPressed){ s_funcPtrCfgButtonPressed(); }
         }
         else
         {
-            if(!s_ignoreCfgButtonRelease)
+            if(!ignoreEstopBtnRelease)
             {
-                 on_cfg_button_release();
+                if(s_funcPtrCfgButtonRelease){ s_funcPtrCfgButtonRelease(); }
             }
-            s_ignoreCfgButtonRelease = false;
+            ignoreEstopBtnRelease = false;
         }
     }
 
-    if(logButtonDownLast != logButtonDown && time_ms-logButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
+    if(logBtnDownLast != logBtnDown && time_ms-logBtnTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Button toggled
-        logButtonDownLast = logButtonDown;
-		logButtonTimeMs = time_ms;
-        if(logButtonDown)
+        logBtnDownLast = logBtnDown;
+		logBtnTimeMs = time_ms;
+        if(logBtnDown)
         {      
-            on_log_button_pressed();    
+            if(s_funcPtrLogButtonPressed){ s_funcPtrLogButtonPressed(); }
         }
         else
         {              
-            if(!s_ignoreLogButtonRelease)
+            if(!ignorePauseBtnRelease)
             {
-                on_log_button_release(); 
+                if(s_funcPtrLogButtonRelease){ s_funcPtrLogButtonRelease(); }
             }
-            s_ignoreLogButtonRelease = false;
+            ignorePauseBtnRelease = false;
         }            
     }
     
-    if(bothButtonsDownLast != bothButtonsDown && time_ms-bothButtonTimeMs > BUTTON_DEBOUNCE_TIME_MS)
+	// Only toggle down on both down and up on both up.
+	if (bothBtnsDown)
+	{
+		if(!cfgBtnDown && !logBtnDown)
+		{
+			bothBtnsDown = false;
+		}
+	}
+	else
+	{
+		if(cfgBtnDown && logBtnDown)
+		{
+			bothBtnsDown = true;
+		}
+	}
+
+    if(bothBtnsDownLast != bothBtnsDown && time_ms-bothBtnTimeMs > BUTTON_DEBOUNCE_TIME_MS)
     {   // Both buttons toggled
-        bothButtonsDownLast = bothButtonsDown;
-		bothButtonTimeMs = time_ms;
-        if(bothButtonsDown){    on_both_buttons_pressed();  }
-        else{                   on_both_buttons_release();  }
+        bothBtnsDownLast = bothBtnsDown;
+		bothBtnTimeMs = time_ms;
+        if(bothBtnsDown)
+        {                
+            if(s_funcPtrBothButtonsPressed){ s_funcPtrBothButtonsPressed(); } 
+            ignoreEstopBtnRelease = true;
+            ignorePauseBtnRelease = true;
+        }
+        else
+        {
+            if(s_funcPtrBothButtonsRelease){ s_funcPtrBothButtonsRelease(); }  
+        }
     }
     
     if( logger_ready() )
@@ -172,9 +201,49 @@ void step_user_interface(uint32_t time_ms)
         {   // Disable logger
             enable_logger(false);
         }
-    }
-    
+    }    
 }
 
 
+void evbUiDefaults()
+{
+    s_funcPtrCfgButtonPressed = on_cfg_button_pressed;
+    s_funcPtrCfgButtonRelease = on_cfg_button_release;
+    s_funcPtrLogButtonPressed = on_log_button_pressed;
+    s_funcPtrLogButtonRelease = on_log_button_release;
+    s_funcPtrBothButtonsPressed = on_both_buttons_pressed;
+    s_funcPtrBothButtonsRelease = on_both_buttons_release;
+
+    s_funcPtrRefreshLedCfg = refresh_led_cfg;
+    s_funcPtrRefreshLedLog = refresh_led_log;
+}
+
+void evbUiButtonCallbacks(
+    VoidFuncPtrVoid fpCfgButtonPressed, VoidFuncPtrVoid fpCfgButtonRelease, 
+    VoidFuncPtrVoid fpLogButtonPressed, VoidFuncPtrVoid fpLogButtonRelease, 
+    VoidFuncPtrVoid fpBothButtonsPressed, VoidFuncPtrVoid fpBothButtonsRelease )
+{
+    s_funcPtrCfgButtonPressed = fpCfgButtonPressed;
+    s_funcPtrCfgButtonRelease = fpCfgButtonRelease;
+    s_funcPtrLogButtonPressed = fpLogButtonPressed;
+    s_funcPtrLogButtonRelease = fpLogButtonRelease;
+    s_funcPtrBothButtonsPressed = fpBothButtonsPressed;
+    s_funcPtrBothButtonsRelease = fpBothButtonsRelease;
+}
+
+void evbUiLedCallbacks(VoidFuncPtrVoid fpLedCfg, VoidFuncPtrVoid fpLedLog )
+{
+    s_funcPtrRefreshLedCfg = fpLedCfg;
+    s_funcPtrRefreshLedLog = fpLedLog;
+}
+
+void evbUiRefreshLedCfg()
+{
+    if(s_funcPtrRefreshLedCfg){ s_funcPtrRefreshLedCfg(); }  
+}
+
+void evbUiRefreshLedLog()
+{
+    if(s_funcPtrRefreshLedLog){ s_funcPtrRefreshLedLog(); }  
+}
 

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2020 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -287,7 +287,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		return;
 	}
 
-	int curTimeMs = current_weekMs();
+	int curTimeMs = current_timeMs();
 	m_rxCount++;
 
 	if (enableReplay)
@@ -359,7 +359,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		{
 			for (;;)
 			{
-				curTimeMs = current_weekMs();
+				curTimeMs = current_timeMs();
 
 				// Replay speed
 				int replayTimeMs = (int)(long)(((double)curTimeMs)*replaySpeedX);
@@ -478,7 +478,7 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 	}
 
 	// Update stats
-	int curTimeMs = current_weekMs();
+	int curTimeMs = current_timeMs();
 	sDidStats &s = m_didStats[id];
 	s.count++;
 	if(s.lastTimeMs)

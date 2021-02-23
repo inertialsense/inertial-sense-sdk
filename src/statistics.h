@@ -17,9 +17,9 @@
 
 typedef struct
 {
-	Vector3                 ave;		// mean
-	Vector3                 var;		// variance
-	Vector3                 std;		// standard deviation
+	ixVector3                 ave;		// mean
+	ixVector3                 var;		// variance
+	ixVector3                 std;		// standard deviation
 	float                   aveAlph;	// alpha gain
 	float                   aveBeta;	// beta  gain
 	float                   varAlph;	// alpha gain
@@ -65,15 +65,15 @@ double standard_deviation_d(double *input, int size, int byteIncrement);
 f_t standard_deviation_int32(int32_t *input, int size, int byteIncrement);
 double standard_deviation_int64(int64_t *input, int size, int byteIncrement);
 f_t standard_deviation_mean( f_t *input, f_t *mean, int size, int byteIncrement );
-void standard_deviation_Vec3( Vector3 result, Vector3 input, int size, int byteIncrement );
-void stardard_deviation_mean_Vec3( Vector3 result, Vector3 input, Vector3 mean, int size, int byteIncrement );
-void mean_Vec3( Vector3 ave, Vector3 input, int size, int byteIncrement );
+void standard_deviation_Vec3( ixVector3 result, ixVector3 input, int size, int byteIncrement );
+void stardard_deviation_mean_Vec3( ixVector3 result, ixVector3 input, ixVector3 mean, int size, int byteIncrement );
+void mean_Vec3( ixVector3 ave, ixVector3 input, int size, int byteIncrement );
 
 // Set ave to zero to get true RMS
 f_t root_mean_squared(f_t *input, int size, int byteIncrement, float ave);
 
 
-void init_realtime_std_dev_Vec3( sRTSDVec3 *s, float dt, float aveCornerFreqHz, float varCornerFreqHz, Vector3 initVal );
+void init_realtime_std_dev_Vec3( sRTSDVec3 *s, float dt, float aveCornerFreqHz, float varCornerFreqHz, ixVector3 initVal );
 
 void realtime_std_dev_Vec3( f_t *input, sRTSDVec3 *v );
 

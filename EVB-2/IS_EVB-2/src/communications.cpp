@@ -19,10 +19,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "xbee.h"
 #include "wifi.h"
 #include "sd_card_logger.h"
-#include "communications.h"
 #include "CAN.h"
 #include "../hw-libs/communications/CAN_comm.h"
 #include "../src/protocol_nmea.h"
+#include "user_interface.h"
+#include "communications.h"
 
 typedef struct
 {
@@ -38,6 +39,8 @@ typedef struct
 #define COM_RX_PORT_COUNT	(EVB2_PORT_COUNT-1)		// exclude CAN port
 comm_rx_port_t              g_comRxPort[COM_RX_PORT_COUNT] = {};
 static uint8_t				s_rxDecodeBuffer[PKT_BUF_SIZE] = {};
+
+is_comm_instance_t 			g_commTx = {};
 
 StreamBufferHandle_t        g_xStreamBufferUINS;
 StreamBufferHandle_t        g_xStreamBufferWiFiRx;
@@ -252,30 +255,30 @@ void callback_cdc_set_dtr(uint8_t port, bool b_enable)
 // }
 
 
-void uINS_stream_stop_all(is_comm_instance_t &comm)
+void uINS_stream_stop_all(void)
 {
-    int len = is_comm_stop_broadcasts_current_port(&comm);
-    comWrite(g_flashCfg->uinsComPort, comm.buf.start, len, LED_INS_TXD_PIN);
+    int len = is_comm_stop_broadcasts_current_port(&g_commTx);
+    comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);
 }
 
-void uINS_stream_enable_std(is_comm_instance_t &comm)
+void uINS_stream_enable_std(void)
 {
     int len;
     
-    len = is_comm_get_data(&comm, DID_INS_2, 0, 0, 10);       // 20 x 4ms = 40ms
-    comWrite(g_flashCfg->uinsComPort, comm.buf.start, len, LED_INS_TXD_PIN);
+    len = is_comm_get_data(&g_commTx, DID_INS_2, 0, 0, 10);       // 20 x 4ms = 40ms
+    comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);
 
-    len = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 500);   // 500ms
-    comWrite(g_flashCfg->uinsComPort, comm.buf.start, len, LED_INS_TXD_PIN);
+    len = is_comm_get_data(&g_commTx, DID_DEV_INFO, 0, 0, 500);   // 500ms
+    comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);
 }
 
-void uINS_stream_enable_PPD(is_comm_instance_t &comm)
+void uINS_stream_enable_PPD(void)
 {
     rmc_t rmc;
     rmc.bits = RMC_PRESET_PPD_BITS;
     rmc.options = 0;
-    int len = is_comm_set_data(&comm, DID_RMC, 0, sizeof(rmc_t), &rmc);
-    comWrite(g_flashCfg->uinsComPort, comm.buf.start, len, LED_INS_TXD_PIN);
+    int len = is_comm_set_data(&g_commTx, DID_RMC, 0, sizeof(rmc_t), &rmc);
+    comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);
 
 //     len = is_comm_get_data(&comm, DID_INS_2, 0, 0, 1);       // 1 x 4ms = 4ms
 //     comWrite(EVB2_PORT_UINS0, comm.buffer, len, LED_INS_TXD_PIN);
@@ -468,7 +471,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     {
         wifi_reinit();
     }
-    refresh_CFG_LED();
+	evbUiRefreshLedCfg();
     
 	// Enable flash write
 	g_nvr_manage_config.flash_write_needed = true;
@@ -510,20 +513,17 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		if(comm->pkt.hdr.pid == PID_GET_DATA)
 		{
 			int n=0;
-			is_comm_instance_t commTx;
-			uint8_t buffer[MAX_DATASET_SIZE];
-			is_comm_init(&commTx, buffer, sizeof(buffer));
 			switch(comm->dataHdr.id)
 			{
-				case DID_DEV_INFO:          n = is_comm_data(&commTx, DID_EVB_DEV_INFO, 0, sizeof(dev_info_t), (void*)&(g_evbDevInfo));         break;
-				case DID_EVB_STATUS:        n = is_comm_data(&commTx, DID_EVB_STATUS, 0, sizeof(evb_status_t), (void*)&(g_status));             break;
-				case DID_EVB_FLASH_CFG:     n = is_comm_data(&commTx, DID_EVB_FLASH_CFG, 0, sizeof(evb_flash_cfg_t), (void*)(g_flashCfg));      break;
-				case DID_EVB_DEBUG_ARRAY:   n = is_comm_data(&commTx, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));        break;
-				case DID_EVB_RTOS_INFO:     n = is_comm_data(&commTx, DID_EVB_RTOS_INFO, 0, sizeof(evb_rtos_info_t), (void*)&(g_rtos));         g_enRtosStats = true;	break;
+				case DID_DEV_INFO:          n = is_comm_data(&g_commTx, DID_EVB_DEV_INFO, 0, sizeof(dev_info_t), (void*)&(g_evbDevInfo));         break;
+				case DID_EVB_STATUS:        n = is_comm_data(&g_commTx, DID_EVB_STATUS, 0, sizeof(evb_status_t), (void*)&(g_status));             break;
+				case DID_EVB_FLASH_CFG:     n = is_comm_data(&g_commTx, DID_EVB_FLASH_CFG, 0, sizeof(evb_flash_cfg_t), (void*)(g_flashCfg));      break;
+				case DID_EVB_DEBUG_ARRAY:   n = is_comm_data(&g_commTx, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));        break;
+				case DID_EVB_RTOS_INFO:     n = is_comm_data(&g_commTx, DID_EVB_RTOS_INFO, 0, sizeof(evb_rtos_info_t), (void*)&(g_rtos));         g_enRtosStats = true;	break;
 			}
 			if(n>0)
 			{
-				serWrite(srcPort, commTx.buf.start, n);
+				serWrite(srcPort, g_commTx.buf.start, n);
 			}			
 
 			// Disable uINS bootloader mode if host sends IS binary command

@@ -51,30 +51,6 @@
 #include "mpu.h"
 #endif
 
-/**
- * \brief Set peripheral mode for IOPORT pins.
- * It will configure port mode and disable pin mode (but enable peripheral).
- * \param port IOPORT port to configure
- * \param masks IOPORT pin masks to configure
- * \param mode Mode masks to configure for the specified pin (\ref ioport_modes)
- */
-#define ioport_set_port_peripheral_mode(port, masks, mode) \
-	do {\
-		ioport_set_port_mode(port, masks, mode);\
-		ioport_disable_port(port, masks);\
-	} while (0)
-
-/**
- * \brief Set peripheral mode for one single IOPORT pin.
- * It will configure port mode and disable pin mode (but enable peripheral).
- * \param pin IOPORT pin to configure
- * \param mode Mode masks to configure for the specified pin (\ref ioport_modes)
- */
-#define ioport_set_pin_peripheral_mode(pin, mode) \
-	do {\
-		ioport_set_pin_mode(pin, mode);\
-		ioport_disable_pin(pin);\
-	} while (0)
 
 /**
  * \brief Set input mode for one single IOPORT pin.
@@ -87,10 +63,10 @@
 #undef ioport_set_pin_input_mode
 #define ioport_set_pin_input_mode(pin, mode, sense) \
 	do {\
- 		ioport_enable_pin(pin);\
-		ioport_set_pin_dir(pin, IOPORT_DIR_INPUT);\
-		ioport_set_pin_mode(pin, mode);\
-		ioport_set_pin_sense_mode(pin, sense);\
+ 		ioport_enable_pin((pin));\
+		ioport_set_pin_dir((pin), IOPORT_DIR_INPUT);\
+		ioport_set_pin_mode((pin), (mode));\
+		ioport_set_pin_sense_mode((pin), (sense));\
 	} while (0)
 
 
@@ -109,6 +85,8 @@
  */
 
 uint8_t g_hdw_detect;
+static VoidFuncPtrVoid s_pfnHandleBoardIoCfg = NULLPTR;
+
 
 /**
  * \brief Set up a memory region.
@@ -374,7 +352,7 @@ static void waitPinPullup(void)
 }
 
 
-void refresh_CFG_LED(void)
+void refresh_led_cfg(void)
 {
     switch(g_flashCfg->cbPreset)
     {
@@ -390,9 +368,33 @@ void refresh_CFG_LED(void)
 }
 
 
+void init_set_board_IO_config_callback(VoidFuncPtrVoid fpIoCfg)
+{
+	s_pfnHandleBoardIoCfg = fpIoCfg;
+}
+
 void board_IO_config(void)
 {	
-	// uINS ser0
+	//////////////////////////////////////////////////////////////////////////
+	// EVB  uINS G1,G2 (CAN, Ser2, I2C)
+	// EVB-PA3 - SDA
+	// EVB-PA4 - SCL
+#ifdef CONF_BOARD_I2C_UINS
+    if (!g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO &&
+		 g_flashCfg->cbOptions&EVB2_CB_OPTIONS_I2C_ENABLE)
+	{
+		i2cInit();		
+	}
+	else
+	{	// Disable pins
+		ioport_set_pin_input_mode(I2C_0_SDA_PIN, 0, 0);
+		ioport_set_pin_input_mode(I2C_0_SCL_PIN, 0, 0);
+	}
+#endif
+	
+	//////////////////////////////////////////////////////////////////////////
+	// uINS G3,G4 (Ser0)
+	// EVB-PA5,PA6
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO ||
 		(g_flashCfg->uinsComPort != EVB2_PORT_UINS0 &&
 		 g_flashCfg->uinsAuxPort != EVB2_PORT_UINS0))
@@ -409,7 +411,9 @@ void board_IO_config(void)
 #endif		
 	}
 	
-    // uINS ser1
+	/////////////////////////////////////////////////////////////
+	// uINS G6,G7 (Ser1, SPI, QDEC0)
+	// EVB-PA9,PA10
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE)
     {
 	    #ifdef CONF_BOARD_SPI_UINS
@@ -433,8 +437,7 @@ void board_IO_config(void)
 	    #endif
     }	
     else if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_TRISTATE_UINS_IO ||
-		(g_flashCfg->uinsComPort != EVB2_PORT_UINS1 &&
-		 g_flashCfg->uinsAuxPort != EVB2_PORT_UINS1))
+			(g_flashCfg->uinsComPort != EVB2_PORT_UINS1 && g_flashCfg->uinsAuxPort != EVB2_PORT_UINS1))
 	{	// I/O tristate - (Enable pin and set as input)
 	    ioport_set_pin_input_mode(UART_INS_SER1_TXD_PIN, 0, 0);
 	    ioport_set_pin_input_mode(UART_INS_SER1_RXD_PIN, 0, 0);
@@ -457,6 +460,8 @@ void board_IO_config(void)
 #endif
     }        
 
+	/////////////////////////////////////////////////////////////
+	// SP330 - RS232/RS485 interface
 #ifdef CONF_BOARD_SERIAL_SP330
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SP330_RS422)
     {   // RS422 mode
@@ -471,6 +476,8 @@ void board_IO_config(void)
     serSetBaudRate(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate);
 #endif
 
+	//////////////////////////////////////////////////////////////////////////
+	// XBee
 #ifdef CONF_BOARD_SERIAL_XBEE
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_XBEE_ENABLE)
     {   // XBee enabled
@@ -516,6 +523,8 @@ void board_IO_config(void)
     }
 #endif
 
+	//////////////////////////////////////////////////////////////////////////
+	// WiFi
 #ifdef CONF_BOARD_SPI_ATWINC_WIFI
     if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_WIFI_ENABLE )
     {   // WiFi enabled
@@ -542,6 +551,9 @@ void board_IO_config(void)
     serSetBaudRate(EVB2_PORT_BLE, 115200);
     serSetBaudRate(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate);
     serSetBaudRate(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate);
+
+	//////////////////////////////////////////////////////////////////////////
+	// CAN
 #ifdef CONF_BOARD_CAN1
 	if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_CAN_ENABLE)
 	{
@@ -549,6 +561,11 @@ void board_IO_config(void)
 		CAN_init();
 	}
 #endif
+
+	if (s_pfnHandleBoardIoCfg)
+	{
+		s_pfnHandleBoardIoCfg();
+	}
 }
 
 
@@ -697,17 +714,13 @@ void board_init(void)
 	ioport_set_pin_output_mode(SP330_NSHDN_PIN, IOPORT_PIN_LEVEL_HIGH);         // Enable device
 #endif
 
-#ifdef CONF_BOARD_SERIAL_GPIO_H8       // GPIO TTL
 	ioport_set_pin_output_mode(GPIO_UART_INV_PIN, IOPORT_PIN_LEVEL_LOW);    // Non-inverting	
+#ifdef CONF_BOARD_SERIAL_GPIO_H8       // GPIO TTL
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_RXD_PIN, GPIO_H8_UART_RXD_FLAGS);
 	MATRIX->CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_TXD_PIN, GPIO_H8_UART_TXD_FLAGS);
     serInit(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate, NULL, NULL);
-	
-// 	char buf[3] = "123";
-// 	serWrite(EVB2_PORT_GPIO_H8, buf, 3, NULL);
 #endif
-    
 
     //////////////////////////////////////////////////////////////////////////
     // SPI Interface
