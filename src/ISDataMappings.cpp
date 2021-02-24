@@ -794,17 +794,17 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateRtkRelMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
 {
 	typedef gps_rtk_rel_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_GPS1_RTK_POS_REL];
+	map_name_to_info_t& m = mappings[id];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "differentialAge", differentialAge, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "arRatio", arRatio, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "baseToRoverVector[0]", baseToRoverVector[0], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "baseToRoverVector[1]", baseToRoverVector[1], 0, DataTypeFloat, float&);
 	ADD_MAP(m, totalSize, "baseToRoverVector[2]", baseToRoverVector[2], 0, DataTypeFloat, float&);
-	ADD_MAP(m, totalSize, "differentialAge", differentialAge, 0, DataTypeFloat, float);
-	ADD_MAP(m, totalSize, "arRatio", arRatio, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "baseToRoverDistance", baseToRoverDistance, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "baseToRoverHeading", baseToRoverHeading, 0, DataTypeFloat, float);
 	ADD_MAP(m, totalSize, "baseToRoverHeadingAcc", baseToRoverHeadingAcc, 0, DataTypeFloat, float);
@@ -813,10 +813,10 @@ static void PopulateRtkRelMappings(map_name_to_info_t mappings[DID_COUNT])
 	ASSERT_SIZE(totalSize);
 }
 
-static void PopulateRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateGpsRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
 {
 	typedef gps_rtk_misc_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_GPS1_RTK_POS_MISC];
+	map_name_to_info_t& m = mappings[id];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "accuracyPos[0]", accuracyPos[0], 0, DataTypeFloat, float&);
@@ -1742,6 +1742,13 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS2_VEL);
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
 	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
+	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS1_RTK_POS_REL);
+	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS2_RTK_CMP_REL);
+	PopulateGpsRtkMiscMappings(m_lookupInfo, DID_GPS1_RTK_POS_MISC);
+	PopulateGpsRtkMiscMappings(m_lookupInfo, DID_GPS2_RTK_CMP_MISC);
+	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
+	PopulateGpsRawMappings(m_lookupInfo, DID_GPS2_RAW);
+	PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
 	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_1);
     PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
     PopulateBarometerMappings(m_lookupInfo);
@@ -1750,11 +1757,6 @@ cISDataMappings::cISDataMappings()
     PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
 	PopulateEvbFlashCfgMappings(m_lookupInfo);
-	PopulateRtkRelMappings(m_lookupInfo);
-	PopulateRtkMiscMappings(m_lookupInfo);
-	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
-	PopulateGpsRawMappings(m_lookupInfo, DID_GPS2_RAW);
-	PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
 	PopulateStrobeInTimeMappings(m_lookupInfo);
 //	PopulateRtosInfoMappings(m_lookupInfo);
     PopulateDiagMsgMappings(m_lookupInfo);
