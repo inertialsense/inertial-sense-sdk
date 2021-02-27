@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "control_law.h"
 
 
-void init_control(void)
+void init_wheel_encoder(void)
 {
 #ifdef CONF_BOARD_QUAD_ENCODER
     if(g_flashCfg->bits&EVB_CFG_BITS_ENABLE_WHEEL_ENCODER)
@@ -28,7 +28,7 @@ void init_control(void)
 }
 
 
-void velocity_control(is_comm_instance_t &comm)
+void step_wheel_encoder(is_comm_instance_t &comm)
 {
 #ifdef CONF_BOARD_QUAD_ENCODER           // Encoder Rx   =======================================================
 
