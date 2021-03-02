@@ -88,11 +88,11 @@ Macros</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a22e51a19cac74be68d668affec047f52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a22e51a19cac74be68d668affec047f52">integrateDeltaThetaVelBortz</a> (<a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> theta, <a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> vel, <a class="el" href="data__sets_8h.html#a0212ee773b57acfdd8f0be41e8d6f17e">imus_t</a> *imu, <a class="el" href="data__sets_8h.html#a0212ee773b57acfdd8f0be41e8d6f17e">imus_t</a> *imuLast, float Nsteps, float dti)</td></tr>
 <tr class="separator:a22e51a19cac74be68d668affec047f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab13724758ee12d29858dc1f2598bdc7e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ab13724758ee12d29858dc1f2598bdc7e">deltaThetaDeltaVelRiemannSum</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast)</td></tr>
+<tr class="memitem:ab13724758ee12d29858dc1f2598bdc7e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ab13724758ee12d29858dc1f2598bdc7e">deltaThetaDeltaVelRiemannSum</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast)</td></tr>
 <tr class="separator:ab13724758ee12d29858dc1f2598bdc7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5755565ca8609700d7f522763ec442f3"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a5755565ca8609700d7f522763ec442f3">deltaThetaDeltaVelTrapezoidal</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast)</td></tr>
+<tr class="memitem:a5755565ca8609700d7f522763ec442f3"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a5755565ca8609700d7f522763ec442f3">deltaThetaDeltaVelTrapezoidal</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast)</td></tr>
 <tr class="separator:a5755565ca8609700d7f522763ec442f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6475cec6db4235f4e2aa1ed29f356d3e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a6475cec6db4235f4e2aa1ed29f356d3e">deltaThetaDeltaVelBortz</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2)</td></tr>
+<tr class="memitem:a6475cec6db4235f4e2aa1ed29f356d3e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a6475cec6db4235f4e2aa1ed29f356d3e">deltaThetaDeltaVelBortz</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2)</td></tr>
 <tr class="separator:a6475cec6db4235f4e2aa1ed29f356d3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac25ba62221268fc54191b6aedcd2ae70"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ac25ba62221268fc54191b6aedcd2ae70">init_iir_filter</a> (<a class="el" href="structiif__filter__t.html">iif_filter_t</a> *f)</td></tr>
 <tr class="separator:ac25ba62221268fc54191b6aedcd2ae70"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -110,11 +110,11 @@ Functions</h2></td></tr>
 <tr class="separator:a65a171873aeac1a687d6d398df5f0e56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50acb905fe429c4475f4a70871d282c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a50acb905fe429c4475f4a70871d282c4">dualToSingleImu</a> (<a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *result, const <a class="el" href="data__sets_8h.html#abc4322af57ef2261080dc74b158daf19">dual_imu_ok_t</a> *di)</td></tr>
 <tr class="separator:a50acb905fe429c4475f4a70871d282c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae799336d34a001dfb12e9e8821d75013"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ae799336d34a001dfb12e9e8821d75013">preintegratedImuToIMU</a> (<a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *pImu)</td></tr>
+<tr class="memitem:ae799336d34a001dfb12e9e8821d75013"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ae799336d34a001dfb12e9e8821d75013">preintegratedImuToIMU</a> (<a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *pImu)</td></tr>
 <tr class="separator:ae799336d34a001dfb12e9e8821d75013"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a261ddf2524d82442ff82e189899770eb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a261ddf2524d82442ff82e189899770eb">imuToPreintegratedImu</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *pImu, const <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, float dt)</td></tr>
+<tr class="memitem:a261ddf2524d82442ff82e189899770eb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a261ddf2524d82442ff82e189899770eb">imuToPreintegratedImu</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *pImu, const <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, float dt)</td></tr>
 <tr class="separator:a261ddf2524d82442ff82e189899770eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b2c7f7c09972ad2a800b0c9eaa69be7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a3b2c7f7c09972ad2a800b0c9eaa69be7">integrateImu</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast, bool enableIMU1, bool enableIMU2)</td></tr>
+<tr class="memitem:a3b2c7f7c09972ad2a800b0c9eaa69be7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a3b2c7f7c09972ad2a800b0c9eaa69be7">integrateImu</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast, bool enableIMU1, bool enableIMU2)</td></tr>
 <tr class="memdesc:a3b2c7f7c09972ad2a800b0c9eaa69be7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute coning and sculling integrals from gyro and accelerometer samples.  <a href="filters_8cpp.html#a3b2c7f7c09972ad2a800b0c9eaa69be7">More...</a><br /></td></tr>
 <tr class="separator:a3b2c7f7c09972ad2a800b0c9eaa69be7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -145,7 +145,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">float deltaThetaDeltaVelBortz </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
@@ -199,7 +199,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">float deltaThetaDeltaVelRiemannSum </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
@@ -235,7 +235,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">float deltaThetaDeltaVelTrapezoidal </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
@@ -393,7 +393,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int imuToPreintegratedImu </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *&#160;</td>
           <td class="paramname"><em>pImu</em>, </td>
         </tr>
         <tr>
@@ -503,7 +503,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void integrateImu </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
@@ -567,7 +567,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu3_t</a> *&#160;</td>
           <td class="paramname"><em>pImu</em>&#160;</td>
         </tr>
         <tr>

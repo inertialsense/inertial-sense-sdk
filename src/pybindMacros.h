@@ -13,7 +13,7 @@ PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, e_i2l, t_i2l, distance, diameter);
 // Public Typcs
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
 PYBIND11_NUMPY_DTYPE(system_fault_t, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr);
-PYBIND11_NUMPY_DTYPE(preintegrated_imu_t, time, theta1, theta2, vel1, vel2, dt, status);
+PYBIND11_NUMPY_DTYPE(preintegrated_imu3_t, time, theta1, theta2, vel1, vel2, dt, status);
 PYBIND11_NUMPY_DTYPE(ins_1_t, week, timeOfWeek, insStatus, hdwStatus, theta, uvw, lla, ned);
 PYBIND11_NUMPY_DTYPE(ins_2_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw, lla);
 PYBIND11_NUMPY_DTYPE(gps_pos_t, week, timeOfWeekMs, status, ecef, lla, hMSL, hAcc, vAcc, pDop, cnoMean, towOffset, leapS, reserved);
@@ -37,7 +37,7 @@ PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
 PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc);
 PYBIND11_NUMPY_DTYPE(magnetometer_t, time, mag);
 PYBIND11_NUMPY_DTYPE(barometer_t, time, bar, mslBar, barTemp, humidity);
-PYBIND11_NUMPY_DTYPE(dual_imu_t, time, I, status);
+PYBIND11_NUMPY_DTYPE(imu3_t, time, I, status);
 //PYBIND11_NUMPY_DTYPE(gps_raw_t, receiverIndex, dataType, obsCount, reserved, data);
 //PYBIND11_NUMPY_DTYPE(gps_rtk_opt_t, mode, soltype, nf, navsys, elmin, snrmin, modear, glomodear, gpsmodear, bdsmodear, arfilter, maxout, minlock, minfixsats, minholdsats, mindropsats, rcvstds, minfix, armaxiter, dynamics, niter, intpref, rovpos, refpos, eratio, err, std, prn, sclkstab, thresar, elmaskar, elmaskhold, thresslip, varholdamb, gainholdamb, maxtdiff, maxinno, maxrejc, maxgdop, baseline, ru, rb, maxaveep, outsingle, prcopt_t);
 PYBIND11_NUMPY_DTYPE(manufacturing_info_t, serialNumber, lotNumber, date, key);

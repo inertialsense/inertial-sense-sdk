@@ -265,7 +265,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  0: DID_NULL
 		0,						//  1: DID_DEV_INFO
         0,						//  2: DID_SYS_FAULT
-		offsetsOnlyTimeFirst,	//  3: DID_PREINTEGRATED_IMU
+		offsetsOnlyTimeFirst,	//  3: DID_PREINTEGRATED_IMU3
 		offsetsIns1,			//  4: DID_INS_1
 		offsetsIns2,			//  5: DID_INS_2
 		offsetsGps,				//  6: DID_GPS1_POS
@@ -419,7 +419,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  0: DID_NULL
         0,						//  1: DID_DEV_INFO
         0,						//  2: DID_SYS_FAULT
-		0,						//  3: DID_PREINTEGRATED_IMU
+		0,						//  3: DID_PREINTEGRATED_IMU3
 		0,						//  4: DID_INS_1
 		0,						//  5: DID_INS_2
 		0,						//  6: DID_GPS1_POS
@@ -569,8 +569,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_INS_3:					return RMC_BITS_INS3;
 		case DID_INS_4:					return RMC_BITS_INS4;
 		case DID_DUAL_IMU_RAW:			return RMC_BITS_DUAL_IMU_RAW;
-		case DID_DUAL_IMU:				return RMC_BITS_DUAL_IMU;
-		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
+		case DID_DUAL_IMU:				return RMC_BITS_IMU;
+		case DID_PREINTEGRATED_IMU3:	return RMC_BITS_PREINTEGRATED_IMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
 		case DID_MAGNETOMETER_1:		return RMC_BITS_MAGNETOMETER1;
 		case DID_MAGNETOMETER_2:		return RMC_BITS_MAGNETOMETER2;
@@ -597,7 +597,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
 		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
 		case DID_WHEEL_CONFIG:          return RMC_BITS_WHEEL_CONFIG;
-		case DID_DUAL_IMU_MAG:          return RMC_BITS_DUAL_IMU_MAG;
+		case DID_DUAL_IMU_MAG:          return RMC_BITS_IMU_MAG;
 		case DID_DUAL_IMU_RAW_MAG:      return RMC_BITS_DUAL_IMU_MAG_RAW;
 		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;
 		default:                        return defaultRmcBits;

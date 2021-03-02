@@ -29,7 +29,7 @@ struct DeviceLog
 {
     vector<dev_info_t> devInfo;
     vector<system_fault_t> sysFault;
-    vector<preintegrated_imu_t> preintegratedImu;
+    vector<preintegrated_imu3_t> preintegratedImu;
     vector<ins_1_t> ins1;
     vector<ins_2_t> ins2;
     vector<gps_pos_t> gps1UbxPos;
@@ -82,8 +82,8 @@ struct DeviceLog
     vector<magnetometer_t> magnetometer;
     vector<barometer_t> barometer;
     vector<gps_pos_t> gps1RtkPos;
-    vector<dual_imu_t> dualImuRaw;
-    vector<dual_imu_t> dualImu;
+    vector<imu3_t> dualImuRaw;
+    vector<imu3_t> dualImu;
     vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     vector<gps_raw_wrapper_t> gpsBaseRaw {1};
 //    vector<gps_rtk_opt_t> gpsRtkOpt;

@@ -127,7 +127,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	case DID_DUAL_IMU:				
 		d.dualImu;      
 		break;
-	case DID_PREINTEGRATED_IMU:		
+	case DID_PREINTEGRATED_IMU3:		
 		d.pImu;    
 		break;
 	case DID_GPS_NAV:				
@@ -194,7 +194,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.streamDThetaVel)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU, g_commandLineOptions.streamDThetaVel);
+		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU3, g_commandLineOptions.streamDThetaVel);
 	}
 	if (g_commandLineOptions.streamGPS)
 	{

@@ -693,22 +693,25 @@ class logPlot:
                 imu1.append(I2[i][index])
             imu0 = np.array(imu0)
             imu1 = np.array(imu1)
-        else:  # DID_PREINTEGRATED_IMU
+        else:  # DID_PREINTEGRATED_IMU3
             if index==0:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
+                imu0 = self.getData(d, DID_PREINTEGRATED_IMU3, 'theta1')
+                imu1 = self.getData(d, DID_PREINTEGRATED_IMU3, 'theta2')
+                imu2 = self.getData(d, DID_PREINTEGRATED_IMU3, 'theta3')
             else:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
-            time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
+                imu0 = self.getData(d, DID_PREINTEGRATED_IMU3, 'vel1')
+                imu1 = self.getData(d, DID_PREINTEGRATED_IMU3, 'vel2')
+                imu2 = self.getData(d, DID_PREINTEGRATED_IMU3, 'vel3')
+            time = self.getData(d, DID_PREINTEGRATED_IMU3, 'time')
+            # dt = self.getData(d, DID_PREINTEGRATED_IMU3, 'dt') # this doesn't account for LogInspector downsampling
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
             for i in range(3):
                 imu0[:, i] /= dt
                 imu1[:, i] /= dt
+                imu2[:, i] /= dt
 
-        return (imu0, imu1, time, dt)
+        return (imu0, imu1, imu2, time, dt)
 
     def imuPQR(self, fig=None):
         if fig is None:
@@ -716,10 +719,13 @@ class logPlot:
         ax = fig.subplots(3, 2, sharex=True)
         self.configureSubplot(ax[0, 0], 'Gyro0 P (deg/s)', 'sec')
         self.configureSubplot(ax[0, 1], 'Gyro1 P (deg/s)', 'sec')
+        self.configureSubplot(ax[0, 2], 'Gyro1 P (deg/s)', 'sec')
         self.configureSubplot(ax[1, 0], 'Gyro0 Q (deg/s)', 'sec')
         self.configureSubplot(ax[1, 1], 'Gyro1 Q (deg/s)', 'sec')
+        self.configureSubplot(ax[1, 2], 'Gyro2 Q (deg/s)', 'sec')
         self.configureSubplot(ax[2, 0], 'Gyro0 R (deg/s)', 'sec')
         self.configureSubplot(ax[2, 1], 'Gyro1 R (deg/s)', 'sec')
+        self.configureSubplot(ax[2, 2], 'Gyro2 R (deg/s)', 'sec')
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
@@ -984,7 +990,7 @@ class logPlot:
             dtGps = dtGps / self.d
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:])
 
-            dtImu = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
+            dtImu = self.getData(d, DID_PREINTEGRATED_IMU3, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU3, 'time')[0:-1]
             dtImu = dtImu / self.d
 
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
@@ -992,7 +998,7 @@ class logPlot:
                 towOffset = towOffset[-1]
             else:
                 towOffset = 0
-            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)
+            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU3, 'time')[1:] + towOffset)
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)

@@ -28,5 +28,5 @@ var searchData=
   ['pfnsteplogfunction_5660',['pfnStepLogFunction',['../_inertial_sense_8h.html#ae91e5ac049ad4acb571f0fafd9af22f5',1,'InertialSense.h']]],
   ['pimu_5fmag_5ft_5661',['pimu_mag_t',['../data__sets_8h.html#aca233086ababa0c6e7913756323dac26',1,'data_sets.h']]],
   ['pos_5fmeasurement_5ft_5662',['pos_measurement_t',['../data__sets_8h.html#a713b33bbe892992b28336fc8909d89f3',1,'data_sets.h']]],
-  ['preintegrated_5fimu_5ft_5663',['preintegrated_imu_t',['../data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0',1,'data_sets.h']]]
+  ['preintegrated_5fimu_5ft_5663',['preintegrated_imu3_t',['../data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0',1,'data_sets.h']]]
 ];

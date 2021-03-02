@@ -161,7 +161,7 @@ int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, un
 	return n;	
 }
 
-int dimu_to_nmea_pimu(char a[], const int aSize, dual_imu_t &dimu)
+int dimu_to_nmea_pimu(char a[], const int aSize, imu3_t &dimu)
 {
 	int n = SNPRINTF(a, aSize, "$PIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", dimu.time);		// 1
@@ -187,7 +187,7 @@ int dimu_to_nmea_pimu(char a[], const int aSize, dual_imu_t &dimu)
 	return n;	
 }
 
-int pimu_to_nmea_ppimu(char a[], const int aSize, preintegrated_imu_t &pimu)
+int pimu_to_nmea_ppimu(char a[], const int aSize, preintegrated_imu3_t &pimu)
 {
 	int n = SNPRINTF(a, aSize, "$PPIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", pimu.time);		// 1

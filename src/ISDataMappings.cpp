@@ -107,7 +107,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_MAGNETOMETER_1] = sizeof(magnetometer_t);
 	sizeMap[DID_MAGNETOMETER_2] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
-	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
+	sizeMap[DID_PREINTEGRATED_IMU3] = sizeof(preintegrated_imu3_t);
     sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
     sizeMap[DID_SYS_CMD] = sizeof(system_command_t);
 	sizeMap[DID_INS_1] = sizeof(ins_1_t);
@@ -131,8 +131,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
-	sizeMap[DID_DUAL_IMU] = sizeof(dual_imu_t);
-    sizeMap[DID_DUAL_IMU_RAW] = sizeof(dual_imu_t);
+	sizeMap[DID_DUAL_IMU] = sizeof(imu3_t);
+    sizeMap[DID_DUAL_IMU_RAW] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
@@ -224,7 +224,7 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT])
 
 static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t dataId)
 {
-	typedef dual_imu_t MAP_TYPE;
+	typedef imu3_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[dataId];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double);
@@ -549,8 +549,8 @@ static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT])
 
 static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DID_COUNT])
 {
-	typedef preintegrated_imu_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU];
+	typedef preintegrated_imu3_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU3];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double);
     ADD_MAP(m, totalSize, "theta1[0]", theta1[0], 0, DataTypeFloat, float&);
@@ -1805,7 +1805,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "null",					// 0: DID_NULL
         "devInfo",				// 1: DID_DEV_INFO,
         "sysFault",				// 2: DID_SYS_FAULT
-        "preintegratedImu",		// 3: DID_PREINTEGRATED_IMU
+        "preintegratedImu",		// 3: DID_PREINTEGRATED_IMU3
         "ins1",					// 4: DID_INS_1
         "ins2",					// 5: DID_INS_2
         "gpsPos",				// 6: DID_GPS1_POS
