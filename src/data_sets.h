@@ -71,8 +71,11 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
+
 // #define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
 // #define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
+#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we use the name "Preintegrated IMU" through the User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs, default 4ms) and cannot be output at any other rate. If a different output data rate is desired, DID_DUAL_IMU which is derived from DID_PREINTEGRATED_IMU can be used instead. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_mem_t) */
 #define DID_CAL_SC1                     (eDataIDs)43 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_CAL_SC2                     (eDataIDs)44 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
