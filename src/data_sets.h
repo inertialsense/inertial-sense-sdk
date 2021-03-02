@@ -71,14 +71,14 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
-#define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
-#define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
+// #define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
+// #define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_mem_t) */
 #define DID_CAL_SC1                     (eDataIDs)43 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_CAL_SC2                     (eDataIDs)44 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_SYS_SENSORS_SIGMA           (eDataIDs)45 /** INTERNAL USE ONLY (sys_sensors_t) */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
-#define DID_INS_DEV_1                   (eDataIDs)47 /** INTERNAL USE ONLY (ins_dev_1_t) */
+// #define DID_INS_DEV_1                   (eDataIDs)47 /** INTERNAL USE ONLY (ins_dev_1_t) */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) */
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
@@ -682,23 +682,30 @@ typedef struct PACKED
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
 
-	/** IMU 1 delta theta (gyroscope {p,q,r} integral) in radians in sensor frame */
-	float                   theta1[3];
-
-	/** IMU 2 delta theta (gyroscope {p,q,r} integral) in radians in sensor frame */
-	float                   theta2[3];
-
-	/** IMU 1 delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
-	float                   vel1[3];
-
-	/** IMU 2 delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
-	float                   vel2[3];
-
 	/** Integral period in seconds for delta theta and delta velocity.  This is configured using DID_FLASH_CONFIG.startupNavDtMs. */
 	float					dt;
 
 	/** IMU Status (eImuStatus) */
 	uint32_t                status;
+
+	/** IMU 1 delta theta (gyroscope {p,q,r} integral) in radians in sensor frame */
+	float                   theta1[3];
+
+	/** IMU 1 delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
+	float                   vel1[3];
+
+	/** IMU 2 delta theta (gyroscope {p,q,r} integral) in radians in sensor frame */
+	float                   theta2[3];
+
+	/** IMU 2 delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
+	float                   vel2[3];
+
+	/** IMU 3 delta theta (gyroscope {p,q,r} integral) in radians in sensor frame */
+	float                   theta3[3];
+
+	/** IMU 3 delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
+	float                   vel3[3];
+
 } preintegrated_imu_t;
 
 
@@ -748,6 +755,19 @@ enum eImuStatus
 //     IMU_STATUS_SATURATION_HISTORY               = (int)0x00000100,
 //     /** Sample rate fault happened within past 10 seconds */
 //     IMU_STATUS_SAMPLE_RATE_FAULT_HISTORY        = (int)0x00000200,
+
+	/** IMU1 gyros available */
+	IMU_STATUS_GYR1_OK                          = (int)0x00010000,
+	/** IMU1 accelerometers available */
+	IMU_STATUS_ACC1_OK                          = (int)0x00020000,
+	/** IMU2 gyros available */
+	IMU_STATUS_GYR2_OK                          = (int)0x00040000,
+	/** IMU2 accelerometers available */
+	IMU_STATUS_ACC2_OK                          = (int)0x00080000,
+	/** IMU3 gyros available */
+	IMU_STATUS_GYR3_OK                          = (int)0x00100000,
+	/** IMU3 accelerometers available */
+	IMU_STATUS_ACC3_OK                          = (int)0x00200000,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
