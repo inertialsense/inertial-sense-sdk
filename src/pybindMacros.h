@@ -13,7 +13,7 @@ PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, e_i2l, t_i2l, distance, diameter);
 // Public Typcs
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
 PYBIND11_NUMPY_DTYPE(system_fault_t, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr);
-PYBIND11_NUMPY_DTYPE(preintegrated_imu3_t, time, theta1, theta2, vel1, vel2, dt, status);
+PYBIND11_NUMPY_DTYPE(preintegrated_imu_t, time, theta, vel, dt, status);
 PYBIND11_NUMPY_DTYPE(ins_1_t, week, timeOfWeek, insStatus, hdwStatus, theta, uvw, lla, ned);
 PYBIND11_NUMPY_DTYPE(ins_2_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw, lla);
 PYBIND11_NUMPY_DTYPE(gps_pos_t, week, timeOfWeekMs, status, ecef, lla, hMSL, hAcc, vAcc, pDop, cnoMean, towOffset, leapS, reserved);

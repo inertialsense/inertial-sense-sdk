@@ -61,7 +61,7 @@ DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
 DID_COMMUNICATIONS_LOOPBACK     = 56
 DID_DUAL_IMU_RAW                = 57
-DID_DUAL_IMU                    = 58
+DID_IMU                    = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
 DID_GPS_RTK_OPT                 = 61
@@ -87,8 +87,8 @@ DID_EVB_STATUS                  = 80
 DID_EVB_CONFIG                  = 81
 DID_EVB_DEBUG_ARRAY             = 82
 DID_EVB_RTOS_INFO               = 83
-DID_DUAL_IMU_RAW_MAG            = 84
-DID_DUAL_IMU_MAG                = 85
+DID_IMU_RAW_MAG            = 84
+DID_IMU_MAG                = 85
 DID_PREINTEGRATED_IMU_MAG       = 86
 DID_WHEEL_CONFIG                = 87
 DID_POSITION_MEASUREMENT        = 88
@@ -160,7 +160,7 @@ did_name_lookup = {
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
  DID_DUAL_IMU_RAW : "dualImuRaw",
- DID_DUAL_IMU : "dualImu",
+ DID_IMU : "dualImu",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
  DID_GPS_RTK_OPT : "gpsRtkOpt",

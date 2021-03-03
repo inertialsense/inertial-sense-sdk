@@ -339,8 +339,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_MAGNETOMETER_1:
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
-		case DID_PREINTEGRATED_IMU3:
-		case DID_DUAL_IMU:
+		case DID_PREINTEGRATED_IMU:
+		case DID_IMU:
 		case DID_INL2_STATES:
 		case DID_GPS_BASE_RAW:
 			if( isTowMode )
@@ -508,8 +508,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	switch (data->hdr.id)
 	{
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
-	case DID_DUAL_IMU:          str = DataToStringDualIMU(d.dualImu, data->hdr);        break;
-	case DID_PREINTEGRATED_IMU3: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
+	case DID_IMU:          str = DataToStringDualIMU(d.imu3, data->hdr);        break;
+	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
 	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
@@ -827,7 +827,7 @@ string cInertialSenseDisplay::DataToStringDualIMU(const imu3_t &imu, const p_dat
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_DUAL_IMU:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_IMU:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -874,13 +874,13 @@ string cInertialSenseDisplay::DataToStringDualIMU(const imu3_t &imu, const p_dat
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_imu3_t &imu, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_PREINTEGRATED_IMU3:");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_PREINTEGRATED_IMU:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -893,39 +893,24 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta1[%6.3f,%6.3f,%6.3f], vel1[%6.3f,%6.3f,%6.3f]",
-			imu.theta1[0] * C_RAD2DEG_F,
-			imu.theta1[1] * C_RAD2DEG_F,
-			imu.theta1[2] * C_RAD2DEG_F,
-			imu.vel1[0], imu.vel1[1], imu.vel1[2]);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta2[%6.3f,%6.3f,%6.3f], vel2[%6.3f,%6.3f,%6.3f]",
-			imu.theta2[0] * C_RAD2DEG_F,
-			imu.theta2[1] * C_RAD2DEG_F,
-			imu.theta2[2] * C_RAD2DEG_F,
-			imu.vel2[0], imu.vel2[1], imu.vel2[2]);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta[%6.3f,%6.3f,%6.3f], vel[%6.3f,%6.3f,%6.3f]",
+			imu.theta[0] * C_RAD2DEG_F,
+			imu.theta[1] * C_RAD2DEG_F,
+			imu.theta[2] * C_RAD2DEG_F,
+			imu.vel[0], imu.vel[1], imu.vel[2]);
 	}
 	else
 	{	// Spacious format
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta1\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.theta1[0] * C_RAD2DEG_F,		// IMU1 P angular rate
-			imu.theta1[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
-			imu.theta1[2] * C_RAD2DEG_F);		// IMU1 R angular rate
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 theta2\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.theta2[0] * C_RAD2DEG_F,		// IMU2 P angular rate
-			imu.theta2[1] * C_RAD2DEG_F,		// IMU2 Q angular rate
-			imu.theta2[2] * C_RAD2DEG_F);		// IMU2 R angular rate
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel1\t");
+			imu.theta[0] * C_RAD2DEG_F,		// IMU1 P angular rate
+			imu.theta[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
+			imu.theta[2] * C_RAD2DEG_F);		// IMU1 R angular rate
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel\t");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-            imu.vel1[0],						// IMU1 X acceleration
-            imu.vel1[1],						// IMU1 Y acceleration
-            imu.vel1[2]);						// IMU1 Z acceleration
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 vel2\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.vel2[0],						// IMU2 X acceleration
-			imu.vel2[1],						// IMU2 Y acceleration
-			imu.vel2[2]);						// IMU2 Z acceleration
+            imu.vel[0],						// IMU1 X acceleration
+            imu.vel[1],						// IMU1 Y acceleration
+            imu.vel[2]);						// IMU1 Z acceleration
 	}
 
 	return buf;

@@ -677,15 +677,15 @@ class logPlot:
         imu0 = []
         imu1 = []
 
-        I1 = self.getData(d, DID_DUAL_IMU, 'I')[:, 0]
-        I2 = self.getData(d, DID_DUAL_IMU, 'I')[:, 1]
-        time = self.getData(d, DID_DUAL_IMU, 'time')
+        I1 = self.getData(d, DID_IMU, 'I')[:, 0]
+        I2 = self.getData(d, DID_IMU, 'I')[:, 1]
+        time = self.getData(d, DID_IMU, 'time')
         if np.shape(I1)[0] == 0:
             I1 = self.getData(d, DID_DUAL_IMU_RAW, 'I')[:, 0]
             I2 = self.getData(d, DID_DUAL_IMU_RAW, 'I')[:, 1]
             time = self.getData(d, DID_DUAL_IMU_RAW, 'time')
 
-        if np.shape(I1)[0] != 0:  # DID_DUAL_IMU or DID_DUAL_IMU_RAW
+        if np.shape(I1)[0] != 0:  # DID_IMU or DID_DUAL_IMU_RAW
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
             for i in range(0, len(I1)):
@@ -693,17 +693,17 @@ class logPlot:
                 imu1.append(I2[i][index])
             imu0 = np.array(imu0)
             imu1 = np.array(imu1)
-        else:  # DID_PREINTEGRATED_IMU3
+        else:  # DID_PREINTEGRATED_IMU
             if index==0:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU3, 'theta1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU3, 'theta2')
-                imu2 = self.getData(d, DID_PREINTEGRATED_IMU3, 'theta3')
+                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
+                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
+                imu2 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta3')
             else:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU3, 'vel1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU3, 'vel2')
-                imu2 = self.getData(d, DID_PREINTEGRATED_IMU3, 'vel3')
-            time = self.getData(d, DID_PREINTEGRATED_IMU3, 'time')
-            # dt = self.getData(d, DID_PREINTEGRATED_IMU3, 'dt') # this doesn't account for LogInspector downsampling
+                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
+                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
+                imu2 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel3')
+            time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
+            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
             for i in range(3):
@@ -990,7 +990,7 @@ class logPlot:
             dtGps = dtGps / self.d
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:])
 
-            dtImu = self.getData(d, DID_PREINTEGRATED_IMU3, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU3, 'time')[0:-1]
+            dtImu = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
             dtImu = dtImu / self.d
 
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
@@ -998,7 +998,7 @@ class logPlot:
                 towOffset = towOffset[-1]
             else:
                 towOffset = 0
-            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU3, 'time')[1:] + towOffset)
+            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)

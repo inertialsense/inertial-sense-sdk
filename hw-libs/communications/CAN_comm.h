@@ -240,7 +240,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-		/** Euler roll, roll rates from each IMU(DID_DUAL_IMU)**/
+		/** Euler roll, roll rates from each IMU(DID_IMU)**/
 		int16_t					insRoll;								//2 bytes (scaled by 10000 4 decimal places precision)
 		int16_t					pImu1;									//2 bytes (scaled by 1000 3 decimal places precision)
 		int16_t					pImu2;									//2 bytes (scaled by 1000 3 decimal places precision)

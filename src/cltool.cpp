@@ -491,7 +491,7 @@ void cltool_outputUsage()
 	cout << "    -msgPresetPPD " << boldOff << "  stream preset: post processing data sets" << endlbOn;
 	cout << "    -msgPresetINS2" << boldOff << "  stream preset: INS2 sets" << endlbOn;
 	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
-	cout << "    -msgDualIMU *  " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
+	cout << "    -msgDualIMU *  " << boldOff << "  stream DID_IMU" << endlbOn;
 	cout << "    -msgPIMU       " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
 	cout << "    -msgMag[n] *   " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
 	cout << "    -msgBaro *     " << boldOff << "  stream DID_BAROMETER" << endlbOn;

@@ -124,10 +124,10 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 		d.ins1.theta;		// euler attitude
 		d.ins1.lla;			// latitude, longitude, altitude
 		break;
-	case DID_DUAL_IMU:				
-		d.dualImu;      
+	case DID_IMU:				
+		d.imu3;      
 		break;
-	case DID_PREINTEGRATED_IMU3:		
+	case DID_PREINTEGRATED_IMU:		
 		d.pImu;    
 		break;
 	case DID_GPS_NAV:				
@@ -190,11 +190,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.streamDualIMU)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_DUAL_IMU, g_commandLineOptions.streamDualIMU);
+		inertialSenseInterface.BroadcastBinaryData(DID_IMU, g_commandLineOptions.streamDualIMU);
 	}
 	if (g_commandLineOptions.streamDThetaVel)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU3, g_commandLineOptions.streamDThetaVel);
+		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU, g_commandLineOptions.streamDThetaVel);
 	}
 	if (g_commandLineOptions.streamGPS)
 	{
