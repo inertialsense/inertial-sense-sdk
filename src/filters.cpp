@@ -255,6 +255,28 @@ void integrateImu( preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast, b
 }
 
 
+void integrateImu(preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast)
+{
+    output->time = imu->time;
+
+    //	output->dt += deltaThetaDeltaVelRiemannSum(output, imu, imuLast);
+    // 	output->dt += deltaThetaDeltaVelTrapezoidal(output, imu, imuLast);
+
+    // Numerical integration of coning and sculling integrals using Bortz's rotation vector formula
+    output->dt += deltaThetaDeltaVelBortz(output, imu, imuLast, CON_SCUL_INT_STEPS);
+
+    // Copy out status bits
+    //output->status |= imu->status;
+
+    //  // Roscoe integral
+    // 	static ixVector3 alpha_last = { 0 };
+    // 	static ixVector3 veloc_last = { 0 };
+    // 	static ixVector3 delta_alpha_last = { 0 };
+    // 	static ixVector3 delta_veloc_last = { 0 };
+    // 	output->dt += integrateDeltaThetaVelRoscoe(output, imu, imu, alpha_last, veloc_last, delta_alpha_last, delta_veloc_last);
+}
+
+
 float deltaThetaDeltaVelRiemannSum( preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast )
 {
 	ixVector3 tmp3;
@@ -293,24 +315,37 @@ float deltaThetaDeltaVelRiemannSum( preintegrated_imu3_t *output, imu3_t *imu, i
 }
 
 
-float deltaThetaDeltaVelTrapezoidal( preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast )
+float deltaThetaDeltaVelTrapezoidal(preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast)
 {
 	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
 	
 	// Use Trapezoidal integral
-	for( int i=0; i<2; i++)
-	{
-		// Delta Theta
-		add_Vec3_Vec3( tmp3, imu->I[i].pqr, imuLast->I[i].pqr );
-		mul_Vec3_X( tmp3, tmp3, dt*0.5f );
-		add_Vec3_Vec3( output->theta1, output->theta1, tmp3 );
+    // Delta Theta
+    add_Vec3_Vec3(tmp3, imu->I[0].pqr, imuLast->I[0].pqr);
+    mul_Vec3_X(tmp3, tmp3, dt*0.5f);
+    add_Vec3_Vec3(output->theta1, output->theta1, tmp3);
 
-		// Delta Velocity
-		add_Vec3_Vec3( tmp3, imu->I[i].acc, imuLast->I[i].acc );
-		mul_Vec3_X( tmp3, tmp3, dt*0.5f );
-		add_Vec3_Vec3( output->vel1, output->vel1, tmp3 );
-	}
+    add_Vec3_Vec3(tmp3, imu->I[1].pqr, imuLast->I[1].pqr);
+    mul_Vec3_X(tmp3, tmp3, dt*0.5f);
+    add_Vec3_Vec3(output->theta2, output->theta2, tmp3);
+
+    add_Vec3_Vec3(tmp3, imu->I[2].pqr, imuLast->I[2].pqr);
+    mul_Vec3_X(tmp3, tmp3, dt*0.5f);
+    add_Vec3_Vec3(output->theta3, output->theta3, tmp3);
+
+    // Delta Velocity
+    add_Vec3_Vec3(tmp3, imu->I[0].acc, imuLast->I[0].acc);
+    mul_Vec3_X(tmp3, tmp3, dt*0.5f);
+    add_Vec3_Vec3(output->vel1, output->vel1, tmp3);
+
+    add_Vec3_Vec3(tmp3, imu->I[1].acc, imuLast->I[1].acc);
+    mul_Vec3_X(tmp3, tmp3, dt*0.5f);
+    add_Vec3_Vec3(output->vel2, output->vel2, tmp3);
+
+    add_Vec3_Vec3(tmp3, imu->I[2].acc, imuLast->I[2].acc);
+    mul_Vec3_X(tmp3, tmp3, dt*0.5f);
+    add_Vec3_Vec3(output->vel3, output->vel3, tmp3);
 
 	// Update history
 	*imuLast = *imu;
@@ -392,6 +427,20 @@ float deltaThetaDeltaVelBortz(preintegrated_imu3_t *output, imu3_t *imu, imu3_t 
 	*imuLast = *imu;
 
 	return dt;
+}
+
+
+float deltaThetaDeltaVelBortz(preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps)
+{
+    float dt = (float)(imu->time - imuLast->time);
+    float dti = dt / (float)Nsteps;
+
+    integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), (float)Nsteps, (float)dti);
+
+    // Update history
+    *imuLast = *imu;
+
+    return dt;
 }
 
 

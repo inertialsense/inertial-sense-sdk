@@ -482,7 +482,8 @@ int imuToPreintegratedImu(preintegrated_imu3_t *pImu, const imu3_t *imu, float d
  * \param imu			Gyro and accelerometer sample.
  * \param imuLast		Previous gyro and accelerometer sample.
  */
-void integrateImu( preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast, bool enableIMU1, bool enableIMU2, bool enableIMU3 );
+void integrateImu(preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast, bool enableIMU1, bool enableIMU2, bool enableIMU3);
+void integrateImu(preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast);
 
 
 
