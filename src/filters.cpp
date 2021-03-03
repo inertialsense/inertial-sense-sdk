@@ -19,7 +19,8 @@
 void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti);
 float deltaThetaDeltaVelRiemannSum( preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast );
 float deltaThetaDeltaVelTrapezoidal( preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast );
-float deltaThetaDeltaVelBortz( preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2, bool enableIMU3 );
+float deltaThetaDeltaVelBortz(preintegrated_imu3_t *output, imu3_t *imu, imu3_t *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2, bool enableIMU3);
+float deltaThetaDeltaVelBortz(preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps);
 #if 0
 float integrateDeltaThetaVelRoscoe(
 	preintegrated_imu3_t *output, 
