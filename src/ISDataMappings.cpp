@@ -132,7 +132,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
 	sizeMap[DID_IMU] = sizeof(imu3_t);
-    sizeMap[DID_DUAL_IMU_RAW] = sizeof(imu3_t);
+    sizeMap[DID_IMU_RAW] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
@@ -1701,7 +1701,7 @@ cISDataMappings::cISDataMappings()
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
-    PopulateIMUMappings(m_lookupInfo, DID_DUAL_IMU_RAW);
+    PopulateIMUMappings(m_lookupInfo, DID_IMU_RAW);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateINS1Mappings(m_lookupInfo);
@@ -1833,7 +1833,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "gps1RtkPos",			// 54: DID_GPS1_RTK_POS
         "magnetometer2",		// 55: DID_MAGNETOMETER_2
         "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
-        "imuDualRaw",			// 57: DID_DUAL_IMU_RAW
+        "imuDualRaw",			// 57: DID_IMU_RAW
         "imuDual",				// 58: DID_IMU
         "inl2MagObs",			// 59: DID_INL2_MAG_OBS_INFO
         "gpsBaseRaw",			// 60: DID_GPS_BASE_RAW

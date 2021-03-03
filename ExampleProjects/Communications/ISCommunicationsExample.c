@@ -108,7 +108,7 @@ int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_inst
 
 #if 0
 	// Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
-	messageSize = is_comm_get_data(comm, _DID_IMU_DUAL, 0, 0, 100);
+	messageSize = is_comm_get_data(comm, _DID_IMU, 0, 0, 100);
 	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
 	{
 		printf("Failed to encode and write get IMU message\r\n");
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 					handleGpsMessage((gps_pos_t*)comm.dataPtr);
 					break;
 
-				case _DID_IMU_DUAL:
+				case _DID_IMU:
 					handleImuMessage((imu3_t*)comm.dataPtr);
 					break;
 

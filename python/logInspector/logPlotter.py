@@ -681,11 +681,11 @@ class logPlot:
         I2 = self.getData(d, DID_IMU, 'I')[:, 1]
         time = self.getData(d, DID_IMU, 'time')
         if np.shape(I1)[0] == 0:
-            I1 = self.getData(d, DID_DUAL_IMU_RAW, 'I')[:, 0]
-            I2 = self.getData(d, DID_DUAL_IMU_RAW, 'I')[:, 1]
-            time = self.getData(d, DID_DUAL_IMU_RAW, 'time')
+            I1 = self.getData(d, DID_IMU_RAW, 'I')[:, 0]
+            I2 = self.getData(d, DID_IMU_RAW, 'I')[:, 1]
+            time = self.getData(d, DID_IMU_RAW, 'time')
 
-        if np.shape(I1)[0] != 0:  # DID_IMU or DID_DUAL_IMU_RAW
+        if np.shape(I1)[0] != 0:  # DID_IMU or DID_IMU_RAW
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
             for i in range(0, len(I1)):
