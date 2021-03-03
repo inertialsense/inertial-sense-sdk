@@ -1816,14 +1816,14 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "debugString",			// 37: DID_DEBUG_STRING
         "rtosInfo",				// 38: DID_RTOS_INFO
         "debugArray",			// 39: DID_DEBUG_ARRAY
-        "sensorCal1",			// 40: DID_SENSORS_CAL1
-        "sensorCal2",			// 41: DID_SENSORS_CAL2
+        "empty40",			    // 40: 
+        "empty41",			    // 41: 
         "sensorCalSC",			// 42: DID_CAL_SC
         "sensorCalSC1",			// 43: DID_CAL_SC1
         "sensorCalSC2",			// 44: DID_CAL_SC2
         "sensorSigma",			// 45: DID_SYS_SENSORS_SIGMA
         "sensorAdcSigma",		// 46: DID_SENSORS_ADC_SIGMA
-        "insDev1",				// 47: DID_INS_DEV_1
+        "empty47",				// 47: 
         "inl2States",			// 48: DID_INL2_STATES
         "inl2CovarianceLD",		// 49: DID_INL2_COVARIANCE_LD
         "inl2Status",			// 50: DID_INL2_STATUS

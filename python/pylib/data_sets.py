@@ -43,14 +43,14 @@ DID_NVR_USERPAGE_G1             = 36
 DID_DEBUG_STRING                = 37
 DID_RTOS_INFO                   = 38
 DID_DEBUG_ARRAY                 = 39
-DID_SENSORS_CAL1                = 40
-DID_SENSORS_CAL2                = 41
+# DID_SENSORS_CAL1                = 40
+# DID_SENSORS_CAL2                = 41
 DID_CAL_SC                      = 42
 DID_CAL_SC1                     = 43
 DID_CAL_SC2                     = 44
 DID_SYS_SENSORS_SIGMA           = 45
 DID_SENSORS_ADC_SIGMA           = 46
-DID_INS_DEV_1                   = 47
+# DID_INS_DEV_1                   = 47
 DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
@@ -143,14 +143,14 @@ did_name_lookup = {
  DID_DEBUG_STRING : "debugString",
  DID_RTOS_INFO : "rtosInfo",
  DID_DEBUG_ARRAY : "debugArray",
- DID_SENSORS_CAL1 : "sensorsCal1",
- DID_SENSORS_CAL2 : "sensorsCal2",
+#  DID_SENSORS_CAL1 : "sensorsCal1",
+#  DID_SENSORS_CAL2 : "sensorsCal2",
  DID_CAL_SC : "calSc",
  DID_CAL_SC1 : "calSc1",
  DID_CAL_SC2 : "calSc2",
  DID_SYS_SENSORS_SIGMA : "sysSensorsSigma",
  DID_SENSORS_ADC_SIGMA : "sensorsAdcSigma",
- DID_INS_DEV_1 : "insDev1",
+#  DID_INS_DEV_1 : "insDev1",
  DID_INL2_STATES : "inl2States",
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",
  DID_INL2_STATUS : "inl2Status",

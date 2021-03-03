@@ -167,8 +167,8 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_RTOS_INFO, dev_log_->rtosInfo );
         HANDLE_MSG( DID_DEBUG_STRING, dev_log_->debugString );
         HANDLE_MSG( DID_DEBUG_ARRAY, dev_log_->debugArray );
-        HANDLE_MSG( DID_SENSORS_CAL1, dev_log_->sensorsCal1 );
-        HANDLE_MSG( DID_SENSORS_CAL2, dev_log_->sensorsCal2 );
+        // HANDLE_MSG( DID_SENSORS_CAL1, dev_log_->sensorsCal1 );
+        // HANDLE_MSG( DID_SENSORS_CAL2, dev_log_->sensorsCal2 );
         // HANDLE_MSG( DID_CAL_SC, dev_log_->calSc );
         // HANDLE_MSG( DID_CAL_SC1, dev_log_->calSc1 );
         // HANDLE_MSG( DID_CAL_SC2, dev_log_->calSc2 );
@@ -257,8 +257,8 @@ void LogReader::forwardData(int id)
     // forward_message( DID_RTOS_INFO, dev_log_->rtosInfo, id );
     forward_message( DID_DEBUG_STRING, dev_log_->debugString, id );
     forward_message( DID_DEBUG_ARRAY, dev_log_->debugArray, id );
-    forward_message( DID_SENSORS_CAL1, dev_log_->sensorsCal1, id );
-    forward_message( DID_SENSORS_CAL2, dev_log_->sensorsCal2, id );
+    // forward_message( DID_SENSORS_CAL1, dev_log_->sensorsCal1, id );
+    // forward_message( DID_SENSORS_CAL2, dev_log_->sensorsCal2, id );
     // forward_message( DID_CAL_SC, dev_log_->calSc, id );
     // forward_message( DID_CAL_SC1, dev_log_->calSc1, id );
     // forward_message( DID_CAL_SC2, dev_log_->calSc2, id );
