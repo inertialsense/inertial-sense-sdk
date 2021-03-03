@@ -182,7 +182,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_MAGNETOMETER_2, dev_log_->magnetometer );
         HANDLE_MSG( DID_BAROMETER, dev_log_->barometer );
         HANDLE_MSG( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos );
-        HANDLE_MSG( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw );
+        HANDLE_MSG( DID_IMU_RAW, dev_log_->dualImuRaw );
         HANDLE_MSG( DID_IMU, dev_log_->imu3 );
         HANDLE_MSG( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo );
         HANDLE_MSG( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw );
@@ -272,7 +272,7 @@ void LogReader::forwardData(int id)
     forward_message( DID_MAGNETOMETER_2, dev_log_->magnetometer, id );
     forward_message( DID_BAROMETER, dev_log_->barometer, id );
     forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, id );
-    forward_message( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw, id );
+    forward_message( DID_IMU_RAW, dev_log_->dualImuRaw, id );
     forward_message( DID_IMU, dev_log_->imu3, id );
     forward_message( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, id );
     forward_message( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, id );
