@@ -153,45 +153,54 @@ void running_mean_filter_f64( double mean[], float input[], int arraySize, int s
 void errorCheckDualImu(dual_imu_ok_t *di)
 {
 	// Error Checking
-	if( di->imu.time != 0.0) 
-	{
+    if (di->imu.time != 0.0)
+    {
         // Compare to a small number much smaller than IMU noise sigma
         if (fabs(di->imu.I[0].acc[0]) < 1.0e-6f && fabs(di->imu.I[0].acc[1]) < 1.0e-6f && fabs(di->imu.I[0].acc[2]) < 1.0e-6f)
         {
             di->imu1ok = false;
         }
         if (fabs(di->imu.I[1].acc[0]) < 1.0e-6f && fabs(di->imu.I[1].acc[1]) < 1.0e-6f && fabs(di->imu.I[1].acc[2]) < 1.0e-6f)
-		{
-			di->imu2ok = false;
-		}
+        {
+            di->imu2ok = false;
+        }
+        if (fabs(di->imu.I[2].acc[0]) < 1.0e-6f && fabs(di->imu.I[2].acc[1]) < 1.0e-6f && fabs(di->imu.I[2].acc[2]) < 1.0e-6f)
+        {
+            di->imu3ok = false;
+        }
     }
 }
 
 
 void dualToSingleImu(imu_t *result, const dual_imu_ok_t *di)
 {
-	// Find best IMU value
-	if (di->imu1ok && di->imu2ok)
-	{
-		// Find average of two IMU samples
-		result->time = di->imu.time;
+    // Find average of all good IMU samples
+    result->time = di->imu.time;
 
-		for (int i = 0; i < 3; i++)
-		{
-			result->I.pqr[i] = 0.5f * (di->imu.I[0].pqr[i] + di->imu.I[1].pqr[i]);
-			result->I.acc[i] = 0.5f * (di->imu.I[0].acc[i] + di->imu.I[1].acc[i]);
-		}
-	}
-	else if (di->imu1ok)
-	{
-		result->time = di->imu.time;
-		result->I = di->imu.I[0];
-	}
-	else if (di->imu2ok)
-	{
-		result->time = di->imu.time;
-		result->I = di->imu.I[1];
-	}
+    int Ndev = 0;
+    float div;
+
+    result->I.pqr[0] = result->I.pqr[1] = result->I.pqr[2] = 0.0f;
+    result->I.acc[0] = result->I.acc[1] = result->I.acc[2] = 0.0f;
+
+    for (int j = 0; j < 3; j++)
+    {
+        if ((j == 0 && di->imu1ok) || (j == 1 && di->imu2ok) || (j == 2 && di->imu3ok))
+        {
+            Ndev++;
+            for (int i = 0; i < 3; i++)
+            {
+                result->I.pqr[i] += di->imu.I[j].pqr[i];
+                result->I.acc[i] += di->imu.I[j].acc[i];
+            }
+        }
+    }
+    div = 1.0f / (float)Ndev;
+    for (int i = 0; i < 3; i++)
+    {
+        result->I.pqr[i] *= div;
+        result->I.acc[i] *= div;
+    }
 }
 
 

@@ -644,7 +644,7 @@ typedef struct PACKED
 	/*! IMU is valid */
 	uint8_t					imu1ok;
 	uint8_t					imu2ok;
-    uint8_t                 reserved1;
+    uint8_t                 imu3ok;
     uint8_t                 reserved2;
 } dual_imu_ok_t;
 
