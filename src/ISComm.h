@@ -48,7 +48,7 @@ extern "C" {
 #define _DID_INS_LLA_QN2B			DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
 
 /** IMU */
-#define _DID_IMU				DID_IMU						/** (see imu3_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
+#define _DID_IMU					DID_IMU					/** (see imu3_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
 #define _DID_IMU_PREINTEGRATED_IMU	DID_PREINTEGRATED_IMU	/** (see preintegrated_imu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
 
 /** GPS */
