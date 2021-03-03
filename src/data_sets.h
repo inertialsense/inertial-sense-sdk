@@ -1145,7 +1145,7 @@ enum eSystemCommand
 
 
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
@@ -1189,7 +1189,7 @@ typedef struct PACKED
 	
 } ascii_msgs_t;
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
