@@ -132,7 +132,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
 	sizeMap[DID_IMU] = sizeof(imu3_t);
-    sizeMap[DID_IMU_RAW] = sizeof(imu3_t);
+    sizeMap[DID_IMU3] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
@@ -224,10 +224,28 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT])
 
 static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t dataId)
 {
+	typedef imu_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[dataId];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "pqr[0]", I.pqr[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "pqr[1]", I.pqr[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "pqr[2]", I.pqr[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "acc[0]", I.acc[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "acc[1]", I.acc[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "acc[2]", I.acc[2], 0, DataTypeFloat, float&);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t dataId)
+{
 	typedef imu3_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[dataId];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "pqr1[0]", I[0].pqr[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "pqr1[1]", I[0].pqr[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "pqr1[2]", I[0].pqr[2], 0, DataTypeFloat, float&);
@@ -240,7 +258,12 @@ static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
     ADD_MAP(m, totalSize, "acc2[0]", I[1].acc[0], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "acc2[1]", I[1].acc[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "acc2[2]", I[1].acc[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "pqr3[0]", I[2].pqr[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "pqr3[1]", I[2].pqr[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "pqr3[2]", I[2].pqr[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "acc3[0]", I[2].acc[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "acc3[1]", I[2].acc[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "acc3[2]", I[2].acc[2], 0, DataTypeFloat, float&);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1701,7 +1724,7 @@ cISDataMappings::cISDataMappings()
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
-    PopulateIMUMappings(m_lookupInfo, DID_IMU_RAW);
+    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateINS1Mappings(m_lookupInfo);
@@ -1833,8 +1856,8 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "gps1RtkPos",			// 54: DID_GPS1_RTK_POS
         "magnetometer2",		// 55: DID_MAGNETOMETER_2
         "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
-        "imuDualRaw",			// 57: DID_IMU_RAW
-        "imuDual",				// 58: DID_IMU
+        "imu3",			        // 57: DID_IMU3
+        "imu",				    // 58: DID_IMU
         "inl2MagObs",			// 59: DID_INL2_MAG_OBS_INFO
         "gpsBaseRaw",			// 60: DID_GPS_BASE_RAW
         "gpsRtkOptions",		// 61: DID_GPS_RTK_OPT

@@ -104,7 +104,7 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
     gps2Raw = log2Data( log, itd.cGPSRaw, 'GPS2Raw')
     gpsBaseRaw = log2Data( log, itd.cGPSRaw, 'GPSBaseRaw')
     imu1 = log2Data( log, itd.cIMU, 'imu1' )
-    dimu = log2Data( log, itd.cIMU, 'dualImu' )
+    dimu = log2Data( log, itd.cIMU, 'imu' )
     dimu = log2Data( log, itd.cIMU, 'preintegratedImu' )
     mag1 = log2Data( log, itd.cIMU, 'magnetometer1' )
     mag2 = log2Data( log, itd.cIMU, 'magnetometer2' )

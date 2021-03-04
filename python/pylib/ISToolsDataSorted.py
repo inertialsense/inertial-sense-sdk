@@ -578,7 +578,7 @@ class cDevice:
 
         # 57 'Communications Loopback'
 
-        self.di[58].set('dualImu', np.dtype([
+        self.di[58].set('imu', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('time', f64),
             ('I', (dtypeImu, 2)),

@@ -60,7 +60,7 @@ DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
 DID_COMMUNICATIONS_LOOPBACK     = 56
-DID_IMU_RAW                = 57
+DID_IMU3                = 57
 DID_IMU                    = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
@@ -159,8 +159,8 @@ did_name_lookup = {
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
- DID_IMU_RAW : "dualImuRaw",
- DID_IMU : "dualImu",
+ DID_IMU3 : "imu3",
+ DID_IMU : "imu",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
  DID_GPS_RTK_OPT : "gpsRtkOpt",
