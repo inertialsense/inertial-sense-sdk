@@ -83,10 +83,10 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
 #define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
-#define DID_MAGNETOMETER_1              (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor 1 output */
+#define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
-#define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
+// #define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_IMU3                        (eDataIDs)57 /** (imu_t) Inertial measurement unit data directly from IMU.  We recommend use of DID_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from 1KHz to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
@@ -636,7 +636,7 @@ typedef struct PACKED
 } imu3_t;
 
 
-/** (DID_MAGNETOMETER_1, DID_MAGNETOMETER_2) Magnetometer sensor data */
+/** (DID_MAGNETOMETER, DID_MAGNETOMETER_2) Magnetometer sensor data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -688,7 +688,7 @@ typedef struct PACKED
 } preintegrated_imu_t;
 
 
-/** DID_IMU_RAW_MAG, DID_IMU_MAG, dual imu + mag1 + mag2 */
+/** DID_IMU_RAW_MAG, DID_IMU_MAG, dual imu + mag */
 typedef struct PACKED
 {
 	/** imu - raw or pre-integrated depending on data id */
@@ -1291,9 +1291,9 @@ typedef struct PACKED
 #define RMC_BITS_IMU                    0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
 #define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
-#define RMC_BITS_MAGNETOMETER1          0x0000000000000080      // ~10ms
-#define RMC_BITS_MAGNETOMETER2          0x0000000000000100      // "
-
+#define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
+//                                      0x0000000000000100      // 
+//                                      0x0000000000000200      // 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1332,8 +1332,7 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_BITS_NO_IMU		(RMC_BITS_PRESET \
 										| RMC_BITS_INS2 \
 										| RMC_BITS_BAROMETER \
-										| RMC_BITS_MAGNETOMETER1 \
-										| RMC_BITS_MAGNETOMETER2 \
+										| RMC_BITS_MAGNETOMETER \
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_GPS2_POS \
 										| RMC_BITS_GPS1_VEL \
@@ -1525,7 +1524,63 @@ typedef struct PACKED
 } bit_t;
 
 
-/** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
+/** (DID_WHEEL_ENCODER) [NOT SUPPORTED, INTERNAL USE ONLY] Message to communicate wheel encoder measurements to GPS-INS */
+typedef struct PACKED
+{
+    /** Time of measurement wrt current week */
+    double timeOfWeek;
+
+    /** Status Word */
+    uint32_t status;
+
+    /** Left wheel angle (rad) */
+    float theta_l;
+
+    /** Right wheel angle (rad) */
+    float theta_r;
+    
+    /** Left wheel angular rate (rad/s) */
+    float omega_l;
+
+    /** Right wheel angular rate (rad/s) */
+    float omega_r;
+
+    /** Left wheel revolution count */
+    uint32_t wrap_count_l;
+
+    /** Right wheel revolution count */
+    uint32_t wrap_count_r;
+
+} wheel_encoder_t;
+
+enum eWheelCfgBits
+{
+    WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
+    WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
+    WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
+};
+
+/** (DID_WHEEL_CONFIG) [NOT SUPPORTED, INTERNAL USE ONLY] Configuration of wheel encoders and kinematic constraints. (Used with nvm_flash_cfg_t.wheelConfig) */
+typedef struct PACKED
+{
+    /** Config bits (see eWheelCfgBits) */
+    uint32_t                bits;
+
+	/** Euler angles describing the rotation from imu to left wheel */
+	float                   e_i2l[3];
+
+	/** Translation from the imu to the left wheel, expressed in the imu frame */
+	float                   t_i2l[3];
+
+	/** Distance between the left wheel and the right wheel */
+	float                   distance;
+
+	/** Estimate of wheel diameter */
+	float                   diameter;
+
+} wheel_config_t;
+
+/** System Configuration (used with nvm_flash_cfg_t.sysCfgBits) */
 enum eSysConfigBits
 {
 	UNUSED1                                             = (int)0x00000001,
@@ -1565,7 +1620,7 @@ enum eSysConfigBits
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
 };
 
-/** GNSS satellite system signal constellation (used with DID_FLASH_CONFIG.gnssSatSigConst) */
+/** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
 	/*! GPS  */
@@ -1590,7 +1645,7 @@ enum eGnssSatSigConst
 		GNSS_SAT_SIG_CONST_GLO
 };
 
-/** RTK Configuration */
+/** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
 enum eRTKConfigBits
 {
 	/** Enable RTK GNSS precision positioning (GPS1) */
@@ -1735,8 +1790,7 @@ enum eRTKConfigBits
 	RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),	
 };
 
-
-/** Sensor Configuration */
+/** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
 	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */	
@@ -1808,8 +1862,7 @@ enum eSensorConfig
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_N90   = (int)23,
 };
 
-
-/** IO configuration (used with DID_FLASH_CONFIG.ioConfig) */
+/** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
 enum eIoConfig
 {
 	/** Input strobe trigger on rising edge (0 = falling edge) */
@@ -1890,63 +1943,6 @@ enum eIoConfig
 	/** CAN Bus Enable */	
 	IO_CONFIG_CAN_BUS_ENABLE					= (int)0x01000000,
 };
-
-
-/** (DID_WHEEL_ENCODER) [NOT SUPPORTED, INTERNAL USE ONLY] Message to communicate wheel encoder measurements to GPS-INS */
-typedef struct PACKED
-{
-    /** Time of measurement wrt current week */
-    double timeOfWeek;
-
-    /** Status Word */
-    uint32_t status;
-
-    /** Left wheel angle (rad) */
-    float theta_l;
-
-    /** Right wheel angle (rad) */
-    float theta_r;
-    
-    /** Left wheel angular rate (rad/s) */
-    float omega_l;
-
-    /** Right wheel angular rate (rad/s) */
-    float omega_r;
-
-    /** Left wheel revolution count */
-    uint32_t wrap_count_l;
-
-    /** Right wheel revolution count */
-    uint32_t wrap_count_r;
-
-} wheel_encoder_t;
-
-enum eWheelCfgBits
-{
-    WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
-    WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
-    WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
-};
-
-/** (DID_WHEEL_CONFIG) [NOT SUPPORTED, INTERNAL USE ONLY] Configuration of wheel encoders and kinematic constraints. */
-typedef struct PACKED
-{
-    /** Config bits (see eWheelCfgBits) */
-    uint32_t                bits;
-
-	/** Euler angles describing the rotation from imu to left wheel */
-	float                   e_i2l[3];
-
-	/** Translation from the imu to the left wheel, expressed in the imu frame */
-	float                   t_i2l[3];
-
-	/** Distance between the left wheel and the right wheel */
-	float                   distance;
-
-	/** Estimate of wheel diameter */
-	float                   diameter;
-
-} wheel_config_t;
 
 typedef enum
 {

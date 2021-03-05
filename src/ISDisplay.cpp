@@ -336,7 +336,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			break;
 
 			// Time since boot - double
-		case DID_MAGNETOMETER_1:
+		case DID_MAGNETOMETER:
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
 		case DID_PREINTEGRATED_IMU:
@@ -514,8 +514,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
 	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
-	case DID_MAGNETOMETER_1:
-	case DID_MAGNETOMETER_2:    str = DataToStringMag(d.mag, data->hdr);                break;
+	case DID_MAGNETOMETER:      str = DataToStringMag(d.mag, data->hdr);                break;
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
 	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);              break;
 	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_POS");				break;
@@ -922,9 +921,7 @@ string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	int i = 0;
-	if (hdr.id == DID_MAGNETOMETER_2) i = 1;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_MAGNETOMETER_%d:", i + 1);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "DID_MAGNETOMETER:");
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime[2] = { 0 };

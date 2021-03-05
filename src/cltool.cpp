@@ -263,21 +263,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.streamINS4 = 50;
 		}
-		else if (startsWith(a, "-msgMag1="))
+		else if (startsWith(a, "-msgMag="))
 		{
-			g_commandLineOptions.streamMag1 = (int)atof(&a[9]);
+			g_commandLineOptions.streamMag = (int)atof(&a[9]);
 		}
-		else if (startsWith(a, "-msgMag1"))
+		else if (startsWith(a, "-msgMag"))
 		{
-			g_commandLineOptions.streamMag1 = 50;
-		}
-		else if (startsWith(a, "-msgMag2="))
-		{
-			g_commandLineOptions.streamMag2 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgMag2"))
-		{
-			g_commandLineOptions.streamMag2 = 50;
+			g_commandLineOptions.streamMag = 50;
 		}
 		else if (startsWith(a, "-msgPIMU"))
 		{
