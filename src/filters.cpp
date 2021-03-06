@@ -172,27 +172,50 @@ void errorCheckImu3(imu3_t *di)
 void tripleToSingleImu(imu_t *result, const imu3_t *di)
 {
 	result->time = di->time;
+	result->status = di->status;
 
 	int cnt = 0;
-	zero_Vec3(result->I.pqr);
-	zero_Vec3(result->I.acc);
 
 	if ((di->status&IMU_STATUS_IMU1_OK)==IMU_STATUS_IMU1_OK)
 	{
-		add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[0].pqr);
-		add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[0].acc);
+		if (cnt == 0)
+		{
+			cpy_Vec3_Vec3(result->I.pqr, di->I[0].pqr);
+			cpy_Vec3_Vec3(result->I.acc, di->I[0].acc);
+		}
+		else
+		{
+			add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[0].pqr);
+			add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[0].acc);
+		}
 		cnt++;
 	}
 	if ((di->status&IMU_STATUS_IMU2_OK)==IMU_STATUS_IMU2_OK)
 	{
-		add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[1].pqr);
-		add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[1].acc);
+		if (cnt == 0)
+		{
+			cpy_Vec3_Vec3(result->I.pqr, di->I[1].pqr);
+			cpy_Vec3_Vec3(result->I.acc, di->I[1].acc);
+		}
+		else
+		{
+			add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[1].pqr);
+			add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[1].acc);
+		}
 		cnt++;
 	}
 	if ((di->status&IMU_STATUS_IMU3_OK)==IMU_STATUS_IMU3_OK)
 	{
-		add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[2].pqr);
-		add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[2].acc);
+		if (cnt == 0)
+		{
+			cpy_Vec3_Vec3(result->I.pqr, di->I[2].pqr);
+			cpy_Vec3_Vec3(result->I.acc, di->I[2].acc);
+		}
+		else
+		{
+			add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[2].pqr);
+			add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[2].acc);
+		}
 		cnt++;
 	}
 
@@ -252,6 +275,7 @@ int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt)
 void integrateImu( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	output->time = imu->time;
+	output->status = imu->status;
 
 	//	output->dt += deltaThetaDeltaVelRiemannSum(output, imu, imuLast);
 	// 	output->dt += deltaThetaDeltaVelTrapezoidal(output, imu, imuLast);
