@@ -171,60 +171,39 @@ void errorCheckImu3(imu3_t *di)
 
 void tripleToSingleImu(imu_t *result, const imu3_t *di)
 {
-	result->time = di->time;
-	result->status = di->status;
+	imu_t imu = {};
+	imu.time = di->time;
+	imu.status = di->status;
 
 	int cnt = 0;
 
 	if ((di->status&IMU_STATUS_IMU1_OK)==IMU_STATUS_IMU1_OK)
 	{
-		if (cnt == 0)
-		{
-			cpy_Vec3_Vec3(result->I.pqr, di->I[0].pqr);
-			cpy_Vec3_Vec3(result->I.acc, di->I[0].acc);
-		}
-		else
-		{
-			add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[0].pqr);
-			add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[0].acc);
-		}
+		add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[0].pqr);
+		add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[0].acc);
 		cnt++;
 	}
 	if ((di->status&IMU_STATUS_IMU2_OK)==IMU_STATUS_IMU2_OK)
 	{
-		if (cnt == 0)
-		{
-			cpy_Vec3_Vec3(result->I.pqr, di->I[1].pqr);
-			cpy_Vec3_Vec3(result->I.acc, di->I[1].acc);
-		}
-		else
-		{
-			add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[1].pqr);
-			add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[1].acc);
-		}
+		add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[1].pqr);
+		add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[1].acc);
 		cnt++;
 	}
 	if ((di->status&IMU_STATUS_IMU3_OK)==IMU_STATUS_IMU3_OK)
 	{
-		if (cnt == 0)
-		{
-			cpy_Vec3_Vec3(result->I.pqr, di->I[2].pqr);
-			cpy_Vec3_Vec3(result->I.acc, di->I[2].acc);
-		}
-		else
-		{
-			add_Vec3_Vec3(result->I.pqr, result->I.pqr, di->I[2].pqr);
-			add_Vec3_Vec3(result->I.acc, result->I.acc, di->I[2].acc);
-		}
+		add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[2].pqr);
+		add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[2].acc);
 		cnt++;
 	}
 
 	if (cnt)
 	{
 		float div = 1/(float)cnt;
-		mul_Vec3_X(result->I.pqr, result->I.pqr, div);
-		mul_Vec3_X(result->I.acc, result->I.acc, div);
-	}	
+		mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
+		mul_Vec3_X(imu.I.acc, imu.I.acc, div);
+	}
+
+	*result = imu;
 }
 
 
@@ -236,7 +215,7 @@ void singleToTripleImu(imu3_t *result, imu_t *imu)
 		cpy_Vec3_Vec3(result->I[i].pqr, imu->I.pqr);
 		cpy_Vec3_Vec3(result->I[i].acc, imu->I.acc);
 	}
-	result->status = (IMU_STATUS_IMU1_OK | IMU_STATUS_IMU2_OK | IMU_STATUS_IMU3_OK);
+	result->status = imu->status | (IMU_STATUS_IMU1_OK | IMU_STATUS_IMU2_OK | IMU_STATUS_IMU3_OK);
 }
 
 
