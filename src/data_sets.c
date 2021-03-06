@@ -315,7 +315,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER
 		offsetsOnlyTimeFirst,	// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		offsetsOnlyTimeFirst,	// 55: DID_MAGNETOMETER_2
+		0,						// 55: 
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		offsetsOnlyTimeFirst,	// 57: DID_IMU3
 		offsetsOnlyTimeFirst,	// 58: DID_IMU
@@ -469,7 +469,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 52: DID_MAGNETOMETER
 		0,						// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		0,						// 55: DID_MAGNETOMETER_2
+		0,						// 55: 
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
 		0,						// 57: DID_IMU3
 		0,						// 58: DID_IMU

@@ -1849,10 +1849,10 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
         "inl2CovarianceLD",		// 49: DID_INL2_COVARIANCE_LD
         "inl2Status",			// 50: DID_INL2_STATUS
         "inl2Misc",				// 51: DID_INL2_MISC
-        "magnetometer",		// 52: DID_MAGNETOMETER
+        "magnetometer",		    // 52: DID_MAGNETOMETER
         "barometer",			// 53: DID_BAROMETER
         "gps1RtkPos",			// 54: DID_GPS1_RTK_POS
-        "magnetometer2",		// 55: DID_MAGNETOMETER_2
+        "empty55",		        // 55: 
         "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
         "imu3",			        // 57: DID_IMU3
         "imu",				    // 58: DID_IMU

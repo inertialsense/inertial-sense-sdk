@@ -88,7 +88,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
 // #define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
-#define DID_IMU3                        (eDataIDs)57 /** (imu_t) Inertial measurement unit data directly from IMU.  We recommend use of DID_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_IMU3                        (eDataIDs)57 /** (imu3_t) Inertial measurement unit data directly from IMU.  We recommend use of DID_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from 1KHz to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
@@ -621,7 +621,7 @@ typedef struct PACKED
 } imu_t;
 
 
-/** () Dual Inertial Measurement Units (IMUs) data */
+/** (DID_IMU3) Dual Inertial Measurement Units (IMUs) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -636,7 +636,7 @@ typedef struct PACKED
 } imu3_t;
 
 
-/** (DID_MAGNETOMETER, DID_MAGNETOMETER_2) Magnetometer sensor data */
+/** (DID_MAGNETOMETER) Magnetometer sensor data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -688,7 +688,7 @@ typedef struct PACKED
 } preintegrated_imu_t;
 
 
-/** DID_IMU_RAW_MAG, DID_IMU_MAG, dual imu + mag */
+/** (DID_IMU_RAW_MAG, DID_IMU_MAG) imu + mag */
 typedef struct PACKED
 {
 	/** imu - raw or pre-integrated depending on data id */
@@ -699,7 +699,7 @@ typedef struct PACKED
 } imu_mag_t;
 
 
-/** DID_PREINTEGRATED_IMU_MAG, pre-integrated imu + mag */
+/** (DID_PREINTEGRATED_IMU_MAG) preintegrated imu + mag */
 typedef struct PACKED
 {
 	/** Preintegrated IMU */
@@ -926,6 +926,7 @@ typedef struct PACKED
     float					magInc;                 
 } inl2_states_t;
 
+// (DID_INL2_STATUS)
 typedef struct PACKED
 {
 	int						ahrs;
@@ -1403,6 +1404,7 @@ typedef struct PACKED
 	float					declination;
 } mag_cal_t;
 
+// (DID_INL2_MAG_OBS_INFO)
 typedef struct PACKED
 {											// INL2 - Magnetometer observer info 
 	uint32_t				timeOfWeekMs;	// Timestamp in milliseconds
