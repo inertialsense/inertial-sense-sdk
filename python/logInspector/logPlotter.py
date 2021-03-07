@@ -677,39 +677,55 @@ class logPlot:
     def loadAccels(self, d):
         return self.loadIMU(d, 1)
 
-    def loadIMU(self, d, index):   # 0 = gyro, 1 = accelerometer
-        imu = []
+    def loadIMU(self, d, sensor):   # 0 = gyro, 1 = accelerometer
+        if sensor==0:
+            result = self.getData(d, DID_PREINTEGRATED_IMU, 'theta')
+        else:
+            result = self.getData(d, DID_PREINTEGRATED_IMU, 'vel')
 
-        I1 = self.getData(d, DID_IMU, 'I')
-        time = self.getData(d, DID_IMU, 'time')
-
-        if np.shape(I1)[0] != 0:  # DID_IMU or DID_IMU3
-            dt = time[1:] - time[:-1]
-            dt = np.append(dt, dt[-1])
-            for i in range(0, len(I1)):
-                imu.append(I1[i][index])
-            imu = np.array(imu)
-        else:  # DID_PREINTEGRATED_IMU
-            if index==0:
-                imu = self.getData(d, DID_PREINTEGRATED_IMU, 'theta')
-            else:
-                imu = self.getData(d, DID_PREINTEGRATED_IMU, 'vel')
+        if np.shape(result)[0] != 0:  # DID_PREINTEGRATED_IMU
             time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
             # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
+            # Convert from preintegrated IMU to IMU.
             for i in range(3):
-                imu[:, i] /= dt
+                result[:, i] /= dt
 
-        return (imu, time, dt)
+        else:   # DID_IMU
+            time = self.getData(d, DID_IMU, 'time')
+
+            if len(time) != 0:
+                I = self.getData(d, DID_IMU, 'I')
+                dt = time[1:] - time[:-1]
+                dt = np.append(dt, dt[-1])
+                result = []
+                for sample in range(0, len(I)):
+                    result.append(I[sample][sensor])
+                result = np.array(result)
+
+            else:   # DID_IMU3
+                time = self.getData(d, DID_IMU3, 'time')
+
+                if len(time) != 0:
+                    I = self.getData(d, DID_IMU3, 'I')
+                    dt = time[1:] - time[:-1]
+                    dt = np.append(dt, dt[-1])
+                    result = []
+                    for sample in range(0, len(I)):
+                        for unit in range(0, len(I[0])):
+                            result.append(I[sample][unit][sensor])
+                    result = np.array(result)
+
+        return (result, time, dt)
 
     def imuPQR(self, fig=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 1, sharex=True)
-        self.configureSubplot(ax[0], 'Gyro0 P (deg/s)', 'sec')
-        self.configureSubplot(ax[1], 'Gyro0 Q (deg/s)', 'sec')
-        self.configureSubplot(ax[2], 'Gyro0 R (deg/s)', 'sec')
+        self.configureSubplot(ax[0], 'Gyro P (deg/s)', 'sec')
+        self.configureSubplot(ax[1], 'Gyro Q (deg/s)', 'sec')
+        self.configureSubplot(ax[2], 'Gyro R (deg/s)', 'sec')
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (pqr, time, dt) = self.loadGyros(d)
