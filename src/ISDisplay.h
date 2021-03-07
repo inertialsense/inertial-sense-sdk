@@ -65,7 +65,6 @@ public:
 	string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
  	string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
 	string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
-	string DataToStringDualIMU(const imu3_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);

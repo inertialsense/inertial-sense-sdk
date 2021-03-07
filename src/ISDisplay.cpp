@@ -508,7 +508,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	switch (data->hdr.id)
 	{
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
-	case DID_IMU:          str = DataToStringDualIMU(d.imu3, data->hdr);        break;
+	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
 	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
 	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
@@ -820,7 +820,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringDualIMU(const imu3_t &imu, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
@@ -839,35 +839,26 @@ string cInertialSenseDisplay::DataToStringDualIMU(const imu3_t &imu, const p_dat
 
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
-		for (int i = 0; i < 2; i++)
-		{
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f]",
-				imu.I[i].pqr[0] * C_RAD2DEG_F,
-				imu.I[i].pqr[1] * C_RAD2DEG_F,
-				imu.I[i].pqr[2] * C_RAD2DEG_F);
-		}
-		for (int i = 0; i < 2; i++)
-		{
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, ", acc[%5.1f,%5.1f,%5.1f]",
-				imu.I[i].acc[0], imu.I[i].acc[1], imu.I[i].acc[2]);
-		}
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f]",
+			imu.I.pqr[0] * C_RAD2DEG_F,
+			imu.I.pqr[1] * C_RAD2DEG_F,
+			imu.I.pqr[2] * C_RAD2DEG_F);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", acc[%5.1f,%5.1f,%5.1f]",
+			imu.I.acc[0], imu.I.acc[1], imu.I.acc[2]);
 	}
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
-		for (int i = 0; i < 2; i++)
-		{
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tPQR\t");
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
-				imu.I[i].pqr[0] * C_RAD2DEG_F,		// P angular rate
-				imu.I[i].pqr[1] * C_RAD2DEG_F,		// Q angular rate
-				imu.I[i].pqr[2] * C_RAD2DEG_F);		// R angular rate
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
-				imu.I[i].acc[0],					// X acceleration
-				imu.I[i].acc[1],					// Y acceleration
-				imu.I[i].acc[2]);					// Z acceleration
-		}
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tPQR\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+			imu.I.pqr[0] * C_RAD2DEG_F,		// P angular rate
+			imu.I.pqr[1] * C_RAD2DEG_F,		// Q angular rate
+			imu.I.pqr[2] * C_RAD2DEG_F);		// R angular rate
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+			imu.I.acc[0],					// X acceleration
+			imu.I.acc[1],					// Y acceleration
+			imu.I.acc[2]);					// Z acceleration
 	}
 
 	return buf;

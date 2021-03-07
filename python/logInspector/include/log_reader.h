@@ -82,7 +82,7 @@ struct DeviceLog
     vector<magnetometer_t> magnetometer;
     vector<barometer_t> barometer;
     vector<gps_pos_t> gps1RtkPos;
-    vector<imu3_t> imu3;
+    // vector<imu3_t> imu3;
     vector<imu_t> imu;
     vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     vector<gps_raw_wrapper_t> gpsBaseRaw {1};

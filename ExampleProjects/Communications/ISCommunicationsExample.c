@@ -32,12 +32,12 @@ static void handleGpsMessage(gps_pos_t* pos)
 	printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", pos->timeOfWeekMs, pos->lla[0], pos->lla[1], pos->lla[2]);
 }
 
-static void handleImuMessage(imu3_t* imu)
+static void handleImuMessage(imu_t* imu)
 {
 	printf("IMU Time: %.3fs, PQR: %5.1f,%5.1f,%5.1f, ACC: %5.1f,%5.1f,%5.1f,\r\n",
 		imu->time,
-		imu->I[0].pqr[0], imu->I[0].pqr[1], imu->I[0].pqr[2],
-		imu->I[0].acc[0], imu->I[0].acc[1], imu->I[0].acc[2]);
+		imu->I.pqr[0], imu->I.pqr[1], imu->I.pqr[2],
+		imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
 
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
 					break;
 
 				case _DID_IMU:
-					handleImuMessage((imu3_t*)comm.dataPtr);
+					handleImuMessage((imu_t*)comm.dataPtr);
 					break;
 
 					// TODO: add other cases for other data ids that you care about

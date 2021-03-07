@@ -149,7 +149,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 				break;
 
 			case _DID_IMU:
-				handleImuMessage((dual_imu_t*)buffer);
+				handleImuMessage((imu_t*)buffer);
 				break;
 
 				// TODO: add other cases for other data ids that you care about

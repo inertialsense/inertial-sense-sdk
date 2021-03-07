@@ -23,8 +23,8 @@ float deltaThetaDeltaVelBortz( preintegrated_imu_t *output, imu_t *imu, imu_t *i
 #if 0
 float integrateDeltaThetaVelRoscoe(
 	preintegrated_imu_t *output, 
-	imu3_t *imu, 
-	imu3_t *imuLast, 
+	imu_t *imu, 
+	imu_t *imuLast, 
 	ixVector3 alpha_last, 
 	ixVector3 veloc_last, 
 	ixVector3 delta_alpha_last, 

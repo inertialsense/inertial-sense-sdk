@@ -130,7 +130,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
-	sizeMap[DID_IMU] = sizeof(imu3_t);
+	sizeMap[DID_IMU] = sizeof(imu_t);
     sizeMap[DID_IMU3] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
