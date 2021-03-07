@@ -71,14 +71,14 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
-// #define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
-// #define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
+#define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) (not needed) */
+#define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) (not needed) */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_mem_t) */
 #define DID_CAL_SC1                     (eDataIDs)43 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_CAL_SC2                     (eDataIDs)44 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_SYS_SENSORS_SIGMA           (eDataIDs)45 /** INTERNAL USE ONLY (sys_sensors_t) */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
-// #define DID_INS_DEV_1                   (eDataIDs)47 /** INTERNAL USE ONLY (ins_dev_1_t) */
+#define DID_INS_DEV_1                   (eDataIDs)47 /** INTERNAL USE ONLY (ins_dev_1_t) (not needed) */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) */
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
