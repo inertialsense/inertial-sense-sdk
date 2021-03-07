@@ -115,9 +115,9 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_cfg_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-#define DID_IMU_RAW_MAG                 (eDataIDs)84 /** (imu_mag_t) DID_IMU3 + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
-#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
-#define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
+#define DID_IMU3_MAG                    (eDataIDs)84 /** (imu3_mag_t) DID_IMU3 + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU3_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
+#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU3_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
+#define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU3_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
 #define DID_WHEEL_CONFIG				(eDataIDs)87 /** (wheel_config_t) [NOT SUPPORTED, INTERNAL USE ONLY] Static configuration for wheel encoder measurements. */
 #define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate*/
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
@@ -688,7 +688,7 @@ typedef struct PACKED
 } preintegrated_imu_t;
 
 
-/** (DID_IMU_RAW_MAG, DID_IMU_MAG) imu + mag */
+/** (DID_IMU_MAG) imu + mag */
 typedef struct PACKED
 {
 	/** imu - raw or pre-integrated depending on data id */
@@ -697,6 +697,17 @@ typedef struct PACKED
 	/** mag */
 	magnetometer_t mag;
 } imu_mag_t;
+
+
+/** (DID_IMU3_MAG) triple imu + mag */
+typedef struct PACKED
+{
+	/** Trimple imu */
+	imu3_t imu;
+	
+	/** mag */
+	magnetometer_t mag;
+} imu3_mag_t;
 
 
 /** (DID_PREINTEGRATED_IMU_MAG) preintegrated imu + mag */
@@ -1317,7 +1328,7 @@ typedef struct PACKED
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
 #define RMC_BITS_WHEEL_CONFIG           0x0000000100000000
-#define RMC_BITS_DID_IMU_MAG_RAW        0x0000000200000000
+#define RMC_BITS_DID_IMU3_MAG           0x0000000200000000
 #define RMC_BITS_IMU_MAG				0x0000000400000000
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
