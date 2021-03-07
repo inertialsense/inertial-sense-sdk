@@ -674,65 +674,44 @@ class logPlot:
         return self.loadIMU(d, 1)
 
     def loadIMU(self, d, index):   # 0 = gyro, 1 = accelerometer
-        imu0 = []
-        imu1 = []
+        imu = []
 
-        I1 = self.getData(d, DID_IMU, 'I')[:, 0]
-        I2 = self.getData(d, DID_IMU, 'I')[:, 1]
+        I1 = self.getData(d, DID_IMU, 'I')
         time = self.getData(d, DID_IMU, 'time')
-        if np.shape(I1)[0] == 0:
-            I1 = self.getData(d, DID_IMU3, 'I')[:, 0]
-            I2 = self.getData(d, DID_IMU3, 'I')[:, 1]
-            time = self.getData(d, DID_IMU3, 'time')
 
         if np.shape(I1)[0] != 0:  # DID_IMU or DID_IMU3
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
             for i in range(0, len(I1)):
-                imu0.append(I1[i][index])
-                imu1.append(I2[i][index])
-            imu0 = np.array(imu0)
-            imu1 = np.array(imu1)
+                imu.append(I1[i][index])
+            imu = np.array(imu)
         else:  # DID_PREINTEGRATED_IMU
             if index==0:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
-                imu2 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta3')
+                imu = self.getData(d, DID_PREINTEGRATED_IMU, 'theta')
             else:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
-                imu2 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel3')
+                imu = self.getData(d, DID_PREINTEGRATED_IMU, 'vel')
             time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
             # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
             for i in range(3):
-                imu0[:, i] /= dt
-                imu1[:, i] /= dt
-                imu2[:, i] /= dt
+                imu[:, i] /= dt
 
-        return (imu0, imu1, imu2, time, dt)
+        return (imu, time, dt)
 
     def imuPQR(self, fig=None):
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 2, sharex=True)
         self.configureSubplot(ax[0, 0], 'Gyro0 P (deg/s)', 'sec')
-        self.configureSubplot(ax[0, 1], 'Gyro1 P (deg/s)', 'sec')
-        self.configureSubplot(ax[0, 2], 'Gyro1 P (deg/s)', 'sec')
         self.configureSubplot(ax[1, 0], 'Gyro0 Q (deg/s)', 'sec')
-        self.configureSubplot(ax[1, 1], 'Gyro1 Q (deg/s)', 'sec')
-        self.configureSubplot(ax[1, 2], 'Gyro2 Q (deg/s)', 'sec')
         self.configureSubplot(ax[2, 0], 'Gyro0 R (deg/s)', 'sec')
-        self.configureSubplot(ax[2, 1], 'Gyro1 R (deg/s)', 'sec')
-        self.configureSubplot(ax[2, 2], 'Gyro2 R (deg/s)', 'sec')
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
 
             for i in range(3):
                 ax[i, 0].plot(time, pqr0[:, 0], label=self.log.serials[d])
-                ax[i, 1].plot(time, pqr1[:, 1], label=self.log.serials[d])
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -744,19 +723,15 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 2, sharex=True)
-        self.configureSubplot(ax[0,0], 'Acc0 X (m/s^2)', 'sec')
-        self.configureSubplot(ax[0,1], 'Acc1 X (m/s^2)', 'sec')
-        self.configureSubplot(ax[1,0], 'Acc0 Y (m/s^2)', 'sec')
-        self.configureSubplot(ax[1,1], 'Acc1 Y (m/s^2)', 'sec')
-        self.configureSubplot(ax[2,0], 'Acc0 Z (m/s^2)', 'sec')
-        self.configureSubplot(ax[2,1], 'Acc1 Z (m/s^2)', 'sec')
+        self.configureSubplot(ax[0,0], 'Acc X (m/s^2)', 'sec')
+        self.configureSubplot(ax[1,0], 'Acc Y (m/s^2)', 'sec')
+        self.configureSubplot(ax[2,0], 'Acc Z (m/s^2)', 'sec')
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (acc0, acc1, time, dt) = self.loadAccels(d)
 
             for i in range(3):
                 ax[i, 0].plot(time, acc0[:, 0], label=self.log.serials[d])
-                ax[i, 1].plot(time, acc1[:, 1], label=self.log.serials[d])
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -769,18 +744,14 @@ class logPlot:
             fig = plt.figure()
         ax = fig.subplots(3, 2, sharex=True)
         self.configureSubplot(ax[0,0], 'AccX 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
-        self.configureSubplot(ax[0,1], 'AccX 1 PSD (dB (m/s^2)^2/Hz)', 'Hz')
         self.configureSubplot(ax[1,0], 'AccY 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
-        self.configureSubplot(ax[1,1], 'AccY 1 PSD (dB (m/s^2)^2/Hz)', 'Hz')
         self.configureSubplot(ax[2,0], 'AccZ 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
-        self.configureSubplot(ax[2,1], 'AccZ 1 PSD (dB (m/s^2)^2/Hz)', 'Hz')
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (acc0, acc1, time, dt) = self.loadAccels(d)
 
             N = time.size
             psd0 = np.zeros((N//2, 3))
-            psd1 = np.zeros((N//2, 3))
             # 1/T = frequency
             Fs = 1 / np.mean(dt)
             f = np.linspace(0, 0.5*Fs, N // 2)
@@ -798,14 +769,10 @@ class logPlot:
                 # psd = abssp*abssp
                 # freq = np.fft.fftfreq(time.shape[-1])
 #                    np.append(psd0, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                psd1[:,i] = 1/N/Fs * np.abs(sp1)**2
-                psd1[1:-1,i] = 2 * psd1[1:-1,i]
 
             for i in range(3):
                 # ax[i, 0].loglog(f, psd0[:, i])
-                # ax[i, 1].loglog(f, psd1[:, i])
                 ax[i, 0].plot(f, 10*np.log10(psd0[:, i]))
-                ax[i, 1].plot(f, 10*np.log10(psd1[:, i]))
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -818,11 +785,8 @@ class logPlot:
             fig = plt.figure()
         ax = fig.subplots(3, 2, sharex=True)
         self.configureSubplot(ax[0,0], 'Gyr0 X PSD (dB dps^2/Hz)', 'Hz')
-        self.configureSubplot(ax[0,1], 'Gyr1 X PSD (dB dps^2/Hz)', 'Hz')
         self.configureSubplot(ax[1,0], 'Gyr0 Y PSD (dB dps^2/Hz)', 'Hz')
-        self.configureSubplot(ax[1,1], 'Gyr1 Y PSD (dB dps^2/Hz)', 'Hz')
         self.configureSubplot(ax[2,0], 'Gyr0 Z PSD (dB dps^2/Hz)', 'Hz')
-        self.configureSubplot(ax[2,1], 'Gyr1 Z PSD (dB dps^2/Hz)', 'Hz')
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
@@ -854,7 +818,6 @@ class logPlot:
 
             for i in range(3):
                 ax[i, 0].plot(f, 10*np.log10(psd0[:, i]))
-                ax[i, 1].plot(f, 10*np.log10(psd1[:, i]))
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -868,11 +831,8 @@ class logPlot:
         ax = fig.subplots(6, 1, sharex=True)
 
         self.configureSubplot(ax[0], 'Mag0 X', 'gauss')
-        self.configureSubplot(ax[1], 'Mag1 X', 'gauss')
         self.configureSubplot(ax[2], 'Mag0 Y', 'gauss')
-        self.configureSubplot(ax[3], 'Mag1 Y', 'gauss')
         self.configureSubplot(ax[4], 'Mag0 Z', 'gauss')
-        self.configureSubplot(ax[5], 'Mag1 Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time0 = self.getData(d, DID_MAGNETOMETER, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
