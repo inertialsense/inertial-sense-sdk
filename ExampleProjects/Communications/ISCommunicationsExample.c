@@ -30,15 +30,11 @@ static void handleIns1Message(ins_1_t* ins)
 
 static void handleIns2Message(ins_2_t* ins)
 {
-	static double timeOfWeekLast = 0;
-	float dtMs = (ins->timeOfWeek - timeOfWeekLast)*1000.0;
-	timeOfWeekLast = ins->timeOfWeek;
-
 	ixVector3 theta;
 	quat2euler(ins->qn2b, theta);
 
-	printf("INS TimeOfWeek: %5.1fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
-		dtMs,
+	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
+		ins->timeOfWeek,
 		ins->lla[0], ins->lla[1], ins->lla[2],
 		theta[0] * C_RAD2DEG_F, theta[1] * C_RAD2DEG_F, theta[2] * C_RAD2DEG_F);
 }
