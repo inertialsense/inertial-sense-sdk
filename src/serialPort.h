@@ -136,7 +136,7 @@ int serialPortClose(serial_port_t* serialPort);
 int serialPortFlush(serial_port_t* serialPort);
 
 // read up to readCount bytes into buffer
-// call is forwarded to serialPortReadTimeout with timeoutMilliseconds of 0 for non-blocking, or SERIAL_PORT_DEFAULT_TIMEOUT for blocking
+// call is forwarded to serialPortReadTimeout with timeoutMilliseconds of 0 for non-blocking, or SERIAL_PORT_DEFAULT_TIMEOUT for blocking.  Returns number of bytes read which is less than or equal to readCount.
 int serialPortRead(serial_port_t* serialPort, unsigned char* buffer, int readCount);
 
 // read up to thue number of bytes requested, returns number of bytes read which is less than or equal to readCount
