@@ -16,6 +16,8 @@ add_executable(ISCommunicationsExample
     ISCommunicationsExample.c
     ../../src/data_sets.c
     ../../src/ISComm.c
+    ../../src/ISMatrix.c
+    ../../src/ISPose.c
     ../../src/serialPort.c
     ../../src/serialPortPlatform.c
 )
