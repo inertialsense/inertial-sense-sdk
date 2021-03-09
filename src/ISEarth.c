@@ -367,3 +367,53 @@ float gravity_igf80(double lat, double alt)
     return (float)( g0 - (K3_GRAV - K4_GRAV * sinmu2 - K5_GRAV * alt) * alt );
 }
 
+
+/*
+* Quaternion rotation to NED with respect to ECEF at specified LLA
+*/
+// void quatEcef2Ned(ixVector4 Qe2n, const ixVector3d lla)
+// {
+// 	ixVector3 Ee2nLL;
+// 	ixVector4 Qe2n0LL, Qe2nLL;
+// 
+// 	//Qe2n0LL is reference attitude [NED w/r/t ECEF] at zero latitude and longitude (elsewhere qned0)
+// 	Qe2n0LL[0] = cosf(-C_PIDIV4_F);
+// 	Qe2n0LL[1] = 0.0f;
+// 	Qe2n0LL[2] = sinf(-C_PIDIV4_F);
+// 	Qe2n0LL[3] = 0.0f;
+// 
+// 	//Qe2nLL is delta reference attitude [NED w/r/t ECEF] accounting for latitude and longitude (elsewhere qned)
+// 	Ee2nLL[0] = 0.0f;
+// 	Ee2nLL[1] = (float)(-lla[0]);
+// 	Ee2nLL[2] = (float)(lla[1]);
+// 
+// 	euler2quat(Ee2nLL, Qe2nLL);
+// 
+// 	//Qe2b=Qe2n*Qn2b is vehicle attitude [BOD w/r/t ECEF]
+// 	mul_Quat_Quat(Qe2n, Qe2n0LL, Qe2nLL);
+// }
+
+
+/* Attitude quaternion for NED frame in ECEF */
+void quat_ecef2ned(float lat, float lon, float *qe2n)
+{
+    float eul[3];
+
+    eul[0] = 0.0f;
+    eul[1] = -lat - 0.5f * C_PI_F;
+    eul[2] = lon;
+    euler2quat(eul, qe2n);
+}
+
+
+/*
+* Convert ECEF quaternion to NED euler at specified ECEF
+*/
+void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ecef)
+{
+	ixVector3d lla;
+
+// 	ecef2lla_d(ecef, lla);
+	ecef2lla(ecef, lla, 5);
+	qe2b2EulerNedLLA(eul, qe2b, lla);
+}

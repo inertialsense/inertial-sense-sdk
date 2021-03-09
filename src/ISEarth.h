@@ -155,6 +155,21 @@ int llaDegValid( double lla[3] );
 */
 float gravity_igf80(double lat, double alt);
 
+/*
+ * Quaternion rotation to NED with respect to ECEF at specified LLA
+ */
+// void quatEcef2Ned(ixVector4 Qe2n, const ixVector3d lla);
+
+/* Attitude quaternion for NED frame in ECEF */
+void quat_ecef2ned(float lat, float lon, float *qe2n);
+
+/*
+* Convert ECEF quaternion to NED euler at specified ECEF
+*/
+void qe2b2EulerNedEcef(ixVector3 theta, const ixVector4 qe2b, const ixVector3d ecef);
+void qe2b2EulerNedLLA(ixVector3 eul, const ixVector4 qe2b, const ixVector3d lla);
+
+
 #ifdef __cplusplus
 }
 #endif
