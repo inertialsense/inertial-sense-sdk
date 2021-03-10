@@ -3168,7 +3168,7 @@ typedef struct
     /** Server IP and port */
     evb_server_t            server[NUM_WIFI_PRESETS];
 
-    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi) */
+    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi).  Only one encoder channel, don't multiple by number of channels. */
     float                   encoderTickToWheelRad;
 
 	/** CAN baudrate */
