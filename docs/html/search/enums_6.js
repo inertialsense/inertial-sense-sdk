@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['tixmlencoding_5725',['TiXmlEncoding',['../tinyxml_8h.html#a88d51847a13ee0f4b4d320d03d2c4d96',1,'tinyxml.h']]]
+  ['protocol_5ftype_5ft_5737',['protocol_type_t',['../_i_s_comm_8h.html#a932bee6e7c2e702a8cce14cfd728ba92',1,'ISComm.h']]]
 ];
