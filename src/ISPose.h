@@ -100,19 +100,6 @@ void quat2psi(const ixQuat q, f_t *psi);
 void euler2quat(const ixEuler euler, ixQuat q );
 
 
-/*
- * Quaternion rotation to NED with respect to ECEF at specified LLA
- */
-// void quatEcef2Ned(ixVector4 Qe2n, const ixVector3d lla);
-
-/* Attitude quaternion for NED frame in ECEF */
-void quat_ecef2ned(float lat, float lon, float *qe2n);
-
-/*
-* Convert ECEF quaternion to NED euler at specified ECEF
-*/
-void qe2b2EulerNedEcef(ixVector3 theta, const ixVector4 qe2b, const ixVector3d ecef);
-void qe2b2EulerNedLLA(ixVector3 eul, const ixVector4 qe2b, const ixVector3d lla);
 
 /*
  * This will construct a direction cosine matrix from

@@ -64,13 +64,13 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		}
 				
 		// Convert encoder ticks to radians.
-		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad)/2; /*Division by 2 to account for 4x encoding*/
-		g_wheelEncoder.theta_r = (chR * g_flashCfg->encoderTickToWheelRad)/2;
+		g_wheelEncoder.theta_l = chL * 0.25f * g_flashCfg->encoderTickToWheelRad; 	/* Division by 4 to account for 4x encoding */
+		g_wheelEncoder.theta_r = chR * 0.25f * g_flashCfg->encoderTickToWheelRad;
 
-        // Convert TC pulse period to rad/sec.  20us per TC LSB x 2 (measure rising to rising edge).
+        // Convert TC pulse period to rad/sec.  40us per TC LSB (measure rising to rising edge).
         if(speedL)
         {
-            g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / (0.00002f * (float)speedL);
+            g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / (0.00004f * (float)speedL);
         }
         else
         {
@@ -78,7 +78,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
         }
         if(speedR)
 		{
-            g_wheelEncoder.omega_r = g_flashCfg->encoderTickToWheelRad / (0.00002f * (float)speedR);
+            g_wheelEncoder.omega_r = g_flashCfg->encoderTickToWheelRad / (0.00004f * (float)speedR);
         }
         else
         {

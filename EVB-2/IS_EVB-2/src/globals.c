@@ -460,8 +460,8 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->server[0].port = 7778;
 	cfg->server[1].ipAddr.u32 = nmi_inet_addr((void*)"192.168.1.144");
 	cfg->server[1].port = 2000;
-// 	cfg->encoderTickToWheelRad = 0.0179999f;	// Husqvarna lawnmower
-	cfg->encoderTickToWheelRad = 0.054164998f;	// Husqvarna lawnmower
+// 	cfg->encoderTickToWheelRad = 0.0359998f;	// Husqvarna lawnmower
+	cfg->encoderTickToWheelRad = 0.108329996f;	// Husqvarna lawnmower
 	
 	com_bridge_apply_preset(cfg);
 	

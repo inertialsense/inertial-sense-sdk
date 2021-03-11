@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "xbee.h"
 #include "wifi.h"
 #include "sd_card_logger.h"
-#include "CAN.h"
+#include "../hw-libs/drivers/CAN.h"
 #include "../hw-libs/communications/CAN_comm.h"
 #include "../src/protocol_nmea.h"
 #include "user_interface.h"
@@ -399,6 +399,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     bool initIOconfig = false;
     bool reinitXBee = false;
     bool reinitWiFi = false;
+	bool reinitCAN = false;
 
     // Detect changes
     if (newCfg.cbPreset != g_flashCfg->cbPreset ||
@@ -443,12 +444,12 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 	if (g_flashCfg->CANbaud_kbps != newCfg.CANbaud_kbps)
 	{
 		g_flashCfg->CANbaud_kbps = newCfg.CANbaud_kbps;
-		CAN_init();
+		reinitCAN = true;
 	}
 	if (g_flashCfg->can_receive_address != newCfg.can_receive_address)
 	{
 		g_flashCfg->can_receive_address = newCfg.can_receive_address;
-		CAN_init();
+		reinitCAN = true;
 	}    
     
     // Copy data from message to working location
@@ -471,6 +472,10 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     {
         wifi_reinit();
     }
+	if (reinitCAN)
+	{
+		CAN_init(g_flashCfg->CANbaud_kbps*1000, g_flashCfg->can_receive_address);
+	}
 	evbUiRefreshLedCfg();
     
 	// Enable flash write

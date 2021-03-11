@@ -1471,6 +1471,14 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\ISUtilities.h</Link>
     </Compile>
+    <Compile Include="..\..\hw-libs\drivers\CAN.c">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\CAN.c</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\drivers\CAN.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\CAN.h</Link>
+    </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.c">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\drivers\d_flash.c</Link>
@@ -1533,12 +1541,6 @@
     <None Include="src\ASF\sam\services\flash_efc\flash_efc.h">
       <SubType>compile</SubType>
     </None>
-    <Compile Include="src\CAN.cpp">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\CAN.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="src\config\conf_d_quadEnc.h">
       <SubType>compile</SubType>
     </Compile>
