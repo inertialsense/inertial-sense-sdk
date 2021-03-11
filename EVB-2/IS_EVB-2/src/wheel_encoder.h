@@ -14,9 +14,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __CONTROL_LAW_H_
 
 
-void init_control(void);
+void init_wheel_encoder(void);
 
-void velocity_control(is_comm_instance_t &comm);
+void step_wheel_encoder(is_comm_instance_t &comm);
 
 
 #endif // __CONTROL_LAW_H_

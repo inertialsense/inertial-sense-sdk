@@ -56,7 +56,7 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
     
     // Forward data between communications ports
     step_com_bridge(comm);
-    velocity_control(comm);
+    step_wheel_encoder(comm);
 
     // Read buttons and update LEDs
     step_user_interface(g_comm_time_ms);

@@ -120,7 +120,7 @@ C_SRCS += \
           $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
           $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
           $(SRC_DIR)/communications.cpp                                                                  \
-          $(SRC_DIR)/control_law.cpp                                                                     \
+          $(SRC_DIR)/wheel_encoder.cpp                                                                     \
           $(SRC_DIR)/drivers/d_time.c                                                                    \
           $(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
           $(SRC_DIR)/drivers/d_adc.c                                                                     \
