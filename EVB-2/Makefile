@@ -84,6 +84,7 @@ C_SRCS += \
           $(ASF_DIR)/sam/drivers/pio/pio_handler.c                                                       \
           $(ASF_DIR)/sam/drivers/pmc/pmc.c                                                               \
           $(ASF_DIR)/sam/drivers/pmc/sleep.c                                                             \
+          $(ASF_DIR)/sam/drivers/pwm/pwm.c                                                               \
           $(ASF_DIR)/sam/drivers/rtc/rtc.c                                                               \
           $(ASF_DIR)/sam/drivers/rtt/rtt.c                                                               \
           $(ASF_DIR)/sam/drivers/spi/spi.c                                                               \
@@ -112,15 +113,15 @@ C_SRCS += \
           $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/tasks.c                                  \
           $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/timers.c                                 \
           $(HW_LIBS_DIR)/FreeRTOS_new.cpp                                                                \
+          $(HW_LIBS_DIR)/drivers/CAN.c                                                                   \
           $(HW_LIBS_DIR)/drivers/d_flash.c                                                               \
           $(HW_LIBS_DIR)/drivers/d_i2c.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
           $(HW_LIBS_DIR)/misc/bootloaderApp.c                                                            \
           $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
           $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
-          $(SRC_DIR)/CAN.cpp                                                                             \
           $(SRC_DIR)/communications.cpp                                                                  \
-          $(SRC_DIR)/control_law.cpp                                                                     \
+          $(SRC_DIR)/wheel_encoder.cpp                                                                     \
           $(SRC_DIR)/drivers/d_time.c                                                                    \
           $(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
           $(SRC_DIR)/drivers/d_adc.c                                                                     \
@@ -181,6 +182,7 @@ INCLUDES += $(ASF_DIR)/common/boards                                            
             $(ASF_DIR)/sam/drivers/mpu                                                      \
             $(ASF_DIR)/sam/drivers/pio                                                      \
             $(ASF_DIR)/sam/drivers/pmc                                                      \
+            $(ASF_DIR)/sam/drivers/pwm                                                      \
             $(ASF_DIR)/sam/drivers/rtc                                                      \
             $(ASF_DIR)/sam/drivers/rtt                                                      \
             $(ASF_DIR)/sam/drivers/spi                                                      \

@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISDisplay.h"
 #include "ISPose.h"
+#include "ISEarth.h"
 #include "ISDataMappings.h"
 
 #if PLATFORM_IS_WINDOWS

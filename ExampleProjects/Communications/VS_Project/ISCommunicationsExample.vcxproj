@@ -21,6 +21,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\data_sets.c" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
+    <ClCompile Include="..\..\..\src\ISMatrix.c" />
+    <ClCompile Include="..\..\..\src\ISPose.c" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
     <ClCompile Include="..\..\..\src\serialPortPlatform.c" />
     <ClCompile Include="..\ISCommunicationsExample.c" />
@@ -28,6 +30,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
+    <ClInclude Include="..\..\..\src\ISMatrix.h" />
+    <ClInclude Include="..\..\..\src\ISPose.h" />
     <ClInclude Include="..\..\..\src\serialPort.h" />
     <ClInclude Include="..\..\..\src\serialPortPlatform.h" />
   </ItemGroup>

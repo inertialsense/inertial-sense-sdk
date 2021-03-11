@@ -56,7 +56,7 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
     
     // Forward data between communications ports
     step_com_bridge(comm);
-    velocity_control(comm);
+    step_wheel_encoder(comm);
 
     // Read buttons and update LEDs
     step_user_interface(g_comm_time_ms);
@@ -200,14 +200,14 @@ void evbMainInitRTOS(pdTASK_CODE pxTaskComm,
 {
 	// Create RTOS tasks
 	createTask(EVB_TASK_COMMUNICATIONS, pxTaskComm,  "COMM",   TASK_COMM_STACK_SIZE,  NULL, TASK_COMM_PRIORITY,  TASK_COMM_PERIOD_MS);
-	createTask(EVB_TASK_LOGGER,         pxTaskLogg,"LOGGER", TASK_LOGGER_STACK_SIZE, NULL, TASK_LOGGER_PRIORITY, TASK_LOGGER_PERIOD_MS);
+	createTask(EVB_TASK_LOGGER,         pxTaskLogg,  "LOGGER", TASK_LOGGER_STACK_SIZE, NULL, TASK_LOGGER_PRIORITY, TASK_LOGGER_PERIOD_MS);
 #ifdef CONF_BOARD_SPI_ATWINC_WIFI       // ATWINC WIFI
 	createTask(EVB_TASK_WIFI,           pxTaskWifi,  "WIFI",   TASK_WIFI_STACK_SIZE,  NULL, TASK_WIFI_PRIORITY,  TASK_WIFI_PERIOD_MS);
 #endif
-	createTask(EVB_TASK_MAINTENANCE,    pxTaskMant, "MAINT",  TASK_MAINT_STACK_SIZE, NULL, TASK_MAINT_PRIORITY, TASK_MAINT_PERIOD_MS);
-	strncpy(g_rtos.task[EVB_TASK_IDLE].name,        "IDLE",   MAX_TASK_NAME_LEN);
-	strncpy(g_rtos.task[EVB_TASK_TIMER].name,       "TIMER",  MAX_TASK_NAME_LEN);
-	strncpy(g_rtos.task[EVB_TASK_SPI_UINS_COM].name,"INSSPI", MAX_TASK_NAME_LEN);
+	createTask(EVB_TASK_MAINTENANCE,    pxTaskMant,  "MAINT",  TASK_MAINT_STACK_SIZE, NULL, TASK_MAINT_PRIORITY, TASK_MAINT_PERIOD_MS);
+	strncpy(g_rtos.task[EVB_TASK_IDLE].name,         "IDLE",   MAX_TASK_NAME_LEN);
+	strncpy(g_rtos.task[EVB_TASK_TIMER].name,        "TIMER",  MAX_TASK_NAME_LEN);
+	strncpy(g_rtos.task[EVB_TASK_SPI_UINS_COM].name, "INSSPI", MAX_TASK_NAME_LEN);
 
 #ifdef ENABLE_WDT
 	// Setup Watchdog
