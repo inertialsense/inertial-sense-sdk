@@ -23,17 +23,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static struct mcan_module mcan_instance;
 
-void CAN_init(void)
+void CAN_init(uint32_t baudrate, uint32_t rx_address)
 {
 	mcan_stop(&mcan_instance);
 	/* Initialize the module. */
 	struct mcan_config config_mcan;
 	mcan_get_config_defaults(&config_mcan);
 	config_mcan.rx_fifo_0_overwrite = true;
+	config_mcan.tx_queue_mode = true;
+	config_mcan.automatic_retransmission = false;
 	mcan_init(&mcan_instance, MCAN1, &config_mcan);
-	mcan_set_baudrate(mcan_instance.hw, (uint32_t)g_flashCfg->CANbaud_kbps*1000);
-	mcan_set_rx_filter(g_flashCfg->can_receive_address);
-
+// #warning "TODO: Add CAN data rate and address to settings stored in flash"
+	mcan_set_baudrate(mcan_instance.hw, baudrate);
+	//mcan_set_baudrate(mcan_instance.hw, 1000000);
+	mcan_set_rx_filter(rx_address);
+	//mcan_set_rx_filter(0x100);
+	
 	mcan_start(&mcan_instance);
 }
 
@@ -237,4 +242,33 @@ void mcan_test_slave(void)
 				mcan_send_message(MCAN_TEST_RECV_ID_EXT, can_tx_message, len);
 		}
 	}		
+}
+
+
+const unsigned int g_validCanBaudRates[CAN_BAUDRATE_COUNT] = { 
+	CAN_BAUDRATE_20000, 
+	CAN_BAUDRATE_33000, 
+	CAN_BAUDRATE_50000, 
+	CAN_BAUDRATE_83000, 
+	CAN_BAUDRATE_100000, 
+	CAN_BAUDRATE_125000,
+	CAN_BAUDRATE_200000,
+	CAN_BAUDRATE_250000,
+	CAN_BAUDRATE_500000,
+	CAN_BAUDRATE_1000000 };
+
+/**
+ * Returns -1 if the baudrate is not a standard baudrate.
+win */
+int mcan_validate_baudrate(unsigned int baudrate)
+{
+	// Valid baudrates for InertialSense hardware
+	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validCanBaudRates); i++)
+	{
+		if (g_validCanBaudRates[i] == baudrate)
+		{
+			return 0;
+		}
+	}
+	return -1;
 }

@@ -102,22 +102,22 @@ typedef struct
 #define ARG_4(A0, A1, A2, A3, A4, ...)	A4
 
 //Buffers for serial ports
-#if MAX_NUMBER_SERIAL_PORTS >= 1
+#if MAX_NUMBER_SERIAL_PORTS >= 1 && CONF_BOARD_SERIAL0
 	COMPILER_ALIGNED(32) static uint8_t g_serTxDmaBuf_port0[ARGN(2, PORT0_CONFIG)];
 	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port0[ARGN(4, PORT0_CONFIG)];
 #endif
 
-#if MAX_NUMBER_SERIAL_PORTS >= 2
+#if MAX_NUMBER_SERIAL_PORTS >= 2 && CONF_BOARD_SERIAL1
 	COMPILER_ALIGNED(32) static uint8_t g_serTxDmaBuf_port1[ARGN(2, PORT1_CONFIG)];
 	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port1[ARGN(4, PORT1_CONFIG)];
 #endif
 
-#if MAX_NUMBER_SERIAL_PORTS >= 3
+#if MAX_NUMBER_SERIAL_PORTS >= 3 && CONF_BOARD_SERIAL2
 	COMPILER_ALIGNED(32) static uint8_t g_serTxDmaBuf_port2[ARGN(2, PORT2_CONFIG)];
 	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port2[ARGN(4, PORT2_CONFIG)];
 #endif
 
-#if MAX_NUMBER_SERIAL_PORTS >= 4
+#if MAX_NUMBER_SERIAL_PORTS >= 4 // USB
 	COMPILER_ALIGNED(32) static uint8_t g_serTxDmaBuf_port3[ARGN(2, PORT3_CONFIG)];
 	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port3[ARGN(4, PORT3_CONFIG)];
 #endif
@@ -1345,7 +1345,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 	{
 		default:
 			break;
-#if MAX_NUMBER_SERIAL_PORTS >= 1
+#if MAX_NUMBER_SERIAL_PORTS >= 1 && CONF_BOARD_SERIAL0
 		case 0:
 			ser->usart = ARGN(0, PORT0_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT0_CONFIG);
@@ -1356,7 +1356,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 			ser->dmaRx.buf = g_serRxDmaBuf_port0;
 			break;
 #endif
-#if MAX_NUMBER_SERIAL_PORTS >= 2
+#if MAX_NUMBER_SERIAL_PORTS >= 2 && CONF_BOARD_SERIAL1
 		case 1:
 			ser->usart = ARGN(0, PORT1_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT1_CONFIG);
@@ -1367,7 +1367,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 			ser->dmaRx.buf = g_serRxDmaBuf_port1;
 			break;
 #endif
-#if MAX_NUMBER_SERIAL_PORTS >= 3
+#if MAX_NUMBER_SERIAL_PORTS >= 3 && CONF_BOARD_SERIAL2
 		case 2:
 			ser->usart = ARGN(0, PORT2_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT2_CONFIG);
@@ -1378,7 +1378,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 			ser->dmaRx.buf = g_serRxDmaBuf_port2;
 			break;
 #endif
-#if MAX_NUMBER_SERIAL_PORTS >= 4
+#if MAX_NUMBER_SERIAL_PORTS >= 4 // USB
 		case 3:
 			ser->usart = ARGN(0, PORT3_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT3_CONFIG);

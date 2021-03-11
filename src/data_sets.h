@@ -1145,7 +1145,7 @@ enum eSystemCommand
 
 
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
@@ -1189,7 +1189,7 @@ typedef struct PACKED
 	
 } ascii_msgs_t;
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
@@ -3168,7 +3168,7 @@ typedef struct
     /** Server IP and port */
     evb_server_t            server[NUM_WIFI_PRESETS];
 
-    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi) */
+    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi).  Only one encoder channel, don't multiple by number of channels. */
     float                   encoderTickToWheelRad;
 
 	/** CAN baudrate */
@@ -3504,6 +3504,23 @@ enum
 	NUM_CIDS
 };
 
+/** Valid baud rates for Inertial Sense hardware */
+typedef enum
+{
+	CAN_BAUDRATE_20000   =   20000,
+	CAN_BAUDRATE_33000   =   33000,
+	CAN_BAUDRATE_50000   =   50000,
+	CAN_BAUDRATE_83000   =   83000,
+	CAN_BAUDRATE_100000  =  100000,
+	CAN_BAUDRATE_125000  =  125000,
+	CAN_BAUDRATE_200000  =  200000,
+	CAN_BAUDRATE_250000  =  250000,
+	CAN_BAUDRATE_500000  =  500000,
+	CAN_BAUDRATE_1000000 = 1000000,
+
+	CAN_BAUDRATE_COUNT = 10
+} can_baudrate_t;
+
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
 {
@@ -3513,7 +3530,7 @@ typedef struct PACKED
 	/** Transmit address. */
 	uint32_t				can_transmit_address[NUM_CIDS];
 	
-	/** Baudrate (kbps) */
+	/** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
 	uint32_t				can_baudrate_kbps;
 
 	/** Receive address. */

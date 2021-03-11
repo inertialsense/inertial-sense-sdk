@@ -16,15 +16,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
+#include "../../src/ISPose.h"
 
 static int running = 1;
 
-static void handleInsMessage(ins_1_t* ins)
+static void handleIns1Message(ins_1_t* ins)
 {
 	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
 		ins->timeOfWeek,
 		ins->lla[0], ins->lla[1], ins->lla[2],
 		ins->theta[0] * C_RAD2DEG_F, ins->theta[1] * C_RAD2DEG_F, ins->theta[2] * C_RAD2DEG_F);
+}
+
+static void handleIns2Message(ins_2_t* ins)
+{
+	ixVector3 theta;
+	quat2euler(ins->qn2b, theta);
+
+	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
+		ins->timeOfWeek,
+		ins->lla[0], ins->lla[1], ins->lla[2],
+		theta[0] * C_RAD2DEG_F, theta[1] * C_RAD2DEG_F, theta[2] * C_RAD2DEG_F);
 }
 
 static void handleGpsMessage(gps_pos_t* pos)
@@ -200,7 +212,11 @@ int main(int argc, char* argv[])
 				switch (comm.dataHdr.id)
 				{
 				case _DID_INS_LLA_EULER_NED:
-					handleInsMessage((ins_1_t*)comm.dataPtr);
+					handleIns1Message((ins_1_t*)comm.dataPtr);
+					break;
+
+				case DID_INS_2:
+					handleIns2Message((ins_2_t*)comm.dataPtr);
 					break;
 
 				case _DID_GPS1_POS:
