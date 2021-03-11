@@ -22,8 +22,14 @@ void init_control(void)
 #ifdef CONF_BOARD_QUAD_ENCODER
     if(g_flashCfg->bits&EVB_CFG_BITS_ENABLE_WHEEL_ENCODER)
     {   
-	    quadEncInit(239);	// Sensing range w/ 15 count encoder direct drive: > 
-	    // quadEncInit(7);		// Sensing range w/ 400 cnt encoder and 3x gearhead: > 7 deg/s 
+		if (g_flashCfg->encoderTickToWheelRad > 0.1f)
+		{	// Low-resolution encoders
+			quadEncInit(239);	// Sensing range w/ 15 count encoder direct drive: > 
+		}
+		else
+		{	// High-resolution encoders
+	    	quadEncInit(7);		// Sensing range w/ 400 cnt encoder and 3x gearhead: > 7 deg/s 
+		}
     }
 #endif
 }
