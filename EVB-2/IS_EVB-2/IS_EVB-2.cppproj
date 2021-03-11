@@ -1553,10 +1553,10 @@
     <Compile Include="src\config\conf_d_usartDMA.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\control_law.cpp">
+    <Compile Include="src\wheel_encoder.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\control_law.h">
+    <Compile Include="src\wheel_encoder.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\drivers\d_adc.c">
