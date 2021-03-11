@@ -1847,6 +1847,12 @@
     <None Include="src\ASF\sam\drivers\pmc\pmc.h">
       <SubType>compile</SubType>
     </None>
+    <Compile Include="src\ASF\sam\drivers\pwm\pwm.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\sam\drivers\pwm\pwm.h">
+      <SubType>compile</SubType>
+    </None>
     <Compile Include="src\ASF\sam\drivers\pmc\sleep.c">
       <SubType>compile</SubType>
     </Compile>

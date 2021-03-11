@@ -84,6 +84,7 @@ C_SRCS += \
           $(ASF_DIR)/sam/drivers/pio/pio_handler.c                                                       \
           $(ASF_DIR)/sam/drivers/pmc/pmc.c                                                               \
           $(ASF_DIR)/sam/drivers/pmc/sleep.c                                                             \
+          $(ASF_DIR)/sam/drivers/pwm/pwm.c                                                               \
           $(ASF_DIR)/sam/drivers/rtc/rtc.c                                                               \
           $(ASF_DIR)/sam/drivers/rtt/rtt.c                                                               \
           $(ASF_DIR)/sam/drivers/spi/spi.c                                                               \
@@ -181,6 +182,7 @@ INCLUDES += $(ASF_DIR)/common/boards                                            
             $(ASF_DIR)/sam/drivers/mpu                                                      \
             $(ASF_DIR)/sam/drivers/pio                                                      \
             $(ASF_DIR)/sam/drivers/pmc                                                      \
+            $(ASF_DIR)/sam/drivers/pwm                                                      \
             $(ASF_DIR)/sam/drivers/rtc                                                      \
             $(ASF_DIR)/sam/drivers/rtt                                                      \
             $(ASF_DIR)/sam/drivers/spi                                                      \
