@@ -13,10 +13,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include "d_quadEnc.h"
 #include "conf_d_quadEnc.h"
-
+#include "globals.h"
 
 //Use of index signal is not support at this time. Needs setup for pin and reading values
 #define QDEC_USE_INDEX	0
+
+static float s_tc2sec = 0.0f;
 
 static void quadEncSetModePosition(Tc *const timercounter, uint32_t ID_timercounter)
 {
@@ -54,8 +56,8 @@ static void quadEncSetModePosition(Tc *const timercounter, uint32_t ID_timercoun
 #endif
 }
 
-static uint32_t speed_capture[2] = {0, 0};
-static uint32_t speed_capture_timeMs = 0;
+static uint32_t ra_capture[2] = {0, 0};
+static uint32_t ra_capture_timeMs = 0;
 
 void TCCAP0_SPD_Handler(void)
 {
@@ -67,22 +69,20 @@ void TCCAP0_SPD_Handler(void)
 	{
 		if(running)
 		{
-			speed_capture[0] = tc_read_ra(TCCAP0_SPD, TCCAP0_SPD_CHANNEL);
-			speed_capture_timeMs = time_msec();
+			ra_capture[0] = tc_read_ra(TCCAP0_SPD, TCCAP0_SPD_CHANNEL);
+			ra_capture_timeMs = time_msec();
 		}
 		else
-		{
-			//first read after stopping is invalid
+		{	// First read after stopping is invalid
 			tc_read_ra(TCCAP0_SPD, TCCAP0_SPD_CHANNEL);	//discard read
 			running = true;
 		}
 	}
 
 	if ((status & TC_SR_COVFS) != 0)
-	{
-		//Timer overflow so we assume we are not moving
-		speed_capture[0] = 0;
-		speed_capture_timeMs = time_msec();
+	{	// Timer overflow - assume we are not moving
+		ra_capture[0] = 0;
+		ra_capture_timeMs = time_msec();
 		running = false;
 	}
 }
@@ -97,27 +97,25 @@ void TCCAP1_SPD_Handler(void)
 	{
 		if(running)
 		{
-			speed_capture[1] = tc_read_ra(TCCAP1_SPD, TCCAP1_SPD_CHANNEL);
-			speed_capture_timeMs = time_msec();
+			ra_capture[1] = tc_read_ra(TCCAP1_SPD, TCCAP1_SPD_CHANNEL);
+			ra_capture_timeMs = time_msec();
 		}
 		else
-		{
-			//first read after stopping is invalid
+		{	// First read after stopping is invalid
 			tc_read_ra(TCCAP1_SPD, TCCAP1_SPD_CHANNEL);	//discard read
 			running = true;
 		}
 	}
 
 	if ((status & TC_SR_COVFS) != 0)
-	{
-		//Timer overflow so we assume we are not moving
-		speed_capture[1] = 0;
-		speed_capture_timeMs = time_msec();
+	{	// Timer overflow - assume we are not moving
+		ra_capture[1] = 0;
+		ra_capture_timeMs = time_msec();
 		running = false;
 	}
 }
 
-static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int timerirq, uint32_t ID_timercounter)
+static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int timerirq, uint32_t ID_timercounter, uint32_t pck6_pres)
 {
 	//Enable the TC channel clock
 	sysclk_enable_peripheral_clock(ID_timercounter);
@@ -125,16 +123,16 @@ static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int ti
 	if(!pmc_is_pck_enabled(PMC_PCK_6))
 	{
 		pmc_disable_pck(PMC_PCK_6);
-		pmc_switch_pck_to_mainck(PMC_PCK_6, PMC_PCK_PRES(239));
+		pmc_switch_pck_to_mainck(PMC_PCK_6, PMC_PCK_PRES(pck6_pres));
 		pmc_enable_pck(PMC_PCK_6);
 	}
-			
-	// Init TC to capture mode.  20us per counter LSB.
+
+	// Init TC to capture mode.
 	tc_init(timercounter, timerchannel,
 		TC_CMR_TCCLKS_TIMER_CLOCK1  /* Clock Selection */
-		| TC_CMR_LDRA_EDGE          /* RA Loading: rising edge of TIOA */
+		| TC_CMR_LDRA_RISING        /* RA Loading: rising edge of TIOA */
 		| TC_CMR_ABETRG             /* External Trigger: TIOA */
-		| TC_CMR_ETRGEDG_EDGE	    /* External Trigger Edge: rising */
+		| TC_CMR_ETRGEDG_RISING	    /* External Trigger Edge: rising */
 	);
 				
 	// Setup capture and overflow interrupt		
@@ -147,7 +145,7 @@ static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int ti
 	tc_start(timercounter, timerchannel);
 }
 
-void quadEncInit(void)
+void quadEncInit(uint32_t pck6_pres)
 {
 	/**** Configure pins ****/
 	// Left Encoder - Position
@@ -172,10 +170,12 @@ void quadEncInit(void)
 	
 	/**** Setup hardware ****/
 	quadEncSetModePosition(QE0_POS, ID_QE0_POS);
-	quadEncSetModeSpeed(TCCAP0_SPD, TCCAP0_SPD_CHANNEL, TCCAP0_SPD_IRQn, ID_TCCAP0_SPD);
+	quadEncSetModeSpeed(TCCAP0_SPD, TCCAP0_SPD_CHANNEL, TCCAP0_SPD_IRQn, ID_TCCAP0_SPD, pck6_pres);
 	
 	quadEncSetModePosition(QE1_POS, ID_QE1_POS);
-	quadEncSetModeSpeed(TCCAP1_SPD, TCCAP1_SPD_CHANNEL, TCCAP1_SPD_IRQn, ID_TCCAP1_SPD);
+	quadEncSetModeSpeed(TCCAP1_SPD, TCCAP1_SPD_CHANNEL, TCCAP1_SPD_IRQn, ID_TCCAP1_SPD, pck6_pres);
+	
+	s_tc2sec = ((float)(pck6_pres+1)) / 12.0e6;
 }
 
 void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
@@ -195,31 +195,37 @@ void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 	taskEXIT_CRITICAL();
 }
 
-void quadEncReadSpeedAll(uint32_t *speed0, uint32_t *speed1)
+void quadEncReadPeriodAll(float *period0, float *period1)
 {
 	taskENTER_CRITICAL();
 	
-	uint32_t dtMs = time_msec() - speed_capture_timeMs;
+	uint32_t dtMs = time_msec() - ra_capture_timeMs;
 	if(dtMs < 100)
 	{
-		*speed0 = speed_capture[0];
-		*speed1 = speed_capture[1];		
+		*period0 = s_tc2sec * ra_capture[0];
+		*period1 = s_tc2sec * ra_capture[1];
+		g_debug.i[0] = ra_capture[0];
+		g_debug.i[1] = ra_capture[1];
 	}
 	else
 	{	// Return zero if encoder pulses occur slower than 100ms
-		*speed0 = 0;
-		*speed1 = 0;
+		*period0 = 0.0f;
+		*period1 = 0.0f;
+		g_debug.i[0] = 0;
+		g_debug.i[1] = 0;
 	}	
 
 	taskEXIT_CRITICAL();
 }
+
+
 
 void test_quad_encoders(void)
 {
 #if	1	//quadEnc testing
 
 	udi_cdc_write_buf("Running\r\n", 9);
-	quadEncInit();
+	quadEncInit(239);
 
 	while(1)
 	{
@@ -227,24 +233,24 @@ void test_quad_encoders(void)
 		char str[BUF_SIZE];
 		int chL, chR;
 		bool dirL, dirR;
-		int speedL, speedR;
+		float periodL, periodR;
 		
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
-		quadEncReadSpeedAll((uint32_t*)&speedL, (uint32_t*)&speedR);
+		quadEncReadPeriodAll(&periodL, &periodR);
 		
 		// Set velocity direction
 		if(dirL)
 		{
-			speedL = -speedL;
+			periodL = -periodL;
 		}
 		if(dirR)
 		{
-			speedR = -speedR;
+			periodR = -periodR;
 		}
 		
-		int len = SNPRINTF(str, BUF_SIZE, "ch0 %c %7d %7d ch1 %c %7d %7d\r\n",
-				dirL ? 'R':'F', chL, (int)speedL,
-				dirR ? 'R':'F', chR, (int)speedR);
+		int len = SNPRINTF(str, BUF_SIZE, "ch0 %c %7d %7.4f ch1 %c %7d %7.4f\r\n",
+				dirL ? 'R':'F', chL, periodL,
+				dirR ? 'R':'F', chR, periodR);
 		udi_cdc_write_buf(str, len);
 		
 		vTaskDelay(200);

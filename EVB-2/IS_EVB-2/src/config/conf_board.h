@@ -43,7 +43,9 @@
 #define CONF_BOARD_CONFIG_MPU_AT_INIT
 
 // Setup to use the Watchdog
+#ifndef DEBUG // RELEASE
 #define ENABLE_WDT
+#endif // DEBUG
 
 #ifdef ENABLE_WDT
 	#define CONF_BOARD_KEEP_WATCHDOG_AT_INIT    // Don't change WDT mode register in init.c
