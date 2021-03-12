@@ -71,19 +71,20 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		}
 				
 		// Convert encoder ticks to radians.
-		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/*Division by 2 to account for 4x encoding*/
+		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/* Division by 4 to account for 4x encoding */
 		g_wheelEncoder.theta_r = (chR * g_flashCfg->encoderTickToWheelRad) * 0.25;
 
         // Convert TC pulse period to rad/sec.  20us per TC LSB x 2 (measure rising to rising edge).
         if(periodL!=0.0f)
         {			
             g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / periodL;
-
+#if 0
 			g_debug.f[0] = periodL*1000000.0;
 			g_debug.f[1] = g_flashCfg->encoderTickToWheelRad;
 			g_debug.f[2] = g_wheelEncoder.omega_l;
 			g_debug.f[3] = g_wheelEncoder.omega_l*C_RAD2DEG_F;
 			g_debug.f[4] = g_wheelEncoder.omega_l*0.276225;	// x (m) wheel radius = linear velocity
+#endif
         }
         else
         {
@@ -101,17 +102,22 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		// Encoder Wrap count (currently counting revolutions) 
 //		g_wheelEncoder.wrap_count_l = g_wheelEncoder.theta_l / (2*PI);
 //		g_wheelEncoder.wrap_count_r = g_wheelEncoder.theta_r / (2*PI);	
-				
-		n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 
-#if 0	// Send to uINS
-		comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
-#else	// Send to Luna
-		comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
+		if (g_ermcBits & ERMC_BITS_WHEEL_ENCODER)
+		{
+			n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
+
+#if 0		// Send to uINS
+			comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
+#else		// Send to Luna
+			comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
 #endif
+		}
 
+#if 0
 		n = is_comm_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));
 		comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
+#endif
 
 		// Update history
 		wheelEncoderLast = g_wheelEncoder;

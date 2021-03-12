@@ -82,7 +82,7 @@ def calcRMS(log, directory, subdir):
 
 
         # If we are in compassing mode, then only calculate RMS after all devices have fix
-        if log.devices[0].data['flashConfig']['RTKCfgBits'][-1] == 8:
+        if log.devices[0].data['flashCfg']['RTKCfgBits'][-1] == 8:
             compassing = True
             time_of_fix_ms = [dev.data['gps1RtkCmpRel']['timeOfWeekMs'][np.argmax(dev.data['gps1RtkCmpRel']['arRatio'] > 3.0)] / 1000.0 for dev in log.devices]
             # print time_of_fix_ms

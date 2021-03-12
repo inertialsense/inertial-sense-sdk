@@ -113,7 +113,7 @@ did_name_lookup = {
  DID_RMC : "rmc",
  DID_SYS_PARAMS : "sysParams",
  DID_SYS_SENSORS : "sysSensors",
- DID_FLASH_CONFIG : "flashConfig",
+ DID_FLASH_CONFIG : "flashCfg",
  DID_GPS1_POS : "gps1Pos",
  DID_GPS2_POS : "gps2Pos",
  DID_GPS1_SAT : "gps1Sat",

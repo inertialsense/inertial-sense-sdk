@@ -33,6 +33,7 @@ uint32_t                    g_comm_time_ms = 0;
 bool                        g_loggerEnabled = false;
 uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
+uint64_t                    g_ermcBits = 0;
 
 
 void globals_init(void)
@@ -466,4 +467,15 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));
+}
+
+
+// Convert DID to message out control mask
+uint64_t evbDidToErmcBit(uint32_t dataId)
+{
+	switch (dataId)
+	{
+		case DID_WHEEL_ENCODER:         return ERMC_BITS_WHEEL_ENCODER;
+        default:                        return 0;
+	}
 }
