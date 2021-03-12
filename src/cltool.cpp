@@ -545,12 +545,12 @@ void cltool_outputHelp()
 	cout << endlbOff << "Run \"" << boldOn << "cltool -h" << boldOff << "\" to display the help menu." << endl;
 }
 
-bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
+bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
 	nvm_flash_cfg_t flashCfg = inertialSenseInterface.GetFlashConfig();
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
-	if (flashConfigString.length() < 2)
+	if (flashCfgString.length() < 2)
 	{
 		// read flash config and display
 		data_mapping_string_t stringBuffer;
@@ -567,7 +567,7 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 	else
 	{
 		vector<string> keyValues;
-		splitString(flashConfigString, "|", keyValues);
+		splitString(flashCfgString, "|", keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
 			vector<string> keyAndValue;
@@ -595,12 +595,12 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 	}
 }
 
-bool cltool_updateEvbFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
+bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
 	evb_flash_cfg_t evbFlashCfg = inertialSenseInterface.GetEvbFlashConfig();
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_EVB_FLASH_CFG);
 
-	if (flashConfigString.length() < 2)
+	if (flashCfgString.length() < 2)
 	{
 		// read flash config and display
 		data_mapping_string_t stringBuffer;
@@ -617,7 +617,7 @@ bool cltool_updateEvbFlashConfig(InertialSense& inertialSenseInterface, string f
 	else
 	{
 		vector<string> keyValues;
-		splitString(flashConfigString, "|", keyValues);
+		splitString(flashCfgString, "|", keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
 			vector<string> keyAndValue;

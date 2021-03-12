@@ -115,8 +115,8 @@ bool cltool_parseCommandLine(int argc, char* argv[]);
 bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
-bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashCfg); // true if should continue
-bool cltool_updateEvbFlashConfig(InertialSense& inertialSenseInterface, string evbFlashCfg); // true if should continue
+bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfg); // true if should continue
+bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string evbFlashCfg); // true if should continue
 
 #endif // __CLTOOL_H__
 
