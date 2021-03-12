@@ -112,7 +112,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-evbFlashCfg="))
 		{
-			g_commandLineOptions.evbFlashCfg = &a[16];
+			g_commandLineOptions.evbFlashCfg = &a[13];
 		}
 		else if (startsWith(a, "-evbFlashCfg"))
 		{
@@ -120,7 +120,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-flashCfg="))
 		{
-			g_commandLineOptions.flashCfg = &a[13];
+			g_commandLineOptions.flashCfg = &a[10];
 		}
 		else if (startsWith(a, "-flashCfg"))
 		{
