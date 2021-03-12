@@ -71,19 +71,20 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		}
 				
 		// Convert encoder ticks to radians.
-		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/*Division by 2 to account for 4x encoding*/
+		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/* Division by 4 to account for 4x encoding */
 		g_wheelEncoder.theta_r = (chR * g_flashCfg->encoderTickToWheelRad) * 0.25;
 
         // Convert TC pulse period to rad/sec.  20us per TC LSB x 2 (measure rising to rising edge).
         if(periodL!=0.0f)
         {			
             g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / periodL;
-
-// 			g_debug.f[0] = periodL*1000000.0;
-// 			g_debug.f[1] = g_flashCfg->encoderTickToWheelRad;
-// 			g_debug.f[2] = g_wheelEncoder.omega_l;
-// 			g_debug.f[3] = g_wheelEncoder.omega_l*C_RAD2DEG_F;
-// 			g_debug.f[4] = g_wheelEncoder.omega_l*0.276225;	// x (m) wheel radius = linear velocity
+#if 0
+			g_debug.f[0] = periodL*1000000.0;
+			g_debug.f[1] = g_flashCfg->encoderTickToWheelRad;
+			g_debug.f[2] = g_wheelEncoder.omega_l;
+			g_debug.f[3] = g_wheelEncoder.omega_l*C_RAD2DEG_F;
+			g_debug.f[4] = g_wheelEncoder.omega_l*0.276225;	// x (m) wheel radius = linear velocity
+#endif
         }
         else
         {
