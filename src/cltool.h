@@ -96,7 +96,7 @@ typedef struct
 	string host; // -host=ip:port
 
 	string flashCfg;
-	string evbFlashConfig;
+	string evbFlashCfg;
 
 	uint32_t timeoutFlushLoggerSeconds;
 } cmd_options_t;
@@ -116,7 +116,7 @@ bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
 bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashCfg); // true if should continue
-bool cltool_updateEvbFlashConfig(InertialSense& inertialSenseInterface, string evbFlashConfig); // true if should continue
+bool cltool_updateEvbFlashConfig(InertialSense& inertialSenseInterface, string evbFlashCfg); // true if should continue
 
 #endif // __CLTOOL_H__
 

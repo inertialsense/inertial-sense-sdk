@@ -110,13 +110,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.disableBroadcastsOnClose = true;
 		}
-		else if (startsWith(a, "-evbFlashConfig="))
+		else if (startsWith(a, "-evbFlashCfg="))
 		{
-			g_commandLineOptions.evbFlashConfig = &a[16];
+			g_commandLineOptions.evbFlashCfg = &a[16];
 		}
-		else if (startsWith(a, "-evbFlashConfig"))
+		else if (startsWith(a, "-evbFlashCfg"))
 		{
-			g_commandLineOptions.evbFlashConfig = ".";
+			g_commandLineOptions.evbFlashCfg = ".";
 		}
 		else if (startsWith(a, "-flashCfg="))
 		{
@@ -519,8 +519,8 @@ void cltool_outputUsage()
 	cout << "OPTIONS (Read or write flash configuration)" << endl;
 	cout << "    -flashCfg" << boldOff << "       list all \"keys\" and \"values\"" << endlbOn;
 	cout << "   \"-flashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
-	cout << "    -evbFlashConfig" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-evbFlashConfig=key=value|key=value\" " << boldOff <<  endlbOn;
+	cout << "    -evbFlashCfg" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-evbFlashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;

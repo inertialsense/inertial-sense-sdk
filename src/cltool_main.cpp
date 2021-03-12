@@ -295,9 +295,9 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		return cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.flashCfg);
 	}
-	if (g_commandLineOptions.evbFlashConfig.length() != 0)
+	if (g_commandLineOptions.evbFlashCfg.length() != 0)
 	{
-		return cltool_updateEvbFlashConfig(inertialSenseInterface, g_commandLineOptions.evbFlashConfig);
+		return cltool_updateEvbFlashConfig(inertialSenseInterface, g_commandLineOptions.evbFlashCfg);
 	}
 	return true;
 }
@@ -365,7 +365,7 @@ static int cltool_createHost()
 		cout << "Failed to update flash config" << endl;
 		return -1;
 	}
-	else if (g_commandLineOptions.evbFlashConfig.length() != 0 && !cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.evbFlashConfig))
+	else if (g_commandLineOptions.evbFlashCfg.length() != 0 && !cltool_updateFlashConfig(inertialSenseInterface, g_commandLineOptions.evbFlashCfg))
 	{
 		cout << "Failed to update EVB flash config" << endl;
 		return -1;
