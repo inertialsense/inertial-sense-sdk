@@ -58,7 +58,7 @@ bool mcan_send_message(uint32_t id_value, uint8_t *data, uint32_t data_length)
 	//get the put index where we put the next packet
 	uint32_t put_index = (status & MCAN_TXFQS_TFQPI_Msk) >> MCAN_TXFQS_TFQPI_Pos;
 
-	struct mcan_tx_element tx_element;
+	struct mcan_tx_element tx_element = {};
 	mcan_get_tx_buffer_element_defaults(&tx_element);
 
 	if(id_value >= 0x800)
@@ -162,6 +162,7 @@ int mcan_set_rx_filter(uint32_t id_value)
 	}
 }
 
+#ifdef CONF_BOARD_CAN_TEST
 /* Master device for CAN test
  * This unit sends a message out the CAN bus then receives the return message and checks that it is valid.
  */
@@ -178,8 +179,8 @@ void mcan_test_master(void)
 		
 	while(1)
 	{
-		uint8_t can_tx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
-		uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
+		uint8_t can_tx_message[CONF_MCAN_ELEMENT_DATA_SIZE] = {};
+		uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE] = {};
 		uint8_t len;
 
 		//Create message
@@ -213,7 +214,9 @@ void mcan_test_master(void)
 		//TODO: Do something with test result		
 	}
 }
+#endif
 
+#ifdef CONF_BOARD_CAN_TEST
 /* Slave device for CAN test
  * This unit listens for a CAN message and returns a response.
  */
@@ -243,7 +246,7 @@ void mcan_test_slave(void)
 		}
 	}		
 }
-
+#endif
 
 const unsigned int g_validCanBaudRates[CAN_BAUDRATE_COUNT] = { 
 	CAN_BAUDRATE_20000, 

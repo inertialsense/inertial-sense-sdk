@@ -27,8 +27,10 @@ int mcan_set_rx_filter(uint32_t id_value);
 uint8_t mcan_receive_message(uint32_t *id_value, uint8_t *data);
 void CAN_set_baudrate(uint32_t baudrate);
 	
+#ifdef CONF_BOARD_CAN_TEST
 void mcan_test_master(void);
 void mcan_test_slave(void);
+#endif
 int mcan_validate_baudrate(unsigned int baudrate);
 
 
