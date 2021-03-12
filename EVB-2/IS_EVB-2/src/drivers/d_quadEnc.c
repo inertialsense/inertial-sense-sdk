@@ -204,15 +204,15 @@ void quadEncReadPeriodAll(float *period0, float *period1)
 	{
 		*period0 = s_tc2sec * ra_capture[0];
 		*period1 = s_tc2sec * ra_capture[1];
-		g_debug.i[0] = ra_capture[0];
-		g_debug.i[1] = ra_capture[1];
+// 		g_debug.i[0] = ra_capture[0];
+// 		g_debug.i[1] = ra_capture[1];
 	}
 	else
 	{	// Return zero if encoder pulses occur slower than 100ms
 		*period0 = 0.0f;
 		*period1 = 0.0f;
-		g_debug.i[0] = 0;
-		g_debug.i[1] = 0;
+// 		g_debug.i[0] = 0;
+// 		g_debug.i[1] = 0;
 	}	
 
 	taskEXIT_CRITICAL();

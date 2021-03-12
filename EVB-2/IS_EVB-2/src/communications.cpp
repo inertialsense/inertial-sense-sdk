@@ -518,7 +518,8 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		switch(comm->pkt.hdr.pid)
 		{
 		case PID_GET_DATA:
-			int n=0;
+			int n;
+			n=0;
 			switch(comm->dataHdr.id)
 			{
 				case DID_DEV_INFO:          n = is_comm_data(&g_commTx, DID_EVB_DEV_INFO, 0, sizeof(dev_info_t), (void*)&(g_evbDevInfo));         break;
@@ -554,7 +555,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 			if(comm->dataHdr.id == DID_RMC)
 			{
 				rmc_t *rmc;
-				rmc = comm->dataPtr;
+				rmc = (rmc_t*)(comm->dataPtr);
 				g_rmc = *rmc;
 			}
 			break;

@@ -79,11 +79,11 @@ void step_wheel_encoder(is_comm_instance_t &comm)
         {			
             g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / periodL;
 
-			g_debug.f[0] = periodL*1000000.0;
-			g_debug.f[1] = g_flashCfg->encoderTickToWheelRad;
-			g_debug.f[2] = g_wheelEncoder.omega_l;
-			g_debug.f[3] = g_wheelEncoder.omega_l*C_RAD2DEG_F;
-			g_debug.f[4] = g_wheelEncoder.omega_l*0.276225;	// x (m) wheel radius = linear velocity
+// 			g_debug.f[0] = periodL*1000000.0;
+// 			g_debug.f[1] = g_flashCfg->encoderTickToWheelRad;
+// 			g_debug.f[2] = g_wheelEncoder.omega_l;
+// 			g_debug.f[3] = g_wheelEncoder.omega_l*C_RAD2DEG_F;
+// 			g_debug.f[4] = g_wheelEncoder.omega_l*0.276225;	// x (m) wheel radius = linear velocity
         }
         else
         {
@@ -102,7 +102,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 //		g_wheelEncoder.wrap_count_l = g_wheelEncoder.theta_l / (2*PI);
 //		g_wheelEncoder.wrap_count_r = g_wheelEncoder.theta_r / (2*PI);	
 
-		if (g_rmci.bits	& RMC_BITS_WHEEL_ENCODER)
+		if (g_rmc.bits & RMC_BITS_WHEEL_ENCODER)
 		{
 			n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 
