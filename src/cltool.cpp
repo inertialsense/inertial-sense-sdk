@@ -110,21 +110,21 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.disableBroadcastsOnClose = true;
 		}
-		else if (startsWith(a, "-evbFlashConfig="))
+		else if (startsWith(a, "-evbFlashCfg="))
 		{
-			g_commandLineOptions.evbFlashConfig = &a[16];
+			g_commandLineOptions.evbFlashCfg = &a[16];
 		}
-		else if (startsWith(a, "-evbFlashConfig"))
+		else if (startsWith(a, "-evbFlashCfg"))
 		{
-			g_commandLineOptions.evbFlashConfig = ".";
+			g_commandLineOptions.evbFlashCfg = ".";
 		}
-		else if (startsWith(a, "-flashConfig="))
+		else if (startsWith(a, "-flashCfg="))
 		{
-			g_commandLineOptions.flashConfig = &a[13];
+			g_commandLineOptions.flashCfg = &a[13];
 		}
-		else if (startsWith(a, "-flashConfig"))
+		else if (startsWith(a, "-flashCfg"))
 		{
-			g_commandLineOptions.flashConfig = ".";
+			g_commandLineOptions.flashCfg = ".";
 		}
 		else if (startsWith(a, "-host="))
 		{
@@ -517,14 +517,14 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration)" << endl;
-	cout << "    -flashConfig" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-flashConfig=key=value|key=value\" " << boldOff <<  endlbOn;
-	cout << "    -evbFlashConfig" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-evbFlashConfig=key=value|key=value\" " << boldOff <<  endlbOn;
+	cout << "    -flashCfg" << boldOff << "       list all \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-flashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
+	cout << "    -evbFlashCfg" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-evbFlashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashConfig=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashConfig values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Client / Server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;
@@ -547,7 +547,7 @@ void cltool_outputHelp()
 
 bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flashConfigString)
 {
-	nvm_flash_cfg_t flashConfig = inertialSenseInterface.GetFlashConfig();
+	nvm_flash_cfg_t flashCfg = inertialSenseInterface.GetFlashConfig();
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	if (flashConfigString.length() < 2)
@@ -557,7 +557,7 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 		cout << "Current flash config" << endl;
 		for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
 		{
-			if (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&flashConfig, stringBuffer))
+			if (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&flashCfg, stringBuffer))
 			{
 				cout << i->second.name << " = " << stringBuffer << endl;
 			}
@@ -584,12 +584,12 @@ bool cltool_updateFlashConfig(InertialSense& inertialSenseInterface, string flas
 					int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
 					int substrIndex = 2 * (radix == 16); // skip 0x for hex
 					const string& str = keyAndValue[1].substr(substrIndex);
-					cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashConfig, info, radix);
+					cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, radix);
 					cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
 				}
 			}
 		}
-		inertialSenseInterface.SetFlashConfig(flashConfig);
+		inertialSenseInterface.SetFlashConfig(flashCfg);
 		g_inertialSenseDisplay.Clear();
 		return true;
 	}
