@@ -101,17 +101,22 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		// Encoder Wrap count (currently counting revolutions) 
 //		g_wheelEncoder.wrap_count_l = g_wheelEncoder.theta_l / (2*PI);
 //		g_wheelEncoder.wrap_count_r = g_wheelEncoder.theta_r / (2*PI);	
-				
-		n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 
-#if 0	// Send to uINS
-		comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
-#else	// Send to Luna
-		comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
+		if (g_rmci.bits	& RMC_BITS_WHEEL_ENCODER)
+		{
+			n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
+
+#if 0		// Send to uINS
+			comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
+#else		// Send to Luna
+			comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
 #endif
+		}
 
+#if 0
 		n = is_comm_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));
 		comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
+#endif
 
 		// Update history
 		wheelEncoderLast = g_wheelEncoder;

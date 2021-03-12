@@ -33,6 +33,7 @@ uint32_t                    g_comm_time_ms = 0;
 bool                        g_loggerEnabled = false;
 uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
+rmc_t    			        g_rmc = {0};
 
 
 void globals_init(void)

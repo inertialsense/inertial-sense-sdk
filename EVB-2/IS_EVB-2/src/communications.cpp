@@ -487,7 +487,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
-	
+
 	switch(ptype)
 	{
 	case _PTYPE_INERTIAL_SENSE_DATA:
@@ -515,8 +515,9 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		break;
 
 	case _PTYPE_INERTIAL_SENSE_CMD:
-		if(comm->pkt.hdr.pid == PID_GET_DATA)
+		switch(comm->pkt.hdr.pid)
 		{
+		case PID_GET_DATA:
 			int n=0;
 			switch(comm->dataHdr.id)
 			{
@@ -531,8 +532,32 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				serWrite(srcPort, g_commTx.buf.start, n);
 			}			
 
+			// Set EVB2 RMC
+			uint32_t bc_period_multiple;
+			uint64_t bits;
+			bc_period_multiple = *((int32_t*)(comm->dataPtr));
+			bits = didToRmcBit(comm->dataHdr.id, 0);
+			if(bc_period_multiple)
+			{	// Disable message
+				g_rmc.bits |= bits;
+			}
+			else
+			{	// Enable message
+				g_rmc.bits &= ~bits;
+			}
+
 			// Disable uINS bootloader mode if host sends IS binary command
 			g_uInsBootloaderEnableTimeMs = 0;
+			break;
+
+		case PID_SET_DATA:
+			if(comm->dataHdr.id == DID_RMC)
+			{
+				rmc_t *rmc;
+				rmc = comm->dataPtr;
+				g_rmc = *rmc;
+			}
+			break;
 		}
 		break;
 

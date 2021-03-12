@@ -99,6 +99,7 @@ extern uint32_t                     g_comm_time_ms;
 extern bool                         g_loggerEnabled;
 extern uint32_t                     g_uInsBootloaderEnableTimeMs;
 extern bool                         g_enRtosStats;
+extern rmc_t    			        g_rmc;
 
 void globals_init(void);
 void com_bridge_apply_preset(evb_flash_cfg_t* cfg);
