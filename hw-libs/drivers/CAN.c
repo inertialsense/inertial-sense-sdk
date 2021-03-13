@@ -248,17 +248,17 @@ void mcan_test_slave(void)
 }
 #endif
 
-const unsigned int g_validCanBaudRates[CAN_BAUDRATE_COUNT] = { 
-	CAN_BAUDRATE_20000, 
-	CAN_BAUDRATE_33000, 
-	CAN_BAUDRATE_50000, 
-	CAN_BAUDRATE_83000, 
-	CAN_BAUDRATE_100000, 
-	CAN_BAUDRATE_125000,
-	CAN_BAUDRATE_200000,
-	CAN_BAUDRATE_250000,
-	CAN_BAUDRATE_500000,
-	CAN_BAUDRATE_1000000 };
+const unsigned int g_validCanBaudRatesKbps[CAN_BAUDRATE_COUNT] = { 
+	CAN_BAUDRATE_20_KBPS, 
+	CAN_BAUDRATE_33_KBPS, 
+	CAN_BAUDRATE_50_KBPS, 
+	CAN_BAUDRATE_83_KBPS, 
+	CAN_BAUDRATE_100_KBPS, 
+	CAN_BAUDRATE_125_KBPS,
+	CAN_BAUDRATE_200_KBPS,
+	CAN_BAUDRATE_250_KBPS,
+	CAN_BAUDRATE_500_KBPS,
+	CAN_BAUDRATE_1000_KBPS };
 
 /**
  * Returns -1 if the baudrate is not a standard baudrate.
@@ -266,12 +266,12 @@ win */
 int mcan_validate_baudrate(unsigned int baudrate)
 {
 	// Valid baudrates for InertialSense hardware
-	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validCanBaudRates); i++)
+	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validCanBaudRatesKbps); i++)
 	{
-		if (g_validCanBaudRates[i] == baudrate)
+		if (g_validCanBaudRatesKbps[i] == baudrate)
 		{
-			return 0;
+			return 1;
 		}
 	}
-	return -1;
+	return 0;
 }
