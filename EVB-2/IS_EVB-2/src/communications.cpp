@@ -11,18 +11,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <asf.h>
+#include "../../../hw-libs/communications/CAN_comm.h"
+#include "../../../hw-libs/drivers/CAN.h"
+#include "../../../hw-libs/misc/bootloaderApp.h"
 #include "../../../src/ISUtilities.h"
 #include "../../../src/ISLogger.h"
-#include "../../../hw-libs/misc/bootloaderApp.h"
 #include "../drivers/d_quadEnc.h"
+#include "../src/protocol_nmea.h"
 #include "ISLogFileFatFs.h"
 #include "xbee.h"
 #include "wifi.h"
 #include "sd_card_logger.h"
-#include "../hw-libs/drivers/CAN.h"
-#include "../hw-libs/communications/CAN_comm.h"
-#include "../src/protocol_nmea.h"
 #include "user_interface.h"
+#include "wheel_encoder.h"
 #include "communications.h"
 
 typedef struct
@@ -400,6 +401,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     bool reinitXBee = false;
     bool reinitWiFi = false;
 	bool reinitCAN = false;
+	bool reinitWheelEncoder = false;
 
     // Detect changes
     if (newCfg.cbPreset != g_flashCfg->cbPreset ||
@@ -450,7 +452,11 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 	{
 		g_flashCfg->can_receive_address = newCfg.can_receive_address;
 		reinitCAN = true;
-	}    
+	}
+	if (g_flashCfg->wheelCfgBits != newCfg.wheelCfgBits)
+	{
+		reinitWheelEncoder = true;
+	}
     
     // Copy data from message to working location
     *g_flashCfg = newCfg;
@@ -475,6 +481,10 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 	if (reinitCAN)
 	{
 		CAN_init(g_flashCfg->CANbaud_kbps*1000, g_flashCfg->can_receive_address);
+	}
+	if (reinitWheelEncoder)
+	{
+		init_wheel_encoder();
 	}
 	evbUiRefreshLedCfg();
     

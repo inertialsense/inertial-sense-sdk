@@ -19,6 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define QDEC_USE_INDEX	0
 
 static float s_tc2sec = 0.0f;
+static bool s_direction_reverse_0 = 0;
+static bool s_direction_reverse_1 = 0;
 
 static void quadEncSetModePosition(Tc *const timercounter, uint32_t ID_timercounter)
 {
@@ -178,6 +180,12 @@ void quadEncInit(uint32_t pck6_pres)
 	s_tc2sec = ((float)(pck6_pres+1)) / 12.0e6;
 }
 
+void quadEncSetDirectionReverse( bool reverse_0, bool reverse_1 )
+{
+	s_direction_reverse_0 = reverse_0;
+	s_direction_reverse_1 = reverse_1;
+}
+
 void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 {
 	int16_t cv;
@@ -192,33 +200,38 @@ void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 	*pos1 = cv;
 	*dir1 = (QE1_POS->TC_QISR & TC_QISR_DIR) / TC_QISR_DIR;
 
+	// Reverse direction
+	if (s_direction_reverse_0) { *pos0 = -(*pos0); *dir0 = !(*dir0); }
+	if (s_direction_reverse_1) { *pos1 = -(*pos1); *dir1 = !(*dir1); }
+
 	taskEXIT_CRITICAL();
 }
 
 void quadEncReadPeriodAll(float *period0, float *period1)
 {
 	taskENTER_CRITICAL();
-	
+
 	uint32_t dtMs = time_msec() - ra_capture_timeMs;
-	if(dtMs < 100)
+	if (dtMs < 100)
 	{
 		*period0 = s_tc2sec * ra_capture[0];
 		*period1 = s_tc2sec * ra_capture[1];
-// 		g_debug.i[0] = ra_capture[0];
-// 		g_debug.i[1] = ra_capture[1];
+
+		// Reverse direction
+		if (s_direction_reverse_0) { *period0 *= -1.0f; }
+		if (s_direction_reverse_1) { *period1 *= -1.0f; }
 	}
 	else
 	{	// Return zero if encoder pulses occur slower than 100ms
 		*period0 = 0.0f;
 		*period1 = 0.0f;
-// 		g_debug.i[0] = 0;
-// 		g_debug.i[1] = 0;
 	}	
+
+// 		g_debug.i[0] = *period0;
+// 		g_debug.i[1] = *period1;
 
 	taskEXIT_CRITICAL();
 }
-
-
 
 void test_quad_encoders(void)
 {
