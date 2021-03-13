@@ -103,7 +103,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 //		g_wheelEncoder.wrap_count_l = g_wheelEncoder.theta_l / (2*PI);
 //		g_wheelEncoder.wrap_count_r = g_wheelEncoder.theta_r / (2*PI);	
 
-		if (g_rmc.bits & RMC_BITS_WHEEL_ENCODER)
+		if (g_ermcBits & ERMC_BITS_WHEEL_ENCODER)
 		{
 			n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 

@@ -487,6 +487,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
+	int n;
 
 	switch(ptype)
 	{
@@ -518,7 +519,6 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		switch(comm->pkt.hdr.pid)
 		{
 		case PID_GET_DATA:
-			int n;
 			n=0;
 			switch(comm->dataHdr.id)
 			{
@@ -533,31 +533,36 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				serWrite(srcPort, g_commTx.buf.start, n);
 			}			
 
-			// Set EVB2 RMC
+			// Set ERMC broadcast control bits
 			uint32_t bc_period_multiple;
 			uint64_t bits;
 			bc_period_multiple = *((int32_t*)(comm->dataPtr));
-			bits = didToRmcBit(comm->dataHdr.id, 0);
+			bits = evbDidToErmcBit(comm->dataHdr.id);
 			if(bc_period_multiple)
 			{	// Disable message
-				g_rmc.bits |= bits;
+				g_ermcBits |= bits;
 			}
 			else
 			{	// Enable message
-				g_rmc.bits &= ~bits;
+				g_ermcBits &= ~bits;
 			}
 
 			// Disable uINS bootloader mode if host sends IS binary command
 			g_uInsBootloaderEnableTimeMs = 0;
-			break;
+			break; // PID_GET_DATA
 
-		case PID_SET_DATA:
-			if(comm->dataHdr.id == DID_RMC)
-			{
-				rmc_t *rmc;
-				rmc = (rmc_t*)(comm->dataPtr);
-				g_rmc = *rmc;
-			}
+		// case PID_SET_DATA:
+		// 	if(comm->dataHdr.id == DID_RMC)
+		// 	{
+		// 		g_ermcBits = *((uint64_t*)(comm->dataPtr));	// RMC is not the same as ERMC (EVB RMC).  We may need to translate this if necessary.
+		// 	}
+		// 	break;
+
+		case PID_STOP_BROADCASTS_ALL_PORTS:
+		case PID_STOP_DID_BROADCAST:
+		case PID_STOP_BROADCASTS_CURRENT_PORT:
+			// Disable EVB broadcasts
+			g_ermcBits = 0;
 			break;
 		}
 		break;
@@ -571,6 +576,9 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				{
 				case ASCII_MSG_ID_BLEN: // Enable bootloader (uINS)
 					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
+
+					// Disable EVB broadcasts
+					g_ermcBits = 0;
 					break;
 							
 				case ASCII_MSG_ID_EBLE: // Enable bootloader (EVB)
@@ -578,7 +586,13 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 					g_uInsBootloaderEnableTimeMs = 0;
 					
 					enable_bootloader(PORT_SEL_USB);
-					break;					
+					break;				
+
+				case ASCII_MSG_ID_STPB:
+				case ASCII_MSG_ID_STPC:	
+					// Disable EVB communications
+					g_ermcBits = 0;
+					break;
 				}
 				break;							
 			}
