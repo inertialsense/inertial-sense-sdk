@@ -49,6 +49,18 @@ static bool startsWith(const char* str, const char* pre)
 	return lenstr < lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
 }
 
+// Returns number of characters until the next space.  This is used to skip arguments.
+static int countToSpace(const char* str)
+{
+	const char *ptr = strchr(str, ' ');
+	if(ptr) 
+	{
+   		return ptr - str;	
+	}
+
+	return 0;
+}
+
 #define CL_DEFAULT_BAUD_RATE				IS_COM_BAUDRATE_DEFAULT 
 #define CL_DEFAULT_COM_PORT					"*"
 #define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_PRETTY 
@@ -98,13 +110,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.asciiMessages = &a[15];
         }
-        else if (startsWith(a, "-baud="))
+        else if (startsWith(a, "-baud"))
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
 		}
-		else if (startsWith(a, "-c="))
+		else if (startsWith(a, "-c"))
 		{
 			g_commandLineOptions.comPort = &a[3];
+			i += countToSpace(&a[3]);
 		}
 		else if (startsWith(a, "-dboc"))
 		{
@@ -135,11 +148,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			cltool_outputUsage();
 			return false;
 		}
-		else if (startsWith(a, "-lms="))
+		else if (startsWith(a, "-lms"))
 		{
 			g_commandLineOptions.maxLogSpacePercent = (float)atof(&a[5]);
 		}
-		else if (startsWith(a, "-lmf="))
+		else if (startsWith(a, "-lmf"))
 		{
 			g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
 		}
@@ -147,7 +160,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
         }
-        else if (startsWith(a, "-lts="))
+        else if (startsWith(a, "-lts"))
 		{
 			const char* subFolder = &a[5];
 			if (*subFolder == '1' || startsWith(subFolder, "true"))
@@ -163,11 +176,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 				g_commandLineOptions.logSubFolder = subFolder;
 			}
 		}
-		else if (startsWith(a, "-lp="))
+		else if (startsWith(a, "-lp"))
 		{
 			g_commandLineOptions.logPath = &a[4];
 		}
-		else if (startsWith(a, "-lt="))
+		else if (startsWith(a, "-lt"))
 		{
 			g_commandLineOptions.logType = &a[4];
 		}
@@ -351,12 +364,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
 		}
-		else if (startsWith(a, "-rp="))
+		else if (startsWith(a, "-rp"))
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.logPath = &a[4];
 		}
-		else if (startsWith(a, "-rs="))
+		else if (startsWith(a, "-rs"))
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
@@ -373,7 +386,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
-		else if (startsWith(a, "-svr=") || startsWith(a, "-srv="))
+		else if (startsWith(a, "-svr") || startsWith(a, "-srv"))
 		{
 			g_commandLineOptions.serverConnection = &a[5];
 		}
@@ -381,11 +394,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
 		}
-		else if (startsWith(a, "-ub="))
+		else if (startsWith(a, "-ub"))
 		{
 			g_commandLineOptions.updateBootloaderFilename = &a[4];
 		}
-        else if (startsWith(a, "-uf="))
+        else if (startsWith(a, "-uf"))
         {
             g_commandLineOptions.updateAppFirmwareFilename = &a[4];
         }
@@ -409,12 +422,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	}
 	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
 	{
-		cout << "Use COM_PORT option \"-c=\" with bootloader" << endl;
+		cout << "Use COM_PORT option \"-c \" with bootloader" << endl;
 		return false;
 	}
     else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
     {
-        cout << "Use COM_PORT option \"-c=\" with bootloader" << endl;
+        cout << "Use COM_PORT option \"-c \" with bootloader" << endl;
         return false;
     }
         
@@ -463,17 +476,17 @@ void cltool_outputUsage()
 	cout << "    firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b=" << EXAMPLE_FIRMWARE_FILE << " -bl=" << EXAMPLE_BOOTLOADER_FILE << " -bv" << boldOff << " # bootload application firmware and update bootloader if needed" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=* -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -b " << EXAMPLE_FIRMWARE_FILE << " -bl " << EXAMPLE_BOOTLOADER_FILE << " -bv" << boldOff << " # bootload application firmware and update bootloader if needed" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       display this help menu" << endlbOn;
-	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
+	cout << "    -c " << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
 	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
@@ -523,8 +536,8 @@ void cltool_outputUsage()
 	cout << "   \"-evbFlashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Client / Server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;
