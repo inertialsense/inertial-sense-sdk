@@ -216,10 +216,6 @@ void quadEncReadPeriodAll(float *period0, float *period1)
 	{
 		*period0 = s_tc2sec * ra_capture[0];
 		*period1 = s_tc2sec * ra_capture[1];
-
-		// Reverse direction
-		if (s_direction_reverse_0) { *period0 *= -1.0f; }
-		if (s_direction_reverse_1) { *period1 *= -1.0f; }
 	}
 	else
 	{	// Return zero if encoder pulses occur slower than 100ms
