@@ -90,6 +90,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		return false;
 	}
 
+	printf("Arguments: %d\n\n%s\n\n", argc, argv[0]);
+
 	// parse command line.  Keep these options in alphabetic order!
 	for (int i = 1; i < argc; i++)
 	{
@@ -105,6 +107,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-c="))
 		{
 			g_commandLineOptions.comPort = &a[3];
+		}
+		else if (startsWith(a, "-c"))
+		{
+			a = argv[++i];	// use next argument
+			g_commandLineOptions.comPort = &a[0];
 		}
 		else if (startsWith(a, "-dboc"))
 		{
@@ -385,9 +392,19 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.updateBootloaderFilename = &a[4];
 		}
+		else if (startsWith(a, "-ub"))
+		{
+			a = argv[++i];	// use next argument
+			g_commandLineOptions.updateBootloaderFilename = &a[0];
+		}
         else if (startsWith(a, "-uf="))
         {
             g_commandLineOptions.updateAppFirmwareFilename = &a[4];
+        }
+        else if (startsWith(a, "-uf"))
+        {
+			a = argv[++i];	// use next argument
+            g_commandLineOptions.updateAppFirmwareFilename = &a[0];
         }
 		else if (startsWith(a, "-uv"))
 		{
@@ -396,7 +413,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
-			cltool_outputUsage();
+			// cltool_outputUsage();
 			return false;
 		}
 	}
@@ -409,12 +426,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	}
 	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
 	{
-		cout << "Use COM_PORT option \"-c=\" with bootloader" << endl;
+		cout << "Use COM_PORT option \"-c \" with bootloader" << endl;
 		return false;
 	}
     else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
     {
-        cout << "Use COM_PORT option \"-c=\" with bootloader" << endl;
+        cout << "Use COM_PORT option \"-c \" with bootloader" << endl;
         return false;
     }
         
@@ -463,17 +480,17 @@ void cltool_outputUsage()
 	cout << "    firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c="  <<     EXAMPLE_PORT << " -b=" << EXAMPLE_FIRMWARE_FILE << " -bl=" << EXAMPLE_BOOTLOADER_FILE << " -bv" << boldOff << " # bootload application firmware and update bootloader if needed" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=* -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -b " << EXAMPLE_FIRMWARE_FILE << " -bl " << EXAMPLE_BOOTLOADER_FILE << " -bv" << boldOff << " # bootload application firmware and update bootloader if needed" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       display this help menu" << endlbOn;
-	cout << "    -c=" << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
+	cout << "    -c " << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
 	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
@@ -523,8 +540,8 @@ void cltool_outputUsage()
 	cout << "   \"-evbFlashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c=" << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Client / Server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;

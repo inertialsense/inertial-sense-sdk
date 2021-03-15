@@ -30,6 +30,8 @@ void init_wheel_encoder(void)
 		{	// High-resolution encoders
 	    	quadEncInit(7);		// Sensing range w/ 400 cnt encoder and 3x gearhead: > 7 deg/s 
 		}
+
+		quadEncSetDirectionReverse(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT, g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT);
     }
 #endif
 }

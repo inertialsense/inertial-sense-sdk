@@ -1916,6 +1916,8 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
 };
 
 /** (DID_WHEEL_CONFIG) [NOT SUPPORTED, INTERNAL USE ONLY] Configuration of wheel encoders and kinematic constraints. */
@@ -3168,7 +3170,7 @@ typedef struct
     /** Server IP and port */
     evb_server_t            server[NUM_WIFI_PRESETS];
 
-    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi).  Only one encoder channel, don't multiple by number of channels. */
+    /** Encoder tick to wheel rotation conversion factor (in radians).  Encoder tick count per revolution on 1 channel x gear ratio x 2pi. */
     float                   encoderTickToWheelRad;
 
 	/** CAN baudrate */
@@ -3197,7 +3199,10 @@ typedef struct
 
 	/** Baud rate for EVB serial port H8 (TLL). */
 	uint32_t                h8gpioBaudRate;
-	
+
+	/** Wheel encoder configuration (see eWheelCfgBits) */
+	uint32_t                wheelCfgBits;
+
 } evb_flash_cfg_t;
 
 
