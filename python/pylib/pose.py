@@ -626,6 +626,16 @@ def rotate_ecef2ned( latlon ):
     return R
 
 
+# Convert body attitude in Euler angles relative to ENU to
+# body attitude relative to NED frame
+def enu2nedEuler(eul_e2b):
+    q_n2e = euler2quat(np.array([np.pi, 0, np.pi/2]))
+    q_e2b = euler2quatArray(eul_e2b)
+    q_n2b = mul_Quat_Quat_Array(q_e2b, q_n2e)
+    eul_n2b = quat2eulerArray(quat)
+    return eul_n2b
+
+
 #  * NED to Euler_t
 def nedEuler(ned):
     euler = np.zeros(np.shape(ned))
