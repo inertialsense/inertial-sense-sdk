@@ -7,22 +7,46 @@ include_directories(${GTEST_INCLUDE_DIRS})
 
 add_library(SDK_test
 	test_com_manager.cpp
+	test_math.cpp
 	test_ring_buffer.cpp
 	../com_manager.c
+	../convert_ins.cpp
 	../data_sets.c
+	../DataChunk.cpp
+	../DataChunkSorted.cpp
+	../DataCSV.cpp
+	../DataJSON.cpp
+	../DataKML.cpp
+	../DeviceLog.cpp
+	../DeviceLogCSV.cpp
+	../DeviceLogJSON.cpp
+	../DeviceLogKML.cpp
+	../DeviceLogSerial.cpp
+	../DeviceLogSorted.cpp
 	../ISComm.c
+	../ISDataMappings.cpp
 	../ISEarth.c
+	../ISFileManager.cpp
+	../ISLogFile.cpp
+	../ISLogger.cpp
 	../ISMatrix.c
 	../ISPose.c
+	../ISUtilities.cpp
 	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c
+	../tinystr.cpp
+	../tinyxml.cpp
+	../tinyxmlerror.cpp
+	../tinyxmlparser.cpp
 	)
 
 add_executable(run_tests 
 	test_com_manager.cpp
+	test_math.cpp
 	test_ring_buffer.cpp
 	../com_manager.c
+	../convert_ins.cpp
 	../data_sets.c
 	../ISComm.c
 	../ISEarth.c
