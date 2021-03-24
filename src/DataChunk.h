@@ -79,15 +79,15 @@ public:
 	cDataChunk();
     virtual ~cDataChunk();
 
-    uint32_t GetBuffSize() { return (uint32_t)(m_buffTail - m_buffHead); }
-    uint32_t GetBuffFree() { return (uint32_t)(m_buffTail - m_dataTail); }
-    uint32_t GetDataSize() { return (uint32_t)(m_dataTail - m_dataHead); }
+    int32_t GetBuffSize() { return (int32_t)(m_buffTail - m_buffHead); }
+    int32_t GetBuffFree() { return (int32_t)(m_buffTail - m_dataTail); }
+    int32_t GetDataSize() { return (int32_t)(m_dataTail - m_dataHead); }
     void SetName(const char name[4]);
 	uint8_t* GetDataPtr();
-	bool PopFront(uint32_t size);
+	bool PopFront(int32_t size);
     int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0); // Returns number of bytes written to file and clears the chunk
 	int32_t ReadFromFile(cISLogFileBase* pFile);
-	bool PushBack(uint8_t* d1, uint32_t d1Size, uint8_t* d2 = NULL, uint32_t d2Size = 0);
+	bool PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2 = NULL, int32_t d2Size = 0);
 
 	virtual void Clear();
 

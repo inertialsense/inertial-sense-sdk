@@ -56,10 +56,10 @@ void cDataChunk::SetName(const char name[4])
 }
 
 
-bool cDataChunk::PushBack(uint8_t* d1, uint32_t d1Size, uint8_t* d2, uint32_t d2Size)
+bool cDataChunk::PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2, int32_t d2Size)
 {
 	// Ensure data will fit
-	uint32_t count = d1Size + d2Size;
+	int32_t count = d1Size + d2Size;
 	if (m_dataHead == NULLPTR ||
 		count > GetBuffFree())
 	{
@@ -88,7 +88,7 @@ uint8_t* cDataChunk::GetDataPtr()
 }
 
 
-bool cDataChunk::PopFront(uint32_t size)
+bool cDataChunk::PopFront(int32_t size)
 {
 	assert(m_dataHead != NULLPTR);
 
