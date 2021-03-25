@@ -43,14 +43,14 @@ void cDeviceLogCSV::InitDeviceForReading()
 {
 	cDeviceLog::InitDeviceForReading();
 
-	// open the first file for each possible data set
+	// Create a list of file for each possible data set
 	m_logs.clear();
 	for (uint32_t id = DID_NULL + 1; id < DID_COUNT; id++)
 	{
 		const char* dataSet = cISDataMappings::GetDataSetName(id);
 		if (dataSet != NULL)
 		{
-			string dataSetRegex = string(dataSet) + "\\.csv$";
+			string dataSetRegex = "LOG_SN" + to_string(m_devInfo.serialNumber) + ".*?" + string(dataSet) + "\\.csv$";
 			vector<ISFileManager::file_info_t> infos;
 			vector<string> files;
 			ISFileManager::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
