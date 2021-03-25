@@ -45,6 +45,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 
+#define PRINT_STATUS
 
 const string cISLogger::g_emptyString;
 
@@ -331,7 +332,11 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 #endif
                         }
                         m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
-                    }
+
+#if defined(PRINT_STATUS)
+						printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
+#endif
+					}
                 }
 			}
 		}
@@ -552,6 +557,10 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		// Copy device info
 		const dev_info_t* devInfo = log.GetDeviceInfo(dev);
 		SetDeviceInfo(devInfo, dev);
+
+#if defined(PRINT_STATUS)
+		printf("cISLogger::CopyLog SN%d type %d, (%d of %d)\n", devInfo->serialNumber, logType, dev+1, log.GetDeviceCount());
+#endif
 
 		// Set KML configuration
 		m_devices[dev]->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
