@@ -213,7 +213,7 @@ TEST(ComManager2, Bad_offset_packet)
 		comManagerStepInstance(&(cm2.cm));
 	}
 
-	EXPECT_TRUE(TRUE);
+	EXPECT_TRUE(true);
 }
 
 TEST(ComManager2, Garbage_data_should_not_crash)

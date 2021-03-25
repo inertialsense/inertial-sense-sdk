@@ -7,6 +7,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 
 add_library(SDK_test
 	test_com_manager.cpp
+	test_com_manager_2.cpp
 	test_math.cpp
 	test_ring_buffer.cpp
 	../com_manager.c
@@ -43,6 +44,7 @@ add_library(SDK_test
 
 add_executable(run_tests 
 	test_com_manager.cpp
+	test_com_manager_2.cpp
 	test_math.cpp
 	test_ring_buffer.cpp
 	../com_manager.c
