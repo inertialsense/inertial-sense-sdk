@@ -124,6 +124,7 @@ bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 		serNum = m_pHandle;
 	}
 
+	string fileName;
 	if (readonly)
 	{
 tryNextFile:
@@ -152,7 +153,7 @@ tryNextFile:
 	else
 	{
 		log.fileCount++;
-		string fileName = GetNewFileName(serNum, log.fileCount, dataSetName);
+		fileName = GetNewFileName(serNum, log.fileCount, dataSetName);
 		log.pFile = fopen(fileName.c_str(), "w");
 
 		// Write Header
@@ -165,15 +166,15 @@ tryNextFile:
 
 	if (log.pFile)
 	{
-#if LOG_DEBUG_WRITE
-		printf("Opened save file: %s\n", filename.str().c_str());
+#if LOG_DEBUG_FILE_WRITE
+		printf("cDeviceLogCSV::OpenNewFile %s\n", fileName.c_str());
 #endif
 		return true;
 	}
 	else
 	{
-#if LOG_DEBUG_WRITE
-		printf("FAILED to open save file: %s\n", filename.str().c_str());
+#if LOG_DEBUG_FILE_WRITE
+		printf("cDeviceLogCSV::OpenNewFile FAILED to open save file: %s\n", fileName.c_str());
 #endif
 		m_logs.erase(log.dataId);
 		return false;

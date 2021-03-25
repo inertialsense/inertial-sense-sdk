@@ -27,10 +27,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "ISLogFileBase.h"
 
-#define LOG_DEBUG_WRITE		0		// Enable debug printout
-#define LOG_DEBUG_READ		0
-#define LOG_CHUNK_STATS		0		// 0 = disabled, 1 = summary, 2 = detailed
-
 using namespace std;
 
 void logStats(const char *format, ...);

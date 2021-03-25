@@ -18,6 +18,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <cstdarg>
 #include <string>
 
+#define LOG_DEBUG_GEN			1		// 
+#define LOG_DEBUG_FILE_WRITE	1		// Enable chunk debug printout
+#define LOG_DEBUG_FILE_READ		1
+#define LOG_DEBUG_CHUNK_WRITE	0		// Enable file debug printout
+#define LOG_DEBUG_CHUNK_READ	0
+#define LOG_CHUNK_STATS			0		// 0 = disabled, 1 = summary, 2 = detailed
+
 
 class cISLogFileBase
 {

@@ -141,11 +141,11 @@ int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber)
 	// Write chunk data to file
 	nBytes += static_cast<int32_t>(pFile->write(m_dataHead, m_hdr.dataSize));
 
-#if LOG_DEBUG_WRITE
+#if LOG_DEBUG_CHUNK_WRITE
 	static int totalBytes = 0;
 	totalBytes += nBytes;
-	printf("%d : %d  -  %x %d", totalBytes, nBytes, m_Hdr.marker, m_Hdr.dataSize);
-	if (nBytes != (headerSize + (int)m_Hdr.dataSize))
+	printf("cDataChunk::WriteToFile %d : %d  -  %x %d", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
+	if (nBytes != (sizeof(sChunkHeader) + (int)m_hdr.dataSize))
 		printf("ERROR WRITING!");
 	printf("\n");
 #endif
@@ -196,14 +196,14 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile)
 	m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
 	nBytes += GetDataSize();
 
-#if LOG_DEBUG_READ
+#if LOG_DEBUG_CHUNK_READ
 	static int totalBytes = 0;
 	totalBytes += nBytes;
-	printf("%d : %d  -  %x %d  ", totalBytes, nBytes, m_Hdr.marker, m_Hdr.dataSize);
-	if ((nBytes > 0) && (m_Hdr.marker != DATA_CHUNK_MARKER))
+	printf("cDataChunk::ReadFromFile %d : %d  -  %x %d  ", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
+	if ((nBytes > 0) && (m_hdr.marker != DATA_CHUNK_MARKER))
 	{
 		printf("MARKER MISMATCH!");
-}
+	}
 	printf("\n");
 #endif
 

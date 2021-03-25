@@ -19,9 +19,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DataChunk.h"
 #include "ISLogFileBase.h"
 
-#define LOG_DEBUG_WRITE		0
-#define LOG_DEBUG_READ		0
-
 PUSH_PACK_1
 
 /** Represents the complete packet body of a PID_DATA and PID_DATA_SET packet */
