@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <stdlib.h>
 #include "../com_manager.h"
-#include "../../../cpp/libs/globals.h"
+#include "../../../SDK/src/data_sets.h"
 
 static dual_imu_t g_dualImu;
 static ins_1_t g_ins1;
@@ -14,11 +14,14 @@ static sys_sensors_adc_t g_sensor_adc;
 static sys_sensors_adc_t g_sensor_lsb;
 static sys_sensors_adc_t g_adcSigma;
 static sys_sensors_t g_sysSigma;
-static sensors_t g_tcBias;
-static sensors_w_temp_t g_sensor_is1;
-static sensors_t g_sensor_is2;
-static sensor_compensation_t g_sc;
-static nvr_manage_t g_nvr_manage_userpage;
+static sys_params_t	g_sysParams;
+static nvm_flash_cfg_t g_nvmFlashCfg;
+static rtos_info_t g_rtos;
+static ascii_msgs_t g_asciiPeriod[NUM_COM_PORTS];
+static system_command_t g_sysCmd;
+static debug_array_t g_debug;
+static io_t g_IO;
+static mag_cal_t g_magCal;
 
 #define BUFFER_SIZE 8192
 
@@ -156,26 +159,24 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC, 0, 0, &g_sensor_lsb, 0, sizeof(sys_sensors_adc_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC_SIGMA, 0, 0, &g_adcSigma, 0, sizeof(sys_sensors_adc_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_SENSORS_SIGMA, 0, 0, &g_sysSigma, 0, sizeof(sys_sensors_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_TC_BIAS, 0, 0, &g_tcBias, &g_tcBias, sizeof(sensors_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_IS1, 0, 0, &g_sensor_is1, 0, sizeof(sensors_w_temp_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_IS2, 0, 0, &g_sensor_is2, 0, sizeof(sensors_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SCOMP, 0, 0, &g_sc, &g_sc, sizeof(sensor_compensation_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_HDW_PARAMS, 0, 0, &g_hdwParams, &g_hdwParams, sizeof(hdw_params_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_TC_BIAS, 0, 0, &g_tcBias, &g_tcBias, sizeof(sensors_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_IS1, 0, 0, &g_sensor_is1, 0, sizeof(sensors_w_temp_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_IS2, 0, 0, &g_sensor_is2, 0, sizeof(sensors_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_SCOMP, 0, 0, &g_sc, &g_sc, sizeof(sensor_compensation_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_HDW_PARAMS, 0, 0, &g_hdwParams, &g_hdwParams, sizeof(hdw_params_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_PARAMS, 0, 0, &g_sysParams, &g_sysParams, sizeof(sys_params_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_NVR_MANAGE_USERPAGE, 0, 0, &g_nvr_manage_userpage, &g_nvr_manage_userpage, sizeof(nvr_manage_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_SN, 0, 0, g_serialNumber, 0, sizeof(nvm_group_sn_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_G0, 0, 0, g_nvmU0, 0, sizeof(nvm_group_0_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_G1, 0, 0, g_nvmU1, 0, sizeof(nvm_group_1_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_FLASH_CONFIG, 0, 0, g_nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_MANAGE_USERPAGE, 0, 0, &g_nvr_manage_userpage, &g_nvr_manage_userpage, sizeof(nvr_manage_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_SN, 0, 0, g_serialNumber, 0, sizeof(nvm_group_sn_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_G0, 0, 0, g_nvmU0, 0, sizeof(nvm_group_0_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_G1, 0, 0, g_nvmU1, 0, sizeof(nvm_group_1_t), 0);
+	comManagerRegisterInstance(&(cm2->cm), DID_FLASH_CONFIG, 0, 0, &g_nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_RTOS_INFO, 0, 0, &g_rtos, 0, sizeof(rtos_info_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_ASCII_BCAST_PERIOD, 0, 0, &g_asciiPeriod, &g_asciiPeriod, sizeof(ascii_msgs_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_CMD, 0, 0, &g_sysCmd, &g_sysCmd, sizeof(system_command_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_DEBUG_ARRAY, 0, 0, &g_debug, &g_debug, sizeof(debug_array_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_FEATURE_BITS, 0, 0, 0, 0, sizeof(feature_bits_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_FEATURE_BITS, 0, 0, 0, 0, sizeof(feature_bits_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_IO, 0, 0, &g_IO, &g_IO, sizeof(io_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_MAG_CAL, 0, 0, &g_magCal, &g_magCal, sizeof(mag_cal_t), 0);
-
-
 }
 
 class cComManagerInit
