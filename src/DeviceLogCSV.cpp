@@ -136,12 +136,12 @@ tryNextFile:
 				m_logs.erase(log.dataId);
 				return false;
 			}
-			string currentFile = files[index++];
+			fileName = files[index++];
 			m_currentFileIndex[log.dataId] = index;
-			log.pFile = fopen(currentFile.c_str(), "r");
+			log.pFile = fopen(fileName.c_str(), "r");
 			log.fileCount++;
 			struct stat st;
-			stat(currentFile.c_str(), &st);
+			stat(fileName.c_str(), &st);
 			log.fileSize = st.st_size;
 			m_logSize += log.fileSize;
 			if (m_csv.ReadHeaderFromFile(log.pFile, log.dataId, log.columnHeaders) == 0)
