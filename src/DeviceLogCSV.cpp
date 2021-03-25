@@ -167,7 +167,7 @@ tryNextFile:
 	if (log.pFile)
 	{
 #if LOG_DEBUG_FILE_WRITE
-		printf("cDeviceLogCSV::OpenNewFile %s\n", fileName.c_str());
+		printf("cDeviceLogCSV::OpenNewFile %s %s\n", (readonly?"read":"write"), fileName.c_str());
 #endif
 		return true;
 	}
