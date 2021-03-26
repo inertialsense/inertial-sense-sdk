@@ -39,10 +39,19 @@ def quatInv( q ):
 def mul_Quat_Quat( q1, q2 ):
     result = np.zeros(4)
     
-    result[0] = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3];
-    result[1] = q1[0]*q2[1] + q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2];
-    result[2] = q1[0]*q2[2] + q1[1]*q2[3] + q1[2]*q2[0] - q1[3]*q2[1];
-    result[3] = q1[0]*q2[3] - q1[1]*q2[2] + q1[2]*q2[1] + q1[3]*q2[0];
+    result[0] = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3]
+    result[1] = q1[0]*q2[1] + q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2]
+    result[2] = q1[0]*q2[2] + q1[1]*q2[3] + q1[2]*q2[0] - q1[3]*q2[1]
+    result[3] = q1[0]*q2[3] - q1[1]*q2[2] + q1[2]*q2[1] + q1[3]*q2[0]
+    return result
+
+def mul_Quat_Quat_Array ( q1, q2 ):
+    result = np.empty((np.shape(q1)[0],4))
+    result[:,0] = q1[:,0]*q2[:,0] - q1[:,1]*q2[:,1] - q1[:,2]*q2[:,2] - q1[:,3]*q2[:,3]
+    result[:,1] = q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:,2]
+    result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] - q1[:,3]*q2[:,1]
+    result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] + q1[:,3]*q2[:,0]
+
     return result
 
 
@@ -351,12 +360,12 @@ def quatRotAxis( q ):
     if np.fabs( sin_a ) < 0.0005: 
         sin_a = 1.0
 
-    d = 1.0 / sin_a;
+    d = 1.0 / sin_a
 
     pqr = np.zeros(3)
-    pqr[0] = q[1] * d;
-    pqr[1] = q[2] * d;
-    pqr[2] = q[3] * d;
+    pqr[0] = q[1] * d
+    pqr[1] = q[2] * d
+    pqr[2] = q[3] * d
     
     print(theta * 180/pi)
 
@@ -404,12 +413,12 @@ def lla2ecef( lla, metric=True):
         # Earth polar radius b = R * (1-f)
         b = 20855486.5953  
 
-    LLA = lla * pi/180;
+    LLA = lla * pi/180
 
-    Smu = sin(LLA[:,0]);
-    Cmu = cos(LLA[:,0]);
-    Sl  = sin(LLA[:,1]);
-    Cl  = cos(LLA[:,1]);
+    Smu = sin(LLA[:,0])
+    Cmu = cos(LLA[:,0])
+    Sl  = sin(LLA[:,1])
+    Cl  = cos(LLA[:,1])
     
     # Radius of curvature at a surface point:
     Rn = R / np.sqrt(1 - e*e*Smu*Smu)
@@ -440,6 +449,87 @@ def lla2ned( llaRef, lla ):
     ned[:,2] = -deltaLLA[:,2]
 
     return ned
+
+# def latlon2ne( lat, lon, ref_lat, ref_lon ):
+#     """Transform lat/lon values to north/east
+
+#     Parameters
+#     ----------
+#     lat : array-like, double
+#         np array of latitude (deg)
+#     lon : array-like, double
+#         np array of longitude (deg)
+#     ref_lat : double
+#         reference latitude (deg)
+#     ref_lon : double
+#         reference longitude (deg)
+
+#     Returns
+#     -------
+#     array-like, double
+#         north and east value arrays
+#     """
+#     # Convert deg to rad
+#     lat = np.radians(lat)
+#     lon = np.radians(lon)
+#     ref_lat = np.radians(ref_lat)
+#     ref_lon = np.radians(ref_lon)
+
+#     # WGS84 ref: https://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+#     # WGS84 Earth's first eccentricity:
+#     e = 0.081819190842622
+#     # WGS84 Semi-Major Axis (a) Earth equatorial radius, m
+#     R = 6378137
+#     dlat = lat - ref_lat
+#     dlon = lon - ref_lon
+#     # radius of curvature in the prime vertical:
+#     RN = R / np.sqrt(1-e*e*np.square(np.sin(ref_lat)))
+#     # radius of curvature in the meridian
+#     RM = RN * (1-e*e) / (1-e*e*np.square(np.sin(ref_lat)))
+#     dN = dlat * RM
+#     dE = dlon * RN * np.cos(ref_lat)
+#     return dN, dE
+
+
+# def ne2latlon(N, E, ref_lat, ref_lon):
+#     """Transform North/Eeas values to lat/lon
+
+#     Parameters
+#     ----------
+#     N : array-like, double
+#         np array of North coordinates (m)
+#     E : array-like, double
+#         np array of East coordinates (m)
+#     ref_lat : double
+#         reference latitude (deg)
+#     ref_lon : double
+#         reference longitude (deg)
+
+#     Returns
+#     -------
+#     array-like, double
+#         latitude and longitude value arrays
+#     """
+#     # Convert deg to rad
+#     ref_lat = np.radians(ref_lat)
+#     ref_lon = np.radians(ref_lon)
+
+#     # WGS84 ref: https://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+#     # WGS84 Earth's first eccentricity:
+#     e = 0.081819190842966
+#     # WGS84 Semi-Major Axis (a) Earth equatorial radius, m
+#     R = 6378137.0
+#     # radius of curvature in the prime vertical:
+#     RN = R / np.sqrt(1-e*e*np.square(np.sin(ref_lat)))
+#     # radius of curvature in the meridian
+#     RM = RN * (1-e*e) / (1-e*e*np.square(np.sin(ref_lat)))
+#     lat = ref_lat + N / RM
+#     lon = ref_lon + E / (RN * np.cos(ref_lat))
+
+#     lat = np.degrees(lat)
+#     lon = np.degrees(lon)
+
+#     return lat, lon
 
 
 #  Find NED (north, east, down) from LLAref to LLA
@@ -534,6 +624,16 @@ def rotate_ecef2ned( latlon ):
     R[2,1] = -Cmu * Sl
     R[2,2] = -Smu
     return R
+
+
+# Convert body attitude in Euler angles relative to ENU to
+# body attitude relative to NED frame
+def enu2nedEuler(eul_e2b):
+    q_n2e = euler2quat(np.array([np.pi, 0, np.pi/2]))
+    q_e2b = euler2quatArray(eul_e2b)
+    q_n2b = mul_Quat_Quat_Array(q_e2b, q_n2e)
+    eul_n2b = quat2eulerArray(quat)
+    return eul_n2b
 
 
 #  * NED to Euler_t
@@ -668,8 +768,8 @@ def accellToEuler(acc):
     euler = np.zeros(np.shape(acc))
     
     euler[:,0] = np.arctan2( -acc[:,1], -acc[:,2] )
-    euler[:,1] = np.arctan2(  acc[:,0], np.sqrt( acc[:,1]*acc[:,1] + acc[:,2]*acc[:,2]) );
-    return euler;
+    euler[:,1] = np.arctan2(  acc[:,0], np.sqrt( acc[:,1]*acc[:,1] + acc[:,2]*acc[:,2]) )
+    return euler
 
 def acc2AttAndBias(acc):
     att = np.zeros(np.shape(acc))

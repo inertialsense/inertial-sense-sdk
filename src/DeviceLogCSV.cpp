@@ -43,7 +43,7 @@ void cDeviceLogCSV::InitDeviceForReading()
 {
 	cDeviceLog::InitDeviceForReading();
 
-	// open the first file for each possible data set
+	// Create a list of file for each possible data set
 	m_logs.clear();
 	for (uint32_t id = DID_NULL + 1; id < DID_COUNT; id++)
 	{
@@ -51,6 +51,10 @@ void cDeviceLogCSV::InitDeviceForReading()
 		if (dataSet != NULL)
 		{
 			string dataSetRegex = string(dataSet) + "\\.csv$";
+			if (m_devInfo.serialNumber > 0 && m_devInfo.serialNumber < 4294967295)	// < 0xFFFFFFFF
+			{	// Include serial number if valid
+				dataSetRegex = "LOG_SN" + to_string(m_devInfo.serialNumber) + ".*?" + dataSetRegex;
+			}
 			vector<ISFileManager::file_info_t> infos;
 			vector<string> files;
 			ISFileManager::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
@@ -124,6 +128,7 @@ bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 		serNum = m_pHandle;
 	}
 
+	string fileName;
 	if (readonly)
 	{
 tryNextFile:
@@ -135,12 +140,12 @@ tryNextFile:
 				m_logs.erase(log.dataId);
 				return false;
 			}
-			string currentFile = files[index++];
+			fileName = files[index++];
 			m_currentFileIndex[log.dataId] = index;
-			log.pFile = fopen(currentFile.c_str(), "r");
+			log.pFile = fopen(fileName.c_str(), "r");
 			log.fileCount++;
 			struct stat st;
-			stat(currentFile.c_str(), &st);
+			stat(fileName.c_str(), &st);
 			log.fileSize = st.st_size;
 			m_logSize += log.fileSize;
 			if (m_csv.ReadHeaderFromFile(log.pFile, log.dataId, log.columnHeaders) == 0)
@@ -152,7 +157,7 @@ tryNextFile:
 	else
 	{
 		log.fileCount++;
-		string fileName = GetNewFileName(serNum, log.fileCount, dataSetName);
+		fileName = GetNewFileName(serNum, log.fileCount, dataSetName);
 		log.pFile = fopen(fileName.c_str(), "w");
 
 		// Write Header
@@ -165,15 +170,15 @@ tryNextFile:
 
 	if (log.pFile)
 	{
-#if LOG_DEBUG_WRITE
-		printf("Opened save file: %s\n", filename.str().c_str());
+#if LOG_DEBUG_FILE_WRITE
+		printf("cDeviceLogCSV::OpenNewFile %s %s\n", (readonly?"read":"write"), fileName.c_str());
 #endif
 		return true;
 	}
 	else
 	{
-#if LOG_DEBUG_WRITE
-		printf("FAILED to open save file: %s\n", filename.str().c_str());
+#if LOG_DEBUG_FILE_WRITE
+		printf("cDeviceLogCSV::OpenNewFile FAILED to open save file: %s\n", fileName.c_str());
 #endif
 		m_logs.erase(log.dataId);
 		return false;
