@@ -33,7 +33,7 @@ uint32_t                    g_comm_time_ms = 0;
 bool                        g_loggerEnabled = false;
 uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
-uint64_t                    g_ermcBits = 0;
+ermc_t                      g_ermc = {0};
 
 
 void globals_init(void)
@@ -475,6 +475,8 @@ uint64_t evbDidToErmcBit(uint32_t dataId)
 {
 	switch (dataId)
 	{
+		case DID_EVB_STATUS:			return ERMC_BITS_STATUS;
+		case DID_EVB_DEBUG_ARRAY:       return ERMC_BITS_DEBUG_ARRAY;
 		case DID_WHEEL_ENCODER:         return ERMC_BITS_WHEEL_ENCODER;
         default:                        return 0;
 	}
