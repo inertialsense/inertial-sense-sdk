@@ -11,9 +11,21 @@ from numpy import dot
 from numpy import pi
 import numpy as np
 from tqdm import tqdm
+import numpy.ctypeslib as ctl
+from ctypes import *
+import sys
+import os
+sys.path.append(
+    os.path.dirname(os.path.realpath(__file__))
+    + '/../../../../../../devel/lib')
 
 # import pylib.plotTools as pt
-
+lib_path = os.path.dirname(os.path.realpath(__file__)) + '/../../../../../../devel/lib'
+#libIS = CDLL('libInertialSense.so')
+#libIS_ros = CDLL('libinertial_sense_ros.so')
+libIS = ctl.load_library('libInertialSense.so', lib_path) 
+libIS_ros = ctl.load_library('libinertial_sense_ros.so', lib_path) 
+clib = CDLL('libc.so.6')
 
 def quatInit():
     q = np.zeros(4)
@@ -133,66 +145,70 @@ def quatNLerp( q1, q2, blend):
 #  *
 #  * Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 def quat2euler( q ):
-    theta = np.zeros(3)
-    
-    theta[0] = np.arctan2( 2 * (q[0]*q[1] + q[2]*q[3]), 1 - 2 * (q[1]*q[1] + q[2]*q[2]) )
-    theta[1] = np.arcsin(  2 * (q[0]*q[2] - q[3]*q[1]) )
-    theta[2] = np.arctan2( 2 * (q[0]*q[3] + q[1]*q[2]), 1 - 2 * (q[2]*q[2] + q[3]*q[3]) )
+    if len(np.shape(q)) == 1:
+        q = np.expand_dims(q, axis = 0)
+        array = 0
+    else:
+        array = 1
+    # theta = np.empty(shape=(np.shape(q)[0],3))
+    # theta[:,0] = np.arctan2( 2 * (q[:,0]*q[:,1] + q[:,2]*q[:,3]), 1 - 2 * (q[:,1]*q[:,1] + q[:,2]*q[:,2]) )
+    # theta[:,1] = np.arcsin(  2 * (q[:,0]*q[:,2] - q[:,3]*q[:,1]) )
+    # theta[:,2] = np.arctan2( 2 * (q[:,0]*q[:,3] + q[:,1]*q[:,2]), 1 - 2 * (q[:,2]*q[:,2] + q[:,3]*q[:,3]) )
+
+    # Calling quat2euler from ISPose.c
+    argtype = np.float32
+    theta = np.empty(shape=(np.shape(q)[0],3), dtype=argtype)
+    py_quat2euler = libIS.quat2euler
+    py_quat2euler.argtypes = [
+        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous'), 
+        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous') ]
+    q = q.astype(argtype)
+    for i in range(0, np.shape(q)[0]):
+        py_quat2euler(q[i,:], theta[i,:])
+
+    if array == 0:
+        theta = np.squeeze(theta)
+
     return theta
-
-def quat2eulerArray( q ):
-    theta = np.empty((np.shape(q)[0],3))
-    
-    theta[:,0] = np.arctan2( 2 * (q[:,0]*q[:,1] + q[:,2]*q[:,3]), 1 - 2 * (q[:,1]*q[:,1] + q[:,2]*q[:,2]) )
-    theta[:,1] = np.arcsin(  2 * (q[:,0]*q[:,2] - q[:,3]*q[:,1]) )
-    theta[:,2] = np.arctan2( 2 * (q[:,0]*q[:,3] + q[:,1]*q[:,2]), 1 - 2 * (q[:,2]*q[:,2] + q[:,3]*q[:,3]) )
-    return theta
-
-
 
 #  * This will convert from euler angles to quaternion vector
-#  * phi, theta, psi -> q(4,1)
+#  * [phi, theta, psi] -> q(4,1)
 #  * euler angles in radians
 def euler2quat( euler ):
-    q = np.zeros(4)
-    hphi = euler[0] * 0.5
-    hthe = euler[1] * 0.5
-    hpsi = euler[2] * 0.5
+    if len(np.shape(euler)) == 1:
+        euler = np.expand_dims(euler, axis = 0)
+        array = 0
+    else:
+        array = 1
+    # q = np.zeros((np.shape(euler)[0],4))
+    # hphi = euler[:,0] * 0.5
+    # hthe = euler[:,1] * 0.5
+    # hpsi = euler[:,2] * 0.5
+    # shphi = np.sin(hphi)
+    # chphi = np.cos(hphi)
+    # shthe = np.sin(hthe)
+    # chthe = np.cos(hthe)
+    # shpsi = np.sin(hpsi)
+    # chpsi = np.cos(hpsi)
+    # q[:,0] = chphi * chthe * chpsi + shphi * shthe * shpsi
+    # q[:,1] = shphi * chthe * chpsi - chphi * shthe * shpsi
+    # q[:,2] = chphi * shthe * chpsi + shphi * chthe * shpsi
+    # q[:,3] = chphi * chthe * shpsi - shphi * shthe * chpsi
 
-    shphi = np.sin(hphi)
-    chphi = np.cos(hphi)
+    # Calling euler2quat from ISPose.c
+    argtype = np.float32
+    q = np.empty(shape=(np.shape(euler)[0],4), dtype=argtype)
+    py_euler2quat = libIS.euler2quat
+    py_euler2quat.argtypes = [
+        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous'), 
+        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous') ]
+    euler = euler.astype(argtype)
+    for i in range(0, np.shape(euler)[0]):
+        py_euler2quat(euler[i,:], q[i,:])
 
-    shthe = np.sin(hthe)
-    chthe = np.cos(hthe)
+    if array == 0:
+        q = np.squeeze(q)
 
-    shpsi = np.sin(hpsi)
-    chpsi = np.cos(hpsi)
-
-    q[0] = chphi * chthe * chpsi + shphi * shthe * shpsi
-    q[1] = shphi * chthe * chpsi - chphi * shthe * shpsi
-    q[2] = chphi * shthe * chpsi + shphi * chthe * shpsi
-    q[3] = chphi * chthe * shpsi - shphi * shthe * chpsi
-    return q
-
-def euler2quatArray( euler ):
-    q = np.zeros((np.shape(euler)[0],4))
-    hphi = euler[:,0] * 0.5
-    hthe = euler[:,1] * 0.5
-    hpsi = euler[:,2] * 0.5
-
-    shphi = np.sin(hphi)
-    chphi = np.cos(hphi)
-
-    shthe = np.sin(hthe)
-    chthe = np.cos(hthe)
-
-    shpsi = np.sin(hpsi)
-    chpsi = np.cos(hpsi)
-
-    q[:,0] = chphi * chthe * chpsi + shphi * shthe * shpsi
-    q[:,1] = shphi * chthe * chpsi - chphi * shthe * shpsi
-    q[:,2] = chphi * shthe * chpsi + shphi * chthe * shpsi
-    q[:,3] = chphi * chthe * shpsi - shphi * shthe * chpsi
     return q
 
 # NE to heading/body frame
@@ -436,6 +452,18 @@ def lla2ecef( lla, metric=True):
 #  lla[1] = longitude (decimal degree)
 #  lla[2] = msl altitude (m)
 def lla2ned( llaRef, lla ):
+
+    py_lla2ned = libIS.llaDeg2ned_d
+    py_lla2ned.argtypes = [ ctl.ndpointer(np.float64, flags = 'aligned, c_contiguous'), 
+                            ctl.ndpointer(np.float64, flags = 'aligned, c_contiguous'),
+                            ctl.ndpointer(np.float32, flags = 'aligned, c_contiguous') ]
+
+    ned1 = np.zeros(np.shape(lla), dtype=np.float32)
+    for i in range(0,np.shape(lla)[0]):
+        py_lla2ned(llaRef, lla[i,:], ned1[i,:])
+
+
+
     a2d = 111120.0      # = DEG2RAD * earth_radius_in_meters
 
     deltaLLA = np.zeros(np.shape(lla))    
@@ -917,6 +945,20 @@ if __name__ == '__main__':
 
     q3 = qmult(q1, q2)
 
+
+    q0 = q[0, :]
+    print("q =", q0)
+    eul = quat2euler(q0)
+    print("eul =", eul)
+    quat = euler2quat(eul)
+    print("q restored =", quat)
+
+    print("q array =", q1)
+    eul = quat2euler(q1)
+    print("eul array =", eul)
+    quat = euler2quat(eul)
+    print("q array restored =", quat)
+
     print("q2 =", q2)
     print("math =", qmult(qinv(q1), q3))
     assert np.sqrt(np.sum(np.square(qmult(qinv(q1), q3) - q2))) < 1e-8
@@ -927,5 +969,23 @@ if __name__ == '__main__':
     qarr = qarr * 1.0/norm(qarr, axis=2)[:,:,None]
     mu = meanOfQuatArray(qarr)
     print(mu)
+
+    # Test libc function binding
+    print('\ntesting clib.memcpy ...\n')
+    clib.memcpy.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'),
+        c_size_t]
+    clib.memcpy.restype = c_void_p
+    N = 4
+    size_float64 = 8
+    arr_from = np.arange(N * 1).astype(np.float64)
+    arr_to = np.empty(shape=N, dtype=np.float64)
+    print('arr_from:', arr_from)
+    print('arr_to:', arr_to)
+    print('\ncalling clib.memcpy ...\n')
+    clib.memcpy(arr_to, arr_from, N * size_float64)
+    print('arr_from:', arr_from)
+    print('arr_to:', arr_to)
 
     pass
