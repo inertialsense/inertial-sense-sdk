@@ -719,7 +719,7 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 // Parse NMEA Functions
 //////////////////////////////////////////////////////////////////////////
 
-uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[NUM_COM_PORTS])
+uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[NUM_COM_PORTS], uint32_t *asciiPeriodPPIMU)
 {
 	if(pHandle >= NUM_COM_PORTS)
 	{
@@ -737,6 +737,9 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 	if(*ptr!=','){ tmp.pimu = atoi(ptr);	}	
 	ptr = ASCII_find_next_field(ptr);			// PPIMU
 	if(*ptr!=','){ tmp.ppimu = atoi(ptr);	}
+
+	if (asciiPeriodPPIMU) { *asciiPeriodPPIMU = (uint32_t)_MAX(tmp.pimu, tmp.ppimu); }	// Global ascii IMU broadcast period
+
 	ptr = ASCII_find_next_field(ptr);			// PINS1
 	if(*ptr!=','){ tmp.pins1 = atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PINS2
@@ -757,6 +760,7 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 	if(*ptr!=','){ tmp.gpzda = atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// pashr
 	if(*ptr!=','){ tmp.pashr = atoi(ptr);	}
+
 		
 	// Copy tmp to corresponding port(s)
 	switch(options&RMC_OPTIONS_PORT_MASK)
