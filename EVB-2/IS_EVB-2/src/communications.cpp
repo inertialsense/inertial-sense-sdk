@@ -336,6 +336,12 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 }
 
 
+void step_broadcast_data(void)
+{
+		
+}
+
+
 void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm)
 {
 	is_evb_log_stream stm = {};

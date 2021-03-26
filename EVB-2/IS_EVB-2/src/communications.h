@@ -38,6 +38,7 @@ void uINS_stream_stop_all(void);
 void uINS_stream_enable_std(void);
 void uINS_stream_enable_PPD(void);
 
+void step_broadcast_data(void);
 void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
 
 void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);

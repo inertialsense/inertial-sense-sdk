@@ -60,6 +60,9 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
 
     // Read buttons and update LEDs
     step_user_interface(g_comm_time_ms);
+
+    // Stream DIDs data sets
+    step_broadcast_data();
 }
 
 
