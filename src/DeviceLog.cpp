@@ -109,7 +109,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
     {
         double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
         m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
-    }
+	}
     return true;
 }
 
@@ -180,15 +180,15 @@ bool cDeviceLog::OpenNewSaveFile()
 
 	if (m_pFile && m_pFile->isOpened())
 	{
-#if LOG_DEBUG_WRITE
-		printf("Opened save file: %s\n", filename.str().c_str());
+#if LOG_DEBUG_FILE_WRITE
+		printf("cDeviceLog::OpenNewSaveFile %s\n", fileName.c_str());
 #endif
 		return true;
 	}
 	else
 	{
-#if LOG_DEBUG_WRITE
-		printf("FAILED to open save file: %s\n", filename.str().c_str());
+#if LOG_DEBUG_FILE_WRITE
+		printf("cDeviceLog::OpenNewSaveFile FAILED %s\n", fileName.c_str());
 #endif
 		return false;
 	}
@@ -211,15 +211,15 @@ bool cDeviceLog::OpenNextReadFile()
 	if (m_pFile)
 	{
 
-#if LOG_DEBUG_READ
-		printf("File opened: %s\n", m_fileName.c_str());
+#if LOG_DEBUG_FILE_READ
+		printf("cDeviceLog::OpenNextReadFile %s\n", m_fileName.c_str());
 #endif
 		return true;
 	}
 	else
 	{
-#if LOG_DEBUG_READ
-		printf("FAILED to open file: %s\n", m_fileName.c_str());
+#if LOG_DEBUG_FILE_READ
+		printf("cDeviceLog::OpenNextReadFile FAILED %s\n", m_fileName.c_str());
 #endif
 		return false;
 	}

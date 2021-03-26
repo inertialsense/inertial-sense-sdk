@@ -56,10 +56,10 @@ void cDataChunk::SetName(const char name[4])
 }
 
 
-bool cDataChunk::PushBack(uint8_t* d1, uint32_t d1Size, uint8_t* d2, uint32_t d2Size)
+bool cDataChunk::PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2, int32_t d2Size)
 {
 	// Ensure data will fit
-	uint32_t count = d1Size + d2Size;
+	int32_t count = d1Size + d2Size;
 	if (m_dataHead == NULLPTR ||
 		count > GetBuffFree())
 	{
@@ -88,7 +88,7 @@ uint8_t* cDataChunk::GetDataPtr()
 }
 
 
-bool cDataChunk::PopFront(uint32_t size)
+bool cDataChunk::PopFront(int32_t size)
 {
 	assert(m_dataHead != NULLPTR);
 
@@ -141,11 +141,11 @@ int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber)
 	// Write chunk data to file
 	nBytes += static_cast<int32_t>(pFile->write(m_dataHead, m_hdr.dataSize));
 
-#if LOG_DEBUG_WRITE
+#if LOG_DEBUG_CHUNK_WRITE
 	static int totalBytes = 0;
 	totalBytes += nBytes;
-	printf("%d : %d  -  %x %d", totalBytes, nBytes, m_Hdr.marker, m_Hdr.dataSize);
-	if (nBytes != (headerSize + (int)m_Hdr.dataSize))
+	printf("cDataChunk::WriteToFile %d : %d  -  %x %d", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
+	if (nBytes != (sizeof(sChunkHeader) + (int)m_hdr.dataSize))
 		printf("ERROR WRITING!");
 	printf("\n");
 #endif
@@ -196,14 +196,14 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile)
 	m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
 	nBytes += GetDataSize();
 
-#if LOG_DEBUG_READ
+#if LOG_DEBUG_CHUNK_READ
 	static int totalBytes = 0;
 	totalBytes += nBytes;
-	printf("%d : %d  -  %x %d  ", totalBytes, nBytes, m_Hdr.marker, m_Hdr.dataSize);
-	if ((nBytes > 0) && (m_Hdr.marker != DATA_CHUNK_MARKER))
+	printf("cDataChunk::ReadFromFile %d : %d  -  %x %d  ", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
+	if ((nBytes > 0) && (m_hdr.marker != DATA_CHUNK_MARKER))
 	{
 		printf("MARKER MISMATCH!");
-}
+	}
 	printf("\n");
 #endif
 
