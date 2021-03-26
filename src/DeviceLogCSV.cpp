@@ -50,7 +50,11 @@ void cDeviceLogCSV::InitDeviceForReading()
 		const char* dataSet = cISDataMappings::GetDataSetName(id);
 		if (dataSet != NULL)
 		{
-			string dataSetRegex = "LOG_SN" + to_string(m_devInfo.serialNumber) + ".*?" + string(dataSet) + "\\.csv$";
+			string dataSetRegex = string(dataSet) + "\\.csv$";
+			if (m_devInfo.serialNumber > 0 && m_devInfo.serialNumber < 4294967295)	// < 0xFFFFFFFF
+			{	// Include serial number if valid
+				dataSetRegex = "LOG_SN" + to_string(m_devInfo.serialNumber) + ".*?" + dataSetRegex;
+			}
 			vector<ISFileManager::file_info_t> infos;
 			vector<string> files;
 			ISFileManager::GetDirectorySpaceUsed(m_directory, dataSetRegex, infos, false, false);
