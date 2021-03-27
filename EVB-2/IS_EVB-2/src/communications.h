@@ -25,6 +25,8 @@ extern bool                     g_usb_cdc_open;
 
 typedef void(*pfnHandleUinsData)(p_data_hdr_t &dataHdr, uDatasets &data);
 typedef void(*pfnHandleHostData)(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort);
+typedef void(*pfnHandleBroadcst)(is_comm_instance_t *comm, uint32_t didSendNow);
+typedef uint64_t(*pfnHandleDid2Ermc)(uint32_t dataId);
 
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin );
 int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
@@ -38,15 +40,17 @@ void uINS_stream_stop_all(void);
 void uINS_stream_enable_std(void);
 void uINS_stream_enable_PPD(void);
 
-void step_broadcast_data(is_comm_instance_t &comm);
+void broadcastRmcMessage(is_comm_instance_t *comm, uint32_t did, uint32_t size, void* data, uint32_t &time_ms, uint32_t didSendNow);
+void step_broadcast_data(is_comm_instance_t *comm, uint32_t didSendNow=0);
 void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
+void setErmcBroadcastBits(is_comm_instance_t *comm, uint32_t srcPort, uint32_t bits);
 
 void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
 void step_com_bridge(is_comm_instance_t &comm);
 void comunications_set_uins_data_callback( pfnHandleUinsData pfn );
 void comunications_set_host_data_callback( pfnHandleHostData pfn );
-void communications_init(void);
+void communications_init( pfnHandleBroadcst pfnHandleBroadcst = NULLPTR, pfnHandleDid2Ermc pfnDid2Ermc = NULLPTR );
 
 /*CAN Message*/
 typedef struct PACKED

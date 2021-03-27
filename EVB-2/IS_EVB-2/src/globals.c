@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 dev_info_t                  g_evbDevInfo = {0};
 wheel_encoder_t				g_wheelEncoder = {0};
 evb_status_t                g_status = {0};
+bool                        g_statusToWlocal = true;
 evb_flash_cfg_t*            g_flashCfg;
 nvr_manage_t                g_nvr_manage_config;
 nvm_config_t                g_userPage = {0};
@@ -467,17 +468,4 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));
-}
-
-
-// Convert DID to message out control mask
-uint64_t evbDidToErmcBit(uint32_t dataId)
-{
-	switch (dataId)
-	{
-		case DID_EVB_STATUS:			return ERMC_BITS_STATUS;
-		case DID_EVB_DEBUG_ARRAY:       return ERMC_BITS_DEBUG_ARRAY;
-		case DID_WHEEL_ENCODER:         return ERMC_BITS_WHEEL_ENCODER;
-        default:                        return 0;
-	}
 }

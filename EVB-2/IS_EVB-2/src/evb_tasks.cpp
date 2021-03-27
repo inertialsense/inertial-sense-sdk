@@ -44,6 +44,11 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
     vTaskDelay(task.periodMs);
 
     g_comm_time_ms = time_msec();
+
+    if (g_statusToWlocal)
+    {
+        g_status.timeOfWeekMs = g_comm_time_ms;
+    }
     
 #ifdef ENABLE_WDT
     // Feed Watchdog to prevent reset
@@ -62,7 +67,7 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
     step_user_interface(g_comm_time_ms);
 
     // Stream DIDs data sets
-    step_broadcast_data(comm);
+    step_broadcast_data(&comm);
 }
 
 

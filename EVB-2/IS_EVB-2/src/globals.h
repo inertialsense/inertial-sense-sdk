@@ -34,7 +34,7 @@ extern "C" {
 #define UBLOX_LOG_ENABLE			    0
 
 // EVB Realtime Message Controller (ERMC) - message broadcast mechanism. 
-// #define ERMC_BITS_DEV_INFO              0x0000000000000001   // Doesn't exist yet
+#define ERMC_BITS_DEV_INFO              0x0000000000000001
 #define ERMC_BITS_STATUS                0x0000000000000002
 #define ERMC_BITS_WHEEL_ENCODER         0x0000000000000004
 #define ERMC_BITS_DEBUG_ARRAY           0x0000000000000100
@@ -66,7 +66,7 @@ typedef struct PACKED      //
 {
     uint64_t                bits;
     uint32_t				options;
-    uint8_t                 periodMultiple[DID_COUNT];
+    uint32_t                periodMultiple[DID_COUNT];
 } ermc_t;
 
 // All Flash Parameters - config max size is 8K for ARM
@@ -99,6 +99,7 @@ extern uint8_t                      g_hdw_detect;
 extern dev_info_t                   g_evbDevInfo;
 extern wheel_encoder_t              g_wheelEncoder;
 extern evb_status_t                 g_status;
+extern bool                         g_statusToWlocal;
 extern evb_flash_cfg_t*             g_flashCfg;
 extern nvr_manage_t                 g_nvr_manage_config;
 extern nvm_config_t                 g_userPage;
@@ -128,8 +129,6 @@ void nvr_init(void);
 void nvr_slow_maintenance(void);
 
 int error_check_config(evb_flash_cfg_t *cfg);
-
-uint64_t evbDidToErmcBit(uint32_t dataId);
 
 #ifdef __cplusplus
 }
