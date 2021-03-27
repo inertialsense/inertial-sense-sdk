@@ -11,22 +11,8 @@ from numpy import dot
 from numpy import pi
 import numpy as np
 from tqdm import tqdm
-import numpy.ctypeslib as ctl
-from ctypes import *
-import sys
-import os
 # import pylib.plotTools as pt
 
-# TODO: need proper path and library name for Windows
-# Suggestion: place both Linux and Windows library in pylib directory
-# and stop using system-dependent paths
-if 'nux' in sys.platform:
-    lib_path = os.path.dirname(os.path.realpath(__file__)) + '/../../../../../../devel/lib'
-    lib_name = 'libInertialSense.so'
-elif 'win' in sys.platform:
-    lib_path = os.path.dirname(os.path.realpath(__file__)) + '/../../VS_project/Release'
-    lib_name = 'libInertialSense.so'
-libIS = ctl.load_library(lib_name, lib_path) 
 
 def quatInit():
     q = np.zeros(4)
@@ -151,21 +137,10 @@ def quat2euler( q ):
         array = 0
     else:
         array = 1
-    # theta = np.empty(shape=(np.shape(q)[0],3))
-    # theta[:,0] = np.arctan2( 2 * (q[:,0]*q[:,1] + q[:,2]*q[:,3]), 1 - 2 * (q[:,1]*q[:,1] + q[:,2]*q[:,2]) )
-    # theta[:,1] = np.arcsin(  2 * (q[:,0]*q[:,2] - q[:,3]*q[:,1]) )
-    # theta[:,2] = np.arctan2( 2 * (q[:,0]*q[:,3] + q[:,1]*q[:,2]), 1 - 2 * (q[:,2]*q[:,2] + q[:,3]*q[:,3]) )
-
-    # Calling quat2euler from ISPose.c
-    argtype = np.float32
-    theta = np.empty(shape=(np.shape(q)[0],3), dtype=argtype)
-    py_quat2euler = libIS.quat2euler
-    py_quat2euler.argtypes = [
-        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous'), 
-        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous') ]
-    q = q.astype(argtype)
-    for i in range(0, np.shape(q)[0]):
-        py_quat2euler(q[i,:], theta[i,:])
+    theta = np.empty(shape=(np.shape(q)[0],3))
+    theta[:,0] = np.arctan2( 2 * (q[:,0]*q[:,1] + q[:,2]*q[:,3]), 1 - 2 * (q[:,1]*q[:,1] + q[:,2]*q[:,2]) )
+    theta[:,1] = np.arcsin(  2 * (q[:,0]*q[:,2] - q[:,3]*q[:,1]) )
+    theta[:,2] = np.arctan2( 2 * (q[:,0]*q[:,3] + q[:,1]*q[:,2]), 1 - 2 * (q[:,2]*q[:,2] + q[:,3]*q[:,3]) )
 
     if array == 0:
         theta = np.squeeze(theta)
@@ -181,31 +156,23 @@ def euler2quat( euler ):
         array = 0
     else:
         array = 1
-    # q = np.zeros((np.shape(euler)[0],4))
-    # hphi = euler[:,0] * 0.5
-    # hthe = euler[:,1] * 0.5
-    # hpsi = euler[:,2] * 0.5
-    # shphi = np.sin(hphi)
-    # chphi = np.cos(hphi)
-    # shthe = np.sin(hthe)
-    # chthe = np.cos(hthe)
-    # shpsi = np.sin(hpsi)
-    # chpsi = np.cos(hpsi)
-    # q[:,0] = chphi * chthe * chpsi + shphi * shthe * shpsi
-    # q[:,1] = shphi * chthe * chpsi - chphi * shthe * shpsi
-    # q[:,2] = chphi * shthe * chpsi + shphi * chthe * shpsi
-    # q[:,3] = chphi * chthe * shpsi - shphi * shthe * chpsi
+    q = np.zeros((np.shape(euler)[0],4))
 
-    # Calling euler2quat from ISPose.c
-    argtype = np.float32
-    q = np.empty(shape=(np.shape(euler)[0],4), dtype=argtype)
-    py_euler2quat = libIS.euler2quat
-    py_euler2quat.argtypes = [
-        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous'), 
-        ctl.ndpointer(dtype=argtype, ndim=1, flags='c_contiguous') ]
-    euler = euler.astype(argtype)
-    for i in range(0, np.shape(euler)[0]):
-        py_euler2quat(euler[i,:], q[i,:])
+    hphi = euler[:,0] * 0.5
+    hthe = euler[:,1] * 0.5
+    hpsi = euler[:,2] * 0.5
+
+    shphi = np.sin(hphi)
+    chphi = np.cos(hphi)
+    shthe = np.sin(hthe)
+    chthe = np.cos(hthe)
+    shpsi = np.sin(hpsi)
+    chpsi = np.cos(hpsi)
+
+    q[:,0] = chphi * chthe * chpsi + shphi * shthe * shpsi
+    q[:,1] = shphi * chthe * chpsi - chphi * shthe * shpsi
+    q[:,2] = chphi * shthe * chpsi + shphi * chthe * shpsi
+    q[:,3] = chphi * chthe * shpsi - shphi * shthe * chpsi
 
     if array == 0:
         q = np.squeeze(q)
@@ -454,17 +421,6 @@ def lla2ecef( lla, metric=True):
 #  lla[2] = msl altitude (m)
 def lla2ned( llaRef, lla ):
 
-    py_lla2ned = libIS.llaDeg2ned_d
-    py_lla2ned.argtypes = [ ctl.ndpointer(np.float64, flags = 'aligned, c_contiguous'), 
-                            ctl.ndpointer(np.float64, flags = 'aligned, c_contiguous'),
-                            ctl.ndpointer(np.float32, flags = 'aligned, c_contiguous') ]
-
-    ned1 = np.zeros(np.shape(lla), dtype=np.float32)
-    for i in range(0,np.shape(lla)[0]):
-        py_lla2ned(llaRef, lla[i,:], ned1[i,:])
-
-
-
     a2d = 111120.0      # = DEG2RAD * earth_radius_in_meters
 
     deltaLLA = np.zeros(np.shape(lla))    
@@ -659,9 +615,9 @@ def rotate_ecef2ned( latlon ):
 # body attitude relative to NED frame
 def enu2nedEuler(eul_e2b):
     q_n2e = euler2quat(np.array([np.pi, 0, np.pi/2]))
-    q_e2b = euler2quatArray(eul_e2b)
+    q_e2b = euler2quat(eul_e2b)
     q_n2b = mul_Quat_Quat_Array(q_e2b, q_n2e)
-    eul_n2b = quat2eulerArray(quat)
+    eul_n2b = quat2euler(quat)
     return eul_n2b
 
 
