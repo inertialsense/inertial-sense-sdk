@@ -15,17 +15,18 @@ import numpy.ctypeslib as ctl
 from ctypes import *
 import sys
 import os
-sys.path.append(
-    os.path.dirname(os.path.realpath(__file__))
-    + '/../../../../../../devel/lib')
-
 # import pylib.plotTools as pt
-lib_path = os.path.dirname(os.path.realpath(__file__)) + '/../../../../../../devel/lib'
-#libIS = CDLL('libInertialSense.so')
-#libIS_ros = CDLL('libinertial_sense_ros.so')
-libIS = ctl.load_library('libInertialSense.so', lib_path) 
-libIS_ros = ctl.load_library('libinertial_sense_ros.so', lib_path) 
-clib = CDLL('libc.so.6')
+
+# TODO: need proper path and library name for Windows
+# Suggestion: place both Linux and Windows library in pylib directory
+# and stop using system-dependent paths
+if 'nux' in sys.platform:
+    lib_path = os.path.dirname(os.path.realpath(__file__)) + '/../../../../../../devel/lib'
+    lib_name = 'libInertialSense.so'
+elif 'win' in sys.platform:
+    lib_path = os.path.dirname(os.path.realpath(__file__)) + '/../../VS_project/Release'
+    lib_name = 'libInertialSense.so'
+libIS = ctl.load_library(lib_name, lib_path) 
 
 def quatInit():
     q = np.zeros(4)
@@ -969,23 +970,5 @@ if __name__ == '__main__':
     qarr = qarr * 1.0/norm(qarr, axis=2)[:,:,None]
     mu = meanOfQuatArray(qarr)
     print(mu)
-
-    # Test libc function binding
-    print('\ntesting clib.memcpy ...\n')
-    clib.memcpy.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'),
-        c_size_t]
-    clib.memcpy.restype = c_void_p
-    N = 4
-    size_float64 = 8
-    arr_from = np.arange(N * 1).astype(np.float64)
-    arr_to = np.empty(shape=N, dtype=np.float64)
-    print('arr_from:', arr_from)
-    print('arr_to:', arr_to)
-    print('\ncalling clib.memcpy ...\n')
-    clib.memcpy(arr_to, arr_from, N * size_float64)
-    print('arr_from:', arr_from)
-    print('arr_to:', arr_to)
 
     pass
