@@ -346,6 +346,8 @@ uint64_t evbDidToErmcBit(uint32_t dataId)
 {
 	switch (dataId)
 	{
+		case DID_EVB_DEV_INFO:			return ERMC_BITS_DEV_INFO;
+		case DID_EVB_FLASH_CFG:			return ERMC_BITS_FLASH_CFG;
 		case DID_EVB_STATUS:			return ERMC_BITS_STATUS;
 		case DID_EVB_DEBUG_ARRAY:       return ERMC_BITS_DEBUG_ARRAY;
 		case DID_WHEEL_ENCODER:         return ERMC_BITS_WHEEL_ENCODER;
@@ -385,7 +387,7 @@ void step_broadcast_data(is_comm_instance_t *comm, uint32_t didSendNow)
 	
 	// Broadcast messages
 	broadcastRmcMessage(comm, DID_DEV_INFO, sizeof(dev_info_t), (void*)&g_evbDevInfo, time_ms_dev_info, didSendNow);
-	broadcastRmcMessage(comm, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), (void*)&g_flashCfg, time_ms_flash_cfg, didSendNow);
+	broadcastRmcMessage(comm, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), (void*)g_flashCfg, time_ms_flash_cfg, didSendNow);
 	broadcastRmcMessage(comm, DID_EVB_RTOS_INFO, sizeof(evb_rtos_info_t), (void*)&g_rtos, time_ms_rtos, didSendNow);
 	broadcastRmcMessage(comm, DID_EVB_STATUS, sizeof(evb_status_t), (void*)&g_status, time_ms_status, didSendNow);
 	broadcastRmcMessage(comm, DID_EVB_DEBUG_ARRAY, sizeof(debug_array_t), (void*)&g_debug, time_ms_debug, didSendNow);
@@ -681,7 +683,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 
 // Set ERMC broadcast control bits
-void setErmcBroadcastBits(is_comm_instance_t *comm, uint32_t srcPort, uint32_t bits)
+void setErmcBroadcastBits(is_comm_instance_t *comm, uint32_t srcPort, uint64_t bits)
 {
 	uint32_t bc_period_multiple = *((int32_t*)(comm->dataPtr));
 	if(bc_period_multiple)

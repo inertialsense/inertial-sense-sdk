@@ -35,8 +35,9 @@ extern "C" {
 
 // EVB Realtime Message Controller (ERMC) - message broadcast mechanism. 
 #define ERMC_BITS_DEV_INFO              0x0000000000000001
-#define ERMC_BITS_STATUS                0x0000000000000002
-#define ERMC_BITS_WHEEL_ENCODER         0x0000000000000004
+#define ERMC_BITS_FLASH_CFG             0x0000000000000002
+#define ERMC_BITS_STATUS                0x0000000000000004
+#define ERMC_BITS_WHEEL_ENCODER         0x0000000000000008
 #define ERMC_BITS_DEBUG_ARRAY           0x0000000000000100
 
 

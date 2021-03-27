@@ -43,7 +43,7 @@ void uINS_stream_enable_PPD(void);
 void broadcastRmcMessage(is_comm_instance_t *comm, uint32_t did, uint32_t size, void* data, uint32_t &time_ms, uint32_t didSendNow);
 void step_broadcast_data(is_comm_instance_t *comm, uint32_t didSendNow=0);
 void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm);
-void setErmcBroadcastBits(is_comm_instance_t *comm, uint32_t srcPort, uint32_t bits);
+void setErmcBroadcastBits(is_comm_instance_t *comm, uint32_t srcPort, uint64_t bits);
 
 void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
