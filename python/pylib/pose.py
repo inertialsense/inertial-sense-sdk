@@ -35,21 +35,42 @@ def quatInv( q ):
 #  * References: 
 #  *    http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 #  *    http://physicsforgames.blogspot.com/2010/02/quaternions.html
-def mul_Quat_Quat( q1, q2 ):
-    result = np.zeros(4)
-    
-    result[0] = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3]
-    result[1] = q1[0]*q2[1] + q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2]
-    result[2] = q1[0]*q2[2] + q1[1]*q2[3] + q1[2]*q2[0] - q1[3]*q2[1]
-    result[3] = q1[0]*q2[3] - q1[1]*q2[2] + q1[2]*q2[1] + q1[3]*q2[0]
-    return result
+def mul_Quat_Quat(q1, q2):
+    if len(np.shape(q1)) == 1:
+        q1 = np.expand_dims(q1, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(q2)) == 1:
+        q2 = np.expand_dims(q2, axis = 0)
+    else:
+        array = 1
+    n1 = np.shape(q1)[0]
+    n2 = np.shape(q2)[0]
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
 
-def mul_Quat_Quat_Array ( q1, q2 ):
-    result = np.empty((np.shape(q1)[0],4))
-    result[:,0] = q1[:,0]*q2[:,0] - q1[:,1]*q2[:,1] - q1[:,2]*q2[:,2] - q1[:,3]*q2[:,3]
-    result[:,1] = q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:,2]
-    result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] - q1[:,3]*q2[:,1]
-    result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] + q1[:,3]*q2[:,0]
+    result = np.empty( (max(n1,n2),4) )
+    if n1 == n2:
+        # Object by object multiplication for 2 n-arrays of quaternions. Result: n-array of quaternions
+        result[:,0] = q1[:,0]*q2[:,0] - q1[:,1]*q2[:,1] - q1[:,2]*q2[:,2] - q1[:,3]*q2[:,3]
+        result[:,1] = q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:,2]
+        result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] - q1[:,3]*q2[:,1]
+        result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] + q1[:,3]*q2[:,0]
+    elif n1 == 1:
+        # Quaternion q1 multiplied by each quaternion in n-array of quaternions q2. Result: n-array of quaternions
+        result[:,0] = q1[0,0]*q2[:,0] - q1[0,1]*q2[:,1] - q1[0,2]*q2[:,2] - q1[0,3]*q2[:,3]
+        result[:,1] = q1[0,0]*q2[:,1] + q1[0,1]*q2[:,0] - q1[0,2]*q2[:,3] + q1[0,3]*q2[:,2]
+        result[:,2] = q1[0,0]*q2[:,2] + q1[0,1]*q2[:,3] + q1[0,2]*q2[:,0] - q1[0,3]*q2[:,1]
+        result[:,3] = q1[0,0]*q2[:,3] - q1[0,1]*q2[:,2] + q1[0,2]*q2[:,1] + q1[0,3]*q2[:,0]
+    else: # n2 == 1:
+        # Each quaternion in n-array of quaternions q1 multiplied by quaternion q2. Result: n-array of quaternions
+        result[:,0] = q1[:,0]*q2[0,0] - q1[:,1]*q2[0,1] - q1[:,2]*q2[0,2] - q1[:,3]*q2[0,3]
+        result[:,1] = q1[:,0]*q2[0,1] + q1[:,1]*q2[0,0] - q1[:,2]*q2[0,3] + q1[:,3]*q2[0,2]
+        result[:,2] = q1[:,0]*q2[0,2] + q1[:,1]*q2[0,3] + q1[:,2]*q2[0,0] - q1[:,3]*q2[0,1]
+        result[:,3] = q1[:,0]*q2[0,3] - q1[:,1]*q2[0,2] + q1[:,2]*q2[0,1] + q1[:,3]*q2[0,0]
+        
+    if array == 0:
+        result = np.squeeze(result)
 
     return result
 
@@ -616,7 +637,7 @@ def rotate_ecef2ned( latlon ):
 def enu2nedEuler(eul_e2b):
     q_n2e = euler2quat(np.array([np.pi, 0, np.pi/2]))
     q_e2b = euler2quat(eul_e2b)
-    q_n2b = mul_Quat_Quat_Array(q_e2b, q_n2e)
+    q_n2b = mul_Quat_Quat(q_e2b, q_n2e)
     eul_n2b = quat2euler(quat)
     return eul_n2b
 
@@ -901,7 +922,8 @@ if __name__ == '__main__':
     q2 = q[2:4, :]
 
     q3 = qmult(q1, q2)
-
+    q3_ = mul_Quat_Quat(q2, q1)
+    assert np.sqrt(np.sum(np.square(q3 - q3_))) < 1e-8
 
     q0 = q[0, :]
     print("q =", q0)
@@ -909,12 +931,19 @@ if __name__ == '__main__':
     print("eul =", eul)
     quat = euler2quat(eul)
     print("q restored =", quat)
+    assert np.sqrt(np.sum(np.square(q0 - quat))) < 1e-8
 
     print("q array =", q1)
     eul = quat2euler(q1)
     print("eul array =", eul)
     quat = euler2quat(eul)
     print("q array restored =", quat)
+    assert np.sqrt(np.sum(np.square(q1 - quat))) < 1e-8
+
+    quat1_ = mul_Quat_Quat(q1, q0)
+    quat2_ = mul_Quat_Quat(q0, q1)
+    quat3_ = mul_Quat_Quat(q1, q[2:5,:])
+
 
     print("q2 =", q2)
     print("math =", qmult(qinv(q1), q3))
