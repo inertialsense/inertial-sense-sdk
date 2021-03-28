@@ -54,7 +54,7 @@ def mul_Quat_Quat(q1, q2):
         array = 1
     n1 = np.shape(q1)[0]
     n2 = np.shape(q2)[0]
-    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty( (max(n1,n2),4) )
     result[:,0] = q1[:,0]*q2[:,0] - q1[:,1]*q2[:,1] - q1[:,2]*q2[:,2] - q1[:,3]*q2[:,3]
@@ -83,7 +83,7 @@ def mul_ConjQuat_Quat(q1, q2):
         array = 1
     n1 = np.shape(q1)[0]
     n2 = np.shape(q2)[0]
-    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty( (max(n1,n2),4) )
     result[:,0] = q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
@@ -112,7 +112,7 @@ def mul_Quat_ConjQuat(q1, q2):
         array = 1
     n1 = np.shape(q1)[0]
     n2 = np.shape(q2)[0]
-    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty( (max(n1,n2),4) )
     result[:,0] =  q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
@@ -140,7 +140,7 @@ def div_Quat_Quat(q1, q2):
         array = 1
     n1 = np.shape(q1)[0]
     n2 = np.shape(q2)[0]
-    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty( (max(n1,n2),4) )
     d = 1.0 / (q1[:,0]*q1[:,0] + q1[:,1]*q1[:,1] + q1[:,2]*q1[:,2] + q1[:,3]*q1[:,3])
@@ -160,8 +160,8 @@ def quat_Vec3_Vec3( v1, v2 ):
 #     Vector3_t w1, w2;
     
     # Normalize input vectors
-    w1 = v1 / np.linalg.norm(v1)
-    w2 = v2 / np.linalg.norm(v2)
+    w1 = normalize(v1)
+    w2 = normalize(v2)
  
     qResult = np.zeros(4)
     # q[1:3]
@@ -175,41 +175,89 @@ def quat_Vec3_Vec3( v1, v2 ):
     return qResult
 
 
-def normalize( v ):
-    return v / np.linalg.norm(v)
+# Compute norm of a single vector or each vector in an array
+def norm(v, axis=None):
+    return np.sqrt(np.sum(v*v, axis=axis))
 
 
-# Computationally simple means to apply quaternion rotation to a vector
-# Requires quaternion be normalized first
-def quatRotVect( q, v ):
-    t = 2.0 * np.cross(q[1:4], v)
-    result = v + q[0] * t + np.cross(q[1:4], t)
+# Normalize vector or each vector in an array
+def normalize(v, axis=None):
+    result = np.empty_like(v)
+    if len(np.shape(v)) == 1:
+        result = v / np.linalg.norm(v)
+    else:
+        vnorm = np.linalg.norm(v, axis=axis)
+        vnorm = np.expand_dims(vnorm, axis=axis)
+        result = v / vnorm
     return result
 
-def quatRotVectArray( q, v ):
+
+#  * Computationally simple means to apply quaternion rotation to a vector.
+#  * Requires quaternion be normalized first.
+#  * If quaternion describes current attitude, then rotation is body -> inertial frame.
+#  * Equivalent to a DCM.T * vector multiply.
+def quatRot(q, v):
+    if len(np.shape(q)) == 1:
+        q = np.expand_dims(q, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(v)) == 1:
+        v = np.expand_dims(v, axis = 0)
+    else:
+        array = 1
+    n1 = np.shape(q)[0]
+    n2 = np.shape(v)[0]
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions and vectors in arrays do not match"
+
+    result = np.empty( (max(n1,n2),3) )
     t = 2.0 * np.cross(q[:,1:4], v)
     result = v + (q[:,0] * t.T).T + np.cross(q[:,1:4], t)
+
+    if array == 0:
+        result = np.squeeze(result)
     return result
+
+
+#  * Computationally simple means to apply quaternion conjugate (opposite) rotation to a vector
+#  * (18 multiplies, 6 subtracts, 6 adds).  Using a DCM uses (27 multiplies, 12 adds, 6 subtracts).
+#  * Requires quaternion be normalized first.
+#  * If quaternion describes current attitude, then rotation is inertial -> body frame.
+#  * Equivalent to a DCM * vector multiply.
+def quatConjRot(q, v):
+    qc = quatConj(q)
+    return quatRot(qc, v)
 
 
 #  Find quaternion interpolation between two quaterions.  Blend must be 0 to 1.
 #  Reference:  http://physicsforgames.blogspot.com/2010/02/quaternions.html
-def quatNLerp( q1, q2, blend):
-    result = np.zeros(4)
+def quatNLerp(q1, q2, blend):
+    if len(np.shape(q1)) == 1:
+        q1 = np.expand_dims(q1, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(q2)) == 1:
+        q2 = np.expand_dims(q2, axis = 0)
+    else:
+        array = 1
+    n1 = np.shape(q1)[0]
+    n2 = np.shape(q2)[0]
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
-    dot = q1[0]*q2[0] + q1[1]*q2[1] + q1[2]*q2[2] + q1[3]*q2[3]
+    result = np.empty( (max(n1,n2),4) )
+    dot = q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
     blendI = 1.0 - blend
 
-    if dot < 0.0:
-        tmpF = np.zeros(4)
-        tmpF = -q2
-        result = blendI*q1 + blend*tmpF
-    else:
-        result = blendI*q1 + blend*q2
+    ind0 = np.asarray(np.where(dot < 0.0))[0,:]
+    ind1 = np.asarray(np.where(dot >= 0.0))[0,:]
+    result[ind0,:] = blendI*q1[ind0,:] - blend*q2[ind0,:]
+    result[ind1,:] = blendI*q1[ind1,:] + blend*q2[ind1,:]
 
-    # Normalize quaternion
-    result = result / np.linalg.norm(result)
-    
+    result = normalize(result, axis=1)
+
+    if array == 0:
+        result = np.squeeze(result)
     return result
 
 
@@ -420,7 +468,7 @@ def quatW( euler ):
 def quatRotAxis( q ):
 
     # Normalize quaternion
-    q = q / np.linalg.norm(q)
+    q = normalize(q)
 
     theta = np.arccos( q[0] ) * 2.0
     sin_a = np.sqrt( 1.0 - q[0] * q[0] )
@@ -861,9 +909,6 @@ def acc2AttAndBias(acc):
          
     return [att, bias]
 
-def norm(v, axis=None):
-    return np.sqrt(np.sum(v*v, axis=axis))
-
 # THIS FUNCTION SHALL BE DELETED
 # qmat_matrix = np.array([[[1.0, 0, 0, 0],
 #                          [0, -1.0, 0, 0],
@@ -975,12 +1020,14 @@ def meanOfQuatArray(q):
 
 if __name__ == '__main__':
     q = np.random.random((5000, 4))
-    q = q / norm(q, axis=1)[:,None]
+    q = normalize(q, axis=1)
 
     q1 = q[0:2, :]
     q2 = q[2:4, :]
     q3 = mul_Quat_Quat(q2, q1)
     q0 = q[0, :]
+
+    qq = quatNLerp(q1, q2, 0.5)
 
     print("q =", q0)
     eul = quat2euler(q0)
@@ -1013,7 +1060,7 @@ if __name__ == '__main__':
     # Find the mean Quaternion
     mu = meanOfQuat(q)
     qarr = np.random.random((5000, 25, 4))
-    qarr = qarr * 1.0/norm(qarr, axis=2)[:,:,None]
+    qarr = normalize(qarr, axis=2)
     mu = meanOfQuatArray(qarr)
     print(mu)
 
