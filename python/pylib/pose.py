@@ -19,19 +19,26 @@ def quatInit():
     q[0] = 1.0
     return q
 
+
 # Quaternion Conjugate: q* = [ w, -x, -y, -z ] of quaterion q = [ w, x, y, z ] 
 # Rotation in opposite direction.
-def quatConj( q ):
-    return r_[ q[0], -q[1], -q[2], -q[3] ]
-
-# Quaternion Inverse: q^-1 = q* / |q|^2
-def quatInv( q ):
-    return quatConj(q)/np.square(np.linalg.norm(q))
+def quatConj(q):
+    qc = np.empty_like(q)
+    if len(np.shape(q)) == 1:
+        qc[0]   = q[0]
+        qc[1:4] = -q[1:4]
+    else:
+        assert np.shape(q)[1] == 4, "Wrong shape of array of quaternions"
+        qc[:,0]   = q[:,0]
+        qc[:,1:4] = -q[:,1:4]
+    return qc
 
 
 #  * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!  
 #  * Concatenates two quaternion rotations into one.
 #  * result = q1 * q2 
+#  * Order of rotation in rotation matrix notation: R(result) = R(q1) * R(q2)
+#  * i.e. rotation by q2 followed by rotation by q1
 #  * References: 
 #  *    http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 #  *    http://physicsforgames.blogspot.com/2010/02/quaternions.html
@@ -50,42 +57,100 @@ def mul_Quat_Quat(q1, q2):
     assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
 
     result = np.empty( (max(n1,n2),4) )
-    if n1 == n2:
-        # Object by object multiplication for 2 n-arrays of quaternions. Result: n-array of quaternions
-        result[:,0] = q1[:,0]*q2[:,0] - q1[:,1]*q2[:,1] - q1[:,2]*q2[:,2] - q1[:,3]*q2[:,3]
-        result[:,1] = q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:,2]
-        result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] - q1[:,3]*q2[:,1]
-        result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] + q1[:,3]*q2[:,0]
-    elif n1 == 1:
-        # Quaternion q1 multiplied by each quaternion in n-array of quaternions q2. Result: n-array of quaternions
-        result[:,0] = q1[0,0]*q2[:,0] - q1[0,1]*q2[:,1] - q1[0,2]*q2[:,2] - q1[0,3]*q2[:,3]
-        result[:,1] = q1[0,0]*q2[:,1] + q1[0,1]*q2[:,0] - q1[0,2]*q2[:,3] + q1[0,3]*q2[:,2]
-        result[:,2] = q1[0,0]*q2[:,2] + q1[0,1]*q2[:,3] + q1[0,2]*q2[:,0] - q1[0,3]*q2[:,1]
-        result[:,3] = q1[0,0]*q2[:,3] - q1[0,1]*q2[:,2] + q1[0,2]*q2[:,1] + q1[0,3]*q2[:,0]
-    else: # n2 == 1:
-        # Each quaternion in n-array of quaternions q1 multiplied by quaternion q2. Result: n-array of quaternions
-        result[:,0] = q1[:,0]*q2[0,0] - q1[:,1]*q2[0,1] - q1[:,2]*q2[0,2] - q1[:,3]*q2[0,3]
-        result[:,1] = q1[:,0]*q2[0,1] + q1[:,1]*q2[0,0] - q1[:,2]*q2[0,3] + q1[:,3]*q2[0,2]
-        result[:,2] = q1[:,0]*q2[0,2] + q1[:,1]*q2[0,3] + q1[:,2]*q2[0,0] - q1[:,3]*q2[0,1]
-        result[:,3] = q1[:,0]*q2[0,3] - q1[:,1]*q2[0,2] + q1[:,2]*q2[0,1] + q1[:,3]*q2[0,0]
+    result[:,0] = q1[:,0]*q2[:,0] - q1[:,1]*q2[:,1] - q1[:,2]*q2[:,2] - q1[:,3]*q2[:,3]
+    result[:,1] = q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:n2,2]
+    result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] - q1[:,3]*q2[:n2,1]
+    result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] + q1[:,3]*q2[:n2,0]
         
     if array == 0:
         result = np.squeeze(result)
+    return result
 
+
+# * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!
+# * Combines two quaternion rotations into one rotation.
+# * result = quatConj(q1) * q2
+# * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
+def mul_ConjQuat_Quat(q1, q2):
+    if len(np.shape(q1)) == 1:
+        q1 = np.expand_dims(q1, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(q2)) == 1:
+        q2 = np.expand_dims(q2, axis = 0)
+    else:
+        array = 1
+    n1 = np.shape(q1)[0]
+    n2 = np.shape(q2)[0]
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
+
+    result = np.empty( (max(n1,n2),4) )
+    result[:,0] = q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
+    result[:,1] = q1[:,0]*q2[:,1] - q1[:,1]*q2[:,0] + q1[:,2]*q2[:,3] - q1[:,3]*q2[:,2]
+    result[:,2] = q1[:,0]*q2[:,2] - q1[:,1]*q2[:,3] - q1[:,2]*q2[:,0] + q1[:,3]*q2[:,1]
+    result[:,3] = q1[:,0]*q2[:,3] + q1[:,1]*q2[:,2] - q1[:,2]*q2[:,1] - q1[:,3]*q2[:,0]
+
+    if array == 0:
+        result = np.squeeze(result)
+    return result
+
+
+# * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!
+# * Combines two quaternion rotations into one rotation.
+# * result = q1 * quatConj(q2)
+# * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
+def mul_Quat_ConjQuat(q1, q2):
+    if len(np.shape(q1)) == 1:
+        q1 = np.expand_dims(q1, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(q2)) == 1:
+        q2 = np.expand_dims(q2, axis = 0)
+    else:
+        array = 1
+    n1 = np.shape(q1)[0]
+    n2 = np.shape(q2)[0]
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
+
+    result = np.empty( (max(n1,n2),4) )
+    result[:,0] =  q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
+    result[:,1] = -q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] + q1[:,2]*q2[:,3] - q1[:,3]*q2[:,2]
+    result[:,2] = -q1[:,0]*q2[:,2] - q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] + q1[:,3]*q2[:,1]
+    result[:,3] = -q1[:,0]*q2[:,3] + q1[:,1]*q2[:,2] - q1[:,2]*q2[:,1] + q1[:,3]*q2[:,0]
+
+    if array == 0:
+        result = np.squeeze(result)
     return result
 
 
 #  * Division of two Quaternions.  Order matters!!!
 #  * result = q1 / q2. 
 #  * Reference: http://www.mathworks.com/help/aeroblks/quaterniondivision.html
-def div_Quat_Quat( q1, q2 ):
-    result = np.zeros(4)
-    d = 1.0 / (q1[0]*q1[0] + q1[1]*q1[1] + q1[2]*q1[2] + q1[3]*q1[3])
+def div_Quat_Quat(q1, q2):
+    if len(np.shape(q1)) == 1:
+        q1 = np.expand_dims(q1, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(q2)) == 1:
+        q2 = np.expand_dims(q2, axis = 0)
+    else:
+        array = 1
+    n1 = np.shape(q1)[0]
+    n2 = np.shape(q2)[0]
+    assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays not matching"
 
-    result[0] = (q1[0]*q2[0] + q1[1]*q2[1] + q1[2]*q2[2] + q1[3]*q2[3]) * d
-    result[1] = (q1[0]*q2[1] - q1[1]*q2[0] - q1[2]*q2[3] + q1[3]*q2[2]) * d
-    result[2] = (q1[0]*q2[2] + q1[1]*q2[3] - q1[2]*q2[0] - q1[3]*q2[1]) * d
-    result[3] = (q1[0]*q2[3] - q1[1]*q2[2] + q1[2]*q2[1] - q1[3]*q2[0]) * d
+    result = np.empty( (max(n1,n2),4) )
+    d = 1.0 / (q1[:,0]*q1[:,0] + q1[:,1]*q1[:,1] + q1[:,2]*q1[:,2] + q1[:,3]*q1[:,3])
+    result[:,0] = q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
+    result[:,1] = q1[:,0]*q2[:,1] - q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:,2]
+    result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] - q1[:,2]*q2[:,0] - q1[:,3]*q2[:,1]
+    result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] - q1[:,3]*q2[:,0]
+    result = result * d
+    if array == 0:
+        result = np.squeeze(result)
     return result
 
 
@@ -165,7 +230,6 @@ def quat2euler( q ):
 
     if array == 0:
         theta = np.squeeze(theta)
-
     return theta
 
 #  * This will convert from euler angles to quaternion vector
@@ -197,7 +261,6 @@ def euler2quat( euler ):
 
     if array == 0:
         q = np.squeeze(q)
-
     return q
 
 # NE to heading/body frame
@@ -801,58 +864,58 @@ def acc2AttAndBias(acc):
 def norm(v, axis=None):
     return np.sqrt(np.sum(v*v, axis=axis))
 
-qmat_matrix = np.array([[[1.0, 0, 0, 0],
-                         [0, -1.0, 0, 0],
-                         [0, 0, -1.0, 0],
-                         [0, 0, 0, -1.0]],
-                        [[0, 1.0, 0, 0],
-                         [1.0, 0, 0, 0],
-                         [0, 0, 0, 1.0],
-                         [0, 0, -1.0, 0]],
-                        [[0, 0, 1.0, 0],
-                         [0, 0, 0, -1.0],
-                         [1.0, 0, 0, 0],
-                         [0, 1.0, 0, 0]],
-                        [[0, 0, 0, 1.0],
-                         [0, 0, 1.0, 0],
-                         [0, -1.0, 0, 0],
-                         [1.0, 0, 0, 0]]])
+# THIS FUNCTION SHALL BE DELETED
+# qmat_matrix = np.array([[[1.0, 0, 0, 0],
+#                          [0, -1.0, 0, 0],
+#                          [0, 0, -1.0, 0],
+#                          [0, 0, 0, -1.0]],
+#                         [[0, 1.0, 0, 0],
+#                          [1.0, 0, 0, 0],
+#                          [0, 0, 0, 1.0],
+#                          [0, 0, -1.0, 0]],
+#                         [[0, 0, 1.0, 0],
+#                          [0, 0, 0, -1.0],
+#                          [1.0, 0, 0, 0],
+#                          [0, 1.0, 0, 0]],
+#                         [[0, 0, 0, 1.0],
+#                          [0, 0, 1.0, 0],
+#                          [0, -1.0, 0, 0],
+#                          [1.0, 0, 0, 0]]])
+# def qmult(q1, q2):
+#     if q1.shape[0] == 1 and q2.shape[0] == 1:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1.T).T
+#     elif q1.shape[0] == 1 and q2.shape[0] != 1:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2[i, :].T).squeeze().dot(q1.T).T
+#     elif q1.shape[0] != 1 and q2.shape[0] == 1:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1[i,:].T).T
+#     elif q1.shape[0] == q2.shape[0]:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i, :].T).T
+#     else:
+#         raise Exception("Incompatible quaternion arrays -- cannot multiply")
 
-def qmult(q1, q2):
-    if q1.shape[0] == 1 and q2.shape[0] == 1:
-        dots = np.empty_like(q2)
-        for i in range(q2.shape[0]):
-            dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1.T).T
-    elif q1.shape[0] == 1 and q2.shape[0] != 1:
-        dots = np.empty_like(q2)
-        for i in range(q2.shape[0]):
-            dots[i, :] = qmat_matrix.dot(q2[i, :].T).squeeze().dot(q1.T).T
-    elif q1.shape[0] != 1 and q2.shape[0] == 1:
-        dots = np.empty_like(q2)
-        for i in range(q2.shape[0]):
-            dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1[i,:].T).T
-    elif q1.shape[0] == q2.shape[0]:
-        dots = np.empty_like(q2)
-        for i in range(q2.shape[0]):
-            dots[i, :] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i, :].T).T
-    else:
-        raise Exception("Incompatible quaternion arrays -- cannot multiply")
+#     # print qmat_matrix.dot(q2.T).squeeze()
+#     # print np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T.squeeze()
+#     # dots = np.empty((2,4,4))
+#     # for i in range(q1.shape[0]):
+#     #      dots[i,:] = qmat_matrix.dot(q2[i,:].T)
+#     # tensordots = np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T
+#     # dots = np.empty_like(q1)
+#     # for i in range(q1.shape[0]):
+#     #      dots[i,:] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i,:].T).T
+#     # tensordots = np.tensordot(q1, np.tensordot(qmat_matrix.T, q2, axes=[0,1]), axes=1).T
+#     # print "dots = ", dots, "\ntensordots = ", tensordots
+#     # print "diff = ", dots - tensordots
 
-    # print qmat_matrix.dot(q2.T).squeeze()
-    # print np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T.squeeze()
-    # dots = np.empty((2,4,4))
-    # for i in range(q1.shape[0]):
-    #      dots[i,:] = qmat_matrix.dot(q2[i,:].T)
-    # tensordots = np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T
-    # dots = np.empty_like(q1)
-    # for i in range(q1.shape[0]):
-    #      dots[i,:] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i,:].T).T
-    # tensordots = np.tensordot(q1, np.tensordot(qmat_matrix.T, q2, axes=[0,1]), axes=1).T
-    # print "dots = ", dots, "\ntensordots = ", tensordots
-    # print "diff = ", dots - tensordots
-
-    # return np.tensordot(q1, np.tensordot(q2.T, qmat_matrix.T, axes=[0,1]).T, axes=1)[0].T
-    return dots
+#     # return np.tensordot(q1, np.tensordot(q2.T, qmat_matrix.T, axes=[0,1]).T, axes=1)[0].T
+#     return dots
 
 def qlog(q):
     q *= np.sign(q[:,0])[:,None]
@@ -873,16 +936,13 @@ def qexp(v):
     out[idx, 1:] = np.sin(norm_v[idx,None]/2.0) * v[idx,:]/norm_v[idx,None]
     return out
 
-def qinv(q):
-    qcopy = q.copy()
-    qcopy[:,1:] *= -1.0
-    return qcopy
-
+# Attitude quaternion resulting from q1 followed by rotation due to rotation vector v
 def qboxplus(q, v):
-    return qmult(q, qexp(v))
+    return mul_Quat_Quat(qexp(v), q)
 
+# Rotation from attitude q1 to q2 in terms of rotation vector
 def qboxminus(q1, q2):
-    return qlog(qmult(qinv(q2), q1))
+    return qlog(mul_Quat_Quat(q1, quatConj(q2)))
 
 # Implementation of "Mean of Sigma Points" from Integrating Generic Sensor Fusion Algorithms with
 # Sound State Representations through Encapsulation of Manifolds by Hertzberg et. al.
@@ -916,41 +976,42 @@ def meanOfQuatArray(q):
 if __name__ == '__main__':
     q = np.random.random((5000, 4))
     q = q / norm(q, axis=1)[:,None]
-    # Find the mean Quaternion
 
     q1 = q[0:2, :]
     q2 = q[2:4, :]
-
-    q3 = qmult(q1, q2)
-    q3_ = mul_Quat_Quat(q2, q1)
-    assert np.sqrt(np.sum(np.square(q3 - q3_))) < 1e-8
-
+    q3 = mul_Quat_Quat(q2, q1)
     q0 = q[0, :]
+
     print("q =", q0)
     eul = quat2euler(q0)
     print("eul =", eul)
     quat = euler2quat(eul)
     print("q restored =", quat)
+    print("q inverse", quatConj(q0))
     assert np.sqrt(np.sum(np.square(q0 - quat))) < 1e-8
+
+    quat0 = mul_Quat_Quat(quatConj(q1),q2)
+    quat1 = mul_ConjQuat_Quat(q1,q2)
+    assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
+
+    quat0 = mul_Quat_Quat(q1,quatConj(q2))
+    quat1 = mul_Quat_ConjQuat(q1,q2)
+    assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
 
     print("q array =", q1)
     eul = quat2euler(q1)
     print("eul array =", eul)
     quat = euler2quat(eul)
     print("q array restored =", quat)
+    print("q array inverse", quatConj(q1))
     assert np.sqrt(np.sum(np.square(q1 - quat))) < 1e-8
 
-    quat1_ = mul_Quat_Quat(q1, q0)
-    quat2_ = mul_Quat_Quat(q0, q1)
-    quat3_ = mul_Quat_Quat(q1, q[2:5,:])
-
-
     print("q2 =", q2)
-    print("math =", qmult(qinv(q1), q3))
-    assert np.sqrt(np.sum(np.square(qmult(qinv(q1), q3) - q2))) < 1e-8
+    print("math =", mul_Quat_Quat(q3, quatConj(q1)))
+    assert np.sqrt(np.sum(np.square(mul_Quat_Quat(q3, quatConj(q1)) - q2))) < 1e-8
 
+    # Find the mean Quaternion
     mu = meanOfQuat(q)
-
     qarr = np.random.random((5000, 25, 4))
     qarr = qarr * 1.0/norm(qarr, axis=2)[:,:,None]
     mu = meanOfQuatArray(qarr)
