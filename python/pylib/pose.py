@@ -311,7 +311,10 @@ def euler2quat( euler ):
         q = np.squeeze(q)
     return q
 
-# NE to heading/body frame
+#  * NE to heading/body frame
+#  * This will construct a direction cosine matrix from
+#  * the psi angle - rotates from NE to body frame
+#  * body = tBL(2,2)*NE
 def psiDCM(psi):
     cpsi = cos(psi) # cos(psi)
     spsi = sin(psi) # sin(psi)
@@ -324,13 +327,28 @@ def psiDCM(psi):
     return DCM  
 
 
+# * This will extract the psi euler angle from a direction cosine matrix in the
+# * standard rotation sequence, for either a 2x2 or 3x3 DCM matrix.
+# * [phi][theta][psi] from reference to body frame
+# *
+# * body = tBL(2,2)*NE
+# * body = tBL(3,3)*NED
+# *
+# * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMpsi(A):
     psi = arctan2( A[0,1], A[0,0] )
     
     return psi
 
 
-# NED to body frame - In the 1-2-3 (roll, pitch, yaw) order
+#  * Reference to body frame - In the 1-2-3 (roll, pitch, yaw) order
+#  * This will construct a direction cosine matrix from
+#  * euler angles in the standard rotation sequence
+#  * [phi][theta][psi] from reference to body frame
+#  *
+#  * body = tBL(3,3)*NED
+#  *
+#  * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def eulerDCM(euler):
     cphi = cos(euler[0]) # cos(phi)
     cthe = cos(euler[1]) # cos(theta)
@@ -348,7 +366,13 @@ def eulerDCM(euler):
  
     return DCM  
 
-
+#  * This will extract euler angles from a direction cosine matrix in the
+#  * standard rotation sequence.
+#  * [phi][theta][psi] from reference to body frame
+#  *
+#  * body = tBL(3,3)*NED
+#  *
+#  * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMeuler(A):
     phi =  arctan2( A[1,2], A[2,2] )
     the =  arcsin( -A[0,2] )
@@ -366,7 +390,7 @@ def DCMeulerToPsi(A, phi, the):
 # /*
 #  * This will construct a direction cosine matrix from
 #  * quaternions in the standard rotation sequence
-#  * [phi][theta][psi] from NED to body frame
+#  * [phi][theta][psi] from reference to body frame
 #  *
 #  * body = tBL(3,3)*NED
 #  * q(4,1)
@@ -384,22 +408,42 @@ def quatDCM(q):
 
 #  * This will construct quaternions from a direction cosine 
 #  * matrix in the standard rotation sequence.
-#  * [phi][theta][psi] from NED to body frame
+#  * [phi][theta][psi] from reference to body frame
 #  *
 #  * body = tBL(3,3)*NED
 #  * q(4,1)
 #  *
 #  * Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMquat(mat):
-    q = np.zeros(4)
+    q = np.empty(4)
+    q_sq4 = np.empty(4)
+    q_sq4[0] = 1 + mat[0,0] + mat[1,1] + mat[2,2]
+    q_sq4[1] = 1 + mat[0,0] - mat[1,1] - mat[2,2]
+    q_sq4[2] = 1 - mat[0,0] + mat[1,1] - mat[2,2]
+    q_sq4[3] = 1 - mat[0,0] - mat[1,1] + mat[2,2]
 
-    q[0] = 0.5 * np.sqrt(1.0 + mat[0,0] + mat[1,1] + mat[2,2])
-    
-    d = 1.0 / (4.0 * q[0])
-    
-    q[1] = d * (mat[1,2] - mat[2,1])
-    q[2] = d * (mat[2,0] - mat[0,2])
-    q[3] = d * (mat[0,1] - mat[1,0])
+    ind = np.argmax(q_sq4)
+    q[ind] = 0.5 * np.sqrt(q_sq4[ind])
+    d = 0.25 / q[ind]
+    if ind == 0:
+        q[1] = d * (mat[1,2] - mat[2,1])
+        q[2] = d * (mat[2,0] - mat[0,2])
+        q[3] = d * (mat[0,1] - mat[1,0])
+    elif ind == 1:
+        q[0] = d * (mat[1,2] - mat[2,1])
+        q[2] = d * (mat[1,0] + mat[0,1])
+        q[3] = d * (mat[0,2] + mat[2,0])
+    elif ind == 2:
+        q[0] = d * (mat[2,0] - mat[0,2])
+        q[1] = d * (mat[1,0] + mat[0,1])
+        q[3] = d * (mat[2,1] + mat[1,2])
+    else:
+        q[0] = d * (mat[0,1] - mat[1,0])
+        q[1] = d * (mat[0,2] + mat[2,0])
+        q[2] = d * (mat[2,1] + mat[1,2])
+
+    if q[0] < 0:
+        q = -q
 
     return q
 
@@ -1028,6 +1072,9 @@ if __name__ == '__main__':
     q0 = q[0, :]
 
     qq = quatNLerp(q1, q2, 0.5)
+
+    R = quatDCM(q0)
+    q0_ = DCMquat(R)
 
     print("q =", q0)
     eul = quat2euler(q0)
