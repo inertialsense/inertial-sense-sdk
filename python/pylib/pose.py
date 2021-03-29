@@ -5,11 +5,8 @@ Author: Walt Johnson
 '''
 from __future__ import print_function
 
-from numpy import sin, cos, tan, arccos, arcsin, arctan2, arctan
-from numpy import r_, c_
-from numpy import dot
-from numpy import pi
 import numpy as np
+from numpy import sin, cos, tan, arccos, arcsin, arctan2, arctan, r_, c_, dot, pi
 from tqdm import tqdm
 # import pylib.plotTools as pt
 
