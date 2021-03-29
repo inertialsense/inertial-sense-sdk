@@ -5,7 +5,7 @@ Author: Walt Johnson
 '''
 from __future__ import print_function
 
-from numpy import sin, cos, arccos, arcsin, arctan2
+from numpy import sin, cos, tan, arccos, arcsin, arctan2, arctan
 from numpy import r_, c_
 from numpy import dot
 from numpy import pi
@@ -504,7 +504,7 @@ def quatW(omega):
     return mat
 
 
-# *   Convert quaternion to rotation axis
+# * Convert quaternion to rotation axis
 def quatRotAxis(q):
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis = 0)
@@ -519,7 +519,7 @@ def quatRotAxis(q):
     return axis
 
 
-# *   Convert quaternion to rotation vector
+# * Convert quaternion to rotation vector
 def quatRotVec(q):
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis = 0)
@@ -547,17 +547,25 @@ def quatRotVec(q):
 #  * d(psi)/d(q1)
 #  * d(psi)/d(q2)
 #  * d(psi)/d(q3)
-def dpsi_dq( q ):
-    dq = np.zeros(4)
+def dpsi_dq(q):
+    if len(np.shape(q)) == 1:
+        q = np.expand_dims(q, axis = 0)
+        array = 0
+    else:
+        array = 1
+    dq = np.zeros(shape=(np.shape(q)[0],4))
 
-    t1  = 1 - 2 * (q[2]*q[2] + q[3]*q[2])
-    t2  = 2 * (q[1]*q[2] + q[0]*q[3])
+    t1  = 1 - 2 * (q[:,2]*q[:,2] + q[:,3]*q[:,2])
+    t2  = 2 * (q[:,1]*q[:,2] + q[:,0]*q[:,3])
     err = 2 / ( t1*t1 + t2*t2 )
 
-    dq[0] = err * (q[3]*t1)
-    dq[1] = err * (q[2]*t1)
-    dq[2] = err * (q[1]*t1 + 2 * q[2]*t2)
-    dq[3] = err * (q[0]*t1 + 2 * q[3]*t2)
+    dq[:,0] = err * (q[:,3]*t1)
+    dq[:,1] = err * (q[:,2]*t1)
+    dq[:,2] = err * (q[:,1]*t1 + 2 * q[:,2]*t2)
+    dq[:,3] = err * (q[:,0]*t1 + 2 * q[:,3]*t2)
+
+    if array == 0:
+        dq = np.squeeze(dq)
 
     return dq
 
@@ -567,21 +575,22 @@ def dpsi_dq( q ):
 #  lla[0] = latitude (decimal degree)
 #  lla[1] = longitude (decimal degree)
 #  lla[2] = msl altitude (m)
-def lla2ecef( lla, metric=True):
+def lla2ecef(lla_deg):
     e = 0.08181919084262    # Earth first eccentricity: e = sqrt((R^2-b^2)/R^2);
     # double R, b, Rn, Smu, Cmu, Sl, Cl;
 
     # Earth equatorial and polar radii (from flattening, f = 1/298.257223563;
-    if metric:
-        R = 6378137         # m
-        # Earth polar radius b = R * (1-f)
-        b = 6356752.31424518
-    else:
-        R = 20925646.3255   # ft
-        # Earth polar radius b = R * (1-f)
-        b = 20855486.5953  
+    R = 6378137         # m
+    # Earth polar radius b = R * (1-f)
+    b = 6356752.31424518
 
-    LLA = lla * pi/180
+    if len(np.shape(lla_deg)) == 1:
+        lla_deg = np.expand_dims(lla_deg, axis = 0)
+        array = 0
+    else:
+        array = 1
+    LLA = np.copy(lla_deg)
+    LLA[:,0:2] = LLA[:,0:2] * pi/180
 
     Smu = sin(LLA[:,0])
     Cmu = cos(LLA[:,0])
@@ -589,14 +598,66 @@ def lla2ecef( lla, metric=True):
     Cl  = cos(LLA[:,1])
     
     # Radius of curvature at a surface point:
-    Rn = R / np.sqrt(1 - e*e*Smu*Smu)
+    Rn = R / np.sqrt(1 - e**2 * Smu**2)
 
-    Pe = np.zeros(np.shape(LLA))
+    Pe = np.empty(np.shape(LLA))
     Pe[:,0] = (Rn + LLA[:,2]) * Cmu * Cl
     Pe[:,1] = (Rn + LLA[:,2]) * Cmu * Sl
-    Pe[:,2] = (Rn*b*b/R/R + LLA[:,2]) * Smu
-    
+    Pe[:,2] = (Rn * (b/R)**2 + LLA[:,2]) * Smu
+
+    if array == 0:
+        Pe = np.squeeze(Pe)
     return Pe
+
+
+# * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (deg,deg,m)
+def ecef2lla(Pe, Niter=5):
+
+    # Earth equatorial radius
+    R = 6378137
+    # Earth polar radius b = R * (1-f)
+    b = 6356752.31424518
+    # Earth first eccentricity
+    e = 0.08181919084262    # e = sqrt((R^2-b^2)/R^2);
+    e2 = e**2
+    # Earth flattening
+    f = 0.0033528106647474805
+
+    if len(np.shape(Pe)) == 1:
+        Pe = np.expand_dims(Pe, axis = 0)
+        array = 0
+    else:
+        array = 1
+    LLA = np.empty(np.shape(Pe))
+
+    # Longitude
+    LLA[:,1] = arctan2(Pe[:,1], Pe[:,0])
+
+    # Latitude computation using Bowring's method 
+    s = np.sqrt(Pe[:,0]**2 + Pe[:,1]**2)
+    beta = arctan2(Pe[:,2], (1-f)*s); # reduced latitude, initial guess
+
+    B = e2 * R
+    A = e2 * R / (1 - f)
+    for i in range(0,Niter):
+        # iterative latitude computation
+        LLA[:,0] = arctan2(Pe[:,2]+A*sin(beta)**3, s-B*cos(beta)**3)
+        beta = arctan((1-f) * tan(LLA[:,0]))
+
+    # Radius of curvature in the vertical prime
+    sin_lat = sin(LLA[:,0])
+    Rn = R / np.sqrt(1.0 - e2 * sin_lat**2)
+
+    # Altitude above planetary ellipsoid
+    LLA[:,2] = s * cos(LLA[:,0]) + (Pe[:,2] + e2 * Rn * sin_lat) * sin_lat - Rn
+
+    # Convert to degrees
+    LLA[:,0:2] = LLA[:,0:2] * 180/pi
+
+    if array == 0:
+        LLA = np.squeeze(LLA)
+    return LLA
+
 
 #  Find NED (north, east, down) from LLAref to LLA
 #
@@ -932,6 +993,7 @@ def unwrapAngle(angle):
             
     return angle
 
+
 # Non-accelerated gravity used to determine attitude
 def accellToEuler(acc):
     euler = np.zeros(np.shape(acc))
@@ -1122,6 +1184,14 @@ if __name__ == '__main__':
     print("q2 =", q2)
     print("q3 = q2*q1; q3*inv(q1) = ", mul_Quat_Quat(q3, quatConj(q1)))
     assert np.sqrt(np.sum(np.square(mul_Quat_Quat(q3, quatConj(q1)) - q2))) < 1e-8
+
+    dq1 = dpsi_dq(q1)
+
+    # Test ECEF-to-LLA transformations
+    xe0 = y[0:5,:]*100000
+    lla_deg = ecef2lla(xe0)
+    xe1 = lla2ecef(lla_deg)
+    assert np.sqrt(np.sum(np.square(xe0 - xe1))) < 1e-4
 
     # Find the mean Quaternion
     mu = meanOfQuat(q)
