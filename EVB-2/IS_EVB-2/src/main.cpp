@@ -99,8 +99,10 @@ static void vTaskMaint(void *pvParameters)
 
 int main(void)
 {
-	evbMainInit();
-	evbMainInitHdw();
+	evbMainInitBoard();
+	evbMainInitNvr();
+	evbMainInitIO();
+	evbMainInitComm();
 	evbMainInitRTOS(vTaskComm, vTaskLogger, vTaskWiFi, vTaskMaint);
 	
 	int result = evbMain();

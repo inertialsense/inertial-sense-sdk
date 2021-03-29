@@ -44,6 +44,11 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
     vTaskDelay(task.periodMs);
 
     g_comm_time_ms = time_msec();
+
+    if (g_statusToWlocal)
+    {
+        g_status.timeOfWeekMs = g_comm_time_ms;
+    }
     
 #ifdef ENABLE_WDT
     // Feed Watchdog to prevent reset
@@ -60,6 +65,9 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
 
     // Read buttons and update LEDs
     step_user_interface(g_comm_time_ms);
+
+    // Stream DIDs data sets
+    step_broadcast_data(&comm);
 }
 
 
@@ -148,7 +156,7 @@ int evbTaskMaint(rtos_task_t &task)
 }
 
 
-void evbMainInit(void)
+void evbMainInitBoard(void)
 {
 	//XDMAC channel interrupt enables do not get cleared by a software reset. Clear them before they cause issues.
 	XDMAC->XDMAC_GID = 0xFFFFFFFF;
@@ -165,8 +173,17 @@ void evbMainInit(void)
     
     // Init globals and flash parameters
     globals_init();
-    nvr_init();
+}
 
+
+void evbMainInitNvr(void)
+{
+	nvr_init();
+}
+
+
+void evbMainInitIO(void)
+{
     // Hold config while resetting
     if(!ioport_get_pin_level(BUTTON_CFG_PIN))
     {   
@@ -179,7 +196,8 @@ void evbMainInit(void)
     evbUiDefaults();
 }
 
-void evbMainInitHdw(void)
+
+void evbMainInitComm(void)
 {
 	// Init hardware I/O, SD card logger, and communications
     sd_card_logger_init();
@@ -192,6 +210,7 @@ void evbMainInitHdw(void)
 	}
 #endif
 }
+
 
 void evbMainInitRTOS(pdTASK_CODE pxTaskComm,
 				    pdTASK_CODE pxTaskLogg,
