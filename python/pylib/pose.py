@@ -448,28 +448,24 @@ def DCMquat(mat):
     return q
 
 
-#  * This will construct the euler omega-cross matrix
-#  * wx(3,3)
+#  * This will construct the cross-product matrix Wx(3,3)
+#  * such that cross(x, y) = Wx * y
 #  * p, q, r (rad/sec)
-def eulerWx( euler ):
-    mat = np.zeros((3,3))
-
-    p = euler[0]
-    q = euler[1]
-    r = euler[2]
+def eulerWx(x):
+    mat = np.empty((3,3))
 
     # Row 1
-    mat[0,0] =  0
-    mat[0,1] = -r
-    mat[0,2] =  q
+    mat[0,0] =  0.0
+    mat[0,1] = -x[2]
+    mat[0,2] =  x[1]
     # Row 2
-    mat[1,0] =  r
-    mat[1,1] =  0
-    mat[1,2] = -p
+    mat[1,0] =  x[2]
+    mat[1,1] =  0.0
+    mat[1,2] = -x[0]
     # Row 3
-    mat[2,0] = -q
-    mat[2,1] =  p
-    mat[2,2] =  0
+    mat[2,0] = -x[1]
+    mat[2,1] =  x[0]
+    mat[2,2] =  0.0
     
     return mat
 
@@ -477,59 +473,71 @@ def eulerWx( euler ):
 #  * This will construct the quaternion omega matrix
 #  * W(4,4)
 #  * p, q, r (rad/sec)
-def quatW( euler ):
+def quatW(omega):
 
-    mat = np.zeros((4,4))
-    p = euler[0] * 0.5
-    q = euler[1] * 0.5
-    r = euler[2] * 0.5
+    mat = np.empty((4,4))
+    p = omega[0] * 0.5
+    q = omega[1] * 0.5
+    r = omega[2] * 0.5
 
     # Row 1
-    mat[0,0] =  0
+    mat[0,0] =  0.0
     mat[0,1] = -p
     mat[0,2] = -q
     mat[0,3] = -r
     # Row 2
     mat[1,0] =  p
-    mat[1,1] =  0
+    mat[1,1] =  0.0
     mat[1,2] =  r
     mat[1,3] = -q
     # Row 3
     mat[2,0] =  q
     mat[2,1] = -r
-    mat[2,2] =  0
+    mat[2,2] =  0.0
     mat[2,3] =  p
     # Row 4
     mat[3,0] =  r
     mat[3,1] =  q
     mat[3,2] = -p
-    mat[3,3] =  0
+    mat[3,3] =  0.0
     
     return mat
 
 
-# *   Convert quaternion to rotation axis (and angle).  Quaternion must be normalized.
-def quatRotAxis( q ):
+# *   Convert quaternion to rotation axis
+def quatRotAxis(q):
+    if len(np.shape(q)) == 1:
+        q = np.expand_dims(q, axis = 0)
+        array = 0
+    else:
+        array = 1
 
-    # Normalize quaternion
-    q = normalize(q)
+    axis = normalize(q[:,1:4], axis = 1)
 
-    theta = np.arccos( q[0] ) * 2.0
-    sin_a = np.sqrt( 1.0 - q[0] * q[0] )
+    if array == 0:
+        axis = np.squeeze(axis)
+    return axis
 
-    if np.fabs( sin_a ) < 0.0005: 
-        sin_a = 1.0
 
-    d = 1.0 / sin_a
+# *   Convert quaternion to rotation vector
+def quatRotVec(q):
+    if len(np.shape(q)) == 1:
+        q = np.expand_dims(q, axis = 0)
+        array = 0
+    else:
+        array = 1
+    rv = np.zeros(shape=(np.shape(q)[0],3))
 
-    pqr = np.zeros(3)
-    pqr[0] = q[1] * d
-    pqr[1] = q[2] * d
-    pqr[2] = q[3] * d
-    
-    print(theta * 180/pi)
+    theta = np.arccos(q[:,0]) * 2.0
+    sin_half_theta = np.sqrt(1.0 - q[:,0] * q[:,0])
+    ind1 = np.asarray(np.where(np.fabs(theta) > 1e-6))[0,:]
+    ind0 = np.asarray(np.where(np.fabs(theta) <= 1e-6))[0,:]
+    rv[ind1,:] = q[ind1,1:4] * (theta[ind1] / sin_half_theta[ind1])[:,None]
+    rv[ind0,:] = q[ind0,1:4] * 2.0
 
-    return pqr
+    if array == 0:
+        rv = np.squeeze(rv)
+    return rv
 
 
 #  *  Compute the derivative of the Euler_t angle psi with respect
@@ -1065,6 +1073,7 @@ def meanOfQuatArray(q):
 if __name__ == '__main__':
     q = np.random.random((5000, 4))
     q = normalize(q, axis=1)
+    y = np.random.random((5000, 3))
 
     q1 = q[0:2, :]
     q2 = q[2:4, :]
@@ -1073,9 +1082,21 @@ if __name__ == '__main__':
 
     qq = quatNLerp(q1, q2, 0.5)
 
+    # Test quat-to-DCM conversions
     R = quatDCM(q0)
-    q0_ = DCMquat(R)
+    quat = DCMquat(R)
+    assert np.sqrt(np.sum(np.square(q0 - quat))) < 1e-8
 
+    # Test cross-product matrix
+    u = np.cross(y[0,:], y[1,:])
+    v = eulerWx(y[0,:]).dot(y[1,:])
+    assert np.sqrt(np.sum(np.square(u - v))) < 1e-8
+
+    # Test quaternion to rotation vector conversion
+    a = quatRotAxis(q[0:5,:])
+    rv = quatRotVec(q[0:5,:])
+
+    # Test quat-to-Euler conversions
     print("q =", q0)
     eul = quat2euler(q0)
     print("eul =", eul)
@@ -1083,15 +1104,6 @@ if __name__ == '__main__':
     print("q restored =", quat)
     print("q inverse", quatConj(q0))
     assert np.sqrt(np.sum(np.square(q0 - quat))) < 1e-8
-
-    quat0 = mul_Quat_Quat(quatConj(q1),q2)
-    quat1 = mul_ConjQuat_Quat(q1,q2)
-    assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
-
-    quat0 = mul_Quat_Quat(q1,quatConj(q2))
-    quat1 = mul_Quat_ConjQuat(q1,q2)
-    assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
-
     print("q array =", q1)
     eul = quat2euler(q1)
     print("eul array =", eul)
@@ -1100,8 +1112,15 @@ if __name__ == '__main__':
     print("q array inverse", quatConj(q1))
     assert np.sqrt(np.sum(np.square(q1 - quat))) < 1e-8
 
+    # Test quaternion multiplication with inverse
+    quat0 = mul_Quat_Quat(quatConj(q1),q2)
+    quat1 = mul_ConjQuat_Quat(q1,q2)
+    assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
+    quat0 = mul_Quat_Quat(q1,quatConj(q2))
+    quat1 = mul_Quat_ConjQuat(q1,q2)
+    assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
     print("q2 =", q2)
-    print("math =", mul_Quat_Quat(q3, quatConj(q1)))
+    print("q3 = q2*q1; q3*inv(q1) = ", mul_Quat_Quat(q3, quatConj(q1)))
     assert np.sqrt(np.sum(np.square(mul_Quat_Quat(q3, quatConj(q1)) - q2))) < 1e-8
 
     # Find the mean Quaternion
