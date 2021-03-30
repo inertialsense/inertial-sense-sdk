@@ -275,7 +275,16 @@ static protocol_type_t processInertialSensePkt(is_comm_instance_t* instance)
         case PID_GET_DATA:
             // copy the requested data set info
 			instance->dataHdr = *((p_data_hdr_t*)pkt->body.ptr);
-			return _PTYPE_INERTIAL_SENSE_CMD;
+
+			if (instance->dataHdr.id > DID_NULL &&
+				instance->dataHdr.size <= MAX_DATASET_SIZE )
+			{
+				// Update data pointer
+				instance->dataPtr = pkt->body.ptr + sizeof(p_data_hdr_t);
+				return _PTYPE_INERTIAL_SENSE_CMD;
+			}
+			break;
+
 		case PID_STOP_BROADCASTS_ALL_PORTS:
 		case PID_STOP_DID_BROADCAST:
 		case PID_STOP_BROADCASTS_CURRENT_PORT:
