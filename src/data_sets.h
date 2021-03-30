@@ -1537,62 +1537,6 @@ typedef struct PACKED
 } bit_t;
 
 
-/** (DID_WHEEL_ENCODER) [NOT SUPPORTED, INTERNAL USE ONLY] Message to communicate wheel encoder measurements to GPS-INS */
-typedef struct PACKED
-{
-    /** Time of measurement wrt current week */
-    double timeOfWeek;
-
-    /** Status Word */
-    uint32_t status;
-
-    /** Left wheel angle (rad) */
-    float theta_l;
-
-    /** Right wheel angle (rad) */
-    float theta_r;
-    
-    /** Left wheel angular rate (rad/s) */
-    float omega_l;
-
-    /** Right wheel angular rate (rad/s) */
-    float omega_r;
-
-    /** Left wheel revolution count */
-    uint32_t wrap_count_l;
-
-    /** Right wheel revolution count */
-    uint32_t wrap_count_r;
-
-} wheel_encoder_t;
-
-enum eWheelCfgBits
-{
-    WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
-    WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
-    WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
-};
-
-/** (DID_WHEEL_CONFIG) [NOT SUPPORTED, INTERNAL USE ONLY] Configuration of wheel encoders and kinematic constraints. (Used with nvm_flash_cfg_t.wheelConfig) */
-typedef struct PACKED
-{
-    /** Config bits (see eWheelCfgBits) */
-    uint32_t                bits;
-
-	/** Euler angles describing the rotation from imu to left wheel */
-	float                   e_i2l[3];
-
-	/** Translation from the imu to the left wheel, expressed in the imu frame */
-	float                   t_i2l[3];
-
-	/** Distance between the left wheel and the right wheel */
-	float                   distance;
-
-	/** Estimate of wheel diameter */
-	float                   diameter;
-
-} wheel_config_t;
-
 /** System Configuration (used with nvm_flash_cfg_t.sysCfgBits) */
 enum eSysConfigBits
 {
