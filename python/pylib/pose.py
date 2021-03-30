@@ -269,9 +269,9 @@ def quat2euler( q ):
     else:
         array = 1
     theta = np.empty(shape=(np.shape(q)[0],3))
-    theta[:,0] = np.arctan2( 2 * (q[:,0]*q[:,1] + q[:,2]*q[:,3]), 1 - 2 * (q[:,1]*q[:,1] + q[:,2]*q[:,2]) )
-    theta[:,1] = np.arcsin(  2 * (q[:,0]*q[:,2] - q[:,3]*q[:,1]) )
-    theta[:,2] = np.arctan2( 2 * (q[:,0]*q[:,3] + q[:,1]*q[:,2]), 1 - 2 * (q[:,2]*q[:,2] + q[:,3]*q[:,3]) )
+    theta[:,0] = np.arctan2( 2.0 * (q[:,0]*q[:,1] + q[:,2]*q[:,3]), 1.0 - 2.0 * (q[:,1]*q[:,1] + q[:,2]*q[:,2]) )
+    theta[:,1] = np.arcsin(  2.0 * (q[:,0]*q[:,2] - q[:,3]*q[:,1]) )
+    theta[:,2] = np.arctan2( 2.0 * (q[:,0]*q[:,3] + q[:,1]*q[:,2]), 1.0 - 2.0 * (q[:,2]*q[:,2] + q[:,3]*q[:,3]) )
 
     if array == 0:
         theta = np.squeeze(theta)
@@ -396,9 +396,9 @@ def DCMeulerToPsi(A, phi, the):
 #  */
 def quatDCM(q):
     DCM = r_[
-           c_[ 1.0 - 2 * (q[2]*q[2] + q[3]*q[3]),       2 * (q[1]*q[2] + q[0]*q[3]),       2 * (q[1]*q[3] - q[0]*q[2]) ],
-           c_[       2 * (q[1]*q[2] - q[0]*q[3]), 1.0 - 2 * (q[1]*q[1] + q[3]*q[3]),       2 * (q[2]*q[3] + q[0]*q[1]) ],
-           c_[       2 * (q[1]*q[3] + q[0]*q[2]),       2 * (q[2]*q[3] - q[0]*q[1]), 1.0 - 2 * (q[1]*q[1] + q[2]*q[2]) ],
+           c_[ 1.0 - 2.0 * (q[2]*q[2] + q[3]*q[3]),       2.0 * (q[1]*q[2] + q[0]*q[3]),       2.0 * (q[1]*q[3] - q[0]*q[2]) ],
+           c_[       2.0 * (q[1]*q[2] - q[0]*q[3]), 1.0 - 2.0 * (q[1]*q[1] + q[3]*q[3]),       2.0 * (q[2]*q[3] + q[0]*q[1]) ],
+           c_[       2.0 * (q[1]*q[3] + q[0]*q[2]),       2.0 * (q[2]*q[3] - q[0]*q[1]), 1.0 - 2.0 * (q[1]*q[1] + q[2]*q[2]) ],
            ]        
         
     return DCM
@@ -552,14 +552,14 @@ def dpsi_dq(q):
         array = 1
     dq = np.zeros(shape=(np.shape(q)[0],4))
 
-    t1  = 1 - 2 * (q[:,2]*q[:,2] + q[:,3]*q[:,2])
-    t2  = 2 * (q[:,1]*q[:,2] + q[:,0]*q[:,3])
-    err = 2 / ( t1*t1 + t2*t2 )
+    t1  = 1.0 - 2.0 * (q[:,2]*q[:,2] + q[:,3]*q[:,2])
+    t2  = 2.0 * (q[:,1]*q[:,2] + q[:,0]*q[:,3])
+    err = 2.0 / ( t1*t1 + t2*t2 )
 
     dq[:,0] = err * (q[:,3]*t1)
     dq[:,1] = err * (q[:,2]*t1)
-    dq[:,2] = err * (q[:,1]*t1 + 2 * q[:,2]*t2)
-    dq[:,3] = err * (q[:,0]*t1 + 2 * q[:,3]*t2)
+    dq[:,2] = err * (q[:,1]*t1 + 2.0 * q[:,2]*t2)
+    dq[:,3] = err * (q[:,0]*t1 + 2.0 * q[:,3]*t2)
 
     if array == 0:
         dq = np.squeeze(dq)
@@ -577,7 +577,7 @@ def lla2ecef(lla_deg):
     # double R, b, Rn, Smu, Cmu, Sl, Cl;
 
     # Earth equatorial and polar radii (from flattening, f = 1/298.257223563;
-    R = 6378137         # m
+    R = 6378137.0         # m
     # Earth polar radius b = R * (1-f)
     b = 6356752.31424518
 
@@ -587,7 +587,7 @@ def lla2ecef(lla_deg):
     else:
         array = 1
     LLA = np.copy(lla_deg)
-    LLA[:,0:2] = LLA[:,0:2] * pi/180
+    LLA[:,0:2] = np.radians(LLA[:,0:2])
 
     Smu = sin(LLA[:,0])
     Cmu = cos(LLA[:,0])
@@ -611,7 +611,7 @@ def lla2ecef(lla_deg):
 def ecef2lla(Pe, Niter=5):
 
     # Earth equatorial radius
-    R = 6378137
+    R = 6378137.0
     # Earth polar radius b = R * (1-f)
     b = 6356752.31424518
     # Earth first eccentricity
@@ -632,10 +632,10 @@ def ecef2lla(Pe, Niter=5):
 
     # Latitude computation using Bowring's method 
     s = np.sqrt(Pe[:,0]**2 + Pe[:,1]**2)
-    beta = arctan2(Pe[:,2], (1-f)*s); # reduced latitude, initial guess
+    beta = arctan2(Pe[:,2], (1.0-f)*s); # reduced latitude, initial guess
 
     B = e2 * R
-    A = e2 * R / (1 - f)
+    A = e2 * R / (1.0 - f)
     for i in range(0,Niter):
         # iterative latitude computation
         LLA[:,0] = arctan2(Pe[:,2]+A*sin(beta)**3, s-B*cos(beta)**3)
@@ -649,135 +649,103 @@ def ecef2lla(Pe, Niter=5):
     LLA[:,2] = s * cos(LLA[:,0]) + (Pe[:,2] + e2 * Rn * sin_lat) * sin_lat - Rn
 
     # Convert to degrees
-    LLA[:,0:2] = LLA[:,0:2] * 180/pi
+    LLA[:,0:2] = np.degrees(LLA[:,0:2])
 
     if array == 0:
         LLA = np.squeeze(LLA)
     return LLA
 
 
-#  Find NED (north, east, down) from LLAref to LLA
+#  Find NED (north, east, down) from lla_ref_deg to lla_deg
 #
-#  lla[0] = latitude (decimal degree)
-#  lla[1] = longitude (decimal degree)
-#  lla[2] = msl altitude (m)
-def lla2ned( llaRef, lla ):
+#  lla_ref_deg[0] = reference latitude (decimal degree)
+#  lla_ref_deg[1] = reference longitude (decimal degree)
+#  lla_ref_deg[2] = reference msl altitude (m)
+#  lla_deg[0] = latitude (decimal degree)
+#  lla_deg[1] = longitude (decimal degree)
+#  lla_deg[2] = msl altitude (m)
+def lla2ned(lla_ref_deg, lla_deg):
+    # Earth equatorial radius
+    R = 6378137.0
+    # Earth first eccentricity
+    e = 0.08181919084262    # e = sqrt((R^2-b^2)/R^2);
+    e2 = e**2
 
-    a2d = 111120.0      # = DEG2RAD * earth_radius_in_meters
+    if len(np.shape(lla_deg)) == 1:
+        lla_deg = np.expand_dims(lla_deg, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(lla_ref_deg)) == 1:
+        lla_ref_deg = np.expand_dims(lla_ref_deg, axis = 0)
 
-    deltaLLA = np.zeros(np.shape(lla))    
-    deltaLLA[:,0] = lla[:,0] - llaRef[0]
-    deltaLLA[:,1] = lla[:,1] - llaRef[1]
-    deltaLLA[:,2] = lla[:,2] - llaRef[2]
-    
-    ned = np.zeros(np.shape(lla))
-    ned[:,0] =  deltaLLA[:,0] * a2d
-    ned[:,1] =  deltaLLA[:,1] * a2d * cos(llaRef[0] * pi/180)
-    ned[:,2] = -deltaLLA[:,2]
+    lla = np.copy(lla_deg)
+    lla_ref = np.copy(lla_ref_deg)
+    # Convert deg to rad
+    lla[:,0:2] = np.radians(lla[:,0:2])
+    lla_ref[:,0:2] = np.radians(lla_ref_deg[:,0:2])
 
-    return ned
+    Pn = np.empty(np.shape(lla))
 
-# def latlon2ne( lat, lon, ref_lat, ref_lon ):
-#     """Transform lat/lon values to north/east
+    deltaLLA = lla - lla_ref
+    # radius of curvature in the prime vertical:
+    sin_lat_ref = sin(lla_ref[:,0])
+    Rn = R / np.sqrt(1.0 - e2 * sin_lat_ref**2)
+    # radius of curvature in the meridian
+    Rm = Rn * (1.0 - e2) / (1.0 - e2 * sin_lat_ref**2)
+    Pn[:,0] = deltaLLA[:,0] * Rm
+    Pn[:,1] = deltaLLA[:,1] * Rn * cos(lla_ref[:,0])
+    Pn[:,2] = -deltaLLA[:,2]
 
-#     Parameters
-#     ----------
-#     lat : array-like, double
-#         np array of latitude (deg)
-#     lon : array-like, double
-#         np array of longitude (deg)
-#     ref_lat : double
-#         reference latitude (deg)
-#     ref_lon : double
-#         reference longitude (deg)
-
-#     Returns
-#     -------
-#     array-like, double
-#         north and east value arrays
-#     """
-#     # Convert deg to rad
-#     lat = np.radians(lat)
-#     lon = np.radians(lon)
-#     ref_lat = np.radians(ref_lat)
-#     ref_lon = np.radians(ref_lon)
-
-#     # WGS84 ref: https://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
-#     # WGS84 Earth's first eccentricity:
-#     e = 0.081819190842622
-#     # WGS84 Semi-Major Axis (a) Earth equatorial radius, m
-#     R = 6378137
-#     dlat = lat - ref_lat
-#     dlon = lon - ref_lon
-#     # radius of curvature in the prime vertical:
-#     RN = R / np.sqrt(1-e*e*np.square(np.sin(ref_lat)))
-#     # radius of curvature in the meridian
-#     RM = RN * (1-e*e) / (1-e*e*np.square(np.sin(ref_lat)))
-#     dN = dlat * RM
-#     dE = dlon * RN * np.cos(ref_lat)
-#     return dN, dE
+    if array == 0:
+        Pn = np.squeeze(Pn)
+    return Pn
 
 
-# def ne2latlon(N, E, ref_lat, ref_lon):
-#     """Transform North/Eeas values to lat/lon
-
-#     Parameters
-#     ----------
-#     N : array-like, double
-#         np array of North coordinates (m)
-#     E : array-like, double
-#         np array of East coordinates (m)
-#     ref_lat : double
-#         reference latitude (deg)
-#     ref_lon : double
-#         reference longitude (deg)
-
-#     Returns
-#     -------
-#     array-like, double
-#         latitude and longitude value arrays
-#     """
-#     # Convert deg to rad
-#     ref_lat = np.radians(ref_lat)
-#     ref_lon = np.radians(ref_lon)
-
-#     # WGS84 ref: https://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
-#     # WGS84 Earth's first eccentricity:
-#     e = 0.081819190842966
-#     # WGS84 Semi-Major Axis (a) Earth equatorial radius, m
-#     R = 6378137.0
-#     # radius of curvature in the prime vertical:
-#     RN = R / np.sqrt(1-e*e*np.square(np.sin(ref_lat)))
-#     # radius of curvature in the meridian
-#     RM = RN * (1-e*e) / (1-e*e*np.square(np.sin(ref_lat)))
-#     lat = ref_lat + N / RM
-#     lon = ref_lon + E / (RN * np.cos(ref_lat))
-
-#     lat = np.degrees(lat)
-#     lon = np.degrees(lon)
-
-#     return lat, lon
-
-
-#  Find NED (north, east, down) from LLAref to LLA
+#  Find LLA (degrees, m) from NED (north, east, down) from lla_ref_deg to lla_deg
 #
-#  lla[0] = latitude (decimal degree)
-#  lla[1] = longitude (decimal degree)
-#  lla[2] = msl altitude (m)
-def lla2ned_single( llaRef, lla ):
-    a2d = 111120.0      # = DEG2RAD * earth_radius_in_meters
+#  lla_ref_deg[0] = reference latitude (decimal degree)
+#  lla_ref_deg[1] = reference longitude (decimal degree)
+#  lla_ref_deg[2] = reference msl altitude (m)
+#  Pn[0] = position North (m)
+#  Pn[1] = position East (m)
+#  Pn[2] = position Down (m)
+def ned2lla(lla_ref_deg, Pn):
+    # Earth equatorial radius
+    R = 6378137.0
+    # Earth first eccentricity
+    e = 0.08181919084262    # e = sqrt((R^2-b^2)/R^2);
+    e2 = e**2
 
-    deltaLLA = np.zeros(np.shape(lla))    
-    deltaLLA[0] = lla[0] - llaRef[0]
-    deltaLLA[1] = lla[1] - llaRef[1]
-    deltaLLA[2] = lla[2] - llaRef[2]
-    
-    ned = np.zeros(np.shape(lla))
-    ned[0] =  deltaLLA[0] * a2d
-    ned[1] =  deltaLLA[1] * a2d * cos(llaRef[0] * pi/180)
-    ned[2] = -deltaLLA[2]
+    if len(np.shape(Pn)) == 1:
+        Pn = np.expand_dims(Pn, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(lla_ref_deg)) == 1:
+        lla_ref_deg = np.expand_dims(lla_ref_deg, axis = 0)
 
-    return ned
+    lla_ref = np.copy(lla_ref_deg)
+    # Convert deg to rad
+    lla_ref[:,0:2] = np.radians(lla_ref_deg[:,0:2])
+
+    lla = np.empty(np.shape(Pn))
+
+    # radius of curvature in the prime vertical:
+    sin_lat_ref = sin(lla_ref[:,0])
+    Rn = R / np.sqrt(1.0 - e2 * sin_lat_ref**2)
+    # radius of curvature in the meridian
+    Rm = Rn * (1.0 - e2) / (1.0 - e2 * sin_lat_ref**2)
+
+    lla[:,0] = lla_ref[:,0] + Pn[:,0] / Rm
+    lla[:,1] = lla_ref[:,1] + Pn[:,1] / (Rn * cos(lla_ref[:,0]))
+    lla[:,2] = lla_ref[:,2] - Pn[:,2] 
+
+    # Convert lat/lon to degrees
+    lla[:,0:2] = np.degrees(lla[:,0:2])
+    if array == 0:
+        lla = np.squeeze(lla)
+    return lla
 
 
 #  Find Delta LLA of NED (north, east, down) from LLAref
@@ -785,30 +753,43 @@ def lla2ned_single( llaRef, lla ):
 #  lla[0] = latitude (decimal degree)
 #  lla[1] = longitude (decimal degree)
 #  lla[2] = msl altitude (m)
-def ned2DeltaLla( ned, llaRef ):
-    invA2d = 1.0 / 111120.0      # 1 / radius
+def ned2DeltaLla(Pn, lla_ref_deg):
+    # Earth equatorial radius
+    R = 6378137.0
+    # Earth first eccentricity
+    e = 0.08181919084262    # e = sqrt((R^2-b^2)/R^2);
+    e2 = e**2
 
-    deltaLLA = np.zeros(np.shape(ned))
-    deltaLLA[:,0] =  ned[:,0] * invA2d
-    deltaLLA[:,1] =  ned[:,1] * invA2d / cos(llaRef[0] * pi/180)
-    deltaLLA[:,2] = -ned[:,2]
+    if len(np.shape(Pn)) == 1:
+        Pn = np.expand_dims(Pn, axis = 0)
+        array = 0
+    else:
+        array = 1
+    if len(np.shape(lla_ref_deg)) == 1:
+        lla_ref_deg = np.expand_dims(lla_ref_deg, axis = 0)
 
+    lla_ref = np.copy(lla_ref_deg)
+    # Convert deg to rad
+    lla_ref[:,0:2] = np.radians(lla_ref_deg[:,0:2])
+
+    deltaLLA = np.empty(np.shape(Pn))
+
+    # radius of curvature in the prime vertical:
+    sin_lat_ref = sin(lla_ref[:,0])
+    Rn = R / np.sqrt(1.0 - e2 * sin_lat_ref**2)
+    # radius of curvature in the meridian
+    Rm = Rn * (1.0 - e2) / (1.0 - e2 * sin_lat_ref**2)
+
+    deltaLLA[:,0] =  Pn[:,0] / Rm
+    deltaLLA[:,1] =  Pn[:,1] / (Rn * cos(lla_ref[:,0]))
+    deltaLLA[:,2] = -Pn[:,2] 
+
+    # Convert delta lat/lon to degrees
+    deltaLLA[:,0:2] = np.degrees(deltaLLA[:,0:2])
+    if array == 0:
+        deltaLLA = np.squeeze(deltaLLA)
     return deltaLLA
 
-#  Find LLA of NED (north, east, down) from LLAref
-#
-#  lla[0] = latitude (decimal degree)
-#  lla[1] = longitude (decimal degree)
-#  lla[2] = msl altitude (m)
-def ned2lla( ned, llaRef ):
-    deltaLLA = ned2DeltaLla( ned, llaRef )
-    
-    lla = np.zeros(np.shape(ned))
-    lla[:,0] = llaRef[0] + deltaLLA[:,0]
-    lla[:,1] = llaRef[1] + deltaLLA[:,1]
-    lla[:,2] = llaRef[2] + deltaLLA[:,2]
-
-    return lla
 
 def rotate_ned2ecef( latlon ):
     R = np.zeros((3,3))
@@ -1186,9 +1167,16 @@ if __name__ == '__main__':
 
     # Test ECEF-to-LLA transformations
     xe0 = y[0:5,:]*100000
-    lla_deg = ecef2lla(xe0)
+    lla_deg = ecef2lla(xe0, 100)
     xe1 = lla2ecef(lla_deg)
     assert np.sqrt(np.sum(np.square(xe0 - xe1))) < 1e-4
+
+    # Test NED-to-LLA transformations
+    lla_ref = np.array([40.0, 117.0, 10.0])
+    lla = np.array([[40.1, 117.1, 20.0],[40.2, 117.2, 0.0]])
+    ned1 = lla2ned(lla_ref, lla)
+    lla1 = ned2lla(lla_ref, ned1)
+    assert np.sqrt(np.sum(np.square(lla - lla1))) < 1e-4
 
     # Find the mean Quaternion
     mu = meanOfQuat(q)
