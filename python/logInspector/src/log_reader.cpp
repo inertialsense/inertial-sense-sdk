@@ -137,7 +137,7 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_RMC, dev_log_->rmc );
         HANDLE_MSG( DID_SYS_PARAMS, dev_log_->sysParams );
         HANDLE_MSG( DID_SYS_SENSORS, dev_log_->sysSensors );
-        HANDLE_MSG( DID_FLASH_CONFIG, dev_log_->flashConfig );
+        HANDLE_MSG( DID_FLASH_CONFIG, dev_log_->flashCfg );
         HANDLE_MSG( DID_GPS1_POS, dev_log_->gps1Pos );
         HANDLE_MSG( DID_GPS2_POS, dev_log_->gps2Pos );
         HANDLE_MSG( DID_GPS1_SAT, dev_log_->gps1Sat );
@@ -226,7 +226,7 @@ void LogReader::forwardData(int id)
     // forward_message( DID_RMC, dev_log_->rmc, id );
     forward_message( DID_SYS_PARAMS, dev_log_->sysParams, id );
     forward_message( DID_SYS_SENSORS, dev_log_->sysSensors, id );
-    forward_message( DID_FLASH_CONFIG, dev_log_->flashConfig, id );
+    forward_message( DID_FLASH_CONFIG, dev_log_->flashCfg, id );
     forward_message( DID_GPS1_POS, dev_log_->gps1Pos, id );
     forward_message( DID_GPS2_POS, dev_log_->gps2Pos, id );
     forward_message( DID_GPS1_SAT, dev_log_->gps1Sat, id );

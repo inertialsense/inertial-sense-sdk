@@ -76,9 +76,9 @@ typedef enum
 {
 	_PTYPE_NONE                 = 0,						/** No complete valid data available yet */
 	_PTYPE_PARSE_ERROR          = 0xFFFFFFFF,				/** Invalid data or checksum error */
-	_PTYPE_INERTIAL_SENSE_DATA  = 0xEFFFFFFF,				/** Protocol Type: Inertial Sense binary data */
-	_PTYPE_INERTIAL_SENSE_CMD   = 0xDFFFFFFF,				/** Protocol Type: Inertial Sense binary command (i.e. query data) */
-	_PTYPE_INERTIAL_SENSE_ACK   = 0xCFFFFFFF,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (nack)  */
+	_PTYPE_INERTIAL_SENSE_DATA  = 0xEFFFFFFF,				/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
+	_PTYPE_INERTIAL_SENSE_CMD   = 0xDFFFFFFF,				/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
+	_PTYPE_INERTIAL_SENSE_ACK   = 0xCFFFFFFF,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
 	_PTYPE_ASCII_NMEA           = 0xBFFFFFFF,				/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */

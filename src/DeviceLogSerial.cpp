@@ -69,7 +69,7 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 	}
 
 	// Ensure data will fit in chunk.  If not, create new chunk
-	uint32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
+	int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
 	if (dataBytes > m_chunk.GetBuffFree())
 	{
         // Save chunk to file and clear

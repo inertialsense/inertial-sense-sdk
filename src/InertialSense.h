@@ -70,7 +70,7 @@ public:
 		serial_port_t serialPort;
 		dev_info_t devInfo;
 		system_command_t sysCmd;
-		nvm_flash_cfg_t flashConfig;
+		nvm_flash_cfg_t flashCfg;
 		evb_flash_cfg_t evbFlashCfg;
 	};
 
@@ -272,7 +272,7 @@ public:
 		{
 			pHandle = 0;
 		}
-		return m_comManagerState.devices[pHandle].flashConfig;
+		return m_comManagerState.devices[pHandle].flashCfg;
 	}
 
 	/**
@@ -291,10 +291,10 @@ public:
 
 	/**
 	* Set the flash config and update flash config on the uINS flash memory
-	* @param flashConfig the flash config
+	* @param flashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
 	*/
-	void SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHandle = 0);
+	void SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle = 0);
 
 	/**
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory

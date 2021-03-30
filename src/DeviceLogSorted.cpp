@@ -141,7 +141,7 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 
     // depending on devices and sources, some logs may have different size for the same id
     // if the size changes, flush the chunk and start a new one with the new size
-    uint32_t dataBytes;
+    int32_t dataBytes;
     if (currentChunk->m_subHdr.dHdr.size != dataHdr->size || currentChunk->m_subHdr.dHdr.offset != dataHdr->offset)
     {
         // force a flush of the chunk and start a new chunk with the new size
@@ -310,7 +310,7 @@ tryAgain:
 		m_data.hdr = chunk->m_subHdr.dHdr;
 
 		// Copy data buffer, ensure not to overrun chunk memory in case of corrupt data
-		memcpy(m_data.buf, cnkData->buf, _MIN(chunk->GetDataSize(), m_data.hdr.size));
+		memcpy(m_data.buf, cnkData->buf, _MIN(chunk->GetDataSize(), (int32_t)(m_data.hdr.size)));
 
         // Size = serial number plus data size
 		int pSize = chunk->m_subHdr.dHdr.size + sizeof(uint32_t);

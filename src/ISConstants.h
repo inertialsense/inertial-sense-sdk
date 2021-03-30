@@ -83,9 +83,7 @@ extern "C" {
 #define CPU_IS_LITTLE_ENDIAN 1
 #define CPU_IS_BIG_ENDIAN 0
 
-
 #elif defined(ARM) || defined(__SAM3X8E__)
-
 #define PLATFORM_IS_EMBEDDED 1
 #define PLATFORM_IS_ARM 1
 #define CPU_IS_LITTLE_ENDIAN 1
@@ -98,7 +96,6 @@ extern "C" {
 #define CPU_IS_BIG_ENDIAN 0
 
 #elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
-
 #define PLATFORM_IS_EMBEDDED 1
 #define PLATFORM_IS_ARM 1
 #define CPU_IS_LITTLE_ENDIAN 1
@@ -107,6 +104,10 @@ extern "C" {
 #else
 
 #error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
+#define PLATFORM_IS_EMBEDDED 0
+#define PLATFORM_IS_ARM 0
+#define CPU_IS_LITTLE_ENDIAN 1
+#define CPU_IS_BIG_ENDIAN 0
 
 #endif // platform defines
 

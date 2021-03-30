@@ -108,7 +108,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	{
 	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
 	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
-	case DID_FLASH_CONFIG:		s->devices[pHandle].flashConfig = *(nvm_flash_cfg_t*)data->buf;	break;
+	case DID_FLASH_CONFIG:		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;	break;
 	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
 		// every 5 seconds, put in a new gps position message
@@ -185,7 +185,7 @@ bool InertialSense::HasReceivedResponseFromDevice(size_t index)
 	}
 
 	return (
-		m_comManagerState.devices[index].flashConfig.size != 0 &&
+		m_comManagerState.devices[index].flashCfg.size != 0 &&
 		m_comManagerState.devices[index].devInfo.serialNumber != 0 &&
 		m_comManagerState.devices[index].devInfo.manufacturer[0] != 0);
 }
@@ -605,16 +605,16 @@ void InertialSense::SetSysCmd(const system_command_t& sysCmd, int pHandle)
 	comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(sysCmd), 0);
 }
 
-void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashConfig, int pHandle)
+void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 {
 	if ((size_t)pHandle >= m_comManagerState.devices.size())
 	{
 		return;
 	}
 
-	m_comManagerState.devices[pHandle].flashConfig = flashConfig;
+	m_comManagerState.devices[pHandle].flashCfg = flashCfg;
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
-	comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashConfig, sizeof(nvm_flash_cfg_t), 0);
+	comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
 	Update();
 }
 

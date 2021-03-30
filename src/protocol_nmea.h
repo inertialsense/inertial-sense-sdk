@@ -47,7 +47,7 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 //////////////////////////////////////////////////////////////////////////
 // NMEA parse
 //////////////////////////////////////////////////////////////////////////
-uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[]);
+uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[], uint32_t *asciiPeriodPPIMU);
 int parse_nmea_zda(const char msgBuf[], int msgSize, double &day, double &month, double &year);
 int parse_nmea_gns(const char msgBuf[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode);
 int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode);

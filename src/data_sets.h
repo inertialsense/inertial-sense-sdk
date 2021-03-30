@@ -1957,6 +1957,65 @@ enum eIoConfig
 	IO_CONFIG_CAN_BUS_ENABLE					= (int)0x01000000,
 };
 
+
+/** (DID_WHEEL_ENCODER) [NOT SUPPORTED, INTERNAL USE ONLY] Message to communicate wheel encoder measurements to GPS-INS */
+typedef struct PACKED
+{
+    /** Time of measurement wrt current week */
+    double timeOfWeek;
+
+    /** Status Word */
+    uint32_t status;
+
+    /** Left wheel angle (rad) */
+    float theta_l;
+
+    /** Right wheel angle (rad) */
+    float theta_r;
+    
+    /** Left wheel angular rate (rad/s) */
+    float omega_l;
+
+    /** Right wheel angular rate (rad/s) */
+    float omega_r;
+
+    /** Left wheel revolution count */
+    uint32_t wrap_count_l;
+
+    /** Right wheel revolution count */
+    uint32_t wrap_count_r;
+
+} wheel_encoder_t;
+
+enum eWheelCfgBits
+{
+    WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
+    WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
+    WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
+};
+
+/** (DID_WHEEL_CONFIG) [NOT SUPPORTED, INTERNAL USE ONLY] Configuration of wheel encoders and kinematic constraints. */
+typedef struct PACKED
+{
+    /** Config bits (see eWheelCfgBits) */
+    uint32_t                bits;
+
+	/** Euler angles describing the rotation from imu to left wheel */
+	float                   e_i2l[3];
+
+	/** Translation from the imu to the left wheel, expressed in the imu frame */
+	float                   t_i2l[3];
+
+	/** Distance between the left wheel and the right wheel */
+	float                   distance;
+
+	/** Estimate of wheel diameter */
+	float                   diameter;
+
+} wheel_config_t;
+
 typedef enum
 {
     DYN_PORTABLE = 0,
@@ -3187,7 +3246,7 @@ typedef struct
     /** Server IP and port */
     evb_server_t            server[NUM_WIFI_PRESETS];
 
-    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi).  Only one encoder channel, don't multiple by number of channels. */
+    /** Encoder tick to wheel rotation conversion factor (in radians).  Encoder tick count per revolution on 1 channel x gear ratio x 2pi. */
     float                   encoderTickToWheelRad;
 
 	/** CAN baudrate */
@@ -3216,7 +3275,10 @@ typedef struct
 
 	/** Baud rate for EVB serial port H8 (TLL). */
 	uint32_t                h8gpioBaudRate;
-	
+
+	/** Wheel encoder configuration (see eWheelCfgBits) */
+	uint32_t                wheelCfgBits;
+
 } evb_flash_cfg_t;
 
 
@@ -3526,16 +3588,16 @@ enum
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
-	CAN_BAUDRATE_20000   =   20000,
-	CAN_BAUDRATE_33000   =   33000,
-	CAN_BAUDRATE_50000   =   50000,
-	CAN_BAUDRATE_83000   =   83000,
-	CAN_BAUDRATE_100000  =  100000,
-	CAN_BAUDRATE_125000  =  125000,
-	CAN_BAUDRATE_200000  =  200000,
-	CAN_BAUDRATE_250000  =  250000,
-	CAN_BAUDRATE_500000  =  500000,
-	CAN_BAUDRATE_1000000 = 1000000,
+	CAN_BAUDRATE_20_KBPS   =   20,
+	CAN_BAUDRATE_33_KBPS   =   33,
+	CAN_BAUDRATE_50_KBPS   =   50,
+	CAN_BAUDRATE_83_KBPS   =   83,
+	CAN_BAUDRATE_100_KBPS  =  100,
+	CAN_BAUDRATE_125_KBPS  =  125,
+	CAN_BAUDRATE_200_KBPS  =  200,
+	CAN_BAUDRATE_250_KBPS  =  250,
+	CAN_BAUDRATE_500_KBPS  =  500,
+	CAN_BAUDRATE_1000_KBPS = 1000,
 
 	CAN_BAUDRATE_COUNT = 10
 } can_baudrate_t;

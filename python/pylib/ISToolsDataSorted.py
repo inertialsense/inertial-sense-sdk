@@ -362,7 +362,7 @@ class cDevice:
 
         # 11 'sysSensors'
 
-        self.di[12].set('flashConfig', np.dtype([
+        self.di[12].set('flashCfg', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in ti
             ('size', u32),
             ('checksum', u32),

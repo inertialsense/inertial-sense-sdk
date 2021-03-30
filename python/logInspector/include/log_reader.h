@@ -38,7 +38,7 @@ struct DeviceLog
 //    vector<rmc_t> rmc;
     vector<sys_params_t> sysParams;
     vector<sys_sensors_t> sysSensors;
-    vector<nvm_flash_cfg_t> flashConfig;
+    vector<nvm_flash_cfg_t> flashCfg;
     vector<gps_pos_t> gps1Pos;
     vector<gps_pos_t> gps2Pos;
     vector<gps_sat_t> gps1Sat;
