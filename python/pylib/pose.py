@@ -988,7 +988,15 @@ def eulerNed(euler):
     return e0n
 
 
+#  Compute body atitude quaternion assuming zero roll and
+#  given body X unit vector NED cordinates
+#  TODO: this function needs a better name
+def nedQuat(v):
+    return euler2quat(nedEuler(v))
+
+
 # Rotate theta eulers from body to inertial frame by ins eulers, in order: phi, theta, psi
+# TODO: this function needs a better description
 def eulerRotateBodyToInertial2(e, rot):
     eResult = np.zeros(np.shape(e))
 
@@ -1004,9 +1012,9 @@ def eulerRotateBodyToInertial2(e, rot):
 
     return eResult
 
+
 # Rotate theta eulers from inertial to body frame by ins eulers, in order: psi, theta, phi
-
-
+# TODO: this function needs a better description
 def eulerRotateInertialToBody2(e, rot):
     eResult = np.zeros(np.shape(e))
 
@@ -1022,178 +1030,88 @@ def eulerRotateInertialToBody2(e, rot):
 
     return eResult
 
-# Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
-
-
-def vectorRotateInertialToBody(vIn, eRot):
-    vResult = np.zeros(np.shape(vIn))
-
-    for i in range(0, np.shape(vResult)[0]):
-        # Create DCM (rotation matrix)
-        DCM = eulerDCM(eRot[i, :])
-        # Apply rotation to vector
-        vResult[i, :] = np.dot(DCM, vIn[i, :])
-
-    return vResult
-
-# Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
-
-
-def vectorRotateBodyToInertial(vIn, eRot):
-    vResult = np.zeros(np.shape(vIn))
-
-    for i in range(0, np.shape(vResult)[0]):
-        # Create DCM (rotation matrix)
-        DCM = eulerDCM(eRot[i, :])
-        # Apply rotation to vector
-        vResult[i, :] = np.dot(DCM.T, vIn[i, :])
-
-    return vResult
 
 # Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
+# Equivalent to a DCM * vector multiply.
+# TODO: this function needs a better name (see quatConjRot() that does the same but uses quaternions)
+def vectorRotateInertialToBody(euler, v_in):
+    q  = euler2quat(euler)
+    v_out = quatConjRot(q, v_in)
+    return v_out
 
-
-def vectorRotateInertialToBody2(vIn, eRot):
-    vResult = np.zeros(np.shape(vIn))
-
-    # Create DCM (rotation matrix)
-    DCM = eulerDCM(eRot)
-
-    for i in range(0, np.shape(vResult)[0]):
-        # Apply rotation to vector
-        vResult[i, :] = np.dot(DCM, vIn[i, :])
-
-    return vResult
 
 # Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
-
-
-def vectorRotateBodyToInertial2(vIn, eRot):
-    vResult = np.zeros(np.shape(vIn))
-
-    # Create DCM (rotation matrix)
-    DCM = eulerDCM(eRot)
-
-    for i in range(0, np.shape(vResult)[0]):
-        # Apply rotation to vector
-        vResult[i, :] = np.dot(DCM.T, vIn[i, :])
-
-    return vResult
-
-
-# Find euler angles of a vector (no roll)
-def vectorEuler(v):
-    psi = np.arctan2(v[1], v[0])
-    dcm = psiDCM(psi)
-    v2 = np.dot(dcm, v[0:2])
-    theta = np.arctan2(-v[2], v2[0])
-    result = r_[0., theta, psi]
-#     print("v:", v, " v2:", v2, " e:", result * 180/pi)
-    return result
-
-
-def vectorQuat(v):
-    return euler2quat(vectorEuler(v))
+# Equivalent to a DCM.T() * vector multiply.
+# TODO: this function needs a better name (see quatConjRot() that does the same but uses quaternions)
+def vectorRotateBodyToInertial(euler, v_in):
+    q  = euler2quat(euler)
+    v_out = quatRot(q, v_in)
+    return v_out
 
 
 def unwrapAngle(angle):
+    if len(np.shape(angle)) < 1:
+        angle = np.expand_dims(angle, axis=0)
+        array = 0
+    else:
+        array = 1
 
     twoPi = pi*2
-
     for i in range(0, np.shape(angle)[0]):
         while angle[i] < -pi:
             angle[i] += twoPi
         while angle[i] > pi:
             angle[i] -= twoPi
 
+    if array == 0:
+        angle = np.squeeze(angle)
     return angle
 
 
-# Non-accelerated gravity used to determine attitude
+# Find body attitude as Euler angles (roll and pitch, yaw is kept zero)
+# given coordinates of the body Z-axis vector in reference rame
+# Application: non-accelerated gravity used to determine attitude
 def accellToEuler(acc):
-    euler = np.zeros(np.shape(acc))
+    if len(np.shape(acc)) == 1:
+        acc = np.expand_dims(acc, axis=0)
+        array = 0
+    else:
+        array = 1
 
+    euler = np.empty(shape=(np.shape(acc)[0], 3))
     euler[:, 0] = np.arctan2(-acc[:, 1], -acc[:, 2])
-    euler[:, 1] = np.arctan2(acc[:, 0], np.sqrt(
-        acc[:, 1]*acc[:, 1] + acc[:, 2]*acc[:, 2]))
+    euler[:, 1] = np.arctan2(acc[:, 0], np.sqrt(acc[:, 1]**2 + acc[:, 2]**2))
+
+    if array == 0:
+        euler = np.squeeze(euler)
     return euler
 
 
+# Find body attitude as Euler angles (roll and pitch, yaw is kept zero)
+# and accelerometer bias given non-accelerated gravity
 def acc2AttAndBias(acc):
-    att = np.zeros(np.shape(acc))
+    if len(np.shape(acc)) == 1:
+        acc = np.expand_dims(acc, axis=0)
+        array = 0
+    else:
+        array = 1
+
     bias = np.zeros(np.shape(acc))
-
-#     pe = pt.cPlot()
-
     for i in range(0, 4):
         att = accellToEuler(acc-bias)
-
         gIF = np.r_[0, 0, -9.80665]
-        for i in range(0, np.shape(bias)[0]):
-            # Create DCM (rotation matrix)
-            DCM = eulerDCM(att[i, :])
-            # Apply rotation to vector: inertial -> body
-            g = np.dot(DCM, gIF)
-            bias[i, :] = acc[i, :] - g
+        DCM = eulerDCM(att)
+        g = np.einsum('ijk,k->ij',DCM, gIF)
+        bias = acc - g
 
-#         pe.plot3Axes(1, range(0,np.shape(bias)[0]), bias, 'Bias', 'm/s^2')
+    if array == 0:
+        att = np.squeeze(att)
+        bias = np.squeeze(bias)
 
     return [att, bias]
 
-# THIS FUNCTION SHALL BE DELETED
-# qmat_matrix = np.array([[[1.0, 0, 0, 0],
-#                          [0, -1.0, 0, 0],
-#                          [0, 0, -1.0, 0],
-#                          [0, 0, 0, -1.0]],
-#                         [[0, 1.0, 0, 0],
-#                          [1.0, 0, 0, 0],
-#                          [0, 0, 0, 1.0],
-#                          [0, 0, -1.0, 0]],
-#                         [[0, 0, 1.0, 0],
-#                          [0, 0, 0, -1.0],
-#                          [1.0, 0, 0, 0],
-#                          [0, 1.0, 0, 0]],
-#                         [[0, 0, 0, 1.0],
-#                          [0, 0, 1.0, 0],
-#                          [0, -1.0, 0, 0],
-#                          [1.0, 0, 0, 0]]])
-# def qmult(q1, q2):
-#     if q1.shape[0] == 1 and q2.shape[0] == 1:
-#         dots = np.empty_like(q2)
-#         for i in range(q2.shape[0]):
-#             dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1.T).T
-#     elif q1.shape[0] == 1 and q2.shape[0] != 1:
-#         dots = np.empty_like(q2)
-#         for i in range(q2.shape[0]):
-#             dots[i, :] = qmat_matrix.dot(q2[i, :].T).squeeze().dot(q1.T).T
-#     elif q1.shape[0] != 1 and q2.shape[0] == 1:
-#         dots = np.empty_like(q2)
-#         for i in range(q2.shape[0]):
-#             dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1[i,:].T).T
-#     elif q1.shape[0] == q2.shape[0]:
-#         dots = np.empty_like(q2)
-#         for i in range(q2.shape[0]):
-#             dots[i, :] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i, :].T).T
-#     else:
-#         raise Exception("Incompatible quaternion arrays -- cannot multiply")
 
-#     # print qmat_matrix.dot(q2.T).squeeze()
-#     # print np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T.squeeze()
-#     # dots = np.empty((2,4,4))
-#     # for i in range(q1.shape[0]):
-#     #      dots[i,:] = qmat_matrix.dot(q2[i,:].T)
-#     # tensordots = np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T
-#     # dots = np.empty_like(q1)
-#     # for i in range(q1.shape[0]):
-#     #      dots[i,:] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i,:].T).T
-#     # tensordots = np.tensordot(q1, np.tensordot(qmat_matrix.T, q2, axes=[0,1]), axes=1).T
-#     # print "dots = ", dots, "\ntensordots = ", tensordots
-#     # print "diff = ", dots - tensordots
-
-#     # return np.tensordot(q1, np.tensordot(q2.T, qmat_matrix.T, axes=[0,1]).T, axes=1)[0].T
-#     return dots
-
-
+# TODO: this function needs a better description
 def qlog(q):
     q *= np.sign(q[:, 0])[:, None]
     norm_v = norm(q[:, 1:], axis=1)
@@ -1205,6 +1123,7 @@ def qlog(q):
     return out
 
 
+# TODO: this function needs a better description
 def qexp(v):
     out = np.empty((len(v), 4))
     norm_v = norm(v, axis=1)
@@ -1215,23 +1134,20 @@ def qexp(v):
     out[idx, 1:] = np.sin(norm_v[idx, None]/2.0) * v[idx, :]/norm_v[idx, None]
     return out
 
+
 # Attitude quaternion resulting from q1 followed by rotation due to rotation vector v
-
-
 def qboxplus(q, v):
     return mul_Quat_Quat(qexp(v), q)
 
+
 # Rotation from attitude q1 to q2 in terms of rotation vector
-
-
 def qboxminus(q1, q2):
     return qlog(mul_Quat_Quat(q1, quatConj(q2)))
+
 
 # Implementation of "Mean of Sigma Points" from Integrating Generic Sensor Fusion Algorithms with
 # Sound State Representations through Encapsulation of Manifolds by Hertzberg et. al.
 # https://arxiv.org/pdf/1107.1119.pdf p.13
-
-
 def meanOfQuat(q):
     n = float(q.shape[0])
     mu = q[None, 0, :]
@@ -1304,6 +1220,7 @@ if __name__ == '__main__':
     assert np.sqrt(np.sum(np.square(q1 - quat))) < 1e-8
 
     # Test quaternion multiplication with inverse
+    quat0 = mul_Quat_Quat(quatConj(q0), q0)
     quat0 = mul_Quat_Quat(quatConj(q1), q2)
     quat1 = mul_ConjQuat_Quat(q1, q2)
     assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
@@ -1346,6 +1263,17 @@ if __name__ == '__main__':
     assert np.sqrt(np.sum(np.square(R[0, :, :] - R1))) < 1e-8
     assert np.sqrt(np.sum(np.square(R[1, :, :] - R2))) < 1e-8
 
+    # Test vector rotation using attitude as Euler angles
+    u0 = y[0:2,:]
+    v = vectorRotateInertialToBody(eul_n2b, u0)
+    u = vectorRotateBodyToInertial(eul_n2b, v)
+    assert np.sqrt(np.sum(np.square(u - u0))) < 1e-8
+
+    u = y[0:2,:]
+    eul = accellToEuler(u)
+    a = unwrapAngle(np.radians(205.0))
+    eul, bias = acc2AttAndBias(u)
+
     # Find the mean Quaternion
     mu = meanOfQuat(q)
     qarr = np.random.random((5000, 25, 4))
@@ -1354,3 +1282,56 @@ if __name__ == '__main__':
     print(mu)
 
     pass
+
+# THIS FUNCTION SHALL BE DELETED
+# qmat_matrix = np.array([[[1.0, 0, 0, 0],
+#                          [0, -1.0, 0, 0],
+#                          [0, 0, -1.0, 0],
+#                          [0, 0, 0, -1.0]],
+#                         [[0, 1.0, 0, 0],
+#                          [1.0, 0, 0, 0],
+#                          [0, 0, 0, 1.0],
+#                          [0, 0, -1.0, 0]],
+#                         [[0, 0, 1.0, 0],
+#                          [0, 0, 0, -1.0],
+#                          [1.0, 0, 0, 0],
+#                          [0, 1.0, 0, 0]],
+#                         [[0, 0, 0, 1.0],
+#                          [0, 0, 1.0, 0],
+#                          [0, -1.0, 0, 0],
+#                          [1.0, 0, 0, 0]]])
+# def qmult(q1, q2):
+#     if q1.shape[0] == 1 and q2.shape[0] == 1:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1.T).T
+#     elif q1.shape[0] == 1 and q2.shape[0] != 1:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2[i, :].T).squeeze().dot(q1.T).T
+#     elif q1.shape[0] != 1 and q2.shape[0] == 1:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2.T).squeeze().dot(q1[i,:].T).T
+#     elif q1.shape[0] == q2.shape[0]:
+#         dots = np.empty_like(q2)
+#         for i in range(q2.shape[0]):
+#             dots[i, :] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i, :].T).T
+#     else:
+#         raise Exception("Incompatible quaternion arrays -- cannot multiply")
+
+#     # print qmat_matrix.dot(q2.T).squeeze()
+#     # print np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T.squeeze()
+#     # dots = np.empty((2,4,4))
+#     # for i in range(q1.shape[0]):
+#     #      dots[i,:] = qmat_matrix.dot(q2[i,:].T)
+#     # tensordots = np.tensordot(qmat_matrix.T, q2, axes=[0,1]).T
+#     # dots = np.empty_like(q1)
+#     # for i in range(q1.shape[0]):
+#     #      dots[i,:] = qmat_matrix.dot(q2[i,:].T).squeeze().dot(q1[i,:].T).T
+#     # tensordots = np.tensordot(q1, np.tensordot(qmat_matrix.T, q2, axes=[0,1]), axes=1).T
+#     # print "dots = ", dots, "\ntensordots = ", tensordots
+#     # print "diff = ", dots - tensordots
+
+#     # return np.tensordot(q1, np.tensordot(q2.T, qmat_matrix.T, axes=[0,1]).T, axes=1)[0].T
+#     return dots
