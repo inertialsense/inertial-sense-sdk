@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 dev_info_t                  g_evbDevInfo = {0};
 wheel_encoder_t				g_wheelEncoder = {0};
 evb_status_t                g_status = {0};
+bool                        g_statusToWlocal = true;
 evb_flash_cfg_t*            g_flashCfg;
 nvr_manage_t                g_nvr_manage_config;
 nvm_config_t                g_userPage = {0};
@@ -36,6 +37,7 @@ uint32_t                    g_comm_time_ms = 0;
 bool                        g_loggerEnabled = false;
 uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
+ermc_t                      g_ermc = {0};
 
 
 void globals_init(void)
@@ -330,11 +332,22 @@ void concatStringWithSpace(char* buf, size_t bufLen, const char* concat)
 void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 {
     evb_flash_cfg_t defaults;
-    memset(&defaults, 0, sizeof(evb_flash_cfg_t));
-    
+    memset(&defaults, 0, sizeof(evb_flash_cfg_t));    
     reset_config_defaults(&defaults);
-    
+
+    bool valid = true;
     if (cfg->checksum != flashChecksum32(cfg, sizeof(evb_flash_cfg_t)) || cfg->key != defaults.key)
+    {   // checksum failure
+        valid = false;
+    }
+
+    if (error_check_config(cfg))
+    {   // Values are outside valid ranges
+        valid = false;        
+    }
+
+	// Flash Config
+	if (!valid)    
     {   // Reset to defaults
         *cfg = defaults;
         g_nvr_manage_config.flash_write_needed = true;
@@ -363,14 +376,11 @@ void nvr_init(void)
     // Update RAM from FLASH
     memcpy(&g_userPage, (void*)BOOTLOADER_FLASH_CONFIG_BASE_ADDRESS, sizeof(g_userPage));
 
-    // Reset to defaults if checksum or keys don't match
-    nvr_validate_config_integrity(g_flashCfg);
-    
-	// Ensure values are within valid ranges
-    error_check_config(g_flashCfg);
-
     // Disable flash writes.  We require the user to initiate each write with this option.
     g_nvr_manage_config.flash_write_enable = 0;
+
+    // Reset to defaults if checksum or keys don't match
+    nvr_validate_config_integrity(g_flashCfg);    
 }
 
 
@@ -472,17 +482,17 @@ int error_check_config(evb_flash_cfg_t *cfg)
         cfg->radioNID > 0x7FFF ||
         cfg->radioPowerLevel > 2 )
     {
-        failure = 1;
+        failure = -1;
     }
     if(EVB_CFG_BITS_IDX_WIFI(cfg->bits) >= NUM_WIFI_PRESETS)
     {
         EVB_CFG_BITS_SET_IDX_WIFI(cfg->bits,0);
-        failure = 1;
+        failure = -1;
     }        
     if(EVB_CFG_BITS_IDX_SERVER(cfg->bits) >= NUM_WIFI_PRESETS)
     {
         EVB_CFG_BITS_SET_IDX_SERVER(cfg->bits,0);
-        failure = 1;
+        failure = -1;
     }
     
     return failure;
@@ -496,7 +506,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 8;			// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 2;			// increment key to force config to revert to defaults (overwrites customer's settings)
 
 	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 
@@ -515,8 +525,8 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->server[0].port = 7778;
 	cfg->server[1].ipAddr.u32 = nmi_inet_addr((void*)"192.168.1.144");
 	cfg->server[1].port = 2000;
-// 	cfg->encoderTickToWheelRad = 0.0179999f;	// Husqvarna lawnmower
-	cfg->encoderTickToWheelRad = 0.054164998f;	// Husqvarna lawnmower
+// 	cfg->encoderTickToWheelRad = 0.0359998f;	// Husqvarna lawnmower
+	cfg->encoderTickToWheelRad = 0.108329996f;	// Husqvarna lawnmower
 	
 	com_bridge_apply_preset(cfg);
 	

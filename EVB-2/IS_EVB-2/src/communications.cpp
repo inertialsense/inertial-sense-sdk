@@ -11,18 +11,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <asf.h>
+#include "../../../hw-libs/communications/CAN_comm.h"
+#include "../../../hw-libs/drivers/CAN.h"
+#include "../../../hw-libs/misc/bootloaderApp.h"
 #include "../../../src/ISUtilities.h"
 #include "../../../src/ISLogger.h"
-#include "../../../hw-libs/misc/bootloaderApp.h"
 #include "../drivers/d_quadEnc.h"
+#include "../src/protocol_nmea.h"
 #include "ISLogFileFatFs.h"
 #include "xbee.h"
 #include "wifi.h"
 #include "sd_card_logger.h"
-#include "CAN.h"
-#include "../hw-libs/communications/CAN_comm.h"
-#include "../src/protocol_nmea.h"
 #include "user_interface.h"
+#include "wheel_encoder.h"
 #include "communications.h"
 
 typedef struct
@@ -48,6 +49,8 @@ StreamBufferHandle_t        g_xStreamBufferWiFiTx;
 
 static pfnHandleUinsData s_pfnHandleUinsData = NULLPTR;
 static pfnHandleHostData s_pfnHandleHostData = NULLPTR;
+static pfnHandleBroadcst s_pfnHandleBroadcst = NULLPTR;
+static pfnHandleDid2Ermc s_pfnHandleDid2Ermc = NULLPTR;
 
 
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin )
@@ -304,6 +307,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	case DID_INS_1:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
+		g_statusToWlocal = false;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins1.timeOfWeek*1000);
 		break;
 	                    
@@ -311,18 +315,21 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
 		g_msg.ins2 = d.ins2;
 		g_status.week = g_msg.ins2.week;
+		g_statusToWlocal = false;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins2.timeOfWeek*1000);
 		break;
 
 	case DID_INS_3:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_3_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
+		g_statusToWlocal = false;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins3.timeOfWeek*1000);
 		break;
 
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
 		g_status.week = d.ins4.week;
+		g_statusToWlocal = false;
 		g_status.timeOfWeekMs = (uint32_t)(d.ins4.timeOfWeek*1000);
 		break;
 	}
@@ -331,6 +338,68 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	if(s_pfnHandleUinsData)
 	{
 		s_pfnHandleUinsData(dataHdr, d);
+	}
+}
+
+// Convert DID to message out control mask
+uint64_t evbDidToErmcBit(uint32_t dataId)
+{
+	switch (dataId)
+	{
+		case DID_EVB_DEV_INFO:			return ERMC_BITS_DEV_INFO;
+		case DID_EVB_FLASH_CFG:			return ERMC_BITS_FLASH_CFG;
+		case DID_EVB_STATUS:			return ERMC_BITS_STATUS;
+		case DID_EVB_DEBUG_ARRAY:       return ERMC_BITS_DEBUG_ARRAY;
+		case DID_WHEEL_ENCODER:         return ERMC_BITS_WHEEL_ENCODER;
+        default:                        break;
+	}
+
+	if (s_pfnHandleDid2Ermc)
+	{	// Pass to callback
+		return s_pfnHandleDid2Ermc(dataId);
+	}
+
+	return 0;
+}
+
+
+void broadcastRmcMessage(is_comm_instance_t *comm, uint32_t did, uint32_t size, void* data, uint32_t &time_ms, uint32_t didSendNow)
+{
+	if ((g_ermc.periodMultiple[did] &&
+		 g_ermc.bits & evbDidToErmcBit(did) && 
+		 (g_comm_time_ms-time_ms) > g_ermc.periodMultiple[did]) ||
+		did == didSendNow)
+	{
+		time_ms = g_comm_time_ms;
+		int n = is_comm_data(comm, did, 0, size, data);
+		serWrite(EVB2_PORT_USB, comm->buf.start, n);
+	}
+}
+
+
+void step_broadcast_data(is_comm_instance_t *comm, uint32_t didSendNow)
+{
+	static uint32_t time_ms_dev_info;
+	static uint32_t time_ms_flash_cfg;
+	static uint32_t time_ms_rtos;
+	static uint32_t time_ms_status;
+	static uint32_t time_ms_debug;
+	
+	// Broadcast messages
+	broadcastRmcMessage(comm, DID_DEV_INFO, sizeof(dev_info_t), (void*)&g_evbDevInfo, time_ms_dev_info, didSendNow);
+	broadcastRmcMessage(comm, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), (void*)g_flashCfg, time_ms_flash_cfg, didSendNow);
+	broadcastRmcMessage(comm, DID_EVB_RTOS_INFO, sizeof(evb_rtos_info_t), (void*)&g_rtos, time_ms_rtos, didSendNow);
+	broadcastRmcMessage(comm, DID_EVB_STATUS, sizeof(evb_status_t), (void*)&g_status, time_ms_status, didSendNow);
+	broadcastRmcMessage(comm, DID_EVB_DEBUG_ARRAY, sizeof(debug_array_t), (void*)&g_debug, time_ms_debug, didSendNow);
+
+	switch (didSendNow)
+	{
+	case DID_EVB_RTOS_INFO:	g_enRtosStats = true; break;
+	}
+
+	if (s_pfnHandleBroadcst)
+	{	// Pass to callback
+		s_pfnHandleBroadcst(comm, didSendNow);
 	}
 }
 
@@ -399,6 +468,8 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     bool initIOconfig = false;
     bool reinitXBee = false;
     bool reinitWiFi = false;
+	bool reinitCAN = false;
+	bool reinitWheelEncoder = false;
 
     // Detect changes
     if (newCfg.cbPreset != g_flashCfg->cbPreset ||
@@ -443,13 +514,17 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 	if (g_flashCfg->CANbaud_kbps != newCfg.CANbaud_kbps)
 	{
 		g_flashCfg->CANbaud_kbps = newCfg.CANbaud_kbps;
-		CAN_init();
+		reinitCAN = true;
 	}
 	if (g_flashCfg->can_receive_address != newCfg.can_receive_address)
 	{
 		g_flashCfg->can_receive_address = newCfg.can_receive_address;
-		CAN_init();
-	}    
+		reinitCAN = true;
+	}
+	if (g_flashCfg->wheelCfgBits != newCfg.wheelCfgBits)
+	{
+		reinitWheelEncoder = true;
+	}
     
     // Copy data from message to working location
     *g_flashCfg = newCfg;
@@ -471,6 +546,14 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     {
         wifi_reinit();
     }
+	if (reinitCAN)
+	{
+		CAN_init(g_flashCfg->CANbaud_kbps*1000, g_flashCfg->can_receive_address);
+	}
+	if (reinitWheelEncoder)
+	{
+		init_wheel_encoder();
+	}
 	evbUiRefreshLedCfg();
     
 	// Enable flash write
@@ -482,7 +565,8 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
-	
+	int n;
+
 	switch(ptype)
 	{
 	case _PTYPE_INERTIAL_SENSE_DATA:
@@ -510,24 +594,32 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		break;
 
 	case _PTYPE_INERTIAL_SENSE_CMD:
-		if(comm->pkt.hdr.pid == PID_GET_DATA)
+		switch(comm->pkt.hdr.pid)
 		{
-			int n=0;
-			switch(comm->dataHdr.id)
-			{
-				case DID_DEV_INFO:          n = is_comm_data(&g_commTx, DID_EVB_DEV_INFO, 0, sizeof(dev_info_t), (void*)&(g_evbDevInfo));         break;
-				case DID_EVB_STATUS:        n = is_comm_data(&g_commTx, DID_EVB_STATUS, 0, sizeof(evb_status_t), (void*)&(g_status));             break;
-				case DID_EVB_FLASH_CFG:     n = is_comm_data(&g_commTx, DID_EVB_FLASH_CFG, 0, sizeof(evb_flash_cfg_t), (void*)(g_flashCfg));      break;
-				case DID_EVB_DEBUG_ARRAY:   n = is_comm_data(&g_commTx, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));        break;
-				case DID_EVB_RTOS_INFO:     n = is_comm_data(&g_commTx, DID_EVB_RTOS_INFO, 0, sizeof(evb_rtos_info_t), (void*)&(g_rtos));         g_enRtosStats = true;	break;
-			}
-			if(n>0)
-			{
-				serWrite(srcPort, g_commTx.buf.start, n);
-			}			
+		case PID_GET_DATA:
+			// Set ERMC broadcast control bits
+			setErmcBroadcastBits(comm, srcPort, evbDidToErmcBit(comm->dataHdr.id));
+
+			// Send data now
+			step_broadcast_data(comm, comm->dataHdr.id);
 
 			// Disable uINS bootloader mode if host sends IS binary command
 			g_uInsBootloaderEnableTimeMs = 0;
+			break; // PID_GET_DATA
+
+		// case PID_SET_DATA:
+		// 	if(comm->dataHdr.id == DID_RMC)
+		// 	{
+		// 		g_ermc.bits = *((uint64_t*)(comm->dataPtr));	// RMC is not the same as ERMC (EVB RMC).  We may need to translate this if necessary.
+		// 	}
+		// 	break;
+
+		case PID_STOP_BROADCASTS_ALL_PORTS:
+		case PID_STOP_DID_BROADCAST:
+		case PID_STOP_BROADCASTS_CURRENT_PORT:
+			// Disable EVB broadcasts
+			g_ermc.bits = 0;
+			break;
 		}
 		break;
 
@@ -540,6 +632,9 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				{
 				case ASCII_MSG_ID_BLEN: // Enable bootloader (uINS)
 					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
+
+					// Disable EVB broadcasts
+					g_ermc.bits = 0;
 					break;
 							
 				case ASCII_MSG_ID_EBLE: // Enable bootloader (EVB)
@@ -547,7 +642,13 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 					g_uInsBootloaderEnableTimeMs = 0;
 					
 					enable_bootloader(PORT_SEL_USB);
-					break;					
+					break;				
+
+				case ASCII_MSG_ID_STPB:
+				case ASCII_MSG_ID_STPC:	
+					// Disable EVB communications
+					g_ermc.bits = 0;
+					break;
 				}
 				break;							
 			}
@@ -573,11 +674,30 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		}
 		break;
 	}
-
-	// Pass to callback
+	
 	if (s_pfnHandleHostData)
-	{
+	{	// Pass to callback
 		s_pfnHandleHostData(comm, ptype, srcPort);
+	}
+}
+
+
+// Set ERMC broadcast control bits
+void setErmcBroadcastBits(is_comm_instance_t *comm, uint32_t srcPort, uint64_t bits)
+{
+	uint32_t bc_period_multiple = *((int32_t*)(comm->dataPtr));
+	if(bc_period_multiple)
+	{	// Enable message
+		g_ermc.bits |= bits;
+	}
+	else
+	{	// Disable message
+		g_ermc.bits &= ~bits;
+		bc_period_multiple = 0;
+	}
+	if (comm->dataHdr.id < sizeof(g_ermc.periodMultiple))
+	{
+		g_ermc.periodMultiple[comm->dataHdr.id] = bc_period_multiple;
 	}
 }
 
@@ -876,7 +996,7 @@ void comunications_set_host_data_callback( pfnHandleHostData pfn )
 }
 
 
-void communications_init(void)
+void communications_init(pfnHandleBroadcst pfnBroadcst, pfnHandleDid2Ermc pfnDid2Ermc)
 {
     const size_t xTriggerLevel = 1;
     g_xStreamBufferUINS = xStreamBufferCreate( STREAM_BUFFER_SIZE, xTriggerLevel );
@@ -890,4 +1010,9 @@ void communications_init(void)
 		// Use alternate decode buffer on EVB so we can preserve and forward original packet received.
 		g_comRxPort[i].comm.altDecodeBuf = s_rxDecodeBuffer;
 	}
+
+	// Broadcast callback
+	s_pfnHandleBroadcst = pfnBroadcst;
+	// DID to RMC
+	s_pfnHandleDid2Ermc = pfnDid2Ermc;
 }

@@ -41,12 +41,12 @@
 #include "pio.h"
 #include "../../../../../../../src/data_sets.h"
 #include "../../../../../../../hw-libs/drivers/d_usartDMA.h"
+#include "../../../../../../../hw-libs/drivers/CAN.h"
 #include "../../../../drivers/d_time.h"
 #include "../../../../spiTouINS.h"
 #include "../../../../xbee.h"
 #include "../../../../wifi.h"
 #include "../../../../globals.h"
-#include "../../../../CAN.h"
 #ifdef CONF_BOARD_CONFIG_MPU_AT_INIT
 #include "mpu.h"
 #endif
@@ -558,7 +558,7 @@ void board_IO_config(void)
 	if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_CAN_ENABLE)
 	{
 		serSetBaudRate(EVB2_PORT_UINS1, 921600);
-		CAN_init();
+		CAN_init(g_flashCfg->CANbaud_kbps*1000. g_flashCfg->can_receive_address);
 	}
 #endif
 

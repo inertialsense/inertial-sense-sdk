@@ -117,7 +117,7 @@ typedef struct
 	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port2[ARGN(4, PORT2_CONFIG)];
 #endif
 
-#if MAX_NUMBER_SERIAL_PORTS >= 4
+#if MAX_NUMBER_SERIAL_PORTS >= 4 // USB
 	COMPILER_ALIGNED(32) static uint8_t g_serTxDmaBuf_port3[ARGN(2, PORT3_CONFIG)];
 	COMPILER_ALIGNED(32) static uint8_t g_serRxDmaBuf_port3[ARGN(4, PORT3_CONFIG)];
 #endif

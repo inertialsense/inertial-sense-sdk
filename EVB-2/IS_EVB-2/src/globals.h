@@ -33,7 +33,17 @@ extern "C" {
 #define SKI_BOX_STATUS_LED_PIN          GPIO_10_PIN
 #define UBLOX_LOG_ENABLE			    0
 
+// EVB Realtime Message Controller (ERMC) - message broadcast mechanism. 
+#define ERMC_BITS_DEV_INFO              0x0000000000000001
+#define ERMC_BITS_FLASH_CFG             0x0000000000000002
+#define ERMC_BITS_STATUS                0x0000000000000004
+#define ERMC_BITS_WHEEL_ENCODER         0x0000000000000008
+#define ERMC_BITS_DEBUG_ARRAY           0x0000000000000100
+
+
 typedef void (*VoidFuncPtrVoid)(void);
+
+PUSH_PACK_1
 
 typedef struct
 {
@@ -53,7 +63,12 @@ typedef struct PACKED      // Non-volatile memory state
     uint32_t                flash_write_enable;				    // 1 = enables flash writes.  This is used to prevent stutters in RTOS caused by flash writes until controlled times.
 } nvr_manage_t;
 
-PUSH_PACK_1
+typedef struct PACKED      // 
+{
+    uint64_t                bits;
+    uint32_t				options;
+    uint32_t                periodMultiple[DID_COUNT];
+} ermc_t;
 
 // All Flash Parameters - config max size is 8K for ARM
 typedef struct PACKED
@@ -85,6 +100,7 @@ extern uint8_t                      g_hdw_detect;
 extern dev_info_t                   g_evbDevInfo;
 extern wheel_encoder_t              g_wheelEncoder;
 extern evb_status_t                 g_status;
+extern bool                         g_statusToWlocal;
 extern evb_flash_cfg_t*             g_flashCfg;
 extern nvr_manage_t                 g_nvr_manage_config;
 extern nvm_config_t                 g_userPage;
@@ -99,6 +115,7 @@ extern uint32_t                     g_comm_time_ms;
 extern bool                         g_loggerEnabled;
 extern uint32_t                     g_uInsBootloaderEnableTimeMs;
 extern bool                         g_enRtosStats;
+extern ermc_t    			        g_ermc;
 
 void globals_init(void);
 void com_bridge_apply_preset(evb_flash_cfg_t* cfg);

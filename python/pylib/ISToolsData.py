@@ -336,7 +336,7 @@ class cCtypeStructures:
             8  : self.insMisc,
             9  : self.sysParams,
 #             10 : self.sysSensors,
-#             11 : self.flashConfig,
+#             11 : self.flashCfg,
 #             12 : self.gpsRssi,
             13 : self.gpsPos,
             14 : self.gpsVel,

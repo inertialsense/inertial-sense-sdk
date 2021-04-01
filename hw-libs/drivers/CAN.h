@@ -21,15 +21,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-void CAN_init(void);
+void CAN_init(uint32_t baudrate, uint32_t rx_address);
 bool mcan_send_message(uint32_t id_value, uint8_t *data, uint32_t data_length);
 int mcan_set_rx_filter(uint32_t id_value);
 uint8_t mcan_receive_message(uint32_t *id_value, uint8_t *data);
 void CAN_set_baudrate(uint32_t baudrate);
 	
+#ifdef CONF_BOARD_CAN_TEST
 void mcan_test_master(void);
 void mcan_test_slave(void);
-	
+#endif
+int mcan_validate_baudrate(unsigned int baudrate);
+
+
 #ifdef __cplusplus
 }
 #endif

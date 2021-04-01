@@ -23,17 +23,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static struct mcan_module mcan_instance;
 
-void CAN_init(void)
+void CAN_init(uint32_t baudrate, uint32_t rx_address)
 {
 	mcan_stop(&mcan_instance);
 	/* Initialize the module. */
 	struct mcan_config config_mcan;
 	mcan_get_config_defaults(&config_mcan);
 	config_mcan.rx_fifo_0_overwrite = true;
+	config_mcan.tx_queue_mode = true;
+	config_mcan.automatic_retransmission = false;
 	mcan_init(&mcan_instance, MCAN1, &config_mcan);
-	mcan_set_baudrate(mcan_instance.hw, (uint32_t)g_flashCfg->CANbaud_kbps*1000);
-	mcan_set_rx_filter(g_flashCfg->can_receive_address);
-
+// #warning "TODO: Add CAN data rate and address to settings stored in flash"
+	mcan_set_baudrate(mcan_instance.hw, baudrate);
+	//mcan_set_baudrate(mcan_instance.hw, 1000000);
+	mcan_set_rx_filter(rx_address);
+	//mcan_set_rx_filter(0x100);
+	
 	mcan_start(&mcan_instance);
 }
 
@@ -53,7 +58,7 @@ bool mcan_send_message(uint32_t id_value, uint8_t *data, uint32_t data_length)
 	//get the put index where we put the next packet
 	uint32_t put_index = (status & MCAN_TXFQS_TFQPI_Msk) >> MCAN_TXFQS_TFQPI_Pos;
 
-	struct mcan_tx_element tx_element;
+	struct mcan_tx_element tx_element = {};
 	mcan_get_tx_buffer_element_defaults(&tx_element);
 
 	if(id_value >= 0x800)
@@ -157,6 +162,7 @@ int mcan_set_rx_filter(uint32_t id_value)
 	}
 }
 
+#ifdef CONF_BOARD_CAN_TEST
 /* Master device for CAN test
  * This unit sends a message out the CAN bus then receives the return message and checks that it is valid.
  */
@@ -173,8 +179,8 @@ void mcan_test_master(void)
 		
 	while(1)
 	{
-		uint8_t can_tx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
-		uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
+		uint8_t can_tx_message[CONF_MCAN_ELEMENT_DATA_SIZE] = {};
+		uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE] = {};
 		uint8_t len;
 
 		//Create message
@@ -208,7 +214,9 @@ void mcan_test_master(void)
 		//TODO: Do something with test result		
 	}
 }
+#endif
 
+#ifdef CONF_BOARD_CAN_TEST
 /* Slave device for CAN test
  * This unit listens for a CAN message and returns a response.
  */
@@ -237,4 +245,33 @@ void mcan_test_slave(void)
 				mcan_send_message(MCAN_TEST_RECV_ID_EXT, can_tx_message, len);
 		}
 	}		
+}
+#endif
+
+const unsigned int g_validCanBaudRatesKbps[CAN_BAUDRATE_COUNT] = { 
+	CAN_BAUDRATE_20_KBPS, 
+	CAN_BAUDRATE_33_KBPS, 
+	CAN_BAUDRATE_50_KBPS, 
+	CAN_BAUDRATE_83_KBPS, 
+	CAN_BAUDRATE_100_KBPS, 
+	CAN_BAUDRATE_125_KBPS,
+	CAN_BAUDRATE_200_KBPS,
+	CAN_BAUDRATE_250_KBPS,
+	CAN_BAUDRATE_500_KBPS,
+	CAN_BAUDRATE_1000_KBPS };
+
+/**
+ * Returns -1 if the baudrate is not a standard baudrate.
+win */
+int mcan_validate_baudrate(unsigned int baudrate)
+{
+	// Valid baudrates for InertialSense hardware
+	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validCanBaudRatesKbps); i++)
+	{
+		if (g_validCanBaudRatesKbps[i] == baudrate)
+		{
+			return 1;
+		}
+	}
+	return 0;
 }

@@ -1145,7 +1145,7 @@ enum eSystemCommand
 
 
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
@@ -1189,7 +1189,7 @@ typedef struct PACKED
 	
 } ascii_msgs_t;
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure (when it is included in the sCommData struct) is zeroed out on stop_all_broadcasts */
+/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
@@ -1916,6 +1916,8 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
 };
 
 /** (DID_WHEEL_CONFIG) [NOT SUPPORTED, INTERNAL USE ONLY] Configuration of wheel encoders and kinematic constraints. */
@@ -3168,7 +3170,7 @@ typedef struct
     /** Server IP and port */
     evb_server_t            server[NUM_WIFI_PRESETS];
 
-    /** Encoder tick to wheel rotation conversion factor (in radians).  (encoder tick count per revolution x gear ratio x 2pi) */
+    /** Encoder tick to wheel rotation conversion factor (in radians).  Encoder tick count per revolution on 1 channel x gear ratio x 2pi. */
     float                   encoderTickToWheelRad;
 
 	/** CAN baudrate */
@@ -3197,7 +3199,10 @@ typedef struct
 
 	/** Baud rate for EVB serial port H8 (TLL). */
 	uint32_t                h8gpioBaudRate;
-	
+
+	/** Wheel encoder configuration (see eWheelCfgBits) */
+	uint32_t                wheelCfgBits;
+
 } evb_flash_cfg_t;
 
 
@@ -3504,6 +3509,23 @@ enum
 	NUM_CIDS
 };
 
+/** Valid baud rates for Inertial Sense hardware */
+typedef enum
+{
+	CAN_BAUDRATE_20_KBPS   =   20,
+	CAN_BAUDRATE_33_KBPS   =   33,
+	CAN_BAUDRATE_50_KBPS   =   50,
+	CAN_BAUDRATE_83_KBPS   =   83,
+	CAN_BAUDRATE_100_KBPS  =  100,
+	CAN_BAUDRATE_125_KBPS  =  125,
+	CAN_BAUDRATE_200_KBPS  =  200,
+	CAN_BAUDRATE_250_KBPS  =  250,
+	CAN_BAUDRATE_500_KBPS  =  500,
+	CAN_BAUDRATE_1000_KBPS = 1000,
+
+	CAN_BAUDRATE_COUNT = 10
+} can_baudrate_t;
+
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
 {
@@ -3513,7 +3535,7 @@ typedef struct PACKED
 	/** Transmit address. */
 	uint32_t				can_transmit_address[NUM_CIDS];
 	
-	/** Baudrate (kbps) */
+	/** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
 	uint32_t				can_baudrate_kbps;
 
 	/** Receive address. */

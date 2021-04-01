@@ -10,7 +10,7 @@
 #include "user_interface.h"
 #include "sd_card_logger.h"
 #include "wheel_encoder.h"
-#include "CAN.h"
+#include "../hw-libs/drivers/CAN.h"
 #include "drivers/d_adc.h"
 
 // RTOS Task Configuration
@@ -46,8 +46,10 @@ void evbTaskLogger(rtos_task_t &task, is_comm_instance_t &comm);
 void evbTaskMaintInit(void *pvParameters);
 int evbTaskMaint(rtos_task_t &task);
 
-void evbMainInit(void);
-void evbMainInitHdw(void);
+void evbMainInitBoard(void);
+void evbMainInitNvr(void);
+void evbMainInitIO(void);
+void evbMainInitComm(void);
 void evbMainInitRTOS(pdTASK_CODE pxTaskComm,
 				    pdTASK_CODE pxTaskLogg,
 				    pdTASK_CODE pxTaskWifi,

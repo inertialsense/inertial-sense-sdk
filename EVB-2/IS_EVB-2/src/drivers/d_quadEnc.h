@@ -24,13 +24,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /**
  * \brief Initialize quadrature encoder driver.
  */
-void quadEncInit(void);
+void quadEncInit(uint32_t pck6_pres);
+
+/**
+ * \brief Apply a direction reversal to encoder output.
+ */
+void quadEncSetDirectionReverse( bool reverse_0, bool reverse_1 );
 
 /**
  * \brief Reads the current position of the encoders.
  */
 void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1);
-void quadEncReadSpeedAll(uint32_t *speed0, uint32_t *speed1);
+void quadEncReadPeriodAll(float *period0, float *period1);
 
 void test_quad_encoders(void);
 

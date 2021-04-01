@@ -159,6 +159,10 @@ Functions</h2></td></tr>
 <tr class="separator:aa94536ac1300b3250bb2f01c46126e3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03c91731245598c0da21324ee739ac19"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a03c91731245598c0da21324ee739ac19">gravity_igf80</a> (double lat, double alt)</td></tr>
 <tr class="separator:a03c91731245598c0da21324ee739ac19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03d55034b3b35dea8e12cd8e94fabdfa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a03d55034b3b35dea8e12cd8e94fabdfa">quat_ecef2ned</a> (float lat, float lon, float *qe2n)</td></tr>
+<tr class="separator:a03d55034b3b35dea8e12cd8e94fabdfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48e80f028274437e6bb7bb51b98b953b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a48e80f028274437e6bb7bb51b98b953b">qe2b2EulerNedEcef</a> (<a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> eul, const <a class="el" href="_i_s_constants_8h.html#a756523a00a3a296bb5f762aade10e312">ixVector4</a> qe2b, const <a class="el" href="_i_s_constants_8h.html#ab3f662fc85826a42aa1bb19e0c725fc1">ixVector3d</a> ecef)</td></tr>
+<tr class="separator:a48e80f028274437e6bb7bb51b98b953b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a9d6a15dea740ba397bf5d6a6049af0b2"></a>
@@ -1069,6 +1073,78 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00232">232</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+
+</div>
+</div>
+<a id="a48e80f028274437e6bb7bb51b98b953b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48e80f028274437e6bb7bb51b98b953b">&#9670;&nbsp;</a></span>qe2b2EulerNedEcef()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void qe2b2EulerNedEcef </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a>&#160;</td>
+          <td class="paramname"><em>eul</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="_i_s_constants_8h.html#a756523a00a3a296bb5f762aade10e312">ixVector4</a>&#160;</td>
+          <td class="paramname"><em>qe2b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="_i_s_constants_8h.html#ab3f662fc85826a42aa1bb19e0c725fc1">ixVector3d</a>&#160;</td>
+          <td class="paramname"><em>ecef</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00412">412</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+
+</div>
+</div>
+<a id="a03d55034b3b35dea8e12cd8e94fabdfa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03d55034b3b35dea8e12cd8e94fabdfa">&#9670;&nbsp;</a></span>quat_ecef2ned()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void quat_ecef2ned </td>
+          <td>(</td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>lat</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>lon</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>qe2n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00398">398</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
