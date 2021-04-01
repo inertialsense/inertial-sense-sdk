@@ -506,7 +506,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 2;			// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 3;			// increment key to force config to revert to defaults (overwrites customer's settings)
 
 	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 

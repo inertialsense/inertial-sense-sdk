@@ -386,7 +386,7 @@ void step_broadcast_data(is_comm_instance_t *comm, uint32_t didSendNow)
 	static uint32_t time_ms_debug;
 	
 	// Broadcast messages
-	broadcastRmcMessage(comm, DID_DEV_INFO, sizeof(dev_info_t), (void*)&g_evbDevInfo, time_ms_dev_info, didSendNow);
+	broadcastRmcMessage(comm, DID_EVB_DEV_INFO, sizeof(dev_info_t), (void*)&g_evbDevInfo, time_ms_dev_info, didSendNow);
 	broadcastRmcMessage(comm, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), (void*)g_flashCfg, time_ms_flash_cfg, didSendNow);
 	broadcastRmcMessage(comm, DID_EVB_RTOS_INFO, sizeof(evb_rtos_info_t), (void*)&g_rtos, time_ms_rtos, didSendNow);
 	broadcastRmcMessage(comm, DID_EVB_STATUS, sizeof(evb_status_t), (void*)&g_status, time_ms_status, didSendNow);
