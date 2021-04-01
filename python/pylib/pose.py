@@ -26,8 +26,8 @@ def quatConj(q):
         qc[1:4] = -q[1:4]
     else:
         assert np.shape(q)[1] == 4, "Wrong shape of array of quaternions"
-        qc[:, 0] = q[:, 0]
-        qc[:, 1:4] = -q[:, 1:4]
+        qc[:,0] = q[:,0]
+        qc[:,1:4] = -q[:,1:4]
     return qc
 
 
@@ -54,14 +54,10 @@ def mul_Quat_Quat(q1, q2):
     assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty((max(n1, n2), 4))
-    result[:, 0] = q1[:, 0]*q2[:, 0] - q1[:, 1] * \
-        q2[:, 1] - q1[:, 2]*q2[:, 2] - q1[:, 3]*q2[:, 3]
-    result[:, 1] = q1[:, 0]*q2[:, 1] + q1[:, 1] * \
-        q2[:, 0] - q1[:, 2]*q2[:, 3] + q1[:, 3]*q2[:n2, 2]
-    result[:, 2] = q1[:, 0]*q2[:, 2] + q1[:, 1] * \
-        q2[:, 3] + q1[:, 2]*q2[:, 0] - q1[:, 3]*q2[:n2, 1]
-    result[:, 3] = q1[:, 0]*q2[:, 3] - q1[:, 1] * \
-        q2[:, 2] + q1[:, 2]*q2[:, 1] + q1[:, 3]*q2[:n2, 0]
+    result[:,0] = q1[:,0]*q2[:,0] - q1[:,1]*q2[:,1] - q1[:,2]*q2[:,2] - q1[:,3]*q2[:,3]
+    result[:,1] = q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:,2]
+    result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] - q1[:,3]*q2[:,1]
+    result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] + q1[:,3]*q2[:,0]
 
     if array == 0:
         result = np.squeeze(result)
@@ -87,14 +83,10 @@ def mul_ConjQuat_Quat(q1, q2):
     assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty((max(n1, n2), 4))
-    result[:, 0] = q1[:, 0]*q2[:, 0] + q1[:, 1] * \
-        q2[:, 1] + q1[:, 2]*q2[:, 2] + q1[:, 3]*q2[:, 3]
-    result[:, 1] = q1[:, 0]*q2[:, 1] - q1[:, 1] * \
-        q2[:, 0] + q1[:, 2]*q2[:, 3] - q1[:, 3]*q2[:, 2]
-    result[:, 2] = q1[:, 0]*q2[:, 2] - q1[:, 1] * \
-        q2[:, 3] - q1[:, 2]*q2[:, 0] + q1[:, 3]*q2[:, 1]
-    result[:, 3] = q1[:, 0]*q2[:, 3] + q1[:, 1] * \
-        q2[:, 2] - q1[:, 2]*q2[:, 1] - q1[:, 3]*q2[:, 0]
+    result[:,0] = q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
+    result[:,1] = q1[:,0]*q2[:,1] - q1[:,1]*q2[:,0] + q1[:,2]*q2[:,3] - q1[:,3]*q2[:,2]
+    result[:,2] = q1[:,0]*q2[:,2] - q1[:,1]*q2[:,3] - q1[:,2]*q2[:,0] + q1[:,3]*q2[:,1]
+    result[:,3] = q1[:,0]*q2[:,3] + q1[:,1]*q2[:,2] - q1[:,2]*q2[:,1] - q1[:,3]*q2[:,0]
 
     if array == 0:
         result = np.squeeze(result)
@@ -120,14 +112,10 @@ def mul_Quat_ConjQuat(q1, q2):
     assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty((max(n1, n2), 4))
-    result[:, 0] = q1[:, 0]*q2[:, 0] + q1[:, 1] * \
-        q2[:, 1] + q1[:, 2]*q2[:, 2] + q1[:, 3]*q2[:, 3]
-    result[:, 1] = -q1[:, 0]*q2[:, 1] + q1[:, 1] * \
-        q2[:, 0] + q1[:, 2]*q2[:, 3] - q1[:, 3]*q2[:, 2]
-    result[:, 2] = -q1[:, 0]*q2[:, 2] - q1[:, 1] * \
-        q2[:, 3] + q1[:, 2]*q2[:, 0] + q1[:, 3]*q2[:, 1]
-    result[:, 3] = -q1[:, 0]*q2[:, 3] + q1[:, 1] * \
-        q2[:, 2] - q1[:, 2]*q2[:, 1] + q1[:, 3]*q2[:, 0]
+    result[:,0] =  q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
+    result[:,1] = -q1[:,0]*q2[:,1] + q1[:,1]*q2[:,0] + q1[:,2]*q2[:,3] - q1[:,3]*q2[:,2]
+    result[:,2] = -q1[:,0]*q2[:,2] - q1[:,1]*q2[:,3] + q1[:,2]*q2[:,0] + q1[:,3]*q2[:,1]
+    result[:,3] = -q1[:,0]*q2[:,3] + q1[:,1]*q2[:,2] - q1[:,2]*q2[:,1] + q1[:,3]*q2[:,0]
 
     if array == 0:
         result = np.squeeze(result)
@@ -152,17 +140,13 @@ def div_Quat_Quat(q1, q2):
     assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty((max(n1, n2), 4))
-    d = 1.0 / (q1[:, 0]*q1[:, 0] + q1[:, 1]*q1[:, 1] +
-               q1[:, 2]*q1[:, 2] + q1[:, 3]*q1[:, 3])
-    result[:, 0] = q1[:, 0]*q2[:, 0] + q1[:, 1] * \
-        q2[:, 1] + q1[:, 2]*q2[:, 2] + q1[:, 3]*q2[:, 3]
-    result[:, 1] = q1[:, 0]*q2[:, 1] - q1[:, 1] * \
-        q2[:, 0] - q1[:, 2]*q2[:, 3] + q1[:, 3]*q2[:, 2]
-    result[:, 2] = q1[:, 0]*q2[:, 2] + q1[:, 1] * \
-        q2[:, 3] - q1[:, 2]*q2[:, 0] - q1[:, 3]*q2[:, 1]
-    result[:, 3] = q1[:, 0]*q2[:, 3] - q1[:, 1] * \
-        q2[:, 2] + q1[:, 2]*q2[:, 1] - q1[:, 3]*q2[:, 0]
+    d = 1.0 / np.einsum('ij,ij->i', q1, q1)
+    result[:,0] = q1[:,0]*q2[:,0] + q1[:,1]*q2[:,1] + q1[:,2]*q2[:,2] + q1[:,3]*q2[:,3]
+    result[:,1] = q1[:,0]*q2[:,1] - q1[:,1]*q2[:,0] - q1[:,2]*q2[:,3] + q1[:,3]*q2[:,2]
+    result[:,2] = q1[:,0]*q2[:,2] + q1[:,1]*q2[:,3] - q1[:,2]*q2[:,0] - q1[:,3]*q2[:,1]
+    result[:,3] = q1[:,0]*q2[:,3] - q1[:,1]*q2[:,2] + q1[:,2]*q2[:,1] - q1[:,3]*q2[:,0]
     result = result * d
+
     if array == 0:
         result = np.squeeze(result)
     return result
@@ -171,17 +155,12 @@ def div_Quat_Quat(q1, q2):
 # Quaternion rotation from vector v1 to vector v2.
 # Reference:
 def quat_Vec3_Vec3(v1, v2):
-    #     Vector3_t w1, w2;
-
     # Normalize input vectors
     w1 = normalize(v1)
     w2 = normalize(v2)
 
     qResult = np.zeros(4)
-    # q[1:3]
     qResult[1:4] = np.cross(w1, w2)
-
-    # q[0]
     qResult[0] = np.sqrt(np.square(np.dot(w1, w1))) + np.dot(w1, w2)
 
     # Normalize quaternion
@@ -225,7 +204,7 @@ def quatRot(q, v):
     assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions and vectors in arrays do not match"
 
     result = np.empty((max(n1, n2), 3))
-    t = 2.0 * np.cross(q[:, 1:4], v)
+    t = 2.0 * np.cross(q[:,1:4], v)
     result = v + (q[:,0] * t.T).T + np.cross(q[:,1:4], t)
 
     if array == 0:
@@ -260,15 +239,12 @@ def quatNLerp(q1, q2, blend):
     assert n1 == n2 or n1 == 1 or n2 == 1, "Number of quaternions in arrays do not match"
 
     result = np.empty((max(n1, n2), 4))
-    dot = q1[:, 0]*q2[:, 0] + q1[:, 1]*q2[:, 1] + \
-        q1[:, 2]*q2[:, 2] + q1[:, 3]*q2[:, 3]
+    dot_q1q2 = np.einsum('ij,ij->i', q1, q2)
     blendI = 1.0 - blend
 
-    ind0 = np.asarray(np.where(dot < 0.0))[0, :]
-    ind1 = np.asarray(np.where(dot >= 0.0))[0, :]
-    result[ind0, :] = blendI*q1[ind0, :] - blend*q2[ind0, :]
-    result[ind1, :] = blendI*q1[ind1, :] + blend*q2[ind1, :]
-
+    ind = dot_q1q2 >= 0.0
+    result[~ind,:] = blendI * q1[~ind,:] - blend * q2[~ind,:]
+    result[ind,:] = blendI * q1[ind,:] + blend * q2[ind,:]
     result = normalize(result, axis=1)
 
     if array == 0:
@@ -276,10 +252,10 @@ def quatNLerp(q1, q2, blend):
     return result
 
 
-#  * This will convert from quaternions to euler angles.  Ensure quaternion is previously normalized.
-#  * q(4,1) -> euler[phi;theta;psi] (rad)
-#  *
-#  * Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+# This will convert from quaternions to euler angles.
+# Ensure quaternion is previously normalized.
+# q(4,1) -> euler[phi;theta;psi] (rad)
+# Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 def quat2euler(q):
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
@@ -287,21 +263,18 @@ def quat2euler(q):
     else:
         array = 1
     theta = np.empty(shape=(np.shape(q)[0], 3))
-    theta[:, 0] = np.arctan2(2.0 * (q[:, 0]*q[:, 1] + q[:, 2]*q[:, 3]),
-                             1.0 - 2.0 * (q[:, 1]*q[:, 1] + q[:, 2]*q[:, 2]))
-    theta[:, 1] = np.arcsin(2.0 * (q[:, 0]*q[:, 2] - q[:, 3]*q[:, 1]))
-    theta[:, 2] = np.arctan2(2.0 * (q[:, 0]*q[:, 3] + q[:, 1]*q[:, 2]),
-                             1.0 - 2.0 * (q[:, 2]*q[:, 2] + q[:, 3]*q[:, 3]))
-
+    theta[:, 0] = np.arctan2(2.0 * (q[:,0]*q[:,1] + q[:,2]*q[:,3]),
+                             1.0 - 2.0 * (q[:,1]**2 + q[:,2]**2))
+    theta[:, 1] = np.arcsin(2.0 * (q[:,0]*q[:,2] - q[:,3]*q[:,1]))
+    theta[:, 2] = np.arctan2(2.0 * (q[:,0]*q[:,3] + q[:,1]*q[:,2]),
+                             1.0 - 2.0 * (q[:,2]**2 + q[:,3]**2))
     if array == 0:
         theta = np.squeeze(theta)
     return theta
 
-#  * This will convert from euler angles to quaternion vector
-#  * [phi, theta, psi] -> q(4,1)
-#  * euler angles in radians
-
-
+# This will convert from euler angles to quaternion vector
+# [phi, theta, psi] -> q(4,1)
+# Euler angles in radians
 def euler2quat(euler):
     if len(np.shape(euler)) == 1:
         euler = np.expand_dims(euler, axis=0)
@@ -310,9 +283,9 @@ def euler2quat(euler):
         array = 1
     q = np.zeros((np.shape(euler)[0], 4))
 
-    hphi = euler[:, 0] * 0.5
-    hthe = euler[:, 1] * 0.5
-    hpsi = euler[:, 2] * 0.5
+    hphi = euler[:,0] * 0.5
+    hthe = euler[:,1] * 0.5
+    hpsi = euler[:,2] * 0.5
 
     shphi = np.sin(hphi)
     chphi = np.cos(hphi)
@@ -321,54 +294,52 @@ def euler2quat(euler):
     shpsi = np.sin(hpsi)
     chpsi = np.cos(hpsi)
 
-    q[:, 0] = chphi * chthe * chpsi + shphi * shthe * shpsi
-    q[:, 1] = shphi * chthe * chpsi - chphi * shthe * shpsi
-    q[:, 2] = chphi * shthe * chpsi + shphi * chthe * shpsi
-    q[:, 3] = chphi * chthe * shpsi - shphi * shthe * chpsi
+    q[:,0] = chphi * chthe * chpsi + shphi * shthe * shpsi
+    q[:,1] = shphi * chthe * chpsi - chphi * shthe * shpsi
+    q[:,2] = chphi * shthe * chpsi + shphi * chthe * shpsi
+    q[:,3] = chphi * chthe * shpsi - shphi * shthe * chpsi
 
     if array == 0:
         q = np.squeeze(q)
     return q
 
-#  * NE to heading/body frame
-#  * This will construct a direction cosine matrix from
-#  * the psi angle - rotates from NE to body frame
-#  * body = tBL(2,2)*NE
 
-
+# NE to heading/body frame
+# This will construct a direction cosine matrix from
+# the psi angle - rotates from NE to body frame
+# body = tBL(2,2)*NE
 def psiDCM(psi):
-    cpsi = cos(psi)  # cos(psi)
-    spsi = sin(psi)  # sin(psi)
+    cpsi = cos(psi)
+    spsi = sin(psi)
 
     DCM = r_[
         c_[cpsi, spsi],
         c_[-spsi, cpsi],
     ]
-
     return DCM
 
 
-# * This will extract the psi euler angle from a direction cosine matrix in the
-# * standard rotation sequence, for either a 2x2 or 3x3 DCM matrix.
-# * [phi][theta][psi] from reference to body frame
-# *
-# * body = tBL(2,2)*NE
-# * body = tBL(3,3)*NED
-# *
-# * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+# This will extract the psi euler angle from a direction cosine matrix in the
+# standard rotation sequence, for either a 2x2 or 3x3 DCM matrix.
+# [phi][theta][psi] from reference to body frame
+#
+# body = tBL(2,2)*NE
+# body = tBL(3,3)*NED
+#
+# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMpsi(A):
     psi = arctan2(A[0, 1], A[0, 0])
     return psi
 
 
-#  * Reference to body frame - In the 1-2-3 (roll, pitch, yaw) order
-#  * This will construct a direction cosine matrix from
-#  * euler angles in the standard rotation sequence
-#  * [phi][theta][psi] from reference to body frame
-#  *
-#  * body = tBL(3,3)*NED
-#  *
-#  * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+# Reference to body frame - In the 1-2-3 (roll, pitch, yaw) order
+# This will construct a direction cosine matrix from
+# euler angles in the standard rotation sequence
+# [phi][theta][psi] from reference to body frame
+#
+# body = tBL(3,3)*NED
+#
+# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def eulerDCM(euler):
     if len(np.shape(euler)) == 1:
         euler = np.expand_dims(euler, axis=0)
@@ -378,36 +349,36 @@ def eulerDCM(euler):
 
     DCM = np.empty((np.shape(euler)[0], 3, 3))
 
-    cphi = cos(euler[:, 0])  # cos(phi)
-    cthe = cos(euler[:, 1])  # cos(theta)
-    cpsi = cos(euler[:, 2])  # cos(psi)
+    cphi = cos(euler[:,0])  # cos(phi)
+    cthe = cos(euler[:,1])  # cos(theta)
+    cpsi = cos(euler[:,2])  # cos(psi)
 
-    sphi = sin(euler[:, 0])  # sin(phi)
-    sthe = sin(euler[:, 1])  # sin(theta)
-    spsi = sin(euler[:, 2])  # sin(psi)
+    sphi = sin(euler[:,0])  # sin(phi)
+    sthe = sin(euler[:,1])  # sin(theta)
+    spsi = sin(euler[:,2])  # sin(psi)
 
-    DCM[:, 0, 0] = cthe * cpsi
-    DCM[:, 0, 1] = cthe * spsi
-    DCM[:, 0, 2] = -sthe
-    DCM[:, 1, 0] = -cphi * spsi + sphi * sthe * cpsi
-    DCM[:, 1, 1] = cphi * cpsi + sphi * sthe * spsi
-    DCM[:, 1, 2] = sphi * cthe
-    DCM[:, 2, 0] = sphi * spsi + cphi * sthe * cpsi
-    DCM[:, 2, 1] = -sphi * cpsi + cphi * sthe * spsi
-    DCM[:, 2, 2] = cphi * cthe
+    DCM[:,0,0] =  cthe * cpsi
+    DCM[:,0,1] =  cthe * spsi
+    DCM[:,0,2] = -sthe
+    DCM[:,1,0] = -cphi * spsi + sphi * sthe * cpsi
+    DCM[:,1,1] =  cphi * cpsi + sphi * sthe * spsi
+    DCM[:,1,2] =  sphi * cthe
+    DCM[:,2,0] =  sphi * spsi + cphi * sthe * cpsi
+    DCM[:,2,1] = -sphi * cpsi + cphi * sthe * spsi
+    DCM[:,2,2] =  cphi * cthe
 
     if array == 0:
         DCM = np.squeeze(DCM)
     return DCM
 
 
-#  * This will extract euler angles from a direction cosine matrix in the
-#  * standard rotation sequence.
-#  * [phi][theta][psi] from reference to body frame
-#  *
-#  * body = tBL(3,3)*NED
-#  *
-#  * reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+# This will extract euler angles from a direction cosine matrix in the
+# standard rotation sequence.
+# [phi][theta][psi] from reference to body frame
+#
+# body = tBL(3,3)*NED
+#
+# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMeuler(mat):
     if len(np.shape(mat)) == 2:
         mat = np.expand_dims(mat, axis=0)
@@ -417,9 +388,9 @@ def DCMeuler(mat):
 
     eul = np.empty(shape=(np.shape(mat)[0], 3))
 
-    eul[:, 0] = arctan2(mat[:, 1, 2], mat[:, 2, 2])
-    eul[:, 1] = arcsin(-mat[:, 0, 2])
-    eul[:, 2] = arctan2(mat[:, 0, 1], mat[:, 0, 0])
+    eul[:,0] = arctan2(mat[:,1,2], mat[:,2,2])
+    eul[:,1] = arcsin(-mat[:,0,2])
+    eul[:,2] = arctan2(mat[:,0,1], mat[:,0,0])
 
     if array == 0:
         eul = np.squeeze(eul)
@@ -431,16 +402,13 @@ def DCMeulerToPsi(A, phi, the):
     return r_[phi, the, psi]
 
 
-# /*
-#  * This will construct a direction cosine matrix from
-#  * quaternions in the standard rotation sequence
-#  * [phi][theta][psi] from reference to body frame
-#  *
-#  * body = tBL(3,3)*NED
-#  * q(4,1)
-#  *
-#  * Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
-#  */
+# This will construct a direction cosine matrix from
+# quaternions in the standard rotation sequence
+# [phi][theta][psi] from reference to body frame
+#
+# body = tBL(3,3)*NED
+#
+# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def quatDCM(q):
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
@@ -450,29 +418,28 @@ def quatDCM(q):
 
     DCM = np.empty(shape=(np.shape(q)[0], 3, 3))
 
-    DCM[:, 0, 0] = 1.0 - 2.0 * (q[:, 2]**2 + q[:, 3]**2)
-    DCM[:, 0, 1] = 2.0 * (q[:, 1]*q[:, 2] + q[:, 0]*q[:, 3])
-    DCM[:, 0, 2] = 2.0 * (q[:, 1]*q[:, 3] - q[:, 0]*q[:, 2])
-    DCM[:, 1, 0] = 2.0 * (q[:, 1]*q[:, 2] - q[:, 0]*q[:, 3])
-    DCM[:, 1, 1] = 1.0 - 2.0 * (q[:, 1]**2 + q[:, 3]**2)
-    DCM[:, 1, 2] = 2.0 * (q[:, 2]*q[:, 3] + q[:, 0]*q[:, 1])
-    DCM[:, 2, 0] = 2.0 * (q[:, 1]*q[:, 3] + q[:, 0]*q[:, 2])
-    DCM[:, 2, 1] = 2.0 * (q[:, 2]*q[:, 3] - q[:, 0]*q[:, 1])
-    DCM[:, 2, 2] = 1.0 - 2.0 * (q[:, 1]**2 + q[:, 2]**2)
+    DCM[:,0,0] = 1.0 - 2.0 * (q[:,2]**2 + q[:,3]**2)
+    DCM[:,0,1] = 2.0 * (q[:,1]*q[:,2] + q[:,0]*q[:,3])
+    DCM[:,0,2] = 2.0 * (q[:,1]*q[:,3] - q[:,0]*q[:,2])
+    DCM[:,1,0] = 2.0 * (q[:,1]*q[:,2] - q[:,0]*q[:,3])
+    DCM[:,1,1] = 1.0 - 2.0 * (q[:,1]**2 + q[:,3]**2)
+    DCM[:,1,2] = 2.0 * (q[:,2]*q[:,3] + q[:,0]*q[:,1])
+    DCM[:,2,0] = 2.0 * (q[:,1]*q[:,3] + q[:,0]*q[:,2])
+    DCM[:,2,1] = 2.0 * (q[:,2]*q[:,3] - q[:,0]*q[:,1])
+    DCM[:,2,2] = 1.0 - 2.0 * (q[:,1]**2 + q[:,2]**2)
 
     if array == 0:
         DCM = np.squeeze(DCM)
     return DCM
 
 
-#  * This will construct quaternions from a direction cosine
-#  * matrix in the standard rotation sequence.
-#  * [phi][theta][psi] from reference to body frame
-#  *
-#  * body = tBL(3,3)*NED
-#  * q(4,1)
-#  *
-#  * Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+# This will construct quaternions from a direction cosine
+# matrix in the standard rotation sequence.
+# [phi][theta][psi] from reference to body frame
+#
+# body = tBL(3,3)*NED
+#
+# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMquat(mat):
     if len(np.shape(mat)) == 2:
         mat = np.expand_dims(mat, axis=0)
@@ -483,33 +450,33 @@ def DCMquat(mat):
     q = np.empty(shape=(np.shape(mat)[0], 4))
     q_sq4 = np.empty_like(q)
 
-    q_sq4[:, 0] = 1 + mat[:, 0, 0] + mat[:, 1, 1] + mat[:, 2, 2]
-    q_sq4[:, 1] = 1 + mat[:, 0, 0] - mat[:, 1, 1] - mat[:, 2, 2]
-    q_sq4[:, 2] = 1 - mat[:, 0, 0] + mat[:, 1, 1] - mat[:, 2, 2]
-    q_sq4[:, 3] = 1 - mat[:, 0, 0] - mat[:, 1, 1] + mat[:, 2, 2]
+    q_sq4[:,0] = 1.0 + mat[:,0,0] + mat[:,1,1] + mat[:,2,2]
+    q_sq4[:,1] = 1.0 + mat[:,0,0] - mat[:,1,1] - mat[:,2,2]
+    q_sq4[:,2] = 1.0 - mat[:,0,0] + mat[:,1,1] - mat[:,2,2]
+    q_sq4[:,3] = 1.0 - mat[:,0,0] - mat[:,1,1] + mat[:,2,2]
 
     for i in range(0, np.shape(mat)[0]):
         ind = np.argmax(q_sq4[i, :])
-        q[i, ind] = 0.5 * np.sqrt(q_sq4[i, ind])
-        d = 0.25 / q[i, ind]
+        q[i,ind] = 0.5 * np.sqrt(q_sq4[i,ind])
+        d = 0.25 / q[i,ind]
         if ind == 0:
-            q[i, 1] = d * (mat[i, 1, 2] - mat[i, 2, 1])
-            q[i, 2] = d * (mat[i, 2, 0] - mat[i, 0, 2])
-            q[i, 3] = d * (mat[i, 0, 1] - mat[i, 1, 0])
+            q[i,1] = d * (mat[i,1,2] - mat[i,2,1])
+            q[i,2] = d * (mat[i,2,0] - mat[i,0,2])
+            q[i,3] = d * (mat[i,0,1] - mat[i,1,0])
         elif ind == 1:
-            q[i, 0] = d * (mat[i, 1, 2] - mat[i, 2, 1])
-            q[i, 2] = d * (mat[i, 1, 0] + mat[i, 0, 1])
-            q[i, 3] = d * (mat[i, 0, 2] + mat[i, 2, 0])
+            q[i,0] = d * (mat[i,1,2] - mat[i,2,1])
+            q[i,2] = d * (mat[i,1,0] + mat[i,0,1])
+            q[i,3] = d * (mat[i,0,2] + mat[i,2,0])
         elif ind == 2:
-            q[i, 0] = d * (mat[i, 2, 0] - mat[i, 0, 2])
-            q[i, 1] = d * (mat[i, 1, 0] + mat[i, 0, 1])
-            q[i, 3] = d * (mat[i, 2, 1] + mat[i, 1, 2])
+            q[i,0] = d * (mat[i,2,0] - mat[i,0,2])
+            q[i,1] = d * (mat[i,1,0] + mat[i,0,1])
+            q[i,3] = d * (mat[i,2,1] + mat[i,1,2])
         else:
-            q[i, 0] = d * (mat[i, 0, 1] - mat[i, 1, 0])
-            q[i, 1] = d * (mat[i, 0, 2] + mat[i, 2, 0])
-            q[i, 2] = d * (mat[i, 2, 1] + mat[i, 1, 2])
+            q[i,0] = d * (mat[i,0,1] - mat[i,1,0])
+            q[i,1] = d * (mat[i,0,2] + mat[i,2,0])
+            q[i,2] = d * (mat[i,2,1] + mat[i,1,2])
 
-    ind = q[:, 0] < 0
+    ind = q[:,0] < 0
     q[ind, :] = -q[ind, :]
 
     if array == 0:
@@ -517,9 +484,9 @@ def DCMquat(mat):
     return q
 
 
-#  * This will construct the cross-product matrix Wx(3,3)
-#  * such that cross(x, y) = Wx * y
-#  * p, q, r (rad/sec)
+# This will construct the cross-product matrix Wx(3,3)
+# such that cross(x, y) = Wx * y
+# p, q, r (rad/sec)
 def eulerWx(x):
     if len(np.shape(x)) == 1:
         x = np.expand_dims(x, axis=0)
@@ -530,26 +497,26 @@ def eulerWx(x):
     mat = np.empty(shape=(np.shape(x)[0], 3, 3))
 
     # Row 1
-    mat[:, 0, 0] = 0.0
-    mat[:, 0, 1] = -x[:, 2]
-    mat[:, 0, 2] = x[:, 1]
+    mat[:,0,0] =  0.0
+    mat[:,0,1] = -x[:,2]
+    mat[:,0,2] =  x[:,1]
     # Row 2
-    mat[:, 1, 0] = x[:, 2]
-    mat[:, 1, 1] = 0.0
-    mat[:, 1, 2] = -x[:, 0]
+    mat[:,1,0] =  x[:,2]
+    mat[:,1,1] =  0.0
+    mat[:,1,2] = -x[:,0]
     # Row 3
-    mat[:, 2, 0] = -x[:, 1]
-    mat[:, 2, 1] = x[:, 0]
-    mat[:, 2, 2] = 0.0
+    mat[:,2,0] = -x[:,1]
+    mat[:,2,1] =  x[:,0]
+    mat[:,2,2] =  0.0
 
     if array == 0:
         mat = np.squeeze(mat)
     return mat
 
 
-#  * This will construct the quaternion omega matrix
-#  * W(4,4)
-#  * p, q, r (rad/sec)
+# This will construct the quaternion omega matrix
+# W(4,4)
+# p, q, r (rad/sec)
 def quatW(omega):
     if len(np.shape(omega)) == 1:
         omega = np.expand_dims(omega, axis=0)
@@ -558,37 +525,37 @@ def quatW(omega):
         array = 1
 
     mat = np.empty(shape=(np.shape(omega)[0], 4, 4))
-    p = omega[:, 0] * 0.5
-    q = omega[:, 1] * 0.5
-    r = omega[:, 2] * 0.5
+    p = omega[:,0] * 0.5
+    q = omega[:,1] * 0.5
+    r = omega[:,2] * 0.5
 
     # Row 1
-    mat[:, 0, 0] = 0.0
-    mat[:, 0, 1] = -p
-    mat[:, 0, 2] = -q
-    mat[:, 0, 3] = -r
+    mat[:,0,0] =  0.0
+    mat[:,0,1] = -p
+    mat[:,0,2] = -q
+    mat[:,0,3] = -r
     # Row 2
-    mat[:, 1, 0] = p
-    mat[:, 1, 1] = 0.0
-    mat[:, 1, 2] = r
-    mat[:, 1, 3] = -q
+    mat[:,1,0] =  p
+    mat[:,1,1] =  0.0
+    mat[:,1,2] =  r
+    mat[:,1,3] = -q
     # Row 3
-    mat[:, 2, 0] = q
-    mat[:, 2, 1] = -r
-    mat[:, 2, 2] = 0.0
-    mat[:, 2, 3] = p
+    mat[:,2,0] =  q
+    mat[:,2,1] = -r
+    mat[:,2,2] =  0.0
+    mat[:,2,3] =  p
     # Row 4
-    mat[:, 3, 0] = r
-    mat[:, 3, 1] = q
-    mat[:, 3, 2] = -p
-    mat[:, 3, 3] = 0.0
+    mat[:,3,0] =  r
+    mat[:,3,1] =  q
+    mat[:,3,2] = -p
+    mat[:,3,3] =  0.0
 
     if array == 0:
         mat = np.squeeze(mat)
     return mat
 
 
-# * Convert quaternion to rotation axis
+# Convert quaternion to rotation axis
 def quatRotAxis(q):
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
@@ -596,41 +563,71 @@ def quatRotAxis(q):
     else:
         array = 1
 
-    axis = normalize(q[:, 1:4], axis=1)
+    axis = normalize(q[:,1:4], axis=1)
 
     if array == 0:
         axis = np.squeeze(axis)
     return axis
 
 
-# * Convert quaternion to rotation vector
+# Convert quaternion to rotation vector
 def quatRotVec(q):
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
         array = 0
     else:
         array = 1
-    rv = np.zeros(shape=(np.shape(q)[0], 3))
 
-    theta = np.arccos(q[:, 0]) * 2.0
-    sin_half_theta = np.sqrt(1.0 - q[:, 0] * q[:, 0])
-    ind1 = np.asarray(np.where(np.fabs(theta) > 1e-6))[0, :]
-    ind0 = np.asarray(np.where(np.fabs(theta) <= 1e-6))[0, :]
-    rv[ind1, :] = q[ind1, 1:4] * (theta[ind1] / sin_half_theta[ind1])[:, None]
-    rv[ind0, :] = q[ind0, 1:4] * 2.0
+    rv = np.zeros(shape=(np.shape(q)[0], 3))
+    ind = q[:,0] < 0
+    q[ind,:] = -q[ind,:]
+
+    q0 = np.clip(q[:,0], -1.0, 1.0)
+    theta = np.arccos(q0) * 2.0
+    sin_half_theta = np.sqrt(1.0 - q0**2)
+    ind = theta > 1e-6
+    rv[ind,:] = q[ind,1:4] * (theta[ind] / sin_half_theta[ind])[:, None]
+    rv[~ind,:] = q[~ind,1:4] * 2.0
 
     if array == 0:
         rv = np.squeeze(rv)
     return rv
 
 
-#  *  Compute the derivative of the Euler_t angle psi with respect
-#  * to the quaternion Q.  The result is a row vector
-#  *
-#  * d(psi)/d(q0)
-#  * d(psi)/d(q1)
-#  * d(psi)/d(q2)
-#  * d(psi)/d(q3)
+# Convert rotation vector to quaternion
+def rotVecQuat(v):
+    if len(np.shape(v)) == 1:
+        v = np.expand_dims(v, axis=0)
+        array = 0
+    else:
+        array = 1
+
+    q = np.zeros(shape=(np.shape(v)[0], 4))
+
+    theta = norm(v, axis=1)
+    half_theta = 0.5 * theta
+    ind = half_theta > 1e-6
+
+    q[~ind,0] = 1.0
+    q[~ind,1:] = v[~ind,:]
+
+    q[ind] = np.cos(half_theta[ind,None])
+    q[ind,1:] = v[ind,:] * (np.sin(half_theta[ind]) / theta[ind])[:,None]
+
+    # Enforce unit norm
+    q = normalize(q, axis=1)
+
+    if array == 0:
+        q = np.squeeze(q)
+    return q
+
+
+#  Compute the derivative of the Euler_t angle psi with respect
+# to the quaternion Q.  The result is a row vector
+# d(psi)/d(q0)
+# d(psi)/d(q1)
+# d(psi)/d(q2)
+# d(psi)/d(q3)
 def dpsi_dq(q):
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
@@ -639,32 +636,28 @@ def dpsi_dq(q):
         array = 1
     dq = np.zeros(shape=(np.shape(q)[0], 4))
 
-    t1 = 1.0 - 2.0 * (q[:, 2]*q[:, 2] + q[:, 3]*q[:, 2])
-    t2 = 2.0 * (q[:, 1]*q[:, 2] + q[:, 0]*q[:, 3])
-    err = 2.0 / (t1*t1 + t2*t2)
+    t1 = 1.0 - 2.0 * (q[:,2]**2 + q[:,3]*q[:,2])
+    t2 = 2.0 * (q[:,1]*q[:,2] + q[:,0]*q[:,3])
+    err = 2.0 / (t1**2 + t2**2)
 
-    dq[:, 0] = err * (q[:, 3]*t1)
-    dq[:, 1] = err * (q[:, 2]*t1)
-    dq[:, 2] = err * (q[:, 1]*t1 + 2.0 * q[:, 2]*t2)
-    dq[:, 3] = err * (q[:, 0]*t1 + 2.0 * q[:, 3]*t2)
+    dq[:,0] = err * (q[:,3]*t1)
+    dq[:,1] = err * (q[:,2]*t1)
+    dq[:,2] = err * (q[:,1]*t1 + 2.0 * q[:,2]*t2)
+    dq[:,3] = err * (q[:,0]*t1 + 2.0 * q[:,3]*t2)
 
     if array == 0:
         dq = np.squeeze(dq)
-
     return dq
 
 
-#  Find Earth Centered Earth Fixed coordinate from LLA
-#
-#  lla[0] = latitude (decimal degree)
-#  lla[1] = longitude (decimal degree)
-#  lla[2] = msl altitude (m)
+# Find Earth Centered Earth Fixed coordinate from LLA
+# lla[0] = latitude (decimal degree)
+# lla[1] = longitude (decimal degree)
+# lla[2] = msl altitude (m)
 def lla2ecef(lla_deg):
     # Earth first eccentricity: e = sqrt((R^2-b^2)/R^2);
     e = 0.08181919084262
-    # double R, b, Rn, Smu, Cmu, Sl, Cl;
-
-    # Earth equatorial and polar radii (from flattening, f = 1/298.257223563;
+     # Earth equatorial and polar radii (from flattening, f = 1/298.257223563;
     R = 6378137.0         # m
     # Earth polar radius b = R * (1-f)
     b = 6356752.31424518
@@ -675,29 +668,28 @@ def lla2ecef(lla_deg):
     else:
         array = 1
     LLA = np.copy(lla_deg)
-    LLA[:, 0:2] = np.radians(LLA[:, 0:2])
+    LLA[:,0:2] = np.radians(LLA[:,0:2])
 
-    Smu = sin(LLA[:, 0])
-    Cmu = cos(LLA[:, 0])
-    Sl = sin(LLA[:, 1])
-    Cl = cos(LLA[:, 1])
+    Smu = sin(LLA[:,0])
+    Cmu = cos(LLA[:,0])
+    Sl  = sin(LLA[:,1])
+    Cl  = cos(LLA[:,1])
 
     # Radius of curvature at a surface point:
     Rn = R / np.sqrt(1 - e**2 * Smu**2)
 
     Pe = np.empty(np.shape(LLA))
-    Pe[:, 0] = (Rn + LLA[:, 2]) * Cmu * Cl
-    Pe[:, 1] = (Rn + LLA[:, 2]) * Cmu * Sl
-    Pe[:, 2] = (Rn * (b/R)**2 + LLA[:, 2]) * Smu
+    Pe[:,0] = (Rn + LLA[:,2]) * Cmu * Cl
+    Pe[:,1] = (Rn + LLA[:,2]) * Cmu * Sl
+    Pe[:,2] = (Rn * (b/R)**2 + LLA[:,2]) * Smu
 
     if array == 0:
         Pe = np.squeeze(Pe)
     return Pe
 
 
-# * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (deg,deg,m)
+# Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (deg,deg,m)
 def ecef2lla(Pe, Niter=5):
-
     # Earth equatorial radius
     R = 6378137.0
     # Earth polar radius b = R * (1-f)
@@ -713,32 +705,30 @@ def ecef2lla(Pe, Niter=5):
         array = 0
     else:
         array = 1
-    LLA = np.empty(np.shape(Pe))
 
-    # Longitude
-    LLA[:, 1] = arctan2(Pe[:, 1], Pe[:, 0])
+    LLA = np.empty(np.shape(Pe))
+    LLA[:,1] = arctan2(Pe[:,1], Pe[:,0]) # Longitude
 
     # Latitude computation using Bowring's method
-    s = np.sqrt(Pe[:, 0]**2 + Pe[:, 1]**2)
-    beta = arctan2(Pe[:, 2], (1.0-f)*s)  # reduced latitude, initial guess
+    s = np.sqrt(Pe[:,0]**2 + Pe[:,1]**2)
+    beta = arctan2(Pe[:,2], (1.0-f)*s)  # reduced latitude, initial guess
 
     B = e2 * R
     A = e2 * R / (1.0 - f)
     for i in range(0, Niter):
         # iterative latitude computation
-        LLA[:, 0] = arctan2(Pe[:, 2]+A*sin(beta)**3, s-B*cos(beta)**3)
-        beta = arctan((1-f) * tan(LLA[:, 0]))
+        LLA[:,0] = arctan2(Pe[:, 2]+A*sin(beta)**3, s-B*cos(beta)**3)
+        beta = arctan((1-f) * tan(LLA[:,0]))
 
     # Radius of curvature in the vertical prime
-    sin_lat = sin(LLA[:, 0])
+    sin_lat = sin(LLA[:,0])
     Rn = R / np.sqrt(1.0 - e2 * sin_lat**2)
 
     # Altitude above planetary ellipsoid
-    LLA[:, 2] = s * cos(LLA[:, 0]) + (Pe[:, 2] + e2 *
-                                      Rn * sin_lat) * sin_lat - Rn
+    LLA[:,2] = s * cos(LLA[:,0]) + (Pe[:,2] + e2 * Rn * sin_lat) * sin_lat - Rn
 
     # Convert to degrees
-    LLA[:, 0:2] = np.degrees(LLA[:, 0:2])
+    LLA[:,0:2] = np.degrees(LLA[:,0:2])
 
     if array == 0:
         LLA = np.squeeze(LLA)
@@ -746,7 +736,6 @@ def ecef2lla(Pe, Niter=5):
 
 
 #  Find NED (north, east, down) from lla_ref_deg to lla_deg
-#
 #  lla_ref_deg[0] = reference latitude (decimal degree)
 #  lla_ref_deg[1] = reference longitude (decimal degree)
 #  lla_ref_deg[2] = reference msl altitude (m)
@@ -771,10 +760,8 @@ def lla2ned(lla_ref_deg, lla_deg):
     lla = np.copy(lla_deg)
     lla_ref = np.copy(lla_ref_deg)
     # Convert deg to rad
-    lla[:, 0:2] = np.radians(lla[:, 0:2])
-    lla_ref[:, 0:2] = np.radians(lla_ref_deg[:, 0:2])
-
-    Pn = np.empty(np.shape(lla))
+    lla[:,0:2] = np.radians(lla[:,0:2])
+    lla_ref[:,0:2] = np.radians(lla_ref_deg[:,0:2])
 
     deltaLLA = lla - lla_ref
     # radius of curvature in the prime vertical:
@@ -782,9 +769,11 @@ def lla2ned(lla_ref_deg, lla_deg):
     Rn = R / np.sqrt(1.0 - e2 * sin_lat_ref**2)
     # radius of curvature in the meridian
     Rm = Rn * (1.0 - e2) / (1.0 - e2 * sin_lat_ref**2)
-    Pn[:, 0] = deltaLLA[:, 0] * Rm
-    Pn[:, 1] = deltaLLA[:, 1] * Rn * cos(lla_ref[:, 0])
-    Pn[:, 2] = -deltaLLA[:, 2]
+
+    Pn = np.empty(np.shape(lla))
+    Pn[:,0] =  deltaLLA[:,0] * Rm
+    Pn[:,1] =  deltaLLA[:,1] * Rn * cos(lla_ref[:, 0])
+    Pn[:,2] = -deltaLLA[:,2]
 
     if array == 0:
         Pn = np.squeeze(Pn)
@@ -814,11 +803,9 @@ def ned2lla(lla_ref_deg, Pn):
     if len(np.shape(lla_ref_deg)) == 1:
         lla_ref_deg = np.expand_dims(lla_ref_deg, axis=0)
 
-    lla_ref = np.copy(lla_ref_deg)
     # Convert deg to rad
-    lla_ref[:, 0:2] = np.radians(lla_ref_deg[:, 0:2])
-
-    lla = np.empty(np.shape(Pn))
+    lla_ref = np.copy(lla_ref_deg)
+    lla_ref[:,0:2] = np.radians(lla_ref_deg[:,0:2])
 
     # radius of curvature in the prime vertical:
     sin_lat_ref = sin(lla_ref[:, 0])
@@ -826,12 +813,13 @@ def ned2lla(lla_ref_deg, Pn):
     # radius of curvature in the meridian
     Rm = Rn * (1.0 - e2) / (1.0 - e2 * sin_lat_ref**2)
 
-    lla[:, 0] = lla_ref[:, 0] + Pn[:, 0] / Rm
-    lla[:, 1] = lla_ref[:, 1] + Pn[:, 1] / (Rn * cos(lla_ref[:, 0]))
-    lla[:, 2] = lla_ref[:, 2] - Pn[:, 2]
+    lla = np.empty(np.shape(Pn))
+    lla[:,0] = lla_ref[:,0] + Pn[:,0] / Rm
+    lla[:,1] = lla_ref[:,1] + Pn[:,1] / (Rn * cos(lla_ref[:,0]))
+    lla[:,2] = lla_ref[:,2] - Pn[:,2]
 
     # Convert lat/lon to degrees
-    lla[:, 0:2] = np.degrees(lla[:, 0:2])
+    lla[:,0:2] = np.degrees(lla[:,0:2])
     if array == 0:
         lla = np.squeeze(lla)
     return lla
@@ -860,11 +848,9 @@ def ned2DeltaLla(lla_ref_deg, Pn):
     if len(np.shape(lla_ref_deg)) == 1:
         lla_ref_deg = np.expand_dims(lla_ref_deg, axis=0)
 
-    lla_ref = np.copy(lla_ref_deg)
     # Convert deg to rad
+    lla_ref = np.copy(lla_ref_deg)
     lla_ref[:, 0:2] = np.radians(lla_ref_deg[:, 0:2])
-
-    deltaLLA = np.empty(np.shape(Pn))
 
     # radius of curvature in the prime vertical:
     sin_lat_ref = sin(lla_ref[:, 0])
@@ -872,9 +858,10 @@ def ned2DeltaLla(lla_ref_deg, Pn):
     # radius of curvature in the meridian
     Rm = Rn * (1.0 - e2) / (1.0 - e2 * sin_lat_ref**2)
 
-    deltaLLA[:, 0] = Pn[:, 0] / Rm
-    deltaLLA[:, 1] = Pn[:, 1] / (Rn * cos(lla_ref[:, 0]))
-    deltaLLA[:, 2] = -Pn[:, 2]
+    deltaLLA = np.empty(np.shape(Pn))
+    deltaLLA[:,0] =  Pn[:,0] / Rm
+    deltaLLA[:,1] =  Pn[:,1] / (Rn * cos(lla_ref[:, 0]))
+    deltaLLA[:,2] = -Pn[:,2]
 
     # Convert delta lat/lon to degrees
     deltaLLA[:, 0:2] = np.degrees(deltaLLA[:, 0:2])
@@ -891,21 +878,21 @@ def rotmat_ned2ecef(latlon):
     else:
         array = 1
 
-    Smu = sin(latlon[:, 0])
-    Cmu = cos(latlon[:, 0])
-    Sl = sin(latlon[:, 1])
-    Cl = cos(latlon[:, 1])
+    Smu = sin(latlon[:,0])
+    Cmu = cos(latlon[:,0])
+    Sl  = sin(latlon[:,1])
+    Cl  = cos(latlon[:,1])
 
     R = np.empty(shape=(np.shape(latlon)[0], 3, 3))
-    R[:, 0, 0] = -Smu * Cl
-    R[:, 0, 1] = -Sl
-    R[:, 0, 2] = -Cmu * Cl
-    R[:, 1, 0] = -Smu * Sl
-    R[:, 1, 1] = Cl
-    R[:, 1, 2] = -Cmu * Sl
-    R[:, 2, 0] = Cmu
-    R[:, 2, 1] = 0.0
-    R[:, 2, 2] = -Smu
+    R[:,0,0] = -Smu * Cl
+    R[:,0,1] = -Sl
+    R[:,0,2] = -Cmu * Cl
+    R[:,1,0] = -Smu * Sl
+    R[:,1,1] =  Cl
+    R[:,1,2] = -Cmu * Sl
+    R[:,2,0] =  Cmu
+    R[:,2,1] =  0.0
+    R[:,2,2] = -Smu
 
     if array == 0:
         R = np.squeeze(R)
@@ -920,21 +907,21 @@ def rotmat_ecef2ned(latlon):
     else:
         array = 1
 
-    Smu = sin(latlon[:, 0])
-    Cmu = cos(latlon[:, 0])
-    Sl = sin(latlon[:, 1])
-    Cl = cos(latlon[:, 1])
+    Smu = sin(latlon[:,0])
+    Cmu = cos(latlon[:,0])
+    Sl  = sin(latlon[:,1])
+    Cl  = cos(latlon[:,1])
 
     R = np.empty(shape=(np.shape(latlon)[0], 3, 3))
-    R[:, 0, 0] = -Smu * Cl
-    R[:, 0, 1] = -Smu * Sl
-    R[:, 0, 2] = Cmu
-    R[:, 1, 0] = -Sl
-    R[:, 1, 1] = Cl
-    R[:, 1, 2] = 0.0
-    R[:, 2, 0] = -Cmu * Cl
-    R[:, 2, 1] = -Cmu * Sl
-    R[:, 2, 2] = -Smu
+    R[:,0,0] = -Smu * Cl
+    R[:,0,1] = -Smu * Sl
+    R[:,0,2] =  Cmu
+    R[:,1,0] = -Sl
+    R[:,1,1] =  Cl
+    R[:,1,2] =  0.0
+    R[:,2,0] = -Cmu * Cl
+    R[:,2,1] = -Cmu * Sl
+    R[:,2,2] = -Smu
 
     if array == 0:
         R = np.squeeze(R)
@@ -944,7 +931,7 @@ def rotmat_ecef2ned(latlon):
 # Convert body attitude in Euler angles relative to ENU frame
 # to body attitude in Euler angles relative to NED frame
 def enu2nedEuler(eul_e2b):
-    q_n2e = euler2quat(np.array([pi, 0, pi/2]))
+    q_n2e = euler2quat(np.array([pi, 0.0, 0.5*pi]))
     q_e2b = euler2quat(eul_e2b)
     q_n2b = mul_Quat_Quat(q_e2b, q_n2e)
     eul_n2b = quat2euler(q_n2b)
@@ -962,9 +949,9 @@ def nedEuler(ned):
         array = 1
 
     euler = np.empty(shape=(np.shape(ned)[0], 3))
-    euler[:, 2] = arctan2(ned[:, 1], ned[:, 0])
-    euler[:, 1] = arctan2(-ned[:, 2], np.sqrt(ned[:, 0]**2 + ned[:, 1]**2))
-    euler[:, 0] = 0
+    euler[:,2] = arctan2(ned[:,1], ned[:,0])
+    euler[:,1] = arctan2(-ned[:,2], np.sqrt(ned[:,0]**2 + ned[:,1]**2))
+    euler[:,0] = 0.0
 
     if array == 0:
         euler = np.squeeze(euler)
@@ -980,7 +967,7 @@ def eulerNed(euler):
         array = 0
     else:
         array = 1
-    e0 = np.array([1., 0., 0.])
+    e0 = np.array([1.0, 0.0, 0.0])
     q  = euler2quat(euler)
     e0n = quatRot(q, e0)
     if array == 0:
@@ -997,38 +984,22 @@ def nedQuat(v):
 
 # Rotate theta eulers from body to inertial frame by ins eulers, in order: phi, theta, psi
 # TODO: this function needs a better description
-def eulerRotateBodyToInertial2(e, rot):
-    eResult = np.zeros(np.shape(e))
-
-    Ai = eulerDCM(rot)                  # use estimate
-
-    for i in range(0, np.shape(eResult)[0]):
-        # Create DCMs (rotation matrices)
-        At = eulerDCM(e[i, :])
-
-        # Apply INS Rotation to Desired Target vector
-        AiAt = dot(Ai, At)               # Apply rotation
-        eResult[i, :] = DCMeuler(AiAt)            # Pull out new eulers
-
-    return eResult
+def eulerRotateBodyToInertial(e, rot):
+    qe = euler2quat(e)
+    qr = euler2quat(rot)
+    q = mul_Quat_Quat(qr, qe)
+    eul = quat2euler(q)
+    return eul
 
 
 # Rotate theta eulers from inertial to body frame by ins eulers, in order: psi, theta, phi
 # TODO: this function needs a better description
-def eulerRotateInertialToBody2(e, rot):
-    eResult = np.zeros(np.shape(e))
-
-    Ai = eulerDCM(rot)                  # use estimate
-
-    for i in range(0, np.shape(eResult)[0]):
-        # Create DCMs (rotation matrices)
-        At = eulerDCM(e[i, :])
-
-        # Apply INS Rotation to Desired Target vector
-        AiAt = dot(Ai.T, At)             # Apply rotation
-        eResult[i, :] = DCMeuler(AiAt)            # Pull out new eulers
-
-    return eResult
+def eulerRotateInertialToBody(e, rot):
+    qe = euler2quat(e)
+    qr = euler2quat(rot)
+    q = mul_ConjQuat_Quat(qr, qe)
+    eul = quat2euler(q)
+    return eul
 
 
 # Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
@@ -1079,8 +1050,8 @@ def accellToEuler(acc):
         array = 1
 
     euler = np.empty(shape=(np.shape(acc)[0], 3))
-    euler[:, 0] = np.arctan2(-acc[:, 1], -acc[:, 2])
-    euler[:, 1] = np.arctan2(acc[:, 0], np.sqrt(acc[:, 1]**2 + acc[:, 2]**2))
+    euler[:,0] = np.arctan2(-acc[:,1], -acc[:,2])
+    euler[:,1] = np.arctan2(acc[:,0], np.sqrt(acc[:,1]**2 + acc[:,2]**2))
 
     if array == 0:
         euler = np.squeeze(euler)
@@ -1101,7 +1072,7 @@ def acc2AttAndBias(acc):
         att = accellToEuler(acc-bias)
         gIF = np.r_[0, 0, -9.80665]
         DCM = eulerDCM(att)
-        g = np.einsum('ijk,k->ij',DCM, gIF)
+        g = np.einsum('ijk,k->ij', DCM, gIF)
         bias = acc - g
 
     if array == 0:
@@ -1111,28 +1082,37 @@ def acc2AttAndBias(acc):
     return [att, bias]
 
 
-# TODO: this function needs a better description
+# Compute logarithm of a unit quaternion (unit norm is important here).
+# Let q = [a, qv], where a is the scalar part and qv is the vector part.
+# qv = sin(phi/2)*nv, where nv is a unit vector. Then
+# ln(q) = ln(||q||) + qv / ||qv|| * arccos(a / ||q||)
+# Therefore for a unit quaternion, the scalar part of ln(q) is zero
+# and the vector part of ln(q) is 1/2 * phi * nv,
+# i.e. half of rotation vector rv = phi * nv because 
+# a = cos(phi/2) in attitude quaternion (see quatRotVec())
+# Reference: https://en.wikipedia.org/wiki/Quaternion
+# NOTE: due to existing implementation in C++, this function
+# returns just the vector part of ln(q)
 def qlog(q):
-    q *= np.sign(q[:, 0])[:, None]
-    norm_v = norm(q[:, 1:], axis=1)
-    out = np.empty((len(q), 3))
-    idx = norm_v > 1e-4
-    out[~idx] = 2.0 * np.sign(q[~idx, 0, None]) * q[~idx, 1:]
-    out[idx] = (2.0 * np.arctan2(norm_v[idx, None], q[idx, 0, None])
-                ) * q[idx, 1:]/norm_v[idx, None]
-    return out
+    # NOTE. According to Wiki description, ln(q)_v should be a 
+    # half of rotation vector. However the previous 
+    # implementation computed the full rotation vector. 
+    # So, using the rotation vector for now until cleared up.
+    rv = quatRotVec(q)
+    return rv
 
 
-# TODO: this function needs a better description
+# Compute exponent of a unit quaternion
+# Let q = [a, qv], where a is the scalar part and qv is the vector part.
+# qv = sin(phi/2)*nv, where nv is a unit vector. Then
+# exp(q) = exp(a) * (cos(||q_v||) + qv / ||qv|| * sin(||q_v||))
+# Reference: https://en.wikipedia.org/wiki/Quaternion
+# NOTE: due to existing implementation in C++, 
+# this function takes just the vector part as its argument to act as
+#  inverse of qlog()
 def qexp(v):
-    out = np.empty((len(v), 4))
-    norm_v = norm(v, axis=1)
-    idx = norm_v > 1e-4
-    out[~idx, 0] = 1
-    out[~idx, 1:] = v[~idx, :]
-    out[idx] = np.cos(norm_v[idx, None]/2.0)
-    out[idx, 1:] = np.sin(norm_v[idx, None]/2.0) * v[idx, :]/norm_v[idx, None]
-    return out
+    q = rotVecQuat(v)
+    return q
 
 
 # Attitude quaternion resulting from q1 followed by rotation due to rotation vector v
@@ -1200,24 +1180,21 @@ if __name__ == '__main__':
     assert np.sqrt(np.sum(np.square(u - v))) < 1e-8
 
     # Test quaternion to rotation vector conversion
-    a = quatRotAxis(q[0:5, :])
-    rv = quatRotVec(q[0:5, :])
+    a = quatRotAxis(q)
+    rv = quatRotVec(q)
+    rv1 = qlog(q)
+    assert np.sqrt(np.sum(np.square(rv - rv1))) < 1e-8
+    quat = rotVecQuat(rv)
+    assert np.sqrt(np.sum(np.square(q - quat))) < 1e-8
 
     # Test quat-to-Euler conversions
-    print("q =", q0)
-    eul = quat2euler(q0)
-    print("eul =", eul)
+    eul = quat2euler(q)
     quat = euler2quat(eul)
-    print("q restored =", quat)
-    print("q inverse", quatConj(q0))
-    assert np.sqrt(np.sum(np.square(q0 - quat))) < 1e-8
-    print("q array =", q1)
-    eul = quat2euler(q1)
-    print("eul array =", eul)
-    quat = euler2quat(eul)
-    print("q array restored =", quat)
-    print("q array inverse", quatConj(q1))
-    assert np.sqrt(np.sum(np.square(q1 - quat))) < 1e-8
+    assert np.sqrt(np.sum(np.square(q - quat))) < 1e-8
+
+    # Euler angles from sequential rotations
+    eul1 = eulerRotateBodyToInertial(eul, eul[0,:])
+    eul2 = eulerRotateInertialToBody(eul, eul[0,:])
 
     # Test quaternion multiplication with inverse
     quat0 = mul_Quat_Quat(quatConj(q0), q0)
@@ -1229,8 +1206,7 @@ if __name__ == '__main__':
     assert np.sqrt(np.sum(np.square(quat0 - quat1))) < 1e-8
     print("q2 =", q2)
     print("q3 = q2*q1; q3*inv(q1) = ", mul_Quat_Quat(q3, quatConj(q1)))
-    assert np.sqrt(
-        np.sum(np.square(mul_Quat_Quat(q3, quatConj(q1)) - q2))) < 1e-8
+    assert np.sqrt(np.sum(np.square(mul_Quat_Quat(q3, quatConj(q1)) - q2))) < 1e-8
 
     dq1 = dpsi_dq(q1)
 
@@ -1238,8 +1214,8 @@ if __name__ == '__main__':
     xe0 = y[0:5, :]*100000
     ind1 = xe0 >= 0
     ind0 = xe0 < 0
-    np.clip(xe0[ind1], 10000, 1e10)
-    np.clip(xe0[ind0], -1e10, -10000)
+    xe0[ind1] = np.clip(xe0[ind1], 10000, 1e10)
+    xe0[ind0] = np.clip(xe0[ind0], -1e10, -10000)
     lla_deg = ecef2lla(xe0, 100)
     xe1 = lla2ecef(lla_deg)
     assert np.sqrt(np.sum(np.square(xe0 - xe1))) < 1e-4
