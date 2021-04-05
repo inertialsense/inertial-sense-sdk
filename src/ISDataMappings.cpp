@@ -1081,26 +1081,26 @@ static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT])
 	map_name_to_info_t& m = mappings[DID_SENSORS_ADC];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double);
-    ADD_MAP(m, totalSize, "pqr1[0]", mpu[0].pqr[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "pqr1[1]", mpu[0].pqr[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "pqr1[2]", mpu[0].pqr[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "acc1[0]", mpu[0].acc[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "acc1[1]", mpu[0].acc[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "acc1[2]", mpu[0].acc[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "mag1[0]", mpu[0].mag[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "mag1[1]", mpu[0].mag[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "mag1[2]", mpu[0].mag[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "temp1", mpu[0].temp, 0, DataTypeFloat, float);
-    ADD_MAP(m, totalSize, "pqr2[0]", mpu[1].pqr[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "pqr2[1]", mpu[1].pqr[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "pqr2[2]", mpu[1].pqr[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "acc2[0]", mpu[1].acc[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "acc2[1]", mpu[1].acc[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "acc2[2]", mpu[1].acc[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "mag2[0]", mpu[1].mag[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "mag2[1]", mpu[1].mag[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "mag2[2]", mpu[1].mag[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "temp2", mpu[1].temp, 0, DataTypeFloat, float);
+
+	for (int i = 0; i < NUM_IMU_DEVICES; i++)
+	{
+		std::string name = "pqr" + std::to_string(i);
+		ADD_MAP(m, totalSize, (name + "[0]"), imu[i].pqr[0], 0, DataTypeFloat, float&);
+		ADD_MAP(m, totalSize, (name + "[1]"), imu[i].pqr[1], 0, DataTypeFloat, float&);
+		ADD_MAP(m, totalSize, (name + "[2]"), imu[i].pqr[2], 0, DataTypeFloat, float&);
+		name = "acc" + std::to_string(i);
+		ADD_MAP(m, totalSize, (name + "[0]"), imu[i].acc[0], 0, DataTypeFloat, float&);
+		ADD_MAP(m, totalSize, (name + "[1]"), imu[i].acc[1], 0, DataTypeFloat, float&);
+		ADD_MAP(m, totalSize, (name + "[2]"), imu[i].acc[2], 0, DataTypeFloat, float&);
+		ADD_MAP(m, totalSize, ("temp" + std::to_string(i)), imu[0].temp, 0, DataTypeFloat, float);
+	}
+	for (int i = 0; i < NUM_MAG_DEVICES; i++)
+	{
+		std::string name = "mag" + std::to_string(i);
+		ADD_MAP(m, totalSize, (name + "[0]"), mag[i].mag[0], 0, DataTypeFloat, float&);
+		ADD_MAP(m, totalSize, (name + "[1]"), mag[i].mag[1], 0, DataTypeFloat, float&);
+		ADD_MAP(m, totalSize, (name + "[2]"), mag[i].mag[2], 0, DataTypeFloat, float&);
+	}
     ADD_MAP(m, totalSize, "bar", bar, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "barTemp", barTemp, 0, DataTypeFloat, float);
     ADD_MAP(m, totalSize, "humidity", humidity, 0, DataTypeFloat, float);

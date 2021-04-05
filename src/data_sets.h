@@ -162,6 +162,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
 #define NUM_IMU_DEVICES     3
+#define NUM_MAG_DEVICES     2
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -1262,14 +1263,27 @@ typedef struct PACKED
 	f_t						temp;			// (°C)		Temperature of MPU
 } sensors_mpu_w_temp_t;
 
+typedef struct PACKED
+{                                       // Units only apply for calibrated data
+	f_t						pqr[3];         // (rad/s)	Angular rate
+	f_t						acc[3];         // (m/s^2)	Linear acceleration
+	f_t						temp;			// (°C)		Temperature of MPU
+} sensors_imu_w_temp_t;
+
+typedef struct PACKED
+{                                       // Units only apply for calibrated data
+	f_t						mag[3];         // (uT)		Magnetometers
+} sensors_mag_t;
+
 #define NUM_ANA_CHANNELS	4
 typedef struct PACKED
 {                                       // LSB units for all except temperature, which is Celsius.
 	double					time;
-	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
-	f_t						bar;            // Barometric pressure
-	f_t						barTemp;		// Temperature of barometric pressure sensor
-	f_t                     humidity;	// Relative humidity as a percent (%rH).  Range is 0% - 100%
+	sensors_imu_w_temp_t	imu[NUM_IMU_DEVICES];
+	sensors_mag_t			mag[NUM_MAG_DEVICES];   // Magnetometers
+	f_t						bar;            		// Barometric pressure
+	f_t						barTemp;				// Temperature of barometric pressure sensor
+	f_t                     humidity;				// Relative humidity as a percent (%rH).  Range is 0% - 100%
 	f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
 } sys_sensors_adc_t;
 
