@@ -209,15 +209,15 @@
 
 // H8 GPIO Pins    - GPIO pins are all tied to multiple SAME70 pins.  Below is just one of these pins.
 #define GPIO_1_PIN				    (PIO_PB4_IDX)		// (H8-5) 
-#define GPIO_2_PIN				    (PIO_PA16_IDX)		// (H8-6)  + PA21
-#define GPIO_3_PIN				    (PIO_PA23_IDX)		// (H8-7)  + PA0 + PE3
-#define GPIO_4_PIN				    (PIO_PA24_IDX)		// (H8-8)  + PA1
-#define GPIO_5_PIN				    (PIO_PB13_IDX)		// (H8-9)  + PC5 + PC29
-#define GPIO_6_PIN				    (PIO_PC6_IDX)		// (H8-10) + PD0 
-#define GPIO_7_PIN				    (PIO_PC9_IDX)		// (H8-11) 
-#define GPIO_8_PIN				    (PIO_PE4_IDX)		// (H8-12) + PD27
-#define GPIO_9_PIN				    (PIO_PE0_IDX)		// (H8-13) + PA15 + PC13
-#define GPIO_10_PIN				    (PIO_PE1_IDX)		// (H8-14) + PC15
+#define GPIO_2_PIN				    (PIO_PA16_IDX)		// (H8-6)  PA16 + PA21
+#define GPIO_3_PIN				    (PIO_PA23_IDX)		// (H8-7)  PA23 + PA0 + PE3
+#define GPIO_4_PIN				    (PIO_PA24_IDX)		// (H8-8)  PA24 + PA1
+#define GPIO_5_PIN				    (PIO_PB13_IDX)		// (H8-9)  PB13 + PC5 + PC29
+#define GPIO_6_PIN				    (PIO_PC6_IDX)		// (H8-10) PC6  + PD0 
+#define GPIO_7_PIN				    (PIO_PC9_IDX)		// (H8-11) PC9 
+#define GPIO_8_PIN				    (PIO_PE4_IDX)		// (H8-12) PE4  + PD27
+#define GPIO_9_PIN				    (PIO_PE0_IDX)		// (H8-13) PE0  + PA15 + PC13
+#define GPIO_10_PIN				    (PIO_PE1_IDX)		// (H8-14) PE1  + PC15
 // GPIO Inverted UART Control
 #define GPIO_UART_INV_PIN		    (PIO_PE2_IDX)
 

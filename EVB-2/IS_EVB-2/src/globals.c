@@ -329,7 +329,7 @@ void concatStringWithSpace(char* buf, size_t bufLen, const char* concat)
 }
 
 
-void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
+bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 {
     evb_flash_cfg_t defaults;
     memset(&defaults, 0, sizeof(evb_flash_cfg_t));    
@@ -362,6 +362,7 @@ void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
     if (cfg->cbPreset == EVB2_CB_PRESET_SPI_RS232){ cfg->cbPreset = EVB2_CB_PRESET_DEFAULT; }
 #endif
 
+    return valid;
 }
 
 
