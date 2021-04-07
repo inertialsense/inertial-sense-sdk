@@ -123,8 +123,8 @@ Functions</h2></td></tr>
 <tr class="separator:ac0d8f73a36374a94f17c9999f7f8c01b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d9ff567b647e06d0f58d867ee107c70"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a8d9ff567b647e06d0f58d867ee107c70">gps_to_nmea_pashr</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> &amp;pos, <a class="el" href="data__sets_8h.html#afcf8ee9e9a7672ae4ee29198e30e06a6">ins_1_t</a> &amp;ins1, float heave, <a class="el" href="data__sets_8h.html#a235df50770f03c7781009d5796e54316">inl2_ned_sigma_t</a> &amp;sigma)</td></tr>
 <tr class="separator:a8d9ff567b647e06d0f58d867ee107c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a45b93c8493e3e920d76c704ad9a3aa87"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a45b93c8493e3e920d76c704ad9a3aa87">parse_nmea_ascb</a> (int pHandle, const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#af4790cefd3dc3838e9da076a57c84b71">ascii_msgs_t</a> asciiPeriod[<a class="el" href="data__sets_8h.html#a05779bed141f5ca2d7aee78aab15dad7">NUM_COM_PORTS</a>])</td></tr>
-<tr class="separator:a45b93c8493e3e920d76c704ad9a3aa87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c623b66a2a16fd45b1a6f211ca076e7"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a6c623b66a2a16fd45b1a6f211ca076e7">parse_nmea_ascb</a> (int pHandle, const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#af4790cefd3dc3838e9da076a57c84b71">ascii_msgs_t</a> asciiPeriod[<a class="el" href="data__sets_8h.html#a05779bed141f5ca2d7aee78aab15dad7">NUM_COM_PORTS</a>], uint32_t *asciiPeriodPPIMU)</td></tr>
+<tr class="separator:a6c623b66a2a16fd45b1a6f211ca076e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad64c0413276ee4ffdfdc13d52875813e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#ad64c0413276ee4ffdfdc13d52875813e">parse_nmea_zda</a> (const char msg[], int msgSize, double &amp;day, double &amp;month, double &amp;year)</td></tr>
 <tr class="separator:ad64c0413276ee4ffdfdc13d52875813e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a531b2e696cc7b542ce8c33bf69bef2bc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a531b2e696cc7b542ce8c33bf69bef2bc">parse_nmea_gns</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], int *satsUsed, int navMode)</td></tr>
@@ -667,8 +667,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a45b93c8493e3e920d76c704ad9a3aa87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a45b93c8493e3e920d76c704ad9a3aa87">&#9670;&nbsp;</a></span>parse_nmea_ascb()</h2>
+<a id="a6c623b66a2a16fd45b1a6f211ca076e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c623b66a2a16fd45b1a6f211ca076e7">&#9670;&nbsp;</a></span>parse_nmea_ascb()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -695,7 +695,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="data__sets_8h.html#af4790cefd3dc3838e9da076a57c84b71">ascii_msgs_t</a>&#160;</td>
-          <td class="paramname"><em>asciiPeriod</em>[NUM_COM_PORTS]&#160;</td>
+          <td class="paramname"><em>asciiPeriod</em>[NUM_COM_PORTS], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t *&#160;</td>
+          <td class="paramname"><em>asciiPeriodPPIMU</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -759,7 +765,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00939">939</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00943">943</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -813,7 +819,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00815">815</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00819">819</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -855,7 +861,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01100">1100</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01104">1104</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -915,7 +921,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01127">1127</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01131">1131</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -969,7 +975,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01055">1055</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01059">1059</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -1017,7 +1023,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00785">785</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00789">789</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
