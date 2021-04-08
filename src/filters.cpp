@@ -93,11 +93,6 @@ void iir_filter_s16(iif_filter_t *f, short input[], float output[])
 }
 
 
-
-
-
-
-
 /** 
  * \brief Running Average Filter
  *  A running average of the input array is collected in the mean array.  Filter
@@ -148,6 +143,37 @@ void running_mean_filter_f64( double mean[], float input[], int arraySize, int s
     for( i=0; i<arraySize; i++ )
         mean[i] = (1.0-alpha)*mean[i] + (alpha)*(double)input[i];
 }
+
+
+/**
+ * \brief Recursive Moving Average and Variance Filter
+ * Recursive computation of moving average and variance given their previous
+ * values, new element in the set, number of elements in the set (window size) and
+ * assuming that one of the elements in the set is removed when new one is
+ * added (i.e. fixed window size).
+ * Reference: http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation
+ *
+ * \param mean          Moving average of the set
+ * \param var           Moving variance of the set
+ * \param input         Floating point value added to the set
+ * \param sampleCount   Number of samples in the sliding window
+ */
+void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount)
+{
+    float dx, div;
+
+    if (sampleCount <= 0) return;
+
+    dx = input - *mean;
+
+    // Expected moving average
+    div = 1.0f / (float)sampleCount;
+    *mean += dx * div;
+
+    // Expected moving variance
+    *var = ((float)(sampleCount * sampleCount - sampleCount - 1) * (*var) + (float)(sampleCount - 1) * dx * dx) * div * div;
+}
+
 
 #define INVALID_ACCEL 1.0e-6f
 void errorCheckImu3(imu3_t *di)

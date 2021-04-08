@@ -463,6 +463,21 @@ void running_mean_filter( float mean[], float input[], int arraySize, int sample
  */
 void running_mean_filter_f64( double mean[], float input[], int arraySize, int sampleCount );
 
+/**
+ * \brief Recursive Moving Average and Variance Filter
+ * Recursive computation of expected moving average and variance given their previous
+ * values, new element in the set, number of elements in the set (window size) and
+ * assuming that one of the elements in the set is removed when new one is
+ * added (i.e. fixed window size).
+ * Reference: http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation
+ *
+ * \param mean          Moving average of the set
+ * \param var           Moving variance of the set
+ * \param input         Floating point value added to the set
+  * \param sampleCount   Number of samples in the sliding window
+*/
+void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount);
+
 
 // Look for error in dual IMU data
 void errorCheckImu3(imu3_t *di);
