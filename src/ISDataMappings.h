@@ -25,6 +25,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#if __has_include("luna_data_sets.h")	// Copy luna_data_sets.h from luna-vehicle\catkin_ws\src\flamingo\EVB-2\IS_EVB-2\src\ into imx\SDK\src
+#include "luna_data_sets.h"
+#define USE_LUNA_DATA_SETS
+#endif
+
 /**
 * Get the size of an eDataType
 * @param dataType the data type to get size for
