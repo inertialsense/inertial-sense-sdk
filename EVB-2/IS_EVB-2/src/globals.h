@@ -124,8 +124,9 @@ int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin 
 int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
 void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
+void concatStringWithSpace(char* buf, size_t bufLen, const char* concat);
 
-void nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
+bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
 void nvr_init(void);
 void nvr_slow_maintenance(void);
 

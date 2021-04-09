@@ -386,10 +386,7 @@ extern void vPortFree(void* pv);
 #define CONST_EXPRESSION constexpr static
 #endif
 #ifndef STATIC_ASSERT
-#define STATIC_ASSERT(exp) static_assert(exp, "STATIC ASSERT FAILED!")
-#endif
-#ifndef STATIC_ASSERT_MSG
-#define STATIC_ASSERT_MSG(exp, msg) static_assert(exp, msg)
+#define STATIC_ASSERT(exp) static_assert(exp, #exp)
 #endif
 #ifndef OVERRIDE
 #define OVERRIDE override
@@ -413,12 +410,8 @@ extern void vPortFree(void* pv);
 #endif
 #define PRE_PROC_COMBINE(X, Y) X##Y
 #ifndef STATIC_ASSERT
-// #define STATIC_ASSERT(exp) typedef char PRE_PROC_COMBINE(STATIC_ASSERT_FAILED_, __LINE__)[(exp) ? 1 : -1]
-#define STATIC_ASSERT(exp) static_assert(exp, "STATIC ASSERT FAILED!")
-#endif
-#ifndef STATIC_ASSERT_MSG
 // #define STATIC_ASSERT_MSG(exp, msg) typedef char PRE_PROC_COMBINE(msg, __LINE__)[(exp) ? 1 : -1]
-#define STATIC_ASSERT_MSG(exp, msg) static_assert(exp, msg)
+#define STATIC_ASSERT(exp) static_assert(exp, #exp)
 #endif
 #ifndef OVERRIDE
 #define OVERRIDE

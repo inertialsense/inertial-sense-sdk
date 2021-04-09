@@ -13,6 +13,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <flash_efc.h>
 #include "ASF/common/components/wifi/winc3400/wifi_drv/socket/include/socket.h"
 #include "../../../hw-libs/drivers/d_flash.h"
+#include "version/version.h"
+#include "version/repositoryInfo.h"
+#include "version/buildInfo.h"
 #include "globals.h"
 
 
@@ -49,33 +52,70 @@ void globals_init(void)
 	}
 	g_evbDevInfo.hardwareVer[3] = 0;
 
-// 	g_evbDevInfo.firmwareVer[0] = FIRMWARE_VERSION_CHAR0;      // Major
-// 	g_evbDevInfo.firmwareVer[1] = FIRMWARE_VERSION_CHAR1;      // Minor
-// 	g_evbDevInfo.firmwareVer[2] = FIRMWARE_VERSION_CHAR2;      // Revision
-// 	g_evbDevInfo.firmwareVer[3] = FIRMWARE_VERSION_CHAR3;		// firmware specific revision
+	g_evbDevInfo.firmwareVer[0] = FIRMWARE_VERSION_CHAR0;       // Major
+	g_evbDevInfo.firmwareVer[1] = FIRMWARE_VERSION_CHAR1;       // Minor
+	g_evbDevInfo.firmwareVer[2] = FIRMWARE_VERSION_CHAR2;       // Revision
+	g_evbDevInfo.firmwareVer[3] = FIRMWARE_VERSION_CHAR3;       // firmware specific revision
 
 	g_evbDevInfo.protocolVer[0] = PROTOCOL_VERSION_CHAR0;		// in com_manager.h
 	g_evbDevInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
 	g_evbDevInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;		// in data_sets.h
 	g_evbDevInfo.protocolVer[3] = PROTOCOL_VERSION_CHAR3;
 
-// 	g_evbDevInfo.repoRevision = REPO_HEAD_COUNT;
-// 	g_evbDevInfo.buildNumber  = BUILD_NUMBER;
+	g_evbDevInfo.repoRevision = REPO_HEAD_COUNT;
+	g_evbDevInfo.buildNumber  = BUILD_NUMBER;
 
 #if defined(DEBUG)
 	g_evbDevInfo.buildDate[0] = 'd';					// Debug
 #else
 	g_evbDevInfo.buildDate[0] = 'r';					// Release
 #endif
-// 	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
-// 	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
-// 	g_evbDevInfo.buildDate[3] = BUILD_DATE_DAY;
 
-// 	g_evbDevInfo.buildTime[0] = BUILD_TIME_HOUR;
-// 	g_evbDevInfo.buildTime[1] = BUILD_TIME_MINUTE;
-// 	g_evbDevInfo.buildTime[2] = BUILD_TIME_SECOND;
-// 	g_evbDevInfo.buildTime[3] = (uint8_t)BUILD_TIME_MILLISECOND;
-// 
+#if 0
+    char date[20] = __DATE__;        //  mmm dd yyyy (e.g. "Jan 14 2012")
+    char *ptr = date;
+    int day=0, month=0, year=0, hour=0, minute=0, second=0;
+
+    if(strcmp(ptr, "Jan")==0)      { month = 1; }           // month
+    else if(strcmp(ptr, "Feb")==0) { month = 2; }
+    else if(strcmp(ptr, "Mar")==0) { month = 3; }
+    else if(strcmp(ptr, "Apr")==0) { month = 4; }
+    else if(strcmp(ptr, "May")==0) { month = 5; }
+    else if(strcmp(ptr, "Jun")==0) { month = 6; }
+    else if(strcmp(ptr, "Jul")==0) { month = 7; }
+    else if(strcmp(ptr, "Aug")==0) { month = 8; }
+    else if(strcmp(ptr, "Sep")==0) { month = 9; }
+    else if(strcmp(ptr, "Oct")==0) { month = 10; }
+    else if(strcmp(ptr, "Nov")==0) { month = 11; }
+    else if(strcmp(ptr, "Dec")==0) { month = 12; }        
+    if ((ptr = strchr(ptr, ' '))) { day = atoi(ptr); }      // day
+    if ((ptr = strchr(ptr, ' '))) { year = atoi(ptr); }     // year
+
+    char time[20] = __TIME__;        // hh::mm::ss in 24 hour time (e.g. "22:29:12")
+    ptr = time;
+    hour = atoi(ptr);                                       // hour
+    if ((ptr = strchr(ptr, ' '))) { minute = atoi(ptr); }   // minute
+    if ((ptr = strchr(ptr, ' '))) { second = atoi(ptr); }   // second
+
+    g_evbDevInfo.buildDate[1] = year - 2000;
+    g_evbDevInfo.buildDate[2] = month;
+    g_evbDevInfo.buildDate[3] = day;
+
+    g_evbDevInfo.buildTime[0] = hour;
+    g_evbDevInfo.buildTime[1] = minute;
+    g_evbDevInfo.buildTime[2] = second;
+    g_evbDevInfo.buildTime[3] = 0;
+#else
+	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
+	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
+	g_evbDevInfo.buildDate[3] = BUILD_DATE_DAY;
+
+	g_evbDevInfo.buildTime[0] = BUILD_TIME_HOUR;
+	g_evbDevInfo.buildTime[1] = BUILD_TIME_MINUTE;
+	g_evbDevInfo.buildTime[2] = BUILD_TIME_SECOND;
+	g_evbDevInfo.buildTime[3] = (uint8_t)BUILD_TIME_MILLISECOND;
+#endif
+
 	strncpy(g_evbDevInfo.manufacturer, "Inertial Sense INC", DEVINFO_MANUFACTURER_STRLEN);
 }
 
@@ -274,7 +314,22 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 }
 
 
-void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
+void concatStringWithSpace(char* buf, size_t bufLen, const char* concat)
+{
+	if (bufLen > 0)
+	{
+		size_t len = strnlen(buf, bufLen);
+		if (len != 0 && len < bufLen - 1)
+		{
+			buf[len++] = ' ';
+			buf[len] = '\0';
+		}
+		strncat(buf, concat, bufLen - len - 1);
+	}    
+}
+
+
+bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 {
     evb_flash_cfg_t defaults;
     memset(&defaults, 0, sizeof(evb_flash_cfg_t));    
@@ -307,6 +362,7 @@ void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
     if (cfg->cbPreset == EVB2_CB_PRESET_SPI_RS232){ cfg->cbPreset = EVB2_CB_PRESET_DEFAULT; }
 #endif
 
+    return valid;
 }
 
 
@@ -451,7 +507,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 2;			// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 3;			// increment key to force config to revert to defaults (overwrites customer's settings)
 
 	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 

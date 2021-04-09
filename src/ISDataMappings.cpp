@@ -138,7 +138,13 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
 	sizeMap[DID_DUAL_IMU_RAW_MAG] = sizeof(imu_mag_t);
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
+	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
 
+	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
+	sizeMap[DID_EVB_FLASH_CFG] = sizeof(evb_flash_cfg_t);
+	sizeMap[DID_EVB_DEBUG_ARRAY] = sizeof(debug_array_t);
+	sizeMap[DID_EVB_RTOS_INFO] = sizeof(evb_rtos_info_t);
+	sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -146,7 +152,6 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SENSORS_IS2] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_TC_BIAS] = sizeof(sensors_t);
 	sizeMap[DID_SCOMP] = sizeof(sensor_compensation_t);
-	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
     sizeMap[DID_RTK_DEBUG] = sizeof(rtk_debug_t);
 //     sizeMap[DID_RTK_STATE] = sizeof(rtk_state_t);
     sizeMap[DID_RTK_CODE_RESIDUAL] = sizeof(rtk_residual_t);
@@ -161,6 +166,17 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_PREINTEGRATED_IMU_MAG] = sizeof(pimu_mag_t);
 	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
 	sizeMap[DID_RTK_DEBUG_2] = sizeof(rtk_debug_2_t);
+
+#endif
+
+#if defined(USE_LUNA_DATA_SETS)
+
+	sizeMap[DID_EVB_LUNA_FLASH_CFG] = sizeof(evb_luna_flash_cfg_t);
+	sizeMap[DID_EVB_LUNA_STATUS] = sizeof(evb_luna_status_t);
+	sizeMap[DID_EVB_LUNA_SENSORS] = sizeof(evb_luna_sensors_t);
+	sizeMap[DID_EVB_LUNA_REMOTE_KILL] = sizeof(evb_luna_remote_kill_t);
+	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_wheel_controller_t);
+	sizeMap[DID_EVB_LUNA_WHEEL_COMMAND] = sizeof(evb_luna_wheel_command_t);
 
 #endif
 
@@ -187,10 +203,10 @@ static void PopulateTimestampField(uint32_t id, const data_info_t** timestamps, 
 	timestamps[id] = NULLPTR; // ensure value is not garbage
 }
 
-static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
 {
 	typedef dev_info_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_DEV_INFO];
+	map_name_to_info_t& m = mappings[id];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "serialNumber", serialNumber, 0, DataTypeUInt32, uint32_t);
@@ -728,6 +744,26 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef evb_status_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_EVB_STATUS];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "firmwareVer[0]", firmwareVer[0], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "firmwareVer[1]", firmwareVer[1], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "firmwareVer[2]", firmwareVer[2], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "firmwareVer[3]", firmwareVer[3], 0, DataTypeUInt8, uint8_t&);
+    ADD_MAP(m, totalSize, "evbStatus", evbStatus, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "loggerMode", loggerMode, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "loggerElapsedTimeMs", loggerElapsedTimeMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wifiIpAddr", wifiIpAddr, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "sysCommand", sysCommand, 0, DataTypeUInt32, uint32_t);
+
+    ASSERT_SIZE(totalSize);
+}
+
 static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_flash_cfg_t MAP_TYPE;
@@ -794,6 +830,116 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ASSERT_SIZE(totalSize);
 }
+
+static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+{
+	typedef debug_array_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[id];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "i[0]", i[0], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[1]", i[1], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[2]", i[2], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[3]", i[3], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[4]", i[4], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[5]", i[5], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[6]", i[6], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[7]", i[7], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "i[8]", i[8], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "f[0]", f[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[1]", f[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[2]", f[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[3]", f[3], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[4]", f[4], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[5]", f[5], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[6]", f[6], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[7]", f[7], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "f[8]", f[8], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "lf[0]", lf[0], 0, DataTypeDouble, double&);
+    ADD_MAP(m, totalSize, "lf[1]", lf[1], 0, DataTypeDouble, double&);
+    ADD_MAP(m, totalSize, "lf[2]", lf[2], 0, DataTypeDouble, double&);
+
+    ASSERT_SIZE(totalSize);
+}
+
+#if defined(USE_LUNA_DATA_SETS)
+
+static void PopulateEvbLunaStatusMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef evb_luna_status_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_EVB_LUNA_STATUS];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "evbLunaStatus", evbLunaStatus, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "motorState", motorState, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "remoteKillMode", remoteKillMode, 0, DataTypeFloat, uint32_t);
+	ADD_MAP(m, totalSize, "supplyVoltage", supplyVoltage, 0, DataTypeFloat, float);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef evb_luna_sensors_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_EVB_LUNA_SENSORS];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "proxSensorOutput[0]", proxSensorOutput[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[1]", proxSensorOutput[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[2]", proxSensorOutput[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[3]", proxSensorOutput[3], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[4]", proxSensorOutput[4], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[5]", proxSensorOutput[5], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[6]", proxSensorOutput[6], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[7]", proxSensorOutput[7], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "proxSensorOutput[8]", proxSensorOutput[8], 0, DataTypeFloat, float&);
+	ADD_MAP(m, totalSize, "bumpEvent", bumpEvent, 0, DataTypeInt32, int32_t);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef evb_luna_wheel_controller_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_EVB_LUNA_WHEEL_CONTROLLER];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "velCmd_l", velCmd_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "velCmd_r", velCmd_r, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "velCmdSlew_l", velCmdSlew_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "velCmdSlew_r", velCmdSlew_r, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "vel_l", vel_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "vel_r", vel_r, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "velErr_l", velErr_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "velErr_r", velErr_r, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "ff_eff_l", ff_eff_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "ff_eff_r", ff_eff_r, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "fb_eff_l", fb_eff_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "fb_eff_r", fb_eff_r, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "eff_l", eff_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "eff_r", eff_r, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "effDuty_l", effDuty_l, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "effDuty_r", effDuty_r, 0, DataTypeUInt32, uint32_t);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef evb_luna_wheel_command_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_EVB_LUNA_WHEEL_COMMAND];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t);
+	ADD_MAP(m, totalSize, "wheel_l", wheel_l, 0, DataTypeFloat, float);
+	ADD_MAP(m, totalSize, "wheel_r", wheel_r, 0, DataTypeFloat, float);
+
+	ASSERT_SIZE(totalSize);
+}
+
+#endif
 
 static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
 {
@@ -1180,36 +1326,6 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "alignAccel[1]", alignAccel[1], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "alignAccel[2]", alignAccel[2], 0, DataTypeFloat, float&);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t);
-
-    ASSERT_SIZE(totalSize);
-}
-
-static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT])
-{
-	typedef debug_array_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_DEBUG_ARRAY];
-	uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "i[0]", i[0], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[1]", i[1], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[2]", i[2], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[3]", i[3], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[4]", i[4], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[5]", i[5], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[6]", i[6], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[7]", i[7], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "i[8]", i[8], 0, DataTypeInt32, int32_t&);
-    ADD_MAP(m, totalSize, "f[0]", f[0], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[1]", f[1], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[2]", f[2], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[3]", f[3], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[4]", f[4], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[5]", f[5], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[6]", f[6], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[7]", f[7], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "f[8]", f[8], 0, DataTypeFloat, float&);
-    ADD_MAP(m, totalSize, "lf[0]", lf[0], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "lf[1]", lf[1], 0, DataTypeDouble, double&);
-    ADD_MAP(m, totalSize, "lf[2]", lf[2], 0, DataTypeDouble, double&);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1726,7 +1842,7 @@ static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
 cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
-	PopulateDeviceInfoMappings(m_lookupInfo);
+	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
     PopulateIMUMappings(m_lookupInfo, DID_DUAL_IMU);
     PopulateIMUMappings(m_lookupInfo, DID_DUAL_IMU_RAW);
 	PopulateSysParamsMappings(m_lookupInfo);
@@ -1757,7 +1873,18 @@ cISDataMappings::cISDataMappings()
     PopulateWheelEncoderMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
+	PopulateEvbStatusMappings(m_lookupInfo);
 	PopulateEvbFlashCfgMappings(m_lookupInfo);
+	PopulateDebugArrayMappings(m_lookupInfo, DID_EVB_DEBUG_ARRAY);
+	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
+
+#if defined(USE_LUNA_DATA_SETS)
+    PopulateEvbLunaStatusMappings(m_lookupInfo);
+    PopulateEvbLunaSensorsMappings(m_lookupInfo);
+	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
+    PopulateEvbLunaWheelCommandMappings(m_lookupInfo);
+#endif
+
 	PopulateStrobeInTimeMappings(m_lookupInfo);
 //	PopulateRtosInfoMappings(m_lookupInfo);
     PopulateDiagMsgMappings(m_lookupInfo);
@@ -1770,7 +1897,7 @@ cISDataMappings::cISDataMappings()
 	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_IS2);
 	PopulateSensorsTCMappings(m_lookupInfo);
 	PopulateSensorsCompMappings(m_lookupInfo);
-	PopulateDebugArrayMappings(m_lookupInfo);
+	PopulateDebugArrayMappings(m_lookupInfo, DID_DEBUG_ARRAY);
 	PopulateUserPage0Mappings(m_lookupInfo);
 	PopulateUserPage1Mappings(m_lookupInfo);
 	PopulateInl2MagObsInfo(m_lookupInfo);
@@ -1896,9 +2023,29 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 		"canconfig",			// 90: 
 		"gps2RtkCmpRel",		// 91: DID_GPS2_RTK_CMP_REL
 		"gps2RtkCmpMisc",		// 92: DID_GPS2_RTK_CMP_MISC
-		"unused_93",			// 93: 
+		"evbDevInfo",			// 93: DID_EVB_DEV_INFO
 		"unused_94",			// 94: 
-		"unused_95"				// 95: 
+		"unused_95",			// 95: 
+		"unused_96",			// 96: 
+		"unused_97",			// 97: 
+		"unused_98",			// 98: 
+		"unused_99",			// 99: 
+		"unused_100",			// 100:
+		"unused_101",			// 101:
+		"unused_102",			// 102:
+		"unused_103",			// 103:
+		"unused_104",			// 104:
+		"unused_105",			// 105:
+		"unused_106",			// 106:
+		"unused_107",			// 107:
+		"unused_108",			// 108:
+		"unused_109",			// 109:
+		"EVB_luna_flash_cfg",	// 110: DID_EVB_LUNA_FLASH_CFG
+		"EVB_luna_status",		// 111: DID_EVB_LUNA_STATUS
+		"EVB_luna_sensors",		// 112: DID_EVB_LUNA_SENSORS
+		"EVB_luna_remote_kill",	// 113: DID_EVB_LUNA_REMOTE_KILL
+		"EVB_luna_wheel_controller", // 114: DID_EVB_LUNA_WHEEL_CONTROLLER
+		"EVB_luna_wheel_cmd",   // 115: DID_EVB_LUNA_WHEEL_COMMAND
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);
@@ -1959,7 +2106,7 @@ uint32_t cISDataMappings::GetSize(uint32_t dataId)
 
 #else
 
-	return (dataId < DID_MAX_COUNT ? s_map.m_lookupSize[dataId] : 0);
+	return (dataId < DID_COUNT ? s_map.m_lookupSize[dataId] : 0);
 
 #endif
 
