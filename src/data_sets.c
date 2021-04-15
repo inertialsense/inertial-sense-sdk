@@ -355,7 +355,27 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsRtkNav,          // 92: DID_GPS2_RTK_CMP_MISC
 		0,                      // 93: 
 		0,                      // 94: 
-		0                       // 95: 
+		0,                      // 95:
+		0,                      // 96:
+		0,                      // 97:
+		0,                      // 98:
+		0,                      // 99:
+		0,                      // 100:
+		0,                      // 101:
+		0,                      // 102:
+		0,                      // 103:
+		0,                      // 104:
+		0,                      // 105:
+		0,                      // 106:
+		0,                      // 107:
+		0,                      // 108:
+		0,                      // 109:
+		0,                      // 110:
+		0,                      // 111:
+		0,                      // 112:
+		0,                      // 113:
+		0,                      // 114:
+		0                       // 115:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -509,7 +529,27 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 92: DID_GPS2_RTK_CMP_MISC
 		0,                      // 93: 
 		0,                      // 94: 
-		0                       // 95: 
+		0,                      // 95:
+		0,                      // 96:
+		0,                      // 97:
+		0,                      // 98:
+		0,                      // 99:
+		0,                      // 100:
+		0,                      // 101:
+		0,                      // 102:
+		0,                      // 103:
+		0,                      // 104:
+		0,                      // 105:
+		0,                      // 106:
+		0,                      // 107:
+		0,                      // 108:
+		0,                      // 109:
+		0,                      // 110:
+		0,                      // 111:
+		0,                      // 112:
+		0,                      // 113:
+		0,                      // 114:
+		0                       // 115:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);

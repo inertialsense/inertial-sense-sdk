@@ -209,7 +209,7 @@ typedef struct
 	pfnComManagerDisableBroadcasts disableBcastFnc;
 
 	// Pointer to local data and data specific callback functions
-	registered_data_t regData[DID_COUNT];
+	registered_data_t regData[DID_COUNT_UINS];
 	
 	// Array of port
 	com_manager_port_t *ports;

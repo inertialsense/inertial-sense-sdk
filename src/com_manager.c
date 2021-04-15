@@ -254,7 +254,7 @@ void comManagerRegisterInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComMan
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 
 	// Validate ID and data pointer
-	if (dataId >= DID_COUNT)
+	if (dataId >= DID_COUNT_UINS)
 	{
 		return;
 	}
@@ -434,7 +434,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 				// Prep data if callback exists
 				unsigned int id = bcPtr->dataHdr.id;
 				int sendData = 1;
-				if (id<DID_COUNT && cmInstance->regData[id].preTxFnc)
+				if (id<DID_COUNT_UINS && cmInstance->regData[id].preTxFnc)
 				{
 					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
 				}
@@ -723,7 +723,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		dataHdr = &(data->hdr);
 
 		// Validate Data
-		if (dataHdr->id < DID_COUNT)
+		if (dataHdr->id < DID_COUNT_UINS)
 		{
 			regd = &(cmInstance->regData[dataHdr->id]);
 
@@ -882,7 +882,7 @@ bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint32_t dataId)
 
 bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint32_t dataId)
 {
-	if (dataId < DID_COUNT)
+	if (dataId < DID_COUNT_UINS)
 	{
 		com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
 		return &cmInstance->regData[dataId].dataSet;
@@ -903,7 +903,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	broadcast_msg_t* msg = 0;
 
 	// Validate the request
-	if (req->id >= DID_COUNT)
+	if (req->id >= DID_COUNT_UINS)
 	{
 		// invalid data id
 		return -1;
@@ -915,7 +915,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		return 0;
 	}
 	// if size is 0 and offset is 0, set size to full data struct size
-	else if (req->size == 0 && req->offset == 0 && req->id < DID_COUNT)
+	else if (req->size == 0 && req->offset == 0 && req->id < DID_COUNT_UINS)
 	{
 		req->size = cmInstance->regData[req->id].dataSet.size;
 	}

@@ -47,7 +47,7 @@ void cComDataBuffer::Reset()
 
 int cComDataBuffer::PushData(int pHandle, const p_data_t* data)
 {
-    if (data->hdr.id == 0 || data->hdr.id >= DID_MAX_COUNT)
+    if (data->hdr.id == 0 || data->hdr.id >= DID_COUNT)
     {
         return -1;
     }
@@ -124,7 +124,7 @@ int cComDataBuffer::ReadData(int pHandle, uint32_t dataId, vector<uint8_t>& data
 {
     data.clear();
 
-    if (dataId == 0 || dataId >= DID_MAX_COUNT)
+    if (dataId == 0 || dataId >= DID_COUNT || dataId >= m_buffers[pHandle].size())
     {
         return -1;
     }

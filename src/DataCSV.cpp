@@ -117,7 +117,11 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& 
 int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf)
 {
 	// Verify file pointer
-	if (pFile == NULL || cISDataMappings::GetSize(dataHdr.id) == 0)
+	if (pFile == NULL)
+	{
+		return 0;
+	}
+	if (cISDataMappings::GetSize(dataHdr.id) == 0)
 	{
 		return 0;
 	}
