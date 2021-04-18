@@ -870,6 +870,25 @@ def ned2DeltaLla(lla_ref_deg, Pn):
     return deltaLLA
 
 
+# Compute quaternion that described rotation from ECEF to NED at given latitude/longitude
+def quat_ecef2ned(latlon):
+    if len(np.shape(latlon)) == 1:
+        latlon = np.expand_dims(latlon, axis=0)
+        array = 0
+    else:
+        array = 1
+
+    eul = np.empty(shape=(np.shape(latlon)[0], 3))
+    eul[:,0] =  0.0;
+    eul[:,1] = -latlon[:,0] - 0.5 * pi
+    eul[:,2] =  latlon[:,1]
+    qe2n = euler2quat(eul)
+
+    if array == 0:
+        qe2n = np.squeeze(qe2n)
+    return qe2n
+
+
 # Compute rotation matrix from NED to ECEF at given latitude/longitude
 def rotmat_ned2ecef(latlon):
     if len(np.shape(latlon)) == 1:
