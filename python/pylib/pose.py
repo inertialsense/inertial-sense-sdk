@@ -1032,7 +1032,7 @@ def vectorRotateInertialToBody(euler, v_in):
 
 # Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
 # Equivalent to a DCM.T() * vector multiply.
-# TODO: this function needs a better name (see quatConjRot() that does the same but uses quaternions)
+# TODO: this function needs a better name (see quatRot() that does the same but uses quaternions)
 def vectorRotateBodyToInertial(euler, v_in):
     q  = euler2quat(euler)
     v_out = quatRot(q, v_in)
