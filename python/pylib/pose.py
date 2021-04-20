@@ -12,14 +12,19 @@ from tqdm import tqdm
 
 
 def quatInit():
+    """ 
+    Create a unit quaternion
+    """
     q = np.zeros(4)
     q[0] = 1.0
     return q
 
 
-# Quaternion Conjugate: q* = [ w, -x, -y, -z ] of quaterion q = [ w, x, y, z ]
-# Rotation in opposite direction.
 def quatConj(q):
+    """
+    Quaternion Conjugate: q* = [ w, -x, -y, -z ] of quaterion q = [ w, x, y, z ]
+    Describes rotation in opposite direction.
+    """
     qc = np.empty_like(q)
     if len(np.shape(q)) == 1:
         qc[0] = q[0]
@@ -31,15 +36,18 @@ def quatConj(q):
     return qc
 
 
-#  * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!
-#  * Concatenates two quaternion rotations into one.
-#  * result = q1 * q2
-#  * Order of rotation in rotation matrix notation: R(result) = R(q1) * R(q2)
-#  * i.e. rotation by q2 followed by rotation by q1
-#  * References:
-#  *    http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
-#  *    http://physicsforgames.blogspot.com/2010/02/quaternions.html
 def mul_Quat_Quat(q1, q2):
+    """
+    Product of two Quaternions. 
+    Order of q1 and q2 matters (same as applying two successive DCMs)!!!
+    Concatenates two quaternion rotations into one.
+    result = q1 * q2
+    Order of rotation in rotation matrix notation: R(result) = R(q1) * R(q2)
+    i.e. rotation by q2 followed by rotation by q1
+    References:
+    http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
+    http://physicsforgames.blogspot.com/2010/02/quaternions.html
+    """
     if len(np.shape(q1)) == 1:
         q1 = np.expand_dims(q1, axis=0)
         array = 0
@@ -64,11 +72,16 @@ def mul_Quat_Quat(q1, q2):
     return result
 
 
-# * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!
-# * Combines two quaternion rotations into one rotation.
-# * result = quatConj(q1) * q2
-# * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 def mul_ConjQuat_Quat(q1, q2):
+    """
+    Product of two Quaternions. 
+    Order of q1 and q2 matters (same as applying two successive DCMs)!!!
+    Combines two quaternion rotations into one rotation.
+    result = quatConj(q1) * q2
+    Order of rotation in rotation matrix notation: R(result) = R(q1).transpose() * R(q2)
+    i.e. rotation by q2 followed by rotation by inverse of q1
+    Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
+    """
     if len(np.shape(q1)) == 1:
         q1 = np.expand_dims(q1, axis=0)
         array = 0
@@ -93,11 +106,16 @@ def mul_ConjQuat_Quat(q1, q2):
     return result
 
 
-# * Product of two Quaternions.  Order of q1 and q2 matters (same as applying two successive DCMs)!!!
-# * Combines two quaternion rotations into one rotation.
-# * result = q1 * quatConj(q2)
-# * Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
 def mul_Quat_ConjQuat(q1, q2):
+    """
+    Product of two Quaternions. 
+    Order of q1 and q2 matters (same as applying two successive DCMs)!!!
+    Combines two quaternion rotations into one rotation.
+    result = q1 * quatConj(q2)
+    Order of rotation in rotation matrix notation: R(result) = R(q1) * R(q2).transpose()
+    i.e. rotation by inverse of q2 followed by rotation by q1
+    Reference: http://www.mathworks.com/help/aeroblks/quaternionmultiplication.html
+    """
     if len(np.shape(q1)) == 1:
         q1 = np.expand_dims(q1, axis=0)
         array = 0
@@ -122,10 +140,12 @@ def mul_Quat_ConjQuat(q1, q2):
     return result
 
 
-#  * Division of two Quaternions.  Order matters!!!
-#  * result = q1 / q2.
-#  * Reference: http://www.mathworks.com/help/aeroblks/quaterniondivision.html
 def div_Quat_Quat(q1, q2):
+    """
+    Division of two Quaternions.  Order matters!!!
+    result = q1 / q2.
+    Reference: http://www.mathworks.com/help/aeroblks/quaterniondivision.html
+    """
     if len(np.shape(q1)) == 1:
         q1 = np.expand_dims(q1, axis=0)
         array = 0
@@ -152,9 +172,11 @@ def div_Quat_Quat(q1, q2):
     return result
 
 
-# Quaternion rotation from vector v1 to vector v2.
-# Reference:
 def quat_Vec3_Vec3(v1, v2):
+    """
+    Quaternion describing rotation from vector v1 to vector v2.
+    Reference:
+    """
     # Normalize input vectors
     w1 = normalize(v1)
     w2 = normalize(v2)
@@ -168,13 +190,17 @@ def quat_Vec3_Vec3(v1, v2):
     return qResult
 
 
-# Compute norm of a single vector or each vector in an array
 def norm(v, axis=None):
+    """
+    Compute norm of a single vector or each vector in an array
+    """
     return np.sqrt(np.sum(v*v, axis=axis))
 
 
-# Normalize vector or each vector in an array
 def normalize(v, axis=None):
+    """
+    Normalize a vector or each vector in an array
+    """
     result = np.empty_like(v)
     if len(np.shape(v)) == 1:
         result = v / np.linalg.norm(v)
@@ -185,11 +211,13 @@ def normalize(v, axis=None):
     return result
 
 
-#  * Computationally simple means to apply quaternion rotation to a vector.
-#  * Requires quaternion be normalized first.
-#  * If quaternion describes current attitude, then rotation is body -> inertial frame.
-#  * Equivalent to a DCM.T * vector multiply.
 def quatRot(q, v):
+    """
+    Computationally simple means to apply quaternion rotation to a vector.
+    Requires quaternion be normalized first.
+    If quaternion describes current attitude, then rotation is body -> inertial frame.
+    Equivalent to using rotation matrix: DCM(q).transpose * v
+    """
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
         array = 0
@@ -212,19 +240,23 @@ def quatRot(q, v):
     return result
 
 
-#  * Computationally simple means to apply quaternion conjugate (opposite) rotation to a vector
-#  * (18 multiplies, 6 subtracts, 6 adds).  Using a DCM uses (27 multiplies, 12 adds, 6 subtracts).
-#  * Requires quaternion be normalized first.
-#  * If quaternion describes current attitude, then rotation is inertial -> body frame.
-#  * Equivalent to a DCM * vector multiply.
 def quatConjRot(q, v):
+    """
+    Computationally simple means to apply quaternion conjugate (opposite) rotation to a vector
+    (18 multiplies, 6 subtracts, 6 adds).  Using a DCM uses (27 multiplies, 12 adds, 6 subtracts).
+    Requires quaternion be normalized first.
+    If quaternion describes current attitude, then rotation is inertial -> body frame.
+    Equivalent to using rotation matrix: DCM(q) * v
+    """
     qc = quatConj(q)
     return quatRot(qc, v)
 
 
-#  Find quaternion interpolation between two quaterions.  Blend must be 0 to 1.
-#  Reference:  http://physicsforgames.blogspot.com/2010/02/quaternions.html
 def quatNLerp(q1, q2, blend):
+    """
+    Find quaternion interpolation between two quaterions.  Blend must be 0 to 1.
+    Reference:  http://physicsforgames.blogspot.com/2010/02/quaternions.html
+    """
     if len(np.shape(q1)) == 1:
         q1 = np.expand_dims(q1, axis=0)
         array = 0
@@ -252,11 +284,13 @@ def quatNLerp(q1, q2, blend):
     return result
 
 
-# This will convert from quaternions to euler angles.
-# Ensure quaternion is previously normalized.
-# q(4,1) -> euler[phi;theta;psi] (rad)
-# Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 def quat2euler(q):
+    """
+    Convert quaternion to Euler angles.
+    Quaternions must have unit norm.
+    q(4,1) -> euler[phi;theta;psi] (rad)
+    Reference: http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+    """
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
         array = 0
@@ -272,10 +306,13 @@ def quat2euler(q):
         theta = np.squeeze(theta)
     return theta
 
-# This will convert from euler angles to quaternion vector
-# [phi, theta, psi] -> q(4,1)
-# Euler angles in radians
+
 def euler2quat(euler):
+    """
+    Convert Euler angles to quaternion
+    [phi, theta, psi] -> q(4,1)
+    Euler angles in radians
+    """
     if len(np.shape(euler)) == 1:
         euler = np.expand_dims(euler, axis=0)
         array = 0
@@ -304,11 +341,12 @@ def euler2quat(euler):
     return q
 
 
-# NE to heading/body frame
-# This will construct a direction cosine matrix from
-# the psi angle - rotates from NE to body frame
-# body = tBL(2,2)*NE
 def psiDCM(psi):
+    """
+    NE to heading/body frame.
+    Construct a DCM from the psi angle (rotates from NE to body frame)
+    body = tBL(2,2)*NE
+    """
     cpsi = cos(psi)
     spsi = sin(psi)
 
@@ -319,28 +357,27 @@ def psiDCM(psi):
     return DCM
 
 
-# This will extract the psi euler angle from a direction cosine matrix in the
-# standard rotation sequence, for either a 2x2 or 3x3 DCM matrix.
-# [phi][theta][psi] from reference to body frame
-#
-# body = tBL(2,2)*NE
-# body = tBL(3,3)*NED
-#
-# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMpsi(A):
+    """
+    Extract the yaw Euler angle from a DCM in the
+    standard rotation sequence, for either a 2x2 or 3x3 DCM matrix.
+    [phi][theta][psi] from reference to body frame
+    body = tBL(2,2)*NE
+    body = tBL(3,3)*NED
+    Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+    """
     psi = arctan2(A[0, 1], A[0, 0])
     return psi
 
 
-# Reference to body frame - In the 1-2-3 (roll, pitch, yaw) order
-# This will construct a direction cosine matrix from
-# euler angles in the standard rotation sequence
-# [phi][theta][psi] from reference to body frame
-#
-# body = tBL(3,3)*NED
-#
-# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def eulerDCM(euler):
+    """
+    Reference to body frame DCM (in the 1-2-3 roll-pitch-yaw order).
+    Construct a DCM from Euler angles in the standard rotation sequence
+    [phi][theta][psi] from reference to body frame
+    body = tBL(3,3)*NED
+    Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+    """
     if len(np.shape(euler)) == 1:
         euler = np.expand_dims(euler, axis=0)
         array = 0
@@ -372,14 +409,13 @@ def eulerDCM(euler):
     return DCM
 
 
-# This will extract euler angles from a direction cosine matrix in the
-# standard rotation sequence.
-# [phi][theta][psi] from reference to body frame
-#
-# body = tBL(3,3)*NED
-#
-# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMeuler(mat):
+    """
+    Extract Euler angles from a DCM in the standard rotation sequence.
+    [phi][theta][psi] from reference to body frame
+    body = tBL(3,3)*NED
+    Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+    """
     if len(np.shape(mat)) == 2:
         mat = np.expand_dims(mat, axis=0)
         array = 0
@@ -402,14 +438,13 @@ def DCMeulerToPsi(A, phi, the):
     return r_[phi, the, psi]
 
 
-# This will construct a direction cosine matrix from
-# quaternions in the standard rotation sequence
-# [phi][theta][psi] from reference to body frame
-#
-# body = tBL(3,3)*NED
-#
-# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def quatDCM(q):
+    """
+    Construct a DCM from quaternions in the standard rotation sequence
+    [phi][theta][psi] from reference to body frame.
+    body = tBL(3,3)*NED
+    Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+    """
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
         array = 0
@@ -433,14 +468,13 @@ def quatDCM(q):
     return DCM
 
 
-# This will construct quaternions from a direction cosine
-# matrix in the standard rotation sequence.
-# [phi][theta][psi] from reference to body frame
-#
-# body = tBL(3,3)*NED
-#
-# Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
 def DCMquat(mat):
+    """
+    Construct quaternion from a DCM in the standard rotation sequence
+    [phi][theta][psi] from reference to body frame.
+    body = tBL(3,3)*NED
+    Reference: http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
+    """
     if len(np.shape(mat)) == 2:
         mat = np.expand_dims(mat, axis=0)
         array = 0
@@ -484,10 +518,11 @@ def DCMquat(mat):
     return q
 
 
-# This will construct the cross-product matrix Wx(3,3)
-# such that cross(x, y) = Wx * y
-# p, q, r (rad/sec)
 def eulerWx(x):
+    """
+    Construct the cross-product matrix Wx(3,3)
+    such that cross(x,y) = Wx * y
+    """
     if len(np.shape(x)) == 1:
         x = np.expand_dims(x, axis=0)
         array = 0
@@ -514,10 +549,13 @@ def eulerWx(x):
     return mat
 
 
-# This will construct the quaternion omega matrix
-# W(4,4)
-# p, q, r (rad/sec)
 def quatW(omega):
+    """
+    Construct the quaternion 4x4 skew-symmetric matrix W(4,4)
+    that describes the quaternion evolution due 
+    to the angular rate vector omega, i.e.
+    dq/dt = 0.5*W*q
+    """
     if len(np.shape(omega)) == 1:
         omega = np.expand_dims(omega, axis=0)
         array = 0
@@ -555,8 +593,10 @@ def quatW(omega):
     return mat
 
 
-# Convert quaternion to rotation axis
 def quatRotAxis(q):
+    """
+    Extract rotation axis from a quaternion
+    """
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
         array = 0
@@ -570,8 +610,10 @@ def quatRotAxis(q):
     return axis
 
 
-# Convert quaternion to rotation vector
 def quatRotVec(q):
+    """
+    Convert quaternion to a rotation vector
+    """
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
         array = 0
@@ -594,8 +636,10 @@ def quatRotVec(q):
     return rv
 
 
-# Convert rotation vector to quaternion
 def rotVecQuat(v):
+    """
+    Convert rotation vector to a quaternion
+    """
     if len(np.shape(v)) == 1:
         v = np.expand_dims(v, axis=0)
         array = 0
@@ -622,13 +666,15 @@ def rotVecQuat(v):
     return q
 
 
-#  Compute the derivative of the Euler_t angle psi with respect
-# to the quaternion Q.  The result is a row vector
-# d(psi)/d(q0)
-# d(psi)/d(q1)
-# d(psi)/d(q2)
-# d(psi)/d(q3)
 def dpsi_dq(q):
+    """
+    Compute the derivative of the yaw Euler angle (psi) w.r.t.
+    to the quaternion q. The result is a row vector
+    d(psi)/d(q0)
+    d(psi)/d(q1)
+    d(psi)/d(q2)
+    d(psi)/d(q3)
+    """
     if len(np.shape(q)) == 1:
         q = np.expand_dims(q, axis=0)
         array = 0
@@ -650,11 +696,13 @@ def dpsi_dq(q):
     return dq
 
 
-# Find Earth Centered Earth Fixed coordinate from LLA
-# lla[0] = latitude (decimal degree)
-# lla[1] = longitude (decimal degree)
-# lla[2] = msl altitude (m)
 def lla2ecef(lla_deg):
+    """
+    Find Earth Centered Earth Fixed coordinate from LLA
+    lla[0] = latitude (decimal degree)
+    lla[1] = longitude (decimal degree)
+    lla[2] = msl altitude (m)
+    """
     # Earth first eccentricity: e = sqrt((R^2-b^2)/R^2);
     e = 0.08181919084262
      # Earth equatorial and polar radii (from flattening, f = 1/298.257223563;
@@ -688,8 +736,11 @@ def lla2ecef(lla_deg):
     return Pe
 
 
-# Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (deg,deg,m)
 def ecef2lla(Pe, Niter=5):
+    """
+    Coordinate transformation from ECEF coordinates to 
+    latitude/longitude/altitude (deg,deg,m)
+    """
     # Earth equatorial radius
     R = 6378137.0
     # Earth polar radius b = R * (1-f)
@@ -735,14 +786,16 @@ def ecef2lla(Pe, Niter=5):
     return LLA
 
 
-#  Find NED (north, east, down) from lla_ref_deg to lla_deg
-#  lla_ref_deg[0] = reference latitude (decimal degree)
-#  lla_ref_deg[1] = reference longitude (decimal degree)
-#  lla_ref_deg[2] = reference msl altitude (m)
-#  lla_deg[0] = latitude (decimal degree)
-#  lla_deg[1] = longitude (decimal degree)
-#  lla_deg[2] = msl altitude (m)
 def lla2ned(lla_ref_deg, lla_deg):
+    """
+    Find NED (north, east, down) offset from lla_ref_deg to lla_deg
+    lla_ref_deg[0] = reference latitude (decimal degree)
+    lla_ref_deg[1] = reference longitude (decimal degree)
+    lla_ref_deg[2] = reference msl altitude (m)
+    lla_deg[0] = latitude (decimal degree)
+    lla_deg[1] = longitude (decimal degree)
+    lla_deg[2] = msl altitude (m)
+    """
     # Earth equatorial radius
     R = 6378137.0
     # Earth first eccentricity
@@ -780,15 +833,17 @@ def lla2ned(lla_ref_deg, lla_deg):
     return Pn
 
 
-#  Find LLA (degrees, m) from NED (north, east, down) from lla_ref_deg to lla_deg
-#
-#  lla_ref_deg[0] = reference latitude (decimal degree)
-#  lla_ref_deg[1] = reference longitude (decimal degree)
-#  lla_ref_deg[2] = reference msl altitude (m)
-#  Pn[0] = position North (m)
-#  Pn[1] = position East (m)
-#  Pn[2] = position Down (m)
 def ned2lla(lla_ref_deg, Pn):
+    """
+    Find position in terms of LLA (degrees, m) given 
+    NED (north, east, down) coordinates and NED origin at lla_ref_deg.
+    lla_ref_deg[0] = reference latitude (decimal degree)
+    lla_ref_deg[1] = reference longitude (decimal degree)
+    lla_ref_deg[2] = reference msl altitude (m)
+    Pn[0] = position North (m)
+    Pn[1] = position East (m)
+    Pn[2] = position Down (m)
+    """
     # Earth equatorial radius
     R = 6378137.0
     # Earth first eccentricity
@@ -825,15 +880,17 @@ def ned2lla(lla_ref_deg, Pn):
     return lla
 
 
-#  Find Delta LLA of NED (north, east, down) from LLAref
-#
-#  lla_ref_deg[0] = reference latitude (decimal degree)
-#  lla_ref_deg[1] = reference longitude (decimal degree)
-#  lla_ref_deg[2] = reference msl altitude (m)
-#  Pn[0] = position North (m)
-#  Pn[1] = position East (m)
-#  Pn[2] = position Down (m)
 def ned2DeltaLla(lla_ref_deg, Pn):
+    """
+    Find LLA offset from the reference LLA given 
+    NED (north, east, down) coordinates with NED origin at the reference LLA
+    lla_ref_deg[0] = reference latitude (decimal degree)
+    lla_ref_deg[1] = reference longitude (decimal degree)
+    lla_ref_deg[2] = reference msl altitude (m)
+    Pn[0] = position North (m)
+    Pn[1] = position East (m)
+    Pn[2] = position Down (m)
+    """
     # Earth equatorial radius
     R = 6378137.0
     # Earth first eccentricity
@@ -870,8 +927,11 @@ def ned2DeltaLla(lla_ref_deg, Pn):
     return deltaLLA
 
 
-# Compute quaternion that described rotation from ECEF to NED at given latitude/longitude
 def quat_ecef2ned(latlon):
+    """
+    Compute quaternion that described rotation from
+    ECEF to NED at given latitude/longitude
+    """
     if len(np.shape(latlon)) == 1:
         latlon = np.expand_dims(latlon, axis=0)
         array = 0
@@ -889,8 +949,10 @@ def quat_ecef2ned(latlon):
     return qe2n
 
 
-# Compute rotation matrix from NED to ECEF at given latitude/longitude
 def rotmat_ned2ecef(latlon):
+    """
+    Compute rotation matrix (DCM) from NED to ECEF at given latitude/longitude
+    """
     if len(np.shape(latlon)) == 1:
         latlon = np.expand_dims(latlon, axis=0)
         array = 0
@@ -918,8 +980,10 @@ def rotmat_ned2ecef(latlon):
     return R
 
 
-# Compute rotation matrix from ECEF to NED at given latitude/longitude
 def rotmat_ecef2ned(latlon):
+    """
+    Compute rotation matrix (DCM) from ECEF to NED at given latitude/longitude
+    """
     if len(np.shape(latlon)) == 1:
         latlon = np.expand_dims(latlon, axis=0)
         array = 0
@@ -947,9 +1011,11 @@ def rotmat_ecef2ned(latlon):
     return R
 
 
-# Convert body attitude in Euler angles relative to ENU frame
-# to body attitude in Euler angles relative to NED frame
 def enu2nedEuler(eul_e2b):
+    """
+    Convert body attitude in Euler angles relative to ENU frame
+    to body attitude in Euler angles relative to NED frame
+    """
     q_n2e = euler2quat(np.array([pi, 0.0, 0.5*pi]))
     q_e2b = euler2quat(eul_e2b)
     q_n2b = mul_Quat_Quat(q_e2b, q_n2e)
@@ -957,10 +1023,11 @@ def enu2nedEuler(eul_e2b):
     return eul_n2b
 
 
-#  Compute body atitude as Euler angles (pitch and heading with zero roll)
-#  given body X unit vector NED cordinates
-#  TODO: this function needs a better name
 def nedEuler(ned):
+    """
+    Compute body atitude as Euler angles (pitch and heading with zero roll)
+    given body X unit vector NED cordinates
+    """
     if len(np.shape(ned)) == 1:
         ned = np.expand_dims(ned, axis=0)
         array = 0
@@ -977,10 +1044,11 @@ def nedEuler(ned):
     return euler
 
 
-#  Compute coordinates of a body X unit vector in NED
-#  given body attitude in NED as Euler angles
-#  TODO: this function needs a better name
 def eulerNed(euler):
+    """
+    Compute coordinates of a body X unit vector in NED
+    given body attitude in NED as Euler angles
+    """
     if len(np.shape(euler)) == 1:
         euler = np.expand_dims(euler, axis=0)
         array = 0
@@ -994,16 +1062,21 @@ def eulerNed(euler):
     return e0n
 
 
-#  Compute body atitude quaternion assuming zero roll and
-#  given body X unit vector NED cordinates
-#  TODO: this function needs a better name
 def nedQuat(v):
+    """
+    Compute body atitude quaternion assuming zero roll and
+    given body X unit vector NED cordinates
+    """
     return euler2quat(nedEuler(v))
 
 
-# Rotate theta eulers from body to inertial frame by ins eulers, in order: phi, theta, psi
-# TODO: this function needs a better description
 def eulerRotateBodyToInertial(e, rot):
+    """
+    Compute Euler angles describing attitude after two rotations:
+    first represented by Euler angles (e) followed by the second
+    represented by Euler angles (rot).
+    Equivalent to: R(eul) = R(rot) * R(e)
+    """
     qe = euler2quat(e)
     qr = euler2quat(rot)
     q = mul_Quat_Quat(qr, qe)
@@ -1011,9 +1084,13 @@ def eulerRotateBodyToInertial(e, rot):
     return eul
 
 
-# Rotate theta eulers from inertial to body frame by ins eulers, in order: psi, theta, phi
-# TODO: this function needs a better description
 def eulerRotateInertialToBody(e, rot):
+    """
+    Compute Euler angles describing attitude after two rotations:
+    first represented by Euler angles (e) followed by the inverse of
+    the second represented by Euler angles (rot).
+    Equivalent to: R(eul) = R(rot).transpose() * R(e)
+    """
     qe = euler2quat(e)
     qr = euler2quat(rot)
     q = mul_ConjQuat_Quat(qr, qe)
@@ -1021,25 +1098,32 @@ def eulerRotateInertialToBody(e, rot):
     return eul
 
 
-# Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
-# Equivalent to a DCM * vector multiply.
-# TODO: this function needs a better name (see quatConjRot() that does the same but uses quaternions)
 def vectorRotateInertialToBody(euler, v_in):
+    """
+    Rotate vector from inertial to body frame by euler angles, in order: psi, theta, phi
+    Equivalent to: DCM * vector
+    Similar to quatConjRot() that does the same but uses quaternions.
+    """
     q  = euler2quat(euler)
     v_out = quatConjRot(q, v_in)
     return v_out
 
 
-# Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
-# Equivalent to a DCM.T() * vector multiply.
-# TODO: this function needs a better name (see quatConjRot() that does the same but uses quaternions)
 def vectorRotateBodyToInertial(euler, v_in):
+    """
+    Rotate vector from body to inertial frame by euler angles, in order: phi, theta, psi
+    Equivalent to: DCM.T() * vector
+    Similar to quatConjRot() that does the same but uses quaternions.
+    """
     q  = euler2quat(euler)
     v_out = quatRot(q, v_in)
     return v_out
 
 
 def unwrapAngle(angle):
+    """
+    Constrain an angle to be within [-pi, pi]
+    """
     if len(np.shape(angle)) < 1:
         angle = np.expand_dims(angle, axis=0)
         array = 0
@@ -1058,10 +1142,12 @@ def unwrapAngle(angle):
     return angle
 
 
-# Find body attitude as Euler angles (roll and pitch, yaw is kept zero)
-# given coordinates of the body Z-axis vector in reference rame
-# Application: non-accelerated gravity used to determine attitude
 def accellToEuler(acc):
+    """
+    Find body attitude as Euler angles (roll and pitch, yaw is kept zero)
+    given coordinates of the body Z-axis vector in reference rame
+    Application: non-accelerated gravity used to determine attitude
+    """
     if len(np.shape(acc)) == 1:
         acc = np.expand_dims(acc, axis=0)
         array = 0
@@ -1077,9 +1163,11 @@ def accellToEuler(acc):
     return euler
 
 
-# Find body attitude as Euler angles (roll and pitch, yaw is kept zero)
-# and accelerometer bias given non-accelerated gravity
 def acc2AttAndBias(acc):
+    """
+    Find body attitude as Euler angles (roll and pitch, yaw is kept zero)
+    and accelerometer bias given non-accelerated gravity
+    """
     if len(np.shape(acc)) == 1:
         acc = np.expand_dims(acc, axis=0)
         array = 0
@@ -1101,53 +1189,63 @@ def acc2AttAndBias(acc):
     return [att, bias]
 
 
-# Compute logarithm of a unit quaternion (unit norm is important here).
-# Let q = [a, qv], where a is the scalar part and qv is the vector part.
-# qv = sin(phi/2)*nv, where nv is a unit vector. Then
-# ln(q) = ln(||q||) + qv / ||qv|| * arccos(a / ||q||)
-# Therefore for a unit quaternion, the scalar part of ln(q) is zero
-# and the vector part of ln(q) is 1/2 * phi * nv,
-# i.e. half of rotation vector rv = phi * nv because 
-# a = cos(phi/2) in attitude quaternion (see quatRotVec())
-# Reference: https://en.wikipedia.org/wiki/Quaternion
-# NOTE: due to existing implementation in C++, this function
-# returns just the vector part of ln(q)
 def qlog(q):
-    # NOTE. According to Wiki description, ln(q)_v should be a 
-    # half of rotation vector. However the previous 
-    # implementation computed the full rotation vector. 
-    # So, using the rotation vector for now until cleared up.
+    """
+    Compute logarithm of a unit quaternion (unit norm is important here).
+    Let q = [a, qv], where a is the scalar part and qv is the vector part.
+    qv = sin(phi/2)*nv, where nv is a unit vector. Then
+    ln(q) = ln(||q||) + qv / ||qv|| * arccos(a / ||q||)
+    Therefore for a unit quaternion, the scalar part of ln(q) is zero
+    and the vector part of ln(q) is 1/2 * phi * nv,
+    i.e. half of rotation vector rv = phi * nv because 
+    a = cos(phi/2) in attitude quaternion (see quatRotVec())
+    Reference: https://en.wikipedia.org/wiki/Quaternion
+    NOTE 1: due to existing implementation in C++, this function
+    returns just the vector part of ln(q)
+    NOTE 2: According to Wiki description, ln(q)_v should be a 
+    half of rotation vector. However the previous 
+    implementation computed the full rotation vector. 
+    So, using the rotation vector for now until cleared up.
+    """
     rv = quatRotVec(q)
     return rv
 
 
-# Compute exponent of a unit quaternion
-# Let q = [a, qv], where a is the scalar part and qv is the vector part.
-# qv = sin(phi/2)*nv, where nv is a unit vector. Then
-# exp(q) = exp(a) * (cos(||q_v||) + qv / ||qv|| * sin(||q_v||))
-# Reference: https://en.wikipedia.org/wiki/Quaternion
-# NOTE: due to existing implementation in C++, 
-# this function takes just the vector part as its argument to act as
-#  inverse of qlog()
 def qexp(v):
+    """
+    Compute exponent of a unit quaternion
+    Let q = [a, qv], where a is the scalar part and qv is the vector part.
+    qv = sin(phi/2)*nv, where nv is a unit vector. Then
+    exp(q) = exp(a) * (cos(||q_v||) + qv / ||qv|| * sin(||q_v||))
+    Reference: https://en.wikipedia.org/wiki/Quaternion
+    NOTE: due to existing implementation in C++, 
+    this function takes just the vector part as its argument to act as
+    inverse of qlog()
+    """
     q = rotVecQuat(v)
     return q
 
 
-# Attitude quaternion resulting from q1 followed by rotation due to rotation vector v
 def qboxplus(q, v):
+    """
+    Attitude quaternion resulting from q1 followed by rotation due to rotation vector v
+    """
     return mul_Quat_Quat(qexp(v), q)
 
 
-# Rotation from attitude q1 to q2 in terms of rotation vector
 def qboxminus(q1, q2):
+    """
+    Rotation from attitude q1 to q2 in terms of rotation vector
+    """
     return qlog(mul_Quat_Quat(q1, quatConj(q2)))
 
 
-# Implementation of "Mean of Sigma Points" from Integrating Generic Sensor Fusion Algorithms with
-# Sound State Representations through Encapsulation of Manifolds by Hertzberg et. al.
-# https://arxiv.org/pdf/1107.1119.pdf p.13
 def meanOfQuat(q):
+    """
+    Implementation of "Mean of Sigma Points" from Integrating Generic Sensor Fusion Algorithms with
+    Sound State Representations through Encapsulation of Manifolds by Hertzberg et. al.
+    Reference: https://arxiv.org/pdf/1107.1119.pdf p.13
+    """
     n = float(q.shape[0])
     mu = q[None, 0, :]
     prev_mu = None
@@ -1156,7 +1254,7 @@ def meanOfQuat(q):
         iter += 1
         prev_mu = mu
         mu = qboxplus(mu, np.sum(qboxminus(q, mu), axis=0)[None, :]/n)
-    assert np.abs(1.0 - norm(mu)) <= 1e03
+    assert np.abs(1.0 - norm(mu)) <= 1e3
     return mu
 
 
