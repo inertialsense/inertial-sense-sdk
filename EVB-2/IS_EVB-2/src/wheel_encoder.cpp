@@ -50,19 +50,20 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		encoderSendTimeMs = 0;
 		
 		// Call read encoders
+		g_wheelEncoder.timeOfWeek = time_seclf();
+		g_wheelEncoderTimeMs = (uint32_t)(g_wheelEncoder.timeOfWeek*1000.0);
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
 		quadEncReadPeriodAll(&periodL, &periodR);
-		g_wheelEncoder.timeOfWeek = time_seclf();
 
 		// Set velocity direction
-// 		if(dirL)
-// 		{
-// 			periodL = -periodL;
-// 		}
-// 		if(dirR)
-// 		{
-// 			periodR = -periodR;
-// 		}
+		if(dirL)
+		{
+			periodL = -periodL;
+		}
+		if(dirR)
+		{
+			periodR = -periodR;
+		}
 				
 		// Convert encoder ticks to radians.
 		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/* Division by 4 to account for 4x encoding */
@@ -72,13 +73,6 @@ void step_wheel_encoder(is_comm_instance_t &comm)
         if(periodL!=0.0f)
         {			
             g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / periodL;
-#if 0
-			g_debug.f[0] = periodL*1000000.0;
-			g_debug.f[1] = g_flashCfg->encoderTickToWheelRad;
-			g_debug.f[2] = g_wheelEncoder.omega_l;
-			g_debug.f[3] = g_wheelEncoder.omega_l*C_RAD2DEG_F;
-			g_debug.f[4] = g_wheelEncoder.omega_l*0.276225;	// x (m) wheel radius = linear velocity
-#endif
         }
         else
         {

@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 dev_info_t                  g_evbDevInfo = {0};
 wheel_encoder_t				g_wheelEncoder = {0};
+uint32_t                    g_wheelEncoderTimeMs = 0;
 evb_status_t                g_status = {0};
 bool                        g_statusToWlocal = true;
 evb_flash_cfg_t*            g_flashCfg;

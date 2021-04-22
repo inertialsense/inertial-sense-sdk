@@ -99,6 +99,7 @@ void board_IO_config(void);
 extern uint8_t                      g_hdw_detect;
 extern dev_info_t                   g_evbDevInfo;
 extern wheel_encoder_t              g_wheelEncoder;
+extern uint32_t                     g_wheelEncoderTimeMs;
 extern evb_status_t                 g_status;
 extern bool                         g_statusToWlocal;
 extern evb_flash_cfg_t*             g_flashCfg;
