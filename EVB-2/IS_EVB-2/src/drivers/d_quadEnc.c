@@ -88,6 +88,8 @@ static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channe
 		else
 		{	// First read after stopping is invalid
 			c->running++;
+			c->count = 0;
+			c->pulseCount = 0;
 		}
 
 		c->timeMs = time_msec();

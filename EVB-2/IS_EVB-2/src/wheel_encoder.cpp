@@ -69,7 +69,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/* Division by 4 to account for 4x encoding */
 		g_wheelEncoder.theta_r = (chR * g_flashCfg->encoderTickToWheelRad) * 0.25;
 
-        // Convert TC pulse period to rad/sec.  20us per TC LSB x 2 (measure rising to rising edge).
+        // Convert TC pulse period to rad/sec.
         if(periodL!=0.0f)
         {			
             g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / periodL;
