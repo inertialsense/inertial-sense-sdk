@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "d_quadEnc.h"
 #include "conf_d_quadEnc.h"
 #include "globals.h"
-#include "luna_globals.h"
+// #include "luna_globals.h"
 
 //Use of index signal is not support at this time. Needs setup for pin and reading values
 #define QDEC_USE_INDEX	0
@@ -77,7 +77,7 @@ static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channe
 
 	if (status & TC_SR_LDRAS)
 	{
-	    ioport_toggle_pin_level(LUNA_L_MOTOR_ENABLE_PIN);	// gray (H8-12)
+// 	    ioport_toggle_pin_level(LUNA_L_MOTOR_ENABLE_PIN);	// gray (H8-12)
 
 		uint32_t ra_count = tc_read_ra(p_tc, ul_channel);
 		if(c->running>3)
@@ -225,7 +225,7 @@ static float quadEncReadPeriod(capture_t *c)
 
 void quadEncReadPeriodAll(float *period0, float *period1)
 {
-	ioport_toggle_pin_level(LUNA_R_MOTOR_ENABLE_PIN);	// brown (H8-5)
+// 	ioport_toggle_pin_level(LUNA_R_MOTOR_ENABLE_PIN);	// brown (H8-5)
 
 	g_debug.i[4] = capture[0].pulseCount;
 	g_debug.i[5] = capture[1].pulseCount;
