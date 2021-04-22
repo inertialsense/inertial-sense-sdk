@@ -22,15 +22,7 @@ void init_wheel_encoder(void)
 #ifdef CONF_BOARD_QUAD_ENCODER
     if(g_flashCfg->bits&EVB_CFG_BITS_ENABLE_WHEEL_ENCODER)
     {   
-		if (g_flashCfg->encoderTickToWheelRad > 0.1f)
-		{	// Low-resolution encoders
-			quadEncInit(239);	// Sensing range w/ 15 count encoder direct drive: > 
-		}
-		else
-		{	// High-resolution encoders
-	    	quadEncInit(7);		// Sensing range w/ 400 cnt encoder and 3x gearhead: > 7 deg/s 
-		}
-
+		quadEncInit(4);		// Sensing range: ~27ms
 		quadEncSetDirectionReverse(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT, g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT);
     }
 #endif
@@ -53,9 +45,9 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 	static int encoderSendTimeMs=0;
 	static wheel_encoder_t wheelEncoderLast = {0};
 
-	if(abs(g_comm_time_ms-encoderSendTimeMs)>=20)
+	if(++encoderSendTimeMs >= 20)
 	{	// Send data at 50Hz
-		encoderSendTimeMs = g_comm_time_ms;
+		encoderSendTimeMs = 0;
 		
 		// Call read encoders
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
@@ -63,14 +55,14 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		g_wheelEncoder.timeOfWeek = time_seclf();
 
 		// Set velocity direction
-		if(dirL)
-		{
-			periodL = -periodL;
-		}
-		if(dirR)
-		{
-			periodR = -periodR;
-		}
+// 		if(dirL)
+// 		{
+// 			periodL = -periodL;
+// 		}
+// 		if(dirR)
+// 		{
+// 			periodR = -periodR;
+// 		}
 				
 		// Convert encoder ticks to radians.
 		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/* Division by 4 to account for 4x encoding */
