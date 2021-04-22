@@ -45,7 +45,8 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 	static int encoderSendTimeMs=0;
 	static wheel_encoder_t wheelEncoderLast = {0};
 
-	if(++encoderSendTimeMs >= 20)
+	++encoderSendTimeMs;
+	if(encoderSendTimeMs >= 20)
 	{	// Send data at 50Hz
 		encoderSendTimeMs = 0;
 		
