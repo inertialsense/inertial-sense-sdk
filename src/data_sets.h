@@ -3204,6 +3204,9 @@ typedef struct
 	/** Wheel encoder configuration (see eWheelCfgBits) */
 	uint32_t                wheelCfgBits;
 
+	/** Wheel update period.  Sets the wheel encoder and control update period. (ms) */
+	uint32_t				wheelStepPeriodMs;
+
 } evb_flash_cfg_t;
 
 

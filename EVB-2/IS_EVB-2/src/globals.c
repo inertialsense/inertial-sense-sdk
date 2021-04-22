@@ -531,6 +531,8 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->encoderTickToWheelRad = 0.108329996f;	// Husqvarna lawnmower
 	// cfg->encoderTickToWheelRad = 0.00523598775598298873f;	// = 2 Pi / (400 count encoder x 3 gear ratio), (ZT mower)
 	
+    cfg->wheelStepPeriodMs = 50;    // 20 Hz
+
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));

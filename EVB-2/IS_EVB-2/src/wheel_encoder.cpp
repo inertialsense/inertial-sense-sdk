@@ -46,7 +46,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 	static wheel_encoder_t wheelEncoderLast = {0};
 
 	++encoderSendTimeMs;
-	if(encoderSendTimeMs >= 20)
+	if(encoderSendTimeMs >= g_flashCfg->wheelStepPeriodMs)
 	{	// Send data at 50Hz
 		encoderSendTimeMs = 0;
 		
