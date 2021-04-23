@@ -236,6 +236,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, g_commandLineOptions.streamSensorsADC);
 	}
+	if (g_commandLineOptions.streamEditDID>DID_NULL && g_commandLineOptions.streamEditDID<DID_COUNT)
+	{
+		g_inertialSenseDisplay.SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.streamEditDID, 1);
+	}
 	if (g_commandLineOptions.streamWheelEncoder)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_WHEEL_ENCODER, g_commandLineOptions.streamWheelEncoder);
@@ -480,6 +485,8 @@ static int inertialSenseMain()
 				// Main loop. Could be in separate thread if desired.
 				while (!g_inertialSenseDisplay.ControlCWasPressed())
 				{
+					g_inertialSenseDisplay.GetKeyboardInput();
+
 					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
 					{

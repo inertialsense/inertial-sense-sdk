@@ -156,6 +156,13 @@ public:
 	static const char* GetDataSetName(uint32_t dataId);
 
 	/**
+	* Get a data set id from name
+	* @param dataId the data id to get a data set name from
+	* @return data set name or NULL if not found
+	*/
+	static uint32_t GetDataSetId(string name);
+
+	/**
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
@@ -212,6 +219,8 @@ public:
 
 private:
 	cISDataMappings();
+
+	static const char* const m_dataIdNames[];
 
 	uint32_t m_lookupSize[DID_COUNT];
 	const data_info_t* m_timestampFields[DID_COUNT];

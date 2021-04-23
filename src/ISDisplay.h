@@ -34,8 +34,9 @@ public:
 	{
 		DMODE_PRETTY,
 		DMODE_SCROLL,
+		DMODE_EDIT,
 		DMODE_STATS,
-		DMODE_QUIET
+		DMODE_QUIET,
 	};
 
 	cInertialSenseDisplay();
@@ -54,6 +55,8 @@ public:
 	string Goodbye();
 	int ReadKey(); // non-block, returns -1 if no key available
 	bool ControlCWasPressed();
+	void ExitProgram();
+	void GetKeyboardInput();
 
 	// for the binary protocol, this processes a packet of data
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
@@ -83,13 +86,22 @@ public:
 	string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
 
+	string DatasetToString(const p_data_t* data);
+
+	void VarSelectIncrement() {	m_varSelectIndex++; m_editFieldEnable = false; }
+	void VarSelectDecrement() { if (m_varSelectIndex>0){ m_varSelectIndex--; } m_editFieldEnable = false; }
+	void SetEditField(std::string field) { m_editField = field; m_editFieldEnable = true; }
+
 private:
 	string VectortoString();
 	void DataToVector(const p_data_t* data);
 
-	vector<string>	m_didMsgs;
-	eDisplayMode m_displayMode;
-	uint16_t m_rxCount;
+	vector<string> m_didMsgs;
+	eDisplayMode m_displayMode = DMODE_PRETTY;
+	uint16_t m_rxCount = 0;
+	uint32_t m_varSelectIndex = 0;
+	bool m_editFieldEnable;
+	std::string m_editField;
 
 	struct sDidStats
 	{

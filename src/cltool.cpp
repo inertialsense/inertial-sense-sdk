@@ -117,6 +117,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.disableBroadcastsOnClose = true;
 		}
+		else if (startsWith(a, "-did"))
+		{
+			a = argv[++i];	// use next argument
+			// Try to use DID number
+			g_commandLineOptions.streamEditDID = strtol(a, NULL, 10);
+			if (g_commandLineOptions.streamEditDID <= DID_NULL || g_commandLineOptions.streamEditDID >= DID_COUNT)
+			{	// Number is invalid.  Use DID name.
+				string didName = &a[0];
+				g_commandLineOptions.streamEditDID = cISDataMappings::GetDataSetId(didName);
+			}
+		}
 		else if (startsWith(a, "-evbFlashCfg="))
 		{
 			g_commandLineOptions.evbFlashCfg = &a[13];
@@ -505,8 +516,9 @@ void cltool_outputUsage()
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
-	cout << "    -msgPresetPPD " << boldOff << "  stream preset: post processing data sets" << endlbOn;
-	cout << "    -msgPresetINS2" << boldOff << "  stream preset: INS2 sets" << endlbOn;
+	cout << "    -did [data_ID] " << boldOff << "  stream and edit specified data set by number or name (i.e. -did DID_FLASH_CONFIG)" << endlbOn;
+	cout << "    -msgPresetPPD  " << boldOff << "  stream preset: post processing data sets" << endlbOn;
+	cout << "    -msgPresetINS2 " << boldOff << "  stream preset: INS2 sets" << endlbOn;
 	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
 	cout << "    -msgDualIMU *  " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
 	cout << "    -msgPIMU       " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;

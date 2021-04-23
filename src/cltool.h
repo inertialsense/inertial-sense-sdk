@@ -48,7 +48,7 @@ using namespace std;
 typedef struct
 {
 	// parsed
-	string comPort; // -c=com_port
+	string comPort; // -c com_port
 	string updateAppFirmwareFilename; // -b=file_name
     string updateBootloaderFilename; // -ub=file_name
     bool bootloaderVerify; // -bv
@@ -82,6 +82,8 @@ typedef struct
 	int streamRTOS;
 	int streamSensorsADC;
 	int streamWheelEncoder;
+
+	int streamEditDID; // -e DID
 
 	bool enableLogging;
 	string logType; // -lt=dat

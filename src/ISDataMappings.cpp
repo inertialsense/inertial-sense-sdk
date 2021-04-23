@@ -827,6 +827,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "h4xRadioBaudRate", h4xRadioBaudRate, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "h8gpioBaudRate", h8gpioBaudRate, 0, DataTypeUInt32, uint32_t);
     ADD_MAP(m, totalSize, "wheelCfgBits", wheelCfgBits, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wheelStepPeriodMs", wheelStepPeriodMs, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }
@@ -862,6 +863,52 @@ static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], u
 }
 
 #if defined(USE_LUNA_DATA_SETS)
+
+static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef evb_luna_flash_cfg_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_EVB_LUNA_FLASH_CFG];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "size", size, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "checksum", checksum, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "key", key, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "bits", bits, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "minLatGeofence", minLatGeofence, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "maxLatGeofence", maxLatGeofence, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "minLonGeofence", minLonGeofence, 0, DataTypeDouble, double);
+    ADD_MAP(m, totalSize, "maxLonGeofence", maxLonGeofence, 0, DataTypeDouble, double);
+	ADD_MAP(m, totalSize, "remoteKillTimeoutMs", remoteKillTimeoutMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "bumpSensitivity", bumpSensitivity, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "minProxDistance", minProxDistance, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.cmdTimeoutMs", wheelControl.cmdTimeoutMs, 0, DataTypeUInt32, uint32_t);
+    ADD_MAP(m, totalSize, "wheelControl.slewRate", wheelControl.slewRate, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.velMax", wheelControl.velMax, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.FF_vel_deadband", wheelControl.FF_vel_deadband, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c0_est_Ki", wheelControl.FF_c0_est_Ki, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.slewRate", wheelControl.slewRate, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_l[0]", wheelControl.FF_c_l[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_l[1]", wheelControl.FF_c_l[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_r[0]", wheelControl.FF_c_r[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_r[1]", wheelControl.FF_c_r[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.FB_Kp", wheelControl.FB_Kp, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.FB_Kd", wheelControl.FB_Kd, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[0]", wheelControl.LinearCoEff[0], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[1]", wheelControl.LinearCoEff[1], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[2]", wheelControl.LinearCoEff[2], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[3]", wheelControl.LinearCoEff[3], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[4]", wheelControl.LinearCoEff[4], 0, DataTypeFloat, float&);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderCountsPerRad", wheelControl.actuatorEncoderCountsPerRad, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[0]", wheelControl.actuatorEncoderRange[0], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[1]", wheelControl.actuatorEncoderRange[1], 0, DataTypeInt32, int32_t&);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_l", wheelControl.actuatorTrim_l, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_r", wheelControl.actuatorTrim_r, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandAngle", wheelControl.actuatorDeadbandAngle, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.FF_FB_engine_rpm", wheelControl.FF_FB_engine_rpm, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.engine_rpm", wheelControl.engine_rpm, 0, DataTypeFloat, float);
+    ADD_MAP(m, totalSize, "wheelControl.testSweepRate", wheelControl.testSweepRate, 0, DataTypeFloat, float);
+
+	ASSERT_SIZE(totalSize);
+}
 
 static void PopulateEvbLunaStatusMappings(map_name_to_info_t mappings[DID_COUNT])
 {
@@ -1841,6 +1888,128 @@ static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
 
 #endif // USE_IS_INTERNAL
 
+
+const char* const cISDataMappings::m_dataIdNames[] =
+{	// Matches data identifier list (eDataIDs) in data_sets.h
+	"DID_NULL",                         // 0
+	"DID_DEV_INFO",                     // 1
+	"DID_SYS_FAULT",                    // 2
+	"DID_PREINTEGRATED_IMU",            // 3
+	"DID_INS_1",                        // 4
+	"DID_INS_2",                        // 5
+	"DID_GPS1_POS",                     // 6
+	"DID_SYS_CMD",                      // 7
+	"DID_ASCII_BCAST_PERIOD",           // 8
+	"DID_RMC",                          // 9
+	"DID_SYS_PARAMS",                   // 10
+	"DID_SYS_SENSORS",                  // 11
+	"DID_FLASH_CONFIG",                 // 12
+	"DID_GPS1_POS",                     // 13
+	"DID_GPS2_POS",                     // 14
+	"DID_GPS1_SAT",                     // 15
+	"DID_GPS2_SAT",                     // 16
+	"DID_GPS1_VERSION",                 // 17
+	"DID_GPS2_VERSION",                 // 18
+	"DID_MAG_CAL",                      // 19
+	"DID_INTERNAL_DIAGNOSTIC",          // 20
+	"DID_GPS1_RTK_POS_REL",             // 21
+	"DID_GPS1_RTK_POS_MISC",            // 22
+	"DID_FEATURE_BITS",                 // 23
+	"DID_SENSORS_IS1",                  // 24
+	"DID_SENSORS_IS2",                  // 25
+	"DID_SENSORS_TC_BIAS",              // 26
+	"DID_IO",                           // 27
+	"DID_SENSORS_ADC",                  // 28
+	"DID_SCOMP",                        // 29
+	"DID_GPS1_VEL",                     // 30
+	"DID_GPS2_VEL",                     // 31
+	"DID_HDW_PARAMS",                   // 32
+	"DID_NVR_MANAGE_USERPAGE",          // 33
+	"DID_NVR_USERPAGE_SN",              // 34
+	"DID_NVR_USERPAGE_G0",              // 35
+	"DID_NVR_USERPAGE_G1",              // 36
+	"DID_DEBUG_STRING",                 // 37
+	"DID_RTOS_INFO",                    // 38
+	"DID_DEBUG_ARRAY",                  // 39
+	"DID_SENSORS_CAL1",                 // 40
+	"DID_SENSORS_CAL2",                 // 41
+	"DID_CAL_SC",                       // 42
+	"DID_CAL_SC1",                      // 43
+	"DID_CAL_SC2",                      // 44
+	"DID_SYS_SENSORS_SIGMA",            // 45
+	"DID_SENSORS_ADC_SIGMA",            // 46
+	"DID_INS_DEV_1",                    // 47
+	"DID_INL2_STATES",                  // 48
+	"DID_INL2_COVARIANCE_LD",           // 49
+	"DID_INL2_STATUS",                  // 50
+	"DID_INL2_MISC",                    // 51
+	"DID_MAGNETOMETER_1",               // 52
+	"DID_BAROMETER",                    // 53
+	"DID_GPS1_RTK_POS",                 // 54
+	"DID_MAGNETOMETER_2",               // 55
+	"DID_COMMUNICATIONS_LOOPBACK",      // 56
+	"DID_DUAL_IMU_RAW",                 // 57
+	"DID_DUAL_IMU",                     // 58
+	"DID_INL2_MAG_OBS_INFO",            // 59
+	"DID_GPS_BASE_RAW",                 // 60
+	"DID_GPS_RTK_OPT",                  // 61
+	"DID_NVR_USERPAGE_INTERNAL",        // 62
+	"DID_MANUFACTURING_INFO",           // 63
+	"DID_BIT",                          // 64
+	"DID_INS_3",                        // 65
+	"DID_INS_4",                        // 66
+	"DID_INL2_NED_SIGMA",               // 67
+	"DID_STROBE_IN_TIME",               // 68
+	"DID_GPS1_RAW",                     // 69
+	"DID_GPS2_RAW",                     // 70
+	"DID_WHEEL_ENCODER",                // 71
+	"DID_DIAGNOSTIC_MESSAGE",           // 72
+	"DID_SURVEY_IN",                    // 73
+	"DID_CAL_SC_INFO",                  // 74
+	"DID_PORT_MONITOR",                 // 75
+	"DID_RTK_STATE",                    // 76
+	"DID_RTK_PHASE_RESIDUAL",           // 77
+	"DID_RTK_CODE_RESIDUAL",            // 78
+	"DID_RTK_DEBUG",                    // 79
+	"DID_EVB_STATUS",                   // 80
+	"DID_EVB_FLASH_CFG",                // 81
+	"DID_EVB_DEBUG_ARRAY",              // 82
+	"DID_EVB_RTOS_INFO",                // 83
+	"DID_DUAL_IMU_RAW_MAG",             // 84
+	"DID_DUAL_IMU_MAG",                 // 85
+	"DID_PREINTEGRATED_IMU_MAG",        // 86
+	"DID_WHEEL_CONFIG",                 // 87
+	"DID_POSITION_MEASUREMENT",         // 88
+	"DID_RTK_DEBUG_2",                  // 89
+	"DID_CAN_CONFIG",                   // 90
+	"DID_GPS2_RTK_CMP_REL",             // 91
+	"DID_GPS2_RTK_CMP_MISC",            // 92
+	"DID_EVB_DEV_INFO",                 // 93
+	"UNUSED_94",                        // 94 
+	"UNUSED_95",                        // 95 
+	"UNUSED_96",                        // 96 
+	"UNUSED_97",                        // 97 
+	"UNUSED_98",                        // 98 
+	"UNUSED_99",                        // 99 
+	"UNUSED_100",                       // 100
+	"UNUSED_101",                       // 101
+	"UNUSED_102",                       // 102
+	"UNUSED_103",                       // 103
+	"UNUSED_104",                       // 104
+	"UNUSED_105",                       // 105
+	"UNUSED_106",                       // 106
+	"UNUSED_107",                       // 107
+	"UNUSED_108",                       // 108
+	"UNUSED_109",                       // 109
+	"DID_EVB_LUNA_FLASH_CFG",           // 110
+	"DID_EVB_LUNA_STATUS",              // 111
+	"DID_EVB_LUNA_SENSORS",             // 112
+	"DID_EVB_LUNA_REMOTE_KILL",         // 113
+	"DID_EVB_LUNA_WHEEL_CONTROLLER",    // 114
+	"DID_EVB_LUNA_WHEEL_COMMAND",       // 115
+};
+
+
 cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
@@ -1881,6 +2050,7 @@ cISDataMappings::cISDataMappings()
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
 
 #if defined(USE_LUNA_DATA_SETS)
+    PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
     PopulateEvbLunaStatusMappings(m_lookupInfo);
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
 	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
@@ -1930,133 +2100,29 @@ cISDataMappings::~cISDataMappings()
 
 const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 {
-    static const char* s_dataIdNames[] =
-    {
-        "null",					// 0: DID_NULL
-        "devInfo",				// 1: DID_DEV_INFO,
-        "sysFault",				// 2: DID_SYS_FAULT
-        "preintegratedImu",		// 3: DID_PREINTEGRATED_IMU
-        "ins1",					// 4: DID_INS_1
-        "ins2",					// 5: DID_INS_2
-        "gpsPos",				// 6: DID_GPS1_POS
-        "config",				// 7: DID_SYS_CMD
-        "ascii_msg",			// 8: DID_ASCII_BCAST_PERIOD
-        "misc",					// 9: DID_INS_MISC
-        "sysParams",			// 10: DID_SYS_PARAMS
-        "sysSensors",			// 11: DID_SYS_SENSORS
-        "flashCfg",				// 12: DID_FLASH_CONFIG
-        "gps1Pos",				// 13: DID_GPS1_UBX_POS
-        "gps2Pos",				// 14: DID_GPS2_POS
-        "gps1CNO",				// 15: DID_GPS1_SAT
-        "gps2CNO",				// 16: DID_GPS2_SAT
-        "gps1Version",			// 17: DID_GPS1_VERSION
-        "gps2Version",			// 18: DID_GPS2_VERSION
-        "magCal",				// 19: DID_MAG_CAL
-        "diagnosticInfo",		// 20: DID_INTERNAL_DIAGNOSTIC
-        "gpsRtkPosRel",			// 21: DID_GPS1_RTK_POS_REL
-        "gpsRtkPosMisc",		// 22: DID_GPS1_RTK_POS_MISC
-        "featureBits",			// 23: DID_FEATURE_BITS
-        "sensorIS1",			// 24: DID_SENSORS_IS1
-        "sensorIS2",			// 25: DID_SENSORS_IS2
-        "sensorTCbias",			// 26: DID_SENSORS_TC_BIAS
-        "ioServos",				// 27: DID_IO
-        "sensorLSB",			// 28: DID_SENSORS_ADC
-        "scomp",				// 29: DID_SCOMP
-        "gps1Vel",				// 30: DID_GPS1_VEL
-        "gps2Vel",				// 31: DID_GPS2_VEL
-        "hdwParams",			// 32: DID_HDW_PARAMS
-        "userPageNvr",			// 33: DID_NVR_MANAGE_USERPAGE
-        "userPageSn",			// 34: DID_NVR_USERPAGE_SN
-        "userpage0",			// 35: DID_NVR_USERPAGE_G0
-        "userpage1",			// 36: DID_NVR_USERPAGE_G1
-        "debugString",			// 37: DID_DEBUG_STRING
-        "rtosInfo",				// 38: DID_RTOS_INFO
-        "debugArray",			// 39: DID_DEBUG_ARRAY
-        "sensorCal1",			// 40: DID_SENSORS_CAL1
-        "sensorCal2",			// 41: DID_SENSORS_CAL2
-        "sensorCalSC",			// 42: DID_CAL_SC
-        "sensorCalSC1",			// 43: DID_CAL_SC1
-        "sensorCalSC2",			// 44: DID_CAL_SC2
-        "sensorSigma",			// 45: DID_SYS_SENSORS_SIGMA
-        "sensorAdcSigma",		// 46: DID_SENSORS_ADC_SIGMA
-        "insDev1",				// 47: DID_INS_DEV_1
-        "inl2States",			// 48: DID_INL2_STATES
-        "inl2CovarianceLD",		// 49: DID_INL2_COVARIANCE_LD
-        "inl2Status",			// 50: DID_INL2_STATUS
-        "inl2Misc",				// 51: DID_INL2_MISC
-        "magnetometer1",		// 52: DID_MAGNETOMETER_1
-        "barometer",			// 53: DID_BAROMETER
-        "gps1RtkPos",			// 54: DID_GPS1_RTK_POS
-        "magnetometer2",		// 55: DID_MAGNETOMETER_2
-        "commLoopback",     	// 56: DID_COMMUNICATIONS_LOOPBACK
-        "imuDualRaw",			// 57: DID_DUAL_IMU_RAW
-        "imuDual",				// 58: DID_DUAL_IMU
-        "inl2MagObs",			// 59: DID_INL2_MAG_OBS_INFO
-        "gpsBaseRaw",			// 60: DID_GPS_BASE_RAW
-        "gpsRtkOptions",		// 61: DID_GPS_RTK_OPT
-        "userPageInternal",		// 62: DID_NVR_USERPAGE_INTERNAL
-        "manufacturingInfo",	// 63: DID_MANUFACTURING_INFO
-        "bit",					// 64: DID_BIT
-        "ins3",					// 65: DID_INS_3
-        "ins4",					// 66: DID_INS_4
-        "inl2NedSigma",			// 67: DID_INL2_NED_SIGMA
-        "strobeInTime",			// 68: DID_STROBE_IN_TIME
-        "gps1Raw",				// 69: DID_GPS1_RAW
-        "gps2Raw",				// 70: DID_GPS2_RAW
-        "wheelEncoder",         // 71: DID_WHEEL_ENCODER
-        "diagnosticMsg",        // 72: DID_DIAGNOSTIC_MESSAGE
-        "surveyIn",             // 73: DID_SURVEY_IN
-        "sensorCalSCInfo",      // 74: DID_CAL_SC_INFO
-        "portMonitor",          // 75: DID_PORT_MONITOR
-        "rtkState",             // 76: DID_RTK_STATE
-        "rtkPhaseResidual",     // 77: DID_RTK_PHASE_RESIDUAL
-        "rtkCodeResidual",      // 78: DID_RTK_CODE_RESIDUAL
-        "rtkDebug",             // 79: DID_RTK_DEBUG
-        "evbStatus",            // 80: DID_EVB_STATUS
-        "evbFlashCfg",          // 81: DID_EVB_FLASH_CFG
-        "evb2DebugArray",       // 82: DID_EVB_DEBUG_ARRAY
-        "evbRtosInfo",          // 83: DID_EVB_RTOS_INFO
-		"imu_mag_raw",			// 84: DID_DUAL_IMU_RAW_MAG
-		"imu_mag",				// 85: DID_DUAL_IMU_MAG
-		"pimu_mag",				// 86: DID_PREINTEGRATED_IMU_MAG
-		"wheelConfig",          // 87: DID_WHEEL_CONFIG
-		"positionMeasurement",  // 88: DID_POSITION_MEASUREMENT
-		"rtkDebug2",            // 89: DID_RTK_DEBUG_2
-		"canconfig",			// 90: 
-		"gps2RtkCmpRel",		// 91: DID_GPS2_RTK_CMP_REL
-		"gps2RtkCmpMisc",		// 92: DID_GPS2_RTK_CMP_MISC
-		"evbDevInfo",			// 93: DID_EVB_DEV_INFO
-		"unused_94",			// 94: 
-		"unused_95",			// 95: 
-		"unused_96",			// 96: 
-		"unused_97",			// 97: 
-		"unused_98",			// 98: 
-		"unused_99",			// 99: 
-		"unused_100",			// 100:
-		"unused_101",			// 101:
-		"unused_102",			// 102:
-		"unused_103",			// 103:
-		"unused_104",			// 104:
-		"unused_105",			// 105:
-		"unused_106",			// 106:
-		"unused_107",			// 107:
-		"unused_108",			// 108:
-		"unused_109",			// 109:
-		"EVB_luna_flash_cfg",	// 110: DID_EVB_LUNA_FLASH_CFG
-		"EVB_luna_status",		// 111: DID_EVB_LUNA_STATUS
-		"EVB_luna_sensors",		// 112: DID_EVB_LUNA_SENSORS
-		"EVB_luna_remote_kill",	// 113: DID_EVB_LUNA_REMOTE_KILL
-		"EVB_luna_wheel_controller", // 114: DID_EVB_LUNA_WHEEL_CONTROLLER
-		"EVB_luna_wheel_cmd",   // 115: DID_EVB_LUNA_WHEEL_COMMAND
-	};
-
-    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_dataIdNames) == DID_COUNT);
+    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
 
     if (dataId < DID_COUNT)
     {
-        return s_dataIdNames[dataId];
+        return m_dataIdNames[dataId];
     }
     return "unknown";
+}
+
+
+uint32_t cISDataMappings::GetDataSetId(string name)
+{
+	transform(name.begin(), name.end(), name.begin(), ::toupper);
+
+	for (int id = 0; id < DID_COUNT; id++)
+	{
+		if (strcmp(name.c_str(), m_dataIdNames[id]) == 0)
+		{	// Found match
+			return id;
+		}
+	}
+
+	return 0;
 }
 
 

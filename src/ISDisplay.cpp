@@ -85,8 +85,6 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 {
 	cout << endl << Hello() << endl;
 
-	m_displayMode = DMODE_PRETTY;
-
 #if PLATFORM_IS_WINDOWS
 
 	// Hide cursor
@@ -281,6 +279,70 @@ bool cInertialSenseDisplay::ControlCWasPressed()
 	return s_controlCWasPressed;
 }
 
+void cInertialSenseDisplay::ExitProgram()
+{
+	s_controlCWasPressed = true;
+}
+
+#include <iostream>
+#include <conio.h>
+void cInertialSenseDisplay::GetKeyboardInput()
+{
+	uint8_t c = 0;
+	if (_kbhit())
+	{	// Keyboard was pressed
+		c = _getch();
+	}
+
+	static std::string editField = "";
+	float val;
+
+	if (c!=0)
+	{	// Keyboard was pressed
+
+		if (c == 224)
+		{	// Arrow key
+			c = _getch();
+			switch (c)
+			{
+			case 72: VarSelectDecrement(); editField.clear(); break;	// up
+			case 80: VarSelectIncrement(); editField.clear(); break;	// down
+			case 75:	break;	// left
+			case 77:	break;	// right
+			}
+		}
+		else if (c >= 48 && c <= 57 || c == '.')
+		{	// Number
+			editField += (char)c;
+			SetEditField(editField);
+		}
+		else switch (c)
+		{	
+		case 8:		// Backspace
+			editField.pop_back();
+			break;
+		case 13:	// Enter	// Convert string to number
+			val = std::stof(editField);
+			m_editFieldEnable = false;
+			break;
+		case 27:	// Escape
+			m_editFieldEnable = false;
+			break;
+
+		case 'q':
+		case 'Q':
+			ExitProgram();
+			break;
+		}
+
+// 		printf("c: %u\n", c);
+
+// 		return true;		// Key Was Hit
+	}
+// 	return false;			// No keys were pressed
+}
+
+
 void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
 {
 	if (m_displayMode == DMODE_QUIET)
@@ -421,6 +483,23 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			timeSinceRefreshMs = curTimeMs;
 		}
 		break;
+
+	case DMODE_EDIT:
+		// Limit printData display updates to 20Hz (50 ms)
+		if (curTimeMs - timeSinceRefreshMs > 50 || curTimeMs < timeSinceRefreshMs)
+		{
+			Home();
+			if (enableReplay)
+				cout << Replay(replaySpeedX) << endl;
+			else
+				cout << Connected() << endl;
+
+			// Generic column format
+			cout << DatasetToString(data);
+
+			timeSinceRefreshMs = curTimeMs;
+			break;
+		}
 
 	case DMODE_STATS:
 		// Limit printData display updates to 20Hz (50 ms)
@@ -1383,6 +1462,53 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 
 	return ss.str();
 }
+
+#define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
+
+#if __has_include("luna_data_sets.h")
+string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
+{
+	uDatasets d = {};
+	copyDataPToStructP(&d, data, sizeof(uDatasets));
+
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	DISPLAY_SNPRINTF("%s\n", cISDataMappings::GetDataSetName(data->hdr.id));
+
+	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(data->hdr.id);
+
+	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
+	int i = 0;
+	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
+	{
+		DISPLAY_SNPRINTF("%15s ", offset->first.c_str());
+
+		if (i == m_varSelectIndex)
+		{
+			DISPLAY_SNPRINTF("*");
+		}
+		else
+		{
+			DISPLAY_SNPRINTF(" ");
+		}
+
+		if (i == m_varSelectIndex && m_editFieldEnable)
+		{	// Show keyboard value
+			DISPLAY_SNPRINTF(" %s\n", m_editField.c_str());
+		}
+		else
+		{	// Show received value
+			cISDataMappings::DataToString(offset->second, &(data->hdr), (uint8_t*)&d, tmp);
+			DISPLAY_SNPRINTF(" %s\n", tmp);
+		}
+
+		i++;
+	}
+
+	return buf;
+}
+#endif
 
 string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wheel, const p_data_hdr_t& hdr)
 {
