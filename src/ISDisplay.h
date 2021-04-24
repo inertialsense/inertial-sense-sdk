@@ -32,6 +32,19 @@ using namespace std;
 class cInertialSenseDisplay
 {
 public:
+	typedef struct
+	{
+		const map_name_to_info_t 			*mapInfo = NULL;
+		map_name_to_info_t::const_iterator 	mapInfoSelection;
+
+		bool            editEnabled;
+		std::string     field;
+		uint8_t         did;
+		bool            uploadNeeded;
+		uint8_t 		data[MAX_DATASET_SIZE];
+		data_info_t 	info;
+	} edit_data_t;
+
 	enum eDisplayMode
 	{
 		DMODE_PRETTY,
@@ -58,8 +71,6 @@ public:
 	int ReadKey(); // non-block, returns -1 if no key available
 	bool ExitProgram();
 	void SetExitProgram();
-	void GetKeyboardInput();
-	bool UploadNeeded(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
 
 	// for the binary protocol, this processes a packet of data
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
@@ -91,9 +102,13 @@ public:
 
 	string DatasetToString(const p_data_t* data);
 
+	void GetKeyboardInput();
 	void SelectEditDataset(int did);
 	void VarSelectIncrement();
 	void VarSelectDecrement();
+	void StopEditing();
+	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
+	edit_data_t *EditData() { return &m_editData; }
 
 private:
 	string VectortoString();
@@ -102,12 +117,8 @@ private:
 	vector<string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;
-	const map_name_to_info_t *m_offsetMap = NULL;
-	map_name_to_info_t::const_iterator m_selectedMapOffset;
-	bool m_editFieldEnable;
-	std::string m_editField;
-	bool m_sendNeeded = false;
-	uint8_t m_sendBuf[MAX_DATASET_SIZE] = {};
+	
+	edit_data_t m_editData = {};
 
 	struct sDidStats
 	{

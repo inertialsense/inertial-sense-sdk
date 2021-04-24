@@ -487,13 +487,10 @@ static int inertialSenseMain()
 				{
 					g_inertialSenseDisplay.GetKeyboardInput();
 
-					eDataIDs dataId = 0;
-					uint8_t* data = NULL;
-					uint32_t length = 0; 
-					uint32_t offset = 0;
-					if (g_inertialSenseDisplay.UploadNeeded(dataId, data, length, offset))
+					if (g_inertialSenseDisplay.UploadNeeded())
 					{
-						inertialSenseInterface.SendData(dataId, data, length, offset);
+						cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
+						inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
 					}
 
 					// [C++ COMM INSTRUCTION] STEP 4: Read data

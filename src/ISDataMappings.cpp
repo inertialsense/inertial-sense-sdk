@@ -2044,6 +2044,7 @@ cISDataMappings::cISDataMappings()
     PopulateWheelEncoderMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
+	PopulateDebugArrayMappings(m_lookupInfo, DID_DEBUG_ARRAY);
 	PopulateEvbStatusMappings(m_lookupInfo);
 	PopulateEvbFlashCfgMappings(m_lookupInfo);
 	PopulateDebugArrayMappings(m_lookupInfo, DID_EVB_DEBUG_ARRAY);
@@ -2069,7 +2070,6 @@ cISDataMappings::cISDataMappings()
 	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_IS2);
 	PopulateSensorsTCMappings(m_lookupInfo);
 	PopulateSensorsCompMappings(m_lookupInfo);
-	PopulateDebugArrayMappings(m_lookupInfo, DID_DEBUG_ARRAY);
 	PopulateUserPage0Mappings(m_lookupInfo);
 	PopulateUserPage1Mappings(m_lookupInfo);
 	PopulateInl2MagObsInfo(m_lookupInfo);
@@ -2181,54 +2181,60 @@ uint32_t cISDataMappings::GetSize(uint32_t dataId)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info, int radix, bool json)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int radix, bool json)
 {
 	const uint8_t* ptr;
-	if (!CanGetFieldData(info, hdr, dataBuffer, ptr))
+	if (!CanGetFieldData(info, hdr, datasetBuffer, ptr))
 	{
 		return false;
 	}
 
-	switch (info.dataType)
+	return StringToVariable(stringBuffer, stringLength, ptr, info.dataType, info.dataSize, radix, json);
+}
+
+
+bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
+{
+	switch (dataType)
 	{
 	case DataTypeInt8:
-		*(int8_t*)ptr = (int8_t)strtol(stringBuffer, NULL, radix);
+		*(int8_t*)dataBuffer = (int8_t)strtol(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeUInt8:
-		*(uint8_t*)ptr = (uint8_t)strtoul(stringBuffer, NULL, radix);
+		*(uint8_t*)dataBuffer = (uint8_t)strtoul(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeInt16:
-		*(int16_t*)ptr = (int16_t)strtol(stringBuffer, NULL, radix);
+		*(int16_t*)dataBuffer = (int16_t)strtol(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeUInt16:
-		*(uint16_t*)ptr = (uint16_t)strtoul(stringBuffer, NULL, radix);
+		*(uint16_t*)dataBuffer = (uint16_t)strtoul(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeInt32:
-		*(int32_t*)ptr = (int32_t)strtol(stringBuffer, NULL, radix);
+		*(int32_t*)dataBuffer = (int32_t)strtol(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeUInt32:
-		*(uint32_t*)ptr = (uint32_t)strtoul(stringBuffer, NULL, radix);
+		*(uint32_t*)dataBuffer = (uint32_t)strtoul(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeInt64:
-		*(int64_t*)ptr = (int64_t)strtoll(stringBuffer, NULL, radix);
+		*(int64_t*)dataBuffer = (int64_t)strtoll(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeUInt64:
-		*(uint64_t*)ptr = (uint64_t)strtoull(stringBuffer, NULL, radix);
+		*(uint64_t*)dataBuffer = (uint64_t)strtoull(stringBuffer, NULL, radix);
 		break;
 
 	case DataTypeFloat:
-		*(float*)ptr = strtof(stringBuffer, NULL);
+		*(float*)dataBuffer = strtof(stringBuffer, NULL);
 		break;
 
 	case DataTypeDouble:
-		*(double*)ptr = strtod(stringBuffer, NULL);
+		*(double*)dataBuffer = strtod(stringBuffer, NULL);
 		break;
 
 	case DataTypeString:
@@ -2259,9 +2265,9 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
 			s2.erase(std::remove(s2.begin(), s2.end(), '"'), s2.end());
 		}
 		// ensure string fits with null terminator
-		s2.resize(info.dataSize - 1);
-		memcpy((void*)ptr, s2.data(), s2.length());
-		memset((uint8_t*)ptr + s2.length(), 0, info.dataSize - s2.length());
+		s2.resize(dataSize - 1);
+		memcpy((void*)dataBuffer, s2.data(), s2.length());
+		memset((uint8_t*)dataBuffer + s2.length(), 0, dataSize - s2.length());
 	} break;
 
 	case DataTypeBinary:
@@ -2269,7 +2275,7 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
 		// convert hex data back to binary
 		size_t len = _MIN(1020, stringLength);
 		len -= (len % 2);
-		uint8_t* ptr2 = (uint8_t*)ptr;
+		uint8_t* ptr2 = (uint8_t*)dataBuffer;
 		for (size_t i = 0; i != len; i += 2)
 		{
 			*ptr2 = (getHexValue(stringBuffer[i + 1]) << 4) | getHexValue(stringBuffer[i + 2]);
@@ -2284,10 +2290,10 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
 }
 
 
-bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, bool json)
 {
 	const uint8_t* ptr;
-	if (!CanGetFieldData(info, hdr, dataBuffer, ptr))
+	if (!CanGetFieldData(info, hdr, datasetBuffer, ptr))
 	{
 		// pick a default string
 		if (info.dataType == DataTypeString)
@@ -2317,7 +2323,13 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 		return false;
 	}
 
-	switch (info.dataType)
+	return VariableToString(info.dataType, ptr, datasetBuffer, info.dataSize, stringBuffer, json);
+}
+
+
+bool cISDataMappings::VariableToString(eDataType dataType, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
+{
+	switch (dataType)
 	{
 	case DataTypeInt8:
 		SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int8_t*)ptr);
@@ -2363,8 +2375,8 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 	{
 		stringBuffer[0] = '"';
 		int tempIndex = 1;
-		char* bufPtr2 = (char*)(dataBuffer + info.dataOffset);
-		char* bufPtrEnd = bufPtr2 + _MIN(IS_DATA_MAPPING_MAX_STRING_LENGTH, info.dataSize) - 3;
+		char* bufPtr2 = (char*)(ptr);
+		char* bufPtrEnd = bufPtr2 + _MIN(IS_DATA_MAPPING_MAX_STRING_LENGTH, dataSize) - 3;
 		for (; bufPtr2 < bufPtrEnd && *bufPtr2 != '\0'; bufPtr2++)
 		{
 			if (json)
@@ -2396,7 +2408,7 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 		}
 		// convert to hex
 		const unsigned char* hexTable = getHexLookupTable();
-		for (size_t i = 0; i < info.dataSize; i++)
+		for (size_t i = 0; i < dataSize; i++)
 		{
 			stringBuffer[hexIndex++] = hexTable[0x0F & (dataBuffer[i] >> 4)];
 			stringBuffer[hexIndex++] = hexTable[0x0F & dataBuffer[i]];

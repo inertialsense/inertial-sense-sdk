@@ -283,87 +283,6 @@ void cInertialSenseDisplay::SetExitProgram()
 	s_exitProgram = true;
 }
 
-#include <iostream>
-#include <conio.h>
-void cInertialSenseDisplay::GetKeyboardInput()
-{
-	uint8_t c = 0;
-	if (_kbhit())
-	{	// Keyboard was pressed
-		c = _getch();
-	}
-
-// 	float val;
-
-	if (c!=0)
-	{	// Keyboard was pressed
-
-		if (c == 224)
-		{	// Arrow key
-			c = _getch();
-			switch (c)
-			{
-			case 72: VarSelectDecrement(); m_editField.clear(); break;	// up
-			case 80: VarSelectIncrement(); m_editField.clear(); break;	// down
-			case 75:	break;	// left
-			case 77:	break;	// right
-			}
-		}
-		else if (c >= 48 && c <= 57 || c == '.')
-		{	// Number
-			m_editField += (char)c;
-			m_editFieldEnable = true;
-		}
-		else switch (c)
-		{	
-		case 8:		// Backspace
-			m_editField.pop_back();
-			break;
-		case 13:	// Enter	// Convert string to number
-			if (m_editFieldEnable)
-			{
-				// val = std::stof(m_editField);
-				// int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
-				int radix = 10;
-				uDatasets d = {};
-				cISDataMappings::StringToData(m_editField.c_str(), (int)m_editField.length(), NULL, (uint8_t*)&d, m_selectedMapOffset->second, radix);
-
-				// Copy into base of txbuffer
-// 				m_sendBuf
-				m_sendNeeded = true;
-			}
-			m_editFieldEnable = false;
-			break;
-		case 27:	// Escape
-			m_editFieldEnable = false;
-			break;
-
-		case 'q':
-		case 'Q':
-			SetExitProgram();
-			break;
-		}
-
-// 		printf("c: %u\n", c);
-
-// 		return true;		// Key Was Hit
-	}
-// 	return false;			// No keys were pressed
-}
-
-
-bool cInertialSenseDisplay::UploadNeeded(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
-{
-	if (m_sendNeeded)
-	{
-		m_sendNeeded = false;
-
-		return true;
-	}
-
-	return false;
-}
-
 
 void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
 {
@@ -1519,7 +1438,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 
 string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
-	if (m_offsetMap == NULL)
+	if (m_editData.mapInfo == NULL)
 	{
 		return "";
 	}
@@ -1530,30 +1449,31 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("%s\n", cISDataMappings::GetDataSetName(data->hdr.id));
+	DISPLAY_SNPRINTF("%s (%d) \n", cISDataMappings::GetDataSetName(data->hdr.id), data->hdr.id);
 
 	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
-	for (map_name_to_info_t::const_iterator offset = m_offsetMap->begin(); offset != m_offsetMap->end(); offset++)
+	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
 	{
-		DISPLAY_SNPRINTF("%15s ", offset->first.c_str());
+		DISPLAY_SNPRINTF("%15s ", it->first.c_str());
 
-		if (offset == m_selectedMapOffset)
+		if (it == m_editData.mapInfoSelection)
 		{
-			DISPLAY_SNPRINTF("*");
+			if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+			else                        { DISPLAY_SNPRINTF("*"); }
 		}
 		else
 		{
 			DISPLAY_SNPRINTF(" ");
 		}
 
-		if (offset == m_selectedMapOffset && m_editFieldEnable)
+		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
 		{	// Show keyboard value
-			DISPLAY_SNPRINTF("* %s\n", m_editField.c_str());
+			DISPLAY_SNPRINTF(" %s      \n", m_editData.field.c_str());
 		}
 		else
 		{	// Show received value
-			cISDataMappings::DataToString(offset->second, &(data->hdr), (uint8_t*)&d, tmp);
-			DISPLAY_SNPRINTF(" %s\n", tmp);
+			cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
+			DISPLAY_SNPRINTF(" %s      \n", tmp);
 		}
 	}
 
@@ -1561,43 +1481,115 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 }
 
 
-void cInertialSenseDisplay::SelectEditDataset(int did) 
+#include <iostream>
+#include <conio.h>
+void cInertialSenseDisplay::GetKeyboardInput()
 {
-	m_offsetMap = cISDataMappings::GetMapInfo(did);
-	m_selectedMapOffset = m_offsetMap->begin();
+	uint8_t c = 0;
+	if (_kbhit())
+	{	// Keyboard was pressed
+		c = _getch();
+	}
+
+	// 	float val;
+
+	if (c != 0)
+	{	// Keyboard was pressed
+
+		if (c == 224)
+		{	// Arrow key
+			c = _getch();
+			switch (c)
+			{
+			case 72: VarSelectDecrement(); m_editData.field.clear(); break;	// up
+			case 80: VarSelectIncrement(); m_editData.field.clear(); break;	// down
+			case 75:	break;	// left
+			case 77:	break;	// right
+			}
+		}
+		else if (c >= 48 && c <= 57 || c == '.' || c == '-')
+		{	// Number
+			m_editData.field += (char)c;
+			m_editData.editEnabled = true;
+		}
+		else switch (c)
+		{
+		case 8:		// Backspace
+			m_editData.field.pop_back();
+			break;
+		case 13:	// Enter	// Convert string to number
+			if (m_editData.editEnabled)
+			{
+				// val = std::stof(m_editData.field);
+				m_editData.info = m_editData.mapInfoSelection->second;
+				cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize);
+				m_editData.uploadNeeded = true;
+			}
+			StopEditing();
+			break;
+		case 27:	// Escape
+			StopEditing();
+			break;
+
+		case 'q':
+		case 'Q':
+			SetExitProgram();
+			break;
+		}
+
+		// 		printf("c: %u\n", c);
+
+		// 		return true;		// Key Was Hit
+	}
+	// 	return false;			// No keys were pressed
+}
+
+
+void cInertialSenseDisplay::SelectEditDataset(int did)
+{
+	m_editData.did = did;
+	m_editData.mapInfo = cISDataMappings::GetMapInfo(did);
+	m_editData.mapInfoSelection = m_editData.mapInfo->begin();
 	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
 }
 
 
 void cInertialSenseDisplay::VarSelectIncrement() 
 {
-	if (m_offsetMap == NULL)
+	if (m_editData.mapInfo == NULL)
 	{
 		return;
 	}
 
-	if (m_selectedMapOffset != --(m_offsetMap->end()))
+	if (m_editData.mapInfoSelection != --(m_editData.mapInfo->end()))
 	{
-		m_selectedMapOffset++;
+		m_editData.mapInfoSelection++;
 	}
 
-	m_editFieldEnable = false; 
+	m_editData.editEnabled = false; 
 }
 
 
 void cInertialSenseDisplay::VarSelectDecrement() 
 { 
-	if (m_offsetMap == NULL)
+	if (m_editData.mapInfo == NULL)
 	{
 		return;
 	}
 
-	if (m_selectedMapOffset != m_offsetMap->begin())
+	if (m_editData.mapInfoSelection != m_editData.mapInfo->begin())
 	{
-		m_selectedMapOffset--;
+		m_editData.mapInfoSelection--;
 	}
 	
-	m_editFieldEnable = false; 
+	m_editData.editEnabled = false; 
+}
+
+
+void cInertialSenseDisplay::StopEditing()
+{
+	m_editData.editEnabled = false;
+	m_editData.field.clear();
 }
 
 
