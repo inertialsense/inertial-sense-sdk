@@ -516,7 +516,7 @@ void cltool_outputUsage()
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
-	cout << "    -did [data_ID] " << boldOff << "  stream and edit specified data set by number or name (i.e. -did DID_FLASH_CONFIG)" << endlbOn;
+	cout << "    -did [data_ID] " << boldOff << "  stream and edit specified data set by number or name (i.e. -did 12 or -did DID_FLASH_CONFIG)" << endlbOn;
 	cout << "    -msgPresetPPD  " << boldOff << "  stream preset: post processing data sets" << endlbOn;
 	cout << "    -msgPresetINS2 " << boldOff << "  stream preset: INS2 sets" << endlbOn;
 	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;

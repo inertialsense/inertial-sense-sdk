@@ -1454,7 +1454,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
 	{
-		DISPLAY_SNPRINTF("%15s ", it->first.c_str());
+		DISPLAY_SNPRINTF("%26s ", it->first.c_str());
 
 		if (it == m_editData.mapInfoSelection)
 		{
