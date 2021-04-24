@@ -238,7 +238,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.streamEditDID>DID_NULL && g_commandLineOptions.streamEditDID<DID_COUNT)
 	{
-		g_inertialSenseDisplay.SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.streamEditDID);
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.streamEditDID, 1);
 	}
 	if (g_commandLineOptions.streamWheelEncoder)
@@ -383,7 +383,7 @@ static int cltool_createHost()
 
 	inertialSenseInterface.StopBroadcasts();
 
-	while (!g_inertialSenseDisplay.ControlCWasPressed())
+	while (!g_inertialSenseDisplay.ExitProgram())
 	{
 		inertialSenseInterface.Update();
 		g_inertialSenseDisplay.Home();
@@ -446,7 +446,7 @@ static int inertialSenseMain()
 		serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
 		unsigned char line[512];
 		unsigned char* asciiData;
-		while (!g_inertialSenseDisplay.ControlCWasPressed())
+		while (!g_inertialSenseDisplay.ExitProgram())
 		{
 			int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
 			if (count > 0)
@@ -483,9 +483,18 @@ static int inertialSenseMain()
 			try
 			{
 				// Main loop. Could be in separate thread if desired.
-				while (!g_inertialSenseDisplay.ControlCWasPressed())
+				while (!g_inertialSenseDisplay.ExitProgram())
 				{
 					g_inertialSenseDisplay.GetKeyboardInput();
+
+					eDataIDs dataId = 0;
+					uint8_t* data = NULL;
+					uint32_t length = 0; 
+					uint32_t offset = 0;
+					if (g_inertialSenseDisplay.UploadNeeded(dataId, data, length, offset))
+					{
+						inertialSenseInterface.SendData(dataId, data, length, offset);
+					}
 
 					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
