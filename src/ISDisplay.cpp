@@ -1449,7 +1449,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("%s (%d) \n", cISDataMappings::GetDataSetName(data->hdr.id), data->hdr.id);
+	DISPLAY_SNPRINTF("%s (%d):      A up, Z down, Q quit\n", cISDataMappings::GetDataSetName(data->hdr.id), data->hdr.id);
 
 	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
@@ -1531,6 +1531,11 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			StopEditing();
 			break;
 
+		case 'a':
+		case 'A': VarSelectDecrement(); m_editData.field.clear(); break;	// up
+		case 'z':
+		case 'Z': VarSelectIncrement(); m_editData.field.clear(); break;	// down
+		
 		case 'q':
 		case 'Q':
 			SetExitProgram();
