@@ -2114,7 +2114,7 @@ uint32_t cISDataMappings::GetDataSetId(string name)
 {
 	transform(name.begin(), name.end(), name.begin(), ::toupper);
 
-	for (int id = 0; id < DID_COUNT; id++)
+	for (eDataIDs id = 0; id < DID_COUNT; id++)
 	{
 		if (strcmp(name.c_str(), m_dataIdNames[id]) == 0)
 		{	// Found match

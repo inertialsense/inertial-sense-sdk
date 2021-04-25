@@ -80,6 +80,7 @@ static void signalFunction(int sig)
 
 #endif
 
+
 cInertialSenseDisplay::cInertialSenseDisplay()
 {
 	cout << endl << Hello() << endl;
@@ -97,6 +98,20 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 #else
 
 	signal(SIGINT, signalFunction);
+
+    SetKeyboardNonBlock();
+
+#endif
+
+}
+
+cInertialSenseDisplay::~cInertialSenseDisplay()
+{
+
+#if !PLATFORM_IS_WINDOWS
+
+	// Revert terminal changes from KeyboardNonBlock();
+	ResetTerminalMode();
 
 #endif
 
@@ -221,62 +236,88 @@ string cInertialSenseDisplay::Goodbye()
 	return "\nThanks for using Inertial Sense!\n";
 }
 
-int cInertialSenseDisplay::ReadKey()
+
+
+void cInertialSenseDisplay::SetKeyboardNonBlock()
+{
+
+#if !PLATFORM_IS_WINDOWS
+
+    struct termios new_settings;
+    tcgetattr(0, &orig_termios_);
+    new_settings = orig_termios_;
+    new_settings.c_lflag &= ~ICANON;
+    new_settings.c_lflag &= ~ECHO;
+    new_settings.c_lflag &= ~ISIG;
+    new_settings.c_cc[VMIN] = 0;
+    new_settings.c_cc[VTIME] = 0;
+    tcsetattr(0, TCSANOW, &new_settings);
+
+#endif
+
+}
+
+
+void cInertialSenseDisplay::ResetTerminalMode()
+{
+
+#if !PLATFORM_IS_WINDOWS
+
+    tcsetattr(0, TCSANOW, &orig_termios_);
+
+#endif
+
+}
+
+
+int cInertialSenseDisplay::KeyboardHit()
 {
 
 #if PLATFORM_IS_WINDOWS
 
-#if 0
-    // This isn't working
-    INPUT_RECORD ip;
-	DWORD numRead = 0;
-	PeekConsoleInputA(m_windowsConsoleIn, &ip, 1, &numRead);
-	if (numRead == 1)
-	{
-		ReadConsoleInputA(m_windowsConsoleIn, &ip, 1, &numRead);
-		if (numRead == 1 && ip.EventType == KEY_EVENT && ip.Event.KeyEvent.bKeyDown)
-		{
-			return ip.Event.KeyEvent.uChar.AsciiChar;
-		}
-	}
+	return _kbhit();
+
 #else
-    if (_kbhit())
-    {
-        return _getch();
-    }
+
+    struct timeval tv = { 0L, 0L };
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(0, &fds);
+    return select(1, &fds, NULL, NULL, &tv);
+
 #endif
 
+}
+
+int cInertialSenseDisplay::GetChar()
+{
+
+#if PLATFORM_IS_WINDOWS
+
+	return _getch();
+
 #else
 
-	struct timeval tv;
-	fd_set fds;
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	FD_ZERO(&fds);
-	FD_SET(STDIN_FILENO, &fds);
-	select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
-	if (FD_ISSET(0, &fds))
-	{
-		struct termios oldt;
-		struct termios newt;
-		tcgetattr(STDIN_FILENO, &oldt); /* store old settings*/
-		newt = oldt; /* copy old settings to new settings */
-		newt.c_lflag &= ~(ICANON); /* change settings */
-		tcsetattr(STDIN_FILENO, TCSANOW, &newt); /*apply the new settings immediatly */
-		int ch = getchar(); /* standard getchar call */
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldt); /* reapply the old settings */
-		return ch; /* return received char */
-	}
+	struct termios oldt, newt;
+	tcgetattr(STDIN_FILENO, &oldt); 			/* store old settings*/
+	newt = oldt; 								/* copy old settings to new settings */
+	newt.c_lflag &= ~(ICANON);					/* change settings */
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);	/* apply the new settings immediatly */
+	int ch = getchar(); 						/* standard getchar call */
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt); 	/* reapply the old settings */
+	return ch;
 
 #endif
 
 	return -1;
 }
 
+
 bool cInertialSenseDisplay::ExitProgram()
 {
 	return s_exitProgram;
 }
+
 
 void cInertialSenseDisplay::SetExitProgram()
 {
@@ -439,8 +480,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			cout << DatasetToString(data);
 
 			timeSinceRefreshMs = curTimeMs;
-			break;
 		}
+		break;
 
 	case DMODE_STATS:
 		// Limit printData display updates to 20Hz (50 ms)
@@ -1481,24 +1522,21 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 }
 
 
-#include <iostream>
-#include <conio.h>
 void cInertialSenseDisplay::GetKeyboardInput()
 {
 	uint8_t c = 0;
-	if (_kbhit())
-	{	// Keyboard was pressed
-		c = _getch();
-	}
 
-	// 	float val;
+	if (KeyboardHit())
+	{	// Keyboard was pressed
+		c = GetChar();
+	}
 
 	if (c != 0)
 	{	// Keyboard was pressed
 
 		if (c == 224)
 		{	// Arrow key
-			c = _getch();
+			c = GetChar();
 			switch (c)
 			{
 			case 72: VarSelectDecrement(); m_editData.field.clear(); break;	// up
@@ -1507,7 +1545,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			case 77:	break;	// right
 			}
 		}
-		else if (c >= 48 && c <= 57 || c == '.' || c == '-')
+		else if ((c >= 48 && c <= 57) || c == '.' || c == '-')
 		{	// Number
 			m_editData.field += (char)c;
 			m_editData.editEnabled = true;

@@ -83,7 +83,7 @@ typedef struct
 	int streamSensorsADC;
 	int streamWheelEncoder;
 
-	int streamEditDID; // -e DID
+	eDataIDs selectEditDID; // -e DID
 
 	bool enableLogging;
 	string logType; // -lt=dat

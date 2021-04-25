@@ -121,11 +121,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			a = argv[++i];	// use next argument
 			// Try to use DID number
-			g_commandLineOptions.streamEditDID = strtol(a, NULL, 10);
-			if (g_commandLineOptions.streamEditDID <= DID_NULL || g_commandLineOptions.streamEditDID >= DID_COUNT)
+			g_commandLineOptions.selectEditDID = strtol(a, NULL, 10);
+			if (g_commandLineOptions.selectEditDID <= DID_NULL || g_commandLineOptions.selectEditDID >= DID_COUNT)
 			{	// Number is invalid.  Use DID name.
 				string didName = &a[0];
-				g_commandLineOptions.streamEditDID = cISDataMappings::GetDataSetId(didName);
+				g_commandLineOptions.selectEditDID = cISDataMappings::GetDataSetId(didName);
 			}
 		}
 		else if (startsWith(a, "-evbFlashCfg="))

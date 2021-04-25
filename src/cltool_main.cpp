@@ -236,10 +236,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	{
 		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, g_commandLineOptions.streamSensorsADC);
 	}
-	if (g_commandLineOptions.streamEditDID>DID_NULL && g_commandLineOptions.streamEditDID<DID_COUNT)
+	if (g_commandLineOptions.selectEditDID>DID_NULL && g_commandLineOptions.selectEditDID<DID_COUNT)
 	{
-		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.streamEditDID);
-		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.streamEditDID, 1);
+		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.selectEditDID);
+		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.selectEditDID, 1);
 	}
 	if (g_commandLineOptions.streamWheelEncoder)
 	{

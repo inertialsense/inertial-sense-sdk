@@ -23,6 +23,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "ISDataMappings.h"
 
+#if !PLATFORM_IS_WINDOWS
+
+#include <termios.h>
+
+#endif
 
 using namespace std;
 
@@ -55,6 +60,7 @@ public:
 	};
 
 	cInertialSenseDisplay();
+	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
 	eDisplayMode GetDisplayMode() { return m_displayMode; }
@@ -68,7 +74,11 @@ public:
 	string Connected();
 	string Replay(double speed=1.0);
 	string Goodbye();
-	int ReadKey(); // non-block, returns -1 if no key available
+
+	void SetKeyboardNonBlock();
+	void ResetTerminalMode();
+	int KeyboardHit();
+	int GetChar();
 	bool ExitProgram();
 	void SetExitProgram();
 
@@ -133,6 +143,10 @@ private:
 
 	HANDLE m_windowsConsoleIn;
 	HANDLE m_windowsConsoleOut;
+
+#else
+
+    struct termios orig_termios_;
 
 #endif
 
