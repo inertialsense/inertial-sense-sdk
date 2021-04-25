@@ -117,6 +117,18 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.disableBroadcastsOnClose = true;
 		}
+		else if (startsWith(a, "-dids"))
+		{
+#if __has_include("luna_data_sets.h")
+			for (eDataIDs id = 0; id < DID_COUNT; id++)
+#else
+			for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
+#endif
+			{
+				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+			}
+			return false;
+		}
 		else if (startsWith(a, "-did"))
 		{
 			a = argv[++i];	// use next argument
@@ -127,15 +139,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 				string didName = &a[0];
 				g_commandLineOptions.selectEditDID = cISDataMappings::GetDataSetId(didName);
 			}
-		}
-		else if (startsWith(a, "-dids"))
-		{
-			printf("List of all DIDs\n");
-			for (eDataIDs id=0; id<DID_COUNT; id++ )
-			{
-				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
-			}
-			return false;
 		}
 		else if (startsWith(a, "-evbFlashCfg="))
 		{
