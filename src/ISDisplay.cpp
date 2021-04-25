@@ -1490,7 +1490,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("%s (%d):      A up, Z down, Q quit\n", cISDataMappings::GetDataSetName(data->hdr.id), data->hdr.id);
+	DISPLAY_SNPRINTF("(%d) %s:      A up, Z down, Q quit\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
 
 	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
@@ -1531,21 +1531,18 @@ void cInertialSenseDisplay::GetKeyboardInput()
 		c = GetChar();
 	}
 
+	if (c == 0)
+	{	// No keyboard inputs
+		return;
+	}
+
+    // printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
+	// return;
+
 	if (c != 0)
 	{	// Keyboard was pressed
 
-		if (c == 224)
-		{	// Arrow key
-			c = GetChar();
-			switch (c)
-			{
-			case 72: VarSelectDecrement(); m_editData.field.clear(); break;	// up
-			case 80: VarSelectIncrement(); m_editData.field.clear(); break;	// down
-			case 75:	break;	// left
-			case 77:	break;	// right
-			}
-		}
-		else if ((c >= 48 && c <= 57) || c == '.' || c == '-')
+		if ((c >= 48 && c <= 57) || c == '.' || c == '-')
 		{	// Number
 			m_editData.field += (char)c;
 			m_editData.editEnabled = true;
@@ -1555,6 +1552,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 		case 8:		// Backspace
 			m_editData.field.pop_back();
 			break;
+		case 10:
 		case 13:	// Enter	// Convert string to number
 			if (m_editData.editEnabled)
 			{

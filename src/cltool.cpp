@@ -90,7 +90,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		return false;
 	}
 
-	printf("Arguments: %d\n\n%s\n\n", argc, argv[0]);
+	// printf("Arguments: %d\n\n%s\n\n", argc, argv[0]);
 
 	// parse command line.  Keep these options in alphabetic order!
 	for (int i = 1; i < argc; i++)
@@ -127,6 +127,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 				string didName = &a[0];
 				g_commandLineOptions.selectEditDID = cISDataMappings::GetDataSetId(didName);
 			}
+		}
+		else if (startsWith(a, "-dids"))
+		{
+			printf("List of all DIDs\n");
+			for (eDataIDs id=0; id<DID_COUNT; id++ )
+			{
+				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+			}
+			return false;
 		}
 		else if (startsWith(a, "-evbFlashCfg="))
 		{
@@ -492,9 +501,9 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_FLASH_CFG       " << EXAMPLE_SPACE_1 << boldOff << " # stream and edit DID_FLASH_CFG message" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -b " << EXAMPLE_FIRMWARE_FILE << " -bl " << EXAMPLE_BOOTLOADER_FILE << " -bv" << boldOff << " # bootload application firmware and update bootloader if needed" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
@@ -516,7 +525,8 @@ void cltool_outputUsage()
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
-	cout << "    -did [data_ID] " << boldOff << "  stream and edit specified data set by number or name (i.e. -did 12 or -did DID_FLASH_CONFIG)" << endlbOn;
+	cout << "    -did [data_ID] " << boldOff << "  stream and edit specified dataset by number or name (i.e. -did 12 or -did DID_FLASH_CONFIG)" << endlbOn;
+	cout << "    -dids          " << boldOff << "  print list of all DID datasets" << endlbOn;
 	cout << "    -msgPresetPPD  " << boldOff << "  stream preset: post processing data sets" << endlbOn;
 	cout << "    -msgPresetINS2 " << boldOff << "  stream preset: INS2 sets" << endlbOn;
 	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
