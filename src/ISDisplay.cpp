@@ -1490,9 +1490,9 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("(%d) %s:      A up, Z down, Q quit\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
+	DISPLAY_SNPRINTF("(%d) %s:      W up, S down, Q quit\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
 
-	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
+	data_mapping_string_t tmp;
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
 	{
 		// Print value
@@ -1540,53 +1540,46 @@ void cInertialSenseDisplay::GetKeyboardInput()
 		return;
 	}
 
-    // printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
+	// Keyboard was pressed
+	c = tolower(c);
+
+	// printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
 	// return;
 
-	if (c != 0)
-	{	// Keyboard was pressed
-
-		if ((c >= 48 && c <= 57) || c == '.' || c == '-')
-		{	// Number
-			m_editData.field += (char)c;
-			m_editData.editEnabled = true;
-		}
-		else switch (c)
-		{
-		case 8:		// Backspace
-			m_editData.field.pop_back();
-			break;
-		case 10:
-		case 13:	// Enter	// Convert string to number
-			if (m_editData.editEnabled)
-			{
-				// val = std::stof(m_editData.field);
-				m_editData.info = m_editData.mapInfoSelection->second;
-				cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize);
-				m_editData.uploadNeeded = true;
-			}
-			StopEditing();
-			break;
-		case 27:	// Escape
-			StopEditing();
-			break;
-
-		case 'a':
-		case 'A': VarSelectDecrement(); m_editData.field.clear(); break;	// up
-		case 'z':
-		case 'Z': VarSelectIncrement(); m_editData.field.clear(); break;	// down
-		
-		case 'q':
-		case 'Q':
-			SetExitProgram();
-			break;
-		}
-
-		// 		printf("c: %u\n", c);
-
-		// 		return true;		// Key Was Hit
+	if ((c >= '0' && c <= '9') || 
+		(c >= 'a' && c <= 'f') || c == '.' || c == '-' )
+	{	// Number
+		m_editData.field += (char)c;
+		m_editData.editEnabled = true;
 	}
-	// 	return false;			// No keys were pressed
+	else switch (c)
+	{
+	case 8:		// Backspace
+		m_editData.field.pop_back();
+		break;
+	case 10:
+	case 13:	// Enter	// Convert string to number
+		if (m_editData.editEnabled)
+		{
+			// val = std::stof(m_editData.field);
+			m_editData.info = m_editData.mapInfoSelection->second;
+			int radix = (m_editData.info.dataFlags == DataFlagsDisplayHex ? 16 : 10);
+			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize, radix);
+			m_editData.uploadNeeded = true;
+		}
+		StopEditing();
+		break;
+	case 27:	// Escape
+		StopEditing();
+		break;
+
+	case 'w': VarSelectDecrement(); m_editData.field.clear(); break;	// up
+	case 's': VarSelectIncrement(); m_editData.field.clear(); break;	// down
+		
+	case 'q':
+		SetExitProgram();
+		break;
+	}
 }
 
 
