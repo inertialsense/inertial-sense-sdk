@@ -44,7 +44,7 @@ public:
 
 		bool            editEnabled;
 		std::string     field;
-		uint8_t         did;
+		int             did;
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;

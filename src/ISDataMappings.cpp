@@ -2118,7 +2118,7 @@ const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 
 uint32_t cISDataMappings::GetDataSetId(string name)
 {
-	transform(name.begin(), name.end(), name.begin(), ::toupper);
+// 	transform(name.begin(), name.end(), name.begin(), ::toupper);
 
 	for (eDataIDs id = 0; id < DID_COUNT; id++)
 	{

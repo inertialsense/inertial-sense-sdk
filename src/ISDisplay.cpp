@@ -309,7 +309,6 @@ int cInertialSenseDisplay::GetChar()
 
 #endif
 
-	return -1;
 }
 
 
@@ -1528,7 +1527,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 
 void cInertialSenseDisplay::GetKeyboardInput()
 {
-	uint8_t c = 0;
+	int c = 0;
 
 	if (KeyboardHit())
 	{	// Keyboard was pressed
