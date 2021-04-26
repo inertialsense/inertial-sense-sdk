@@ -256,7 +256,7 @@ static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
     ADD_MAP(m, totalSize, "acc2[0]", I[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "acc2[1]", I[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "acc2[2]", I[1].acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }
@@ -267,8 +267,8 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
 	map_name_to_info_t& m = mappings[DID_SYS_PARAMS];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "imuTemp", imuTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "baroTemp", baroTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "mcuTemp", mcuTemp, 0, DataTypeFloat, float, 0);
@@ -278,7 +278,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double, 0);
 	ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }
@@ -318,8 +318,8 @@ static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT])
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "theta[0]", theta[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "theta[1]", theta[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "theta[2]", theta[2], 0, DataTypeFloat, float&, 0);
@@ -336,15 +336,15 @@ static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t did)
+static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef ins_2_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[did];
+	map_name_to_info_t& m = mappings[DID_INS_2];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "qn2b[0]", qn2b[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "qn2b[1]", qn2b[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "qn2b[2]", qn2b[2], 0, DataTypeFloat, float&, 0);
@@ -359,6 +359,30 @@ static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef ins_3_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_INS_3];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "qn2b[0]", qn2b[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "qn2b[1]", qn2b[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "qn2b[2]", qn2b[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "qn2b[3]", qn2b[3], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "uvw[0]", uvw[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "uvw[1]", uvw[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "uvw[2]", uvw[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "lla[0]", lla[0], 0, DataTypeDouble, double&, 0);
+	ADD_MAP(m, totalSize, "lla[1]", lla[1], 0, DataTypeDouble, double&, 0);
+	ADD_MAP(m, totalSize, "lla[2]", lla[2], 0, DataTypeDouble, double&, 0);
+	ADD_MAP(m, totalSize, "msl", msl, 0, DataTypeFloat, float, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
 static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef ins_4_t MAP_TYPE;
@@ -366,8 +390,8 @@ static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT])
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "insStatus", insStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "qe2b[0]", qe2b[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "qe2b[1]", qe2b[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "qe2b[2]", qe2b[2], 0, DataTypeFloat, float&, 0);
@@ -389,7 +413,7 @@ static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "ecef[0]", ecef[0], 0, DataTypeDouble, double&, 0);
 	ADD_MAP(m, totalSize, "ecef[1]", ecef[1], 0, DataTypeDouble, double&, 0);
 	ADD_MAP(m, totalSize, "ecef[2]", ecef[2], 0, DataTypeDouble, double&, 0);
@@ -420,7 +444,7 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	ADD_MAP(m, totalSize, "vel[1]", vel[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "vel[2]", vel[2], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "sAcc", sAcc, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -582,7 +606,7 @@ static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DI
     ADD_MAP(m, totalSize, "vel2[1]", vel2[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "vel2[2]", vel2[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }
@@ -656,7 +680,7 @@ static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
     map_name_to_info_t& m = mappings[DID_WHEEL_ENCODER];
     uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "timeOfWeek", timeOfWeek, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "theta_l", theta_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "omega_l", omega_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "theta_r", theta_r, 0, DataTypeFloat, float, 0);
@@ -701,8 +725,8 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gps1AntOffset[2]", gps1AntOffset[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "insDynModel", insDynModel, 0, DataTypeUInt8, uint8_t, 0);
 	ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t, 0);
-	ADD_MAP(m, totalSize, "gnssSatSigConst", gnssSatSigConst, 0, DataTypeUInt16, uint16_t, 0);
-	ADD_MAP(m, totalSize, "sysCfgBits", sysCfgBits, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "gnssSatSigConst", gnssSatSigConst, 0, DataTypeUInt16, uint16_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "sysCfgBits", sysCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "refLla[0]", refLla[0], 0, DataTypeDouble, double&, 0);
     ADD_MAP(m, totalSize, "refLla[1]", refLla[1], 0, DataTypeDouble, double&, 0);
     ADD_MAP(m, totalSize, "refLla[2]", refLla[2], 0, DataTypeDouble, double&, 0);
@@ -712,8 +736,8 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "lastLlaTimeOfWeekMs", lastLlaTimeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "lastLlaWeek", lastLlaWeek, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "lastLlaUpdateDistance", lastLlaUpdateDistance, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "ioConfig", ioConfig, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "cBrdConfig", cBrdConfig, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "ioConfig", ioConfig, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cBrdConfig", cBrdConfig, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "magInclination", magInclination, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "magDeclination", magDeclination, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "gps2AntOffset[0]", gps2AntOffset[0], 0, DataTypeFloat, float&, 0);
@@ -727,9 +751,9 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "zeroVelOffset[2]", zeroVelOffset[2], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "gpsTimeSyncPeriodMs", gpsTimeSyncPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "startupGPSDtMs", startupGPSDtMs, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "wheelConfig.e_i2l[0]", wheelConfig.e_i2l[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelConfig.e_i2l[1]", wheelConfig.e_i2l[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelConfig.e_i2l[2]", wheelConfig.e_i2l[2], 0, DataTypeFloat, float&, 0);
@@ -755,11 +779,11 @@ static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "firmwareVer[1]", firmwareVer[1], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "firmwareVer[2]", firmwareVer[2], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "firmwareVer[3]", firmwareVer[3], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "evbStatus", evbStatus, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "evbStatus", evbStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "loggerMode", loggerMode, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "loggerElapsedTimeMs", loggerElapsedTimeMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "wifiIpAddr", wifiIpAddr, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "sysCommand", sysCommand, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "sysCommand", sysCommand, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }
@@ -776,20 +800,20 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "reserved1[0]", reserved1[0], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "reserved1[1]", reserved1[1], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "reserved1[2]", reserved1[2], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[0]", cbf[0], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[1]", cbf[1], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[2]", cbf[2], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[3]", cbf[3], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[4]", cbf[4], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[5]", cbf[5], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[6]", cbf[6], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[7]", cbf[7], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[8]", cbf[8], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbf[9]", cbf[9], 0, DataTypeUInt32, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "cbOptions", cbOptions, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "bits", bits, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "radioPID", radioPID, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "radioNID", radioNID, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "cbf[0]", cbf[0], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[1]", cbf[1], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[2]", cbf[2], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[3]", cbf[3], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[4]", cbf[4], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[5]", cbf[5], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[6]", cbf[6], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[7]", cbf[7], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[8]", cbf[8], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbf[9]", cbf[9], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "cbOptions", cbOptions, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "bits", bits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "radioPID", radioPID, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "radioNID", radioNID, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "radioPowerLevel", radioPowerLevel, 0, DataTypeUInt32, uint32_t, 0);
 
     ADD_MAP(m, totalSize, "wifi[0].ssid", wifi[0].ssid, WIFI_SSID_PSK_SIZE, DataTypeString, char[WIFI_SSID_PSK_SIZE], 0);
@@ -816,7 +840,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ADD_MAP(m, totalSize, "encoderTickToWheelRad", encoderTickToWheelRad, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "CANbaud_kbps", CANbaud_kbps, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "can_receive_address", can_receive_address, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "can_receive_address", can_receive_address, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "uinsComPort", uinsComPort, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "uinsAuxPort", uinsAuxPort, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeUInt8, uint8_t&, 0);
@@ -826,7 +850,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "h3sp330BaudRate", h3sp330BaudRate, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "h4xRadioBaudRate", h4xRadioBaudRate, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "h8gpioBaudRate", h8gpioBaudRate, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "wheelCfgBits", wheelCfgBits, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "wheelCfgBits", wheelCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "wheelStepPeriodMs", wheelStepPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
@@ -916,7 +940,7 @@ static void PopulateEvbLunaStatusMappings(map_name_to_info_t mappings[DID_COUNT]
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_STATUS];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "evbLunaStatus", evbLunaStatus, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "evbLunaStatus", evbLunaStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "motorState", motorState, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "remoteKillMode", remoteKillMode, 0, DataTypeFloat, uint32_t, 0);
 	ADD_MAP(m, totalSize, "supplyVoltage", supplyVoltage, 0, DataTypeFloat, float, 0);
@@ -952,7 +976,7 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "velCmd_l", velCmd_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velCmd_r", velCmd_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velCmdSlew_l", velCmdSlew_l, 0, DataTypeFloat, float, 0);
@@ -1004,7 +1028,7 @@ static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], ui
 	ADD_MAP(m, totalSize, "baseToRoverDistance", baseToRoverDistance, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "baseToRoverHeading", baseToRoverHeading, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "baseToRoverHeadingAcc", baseToRoverHeadingAcc, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -1196,33 +1220,33 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_POS]", can_period_mult[CID_GPS1_POS], 0, DataTypeUInt32, uint32_t&, 0);
 	ADD_MAP(m, totalSize, "can_period_mult[CID_ROLL_ROLLRATE]", can_period_mult[CID_ROLL_ROLLRATE], 0, DataTypeUInt32, uint32_t&, 0);
 	ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_RTK_REL]", can_period_mult[CID_GPS1_RTK_REL], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_TIME]", can_transmit_address[CID_INS_TIME], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_STATUS]", can_transmit_address[CID_INS_STATUS], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_EULER]", can_transmit_address[CID_INS_EULER], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_QUATN2B]", can_transmit_address[CID_INS_QUATN2B], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_QUATE2B]", can_transmit_address[CID_INS_QUATE2B], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_UVW]", can_transmit_address[CID_INS_UVW], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_VE]", can_transmit_address[CID_INS_VE], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_LAT]", can_transmit_address[CID_INS_LAT], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_LON]", can_transmit_address[CID_INS_LON], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ALT]", can_transmit_address[CID_INS_ALT], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_NORTH_EAST]", can_transmit_address[CID_INS_NORTH_EAST], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_DOWN]", can_transmit_address[CID_INS_DOWN], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ECEF_X]", can_transmit_address[CID_INS_ECEF_X], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ECEF_Y]", can_transmit_address[CID_INS_ECEF_Y], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ECEF_Z]", can_transmit_address[CID_INS_ECEF_Z], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_MSL]", can_transmit_address[CID_INS_MSL], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_PREINT_PX]", can_transmit_address[CID_PREINT_PX], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_PREINT_QY]", can_transmit_address[CID_PREINT_QY], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_PREINT_RZ]", can_transmit_address[CID_PREINT_RZ], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_PX]", can_transmit_address[CID_DUAL_PX], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_QY]", can_transmit_address[CID_DUAL_QY], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_RZ]", can_transmit_address[CID_DUAL_RZ], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_POS]", can_transmit_address[CID_GPS1_POS], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_RTK_REL]", can_transmit_address[CID_GPS1_RTK_REL], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_transmit_address[CID_ROLL_ROLLRATE]", can_transmit_address[CID_ROLL_ROLLRATE], 0, DataTypeUInt32, uint32_t&, 0);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_TIME]", can_transmit_address[CID_INS_TIME], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_STATUS]", can_transmit_address[CID_INS_STATUS], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_EULER]", can_transmit_address[CID_INS_EULER], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_QUATN2B]", can_transmit_address[CID_INS_QUATN2B], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_QUATE2B]", can_transmit_address[CID_INS_QUATE2B], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_UVW]", can_transmit_address[CID_INS_UVW], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_VE]", can_transmit_address[CID_INS_VE], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_LAT]", can_transmit_address[CID_INS_LAT], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_LON]", can_transmit_address[CID_INS_LON], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ALT]", can_transmit_address[CID_INS_ALT], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_NORTH_EAST]", can_transmit_address[CID_INS_NORTH_EAST], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_DOWN]", can_transmit_address[CID_INS_DOWN], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ECEF_X]", can_transmit_address[CID_INS_ECEF_X], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ECEF_Y]", can_transmit_address[CID_INS_ECEF_Y], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_ECEF_Z]", can_transmit_address[CID_INS_ECEF_Z], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_MSL]", can_transmit_address[CID_INS_MSL], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_PREINT_PX]", can_transmit_address[CID_PREINT_PX], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_PREINT_QY]", can_transmit_address[CID_PREINT_QY], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_PREINT_RZ]", can_transmit_address[CID_PREINT_RZ], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_PX]", can_transmit_address[CID_DUAL_PX], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_QY]", can_transmit_address[CID_DUAL_QY], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_RZ]", can_transmit_address[CID_DUAL_RZ], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_POS]", can_transmit_address[CID_GPS1_POS], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_RTK_REL]", can_transmit_address[CID_GPS1_RTK_REL], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "can_transmit_address[CID_ROLL_ROLLRATE]", can_transmit_address[CID_ROLL_ROLLRATE], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "can_baudrate_kbps", can_baudrate_kbps, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "can_receive_address", can_receive_address, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "can_receive_address", can_receive_address, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -1374,7 +1398,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "alignAccel[0]", alignAccel[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "alignAccel[1]", alignAccel[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "alignAccel[2]", alignAccel[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2025,8 +2049,8 @@ cISDataMappings::cISDataMappings()
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateINS1Mappings(m_lookupInfo);
-	PopulateINS2Mappings(m_lookupInfo, DID_INS_2);
-	PopulateINS2Mappings(m_lookupInfo, DID_INS_3);
+	PopulateINS2Mappings(m_lookupInfo);
+	PopulateINS3Mappings(m_lookupInfo);
 	PopulateINS4Mappings(m_lookupInfo);
 	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_POS);
 	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_UBX_POS);
