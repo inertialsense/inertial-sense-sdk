@@ -1495,8 +1495,19 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
 	{
-		DISPLAY_SNPRINTF("%26s ", it->first.c_str());
+		// Print value
+#define DTS_VALUE_FORMAT	"%22s "
+		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
+		{	// Show keyboard value
+			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+		}
+		else
+		{	// Show received value
+			cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
+			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+		}
 
+		// Print selection marker
 		if (it == m_editData.mapInfoSelection)
 		{
 			if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
@@ -1507,15 +1518,8 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 			DISPLAY_SNPRINTF(" ");
 		}
 
-		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
-		{	// Show keyboard value
-			DISPLAY_SNPRINTF(" %s      \n", m_editData.field.c_str());
-		}
-		else
-		{	// Show received value
-			cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
-			DISPLAY_SNPRINTF(" %s      \n", tmp);
-		}
+		// Print value name
+		DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
 	}
 
 	return buf;
