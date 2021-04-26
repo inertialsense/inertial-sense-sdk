@@ -46,6 +46,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define PRINTV3_LLA_MSL	"%13.7f,%13.7f,%7.1f MSL\n"
 #define BUF_SIZE 8192
 
+#define DATASET_VIEW_NUM_ROWS 20
+
 #define DISPLAY_DELTA_TIME	0	// show delta time instead of time
 
 static bool s_exitProgram;
@@ -1492,7 +1494,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	DISPLAY_SNPRINTF("(%d) %s:      W up, S down, Q quit\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
 
 	data_mapping_string_t tmp;
-	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
+	for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
 	{
 		// Print value
 #define DTS_VALUE_FORMAT	"%22s "
@@ -1575,6 +1577,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	case 'w': VarSelectDecrement(); m_editData.field.clear(); break;	// up
 	case 's': VarSelectIncrement(); m_editData.field.clear(); break;	// down
 		
+	case 3:		// Ctrl-C
 	case 'q':
 		SetExitProgram();
 		break;
@@ -1587,6 +1590,20 @@ void cInertialSenseDisplay::SelectEditDataset(int did)
 	m_editData.did = did;
 	m_editData.mapInfo = cISDataMappings::GetMapInfo(did);
 	m_editData.mapInfoSelection = m_editData.mapInfo->begin();
+	m_editData.mapInfoBegin = m_editData.mapInfo->begin();
+
+	// Set m_editData.mapInfoBegin to end or DATASET_VIEW_NUM_ROWSth element, whichever is smaller.
+	int i=0;
+	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
+	{
+		if (i++>DATASET_VIEW_NUM_ROWS)
+		{
+			break;
+		}
+
+		m_editData.mapInfoEnd = it;
+	}
+
 	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
 }
 
@@ -1598,9 +1615,17 @@ void cInertialSenseDisplay::VarSelectIncrement()
 		return;
 	}
 
-	if (m_editData.mapInfoSelection != --(m_editData.mapInfo->end()))
+	map_name_to_info_t::const_iterator mapInfoEnd = m_editData.mapInfoEnd;
+	if (m_editData.mapInfoSelection != --(mapInfoEnd))
 	{
 		m_editData.mapInfoSelection++;
+	}
+	else if (m_editData.mapInfoEnd != --(m_editData.mapInfo->end()))
+	{
+		m_editData.mapInfoBegin++;
+		m_editData.mapInfoEnd++;
+		m_editData.mapInfoSelection++;
+		Clear();
 	}
 
 	m_editData.editEnabled = false; 
@@ -1614,9 +1639,16 @@ void cInertialSenseDisplay::VarSelectDecrement()
 		return;
 	}
 
-	if (m_editData.mapInfoSelection != m_editData.mapInfo->begin())
+	if (m_editData.mapInfoSelection != m_editData.mapInfoBegin)
 	{
 		m_editData.mapInfoSelection--;
+	}
+	else if (m_editData.mapInfoBegin != m_editData.mapInfo->begin())
+	{
+		m_editData.mapInfoBegin--;
+		m_editData.mapInfoEnd--;
+		m_editData.mapInfoSelection--;
+		Clear();
 	}
 	
 	m_editData.editEnabled = false; 

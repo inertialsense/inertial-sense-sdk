@@ -41,6 +41,8 @@ public:
 	{
 		const map_name_to_info_t 			*mapInfo = NULL;
 		map_name_to_info_t::const_iterator 	mapInfoSelection;
+		map_name_to_info_t::const_iterator 	mapInfoBegin;
+		map_name_to_info_t::const_iterator 	mapInfoEnd;
 
 		bool            editEnabled;
 		std::string     field;

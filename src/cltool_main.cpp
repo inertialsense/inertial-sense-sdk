@@ -100,6 +100,8 @@ static void output_client_bytes(InertialSense* i)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
+	// return;
+
     (void)i;
     (void)pHandle;
 	// Print data to terminal
