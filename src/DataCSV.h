@@ -41,6 +41,12 @@ typedef enum
 	DataTypeCount
 } eDataType;
 
+typedef enum
+{
+	DataFlagsNull			= 0x0000,
+	DataFlagsDisplayHex		= 0x0100
+} eDataFlags;
+
 /*
 * Metadata about a specific field
 */
@@ -49,6 +55,7 @@ typedef struct
 	uint32_t dataOffset;
 	uint32_t dataSize;
 	eDataType dataType;
+	eDataFlags dataFlags;
 	string name;
 } data_info_t;
 

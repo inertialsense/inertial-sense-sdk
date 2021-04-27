@@ -41,10 +41,12 @@ public:
 	{
 		const map_name_to_info_t 			*mapInfo = NULL;
 		map_name_to_info_t::const_iterator 	mapInfoSelection;
+		map_name_to_info_t::const_iterator 	mapInfoBegin;
+		map_name_to_info_t::const_iterator 	mapInfoEnd;
 
 		bool            editEnabled;
 		std::string     field;
-		uint8_t         did;
+		int             did;
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;

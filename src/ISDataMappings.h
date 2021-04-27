@@ -214,12 +214,13 @@ public:
 	/**
 	* Convert a variable to a string
 	* @param dataType data type
+	* @param dataFlags data flags 
 	* @param dataBuffer data buffer pointer
 	* @param stringBuffer the buffer to hold the converted string
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool VariableToString(eDataType dataType, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
 
 	/**
 	* Get a timestamp from data if available
