@@ -11,8 +11,8 @@ The following keywords are found in the CLTool soure code identify the steps for
 
 ```C++
 /* SDK Implementation Keywords:
- * [C++ COMM INSTRUCTION] - C++ binding API - InertialSense class with binary communication
- *                          protocol and serial port support for Linux and Windows.
+ * [C++ COMM INSTRUCTION] - C++ binding API, InertialSense class with binary
+ * communication protocol and serial port support for Linux and Windows.
  * [LOGGER INSTRUCTION] - Data logger.
  * [BOOTLOADER INSTRUCTION] - Firmware update feature.
  */
