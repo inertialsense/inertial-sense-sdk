@@ -111,6 +111,7 @@ public:
 	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 	string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+	string DataToStringGeneric(const p_data_t* data);
 
 	string DatasetToString(const p_data_t* data);
 
@@ -129,7 +130,7 @@ private:
 	vector<string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;
-	
+
 	edit_data_t m_editData = {};
 
 	struct sDidStats

@@ -602,6 +602,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 		char buf[128];
 		SNPRINTF(buf, sizeof(buf), "(%d) %s \n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
 		str = buf;
+#elif 0
+		str = DataToStringGeneric(data);
 #endif
 		break;
 	}
@@ -1473,6 +1475,33 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 
 
 #define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
+#define DTS_VALUE_FORMAT	"%22s "
+
+string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
+{
+	const map_name_to_info_t *mapInfo = cISDataMappings::GetMapInfo(data->hdr.id);
+
+	uDatasets d = {};
+	copyDataPToStructP(&d, data, sizeof(d));
+
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
+
+	data_mapping_string_t tmp;
+	for (map_name_to_info_t::const_iterator it = mapInfo->begin(); it != mapInfo->end(); it++)
+	{
+		// Print value
+		cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
+		DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+
+		// Print value name
+		DISPLAY_SNPRINTF("  %s\n", it->first.c_str());
+	}
+
+	return buf;
+}
 
 string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
@@ -1493,7 +1522,6 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
 	{
 		// Print value
-#define DTS_VALUE_FORMAT	"%22s "
 		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
 		{	// Show keyboard value
 			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
