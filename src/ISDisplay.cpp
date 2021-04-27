@@ -83,7 +83,7 @@ static void signalFunction(int sig)
 #endif
 
 
-cInertialSenseDisplay::cInertialSenseDisplay(bool nonblockingkeyboard)
+cInertialSenseDisplay::cInertialSenseDisplay()
 {
 	cout << endl << Hello() << endl;
 
@@ -100,12 +100,6 @@ cInertialSenseDisplay::cInertialSenseDisplay(bool nonblockingkeyboard)
 #else
 
 	signal(SIGINT, signalFunction);
-
-	m_nonblockingkeyboard = nonblockingkeyboard;
-	if (m_nonblockingkeyboard)
-	{
-	    SetKeyboardNonBlock();
-	}
 
 #endif
 
@@ -248,6 +242,7 @@ string cInertialSenseDisplay::Goodbye()
 
 void cInertialSenseDisplay::SetKeyboardNonBlock()
 {
+	m_nonblockingkeyboard = true;
 
 #if !PLATFORM_IS_WINDOWS
 

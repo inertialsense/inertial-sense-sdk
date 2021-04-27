@@ -345,6 +345,7 @@ static int inertialSenseMain()
 {	
 	// clear display
 	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
+	g_inertialSenseDisplay.SetKeyboardNonBlock();
 	g_inertialSenseDisplay.Clear();
 
 	// if replay data log specified on command line, do that now and return

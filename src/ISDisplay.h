@@ -61,7 +61,7 @@ public:
 		DMODE_QUIET,
 	};
 
-	cInertialSenseDisplay(bool nonblockingkeyboard=false);
+	cInertialSenseDisplay();
 	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
