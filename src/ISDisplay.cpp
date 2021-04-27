@@ -1000,8 +1000,6 @@ string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	int i = 0;
-	if (hdr.id == DID_MAGNETOMETER_2) i = 1;
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1

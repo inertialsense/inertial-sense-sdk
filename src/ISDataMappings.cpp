@@ -2405,14 +2405,14 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
 
 	case DataTypeInt64:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", *(uint64_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (long long)*(uint64_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%lld", (long long)*(int64_t*)ptr);
 		break;
 
 	case DataTypeUInt64:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", *(uint64_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (unsigned long long)*(uint64_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%llu", (unsigned long long)*(uint64_t*)ptr);
 		break;
