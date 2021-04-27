@@ -30,11 +30,11 @@ using namespace std;
 #if PLATFORM_IS_WINDOWS
 #define APP_EXT                 ".exe"
 #define EXAMPLE_PORT            "COM5"
-#define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549    "
+#define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549       "
 #define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex"
 #define EXAMPLE_BOOTLOADER_FILE "c:\\fw\\SAMx70-Bootloader.bin"
 #define EXAMPLE_SPACE_1         "    "
-#define EXAMPLE_SPACE_2         ""
+#define EXAMPLE_SPACE_2         "   "
 #else
 #define APP_EXT	                ""
 #define EXAMPLE_PORT            "/dev/ttyS2"
@@ -44,6 +44,12 @@ using namespace std;
 #define EXAMPLE_SPACE_1         "  "
 #define EXAMPLE_SPACE_2			"    "
 #endif
+
+typedef struct
+{
+	eDataIDs	did;
+	int			periodMultiple;
+} stream_did_t;
 
 typedef struct
 {
@@ -63,27 +69,8 @@ typedef struct
 
 	uint64_t rmcPreset;
     bool persistentMessages;
-	int streamINS1;
-	int streamINS2;
-	int streamINS3;
-	int streamINS4;
-	int streamDualIMU;
-	int streamIMU1;
-	int streamIMU2;
-    int streamGPS;
-    int streamRtkPos;
-	int streamRtkPosRel;
-	int streamRtkCmpRel;
-    int streamMag1;
-	int streamMag2;
-	int streamBaro;
-	int streamSysSensors;
-	int streamDThetaVel;
-	int streamRTOS;
-	int streamSensorsADC;
-	int streamWheelEncoder;
-
-	eDataIDs selectEditDID; // -e DID
+	stream_did_t datasetEdit;				// -edit DID#=periodMultiple
+	vector<stream_did_t> datasets = {};		// -did DID#=periodMultiple
 
 	bool enableLogging;
 	string logType; // -lt=dat

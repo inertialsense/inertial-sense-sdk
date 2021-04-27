@@ -2363,56 +2363,56 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
 	{
 	case DataTypeInt8:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", (int)*(int32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(int8_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int8_t*)ptr);
 		break;
 
 	case DataTypeUInt8:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", (int)*(int32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(uint8_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint8_t*)ptr);
 		break;
 
 	case DataTypeInt16:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", (int)*(int32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(int16_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int16_t*)ptr);
 		break;
 
 	case DataTypeUInt16:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", (int)*(int32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(uint16_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint16_t*)ptr);
 		break;
 
 	case DataTypeInt32:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", (int)*(int32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(int32_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int32_t*)ptr);
 		break;
 
 	case DataTypeUInt32:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", (unsigned int)*(uint32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(uint32_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint32_t*)ptr);		
 		break;
 
 	case DataTypeInt64:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016X", (unsigned int)*(uint32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", *(uint64_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%lld", (long long)*(int64_t*)ptr);
 		break;
 
 	case DataTypeUInt64:
 		if (dataFlags == DataFlagsDisplayHex)
-			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016X", (unsigned int)*(uint32_t*)ptr);
+			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", *(uint64_t*)ptr);
 		else
 			SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%llu", (unsigned long long)*(uint64_t*)ptr);
 		break;
