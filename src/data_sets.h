@@ -1916,6 +1916,7 @@ enum eWheelCfgBits
 {
     WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
+    WHEEL_CFG_BITS_ENABLE_CONTROL           = (int)0x00000004,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
@@ -3117,7 +3118,6 @@ typedef enum
     EVB_CFG_BITS_SERVER_SELECT_MASK             = 0x0000000C,
     EVB_CFG_BITS_SERVER_SELECT_OFFSET           = 2,
     EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,		// Don't enable PPD stream when log button is pressed
-    EVB_CFG_BITS_ENABLE_WHEEL_ENCODER           = 0x00000100,
     EVB_CFG_BITS_ENABLE_ADC                     = 0x00000200,
 } eEvbFlashCfgBits;
 
@@ -3547,6 +3547,10 @@ typedef struct PACKED
 
 } can_config_t;
 
+#if __has_include("luna_data_sets.h")
+#include "luna_data_sets.h"
+#endif
+
 /** Union of datasets */
 typedef union PACKED
 {
@@ -3578,6 +3582,10 @@ typedef union PACKED
 	gps_raw_t				gpsRaw;
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
+
+#if __has_include("luna_data_sets.h")
+	evb_luna_wheel_controller_t     wheelController;
+#endif
 } uDatasets;
 
 /** Union of INS output datasets */

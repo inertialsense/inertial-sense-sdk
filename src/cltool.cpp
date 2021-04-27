@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "cltool.h"
+#include <string.h>
 #include "ISDataMappings.h"
 
 cmd_options_t g_commandLineOptions;
@@ -60,6 +61,45 @@ static bool startsWith(const char* str, const char* pre)
 #define CL_DEFAULT_REPLAY_SPEED				1.0
 #define CL_DEFAULT_BOOTLOAD_VERIFY			false
 
+bool read_did_argument(stream_did_t *dataset, string s)
+{
+	// Try to use DID number
+	eDataIDs did = strtol(s.c_str(), NULL, 10);
+
+	std::string::size_type pos = s.find('=');
+
+	if (did <= DID_NULL || did >= DID_COUNT)
+	{	// Number is invalid.  Use DID name.
+		string name = s;
+		if (pos != std::string::npos)
+		{	// Remove equal sign
+			name = s.substr(0, pos);
+		}
+
+		did = cISDataMappings::GetDataSetId(name);
+	}
+
+	if (did > DID_NULL && did < DID_COUNT)
+	{	// DID is valid
+		dataset->did = did;
+		dataset->periodMultiple = 1;
+
+		if (pos != std::string::npos)
+		{	// Contains '='
+			string m = s.substr(pos + 1);
+
+			if (m.find(" ") == std::string::npos)
+			{	// Found period multiple following equal sign (i.e. DID=periodMultiple: 4=4 or DID_INS_1=4)
+				dataset->periodMultiple = strtol(m.c_str(), NULL, 10);
+			}
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
 	// set defaults
@@ -90,7 +130,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		return false;
 	}
 
-	printf("Arguments: %d\n\n%s\n\n", argc, argv[0]);
+	// printf("Arguments: %d\n\n%s\n\n", argc, argv[0]);
 
 	// parse command line.  Keep these options in alphabetic order!
 	for (int i = 1; i < argc; i++)
@@ -116,6 +156,37 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-dboc"))
 		{
 			g_commandLineOptions.disableBroadcastsOnClose = true;
+		}
+		else if (startsWith(a, "-dids"))
+		{
+#if __has_include("luna_data_sets.h")
+			for (eDataIDs id = 0; id < DID_COUNT; id++)
+#else
+			for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
+#endif
+			{
+				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+			}
+			return false;
+		}
+		else if (startsWith(a, "-did"))
+		{
+			while ((i+1)<argc && !startsWith(argv[i+1], "-"))	// next argument doesn't start with "-"
+			{
+				stream_did_t dataset = {};
+				if (read_did_argument(&dataset, argv[++i]))		// use next argument
+				{
+					g_commandLineOptions.datasets.push_back(dataset);
+				}
+			}
+		}
+		else if (startsWith(a, "-edit"))
+		{
+			stream_did_t dataset = {};
+			if (read_did_argument(&dataset, argv[++i]))	// use next argument
+			{
+				g_commandLineOptions.datasetEdit = dataset;
+			}
 		}
 		else if (startsWith(a, "-evbFlashCfg="))
 		{
@@ -174,6 +245,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.logPath = &a[4];
 		}
+		else if (startsWith(a, "-lp"))
+		{
+			a = argv[++i];	// use next argument
+			g_commandLineOptions.logPath = &a[4];
+		}
 		else if (startsWith(a, "-lt="))
 		{
 			g_commandLineOptions.logType = &a[4];
@@ -198,157 +274,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
             }
         }
-		else if (startsWith(a, "-msgBaro="))
-		{
-			g_commandLineOptions.streamBaro = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgBaro"))
-		{
-			g_commandLineOptions.streamBaro = 50;
-		}
-		else if (startsWith(a, "-msgDualIMU="))
-		{
-			g_commandLineOptions.streamDualIMU = (int)atof(&a[12]);
-		}
-		else if (startsWith(a, "-msgDualIMU"))
-		{
-			g_commandLineOptions.streamDualIMU = 50;
-		}
-		else if (startsWith(a, "-msgGPS="))
-		{
-			g_commandLineOptions.streamGPS = (int)atof(&a[8]);
-		}
-        else if (startsWith(a, "-msgGPS"))
-		{
-			g_commandLineOptions.streamGPS = 1;
-		}
-		else if (startsWith(a, "-msgIMU1="))
-		{
-			g_commandLineOptions.streamIMU1 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgIMU1"))
-		{
-			g_commandLineOptions.streamIMU1 = 50;
-		}
-		else if (startsWith(a, "-msgIMU2=")) 
-		{
-			g_commandLineOptions.streamIMU2 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgIMU2"))
-		{
-			g_commandLineOptions.streamIMU2 = 50;
-		}
-		else if (startsWith(a, "-msgINS1="))
-		{
-			g_commandLineOptions.streamINS1 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgINS1"))
-		{
-			g_commandLineOptions.streamINS1 = 50;
-		}
-		else if (startsWith(a, "-msgINS2="))
-		{
-			g_commandLineOptions.streamINS2 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgINS2"))
-		{
-			g_commandLineOptions.streamINS2 = 50;
-		}
-		else if (startsWith(a, "-msgINS3="))
-		{
-			g_commandLineOptions.streamINS3 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgINS3"))
-		{
-			g_commandLineOptions.streamINS3 = 50;
-		}
-		else if (startsWith(a, "-msgINS4="))
-		{
-			g_commandLineOptions.streamINS4 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgINS4"))
-		{
-			g_commandLineOptions.streamINS4 = 50;
-		}
-		else if (startsWith(a, "-msgMag1="))
-		{
-			g_commandLineOptions.streamMag1 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgMag1"))
-		{
-			g_commandLineOptions.streamMag1 = 50;
-		}
-		else if (startsWith(a, "-msgMag2="))
-		{
-			g_commandLineOptions.streamMag2 = (int)atof(&a[9]);
-		}
-		else if (startsWith(a, "-msgMag2"))
-		{
-			g_commandLineOptions.streamMag2 = 50;
-		}
-		else if (startsWith(a, "-msgPIMU"))
-		{
-			g_commandLineOptions.streamDThetaVel = 1;
-		}
-		else if (startsWith(a, "-msgPresetPPD"))
+		else if (startsWith(a, "-presetPPD"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_BITS;
 		}
-		else if (startsWith(a, "-msgPresetINS2"))
+		else if (startsWith(a, "-presetINS2"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
-		}
-		else if (startsWith(a, "-msgRtkPosRel="))
-		{
-			g_commandLineOptions.streamRtkPosRel = (int)atof(&a[11]);
-		}
-		else if (startsWith(a, "-msgRtkPosRel"))
-		{
-			g_commandLineOptions.streamRtkPosRel = 1;
-		}
-		else if (startsWith(a, "-msgRtkCmpRel="))
-		{
-			g_commandLineOptions.streamRtkCmpRel = (int)atof(&a[11]);
-		}
-		else if (startsWith(a, "-msgRtkCmpRel"))
-		{
-			g_commandLineOptions.streamRtkCmpRel = 1;
-		}
-		else if (startsWith(a, "-msgRtkPos="))
-		{
-		g_commandLineOptions.streamRtkPos = (int)atof(&a[11]);
-		}
-		else if (startsWith(a, "-msgRtkPos"))
-		{
-		g_commandLineOptions.streamRtkPos = 1;
-		}
-		else if (startsWith(a, "-msgRTOS="))
-		{
-			g_commandLineOptions.streamRTOS = (int)atof(&a[9]);
-		}
-        else if (startsWith(a, "-msgRTOS"))
-		{
-			g_commandLineOptions.streamRTOS = 250;
-		}
-		else if (startsWith(a, "-msgSensorsADC="))
-		{
-			g_commandLineOptions.streamSensorsADC = (int)atof(&a[15]);
-		}
-		else if (startsWith(a, "-msgSensorsADC"))
-		{
-			g_commandLineOptions.streamSensorsADC = 50;
-		}
-		else if (startsWith(a, "-msgSensors="))
-		{
-			g_commandLineOptions.streamSysSensors = (int)atof(&a[12]);
-		}
-		else if (startsWith(a, "-msgSensors"))
-		{
-			g_commandLineOptions.streamSysSensors = 50;
-		}
-		else if (startsWith(a, "-msgWheel"))
-		{
-			g_commandLineOptions.streamWheelEncoder = 1;
 		}
         else if (startsWith(a, "-persistent"))
         {
@@ -360,6 +292,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-rp="))
 		{
+			g_commandLineOptions.replayDataLog = true;
+			g_commandLineOptions.logPath = &a[4];
+		}
+		else if (startsWith(a, "-rp"))
+		{
+			a = argv[++i];	// use next argument
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.logPath = &a[4];
 		}
@@ -480,71 +418,68 @@ void cltool_outputUsage()
 	cout << "    firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon       " << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -msgPresetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -msgINS2 -msgGPS=10 -msgBaro" << boldOff << " # stream multiple at 115200 bps, GPS data streamed at 10 times the base period (200ms x 10 = 2 sec)" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -rp=" <<     EXAMPLE_LOG_DIR                                           << boldOff << " # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -b " << EXAMPLE_FIRMWARE_FILE << " -bl " << EXAMPLE_BOOTLOADER_FILE << " -bv" << boldOff << " # bootload application firmware and update bootloader if needed" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PREINTEGRATED_IMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << boldOff << " # stream same as line above" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PREINTEGRATED_IMU at startupNavDtMs x 5" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << " # update application firmware and bootloader" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
-	cout << "    -h --help" << boldOff << "       display this help menu" << endlbOn;
-	cout << "    -c " << boldOff << "COM_PORT     select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
+	cout << "    -h --help" << boldOff << "       Display this help menu" << endlbOn;
+	cout << "    -c " << boldOff << "COM_PORT     Select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
 	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
-	cout << "    -baud=" << boldOff << "BAUDRATE  set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
-	cout << "    -magRecal[n]" << boldOff << "    recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
-    cout << "    -q" << boldOff << "              quiet mode, no display" << endlbOn;
-    cout << "    -reset         " << boldOff << " issue software reset.  Use caution." << endlbOn;
-    cout << "    -s" << boldOff << "              scroll displayed messages to show history" << endlbOn;
-	cout << "    -stats" << boldOff << "          display statistics of data received" << endlbOn;
-    cout << "    -survey=[s],[d]" << boldOff << " survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
-	cout << "    -uf=" << boldOff << "FILEPATH    update firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
-	cout << "    -ub=" << boldOff << "BLFILEPATH  update bootloader using .bin file BLFILEPATH. Combine with -b option to check version and updated if needed." << endlbOn;
-	cout << "    -uv" << boldOff << "             verify after firmware update." << endlbOn;
+	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
+	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
+    cout << "    -q" << boldOff << "              Quiet mode, no display" << endlbOn;
+    cout << "    -reset         " << boldOff << " Issue software reset.  Use caution." << endlbOn;
+    cout << "    -s" << boldOff << "              Scroll displayed messages to show history" << endlbOn;
+	cout << "    -stats" << boldOff << "          Display statistics of data received" << endlbOn;
+    cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
+	cout << "    -uf " << boldOff << "FILEPATH    Update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
+	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old." << endlbOn;
+	cout << "    -uv" << boldOff << "             Run verification after application firmware update." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
-	cout << "    -msgPresetPPD " << boldOff << "  stream preset: post processing data sets" << endlbOn;
-	cout << "    -msgPresetINS2" << boldOff << "  stream preset: INS2 sets" << endlbOn;
-	cout << "    -msgINS[n] *   " << boldOff << "  stream DID_INS_[n], where [n] = 1, 2, 3 or 4 (without brackets)" << endlbOn;
-	cout << "    -msgDualIMU *  " << boldOff << "  stream DID_DUAL_IMU" << endlbOn;
-	cout << "    -msgPIMU       " << boldOff << "  stream DID_PREINTEGRATED_IMU" << endlbOn;
-	cout << "    -msgMag[n] *   " << boldOff << "  stream DID_MAGNETOMETER_[n], where [n] = 1 or 2 (without brackets)" << endlbOn;
-	cout << "    -msgBaro *     " << boldOff << "  stream DID_BAROMETER" << endlbOn;
-	cout << "    -msgGPS *      " << boldOff << "  stream DID_GPS_NAV" << endlbOn;
-	cout << "    -msgSensors *  " << boldOff << "  stream DID_SYS_SENSORS" << endlbOn;
-	cout << "    -msgRtkPos *   " << boldOff << "  stream DID_GPS1_RTK_POS" << endlbOn;
-	cout << "    -msgRtkPosRel *" << boldOff << "  stream DID_GPS1_RTK_POS_REL" << endlbOn;
-	cout << "    -msgRtkCmpRel *" << boldOff << "  stream DID_GPS2_RTK_CMP_REL" << endlbOn;
-	cout << "    -persistent   " << boldOff << "  save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "                * Message can be appended with =<PERIODMULTIPLE> to change message frequency. Period is then equal to message" << endlbOn; 
-	cout << "                  source times the PERIODMULTIPLE. If not appended the data will stream at a default rate." << endlbOn;
-	cout << "                  Example: -msgINS2=10 will stream data at startupNavDtMs x 10" << endlbOn;
+	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
+	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
+	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
+	cout << "          Message period = source period x PERIODMULT. PERIODMULT is 1 if not specified." << endlbOff;
+	cout << "          Common DIDs: DID_INS_1, DID_INS_2, DID_INS_4, DID_PREINTEGRATED_IMU, DID_IMU, DID_GPS1_POS," << endlbOff;
+	cout << "          DID_GPS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
+	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
+	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
+	cout << "    -presetPPD     " << boldOff << " Stream preset post processing datasets (PPD)" << endlbOn;
+	cout << "    -presetINS2    " << boldOff << " Stream preset INS2 datasets" << endlbOn;
     cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
-	cout << "    -lon" << boldOff << "            enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        log type dat (default), sdat, kml or csv" << endlbOn;
-	cout << "    -lp=" << boldOff << "PATH        log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
-	cout << "    -lms=" << boldOff << "PERCENT    log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
-	cout << "    -lmf=" << boldOff << "BYTES      log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
-	cout << "    -lts=" << boldOff << "0          log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
-	cout << "    -r" << boldOff << "              replay data log from default path" << endlbOn;
-	cout << "    -rp=" << boldOff << "PATH        replay data log from PATH" << endlbOn;
-	cout << "    -rs=" << boldOff << "SPEED       replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
+	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type dat (default), sdat, kml or csv" << endlbOn;
+	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
+	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
+	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
+	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
+	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;
+	cout << "    -rp " << boldOff << "PATH        Replay data log from PATH" << endlbOn;
+	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Read or write flash configuration)" << endl;
-	cout << "    -flashCfg" << boldOff << "       list all \"keys\" and \"values\"" << endlbOn;
+	cout << "OPTIONS (Read or write flash configuration from command line)" << endl;
+	cout << "    -flashCfg" << boldOff << "       List all \"keys\" and \"values\"" << endlbOn;
 	cout << "   \"-flashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
-	cout << "    -evbFlashCfg" << boldOff << "    list all \"keys\" and \"values\"" << endlbOn;
+	cout << "    -evbFlashCfg" << boldOff << "    List all \"keys\" and \"values\"" << endlbOn;
 	cout << "   \"-evbFlashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
-	cout << "        " << boldOff << "            set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
+	cout << "        " << boldOff << "            Set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Client / Server)" << endl;
-	cout << "    -svr=" << boldOff << "INFO       used to retrieve external data and send to the uINS. Examples:" << endl;
+	cout << "    -svr=" << boldOff << "INFO       Used to retrieve external data and send to the uINS. Examples:" << endl;
 	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
 	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:user:password" << endl;
 	cout << "                                                              (URL, user, password optional)" << endl;

@@ -100,6 +100,8 @@ static void output_client_bytes(InertialSense* i)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
+	// return;
+
     (void)i;
     (void)pHandle;
 	// Print data to terminal
@@ -168,77 +170,24 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	inertialSenseInterface.BroadcastBinaryData(DID_DEV_INFO, 2000);
 
 	// depending on command line options. stream various data sets
-	if (g_commandLineOptions.streamINS1)
+	if (g_commandLineOptions.datasetEdit.did)
 	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_1, g_commandLineOptions.streamINS1);
+		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasetEdit.did);
+		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasetEdit.did, g_commandLineOptions.datasetEdit.periodMultiple);
 	}
-	if (g_commandLineOptions.streamINS2)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_2, g_commandLineOptions.streamINS2);
-	}
-	if (g_commandLineOptions.streamINS3)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_3, g_commandLineOptions.streamINS3);
-	}
-	if (g_commandLineOptions.streamINS4)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_4, g_commandLineOptions.streamINS4);
-	}
-	if (g_commandLineOptions.streamSysSensors)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_SYS_SENSORS, g_commandLineOptions.streamSysSensors);
-	}
-	if (g_commandLineOptions.streamDualIMU)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_DUAL_IMU, g_commandLineOptions.streamDualIMU);
-	}
-	if (g_commandLineOptions.streamDThetaVel)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU, g_commandLineOptions.streamDThetaVel);
-	}
-	if (g_commandLineOptions.streamGPS)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_GPS1_POS, g_commandLineOptions.streamGPS);
-	}
-    if (g_commandLineOptions.streamRtkPos)
-    {
-        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS, g_commandLineOptions.streamRtkPos);
-    }
-    if (g_commandLineOptions.streamRtkPosRel)
-    {
-        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS_REL, g_commandLineOptions.streamRtkPosRel);
-    }
-	if (g_commandLineOptions.streamRtkCmpRel)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_GPS2_RTK_CMP_REL, g_commandLineOptions.streamRtkCmpRel);
-	}
-    if (g_commandLineOptions.streamMag1)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_1, g_commandLineOptions.streamMag1);
-	}
-	if (g_commandLineOptions.streamMag2)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER_2, g_commandLineOptions.streamMag2);
-	}
-	if (g_commandLineOptions.streamBaro)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, g_commandLineOptions.streamBaro);
-	}
-	if (g_commandLineOptions.streamRTOS)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_RTOS_INFO, g_commandLineOptions.streamRTOS);
-        system_command_t cfg;
-        cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
-        cfg.invCommand = ~cfg.command;
-		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-	}
-	if (g_commandLineOptions.streamSensorsADC)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, g_commandLineOptions.streamSensorsADC);
-	}
-	if (g_commandLineOptions.streamWheelEncoder)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_WHEEL_ENCODER, g_commandLineOptions.streamWheelEncoder);
+	else while (g_commandLineOptions.datasets.size())
+	{	// Request datasets
+		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
+		switch (g_commandLineOptions.datasets.back().did)
+		{
+		case DID_RTOS_INFO:
+			system_command_t cfg;
+			cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+			cfg.invCommand = ~cfg.command;
+			inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+			break;
+		}
+		g_commandLineOptions.datasets.pop_back();
 	}
 	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
 	{
@@ -378,7 +327,7 @@ static int cltool_createHost()
 
 	inertialSenseInterface.StopBroadcasts();
 
-	while (!g_inertialSenseDisplay.ControlCWasPressed())
+	while (!g_inertialSenseDisplay.ExitProgram())
 	{
 		inertialSenseInterface.Update();
 		g_inertialSenseDisplay.Home();
@@ -441,7 +390,7 @@ static int inertialSenseMain()
 		serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
 		unsigned char line[512];
 		unsigned char* asciiData;
-		while (!g_inertialSenseDisplay.ControlCWasPressed())
+		while (!g_inertialSenseDisplay.ExitProgram())
 		{
 			int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
 			if (count > 0)
@@ -478,8 +427,16 @@ static int inertialSenseMain()
 			try
 			{
 				// Main loop. Could be in separate thread if desired.
-				while (!g_inertialSenseDisplay.ControlCWasPressed())
+				while (!g_inertialSenseDisplay.ExitProgram())
 				{
+					g_inertialSenseDisplay.GetKeyboardInput();
+
+					if (g_inertialSenseDisplay.UploadNeeded())
+					{
+						cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
+						inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
+					}
+
 					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
 					{

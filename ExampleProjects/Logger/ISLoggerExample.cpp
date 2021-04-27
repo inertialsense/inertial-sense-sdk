@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 
 	std::cout << "Started logger..." << std::endl;
 
-	while (!display.ControlCWasPressed())
+	while (!display.ExitProgram())
 	{
 		inertialSense.Update();
 	}

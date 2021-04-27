@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 void init_wheel_encoder(void)
 {
 #ifdef CONF_BOARD_QUAD_ENCODER
-    if(g_flashCfg->bits&EVB_CFG_BITS_ENABLE_WHEEL_ENCODER)
+    if(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_ENABLE_ENCODER)
     {   
 		quadEncInit(4);		// Sensing range: ~27ms
 		quadEncSetDirectionReverse(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT, g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT);
@@ -33,7 +33,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 {
 #ifdef CONF_BOARD_QUAD_ENCODER           // Encoder Rx   =======================================================
 
-    if(!(g_flashCfg->bits&EVB_CFG_BITS_ENABLE_WHEEL_ENCODER))
+    if(!(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_ENABLE_ENCODER))
     {   // Wheel encoders disabled
         return;
     }
@@ -47,7 +47,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 
 	++encoderSendTimeMs;
 	if(encoderSendTimeMs >= g_flashCfg->wheelStepPeriodMs)
-	{	// Send data at 50Hz
+	{  
 		encoderSendTimeMs = 0;
 		
 		// Call read encoders

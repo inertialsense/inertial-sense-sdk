@@ -95,14 +95,14 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& 
 		}
 		if (columnHeader == "_ID_")
 		{
-			columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeInt64, "_ID_" });
+			columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeInt64, (eDataFlags)0, "_ID_" });
 		}
 		else
 		{
 			map_name_to_info_t::const_iterator offset = offsetMap->find(columnHeader);
 			if (offset == offsetMap->end())
 			{
-				columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeBinary, columnHeader });
+				columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeBinary, (eDataFlags)0, columnHeader });
 			}
 			else
 			{
