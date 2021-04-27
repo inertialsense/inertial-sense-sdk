@@ -16,7 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 cmd_options_t g_commandLineOptions;
 serial_port_t g_serialPort;
-cInertialSenseDisplay g_inertialSenseDisplay;
+cInertialSenseDisplay g_inertialSenseDisplay(true);
 
 int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
 {

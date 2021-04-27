@@ -61,7 +61,7 @@ public:
 		DMODE_QUIET,
 	};
 
-	cInertialSenseDisplay();
+	cInertialSenseDisplay(bool nonblockingkeyboard=false);
 	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
@@ -127,6 +127,7 @@ private:
 	string VectortoString();
 	void DataToVector(const p_data_t* data);
 
+	bool m_nonblockingkeyboard;
 	vector<string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;

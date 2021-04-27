@@ -83,7 +83,7 @@ static void signalFunction(int sig)
 #endif
 
 
-cInertialSenseDisplay::cInertialSenseDisplay()
+cInertialSenseDisplay::cInertialSenseDisplay(bool nonblockingkeyboard)
 {
 	cout << endl << Hello() << endl;
 
@@ -101,7 +101,11 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 
 	signal(SIGINT, signalFunction);
 
-    // SetKeyboardNonBlock();
+	m_nonblockingkeyboard = nonblockingkeyboard;
+	if (m_nonblockingkeyboard)
+	{
+	    SetKeyboardNonBlock();
+	}
 
 #endif
 
@@ -112,8 +116,10 @@ cInertialSenseDisplay::~cInertialSenseDisplay()
 
 #if !PLATFORM_IS_WINDOWS
 
-	// Revert terminal changes from KeyboardNonBlock();
-	ResetTerminalMode();
+	if (m_nonblockingkeyboard)
+	{	// Revert terminal changes from KeyboardNonBlock();
+		ResetTerminalMode();
+	}
 
 #endif
 
