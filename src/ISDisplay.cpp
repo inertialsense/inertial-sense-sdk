@@ -101,7 +101,7 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 
 	signal(SIGINT, signalFunction);
 
-    SetKeyboardNonBlock();
+    // SetKeyboardNonBlock();
 
 #endif
 
