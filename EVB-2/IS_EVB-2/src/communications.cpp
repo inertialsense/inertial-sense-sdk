@@ -524,6 +524,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 	if (g_flashCfg->wheelCfgBits != newCfg.wheelCfgBits)
 	{
 		reinitWheelEncoder = true;
+		initIOconfig = true;
 	}
     
     // Copy data from message to working location

@@ -171,12 +171,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 	// depending on command line options. stream various data sets
 	if (g_commandLineOptions.datasetEdit.did)
-	{
+	{	// Dataset to edit
 		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasetEdit.did);
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasetEdit.did, g_commandLineOptions.datasetEdit.periodMultiple);
 	}
 	else while (g_commandLineOptions.datasets.size())
-	{	// Request datasets
+	{	// Datasets to stream
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
 		switch (g_commandLineOptions.datasets.back().did)
 		{
@@ -345,6 +345,7 @@ static int inertialSenseMain()
 {	
 	// clear display
 	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
+	g_inertialSenseDisplay.SetKeyboardNonBlock();
 	g_inertialSenseDisplay.Clear();
 
 	// if replay data log specified on command line, do that now and return

@@ -101,8 +101,6 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 
 	signal(SIGINT, signalFunction);
 
-    SetKeyboardNonBlock();
-
 #endif
 
 }
@@ -112,8 +110,10 @@ cInertialSenseDisplay::~cInertialSenseDisplay()
 
 #if !PLATFORM_IS_WINDOWS
 
-	// Revert terminal changes from KeyboardNonBlock();
-	ResetTerminalMode();
+	if (m_nonblockingkeyboard)
+	{	// Revert terminal changes from KeyboardNonBlock();
+		ResetTerminalMode();
+	}
 
 #endif
 
@@ -242,6 +242,7 @@ string cInertialSenseDisplay::Goodbye()
 
 void cInertialSenseDisplay::SetKeyboardNonBlock()
 {
+	m_nonblockingkeyboard = true;
 
 #if !PLATFORM_IS_WINDOWS
 
