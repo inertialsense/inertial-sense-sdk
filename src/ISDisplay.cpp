@@ -251,7 +251,7 @@ void cInertialSenseDisplay::SetKeyboardNonBlock()
     new_settings = orig_termios_;
     new_settings.c_lflag &= ~ICANON;
     new_settings.c_lflag &= ~ECHO;
-    new_settings.c_lflag &= ~ISIG;
+    // new_settings.c_lflag &= ~ISIG;	// disable ctrl-c signal
     new_settings.c_cc[VMIN] = 0;
     new_settings.c_cc[VTIME] = 0;
     tcsetattr(0, TCSANOW, &new_settings);
