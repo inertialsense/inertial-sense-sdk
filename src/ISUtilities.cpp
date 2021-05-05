@@ -202,7 +202,7 @@ extern "C" {
 
 #endif
 
-int current_timeSec()
+unsigned int current_timeSec()
 {
 
 #if PLATFORM_IS_WINDOWS
@@ -222,7 +222,7 @@ int current_timeSec()
 }
 
 /** System time in milliseconds */
-int current_timeMs()
+unsigned int current_timeMs()
 {
 
 #if PLATFORM_IS_WINDOWS

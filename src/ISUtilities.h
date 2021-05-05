@@ -140,8 +140,8 @@ void usleep(__int64 usec);
 
 #endif
 
-int current_timeSec();
-int current_timeMs();
+unsigned int current_timeSec();
+unsigned int current_timeMs();
 uint64_t current_timeUs();
 
 uint64_t timerUsStart();
