@@ -427,8 +427,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 	}
 
 
-	static int timeSinceRefreshMs = 0;
-	static int timeSinceClearMs = 0;
+	static unsigned int timeSinceRefreshMs = 0;
+	static unsigned int timeSinceClearMs = 0;
 	static char idHist[DID_COUNT] = { 0 };
 	if (m_displayMode != DMODE_SCROLL)
 	{
@@ -443,6 +443,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 
 	// Display Data
+#define REFRESH_PERIOD_MS	100		// 10Hz 
 	switch (m_displayMode)
 	{
 	default:
@@ -453,9 +454,11 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		// Data stays at fixed location (no scroll history)
 		DataToVector(data);
 
-		// Limit printData display updates to 20Hz (50 ms)
-		if (curTimeMs - timeSinceRefreshMs > 50 || curTimeMs < timeSinceRefreshMs)
+		// Limit printData display updates
+		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
 		{
+			timeSinceRefreshMs = curTimeMs;
+
 			Home();
 			if (enableReplay)
 				cout << Replay(replaySpeedX) << endl;
@@ -463,15 +466,15 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 				cout << Connected() << endl;
 
 			cout << VectortoString();
-
-			timeSinceRefreshMs = curTimeMs;
 		}
 		break;
 
 	case DMODE_EDIT:
-		// Limit printData display updates to 20Hz (50 ms)
-		if (curTimeMs - timeSinceRefreshMs > 50 || curTimeMs < timeSinceRefreshMs)
+		// Limit printData display updates
+		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
 		{
+			timeSinceRefreshMs = curTimeMs;
+
 			Home();
 			if (enableReplay)
 				cout << Replay(replaySpeedX) << endl;
@@ -480,20 +483,18 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 			// Generic column format
 			cout << DatasetToString(data);
-
-			timeSinceRefreshMs = curTimeMs;
 		}
 		break;
 
 	case DMODE_STATS:
-		// Limit printData display updates to 20Hz (50 ms)
-		if (curTimeMs - timeSinceRefreshMs > 50 || curTimeMs < timeSinceRefreshMs)
+		// Limit printData display updates
+		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
 		{
+			timeSinceRefreshMs = curTimeMs;
+
 			Home();
 			cout << Connected() << endl;
 			DataToStats(data);
-
-			timeSinceRefreshMs = curTimeMs;
 		}
 		break;
 
