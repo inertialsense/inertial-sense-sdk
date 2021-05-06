@@ -46,7 +46,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define PRINTV3_LLA_MSL	"%13.7f,%13.7f,%7.1f MSL\n"
 #define BUF_SIZE 8192
 
-#define DATASET_VIEW_NUM_ROWS 25
+#define DATASET_VIEW_NUM_ROWS 5
 
 #define DISPLAY_DELTA_TIME	0	// show delta time instead of time
 
@@ -1620,14 +1620,14 @@ void cInertialSenseDisplay::SelectEditDataset(int did)
 
 	// Set m_editData.mapInfoBegin to end or DATASET_VIEW_NUM_ROWSth element, whichever is smaller.
 	int i=0;
-	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
+	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); )
 	{
-		if (i++>DATASET_VIEW_NUM_ROWS)
+		if (++i>DATASET_VIEW_NUM_ROWS)
 		{
 			break;
 		}
 
-		m_editData.mapInfoEnd = it;
+		m_editData.mapInfoEnd = ++it;
 	}
 
 	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
@@ -1646,7 +1646,7 @@ void cInertialSenseDisplay::VarSelectIncrement()
 	{
 		m_editData.mapInfoSelection++;
 	}
-	else if (m_editData.mapInfoEnd != --(m_editData.mapInfo->end()))
+	else if (m_editData.mapInfoEnd != m_editData.mapInfo->end())
 	{
 		m_editData.mapInfoBegin++;
 		m_editData.mapInfoEnd++;
