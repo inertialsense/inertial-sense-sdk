@@ -1726,7 +1726,7 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
 	ASSERT_SIZE(totalSize);
 }
 
-
+#if 0
 static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef rtk_debug_2_t MAP_TYPE;
@@ -1915,6 +1915,7 @@ static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
 
 	ASSERT_SIZE(totalSize);
 }
+#endif
 
 #endif // USE_IS_INTERNAL
 
@@ -2108,7 +2109,7 @@ cISDataMappings::cISDataMappings()
 //     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_CODE_RESIDUAL);
 //     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_PHASE_RESIDUAL);
 	PopulateRtkDebugMappings(m_lookupInfo);
-	PopulateRtkDebug2Mappings(m_lookupInfo);
+	// PopulateRtkDebug2Mappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
 	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_RAW_MAG);
 	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_MAG);

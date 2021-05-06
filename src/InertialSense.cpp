@@ -10,6 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "protocol_nmea.h"
 #include "InertialSense.h"
 
 using namespace std;
@@ -118,6 +119,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		{
 			nextGpsMessageTime = currentTime + 5;
 			*s->clientBytesToSend = gpsToNmeaGGA((gps_pos_t*)data->buf, s->clientBuffer, s->clientBufferSize);
+			// *s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, (gps_pos_t*)data->buf);
 		}
 	}
 }

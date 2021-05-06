@@ -3739,6 +3739,7 @@ Convert gps pos to nmea gga
 @param bufferLength number of chars available in buffer, should be at least 128
 @return number of chars written to buffer, not including the null terminator
 */
+// Use gps_to_nmea_gga() in protocol_nmea.cpp instead... 
 int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength);
 
 #ifndef RTKLIB_H

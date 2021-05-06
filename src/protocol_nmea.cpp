@@ -52,20 +52,20 @@ void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask)
 * return : gtime_t struct
 * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
 *-----------------------------------------------------------------------------*/
-gtime_t epoch2time(const double *ep)
+gtime_t epochToTime(const double *ep)
 {
-	const int doy[]={1,32,60,91,121,152,182,213,244,274,305,335};
-	gtime_t time={0};
-	int days,sec,year=(int)ep[0],mon=(int)ep[1],day=(int)ep[2];
-	
-	if (year<1970||2099<year||mon<1||12<mon) return time;
-	
-	/* leap year if year%4==0 in 1901-2099 */
-	days=(year-1970)*365+(year-1969)/4+doy[mon-1]+day-2+(year%4==0&&mon>=3?1:0);
-	sec=(int)floor(ep[5]);
-	time.time=(time_t)days*86400+(int)ep[3]*3600+(int)ep[4]*60+sec;
-	time.sec=ep[5]-sec;
-	return time;
+    const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
+    gtime_t time = { 0 };
+    int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
+
+    if (year < 1970 || 2099 < year || mon < 1 || 12 < mon) return time;
+
+    /* leap year if year%4==0 in 1901-2099 */
+    days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
+    sec = (int)floor(ep[5]);
+    time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
+    time.sec = ep[5] - sec;
+    return time;
 }
 
 static const double gpst0[]={1980,1, 6,0,0,0}; /* gps time reference */
@@ -76,9 +76,9 @@ static const double gpst0[]={1980,1, 6,0,0,0}; /* gps time reference */
 *          int    *week     IO  week number in gps time (NULL: no output)
 * return : time of week in gps time (s)
 *-----------------------------------------------------------------------------*/
-double time2gpst(gtime_t t, int *week)
+double timeToGpst(gtime_t t, int *week)
 {
-	gtime_t t0=epoch2time(gpst0);
+	gtime_t t0=epochToTime(gpst0);
 	time_t sec=t.time-t0.time;
 	time_t w=(time_t)(sec/(86400*7));
 	
@@ -831,9 +831,9 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double subSec = UTCtime - (int)UTCtime;
 	datetime[5] = (double)((int)UTCtime % 100) + subSec + gpsPos->leapS;
 			
-	gtime_t gtm = epoch2time(datetime);
+	gtime_t gtm = epochToTime(datetime);
 	int week;
-	double iTOWd = time2gpst(gtm, &week);
+	double iTOWd = timeToGpst(gtm, &week);
 	uint32_t iTOW = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 		
 	//Latitude
@@ -955,9 +955,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double subSec = UTCtime - (int)UTCtime;
 	datetime[5] = (double)((int)UTCtime % 100) + subSec + gpsPos->leapS;
 			
-	gtime_t gtm = epoch2time(datetime);
+	gtime_t gtm = epochToTime(datetime);
 	int week;
-	double iTOWd = time2gpst(gtm, &week);
+	double iTOWd = timeToGpst(gtm, &week);
 	uint32_t iTOW = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 			
 	//Latitude
@@ -1082,8 +1082,8 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 	double subSec = UTCtime - (int)UTCtime;
 	datetime[5] = (double)((int)UTCtime % 100) + subSec;
 			
-	gtime_t gtm = epoch2time(datetime);
-	double iTOWd = time2gpst(gtm, 0);
+	gtime_t gtm = epochToTime(datetime);
+	double iTOWd = timeToGpst(gtm, 0);
 	gpsVel->timeOfWeekMs = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 			
 	//Speed data in NED
