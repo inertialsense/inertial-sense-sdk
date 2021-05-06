@@ -1582,6 +1582,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	else switch (c)
 	{
 	case 8:		// Backspace
+	case 127:	// Delete
 		m_editData.field.pop_back();
 		break;
 	case 10:
