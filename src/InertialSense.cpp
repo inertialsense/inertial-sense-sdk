@@ -119,7 +119,8 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		{
 			nextGpsMessageTime = currentTime + 5;
 			// *s->clientBytesToSend = gpsToNmeaGGA((gps_pos_t*)data->buf, s->clientBuffer, s->clientBufferSize);
-			*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, (gps_pos_t*)data->buf);
+			gps_pos_t &gps = *((gps_pos_t*)data->buf);
+			*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 		}
 	}
 }

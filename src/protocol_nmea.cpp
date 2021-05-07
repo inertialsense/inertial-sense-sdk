@@ -719,12 +719,13 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 // Parse NMEA Functions
 //////////////////////////////////////////////////////////////////////////
 
+// Returns RMC options
 uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[NUM_COM_PORTS], uint32_t *asciiPeriodPPIMU)
 {
 	(void)msgSize;
 	if(pHandle >= NUM_COM_PORTS)
 	{
-		return -1;
+		return 0;
 	}
 	char *ptr = (char *)msg;
 	
@@ -733,34 +734,34 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 	uint32_t options = 0;
 	
 	ptr = ASCII_find_next_field(ptr);			// Options
-	if(*ptr!=','){ options = atoi(ptr);		}		
+	if(*ptr!=','){ options = (uint16_t)atoi(ptr); }		
 	ptr = ASCII_find_next_field(ptr);			// PIMU
-	if(*ptr!=','){ tmp.pimu = atoi(ptr);	}	
+	if(*ptr!=','){ tmp.pimu = (uint16_t)atoi(ptr); }	
 	ptr = ASCII_find_next_field(ptr);			// PPIMU
-	if(*ptr!=','){ tmp.ppimu = atoi(ptr);	}
+	if(*ptr!=','){ tmp.ppimu = (uint16_t)atoi(ptr); }
 
 	if (asciiPeriodPPIMU) { *asciiPeriodPPIMU = (uint32_t)_MAX(tmp.pimu, tmp.ppimu); }	// Global ascii IMU broadcast period
 
 	ptr = ASCII_find_next_field(ptr);			// PINS1
-	if(*ptr!=','){ tmp.pins1 = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pins1 = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PINS2
-	if(*ptr!=','){ tmp.pins2 = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pins2 = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PGPSP
-	if(*ptr!=','){ tmp.pgpsp = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pgpsp = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// reserved
 	
 	ptr = ASCII_find_next_field(ptr);			// gpgga
-	if(*ptr!=','){ tmp.gpgga = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpgga = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgll
-	if(*ptr!=','){ tmp.gpgll = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpgll = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgsa
-	if(*ptr!=','){ tmp.gpgsa = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpgsa = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gprmc
-	if(*ptr!=','){ tmp.gprmc = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gprmc = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpzda
-	if(*ptr!=','){ tmp.gpzda = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpzda = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// pashr
-	if(*ptr!=','){ tmp.pashr = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pashr = (uint16_t)atoi(ptr);	}
 
 		
 	// Copy tmp to corresponding port(s)
@@ -1171,19 +1172,19 @@ int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSV
 		for(int i=0;i<countSat;++i)
 		{
 			//svid
-			int svid = atoi(ptr);
+			uint8_t svid = (uint8_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//elv
-			int elv = atoi(ptr);
+			uint8_t elv = (uint8_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//az
-			int az = atoi(ptr);
+			uint16_t az = (uint16_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//cno
-			int cno = atoi(ptr);
+			uint8_t cno = (uint8_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//Save data (only if there is room available)
