@@ -1,8 +1,8 @@
 .PHONY: clean All
 
 All:
-	@echo "----------Building project:[ CLTool - Debug ]----------"
-	@$(MAKE) -f  "CLTool.mk"
+	@echo "----------Building project:[ cltool - Debug ]----------"
+	@$(MAKE) -f  "cltool.mk"
 clean:
-	@echo "----------Cleaning project:[ CLTool - Debug ]----------"
+	@echo "----------Cleaning project:[ cltool - Debug ]----------"
 	@$(MAKE) -f  "CLTool.mk" clean

@@ -1360,7 +1360,7 @@ if __name__ == '__main__':
     file = open(home + "/Documents/Inertial_Sense/config.yaml", 'r')
     config = yaml.load(file)
     directory = config["directory"]
-    directory = "/home/superjax/Code/IS-src/cpp/SDK/CLTool/build/IS_logs"
+    directory = "/home/superjax/Code/IS-src/cpp/SDK/cltool/build/IS_logs"
     directory = r"C:\Users\quaternion\Downloads\20181218_Compass_Drive\20181218 Compass Drive\20181218_101023"
     serials = config['serials']
 
