@@ -121,6 +121,9 @@
     <ClCompile Include="..\..\..\src\ISLogFile.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\protocol_nmea.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h">
@@ -229,6 +232,9 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISLogFileFactory.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\protocol_nmea.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
   </ItemGroup>
