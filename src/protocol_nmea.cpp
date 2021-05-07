@@ -721,6 +721,7 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 
 uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[NUM_COM_PORTS], uint32_t *asciiPeriodPPIMU)
 {
+	(void)msgSize;
 	if(pHandle >= NUM_COM_PORTS)
 	{
 		return -1;
@@ -788,6 +789,7 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 */
 int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, double &year)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxZDA,time,day,month,year,ltzh,ltzn*cs<CR><LF>
 			
@@ -818,6 +820,7 @@ int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, do
 */
 int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGNS,time,lat,NS,lon,EW,posMode,numSV,HDOP,alt,sep,diffAge,diffStation,navStatus*cs<CR><LF>
 
@@ -942,6 +945,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 */	
 int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGGA,time,lat,NS,lon,EW,quality,numSV,HDOP,alt,altUnit,sep,sepUnit,diffAge,diffStation*cs<CR><LF>
 			
@@ -1058,6 +1062,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 */
 int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], int *satsUsed, int navMode)
 {
+	(void)msgSize;
+	(void)navMode;
+	(void)satsUsed;
 	char *ptr = (char *)&msg[7];
 	//$xxRMC,time,status,lat,NS,lon,EW,spd,cog,date,mv,mvEW,posMode,navStatus*cs<CR><LF>
 
@@ -1103,6 +1110,7 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 */
 int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMode)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGSA,opMode,navMode{,svid},PDOP,HDOP,VDOP,systemId*cs<CR><LF>
 
@@ -1130,6 +1138,7 @@ int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMod
 */
 int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSVmsg[2], int *satCount, uint32_t *cnoSum, uint32_t *cnoCount)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGSV,numMsg,msgNum,numSV{,svid,elv,az,cno},signalId*cs<CR><LF>
 		
