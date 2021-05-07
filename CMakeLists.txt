@@ -47,6 +47,7 @@ add_library(InertialSense
   src/ISTcpClient.cpp
   src/ISTcpServer.cpp
   src/ISUtilities.cpp
+	src/protocol_nmea.cpp
   src/linked_list.c
   src/ring_buffer.c
   src/serialPort.c
