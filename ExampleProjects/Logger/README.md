@@ -1,12 +1,12 @@
 # SDK: Data Logging Example Project
 
-This [ISLoggerExample](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/LogReader) project demonstrates data logging with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISLoggerExample](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Logger) project demonstrates data logging with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISLoggerExample.cpp](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/LogReader/ISLogReaderExample.cpp)
+* [ISLoggerExample.cpp](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Logger/ISLoggerExample.cpp)
 
 #### SDK Files
 
