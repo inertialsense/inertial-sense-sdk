@@ -5,4 +5,4 @@ All:
 	@$(MAKE) -f  "cltool.mk"
 clean:
 	@echo "----------Cleaning project:[ cltool - Debug ]----------"
-	@$(MAKE) -f  "CLTool.mk" clean
+	@$(MAKE) -f  "cltool.mk" clean
