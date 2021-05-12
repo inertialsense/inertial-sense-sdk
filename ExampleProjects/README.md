@@ -8,7 +8,7 @@ The following example projects are provide with the SDK to demonstrate various c
 * [Binary Communications](Communications/README) - How to communicate using InertialSense binary protocol using SDK. 
 * [Bootloader](bootloader/README) - How to update firmware on the InertialSense products using SDK.
 * [Logger ](Logger/README) - How to data log using using SDK.
-* [CLTool](..CLTool/README) - A multipurpose command line tool capable most common functionalities, including those of all example projects.
+* [CLTool](..cltool/README) - A multipurpose command line tool capable most common functionalities, including those of all example projects.
 
 ## Compile & Run (Linux/Mac)
 

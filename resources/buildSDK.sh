@@ -15,7 +15,7 @@ BIN_DIR="bin/Linux"
 RES_DIR="../../resources"
 
 cd ..
-cd InertialSenseCLTool/
+cd cltool/
 
 rm -rf build
 mkdir build

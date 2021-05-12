@@ -86,7 +86,7 @@ $ ./bin/ISLoggerExample /dev/ttyUSB0
 ```
 ## Compile & Run (Windows MS Visual Studio)
 
-1. Open Visual Studio solution file (InertialSenseSDK\ExampleProjects\Logger\VS_project\InertialSenseCLTool.sln)
+1. Open Visual Studio solution file (InertialSenseSDK\ExampleProjects\Logger\VS_project\ISLoggerExample.sln)
 2. Build (F7)
 3. Run executable
 ``` bash

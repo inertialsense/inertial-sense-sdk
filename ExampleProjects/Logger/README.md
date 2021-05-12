@@ -1,12 +1,12 @@
-# SDK: Data Logging Example Project
+# SDK: Data Log Reader Example Project
 
-This [ISLoggerExample](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Logger) project demonstrates data logging with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISLogReaderExample](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/LogReader) project demonstrates data logging with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISLoggerExample.cpp](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Logger/ISLoggerExample.cpp)
+* [ISLogReaderExample.cpp](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/LogReader/ISLogReaderExample.cpp)
 
 #### SDK Files
 
@@ -86,7 +86,7 @@ $ ./bin/ISLoggerExample /dev/ttyUSB0
 ```
 ## Compile & Run (Windows MS Visual Studio)
 
-1. Open Visual Studio solution file (InertialSenseSDK\ExampleProjects\Logger\VS_project\InertialSenseCLTool.sln)
+1. Open Visual Studio solution file (InertialSenseSDK\ExampleProjects\Logger\VS_project\ISLoggerExample.sln)
 2. Build (F7)
 3. Run executable
 ``` bash

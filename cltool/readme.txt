@@ -6,7 +6,7 @@ Linux Instructions
 
 1. Create build directory...
 
-   $ cd InertialSenseCLTool
+   $ cd cltool
    $ mkdir build
 
 2. Run cmake from within build directory.
@@ -45,7 +45,7 @@ Linux Instructions
 ======================================
 Windows Instructions (MS Visual Studio)
 
-1. Open Visual Studio solution file (VS_project/InertialSenseCLTool.sln).
+1. Open Visual Studio solution file (VS_project/cltool.sln).
 
 2. Build and run (F5).
 

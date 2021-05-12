@@ -8,7 +8,7 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
 
 **EvalTool executable** - Graphical Windows-based desktop program that allows you to explore and test functionality of the Inertial Sense products in real-time.  It has scrolling plots, 3D model representation, table views of all data, data logger, and firmware updating interface for the uINS, uAHRS, or uIMU. The EvalTool can simultaneously interface with multiple Inertial Sense devices.
 
-**CLTool** - Command line utility that can be used to communicate, log data, and update firmware for Inertial Sense products.  Additionally, InertialSenseCLTool serves as example source code to demonstrate how to integrate the Inertial Sense SDK into your own source code.  The InertialSenseCLTool can be compiled in Linux and Windows. 
+**CLTool** - Command line utility that can be used to communicate, log data, and update firmware for Inertial Sense products.  Additionally, cltool serves as example source code to demonstrate how to integrate the Inertial Sense SDK into your own source code.  The cltool can be compiled in Linux and Windows. 
 
 **EVB-2** - Multi-purpose hardware evaluation and development kit for the uINS.  The EVB-2 includes the uINS-G2 with Dual GNSS, RTK heading / positioning, onboard logging to micro SD card, 915MHz XBee radio for RTK base corrections, WiFi and BLE interface, serial and SPI communications to uINS interface, and Microchip SAME70 processor as communications bridge and user project development environment.   
 
