@@ -782,6 +782,8 @@ static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLengt
     *buffer += written;
 }
 
+#if 0
+// Use gps_to_nmea_gga() in protocol_nmea.cpp instead... 
 int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength)
 {
     // NMEA GGA line - http://www.gpsinformation.org/dale/nmea.htm#GGA
@@ -884,6 +886,7 @@ int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength)
     buffer += written;
     return (int)(buffer - bufferStart);
 }
+#endif
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/
 int ubxSys(int gnssID)

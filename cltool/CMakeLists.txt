@@ -50,6 +50,7 @@ add_executable(cltool
 	../src/ISTcpServer.cpp
 	../src/ISUtilities.cpp
 	../src/linked_list.c
+	../src/protocol_nmea.cpp
 	../src/serialPort.c
 	../src/serialPortPlatform.c
 	../src/time_conversion.c

@@ -192,6 +192,7 @@
     <ClCompile Include="..\..\src\ISTcpServer.cpp" />
     <ClCompile Include="..\..\src\ISUtilities.cpp" />
     <ClCompile Include="..\..\src\linked_list.c" />
+    <ClCompile Include="..\..\src\protocol_nmea.cpp" />
     <ClCompile Include="..\..\src\ring_buffer.c" />
     <ClCompile Include="..\..\src\serialPort.c" />
     <ClCompile Include="..\..\src\serialPortPlatform.c" />

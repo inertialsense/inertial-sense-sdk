@@ -10,6 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "protocol_nmea.h"
 #include "InertialSense.h"
 
 using namespace std;
@@ -117,7 +118,9 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		if (currentTime > nextGpsMessageTime)
 		{
 			nextGpsMessageTime = currentTime + 5;
-			*s->clientBytesToSend = gpsToNmeaGGA((gps_pos_t*)data->buf, s->clientBuffer, s->clientBufferSize);
+			// *s->clientBytesToSend = gpsToNmeaGGA((gps_pos_t*)data->buf, s->clientBuffer, s->clientBufferSize);
+			gps_pos_t &gps = *((gps_pos_t*)data->buf);
+			*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 		}
 	}
 }
@@ -763,7 +766,7 @@ bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)
 	{
 		// sleep in between to allow test bed to send the serial data
 		// TODO: This was 10ms, but that was to long for the CI test.
-// 		SLEEP_MS(1);	// This is commented out because it causes problems when using testbad with CLTool on single board computer.
+// 		SLEEP_MS(1);	// This is commented out because it causes problems when using testbad with cltool on single board computer.
 		serialPortWrite(&m_comManagerState.devices[i].serialPort, data, dataLength);
 	}
 	return false; // do not parse, since we are just forwarding it on

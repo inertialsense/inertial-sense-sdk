@@ -47,6 +47,7 @@ add_library(InertialSense
   src/ISTcpClient.cpp
   src/ISTcpServer.cpp
   src/ISUtilities.cpp
+  src/protocol_nmea.cpp
   src/linked_list.c
   src/ring_buffer.c
   src/serialPort.c
@@ -64,6 +65,6 @@ target_compile_options(InertialSense PUBLIC -fPIC)
 
 add_library( InertialSense::libinertialsense ALIAS InertialSense )
 
-add_subdirectory(CLTool)
+add_subdirectory(cltool)
 add_subdirectory(ExampleProjects)
 
