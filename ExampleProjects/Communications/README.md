@@ -1,23 +1,23 @@
 # SDK: Binary Communications Example Project
 
-This [ISCommunicationsExample](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Communications) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISCommunicationsExample.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/Communications/ISCommunicationsExample.c)
+* [ISCommunicationsExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications/ISCommunicationsExample.c)
 
 #### SDK Files
 
-* [data_sets.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/data_sets.c)
-* [data_sets.h](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/data_sets.h)
-* [ISComm.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/ISComm.c)
-* [ISComm.h](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/ISComm.h)
-* [serialPort.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/serialPort.c)
-* [serialPort.h](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/serialPort.h)
-* [serialPortPlatform.c](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/serialPortPlatform.c)
-* [serialPortPlatform.h](https://github.com/inertialsense/InertialSenseSDK/tree/master/src/serialPortPlatform.h)
+* [data_sets.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/data_sets.c)
+* [data_sets.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/data_sets.h)
+* [ISComm.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/ISComm.c)
+* [ISComm.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/ISComm.h)
+* [serialPort.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPort.c)
+* [serialPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPort.h)
+* [serialPortPlatform.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.c)
+* [serialPortPlatform.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.h)
 
 
 ## Implementation
@@ -162,7 +162,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 
 1. Create build directory
 ``` bash
-$ cd InertialSenseSDK/ExampleProjects/Communications
+$ cd inertial-sense-sdk/ExampleProjects/Communications
 $ mkdir build
 ```
 2. Run cmake from within build directory
@@ -187,13 +187,13 @@ $ ./bin/ISCommunicationsExample /dev/ttyUSB0
 ```
 ## Compile & Run (Windows MS Visual Studio)
 
-1. Open Visual Studio solution file (InertialSenseSDK\ExampleProjects\Communications\VS_project\ISCommunicationsExample.sln)
+1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Communications\VS_project\ISCommunicationsExample.sln)
 2. Build (F7)
 3. Run executable
 ``` bash
-C:\InertialSenseSDK\ExampleProjects\Communications\VS_project\Release\ISCommunicationsExample.exe COM3
+C:\inertial-sense-sdk\ExampleProjects\Communications\VS_project\Release\ISCommunicationsExample.exe COM3
 ```
 
 ## Summary
 
-That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/InertialSenseSDK">InertialSenseSDK</a> GitHub repository, and we will be happy to help.
+That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/inertial-sense-sdk">inertial-sense-sdk</a> GitHub repository, and we will be happy to help.

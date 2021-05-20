@@ -1,16 +1,16 @@
 # SDK: Data Log Reader Example Project
 
-This [ISLogReaderExample](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/LogReader) project demonstrates data logging with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISLogReaderExample](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/LogReader) project demonstrates data logging with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISLogReaderExample.cpp](https://github.com/inertialsense/InertialSenseSDK/tree/master/ExampleProjects/LogReader/ISLogReaderExample.cpp)
+* [ISLogReaderExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/LogReader/ISLogReaderExample.cpp)
 
 #### SDK Files
 
-* [SDK](https://github.com/inertialsense/InertialSenseSDK/tree/master/src)
+* [SDK](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src)
 
 
 ## Implementation
@@ -61,7 +61,7 @@ build/IS_logs/LOG_SN30664_20180323_112822_0001.dat
 
 1. Create build directory
 ``` bash
-$ cd InertialSenseSDK/ExampleProjects/Logger
+$ cd inertial-sense-sdk/ExampleProjects/Logger
 $ mkdir build
 ```
 2. Run cmake from within build directory
@@ -86,13 +86,13 @@ $ ./bin/ISLoggerExample /dev/ttyUSB0
 ```
 ## Compile & Run (Windows MS Visual Studio)
 
-1. Open Visual Studio solution file (InertialSenseSDK\ExampleProjects\Logger\VS_project\InertialSenseCLTool.sln)
+1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Logger\VS_project\ISLoggerExample.sln)
 2. Build (F7)
 3. Run executable
 ``` bash
-C:\InertialSenseSDK\ExampleProjects\Logger\VS_project\Release\ISLoggerExample.exe COM3
+C:\inertial-sense-sdk\ExampleProjects\Logger\VS_project\Release\ISLoggerExample.exe COM3
 ```
 
 ## Summary
 
-That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/InertialSenseSDK">InertialSenseSDK</a> GitHub repository, and we will be happy to help.
+That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/inertial-sense-sdk">inertial-sense-sdk</a> GitHub repository, and we will be happy to help.
