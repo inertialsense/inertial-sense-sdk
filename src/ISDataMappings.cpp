@@ -172,7 +172,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 #if defined(USE_LUNA_DATA_SETS)
 
 	sizeMap[DID_EVB_LUNA_FLASH_CFG] = sizeof(evb_luna_flash_cfg_t);
-	sizeMap[DID_COYOTE_STATUS] = sizeof(evb_luna_status_t);
+	sizeMap[DID_EVB_LUNA_STATUS] = sizeof(evb_luna_status_t);
 	sizeMap[DID_EVB_LUNA_SENSORS] = sizeof(evb_luna_sensors_t);
 	sizeMap[DID_EVB_LUNA_REMOTE_KILL] = sizeof(evb_luna_remote_kill_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_wheel_controller_t);
@@ -937,7 +937,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
 static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_luna_status_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_COYOTE_STATUS];
+	map_name_to_info_t& m = mappings[DID_EVB_LUNA_STATUS];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "evbLunaStatus", evbLunaStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
@@ -2033,7 +2033,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"UNUSED_108",                       // 108
 	"UNUSED_109",                       // 109
 	"DID_EVB_LUNA_FLASH_CFG",           // 110
-	"DID_COYOTE_STATUS",              // 111
+	"DID_EVB_LUNA_STATUS",              // 111
 	"DID_EVB_LUNA_SENSORS",             // 112
 	"DID_EVB_LUNA_REMOTE_KILL",         // 113
 	"DID_EVB_LUNA_WHEEL_CONTROLLER",    // 114
