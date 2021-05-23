@@ -471,7 +471,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 	case DMODE_EDIT:
 		// Limit printData display updates
-		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
+		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS &&
+			data->hdr.id == m_editData.did)
 		{
 			timeSinceRefreshMs = curTimeMs;
 
