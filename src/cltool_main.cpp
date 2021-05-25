@@ -223,20 +223,20 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
 
-	if (g_commandLineOptions.serverConnection.length() != 0)
+	if (g_commandLineOptions.roverConnection.length() != 0)
 	{
-		if (g_commandLineOptions.serverConnection.find("RTCM3:") == 0 ||
-			g_commandLineOptions.serverConnection.find("IS:") == 0 ||
-			g_commandLineOptions.serverConnection.find("UBLOX:") == 0)
+		if (g_commandLineOptions.roverConnection.find("RTCM3:") == 0 ||
+			g_commandLineOptions.roverConnection.find("IS:") == 0 ||
+			g_commandLineOptions.roverConnection.find("UBLOX:") == 0)
 		{
-			if (!inertialSenseInterface.OpenServerConnection(g_commandLineOptions.serverConnection))
+			if (!inertialSenseInterface.OpenServerConnection(g_commandLineOptions.roverConnection))
 			{
 				cout << "Failed to connect to server." << endl;
 			}
 		}
 		else
 		{
-			cout << "Invalid server connection, must prefix with RTCM3:, IS: or UBLOX:, " << g_commandLineOptions.serverConnection << endl;
+			cout << "Invalid server connection, must prefix with RTCM3:, IS: or UBLOX:, " << g_commandLineOptions.roverConnection << endl;
 			return false;
 		}
 	}
@@ -319,9 +319,9 @@ static int cltool_createHost()
 		cout << "Failed to update EVB flash config" << endl;
 		return -1;
 	}
-	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.host))
+	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.baseConnection))
 	{
-		cout << "Failed to create host at " << g_commandLineOptions.host << endl;
+		cout << "Failed to create host at " << g_commandLineOptions.baseConnection << endl;
 		return -1;
 	}
 
@@ -378,7 +378,7 @@ static int inertialSenseMain()
         return cltool_updateBootloader();
     }
     // if host was specified on the command line, create a tcp server
-	else if (g_commandLineOptions.host.length() != 0)
+	else if (g_commandLineOptions.baseConnection.length() != 0)
 	{
 		return cltool_createHost();
 	}

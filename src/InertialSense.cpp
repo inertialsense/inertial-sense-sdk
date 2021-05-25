@@ -112,15 +112,16 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	case DID_FLASH_CONFIG:		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;	break;
 	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
-		// every 5 seconds, put in a new gps position message
-		static time_t nextGpsMessageTime;
+		static time_t lastTime;
 		time_t currentTime = time(NULLPTR);
-		if (currentTime > nextGpsMessageTime)
-		{
-			nextGpsMessageTime = currentTime + 5;
-			// *s->clientBytesToSend = gpsToNmeaGGA((gps_pos_t*)data->buf, s->clientBuffer, s->clientBufferSize);
+		if (abs(currentTime - lastTime) > 5)
+		{	// Update every 5 seconds
+			lastTime = currentTime;
 			gps_pos_t &gps = *((gps_pos_t*)data->buf);
-			*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+			{
+				*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+			}
 		}
 	}
 }
@@ -330,14 +331,12 @@ bool InertialSense::SetLoggerEnabled(
 
 bool InertialSense::OpenServerConnection(const string& connectionString)
 {
-	bool opened = false;
-
 	CloseServerConnection();
 	vector<string> pieces;
 	splitString(connectionString, ":", pieces);
 	if (pieces.size() < 3)
 	{
-		return opened;
+		return false;
 	}
 
 	string type = pieces[0];
@@ -348,35 +347,38 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 	{
 		if (pieces.size() < 4)
 		{
-			return opened;
+			return false;
 		}
-		else if ((opened = (m_serialServer.Open(pieces[2].c_str(), atoi(pieces[3].c_str())))))
+		
+		if (m_serialServer.Open(pieces[2].c_str(), atoi(pieces[3].c_str())))
 		{
 			m_clientStream = &m_serialServer;
 		}
 	}
 	else
-	{	// TCP-IP / NTRIP
+	{	// TCP / NTRIP
+		if (m_tcpClient.Open(host, atoi(port.c_str()), 100) == -1)
+		{
+			return false;
+		}
+
 		string subUrl = (pieces.size() > 3 ? pieces[3] : "");
 		string username = (pieces.size() > 4 ? pieces[4] : "");
 		string password = (pieces.size() > 5 ? pieces[5] : "");
 		string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
 
-		opened = (m_tcpClient.Open(host, atoi(port.c_str()), 100) == 0);
 		if (subUrl.size() != 0)
-		{
+		{	// Connect NTRIP if specified - https://igs.bkg.bund.de/root_ftp/NTRIP/documentation/NtripDocumentation.pdf
 			m_tcpClient.HttpGet(subUrl, userAgent, username, password);
 		}
-	}
-	if (opened)
-	{
+
 		if (m_clientStream == NULLPTR)
 		{
 			m_clientStream = &m_tcpClient;
 		}
 	}
 
-	return opened;
+	return true;
 }
 
 void InertialSense::CloseServerConnection()
@@ -448,16 +450,7 @@ bool InertialSense::Update()
 // 			static int ubxRtcmCnt = 0;
 // 			printf("Rx data: %d\n", count);
 
-#if 0		// Read one byte (simple method)
-			uint8_t c;
-
-			// Read from serial buffer until empty
-			while (m_clientStream->Read(&c, 1))
-			{
-				if ((ptype = is_comm_parse_byte(comm, c)) != _PTYPE_NONE)
-				{
-
-#else		// Read a set of bytes (fast method)
+			// Read a set of bytes (fast method)
 
 			// Get available size of comm buffer
 			int n = is_comm_free(comm);
@@ -471,7 +464,6 @@ bool InertialSense::Update()
 				// Search comm buffer for valid packets
 				while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 				{
-#endif					
 					switch (ptype)
 					{
 					case _PTYPE_UBLOX:
@@ -504,15 +496,11 @@ bool InertialSense::Update()
 				}
 			}
 
-			// send data to client if available, i.e. nmea gga pos
-			if (m_clientServerByteCount > 0)
+			// Send data to client if available, i.e. nmea gga pos
+			if (m_clientBufferBytesToSend > 0)
 			{
-				int bytes = m_clientBufferBytesToSend;
-				if (bytes != 0)
-				{
-					m_clientStream->Write(m_clientBuffer, bytes);
-					m_clientBufferBytesToSend = 0;
-				}
+				m_clientStream->Write(m_clientBuffer, m_clientBufferBytesToSend);
+				m_clientBufferBytesToSend = 0;
 			}
 		}
 		

@@ -140,6 +140,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.asciiMessages = &a[15];
         }
+		else if (startsWith(a, "-base="))
+		{
+			g_commandLineOptions.baseConnection = &a[6];
+		}
         else if (startsWith(a, "-baud="))
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
@@ -200,10 +204,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.flashCfg = ".";
 		}
-		else if (startsWith(a, "-host="))
-		{
-			g_commandLineOptions.host = &a[6];
-		}
 		else if (startsWith(a, "-h") || startsWith(a, "--h") || startsWith(a, "-help") || startsWith(a, "--help"))
 		{
 			cltool_outputUsage();
@@ -256,16 +256,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.magRecal = true;
 			g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
 		}
-        else if (startsWith(a, "-survey="))
-        {
-            g_commandLineOptions.rmcPreset = 0;
-            g_commandLineOptions.surveyIn.state = strtol(a + 8, NULL, 10);
-            int maxDurationSec = strtol(a + 10, NULL, 10);
-            if (maxDurationSec > 5)
-            {
-                g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
-            }
-        }
 		else if (startsWith(a, "-presetPPD"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_BITS;
@@ -297,6 +287,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.softwareReset = true;
         }
+		else if (startsWith(a, "-rover="))
+		{
+			g_commandLineOptions.roverConnection = &a[7];
+
+			// DID_GPS1_POS must be enabled for NTRIP VRS to supply rover position.
+			stream_did_t dataset = {};
+			read_did_argument(&dataset, "DID_GPS1_POS");
+			g_commandLineOptions.datasets.push_back(dataset);
+		}
 		else if (startsWith(a, "-r"))
 		{
 			g_commandLineOptions.replayDataLog = true;
@@ -305,10 +304,16 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
-		else if (startsWith(a, "-svr=") || startsWith(a, "-srv="))
-		{
-			g_commandLineOptions.serverConnection = &a[5];
-		}
+        else if (startsWith(a, "-survey="))
+        {
+            g_commandLineOptions.rmcPreset = 0;
+            g_commandLineOptions.surveyIn.state = strtol(a + 8, NULL, 10);
+            int maxDurationSec = strtol(a + 10, NULL, 10);
+            if (maxDurationSec > 5)
+            {
+                g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
+            }
+        }
 		else if (startsWith(a, "-s"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
@@ -457,17 +462,16 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Client / Server)" << endl;
-	cout << "    -svr=" << boldOff << "INFO       Used to retrieve external data and send to the uINS. Examples:" << endl;
-	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
-	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:username:password" << endl;
-	cout << "        - NTRIP RTCM3:   -svr=RTCM3:192.168.1.100:7777:mountpoint:username:password" << endl;
-	cout << "                                                              (URL/mountpoint, user, password optional)" << endl;
-	cout << "        - UBLOX data:    -svr=UBLOX:192.168.1.100:7777        (no URL, user or password)" << endl;
-	cout << "        - InertialSense: -svr=IS:192.168.1.100:7777           (no URL, user or password)" << endlbOn;
-	cout << "    -host=" << boldOff << "IP:PORT   used to host a TCP/IP InertialSense server. Examples:" << endl;
-	cout << "                         -host=:7777                          (IP is optional)" << endl;
-	cout << "                         -host=192.168.1.43:7777" << endl;
+	cout << "OPTIONS (RTK Rover / Base)" << endl;
+	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
+	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
+	cout << "        - NTRIP:   -rover=RTCM3:192.168.1.100:7777:mountpoint:username:password" << endl;
+	cout << "        - TCP:     -rover=RTCM3:192.168.1.100:7777" << endl;
+	cout << "        - TCP:     -rover=UBLOX:192.168.1.100:7777" << endl;
+	cout << "        - SERIAL:  -rover=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
+	cout << "    -base=" << boldOff << "[IP]:[port]   As a Base (sever), send RTK corrections.  Examples:" << endl;
+	cout << "        - TCP:     -base=:7777                          (IP is optional)" << endl;
+	cout << "        - TCP:     -base=192.168.1.43:7777" << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }
