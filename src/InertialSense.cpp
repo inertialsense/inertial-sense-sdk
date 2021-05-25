@@ -104,7 +104,6 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		handlerGlobal(s->inertialSenseInterface, data, pHandle);
 	}
 
-	// if we got dev info, sysCmd or flash config, set it
 	switch (data->hdr.id)
 	{
 	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
@@ -333,7 +332,7 @@ bool InertialSense::OpenConnectionToServer(const string& connectionString)
 {
 	CloseServerConnection();
 
-	m_clientStream = cISClient::OpenConnectionToServer(connectionString);
+	m_clientStream = cISClient::OpenConnectionToServer(connectionString, &m_forwardGpgga);
 
 	return m_clientStream!=NULLPTR;
 }
@@ -379,87 +378,13 @@ size_t InertialSense::GetDeviceCount()
 
 bool InertialSense::Update()
 {
-	uint8_t buffer[PKT_BUF_SIZE];
 	if (m_tcpServer.IsOpen() && m_comManagerState.devices.size() != 0)
 	{
-		// as a tcp server, only the first serial port is read from
-		int count = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, buffer, sizeof(buffer), 0);
-		if (count > 0)
-		{
-			// forward data on to connected clients
-			m_clientServerByteCount += count;
-			if (m_tcpServer.Write(buffer, count) != count)
-			{
-				cout << endl << "Failed to write bytes to tcp server!" << endl;
-			}
-		}
-		m_tcpServer.Update();
+		UpdateServer();
 	}
 	else
 	{
-		if (m_clientStream != NULLPTR)
-		{
-			// Forward only valid uBlox and RTCM3 packets
-
-			is_comm_instance_t *comm = &(m_gpComm);
-			protocol_type_t ptype = _PTYPE_NONE;
-			static int error = 0;
-// 			static int ubxRtcmCnt = 0;
-// 			printf("Rx data: %d\n", count);
-
-			// Read a set of bytes (fast method)
-
-			// Get available size of comm buffer
-			int n = is_comm_free(comm);
-
-			// Read data directly into comm buffer
-			if ((n = m_clientStream->Read(comm->buf.tail, n)))
-			{
-				// Update comm buffer tail pointer
-				comm->buf.tail += n;
-
-				// Search comm buffer for valid packets
-				while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-				{
-					switch (ptype)
-					{
-					case _PTYPE_UBLOX:
-					case _PTYPE_RTCM3:
-// 						if (comm->externalDataIdentifier == EXTERNAL_DATA_ID_UBLOX)
-// 						{
-// 							printf("Receive uBlox: %d\n", ubxRtcmCnt++);
-// 						}
-// 						else
-// 						{
-// 							printf("Receive RTCM3: %d\n", ubxRtcmCnt++);
-// 						}
-						m_clientServerByteCount += comm->dataHdr.size;
-						OnPacketReceived(comm->dataPtr, comm->dataHdr.size);
-						break;
-
-					case _PTYPE_PARSE_ERROR:
-						printf("PARSE ERROR: %d\n", error++);
-						break;
-					case _PTYPE_INERTIAL_SENSE_DATA:
-// 							printf("Receive DID: %d\n", did);
-						break;
-					case _PTYPE_ASCII_NMEA:
-// 								printf("Receive ASCII\n");
-						break;
-
-					default:
-						break;
-					}
-				}
-			}
-
-			// Send data to client if available, i.e. nmea gga pos
-			if (m_clientBufferBytesToSend > 0)
-			{
-				m_clientStream->Write(m_clientBuffer, m_clientBufferBytesToSend);
-				m_clientBufferBytesToSend = 0;
-			}
-		}
+		UpdateClient();
 		
 		// [C COMM INSTRUCTION]  2.) Update Com Manager at regular interval to send and receive data.  
 		// Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
@@ -479,6 +404,86 @@ bool InertialSense::Update()
 			return false;
 		}
 	}
+
+	return true;
+}
+
+bool InertialSense::UpdateServer()
+{
+	uint8_t buffer[PKT_BUF_SIZE];
+
+	// as a tcp server, only the first serial port is read from
+	int count = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, buffer, sizeof(buffer), 0);
+	if (count > 0)
+	{
+		// forward data on to connected clients
+		m_clientServerByteCount += count;
+		if (m_tcpServer.Write(buffer, count) != count)
+		{
+			cout << endl << "Failed to write bytes to tcp server!" << endl;
+		}
+	}
+	m_tcpServer.Update();
+
+	return true;
+}
+
+bool InertialSense::UpdateClient()
+{
+	if (m_clientStream == NULLPTR)
+	{
+		return false;
+	}
+
+	// Forward only valid uBlox and RTCM3 packets
+	is_comm_instance_t *comm = &(m_gpComm);
+	protocol_type_t ptype = _PTYPE_NONE;
+	static int error = 0;
+
+	// Read a set of bytes (fast method)
+	// Get available size of comm buffer
+	int n = is_comm_free(comm);
+
+	// Read data directly into comm buffer
+	if ((n = m_clientStream->Read(comm->buf.tail, n)))
+	{
+		// Update comm buffer tail pointer
+		comm->buf.tail += n;
+
+		// Search comm buffer for valid packets
+		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+		{
+			switch (ptype)
+			{
+			case _PTYPE_UBLOX:
+			case _PTYPE_RTCM3:
+				m_clientServerByteCount += comm->dataHdr.size;
+				OnPacketReceived(comm->dataPtr, comm->dataHdr.size);
+				break;
+
+			case _PTYPE_PARSE_ERROR:
+				printf("PARSE ERROR: %d\n", error++);
+				break;
+
+			case _PTYPE_INERTIAL_SENSE_DATA:
+				break;
+
+			case _PTYPE_ASCII_NMEA:
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+
+	// Send data to client if available, i.e. nmea gga pos
+	if (m_clientBufferBytesToSend > 0 && m_forwardGpgga)
+	{
+		m_clientStream->Write(m_clientBuffer, m_clientBufferBytesToSend);
+	}
+	m_clientBufferBytesToSend = 0;
+
 
 	return true;
 }

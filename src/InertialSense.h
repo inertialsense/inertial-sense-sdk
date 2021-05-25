@@ -367,6 +367,7 @@ private:
 	cISTcpClient m_tcpClient;
 	char m_clientBuffer[512];
 	int m_clientBufferBytesToSend;
+	bool m_forwardGpgga;
 
 	cISTcpServer m_tcpServer;
 	cISSerialPort m_serialServer;
@@ -380,6 +381,8 @@ private:
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 
 	// returns false if logger failed to open
+	bool UpdateServer();
+	bool UpdateClient();
 	bool EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder);
 	void DisableLogging();
 	bool HasReceivedResponseFromDevice(size_t index);

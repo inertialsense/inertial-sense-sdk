@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // [TCP]:[RTCM3]:[ip/url]:[port]:[mountpoint]:[username]:[password]
 // [TCP]:[RTCM3]:[ip/url]:[port]
 // [SERIAL]:[RTCM3]:[serial port]:[baudrate]
-cISStream* cISClient::OpenConnectionToServer(const string& connectionString)
+cISStream* cISClient::OpenConnectionToServer(const string& connectionString, bool *enableGpggaForwarding)
 {
 	vector<string> pieces;
 	splitString(connectionString, ':', pieces);
@@ -63,6 +63,10 @@ cISStream* cISClient::OpenConnectionToServer(const string& connectionString)
 		{	// Connect NTRIP if specified - https://igs.bkg.bund.de/root_ftp/NTRIP/documentation/NtripDocumentation.pdf
 			string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
 			clientStream->HttpGet(subUrl, userAgent, username, password);
+			if (enableGpggaForwarding != NULL)
+			{
+				*enableGpggaForwarding = true;
+			}
 		}
 
 		return clientStream;

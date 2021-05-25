@@ -35,9 +35,10 @@ public:
 	*	[TCP]:[RTCM3]:[ip/url]:[port]:[mountpoint]:[username]:[password]
 	*	[TCP]:[RTCM3]:[ip/url]:[port]
 	*	[SERIAL]:[RTCM3]:[serial port]:[baudrate]
+	* @param enableGpggaForwarding Return value indicating that GPGGA GNSS messages should sent for VRS base stations. 
 	* @return cISStream pointer if successful, otherwise NULLPTR
 	*/
-	static cISStream* OpenConnectionToServer(const string& connectionString);
+	static cISStream* OpenConnectionToServer(const string& connectionString, bool *enableGpggaForwarding=NULL);
 };
 
 
