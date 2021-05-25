@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <stdio.h>
+#include <sstream>
 #include <iostream>
 #include <math.h>
 #include <string>
@@ -154,26 +155,30 @@ string base64Decode(const string& encoded_string)
 	return ret;
 }
 
-size_t splitString(const string& s, const string& delimiter, vector<string>& result)
+size_t splitString(const string& str, const char delimiter, vector<string>& result)
 {
 	result.clear();
-	size_t pos = 0;
-	size_t pos2;
-	while (true)
+	istringstream f(str);
+	string s;
+	while (getline(f, s, delimiter))
 	{
-		pos2 = s.find(delimiter, pos);
-		if (pos2 == string::npos)
-		{
-			result.push_back(s.substr(pos));
-			break;
-		}
-		else
-		{
-			result.push_back(s.substr(pos, pos2 - pos));
-			pos = pos2 + delimiter.length();
-		}
+		result.push_back(s);
 	}
 	return result.size();
+}
+
+void joinStrings(const vector<string>& v, const char c, string& result) 
+{
+	result.clear();
+
+	for (vector<string>::const_iterator p = v.begin(); p != v.end(); ++p) 
+	{
+		result += *p;
+		if (p != v.end() - 1)
+		{
+			result += c;
+		}
+	}
 }
 
 #ifdef __cplusplus

@@ -225,19 +225,25 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
 	{
-		if (g_commandLineOptions.roverConnection.find("RTCM3:") == 0 ||
-			g_commandLineOptions.roverConnection.find("IS:") == 0 ||
-			g_commandLineOptions.roverConnection.find("UBLOX:") == 0)
+		vector<string> pieces;
+		splitString(g_commandLineOptions.roverConnection, ':', pieces);
+		if (pieces[0] != "TCP" &&
+			pieces[0] != "SERIAL")
 		{
-			if (!inertialSenseInterface.OpenServerConnection(g_commandLineOptions.roverConnection))
-			{
-				cout << "Failed to connect to server." << endl;
-			}
-		}
-		else
-		{
-			cout << "Invalid server connection, must prefix with RTCM3:, IS: or UBLOX:, " << g_commandLineOptions.roverConnection << endl;
+			cout << "Invalid base connection, 1st field must be: TCP or SERIAL\n  -rover=" << g_commandLineOptions.roverConnection << endl;
 			return false;
+		}
+		if (pieces[1] != "RTCM3" &&
+			pieces[1] != "IS" &&
+			pieces[1] != "UBLOX")
+		{
+			cout << "Invalid base connection, 2nd field must be: RTCM3, IS, or UBLOX\n  -rover=" << g_commandLineOptions.roverConnection << endl;
+			return false;
+		}
+
+		if (!inertialSenseInterface.OpenConnectionToServer(g_commandLineOptions.roverConnection))
+		{
+			cout << "Failed to connect to server (base)." << endl;
 		}
 	}
 	if (g_commandLineOptions.flashCfg.length() != 0)

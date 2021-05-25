@@ -31,6 +31,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISSerialPort.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
+#include "ISClient.h"
 
 // use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
@@ -189,7 +190,7 @@ public:
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure
 	*/
-	bool OpenServerConnection(const string& connectionString);
+	bool OpenConnectionToServer(const string& connectionString);
 
 	/**
 	* Create a host that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
@@ -362,13 +363,16 @@ private:
 	cMutex m_logMutex;
 	map<int, vector<p_data_t>> m_logPackets;
 	time_t m_lastLogReInit;
+
 	cISTcpClient m_tcpClient;
 	char m_clientBuffer[512];
 	int m_clientBufferBytesToSend;
+
 	cISTcpServer m_tcpServer;
 	cISSerialPort m_serialServer;
-	cISStream* m_clientStream;
+	cISStream* m_clientStream;				// Our client connection to a server
 	uint64_t m_clientServerByteCount;
+
 	bool m_disableBroadcastsOnClose;
 	com_manager_init_t m_cmInit;
 	com_manager_port_t *m_cmPorts;

@@ -454,25 +454,26 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration from command line)" << endl;
-	cout << "    -flashCfg" << boldOff << "       List all \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-flashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
-	cout << "    -evbFlashCfg" << boldOff << "    List all \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-evbFlashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
+	cout << "    -flashCfg" << boldOff << "       List all uINS \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-flashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
+	cout << "    -evbFlashCfg" << boldOff << "    List all EVB \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-evbFlashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            Set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
-	cout << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << endlbOn;
+	cout << "     " << boldOff << "                             # Set multiple flashCfg values" << endlbOn;
 	cout << "OPTIONS (RTK Rover / Base)" << endl;
 	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
 	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
-	cout << "        - NTRIP:   -rover=RTCM3:192.168.1.100:7777:mountpoint:username:password" << endl;
-	cout << "        - TCP:     -rover=RTCM3:192.168.1.100:7777" << endl;
-	cout << "        - TCP:     -rover=UBLOX:192.168.1.100:7777" << endl;
-	cout << "        - SERIAL:  -rover=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
+	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
+	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777" << endl;
+	cout << "            -rover=TCP:UBLOX:192.168.1.100:7777" << endl;
+	cout << "            -rover=SERIAL:RTCM3:" << EXAMPLE_PORT << ":57600             (port, baud rate)" << endl;
 	cout << "    -base=" << boldOff << "[IP]:[port]   As a Base (sever), send RTK corrections.  Examples:" << endl;
-	cout << "        - TCP:     -base=:7777                            (IP is optional)" << endl;
-	cout << "        - TCP:     -base=192.168.1.43:7777" << endl;
+	cout << "            -base=TCP::7777                            (IP is optional)" << endl;
+	cout << "            -base=TCP:192.168.1.43:7777" << endl;
+	cout << "            -base=SERIAL:" << EXAMPLE_PORT << ":921600" << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }
@@ -504,11 +505,11 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 	else
 	{
 		vector<string> keyValues;
-		splitString(flashCfgString, "|", keyValues);
+		splitString(flashCfgString, '|', keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
 			vector<string> keyAndValue;
-			splitString(keyValues[i], "=", keyAndValue);
+			splitString(keyValues[i], '=', keyAndValue);
 			if (keyAndValue.size() == 2)
 			{
 				if (flashMap.find(keyAndValue[0]) == flashMap.end())
@@ -554,11 +555,11 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 	else
 	{
 		vector<string> keyValues;
-		splitString(flashCfgString, "|", keyValues);
+		splitString(flashCfgString, '|', keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
 			vector<string> keyAndValue;
-			splitString(keyValues[i], "=", keyAndValue);
+			splitString(keyValues[i], '=', keyAndValue);
 			if (keyAndValue.size() == 2)
 			{
 				if (flashMap.find(keyAndValue[0]) == flashMap.end())

@@ -329,56 +329,13 @@ bool InertialSense::SetLoggerEnabled(
 	return true;
 }
 
-bool InertialSense::OpenServerConnection(const string& connectionString)
+bool InertialSense::OpenConnectionToServer(const string& connectionString)
 {
 	CloseServerConnection();
-	vector<string> pieces;
-	splitString(connectionString, ":", pieces);
-	if (pieces.size() < 3)
-	{
-		return false;
-	}
 
-	string type = pieces[0];
-	string host = pieces[1];
-	string port = pieces[2];
+	m_clientStream = cISClient::OpenConnectionToServer(connectionString);
 
-	if (type == "SERIAL")
-	{
-		if (pieces.size() < 4)
-		{
-			return false;
-		}
-		
-		if (m_serialServer.Open(pieces[2].c_str(), atoi(pieces[3].c_str())))
-		{
-			m_clientStream = &m_serialServer;
-		}
-	}
-	else
-	{	// TCP / NTRIP
-		if (m_tcpClient.Open(host, atoi(port.c_str()), 100) == -1)
-		{
-			return false;
-		}
-
-		string subUrl = (pieces.size() > 3 ? pieces[3] : "");
-		string username = (pieces.size() > 4 ? pieces[4] : "");
-		string password = (pieces.size() > 5 ? pieces[5] : "");
-		string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
-
-		if (subUrl.size() != 0)
-		{	// Connect NTRIP if specified - https://igs.bkg.bund.de/root_ftp/NTRIP/documentation/NtripDocumentation.pdf
-			m_tcpClient.HttpGet(subUrl, userAgent, username, password);
-		}
-
-		if (m_clientStream == NULLPTR)
-		{
-			m_clientStream = &m_tcpClient;
-		}
-	}
-
-	return true;
+	return m_clientStream!=NULLPTR;
 }
 
 void InertialSense::CloseServerConnection()
@@ -675,7 +632,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 	}
 	else
 	{
-		splitString(comPort, ",", portStrings);
+		splitString(comPort, ',', portStrings);
 	}
 	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
@@ -804,7 +761,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	else
 	{
 		// comma separated list of serial ports
-		splitString(port, ",", ports);
+		splitString(port, ',', ports);
 	}
 
 	// open serial ports
