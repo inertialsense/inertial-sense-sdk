@@ -398,8 +398,7 @@ void cltool_outputUsage()
 	cout << "-----------------------------------------------------------------" << endl;
 	cout << endlbOn;
 	cout << "DESCRIPTION" << endlbOff;
-	cout << "    Command line utility for communicating, logging, and updating" << endl;
-	cout << "    firmware with Inertial Sense product line." << endl;
+	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PREINTEGRATED_IMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOn;
@@ -409,8 +408,10 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << " # Connect to RTK NTRIP base" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << " # update application firmware and bootloader" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOn;
+	cout << "                                                 " << boldOff << " # update application firmware and bootloader" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
@@ -470,7 +471,7 @@ void cltool_outputUsage()
 	cout << "        - TCP:     -rover=UBLOX:192.168.1.100:7777" << endl;
 	cout << "        - SERIAL:  -rover=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
 	cout << "    -base=" << boldOff << "[IP]:[port]   As a Base (sever), send RTK corrections.  Examples:" << endl;
-	cout << "        - TCP:     -base=:7777                          (IP is optional)" << endl;
+	cout << "        - TCP:     -base=:7777                            (IP is optional)" << endl;
 	cout << "        - TCP:     -base=192.168.1.43:7777" << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
