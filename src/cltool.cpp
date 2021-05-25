@@ -460,8 +460,9 @@ void cltool_outputUsage()
 	cout << "OPTIONS (Client / Server)" << endl;
 	cout << "    -svr=" << boldOff << "INFO       Used to retrieve external data and send to the uINS. Examples:" << endl;
 	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
-	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:user:password" << endl;
-	cout << "                                                              (URL, user, password optional)" << endl;
+	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:username:password" << endl;
+	cout << "        - NTRIP RTCM3:   -svr=RTCM3:192.168.1.100:7777:mountpoint:username:password" << endl;
+	cout << "                                                              (URL/mountpoint, user, password optional)" << endl;
 	cout << "        - UBLOX data:    -svr=UBLOX:192.168.1.100:7777        (no URL, user or password)" << endl;
 	cout << "        - InertialSense: -svr=IS:192.168.1.100:7777           (no URL, user or password)" << endlbOn;
 	cout << "    -host=" << boldOff << "IP:PORT   used to host a TCP/IP InertialSense server. Examples:" << endl;

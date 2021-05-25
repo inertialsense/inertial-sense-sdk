@@ -340,7 +340,11 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 		return opened;
 	}
 
-	if (pieces[1] == "SERIAL")
+	string type = pieces[0];
+	string host = pieces[1];
+	string port = pieces[2];
+
+	if (type == "SERIAL")
 	{
 		if (pieces.size() < 4)
 		{
@@ -352,27 +356,20 @@ bool InertialSense::OpenServerConnection(const string& connectionString)
 		}
 	}
 	else
-	{
-		opened = (m_tcpClient.Open(pieces[1], atoi(pieces[2].c_str())) == 0);
-		string url = (pieces.size() > 3 ? pieces[3] : "");
-		string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
+	{	// TCP-IP / NTRIP
+		string subUrl = (pieces.size() > 3 ? pieces[3] : "");
 		string username = (pieces.size() > 4 ? pieces[4] : "");
 		string password = (pieces.size() > 5 ? pieces[5] : "");
-		if (url.size() != 0)
+		string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
+
+		opened = (m_tcpClient.Open(host, atoi(port.c_str()), 100) == 0);
+		if (subUrl.size() != 0)
 		{
-			m_tcpClient.HttpGet(url, userAgent, username, password);
+			m_tcpClient.HttpGet(subUrl, userAgent, username, password);
 		}
 	}
 	if (opened)
 	{
-#if 0
-		// configure as RTK rover
-		uint32_t cfgBits = RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING;
-		for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-		{
-			comManagerSendData((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
-		}
-#endif
 		if (m_clientStream == NULLPTR)
 		{
 			m_clientStream = &m_tcpClient;
