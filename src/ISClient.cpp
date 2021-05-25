@@ -15,9 +15,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISClient.h"
 
-
+// connectionString usage:
 // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
 // [TCP]:[RTCM3]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+// [TCP]:[RTCM3]:[ip/url]:[port]
 // [SERIAL]:[RTCM3]:[serial port]:[baudrate]
 cISStream* cISClient::OpenConnectionToServer(const string& connectionString)
 {
@@ -28,7 +29,7 @@ cISStream* cISClient::OpenConnectionToServer(const string& connectionString)
 		return NULLPTR;
 	}
 
-	string type		= pieces[0];	// TPC, SERIAL
+	string type		= pieces[0];	// TCP, SERIAL
 	string protocol = pieces[1];	// RTCM3, UBLOX, IS
 
 	if (type == "SERIAL")

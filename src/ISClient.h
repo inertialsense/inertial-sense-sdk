@@ -21,9 +21,22 @@ private:
 
 public:
 	/**
+	* Constructor
 	*/
 	cISClient(){}
 
+	/**
+	* Opens an ISStream (TCP or Serial Port) client
+	* @param connectionString Colon delimited string containing connection info, 
+	* [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+	*    type:		TCP, SERIAL
+	*    protocol:	RTCM3, UBLOX, IS
+	*	[type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+	*	[TCP]:[RTCM3]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+	*	[TCP]:[RTCM3]:[ip/url]:[port]
+	*	[SERIAL]:[RTCM3]:[serial port]:[baudrate]
+	* @return cISStream pointer if successful, otherwise NULLPTR
+	*/
 	static cISStream* OpenConnectionToServer(const string& connectionString);
 };
 
