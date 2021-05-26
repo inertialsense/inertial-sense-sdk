@@ -1,23 +1,6 @@
 # SDK: NTRIP Rover Example Project
 
-This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/NTRIP_rover) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
-
-## Files
-
-#### Project Files
-
-* [ISNtripRoverExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications/ISNtripRoverExample.cpp)
-
-#### SDK Files
-
-* [data_sets.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/data_sets.c)
-* [data_sets.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/data_sets.h)
-* [ISComm.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/ISComm.c)
-* [ISComm.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/ISComm.h)
-* [serialPort.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPort.c)
-* [serialPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPort.h)
-* [serialPortPlatform.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.c)
-* [serialPortPlatform.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.h)
+This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/NTRIP_rover) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Implementation
 
@@ -27,6 +10,9 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
+#include "../../src/ISStream.h"
+#include "../../src/ISClient.h"
+#include "../../src/protocol_nmea.h"
 ```
 
 ### Step 2: Init comm instance
@@ -35,12 +21,8 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
 
-	// Make sure to assign a valid buffer and buffer size to the comm instance
-	comm.buffer = buffer;
-	comm.bufferSize = sizeof(buffer);
-
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm);
+	is_comm_init(&comm, buffer, sizeof(buffer));
 ```
 
 ### Step 3: Initialize and open serial port
@@ -63,7 +45,20 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 	}
 ```
 
-### Step 4: Stop any message broadcasting
+### STEP 4: Connect to the RTK base (sever)
+
+```c++
+	// Connection string follows the following format:
+	// [type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]
+	// i.e. TCP:RTCM3:192.168.1.100:7777:mount:user:password
+	if ((s_clientStream = cISClient::OpenConnectionToServer(argv[2])) == NULLPTR)
+	{
+		printf("Failed to open RTK base connection %s\r\n", argv[2]);
+		return -2;
+	}
+```
+
+### Step 5: Stop any message broadcasting
 
 ```c++
 	// Stop all broadcasts on the device
@@ -74,94 +69,38 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 	}
 ```
 
-### Step 5: Set configuration (optional)
-
-```C++
-	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
-	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	int messageSize = is_comm_set_data(comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write set INS rotation\r\n");
-	}
-```
-
 ### Step 6: Enable message broadcasting
 
-This can be done either using the Realtime Message Controller (RMC) or the get data command.
-
-#### Realtime Message Controller (RMC)
-
-```c++
-// Enable broadcasts using RMC: DID_INS_1 @ 20Hz and DID_GPS_NAV @ 5Hz
-rmc_t rmc;
-rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS_NAV;
-rmc.insPeriodMs = 50;	// INS @ 20Hz
-rmc.options = 0;		// current port
-
-int messageSize = is_comm_set_data(comm, _DID_RMC, 0, sizeof(rmc_t), &rmc);
-if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-{
-	printf("Failed to encode and write RMC message\r\n");
-}
-```
-#### Get Data Command
+To use NTRIP, we must enable the DID_GPS1_POS message which will be rebroadcast as NMEA GGA every 5 seconds to the RTK NTRIP base station.  
 
 ```C++
-	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
-	int messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write get INS message\r\n");
-	}
-
-#if 1
-	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
-	messageSize = is_comm_get_data(comm, _DID_GPS_NAV, 0, 0, 200);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
+int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+{
+	int n = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
+		return -5;
 	}
-#endif
+	n = is_comm_get_data(comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	{
+		printf("Failed to encode and write get GPS message\r\n");
+		return -5;
+	}
+	return 0;
+}
 ```
 
 ### Step 7: Handle received data 
 
-```C++
-	int count;
-	uint8_t inByte;
-
-	// You can set running to false with some other piece of code to break out of the loop and end the program
-	while (running)
-	{
-		// Read one byte with a 20 millisecond timeout
-		while ((count = serialPortReadCharTimeout(&serialPort, &inByte, 20)) > 0)
-		{
-			switch (is_comm_parse(&comm, inByte))
-			{
-			case _DID_INS_LLA_EULER_NED:
-				handleInsMessage((ins_1_t*)buffer);
-				break;
-
-			case _DID_GPS_NAV:
-				handleGpsMessage((gps_nav_t*)buffer);
-				break;
-
-			case _DID_IMU_DUAL:
-				handleImuMessage((dual_imu_t*)buffer);
-				break;
-
-				// TODO: add other cases for other data ids that you care about
-			}
-		}
-	}
-```
+See the ISNtripRoverExample.cpp for details.
 
 ## Compile & Run (Linux/Mac)
 
 1. Create build directory
 ``` bash
-$ cd inertial-sense-sdk/ExampleProjects/Communications
+$ cd inertial-sense-sdk/ExampleProjects/NTRIP_rover
 $ mkdir build
 ```
 2. Run cmake from within build directory
@@ -182,7 +121,7 @@ $ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManage
 ```
 5. Run executable
 ``` bash
-$ ./bin/ISCommunicationsExample /dev/ttyUSB0
+$ ./bin/ISNtripRoverExample /dev/ttyUSB0 TCP:RTCM3:192.168.1.100:7777:mount:user:password
 ```
 ## Compile & Run (Windows MS Visual Studio)
 
@@ -190,7 +129,7 @@ $ ./bin/ISCommunicationsExample /dev/ttyUSB0
 2. Build (F7)
 3. Run executable
 ``` bash
-C:\inertial-sense-sdk\ExampleProjects\Communications\VS_project\Release\ISCommunicationsExample.exe COM3
+C:\inertial-sense-sdk\ExampleProjects\ISNtripRoverExample\VS_project\Release\ISNtripRoverExample.exe COM3
 ```
 
 ## Summary

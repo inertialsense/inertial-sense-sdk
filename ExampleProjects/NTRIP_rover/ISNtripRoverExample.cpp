@@ -183,7 +183,6 @@ int main(int argc, char* argv[])
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
 	is_comm_init(&comm, buffer, sizeof(buffer));
 
-
 	// STEP 3: Initialize and open serial port
 	serial_port_t serialPort;
 
@@ -201,6 +200,7 @@ int main(int argc, char* argv[])
 		return -2;
 	}
 
+	// STEP 4: Connect to the RTK base (sever)
 	// Connection string follows the following format:
 	// [type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]
 	// i.e. TCP:RTCM3:192.168.1.100:7777:mount:user:password
@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
 
 	int error;
 
-	// STEP 4: Stop any message broadcasting
+	// STEP 5: Stop any message broadcasting
 	if ((error = stop_message_broadcasting(&serialPort, &comm)))
 	{
 		return error;
