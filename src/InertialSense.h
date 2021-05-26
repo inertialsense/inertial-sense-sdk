@@ -197,7 +197,7 @@ public:
 	* @param ipAndPort ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
 	* @return true if success, false if error
 	*/
-	bool CreateHost(const string& ipAndPort);
+	bool CreateHost(const string& connectionString);
 
 	/**
 	* Close any open connection to a server

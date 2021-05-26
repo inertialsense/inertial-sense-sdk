@@ -328,6 +328,7 @@ bool InertialSense::SetLoggerEnabled(
 	return true;
 }
 
+// [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
 bool InertialSense::OpenConnectionToServer(const string& connectionString)
 {
 	CloseServerConnection();
@@ -345,7 +346,8 @@ void InertialSense::CloseServerConnection()
 	m_clientStream = NULLPTR;
 }
 
-bool InertialSense::CreateHost(const string& ipAndPort)
+// [type]:[ip/url]:[port]
+bool InertialSense::CreateHost(const string& connectionString)
 {
 	// if no serial connection, fail
 	if (!IsOpen())
@@ -354,16 +356,26 @@ bool InertialSense::CreateHost(const string& ipAndPort)
 	}
 
 	CloseServerConnection();
-	size_t colon = ipAndPort.find(':', 0);
-	if (colon == string::npos)
+
+	vector<string> pieces;
+	splitString(connectionString, ':', pieces);
+	if (pieces.size() < 3)
 	{
 		return false;
 	}
+
+	string type     = pieces[0];    // TCP, SERIAL
+	string host     = pieces[1];    // IP / URL
+	string port     = pieces[2];
+
+	if (type != "TCP")
+	{
+		return false;
+	}
+
 	StopBroadcasts();
-	string host = ipAndPort.substr(0, colon);
-	string portString = ipAndPort.substr(colon + 1);
-	int port = (int)strtol(portString.c_str(), NULLPTR, 10);
-	return (m_tcpServer.Open(host, port) == 0);
+
+	return (m_tcpServer.Open(host, atoi(port.c_str())) == 0);
 }
 
 bool InertialSense::IsOpen()
