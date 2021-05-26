@@ -2,14 +2,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 
 project(ISNtripRoverExample)
 
-#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
 add_executable(ISNtripRoverExample ISNtripRoverExample.cpp)
+target_link_libraries(ISNtripRoverExample InertialSense)
 
 else()	# Build only this project
 
