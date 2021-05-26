@@ -237,7 +237,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 			pieces[1] != "IS" &&
 			pieces[1] != "UBLOX")
 		{
-			cout << "Invalid base connection, 2nd field must be: RTCM3, IS, or UBLOX\n  -rover=" << g_commandLineOptions.roverConnection << endl;
+			cout << "Invalid base connection, 2nd field must be: RTCM3, UBLOX, or IS\n  -rover=" << g_commandLineOptions.roverConnection << endl;
 			return false;
 		}
 

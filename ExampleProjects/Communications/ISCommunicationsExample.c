@@ -97,7 +97,7 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 }
 
 
-int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
 	int messageSize;
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 
 
 	// STEP 6: Enable message broadcasting
-	if ((error = enable_message_broadcasting_get_data(&serialPort, &comm)))
+	if ((error = enable_message_broadcasting(&serialPort, &comm)))
 	{
 		return error;
 	}

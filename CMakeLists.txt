@@ -33,8 +33,8 @@ add_library(InertialSense
   src/InertialSense.cpp
   src/filters.cpp
   src/inertialSenseBootLoader.c
-  src/ISComm.c
 	src/ISClient.cpp
+  src/ISComm.c
   src/ISDataMappings.cpp
   src/ISDisplay.cpp
   src/ISEarth.c

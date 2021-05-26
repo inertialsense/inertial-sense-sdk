@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISStream.h"
 
+
 class cISClient
 {
 private:
@@ -38,7 +39,7 @@ public:
 	* @param enableGpggaForwarding Return value indicating that GPGGA GNSS messages should sent for VRS base stations. 
 	* @return cISStream pointer if successful, otherwise NULLPTR
 	*/
-	static cISStream* OpenConnectionToServer(const string& connectionString, bool *enableGpggaForwarding=NULL);
+	static cISStream* OpenConnectionToServer(const std::string& connectionString, bool *enableGpggaForwarding=NULL);
 };
 
 

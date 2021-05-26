@@ -74,3 +74,4 @@ cISStream* cISClient::OpenConnectionToServer(const string& connectionString, boo
 
 	return NULLPTR;
 }
+

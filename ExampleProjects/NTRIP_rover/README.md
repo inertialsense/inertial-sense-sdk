@@ -1,6 +1,6 @@
-# SDK: Binary Communications Example Project
+# SDK: NTRIP Rover Example Project
 
-This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/NTRIP_rover) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
@@ -18,7 +18,6 @@ This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/t
 * [serialPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPort.h)
 * [serialPortPlatform.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.c)
 * [serialPortPlatform.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.h)
-
 
 ## Implementation
 
@@ -183,15 +182,15 @@ $ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManage
 ```
 5. Run executable
 ``` bash
-$ ./bin/ISNtripRoverExample /dev/ttyUSB0
+$ ./bin/ISCommunicationsExample /dev/ttyUSB0
 ```
 ## Compile & Run (Windows MS Visual Studio)
 
-1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Communications\VS_project\ISNtripRoverExample.sln)
+1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Communications\VS_project\ISCommunicationsExample.sln)
 2. Build (F7)
 3. Run executable
 ``` bash
-C:\inertial-sense-sdk\ExampleProjects\Communications\VS_project\Release\ISNtripRoverExample.exe COM3
+C:\inertial-sense-sdk\ExampleProjects\Communications\VS_project\Release\ISCommunicationsExample.exe COM3
 ```
 
 ## Summary

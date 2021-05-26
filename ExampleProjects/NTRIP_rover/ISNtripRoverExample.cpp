@@ -17,19 +17,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
-#include "../../src/ISPose.h"
-// #include "../../src/ISStream.h"
-// #include "../../src/ISClient.h"
+#include "../../src/ISStream.h"
+#include "../../src/ISClient.h"
+#include "../../src/protocol_nmea.h"
 
-static int running = 1;
+using namespace std;
 
-std::string test;
+static cISStream *s_clientStream;
+
 
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Stop all broadcasts on the device
-	int messageSize = is_comm_stop_broadcasts_all_ports(comm);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	int n = is_comm_stop_broadcasts_all_ports(comm);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -38,37 +39,131 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 }
 
 
-int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
-	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-	int messageSize;
-	messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 10);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
-	{
-		printf("Failed to encode and write get INS message\r\n");
-		return -4;
-	}
-
-#if 1
-	// Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-	messageSize = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 1);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	int n = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
 	}
-#endif
-
-#if 0
-	// Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
-	messageSize = is_comm_get_data(comm, _DID_IMU_DUAL, 0, 0, 100);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	n = is_comm_get_data(comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
-		printf("Failed to encode and write get IMU message\r\n");
-		return -6;
+		printf("Failed to encode and write get GPS message\r\n");
+		return -5;
 	}
-#endif
 	return 0;
+}
+
+
+static struct
+{
+	gps_pos_t		gps;
+	gps_rtk_rel_t	rel;
+	uint8_t			baseCount;
+} s_rx = {};
+
+void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
+{
+	switch (comm->dataHdr.id)
+	{
+	case DID_GPS1_RTK_POS_REL:
+		is_comm_copy_to_struct(&s_rx.rel, comm, sizeof(s_rx.rel));		
+		break;
+
+	case DID_GPS1_POS:		
+		is_comm_copy_to_struct(&s_rx.gps, comm, sizeof(s_rx.gps));
+		string fix;
+		switch (s_rx.gps.status&GPS_STATUS_FIX_MASK)
+		{
+		default:						fix = "None      ";		break;
+		case GPS_STATUS_FIX_3D:			fix = "3D        ";		break;
+		case GPS_STATUS_FIX_RTK_SINGLE:	fix = "RTK-Single";		break;
+		case GPS_STATUS_FIX_RTK_FLOAT:	fix = "RTK-Float ";		break;
+		case GPS_STATUS_FIX_RTK_FIX:	fix = "RTK       ";		break;
+		}
+
+		printf("LL %12.9f %12.9f, hacc %4.2fm, age %3.1fs, fix-%s  %s\n",
+			s_rx.gps.lla[0],
+			s_rx.gps.lla[1],
+			s_rx.gps.hAcc,
+			s_rx.rel.differentialAge,	// time since last base message
+			fix.c_str(),
+			(s_rx.gps.status&GPS_STATUS_FLAGS_RTK_BASE_DATA_MISSING ? "BASE: No data" : (string("BASE: ")+to_string(s_rx.baseCount)).c_str())
+			 );
+
+		// Forward our position via GGA every 5 seconds to the RTK base.
+		static time_t lastTime;
+		time_t currentTime = time(NULLPTR);
+		if (abs(currentTime - lastTime) > 5)
+		{	// Update every 5 seconds
+			lastTime = currentTime;
+			if ((s_rx.gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+			{	// GPS position is valid
+				char buf[512];
+				int n = gps_to_nmea_gga(buf, sizeof(buf), s_rx.gps);
+				clientStream->Write(buf, n);
+				printf("Sending position to Base: \n%s\n", string(buf,n).c_str());
+			}
+			else
+			{
+				printf("Waiting for fix...\n");
+			}
+		}
+		break;
+	}
+}
+
+
+void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+{
+	protocol_type_t ptype;
+
+	// Get available size of comm buffer
+	int n = is_comm_free(comm);
+
+	// Read data directly into comm buffer
+	if (n = serialPortRead(serialPort, comm->buf.tail, n))
+	{
+		// Update comm buffer tail pointer
+		comm->buf.tail += n;
+
+		// Search comm buffer for valid packets
+		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+		{
+			if (ptype == _PTYPE_INERTIAL_SENSE_DATA)
+			{
+				handle_uINS_data(comm, clientStream);
+			}
+		}
+	}
+}
+
+
+void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+{
+	protocol_type_t ptype;
+
+	// Get available size of comm buffer
+	int n = is_comm_free(comm);
+
+	// Read data from RTK Base station
+	if (n = clientStream->Read(comm->buf.tail, n))
+	{
+		// Update comm buffer tail pointer
+		comm->buf.tail += n;
+
+		// Search comm buffer for valid packets
+		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+		{
+			if (ptype == _PTYPE_RTCM3)
+			{	// Forward RTCM3 packets to uINS
+				serialPortWrite(serialPort, comm->dataPtr, comm->dataHdr.size);
+				s_rx.baseCount++;
+			}
+		}
+	}
 }
 
 
@@ -80,7 +175,6 @@ int main(int argc, char* argv[])
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3" 
 		return -1;
 	}
-
 
 	// STEP 2: Init comm instance
 	is_comm_instance_t comm;
@@ -101,14 +195,20 @@ int main(int argc, char* argv[])
 	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_921600, 1))
+	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_921600, 0))
 	{
 		printf("Failed to open serial port on com port %s\r\n", argv[1]);
 		return -2;
 	}
 
-// 	string connectionString = "-rover=TCP:RTCM3:168.179.231.9:2101:GNSSVRSRTCM32:inertialsense1:inertialsense1";
-// 	cISStream *clientStream = cISClient::OpenConnectionToServer(connectionString);
+	// Connection string follows the following format:
+	// [type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]
+	// i.e. TCP:RTCM3:192.168.1.100:7777:mount:user:password
+	if ((s_clientStream = cISClient::OpenConnectionToServer(argv[2])) == NULLPTR)
+	{
+		printf("Failed to open RTK base connection %s\r\n", argv[2]);
+		return -2;
+	}
 
 	int error;
 
@@ -118,57 +218,23 @@ int main(int argc, char* argv[])
 		return error;
 	}
 
-
-#if 0	// STEP 5: Set configuration
-	if ((error = set_configuration(&serialPort, &comm)))
-	{
-		return error;
-	}
-#endif
-
-
 	// STEP 6: Enable message broadcasting
-	if ((error = enable_message_broadcasting_get_data(&serialPort, &comm)))
+	if ((error = enable_message_broadcasting(&serialPort, &comm)))
 	{
 		return error;
 	}
 
 
 	// STEP 8: Handle received data
-	int count;
-	uint8_t inByte;
 
-	// You can set running to false with some other piece of code to break out of the loop and end the program
-	while (running)
+	// Main loop
+	while (1)
 	{
-		// Read one byte with a 20 millisecond timeout
-		while ((count = serialPortReadCharTimeout(&serialPort, &inByte, 20)) > 0)
-		{
-			switch (is_comm_parse_byte(&comm, inByte))
-			{
-			case _PTYPE_INERTIAL_SENSE_DATA:
-				switch (comm.dataHdr.id)
-				{
-				case _DID_INS_LLA_EULER_NED:
-					break;
+		read_uINS_data(&serialPort, &comm, s_clientStream);
 
-				case DID_INS_2:
-					break;
+		read_RTK_base_data(&serialPort, &comm, s_clientStream);
 
-				case _DID_GPS1_POS:
-					break;
-
-				case _DID_IMU_DUAL:
-					break;
-
-					// TODO: add other cases for other data ids that you care about
-				}
-				break;
-
-			default:
-				break;
-			}
-		}
+		Sleep(1);	// sleep for 1ms, serial port reads are non-blocking
 	}
 }
 
