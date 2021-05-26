@@ -1,6 +1,6 @@
 # SDK: NTRIP Rover Example Project
 
-This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/NTRIP_rover) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/NTRIP_rover) project demonstrates how to implement a TCP NTRIP connection to and receive corrections from an RTK base station.  This example supplies RTK corrections to the <a href="https://inertialsense.com">InertialSense</a> products (uINS and Rugged) using the Inertial Sense SDK.
 
 ## Implementation
 

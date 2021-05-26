@@ -29,7 +29,7 @@ cISStream* cISClient::OpenConnectionToServer(const string& connectionString, boo
 		return NULLPTR;
 	}
 
-	string type		= pieces[0];	// TCP, SERIAL
+	string type     = pieces[0];	// TCP, SERIAL
 	string protocol = pieces[1];	// RTCM3, UBLOX, IS
 
 	if (type == "SERIAL")
@@ -48,9 +48,9 @@ cISStream* cISClient::OpenConnectionToServer(const string& connectionString, boo
 	{
 		cISTcpClient *clientStream = new cISTcpClient();
 
-		string host = (pieces[2].size()>0 ? pieces[2] : "127.0.0.1");	// ipAddr/URL
-		string port = (pieces[3]);
-		string subUrl = (pieces.size() > 4 ? pieces[4] : "");
+		string host     = (pieces[2].size()>0 ? pieces[2] : "127.0.0.1");	// ipAddr/URL
+		string port     = (pieces[3]);
+		string subUrl   = (pieces.size() > 4 ? pieces[4] : "");
 		string username = (pieces.size() > 5 ? pieces[5] : "");
 		string password = (pieces.size() > 6 ? pieces[6] : "");
 

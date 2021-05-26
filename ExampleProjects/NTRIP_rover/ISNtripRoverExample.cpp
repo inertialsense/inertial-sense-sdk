@@ -173,8 +173,8 @@ int main(int argc, char* argv[])
 	if (argc < 2)
 	{
 		printf("Please pass the com port and the RTK base connection string as the 1st and 2nd arguments.\r\n");
-		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> 
-		// Command Arguments: COM3 TCP:RTCM3:192.168.1.100:7777:mountpoint:username:password
+		printf("In Visual Studio IDE, this can be done through \"Project Properties -> Debugging ->.\r\n");
+		printf("Command Arguments\": COM3 TCP:RTCM3:192.168.1.100:7777:mountpoint:username:password\r\n");
 		return -1;
 	}
 
