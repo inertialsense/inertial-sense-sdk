@@ -193,8 +193,8 @@ public:
 	bool OpenConnectionToServer(const string& connectionString);
 
 	/**
-	* Create a host that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
-	* @param ipAndPort ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
+	* Create a server that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
+	* @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
 	* @return true if success, false if error
 	*/
 	bool CreateHost(const string& connectionString);
