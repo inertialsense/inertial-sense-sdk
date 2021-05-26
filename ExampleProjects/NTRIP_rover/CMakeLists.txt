@@ -19,6 +19,7 @@ add_executable(ISNtripRoverExample
     ../../src/ISMatrix.c
     ../../src/ISPose.c
 	../../src/ISClient.cpp
+	../../src/ISFileManager.cpp
 	../../src/ISSerialPort.cpp
 	../../src/ISStream.cpp
 	../../src/ISTcpClient.cpp
@@ -27,6 +28,6 @@ add_executable(ISNtripRoverExample
     ../../src/serialPort.c
     ../../src/serialPortPlatform.c
 )
-target_link_libraries(ISNtripRoverExample m)
+target_link_libraries(ISNtripRoverExample m pthread)
 
 endif()
