@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/serialPortPlatform.h"
 #include "../../src/ISStream.h"
 #include "../../src/ISClient.h"
+#include "../../src/ISUtilities.h"
 #include "../../src/protocol_nmea.h"
 
 using namespace std;
@@ -124,7 +125,7 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
-	if (n = serialPortRead(serialPort, comm->buf.tail, n))
+	if ((n = serialPortRead(serialPort, comm->buf.tail, n)))
 	{
 		// Update comm buffer tail pointer
 		comm->buf.tail += n;
@@ -149,7 +150,7 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 	int n = is_comm_free(comm);
 
 	// Read data from RTK Base station
-	if (n = clientStream->Read(comm->buf.tail, n))
+	if ((n = clientStream->Read(comm->buf.tail, n)))
 	{
 		// Update comm buffer tail pointer
 		comm->buf.tail += n;
@@ -234,7 +235,7 @@ int main(int argc, char* argv[])
 
 		read_RTK_base_data(&serialPort, &comm, s_clientStream);
 
-		Sleep(1);	// sleep for 1ms, serial port reads are non-blocking
+		SLEEP_MS(1);	// sleep for 1ms, serial port reads are non-blocking
 	}
 }
 
