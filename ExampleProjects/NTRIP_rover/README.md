@@ -6,7 +6,7 @@ This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/t
 
 #### Project Files
 
-* [ISNtripRoverExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications/ISNtripRoverExample.c)
+* [ISNtripRoverExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications/ISNtripRoverExample.cpp)
 
 #### SDK Files
 

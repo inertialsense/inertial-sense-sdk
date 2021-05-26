@@ -22,7 +22,7 @@
     <ClCompile Include="..\..\..\src\serialPortPlatform.c">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\ISNtripRoverExample.c">
+    <ClCompile Include="..\ISNtripRoverExample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\ISPose.c">

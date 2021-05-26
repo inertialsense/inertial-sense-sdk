@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <stdio.h>
+#include <string>
 
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
@@ -22,38 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static int running = 1;
 
-static void handleIns1Message(ins_1_t* ins)
-{
-	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
-		ins->timeOfWeek,
-		ins->lla[0], ins->lla[1], ins->lla[2],
-		ins->theta[0] * C_RAD2DEG_F, ins->theta[1] * C_RAD2DEG_F, ins->theta[2] * C_RAD2DEG_F);
-}
-
-static void handleIns2Message(ins_2_t* ins)
-{
-	ixVector3 theta;
-	quat2euler(ins->qn2b, theta);
-
-	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
-		ins->timeOfWeek,
-		ins->lla[0], ins->lla[1], ins->lla[2],
-		theta[0] * C_RAD2DEG_F, theta[1] * C_RAD2DEG_F, theta[2] * C_RAD2DEG_F);
-}
-
-static void handleGpsMessage(gps_pos_t* pos)
-{
-	printf("GPS TimeOfWeek: %dms, LLA: %3.7f,%3.7f,%5.2f\r\n", pos->timeOfWeekMs, pos->lla[0], pos->lla[1], pos->lla[2]);
-}
-
-static void handleImuMessage(dual_imu_t* imu)
-{
-	printf("IMU Time: %.3fs, PQR: %5.1f,%5.1f,%5.1f, ACC: %5.1f,%5.1f,%5.1f,\r\n",
-		imu->time,
-		imu->I[0].pqr[0], imu->I[0].pqr[1], imu->I[0].pqr[2],
-		imu->I[0].acc[0], imu->I[0].acc[1], imu->I[0].acc[2]);
-}
-
+std::string test;
 
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
@@ -180,19 +150,15 @@ int main(int argc, char* argv[])
 				switch (comm.dataHdr.id)
 				{
 				case _DID_INS_LLA_EULER_NED:
-					handleIns1Message((ins_1_t*)comm.dataPtr);
 					break;
 
 				case DID_INS_2:
-					handleIns2Message((ins_2_t*)comm.dataPtr);
 					break;
 
 				case _DID_GPS1_POS:
-					handleGpsMessage((gps_pos_t*)comm.dataPtr);
 					break;
 
 				case _DID_IMU_DUAL:
-					handleImuMessage((dual_imu_t*)comm.dataPtr);
 					break;
 
 					// TODO: add other cases for other data ids that you care about
