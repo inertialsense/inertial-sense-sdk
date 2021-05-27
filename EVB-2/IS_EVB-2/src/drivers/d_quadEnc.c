@@ -205,7 +205,8 @@ static float quadEncReadPeriod(capture_t *c)
 	if (c->running)
 	{
 		uint32_t dtMs = time_msec() - c->timeMs;
-		if (dtMs > 100)		// 100ms timeout
+		if (dtMs > 500)		// 100ms timeout
+		// We might try scaling this timeout based on the number of ticks per radian.  We need to wait longer if lower resolution encoders. 
 		{	// Wheels are stationary or spinning very slowly 
 			c->running = 0;
 			c->count = 0;
@@ -220,10 +221,10 @@ static float quadEncReadPeriod(capture_t *c)
 		c->count = 0;
 		c->pulseCount = 0;
 	}
-	else
-	{
-		c->period = 0.0f;
-	}
+// 	else
+// 	{
+// 		c->period = 0.0f;
+// 	}
 
 	return c->period;
 }
