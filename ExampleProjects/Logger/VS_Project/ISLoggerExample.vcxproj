@@ -35,6 +35,7 @@
     <ClCompile Include="..\..\..\src\DeviceLogSorted.cpp" />
     <ClCompile Include="..\..\..\src\InertialSense.cpp" />
     <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c" />
+    <ClCompile Include="..\..\..\src\ISClient.cpp" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\ISDataMappings.cpp" />
     <ClCompile Include="..\..\..\src\ISDisplay.cpp" />
@@ -75,6 +76,7 @@
     <ClInclude Include="..\..\..\src\DeviceLogSorted.h" />
     <ClInclude Include="..\..\..\src\InertialSense.h" />
     <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h" />
+    <ClInclude Include="..\..\..\src\ISClient.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
     <ClInclude Include="..\..\..\src\ISDataMappings.h" />
     <ClInclude Include="..\..\..\src\ISDisplay.h" />

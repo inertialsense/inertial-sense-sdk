@@ -140,6 +140,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.asciiMessages = &a[15];
         }
+		else if (startsWith(a, "-base="))
+		{
+			g_commandLineOptions.baseConnection = &a[6];
+		}
         else if (startsWith(a, "-baud="))
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
@@ -200,10 +204,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.flashCfg = ".";
 		}
-		else if (startsWith(a, "-host="))
-		{
-			g_commandLineOptions.host = &a[6];
-		}
 		else if (startsWith(a, "-h") || startsWith(a, "--h") || startsWith(a, "-help") || startsWith(a, "--help"))
 		{
 			cltool_outputUsage();
@@ -256,16 +256,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.magRecal = true;
 			g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
 		}
-        else if (startsWith(a, "-survey="))
-        {
-            g_commandLineOptions.rmcPreset = 0;
-            g_commandLineOptions.surveyIn.state = strtol(a + 8, NULL, 10);
-            int maxDurationSec = strtol(a + 10, NULL, 10);
-            if (maxDurationSec > 5)
-            {
-                g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
-            }
-        }
 		else if (startsWith(a, "-presetPPD"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_BITS;
@@ -297,6 +287,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.softwareReset = true;
         }
+		else if (startsWith(a, "-rover="))
+		{
+			g_commandLineOptions.roverConnection = &a[7];
+
+			// DID_GPS1_POS must be enabled for NTRIP VRS to supply rover position.
+			stream_did_t dataset = {};
+			read_did_argument(&dataset, "DID_GPS1_POS");
+			g_commandLineOptions.datasets.push_back(dataset);
+		}
 		else if (startsWith(a, "-r"))
 		{
 			g_commandLineOptions.replayDataLog = true;
@@ -305,10 +304,16 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
 		}
-		else if (startsWith(a, "-svr=") || startsWith(a, "-srv="))
-		{
-			g_commandLineOptions.serverConnection = &a[5];
-		}
+        else if (startsWith(a, "-survey="))
+        {
+            g_commandLineOptions.rmcPreset = 0;
+            g_commandLineOptions.surveyIn.state = strtol(a + 8, NULL, 10);
+            int maxDurationSec = strtol(a + 10, NULL, 10);
+            if (maxDurationSec > 5)
+            {
+                g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
+            }
+        }
 		else if (startsWith(a, "-s"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
@@ -393,8 +398,7 @@ void cltool_outputUsage()
 	cout << "-----------------------------------------------------------------" << endl;
 	cout << endlbOn;
 	cout << "DESCRIPTION" << endlbOff;
-	cout << "    Command line utility for communicating, logging, and updating" << endl;
-	cout << "    firmware with Inertial Sense product line." << endl;
+	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PREINTEGRATED_IMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOn;
@@ -404,8 +408,10 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << " # Connect to RTK NTRIP base" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << " # update application firmware and bootloader" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOn;
+	cout << "                                                   " << boldOff << " # update application firmware and bootloader" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
@@ -438,7 +444,7 @@ void cltool_outputUsage()
     cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type dat (default), sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: dat (default), sdat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
@@ -448,25 +454,26 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration from command line)" << endl;
-	cout << "    -flashCfg" << boldOff << "       List all \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-flashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
-	cout << "    -evbFlashCfg" << boldOff << "    List all \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-evbFlashCfg=key=value|key=value\" " << boldOff <<  endlbOn;
+	cout << "    -flashCfg" << boldOff << "       List all uINS \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-flashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
+	cout << "    -evbFlashCfg" << boldOff << "    List all EVB \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-evbFlashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            Set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << "# Set multiple flashCfg values" << endlbOn;
-	cout << endlbOn;
-	cout << "OPTIONS (Client / Server)" << endl;
-	cout << "    -svr=" << boldOff << "INFO       Used to retrieve external data and send to the uINS. Examples:" << endl;
-	cout << "        - SERIAL:        -svr=RTCM3:SERIAL:" << EXAMPLE_PORT << ":57600         (port, baud rate)" << endl;
-	cout << "        - RTCM3:         -svr=RTCM3:192.168.1.100:7777:URL:user:password" << endl;
-	cout << "                                                              (URL, user, password optional)" << endl;
-	cout << "        - UBLOX data:    -svr=UBLOX:192.168.1.100:7777        (no URL, user or password)" << endl;
-	cout << "        - InertialSense: -svr=IS:192.168.1.100:7777           (no URL, user or password)" << endlbOn;
-	cout << "    -host=" << boldOff << "IP:PORT   used to host a TCP/IP InertialSense server. Examples:" << endl;
-	cout << "                         -host=:7777                          (IP is optional)" << endl;
-	cout << "                         -host=192.168.1.43:7777" << endl;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << endlbOn;
+	cout << "     " << boldOff << "                             # Set multiple flashCfg values" << endlbOn;
+	cout << "OPTIONS (RTK Rover / Base)" << endl;
+	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
+	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
+	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
+	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777" << endl;
+	cout << "            -rover=TCP:UBLOX:192.168.1.100:7777" << endl;
+	cout << "            -rover=SERIAL:RTCM3:" << EXAMPLE_PORT << ":57600             (port, baud rate)" << endl;
+	cout << "    -base=" << boldOff << "[IP]:[port]   As a Base (sever), send RTK corrections.  Examples:" << endl;
+	cout << "            -base=TCP::7777                            (IP is optional)" << endl;
+	cout << "            -base=TCP:192.168.1.43:7777" << endl;
+	cout << "            -base=SERIAL:" << EXAMPLE_PORT << ":921600" << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }
@@ -498,11 +505,11 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 	else
 	{
 		vector<string> keyValues;
-		splitString(flashCfgString, "|", keyValues);
+		splitString(flashCfgString, '|', keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
 			vector<string> keyAndValue;
-			splitString(keyValues[i], "=", keyAndValue);
+			splitString(keyValues[i], '=', keyAndValue);
 			if (keyAndValue.size() == 2)
 			{
 				if (flashMap.find(keyAndValue[0]) == flashMap.end())
@@ -548,11 +555,11 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 	else
 	{
 		vector<string> keyValues;
-		splitString(flashCfgString, "|", keyValues);
+		splitString(flashCfgString, '|', keyValues);
 		for (size_t i = 0; i < keyValues.size(); i++)
 		{
 			vector<string> keyAndValue;
-			splitString(keyValues[i], "=", keyAndValue);
+			splitString(keyValues[i], '=', keyAndValue);
 			if (keyAndValue.size() == 2)
 			{
 				if (flashMap.find(keyAndValue[0]) == flashMap.end())

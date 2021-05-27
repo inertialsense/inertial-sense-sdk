@@ -1186,7 +1186,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
 	}
 	else
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tvectorToRover: ");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tbaseToRover: ");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
 			rel.baseToRoverVector[0],				// Vector to base in ECEF
 			rel.baseToRoverVector[1],				// Vector to base in ECEF
