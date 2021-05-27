@@ -8,7 +8,7 @@ The following example projects are provide with the SDK to demonstrate various c
 * [Binary Communications](Communications/README) - How to communicate using InertialSense binary protocol using SDK. 
 * [Bootloader](bootloader/README) - How to update firmware on the InertialSense products using SDK.
 * [Logger ](Logger/README) - How to data log using using SDK.
-* [CLTool](..CLTool/README) - A multipurpose command line tool capable most common functionalities, including those of all example projects.
+* [CLTool](..cltool/README) - A multipurpose command line tool capable most common functionalities, including those of all example projects.
 
 ## Compile & Run (Linux/Mac)
 
@@ -16,7 +16,7 @@ The following steps will build executables for all of the example projects.
 
 1. Create build directory
 ``` bash
-$ cd InertialSenseSDK/ExampleProjects
+$ cd inertial-sense-sdk/ExampleProjects
 $ mkdir build
 ```
 2. Run cmake from within build directory
@@ -43,14 +43,14 @@ $ ./bin/[EXECUTABLE] /dev/ttyUSB0
 
 The following steps will build executables for all of the example projects.
 
-1. Open Visual Studio solution file (InertialSenseSDK\ExampleProjects\VS_project\AllExampleProjects.sln)
+1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\VS_project\AllExampleProjects.sln)
 2. Select the "Release" Solution Configuration.
 3. Build (F7)
 4. Run executable
 ``` bash
-C:\InertialSenseSDK\ExampleProjects\Ascii\VS_project\Release\[EXECUTABLE.EXE] COM3
+C:\inertial-sense-sdk\ExampleProjects\Ascii\VS_project\Release\[EXECUTABLE.EXE] COM3
 ```
 
 ## Summary
 
-That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/InertialSenseSDK">InertialSenseSDK</a> github repository, and we will be happy to help.
+That covers all the basic functionality you need to set up and talk to <a href="https://inertialsense.com">InertialSense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/inertial-sense-sdk">inertial-sense-sdk</a> github repository, and we will be happy to help.

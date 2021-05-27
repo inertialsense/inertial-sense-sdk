@@ -934,7 +934,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
 	ASSERT_SIZE(totalSize);
 }
 
-static void PopulateEvbLunaStatusMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_luna_status_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_STATUS];
@@ -1726,7 +1726,7 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
 	ASSERT_SIZE(totalSize);
 }
 
-
+#if 0
 static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef rtk_debug_2_t MAP_TYPE;
@@ -1915,6 +1915,7 @@ static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
 
 	ASSERT_SIZE(totalSize);
 }
+#endif
 
 #endif // USE_IS_INTERNAL
 
@@ -1927,7 +1928,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_PREINTEGRATED_IMU",            // 3
 	"DID_INS_1",                        // 4
 	"DID_INS_2",                        // 5
-	"DID_GPS1_POS",                     // 6
+	"DID_GPS1_UBX_POS",                 // 6
 	"DID_SYS_CMD",                      // 7
 	"DID_ASCII_BCAST_PERIOD",           // 8
 	"DID_RMC",                          // 9
@@ -2082,7 +2083,7 @@ cISDataMappings::cISDataMappings()
 
 #if defined(USE_LUNA_DATA_SETS)
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
-    PopulateEvbLunaStatusMappings(m_lookupInfo);
+    PopulateCoyoteStatusMappings(m_lookupInfo);
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
 	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
     PopulateEvbLunaWheelCommandMappings(m_lookupInfo);
@@ -2108,7 +2109,7 @@ cISDataMappings::cISDataMappings()
 //     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_CODE_RESIDUAL);
 //     PopulateRtkResidualMappings(m_lookupInfo, DID_RTK_PHASE_RESIDUAL);
 	PopulateRtkDebugMappings(m_lookupInfo);
-	PopulateRtkDebug2Mappings(m_lookupInfo);
+	// PopulateRtkDebug2Mappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
 	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_RAW_MAG);
 	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_DUAL_IMU_MAG);

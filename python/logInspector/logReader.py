@@ -367,7 +367,7 @@ class Log:
         f.write("----------------- Average Attitude ---------------------\n")
         f.write("Dev:  \t[ Roll\t\tPitch\t\tYaw ]\n")
         for i in range(self.numDev):
-            qavg = meanOfQuat(self.stateArray[i, :, 7:])
+            qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
             f.write("%d\t%f\t%f\t%f\n" % (self.serials[i], euler[0], euler[1], euler[2]))
 

@@ -171,12 +171,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 	// depending on command line options. stream various data sets
 	if (g_commandLineOptions.datasetEdit.did)
-	{
+	{	// Dataset to edit
 		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasetEdit.did);
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasetEdit.did, g_commandLineOptions.datasetEdit.periodMultiple);
 	}
 	else while (g_commandLineOptions.datasets.size())
-	{	// Request datasets
+	{	// Datasets to stream
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
 		switch (g_commandLineOptions.datasets.back().did)
 		{
@@ -223,21 +223,27 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
 
-	if (g_commandLineOptions.serverConnection.length() != 0)
+	if (g_commandLineOptions.roverConnection.length() != 0)
 	{
-		if (g_commandLineOptions.serverConnection.find("RTCM3:") == 0 ||
-			g_commandLineOptions.serverConnection.find("IS:") == 0 ||
-			g_commandLineOptions.serverConnection.find("UBLOX:") == 0)
+		vector<string> pieces;
+		splitString(g_commandLineOptions.roverConnection, ':', pieces);
+		if (pieces[0] != "TCP" &&
+			pieces[0] != "SERIAL")
 		{
-			if (!inertialSenseInterface.OpenServerConnection(g_commandLineOptions.serverConnection))
-			{
-				cout << "Failed to connect to server." << endl;
-			}
-		}
-		else
-		{
-			cout << "Invalid server connection, must prefix with RTCM3:, IS: or UBLOX:, " << g_commandLineOptions.serverConnection << endl;
+			cout << "Invalid base connection, 1st field must be: TCP or SERIAL\n  -rover=" << g_commandLineOptions.roverConnection << endl;
 			return false;
+		}
+		if (pieces[1] != "RTCM3" &&
+			pieces[1] != "IS" &&
+			pieces[1] != "UBLOX")
+		{
+			cout << "Invalid base connection, 2nd field must be: RTCM3, UBLOX, or IS\n  -rover=" << g_commandLineOptions.roverConnection << endl;
+			return false;
+		}
+
+		if (!inertialSenseInterface.OpenConnectionToServer(g_commandLineOptions.roverConnection))
+		{
+			cout << "Failed to connect to server (base)." << endl;
 		}
 	}
 	if (g_commandLineOptions.flashCfg.length() != 0)
@@ -319,9 +325,9 @@ static int cltool_createHost()
 		cout << "Failed to update EVB flash config" << endl;
 		return -1;
 	}
-	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.host))
+	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.baseConnection))
 	{
-		cout << "Failed to create host at " << g_commandLineOptions.host << endl;
+		cout << "Failed to create host at " << g_commandLineOptions.baseConnection << endl;
 		return -1;
 	}
 
@@ -345,6 +351,7 @@ static int inertialSenseMain()
 {	
 	// clear display
 	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
+	g_inertialSenseDisplay.SetKeyboardNonBlock();
 	g_inertialSenseDisplay.Clear();
 
 	// if replay data log specified on command line, do that now and return
@@ -377,7 +384,7 @@ static int inertialSenseMain()
         return cltool_updateBootloader();
     }
     // if host was specified on the command line, create a tcp server
-	else if (g_commandLineOptions.host.length() != 0)
+	else if (g_commandLineOptions.baseConnection.length() != 0)
 	{
 		return cltool_createHost();
 	}

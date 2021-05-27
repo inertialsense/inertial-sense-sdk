@@ -43,12 +43,21 @@ string base64Decode(const string& encoded_string);
 
 /**
 * Split string by delimiter
+* @param str the string to split
+* @param delimiter the delimiter to split on
+* @param result cleared and then filled with split strings
+* @return the number of items in result
+*/
+size_t splitString(const string& str, const char delimiter, vector<string>& result);
+
+/**
+* Join vector of strings with character
 * @param s the string to split
 * @param delimiter the delimiter to split on
 * @param result cleared and then filled with split strings
 * @return the number of items in result
 */
-size_t splitString(const string& s, const string& delimiter, vector<string>& result);
+void joinStrings(const vector<string>& v, const char c, string& result);
 
 /**
 * Wraps the mutex functions below
@@ -140,8 +149,8 @@ void usleep(__int64 usec);
 
 #endif
 
-int current_timeSec();
-int current_timeMs();
+unsigned int current_timeSec();
+unsigned int current_timeMs();
 uint64_t current_timeUs();
 
 uint64_t timerUsStart();

@@ -101,8 +101,6 @@ cInertialSenseDisplay::cInertialSenseDisplay()
 
 	signal(SIGINT, signalFunction);
 
-    SetKeyboardNonBlock();
-
 #endif
 
 }
@@ -112,8 +110,10 @@ cInertialSenseDisplay::~cInertialSenseDisplay()
 
 #if !PLATFORM_IS_WINDOWS
 
-	// Revert terminal changes from KeyboardNonBlock();
-	ResetTerminalMode();
+	if (m_nonblockingkeyboard)
+	{	// Revert terminal changes from KeyboardNonBlock();
+		ResetTerminalMode();
+	}
 
 #endif
 
@@ -242,6 +242,7 @@ string cInertialSenseDisplay::Goodbye()
 
 void cInertialSenseDisplay::SetKeyboardNonBlock()
 {
+	m_nonblockingkeyboard = true;
 
 #if !PLATFORM_IS_WINDOWS
 
@@ -250,7 +251,7 @@ void cInertialSenseDisplay::SetKeyboardNonBlock()
     new_settings = orig_termios_;
     new_settings.c_lflag &= ~ICANON;
     new_settings.c_lflag &= ~ECHO;
-    new_settings.c_lflag &= ~ISIG;
+    // new_settings.c_lflag &= ~ISIG;	// disable ctrl-c signal
     new_settings.c_cc[VMIN] = 0;
     new_settings.c_cc[VTIME] = 0;
     tcsetattr(0, TCSANOW, &new_settings);
@@ -333,15 +334,15 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		return;
 	}
 
-	int curTimeMs = current_timeMs();
+	unsigned int curTimeMs = current_timeMs();
 	m_rxCount++;
 
 	if (enableReplay)
 	{
 		static bool isTowMode = false;
-		static int gpsTowMsOffset = 0;
-		static int msgTimeMsOffset = 0;
-		int msgTimeMs = 0;
+		static unsigned int gpsTowMsOffset = 0;
+		static unsigned int msgTimeMsOffset = 0;
+		unsigned int msgTimeMs = 0;
 
 		// Copy only new data
 		uDatasets d = {};
@@ -353,7 +354,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			// Time of week - double
 		case DID_INS_1:
 		case DID_INS_2:				
-			msgTimeMs = (int)(1000.0*d.ins1.timeOfWeek); 
+			msgTimeMs = (unsigned int)(1000.0*d.ins1.timeOfWeek); 
 			isTowMode = true;
 			break;
 
@@ -366,7 +367,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_GPS1_POS:
         case DID_GPS1_RTK_POS:
             msgTimeMs = d.gpsPos.timeOfWeekMs;
-			gpsTowMsOffset = (int)(1000.0*d.gpsPos.towOffset); 
+			gpsTowMsOffset = (unsigned int)(1000.0*d.gpsPos.towOffset); 
 			isTowMode = true; 
 			break;
 
@@ -377,7 +378,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 		case DID_GPS1_RTK_POS_MISC:
 			msgTimeMs = d.gpsPos.timeOfWeekMs;
-			gpsTowMsOffset = (int)(1000.0*d.gpsPos.towOffset);
+			gpsTowMsOffset = (unsigned int)(1000.0*d.gpsPos.towOffset);
 			isTowMode = false;
 			break;
 
@@ -390,9 +391,9 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_INL2_STATES:
 		case DID_GPS_BASE_RAW:
 			if( isTowMode )
-				msgTimeMs = (int)(1000.0*d.imu.time) + gpsTowMsOffset; 
+				msgTimeMs = (unsigned int)(1000.0*d.imu.time) + gpsTowMsOffset; 
 			else
-				msgTimeMs = (int)(1000.0*d.imu.time);
+				msgTimeMs = (unsigned int)(1000.0*d.imu.time);
 			break;
 
 			// Unidentified data type
@@ -408,10 +409,10 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 				curTimeMs = current_timeMs();
 
 				// Replay speed
-				int replayTimeMs = (int)(long)(((double)curTimeMs)*replaySpeedX);
+				unsigned int replayTimeMs = (unsigned int)(long)(((double)curTimeMs)*replaySpeedX);
 
 				// Reinitialize message offset
-				if (abs(msgTimeMs + msgTimeMsOffset - replayTimeMs) > 1500)
+				if ((msgTimeMs + msgTimeMsOffset - replayTimeMs) > 1500)
 					msgTimeMsOffset = replayTimeMs - msgTimeMs;
 
 				// Proceed if we're caught up
@@ -426,8 +427,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 	}
 
 
-	static int timeSinceRefreshMs = 0;
-	static int timeSinceClearMs = 0;
+	static unsigned int timeSinceRefreshMs = 0;
+	static unsigned int timeSinceClearMs = 0;
 	static char idHist[DID_COUNT] = { 0 };
 	if (m_displayMode != DMODE_SCROLL)
 	{
@@ -442,6 +443,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 
 	// Display Data
+#define REFRESH_PERIOD_MS	100		// 10Hz 
 	switch (m_displayMode)
 	{
 	default:
@@ -452,9 +454,11 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		// Data stays at fixed location (no scroll history)
 		DataToVector(data);
 
-		// Limit printData display updates to 20Hz (50 ms)
-		if (curTimeMs - timeSinceRefreshMs > 50 || curTimeMs < timeSinceRefreshMs)
+		// Limit printData display updates
+		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
 		{
+			timeSinceRefreshMs = curTimeMs;
+
 			Home();
 			if (enableReplay)
 				cout << Replay(replaySpeedX) << endl;
@@ -462,15 +466,16 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 				cout << Connected() << endl;
 
 			cout << VectortoString();
-
-			timeSinceRefreshMs = curTimeMs;
 		}
 		break;
 
 	case DMODE_EDIT:
-		// Limit printData display updates to 20Hz (50 ms)
-		if (curTimeMs - timeSinceRefreshMs > 50 || curTimeMs < timeSinceRefreshMs)
+		// Limit printData display updates
+		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS &&
+			data->hdr.id == m_editData.did)
 		{
+			timeSinceRefreshMs = curTimeMs;
+
 			Home();
 			if (enableReplay)
 				cout << Replay(replaySpeedX) << endl;
@@ -479,20 +484,18 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 			// Generic column format
 			cout << DatasetToString(data);
-
-			timeSinceRefreshMs = curTimeMs;
 		}
 		break;
 
 	case DMODE_STATS:
-		// Limit printData display updates to 20Hz (50 ms)
-		if (curTimeMs - timeSinceRefreshMs > 50 || curTimeMs < timeSinceRefreshMs)
+		// Limit printData display updates
+		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
 		{
+			timeSinceRefreshMs = curTimeMs;
+
 			Home();
 			cout << Connected() << endl;
 			DataToStats(data);
-
-			timeSinceRefreshMs = curTimeMs;
 		}
 		break;
 
@@ -1183,7 +1186,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
 	}
 	else
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tvectorToRover: ");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tbaseToRover: ");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
 			rel.baseToRoverVector[0],				// Vector to base in ECEF
 			rel.baseToRoverVector[1],				// Vector to base in ECEF
@@ -1580,6 +1583,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	else switch (c)
 	{
 	case 8:		// Backspace
+	case 127:	// Delete
 		m_editData.field.pop_back();
 		break;
 	case 10:
@@ -1618,14 +1622,14 @@ void cInertialSenseDisplay::SelectEditDataset(int did)
 
 	// Set m_editData.mapInfoBegin to end or DATASET_VIEW_NUM_ROWSth element, whichever is smaller.
 	int i=0;
-	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); it++)
+	for (map_name_to_info_t::const_iterator it = m_editData.mapInfo->begin(); it != m_editData.mapInfo->end(); )
 	{
-		if (i++>DATASET_VIEW_NUM_ROWS)
+		if (++i>DATASET_VIEW_NUM_ROWS)
 		{
 			break;
 		}
 
-		m_editData.mapInfoEnd = it;
+		m_editData.mapInfoEnd = ++it;
 	}
 
 	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
@@ -1644,7 +1648,7 @@ void cInertialSenseDisplay::VarSelectIncrement()
 	{
 		m_editData.mapInfoSelection++;
 	}
-	else if (m_editData.mapInfoEnd != --(m_editData.mapInfo->end()))
+	else if (m_editData.mapInfoEnd != m_editData.mapInfo->end())
 	{
 		m_editData.mapInfoBegin++;
 		m_editData.mapInfoEnd++;

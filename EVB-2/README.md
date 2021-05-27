@@ -92,7 +92,7 @@ The EVB USB port on the EVB-2 must be used to update the EVB-2 firmware.
 
 ##### CLTool
 
-Use the -b command line flag. See the CLTool [help menu](<https://docs.inertialsense.com/user-manual/software/cltool/#help-menu>).
+Use the -b command line flag. See the cltool [help menu](<https://docs.inertialsense.com/user-manual/software/cltool/#help-menu>).
 
 ##### SDK
 

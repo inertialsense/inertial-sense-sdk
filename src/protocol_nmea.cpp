@@ -52,20 +52,20 @@ void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask)
 * return : gtime_t struct
 * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
 *-----------------------------------------------------------------------------*/
-gtime_t epoch2time(const double *ep)
+gtime_t epochToTime(const double *ep)
 {
-	const int doy[]={1,32,60,91,121,152,182,213,244,274,305,335};
-	gtime_t time={0};
-	int days,sec,year=(int)ep[0],mon=(int)ep[1],day=(int)ep[2];
-	
-	if (year<1970||2099<year||mon<1||12<mon) return time;
-	
-	/* leap year if year%4==0 in 1901-2099 */
-	days=(year-1970)*365+(year-1969)/4+doy[mon-1]+day-2+(year%4==0&&mon>=3?1:0);
-	sec=(int)floor(ep[5]);
-	time.time=(time_t)days*86400+(int)ep[3]*3600+(int)ep[4]*60+sec;
-	time.sec=ep[5]-sec;
-	return time;
+    const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
+    gtime_t time = { 0 };
+    int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
+
+    if (year < 1970 || 2099 < year || mon < 1 || 12 < mon) return time;
+
+    /* leap year if year%4==0 in 1901-2099 */
+    days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
+    sec = (int)floor(ep[5]);
+    time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
+    time.sec = ep[5] - sec;
+    return time;
 }
 
 static const double gpst0[]={1980,1, 6,0,0,0}; /* gps time reference */
@@ -76,9 +76,9 @@ static const double gpst0[]={1980,1, 6,0,0,0}; /* gps time reference */
 *          int    *week     IO  week number in gps time (NULL: no output)
 * return : time of week in gps time (s)
 *-----------------------------------------------------------------------------*/
-double time2gpst(gtime_t t, int *week)
+double timeToGpst(gtime_t t, int *week)
 {
-	gtime_t t0=epoch2time(gpst0);
+	gtime_t t0=epochToTime(gpst0);
 	time_t sec=t.time-t0.time;
 	time_t w=(time_t)(sec/(86400*7));
 	
@@ -719,11 +719,13 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 // Parse NMEA Functions
 //////////////////////////////////////////////////////////////////////////
 
+// Returns RMC options
 uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[NUM_COM_PORTS], uint32_t *asciiPeriodPPIMU)
 {
+	(void)msgSize;
 	if(pHandle >= NUM_COM_PORTS)
 	{
-		return -1;
+		return 0;
 	}
 	char *ptr = (char *)msg;
 	
@@ -732,34 +734,34 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 	uint32_t options = 0;
 	
 	ptr = ASCII_find_next_field(ptr);			// Options
-	if(*ptr!=','){ options = atoi(ptr);		}		
+	if(*ptr!=','){ options = (uint16_t)atoi(ptr); }		
 	ptr = ASCII_find_next_field(ptr);			// PIMU
-	if(*ptr!=','){ tmp.pimu = atoi(ptr);	}	
+	if(*ptr!=','){ tmp.pimu = (uint16_t)atoi(ptr); }	
 	ptr = ASCII_find_next_field(ptr);			// PPIMU
-	if(*ptr!=','){ tmp.ppimu = atoi(ptr);	}
+	if(*ptr!=','){ tmp.ppimu = (uint16_t)atoi(ptr); }
 
 	if (asciiPeriodPPIMU) { *asciiPeriodPPIMU = (uint32_t)_MAX(tmp.pimu, tmp.ppimu); }	// Global ascii IMU broadcast period
 
 	ptr = ASCII_find_next_field(ptr);			// PINS1
-	if(*ptr!=','){ tmp.pins1 = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pins1 = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PINS2
-	if(*ptr!=','){ tmp.pins2 = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pins2 = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PGPSP
-	if(*ptr!=','){ tmp.pgpsp = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pgpsp = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// reserved
 	
 	ptr = ASCII_find_next_field(ptr);			// gpgga
-	if(*ptr!=','){ tmp.gpgga = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpgga = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgll
-	if(*ptr!=','){ tmp.gpgll = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpgll = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgsa
-	if(*ptr!=','){ tmp.gpgsa = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpgsa = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gprmc
-	if(*ptr!=','){ tmp.gprmc = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gprmc = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpzda
-	if(*ptr!=','){ tmp.gpzda = atoi(ptr);	}
+	if(*ptr!=','){ tmp.gpzda = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// pashr
-	if(*ptr!=','){ tmp.pashr = atoi(ptr);	}
+	if(*ptr!=','){ tmp.pashr = (uint16_t)atoi(ptr);	}
 
 		
 	// Copy tmp to corresponding port(s)
@@ -788,6 +790,7 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 */
 int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, double &year)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxZDA,time,day,month,year,ltzh,ltzn*cs<CR><LF>
 			
@@ -818,6 +821,7 @@ int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, do
 */
 int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGNS,time,lat,NS,lon,EW,posMode,numSV,HDOP,alt,sep,diffAge,diffStation,navStatus*cs<CR><LF>
 
@@ -831,9 +835,9 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double subSec = UTCtime - (int)UTCtime;
 	datetime[5] = (double)((int)UTCtime % 100) + subSec + gpsPos->leapS;
 			
-	gtime_t gtm = epoch2time(datetime);
+	gtime_t gtm = epochToTime(datetime);
 	int week;
-	double iTOWd = time2gpst(gtm, &week);
+	double iTOWd = timeToGpst(gtm, &week);
 	uint32_t iTOW = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 		
 	//Latitude
@@ -942,6 +946,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 */	
 int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGGA,time,lat,NS,lon,EW,quality,numSV,HDOP,alt,altUnit,sep,sepUnit,diffAge,diffStation*cs<CR><LF>
 			
@@ -955,9 +960,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double subSec = UTCtime - (int)UTCtime;
 	datetime[5] = (double)((int)UTCtime % 100) + subSec + gpsPos->leapS;
 			
-	gtime_t gtm = epoch2time(datetime);
+	gtime_t gtm = epochToTime(datetime);
 	int week;
-	double iTOWd = time2gpst(gtm, &week);
+	double iTOWd = timeToGpst(gtm, &week);
 	uint32_t iTOW = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 			
 	//Latitude
@@ -1058,6 +1063,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 */
 int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], int *satsUsed, int navMode)
 {
+	(void)msgSize;
+	(void)navMode;
+	(void)satsUsed;
 	char *ptr = (char *)&msg[7];
 	//$xxRMC,time,status,lat,NS,lon,EW,spd,cog,date,mv,mvEW,posMode,navStatus*cs<CR><LF>
 
@@ -1082,8 +1090,8 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 	double subSec = UTCtime - (int)UTCtime;
 	datetime[5] = (double)((int)UTCtime % 100) + subSec;
 			
-	gtime_t gtm = epoch2time(datetime);
-	double iTOWd = time2gpst(gtm, 0);
+	gtime_t gtm = epochToTime(datetime);
+	double iTOWd = timeToGpst(gtm, 0);
 	gpsVel->timeOfWeekMs = (uint32_t)((iTOWd + 0.00001) * 1000.0);
 			
 	//Speed data in NED
@@ -1103,6 +1111,7 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 */
 int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMode)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGSA,opMode,navMode{,svid},PDOP,HDOP,VDOP,systemId*cs<CR><LF>
 
@@ -1130,6 +1139,7 @@ int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMod
 */
 int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSVmsg[2], int *satCount, uint32_t *cnoSum, uint32_t *cnoCount)
 {
+	(void)msgSize;
 	char *ptr = (char *)&msg[7];
 	//$xxGSV,numMsg,msgNum,numSV{,svid,elv,az,cno},signalId*cs<CR><LF>
 		
@@ -1162,19 +1172,19 @@ int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSV
 		for(int i=0;i<countSat;++i)
 		{
 			//svid
-			int svid = atoi(ptr);
+			uint8_t svid = (uint8_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//elv
-			int elv = atoi(ptr);
+			uint8_t elv = (uint8_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//az
-			int az = atoi(ptr);
+			uint16_t az = (uint16_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//cno
-			int cno = atoi(ptr);
+			uint8_t cno = (uint8_t)atoi(ptr);
 			ptr = ASCII_find_next_field(ptr);
 			
 			//Save data (only if there is room available)

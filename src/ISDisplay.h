@@ -46,7 +46,7 @@ public:
 
 		bool            editEnabled;
 		std::string     field;
-		int             did;
+		uint32_t        did;
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;
@@ -127,6 +127,7 @@ private:
 	string VectortoString();
 	void DataToVector(const p_data_t* data);
 
+	bool m_nonblockingkeyboard;
 	vector<string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;
