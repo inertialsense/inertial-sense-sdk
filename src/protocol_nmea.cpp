@@ -2,6 +2,7 @@
 #include "protocol_nmea.h"
 #include "ISPose.h"
 #include "ISEarth.h"
+#include "globals.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -871,18 +872,23 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	int fixType = 0;
 	int differential = 0;
 	if(pMode[0] == 'R' || pMode[1] == 'R' || pMode[2] == 'R' || pMode[3] == 'R')	//RTK fixed
-		fixType = 2;
+		{fixType = 3;
+		g_debug.i[1]++;}
 	else if(pMode[0] == 'F' || pMode[1] == 'F' || pMode[2] == 'F' || pMode[3] == 'F')	//RTK float
-		fixType = 2;
+		{fixType = 2;
+		g_debug.i[2]++;}
 	else if(pMode[0] == 'D' || pMode[1] == 'D' || pMode[2] == 'D' || pMode[3] == 'D')	//2D/3D GNSS fix
 	{
 		fixType = 2;
 		differential = 1;
+		g_debug.i[3]++;
 	}
 	else if(pMode[0] == 'A' || pMode[1] == 'A' || pMode[2] == 'A' || pMode[3] == 'A')	//2D/3D GNSS fix
-		fixType = 2;
+		{fixType = 2;
+		g_debug.i[4]++;}
 	else if(pMode[0] == 'E' || pMode[1] == 'E' || pMode[2] == 'E' || pMode[3] == 'E')	//Dead rekoning fix
-		fixType = 1;
+		{fixType = 1;
+		g_debug.i[5]++;}
 		
 	//Determine 2D / 3D
 	if(fixType == 2 && navMode == 3)
