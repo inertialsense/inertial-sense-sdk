@@ -35,6 +35,7 @@ add_executable(cltool
 	../src/DeviceLogSorted.cpp
 	../src/InertialSense.cpp
 	../src/inertialSenseBootLoader.c
+	../src/ISClient.cpp
 	../src/ISComm.c
 	../src/ISDataMappings.cpp
 	../src/ISDisplay.cpp

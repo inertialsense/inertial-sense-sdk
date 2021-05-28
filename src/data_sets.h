@@ -3731,16 +3731,6 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 /** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds);
 
-/*
-Convert gps pos to nmea gga
-
-@param gps gps position
-@param buffer buffer to fill with nmea gga
-@param bufferLength number of chars available in buffer, should be at least 128
-@return number of chars written to buffer, not including the null terminator
-*/
-// Use gps_to_nmea_gga() in protocol_nmea.cpp instead... 
-// int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength);
 
 #ifndef RTKLIB_H
 #define SYS_NONE    0x00                /* navigation system: none */

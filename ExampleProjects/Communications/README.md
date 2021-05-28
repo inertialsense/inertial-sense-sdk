@@ -1,12 +1,12 @@
 # SDK: Binary Communications Example Project
 
-This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications) project demonstrates binary communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISCommunicationsExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Communications/ISCommunicationsExample.c)
+* [ISCommunicationsExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications/ISCommunicationsExample.c)
 
 #### SDK Files
 
@@ -36,12 +36,8 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
 
-	// Make sure to assign a valid buffer and buffer size to the comm instance
-	comm.buffer = buffer;
-	comm.bufferSize = sizeof(buffer);
-
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm);
+	is_comm_init(&comm, buffer, sizeof(buffer));
 ```
 
 ### Step 3: Initialize and open serial port

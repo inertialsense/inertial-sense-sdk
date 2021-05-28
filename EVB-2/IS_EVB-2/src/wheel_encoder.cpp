@@ -46,7 +46,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 	static wheel_encoder_t wheelEncoderLast = {0};
 
 	++encoderSendTimeMs;
-	if(encoderSendTimeMs >= g_flashCfg->wheelStepPeriodMs)
+	if(encoderSendTimeMs >= (int)g_flashCfg->wheelStepPeriodMs)
 	{  
 		encoderSendTimeMs = 0;
 		
