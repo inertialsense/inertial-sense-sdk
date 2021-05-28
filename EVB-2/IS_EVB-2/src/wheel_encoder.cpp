@@ -24,6 +24,7 @@ void init_wheel_encoder(void)
     {   
 		quadEncInit(4);		// Sensing range: ~27ms
 		quadEncSetDirectionReverse(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT, g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT);
+		quadEncStartFilterCount(g_flashCfg->encoderTickToWheelRad);
     }
 #endif
 }

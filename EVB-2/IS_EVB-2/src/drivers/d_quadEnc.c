@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define QDEC_USE_INDEX	0
 
 static float s_tc2sec = 0.0f;
+static int s_start_filter_count = 0;
 static bool s_direction_reverse_0 = 0;
 static bool s_direction_reverse_1 = 0;
 
@@ -83,14 +84,14 @@ static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channe
 	if (status & TC_SR_LDRAS)
 	{	// RA Loading
 		uint32_t ra_count = tc_read_ra(p_tc, ul_channel);
-		if(c->running)
+		if(c->running >= s_start_filter_count)
 		{
 			c->count += c->overflow + ra_count;
 			c->pulseCount++;
 		}
 		else
 		{	// First read after stopping is invalid
-			c->running = 1;
+			c->running++;
 			c->count = 0;
 			c->pulseCount = 0;
 		}
@@ -179,6 +180,15 @@ void quadEncSetDirectionReverse( bool reverse_0, bool reverse_1 )
 	s_direction_reverse_1 = reverse_1;
 }
 
+void quadEncStartFilterCount( float encoderTickToWheelRad )
+{
+	if (encoderTickToWheelRad != 0.0)
+	{
+		int count = ceil(1.0 / (encoderTickToWheelRad * 50));
+		s_start_filter_count = _MAX(count,0);
+	}
+}
+
 void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 {
 	int16_t cv;
@@ -206,7 +216,8 @@ static float quadEncReadPeriod(capture_t *c)
 	{
 		uint32_t dtMs = time_msec() - c->timeMs;
 		if (dtMs > 500)		// 100ms timeout
-		// We might try scaling this timeout based on the number of ticks per radian.  We need to wait longer if lower resolution encoders. 
+		// We might try scaling this timeout based on the minimum velocity and number of ticks per radian.  We need to wait longer for lower resolution encoders. 
+		// threshold = rad_per_tick * min_velocity * (125)     Hoverbot ~500ms, ZT ~2ms
 		{	// Wheels are stationary or spinning very slowly 
 			c->running = 0;
 			c->count = 0;
