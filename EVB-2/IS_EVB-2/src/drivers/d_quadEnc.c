@@ -242,8 +242,8 @@ static float quadEncReadPeriod(capture_t *c)
 
 void quadEncReadPeriodAll(float *period0, float *period1)
 {
-	g_debug.i[4] = capture[0].pulseCount;
-	g_debug.i[5] = capture[1].pulseCount;
+	// g_debug.i[4] = capture[0].pulseCount;
+	// g_debug.i[5] = capture[1].pulseCount;
 
 	taskENTER_CRITICAL();
 
@@ -252,12 +252,12 @@ void quadEncReadPeriodAll(float *period0, float *period1)
 
 	taskEXIT_CRITICAL();
 
-	g_debug.i[0] = capture[0].count;
-	g_debug.i[1] = capture[1].count;
-	g_debug.i[2] = capture[0].overflow;
-	g_debug.i[3] = capture[1].overflow;	
-	g_debug.f[0] = *period0 * 1000.0;
-	g_debug.f[1] = *period1 * 1000.0;
+	// g_debug.i[0] = capture[0].count;
+	// g_debug.i[1] = capture[1].count;
+	// g_debug.i[2] = capture[0].overflow;
+	// g_debug.i[3] = capture[1].overflow;	
+	// g_debug.f[0] = *period0 * 1000.0;
+	// g_debug.f[1] = *period1 * 1000.0;
 }
 
 void test_quad_encoders(void)
