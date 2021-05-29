@@ -2,7 +2,6 @@
 #include "protocol_nmea.h"
 #include "ISPose.h"
 #include "ISEarth.h"
-#include "globals.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -950,13 +949,6 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	gpsPos->ecef[0] = ecef[0];
 	gpsPos->ecef[1] = ecef[1];
 	gpsPos->ecef[2] = ecef[2];	
-
-#if 1
-	g_debug.i[8] = iTOW;
-	g_debug.lf[0] = gpsPos->lla[0];
-	g_debug.lf[1] = gpsPos->lla[1];
-	g_debug.lf[2] = gpsPos->lla[2];
-#endif
 
 	return 0;	
 }
