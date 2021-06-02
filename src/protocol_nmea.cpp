@@ -819,7 +819,7 @@ int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, do
 *   Number Satellites
 *   Altitude & Geoid separation
 */
-int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode)
+int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -868,26 +868,49 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	ptr = ASCII_find_next_field(ptr);
 		
 	//Based off of ZED-F9P datasheet
-	int fixType = 0;
-	int differential = 0;
-	if(pMode[0] == 'R' || pMode[1] == 'R' || pMode[2] == 'R' || pMode[3] == 'R')	//RTK fixed
-		fixType = 2;
-	else if(pMode[0] == 'F' || pMode[1] == 'F' || pMode[2] == 'F' || pMode[3] == 'F')	//RTK float
-		fixType = 2;
-	else if(pMode[0] == 'D' || pMode[1] == 'D' || pMode[2] == 'D' || pMode[3] == 'D')	//2D/3D GNSS fix
+	uint32_t fixType = GPS_STATUS_FIX_NONE;
+	statusFlags |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+	gpsPos->hAcc = 0.0f;
+	if(pMode[0] == 'R' || pMode[1] == 'R' || pMode[2] == 'R' || pMode[3] == 'R')		// RTK fix
 	{
-		fixType = 2;
-		differential = 1;
+		fixType = GPS_STATUS_FIX_RTK_FIX;
+		statusFlags |= 
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_RTK_POSITION_VALID |
+			GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos->hAcc = 0.05f;
 	}
-	else if(pMode[0] == 'A' || pMode[1] == 'A' || pMode[2] == 'A' || pMode[3] == 'A')	//2D/3D GNSS fix
-		fixType = 2;
-	else if(pMode[0] == 'E' || pMode[1] == 'E' || pMode[2] == 'E' || pMode[3] == 'E')	//Dead rekoning fix
-		fixType = 1;
-		
-	//Determine 2D / 3D
-	if(fixType == 2 && navMode == 3)
-		fixType = 3;
-		
+	else if(pMode[0] == 'F' || pMode[1] == 'F' || pMode[2] == 'F' || pMode[3] == 'F')	// RTK float
+	{
+		fixType = GPS_STATUS_FIX_RTK_FLOAT;
+		statusFlags |=
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos->hAcc = 0.4f;
+	}
+	else if(pMode[0] == 'D' || pMode[1] == 'D' || pMode[2] == 'D' || pMode[3] == 'D')	// Differential (DGPS)
+	{
+		fixType = GPS_STATUS_FIX_DGPS;
+		statusFlags |= 
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos->hAcc = 0.8f;
+	}
+	else if(pMode[0] == 'A' || pMode[1] == 'A' || pMode[2] == 'A' || pMode[3] == 'A')	// Autonomous, 2D/3D
+	{
+		fixType = GPS_STATUS_FIX_3D;
+		statusFlags |= GPS_STATUS_FLAGS_FIX_OK;
+		gpsPos->hAcc = 1.5f;
+	}
+	else if(pMode[0] == 'E' || pMode[1] == 'E' || pMode[2] == 'E' || pMode[3] == 'E')	// Dead reckoning
+	{
+		fixType = GPS_STATUS_FIX_DEAD_RECKONING_ONLY;
+	}
+	gpsPos->vAcc = 1.4f * gpsPos->hAcc;
+			
 	//Number of satellites used in solution
 	*satsUsed = atoi(ptr);
 	ptr = ASCII_find_next_field(ptr);
@@ -905,9 +928,8 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 		
 	//Store data		
 	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, GPS_STATUS_NUM_SATS_USED_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), (fixType != 0) << GPS_STATUS_FLAGS_BIT_OFFSET, GPS_STATUS_FLAGS_FIX_OK);
-	set_gpsPos_status_mask(&(gpsPos->status), fixType << GPS_STATUS_FIX_BIT_OFFSET, GPS_STATUS_FIX_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), differential << (GPS_STATUS_FLAGS_BIT_OFFSET + 1), GPS_STATUS_FLAGS_DGPS_USED);
+	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, GPS_STATUS_FLAGS_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), fixType, GPS_STATUS_FIX_MASK);
 		
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];
@@ -927,11 +949,6 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	gpsPos->ecef[0] = ecef[0];
 	gpsPos->ecef[1] = ecef[1];
 	gpsPos->ecef[2] = ecef[2];	
-	//gpsPos->hAcc = 0;
-	//gpsPos->vAcc = 0;	
-		
-	//Indicate it is coming from NMEA
-	gpsPos->status |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
 
 	return 0;	
 }
@@ -944,7 +961,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 *   Number Satellites
 *   Altitude & Geoid separation
 */	
-int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, int navMode)
+int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -985,27 +1002,50 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	ptr = ASCII_find_next_field(ptr);
 			
 	//Based off of ZED-F9P datasheet
-	int fixType = 0;
-	int differential = 0;
+	uint32_t fixType = GPS_STATUS_FIX_NONE;
+	statusFlags |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+	gpsPos->hAcc = 0.0f;
+	gpsPos->vAcc = 0.0f;
 	switch(quality)
 	{
-		case 1:
-		case 4:
-		case 5:
-		fixType = 2;
+	case 6:		// Dead reckoning
+		fixType = GPS_STATUS_FIX_DEAD_RECKONING_ONLY;
 		break;
-		case 2:
-		fixType = 2;
-		differential = 1;
+
+	case 5:		// RTK float
+		fixType = GPS_STATUS_FIX_RTK_FLOAT;
+		statusFlags |=
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos->hAcc = 0.4f;
 		break;
-		case 6:
-		fixType = 1;
+	
+	case 4:		// RTK fix
+		fixType = GPS_STATUS_FIX_RTK_FIX;
+		statusFlags |= 
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_RTK_POSITION_VALID |
+			GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos->hAcc = 0.05f;
+		break;
+
+	case 2:		// Differential
+		fixType = GPS_STATUS_FIX_DGPS;
+		statusFlags |= 
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos->hAcc = 0.8f;
+		break;
+
+	case 1:		// Autonomous
+		fixType = GPS_STATUS_FIX_3D;
+		statusFlags |= GPS_STATUS_FLAGS_FIX_OK;
+		gpsPos->hAcc = 1.5f;
 		break;
 	}
-			
-	//Determine 2D / 3D
-	if(fixType == 2 && navMode == 3)
-	fixType = 3;
 			
 	//Number of satellites used in solution
 	*satsUsed = atoi(ptr);
@@ -1027,9 +1067,8 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 			
 	//Store data
 	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, GPS_STATUS_NUM_SATS_USED_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), (fixType != 0) << GPS_STATUS_FLAGS_BIT_OFFSET, GPS_STATUS_FLAGS_FIX_OK);
-	set_gpsPos_status_mask(&(gpsPos->status), fixType << GPS_STATUS_FIX_BIT_OFFSET, GPS_STATUS_FIX_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), differential << (GPS_STATUS_FLAGS_BIT_OFFSET + 1), GPS_STATUS_FLAGS_DGPS_USED);
+	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, GPS_STATUS_FLAGS_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), fixType, GPS_STATUS_FIX_MASK);
 			
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];
@@ -1061,11 +1100,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 /* G_RMC Message
 * Provides speed (speed and course over ground)
 */
-int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], int *satsUsed, int navMode)
+int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6])
 {
 	(void)msgSize;
-	(void)navMode;
-	(void)satsUsed;
 	char *ptr = (char *)&msg[7];
 	//$xxRMC,time,status,lat,NS,lon,EW,spd,cog,date,mv,mvEW,posMode,navStatus*cs<CR><LF>
 
