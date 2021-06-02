@@ -73,7 +73,7 @@ static capture_t capture[2] = {};
 
 static float quadEncPeriodSetStopped(capture_t *c)
 {	// Wheels are stationary or spinning very slowly
-	c->running = 0;
+	c->running = false;
 	c->count = 0;
 	c->pulseCount = 0;
 	c->period = 0.0f;
@@ -85,7 +85,7 @@ static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channe
 	uint32_t status = tc_get_status(p_tc, ul_channel);
 
 	if (c->directionLast != direction)
-	{	// Switched direction
+	{	// Switched direction.  Reset velocity measurements and indicate system is not running.
 		c->directionLast = direction;
 		quadEncPeriodSetStopped(c);
 	}
