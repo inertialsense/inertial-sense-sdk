@@ -17,4 +17,3 @@ Debug/
 *.o
 IS_logs/
 *.user
-src/luna_data_sets.h

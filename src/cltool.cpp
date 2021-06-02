@@ -159,7 +159,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-dids"))
 		{
-#if __has_include("luna_data_sets.h")
+#if defined(INCLUDE_LUNA_DATA_SETS)
 			for (eDataIDs id = 0; id < DID_COUNT; id++)
 #else
 			for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
