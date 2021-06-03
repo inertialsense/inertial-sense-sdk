@@ -19,7 +19,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define QDEC_USE_INDEX	0
 
 static float s_tc2sec = 0.0f;
-static int s_start_filter_count = 0;
 static bool s_direction_reverse_0 = 0;
 static bool s_direction_reverse_1 = 0;
 
@@ -63,6 +62,7 @@ typedef struct
 {
 	uint32_t 		count;
 	uint32_t 		overflow;
+	uint32_t		directionLast;
 	uint32_t		running;
 	uint32_t 		timeMs;
 	uint32_t		pulseCount;		// Number of pulses accumulated in count
@@ -71,10 +71,24 @@ typedef struct
 
 static capture_t capture[2] = {};
 
+static float quadEncPeriodSetStopped(capture_t *c)
+{	// Wheels are stationary or spinning very slowly
+	c->running = false;
+	c->count = 0;
+	c->pulseCount = 0;
+	c->period = 0.0f;
+}
+
 // This wheel encoder works by 
-static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channel)
+static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channel, uint32_t direction)
 {
 	uint32_t status = tc_get_status(p_tc, ul_channel);
+
+	if (c->directionLast != direction)
+	{	// Switched direction.  Reset velocity measurements and indicate system is not running.
+		c->directionLast = direction;
+		quadEncPeriodSetStopped(c);
+	}
 
 	if (status & TC_SR_COVFS)
 	{	// Counter Overflow
@@ -84,14 +98,14 @@ static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channe
 	if (status & TC_SR_LDRAS)
 	{	// RA Loading
 		uint32_t ra_count = tc_read_ra(p_tc, ul_channel);
-		if(c->running >= s_start_filter_count)
+		if(c->running != 0)
 		{
 			c->count += c->overflow + ra_count;
 			c->pulseCount++;
 		}
 		else
 		{	// First read after stopping is invalid
-			c->running++;
+			c->running = true;
 			c->count = 0;
 			c->pulseCount = 0;
 		}
@@ -103,12 +117,12 @@ static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channe
 
 void TCCAP0_SPD_Handler(void)
 {
-	tc_encoder_handler(&capture[0], TCCAP0_SPD, TCCAP0_SPD_CHANNEL);	
+	tc_encoder_handler(&capture[0], TCCAP0_SPD, TCCAP0_SPD_CHANNEL, QE0_POS->TC_QISR & TC_QISR_DIR);	
 }
 
 void TCCAP1_SPD_Handler(void)
 {
-	tc_encoder_handler(&capture[1], TCCAP1_SPD, TCCAP1_SPD_CHANNEL);	
+	tc_encoder_handler(&capture[1], TCCAP1_SPD, TCCAP1_SPD_CHANNEL, QE1_POS->TC_QISR & TC_QISR_DIR);	
 }
 
 static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int timerirq, uint32_t ID_timercounter, uint32_t pck6_pres)
@@ -180,15 +194,6 @@ void quadEncSetDirectionReverse( bool reverse_0, bool reverse_1 )
 	s_direction_reverse_1 = reverse_1;
 }
 
-void quadEncStartFilterCount( float encoderTickToWheelRad )
-{
-	if (encoderTickToWheelRad != 0.0)
-	{
-		int count = ceil(1.0 / (encoderTickToWheelRad * 50));
-		s_start_filter_count = _MAX(count,0);
-	}
-}
-
 void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 {
 	int16_t cv;
@@ -197,11 +202,11 @@ void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 	
 	cv = QE0_POS->TC_CHANNEL[0].TC_CV;
 	*pos0 = cv;
-	*dir0 = (QE0_POS->TC_QISR & TC_QISR_DIR) / TC_QISR_DIR;
+	*dir0 = 0x1 && (QE0_POS->TC_QISR & TC_QISR_DIR);
 	
 	cv = QE1_POS->TC_CHANNEL[0].TC_CV;
 	*pos1 = cv;
-	*dir1 = (QE1_POS->TC_QISR & TC_QISR_DIR) / TC_QISR_DIR;
+	*dir1 = 0x1 && (QE1_POS->TC_QISR & TC_QISR_DIR);
 
 	// Reverse direction
 	if (s_direction_reverse_0) { *pos0 = -(*pos0); *dir0 = !(*dir0); }
@@ -218,11 +223,8 @@ static float quadEncReadPeriod(capture_t *c)
 		if (dtMs > 500)		// 100ms timeout
 		// We might try scaling this timeout based on the minimum velocity and number of ticks per radian.  We need to wait longer for lower resolution encoders. 
 		// threshold = rad_per_tick * min_velocity * (125)     Hoverbot ~500ms, ZT ~2ms
-		{	// Wheels are stationary or spinning very slowly 
-			c->running = 0;
-			c->count = 0;
-			c->pulseCount = 0;
-			c->period = 0.0f;
+		{	 
+			quadEncPeriodSetStopped(c);
 		}
 	}
 
