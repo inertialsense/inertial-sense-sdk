@@ -1100,7 +1100,7 @@ static int bootloaderSync(serial_port_t* s)
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
         if (serialPortWriteAndWaitForTimeout(s, &handshakerChar, 1, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {
+        {	// Success
             serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
             return 1;
         }
@@ -1114,10 +1114,13 @@ static int bootloaderHandshake(bootload_params_t* p)
     //Port should already be closed, but make sure
     serialPortClose(p->port);
 
+	// Ensure we use closest baudrate supported by bootloader
+	p->baudRate = bootloaderClosestBaudRate(p->baudRate);
+
 #if ENABLE_BOOTLOADER_BAUD_DETECTION
 
-    // ensure that we start off with a valid baud rate
-    if (p->baudRate == 0)
+	// ensure that we start off with a valid baud rate
+	if (p->baudRate == 0)
     {
         p->baudRate = bootloaderCycleBaudRate(p->baudRate);
     }
