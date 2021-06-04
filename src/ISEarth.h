@@ -169,6 +169,28 @@ void quat_ecef2ned(float lat, float lon, float *qe2n);
 void qe2b2EulerNedEcef(ixVector3 theta, const ixVector4 qe2b, const ixVector3d ecef);
 void qe2b2EulerNedLLA(ixVector3 eul, const ixVector4 qe2b, const ixVector3d lla);
 
+/**
+ * @brief primeRadius       Compute prime radius of curvature
+ * @param lat               latitude at which we want to compute the prime radius of curvature (rad)
+ * @return                  prime radius of curvature (m)
+ */
+double primeRadius(const double lat);
+
+/**
+ * @brief meridonalRadius   Compute meridional radius of curvature
+ * @param lat               latitude at which we want to compute the merdional radius of curvature (rad)
+ * @return                  meridional radius of curvature (m)
+ */
+double meridonalRadius(const double lat);
+
+
+/**
+ * @brief rangeBearing_from_lla         Compute the range and bearing between two geodetic coordinates
+ * @param lla1                          array of lat (rad), lon (rad) and altitude (m)
+ * @param lla2                          array of lat (rad), lon (rad) and altitude (m)
+ * @param rb                            array of the resulting range (m) and bearing (rad)
+ */
+void rangeBearing_from_lla(const ixVector3d lla1, const ixVector3d lla2, ixVector2d rb);
 
 #ifdef __cplusplus
 }
