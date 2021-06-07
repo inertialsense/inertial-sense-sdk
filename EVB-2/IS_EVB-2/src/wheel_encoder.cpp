@@ -24,6 +24,7 @@ void init_wheel_encoder(void)
     {   
 		quadEncInit(4);		// Sensing range: ~27ms
 		quadEncSetDirectionReverse(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT, g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT);
+		quadEncStartFilterCount(g_flashCfg->encoderTickToWheelRad);
     }
 #endif
 }
@@ -46,7 +47,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 	static wheel_encoder_t wheelEncoderLast = {0};
 
 	++encoderSendTimeMs;
-	if(encoderSendTimeMs >= g_flashCfg->wheelStepPeriodMs)
+	if(encoderSendTimeMs >= (int)g_flashCfg->wheelStepPeriodMs)
 	{  
 		encoderSendTimeMs = 0;
 		

@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define QDEC_USE_INDEX	0
 
 static float s_tc2sec = 0.0f;
+static int s_start_filter_count = 0;
 static bool s_direction_reverse_0 = 0;
 static bool s_direction_reverse_1 = 0;
 
@@ -70,14 +71,20 @@ typedef struct
 
 static capture_t capture[2] = {};
 
+// This wheel encoder works by 
 static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channel)
 {
 	uint32_t status = tc_get_status(p_tc, ul_channel);
 
+	if (status & TC_SR_COVFS)
+	{	// Counter Overflow
+		c->overflow += 0x00010000;
+	}
+	
 	if (status & TC_SR_LDRAS)
-	{
+	{	// RA Loading
 		uint32_t ra_count = tc_read_ra(p_tc, ul_channel);
-		if(c->running>3)
+		if(c->running >= s_start_filter_count)
 		{
 			c->count += c->overflow + ra_count;
 			c->pulseCount++;
@@ -91,11 +98,6 @@ static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channe
 
 		c->timeMs = time_msec();
 		c->overflow = 0;
-	}
-
-	if (status & TC_SR_COVFS)
-	{	// Timer overflow
-		c->overflow += 0x00010000;
 	}
 }
 
@@ -178,6 +180,15 @@ void quadEncSetDirectionReverse( bool reverse_0, bool reverse_1 )
 	s_direction_reverse_1 = reverse_1;
 }
 
+void quadEncStartFilterCount( float encoderTickToWheelRad )
+{
+	if (encoderTickToWheelRad != 0.0)
+	{
+		int count = ceil(1.0 / (encoderTickToWheelRad * 50));
+		s_start_filter_count = _MAX(count,0);
+	}
+}
+
 void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 {
 	int16_t cv;
@@ -203,7 +214,10 @@ static float quadEncReadPeriod(capture_t *c)
 {
 	if (c->running)
 	{
-		if (time_msec() - c->timeMs > 100)		// 100ms timeout
+		uint32_t dtMs = time_msec() - c->timeMs;
+		if (dtMs > 500)		// 100ms timeout
+		// We might try scaling this timeout based on the minimum velocity and number of ticks per radian.  We need to wait longer for lower resolution encoders. 
+		// threshold = rad_per_tick * min_velocity * (125)     Hoverbot ~500ms, ZT ~2ms
 		{	// Wheels are stationary or spinning very slowly 
 			c->running = 0;
 			c->count = 0;
@@ -218,14 +232,18 @@ static float quadEncReadPeriod(capture_t *c)
 		c->count = 0;
 		c->pulseCount = 0;
 	}
+// 	else
+// 	{
+// 		c->period = 0.0f;
+// 	}
 
 	return c->period;
 }
 
 void quadEncReadPeriodAll(float *period0, float *period1)
 {
-// 	g_debug.i[4] = capture[0].pulseCount;
-// 	g_debug.i[5] = capture[1].pulseCount;
+	// g_debug.i[4] = capture[0].pulseCount;
+	// g_debug.i[5] = capture[1].pulseCount;
 
 	taskENTER_CRITICAL();
 
@@ -234,12 +252,12 @@ void quadEncReadPeriodAll(float *period0, float *period1)
 
 	taskEXIT_CRITICAL();
 
-// 	g_debug.i[0] = capture[0].count;
-// 	g_debug.i[1] = capture[1].count;
-// 	g_debug.i[2] = capture[0].overflow;
-// 	g_debug.i[3] = capture[1].overflow;	
-// 	g_debug.f[0] = *period0 * 1000.0;
-// 	g_debug.f[1] = *period1 * 1000.0;
+	// g_debug.i[0] = capture[0].count;
+	// g_debug.i[1] = capture[1].count;
+	// g_debug.i[2] = capture[0].overflow;
+	// g_debug.i[3] = capture[1].overflow;	
+	// g_debug.f[0] = *period0 * 1000.0;
+	// g_debug.f[1] = *period1 * 1000.0;
 }
 
 void test_quad_encoders(void)

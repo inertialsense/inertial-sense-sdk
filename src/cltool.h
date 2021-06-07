@@ -53,11 +53,10 @@ typedef struct
 
 typedef struct
 {
-	// parsed
-	string comPort; // -c com_port
-	string updateAppFirmwareFilename; // -b=file_name
-    string updateBootloaderFilename; // -ub=file_name
-    bool bootloaderVerify; // -bv
+	string comPort; 						// -c com_port
+	string updateAppFirmwareFilename; 		// -b file_name
+    string updateBootloaderFilename; 		// -ub file_name
+    bool bootloaderVerify; 					// -bv
     bool replayDataLog;
     bool softwareReset;
     bool magRecal;
@@ -73,16 +72,16 @@ typedef struct
 	vector<stream_did_t> datasets = {};		// -did DID#=periodMultiple
 
 	bool enableLogging;
-	string logType; // -lt=dat
-	string logPath; // -lp=path
-	float maxLogSpacePercent; // -lms=max_space_mb
-	uint32_t maxLogFileSize; // -lmf=max_file_size
-	string logSubFolder; // -lts=1
-	int baudRate; // -baud=3000000
+	string logType; 						// -lt=dat
+	string logPath; 						// -lp path
+	float maxLogSpacePercent; 				// -lms=max_space_mb
+	uint32_t maxLogFileSize; 				// -lmf=max_file_size
+	string logSubFolder; 					// -lts=1
+	int baudRate; 							// -baud=3000000
 	bool disableBroadcastsOnClose;
 
-	string serverConnection; // -svr=type:host:port:url:user:password
-	string host; // -host=ip:port
+	string roverConnection; 				// -rover=type:IP/URL:port:mountpoint:user:password   (server)
+	string baseConnection; 					// -base=IP:port    (client)
 
 	string flashCfg;
 	string evbFlashCfg;

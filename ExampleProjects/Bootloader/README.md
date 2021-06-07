@@ -1,12 +1,12 @@
 # SDK: Firmware Update (Bootloader) Example Project
 
-This [ISBootloaderExample](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Bootloader) project demonstrates firmware update with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
+This [ISBootloaderExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Bootloader) project demonstrates firmware update with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.
 
 ## Files
 
 #### Project Files
 
-* [ISBootloaderExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/ExampleProjects/Bootloader/ISBootloaderExample.c)
+* [ISBootloaderExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Bootloader/ISBootloaderExample.c)
 
 #### SDK Files
 
@@ -52,32 +52,23 @@ This [ISBootloaderExample](https://github.com/inertialsense/inertial-sense-sdk/t
 ```C++
 	// bootloader parameters
 	bootload_params_t param;
-	// buffer to show any errors
-	char errorBuffer[512];
 
 	// very important - initialize the bootloader params to zeros
 	memset(&param, 0, sizeof(param));
 
-	// error buffer, useful if something fails
-	param.error = errorBuffer;
-	param.errorLength = sizeof(errorBuffer);
-
-	// the file to bootload, *.hex
-	param.fileName = argv[2];
-
 	// the serial port
 	param.port = &serialPort;
+	param.baudRate = atoi(argv[2]);
 
-	// progress indicators
-	param.uploadProgress = bootloaderUploadProgress;
-	param.verifyProgress = bootloaderVerifyProgress;
+	// the file to bootload, *.hex
+	param.fileName = argv[3];
 
-	// enable verify to read back the firmware and ensure it is correct
-	param.flags.bitFields.enableVerify = 1;
-
-	// enable auto-baud, in the event that fast serial communications is not available,
-	//  the bootloader will attempt to fall back to a slower speed
-	param.flags.bitFields.enableAutoBaud = 1;
+	// optional - bootloader file, *.bin
+	param.forceBootloaderUpdate = 0;	//do not force update of bootloader
+	if (argc == 5)
+		param.bootName = argv[4];
+	else
+		param.bootName = 0;
 ```
 
 ### Step 4: Run bootloader
@@ -120,7 +111,7 @@ $ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManage
 ```
 5. Run executable
 ``` bash
-$ ./bin/ISBootloaderExample /dev/ttyUSB0 IS_uINS-3.hex
+$ ./bin/ISBootloaderExample /dev/ttyUSB0 921600 IS_uINS-3.hex
 ```
 ## Compile & Run (Windows MS Visual Studio)
 
@@ -128,7 +119,7 @@ $ ./bin/ISBootloaderExample /dev/ttyUSB0 IS_uINS-3.hex
 2. Build (F7)
 3. Run executable
 ``` bash
-C:\inertial-sense-sdk\ExampleProjects\Bootloader\VS_project\Release\ISBootloaderExample.exe COM3 IS_uINS-3.hex
+C:\inertial-sense-sdk\ExampleProjects\Bootloader\VS_project\Release\ISBootloaderExample.exe COM3 921600 IS_uINS-3.hex
 ```
 
 ## Summary

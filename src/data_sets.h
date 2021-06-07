@@ -1587,20 +1587,20 @@ enum eGnssSatSigConst
 /** RTK Configuration */
 enum eRTKConfigBits
 {
-	/** Enable RTK GNSS precision positioning (GPS1) */
+	/** Enable onboard RTK GNSS precision positioning (GPS1) */
 	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING				= (int)0x00000001,
 
-	/** Enable RTK GNSS positioning on uBlox F9P (GPS1) */
-	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_F9P			= (int)0x00000002,
+	/** Enable external RTK GNSS positioning (GPS1) */
+	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL	= (int)0x00000002,
 
-	/** Enable RTK GNSS compassing on uBlox F9P (GPS2) */
+	/** Enable external RTK GNSS compassing on uBlox F9P (GPS2) */
 	RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P			= (int)0x00000004,
 
 	/** Enable dual GNSS RTK compassing (GPS2 to GPS1) */
 	RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING				= (int)0x00000008,	
 
 	/** Mask of RTK GNSS positioning types */
-	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK		= (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING|RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_F9P),
+	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK		= (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING|RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL),
 
 	/** Mask of dual GNSS RTK compassing types */
 	RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK			= (RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING|RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P),
@@ -3732,16 +3732,6 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 /** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds);
 
-/*
-Convert gps pos to nmea gga
-
-@param gps gps position
-@param buffer buffer to fill with nmea gga
-@param bufferLength number of chars available in buffer, should be at least 128
-@return number of chars written to buffer, not including the null terminator
-*/
-// Use gps_to_nmea_gga() in protocol_nmea.cpp instead... 
-// int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength);
 
 #ifndef RTKLIB_H
 #define SYS_NONE    0x00                /* navigation system: none */

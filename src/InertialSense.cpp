@@ -104,7 +104,6 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		handlerGlobal(s->inertialSenseInterface, data, pHandle);
 	}
 
-	// if we got dev info, sysCmd or flash config, set it
 	switch (data->hdr.id)
 	{
 	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
@@ -112,15 +111,16 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	case DID_FLASH_CONFIG:		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;	break;
 	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
-		// every 5 seconds, put in a new gps position message
-		static time_t nextGpsMessageTime;
+		static time_t lastTime;
 		time_t currentTime = time(NULLPTR);
-		if (currentTime > nextGpsMessageTime)
-		{
-			nextGpsMessageTime = currentTime + 5;
-			// *s->clientBytesToSend = gpsToNmeaGGA((gps_pos_t*)data->buf, s->clientBuffer, s->clientBufferSize);
+		if (abs(currentTime - lastTime) > 5)
+		{	// Update every 5 seconds
+			lastTime = currentTime;
 			gps_pos_t &gps = *((gps_pos_t*)data->buf);
-			*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+			{
+				*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+			}
 		}
 	}
 }
@@ -328,58 +328,14 @@ bool InertialSense::SetLoggerEnabled(
 	return true;
 }
 
-bool InertialSense::OpenServerConnection(const string& connectionString)
+// [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+bool InertialSense::OpenConnectionToServer(const string& connectionString)
 {
-	bool opened = false;
-
 	CloseServerConnection();
-	vector<string> pieces;
-	splitString(connectionString, ":", pieces);
-	if (pieces.size() < 3)
-	{
-		return opened;
-	}
 
-	if (pieces[1] == "SERIAL")
-	{
-		if (pieces.size() < 4)
-		{
-			return opened;
-		}
-		else if ((opened = (m_serialServer.Open(pieces[2].c_str(), atoi(pieces[3].c_str())))))
-		{
-			m_clientStream = &m_serialServer;
-		}
-	}
-	else
-	{
-		opened = (m_tcpClient.Open(pieces[1], atoi(pieces[2].c_str())) == 0);
-		string url = (pieces.size() > 3 ? pieces[3] : "");
-		string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
-		string username = (pieces.size() > 4 ? pieces[4] : "");
-		string password = (pieces.size() > 5 ? pieces[5] : "");
-		if (url.size() != 0)
-		{
-			m_tcpClient.HttpGet(url, userAgent, username, password);
-		}
-	}
-	if (opened)
-	{
-#if 0
-		// configure as RTK rover
-		uint32_t cfgBits = RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING;
-		for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-		{
-			comManagerSendData((int)i, DID_FLASH_CONFIG, &cfgBits, sizeof(cfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
-		}
-#endif
-		if (m_clientStream == NULLPTR)
-		{
-			m_clientStream = &m_tcpClient;
-		}
-	}
+	m_clientStream = cISClient::OpenConnectionToServer(connectionString, &m_forwardGpgga);
 
-	return opened;
+	return m_clientStream!=NULLPTR;
 }
 
 void InertialSense::CloseServerConnection()
@@ -390,7 +346,8 @@ void InertialSense::CloseServerConnection()
 	m_clientStream = NULLPTR;
 }
 
-bool InertialSense::CreateHost(const string& ipAndPort)
+// [type]:[ip/url]:[port]
+bool InertialSense::CreateHost(const string& connectionString)
 {
 	// if no serial connection, fail
 	if (!IsOpen())
@@ -399,16 +356,26 @@ bool InertialSense::CreateHost(const string& ipAndPort)
 	}
 
 	CloseServerConnection();
-	size_t colon = ipAndPort.find(':', 0);
-	if (colon == string::npos)
+
+	vector<string> pieces;
+	splitString(connectionString, ':', pieces);
+	if (pieces.size() < 3)
 	{
 		return false;
 	}
+
+	string type     = pieces[0];    // TCP, SERIAL
+	string host     = pieces[1];    // IP / URL
+	string port     = pieces[2];
+
+	if (type != "TCP")
+	{
+		return false;
+	}
+
 	StopBroadcasts();
-	string host = ipAndPort.substr(0, colon);
-	string portString = ipAndPort.substr(colon + 1);
-	int port = (int)strtol(portString.c_str(), NULLPTR, 10);
-	return (m_tcpServer.Open(host, port) == 0);
+
+	return (m_tcpServer.Open(host, atoi(port.c_str())) == 0);
 }
 
 bool InertialSense::IsOpen()
@@ -423,101 +390,13 @@ size_t InertialSense::GetDeviceCount()
 
 bool InertialSense::Update()
 {
-	uint8_t buffer[PKT_BUF_SIZE];
 	if (m_tcpServer.IsOpen() && m_comManagerState.devices.size() != 0)
 	{
-		// as a tcp server, only the first serial port is read from
-		int count = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, buffer, sizeof(buffer), 0);
-		if (count > 0)
-		{
-			// forward data on to connected clients
-			m_clientServerByteCount += count;
-			if (m_tcpServer.Write(buffer, count) != count)
-			{
-				cout << endl << "Failed to write bytes to tcp server!" << endl;
-			}
-		}
-		m_tcpServer.Update();
+		UpdateServer();
 	}
 	else
 	{
-		if (m_clientStream != NULLPTR)
-		{
-			// Forward only valid uBlox and RTCM3 packets
-
-			is_comm_instance_t *comm = &(m_gpComm);
-			protocol_type_t ptype = _PTYPE_NONE;
-			static int error = 0;
-// 			static int ubxRtcmCnt = 0;
-// 			printf("Rx data: %d\n", count);
-
-#if 0		// Read one byte (simple method)
-			uint8_t c;
-
-			// Read from serial buffer until empty
-			while (m_clientStream->Read(&c, 1))
-			{
-				if ((ptype = is_comm_parse_byte(comm, c)) != _PTYPE_NONE)
-				{
-
-#else		// Read a set of bytes (fast method)
-
-			// Get available size of comm buffer
-			int n = is_comm_free(comm);
-
-			// Read data directly into comm buffer
-			if ((n = m_clientStream->Read(comm->buf.tail, n)))
-			{
-				// Update comm buffer tail pointer
-				comm->buf.tail += n;
-
-				// Search comm buffer for valid packets
-				while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-				{
-#endif					
-					switch (ptype)
-					{
-					case _PTYPE_UBLOX:
-					case _PTYPE_RTCM3:
-// 						if (comm->externalDataIdentifier == EXTERNAL_DATA_ID_UBLOX)
-// 						{
-// 							printf("Receive uBlox: %d\n", ubxRtcmCnt++);
-// 						}
-// 						else
-// 						{
-// 							printf("Receive RTCM3: %d\n", ubxRtcmCnt++);
-// 						}
-						m_clientServerByteCount += comm->dataHdr.size;
-						OnPacketReceived(comm->dataPtr, comm->dataHdr.size);
-						break;
-
-					case _PTYPE_PARSE_ERROR:
-						printf("PARSE ERROR: %d\n", error++);
-						break;
-					case _PTYPE_INERTIAL_SENSE_DATA:
-// 							printf("Receive DID: %d\n", did);
-						break;
-					case _PTYPE_ASCII_NMEA:
-// 								printf("Receive ASCII\n");
-						break;
-
-					default:
-						break;
-					}
-				}
-			}
-
-			// send data to client if available, i.e. nmea gga pos
-			if (m_clientServerByteCount > 0)
-			{
-				int bytes = m_clientBufferBytesToSend;
-				if (bytes != 0)
-				{
-					m_clientStream->Write(m_clientBuffer, bytes);
-					m_clientBufferBytesToSend = 0;
-				}
-			}
-		}
+		UpdateClient();
 		
 		// [C COMM INSTRUCTION]  2.) Update Com Manager at regular interval to send and receive data.  
 		// Normally called within a while loop.  Include a thread "sleep" if running on a multi-thread/
@@ -537,6 +416,86 @@ bool InertialSense::Update()
 			return false;
 		}
 	}
+
+	return true;
+}
+
+bool InertialSense::UpdateServer()
+{
+	uint8_t buffer[PKT_BUF_SIZE];
+
+	// as a tcp server, only the first serial port is read from
+	int count = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, buffer, sizeof(buffer), 0);
+	if (count > 0)
+	{
+		// forward data on to connected clients
+		m_clientServerByteCount += count;
+		if (m_tcpServer.Write(buffer, count) != count)
+		{
+			cout << endl << "Failed to write bytes to tcp server!" << endl;
+		}
+	}
+	m_tcpServer.Update();
+
+	return true;
+}
+
+bool InertialSense::UpdateClient()
+{
+	if (m_clientStream == NULLPTR)
+	{
+		return false;
+	}
+
+	// Forward only valid uBlox and RTCM3 packets
+	is_comm_instance_t *comm = &(m_gpComm);
+	protocol_type_t ptype = _PTYPE_NONE;
+	static int error = 0;
+
+	// Read a set of bytes (fast method)
+	// Get available size of comm buffer
+	int n = is_comm_free(comm);
+
+	// Read data directly into comm buffer
+	if ((n = m_clientStream->Read(comm->buf.tail, n)))
+	{
+		// Update comm buffer tail pointer
+		comm->buf.tail += n;
+
+		// Search comm buffer for valid packets
+		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+		{
+			switch (ptype)
+			{
+			case _PTYPE_UBLOX:
+			case _PTYPE_RTCM3:
+				m_clientServerByteCount += comm->dataHdr.size;
+				OnPacketReceived(comm->dataPtr, comm->dataHdr.size);
+				break;
+
+			case _PTYPE_PARSE_ERROR:
+				printf("PARSE ERROR: %d\n", error++);
+				break;
+
+			case _PTYPE_INERTIAL_SENSE_DATA:
+				break;
+
+			case _PTYPE_ASCII_NMEA:
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+
+	// Send data to client if available, i.e. nmea gga pos
+	if (m_clientBufferBytesToSend > 0 && m_forwardGpgga)
+	{
+		m_clientStream->Write(m_clientBuffer, m_clientBufferBytesToSend);
+	}
+	m_clientBufferBytesToSend = 0;
+
 
 	return true;
 }
@@ -690,7 +649,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 	}
 	else
 	{
-		splitString(comPort, ",", portStrings);
+		splitString(comPort, ',', portStrings);
 	}
 	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
@@ -819,7 +778,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	else
 	{
 		// comma separated list of serial ports
-		splitString(port, ",", ports);
+		splitString(port, ',', ports);
 	}
 
 	// open serial ports

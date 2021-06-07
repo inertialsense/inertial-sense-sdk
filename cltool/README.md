@@ -1,6 +1,6 @@
 # C++ API - Inertial Sense Class and CLTool Example Project
 
-The <a href="https://github.com/inertialsense/inertial-sense-sdk/blob/master/src/InertialSense.cpp">InertialSense C++ class</a>, defined in InertialSense.h/.cpp, provides all SDK capabilities including serial communications, data logging to file, and embedded firmware update for <a href="https://inertialsense.com">InertialSense</a> products.
+The <a href="https://github.com/inertialsense/inertial-sense-sdk/blob/release/src/InertialSense.cpp">InertialSense C++ class</a>, defined in InertialSense.h/.cpp, provides all SDK capabilities including serial communications, data logging to file, and embedded firmware update for <a href="https://inertialsense.com">InertialSense</a> products.
 
 ## CLTool Example
 
