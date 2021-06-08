@@ -21,6 +21,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "data_sets.h"
 #include "ISConstants.h"
+#include "ISDataMappings.h"
+
+#if !PLATFORM_IS_WINDOWS
+
+#include <termios.h>
+
+#endif
 
 using namespace std;
 
@@ -30,15 +37,32 @@ using namespace std;
 class cInertialSenseDisplay
 {
 public:
+	typedef struct
+	{
+		const map_name_to_info_t 			*mapInfo = NULL;
+		map_name_to_info_t::const_iterator 	mapInfoSelection;
+		map_name_to_info_t::const_iterator 	mapInfoBegin;
+		map_name_to_info_t::const_iterator 	mapInfoEnd;
+
+		bool            editEnabled;
+		std::string     field;
+		uint32_t        did;
+		bool            uploadNeeded;
+		uint8_t 		data[MAX_DATASET_SIZE];
+		data_info_t 	info;
+	} edit_data_t;
+
 	enum eDisplayMode
 	{
 		DMODE_PRETTY,
 		DMODE_SCROLL,
+		DMODE_EDIT,
 		DMODE_STATS,
-		DMODE_QUIET
+		DMODE_QUIET,
 	};
 
 	cInertialSenseDisplay();
+	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
 	eDisplayMode GetDisplayMode() { return m_displayMode; }
@@ -52,8 +76,13 @@ public:
 	string Connected();
 	string Replay(double speed=1.0);
 	string Goodbye();
-	int ReadKey(); // non-block, returns -1 if no key available
-	bool ControlCWasPressed();
+
+	void SetKeyboardNonBlock();
+	void ResetTerminalMode();
+	int KeyboardHit();
+	int GetChar();
+	bool ExitProgram();
+	void SetExitProgram();
 
 	// for the binary protocol, this processes a packet of data
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
@@ -81,14 +110,28 @@ public:
 	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 	string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+	string DataToStringGeneric(const p_data_t* data);
+
+	string DatasetToString(const p_data_t* data);
+
+	void GetKeyboardInput();
+	void SelectEditDataset(int did);
+	void VarSelectIncrement();
+	void VarSelectDecrement();
+	void StopEditing();
+	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
+	edit_data_t *EditData() { return &m_editData; }
 
 private:
 	string VectortoString();
 	void DataToVector(const p_data_t* data);
 
-	vector<string>	m_didMsgs;
-	eDisplayMode m_displayMode;
-	uint16_t m_rxCount;
+	bool m_nonblockingkeyboard;
+	vector<string> m_didMsgs;
+	eDisplayMode m_displayMode = DMODE_PRETTY;
+	uint16_t m_rxCount = 0;
+
+	edit_data_t m_editData = {};
 
 	struct sDidStats
 	{
@@ -103,6 +146,10 @@ private:
 
 	HANDLE m_windowsConsoleIn;
 	HANDLE m_windowsConsoleOut;
+
+#else
+
+    struct termios orig_termios_;
 
 #endif
 

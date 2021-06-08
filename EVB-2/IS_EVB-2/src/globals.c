@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 dev_info_t                  g_evbDevInfo = {0};
 wheel_encoder_t				g_wheelEncoder = {0};
+uint32_t                    g_wheelEncoderTimeMs = 0;
 evb_status_t                g_status = {0};
 bool                        g_statusToWlocal = true;
 evb_flash_cfg_t*            g_flashCfg;
@@ -528,7 +529,10 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->server[1].port = 2000;
 // 	cfg->encoderTickToWheelRad = 0.0359998f;	// Husqvarna lawnmower
 	cfg->encoderTickToWheelRad = 0.108329996f;	// Husqvarna lawnmower
+	// cfg->encoderTickToWheelRad = 0.00523598775598298873f;	// = 2 Pi / (400 count encoder x 3 gear ratio), (ZT mower)
 	
+    cfg->wheelStepPeriodMs = 50;    // 20 Hz
+
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));

@@ -25,7 +25,7 @@ sys.path.append('..')
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
-from pylib.pose import quat2eulerArray, lla2ned, rotate_ecef2ned, quatRotVectArray
+from pylib.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
 
 class logPlot:
@@ -131,7 +131,7 @@ class logPlot:
             if refLla is None:
                 refLla = self.getData(d, DID_INS_2, 'lla')[0]
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
-            euler = quat2eulerArray(self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
             if(np.shape(self.active_devs)[0]==1):
@@ -202,23 +202,22 @@ class logPlot:
         fig.suptitle('NED Vel - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            insVelNed = quatRotVectArray(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
+            insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
             ax[0].plot(time, insVelNed[:,0], label=self.log.serials[d])
             ax[1].plot(time, insVelNed[:,1])
             ax[2].plot(time, insVelNed[:,2])
 
-            try:
-                if np.shape(self.active_devs)[0] == 1:  # Show GPS if #devs is 1
-                    timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
-                    gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'velEcef')
-                    R = rotate_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0]*np.pi/180.0)
-                    gpsVelNed = R.dot(gpsVelEcef.T).T
+            if np.shape(self.active_devs)[0] == 1:  # Show GPS if #devs is 1
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
+                gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'velEcef')
+                qe2n = quat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
+                if len(gpsVelEcef) > 0:
+                    gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
+                    #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
+                    #gpsVelNed = R.dot(gpsVelEcef.T).T
                     ax[0].plot(timeGPS, gpsVelNed[:, 0], label='GPS')
                     ax[1].plot(timeGPS, gpsVelNed[:, 1])
                     ax[2].plot(timeGPS, gpsVelNed[:, 2])
-            except:
-                pass
-                # print("no GPS data available")
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -252,7 +251,7 @@ class logPlot:
         self.configureSubplot(ax[1], 'Pitch', 'deg')
         self.configureSubplot(ax[2], 'Yaw', 'deg')
         for d in self.active_devs:
-            euler = quat2eulerArray(self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1].plot(time, euler[:,1]*RAD2DEG)
@@ -276,7 +275,7 @@ class logPlot:
             insTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
-            euler = quat2eulerArray(self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             if magTime:
                 ax[0].plot(magTime, magHdg * RAD2DEG)
             if gpsTime:
@@ -1352,7 +1351,7 @@ if __name__ == '__main__':
     file = open(home + "/Documents/Inertial_Sense/config.yaml", 'r')
     config = yaml.load(file)
     directory = config["directory"]
-    directory = "/home/superjax/Code/IS-src/cpp/SDK/CLTool/build/IS_logs"
+    directory = "/home/superjax/Code/IS-src/cpp/SDK/cltool/build/IS_logs"
     directory = r"C:\Users\quaternion\Downloads\20181218_Compass_Drive\20181218 Compass Drive\20181218_101023"
     serials = config['serials']
 

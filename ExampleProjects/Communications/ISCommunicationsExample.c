@@ -57,8 +57,8 @@ int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
 	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	int messageSize = is_comm_set_data(comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	int n = is_comm_set_data(comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write set INS rotation\r\n");
 		return -3;
@@ -71,8 +71,8 @@ int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Stop all broadcasts on the device
-	int messageSize = is_comm_stop_broadcasts_all_ports(comm);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	int n = is_comm_stop_broadcasts_all_ports(comm);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -87,8 +87,8 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 	cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
 	cfg.invCommand = ~cfg.command;
 
-	int messageSize = is_comm_set_data(comm, DID_SYS_CMD, 0, sizeof(system_command_t), &cfg);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	int n = is_comm_set_data(comm, DID_SYS_CMD, 0, sizeof(system_command_t), &cfg);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to write save persistent message\r\n");
 		return -3;
@@ -97,12 +97,12 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 }
 
 
-int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-	int messageSize;
-	messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 10);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	int n;
+	n = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 10);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get INS message\r\n");
 		return -4;
@@ -110,8 +110,8 @@ int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_inst
 
 #if 1
 	// Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-	messageSize = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 1);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	n = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -120,8 +120,8 @@ int enable_message_broadcasting_get_data(serial_port_t *serialPort, is_comm_inst
 
 #if 0
 	// Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
-	messageSize = is_comm_get_data(comm, _DID_IMU, 0, 0, 100);
-	if (messageSize != serialPortWrite(serialPort, comm->buf.start, messageSize))
+	n = is_comm_get_data(comm, _DID_IMU_DUAL, 0, 0, 100);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get IMU message\r\n");
 		return -6;
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 
 
 	// STEP 6: Enable message broadcasting
-	if ((error = enable_message_broadcasting_get_data(&serialPort, &comm)))
+	if ((error = enable_message_broadcasting(&serialPort, &comm)))
 	{
 		return error;
 	}

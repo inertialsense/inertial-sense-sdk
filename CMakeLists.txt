@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 
-project(InertialSenseSDK)
+project(inertial-sense-sdk)
 
 #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
@@ -33,6 +33,7 @@ add_library(InertialSense
   src/InertialSense.cpp
   src/filters.cpp
   src/inertialSenseBootLoader.c
+	src/ISClient.cpp
   src/ISComm.c
   src/ISDataMappings.cpp
   src/ISDisplay.cpp
@@ -47,6 +48,7 @@ add_library(InertialSense
   src/ISTcpClient.cpp
   src/ISTcpServer.cpp
   src/ISUtilities.cpp
+  src/protocol_nmea.cpp
   src/linked_list.c
   src/ring_buffer.c
   src/serialPort.c
@@ -64,6 +66,6 @@ target_compile_options(InertialSense PUBLIC -fPIC)
 
 add_library( InertialSense::libinertialsense ALIAS InertialSense )
 
-add_subdirectory(CLTool)
+add_subdirectory(cltool)
 add_subdirectory(ExampleProjects)
 

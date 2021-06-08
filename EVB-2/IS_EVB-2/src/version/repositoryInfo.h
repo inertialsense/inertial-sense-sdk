@@ -1,5 +1,5 @@
-#define REPO_DESCRIPTION "1.8.4.b-31-g710eabae" 
+#define REPO_DESCRIPTION "1.8.4.b-130-g47d8eb4d" 
 #define REPO_VERSION_MAJOR 1 
 #define REPO_VERSION_MINOR 8 
 #define REPO_VERSION_REVIS 4 
-#define REPO_HEAD_COUNT 390 
+#define REPO_HEAD_COUNT 490 

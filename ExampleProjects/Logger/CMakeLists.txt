@@ -31,6 +31,7 @@ add_executable(ISLoggerExample
 	../../src/DeviceLogSorted.cpp
 	../../src/InertialSense.cpp
 	../../src/inertialSenseBootLoader.c
+	../../src/ISClient.cpp
 	../../src/ISComm.c
 	../../src/ISDataMappings.cpp
 	../../src/ISDisplay.cpp
@@ -45,6 +46,7 @@ add_executable(ISLoggerExample
 	../../src/ISTcpClient.cpp
 	../../src/ISTcpServer.cpp
 	../../src/ISUtilities.cpp
+	../../src/protocol_nmea.cpp
 	../../src/linked_list.c
 	../../src/serialPort.c
 	../../src/serialPortPlatform.c

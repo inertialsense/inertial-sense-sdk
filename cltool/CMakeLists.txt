@@ -7,6 +7,9 @@ project(cltool)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
 
+if(INCLUDE_LUNA_DATA_SETS)	# run "cmake -DINCLUDE_LUNA_DATA_SETS=1 .."
+    add_definitions(-DINCLUDE_LUNA_DATA_SETS)
+endif()
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
@@ -35,6 +38,7 @@ add_executable(cltool
 	../src/DeviceLogSorted.cpp
 	../src/InertialSense.cpp
 	../src/inertialSenseBootLoader.c
+	../src/ISClient.cpp
 	../src/ISComm.c
 	../src/ISDataMappings.cpp
 	../src/ISDisplay.cpp
@@ -50,6 +54,7 @@ add_executable(cltool
 	../src/ISTcpServer.cpp
 	../src/ISUtilities.cpp
 	../src/linked_list.c
+	../src/protocol_nmea.cpp
 	../src/serialPort.c
 	../src/serialPortPlatform.c
 	../src/time_conversion.c

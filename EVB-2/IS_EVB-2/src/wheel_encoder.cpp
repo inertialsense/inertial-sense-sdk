@@ -20,17 +20,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 void init_wheel_encoder(void)
 {
 #ifdef CONF_BOARD_QUAD_ENCODER
-    if(g_flashCfg->bits&EVB_CFG_BITS_ENABLE_WHEEL_ENCODER)
+    if(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_ENABLE_ENCODER)
     {   
-		if (g_flashCfg->encoderTickToWheelRad > 0.1f)
-		{	// Low-resolution encoders
-			quadEncInit(239);	// Sensing range w/ 15 count encoder direct drive: > 
-		}
-		else
-		{	// High-resolution encoders
-	    	quadEncInit(7);		// Sensing range w/ 400 cnt encoder and 3x gearhead: > 7 deg/s 
-		}
-
+		quadEncInit(4);		// Sensing range: ~27ms
 		quadEncSetDirectionReverse(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT, g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT);
     }
 #endif
@@ -41,7 +33,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 {
 #ifdef CONF_BOARD_QUAD_ENCODER           // Encoder Rx   =======================================================
 
-    if(!(g_flashCfg->bits&EVB_CFG_BITS_ENABLE_WHEEL_ENCODER))
+    if(!(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_ENABLE_ENCODER))
     {   // Wheel encoders disabled
         return;
     }
@@ -53,14 +45,16 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 	static int encoderSendTimeMs=0;
 	static wheel_encoder_t wheelEncoderLast = {0};
 
-	if(abs(g_comm_time_ms-encoderSendTimeMs)>=20)
-	{	// Send data at 50Hz
-		encoderSendTimeMs = g_comm_time_ms;
+	++encoderSendTimeMs;
+	if(encoderSendTimeMs >= (int)g_flashCfg->wheelStepPeriodMs)
+	{  
+		encoderSendTimeMs = 0;
 		
 		// Call read encoders
+		g_wheelEncoder.timeOfWeek = time_seclf();
+		g_wheelEncoderTimeMs = (uint32_t)(g_wheelEncoder.timeOfWeek*1000.0);
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
 		quadEncReadPeriodAll(&periodL, &periodR);
-		g_wheelEncoder.timeOfWeek = time_seclf();
 
 		// Set velocity direction
 		if(dirL)
@@ -76,17 +70,10 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		g_wheelEncoder.theta_l = (chL * g_flashCfg->encoderTickToWheelRad) * 0.25; 	/* Division by 4 to account for 4x encoding */
 		g_wheelEncoder.theta_r = (chR * g_flashCfg->encoderTickToWheelRad) * 0.25;
 
-        // Convert TC pulse period to rad/sec.  20us per TC LSB x 2 (measure rising to rising edge).
+        // Convert TC pulse period to rad/sec.
         if(periodL!=0.0f)
         {			
             g_wheelEncoder.omega_l = g_flashCfg->encoderTickToWheelRad / periodL;
-#if 0
-			g_debug.f[0] = periodL*1000000.0;
-			g_debug.f[1] = g_flashCfg->encoderTickToWheelRad;
-			g_debug.f[2] = g_wheelEncoder.omega_l;
-			g_debug.f[3] = g_wheelEncoder.omega_l*C_RAD2DEG_F;
-			g_debug.f[4] = g_wheelEncoder.omega_l*0.276225;	// x (m) wheel radius = linear velocity
-#endif
         }
         else
         {

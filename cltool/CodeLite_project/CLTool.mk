@@ -3,10 +3,10 @@
 ## any manual changes will be erased      
 ##
 ## Debug
-ProjectName            :=CLTool
+ProjectName            :=cltool
 ConfigurationName      :=Debug
-WorkspacePath          := "/home/pi/share/IS-src/cpp/SDK/CLTool/CodeLite_project"
-ProjectPath            := "/home/pi/share/IS-src/cpp/SDK/CLTool/CodeLite_project"
+WorkspacePath          := "/home/pi/share/IS-src/cpp/SDK/cltool/CodeLite_project"
+ProjectPath            := "/home/pi/share/IS-src/cpp/SDK/cltool/CodeLite_project"
 IntermediateDirectory  :=./Debug
 OutDir                 := $(IntermediateDirectory)
 CurrentFileName        :=
@@ -32,7 +32,7 @@ Preprocessors          :=
 ObjectSwitch           :=-o 
 ArchiveOutputSwitch    := 
 PreprocessOnlySwitch   :=-E
-ObjectsFileList        :="CLTool.txt"
+ObjectsFileList        :="cltool.txt"
 PCHCompileFlags        :=
 MakeDirCommand         :=mkdir -p
 LinkOptions            :=  
@@ -91,7 +91,7 @@ PreBuild:
 ## Objects
 ##
 $(IntermediateDirectory)/source_main.cpp$(ObjectSuffix): ../source/main.cpp $(IntermediateDirectory)/source_main.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/pi/share/IS-src/cpp/SDK/CLTool/source/main.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/source_main.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/pi/share/IS-src/cpp/SDK/cltool/source/main.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/source_main.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/source_main.cpp$(DependSuffix): ../source/main.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/source_main.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/source_main.cpp$(DependSuffix) -MM "../source/main.cpp"
 
@@ -387,6 +387,6 @@ clean:
 	$(RM) ./Debug/*$(ObjectSuffix)
 	$(RM) ./Debug/*$(DependSuffix)
 	$(RM) $(OutputFile)
-	$(RM) ".build-debug/CLTool"
+	$(RM) ".build-debug/cltool"
 
 

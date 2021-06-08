@@ -34,7 +34,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #include "ISConstants.h"
-#include "ISDisplay.h"
 #include "ISLogFile.h"
 
 using namespace std;

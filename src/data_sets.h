@@ -1620,20 +1620,20 @@ enum eGnssSatSigConst
 /** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
 enum eRTKConfigBits
 {
-	/** Enable RTK GNSS precision positioning (GPS1) */
+	/** Enable onboard RTK GNSS precision positioning (GPS1) */
 	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING				= (int)0x00000001,
 
-	/** Enable RTK GNSS positioning on uBlox F9P (GPS1) */
-	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_F9P			= (int)0x00000002,
+	/** Enable external RTK GNSS positioning (GPS1) */
+	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL	= (int)0x00000002,
 
-	/** Enable RTK GNSS compassing on uBlox F9P (GPS2) */
+	/** Enable external RTK GNSS compassing on uBlox F9P (GPS2) */
 	RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P			= (int)0x00000004,
 
 	/** Enable dual GNSS RTK compassing (GPS2 to GPS1) */
 	RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING				= (int)0x00000008,	
 
 	/** Mask of RTK GNSS positioning types */
-	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK		= (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING|RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_F9P),
+	RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK		= (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING|RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL),
 
 	/** Mask of dual GNSS RTK compassing types */
 	RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK			= (RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING|RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P),
@@ -1950,6 +1950,7 @@ enum eWheelCfgBits
 {
     WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
+    WHEEL_CFG_BITS_ENABLE_CONTROL           = (int)0x00000004,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
@@ -3151,7 +3152,6 @@ typedef enum
     EVB_CFG_BITS_SERVER_SELECT_MASK             = 0x0000000C,
     EVB_CFG_BITS_SERVER_SELECT_OFFSET           = 2,
     EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,		// Don't enable PPD stream when log button is pressed
-    EVB_CFG_BITS_ENABLE_WHEEL_ENCODER           = 0x00000100,
     EVB_CFG_BITS_ENABLE_ADC                     = 0x00000200,
 } eEvbFlashCfgBits;
 
@@ -3237,6 +3237,9 @@ typedef struct
 
 	/** Wheel encoder configuration (see eWheelCfgBits) */
 	uint32_t                wheelCfgBits;
+
+	/** Wheel update period.  Sets the wheel encoder and control update period. (ms) */
+	uint32_t				wheelStepPeriodMs;
 
 } evb_flash_cfg_t;
 
@@ -3578,6 +3581,10 @@ typedef struct PACKED
 
 } can_config_t;
 
+#if defined(INCLUDE_LUNA_DATA_SETS)
+#include "luna_data_sets.h"
+#endif
+
 /** Union of datasets */
 typedef union PACKED
 {
@@ -3609,6 +3616,10 @@ typedef union PACKED
 	gps_raw_t				gpsRaw;
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
+
+#if defined(INCLUDE_LUNA_DATA_SETS)
+	evb_luna_wheel_controller_t     wheelController;
+#endif
 } uDatasets;
 
 /** Union of INS output datasets */
@@ -3754,15 +3765,6 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 /** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds);
 
-/*
-Convert gps pos to nmea gga
-
-@param gps gps position
-@param buffer buffer to fill with nmea gga
-@param bufferLength number of chars available in buffer, should be at least 128
-@return number of chars written to buffer, not including the null terminator
-*/
-int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength);
 
 #ifndef RTKLIB_H
 #define SYS_NONE    0x00                /* navigation system: none */
