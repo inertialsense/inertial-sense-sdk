@@ -243,6 +243,23 @@ static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
 	map_name_to_info_t& m = mappings[dataId];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "pqr[0]", I.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr[1]", I.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr[2]", I.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc[0]", I.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc[1]", I.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc[2]", I.acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t dataId)
+{
+	typedef imu3_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[dataId];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "pqr1[0]", I[0].pqr[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[1]", I[0].pqr[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[2]", I[0].pqr[2], 0, DataTypeFloat, float&, 0);
@@ -255,6 +272,12 @@ static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
     ADD_MAP(m, totalSize, "acc2[0]", I[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "acc2[1]", I[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "acc2[2]", I[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[0]", I[2].pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[1]", I[2].pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[2]", I[2].pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[0]", I[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[1]", I[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[2]", I[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
@@ -592,18 +615,12 @@ static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DI
 	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "theta1[0]", theta1[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "theta1[1]", theta1[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "theta1[2]", theta1[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "vel1[0]", vel1[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "vel1[1]", vel1[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "vel1[2]", vel1[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "theta2[0]", theta2[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "theta2[1]", theta2[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "theta2[2]", theta2[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "vel2[0]", vel2[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "vel2[1]", vel2[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "vel2[2]", vel2[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "theta[0]", theta[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "theta[1]", theta[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "theta[2]", theta[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "vel[0]", vel[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "vel[1]", vel[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "vel[2]", vel[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
@@ -616,28 +633,18 @@ static void PopulateIMUDeltaThetaVelocityMagMappings(map_name_to_info_t mappings
 	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU_MAG];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "imutime", pimu.time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "theta1[0]", pimu.theta1[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "theta1[1]", pimu.theta1[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "theta1[2]", pimu.theta1[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "vel1[0]", pimu.vel1[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "vel1[1]", pimu.vel1[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "vel1[2]", pimu.vel1[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "theta2[0]", pimu.theta2[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "theta2[1]", pimu.theta2[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "theta2[2]", pimu.theta2[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "vel2[0]", pimu.vel2[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "vel2[1]", pimu.vel2[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "vel2[2]", pimu.vel2[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "theta[0]", pimu.theta[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "theta[1]", pimu.theta[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "theta[2]", pimu.theta[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "vel[0]", pimu.vel[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "vel[1]", pimu.vel[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "vel[2]", pimu.vel[2], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "dt", pimu.dt, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "imustatus", pimu.status, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "mag1time", mag1.time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "mag1[0]", mag1.mag[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag1[1]", mag1.mag[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag1[2]", mag1.mag[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag2time", mag2.time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "mag2[0]", mag2.mag[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag2[1]", mag2.mag[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag2[2]", mag2.mag[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "magtime", mag.time, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "mag[0]", mag.mag[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag[1]", mag.mag[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -660,15 +667,17 @@ static void PopulateIMU3MagnetometerMappings(map_name_to_info_t mappings[DID_COU
 	ADD_MAP(m, totalSize, "acc2[0]", imu.I[1].acc[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc2[1]", imu.I[1].acc[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc2[2]", imu.I[1].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[0]", imu.I[2].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[1]", imu.I[2].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[2]", imu.I[2].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[0]", imu.I[2].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[1]", imu.I[2].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[2]", imu.I[2].acc[2], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "imustatus", imu.status, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "mag1time", mag1.time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "mag1[0]", mag1.mag[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag1[1]", mag1.mag[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag1[2]", mag1.mag[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag2time", mag2.time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "mag2[0]", mag2.mag[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag2[1]", mag2.mag[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag2[2]", mag2.mag[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "magtime", mag.time, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "mag[0]", mag.mag[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag[1]", mag.mag[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -2043,7 +2052,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
-	PopulateDeviceInfoMappings(m_lookupInfo);
+	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3);
 	PopulateSysParamsMappings(m_lookupInfo);
@@ -2110,7 +2119,7 @@ cISDataMappings::cISDataMappings()
 	// PopulateRtkDebug2Mappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
 	PopulateIMU3MagnetometerMappings(m_lookupInfo);
-	PopulateIMUMagnetometerMappings(m_lookupInfo, DID_IMU_MAG);
+	// PopulateIMUMagnetometerMappings(m_lookupInfo, DID_IMU_MAG);
 
 #endif
 

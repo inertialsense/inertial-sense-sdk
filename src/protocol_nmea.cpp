@@ -184,13 +184,13 @@ int pimu_to_nmea_ppimu(char a[], const int aSize, preintegrated_imu_t &pimu)
 	int n = SNPRINTF(a, aSize, "$PPIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", pimu.time);		// 1
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta);		// 2
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta);		// 3
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta);		// 4
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[0]);	// 2
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[1]);	// 3
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[2]);	// 4
 
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel);			// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel);			// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel);			// 7
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[0]);		// 5
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[1]);		// 6
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[2]);		// 7
 
 	n += SNPRINTF(a+n, aSize-n, ",%.3f", pimu.dt);			// 8
 	
