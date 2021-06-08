@@ -1580,7 +1580,8 @@ enum eGnssSatSigConst
 		GNSS_SAT_SIG_CONST_SBAS | \
 		GNSS_SAT_SIG_CONST_QZSS | \
 		GNSS_SAT_SIG_CONST_GAL | \
-		GNSS_SAT_SIG_CONST_GLO
+		GNSS_SAT_SIG_CONST_GLO | \
+		GNSS_SAT_SIG_CONST_BDS
 };
 
 /** RTK Configuration */
@@ -2006,7 +2007,7 @@ typedef struct PACKED
     /** Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
     double                  refLla[3];
 
-    /** Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup (deg, deg, m) */
+    /** Last latitude, longitude, HAE (height above ellipsoid) used to aid GPS startup (deg, deg, m).  Updated when the distance between current LLA and lastLla exceeds lastLlaUpdateDistance. */
     double					lastLla[3];
 
     /** Last LLA GPS time since week start (Sunday morning) in milliseconds */
