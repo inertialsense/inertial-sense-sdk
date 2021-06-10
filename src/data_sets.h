@@ -1808,25 +1808,45 @@ enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */
 	IO_CONFIG_STROBE_TRIGGER_HIGH               = (int)0x00000001,
+	// G1,G2 - STROBE, CAN, Ser2, I2C (future)
 	/** G1,G2 - STROBE input on G2 */
 	IO_CONFIG_G1G2_STROBE_INPUT_G2              = (int)0x00000002,
 	/** G1,G2 - CAN Bus */
 	IO_CONFIG_G1G2_CAN_BUS                      = (int)0x00000004,
-	/** G1,G2 - General Communications on Ser2, excluding GPS communications. */
+	/** G1,G2 - General Communications on Ser2. Excludes GPS communications. */
 	IO_CONFIG_G1G2_COM2                         = (int)0x00000006,
 	/** G1,G2 - MASK.  Note: This G1,G2 setting is overriden when GPS1 or GPS2 is configured to use Ser2. */
 	IO_CONFIG_G1G2_MASK                         = (int)0x0000000E,
 
+	// G9 - STROBE, QDEC0 (future)
 	/** G9 - Strobe input */
 	IO_CONFIG_G9_STROBE_INPUT                   = (int)0x00000010,
 	/** G9 - Enable Nav update strobe output pulse on G9 (uINS pin 10) indicating preintegrated IMU and navigation updates */
 	IO_CONFIG_G9_STROBE_OUTPUT_NAV              = (int)0x00000020,
+	/** G9 - Quadrature wheel encoder input (QDEC0-B). */
+	IO_CONFIG_G9_QDEC0_INPUT                    = (int)0x00000030,
 	/** G9 - Bit mask */
 	IO_CONFIG_G9_MASK                           = (int)0x00000030,
-	/** Input strobe - enable on G5 */
-	IO_CONFIG_INPUT_STROBE_G5_ENABLE			= (int)0x00000040,
-	/** Input strobe - enable on G8 */
-	IO_CONFIG_INPUT_STROBE_G8_ENABLE			= (int)0x00000080,
+
+	// G6,G7 - Ser1, QDEC0 (future)
+	/** G6,G7 - General Communications on Ser1. Excludes GPS communications.  Overriden when SPI is enabled (G9 held low on bootup/config). */
+	IO_CONFIG_G6G7_COM1                         = (int)0x00000040,
+	/** G6,G7 - Quadrature wheel encoder input (G6 QDEC0-A).  Overriden when SPI is enabled (G9 held low on bootup/config). */
+	IO_CONFIG_G6G7_QDEC0_INPUT_G6               = (int)0x00000080,
+	/** G6,G7 - Bit mask */
+	IO_CONFIG_G6G7_MASK                         = (int)0x000000C0,
+
+	// G5,G8 - STROBE, QDEC1 (future), SPI (enabled when G9 is held low on bootup/config)
+	/** G5,G8 - Strobe input on G5 */
+	IO_CONFIG_G5G8_STROBE_INPUT_G5              = (int)0x00000100,
+	/** G5,G8 - Strobe input on G8 */
+	IO_CONFIG_G5G8_STROBE_INPUT_G8              = (int)0x00000200,
+	/** G5,G8 - Strobe input on both G5 and G8 */
+	IO_CONFIG_G5G8_STROBE_INPUT_G5_G8           = (int)0x00000300,
+	/** G5,G8 - Quadrature wheel encoder input (G5 QDEC1-B, G8 QDEC1-A) */
+	IO_CONFIG_G5G8_QDEC_INPUT                   = (int)0x00000400,
+	/** G5,G8 - Bit mask */
+	IO_CONFIG_G5G8_MASK                         = (int)0x00000700,
 
 	/** Unused bits */
 
@@ -1869,6 +1889,8 @@ enum eIoConfig
 	IO_CONFIG_GPS_SOURCE_SER1					= (int)4,
 	/** GPS source - Serial 2 */
 	IO_CONFIG_GPS_SOURCE_SER2					= (int)5,
+	/** GPS source - last type */
+	IO_CONFIG_GPS_SOURCE_LAST					= IO_CONFIG_GPS_SOURCE_SER2,	// set to last source
 
 	/** GPS type MASK */
 	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000007,
@@ -1878,6 +1900,8 @@ enum eIoConfig
 	IO_CONFIG_GPS_TYPE_UBX_F9P					= (int)1,
 	/** GPS type - NMEA */
 	IO_CONFIG_GPS_TYPE_NMEA						= (int)2,
+	/** GPS type - last type */
+	IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
