@@ -1349,7 +1349,7 @@ typedef struct PACKED
 										| RMC_BITS_RTK_STATE \
 										| RMC_BITS_RTK_CODE_RESIDUAL \
 										| RMC_BITS_RTK_PHASE_RESIDUAL)
-#define RMC_PRESET_PPD_ROBOT			(RMC_PRESET_PPD_BITS\
+#define RMC_PRESET_PPD_ROBOT			(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_WHEEL_ENCODER \
 										| RMC_BITS_WHEEL_CONFIG)
 
@@ -1817,6 +1817,8 @@ enum eIoConfig
 	IO_CONFIG_G1G2_COM2                         = (int)0x00000006,
 	/** G1,G2 - MASK.  Note: This G1,G2 setting is overriden when GPS1 or GPS2 is configured to use Ser2. */
 	IO_CONFIG_G1G2_MASK                         = (int)0x0000000E,
+	/** G1,G2 - Default */
+	IO_CONFIG_G1G2_DEFAULT                      = IO_CONFIG_G1G2_CAN_BUS,
 
 	// G9 - STROBE, QDEC0 (future)
 	/** G9 - Strobe input */
@@ -1827,6 +1829,8 @@ enum eIoConfig
 	IO_CONFIG_G9_QDEC0_INPUT                    = (int)0x00000030,
 	/** G9 - Bit mask */
 	IO_CONFIG_G9_MASK                           = (int)0x00000030,
+	/** G9 - Default */
+	IO_CONFIG_G9_DEFAULT                        = (int)0,	
 
 	// G6,G7 - Ser1, QDEC0 (future)
 	/** G6,G7 - General Communications on Ser1. Excludes GPS communications.  Overriden when SPI is enabled (G9 held low on bootup/config). */
@@ -1835,6 +1839,8 @@ enum eIoConfig
 	IO_CONFIG_G6G7_QDEC0_INPUT_G6               = (int)0x00000080,
 	/** G6,G7 - Bit mask */
 	IO_CONFIG_G6G7_MASK                         = (int)0x000000C0,
+	/** G6,G7 - Default */
+	IO_CONFIG_G6G7_DEFAULT                      = IO_CONFIG_G6G7_COM1,	
 
 	// G5,G8 - STROBE, QDEC1 (future), SPI (enabled when G9 is held low on bootup/config)
 	/** G5,G8 - Strobe input on G5 */
@@ -1847,6 +1853,8 @@ enum eIoConfig
 	IO_CONFIG_G5G8_QDEC_INPUT                   = (int)0x00000400,
 	/** G5,G8 - Bit mask */
 	IO_CONFIG_G5G8_MASK                         = (int)0x00000700,
+	/** G5,G8 - Default */
+	IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
 
 	/** Unused bits */
 
@@ -1916,6 +1924,7 @@ enum eIoConfig
 	/** Unused bits */
 };
 
+#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
 
 /** (DID_WHEEL_ENCODER) [NOT SUPPORTED, INTERNAL USE ONLY] Message to communicate wheel encoder measurements to GPS-INS */
 typedef struct PACKED
