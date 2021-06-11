@@ -169,7 +169,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 
 #endif
 
-#if defined(USE_LUNA_DATA_SETS)
+#if defined(INCLUDE_LUNA_DATA_SETS)
 
 	sizeMap[DID_EVB_LUNA_FLASH_CFG] = sizeof(evb_luna_flash_cfg_t);
 	sizeMap[DID_EVB_LUNA_STATUS] = sizeof(evb_luna_status_t);
@@ -886,7 +886,7 @@ static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], u
     ASSERT_SIZE(totalSize);
 }
 
-#if defined(USE_LUNA_DATA_SETS)
+#if defined(INCLUDE_LUNA_DATA_SETS)
 
 static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
 {
@@ -922,8 +922,8 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[3]", wheelControl.LinearCoEff[3], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[4]", wheelControl.LinearCoEff[4], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderCountsPerRad", wheelControl.actuatorEncoderCountsPerRad, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[0]", wheelControl.actuatorEncoderRange[0], 0, DataTypeInt32, int32_t&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[1]", wheelControl.actuatorEncoderRange[1], 0, DataTypeInt32, int32_t&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[0]", wheelControl.actuatorEncoderRange[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[1]", wheelControl.actuatorEncoderRange[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_l", wheelControl.actuatorTrim_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_r", wheelControl.actuatorTrim_r, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandAngle", wheelControl.actuatorDeadbandAngle, 0, DataTypeFloat, float, 0);
@@ -993,8 +993,8 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "eff_r", eff_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effAct_l", effAct_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effAct_r", effAct_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effDuty_l", effDuty_l, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "effDuty_r", effDuty_r, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "effDuty_l", effDuty_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "effDuty_r", effDuty_r, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -2081,7 +2081,7 @@ cISDataMappings::cISDataMappings()
 	PopulateDebugArrayMappings(m_lookupInfo, DID_EVB_DEBUG_ARRAY);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
 
-#if defined(USE_LUNA_DATA_SETS)
+#if defined(INCLUDE_LUNA_DATA_SETS)
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
     PopulateCoyoteStatusMappings(m_lookupInfo);
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
