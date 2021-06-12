@@ -80,7 +80,7 @@ typedef struct
 	float					actuatorEncoderCountsPerRad;
 
     /** Actuator count [min, max] Duty cycle will drive between these numbers. Duty of 0 - min, duty of 100 - Max */
-    int32_t                 actuatorEncoderRange[2];
+    float                   actuatorEncoderRange[2];
 
     /** (rad) Angle that sets actuator zero velocity (center) position relative to home point. */
     float                	actuatorTrim_l;
@@ -95,7 +95,7 @@ typedef struct
     /** (rpm) Current engine RPM.  Used for wheel control gain scheduling. */
     float                   engine_rpm;
 
-	/** Test sweep rate (rad/s/s) */
+	/** Test sweep rate (rad/s) */
 	float					testSweepRate;
 
 } evb_luna_wheel_control_cfg_t;
@@ -354,9 +354,9 @@ typedef struct
 	float 					effAct_l;
 	float 					effAct_r;
 
-	/** Feedback control effort */
-	uint32_t 				effDuty_l;
-	uint32_t 				effDuty_r;
+	/** Feedback control effort duty cycle (%, 0-100) */
+	float 					effDuty_l;
+	float 					effDuty_r;
 
 } evb_luna_wheel_controller_t;
 

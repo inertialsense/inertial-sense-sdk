@@ -71,7 +71,7 @@ typedef struct
 
 static capture_t capture[2] = {};
 
-static float quadEncPeriodSetStopped(capture_t *c)
+static void quadEncPeriodSetStopped(capture_t *c)
 {	// Wheels are stationary or spinning very slowly
 	c->running = false;
 	c->count = 0;
