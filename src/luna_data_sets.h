@@ -213,7 +213,7 @@ typedef enum
     /**Full Mask */
     COYOTE_STATUS_MASK                                  = 0x000FFFFF,
 
-} eCoyoteStatus;
+} eEvbLunaStatus;
 
 typedef enum
 {
