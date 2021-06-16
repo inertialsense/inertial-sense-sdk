@@ -1,4 +1,4 @@
-TARGET	?= EVB-2
+TARGET	?= IS_EVB-2
 
 SERIAL_DEVICE ?= /dev/ttyUSB0
 
