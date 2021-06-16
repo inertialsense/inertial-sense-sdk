@@ -1397,12 +1397,16 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 #define SADC_WIDTH	5
 		for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
 		{
-			auto &mpu = sensorsADC.mpu[i];
-			ss << "\tmpu[" << i << "]: " << setprecision(0);
-			ss << "pqr[" << setw(SADC_WIDTH) << mpu.pqr[0] << "," << setw(SADC_WIDTH) << mpu.pqr[1] << "," << setw(SADC_WIDTH) << mpu.pqr[2] << "], ";
-			ss << "acc[" << setw(SADC_WIDTH) << mpu.acc[0] << "," << setw(SADC_WIDTH) << mpu.acc[1] << "," << setw(SADC_WIDTH) << mpu.acc[2] << "], ";
-			ss << "mag[" << setw(SADC_WIDTH) << mpu.mag[0] << "," << setw(SADC_WIDTH) << mpu.mag[1] << "," << setw(SADC_WIDTH) << mpu.mag[2] << "], ";
-			ss << "temp " << setprecision(3) << mpu.temp << ",";
+			auto &imu = sensorsADC.imu[i];
+			ss << "\timu[" << i << "]: " << setprecision(0);
+			ss << "pqr[" << setw(SADC_WIDTH) << imu.pqr[0] << "," << setw(SADC_WIDTH) << imu.pqr[1] << "," << setw(SADC_WIDTH) << imu.pqr[2] << "], ";
+			ss << "acc[" << setw(SADC_WIDTH) << imu.acc[0] << "," << setw(SADC_WIDTH) << imu.acc[1] << "," << setw(SADC_WIDTH) << imu.acc[2] << "], ";
+			ss << "temp " << setprecision(3) << imu.temp << ",";
+		}
+		for (size_t i = 0; i < NUM_MAG_DEVICES; ++i)
+		{
+			auto &mag = sensorsADC.mag[i];
+			ss << "mag[" << setw(SADC_WIDTH) << mag.mag[0] << "," << setw(SADC_WIDTH) << mag.mag[1] << "," << setw(SADC_WIDTH) << mag.mag[2] << "], ";
 			ss << "\n";
 		}
 	}
@@ -1410,12 +1414,16 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 	{
 		for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
 		{
-			auto &mpu = sensorsADC.mpu[i];
+			auto &imu = sensorsADC.imu[i];
 			ss << "mpu[" << i << "]: " << setprecision(0);
-			ss << "pqr[" << mpu.pqr[0] << "," << mpu.pqr[1] << "," << mpu.pqr[2] << "], ";
-			ss << "acc[" << mpu.acc[0] << "," << mpu.acc[1] << "," << mpu.acc[2] << "], ";
-			ss << "mag[" << mpu.mag[0] << "," << mpu.mag[1] << "," << mpu.mag[2] << "], ";
-			ss << "temp " << setprecision(3) << mpu.temp << ",";
+			ss << "pqr[" << imu.pqr[0] << "," << imu.pqr[1] << "," << imu.pqr[2] << "], ";
+			ss << "acc[" << imu.acc[0] << "," << imu.acc[1] << "," << imu.acc[2] << "], ";
+			ss << "temp " << setprecision(3) << imu.temp << ",";
+		}
+		for (size_t i = 0; i < NUM_MAG_DEVICES; ++i)
+		{
+			auto &mag = sensorsADC.mag[i];
+			ss << "mag[" << mag.mag[0] << "," << mag.mag[1] << "," << mag.mag[2] << "], ";
 		}
 	}
 
