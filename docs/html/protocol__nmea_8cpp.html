@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.8.4</span>
+   &#160;<span id="projectnumber">Release 1.8.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -91,10 +91,10 @@ Functions</h2></td></tr>
 <tr class="separator:abf054f01ca5773fd9e5d90d186012477"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97b2f5b972b9efcea0201ef06eaef80b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a97b2f5b972b9efcea0201ef06eaef80b">set_gpsPos_status_mask</a> (uint32_t *status, uint32_t state, uint32_t mask)</td></tr>
 <tr class="separator:a97b2f5b972b9efcea0201ef06eaef80b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b89390443be3cf766e2910ddc73510e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structgtime__t.html">gtime_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a3b89390443be3cf766e2910ddc73510e">epoch2time</a> (const double *ep)</td></tr>
-<tr class="separator:a3b89390443be3cf766e2910ddc73510e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a985daad1b7329e19b520e522f1c2c297"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a985daad1b7329e19b520e522f1c2c297">time2gpst</a> (<a class="el" href="structgtime__t.html">gtime_t</a> t, int *week)</td></tr>
-<tr class="separator:a985daad1b7329e19b520e522f1c2c297"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d6cea95efbf36a9bbf4750920cb71f0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structgtime__t.html">gtime_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a5d6cea95efbf36a9bbf4750920cb71f0">epochToTime</a> (const double *ep)</td></tr>
+<tr class="separator:a5d6cea95efbf36a9bbf4750920cb71f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbab6dc8b17320cc56f6c8575d913824"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#adbab6dc8b17320cc56f6c8575d913824">timeToGpst</a> (<a class="el" href="structgtime__t.html">gtime_t</a> t, int *week)</td></tr>
+<tr class="separator:adbab6dc8b17320cc56f6c8575d913824"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91dde95de4c0885e0616aa9b4adf58aa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a91dde95de4c0885e0616aa9b4adf58aa">dev_info_to_nmea_info</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#a3b0f6e60dd38eb83c023b3a65b246a09">dev_info_t</a> &amp;info)</td></tr>
 <tr class="separator:a91dde95de4c0885e0616aa9b4adf58aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9df86212f241ec1551efef39f2fd89f3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a9df86212f241ec1551efef39f2fd89f3">tow_to_nmea_ptow</a> (char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek)</td></tr>
@@ -127,12 +127,12 @@ Functions</h2></td></tr>
 <tr class="separator:a6c623b66a2a16fd45b1a6f211ca076e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad64c0413276ee4ffdfdc13d52875813e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#ad64c0413276ee4ffdfdc13d52875813e">parse_nmea_zda</a> (const char msg[], int msgSize, double &amp;day, double &amp;month, double &amp;year)</td></tr>
 <tr class="separator:ad64c0413276ee4ffdfdc13d52875813e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a531b2e696cc7b542ce8c33bf69bef2bc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a531b2e696cc7b542ce8c33bf69bef2bc">parse_nmea_gns</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], int *satsUsed, int navMode)</td></tr>
-<tr class="separator:a531b2e696cc7b542ce8c33bf69bef2bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11d82e0e8b5c7d7fb79a4b475ecc1318"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a11d82e0e8b5c7d7fb79a4b475ecc1318">parse_nmea_gga</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], int *satsUsed, int navMode)</td></tr>
-<tr class="separator:a11d82e0e8b5c7d7fb79a4b475ecc1318"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbb79e0d905ebd5ce99a3b00724a7327"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#adbb79e0d905ebd5ce99a3b00724a7327">parse_nmea_rmc</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#af2f8adebb330e887e22825a4535b2051">gps_vel_t</a> *gpsVel, double datetime[6], int *satsUsed, int navMode)</td></tr>
-<tr class="separator:adbb79e0d905ebd5ce99a3b00724a7327"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05a2eb6085b562af38580649a959ebac"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a05a2eb6085b562af38580649a959ebac">parse_nmea_gns</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)</td></tr>
+<tr class="separator:a05a2eb6085b562af38580649a959ebac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64d443a0d002ef6ebb846b28dfce25d3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a64d443a0d002ef6ebb846b28dfce25d3">parse_nmea_gga</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)</td></tr>
+<tr class="separator:a64d443a0d002ef6ebb846b28dfce25d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed85fd0419388732053e760129685579"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#aed85fd0419388732053e760129685579">parse_nmea_rmc</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#af2f8adebb330e887e22825a4535b2051">gps_vel_t</a> *gpsVel, double datetime[6])</td></tr>
+<tr class="separator:aed85fd0419388732053e760129685579"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b334fe89376ad58c3b051df267247c4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#a6b334fe89376ad58c3b051df267247c4">parse_nmea_gsa</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, int *navMode)</td></tr>
 <tr class="separator:a6b334fe89376ad58c3b051df267247c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae564ac6273604895e6397e517621973b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8cpp.html#ae564ac6273604895e6397e517621973b">parse_nmea_gsv</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#aa6d16363017b2c56d12f2656dd8c545e">gps_sat_t</a> *gpsSat, int lastGSVmsg[2], int *satCount, uint32_t *cnoSum, uint32_t *cnoCount)</td></tr>
@@ -281,14 +281,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a3b89390443be3cf766e2910ddc73510e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b89390443be3cf766e2910ddc73510e">&#9670;&nbsp;</a></span>epoch2time()</h2>
+<a id="a5d6cea95efbf36a9bbf4750920cb71f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d6cea95efbf36a9bbf4750920cb71f0">&#9670;&nbsp;</a></span>epochToTime()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structgtime__t.html">gtime_t</a> epoch2time </td>
+          <td class="memname"><a class="el" href="structgtime__t.html">gtime_t</a> epochToTime </td>
           <td>(</td>
           <td class="paramtype">const double *&#160;</td>
           <td class="paramname"><em>ep</em></td><td>)</td>
@@ -711,12 +711,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00722">722</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00723">723</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a11d82e0e8b5c7d7fb79a4b475ecc1318"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a11d82e0e8b5c7d7fb79a4b475ecc1318">&#9670;&nbsp;</a></span>parse_nmea_gga()</h2>
+<a id="a64d443a0d002ef6ebb846b28dfce25d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64d443a0d002ef6ebb846b28dfce25d3">&#9670;&nbsp;</a></span>parse_nmea_gga()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -754,8 +754,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>navMode</em>&#160;</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>statusFlags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -765,12 +765,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00943">943</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00964">964</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a531b2e696cc7b542ce8c33bf69bef2bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a531b2e696cc7b542ce8c33bf69bef2bc">&#9670;&nbsp;</a></span>parse_nmea_gns()</h2>
+<a id="a05a2eb6085b562af38580649a959ebac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05a2eb6085b562af38580649a959ebac">&#9670;&nbsp;</a></span>parse_nmea_gns()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -808,8 +808,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>navMode</em>&#160;</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>statusFlags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -819,7 +819,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00819">819</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00822">822</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -861,7 +861,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01104">1104</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01149">1149</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -921,12 +921,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01131">1131</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01177">1177</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
-<a id="adbb79e0d905ebd5ce99a3b00724a7327"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbb79e0d905ebd5ce99a3b00724a7327">&#9670;&nbsp;</a></span>parse_nmea_rmc()</h2>
+<a id="aed85fd0419388732053e760129685579"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed85fd0419388732053e760129685579">&#9670;&nbsp;</a></span>parse_nmea_rmc()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -953,19 +953,7 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>datetime</em>[6], </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>satsUsed</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>navMode</em>&#160;</td>
+          <td class="paramname"><em>datetime</em>[6]&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -975,7 +963,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01059">1059</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01103">1103</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -1023,7 +1011,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00789">789</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00791">791</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -1135,14 +1123,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a985daad1b7329e19b520e522f1c2c297"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a985daad1b7329e19b520e522f1c2c297">&#9670;&nbsp;</a></span>time2gpst()</h2>
+<a id="adbab6dc8b17320cc56f6c8575d913824"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbab6dc8b17320cc56f6c8575d913824">&#9670;&nbsp;</a></span>timeToGpst()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">double time2gpst </td>
+          <td class="memname">double timeToGpst </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structgtime__t.html">gtime_t</a>&#160;</td>
           <td class="paramname"><em>t</em>, </td>
