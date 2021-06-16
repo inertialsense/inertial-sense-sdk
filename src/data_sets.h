@@ -1387,7 +1387,7 @@ enum eMagRecalMode
 /** (DID_MAG_CAL) Magnetometer Calibration */
 typedef struct PACKED
 {
-	/** Set mode and start recalibration.  1 = multi-axis, 2 = single-axis, 101 = abort. */
+	/** Set mode and start recalibration. 1 = multi-axis, 2 = single-axis, 101 = abort. (see eMagRecalMode) */
 	uint32_t                recalCmd;
 	
 	/** Mag recalibration progress indicator: 0-100 % */
