@@ -304,14 +304,14 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 #endif
 
 	// Enable CAN
-#ifdef CONF_BOARD_CAN1
-	switch(cfg->cbPreset)
-	{
-		case EVB2_CB_PRESET_CAN:
-		cfg->cbOptions |= EVB2_CB_OPTIONS_CAN_ENABLE;
-		break;
-	}
-#endif
+//#ifdef CONF_BOARD_CAN1
+	//switch(cfg->cbPreset)
+	//{
+		//case EVB2_CB_PRESET_CAN:
+		//cfg->cbOptions |= EVB2_CB_OPTIONS_CAN_ENABLE;
+		//break;
+	//}
+//#endif
 }
 
 
