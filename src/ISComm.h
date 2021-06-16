@@ -121,7 +121,7 @@ typedef enum
 // version 1: initial release
 // version 2: 24 bit checksum support
 // version 3: ioConfig change
-#define PROTOCOL_VERSION_CHAR1			(3)
+#define PROTOCOL_VERSION_CHAR1			(4)
 
 // Minor (in data_sets.h)
 // #define PROTOCOL_VERSION_CHAR2		0
