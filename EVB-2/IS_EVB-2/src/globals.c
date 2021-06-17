@@ -243,16 +243,16 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 		break;
          
 #ifdef CONF_BOARD_CAN1
-	case  EVB2_CB_PRESET_CAN:
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
-
-		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
-
-		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_CAN);
-		cfg->cbf[EVB2_PORT_CAN]	   |= (1<<EVB2_PORT_USB);
-		break;
+	//case  EVB2_CB_PRESET_CAN:
+		//cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
+		//cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
+//
+		//cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
+        //cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+//
+		//cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_CAN);
+		//cfg->cbf[EVB2_PORT_CAN]	   |= (1<<EVB2_PORT_USB);
+		//break;
 #endif
     }        
 
