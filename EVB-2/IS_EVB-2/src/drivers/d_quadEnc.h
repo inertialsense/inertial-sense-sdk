@@ -32,11 +32,6 @@ void quadEncInit(uint32_t pck6_pres);
 void quadEncSetDirectionReverse( bool reverse_0, bool reverse_1 );
 
 /**
- * \brief Sets the amount of encoder pulses required before velocity estimate is valid following a stop condition.
- */
-void quadEncStartFilterCount( float encoderTickToWheelRad );
-
-/**
  * \brief Reads the current position of the encoders.
  */
 void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1);

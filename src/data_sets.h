@@ -3590,7 +3590,7 @@ typedef struct PACKED
 
 } can_config_t;
 
-#if __has_include("luna_data_sets.h")
+#if defined(INCLUDE_LUNA_DATA_SETS)
 #include "luna_data_sets.h"
 #endif
 
@@ -3626,7 +3626,7 @@ typedef union PACKED
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
 
-#if __has_include("luna_data_sets.h")
+#if defined(INCLUDE_LUNA_DATA_SETS)
 	evb_luna_wheel_controller_t     wheelController;
 #endif
 } uDatasets;
