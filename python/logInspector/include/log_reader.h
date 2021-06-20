@@ -70,7 +70,7 @@ struct DeviceLog
     vector<debug_array_t> debugArray;
     vector<sensors_mpu_w_temp_t> sensorsCal1;
     vector<sensors_mpu_w_temp_t> sensorsCal2;
-    // vector<sensor_cal_t> calSc;
+    // vector<sensor_cal_v1p2_t> calSc;
     // vector<sensor_cal_mpu_t> calSc1;
     // vector<sensor_cal_mpu_t> calSc2;
     vector<sys_sensors_t> sysSensorsSigma;
