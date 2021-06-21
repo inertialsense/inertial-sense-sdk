@@ -80,7 +80,7 @@ typedef struct
 	float					actuatorEncoderCountsPerRad;
 
     /** Actuator count [min, max] Duty cycle will drive between these numbers. Duty of 0 - min, duty of 100 - Max */
-    int32_t                 actuatorEncoderRange[2];
+    float                   actuatorEncoderRange[2];
 
     /** (rad) Angle that sets actuator zero velocity (center) position relative to home point. */
     float                	actuatorTrim_l;
@@ -95,7 +95,7 @@ typedef struct
     /** (rpm) Current engine RPM.  Used for wheel control gain scheduling. */
     float                   engine_rpm;
 
-	/** Test sweep rate (rad/s/s) */
+	/** Test sweep rate (rad/s) */
 	float					testSweepRate;
 
 } evb_luna_wheel_control_cfg_t;
@@ -172,51 +172,27 @@ typedef struct
 typedef enum
 {
     /** Motor command timeout */
-    EVB_LUNA_STATUS_WHEEL_CMD_TIMEOUT      		        = 0x00000001,
+    EVB_LUNA_STATUS_WHEEL_CMD_TIMEOUT                   = 0x00000001,
 
 	/** Geofence boundary exceeded */
-	EVB_LUNA_STATUS_ERR_GEOFENCE_EXCEEDED  		        = 0x00000002,
+	EVB_LUNA_STATUS_ERR_GEOFENCE_EXCEEDED               = 0x00000002,
 		
 	/** Remote kill - motors disabled by remote kill */
-	EVB_LUNA_STATUS_ERR_REMOTE_KILL				        = 0x00000004,
+	EVB_LUNA_STATUS_ERR_REMOTE_KILL                     = 0x00000004,
 	
 	/** Emergency stop button */
-	EVB_LUNA_STATUS_ERR_ESTOP					        = 0x00000008,
+	EVB_LUNA_STATUS_ERR_ESTOP                           = 0x00000008,
 		
 	/** Bump sensor */
-	EVB_LUNA_STATUS_ERR_BUMP					        = 0x00000010,
+	EVB_LUNA_STATUS_ERR_BUMP                            = 0x00000010,
 	
 	/** Range Sensor */
-	EVB_LUNA_STATUS_ERR_PROXIMITY				        = 0x00000020,
+	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000020,
 
     /** EVB Error bit mask */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
 
-    /**Controller not tracking heading*/
-    COYOTE_STATUS_ERR_TRACKING_HEADING                  = 0x00001000,
-
-    /**Controller not tracking ang vel*/
-    COYOTE_STATUS_ERR_TRACKING_ANG_VEL                  = 0x00002000,
-
-    /**Controller not approaching waypoint*/
-    COYOTE_STATUS_ERR_TRACKING_WAYPOINT                 = 0x00004000,
-
-    /**Controller tracking error bit mask*/
-    COYOTE_STATUS_ERR_TRACKING_BITMASK                  = 0x0000F000,
-	
-    /** Error Mask */
-    COYOTE_STATUS_ERR_MASK                              = 0x0000FFFF,
-
-    /**OGM Blocked */
-    COYOTE_STATUS_AUTONOMOUS_OGM_BLOCK                  = 0x00010000,
-
-    /**Paused in autonomous mode */
-    COYOTE_STATUS_AUTONOMOUS_PAUSE                      = 0x00020000,
-
-    /**Full Mask */
-    COYOTE_STATUS_MASK                                  = 0x000FFFFF,
-
-} eCoyoteStatus;
+} eEvbLunaStatus;
 
 typedef enum
 {
@@ -365,9 +341,9 @@ typedef struct
 	float 					effAct_l;
 	float 					effAct_r;
 
-	/** Feedback control effort */
-	uint32_t 				effDuty_l;
-	uint32_t 				effDuty_r;
+	/** Feedback control effort duty cycle (%, 0-100) */
+	float 					effDuty_l;
+	float 					effDuty_r;
 
 } evb_luna_wheel_controller_t;
 
