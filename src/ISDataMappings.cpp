@@ -944,6 +944,7 @@ static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "motorState", motorState, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "remoteKillMode", remoteKillMode, 0, DataTypeFloat, uint32_t, 0);
 	ADD_MAP(m, totalSize, "supplyVoltage", supplyVoltage, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "evbSupplyVoltage", evbSupplyVoltage, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -977,6 +978,10 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "errorStatus_l", errorStatus_l, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "errorStatus_r", errorStatus_r, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "stateCurr_l", stateCurr_l, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "stateCurr_r", stateCurr_r, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "velCmd_l", velCmd_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velCmd_r", velCmd_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velCmdSlew_l", velCmdSlew_l, 0, DataTypeFloat, float, 0);

@@ -164,6 +164,9 @@ typedef struct
 	/** Supply voltage (V) */
 	float                   supplyVoltage;
 
+	/** EVB Supply voltage (V) */
+	float 					evbSupplyVoltage;
+
 } evb_luna_status_t;
 
 typedef enum
@@ -321,6 +324,14 @@ typedef struct
 
 	/** Wheel control status (see eLunaWheelControllerStatus) */
 	uint32_t            	status;
+	
+	/** Wheel error status (motor driver specific) */
+	uint32_t				errorStatus_l; 
+	uint32_t				errorStatus_r; 
+	
+	/** Wheel control status (motor driver specific) */
+	uint32_t				stateCurr_l;
+	uint32_t				stateCurr_r;
 
 	/** Velocity commanded */
 	float 					velCmd_l;
