@@ -188,6 +188,18 @@ typedef enum
 
     /** EVB Error bit mask */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
+	
+	/** Axis is in an invalid state */
+	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
+	
+	/** Watchdog has expired */
+	EVB_LUNA_STATUS_AXIS_ERR_WATCHDOG					= 0x02000000,
+	
+	/** Motor or driver temperature is above limits */
+	EVB_LUNA_STATUS_AXIS_ERR_TEMP						= 0x04000000,
+	
+	/** Axis error bit mask */ 
+	EVB_LUNA_STATUS_AXIS_ERR_MASK						= 0xFF000000,
 
 } eEvbLunaStatus;
 
