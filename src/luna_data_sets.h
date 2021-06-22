@@ -40,6 +40,13 @@ typedef enum
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_MASK  = 0x00000600,
 } eEvbLunaFlashCfgBits;
 
+typedef enum
+{
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN				= 0x00000000,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT				= 0x00000001,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK					= 0x00000003,
+} eEvbLunaWheelControlConfig_t;
+
 #define NUM_FF_COEFS	2
 #define NUM_AL_COEFS	5
 
@@ -97,6 +104,9 @@ typedef struct
 
 	/** Test sweep rate (rad/s) */
 	float					testSweepRate;
+
+	/** Various config like motor control types, etc. (eEvbLunaWheelControlConfig_t) */
+	uint32_t				config;
 
 } evb_luna_wheel_control_cfg_t;
 
