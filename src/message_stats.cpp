@@ -84,6 +84,14 @@ string messageDescriptionRtcm3(int id)
 	return "";
 }
 
+unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
+{
+	unsigned int bits = 0;
+	int i;
+	for (i = pos; i < pos + len; i++) bits = (bits << 1) + ((buff[i / 8] >> (7 - i % 8)) & 1u);
+	return bits;
+}
+
 static msg_stats_t createNewMsgStats(int timeMs, string description = "")
 {
 	msg_stats_t s = {};

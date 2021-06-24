@@ -32,6 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISClient.h"
+#include "message_stats.h"
 
 // use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
@@ -379,6 +380,7 @@ private:
 	com_manager_port_t *m_cmPorts;
 	is_comm_instance_t m_gpComm;
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
+	mul_msg_stats_t m_messageStats = {};
 
 	// returns false if logger failed to open
 	bool UpdateServer();
