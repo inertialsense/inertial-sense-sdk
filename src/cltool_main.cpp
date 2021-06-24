@@ -39,7 +39,6 @@ static bool display_server_status(InertialSense* i, const char* prefix = "", con
 {
 	static float serverKBps = 0;
 	static uint64_t serverByteCount = 0;
-	static uint64_t updateCount = 0;
 	static uint64_t serverByteRateTimeMsLast = 0;
 	static uint64_t serverByteCountLast = 0;
 
@@ -64,8 +63,8 @@ static bool display_server_status(InertialSense* i, const char* prefix = "", con
 			}
 			printf("%sServer: %s:%d     Connections: %d current, %d total     %s\n", 
 				prefix, i->GetTcpServerIpAddress().c_str(), i->GetTcpServerPort(), i->GetClientConnectionCurrent(), i->GetClientConnectionTotal(), suffix);
-			printf("Data: %02" PRIu64 " (%3.1f KB/s : %lld)\n\n", 
-				(++updateCount) % 100, serverKBps, (long long)i->GetClientServerByteCount());
+			printf("Tx Data: %4.1f KB/s, %lld bytes\n\n", 
+				serverKBps, (long long)i->GetClientServerByteCount());
 
 			cout << i->getServerMessageStatsSummary();
 			return true;
