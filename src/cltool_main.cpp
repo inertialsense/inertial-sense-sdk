@@ -35,7 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
-static bool output_server_bytes(InertialSense* i, const char* prefix = "", const char* suffix = "")
+static bool display_server_status(InertialSense* i, const char* prefix = "", const char* suffix = "")
 {
 	static float serverKBps = 0;
 	static uint64_t serverByteCount = 0;
@@ -62,14 +62,19 @@ static bool output_server_bytes(InertialSense* i, const char* prefix = "", const
 				serverByteCountLast = serverByteCount;
 				serverByteRateTimeMsLast = timeMs;
 			}
-			printf("%sServer: %02" PRIu64 " (%3.1f KB/s : %lld)     %s", prefix, (++updateCount) % 100, serverKBps, (long long)i->GetClientServerByteCount(), suffix);
+			printf("%sServer: %s:%d     Connections: %d current, %d total     %s\n", 
+				prefix, i->GetTcpServerIpAddress().c_str(), i->GetTcpServerPort(), i->GetClientConnectionCurrent(), i->GetClientConnectionTotal(), suffix);
+			printf("Data: %02" PRIu64 " (%3.1f KB/s : %lld)\n\n", 
+				(++updateCount) % 100, serverKBps, (long long)i->GetClientServerByteCount());
+
+			cout << i->getMessageStatsSummary();
 			return true;
 		}
 	}
 	return false;
 }
 
-static void output_client_bytes(InertialSense* i)
+static void display_client_status(InertialSense* i)
 {
 	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET)
 	{
@@ -92,7 +97,7 @@ static void output_client_bytes(InertialSense* i)
 		}
 		else
 		{
-			output_server_bytes(i, "\n", suffix);
+			display_server_status(i, "\n", suffix);
 		}
 	}
 }
@@ -106,7 +111,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
     (void)pHandle;
 	// Print data to terminal
 	g_inertialSenseDisplay.ProcessData(data);
-	output_client_bytes(i);
+	display_client_status(i);
 
 #if 0
 
@@ -337,7 +342,7 @@ static int cltool_createHost()
 	{
 		inertialSenseInterface.Update();
 		g_inertialSenseDisplay.Home();
-		output_server_bytes(&inertialSenseInterface);
+		display_server_status(&inertialSenseInterface);
 	}
 	cout << "Shutting down..." << endl;
 

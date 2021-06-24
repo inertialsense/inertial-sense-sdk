@@ -455,9 +455,9 @@ bool InertialSense::UpdateServer()
 				{
 					len = messageStatsGetbitu(comm->dataPtr, 14, 10);
 					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
-					if (comm->dataHdr.size < 1024)
+					if ((id == 1029) && (comm->dataHdr.size < 1024))
 					{
-// 						str = QString(QByteArray(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12));
+						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
 					}
 				}
 				else if (ptype == _PTYPE_UBLOX)
@@ -486,7 +486,7 @@ bool InertialSense::UpdateServer()
 
 			if (ptype != _PTYPE_NONE && id)
 			{
-				messageStatsAppend(str, m_messageStats, ptype, id, static_cast<int>(time(0)));
+				messageStatsAppend(str, m_messageStats, ptype, id, current_timeMs());
 			}
 		}
 	}
@@ -788,22 +788,29 @@ bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)
 void InertialSense::OnClientConnecting(cISTcpServer* server)
 {
 	(void)server;
-	cout << endl << "Client connecting..." << endl;
+	// cout << endl << "Client connecting..." << endl;
 }
 
 void InertialSense::OnClientConnected(cISTcpServer* server, socket_t socket)
 {
-	cout << endl << "Client connected: " << (int)socket << endl;
+	// cout << endl << "Client connected: " << (int)socket << endl;
+	m_clientConnectionsCurrent++;
+	m_clientConnectionsTotal++;
 }
 
 void InertialSense::OnClientConnectFailed(cISTcpServer* server)
 {
-	cout << endl << "Client connection failed!" << endl;
+	// cout << endl << "Client connection failed!" << endl;
 }
 
 void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
 {
-	cout << endl << "Client disconnected: " << (int)socket << endl;
+	// cout << endl << "Client disconnected: " << (int)socket << endl;
+	m_clientConnectionsCurrent--;
+	if (m_clientConnectionsCurrent<0)
+	{
+		m_clientConnectionsCurrent = 0;
+	}
 }
 
 bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
