@@ -428,6 +428,9 @@ bool InertialSense::UpdateServer()
 	int count = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, buffer, sizeof(buffer), 0);
 	if (count > 0)
 	{
+// 		TODO WHJ: Add packet error checking here and use messageStatsAppend() to keep message statistics.
+// 		messageStatsAppend()
+
 		// forward data on to connected clients
 		m_clientServerByteCount += count;
 		if (m_tcpServer.Write(buffer, count) != count)
