@@ -96,7 +96,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		{
 			n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 
-#if 0		// Send to uINS
+#if 1		// Send to uINS
 			comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
 #else		// Send to Luna
 			comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);

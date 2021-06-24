@@ -258,7 +258,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-presetPPD"))
 		{
-			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_BITS;
+			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_ROBOT;
 		}
 		else if (startsWith(a, "-presetINS2"))
 		{
