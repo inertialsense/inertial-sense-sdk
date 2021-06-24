@@ -374,7 +374,7 @@ public:
 	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, const string& bootloaderFileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, pfnBootloadStatus infoProgress = NULLPTR, bool updateBootloader = false);
 	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
 
-	string getMessageStatsSummary() { return messageStatsSummary(m_messageStats); }
+	string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 
 protected:
 	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
@@ -408,7 +408,7 @@ private:
 	com_manager_port_t *m_cmPorts;
 	is_comm_instance_t m_gpComm;
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
-	mul_msg_stats_t m_messageStats = {};
+	mul_msg_stats_t m_serverMessageStats = {};
 
 	// returns false if logger failed to open
 	bool UpdateServer();

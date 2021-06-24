@@ -67,7 +67,7 @@ static bool display_server_status(InertialSense* i, const char* prefix = "", con
 			printf("Data: %02" PRIu64 " (%3.1f KB/s : %lld)\n\n", 
 				(++updateCount) % 100, serverKBps, (long long)i->GetClientServerByteCount());
 
-			cout << i->getMessageStatsSummary();
+			cout << i->getServerMessageStatsSummary();
 			return true;
 		}
 	}

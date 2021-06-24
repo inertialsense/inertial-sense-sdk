@@ -486,7 +486,7 @@ bool InertialSense::UpdateServer()
 
 			if (ptype != _PTYPE_NONE && id)
 			{
-				messageStatsAppend(str, m_messageStats, ptype, id, current_timeMs());
+				messageStatsAppend(str, m_serverMessageStats, ptype, id, current_timeMs());
 			}
 		}
 	}
