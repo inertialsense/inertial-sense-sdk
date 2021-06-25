@@ -50,6 +50,7 @@
     <ClCompile Include="..\..\..\src\ISTcpClient.cpp" />
     <ClCompile Include="..\..\..\src\ISTcpServer.cpp" />
     <ClCompile Include="..\..\..\src\ISUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\..\src\protocol_nmea.cpp" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
     <ClCompile Include="..\..\..\src\serialPortPlatform.c" />
@@ -93,6 +94,7 @@
     <ClInclude Include="..\..\..\src\ISTcpClient.h" />
     <ClInclude Include="..\..\..\src\ISTcpServer.h" />
     <ClInclude Include="..\..\..\src\ISUtilities.h" />
+    <ClInclude Include="..\..\..\src\message_stats.h" />
     <ClInclude Include="..\..\..\src\protocol_nmea.h" />
     <ClInclude Include="..\..\..\src\serialPort.h" />
     <ClInclude Include="..\..\..\src\serialPortPlatform.h" />
