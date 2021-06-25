@@ -438,7 +438,7 @@ bool InertialSense::UpdateServer()
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 		{
-			int id = 0, len = 0;
+			int id = 0;	// len = 0;
 			string str;
 
 			switch (ptype)
@@ -447,13 +447,13 @@ bool InertialSense::UpdateServer()
 			case _PTYPE_UBLOX:
 				// forward data on to connected clients
 				m_clientServerByteCount += comm->dataHdr.size;
-				if (m_tcpServer.Write(comm->dataPtr, comm->dataHdr.size) != comm->dataHdr.size)
+				if (m_tcpServer.Write(comm->dataPtr, comm->dataHdr.size) != (int)comm->dataHdr.size)
 				{
 					cout << endl << "Failed to write bytes to tcp server!" << endl;
 				}
 				if (ptype == _PTYPE_RTCM3)
 				{
-					len = messageStatsGetbitu(comm->dataPtr, 14, 10);
+					// len = messageStatsGetbitu(comm->dataPtr, 14, 10);
 					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
 					if ((id == 1029) && (comm->dataHdr.size < 1024))
 					{
@@ -481,6 +481,9 @@ bool InertialSense::UpdateServer()
 					pStart = _MAX(pStart, pEnd - 8);
 					memcpy(&id, pStart, (pEnd - pStart));
 				}
+				break;
+
+			default:
 				break;
 			}
 
