@@ -35,69 +35,68 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
-static bool display_server_status(InertialSense* i, const char* prefix = "", const char* suffix = "")
+static void display_server_client_status(InertialSense* i, string prefix, string ipAddr, int port)
 {
+	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
+		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
+	{
+		return;
+	}
+
 	static float serverKBps = 0;
 	static uint64_t serverByteCount = 0;
 	static uint64_t serverByteRateTimeMsLast = 0;
 	static uint64_t serverByteCountLast = 0;
 
-	if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_QUIET)
+	uint64_t newServerByteCount = i->GetClientServerByteCount();
+	if (serverByteCount != newServerByteCount)
 	{
-		uint64_t newServerByteCount = i->GetClientServerByteCount();
-		if (serverByteCount != newServerByteCount)
+		serverByteCount = newServerByteCount;
+
+		// Data rate of server bytes
+		uint64_t timeMs = getTickCount();
+		uint64_t dtMs = timeMs - serverByteRateTimeMsLast;
+		if (dtMs >= 1000)
 		{
-			serverByteCount = newServerByteCount;
+			uint64_t serverBytesDelta = serverByteCount - serverByteCountLast;
+			serverKBps = ((float)serverBytesDelta / (float)dtMs);
 
-			// Data rate of server bytes
-			uint64_t timeMs = getTickCount();
-			uint64_t dtMs = timeMs - serverByteRateTimeMsLast;
-			if (dtMs >= 1000)
-			{
-				uint64_t serverBytesDelta = serverByteCount - serverByteCountLast;
-				serverKBps = ((float)serverBytesDelta / (float)dtMs);
-
-				// Update history
-				serverByteCountLast = serverByteCount;
-				serverByteRateTimeMsLast = timeMs;
-			}
-			printf("%sServer: %s:%d     Connections: %d current, %d total     %s\n", 
-				prefix, i->GetTcpServerIpAddress().c_str(), i->GetTcpServerPort(), i->GetClientConnectionCurrent(), i->GetClientConnectionTotal(), suffix);
-			printf("Tx Data: %4.1f KB/s, %lld bytes\n\n", 
-				serverKBps, (long long)i->GetClientServerByteCount());
-
-			cout << i->getServerMessageStatsSummary();
-			return true;
+			// Update history
+			serverByteCountLast = serverByteCount;
+			serverByteRateTimeMsLast = timeMs;
 		}
+		printf("%s: %s:%d     Connections: %d current, %d total    \n", 
+			prefix.c_str(), ipAddr.c_str(), port, i->GetClientConnectionCurrent(), i->GetClientConnectionTotal());
+		printf("Data: %4.1f KB/s, %lld bytes\n\n", 
+			serverKBps, (long long)i->GetClientServerByteCount());
+
+		cout << i->getServerMessageStatsSummary();
 	}
-	return false;
 }
 
 static void display_client_status(InertialSense* i)
 {
-	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET)
+	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
+		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
 	{
 		return;
 	}
 
-	if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_SCROLL)
+	char suffix[256];
+	com_manager_status_t* status = comManagerGetStatus(0);
+	suffix[0] = '\0';
+	if (status != NULLPTR && status->communicationErrorCount != 0)
 	{
-		char suffix[256];
-		com_manager_status_t* status = comManagerGetStatus(0);
-		suffix[0] = '\0';
-		if (status != NULLPTR && status->communicationErrorCount != 0 && g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
-		{
-			snprintf(suffix, sizeof(suffix), "Com errors: %d     ", status->communicationErrorCount);
-		}
-		g_inertialSenseDisplay.Home();
-		if (i->GetClientServerByteCount() == 0)
-		{
-			cout << endl << suffix;
-		}
-		else
-		{
-			display_server_status(i, "\n", suffix);
-		}
+		snprintf(suffix, sizeof(suffix), "Com errors: %d     ", status->communicationErrorCount);
+	}
+	g_inertialSenseDisplay.Home();
+	if (i->GetClientServerByteCount() == 0)
+	{
+		cout << endl << suffix;
+	}
+	else
+	{
+		display_server_client_status(i, "Client", i->GetTcpServerIpAddress(), i->GetTcpServerPort());
 	}
 }
 
@@ -341,7 +340,9 @@ static int cltool_createHost()
 	{
 		inertialSenseInterface.Update();
 		g_inertialSenseDisplay.Home();
-		display_server_status(&inertialSenseInterface);
+		display_server_client_status(&inertialSenseInterface, "Server", 
+			inertialSenseInterface.GetTcpServerIpAddress(), 
+			inertialSenseInterface.GetTcpServerPort());
 	}
 	cout << "Shutting down..." << endl;
 
