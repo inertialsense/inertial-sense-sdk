@@ -109,7 +109,9 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
     (void)pHandle;
 	// Print data to terminal
 	g_inertialSenseDisplay.ProcessData(data);
-	display_client_status(i);
+	// display_client_status(i);
+	display_server_client_status(i, "Client", i->GetTcpServerIpAddress(), i->GetTcpServerPort());
+
 
 #if 0
 
