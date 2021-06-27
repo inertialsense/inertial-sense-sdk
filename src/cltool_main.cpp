@@ -78,17 +78,18 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 		{
 			outstream << "Client: " << i->GetClientConnectionInfo()     << "     Rx: ";
 		}
-		outstream << setprecision(1) << setw(3) << serverKBps << " KB/s, " << (long long)i->GetClientServerByteCount() << " bytes    \n";
+		outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->GetClientServerByteCount() << " bytes    \n";
 
 		if (server)
 		{	// Server
 			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
 			outstream << i->getServerMessageStatsSummary();
+			refresh = true;
 		}
 		else
 		{	// Client
 			com_manager_status_t* status = comManagerGetStatus(0);
-			if (status != NULLPTR && status->communicationErrorCount>1)
+			if (status != NULLPTR && status->communicationErrorCount>2)
 			{
 				outstream << "Com errors: " << status->communicationErrorCount << "     \n";
 			}
@@ -344,6 +345,7 @@ static int cltool_createHost()
 	{
 		inertialSenseInterface.Update();
 		g_inertialSenseDisplay.Home();
+		cout << g_inertialSenseDisplay.Hello();
 		display_server_client_status(&inertialSenseInterface, true);
 	}
 	cout << "Shutting down..." << endl;

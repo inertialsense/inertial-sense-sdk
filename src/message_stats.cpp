@@ -253,7 +253,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		}
 	}
 
-	if (msgStats.ack.count)
+	if (msgStats.ack.count>5)
 	{
 		str.append("Acknowledge: ____________________________\n");
 		str.append("  Count  dtMs\n");
@@ -263,7 +263,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		str.append(string(buf));
 	}
 
-	if (msgStats.parseError.count>1)
+	if (msgStats.parseError.count>5)
 	{
 		str.append("Parse Error: ____________________________\n");
 		str.append("  Count  dtMs\n");

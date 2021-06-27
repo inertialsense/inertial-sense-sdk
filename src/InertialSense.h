@@ -327,7 +327,7 @@ public:
 	* Get TCP server IP address and port (i.e. "127.0.0.1:7777")
 	* @return string IP address and port
 	*/
-	string GetTcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + to_string(m_tcpServer.Port()); }
+	string GetTcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + to_string(m_tcpServer.Port()); }
 
 	/**
 	* Get Client connection info string (i.e. "127.0.0.1:7777")
