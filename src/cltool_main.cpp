@@ -36,7 +36,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "cltool.h"
 
 
-static void display_server_client_status(InertialSense* i, bool server=false, bool refresh=false)
+static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refresh=false)
 {
 	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
 		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
@@ -83,7 +83,10 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 		if (server)
 		{	// Server
 			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
-			outstream << i->getServerMessageStatsSummary();
+			if (showMessageSummary)
+			{
+				outstream << i->getServerMessageStatsSummary();
+			}
 			refresh = true;
 		}
 		else
@@ -93,7 +96,10 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 			{
 				outstream << "Com errors: " << status->communicationErrorCount << "     \n";
 			}
-			outstream << i->getClientMessageStatsSummary();
+			if (showMessageSummary)
+			{
+				outstream << i->getClientMessageStatsSummary();
+			}
 		}
 	}
 
@@ -114,7 +120,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	bool refresh = g_inertialSenseDisplay.ProcessData(data);
 
 	// Collect and print summary list of client messages received
-	display_server_client_status(i, false, refresh);
+	display_server_client_status(i, false, false, refresh);
 
 #if 0
 
@@ -346,7 +352,7 @@ static int cltool_createHost()
 		inertialSenseInterface.Update();
 		g_inertialSenseDisplay.Home();
 		cout << g_inertialSenseDisplay.Hello();
-		display_server_client_status(&inertialSenseInterface, true);
+		display_server_client_status(&inertialSenseInterface, true, true);
 	}
 	cout << "Shutting down..." << endl;
 
