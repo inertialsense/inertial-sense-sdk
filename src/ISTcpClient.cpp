@@ -325,3 +325,8 @@ int cISTcpClient::SetBlocking(bool blocking)
 	m_blocking = blocking;
 	return ISSocketSetBlocking(m_socket, blocking);
 }
+
+std::string cISTcpClient::ConnectionInfo()
+{
+	return m_host + ":" + to_string(m_port);
+}
