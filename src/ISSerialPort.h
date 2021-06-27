@@ -86,6 +86,13 @@ public:
 	* @param ports cleared and then receives the name of each connected usb port
 	*/
 	static void GetComPorts(vector<string>& ports);
+
+	/**
+	* Gets information about the current connection (i.e. TCP ip address and port number or serial port name)
+	* @return connection info
+	*/
+	std::string ConnectionInfo() OVERRIDE;
+
 };
 
 #endif // __ISSERIALPORT_H__

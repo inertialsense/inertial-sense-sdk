@@ -324,16 +324,16 @@ public:
 	int GetClientConnectionTotal() { return m_clientConnectionsTotal; }
 
 	/**
-	* Get TCP server IP address
-	* @return string IP address
+	* Get TCP server IP address and port (i.e. "127.0.0.1:7777")
+	* @return string IP address and port
 	*/
-	string GetTcpServerIpAddress() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()); }
+	string GetTcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + to_string(m_tcpServer.Port()); }
 
 	/**
-	* Get TCP server port number
-	* @return int port number
+	* Get Client connection info string (i.e. "127.0.0.1:7777")
+	* @return string IP address and port
 	*/
-	int GetTcpServerPort() { return m_tcpServer.Port(); }
+	string GetClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
 
 	/**
 	* Get access to the underlying serial port
@@ -375,6 +375,7 @@ public:
 	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
 
 	string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
+	string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
 protected:
 	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
@@ -391,7 +392,6 @@ private:
 	map<int, vector<p_data_t>> m_logPackets;
 	time_t m_lastLogReInit;
 
-	cISTcpClient m_tcpClient;
 	char m_clientBuffer[512];
 	int m_clientBufferBytesToSend;
 	bool m_forwardGpgga;
@@ -402,6 +402,7 @@ private:
 	uint64_t m_clientServerByteCount;
 	int m_clientConnectionsCurrent = 0;
 	int m_clientConnectionsTotal = 0;
+	mul_msg_stats_t m_clientMessageStats = {};
 
 	bool m_disableBroadcastsOnClose;
 	com_manager_init_t m_cmInit;

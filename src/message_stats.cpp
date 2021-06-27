@@ -194,7 +194,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		{
 			int did = it->first;
 			msg_stats_t &s = it->second;
-			int dtMs = s.timeMs - s.prevTimeMs;
+			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 
 			SNPRINTF(buf, BUF_SIZE, "%4d%8d%6d  %s\n", did, s.count, dtMs, s.description.c_str());
             str.append(string(buf));
@@ -209,7 +209,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		for (it = msgStats.ascii.begin(); it != msgStats.ascii.end(); it++)
 		{
 			msg_stats_t &s = it->second;
-			int dtMs = s.timeMs - s.prevTimeMs;
+			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 			union
 			{
 				int id;
@@ -232,7 +232,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 			msg_stats_t &s = it->second;
 			uint8_t msgClass = (uint8_t)id;
 			uint8_t msgID = (uint8_t)(id >> 8);
-			int dtMs = s.timeMs - s.prevTimeMs;
+			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 			SNPRINTF(buf, BUF_SIZE, "(0x%02x 0x%02x)%8d%6d  %s\n", msgClass, msgID, s.count, dtMs, s.description.c_str());
             str.append(string(buf));
 		}
@@ -247,7 +247,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		{
 			int id = it->first;
 			msg_stats_t &s = it->second;
-			int dtMs = s.timeMs - s.prevTimeMs;
+			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 			SNPRINTF(buf, BUF_SIZE, "%3d%8d%6d  %s\n", id, s.count, dtMs, s.description.c_str());
             str.append(string(buf));
 		}
@@ -258,17 +258,17 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		str.append("Acknowledge: ____________________________\n");
 		str.append("  Count  dtMs\n");
 		msg_stats_t &s = msgStats.ack;
-		int dtMs = s.timeMs - s.prevTimeMs;
+		int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 		SNPRINTF(buf, BUF_SIZE, "%8d%6d\n", s.count, dtMs);
 		str.append(string(buf));
 	}
 
-	if (msgStats.parseError.count)
+	if (msgStats.parseError.count>1)
 	{
 		str.append("Parse Error: ____________________________\n");
 		str.append("  Count  dtMs\n");
 		msg_stats_t &s = msgStats.parseError;
-		int dtMs = s.timeMs - s.prevTimeMs;
+		int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);
 		SNPRINTF(buf, BUF_SIZE, "%8d%6d\n", s.count, dtMs);
 		str.append(string(buf));
 	}

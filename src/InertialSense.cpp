@@ -340,7 +340,6 @@ bool InertialSense::OpenConnectionToServer(const string& connectionString)
 
 void InertialSense::CloseServerConnection()
 {
-	m_tcpClient.Close();
 	m_tcpServer.Close();
 	m_serialServer.Close();
 	m_clientStream = NULLPTR;
@@ -487,8 +486,8 @@ bool InertialSense::UpdateServer()
 				break;
 			}
 
-			if (ptype != _PTYPE_NONE && id)
-			{
+			if (ptype != _PTYPE_NONE)
+			{	// Record message info
 				messageStatsAppend(str, m_serverMessageStats, ptype, id, current_timeMs());
 			}
 		}
@@ -522,12 +521,28 @@ bool InertialSense::UpdateClient()
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 		{
+			int id = 0;
+			string str;
+
 			switch (ptype)
 			{
 			case _PTYPE_UBLOX:
 			case _PTYPE_RTCM3:
 				m_clientServerByteCount += comm->dataHdr.size;
 				OnPacketReceived(comm->dataPtr, comm->dataHdr.size);
+
+				if (ptype == _PTYPE_RTCM3)
+				{
+					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
+					if ((id == 1029) && (comm->dataHdr.size < 1024))
+					{
+						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
+					}
+				}
+				else if (ptype == _PTYPE_UBLOX)
+				{
+					id = *((uint16_t*)(&comm->dataPtr[2]));
+				}
 				break;
 
 			case _PTYPE_PARSE_ERROR:
@@ -535,13 +550,26 @@ bool InertialSense::UpdateClient()
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD:
+				id = comm->dataHdr.id;
 				break;
 
 			case _PTYPE_ASCII_NMEA:
+				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
+					uint8_t *pStart = comm->dataPtr + 2;
+					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
+					pStart = _MAX(pStart, pEnd - 8);
+					memcpy(&id, pStart, (pEnd - pStart));
+				}
 				break;
 
 			default:
 				break;
+			}
+
+			if (ptype != _PTYPE_NONE)
+			{	// Record message info
+				messageStatsAppend(str, m_clientMessageStats, ptype, id, current_timeMs());
 			}
 		}
 	}

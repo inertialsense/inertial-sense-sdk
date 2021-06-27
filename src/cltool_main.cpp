@@ -35,7 +35,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
-static void display_server_client_status(InertialSense* i, string prefix, string ipAddr, int port)
+
+static void display_server_client_status(InertialSense* i, bool server=false, bool refresh=false)
 {
 	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
 		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
@@ -47,6 +48,7 @@ static void display_server_client_status(InertialSense* i, string prefix, string
 	static uint64_t serverByteCount = 0;
 	static uint64_t serverByteRateTimeMsLast = 0;
 	static uint64_t serverByteCountLast = 0;
+	static stringstream outstream;
 
 	uint64_t newServerByteCount = i->GetClientServerByteCount();
 	if (serverByteCount != newServerByteCount)
@@ -65,53 +67,53 @@ static void display_server_client_status(InertialSense* i, string prefix, string
 			serverByteCountLast = serverByteCount;
 			serverByteRateTimeMsLast = timeMs;
 		}
-		printf("%s: %s:%d     Connections: %d current, %d total    \n", 
-			prefix.c_str(), ipAddr.c_str(), port, i->GetClientConnectionCurrent(), i->GetClientConnectionTotal());
-		printf("Data: %4.1f KB/s, %lld bytes\n\n", 
-			serverKBps, (long long)i->GetClientServerByteCount());
 
-		cout << i->getServerMessageStatsSummary();
+		outstream.str("");	// clear
+		outstream << "\n";
+		if (server)
+		{
+			outstream << "Server: " << i->GetTcpServerIpAddressPort()   << "     Tx: ";
+		}
+		else
+		{
+			outstream << "Client: " << i->GetClientConnectionInfo()     << "     Rx: ";
+		}
+		outstream << setprecision(1) << setw(3) << serverKBps << " KB/s, " << (long long)i->GetClientServerByteCount() << " bytes    \n";
+
+		if (server)
+		{	// Server
+			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
+			outstream << i->getServerMessageStatsSummary();
+		}
+		else
+		{	// Client
+			com_manager_status_t* status = comManagerGetStatus(0);
+			if (status != NULLPTR && status->communicationErrorCount>1)
+			{
+				outstream << "Com errors: " << status->communicationErrorCount << "     \n";
+			}
+			outstream << i->getClientMessageStatsSummary();
+		}
+	}
+
+	if (refresh)
+	{
+		cout << outstream.str();
 	}
 }
 
-static void display_client_status(InertialSense* i)
-{
-	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
-		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
-	{
-		return;
-	}
-
-	char suffix[256];
-	com_manager_status_t* status = comManagerGetStatus(0);
-	suffix[0] = '\0';
-	if (status != NULLPTR && status->communicationErrorCount != 0)
-	{
-		snprintf(suffix, sizeof(suffix), "Com errors: %d     ", status->communicationErrorCount);
-	}
-	g_inertialSenseDisplay.Home();
-	if (i->GetClientServerByteCount() == 0)
-	{
-		cout << endl << suffix;
-	}
-	else
-	{
-		display_server_client_status(i, "Client", i->GetTcpServerIpAddress(), i->GetTcpServerPort());
-	}
-}
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-	// return;
-
     (void)i;
     (void)pHandle;
-	// Print data to terminal
-	g_inertialSenseDisplay.ProcessData(data);
-	// display_client_status(i);
-	display_server_client_status(i, "Client", i->GetTcpServerIpAddress(), i->GetTcpServerPort());
 
+	// Print data to terminal
+	bool refresh = g_inertialSenseDisplay.ProcessData(data);
+
+	// Collect and print summary list of client messages received
+	display_server_client_status(i, false, refresh);
 
 #if 0
 
@@ -342,9 +344,7 @@ static int cltool_createHost()
 	{
 		inertialSenseInterface.Update();
 		g_inertialSenseDisplay.Home();
-		display_server_client_status(&inertialSenseInterface, "Server", 
-			inertialSenseInterface.GetTcpServerIpAddress(), 
-			inertialSenseInterface.GetTcpServerPort());
+		display_server_client_status(&inertialSenseInterface, true);
 	}
 	cout << "Shutting down..." << endl;
 
