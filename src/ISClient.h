@@ -40,12 +40,6 @@ public:
 	* @return cISStream pointer if successful, otherwise NULLPTR
 	*/
 	static cISStream* OpenConnectionToServer(const std::string& connectionString, bool *enableGpggaForwarding=NULL);
-
-	bool m_typeTcp;
-	std::string m_protocol;
-	std::string m_ipAddress;
-	std::string m_port;
-	std::string m_mount;
 };
 
 
