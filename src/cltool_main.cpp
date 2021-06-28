@@ -85,7 +85,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
 			if (showMessageSummary)
 			{
-				outstream << i->getServerMessageStatsSummary();
+// 				outstream << i->getServerMessageStatsSummary();
 			}
 			refresh = true;
 		}
@@ -347,11 +347,13 @@ static int cltool_createHost()
 
 	inertialSenseInterface.StopBroadcasts();
 
+	static uint8_t j = 0;
 	while (!g_inertialSenseDisplay.ExitProgram())
 	{
 		inertialSenseInterface.Update();
-		g_inertialSenseDisplay.Home();
-		cout << g_inertialSenseDisplay.Hello();
+		printf("%d\n", j++);
+// 		g_inertialSenseDisplay.Home();
+// 		cout << g_inertialSenseDisplay.Hello();
 		display_server_client_status(&inertialSenseInterface, true, true);
 	}
 	cout << "Shutting down..." << endl;
