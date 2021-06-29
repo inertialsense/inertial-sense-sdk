@@ -347,13 +347,21 @@ static int cltool_createHost()
 
 	inertialSenseInterface.StopBroadcasts();
 
-	// static uint8_t j = 0;
+	unsigned int timeSinceClearMs = 0, curTimeMs;
 	while (!g_inertialSenseDisplay.ExitProgram())
 	{
 		inertialSenseInterface.Update();
+		curTimeMs = current_timeMs();
+		bool refresh = false;
+		if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs)
+		{	// Clear terminal
+			g_inertialSenseDisplay.Clear();
+			timeSinceClearMs = curTimeMs;
+			refresh = true;
+		}
 		g_inertialSenseDisplay.Home();
 		cout << g_inertialSenseDisplay.Hello();
-		display_server_client_status(&inertialSenseInterface, true, true);
+		display_server_client_status(&inertialSenseInterface, true, true, refresh);
 	}
 	cout << "Shutting down..." << endl;
 
