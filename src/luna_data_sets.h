@@ -266,11 +266,11 @@ typedef struct
 	/** Control mode (see eLunaWheelControllerMode) */
 	uint32_t                mode;
 
-	/** Left wheel velocity */
-	float					wheel_l;
+	/** Forward velocity (m/s) */
+	float					fwd_vel;
 
-	/** Right wheel velocity */
-	float					wheel_r;
+	/** Turn rate (rad/s) */
+	float					turn_rate;
 
 } evb_luna_wheel_command_t;
 
