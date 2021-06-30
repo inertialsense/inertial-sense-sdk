@@ -1009,8 +1009,8 @@ static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "wheel_l", wheel_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "wheel_r", wheel_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "fwd_vel", fwd_vel, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "turn_rate", turn_rate, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
