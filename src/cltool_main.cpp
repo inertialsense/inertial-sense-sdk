@@ -85,7 +85,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
 			if (showMessageSummary)
 			{
-				outstream << i->getServerMessageStatsSummary();
+ 				outstream << i->getServerMessageStatsSummary();
 			}
 			refresh = true;
 		}
@@ -347,12 +347,21 @@ static int cltool_createHost()
 
 	inertialSenseInterface.StopBroadcasts();
 
+	unsigned int timeSinceClearMs = 0, curTimeMs;
 	while (!g_inertialSenseDisplay.ExitProgram())
 	{
 		inertialSenseInterface.Update();
+		curTimeMs = current_timeMs();
+		bool refresh = false;
+		if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs)
+		{	// Clear terminal
+			g_inertialSenseDisplay.Clear();
+			timeSinceClearMs = curTimeMs;
+			refresh = true;
+		}
 		g_inertialSenseDisplay.Home();
 		cout << g_inertialSenseDisplay.Hello();
-		display_server_client_status(&inertialSenseInterface, true, true);
+		display_server_client_status(&inertialSenseInterface, true, true, refresh);
 	}
 	cout << "Shutting down..." << endl;
 

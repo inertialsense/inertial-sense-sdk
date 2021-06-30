@@ -104,7 +104,7 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
         {
             break;
         }
-        writeCount = send(socket, (const char*)data, dataLength, 0);
+        writeCount = send(socket, (const char*)data, dataLength, MSG_NOSIGNAL);
         if (writeCount < 0)
         {
             break;
