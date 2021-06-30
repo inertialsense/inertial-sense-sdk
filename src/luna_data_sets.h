@@ -108,6 +108,12 @@ typedef struct
 	/** Various config like motor control types, etc. (eEvbLunaWheelControlConfig_t) */
 	uint32_t				config;
 
+	/** (m) Wheel radius */
+	float 					wheelRadius;
+
+	/** (m) Wheel baseline, distance between wheels */
+	float					wheelBaseline;
+
 } evb_luna_wheel_control_cfg_t;
 
 /**
