@@ -239,8 +239,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-lp"))
 		{
-			a = argv[++i];	// use next argument
-			g_commandLineOptions.logPath = &a[4];
+            g_commandLineOptions.logPath = argv[++i];	// use next argument;
 		}
 		else if (startsWith(a, "-lt="))
 		{
