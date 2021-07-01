@@ -104,7 +104,12 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
         {
             break;
         }
-        writeCount = send(socket, (const char*)data, dataLength, MSG_NOSIGNAL);
+
+		int flags = 0;
+#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
+		flags = MSG_NOSIGNAL;
+#endif
+        writeCount = send(socket, (const char*)data, dataLength, flags);
         if (writeCount < 0)
         {
             break;
