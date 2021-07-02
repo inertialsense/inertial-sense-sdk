@@ -380,6 +380,8 @@ bool makePath(const std::string& path)
 {
 #if defined(_WIN32)
     int ret = _mkdir(path.c_str());
+#elif PLATFORM_IS_EVB_2
+	int ret = 0;
 #else
     mode_t mode = 0755;
     int ret = mkdir(path.c_str(), mode);
@@ -405,8 +407,11 @@ bool makePath(const std::string& path)
         // now, try to create again
 #if defined(_WIN32)
         return 0 == _mkdir(path.c_str());
+#elif PLATFORM_IS_EVB_2
+
 #else
         return 0 == mkdir(path.c_str(), mode);
+
 #endif
 
     case EEXIST:
