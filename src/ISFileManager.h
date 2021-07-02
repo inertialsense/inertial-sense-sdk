@@ -56,6 +56,8 @@ namespace ISFileManager
 
     bool TouchFile(const std::string& path);
 
+    bool makePath(const std::string& path);
+
 }
 
 #endif //IS_SDK_IS_FILE_MANAGER_H_
