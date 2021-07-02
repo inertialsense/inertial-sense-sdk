@@ -150,8 +150,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-c"))
 		{
-			a = argv[++i];	// use next argument
-			g_commandLineOptions.comPort = &a[0];
+			g_commandLineOptions.comPort = argv[++i];	// use next argument
 		}
 		else if (startsWith(a, "-dboc"))
 		{
@@ -239,8 +238,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-lp"))
 		{
-			a = argv[++i];	// use next argument
-			g_commandLineOptions.logPath = &a[4];
+			g_commandLineOptions.logPath = argv[++i];	// use next argument;
 		}
 		else if (startsWith(a, "-lt="))
 		{
@@ -274,9 +272,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-rp"))
 		{
-			a = argv[++i];	// use next argument
 			g_commandLineOptions.replayDataLog = true;
-			g_commandLineOptions.logPath = &a[4];
+			g_commandLineOptions.logPath = argv[++i];	// use next argument
 		}
 		else if (startsWith(a, "-rs="))
 		{
@@ -320,13 +317,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-ub"))
 		{
-			a = argv[++i];	// use next argument
-			g_commandLineOptions.updateBootloaderFilename = &a[0];
+			g_commandLineOptions.updateBootloaderFilename = argv[++i];	// use next argument
 		}
         else if (startsWith(a, "-uf"))
         {
-			a = argv[++i];	// use next argument
-            g_commandLineOptions.updateAppFirmwareFilename = &a[0];
+            g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
         }
 		else if (startsWith(a, "-uv"))
 		{
