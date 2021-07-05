@@ -32,6 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "ISStream.h"
 #include "ISClient.h"
+#include "message_stats.h"
 
 // use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
@@ -311,6 +312,30 @@ public:
 	uint64_t GetClientServerByteCount() { return m_clientServerByteCount; }
 
 	/**
+	* Get the current number of client connections
+	* @return int number of current client connected
+	*/
+	int GetClientConnectionCurrent() { return m_clientConnectionsCurrent; }
+
+	/**
+	* Get the total number of client connections
+	* @return int number of total client that have connected
+	*/
+	int GetClientConnectionTotal() { return m_clientConnectionsTotal; }
+
+	/**
+	* Get TCP server IP address and port (i.e. "127.0.0.1:7777")
+	* @return string IP address and port
+	*/
+	string GetTcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + to_string(m_tcpServer.Port()); }
+
+	/**
+	* Get Client connection info string (i.e. "127.0.0.1:7777")
+	* @return string IP address and port
+	*/
+	string GetClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
+
+	/**
 	* Get access to the underlying serial port
 	* @param pHandle the pHandle to get the serial port for
 	* @return the serial port
@@ -349,6 +374,9 @@ public:
 	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, const string& bootloaderFileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, pfnBootloadStatus infoProgress = NULLPTR, bool updateBootloader = false);
 	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
 
+	string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
+	string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
+
 protected:
 	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
 	void OnClientConnecting(cISTcpServer* server) OVERRIDE;
@@ -364,7 +392,6 @@ private:
 	map<int, vector<p_data_t>> m_logPackets;
 	time_t m_lastLogReInit;
 
-	cISTcpClient m_tcpClient;
 	char m_clientBuffer[512];
 	int m_clientBufferBytesToSend;
 	bool m_forwardGpgga;
@@ -373,12 +400,16 @@ private:
 	cISSerialPort m_serialServer;
 	cISStream* m_clientStream;				// Our client connection to a server
 	uint64_t m_clientServerByteCount;
+	int m_clientConnectionsCurrent = 0;
+	int m_clientConnectionsTotal = 0;
+	mul_msg_stats_t m_clientMessageStats = {};
 
 	bool m_disableBroadcastsOnClose;
 	com_manager_init_t m_cmInit;
 	com_manager_port_t *m_cmPorts;
 	is_comm_instance_t m_gpComm;
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
+	mul_msg_stats_t m_serverMessageStats = {};
 
 	// returns false if logger failed to open
 	bool UpdateServer();

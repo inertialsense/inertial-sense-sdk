@@ -163,7 +163,6 @@ void cInertialSenseDisplay::Clear(void)
 	printf( "\x1B[2J" ); // VT100 terminal command
 
 #endif
-
 }
 
 void cInertialSenseDisplay::Home(void)
@@ -326,12 +325,12 @@ void cInertialSenseDisplay::SetExitProgram()
 	s_exitProgram = true;
 }
 
-
-void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
+// Return true on refresh
+bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
 {
 	if (m_displayMode == DMODE_QUIET)
 	{
-		return;
+		return false;
 	}
 
 	unsigned int curTimeMs = current_timeMs();
@@ -466,6 +465,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 				cout << Connected() << endl;
 
 			cout << VectortoString();
+			return true;
 		}
 		break;
 
@@ -484,6 +484,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 			// Generic column format
 			cout << DatasetToString(data);
+			return true;
 		}
 		break;
 
@@ -496,17 +497,16 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			Home();
 			cout << Connected() << endl;
 			DataToStats(data);
+			return true;
 		}
 		break;
-
 
 	case DMODE_SCROLL:	// Scroll display 
 		cout << DataToString(data) << endl;
 		break;
 	}
 
-
-
+	return false;
 }
 
 string cInertialSenseDisplay::VectortoString()

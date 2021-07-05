@@ -355,6 +355,10 @@ uint64_t GetDirectorySpaceAvailable(const std::string& directory)
     memset(&stat, 0, sizeof(stat));
     char fullPath[PATH_MAX];
     bool created = (_MKDIR(directory.c_str()) == 0);
+
+    if(!created)
+        makePath(directory.c_str());
+
     if (realpath(directory.c_str(), fullPath) == NULL)
     {
         printf("GetDirectorySpaceAvailable error %s\n", directory.c_str());
@@ -370,6 +374,53 @@ uint64_t GetDirectorySpaceAvailable(const std::string& directory)
 
 #endif
 
+}
+
+bool makePath(const std::string& path)
+{
+#if defined(_WIN32)
+    int ret = _mkdir(path.c_str());
+#elif PLATFORM_IS_EVB_2
+	int ret = 0;
+#else
+    mode_t mode = 0755;
+    int ret = mkdir(path.c_str(), mode);
+#endif
+    if (ret == 0)
+        return true;
+
+    switch (errno)
+    {
+    case ENOENT:
+        // parent didn't exist, try to create it
+        {
+            int pos = path.find_last_of('/');
+            if (pos == std::string::npos)
+#if defined(_WIN32)
+                pos = path.find_last_of('\\');
+            if (pos == std::string::npos)
+#endif
+                return false;
+            if (!makePath( path.substr(0, pos) ))
+                return false;
+        }
+        // now, try to create again
+#if defined(_WIN32)
+        return 0 == _mkdir(path.c_str());
+#elif PLATFORM_IS_EVB_2
+
+#else
+        return 0 == mkdir(path.c_str(), mode);
+
+#endif
+
+    case EEXIST:
+        // done!
+        return PathIsDir(path);
+
+    default:
+        return false;
+    }
 }
 
 std::string GetFileName(const std::string& path)

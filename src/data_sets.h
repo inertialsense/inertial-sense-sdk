@@ -1170,7 +1170,7 @@ enum eSystemCommand
 /** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
-	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
+	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB] (see RMC_OPTIONS_...) */
 	uint32_t				options;
 
 	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
@@ -1420,7 +1420,7 @@ enum eMagRecalMode
 /** (DID_MAG_CAL) Magnetometer Calibration */
 typedef struct PACKED
 {
-	/** Set mode and start recalibration.  1 = multi-axis, 2 = single-axis, 101 = abort. */
+	/** Set mode and start recalibration. 1 = multi-axis, 2 = single-axis, 101 = abort. (see eMagRecalMode) */
 	uint32_t                recalCmd;
 	
 	/** Mag recalibration progress indicator: 0-100 % */
