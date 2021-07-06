@@ -54,7 +54,7 @@ int cISSerialPort::Write(const void* data, int dataLength)
 	return serialPortWrite(&m_serial, (const unsigned char*)data, dataLength);
 }
 
-void cISSerialPort:: GetComPorts(vector<string>& ports)
+void cISSerialPort::GetComPorts(vector<string>& ports)
 {
 	ports.clear();
 
@@ -79,4 +79,9 @@ void cISSerialPort:: GetComPorts(vector<string>& ports)
 
 #endif
 
+}
+
+std::string cISSerialPort::ConnectionInfo()
+{
+	return string(m_serial.port);
 }

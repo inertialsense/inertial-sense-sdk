@@ -79,6 +79,15 @@ int cISTcpServer::Open(const string& ipAddress, int port)
 		return -1;
 	}
 
+#if 0	// Disable Nagles algorithm which identifies if multiple packets can be grouped and sent together
+	if (setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, (const char *)&enable,sizeof(enable)) < 0) 
+	{
+		freeaddrinfo(result);
+		Close();
+		return -1;
+	}
+#endif
+
 	// setup listener socket
 	status = ::bind(m_socket, result->ai_addr, (int)result->ai_addrlen);
 	if (status != 0)

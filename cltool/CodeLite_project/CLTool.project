@@ -55,6 +55,8 @@
     <File Name="../../src/inertialSenseBootLoader.h"/>
     <File Name="../../src/linked_list.c"/>
     <File Name="../../src/linked_list.h"/>
+    <File Name="../../src/message_stats.cpp"/>
+    <File Name="../../src/message_stats.h"/>
     <File Name="../../src/serialPort.c"/>
     <File Name="../../src/serialPort.h"/>
     <File Name="../../src/serialPortPlatform.c"/>

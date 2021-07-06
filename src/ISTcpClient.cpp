@@ -104,7 +104,12 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
         {
             break;
         }
-        writeCount = send(socket, (const char*)data, dataLength, 0);
+
+		int flags = 0;
+#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
+		flags = MSG_NOSIGNAL;
+#endif
+        writeCount = send(socket, (const char*)data, dataLength, flags);
         if (writeCount < 0)
         {
             break;
@@ -324,4 +329,9 @@ int cISTcpClient::SetBlocking(bool blocking)
 {
 	m_blocking = blocking;
 	return ISSocketSetBlocking(m_socket, blocking);
+}
+
+std::string cISTcpClient::ConnectionInfo()
+{
+	return m_host + ":" + to_string(m_port);
 }

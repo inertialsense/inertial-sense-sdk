@@ -69,6 +69,12 @@ public:
 	*/
 	virtual long long GetBytesAvailableToRead() { return -1; }
 
+	/**
+	* Gets information about the current connection (i.e. TCP ip address and port number or serial port name)
+	* @return connection info
+	*/
+	virtual std::string ConnectionInfo() { return ""; }
+
 private:
 	cISStream(const cISStream& copy); // Disable copy constructor
 };

@@ -278,7 +278,7 @@ void uINS_stream_enable_std(void)
 void uINS_stream_enable_PPD(void)
 {
     rmc_t rmc;
-    rmc.bits = RMC_PRESET_PPD_BITS;
+    rmc.bits = RMC_PRESET_PPD_ROBOT;
     rmc.options = 0;
     int len = is_comm_set_data(&g_commTx, DID_RMC, 0, sizeof(rmc_t), &rmc);
     comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);

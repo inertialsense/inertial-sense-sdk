@@ -85,7 +85,7 @@ public:
 	void SetExitProgram();
 
 	// for the binary protocol, this processes a packet of data
-	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
+	bool ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void DataToStats(const p_data_t* data);
 	string DataToString(const p_data_t* data);
 	char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);

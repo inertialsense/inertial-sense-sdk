@@ -523,6 +523,7 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
 protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 {
 	is_comm_buffer_t *buf = &(instance->buf);
+	protocol_type_t ptype;
 
 	// Search for packet
 	while (buf->scan < buf->tail)
@@ -577,15 +578,17 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			}
 			break;
 		case UBLOX_START_BYTE1:
-			if (processUbloxByte(instance) != _PTYPE_NONE)
+			ptype = processUbloxByte(instance);
+			if (ptype != _PTYPE_NONE)
 			{
-				return _PTYPE_UBLOX;
+				return ptype;
 			}
 			break;
 		case RTCM3_START_BYTE:
-			if (processRtcm3Byte(instance) != _PTYPE_NONE)
+			ptype = processRtcm3Byte(instance);
+			if (ptype != _PTYPE_NONE)
 			{
-				return _PTYPE_RTCM3;
+				return ptype;
 			}
 		}
 	}
