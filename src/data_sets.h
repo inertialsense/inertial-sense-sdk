@@ -164,6 +164,8 @@ typedef uint32_t eDataIDs;
 
 #define NUM_IMU_DEVICES     3
 #define NUM_MAG_DEVICES     2
+// #define NUM_IMU_DEVICES     (g_hdw_detect >= HDW_DETECT_VER_IMX_4_x_x ? 3 : 2)
+// #define NUM_MAG_DEVICES     (g_hdw_detect >= HDW_DETECT_VER_IMX_4_x_x ? 2 : 1)
 
 /** INS status flags */
 enum eInsStatusFlags
