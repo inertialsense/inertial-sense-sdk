@@ -964,19 +964,19 @@ void step_com_bridge(is_comm_instance_t &comm)
 #endif
 
 #ifdef CONF_BOARD_CAN1
-	uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
-	uint32_t id;
-	uint8_t lenCAN;
-	is_can_message msg;
-	msg.startByte = CAN_HDR;
-	msg.endByte = CAN_FTR;
-	if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
-	{
-		msg.address = id;
-		msg.payload = *(is_can_payload*)can_rx_message;
-		msg.dlc = lenCAN;
-		com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
-	}
+	//uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
+	//uint32_t id;
+	//uint8_t lenCAN;
+	//is_can_message msg;
+	//msg.startByte = CAN_HDR;
+	//msg.endByte = CAN_FTR;
+	//if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
+	//{
+		//msg.address = id;
+		//msg.payload = *(is_can_payload*)can_rx_message;
+		//msg.dlc = lenCAN;
+		//com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
+	//}
 	/*Test CAN*/
 		//static uint8_t tx_message_1[8] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};
 		//mcan_send_message(0x100000A5, tx_message_1, CONF_MCAN_ELEMENT_DATA_SIZE);

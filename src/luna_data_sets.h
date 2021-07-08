@@ -40,6 +40,13 @@ typedef enum
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_MASK  = 0x00000600,
 } eEvbLunaFlashCfgBits;
 
+typedef enum
+{
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN				= 0x00000000,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT				= 0x00000001,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK					= 0x00000003,
+} eEvbLunaWheelControlConfig_t;
+
 #define NUM_FF_COEFS	2
 #define NUM_AL_COEFS	5
 
@@ -97,6 +104,15 @@ typedef struct
 
 	/** Test sweep rate (rad/s) */
 	float					testSweepRate;
+
+	/** Various config like motor control types, etc. (eEvbLunaWheelControlConfig_t) */
+	uint32_t				config;
+
+	/** (m) Wheel radius */
+	float 					wheelRadius;
+
+	/** (m) Wheel baseline, distance between wheels */
+	float					wheelBaseline;
 
 } evb_luna_wheel_control_cfg_t;
 
@@ -188,6 +204,18 @@ typedef enum
 
     /** EVB Error bit mask */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
+	
+	/** Axis is in an invalid state */
+	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
+	
+	/** Watchdog has expired */
+	EVB_LUNA_STATUS_AXIS_ERR_WATCHDOG					= 0x02000000,
+	
+	/** Motor or driver temperature is above limits */
+	EVB_LUNA_STATUS_AXIS_ERR_TEMP						= 0x04000000,
+	
+	/** Axis error bit mask */ 
+	EVB_LUNA_STATUS_AXIS_ERR_MASK						= 0xFF000000,
 
 } eEvbLunaStatus;
 
@@ -244,11 +272,11 @@ typedef struct
 	/** Control mode (see eLunaWheelControllerMode) */
 	uint32_t                mode;
 
-	/** Left wheel velocity */
-	float					wheel_l;
+	/** Forward velocity (m/s) */
+	float					fwd_vel;
 
-	/** Right wheel velocity */
-	float					wheel_r;
+	/** Turn rate (rad/s) */
+	float					turn_rate;
 
 } evb_luna_wheel_command_t;
 

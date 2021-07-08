@@ -909,7 +909,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.velMax", wheelControl.velMax, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_vel_deadband", wheelControl.FF_vel_deadband, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c0_est_Ki", wheelControl.FF_c0_est_Ki, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.slewRate", wheelControl.slewRate, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheelControl.FF_c0_est_max", wheelControl.FF_c0_est_max, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c_l[0]", wheelControl.FF_c_l[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c_l[1]", wheelControl.FF_c_l[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c_r[0]", wheelControl.FF_c_r[0], 0, DataTypeFloat, float&, 0);
@@ -930,6 +930,9 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.FF_FB_engine_rpm", wheelControl.FF_FB_engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.engine_rpm", wheelControl.engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.testSweepRate", wheelControl.testSweepRate, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheelControl.config", wheelControl.config, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "wheelControl.wheelRadius", wheelControl.wheelRadius, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheelControl.wheelBaseline", wheelControl.wheelBaseline, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -1006,8 +1009,8 @@ static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "wheel_l", wheel_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "wheel_r", wheel_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "fwd_vel", fwd_vel, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "turn_rate", turn_rate, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
