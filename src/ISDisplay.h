@@ -122,6 +122,7 @@ public:
 	void StopEditing();
 	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
 	edit_data_t *EditData() { return &m_editData; }
+	int outputOnce = 0;
 
 private:
 	string VectortoString();

@@ -85,7 +85,6 @@ static void signalFunction(int sig)
 
 cInertialSenseDisplay::cInertialSenseDisplay()
 {
-	cout << endl << Hello() << endl;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -459,9 +458,15 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			timeSinceRefreshMs = curTimeMs;
 
 			Home();
+			if (outputOnce)
+			{
+				cout << VectortoString();
+				exit(1);
+			}
 			if (enableReplay)
 				cout << Replay(replaySpeedX) << endl;
 			else
+
 				cout << Connected() << endl;
 
 			cout << VectortoString();
@@ -573,6 +578,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	string str;
 	switch (data->hdr.id)
 	{
+	case DID_EVB_DEV_INFO:
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
 	case DID_DUAL_IMU:          str = DataToStringDualIMU(d.dualImu, data->hdr);        break;
 	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
