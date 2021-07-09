@@ -1,5 +1,6 @@
 #include <asf.h>
 #include "misc/rtos.h"
+#include "../../../cpp/hdw-src/uINS-3/IS_uINS/src/misc/nvr.h"
 #include "maintenance.h"
 #include "d_flash.h"
 #include "bootloaderApp.h"
