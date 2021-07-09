@@ -222,8 +222,8 @@ typedef enum
 typedef enum
 {
 	LMS_UNSPECIFIED					= 0,
-	LMS_MOTOR_ENABLE				= 1,
-	LMS_MOTOR_DISABLE				= 2,	
+	LMS_MOTOR_CONTROL_ENABLE		= 1,	// Motor control enabled.
+	LMS_MOTOR_CONTROL_DISABLE		= 2,	// Motor control disabled.  Engine shutoff is controlled only by remote kill.
 } eLunaMotorState;
 
 typedef enum
@@ -232,7 +232,7 @@ typedef enum
 	LRKM_ENABLE						= 1,	// Keep alive motors enabled.
 	LRKM_DISABLE					= 2,	// Disable motors.
 	LRKM_PAUSE						= 3,	// Keep alive motors paused.
-	LRKM_DISARM 					= 4,	// Turn off remote kill and then switch to LMS_MOTOR_ENABLE.
+	LRKM_DISARM 					= 4,	// Turn off remote kill and then switch to LMS_MOTOR_CONTROL_ENABLE.
 } eLunaRemoteKillMode;
 
 /**
