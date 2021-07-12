@@ -20,6 +20,36 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static int running = 1;
 
+static void handleDevInfoMessage(dev_info_t* info)
+{
+		printf("(1) DID_DEV_INFO");
+
+		// Single line format
+		printf(" SN%d, Fw %d.%d.%d.%d %c%d, %04d-%02d-%02d",
+			info->serialNumber,
+			info->firmwareVer[0],
+			info->firmwareVer[1],
+			info->firmwareVer[2],
+			info->firmwareVer[3],
+			info->buildDate[0],
+			info->buildNumber,
+			info->buildDate[1] + 2000,
+			info->buildDate[2],
+			info->buildDate[3]
+		);
+
+		printf(" %02d:%02d:%02d, Proto %d.%d.%d.%d\n",
+				info->buildTime[0],
+				info->buildTime[1],
+				info->buildTime[2],
+				info->protocolVer[0],
+				info->protocolVer[1],
+				info->protocolVer[2],
+				info->protocolVer[3]
+			);
+		exit(1);
+}
+
 static void handleIns1Message(ins_1_t* ins)
 {
 	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
@@ -95,6 +125,30 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 	}
 	return 0;
 }
+
+void report_dev_info(serial_port_t* serialPort, is_comm_instance_t* comm)
+{
+	int n;
+	n = is_comm_get_data(comm, DID_DEV_INFO, 0, 0, 0);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	{
+		printf("Failed to encode and write get INS message\r\n");
+		return -4;
+	}
+}
+
+void report_evb_dev_info(serial_port_t * serialPort, is_comm_instance_t * comm)
+{
+	int n;
+	n = is_comm_get_data(comm, DID_EVB_DEV_INFO, 0, 0, 0);
+	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	{
+		printf("Failed to encode and write get INS message\r\n");
+		return -4;
+	}
+}
+
+
 
 
 int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
@@ -184,17 +238,21 @@ int main(int argc, char* argv[])
 #endif
 
 
-	// STEP 6: Enable message broadcasting
-	if ((error = enable_message_broadcasting(&serialPort, &comm)))
-	{
-		return error;
-	}
+
 
 
 #if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
 	save_persistent_messages(&serialPort, &comm);
 #endif
+	if (*argv[argc - 1] == '9')
+	{
+		report_dev_info(&serialPort, &comm);
+	}
 
+	if (*argv[argc - 1] == '8')
+	{
+		report_evb_dev_info(&serialPort, &comm);
+	}
 
 	// STEP 8: Handle received data
 	int count;
@@ -226,6 +284,9 @@ int main(int argc, char* argv[])
 				case _DID_IMU_DUAL:
 					handleImuMessage((dual_imu_t*)comm.dataPtr);
 					break;
+				case DID_DEV_INFO:
+				case DID_EVB_DEV_INFO:
+					handleDevInfoMessage((dev_info_t*)comm.dataPtr);
 
 					// TODO: add other cases for other data ids that you care about
 				}
