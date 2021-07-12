@@ -38,8 +38,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refresh=false)
 {
-	if (g_inertialSenseDisplay->GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
-		g_inertialSenseDisplay->GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
+	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
+		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
 	{
 		return;
 	}
@@ -113,7 +113,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-	if (data->hdr.id != g_commandLineOptions.outputOnce && g_commandLineOptions.outputOnce)
+	if (data->hdr.id != g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid)
 	{
 		return;
 	}
@@ -121,7 +121,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
     (void)pHandle;
 
 	// Print data to terminal
-	bool refresh = g_inertialSenseDisplay->ProcessData(data);
+	bool refresh = g_inertialSenseDisplay.ProcessData(data);
 
 	
 
@@ -192,7 +192,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	// depending on command line options. stream various data sets
 	if (g_commandLineOptions.datasetEdit.did)
 	{	// Dataset to edit
-		g_inertialSenseDisplay->SelectEditDataset(g_commandLineOptions.datasetEdit.did);
+		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasetEdit.did);
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasetEdit.did, g_commandLineOptions.datasetEdit.periodMultiple);
 	}
 	else while (g_commandLineOptions.datasets.size())
@@ -354,19 +354,19 @@ static int cltool_createHost()
 	inertialSenseInterface.StopBroadcasts();
 
 	unsigned int timeSinceClearMs = 0, curTimeMs;
-	while (!g_inertialSenseDisplay->ExitProgram())
+	while (!g_inertialSenseDisplay.ExitProgram())
 	{
 		inertialSenseInterface.Update();
 		curTimeMs = current_timeMs();
 		bool refresh = false;
 		if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs)
 		{	// Clear terminal
-			g_inertialSenseDisplay->Clear();
+			g_inertialSenseDisplay.Clear();
 			timeSinceClearMs = curTimeMs;
 			refresh = true;
 		}
-		g_inertialSenseDisplay->Home();
-		cout << g_inertialSenseDisplay->Hello();
+		g_inertialSenseDisplay.Home();
+		cout << g_inertialSenseDisplay.Hello();
 		display_server_client_status(&inertialSenseInterface, true, true, refresh);
 	}
 	cout << "Shutting down..." << endl;
@@ -380,9 +380,9 @@ static int cltool_createHost()
 static int inertialSenseMain()
 {	
 	// clear display
-	g_inertialSenseDisplay->SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
-	g_inertialSenseDisplay->SetKeyboardNonBlock();
-	g_inertialSenseDisplay->Clear();
+	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
+	g_inertialSenseDisplay.SetKeyboardNonBlock();
+	g_inertialSenseDisplay.Clear();
 
 	// if replay data log specified on command line, do that now and return
 	if (g_commandLineOptions.replayDataLog)
@@ -427,7 +427,7 @@ static int inertialSenseMain()
 		serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
 		unsigned char line[512];
 		unsigned char* asciiData;
-		while (!g_inertialSenseDisplay->ExitProgram())
+		while (!g_inertialSenseDisplay.ExitProgram())
 		{
 			int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
 			if (count > 0)
@@ -464,13 +464,13 @@ static int inertialSenseMain()
 			try
 			{
 				// Main loop. Could be in separate thread if desired.
-				while (!g_inertialSenseDisplay->ExitProgram())
+				while (!g_inertialSenseDisplay.ExitProgram())
 				{
-					g_inertialSenseDisplay->GetKeyboardInput();
+					g_inertialSenseDisplay.GetKeyboardInput();
 
-					if (g_inertialSenseDisplay->UploadNeeded())
+					if (g_inertialSenseDisplay.UploadNeeded())
 					{
-						cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay->EditData();
+						cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
 						inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
 					}
 
@@ -507,8 +507,9 @@ int cltool_main(int argc, char* argv[])
 		// parsing failed
 		return -1;
 	}
-	g_inertialSenseDisplay = new cInertialSenseDisplay;
-	g_inertialSenseDisplay->outputOnce = g_commandLineOptions.outputOnce;
+
+	g_inertialSenseDisplay.setOutputOnceDid(g_commandLineOptions.outputOnceDid);
+
 	// InertialSense class example using command line options
 	int result = inertialSenseMain();
 	if (result == -1)
@@ -519,7 +520,7 @@ int cltool_main(int argc, char* argv[])
         SLEEP_MS(2000);
 	}
 
-	g_inertialSenseDisplay->ShutDown();
+	g_inertialSenseDisplay.ShutDown();
 
 	return result;
 }

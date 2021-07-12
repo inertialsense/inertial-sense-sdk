@@ -87,12 +87,12 @@ typedef struct
 	string evbFlashCfg;
 
 	uint32_t timeoutFlushLoggerSeconds;
-	int outputOnce = 0;
+	uint32_t outputOnceDid = 0;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
 extern serial_port_t g_serialPort;
-extern cInertialSenseDisplay *g_inertialSenseDisplay;
+extern cInertialSenseDisplay g_inertialSenseDisplay;
 extern bool g_ctrlCPressed;
 
 int cltool_main(int argc, char* argv[]);

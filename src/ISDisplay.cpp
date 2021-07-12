@@ -145,6 +145,10 @@ void cInertialSenseDisplay::ShutDown()
 
 void cInertialSenseDisplay::Clear(void)
 {
+	if (!m_interactiveMode)
+	{
+		return;
+	}
 
 #if PLATFORM_IS_WINDOWS
 
@@ -166,6 +170,10 @@ void cInertialSenseDisplay::Clear(void)
 
 void cInertialSenseDisplay::Home(void)
 {
+	if (!m_interactiveMode)
+	{
+		return;
+	}
 
 #if PLATFORM_IS_WINDOWS
 
@@ -458,7 +466,7 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			timeSinceRefreshMs = curTimeMs;
 
 			Home();
-			if (outputOnce)
+			if (m_outputOnceDid)
 			{
 				cout << VectortoString();
 				exit(1);
