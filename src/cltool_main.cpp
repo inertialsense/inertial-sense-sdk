@@ -113,7 +113,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-	if (data->hdr.id != g_commandLineOptions.outputOnce && g_commandLineOptions.outputOnce)
+	if (data->hdr.id != g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid)
 	{
 		return;
 	}
@@ -507,7 +507,9 @@ int cltool_main(int argc, char* argv[])
 		// parsing failed
 		return -1;
 	}
-	g_inertialSenseDisplay.outputOnce = g_commandLineOptions.outputOnce;
+
+	g_inertialSenseDisplay.setOutputOnceDid(g_commandLineOptions.outputOnceDid);
+
 	// InertialSense class example using command line options
 	int result = inertialSenseMain();
 	if (result == -1)

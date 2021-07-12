@@ -121,7 +121,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
     g_commandLineOptions.surveyIn.minAccuracy = 0;
-	g_commandLineOptions.outputOnce = 0;
+	g_commandLineOptions.outputOnceDid = 0;
 
 
 	if(argc <= 1)
@@ -173,7 +173,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 				while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))	// next argument doesn't start with "-"
 				{
-					if (g_commandLineOptions.outputOnce)
+					if (g_commandLineOptions.outputOnceDid)
 					{
 						i++;
 					}
@@ -184,7 +184,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 						{
 							if (dataset.periodMultiple == 0)
 							{
-								g_commandLineOptions.outputOnce = dataset.did;
+								g_commandLineOptions.outputOnceDid = dataset.did;
 								g_commandLineOptions.datasets.clear();
 							}
 							g_commandLineOptions.datasets.push_back(dataset);
