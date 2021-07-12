@@ -16,7 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 cmd_options_t g_commandLineOptions;
 serial_port_t g_serialPort;
-cInertialSenseDisplay *g_inertialSenseDisplay;
+cInertialSenseDisplay g_inertialSenseDisplay;
 
 int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
 {
@@ -388,7 +388,7 @@ bool cltool_replayDataLog()
 	p_data_t *data;
 	while ((data = logger.ReadData()) != NULL)
 	{
-		g_inertialSenseDisplay->ProcessData(data, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+		g_inertialSenseDisplay.ProcessData(data, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
 
 // 		if (data->hdr.id == DID_GPS1_RAW)
 // 		{
@@ -397,7 +397,7 @@ bool cltool_replayDataLog()
 	}
 
 	cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
-	g_inertialSenseDisplay->Goodbye();
+	g_inertialSenseDisplay.Goodbye();
 	return true;
 }
 
@@ -537,7 +537,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 			}
 		}
 		inertialSenseInterface.SetFlashConfig(flashCfg);
-		g_inertialSenseDisplay->Clear();
+		g_inertialSenseDisplay.Clear();
 		return true;
 	}
 }
@@ -587,7 +587,7 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 			}
 		}
 		inertialSenseInterface.SetEvbFlashConfig(evbFlashCfg);
-		g_inertialSenseDisplay->Clear();
+		g_inertialSenseDisplay.Clear();
 		return true;
 	}
 }

@@ -92,7 +92,7 @@ typedef struct
 
 extern cmd_options_t g_commandLineOptions;
 extern serial_port_t g_serialPort;
-extern cInertialSenseDisplay *g_inertialSenseDisplay;
+extern cInertialSenseDisplay g_inertialSenseDisplay;
 extern bool g_ctrlCPressed;
 
 int cltool_main(int argc, char* argv[]);
