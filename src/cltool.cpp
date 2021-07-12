@@ -16,7 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 cmd_options_t g_commandLineOptions;
 serial_port_t g_serialPort;
-cInertialSenseDisplay g_inertialSenseDisplay;
+cInertialSenseDisplay *g_inertialSenseDisplay;
 
 int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
 {
@@ -121,8 +121,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
     g_commandLineOptions.surveyIn.minAccuracy = 0;
+	g_commandLineOptions.outputOnce = 0;
 
-	cltool_outputHelp();
 
 	if(argc <= 1)
 	{	// Display usage menu if no options are provided 
@@ -166,18 +166,32 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			{
 				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
 			}
+			cltool_outputHelp();
 			return false;
 		}
 		else if (startsWith(a, "-did"))
 		{
-			while ((i+1)<argc && !startsWith(argv[i+1], "-"))	// next argument doesn't start with "-"
-			{
-				stream_did_t dataset = {};
-				if (read_did_argument(&dataset, argv[++i]))		// use next argument
+				while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))	// next argument doesn't start with "-"
 				{
-					g_commandLineOptions.datasets.push_back(dataset);
+					if (g_commandLineOptions.outputOnce)
+					{
+						i++;
+					}
+					else
+					{
+						stream_did_t dataset = {};
+						if (read_did_argument(&dataset, argv[++i]))		// use next argument
+						{
+							if (dataset.periodMultiple == 0)
+							{
+								g_commandLineOptions.outputOnce = dataset.did;
+								g_commandLineOptions.datasets.clear();
+							}
+							g_commandLineOptions.datasets.push_back(dataset);
+						}
+					}
 				}
-			}
+			
 		}
 		else if (startsWith(a, "-edit"))
 		{
@@ -330,7 +344,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
-			// cltool_outputUsage();
+			cltool_outputHelp();
 			return false;
 		}
 	}
@@ -374,7 +388,7 @@ bool cltool_replayDataLog()
 	p_data_t *data;
 	while ((data = logger.ReadData()) != NULL)
 	{
-		g_inertialSenseDisplay.ProcessData(data, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+		g_inertialSenseDisplay->ProcessData(data, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
 
 // 		if (data->hdr.id == DID_GPS1_RAW)
 // 		{
@@ -383,7 +397,7 @@ bool cltool_replayDataLog()
 	}
 
 	cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
-	g_inertialSenseDisplay.Goodbye();
+	g_inertialSenseDisplay->Goodbye();
 	return true;
 }
 
@@ -523,7 +537,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 			}
 		}
 		inertialSenseInterface.SetFlashConfig(flashCfg);
-		g_inertialSenseDisplay.Clear();
+		g_inertialSenseDisplay->Clear();
 		return true;
 	}
 }
@@ -573,7 +587,7 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 			}
 		}
 		inertialSenseInterface.SetEvbFlashConfig(evbFlashCfg);
-		g_inertialSenseDisplay.Clear();
+		g_inertialSenseDisplay->Clear();
 		return true;
 	}
 }
