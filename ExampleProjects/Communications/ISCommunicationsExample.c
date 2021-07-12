@@ -50,6 +50,36 @@ static void handleDevInfoMessage(dev_info_t* info)
 		exit(1);
 }
 
+static void handleDevInfoEVBMessage(dev_info_t* info)
+{
+	printf("(1) DID_EVB_DEV_INFO");
+
+	// Single line format
+	printf(" SN%d, Fw %d.%d.%d.%d %c%d, %04d-%02d-%02d",
+		info->serialNumber,
+		info->firmwareVer[0],
+		info->firmwareVer[1],
+		info->firmwareVer[2],
+		info->firmwareVer[3],
+		info->buildDate[0],
+		info->buildNumber,
+		info->buildDate[1] + 2000,
+		info->buildDate[2],
+		info->buildDate[3]
+	);
+
+	printf(" %02d:%02d:%02d, Proto %d.%d.%d.%d\n",
+		info->buildTime[0],
+		info->buildTime[1],
+		info->buildTime[2],
+		info->protocolVer[0],
+		info->protocolVer[1],
+		info->protocolVer[2],
+		info->protocolVer[3]
+	);
+	exit(1);
+}
+
 static void handleIns1Message(ins_1_t* ins)
 {
 	printf("INS TimeOfWeek: %.3fs, LLA: %3.7f,%3.7f,%5.2f, Euler: %5.1f,%5.1f,%5.1f\r\n",
@@ -284,8 +314,10 @@ int main(int argc, char* argv[])
 				case _DID_IMU_DUAL:
 					handleImuMessage((dual_imu_t*)comm.dataPtr);
 					break;
-				case DID_DEV_INFO:
 				case DID_EVB_DEV_INFO:
+					handleDevInfoEVBMessage((dev_info_t*)comm.dataPtr);
+
+				case DID_DEV_INFO:
 					handleDevInfoMessage((dev_info_t*)comm.dataPtr);
 
 					// TODO: add other cases for other data ids that you care about
