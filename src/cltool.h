@@ -87,7 +87,7 @@ typedef struct
 	string evbFlashCfg;
 
 	uint32_t timeoutFlushLoggerSeconds;
-	int outputOnceDid = 0;
+	uint32_t outputOnceDid = 0;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

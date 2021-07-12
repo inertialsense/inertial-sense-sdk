@@ -395,7 +395,7 @@ bool makePath(const std::string& path)
         // parent didn't exist, try to create it
         {
             int pos = path.find_last_of('/');
-            if (pos == std::string::npos)
+            if (pos == (int)std::string::npos)
 #if defined(_WIN32)
                 pos = path.find_last_of('\\');
             if (pos == std::string::npos)
