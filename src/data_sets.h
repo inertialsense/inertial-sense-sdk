@@ -1971,17 +1971,17 @@ typedef struct PACKED
     /** Config bits (see eWheelCfgBits) */
     uint32_t                bits;
 
-	/** Euler angles describing the rotation from imu to left wheel */
-	float                   e_i2l[3];
+	/** Euler angles describing the rotation from imu (body) to the center of non-steering axle */
+	float                   e_b2a[3];
 
-	/** Translation from the imu to the left wheel, expressed in the imu frame */
-	float                   t_i2l[3];
+	/** Translation from the imu (body) to the center of the non-steering axle, expressed in the imu (body) frame */
+	float                   t_b2a[3];
 
 	/** Distance between the left wheel and the right wheel */
-	float                   distance;
+	float                   track_width;
 
-	/** Estimate of wheel diameter */
-	float                   diameter;
+	/** Estimate of wheel radius */
+	float                   radius;
 
 } wheel_config_t;
 
