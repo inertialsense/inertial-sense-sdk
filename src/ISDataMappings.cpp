@@ -754,12 +754,12 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-    ADD_MAP(m, totalSize, "wheelConfig.e_b2a[0]", wheelConfig.e_b2a[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.e_b2a[1]", wheelConfig.e_b2a[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.e_b2a[2]", wheelConfig.e_b2a[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.t_b2a[0]", wheelConfig.t_b2a[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.t_b2a[1]", wheelConfig.t_b2a[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.t_b2a[2]", wheelConfig.t_b2a[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.e_b2w[0]", wheelConfig.e_b2w[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.e_b2w[1]", wheelConfig.e_b2w[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.e_b2w[2]", wheelConfig.e_b2w[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.t_b2w[0]", wheelConfig.t_b2w[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.t_b2w[1]", wheelConfig.t_b2w[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.t_b2w[2]", wheelConfig.t_b2w[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelConfig.track_width", wheelConfig.track_width, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelConfig.radius", wheelConfig.radius, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float, 0);
