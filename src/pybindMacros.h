@@ -8,7 +8,7 @@ PYBIND11_NUMPY_DTYPE(rtos_task_t, name, priority, stackUnused, periodMs, runTime
 PYBIND11_NUMPY_DTYPE(imus_t, pqr, acc);
 // PYBIND11_NUMPY_DTYPE(sensors_mpu_t, pqr, acc, mag);
 PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omega_l, omega_r, wrap_count_l, wrap_count_r);
-PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, e_i2l, t_i2l, distance, diameter);
+PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, e_b2w, t_b2w, track_width, radius);
 
 // Public Typcs
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
