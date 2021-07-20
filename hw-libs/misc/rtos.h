@@ -17,9 +17,10 @@ extern "C" {
 #endif
 
 #include "../../src/ISConstants.h"
-#include "task.h"
+#include "../freertos/FreeRTOS.h"
+#include "../freertos/task.h"
 #include "../drivers/d_time.h"
-#if !defined(PLATFORM_IS_EVB_2)
+#if !defined(PLATFORM_IS_EVB_2) && !defined(STM32L452xx)
 #include "../../../hdw-src/uINS-3/IS_uINS/src/misc/debug_gpio.h"
 #endif
 

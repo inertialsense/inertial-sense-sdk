@@ -18,7 +18,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "globals.h"
 #include "IS_internal.h"
 #include "misc/maintenance.h"
+#ifndef STM32L452xx // uINS-3
 #include "../../../hdw-src/uINS-3/IS_uINS/src/misc/debug_gpio.h"
+#endif
 #endif
 #include "bootloaderApp.h"
 
@@ -109,18 +111,20 @@ void rtosResetStats(void)
 void vApplicationIdleHook(void)
 {
     // Sleep to reduce power consumption
-    pmc_enable_sleepmode(0);
+#ifndef STM32L452xx
+    pmc_enable_sleepmode(0);	// TODO: Implement this function for STM32L452xx
+#endif
 }
 
 
 void vApplicationTickHook(void)
 {
-#if !defined(PLATFORM_IS_EVB_2)
+#if !defined(PLATFORM_IS_EVB_2) && !defined(STM32L452xx)
     DBGPIO_TOGGLE(DBG_RTOS_TICK_HOOK_PIN);  // Debug used to monitor RTOS tick execution
 #endif
 }
 
-
+#ifndef STM32L452xx	// TODO: Implement these functions for STM32L452xx
 static void setGpbrWithTaskInfo(void)
 {
     uint32_t task;
@@ -238,6 +242,7 @@ void UsageFault_Handler(void)
 #endif
 }
 #endif
+#endif	// ifndef STM32L452xx
 
 
 #if 1
