@@ -1989,13 +1989,13 @@ typedef struct PACKED
 	float                   e_b2w[3];
 
     /** Euler angle standard deviation of measurements describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
-	float                   e_b2wSigma[3];
+	float                   e_b2w_sigma[3];
 
 	/** Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
 	float                   t_b2w[3];
 
     /** Translation standard deviation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
-	float                   t_b2wSigma[3];
+	float                   t_b2w_sigma[3];
 
 } wheel_transform_t;
 
