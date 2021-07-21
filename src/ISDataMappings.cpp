@@ -2012,7 +2012,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_DUAL_IMU_RAW_MAG",             // 84
 	"DID_DUAL_IMU_MAG",                 // 85
 	"DID_PREINTEGRATED_IMU_MAG",        // 86
-	"DID_WHEEL_CONFIG",                 // 87
+	"DID_GROUND_VEHICLE",                 // 87
 	"DID_POSITION_MEASUREMENT",         // 88
 	"DID_RTK_DEBUG_2",                  // 89
 	"DID_CAN_CONFIG",                   // 90
