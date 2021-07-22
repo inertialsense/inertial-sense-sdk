@@ -1965,47 +1965,38 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
 };
 
-/** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
-typedef struct PACKED
+
+typedef enum
 {
-    uint32_t                cmd;
-
-    wheel_transform_t       wheelTransform;
-} ground_vehicle_t;
-
-enum eGroundVehicleCmds
-(
-    STATE_RUN_MODE          = 0x0;
-    CMD_START_LEARNING      = 0x1,
-    CMD_FINISH_LEARNING     = 0x2,
-    CMD_SET_CURRENT_VALUES  = 0x3,
-    STATE_LEARNING          = 0x4,    
-)
-
+    STATE_STANDBY           = 0,
+    CMD_START_LEARNING      = 1,
+    CMD_FINISH_LEARNING     = 2,
+    CMD_SET_CURRENT_VALUES  = 3,
+    STATE_LEARNING          = 4,    
+ } eGroundVehicleCmds;
 
 typedef struct PACKED
 {
-    /** Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
+	/** Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
 	float                   e_b2w[3];
 
-    /** Euler angle standard deviation of measurements describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
+	/** Euler angle standard deviation of measurements describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
 	float                   e_b2w_sigma[3];
 
 	/** Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
 	float                   t_b2w[3];
 
-    /** Translation standard deviation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
+	/** Translation standard deviation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
 	float                   t_b2w_sigma[3];
 
 } wheel_transform_t;
 
-
 typedef struct PACKED
 {
-    /** Config bits (see eWheelCfgBits) */
-    uint32_t                bits;
+	/** Config bits (see eWheelCfgBits) */
+	uint32_t                bits;
 
-    wheel_transform_t       transform;
+	wheel_transform_t       transform;
 
 	/** Distance between the left wheel and the right wheel */
 	float                   track_width;
@@ -2014,6 +2005,18 @@ typedef struct PACKED
 	float                   radius;
 
 } wheel_config_t;
+
+
+
+
+/** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
+typedef struct PACKED
+{
+	uint32_t                cmd;
+
+	wheel_transform_t       wheelTransform;
+
+} ground_vehicle_t;
 
 typedef enum
 {
