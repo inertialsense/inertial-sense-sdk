@@ -1969,10 +1969,10 @@ enum eWheelCfgBits
 typedef enum
 {
     STATE_STANDBY           = 0,
-    CMD_START_LEARNING      = 1,
-    CMD_FINISH_LEARNING     = 2,
-    CMD_SET_CURRENT_VALUES  = 3,
-    STATE_LEARNING          = 4,    
+	STATE_LEARNING			= 1,
+    CMD_START_LEARNING      = 2,
+    CMD_FINISH_LEARNING     = 3,
+    CMD_SET_CURRENT_VALUES  = 4,
  } eGroundVehicleCmds;
 
 typedef struct PACKED
