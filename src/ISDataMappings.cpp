@@ -696,7 +696,7 @@ static void PopulateGroundVehicleMappings(map_name_to_info_t mappings[DID_COUNT]
     typedef ground_vehicle_t MAP_TYPE;
     map_name_to_info_t& m = mappings[DID_GROUND_VEHICLE];
     uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "cmd", cmd, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "transform.e_b2w[0]", wheelTransform.e_b2w[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "transform.e_b2w[1]", wheelTransform.e_b2w[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "transform.e_b2w[2]", wheelTransform.e_b2w[2], 0, DataTypeFloat, float&, 0);
