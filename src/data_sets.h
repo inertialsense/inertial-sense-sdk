@@ -1974,7 +1974,7 @@ typedef enum
     CMD_START_LEARNING      = 2,
     CMD_FINISH_LEARNING     = 3,
     CMD_SET_CURRENT_VALUES  = 4,
- } eGroundVehicleCmds;
+ } eGroundVehicleMode;
 
 typedef struct PACKED
 {
@@ -2012,8 +2012,8 @@ typedef struct PACKED
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
 typedef struct PACKED
 {
-	/** Current state of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleCmds) */
-	uint32_t                cmd;
+	/** Current mode of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleMode) */
+	uint32_t                mode;
 
 	/** Euler angles and offset describing the rotation and tranlation from imu (body) to the wheel frame (center of the non-steering axle) */
 	wheel_transform_t       wheelTransform;
