@@ -1980,14 +1980,12 @@ typedef struct PACKED
 {
 	/** Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
 	float                   e_b2w[3];
-//	float                   e_b2w_sigma[3]; // standard deviation (uncertainty)
 
 	/** Euler angle standard deviation of measurements describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
 	float                   e_b2w_sigma[3];
 
 	/** Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
 	float                   t_b2w[3];
-//	float                   t_b2w_sigma[3]; // standard deviation (uncertainty)
 
 	/** Translation standard deviation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
 	float                   t_b2w_sigma[3];
@@ -1999,6 +1997,7 @@ typedef struct PACKED
 	/** Config bits (see eWheelCfgBits) */
 	uint32_t                bits;
 
+	/** Euler angles and offset describing the rotation and tranlation from imu (body) to the wheel frame (center of the non-steering axle) */
 	wheel_transform_t       transform;
 
 	/** Distance between the left wheel and the right wheel */
@@ -2016,6 +2015,7 @@ typedef struct PACKED
 	/** Current state of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleCmds) */
 	uint32_t                cmd;
 
+	/** Euler angles and offset describing the rotation and tranlation from imu (body) to the wheel frame (center of the non-steering axle) */
 	wheel_transform_t       wheelTransform;
 
 } ground_vehicle_t;
