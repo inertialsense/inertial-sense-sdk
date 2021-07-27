@@ -206,8 +206,8 @@ enum eInsStatusFlags
 	INS_STATUS_DO_NOT_MOVE						= (int)0x00002000,	
 	/** Velocity aided by GPS velocity */
 	INS_STATUS_GPS_AIDING_VEL                   = (int)0x00004000,
-
-	INS_STATUS_UNUSED_4				            = (int)0x00008000,
+	/** Vehicle kinematic calibration is good */
+	INS_STATUS_KINEMATIC_CAL_GOOD	            = (int)0x00008000,
 
 	/** INS/AHRS Solution Status */
 	INS_STATUS_SOLUTION_MASK					= (int)0x000F0000,
