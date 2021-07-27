@@ -190,8 +190,8 @@ enum eInsStatusFlags
 	/** Heading aided by GPS */
 	INS_STATUS_GPS_AIDING_HEADING               = (int)0x00000080,
 
-	/** Position and velocity aided by GPS */
-	INS_STATUS_GPS_AIDING_POS_VEL               = (int)0x00000100,
+	/** Position aided by GPS position */
+	INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
 	/** GPS update event occurred in solution, potentially causing discontinuity in position path */
 	INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
 	/** Reserved for internal purpose */
@@ -203,9 +203,10 @@ enum eInsStatusFlags
 	INS_STATUS_NAV_MODE							= (int)0x00001000,
 
 	/** User should not move (keep system motionless) to assist on-board processing. */
-	INS_STATUS_DO_NOT_MOVE						= (int)0x00002000,
-	
-	INS_STATUS_UNUSED_3				            = (int)0x00004000,
+	INS_STATUS_DO_NOT_MOVE						= (int)0x00002000,	
+	/** Velocity aided by GPS velocity */
+	INS_STATUS_GPS_AIDING_VEL                   = (int)0x00004000,
+
 	INS_STATUS_UNUSED_4				            = (int)0x00008000,
 
 	/** INS/AHRS Solution Status */
@@ -2009,11 +2010,10 @@ typedef struct PACKED
 } wheel_config_t;
 
 
-
-
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
 typedef struct PACKED
 {
+	/** Current state of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleCmds) */
 	uint32_t                cmd;
 
 	wheel_transform_t       wheelTransform;

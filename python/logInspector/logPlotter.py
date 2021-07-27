@@ -324,7 +324,10 @@ class logPlot:
                 # ax.text(p1, -cnt * 1.5, 'GPS Update')
                 # cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000100) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Pos/Vel')
+                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Pos')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00004000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Vel')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000080) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Hdg')
