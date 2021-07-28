@@ -1966,7 +1966,6 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
 };
 
-
 typedef enum
 {
     STATE_STANDBY           = 0,
@@ -2007,7 +2006,6 @@ typedef struct PACKED
 	float                   radius;
 
 } wheel_config_t;
-
 
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
 typedef struct PACKED
