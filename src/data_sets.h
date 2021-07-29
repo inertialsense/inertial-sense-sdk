@@ -2067,7 +2067,7 @@ typedef struct PACKED
     /** X,Y,Z offset in meters from Sensor Frame origin to GPS 1 antenna. */
     float					gps1AntOffset[3];
  
-    /** INS dynamic platform model.  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** INS dynamic platform model.  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t					insDynModel;
 
 	/** Reserved */
