@@ -1349,9 +1349,38 @@ class logPlot:
             a.set_title(titles[i])
             a.grid(True)
 
+    def groundVehicle(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
 
+        fig.suptitle('Ground Vehicle - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(5, 2, sharex=True)
+        # titles = ['Left Wheel Angle', 'Right Wheel Angle', 'Left Wheel Velocity', 'Right Wheel Velocity']
+        # fields = ['theta_l', 'theta_r', 'omega_l', 'omega_r']
 
+        ax[0,0].set_title('Mode')
 
+        for d in self.active_devs:
+            time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'))
+            mode = np.array(self.getData(d, DID_GROUND_VEHICLE, 'mode'))
+            ax[0,0].plot(time, mode)
+
+        # for d in self.active_devs:
+        #     time = np.array(getTimeFromTow(self.getData(d, DID_WHEEL_ENCODER, 'timeOfWeek')))
+        #     for i, a in enumerate(ax):
+        #         a.plot(time, self.getData(d, DID_WHEEL_ENCODER, fields[i]), label=self.log.serials[d])
+        #         if i == 0:
+        #             a.legend(ncol=2)
+
+        # for i, a in enumerate(ax):
+        #     a.set_ylabel(fields[i])
+        #     a.set_title(titles[i])
+        #     a.grid(True)
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+            
     def showFigs(self):
         if self.show:
             plt.show()
@@ -1388,6 +1417,7 @@ if __name__ == '__main__':
     # plotter.nedMap()
     # plotter.magDec()
     plotter.rtkDebug()
-    #plotter.wheelEncoder()
+    # plotter.wheelEncoder()
+    # plotter.groundVehicle()
 
     plotter.showFigs()

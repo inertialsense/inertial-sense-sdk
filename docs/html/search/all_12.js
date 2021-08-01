@@ -155,7 +155,7 @@ var searchData=
   ['rmc_5fpreset_5fppd_5fbits_5fraw_5fimu_3007',['RMC_PRESET_PPD_BITS_RAW_IMU',['../data__sets_8h.html#aba5a6647f5808e6cdfd54c1d6db68729',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fbits_5frtk_5fdbg_3008',['RMC_PRESET_PPD_BITS_RTK_DBG',['../data__sets_8h.html#af621f4bc9fa425bd5bc00e9b2bb490c0',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fnav_5fperiod_5fmult_3009',['RMC_PRESET_PPD_NAV_PERIOD_MULT',['../data__sets_8h.html#ac4434e93fd2603beef3791f842bb86b2',1,'data_sets.h']]],
-  ['rmc_5fpreset_5fppd_5frobot_3010',['RMC_PRESET_PPD_ROBOT',['../data__sets_8h.html#a8fde050afcfaff93b9fce7741812bc18',1,'data_sets.h']]],
+  ['rmc_5fpreset_5fppd_5frobot_3010',['RMC_PRESET_PPD_GROUND_VEHICLE',['../data__sets_8h.html#a8fde050afcfaff93b9fce7741812bc18',1,'data_sets.h']]],
   ['rmc_5ft_3011',['rmc_t',['../data__sets_8h.html#a2f9028388b0f9bb18f02683cd9ed58d1',1,'data_sets.h']]],
   ['rmcpreset_3012',['rmcPreset',['../structcmd__options__t.html#aa38eacf8525b14f32814bdbdbfb31d9d',1,'cmd_options_t']]],
   ['rmean_5ffilter_5ft_3013',['rmean_filter_t',['../structrmean__filter__t.html',1,'']]],

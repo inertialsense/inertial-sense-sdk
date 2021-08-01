@@ -174,6 +174,7 @@ did_name_lookup = {
  DID_GPS1_RAW : "gps1Raw",
  DID_GPS2_RAW : "gps2Raw",
  DID_WHEEL_ENCODER : "wheelEncoder",
+ DID_GROUND_VEHICLE : "groundVehicle",
  DID_DIAGNOSTIC_MESSAGE : "diagnosticMessage",
  DID_SURVEY_IN : "surveyIn",
  DID_EVB2 : "evb2",

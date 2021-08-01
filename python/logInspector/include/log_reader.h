@@ -96,7 +96,7 @@ struct DeviceLog
     vector<gps_raw_wrapper_t> gps1Raw {1};
     vector<gps_raw_wrapper_t> gps2Raw {1};
     vector<wheel_encoder_t> wheelEncoder;
-    // vector<wheel_encoder_config_t> wheelEncoderConfig;
+    vector<ground_vehicle_t> groundVehicle;
     vector<diag_msg_t> diagnosticMessage;
     vector<survey_in_t> surveyIn;
 //    vector<evb2_t> evb2;

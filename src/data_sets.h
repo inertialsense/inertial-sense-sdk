@@ -1350,7 +1350,7 @@ typedef struct PACKED
 										| RMC_BITS_RTK_STATE \
 										| RMC_BITS_RTK_CODE_RESIDUAL \
 										| RMC_BITS_RTK_PHASE_RESIDUAL)
-#define RMC_PRESET_PPD_ROBOT			(RMC_PRESET_PPD_BITS \
+#define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_WHEEL_ENCODER \
 										| RMC_BITS_GROUND_VEHICLE)
 
@@ -1958,7 +1958,6 @@ typedef struct PACKED
 
 enum eWheelCfgBits
 {
-    WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
     WHEEL_CFG_BITS_ENABLE_CONTROL           = (int)0x00000004,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
@@ -1968,11 +1967,11 @@ enum eWheelCfgBits
 
 typedef enum
 {
-    STATE_STANDBY           = 0,
-	STATE_LEARNING			= 1,
-    CMD_START_LEARNING      = 2,
-    CMD_FINISH_LEARNING     = 3,
-    CMD_SET_CURRENT_VALUES  = 4,
+    GV_MODE_STANDBY                = 0,
+	GV_MODE_LEARNING			   = 1,
+    GV_CMD_START_LEARNING      	   = 2,
+    GV_CMD_STOP_AND_SAVE_LEARNING  = 3,
+    GV_CMD_CANCEL_LEARNING         = 4,
  } eGroundVehicleMode;
 
 typedef struct PACKED
@@ -1999,7 +1998,7 @@ typedef struct PACKED
 	/** Euler angles and offset describing the rotation and tranlation from imu (body) to the wheel frame (center of the non-steering axle) */
 	wheel_transform_t       transform;
 
-	/** Distance between the left wheel and the right wheel */
+	/** Distance between the left and right wheels */
 	float                   track_width;
 
 	/** Estimate of wheel radius */
@@ -2010,11 +2009,14 @@ typedef struct PACKED
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
 typedef struct PACKED
 {
+	/** GPS time of week (since Sunday morning) in milliseconds */
+	uint32_t				timeOfWeekMs;
+
 	/** Current mode of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleMode) */
 	uint32_t                mode;
 
-	/** Euler angles and offset describing the rotation and tranlation from imu (body) to the wheel frame (center of the non-steering axle) */
-	wheel_transform_t       wheelTransform;
+	/** Wheel transform, track width, and wheel radius. */
+	wheel_config_t       	wheelConfig;
 
 } ground_vehicle_t;
 
@@ -2067,7 +2069,7 @@ typedef struct PACKED
     /** X,Y,Z offset in meters from Sensor Frame origin to GPS 1 antenna. */
     float					gps1AntOffset[3];
  
-    /** INS dynamic platform model.  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** INS dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t					insDynModel;
 
 	/** Reserved */
@@ -3641,6 +3643,7 @@ typedef union PACKED
 	mag_cal_t				magCal;
 	barometer_t				baro;
     wheel_encoder_t         wheelEncoder;
+	ground_vehicle_t		groundVehicle;
 	pos_measurement_t		posMeasurement;
 	preintegrated_imu_t		pImu;
 	gps_pos_t				gpsPos;
