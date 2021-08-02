@@ -2012,6 +2012,9 @@ typedef struct PACKED
 	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t				timeOfWeekMs;
 
+	/** Ground vehicle status flags */
+	uint32_t                status;
+
 	/** Current mode of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleMode) */
 	uint32_t                mode;
 

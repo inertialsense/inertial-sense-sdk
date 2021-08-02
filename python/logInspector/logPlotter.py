@@ -1356,6 +1356,7 @@ class logPlot:
         fig.suptitle('Ground Vehicle - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(8, 2, sharex=True)
 
+        ax[0,0].set_title('Status')
         ax[0,0].set_title('Mode')
         ax[1,0].set_title('e_b2w')
         ax[1,1].set_title('e_b2w_sigma')
@@ -1366,9 +1367,9 @@ class logPlot:
 
         for d in self.active_devs:
             time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'))
-            mode = np.array(self.getData(d, DID_GROUND_VEHICLE, 'mode'))
             wheelConfig = self.getData(d, DID_GROUND_VEHICLE, 'wheelConfig')
-            ax[0,0].plot(time, mode)
+            ax[0,0].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'status'))
+            ax[0,1].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'mode'))
 
             ax[1,0].plot(time, wheelConfig['transform']['e_b2w'][:, 0], label=self.log.serials[d])
             ax[2,0].plot(time, wheelConfig['transform']['e_b2w'][:, 1])
