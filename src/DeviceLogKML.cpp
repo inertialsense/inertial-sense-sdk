@@ -149,6 +149,7 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	{
 		int tracksNum = 0;
 
+		double nextTime = log.data[0].time;
 		for (size_t i = 0; i < log.data.size(); )
 		{
 			bool deadReckoning = log.data[i].deadReckoning;
@@ -198,7 +199,6 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 			elem->LinkEndChild(new TiXmlText(labelScale));
 			LabelStyle->LinkEndChild(elem);
 
-			double nextTime = log.data[0].time;
 			while (i < log.data.size())
 			{
 				sKmlLogData& item = (log.data[i]);
@@ -206,6 +206,7 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 				// Log only every iconUpdatePeriodSec
 				if (item.time < nextTime)
 				{
+					i++;
 					continue;
 				}
 				nextTime = item.time - fmod(item.time, m_pointUpdatePeriodSec) + m_pointUpdatePeriodSec;
