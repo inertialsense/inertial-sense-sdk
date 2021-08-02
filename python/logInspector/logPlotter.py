@@ -1354,28 +1354,38 @@ class logPlot:
             fig = plt.figure()
 
         fig.suptitle('Ground Vehicle - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(5, 2, sharex=True)
-        # titles = ['Left Wheel Angle', 'Right Wheel Angle', 'Left Wheel Velocity', 'Right Wheel Velocity']
-        # fields = ['theta_l', 'theta_r', 'omega_l', 'omega_r']
+        ax = fig.subplots(8, 2, sharex=True)
 
         ax[0,0].set_title('Mode')
+        ax[1,0].set_title('e_b2w')
+        ax[1,1].set_title('e_b2w_sigma')
+        ax[4,0].set_title('t_b2w')
+        ax[4,1].set_title('t_b2w_sigma')
+        ax[7,0].set_title('Radius')
+        ax[7,1].set_title('Track Width')
 
         for d in self.active_devs:
             time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'))
             mode = np.array(self.getData(d, DID_GROUND_VEHICLE, 'mode'))
+            wheelConfig = self.getData(d, DID_GROUND_VEHICLE, 'wheelConfig')
             ax[0,0].plot(time, mode)
 
-        # for d in self.active_devs:
-        #     time = np.array(getTimeFromTow(self.getData(d, DID_WHEEL_ENCODER, 'timeOfWeek')))
-        #     for i, a in enumerate(ax):
-        #         a.plot(time, self.getData(d, DID_WHEEL_ENCODER, fields[i]), label=self.log.serials[d])
-        #         if i == 0:
-        #             a.legend(ncol=2)
+            ax[1,0].plot(time, wheelConfig['transform']['e_b2w'][:, 0], label=self.log.serials[d])
+            ax[2,0].plot(time, wheelConfig['transform']['e_b2w'][:, 1])
+            ax[3,0].plot(time, wheelConfig['transform']['e_b2w'][:, 2])
+            ax[1,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[2,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 1])
+            ax[3,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 2])
 
-        # for i, a in enumerate(ax):
-        #     a.set_ylabel(fields[i])
-        #     a.set_title(titles[i])
-        #     a.grid(True)
+            ax[4,0].plot(time, wheelConfig['transform']['t_b2w'][:, 0], label=self.log.serials[d])
+            ax[5,0].plot(time, wheelConfig['transform']['t_b2w'][:, 1])
+            ax[6,0].plot(time, wheelConfig['transform']['t_b2w'][:, 2])
+            ax[4,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[5,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 1])
+            ax[6,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 2])
+
+            ax[7,0].plot(time, wheelConfig['radius'])
+            ax[7,1].plot(time, wheelConfig['track_width'])
 
         for a in ax:
             for b in a:
