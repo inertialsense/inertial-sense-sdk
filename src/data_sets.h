@@ -2006,6 +2006,13 @@ typedef struct PACKED
 
 } wheel_config_t;
 
+typedef enum
+{
+	GV_STATUS_LEARNING_ENABLED		= 0x00000001,
+	GV_STATUS_KINEMATIC_CAL_GOOD	= 0x00100000,
+	GV_STATUS_DEAD_RECKONING		= 0x10000000,
+} eGroundVehicleStatus;
+
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
 typedef struct PACKED
 {

@@ -1357,7 +1357,7 @@ class logPlot:
         ax = fig.subplots(8, 2, sharex=True)
 
         ax[0,0].set_title('Status')
-        ax[0,0].set_title('Mode')
+        ax[0,1].set_title('Mode')
         ax[1,0].set_title('e_b2w')
         ax[1,1].set_title('e_b2w_sigma')
         ax[4,0].set_title('t_b2w')
