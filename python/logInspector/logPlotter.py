@@ -489,6 +489,7 @@ class logPlot:
             fig = plt.figure()
 
         ax = fig.subplots(4, 1, sharex=True)
+        did_gps_vel = did_gps_pos+(DID_GPS1_VEL-DID_GPS1_POS)
         if did_gps_pos==DID_GPS1_POS:
             gps_num = 1
         else:
@@ -502,12 +503,14 @@ class logPlot:
         for d in self.active_devs:
             r = d == self.active_devs[0]  # plot text w/ first device
             time = getTimeFromTowMs(self.getData(d, did_gps_pos, 'timeOfWeekMs'))
+            velTime = getTimeFromTowMs(self.getData(d, did_gps_vel, 'timeOfWeekMs'))
             gStatus = self.getData(d, did_gps_pos, 'status')
 
             ax[0].plot(time, gStatus & 0xFF, label=self.log.serials[d])
             ax[1].plot(time, self.getData(d, did_gps_pos, 'pDop'), 'm', label="pDop")
             ax[1].plot(time, self.getData(d, did_gps_pos, 'hAcc'), 'r', label="hAcc")
             ax[1].plot(time, self.getData(d, did_gps_pos, 'vAcc'), 'b', label="vAcc")
+            ax[1].plot(velTime, self.getData(d, did_gps_vel, 'sAcc'), 'c', label="sAcc")
             if self.log.data[d, DID_GPS1_RTK_POS] is not []:
                 rtktime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_POS, 'timeOfWeekMs'))
                 ax[1].plot(rtktime, self.getData(d, DID_GPS1_RTK_POS, 'vAcc'), 'g', label="rtkHor")
