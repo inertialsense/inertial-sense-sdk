@@ -1967,11 +1967,12 @@ enum eWheelCfgBits
 
 typedef enum
 {
-    GV_MODE_STANDBY                = 0,
-	GV_MODE_LEARNING			   = 1,
-    GV_CMD_START_LEARNING      	   = 2,
-    GV_CMD_STOP_AND_SAVE_LEARNING  = 3,
-    GV_CMD_CANCEL_LEARNING         = 4,
+    GV_MODE_STANDBY                         = 0,
+	GV_MODE_LEARNING                        = 1,
+    GV_CMD_START_LEARNING      	            = 2,
+    GV_CMD_CLEAR_AND_START_LEARNING         = 3,
+    GV_CMD_STOP_AND_SAVE_LEARNING           = 4,
+    GV_CMD_CANCEL_LEARNING                  = 5,
  } eGroundVehicleMode;
 
 typedef struct PACKED
@@ -2019,7 +2020,7 @@ typedef struct PACKED
 	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t				timeOfWeekMs;
 
-	/** Ground vehicle status flags */
+	/** Ground vehicle status flags (eGroundVehicleStatus) */
 	uint32_t                status;
 
 	/** Current mode of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleMode) */
