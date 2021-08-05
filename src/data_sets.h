@@ -1969,7 +1969,7 @@ typedef enum
 {
     GV_MODE_STANDBY                         = 0,
 	GV_MODE_LEARNING                        = 1,
-    GV_CMD_START_LEARNING      	            = 2,
+    GV_CMD_RESUME_LEARNING                  = 2,
     GV_CMD_CLEAR_AND_START_LEARNING         = 3,
     GV_CMD_STOP_AND_SAVE_LEARNING           = 4,
     GV_CMD_CANCEL_LEARNING                  = 5,
