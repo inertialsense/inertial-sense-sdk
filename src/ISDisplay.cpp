@@ -635,7 +635,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 		(hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
-        (insStatus & INS_STATUS_GPS_AIDING_POS_VEL) != 0);
+        (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
 	if (insStatus & INS_STATUS_NAV_MODE)
 	{
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: NAV ");

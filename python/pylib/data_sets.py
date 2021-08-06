@@ -90,7 +90,7 @@ DID_EVB_RTOS_INFO               = 83
 DID_DUAL_IMU_RAW_MAG            = 84
 DID_DUAL_IMU_MAG                = 85
 DID_PREINTEGRATED_IMU_MAG       = 86
-DID_WHEEL_CONFIG                = 87
+DID_GROUND_VEHICLE                = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
@@ -174,6 +174,7 @@ did_name_lookup = {
  DID_GPS1_RAW : "gps1Raw",
  DID_GPS2_RAW : "gps2Raw",
  DID_WHEEL_ENCODER : "wheelEncoder",
+ DID_GROUND_VEHICLE : "groundVehicle",
  DID_DIAGNOSTIC_MESSAGE : "diagnosticMessage",
  DID_SURVEY_IN : "surveyIn",
  DID_EVB2 : "evb2",

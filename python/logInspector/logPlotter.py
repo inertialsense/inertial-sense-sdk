@@ -324,7 +324,10 @@ class logPlot:
                 # ax.text(p1, -cnt * 1.5, 'GPS Update')
                 # cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000100) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Pos/Vel')
+                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Pos')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00004000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Vel')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000080) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Hdg')
@@ -486,6 +489,7 @@ class logPlot:
             fig = plt.figure()
 
         ax = fig.subplots(4, 1, sharex=True)
+        did_gps_vel = did_gps_pos+(DID_GPS1_VEL-DID_GPS1_POS)
         if did_gps_pos==DID_GPS1_POS:
             gps_num = 1
         else:
@@ -499,12 +503,14 @@ class logPlot:
         for d in self.active_devs:
             r = d == self.active_devs[0]  # plot text w/ first device
             time = getTimeFromTowMs(self.getData(d, did_gps_pos, 'timeOfWeekMs'))
+            velTime = getTimeFromTowMs(self.getData(d, did_gps_vel, 'timeOfWeekMs'))
             gStatus = self.getData(d, did_gps_pos, 'status')
 
             ax[0].plot(time, gStatus & 0xFF, label=self.log.serials[d])
             ax[1].plot(time, self.getData(d, did_gps_pos, 'pDop'), 'm', label="pDop")
             ax[1].plot(time, self.getData(d, did_gps_pos, 'hAcc'), 'r', label="hAcc")
             ax[1].plot(time, self.getData(d, did_gps_pos, 'vAcc'), 'b', label="vAcc")
+            ax[1].plot(velTime, self.getData(d, did_gps_vel, 'sAcc'), 'c', label="sAcc")
             if self.log.data[d, DID_GPS1_RTK_POS] is not []:
                 rtktime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_POS, 'timeOfWeekMs'))
                 ax[1].plot(rtktime, self.getData(d, DID_GPS1_RTK_POS, 'vAcc'), 'g', label="rtkHor")
@@ -1346,9 +1352,49 @@ class logPlot:
             a.set_title(titles[i])
             a.grid(True)
 
+    def groundVehicle(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
 
+        fig.suptitle('Ground Vehicle - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(8, 2, sharex=True)
 
+        ax[0,0].set_title('Status')
+        ax[0,1].set_title('Mode')
+        ax[1,0].set_title('e_b2w')
+        ax[1,1].set_title('e_b2w_sigma')
+        ax[4,0].set_title('t_b2w')
+        ax[4,1].set_title('t_b2w_sigma')
+        ax[7,0].set_title('Radius')
+        ax[7,1].set_title('Track Width')
 
+        for d in self.active_devs:
+            time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'))
+            wheelConfig = self.getData(d, DID_GROUND_VEHICLE, 'wheelConfig')
+            ax[0,0].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'status'))
+            ax[0,1].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'mode'))
+
+            ax[1,0].plot(time, wheelConfig['transform']['e_b2w'][:, 0], label=self.log.serials[d])
+            ax[2,0].plot(time, wheelConfig['transform']['e_b2w'][:, 1])
+            ax[3,0].plot(time, wheelConfig['transform']['e_b2w'][:, 2])
+            ax[1,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[2,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 1])
+            ax[3,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 2])
+
+            ax[4,0].plot(time, wheelConfig['transform']['t_b2w'][:, 0], label=self.log.serials[d])
+            ax[5,0].plot(time, wheelConfig['transform']['t_b2w'][:, 1])
+            ax[6,0].plot(time, wheelConfig['transform']['t_b2w'][:, 2])
+            ax[4,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[5,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 1])
+            ax[6,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 2])
+
+            ax[7,0].plot(time, wheelConfig['radius'])
+            ax[7,1].plot(time, wheelConfig['track_width'])
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+            
     def showFigs(self):
         if self.show:
             plt.show()
@@ -1385,6 +1431,7 @@ if __name__ == '__main__':
     # plotter.nedMap()
     # plotter.magDec()
     plotter.rtkDebug()
-    #plotter.wheelEncoder()
+    # plotter.wheelEncoder()
+    # plotter.groundVehicle()
 
     plotter.showFigs()
