@@ -1969,10 +1969,11 @@ typedef enum
 {
     GV_MODE_STANDBY                         = 0,
 	GV_MODE_LEARNING                        = 1,
-    GV_CMD_LEARNING_RESUME                  = 2,
-    GV_CMD_LEARNING_CLEAR_AND_START         = 3,
-    GV_CMD_LEARNING_STOP_AND_SAVE           = 4,
-    GV_CMD_LEARNING_CANCEL                  = 5,
+    GV_CMD_LEARNING_START                   = 2,    // Use provided transform and sigma
+    GV_CMD_LEARNING_RESUME                  = 3,    // Reset sigma values
+    GV_CMD_LEARNING_CLEAR_AND_START         = 4,    // Zero transform and reset sigma values
+    GV_CMD_LEARNING_STOP_AND_SAVE           = 5,
+    GV_CMD_LEARNING_CANCEL                  = 6,
  } eGroundVehicleMode;
 
 typedef struct PACKED
