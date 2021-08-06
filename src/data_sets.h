@@ -176,7 +176,8 @@ enum eInsStatusFlags
 	/** Estimate is COARSE mask (usable but outside spec) */
 	INS_STATUS_ALIGN_COARSE_MASK                = (int)0x00000007,
 
-	INS_STATUS_UNUSED_1                         = (int)0x00000008,
+	/** Velocity aided by wheel sensor */
+	INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
 	/** Attitude estimate is within spec (FINE) */
 	INS_STATUS_ATT_ALIGN_FINE                   = (int)0x00000010,
