@@ -2013,7 +2013,11 @@ typedef enum
 {
 	GV_STATUS_LEARNING_ENABLED		= 0x00000001,
 	GV_STATUS_DEAD_RECKONING		= 0x01000000,
+	/** Vehicle kinematic parameters */ 
 	GV_STATUS_KINEMATIC_CAL_GOOD	= 0x02000000,
+	/** Vehicle kinematic learning has converged and is complete. */ 
+	GV_STATUS_LEARNING_CONVERGED    = 0x04000000,
+
 } eGroundVehicleStatus;
 
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
