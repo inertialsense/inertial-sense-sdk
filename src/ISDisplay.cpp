@@ -594,9 +594,9 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
 	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
-	case DID_MAGNETOMETER:
+	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
+	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
-	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);              break;
 	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_POS");				break;
 	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS2_POS");				break;
 	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_RTK_POS");			break;
@@ -1012,7 +1012,37 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringBarometer(const barometer_t &baro, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+	static double lastTime = 0;
+	double dtMs = 1000.0*(baro.time - lastTime);
+	lastTime = baro.time;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", baro.time);
+#endif
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fkPa", baro.bar);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.1fm", baro.mslBar);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fC", baro.barTemp);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", Humid. %.1f%%", baro.humidity);
+
+	if (m_displayMode == DMODE_PRETTY)
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+	}
+
+	return buf;
+}
+
+string cInertialSenseDisplay::DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
@@ -1069,36 +1099,6 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 			mag.progress,
 			mag.declination * C_RAD2DEG_F);
 	}
-
-	if (m_displayMode == DMODE_PRETTY)
-	{
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
-	}
-
-	return buf;
-}
-
-string cInertialSenseDisplay::DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr)
-{
-	(void)hdr;
-	char buf[BUF_SIZE];
-	char* ptr = buf;
-	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
-
-#if DISPLAY_DELTA_TIME==1
-	static double lastTime = 0;
-	double dtMs = 1000.0*(baro.time - lastTime);
-	lastTime = baro.time;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
-#else
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", baro.time);
-#endif
-
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fkPa", baro.bar);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.1fm", baro.mslBar);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fC", baro.barTemp);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", Humid. %.1f%%", baro.humidity);
 
 	if (m_displayMode == DMODE_PRETTY)
 	{
