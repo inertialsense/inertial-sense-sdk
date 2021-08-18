@@ -104,7 +104,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
-	sizeMap[DID_MAGNETOMETER_1] = sizeof(magnetometer_t);
+	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_MAGNETOMETER_2] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
 	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
@@ -2011,7 +2011,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_COVARIANCE_LD",           // 49
 	"DID_INL2_STATUS",                  // 50
 	"DID_INL2_MISC",                    // 51
-	"DID_MAGNETOMETER_1",               // 52
+	"DID_MAGNETOMETER",               // 52
 	"DID_BAROMETER",                    // 53
 	"DID_GPS1_RTK_POS",                 // 54
 	"DID_MAGNETOMETER_2",               // 55
@@ -2105,7 +2105,7 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS2_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
-	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_1);
+	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
     PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
     PopulateBarometerMappings(m_lookupInfo);
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);

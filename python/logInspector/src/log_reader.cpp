@@ -178,8 +178,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_INL2_STATES, dev_log_->inl2States );
         HANDLE_MSG( DID_INL2_STATUS, dev_log_->inl2Status );
         // HANDLE_MSG( DID_INL2_MISC, dev_log_->inl2Misc );
-        HANDLE_MSG( DID_MAGNETOMETER_1, dev_log_->magnetometer );
-        HANDLE_MSG( DID_MAGNETOMETER_2, dev_log_->magnetometer );
+        HANDLE_MSG( DID_MAGNETOMETER, dev_log_->magnetometer );
         HANDLE_MSG( DID_BAROMETER, dev_log_->barometer );
         HANDLE_MSG( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos );
         HANDLE_MSG( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw );
@@ -268,8 +267,7 @@ void LogReader::forwardData(int id)
     forward_message( DID_INL2_STATES, dev_log_->inl2States, id );
     forward_message( DID_INL2_STATUS, dev_log_->inl2Status, id );
     // forward_message( DID_INL2_MISC, dev_log_->inl2Misc, id );
-    forward_message( DID_MAGNETOMETER_1, dev_log_->magnetometer, id );
-    forward_message( DID_MAGNETOMETER_2, dev_log_->magnetometer, id );
+    forward_message( DID_MAGNETOMETER, dev_log_->magnetometer, id );
     forward_message( DID_BAROMETER, dev_log_->barometer, id );
     forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, id );
     forward_message( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw, id );

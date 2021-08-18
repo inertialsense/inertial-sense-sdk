@@ -55,7 +55,7 @@ DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
 DID_INL2_MISC                   = 51
-DID_MAGNETOMETER_1              = 52
+DID_MAGNETOMETER              = 52
 DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
@@ -155,7 +155,7 @@ did_name_lookup = {
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",
  DID_INL2_STATUS : "inl2Status",
  DID_INL2_MISC : "inl2Misc",
- DID_MAGNETOMETER_1 : "magnetometer1",
+ DID_MAGNETOMETER : "magnetometer1",
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",

@@ -56,7 +56,7 @@ extern "C" {
 
 /** Magnetometer, Barometer, and other Sensor */
 #define _DID_MAG_CAL				DID_MAG_CAL				/** (see mag_cal_t) Magnetometer calibration */
-#define _DID_MAGNETOMETER_1			DID_MAGNETOMETER_1		/** (see magnetometer_t) Magnetometer sensor 1 output */
+#define _DID_MAGNETOMETER_1			DID_MAGNETOMETER/** (see magnetometer_t) Magnetometer sensor 1 output */
 #define _DID_MAGNETOMETER_2			DID_MAGNETOMETER_2		/** (see magnetometer_t) Magnetometer sensor 2 output */
 #define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
 #define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */

@@ -155,10 +155,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	case DID_GPS_NAV:				
 		d.gpsNav;       
 		break;
-	case DID_MAGNETOMETER_1:		
-		d.mag;          
-		break;
-	case DID_MAGNETOMETER_2:		
+	case DID_MAGNETOMETER:		
 		d.mag;          
 		break;
 	case DID_BAROMETER:				
