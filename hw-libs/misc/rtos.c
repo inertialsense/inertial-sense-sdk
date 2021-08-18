@@ -362,6 +362,7 @@ void HardFault_Handler(void)
 
 #pragma GCC pop_options
 
+#ifndef uINS_5
 static void HardFault_Test(void)
 {
 #if 0
@@ -386,7 +387,7 @@ static void HardFault_Test(void)
 	
 	for (;;) {}
 }
-
+#endif
 
 
 // enable to detect which handler was called as opposed to the default Dummy_Handler
