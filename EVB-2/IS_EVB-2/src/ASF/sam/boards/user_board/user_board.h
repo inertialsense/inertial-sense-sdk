@@ -208,7 +208,7 @@
 
 
 // H8 GPIO Pins    - GPIO pins are all tied to multiple SAME70 pins.  Below is just one of these pins.
-#define GPIO_1_PIN				    (PIO_PB4_IDX)		// (H8-5) 
+#define GPIO_1_PIN				    (PIO_PB4_IDX)		// (H8-5)  PB4
 #define GPIO_2_PIN				    (PIO_PA16_IDX)		// (H8-6)  PA16 + PA21
 #define GPIO_3_PIN				    (PIO_PA23_IDX)		// (H8-7)  PA23 + PA0 + PE3
 #define GPIO_4_PIN				    (PIO_PA24_IDX)		// (H8-8)  PA24 + PA1
