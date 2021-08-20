@@ -242,6 +242,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
+    if (g_commandLineOptions.softwareResetEvb)
+    {   // Issue software reset to EVB
+        uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), 0);
+    }
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
 	{

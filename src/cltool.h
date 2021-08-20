@@ -59,6 +59,7 @@ typedef struct
     bool bootloaderVerify; 					// -bv
     bool replayDataLog;
     bool softwareReset;
+    bool softwareResetEvb;
     bool magRecal;
     uint32_t magRecalMode;
     survey_in_t surveyIn;

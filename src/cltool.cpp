@@ -294,6 +294,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
 		}
+        else if (startsWith(a, "-resetEvb") || 
+				 startsWith(a, "-resetEVB") ||
+				 startsWith(a, "-resetevb") )
+        {
+            g_commandLineOptions.softwareResetEvb = true;
+        }
         else if (startsWith(a, "-reset"))
         {
             g_commandLineOptions.softwareReset = true;
@@ -431,6 +437,7 @@ void cltool_outputUsage()
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display" << endlbOn;
     cout << "    -reset         " << boldOff << " Issue software reset.  Use caution." << endlbOn;
+    cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB.  Use caution." << endlbOn;
     cout << "    -s" << boldOff << "              Scroll displayed messages to show history" << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received" << endlbOn;
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
