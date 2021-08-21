@@ -203,7 +203,7 @@ typedef enum
 	/** Range Sensor */
 	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000020,
 
-    /** EVB Error bit mask */
+    /** EVB Error bit mask.  Errors in this mask will stop control. */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
 
 	/** Wheel encoder fault */
