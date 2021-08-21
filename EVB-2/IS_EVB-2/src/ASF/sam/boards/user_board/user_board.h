@@ -77,7 +77,9 @@
 
 #define HDW_DETECT_VER_EVB_2_0_0	0
 #define HDW_DETECT_VER_EVB_2_0_1	1
-
+#define HDW_DETECT_VER_EVB_2_1_0	2
+#define HDW_DETECT_VER_EVB_2_1_1	3
+#define HDW_DETECT_VER_EVB_2_2_0	4
 
 // uINS Ser0 UART
 #define UART_INS_SER0_RXD_PIN       (PIO_PA5_IDX)
