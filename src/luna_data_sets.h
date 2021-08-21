@@ -205,6 +205,9 @@ typedef enum
 
     /** EVB Error bit mask */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
+
+	/** Wheel encoder fault */
+	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
 	
 	/** Axis is in an invalid state */
 	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
