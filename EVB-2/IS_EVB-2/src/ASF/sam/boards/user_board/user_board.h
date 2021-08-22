@@ -217,7 +217,7 @@
 #define GPIO_5_PIN				    (PIO_PB13_IDX)		// (H8-9)  PB13 + PC5 + PC29
 #define GPIO_6_PIN				    (PIO_PC6_IDX)		// (H8-10) PC6  + PD0 
 #define GPIO_7_PIN				    (PIO_PC9_IDX)		// (H8-11) PC9 
-#define GPIO_8_PIN				    (PIO_PE4_IDX)		// (H8-12) PE4  + PD27
+#define GPIO_8_PIN				    (PIO_PD27_IDX)		// (H8-12) PE4  + PD27 (PE4 does not work as an output pin)
 #define GPIO_9_PIN				    (PIO_PE0_IDX)		// (H8-13) PE0  + PA15 + PC13
 #define GPIO_10_PIN				    (PIO_PE1_IDX)		// (H8-14) PE1  + PC15
 // GPIO Inverted UART Control
