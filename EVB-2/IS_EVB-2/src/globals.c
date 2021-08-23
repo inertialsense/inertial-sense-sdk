@@ -45,11 +45,28 @@ void globals_init(void)
 {
 	// Init Device Info struct
 	g_evbDevInfo.hardwareVer[0] = 2;
-	g_evbDevInfo.hardwareVer[1] = 0;
 	switch(g_hdw_detect)
 	{
-	case HDW_DETECT_VER_EVB_2_0_0:				g_evbDevInfo.hardwareVer[2] = 0;	break;
-	default: /* HDW_DETECT_VER_EVB_2_0_1 */		g_evbDevInfo.hardwareVer[2] = 1;	break;
+    default:
+    	g_evbDevInfo.hardwareVer[1] = 0;
+        break;
+	case HDW_DETECT_VER_EVB_2_1_0:
+	case HDW_DETECT_VER_EVB_2_1_1:
+	    g_evbDevInfo.hardwareVer[1] = 1;
+        break;
+	case HDW_DETECT_VER_EVB_2_2_0:
+	    g_evbDevInfo.hardwareVer[1] = 2;
+        break;
+	}
+	switch(g_hdw_detect)
+	{
+    default:
+    	g_evbDevInfo.hardwareVer[2] = 0;
+        break;
+	case HDW_DETECT_VER_EVB_2_0_1:
+	case HDW_DETECT_VER_EVB_2_1_1:
+	    g_evbDevInfo.hardwareVer[2] = 1;	
+        break;
 	}
 	g_evbDevInfo.hardwareVer[3] = 0;
 

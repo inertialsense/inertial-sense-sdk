@@ -3175,7 +3175,7 @@ typedef struct
     /** WiFi IP address */
     uint32_t                wifiIpAddr;
 
-    /** System command */
+    /** System command (see eSystemCommand) */
     uint32_t                sysCommand;
 
 } evb_status_t;
@@ -3677,6 +3677,7 @@ typedef union PACKED
 	gps_raw_t				gpsRaw;
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
+	evb_status_t			evbStatus;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	evb_luna_wheel_controller_t     wheelController;

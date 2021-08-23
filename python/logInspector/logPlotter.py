@@ -714,8 +714,8 @@ class logPlot:
             dt = time[1:] - time[:-1]
             dt = np.append(dt, dt[-1])
             for i in range(3):
-                imu0[:, i] /= dt
-                imu1[:, i] /= dt
+                imu0[:, i] *= self.d/dt
+                imu1[:, i] *= self.d/dt
 
         return (imu0, imu1, time, dt)
 
@@ -734,8 +734,8 @@ class logPlot:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
 
             for i in range(3):
-                ax[i, 0].plot(time, pqr0[:, 0], label=self.log.serials[d])
-                ax[i, 1].plot(time, pqr1[:, 1], label=self.log.serials[d])
+                ax[i, 0].plot(time, pqr0[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                ax[i, 1].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -758,8 +758,8 @@ class logPlot:
             (acc0, acc1, time, dt) = self.loadAccels(d)
 
             for i in range(3):
-                ax[i, 0].plot(time, acc0[:, 0], label=self.log.serials[d])
-                ax[i, 1].plot(time, acc1[:, 1], label=self.log.serials[d])
+                ax[i, 0].plot(time, acc0[:, i], label=self.log.serials[d])
+                ax[i, 1].plot(time, acc1[:, i], label=self.log.serials[d])
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
