@@ -3176,7 +3176,7 @@ typedef struct
     /** WiFi IP address */
     uint32_t                wifiIpAddr;
 
-    /** System command (see eSystemCommand) */
+    /** System command (see eSystemCommand).  99 = software reset */
     uint32_t                sysCommand;
 
 } evb_status_t;
