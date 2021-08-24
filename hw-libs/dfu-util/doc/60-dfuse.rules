@@ -1,0 +1,13 @@
+# Example udev rules (usually placed in /etc/udev/rules.d)
+
+# STM32
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", TAG+="uaccess"
+
+# GD32VF103
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="28e9", ATTRS{idProduct}=="0189", TAG+="uaccess"
+
+# Spark Core
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="607f", TAG+="uaccess"
+
+# On older systems, a user group like "plugdev" can be given access:
+# ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", MODE="664", GROUP="plugdev"

@@ -15,8 +15,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
-#include "../../src/serialPortPlatform.h"
-#include "../../src/inertialSenseBootLoader.h"
+#include "../../src/serialPortPlatform_dfu.h"
+#include "../../src/inertialSenseBootLoader_dfu.h"
 
 // print out upload progress
 static int bootloaderUploadProgress(const void* obj, float percent)
