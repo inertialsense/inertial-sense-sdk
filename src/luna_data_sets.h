@@ -40,6 +40,7 @@ typedef enum
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_MASK  = 0x00000600,
 } eEvbLunaFlashCfgBits;
 
+
 typedef enum
 {
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_UNDEFINED             = 0x00000000,
@@ -63,25 +64,27 @@ typedef struct
 	/** Commanded velocity max (rad/s) */
 	float					velMax;
 
-	/** Feadforward deadband (m/s) */
+	/** Feedforward deadband (m/s) */
 	float					FF_vel_deadband;
 
-	/** Feadforward C0 estimate integral gain */
+	/** Feedforward C0 estimate integral gain */
 	float					FF_c0_est_Ki;
 
-    /** Feadforward C0 estimate maximum value (rad/s) */
+    /** Feedforward C0 estimate maximum value (rad/s) */
     float                 	FF_c0_est_max;
 
-    /** Feadforward C0 and C1 coefficients */
+    /** Feedforward C0 and C1 coefficients */
     float                 	FF_c_l[NUM_FF_COEFS];
     float                 	FF_c_r[NUM_FF_COEFS];
 
 	/** Feadback proportional gain */
 	float					FB_Kp;
 
+    /** Feedback integral gain */
+    float                   FB_Ki;
+
 	/** Feadback derivative gain */
 	float					FB_Kd;
-
     /** EVB2 velocity Linearization Coefficients */
     float                   LinearCoEff[NUM_AL_COEFS];
 
