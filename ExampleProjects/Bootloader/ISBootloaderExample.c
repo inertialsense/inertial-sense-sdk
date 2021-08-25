@@ -14,9 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
-#include "../../src/ISComm.h"
-#include "../../src/serialPortPlatform_dfu.h"
-#include "../../src/inertialSenseBootLoader_dfu.h"
+#include "../../src/uins_sdk_compat.h"
 
 // print out upload progress
 static int bootloaderUploadProgress(const void* obj, float percent)
@@ -56,16 +54,18 @@ int main(int argc, char* argv[])
 	}
 
 	// STEP 2: Initialize and open serial port
+	uins_device_t device;
+	create_device_uins50(&device);
 
 	serial_port_t serialPort;
 
 	// initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
 	//  you will need to either bootload from Windows, MAC or Linux, or implement your own code that
 	//  implements all the function pointers on the serial_port_t struct.
-	serialPortPlatformInit(&serialPort);
+	serialPortPlatformInitCompat(&device, &serialPort);
 
 	// set the port - the bootloader uses this to open the port and enable bootload mode, etc.
-	serialPortSetPort(&serialPort, argv[1]);
+	serialPortSetPortCompat(&device, &serialPort, argv[1]);
 
 	// STEP 3: Set bootloader parameters
 
@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 
 	// STEP 4: Run bootloader
 
-	if (bootloadFileEx(&param))
+	if (bootloadFileExCompat(&param))
 	{
 		printf("Bootloader success on port %s with file %s\n", serialPort.port, param.fileName);
 		return 0;

@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-#include "serialPort.h"
+#include "serialPort_dfu.h"
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
@@ -88,9 +88,9 @@ Boot load a .hex or .bin file to a device
 
 @return 0 if failure, non-zero if success
 */
-int bootloadFile(serial_port_t* port, const char* fileName, const char* bootName,
+int bootloadFileDfu(serial_port_t* port, const char* fileName, const char* bootName,
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
-int bootloadFileEx(bootload_params_t* params);
+int bootloadFileExDfu(bootload_params_t* params);
 
 /**
 Boot load a new bootloader .bin file to device. Device must be in application or bootloader assist mode, not bootloader mode.
@@ -103,9 +103,9 @@ Boot load a new bootloader .bin file to device. Device must be in application or
 @param verifyProgress called periodically during firmware verification - can be NULL
 @retur 0 if failure, non-zero if success
 */
-int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, 
+int bootloadUpdateBootloaderDfu(serial_port_t* port, const char* fileName, 
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
-int bootloadUpdateBootloaderEx(bootload_params_t* p);
+int bootloadUpdateBootloaderExDfu(bootload_params_t* p);
 
 /**
 Retrieve the bootloader version from .bin file
@@ -116,7 +116,7 @@ Retrieve the bootloader version from .bin file
 
 @return 0 if failure, 1 if success
 */
-int bootloadGetBootloaderVersionFromFile(const char* bootName, int* verMajor, char* verMinor);
+int bootloadGetBootloaderVersionFromFileDfu(const char* bootName, int* verMajor, char* verMinor);
 
 /**
 Enable bootloader mode for a device
@@ -128,7 +128,7 @@ Enable bootloader mode for a device
 
 @return 0 if failure, non-zero if success
 */
-int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd);
+int enableBootloaderDfu(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd);
 
 /**
 Disables the bootloader and goes back to program mode
@@ -139,11 +139,11 @@ Disables the bootloader and goes back to program mode
 
 @return 0 if failure, non-zero if success
 */
-int disableBootloader(serial_port_t* port, char* error, int errorLength);
+int disableBootloaderDfu(serial_port_t* port, char* error, int errorLength);
 
 
-int bootloaderCycleBaudRate(int baudRate);
-int bootloaderClosestBaudRate(int baudRate);
+int bootloaderCycleBaudRateDfu(int baudRate);
+int bootloaderClosestBaudRateDfu(int baudRate);
 
 
 #ifdef __cplusplus

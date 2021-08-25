@@ -22,10 +22,14 @@ else()	# Build only this project
 	add_executable(ISBootloaderExample
 		ISBootloaderExample.c
 		../../src/data_sets.c
-		../../src/inertialSenseBootLoader_dfu.c
 		../../src/ISComm.c
+		../../src/uins_sdk_compat.c
+		../../src/serialPort.c
 		../../src/serialPort_dfu.c
+		../../src/serialPortPlatform.c
 		../../src/serialPortPlatform_dfu.c
+		../../src/inertialSenseBootLoader.c
+		../../src/inertialSenseBootLoader_dfu.c
 		../../hw-libs/dfu-util/src/dfu_util.c
 		../../hw-libs/dfu-util/src/dfu_load.c
 		../../hw-libs/dfu-util/src/dfu.c

@@ -44,8 +44,23 @@
 #include "dfuse.h"
 
 
-int bootloadFileEx(bootload_params_t* params)
+int bootloadFileExDfu(bootload_params_t* params)
 {
+
+/*
+
+vid 0483
+pid df11
+
+Found DFU: [0483:df11] ver=2200, devnum=42, cfg=1, intf=0, path="1-3", alt=3, name="@Device Feature/0xFFFF0000/01*004 e", serial="205834865852"
+Found DFU: [0483:df11] ver=2200, devnum=42, cfg=1, intf=0, path="1-3", alt=2, name="@OTP Memory /0x1FFF7000/01*0001Ke", serial="205834865852"
+Found DFU: [0483:df11] ver=2200, devnum=42, cfg=1, intf=0, path="1-3", alt=1, name="@Option Bytes  /0x1FFF7800/01*040 e", serial="205834865852"
+Found DFU: [0483:df11] ver=2200, devnum=42, cfg=1, intf=0, path="1-3", alt=0, name="@Internal Flash  /0x08000000/0256*0002Kg", serial="205834865852"
+
+dfu://0483/df11/3
+
+*/
+
 	struct dfu_config config;
 
 	int expected_size = 0;
