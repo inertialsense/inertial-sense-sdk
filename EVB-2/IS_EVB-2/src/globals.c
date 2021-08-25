@@ -90,60 +90,7 @@ void globals_init(void)
 #endif
 
 #if 0
-    char date[20] = __DATE__;        //  mmm dd yyyy (e.g. "Jan 14 2012")
-    int day=0, month=0, year=0, hour=0, minute=0, second=0;
-		if (date[0] == 'J' && 
-			date[1] == 'a' && 
-			date[2] == 'n'){ month = 1; }           // month
-    else if(date[0] == 'F' && 
-			date[1] == 'e' && 
-			date[2] == 'b'){ month = 2; }
-    else if(date[0] == 'M' && 
-			date[1] == 'a' && 
-			date[2] == 'r'){ month = 3; }
-    else if(date[0] == 'A' && 
-			date[1] == 'p' && 
-			date[2] == 'r'){ month = 4; }
-    else if(date[0] == 'M' && 
-			date[1] == 'a' && 
-			date[2] == 'y'){ month = 5; }
-    else if(date[0] == 'J' && 
-			date[1] == 'u' && 
-			date[2] == 'n'){ month = 6; }
-    else if(date[0] == 'J' && 
-			date[1] == 'u' && 
-			date[2] == 'l'){ month = 7; }
-    else if(date[0] == 'A' && 
-			date[1] == 'u' && 
-			date[2] == 'g'){ month = 8; }
-    else if(date[0] == 'S' && 
-			date[1] == 'e' && 
-			date[2] == 'p'){ month = 9; }
-    else if(date[0] == 'O' && 
-			date[1] == 'c' && 
-			date[2] == 't'){ month = 10; }
-    else if(date[0] == 'N' && 
-			date[1] == 'o' && 
-			date[2] == 'v'){ month = 11; }
-    else if(date[0] == 'D' && 
-			date[1] == 'e' && 
-			date[2] == 'c'){ month = 12; }
-    day  = atoi(&date[4]);     // day
-    year = atoi(&date[7]);     // year
-
-    char time[20] = __TIME__;  // hh:mm:ss in 24 hour time (e.g. "22:29:12")
-    hour   = atoi(&time[0]);   // hour
-    minute = atoi(&time[3]);   // minute
-    second = atoi(&time[6]);   // second
-
-    g_evbDevInfo.buildDate[1] = year - 2000;
-    g_evbDevInfo.buildDate[2] = month;
-    g_evbDevInfo.buildDate[3] = day;
-
-    g_evbDevInfo.buildTime[0] = hour;
-    g_evbDevInfo.buildTime[1] = minute;
-    g_evbDevInfo.buildTime[2] = second;
-    g_evbDevInfo.buildTime[3] = 0;
+    setBuildDateTimeFromCompileTime(g_evbDevInfo.buildDate, g_evbDevInfo.buildTime);
 #else
 	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
 	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
@@ -574,4 +521,63 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));
+}
+
+
+void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4])
+{
+    char date[20] = __DATE__;        //  mmm dd yyyy (e.g. "Jan 14 2012")
+    int day=0, month=0, year=0, hour=0, minute=0, second=0;
+		if (date[0] == 'J' && 
+			date[1] == 'a' && 
+			date[2] == 'n'){ month = 1; }           // month
+    else if(date[0] == 'F' && 
+			date[1] == 'e' && 
+			date[2] == 'b'){ month = 2; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'r'){ month = 3; }
+    else if(date[0] == 'A' && 
+			date[1] == 'p' && 
+			date[2] == 'r'){ month = 4; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'y'){ month = 5; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'n'){ month = 6; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'l'){ month = 7; }
+    else if(date[0] == 'A' && 
+			date[1] == 'u' && 
+			date[2] == 'g'){ month = 8; }
+    else if(date[0] == 'S' && 
+			date[1] == 'e' && 
+			date[2] == 'p'){ month = 9; }
+    else if(date[0] == 'O' && 
+			date[1] == 'c' && 
+			date[2] == 't'){ month = 10; }
+    else if(date[0] == 'N' && 
+			date[1] == 'o' && 
+			date[2] == 'v'){ month = 11; }
+    else if(date[0] == 'D' && 
+			date[1] == 'e' && 
+			date[2] == 'c'){ month = 12; }
+    day  = atoi(&date[4]);     // day
+    year = atoi(&date[7]);     // year
+
+    char time[20] = __TIME__;  // hh:mm:ss in 24 hour time (e.g. "22:29:12")
+    hour   = atoi(&time[0]);   // hour
+    minute = atoi(&time[3]);   // minute
+    second = atoi(&time[6]);   // second
+
+    buildDate[1] = year - 2000;
+    buildDate[2] = month;
+    buildDate[3] = day;
+
+    buildTime[0] = hour;
+    buildTime[1] = minute;
+    buildTime[2] = second;
+    buildTime[3] = 0;
 }
