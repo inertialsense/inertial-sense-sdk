@@ -294,9 +294,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
 		}
-        else if (startsWith(a, "-resetEvb") || 
-				 startsWith(a, "-resetEVB") ||
-				 startsWith(a, "-resetevb") )
+        else if (startsWith(a, "-resetEvb"))
         {
             g_commandLineOptions.softwareResetEvb = true;
         }
