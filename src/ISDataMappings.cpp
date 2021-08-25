@@ -949,6 +949,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.FF_c_r[0]", wheelControl.FF_c_r[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c_r[1]", wheelControl.FF_c_r[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FB_Kp", wheelControl.FB_Kp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FB_Ki", wheelControl.FB_Ki, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FB_Kd", wheelControl.FB_Kd, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[0]", wheelControl.LinearCoEff[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[1]", wheelControl.LinearCoEff[1], 0, DataTypeFloat, float&, 0);

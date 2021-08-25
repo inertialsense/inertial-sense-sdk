@@ -85,6 +85,7 @@ typedef struct
 
 	/** Feadback derivative gain */
 	float					FB_Kd;
+	
     /** EVB2 velocity Linearization Coefficients */
     float                   LinearCoEff[NUM_AL_COEFS];
 
