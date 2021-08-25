@@ -2153,14 +2153,14 @@ typedef struct PACKED
     /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig in data_sets.h) */
     uint32_t                sensorConfig;
 
-	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
-    wheel_config_t          wheelConfig;
-
 	/** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
 	float                   gpsMinimumElevation;
 
     /** Serial port 2 baud rate in bits per second */
     uint32_t				ser2BaudRate;
+
+	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
+    wheel_config_t          wheelConfig;
 
 } nvm_flash_cfg_t;
 
