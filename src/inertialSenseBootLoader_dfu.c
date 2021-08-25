@@ -43,25 +43,26 @@
 #include "dfu_util.h"
 #include "dfuse.h"
 
-int verbose = 0;
-
-struct dfu_if *dfu_root = NULL;
-
-char *match_path = NULL;
-int match_vendor = -1;
-int match_product = -1;
-int match_vendor_dfu = -1;
-int match_product_dfu = -1;
-int match_config_index = -1;
-int match_iface_index = -1;
-int match_iface_alt_index = -1;
-int match_devnum = -1;
-const char *match_iface_alt_name = NULL;
-const char *match_serial = NULL;
-const char *match_serial_dfu = NULL;
 
 int bootloadFileEx(bootload_params_t* params)
 {
+	int verbose = 3;
+
+	struct dfu_if *dfu_root = NULL;
+
+	char *match_path = NULL;
+	int match_vendor = -1;
+	int match_product = -1;
+	int match_vendor_dfu = -1;
+	int match_product_dfu = -1;
+	int match_config_index = -1;
+	int match_iface_index = -1;
+	int match_iface_alt_index = -1;
+	int match_devnum = -1;
+	const char *match_iface_alt_name = NULL;
+	const char *match_serial = NULL;
+	const char *match_serial_dfu = NULL;
+
 	int expected_size = 0;
 	unsigned int transfer_size = 0;
 	struct dfu_status status;
@@ -104,6 +105,7 @@ int bootloadFileEx(bootload_params_t* params)
 		libusb_set_debug(ctx, 255);
 #endif
 	}
+	
 probe:
 	probe_devices(ctx);
 
