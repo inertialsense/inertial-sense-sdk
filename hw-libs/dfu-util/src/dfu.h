@@ -23,7 +23,8 @@
 
 #include <libusb.h>
 #include "usb_dfu.h"
-#include "dfuse_mem.h"
+
+#include "dfu_types.h"
 
 /* DFU states */
 #define STATE_APP_IDLE                  0x00
@@ -78,33 +79,7 @@
  *  1 unsigned byte iString
 */
 
-struct dfu_status {
-    unsigned char bStatus;
-    unsigned int  bwPollTimeout;
-    unsigned char bState;
-    unsigned char iString;
-};
-
-struct dfu_if {
-    struct usb_dfu_func_descriptor func_dfu;
-    uint16_t quirks;
-    uint16_t busnum;
-    uint16_t devnum;
-    uint16_t vendor;
-    uint16_t product;
-    uint16_t bcdDevice;
-    uint8_t configuration;
-    uint8_t interface;
-    uint8_t altsetting;
-    uint8_t flags;
-    uint8_t bMaxPacketSize0;
-    char *alt_name;
-    char *serial_name;
-    libusb_device *dev;
-    libusb_device_handle *dev_handle;
-    struct dfu_if *next;
-    struct memsegment *mem_layout; /* for DfuSe */
-};
+void create_dfu_config(struct dfu_config* config);
 
 int dfu_detach( libusb_device_handle *device,
                 const unsigned short interface,

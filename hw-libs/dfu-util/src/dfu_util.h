@@ -14,23 +14,9 @@ enum mode {
 	MODE_DOWNLOAD
 };
 
-extern struct dfu_if *dfu_root;
-extern char *match_path;
-extern int match_vendor;
-extern int match_product;
-extern int match_vendor_dfu;
-extern int match_product_dfu;
-extern int match_config_index;
-extern int match_iface_index;
-extern int match_iface_alt_index;
-extern int match_devnum;
-extern const char *match_iface_alt_name;
-extern const char *match_serial;
-extern const char *match_serial_dfu;
-
-void probe_devices(libusb_context *);
-void disconnect_devices(void);
+void probe_devices(libusb_context* ctx, struct dfu_config* config);
+void disconnect_devices(struct dfu_config* config);
 void print_dfu_if(struct dfu_if *);
-void list_dfu_interfaces(void);
+void list_dfu_interfaces(struct dfu_config* config);
 
 #endif /* DFU_UTIL_H */

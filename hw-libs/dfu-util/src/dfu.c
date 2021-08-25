@@ -358,3 +358,33 @@ int dfu_abort_to_idle(struct dfu_if *dif)
 	milli_sleep(dst.bwPollTimeout);
 	return ret;
 }
+
+void create_dfu_config(struct dfu_config* config)
+{
+	memset(config, 0, sizeof(config));
+
+    config->verbose = 0;
+    config->dfu_root = NULL;
+    config->match_path = NULL;
+    config->match_vendor = -1;
+    config->match_product = -1;
+    config->match_vendor_dfu = -1;
+    config->match_product_dfu = -1;
+    config->match_config_index = -1;
+    config->match_iface_index = -1;
+    config->match_iface_alt_index = -1;
+    config->match_devnum = -1;
+    config->match_iface_alt_name = NULL;
+    config->match_serial = NULL;
+    config->match_serial_dfu = NULL;
+
+    config->last_erased_page = 1; /* non-aligned value, won't match */
+    config->dfuse_address = 0;
+    config->dfuse_address_present = 0;
+    config->dfuse_length = 0;
+    config->dfuse_force = 0;
+    config->dfuse_leave = 0;
+    config->dfuse_unprotect = 0;
+    config->dfuse_mass_erase = 0;
+    config->dfuse_will_reset = 0;
+}

@@ -183,7 +183,7 @@ uint32_t dfu_file_write_crc(int f, uint32_t crc, const void *buf, int size)
 	return (crc);
 }
 
-void dfu_load_file(struct dfu_file *file, enum suffix_req check_suffix, enum prefix_req check_prefix)
+void dfu_load_file(struct dfu_file *file, enum suffix_req check_suffix, enum prefix_req check_prefix, struct dfu_config* config)
 {
 	off_t offset;
 	int f;
@@ -220,7 +220,7 @@ void dfu_load_file(struct dfu_file *file, enum suffix_req check_suffix, enum pre
 			read_bytes = fread(file->firmware + file->size.total, 1, STDIN_CHUNK_SIZE, stdin);
 			file->size.total += read_bytes;
 		}
-		if (verbose)
+		if (config->verbose)
 			printf("Read %lli bytes from stdin\n", (long long) file->size.total);
 		/* Never require suffix when reading from stdin */
 		check_suffix = MAYBE_SUFFIX;
@@ -309,7 +309,7 @@ void dfu_load_file(struct dfu_file *file, enum suffix_req check_suffix, enum pre
 
 		file->bcdDFU = (dfusuffix[7] << 8) + dfusuffix[6];
 
-		if (verbose)
+		if (config->verbose)
 			printf("DFU suffix version %x\n", file->bcdDFU);
 
 		file->size.suffix = dfusuffix[11];
@@ -348,7 +348,7 @@ checked:
 		errx(EX_DATAERR, "Valid DFU prefix needed");
 	if (file->size.prefix && check_prefix == NO_PREFIX)
 		errx(EX_DATAERR, "A prefix already exists, please delete it first");
-	if (file->size.prefix && verbose) {
+	if (file->size.prefix && config->verbose) {
 		uint8_t *data = file->firmware;
 		if (file->prefix_type == LMDFU_PREFIX)
 			printf("Possible TI Stellaris DFU prefix with "

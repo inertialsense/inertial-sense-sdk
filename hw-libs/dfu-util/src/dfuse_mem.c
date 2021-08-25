@@ -82,7 +82,7 @@ void free_segment_list(struct memsegment *segment_list)
 /* Parse memory map from interface descriptor string
  * encoded as per ST document UM0424 section 4.3.2.
  */
-struct memsegment *parse_memory_layout(char *intf_desc)
+struct memsegment *parse_memory_layout(char *intf_desc, struct dfu_config* config)
 {
 
 	char multiplier, memtype;
@@ -178,7 +178,7 @@ struct memsegment *parse_memory_layout(char *intf_desc)
 			segment.memtype = memtype & 7;
 			add_segment(&segment_list, segment);
 
-			if (verbose)
+			if (config->verbose)
 				printf("Memory segment at 0x%08x %3d x %4d = "
 				       "%5d (%s%s%s)\n",
 				       address, sectors, size, sectors * size,

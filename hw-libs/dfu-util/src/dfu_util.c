@@ -155,7 +155,7 @@ static int get_string_descriptor_ascii(libusb_device_handle *devh,
 	return di;
 }
 
-static void probe_configuration(libusb_device *dev, struct libusb_device_descriptor *desc)
+static void probe_configuration(libusb_device *dev, struct libusb_device_descriptor *desc, struct dfu_config* config)
 {
 	struct usb_dfu_func_descriptor func_dfu;
 	libusb_device_handle *devh;
@@ -178,7 +178,7 @@ static void probe_configuration(libusb_device *dev, struct libusb_device_descrip
 		ret = libusb_get_config_descriptor(dev, cfg_idx, &cfg);
 		if (ret != 0)
 			return;
-		if (match_config_index > -1 && match_config_index != cfg->bConfigurationValue) {
+		if (config->match_config_index > -1 && config->match_config_index != cfg->bConfigurationValue) {
 			libusb_free_config_descriptor(cfg);
 			continue;
 		}
@@ -259,7 +259,7 @@ found_dfu:
 		     intf_idx++) {
 			int multiple_alt;
 
-			if (match_iface_index > -1 && match_iface_index != intf_idx)
+			if (config->match_iface_index > -1 && config->match_iface_index != intf_idx)
 				continue;
 
 			uif = &cfg->interface[intf_idx];
@@ -300,22 +300,22 @@ found_dfu:
 					dfu_mode = 1;
 
 				if (dfu_mode &&
-				    match_iface_alt_index > -1 && match_iface_alt_index != intf->bAlternateSetting)
+				    config->match_iface_alt_index > -1 && config->match_iface_alt_index != intf->bAlternateSetting)
 					continue;
 
 				if (dfu_mode) {
-					if ((match_vendor_dfu >= 0 && match_vendor_dfu != desc->idVendor) ||
-					    (match_product_dfu >= 0 && match_product_dfu != desc->idProduct)) {
+					if ((config->match_vendor_dfu >= 0 && config->match_vendor_dfu != desc->idVendor) ||
+					    (config->match_product_dfu >= 0 && config->match_product_dfu != desc->idProduct)) {
 						continue;
 					}
 				} else {
-					if ((match_vendor >= 0 && match_vendor != desc->idVendor) ||
-					    (match_product >= 0 && match_product != desc->idProduct)) {
+					if ((config->match_vendor >= 0 && config->match_vendor != desc->idVendor) ||
+					    (config->match_product >= 0 && config->match_product != desc->idProduct)) {
 						continue;
 					}
 				}
 
-				if (match_devnum >= 0 && match_devnum != libusb_get_device_address(dev))
+				if (config->match_devnum >= 0 && config->match_devnum != libusb_get_device_address(dev))
 					continue;
 
 				ret = libusb_open(dev, &devh);
@@ -350,14 +350,14 @@ found_dfu:
 				libusb_close(devh);
 
 				if (dfu_mode &&
-				    match_iface_alt_name != NULL && strcmp(alt_name, match_iface_alt_name))
+				    config->match_iface_alt_name != NULL && strcmp(alt_name, config->match_iface_alt_name))
 					continue;
 
 				if (dfu_mode) {
-					if (match_serial_dfu != NULL && strcmp(match_serial_dfu, serial_name))
+					if (config->match_serial_dfu != NULL && strcmp(config->match_serial_dfu, serial_name))
 						continue;
 				} else {
-					if (match_serial != NULL && strcmp(match_serial, serial_name))
+					if (config->match_serial != NULL && strcmp(config->match_serial, serial_name))
 						continue;
 				}
 
@@ -393,8 +393,8 @@ found_dfu:
 				pdfu->bMaxPacketSize0 = desc->bMaxPacketSize0;
 
 				/* queue into list */
-				pdfu->next = dfu_root;
-				dfu_root = pdfu;
+				pdfu->next = config->dfu_root;
+				config->dfu_root = pdfu;
 			}
 		}
 		libusb_free_config_descriptor(cfg);
@@ -424,7 +424,7 @@ char *get_path(libusb_device *dev)
 #endif
 }
 
-void probe_devices(libusb_context *ctx)
+void probe_devices(libusb_context *ctx, struct dfu_config* config)
 {
 	libusb_device **list;
 	ssize_t num_devs;
@@ -435,21 +435,21 @@ void probe_devices(libusb_context *ctx)
 		struct libusb_device_descriptor desc;
 		struct libusb_device *dev = list[i];
 
-		if (match_path != NULL && strcmp(get_path(dev),match_path) != 0)
+		if (config->match_path != NULL && strcmp(get_path(dev), config->match_path) != 0)
 			continue;
 		if (libusb_get_device_descriptor(dev, &desc))
 			continue;
-		probe_configuration(dev, &desc);
+		probe_configuration(dev, &desc, config);
 	}
 	libusb_free_device_list(list, 1);
 }
 
-void disconnect_devices(void)
+void disconnect_devices(struct dfu_config* config)
 {
 	struct dfu_if *pdfu;
 	struct dfu_if *prev = NULL;
 
-	for (pdfu = dfu_root; pdfu != NULL; pdfu = pdfu->next) {
+	for (pdfu = config->dfu_root; pdfu != NULL; pdfu = pdfu->next) {
 		free(prev);
 		libusb_unref_device(pdfu->dev);
 		free(pdfu->alt_name);
@@ -457,7 +457,7 @@ void disconnect_devices(void)
 		prev = pdfu;
 	}
 	free(prev);
-	dfu_root = NULL;
+	config->dfu_root = NULL;
 }
 
 void print_dfu_if(struct dfu_if *dfu_if)
@@ -474,10 +474,10 @@ void print_dfu_if(struct dfu_if *dfu_if)
 }
 
 /* Walk the device tree and print out DFU devices */
-void list_dfu_interfaces(void)
+void list_dfu_interfaces(struct dfu_config* config)
 {
 	struct dfu_if *pdfu;
 
-	for (pdfu = dfu_root; pdfu != NULL; pdfu = pdfu->next)
+	for (pdfu = config->dfu_root; pdfu != NULL; pdfu = pdfu->next)
 		print_dfu_if(pdfu);
 }

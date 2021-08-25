@@ -98,7 +98,7 @@ int dfuload_do_upload(struct dfu_if *dif, int xfer_size,
 	return ret;
 }
 
-int dfuload_do_dnload(struct dfu_if *dif, int xfer_size, struct dfu_file *file)
+int dfuload_do_dnload(struct dfu_if *dif, int xfer_size, struct dfu_file* file, struct dfu_config* config)
 {
 	off_t bytes_sent;
 	off_t expected_size;
@@ -148,7 +148,7 @@ int dfuload_do_dnload(struct dfu_if *dif, int xfer_size, struct dfu_file *file)
 
 			/* Wait while device executes flashing */
 			milli_sleep(dst.bwPollTimeout);
-			if (verbose > 1)
+			if (config->verbose > 1)
 				fprintf(stderr, "Poll timeout %i ms\n", dst.bwPollTimeout);
 
 		} while (1);
@@ -174,7 +174,7 @@ int dfuload_do_dnload(struct dfu_if *dif, int xfer_size, struct dfu_file *file)
 
 	dfu_progress_bar("Download", bytes_sent, bytes_sent);
 
-	if (verbose)
+	if (config->verbose)
 		printf("Sent a total of %lli bytes\n", (long long) bytes_sent);
 
 get_status:

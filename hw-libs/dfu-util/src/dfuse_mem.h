@@ -25,20 +25,12 @@
 #define DFUSE_ERASABLE  2
 #define DFUSE_WRITEABLE 4
 
-struct memsegment {
-	unsigned int start;
-	unsigned int end;
-	int pagesize;
-	int memtype;
-	struct memsegment *next;
-};
-
 int add_segment(struct memsegment **list, struct memsegment new_element);
 
 struct memsegment *find_segment(struct memsegment *list, unsigned int address);
 
 void free_segment_list(struct memsegment *list);
 
-struct memsegment *parse_memory_layout(char *intf_desc_str);
+struct memsegment *parse_memory_layout(char *intf_desc_str, struct dfu_config* config);
 
 #endif /* DFUSE_MEM_H */
