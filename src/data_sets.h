@@ -811,7 +811,7 @@ typedef struct PACKED
 	/** Speed accuracy in meters / second */
 	float					sAcc;
 	
-	/** NMEA input if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA */
+	/** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
 	uint32_t                status;
 } gps_vel_t;
 
