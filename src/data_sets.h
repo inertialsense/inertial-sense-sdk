@@ -359,6 +359,13 @@ enum eHdwStatusFlags
 	HDW_STATUS_OUTPUT_RESET_MASK				= (HDW_STATUS_SATURATION_MASK),
 };
 
+// Used to validate GPS position (and velocity)
+#define GPS_THRESH_SATS_USED			5
+#define GPS_THRESH_DOP					5.0f
+#define GPS_THRESH_H_ACC				20.0f
+#define GPS_THRESH_V_ACC				40.0f
+#define GPS_THRESH_S_ACC				2.0f
+
 /** GPS Status */
 enum eGpsStatus
 {

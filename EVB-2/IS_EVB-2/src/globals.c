@@ -91,29 +91,50 @@ void globals_init(void)
 
 #if 0
     char date[20] = __DATE__;        //  mmm dd yyyy (e.g. "Jan 14 2012")
-    char *ptr = date;
     int day=0, month=0, year=0, hour=0, minute=0, second=0;
+		if (date[0] == 'J' && 
+			date[1] == 'a' && 
+			date[2] == 'n'){ month = 1; }           // month
+    else if(date[0] == 'F' && 
+			date[1] == 'e' && 
+			date[2] == 'b'){ month = 2; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'r'){ month = 3; }
+    else if(date[0] == 'A' && 
+			date[1] == 'p' && 
+			date[2] == 'r'){ month = 4; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'y'){ month = 5; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'n'){ month = 6; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'l'){ month = 7; }
+    else if(date[0] == 'A' && 
+			date[1] == 'u' && 
+			date[2] == 'g'){ month = 8; }
+    else if(date[0] == 'S' && 
+			date[1] == 'e' && 
+			date[2] == 'p'){ month = 9; }
+    else if(date[0] == 'O' && 
+			date[1] == 'c' && 
+			date[2] == 't'){ month = 10; }
+    else if(date[0] == 'N' && 
+			date[1] == 'o' && 
+			date[2] == 'v'){ month = 11; }
+    else if(date[0] == 'D' && 
+			date[1] == 'e' && 
+			date[2] == 'c'){ month = 12; }
+    day  = atoi(&date[4]);     // day
+    year = atoi(&date[7]);     // year
 
-    if(strcmp(ptr, "Jan")==0)      { month = 1; }           // month
-    else if(strcmp(ptr, "Feb")==0) { month = 2; }
-    else if(strcmp(ptr, "Mar")==0) { month = 3; }
-    else if(strcmp(ptr, "Apr")==0) { month = 4; }
-    else if(strcmp(ptr, "May")==0) { month = 5; }
-    else if(strcmp(ptr, "Jun")==0) { month = 6; }
-    else if(strcmp(ptr, "Jul")==0) { month = 7; }
-    else if(strcmp(ptr, "Aug")==0) { month = 8; }
-    else if(strcmp(ptr, "Sep")==0) { month = 9; }
-    else if(strcmp(ptr, "Oct")==0) { month = 10; }
-    else if(strcmp(ptr, "Nov")==0) { month = 11; }
-    else if(strcmp(ptr, "Dec")==0) { month = 12; }        
-    if ((ptr = strchr(ptr, ' '))) { day = atoi(ptr); }      // day
-    if ((ptr = strchr(ptr, ' '))) { year = atoi(ptr); }     // year
-
-    char time[20] = __TIME__;        // hh::mm::ss in 24 hour time (e.g. "22:29:12")
-    ptr = time;
-    hour = atoi(ptr);                                       // hour
-    if ((ptr = strchr(ptr, ' '))) { minute = atoi(ptr); }   // minute
-    if ((ptr = strchr(ptr, ' '))) { second = atoi(ptr); }   // second
+    char time[20] = __TIME__;  // hh:mm:ss in 24 hour time (e.g. "22:29:12")
+    hour   = atoi(&time[0]);   // hour
+    minute = atoi(&time[3]);   // minute
+    second = atoi(&time[6]);   // second
 
     g_evbDevInfo.buildDate[1] = year - 2000;
     g_evbDevInfo.buildDate[2] = month;
