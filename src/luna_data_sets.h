@@ -40,11 +40,14 @@ typedef enum
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_MASK  = 0x00000600,
 } eEvbLunaFlashCfgBits;
 
+
 typedef enum
 {
-	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN				= 0x00000000,
-	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT				= 0x00000001,
-	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK					= 0x00000003,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_UNDEFINED             = 0,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT              = 1,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN             = 2,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_PWM                   = 3,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK                  = 0x00000007,
 } eEvbLunaWheelControlConfig_t;
 
 #define NUM_FF_COEFS	2
@@ -61,25 +64,28 @@ typedef struct
 	/** Commanded velocity max (rad/s) */
 	float					velMax;
 
-	/** Feadforward deadband (m/s) */
+	/** Feedforward deadband (m/s) */
 	float					FF_vel_deadband;
 
-	/** Feadforward C0 estimate integral gain */
+	/** Feedforward C0 estimate integral gain */
 	float					FF_c0_est_Ki;
 
-    /** Feadforward C0 estimate maximum value (rad/s) */
+    /** Feedforward C0 estimate maximum value (rad/s) */
     float                 	FF_c0_est_max;
 
-    /** Feadforward C0 and C1 coefficients */
+    /** Feedforward C0 and C1 coefficients */
     float                 	FF_c_l[NUM_FF_COEFS];
     float                 	FF_c_r[NUM_FF_COEFS];
 
-	/** Feadback proportional gain */
+	/** Feedback proportional gain */
 	float					FB_Kp;
 
-	/** Feadback derivative gain */
-	float					FB_Kd;
+    /** Feedback integral gain */
+    float                   FB_Ki;
 
+	/** Feedback derivative gain */
+	float					FB_Kd;
+	
     /** EVB2 velocity Linearization Coefficients */
     float                   LinearCoEff[NUM_AL_COEFS];
 
@@ -202,8 +208,11 @@ typedef enum
 	/** Range Sensor */
 	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000020,
 
-    /** EVB Error bit mask */
+    /** EVB Error bit mask.  Errors in this mask will stop control. */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
+
+	/** Wheel encoder fault */
+	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
 	
 	/** Axis is in an invalid state */
 	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
