@@ -366,8 +366,6 @@ void create_dfu_config(struct dfu_config* config)
     config->verbose = 0;
     config->dfu_root = NULL;
     config->match_path = NULL;
-    config->match_vendor = -1;
-    config->match_product = -1;
     config->match_vendor_dfu = -1;
     config->match_product_dfu = -1;
     config->match_config_index = -1;

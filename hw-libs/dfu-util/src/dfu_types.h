@@ -1,5 +1,7 @@
 #pragma once
 
+#include "usb_dfu.h"
+
 struct dfu_status {
     unsigned char bStatus;
     unsigned int  bwPollTimeout;

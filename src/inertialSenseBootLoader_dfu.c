@@ -27,24 +27,7 @@
 
 #include "inertialSenseBootLoader_dfu.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <getopt.h>
-#include <libusb.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-
-#include "dfu_portable.h"
-#include "dfu.h"
-#include "dfu_file.h"
-#include "dfu_load.h"
-#include "dfu_util.h"
-#include "dfuse.h"
-
-
-int bootloadFileExDfu(bootload_params_t* params)
+int bootloadFileExDfu(struct dfu_config config)
 {
 
 /*
@@ -60,8 +43,6 @@ Found DFU: [0483:df11] ver=2200, devnum=42, cfg=1, intf=0, path="1-3", alt=0, na
 dfu://0483/df11/3
 
 */
-
-	struct dfu_config config;
 
 	int expected_size = 0;
 	unsigned int transfer_size = 0;

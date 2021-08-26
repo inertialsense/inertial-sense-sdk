@@ -16,13 +16,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/uins_sdk_compat.h"
 
-static void on_error(uins_device_interface_t* interface, const void* user_data, int error_code, const char * error_message)
+static void on_error(uins_device_interface* interface, const void* user_data, int error_code, const char * error_message)
 {
 	printf("Bootloader failed! Error: %d %s\n", error_code, error_message);
 	// printf("user data: %s\n", user_data);
 }
 
-static int on_upload_progress(uins_device_interface_t* interface, const void* user_data, float percent)
+static int on_upload_progress(uins_device_interface* interface, const void* user_data, float percent)
 {
 	printf("Upload: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)
@@ -34,7 +34,7 @@ static int on_upload_progress(uins_device_interface_t* interface, const void* us
 	return 1; // return zero to abort
 }
 
-static int on_verify_progress(uins_device_interface_t* interface, const void* user_data, float percent)
+static int on_verify_progress(uins_device_interface* interface, const void* user_data, float percent)
 {
 	printf("Verify: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)
@@ -56,19 +56,21 @@ int main(int argc, char* argv[])
 	uins_device_uri uri = "dfu://0483/df11/0";
 
 	const char* hex_file = "/tmp/uins5-firmware.hex";
-	
-	uins_device_interface_t* uins = uins_create_device_interface(uins_50(), uri);
+
+	uins_device_interface* uins = uins_create_device_interface(uins_50(), uri);
 
 	char* user_data = "my own data";
 	
-	uins_operation_result_t bootloader_update_ok = uins_update_bootloader(
+	uins_operation_result bootloader_update_ok = uins_update_flash(
 		uins,
 		hex_file,
-		IS_VERIFY_BOOTLOADER_ON,
+		IS_UPDATE_APPLICATION_FIRMWARE,
+		IS_VERIFY_ON,
 		on_error,
 		on_upload_progress,
 		on_verify_progress,
-		user_data);
+		user_data
+	);
 	
 	if (bootloader_update_ok)
 	{
