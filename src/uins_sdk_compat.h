@@ -5,32 +5,30 @@
 extern "C" {
 #endif
 
-#include "serialPort.h" // sam
-#include "serialPort_dfu.h"
-// TODO:  #include "serialPort_uart.h"
+typedef enum uins_device_interface_flags {
+    IS_DEVICE_INTERFACE_FLAG_SAM   = 0b00000000,  // default
+    IS_DEVICE_INTERFACE_FLAG_DFU   = 0b00000001,
+    IS_DEVICE_INTERFACE_FLAG_UART  = 0b00000010,
 
-#include "serialPortPlatform.h" // sam
-#include "serialPortPlatform_dfu.h"
-// TODO:  #include "serialPortPlatform_uart.h"
+    IS_DEVICE_INTERFACE_FLAG_RSVD1 = 0b00000100,
+    IS_DEVICE_INTERFACE_FLAG_RSVD2 = 0b00001000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD3 = 0b00010000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD4 = 0b00100000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD5 = 0b01000000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD6 = 0b10000000,
+} uins_device_interface_flags_t;
 
-#include "inertialSenseBootLoader.h" // sam
-#include "inertialSenseBootLoader_dfu.h"
-// TODO:  #include "inertialSenseBootLoader_uart.h"
-
-typedef enum bootloader_flags {
-    IS_BOOTLOADER_FLAG_SAM   = 0b00000000,  // default
-    IS_BOOTLOADER_FLAG_DFU   = 0b00000001,
-    IS_BOOTLOADER_FLAG_UART  = 0b00000010,
-
-    IS_BOOTLOADER_FLAG_RSVD1 = 0b00000100,
-    IS_BOOTLOADER_FLAG_RSVD2 = 0b00001000,
-    IS_BOOTLOADER_FLAG_RSVD3 = 0b00010000,
-    IS_BOOTLOADER_FLAG_RSVD4 = 0b00100000,
-    IS_BOOTLOADER_FLAG_RSVD5 = 0b01000000,
-    IS_BOOTLOADER_FLAG_RSVD6 = 0b10000000,
-} bootloader_flags_t;
+typedef enum uins_bootloader_verification_style {
+    IS_VERIFY_BOOTLOADER_ON  = 1,
+    IS_VERIFY_BOOTLOADER_OFF = 2
+} uins_bootloader_verification_style_t;
 
 typedef unsigned char communications_flags_t;   // 1111 1111
+
+typedef enum uins_operation_result {
+    IS_OP_ERROR = 0,
+    IS_OP_OK    = 1
+} uins_operation_result_t;
 
 typedef struct uins_device
 {
@@ -39,45 +37,73 @@ typedef struct uins_device
     communications_flags_t bootloader_flash_support;
 } uins_device_t;
 
-void create_device_uins31(uins_device_t* device);
-void create_device_uins50(uins_device_t* device);
+typedef const unsigned char * uins_device_uri;
 
-int serialPortPlatformInitCompat(uins_device_t* device, serial_port_t* serialPort);
-void serialPortSetPortCompat(uins_device_t* device, serial_port_t* serialPort, const char* port);
-int serialPortOpenCompat(uins_device_t* device, serial_port_t* serialPort, const char* port, int baudRate, int blocking);
-int serialPortOpenRetryCompat(uins_device_t* device, serial_port_t* serialPort, const char* port, int baudRate, int blocking);
-int serialPortIsOpenCompat(uins_device_t* device, serial_port_t* serialPort);
-int serialPortCloseCompat(uins_device_t* device, serial_port_t* serialPort);
-int serialPortFlushCompat(uins_device_t* device, serial_port_t* serialPort);
-int serialPortReadCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* buffer, int readCount);
-int serialPortReadTimeoutCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds);
-int serialPortReadTimeoutAsyncCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion callback);
-int serialPortReadLineCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* buffer, int bufferLength);
-int serialPortReadLineTimeoutCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* buffer, int bufferLength, int timeoutMilliseconds);
-int serialPortReadAsciiCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* buffer, int bufferLength, unsigned char** asciiData);
-int serialPortReadAsciiTimeoutCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* buffer, int bufferLength, int timeoutMilliseconds, unsigned char** asciiData);
-int serialPortReadCharCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* c);
-int serialPortReadCharTimeoutCompat(uins_device_t* device, serial_port_t* serialPort, unsigned char* c, int timeoutMilliseconds);
-int serialPortWriteCompat(uins_device_t* device, serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
-int serialPortWriteLineCompat(uins_device_t* device, serial_port_t* serialPort, const unsigned char* buffer, int writeCount);
-int serialPortWriteAsciiCompat(uins_device_t* device, serial_port_t* serialPort, const char* buffer, int bufferLength);
-int serialPortWriteAndWaitForCompat(uins_device_t* device, serial_port_t* serialPort, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength);
-int serialPortWriteAndWaitForTimeoutCompat(uins_device_t* device, serial_port_t* serialPort, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength, const int timeoutMilliseconds);
-int serialPortWaitForCompat(uins_device_t* device, serial_port_t* serialPort, const unsigned char* waitFor, int waitForLength);
-int serialPortWaitForTimeoutCompat(uins_device_t* device, serial_port_t* serialPort, const unsigned char* waitFor, int waitForLength, int timeoutMilliseconds);
-int serialPortGetByteCountAvailableToReadCompat(uins_device_t* device, serial_port_t* serialPort);
-int serialPortGetByteCountAvailableToWriteCompat(uins_device_t* device, serial_port_t* serialPort);
-int serialPortSleepCompat(uins_device_t* device, serial_port_t* serialPort, int sleepMilliseconds);
+/** a unique id for a device interface
+ * 
+ * Examples:
+ *  file://dev/ttyACM0
+ *  sam://vendorid/productid
+ *  dfu://vendorid/productid/altid
+ */
+typedef struct uins_device_interface
+{
+    uins_device_t device;
+    uins_device_uri uri;
+    int read_timeout_ms;
+    int write_timeout_ms;
+    void * instance_data;
+} uins_device_interface_t;
 
-int bootloadFileCompat(serial_port_t* port, const char* fileName, const char* bootName, const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
-int bootloadFileExCompat(bootload_params_t* params);
-int bootloadUpdateBootloaderCompat(serial_port_t* port, const char* fileName, const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
-int bootloadUpdateBootloaderExCompat(bootload_params_t* p);
-int bootloadGetBootloaderVersionFromFileCompat(const char* bootName, int* verMajor, char* verMinor);
-int enableBootloaderCompat(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd);
-int disableBootloaderCompat(serial_port_t* port, char* error, int errorLength);
-int bootloaderCycleBaudRateCompat(int baudRate);
-int bootloaderClosestBaudRateCompat(int baudRate);
+typedef void(*pfnUinsDeviceInterfaceError)(uins_device_interface_t* interface, const void* user_data, int error_code, const char * error_message);
+typedef int(*pfnUinsDeviceInterfaceTaskProgress)(uins_device_interface_t* interface, const void* user_data, float percent);
+
+typedef const unsigned char * const uins_firmware_file_buffer;
+
+uins_device_t uins_31();
+uins_device_t uins_40();
+uins_device_t uins_50();
+
+/**
+ * @brief Create a device interface object
+ * 
+ * @param device The device type to search for
+ * @param interface The device interface to initialize and populate with values.  NULL if not found.
+ * @param unique_identifier A unique uri to the device interface
+ * @param optional_callback_handler If not NULL, the callback handler to signal when the interface is used for subsequent operations
+ * @return a newly allocated device interface on the heap
+ * @see uins_destroy_device_interface 
+ */
+uins_device_interface_t* uins_create_device_interface(
+    uins_device_t device,
+    const uins_device_uri unique_identifier
+);
+
+/** performs any necessary flush or clean up operations, releases instance data resources and frees heap memory from create */
+uins_operation_result_t uins_destroy_device_interface(uins_device_interface_t* interface);
+
+/** open the device interface */
+uins_operation_result_t uins_open(uins_device_interface_t* interface);
+
+/** close the device interface */
+uins_operation_result_t uins_close(uins_device_interface_t* interface);
+
+/** read the specified number of bytes from the device interface into the buffer */
+uins_operation_result_t uins_read(uins_device_interface_t* interface, int read_count, uins_firmware_file_buffer buffer);
+
+/** write the specified number of bytes from the buffer onto the device interface */
+uins_operation_result_t uins_write(uins_device_interface_t* interface, int write_count, uins_firmware_file_buffer buffer);
+
+/** copy hex file from this machine to the device interface */
+uins_operation_result_t uins_update_bootloader(
+    const uins_device_interface_t* interface,
+    const char* firmware_file_path,
+    uins_bootloader_verification_style_t verification_style,
+    pfnUinsDeviceInterfaceError error_callback,
+    pfnUinsDeviceInterfaceTaskProgress upload_progress_callback,
+    pfnUinsDeviceInterfaceTaskProgress verify_progress_callback,
+    const void* user_data
+);
 
 #ifdef __cplusplus
 }
