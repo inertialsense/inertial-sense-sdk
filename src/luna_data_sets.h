@@ -77,13 +77,13 @@ typedef struct
     float                 	FF_c_l[NUM_FF_COEFS];
     float                 	FF_c_r[NUM_FF_COEFS];
 
-	/** Feadback proportional gain */
+	/** Feedback proportional gain */
 	float					FB_Kp;
 
     /** Feedback integral gain */
     float                   FB_Ki;
 
-	/** Feadback derivative gain */
+	/** Feedback derivative gain */
 	float					FB_Kd;
 	
     /** EVB2 velocity Linearization Coefficients */
