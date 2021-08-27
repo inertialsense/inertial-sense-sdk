@@ -67,13 +67,13 @@ typedef struct
 	/** Feedforward deadband (m/s) */
 	float					FF_vel_deadband;
 
-	/** Feedforward C0 estimate integral gain */
-	float					FF_est_Ki;
+	/** Feedforward coefficient estimation gain */
+	float					FF_c_est_Ki[NUM_FF_COEFS];
 
-    /** Feedforward C0 estimate maximum value (rad/s) */
-    float                 	FF_est_max;
+    /** Feedforward coefficient estimation maximum value (rad/s) */
+    float                 	FF_c_est_max[NUM_FF_COEFS];
 
-    /** Feedforward C0 and C1 coefficients */
+    /** Feedforward coefficients */
     float                 	FF_c_l[NUM_FF_COEFS];
     float                 	FF_c_r[NUM_FF_COEFS];
 
