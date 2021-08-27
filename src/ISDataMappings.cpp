@@ -942,10 +942,10 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.slewRate", wheelControl.slewRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.velMax", wheelControl.velMax, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_vel_deadband", wheelControl.FF_vel_deadband, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_est_Ki[0]", wheelControl.FF_c_est_Ki[0], 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_est_Ki[1]", wheelControl.FF_c_est_Ki[1], 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[0]", wheelControl.FF_c_est_max[0], 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[1]", wheelControl.FF_c_est_max[1], 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_est_Ki[0]", wheelControl.FF_c_est_Ki[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_est_Ki[1]", wheelControl.FF_c_est_Ki[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[0]", wheelControl.FF_c_est_max[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[1]", wheelControl.FF_c_est_max[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c_l[0]", wheelControl.FF_c_l[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c_l[1]", wheelControl.FF_c_l[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_c_r[0]", wheelControl.FF_c_r[0], 0, DataTypeFloat, float&, 0);
