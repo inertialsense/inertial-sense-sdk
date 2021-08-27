@@ -60,7 +60,7 @@ dfu://0483/df11/3
 	uint16_t runtime_vendor;
 	uint16_t runtime_product;
 
-	create_dfu_config(&config);
+	// create_dfu_config(&config);
 
 	memset(&file, 0, sizeof(file));
 

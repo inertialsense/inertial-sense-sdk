@@ -44,17 +44,28 @@ typedef struct
 
 typedef const unsigned char * uins_device_uri;
 
+typedef struct
+{
+    // tbd enum scheme;
+    int scheme;
+    // todo rest of properties
+
+} uins_device_uri_properties;
+
+
 /** a unique id for a device interface
  * 
  * Examples:
  *  file://dev/ttyACM0
  *  sam://vendorid/productid
- *  dfu://vendorid/productid/altid
+ *  dfu://vendorid/productid/altid/index_number/f .... 
+ *  uart://vendorid/productid/115200
  */
 typedef struct uins_device_interface
 {
     uins_device device;
-    uins_device_uri uri;
+    // uins_device_uri uri;
+    uins_device_uri_properties uri_properties;
     int read_timeout_ms;
     int write_timeout_ms;
     void * instance_data;

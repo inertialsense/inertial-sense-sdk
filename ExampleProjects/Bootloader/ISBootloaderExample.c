@@ -53,7 +53,7 @@ static void bootloaderStatusText(const void* obj, const char* info)
 int main(int argc, char* argv[])
 {
 	// uins_create_device_interface(uins_31(), "file://dev/ttyACM0");
-	uins_device_uri uri = "dfu://0483/df11/0";
+	uins_device_uri uri = "dfu://0483/df11/0/....";
 
 	const char* hex_file = "/tmp/uins5-firmware.hex";
 
@@ -71,6 +71,8 @@ int main(int argc, char* argv[])
 		on_verify_progress,
 		user_data
 	);
+
+	uins_destroy_device_interface(uins);
 	
 	if (bootloader_update_ok)
 	{
