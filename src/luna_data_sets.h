@@ -67,7 +67,7 @@ typedef struct
 	/** Feedforward deadband (m/s) */
 	float					FF_vel_deadband;
 
-	/** Feedforward coefficient estimation gain */
+	/** Feedforward coefficient estimation gain.  Zero to disable estimation..  Zero to disable estimation..  Zero to disable estimation. */
 	float					FF_c_est_Ki[NUM_FF_COEFS];
 
     /** Feedforward coefficient estimation maximum value (rad/s) */
