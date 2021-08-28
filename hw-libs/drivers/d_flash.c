@@ -15,7 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "globals.h"
 #include "../misc/bootloaderShared.h"
 #include "../misc/rtos.h"
-#include "../misc/nvr.h"
+// #include "../misc/nvr.h"
 #include "d_flash.h"
 #include "user_board.h"
 

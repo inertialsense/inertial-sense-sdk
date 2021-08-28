@@ -1,6 +1,5 @@
 #include <asf.h>
 #include "misc/rtos.h"
-#include "../../../cpp/hdw-src/uINS-3/IS_uINS/src/misc/nvr.h"
 #include "maintenance.h"
 #include "d_flash.h"
 #include "bootloaderApp.h"
@@ -230,5 +229,5 @@ void save_persistent_messages(void)
 	// Copy CAN
 	g_nvmInternalFlashCfg->startupCAN = g_CAN;
 
-	nvr_flash_config_write_needed_enable();     
+ 	nvr_flash_config_write_needed_enable();     
 }
