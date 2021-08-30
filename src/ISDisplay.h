@@ -121,6 +121,7 @@ public:
 	void StopEditing();
 	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
 	edit_data_t *EditData() { return &m_editData; }
+	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
 
 private:
 	string VectortoString();
@@ -132,6 +133,8 @@ private:
 	uint16_t m_rxCount = 0;
 
 	edit_data_t m_editData = {};
+	int m_outputOnceDid = 0;				// 0 = disabled
+	bool m_interactiveMode = true;
 
 	struct sDidStats
 	{

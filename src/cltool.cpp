@@ -121,8 +121,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
     g_commandLineOptions.surveyIn.minAccuracy = 0;
+	g_commandLineOptions.outputOnceDid = 0;
 
-	cltool_outputHelp();
 
 	if(argc <= 1)
 	{	// Display usage menu if no options are provided 
@@ -166,18 +166,32 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			{
 				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
 			}
+			cltool_outputHelp();
 			return false;
 		}
 		else if (startsWith(a, "-did"))
 		{
-			while ((i+1)<argc && !startsWith(argv[i+1], "-"))	// next argument doesn't start with "-"
-			{
-				stream_did_t dataset = {};
-				if (read_did_argument(&dataset, argv[++i]))		// use next argument
+				while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))	// next argument doesn't start with "-"
 				{
-					g_commandLineOptions.datasets.push_back(dataset);
+					if (g_commandLineOptions.outputOnceDid)
+					{
+						i++;
+					}
+					else
+					{
+						stream_did_t dataset = {};
+						if (read_did_argument(&dataset, argv[++i]))		// use next argument
+						{
+							if (dataset.periodMultiple == 0)
+							{
+								g_commandLineOptions.outputOnceDid = dataset.did;
+								g_commandLineOptions.datasets.clear();
+							}
+							g_commandLineOptions.datasets.push_back(dataset);
+						}
+					}
 				}
-			}
+			
 		}
 		else if (startsWith(a, "-edit"))
 		{
@@ -256,7 +270,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-presetPPD"))
 		{
-			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_ROBOT;
+			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_GROUND_VEHICLE;
 		}
 		else if (startsWith(a, "-presetINS2"))
 		{
@@ -280,6 +294,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
 		}
+        else if (startsWith(a, "-resetEvb"))
+        {
+            g_commandLineOptions.softwareResetEvb = true;
+        }
         else if (startsWith(a, "-reset"))
         {
             g_commandLineOptions.softwareReset = true;
@@ -330,7 +348,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
-			// cltool_outputUsage();
+			cltool_outputHelp();
 			return false;
 		}
 	}
@@ -417,6 +435,7 @@ void cltool_outputUsage()
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display" << endlbOn;
     cout << "    -reset         " << boldOff << " Issue software reset.  Use caution." << endlbOn;
+    cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB.  Use caution." << endlbOn;
     cout << "    -s" << boldOff << "              Scroll displayed messages to show history" << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received" << endlbOn;
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;

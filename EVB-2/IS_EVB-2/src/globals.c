@@ -45,11 +45,28 @@ void globals_init(void)
 {
 	// Init Device Info struct
 	g_evbDevInfo.hardwareVer[0] = 2;
-	g_evbDevInfo.hardwareVer[1] = 0;
 	switch(g_hdw_detect)
 	{
-	case HDW_DETECT_VER_EVB_2_0_0:				g_evbDevInfo.hardwareVer[2] = 0;	break;
-	default: /* HDW_DETECT_VER_EVB_2_0_1 */		g_evbDevInfo.hardwareVer[2] = 1;	break;
+    default:
+    	g_evbDevInfo.hardwareVer[1] = 0;
+        break;
+	case HDW_DETECT_VER_EVB_2_1_0:
+	case HDW_DETECT_VER_EVB_2_1_1:
+	    g_evbDevInfo.hardwareVer[1] = 1;
+        break;
+	case HDW_DETECT_VER_EVB_2_2_0:
+	    g_evbDevInfo.hardwareVer[1] = 2;
+        break;
+	}
+	switch(g_hdw_detect)
+	{
+    default:
+    	g_evbDevInfo.hardwareVer[2] = 0;
+        break;
+	case HDW_DETECT_VER_EVB_2_0_1:
+	case HDW_DETECT_VER_EVB_2_1_1:
+	    g_evbDevInfo.hardwareVer[2] = 1;	
+        break;
 	}
 	g_evbDevInfo.hardwareVer[3] = 0;
 
@@ -73,39 +90,7 @@ void globals_init(void)
 #endif
 
 #if 0
-    char date[20] = __DATE__;        //  mmm dd yyyy (e.g. "Jan 14 2012")
-    char *ptr = date;
-    int day=0, month=0, year=0, hour=0, minute=0, second=0;
-
-    if(strcmp(ptr, "Jan")==0)      { month = 1; }           // month
-    else if(strcmp(ptr, "Feb")==0) { month = 2; }
-    else if(strcmp(ptr, "Mar")==0) { month = 3; }
-    else if(strcmp(ptr, "Apr")==0) { month = 4; }
-    else if(strcmp(ptr, "May")==0) { month = 5; }
-    else if(strcmp(ptr, "Jun")==0) { month = 6; }
-    else if(strcmp(ptr, "Jul")==0) { month = 7; }
-    else if(strcmp(ptr, "Aug")==0) { month = 8; }
-    else if(strcmp(ptr, "Sep")==0) { month = 9; }
-    else if(strcmp(ptr, "Oct")==0) { month = 10; }
-    else if(strcmp(ptr, "Nov")==0) { month = 11; }
-    else if(strcmp(ptr, "Dec")==0) { month = 12; }        
-    if ((ptr = strchr(ptr, ' '))) { day = atoi(ptr); }      // day
-    if ((ptr = strchr(ptr, ' '))) { year = atoi(ptr); }     // year
-
-    char time[20] = __TIME__;        // hh::mm::ss in 24 hour time (e.g. "22:29:12")
-    ptr = time;
-    hour = atoi(ptr);                                       // hour
-    if ((ptr = strchr(ptr, ' '))) { minute = atoi(ptr); }   // minute
-    if ((ptr = strchr(ptr, ' '))) { second = atoi(ptr); }   // second
-
-    g_evbDevInfo.buildDate[1] = year - 2000;
-    g_evbDevInfo.buildDate[2] = month;
-    g_evbDevInfo.buildDate[3] = day;
-
-    g_evbDevInfo.buildTime[0] = hour;
-    g_evbDevInfo.buildTime[1] = minute;
-    g_evbDevInfo.buildTime[2] = second;
-    g_evbDevInfo.buildTime[3] = 0;
+    setBuildDateTimeFromCompileTime(g_evbDevInfo.buildDate, g_evbDevInfo.buildTime);
 #else
 	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
 	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
@@ -243,16 +228,16 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 		break;
          
 #ifdef CONF_BOARD_CAN1
-	case  EVB2_CB_PRESET_CAN:
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
-
-		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
-
-		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_CAN);
-		cfg->cbf[EVB2_PORT_CAN]	   |= (1<<EVB2_PORT_USB);
-		break;
+	//case  EVB2_CB_PRESET_CAN:
+		//cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
+		//cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
+//
+		//cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
+        //cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+//
+		//cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_CAN);
+		//cfg->cbf[EVB2_PORT_CAN]	   |= (1<<EVB2_PORT_USB);
+		//break;
 #endif
     }        
 
@@ -304,14 +289,14 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 #endif
 
 	// Enable CAN
-#ifdef CONF_BOARD_CAN1
-	switch(cfg->cbPreset)
-	{
-		case EVB2_CB_PRESET_CAN:
-		cfg->cbOptions |= EVB2_CB_OPTIONS_CAN_ENABLE;
-		break;
-	}
-#endif
+//#ifdef CONF_BOARD_CAN1
+	//switch(cfg->cbPreset)
+	//{
+		//case EVB2_CB_PRESET_CAN:
+		//cfg->cbOptions |= EVB2_CB_OPTIONS_CAN_ENABLE;
+		//break;
+	//}
+//#endif
 }
 
 
@@ -536,4 +521,63 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));
+}
+
+
+void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4])
+{
+    char date[20] = __DATE__;        //  mmm dd yyyy (e.g. "Jan 14 2012")
+    int day=0, month=0, year=0, hour=0, minute=0, second=0;
+		if (date[0] == 'J' && 
+			date[1] == 'a' && 
+			date[2] == 'n'){ month = 1; }           // month
+    else if(date[0] == 'F' && 
+			date[1] == 'e' && 
+			date[2] == 'b'){ month = 2; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'r'){ month = 3; }
+    else if(date[0] == 'A' && 
+			date[1] == 'p' && 
+			date[2] == 'r'){ month = 4; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'y'){ month = 5; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'n'){ month = 6; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'l'){ month = 7; }
+    else if(date[0] == 'A' && 
+			date[1] == 'u' && 
+			date[2] == 'g'){ month = 8; }
+    else if(date[0] == 'S' && 
+			date[1] == 'e' && 
+			date[2] == 'p'){ month = 9; }
+    else if(date[0] == 'O' && 
+			date[1] == 'c' && 
+			date[2] == 't'){ month = 10; }
+    else if(date[0] == 'N' && 
+			date[1] == 'o' && 
+			date[2] == 'v'){ month = 11; }
+    else if(date[0] == 'D' && 
+			date[1] == 'e' && 
+			date[2] == 'c'){ month = 12; }
+    day  = atoi(&date[4]);     // day
+    year = atoi(&date[7]);     // year
+
+    char time[20] = __TIME__;  // hh:mm:ss in 24 hour time (e.g. "22:29:12")
+    hour   = atoi(&time[0]);   // hour
+    minute = atoi(&time[3]);   // minute
+    second = atoi(&time[6]);   // second
+
+    buildDate[1] = year - 2000;
+    buildDate[2] = month;
+    buildDate[3] = day;
+
+    buildTime[0] = hour;
+    buildTime[1] = minute;
+    buildTime[2] = second;
+    buildTime[3] = 0;
 }

@@ -108,7 +108,7 @@
 // #define CONF_BOARD_I2C_UINS
 
 // CAN interface
- //#define CONF_BOARD_CAN1
+#define CONF_BOARD_CAN1
  //#define CONF_BOARD_CAN_TEST
 
 // ADC interface

@@ -65,7 +65,43 @@ bool mcan_send_message(uint32_t id_value, uint8_t *data, uint32_t data_length)
 		tx_element.T0.reg |= MCAN_TX_ELEMENT_T0_EXTENDED_ID(id_value) | MCAN_TX_ELEMENT_T0_XTD;
 	else
 		tx_element.T0.reg |= MCAN_TX_ELEMENT_T0_STANDARD_ID(id_value);
-		
+	
+	tx_element.T1.bit.DLC = data_length;
+
+	for (uint32_t i = 0; i < data_length; i++) {
+		tx_element.data[i] = data[i];
+	}
+
+	mcan_set_tx_buffer_element(&mcan_instance, &tx_element, put_index);
+	mcan_tx_transfer_request(&mcan_instance, (1 << put_index));
+
+	return true;
+}
+
+bool mcan_send_message_rtr(uint32_t id_value, uint8_t *data, uint32_t data_length)
+{
+	uint32_t status = mcan_tx_get_fifo_queue_status(&mcan_instance);
+
+	//check if fifo is full
+	if(status & MCAN_TXFQS_TFQF) {
+		return false;
+	}
+	
+	//Prevent sending more data than buffer size
+	if(data_length > CONF_MCAN_ELEMENT_DATA_SIZE)
+		data_length = CONF_MCAN_ELEMENT_DATA_SIZE;
+
+	//get the put index where we put the next packet
+	uint32_t put_index = (status & MCAN_TXFQS_TFQPI_Msk) >> MCAN_TXFQS_TFQPI_Pos;
+
+	struct mcan_tx_element tx_element = {};
+	mcan_get_tx_buffer_element_defaults(&tx_element);
+
+	if(id_value >= 0x800)
+		tx_element.T0.reg |= MCAN_TX_ELEMENT_T0_EXTENDED_ID(id_value) | MCAN_TX_ELEMENT_T0_XTD;
+	else
+		tx_element.T0.reg |= MCAN_TX_ELEMENT_T0_STANDARD_ID(id_value) | MCAN_TX_ELEMENT_T0_RTR;
+	
 	tx_element.T1.bit.DLC = data_length;
 
 	for (uint32_t i = 0; i < data_length; i++) {

@@ -558,7 +558,7 @@ void board_IO_config(void)
 	if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_CAN_ENABLE)
 	{
 		serSetBaudRate(EVB2_PORT_UINS1, 921600);
-		CAN_init(g_flashCfg->CANbaud_kbps*1000. g_flashCfg->can_receive_address);
+		CAN_init(g_flashCfg->CANbaud_kbps*1000, g_flashCfg->can_receive_address);
 	}
 #endif
 

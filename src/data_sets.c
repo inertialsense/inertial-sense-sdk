@@ -521,7 +521,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 84: DID_IMU3_MAG
 		0,						// 85: DID_IMU_MAG
 		0,						// 86: DID_PREINTEGRATED_IMU_MAG
-		0,						// 87: DID_WHEEL_CONFIG
+		0,						// 87: DID_GROUND_VEHICLE
 		0,						// 88: DID_POSITION_MEASUREMENT
 		0,						// 89: DID_RTK_DEBUG_2
 		0,						// 90: DID_CAN_CONFIG
@@ -633,7 +633,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
 		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
-		case DID_WHEEL_CONFIG:          return RMC_BITS_WHEEL_CONFIG;
+		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
 		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
 		case DID_IMU3_MAG:              return RMC_BITS_DID_IMU3_MAG;
 		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;

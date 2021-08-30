@@ -59,6 +59,7 @@ typedef struct
     bool bootloaderVerify; 					// -bv
     bool replayDataLog;
     bool softwareReset;
+    bool softwareResetEvb;
     bool magRecal;
     uint32_t magRecalMode;
     survey_in_t surveyIn;
@@ -87,6 +88,7 @@ typedef struct
 	string evbFlashCfg;
 
 	uint32_t timeoutFlushLoggerSeconds;
+	uint32_t outputOnceDid = 0;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

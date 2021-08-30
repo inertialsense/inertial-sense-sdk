@@ -585,7 +585,7 @@ Macros</h2></td></tr>
 <tr class="separator:aba5a6647f5808e6cdfd54c1d6db68729"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af621f4bc9fa425bd5bc00e9b2bb490c0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#af621f4bc9fa425bd5bc00e9b2bb490c0">RMC_PRESET_PPD_BITS_RTK_DBG</a></td></tr>
 <tr class="separator:af621f4bc9fa425bd5bc00e9b2bb490c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8fde050afcfaff93b9fce7741812bc18"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a8fde050afcfaff93b9fce7741812bc18">RMC_PRESET_PPD_ROBOT</a></td></tr>
+<tr class="memitem:a8fde050afcfaff93b9fce7741812bc18"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a8fde050afcfaff93b9fce7741812bc18">RMC_PRESET_PPD_GROUND_VEHICLE</a></td></tr>
 <tr class="separator:a8fde050afcfaff93b9fce7741812bc18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e2fd2141086b2c34c3a2ada09ec9486"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8h.html#a9e2fd2141086b2c34c3a2ada09ec9486">HDW_BIT_MODE</a>(hdwBitStatus)&#160;&#160;&#160;((hdwBitStatus&amp;<a class="el" href="data__sets_8h.html#a20228ceb9caa12db76b8599ff714ea67a20f51afc8891697169fbc50c001ad7d8">HDW_BIT_MODE_MASK</a>)&gt;&gt;<a class="el" href="data__sets_8h.html#a20228ceb9caa12db76b8599ff714ea67a5e2741242ab631ab90c4aa6010b92f66">HDW_BIT_MODE_OFFSET</a>)</td></tr>
 <tr class="separator:a9e2fd2141086b2c34c3a2ada09ec9486"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -960,7 +960,7 @@ Enumerations</h2></td></tr>
 <br />
 &#160;&#160;<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caf9211a49fae388ad2045fee0f274c007">INS_STATUS_ALIGN_FINE_MASK</a> = (int)0x00000070, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415caae26007bc2dc98a7afb01cef4ef843eb">INS_STATUS_GPS_AIDING_HEADING</a> = (int)0x00000080, 
-<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cae2a8b5a3e552a193a89a4a0f38db590f">INS_STATUS_GPS_AIDING_POS_VEL</a> = (int)0x00000100, 
+<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cae2a8b5a3e552a193a89a4a0f38db590f">INS_STATUS_GPS_AIDING_POS</a> = (int)0x00000100, 
 <a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415ca4662a4846829c59d0e06598d98873eb2">INS_STATUS_GPS_UPDATE_IN_SOLUTION</a> = (int)0x00000200, 
 <br />
 &#160;&#160;<a class="el" href="data__sets_8h.html#a74d57d47fbafec0dd4e5075ecb55415cac9894fe77ead6e6c46a4a89c5a6fd05d">INS_STATUS_RESERVED_1</a> = (int)0x00000400, 
@@ -5793,13 +5793,13 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a8fde050afcfaff93b9fce7741812bc18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8fde050afcfaff93b9fce7741812bc18">&#9670;&nbsp;</a></span>RMC_PRESET_PPD_ROBOT</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fde050afcfaff93b9fce7741812bc18">&#9670;&nbsp;</a></span>RMC_PRESET_PPD_GROUND_VEHICLE</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define RMC_PRESET_PPD_ROBOT</td>
+          <td class="memname">#define RMC_PRESET_PPD_GROUND_VEHICLE</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -8135,7 +8135,7 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415caae26007bc2dc98a7afb01cef4ef843eb"></a>INS_STATUS_GPS_AIDING_HEADING&#160;</td><td class="fielddoc"><p>Heading aided by GPS </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415cae2a8b5a3e552a193a89a4a0f38db590f"></a>INS_STATUS_GPS_AIDING_POS_VEL&#160;</td><td class="fielddoc"><p>Position and velocity aided by GPS </p>
+<tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415cae2a8b5a3e552a193a89a4a0f38db590f"></a>INS_STATUS_GPS_AIDING_POS&#160;</td><td class="fielddoc"><p>Position and velocity aided by GPS </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a74d57d47fbafec0dd4e5075ecb55415ca4662a4846829c59d0e06598d98873eb2"></a>INS_STATUS_GPS_UPDATE_IN_SOLUTION&#160;</td><td class="fielddoc"><p>GPS update event occurred in solution, potentially causing discontinuity in position path </p>
 </td></tr>

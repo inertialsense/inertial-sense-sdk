@@ -278,7 +278,7 @@ void uINS_stream_enable_std(void)
 void uINS_stream_enable_PPD(void)
 {
     rmc_t rmc;
-    rmc.bits = RMC_PRESET_PPD_ROBOT;
+    rmc.bits = RMC_PRESET_PPD_GROUND_VEHICLE;
     rmc.options = 0;
     int len = is_comm_set_data(&g_commTx, DID_RMC, 0, sizeof(rmc_t), &rmc);
     comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);
@@ -290,7 +290,7 @@ void uINS_stream_enable_PPD(void)
 
 void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 {
-	uDatasets d;
+	uDatasets d = {0};
 
 	if( copyDataPToStructP2(&d, &dataHdr, data, sizeof(uDatasets)) )
 	{	// Invalid
@@ -574,6 +574,25 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		{	// From host to EVB
 		case DID_EVB_STATUS:
 			is_comm_copy_to_struct(&g_status, comm, sizeof(evb_status_t));
+
+			switch (g_status.sysCommand)
+			{
+			case SYS_CMD_SOFTWARE_RESET:
+			#if 0
+				// Write flash config now
+				//  nvr_flash_config_write_now_before_reset();
+				BEGIN_CRITICAL_SECTION
+				g_nvr_manage_config.flash_write_needed = true;
+				g_nvr_manage_config.flash_write_enable = true;
+				END_CRITICAL_SECTION
+				nvr_slow_maintenance();
+			#endif
+
+				// Reset processor
+				soft_reset_backup_register(SYS_FAULT_STATUS_USER_RESET);
+				break;
+			}
+			g_status.sysCommand = 0;
 			break;
 				
 		case DID_EVB_FLASH_CFG:
@@ -612,7 +631,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		// 	{
 		// 		g_ermc.bits = *((uint64_t*)(comm->dataPtr));	// RMC is not the same as ERMC (EVB RMC).  We may need to translate this if necessary.
 		// 	}
-		// 	break;
+			// break;
 
 		case PID_STOP_BROADCASTS_ALL_PORTS:
 		case PID_STOP_DID_BROADCAST:
@@ -964,19 +983,19 @@ void step_com_bridge(is_comm_instance_t &comm)
 #endif
 
 #ifdef CONF_BOARD_CAN1
-	uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
-	uint32_t id;
-	uint8_t lenCAN;
-	is_can_message msg;
-	msg.startByte = CAN_HDR;
-	msg.endByte = CAN_FTR;
-	if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
-	{
-		msg.address = id;
-		msg.payload = *(is_can_payload*)can_rx_message;
-		msg.dlc = lenCAN;
-		com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
-	}
+	//uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
+	//uint32_t id;
+	//uint8_t lenCAN;
+	//is_can_message msg;
+	//msg.startByte = CAN_HDR;
+	//msg.endByte = CAN_FTR;
+	//if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
+	//{
+		//msg.address = id;
+		//msg.payload = *(is_can_payload*)can_rx_message;
+		//msg.dlc = lenCAN;
+		//com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
+	//}
 	/*Test CAN*/
 		//static uint8_t tx_message_1[8] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};
 		//mcan_send_message(0x100000A5, tx_message_1, CONF_MCAN_ELEMENT_DATA_SIZE);

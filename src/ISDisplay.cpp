@@ -85,7 +85,6 @@ static void signalFunction(int sig)
 
 cInertialSenseDisplay::cInertialSenseDisplay()
 {
-	cout << endl << Hello() << endl;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -146,6 +145,10 @@ void cInertialSenseDisplay::ShutDown()
 
 void cInertialSenseDisplay::Clear(void)
 {
+	if (!m_interactiveMode)
+	{
+		return;
+	}
 
 #if PLATFORM_IS_WINDOWS
 
@@ -167,6 +170,10 @@ void cInertialSenseDisplay::Clear(void)
 
 void cInertialSenseDisplay::Home(void)
 {
+	if (!m_interactiveMode)
+	{
+		return;
+	}
 
 #if PLATFORM_IS_WINDOWS
 
@@ -459,9 +466,15 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			timeSinceRefreshMs = curTimeMs;
 
 			Home();
+			if (m_outputOnceDid)
+			{
+				cout << VectortoString();
+				exit(1);
+			}
 			if (enableReplay)
 				cout << Replay(replaySpeedX) << endl;
 			else
+
 				cout << Connected() << endl;
 
 			cout << VectortoString();
@@ -573,6 +586,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	string str;
 	switch (data->hdr.id)
 	{
+	case DID_EVB_DEV_INFO:
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
 	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
 	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
@@ -620,7 +634,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 		(hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
-        (insStatus & INS_STATUS_GPS_AIDING_POS_VEL) != 0);
+        (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
 	if (insStatus & INS_STATUS_NAV_MODE)
 	{
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: NAV ");

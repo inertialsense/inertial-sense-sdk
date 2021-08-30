@@ -40,6 +40,16 @@ typedef enum
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_MASK  = 0x00000600,
 } eEvbLunaFlashCfgBits;
 
+
+typedef enum
+{
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_UNDEFINED             = 0,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT              = 1,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN             = 2,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_PWM                   = 3,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK                  = 0x00000007,
+} eEvbLunaWheelControlConfig_t;
+
 #define NUM_FF_COEFS	2
 #define NUM_AL_COEFS	5
 
@@ -54,25 +64,28 @@ typedef struct
 	/** Commanded velocity max (rad/s) */
 	float					velMax;
 
-	/** Feadforward deadband (m/s) */
+	/** Feedforward deadband (m/s) */
 	float					FF_vel_deadband;
 
-	/** Feadforward C0 estimate integral gain */
+	/** Feedforward C0 estimate integral gain */
 	float					FF_c0_est_Ki;
 
-    /** Feadforward C0 estimate maximum value (rad/s) */
+    /** Feedforward C0 estimate maximum value (rad/s) */
     float                 	FF_c0_est_max;
 
-    /** Feadforward C0 and C1 coefficients */
+    /** Feedforward C0 and C1 coefficients */
     float                 	FF_c_l[NUM_FF_COEFS];
     float                 	FF_c_r[NUM_FF_COEFS];
 
-	/** Feadback proportional gain */
+	/** Feedback proportional gain */
 	float					FB_Kp;
 
-	/** Feadback derivative gain */
-	float					FB_Kd;
+    /** Feedback integral gain */
+    float                   FB_Ki;
 
+	/** Feedback derivative gain */
+	float					FB_Kd;
+	
     /** EVB2 velocity Linearization Coefficients */
     float                   LinearCoEff[NUM_AL_COEFS];
 
@@ -97,6 +110,15 @@ typedef struct
 
 	/** Test sweep rate (rad/s) */
 	float					testSweepRate;
+
+	/** Various config like motor control types, etc. (eEvbLunaWheelControlConfig_t) */
+	uint32_t				config;
+
+	/** (m) Wheel radius */
+	float 					wheelRadius;
+
+	/** (m) Wheel baseline, distance between wheels */
+	float					wheelBaseline;
 
 } evb_luna_wheel_control_cfg_t;
 
@@ -186,16 +208,31 @@ typedef enum
 	/** Range Sensor */
 	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000020,
 
-    /** EVB Error bit mask */
+    /** EVB Error bit mask.  Errors in this mask will stop control. */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
+
+	/** Wheel encoder fault */
+	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
+	
+	/** Axis is in an invalid state */
+	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
+	
+	/** Watchdog has expired */
+	EVB_LUNA_STATUS_AXIS_ERR_WATCHDOG					= 0x02000000,
+	
+	/** Motor or driver temperature is above limits */
+	EVB_LUNA_STATUS_AXIS_ERR_TEMP						= 0x04000000,
+	
+	/** Axis error bit mask */ 
+	EVB_LUNA_STATUS_AXIS_ERR_MASK						= 0xFF000000,
 
 } eEvbLunaStatus;
 
 typedef enum
 {
 	LMS_UNSPECIFIED					= 0,
-	LMS_MOTOR_ENABLE				= 1,
-	LMS_MOTOR_DISABLE				= 2,	
+	LMS_MOTOR_CONTROL_ENABLE		= 1,	// Motor control enabled.
+	LMS_MOTOR_CONTROL_DISABLE		= 2,	// Motor control disabled.  Engine shutoff is controlled only by remote kill.
 } eLunaMotorState;
 
 typedef enum
@@ -204,7 +241,7 @@ typedef enum
 	LRKM_ENABLE						= 1,	// Keep alive motors enabled.
 	LRKM_DISABLE					= 2,	// Disable motors.
 	LRKM_PAUSE						= 3,	// Keep alive motors paused.
-	LRKM_DISARM 					= 4,	// Turn off remote kill and then switch to LMS_MOTOR_ENABLE.
+	LRKM_DISARM 					= 4,	// Turn off remote kill and then switch to LMS_MOTOR_CONTROL_ENABLE.
 } eLunaRemoteKillMode;
 
 /**
@@ -244,11 +281,11 @@ typedef struct
 	/** Control mode (see eLunaWheelControllerMode) */
 	uint32_t                mode;
 
-	/** Left wheel velocity */
-	float					wheel_l;
+	/** Forward velocity (m/s) */
+	float					fwd_vel;
 
-	/** Right wheel velocity */
-	float					wheel_r;
+	/** Turn rate (rad/s) */
+	float					turn_rate;
 
 } evb_luna_wheel_command_t;
 

@@ -263,6 +263,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		str.append(string(buf));
 	}
 
+#ifdef DEBUG
 	if (msgStats.parseError.count>5)
 	{
 		str.append("Parse Error: ____________________________\n");
@@ -272,6 +273,6 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		SNPRINTF(buf, BUF_SIZE, "%8d %5d\n", s.count, dtMs);
 		str.append(string(buf));
 	}
-
+#endif
 	return str;
 }

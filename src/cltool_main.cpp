@@ -113,11 +113,17 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
+	if (data->hdr.id != g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid)
+	{
+		return;
+	}
     (void)i;
     (void)pHandle;
 
 	// Print data to terminal
 	bool refresh = g_inertialSenseDisplay.ProcessData(data);
+
+	
 
 	// Collect and print summary list of client messages received
 	display_server_client_status(i, false, false, refresh);
@@ -232,6 +238,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.command = SYS_CMD_SOFTWARE_RESET;
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+    }
+    if (g_commandLineOptions.softwareResetEvb)
+    {   // Issue software reset to EVB
+        uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
     }
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
@@ -495,11 +506,11 @@ int cltool_main(int argc, char* argv[])
 	// Parse command line options
 	if (!cltool_parseCommandLine(argc, argv))
 	{
-		g_inertialSenseDisplay.ShutDown();
-
 		// parsing failed
 		return -1;
 	}
+
+	g_inertialSenseDisplay.setOutputOnceDid(g_commandLineOptions.outputOnceDid);
 
 	// InertialSense class example using command line options
 	int result = inertialSenseMain();
