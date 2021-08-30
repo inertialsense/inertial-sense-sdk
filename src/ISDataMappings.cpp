@@ -1384,7 +1384,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "temp2", mpu[0].temp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tempRampRate1", mpu[0].tempRampRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tci1", mpu[0].tci, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "numTcPts1", mpu[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    //ADD_MAP(m, totalSize, "numTcPts1", mpu[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "dtTemp1", mpu[0].dtTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "pqr2[0]", mpu[1].lpfLsb.pqr[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr2[1]", mpu[1].lpfLsb.pqr[1], 0, DataTypeFloat, float&, 0);
@@ -1399,7 +1399,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "temp4", mpu[1].temp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tempRampRate2", mpu[1].tempRampRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tci2", mpu[1].tci, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "numTcPts2", mpu[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    //ADD_MAP(m, totalSize, "numTcPts2", mpu[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "dtTemp2", mpu[1].dtTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
