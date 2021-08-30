@@ -38,6 +38,7 @@ uins_device_interface* uins_create_device_interface(
 )
 {
     // TODO: uri parsing function
+    // TODO: 
 }
 
 uins_operation_result uins_destroy_device_interface(uins_device_interface* interface)
@@ -76,7 +77,7 @@ uins_operation_result uins_update_flash(
     const void* user_data
 )
 {
-    if (interface->device.bootloader_flash_support & IS_DEVICE_INTERFACE_FLAG_DFU)
+    if (interface->uri_properties.scheme & IS_DEVICE_INTERFACE_FLAG_DFU)
     {
         struct dfu_config config;
         create_dfu_config(&config);
