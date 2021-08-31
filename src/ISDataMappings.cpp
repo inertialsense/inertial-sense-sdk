@@ -2020,10 +2020,10 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_COVARIANCE_LD",           // 49
 	"DID_INL2_STATUS",                  // 50
 	"DID_INL2_MISC",                    // 51
-	"DID_MAGNETOMETER_1",               // 52
+	"DID_MAGNETOMETER",                 // 52
 	"DID_BAROMETER",                    // 53
 	"DID_GPS1_RTK_POS",                 // 54
-	"DID_MAGNETOMETER_2",               // 55
+	"UNUSED_55",                        // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
 	"DID_DUAL_IMU_RAW",                 // 57
 	"DID_DUAL_IMU",                     // 58
