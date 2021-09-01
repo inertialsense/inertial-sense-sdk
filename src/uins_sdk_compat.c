@@ -37,13 +37,34 @@ uins_device_interface* uins_create_device_interface(
     const uins_device_uri unique_identifier
 )
 {
-    // TODO: uri parsing function
-    // TODO: 
+    uins_device_interface* interface = malloc(sizeof(uins_device_interface));
+
+    char scheme_string[5] = "";
+
+    int uri_scan_status = sscanf(uri, "%5[^:]%*[:/]%x/%x/%d", scheme_string, interface->uri_properties.vid, 
+        interface->uri_properties.pid, interface->uri_properties.alt);
+
+    if(strncmp(scheme_string, "sam", 3) == 0)
+    {
+        interface->uri_properties.scheme = IS_SCHEME_SAM;
+    }
+    else if(strncmp(scheme_string, "dfu", 3) == 0)
+    {
+        interface->uri_properties.scheme = IS_SCHEME_DFU;
+    }
+    else if(strncmp(scheme_string, "uart", 4) == 0)
+    {
+        interface->uri_properties.scheme = IS_SCHEME_UART;
+    }
+    
+    return interface;
 }
 
 uins_operation_result uins_destroy_device_interface(uins_device_interface* interface)
 {
+    free(interface);
 
+    return IS_OP_OK;
 }
 
 uins_operation_result uins_open(uins_device_interface* interface)

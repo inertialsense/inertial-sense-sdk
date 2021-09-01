@@ -44,12 +44,18 @@ typedef struct
 
 typedef const unsigned char * uins_device_uri;
 
+typedef enum {
+    IS_SCHEME_SAM = 0,
+    IS_SCHEME_DFU,
+    IS_SCHEME_UART
+} uins_upload_scheme;
+
 typedef struct
 {
-    // tbd enum scheme;
-    int scheme;
-    // todo rest of properties
-
+    uins_upload_scheme scheme;
+    int vid;
+    int pid;
+    int alt;
 } uins_device_uri_properties;
 
 
