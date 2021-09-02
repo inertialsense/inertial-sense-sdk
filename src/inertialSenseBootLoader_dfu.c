@@ -364,25 +364,30 @@ status_again:
 		printf("Adjusted transfer size to %i\n", transfer_size);
 	}
 
-    /* open for "exclusive" writing */
-    fd = open(file.name, O_WRONLY | O_BINARY | O_CREAT | O_EXCL | O_TRUNC, 0666);
-    if (fd < 0) {
-        warn("Cannot open file %s for writing", file.name);
-        ret = EX_CANTCREAT;
-        return ret;
-    }
+	// "download" means copy from host to device
+	// case MODE_DOWNLOAD:
 
-    if (dfuse_device || dfuse_options) {
-        ret = dfuse_do_upload(&config, config.dfu_root, transfer_size, fd, dfuse_options);
-    } else {
-        ret = dfuload_do_upload(config.dfu_root, transfer_size, expected_size, fd);
-    }
-    close(fd);
-    if (ret < 0)
-        ret = EX_IOERR;
-    else
-        ret = EX_OK;
-
+	if (((file.idVendor  != 0xffff && file.idVendor  != runtime_vendor) ||
+			(file.idProduct != 0xffff && file.idProduct != runtime_product)) &&
+		((file.idVendor  != 0xffff && file.idVendor  != config.dfu_root->vendor) ||
+			(file.idProduct != 0xffff && file.idProduct != config.dfu_root->product))) {
+		errx(EX_USAGE, "Error: File ID %04x:%04x does "
+			"not match device (%04x:%04x or %04x:%04x)",
+			file.idVendor, file.idProduct,
+			runtime_vendor, runtime_product,
+			config.dfu_root->vendor, config.dfu_root->product);
+	}
+	if (dfuse_device || dfuse_options || file.bcdDFU == 0x11a) {
+		ret = dfuse_do_dnload(config.dfu_root, transfer_size, &file, dfuse_options, &config);
+	} else {
+		ret = dfuload_do_dnload(config.dfu_root, transfer_size, &file, &config);
+	}
+	if (ret < 0)
+		ret = EX_IOERR;
+	else
+		ret = EX_OK;
+	
+	// break; // MODE_DOWNLOAD
 
 	if (!ret && final_reset) {
 		ret = dfu_detach(config.dfu_root->dev_handle, config.dfu_root->interface, 1000);
