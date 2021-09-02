@@ -45,15 +45,15 @@ uins_device_interface* uins_create_device_interface(
     unsigned int vendor_id;
     unsigned int product_id;
     unsigned int alt_id;
-    unsigned int device_address;
+    char dfuse_address[11];
 
     int uri_scan_status = sscanf(uri,
-        "%5[^:]%*[:/]%x/%x/%u/%x",
+        "%5[^:]%*[:/]%x/%x/%u/%s",
         uri_scheme,
         &vendor_id,
         &product_id,
         &alt_id,
-        &device_address);
+        dfuse_address);
 
     if(strncmp(uri_scheme, "sam", 3) == 0)
     {
@@ -62,17 +62,21 @@ uins_device_interface* uins_create_device_interface(
     else if(strncmp(uri_scheme, "dfu", 3) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_DFU;
+        strcpy(interface->uri_properties.address, dfuse_address);
     }
     else if(strncmp(uri_scheme, "uart", 4) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_UART;
     }
+    else
+    {
+        interface->uri_properties.scheme = IS_SCHEME_UNKNOWN;
+    }
 
     interface->uri_properties.vid = vendor_id;
     interface->uri_properties.pid = product_id;
     interface->uri_properties.alt = alt_id;
-    interface->uri_properties.address = device_address;
-    
+   
     return interface;
 }
 
@@ -114,32 +118,20 @@ uins_operation_result uins_update_flash(
     const void* user_data
 )
 {
-    if (interface->uri_properties.scheme & IS_DEVICE_INTERFACE_FLAG_DFU)
+    if (interface->uri_properties.scheme == IS_SCHEME_DFU)
     {
         struct dfu_config config;
         create_dfu_config(&config);
 
-        // TODO: setup up correct configuration using function parameters
-        // dfu://0483/df11/0/0x08000000
-        
-        config.match_vendor = 0x0483;
-        // config.match_vendor_dfu;
-
-        config.match_product = 0xdf11;
-        // config.match_product_dfu;
-        
-        // config.match_serial_dfu;
-        
-        config.match_iface_alt_index = 0;
-        
-        config.dfuse_options = "0x08000000";
-
+        config.match_vendor = interface->uri_properties.vid;
+        config.match_product = interface->uri_properties.pid;
+        config.match_iface_alt_index = interface->uri_properties.alt;
+        config.dfuse_options = interface->uri_properties.address;
         config.verbose = 3; // more logs
+        config.bin_file_path = firmware_file_path;
 
-        config.bin_file_path = "/home/sfusco/code/inertialsense/uins5/imx/cpp/hdw-src/research/stm32/bootloader_entry_test/Debug Nucleo/bootloader_entry_test.bin";
-        
-        int ok = bootloadFileExDfu(config);
-        if (ok) {
+        int ret = bootloadFileExDfu(config);
+        if (ret == 0) {
             return IS_OP_OK;
         } else {
             return IS_OP_ERROR;
@@ -147,4 +139,5 @@ uins_operation_result uins_update_flash(
     }
 
     // TODO: legacy SAM with serialPort and bootloader calls
+    return IS_OP_ERROR;
 }

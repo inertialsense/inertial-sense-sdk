@@ -741,6 +741,7 @@ int dfuse_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 		ret = dfuse_do_bin_dnload(config, dif, xfer_size, file, config->dfuse_address);
 	} else {
 		if (file->bcdDFU != 0x11a) {
+			printf("file->bcdDFU: %d\n", file->bcdDFU);
 			warnx("Only DfuSe file version 1.1a is supported");
 			errx(EX_USAGE, "(for raw binary download, use the "
 			     "--dfuse-address option)");

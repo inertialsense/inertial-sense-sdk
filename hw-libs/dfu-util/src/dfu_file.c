@@ -247,12 +247,17 @@ void dfu_load_file(struct dfu_file *file, enum suffix_req check_suffix, enum pre
 		}
 		file->firmware = dfu_malloc(file->size.total);
 
+		printf("reading\n");
 		while (read_total < file->size.total) {
 			off_t to_read = file->size.total - read_total;
 			/* read() limit on Linux, slightly below MAX_INT on Windows */
 			if (to_read > 0x7ffff000)
 				to_read = 0x7ffff000;
 			read_count = read(f, file->firmware + read_total, to_read);
+			for (size_t i = 0; i != read_count; ++i)
+			{
+				printf(".");
+			}
 			if (read_count == 0)
 				break;
 			if (read_count == -1 && errno != EINTR)
@@ -264,6 +269,7 @@ void dfu_load_file(struct dfu_file *file, enum suffix_req check_suffix, enum pre
 			    (long long) read_total, (long long) file->size.total, file->name);
 		}
 		close(f);
+		printf("\n");
 	}
 
 	/* Check for possible DFU file suffix by trying to parse one */
@@ -365,6 +371,19 @@ checked:
 				   data[2] >>1 | (data[3] << 7) );
 		else
 			errx(EX_DATAERR, "Unknown DFU prefix type");
+	}
+
+	if (config->verbose > 2)
+	{
+		printf("file->name: %s\n", file->name);
+		printf("file->size.prefix: %d\n", file->size.prefix);
+		printf("file->size.suffix: %d\n", file->size.suffix);
+		printf("file->size.total: %ld\n", file->size.total);
+		printf("file->bcdDFU: %d\n", file->bcdDFU);
+		printf("file->idVendor: %d\n", file->idVendor);
+		printf("file->idProduct: %d\n", file->idProduct);
+		printf("file->bcdDevice: %d\n", file->bcdDevice);
+		printf("file->lmdfu_address: %d\n", file->lmdfu_address);
 	}
 }
 

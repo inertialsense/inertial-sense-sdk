@@ -31,8 +31,8 @@ typedef enum {
 typedef unsigned char communications_flags;   // 1111 1111
 
 typedef enum {
-    IS_OP_ERROR = 0,
-    IS_OP_OK    = 1
+    IS_OP_ERROR     = 0,
+    IS_OP_OK        = 1
 } uins_operation_result;
 
 typedef struct
@@ -45,18 +45,19 @@ typedef struct
 typedef const unsigned char * uins_device_uri;
 
 typedef enum {
-    IS_SCHEME_SAM = 0,
+    IS_SCHEME_UNKNOWN = 0,
+    IS_SCHEME_SAM,
     IS_SCHEME_DFU,
     IS_SCHEME_UART
-} uins_upload_scheme;
+} uins_device_scheme;
 
 typedef struct
 {
-    uins_upload_scheme scheme;
+    uins_device_scheme scheme;
     unsigned int vid;
     unsigned int pid;
     unsigned int alt;
-    unsigned int address;
+    char address[11];
 } uins_device_uri_properties;
 
 

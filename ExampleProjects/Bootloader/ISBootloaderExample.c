@@ -53,9 +53,9 @@ static void bootloaderStatusText(const void* obj, const char* info)
 int main(int argc, char* argv[])
 {
 	// uins_create_device_interface(uins_31(), "file://dev/ttyACM0");
-	uins_device_uri uri = "dfu://0483/df11/0/....";
 
-	const char* hex_file = "/tmp/uins5-firmware.hex";
+	uins_device_uri uri = "dfu://0483/df11/0/0x08000000";
+	const char* firmware_file_path = "bootloader_entry_test.bin";
 
 	uins_device_interface* uins = uins_create_device_interface(uins_50(), uri);
 
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	
 	uins_operation_result bootloader_update_ok = uins_update_flash(
 		uins,
-		hex_file,
+		firmware_file_path,
 		IS_UPDATE_APPLICATION_FIRMWARE,
 		IS_VERIFY_ON,
 		on_error,
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 	
 	if (bootloader_update_ok)
 	{
-		printf("Bootloader success on %s with file %s\n", uri, hex_file);
+		printf("Bootloader success on %s with file %s\n", uri, firmware_file_path);
 		return 0;
 	}
 	else
