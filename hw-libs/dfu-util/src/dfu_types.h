@@ -54,6 +54,8 @@ struct dfu_config {
     int dfuse_unprotect;
     int dfuse_mass_erase;
     int dfuse_will_reset;
+	const char *dfuse_options;
+	const char *bin_file_path;
 };
 
 struct dfu_file {

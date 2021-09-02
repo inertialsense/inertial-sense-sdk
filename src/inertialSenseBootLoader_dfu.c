@@ -55,7 +55,6 @@ dfu://0483/df11/3
 	int ret;
 	int dfuse_device = 0;
 	int fd;
-	const char *dfuse_options = NULL;
 	int detach_delay = 5;
 	uint16_t runtime_vendor;
 	uint16_t runtime_product;
@@ -63,6 +62,7 @@ dfu://0483/df11/3
 	// create_dfu_config(&config);
 
 	memset(&file, 0, sizeof(file));
+	file.name = config.bin_file_path;
 
 	/* make sure all prints are flushed */
 	setvbuf(stdout, NULL, _IONBF, 0);
@@ -71,6 +71,18 @@ dfu://0483/df11/3
 	if (config.match_config_index == 0) {
 		/* Handle "-c 0" (unconfigured device) as don't care */
 		config.match_config_index = -1;
+	}
+
+	dfu_load_file(&file, MAYBE_SUFFIX, MAYBE_PREFIX, &config);
+	/* If the user didn't specify product and/or vendor IDs to match,
+		* use any IDs from the file suffix for device matching */
+	if (config.match_vendor < 0 && file.idVendor != 0xffff) {
+		config.match_vendor = file.idVendor;
+		printf("Match vendor ID from file: %04x\n", config.match_vendor);
+	}
+	if (config.match_product < 0 && file.idProduct != 0xffff) {
+		config.match_product = file.idProduct;
+		printf("Match product ID from file: %04x\n", config.match_product);
 	}
 
 	if (wait_device) {
@@ -335,7 +347,7 @@ status_again:
 
 	if (config.dfu_root->func_dfu.bcdDFUVersion == libusb_cpu_to_le16(0x11a))
 		dfuse_device = 1;
-	else if (dfuse_options)
+	else if (config.dfuse_options)
 		printf("Warning: DfuSe option used on non-DfuSe device\n");
 
 	/* Get from device or user, warn if overridden */
@@ -377,8 +389,8 @@ status_again:
 			runtime_vendor, runtime_product,
 			config.dfu_root->vendor, config.dfu_root->product);
 	}
-	if (dfuse_device || dfuse_options || file.bcdDFU == 0x11a) {
-		ret = dfuse_do_dnload(&config, config.dfu_root, transfer_size, &file, dfuse_options);
+	if (dfuse_device || config.dfuse_options || file.bcdDFU == 0x11a) {
+		ret = dfuse_do_dnload(&config, config.dfu_root, transfer_size, &file, config.dfuse_options);
 	} else {
 		ret = dfuload_do_dnload(&config, config.dfu_root, transfer_size, &file);
 	}

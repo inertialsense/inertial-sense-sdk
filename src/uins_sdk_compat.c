@@ -39,17 +39,21 @@ uins_device_interface* uins_create_device_interface(
 {
     uins_device_interface* interface = malloc(sizeof(uins_device_interface));
 
+    // dfu://0483/df11/0/0x08000000
+
     char uri_scheme[5];
     unsigned int vendor_id;
     unsigned int product_id;
     unsigned int alt_id;
+    unsigned int device_address;
 
     int uri_scan_status = sscanf(uri,
-        "%5[^:]%*[:/]%x/%x/%u",
+        "%5[^:]%*[:/]%x/%x/%u/%x",
         uri_scheme,
         &vendor_id,
         &product_id,
-        &alt_id);
+        &alt_id,
+        &device_address);
 
     if(strncmp(uri_scheme, "sam", 3) == 0)
     {
@@ -67,6 +71,7 @@ uins_device_interface* uins_create_device_interface(
     interface->uri_properties.vid = vendor_id;
     interface->uri_properties.pid = product_id;
     interface->uri_properties.alt = alt_id;
+    interface->uri_properties.address = device_address;
     
     return interface;
 }
@@ -115,6 +120,23 @@ uins_operation_result uins_update_flash(
         create_dfu_config(&config);
 
         // TODO: setup up correct configuration using function parameters
+        // dfu://0483/df11/0/0x08000000
+        
+        config.match_vendor = 0x0483;
+        // config.match_vendor_dfu;
+
+        config.match_product = 0xdf11;
+        // config.match_product_dfu;
+        
+        // config.match_serial_dfu;
+        
+        config.match_iface_alt_index = 0;
+        
+        config.dfuse_options = "0x08000000";
+
+        config.verbose = 3; // more logs
+
+        config.bin_file_path = "/home/sfusco/code/inertialsense/uins5/imx/cpp/hdw-src/research/stm32/bootloader_entry_test/Debug Nucleo/bootloader_entry_test.bin";
         
         int ok = bootloadFileExDfu(config);
         if (ok) {

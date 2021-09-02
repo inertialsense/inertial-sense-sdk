@@ -56,6 +56,7 @@ typedef struct
     unsigned int vid;
     unsigned int pid;
     unsigned int alt;
+    unsigned int address;
 } uins_device_uri_properties;
 
 
