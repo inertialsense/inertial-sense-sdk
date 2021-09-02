@@ -570,7 +570,7 @@ void board_IO_config(void)
 
 
 
-void board_init(void)
+void board_init()
 {
 	// Hardware Detection - PCB version
 	ioport_set_pin_dir(EVB_HDW_DETECT_0_GPIO, IOPORT_DIR_INPUT);
