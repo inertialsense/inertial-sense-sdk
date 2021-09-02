@@ -45,8 +45,7 @@
 #include "dfu_load.h"
 #include "quirks.h"
 
-int dfuload_do_upload(struct dfu_if *dif, int xfer_size,
-    int expected_size, int fd)
+int dfuload_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size, int expected_size, int fd)
 {
 	off_t total_bytes = 0;
 	unsigned short transaction = 0;
@@ -98,7 +97,7 @@ int dfuload_do_upload(struct dfu_if *dif, int xfer_size,
 	return ret;
 }
 
-int dfuload_do_dnload(struct dfu_if *dif, int xfer_size, struct dfu_file* file, struct dfu_config* config)
+int dfuload_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_size, struct dfu_file* file)
 {
 	off_t bytes_sent;
 	off_t expected_size;

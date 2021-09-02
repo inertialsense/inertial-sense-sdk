@@ -34,28 +34,39 @@ uins_device uins_50()
 
 uins_device_interface* uins_create_device_interface(
     uins_device device,
-    const uins_device_uri unique_identifier
+    const uins_device_uri uri
 )
 {
     uins_device_interface* interface = malloc(sizeof(uins_device_interface));
 
-    char scheme_string[5] = "";
+    char uri_scheme[5];
+    unsigned int vendor_id;
+    unsigned int product_id;
+    unsigned int alt_id;
 
-    int uri_scan_status = sscanf(uri, "%5[^:]%*[:/]%x/%x/%d", scheme_string, interface->uri_properties.vid, 
-        interface->uri_properties.pid, interface->uri_properties.alt);
+    int uri_scan_status = sscanf(uri,
+        "%5[^:]%*[:/]%x/%x/%u",
+        uri_scheme,
+        &vendor_id,
+        &product_id,
+        &alt_id);
 
-    if(strncmp(scheme_string, "sam", 3) == 0)
+    if(strncmp(uri_scheme, "sam", 3) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_SAM;
     }
-    else if(strncmp(scheme_string, "dfu", 3) == 0)
+    else if(strncmp(uri_scheme, "dfu", 3) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_DFU;
     }
-    else if(strncmp(scheme_string, "uart", 4) == 0)
+    else if(strncmp(uri_scheme, "uart", 4) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_UART;
     }
+
+    interface->uri_properties.vid = vendor_id;
+    interface->uri_properties.pid = product_id;
+    interface->uri_properties.alt = alt_id;
     
     return interface;
 }

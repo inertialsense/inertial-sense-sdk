@@ -378,9 +378,9 @@ status_again:
 			config.dfu_root->vendor, config.dfu_root->product);
 	}
 	if (dfuse_device || dfuse_options || file.bcdDFU == 0x11a) {
-		ret = dfuse_do_dnload(config.dfu_root, transfer_size, &file, dfuse_options, &config);
+		ret = dfuse_do_dnload(&config, config.dfu_root, transfer_size, &file, dfuse_options);
 	} else {
-		ret = dfuload_do_dnload(config.dfu_root, transfer_size, &file, &config);
+		ret = dfuload_do_dnload(&config, config.dfu_root, transfer_size, &file);
 	}
 	if (ret < 0)
 		ret = EX_IOERR;

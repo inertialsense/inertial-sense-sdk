@@ -53,9 +53,9 @@ typedef enum {
 typedef struct
 {
     uins_upload_scheme scheme;
-    int vid;
-    int pid;
-    int alt;
+    unsigned int vid;
+    unsigned int pid;
+    unsigned int alt;
 } uins_device_uri_properties;
 
 
