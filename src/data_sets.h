@@ -83,10 +83,10 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
 #define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
-#define DID_MAGNETOMETER_1              (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor 1 output */
+#define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor 1 output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
-#define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
+//#define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_DUAL_IMU_RAW                (eDataIDs)57 /** (dual_imu_t) Dual inertial measurement unit data directly from IMU.  We recommend use of DID_DUAL_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_DUAL_IMU                    (eDataIDs)58 /** (dual_imu_t) Dual inertial measurement unit data down-sampled from 1KHz to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
@@ -655,7 +655,7 @@ typedef struct PACKED
 } dual_imu_ok_t;
 
 
-/** (DID_MAGNETOMETER_1, DID_MAGNETOMETER_2) Magnetometer sensor data */
+/** (DID_MAGNETOMETER) Magnetometer sensor data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1293,9 +1293,9 @@ typedef struct PACKED
 #define RMC_BITS_DUAL_IMU               0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
 #define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
-#define RMC_BITS_MAGNETOMETER1          0x0000000000000080      // ~10ms
-#define RMC_BITS_MAGNETOMETER2          0x0000000000000100      // "
-
+#define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
+//                                      0x0000000000000100      //
+//                                      0x0000000000000200      //
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1334,8 +1334,7 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_BITS_NO_IMU      (RMC_BITS_PRESET \
 										| RMC_BITS_INS2 \
 										| RMC_BITS_BAROMETER \
-										| RMC_BITS_MAGNETOMETER1 \
-										| RMC_BITS_MAGNETOMETER2 \
+										| RMC_BITS_MAGNETOMETER \
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_GPS2_POS \
 										| RMC_BITS_GPS1_VEL \

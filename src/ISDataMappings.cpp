@@ -104,8 +104,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
-	sizeMap[DID_MAGNETOMETER_1] = sizeof(magnetometer_t);
-	sizeMap[DID_MAGNETOMETER_2] = sizeof(magnetometer_t);
+	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
 	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
 	sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
@@ -561,10 +560,10 @@ static void PopulateGPSCNOMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+static void PopulateMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef magnetometer_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[id];
+	map_name_to_info_t& m = mappings[DID_MAGNETOMETER];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "mag[0]", mag[0], 0, DataTypeFloat, float&, 0);
@@ -2014,10 +2013,10 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_COVARIANCE_LD",           // 49
 	"DID_INL2_STATUS",                  // 50
 	"DID_INL2_MISC",                    // 51
-	"DID_MAGNETOMETER_1",               // 52
+	"DID_MAGNETOMETER",                 // 52
 	"DID_BAROMETER",                    // 53
 	"DID_GPS1_RTK_POS",                 // 54
-	"DID_MAGNETOMETER_2",               // 55
+	"UNUSED_55",                        // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
 	"DID_DUAL_IMU_RAW",                 // 57
 	"DID_DUAL_IMU",                     // 58
@@ -2108,8 +2107,7 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS2_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
-	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_1);
-    PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
+	PopulateMagnetometerMappings(m_lookupInfo);
     PopulateBarometerMappings(m_lookupInfo);
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
     PopulateWheelEncoderMappings(m_lookupInfo);
