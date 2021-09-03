@@ -26,8 +26,8 @@ uins_device uins_40()
 uins_device uins_50()
 {
     uins_device d;
-    d.version_major = 3;
-    d.version_minor = 1;
+    d.version_major = 5;
+    d.version_minor = 0;
     d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_DFU | IS_DEVICE_INTERFACE_FLAG_UART;
     return d;
 }
