@@ -70,7 +70,7 @@ typedef struct
 	/** Feedforward coefficient estimation gain.  Zero to disable estimation..  Zero to disable estimation..  Zero to disable estimation. */
 	float					FF_c_est_Ki[NUM_FF_COEFS];
 
-    /** Feedforward coefficient estimation maximum value (rad/s) */
+    /** Feedforward coefficient estimation maximum value */
     float                 	FF_c_est_max[NUM_FF_COEFS];
 
     /** Feedforward coefficients */
