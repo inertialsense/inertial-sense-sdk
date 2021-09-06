@@ -1325,21 +1325,28 @@ static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "acc1[0]", imu[0].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "acc1[1]", imu[0].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "acc1[2]", imu[0].acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[0]", mag[0].mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[1]", mag[0].mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[2]", mag[0].mag[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "temp1",   imu[0].temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "pqr2[0]", imu[1].pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[1]", imu[1].pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[2]", imu[1].pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[0]", imu[1].acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[1]", imu[1].acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[2]", imu[1].acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[0]", mag[1].mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[1]", mag[1].mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[2]", mag[1].mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp2",   imu[1].temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "bar", bar, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr2[0]", imu[1].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr2[1]", imu[1].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr2[2]", imu[1].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc2[0]", imu[1].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc2[1]", imu[1].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc2[2]", imu[1].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "temp2", imu[1].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr3[0]", imu[2].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[1]", imu[2].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[2]", imu[2].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[0]", imu[2].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[1]", imu[2].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[2]", imu[2].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "temp3", imu[2].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "mag1[0]", mag[0].mag[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag1[1]", mag[0].mag[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag1[2]", mag[0].mag[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag2[0]", mag[1].mag[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag2[1]", mag[1].mag[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag2[2]", mag[1].mag[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "bar", bar, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "barTemp", barTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "humidity", humidity, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "ana[0]", ana[0], 0, DataTypeFloat, float&, 0);
@@ -1375,6 +1382,16 @@ static void PopulateSensorsISMappings(map_name_to_info_t mappings[DID_COUNT], ui
     ADD_MAP(m, totalSize, "mag2[1]", mpu[1].mag[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "mag2[2]", mpu[1].mag[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "temp2", mpu[1].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr3[0]", mpu[2].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[1]", mpu[2].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[2]", mpu[2].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[0]", mpu[2].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[1]", mpu[2].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[2]", mpu[2].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag3[0]", mpu[2].mag[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag3[1]", mpu[2].mag[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag3[2]", mpu[2].mag[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "temp3", mpu[2].temp, 0, DataTypeFloat, float, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1402,6 +1419,15 @@ static void PopulateSensorsTCMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "mag2[0]", mpu[1].mag[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "mag2[1]", mpu[1].mag[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "mag2[2]", mpu[1].mag[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[0]", mpu[2].pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[1]", mpu[2].pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[2]", mpu[2].pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[0]", mpu[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[1]", mpu[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[2]", mpu[2].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag3[0]", mpu[2].mag[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag3[1]", mpu[2].mag[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag3[2]", mpu[2].mag[2], 0, DataTypeFloat, float&, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1420,12 +1446,13 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "mag1[0]", mpu[0].lpfLsb.mag[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "mag1[1]", mpu[0].lpfLsb.mag[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "mag1[2]", mpu[0].lpfLsb.mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp1", mpu[0].lpfLsb.temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "temp2", mpu[0].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "temp1lpf", mpu[0].lpfLsb.temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "temp1", mpu[0].temp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tempRampRate1", mpu[0].tempRampRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tci1", mpu[0].tci, 0, DataTypeUInt32, uint32_t, 0);
-    //ADD_MAP(m, totalSize, "numTcPts1", mpu[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "m1numTcPts", mpu[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "dtTemp1", mpu[0].dtTemp, 0, DataTypeFloat, float, 0);
+
     ADD_MAP(m, totalSize, "pqr2[0]", mpu[1].lpfLsb.pqr[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr2[1]", mpu[1].lpfLsb.pqr[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr2[2]", mpu[1].lpfLsb.pqr[2], 0, DataTypeFloat, float&, 0);
@@ -1435,12 +1462,29 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "mag2[0]", mpu[1].lpfLsb.mag[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "mag2[1]", mpu[1].lpfLsb.mag[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "mag2[2]", mpu[1].lpfLsb.mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp3", mpu[1].lpfLsb.temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "temp4", mpu[1].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "temp2lpf", mpu[1].lpfLsb.temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "temp2", mpu[1].temp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tempRampRate2", mpu[1].tempRampRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tci2", mpu[1].tci, 0, DataTypeUInt32, uint32_t, 0);
-    //ADD_MAP(m, totalSize, "numTcPts2", mpu[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "m2numTcPts", mpu[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "dtTemp2", mpu[1].dtTemp, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "pqr3[0]", mpu[2].lpfLsb.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[1]", mpu[2].lpfLsb.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr3[2]", mpu[2].lpfLsb.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[0]", mpu[2].lpfLsb.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[1]", mpu[2].lpfLsb.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc3[2]", mpu[2].lpfLsb.acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag3[0]", mpu[2].lpfLsb.mag[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag3[1]", mpu[2].lpfLsb.mag[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag3[2]", mpu[2].lpfLsb.mag[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "temp3lpf", mpu[2].lpfLsb.temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "temp3", mpu[2].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tempRampRate2", mpu[2].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tci3", mpu[2].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "m3numTcPts", mpu[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "dtTemp3", mpu[2].dtTemp, 0, DataTypeFloat, float, 0);
+
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "alignAccel[0]", alignAccel[0], 0, DataTypeFloat, float&, 0);
@@ -2064,7 +2108,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS2_RTK_CMP_REL",             // 91
 	"DID_GPS2_RTK_CMP_MISC",            // 92
 	"DID_EVB_DEV_INFO",                 // 93
-	"UNUSED_94",                        // 94 
+	"DID_CAL_SC3",                      // 94
 	"UNUSED_95",                        // 95 
 	"UNUSED_96",                        // 96 
 	"UNUSED_97",                        // 97 

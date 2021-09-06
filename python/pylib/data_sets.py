@@ -87,15 +87,17 @@ DID_EVB_STATUS                  = 80
 DID_EVB_CONFIG                  = 81
 DID_EVB_DEBUG_ARRAY             = 82
 DID_EVB_RTOS_INFO               = 83
-DID_IMU3_MAG                 = 84
+DID_IMU3_MAG                    = 84
 DID_IMU_MAG                     = 85
 DID_PREINTEGRATED_IMU_MAG       = 86
-DID_GROUND_VEHICLE                = 87
+DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
+DID_EVB_DEV_INFO                = 93
+DID_CAL_SC3                     = 94
 
 NUM_DIDS                        = 96
 

@@ -353,8 +353,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 90: 
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		offsetsRtkNav,          // 92: DID_GPS2_RTK_CMP_MISC
-		0,                      // 93: 
-		0,                      // 94: 
+		0,                      // 93: DID_EVB_DEV_INFO
+		0,                      // 94: DID_CAL_SC3
 		0,                      // 95:
 		0,                      // 96:
 		0,                      // 97:
@@ -527,8 +527,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 90: DID_CAN_CONFIG
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		0,                      // 92: DID_GPS2_RTK_CMP_MISC
-		0,                      // 93: 
-		0,                      // 94: 
+		0,                      // 93: DID_EVB_DEV_INFO
+		0,						// 44: DID_CAL_SC3
 		0,                      // 95:
 		0,                      // 96:
 		0,                      // 97:
