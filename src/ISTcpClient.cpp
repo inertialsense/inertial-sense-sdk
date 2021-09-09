@@ -270,21 +270,35 @@ int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
     SetBlocking(false);
 
     // because non-blocking, connect returns immediately
-	// status return value is unreliable
+    // status return value is unreliable
     connect(m_socket, result->ai_addr, (int)result->ai_addrlen);
 
-	// check sock_opt_err in order to confirm socket is actually connected
-	int sock_opt_err;
-	socklen_t sock_opt_err_len = sizeof(sock_opt_err);
-	status = getsockopt(m_socket, SOL_SOCKET, SO_ERROR, &sock_opt_err, &sock_opt_err_len);
-	if (sock_opt_err != 0)
-	{
-		freeaddrinfo(result);
-		Close();
-        return -1;
-	}
+    #if PLATFORM_IS_WINDOWS
 
-	freeaddrinfo(result);
+    status = ISSocketCanWrite(m_socket, timeoutMilliseconds);
+    if (status < 0)
+    {
+        freeaddrinfo(result);
+        Close();
+        return -1;
+    }
+
+    #else
+
+    // check sock_opt_err in order to confirm socket is actually connected
+    int sock_opt_err;
+    socklen_t sock_opt_err_len = sizeof(sock_opt_err);
+    status = getsockopt(m_socket, SOL_SOCKET, SO_ERROR, &sock_opt_err, &sock_opt_err_len);
+    if (sock_opt_err != 0)
+    {
+        freeaddrinfo(result);
+        Close();
+        return -1;
+    }
+
+    #endif
+
+    freeaddrinfo(result);
     return 0;
 }
 
