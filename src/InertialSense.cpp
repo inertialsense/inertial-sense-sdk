@@ -333,6 +333,7 @@ bool InertialSense::OpenConnectionToServer(const string& connectionString)
 {
 	CloseServerConnection();
 
+	// calls new cISTcpClient or new cISSerialPort
 	m_clientStream = cISClient::OpenConnectionToServer(connectionString, &m_forwardGpgga);
 
 	return m_clientStream!=NULLPTR;
@@ -342,7 +343,12 @@ void InertialSense::CloseServerConnection()
 {
 	m_tcpServer.Close();
 	m_serialServer.Close();
-	m_clientStream = NULLPTR;
+
+	if (m_clientStream != NULLPTR)
+	{
+		delete m_clientStream;
+		m_clientStream = NULLPTR;
+	}
 }
 
 // [type]:[ip/url]:[port]
