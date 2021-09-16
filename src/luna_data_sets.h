@@ -22,7 +22,8 @@ extern "C" {
 #define DID_EVB_LUNA_REMOTE_KILL        (eDataIDs)113 /** (evb_luna_remote_kill_t) EVB remoteKill system */
 #define DID_EVB_LUNA_WHEEL_CONTROLLER   (eDataIDs)114 /** (evb_luna_wheel_controller_t) EVB wheel control information */
 #define DID_EVB_LUNA_WHEEL_COMMAND      (eDataIDs)115 /** (evb_luna_wheel_command_t) EVB velocity command */
-#define DID_LUNA_COUNT					116				/** Make larger than all Luna DIDs */
+#define DID_EVB_LUNA_AUX_COMMAND        (eDataIDs)116 /** (evb_luna_aux_command_t) EVB auxillary commands */
+#define DID_LUNA_COUNT					117				/** Make larger than all Luna DIDs */
 
 
 PUSH_PACK_1
@@ -289,6 +290,21 @@ typedef struct
 
 } evb_luna_wheel_command_t;
 
+typedef struct evb_luna_aux_command_t
+{
+    uint32_t                    command;
+
+}evb_luna_aux_command_t;
+
+typedef enum
+{
+    //Possible Commands
+    CMD_BLADE_OFF        = 0,
+    CMD_BLADE_ON         = 1,
+    CMD_EBRAKE_ENGAGE    = 2,
+    CMD_EBRAKE_DISENGAGE = 3,
+    CMD_BEEP             = 4,
+} eLunaAuxCommands;
 
 typedef enum
 {
