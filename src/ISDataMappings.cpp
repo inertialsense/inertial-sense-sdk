@@ -177,7 +177,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_EVB_LUNA_REMOTE_KILL] = sizeof(evb_luna_remote_kill_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_wheel_controller_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_COMMAND] = sizeof(evb_luna_wheel_command_t);
-    sizeMap[DID_EVB_LUNA_AUX_COMMAND] = sizeof(evb_luna_aux_cmd_t);
+    sizeMap[DID_EVB_LUNA_AUX_COMMAND] = sizeof(evb_luna_aux_command_t);
 
 #endif
 
@@ -1054,8 +1054,8 @@ static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_
 
 static void PopulateEvbLunaAuxCmdMappings(map_name_to_info_t mappings[DID_COUNT])
 {
-    typedef evb_luna_aux_cmd_t MAP_TYPE;
-    map_name_to_info_t& m = mappings[DID_EVB_LUNA_AUX_CMD];
+    typedef evb_luna_aux_command_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_EVB_LUNA_AUX_COMMAND];
     uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "command", command, 0, DataTypeUInt32, uint32_t, 0);
 
@@ -2089,6 +2089,9 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_LUNA_WHEEL_CONTROLLER",    // 114
 	"DID_EVB_LUNA_WHEEL_COMMAND",       // 115
     "DID_EVB_LUNA_AUX_COMMAND",         // 116
+	"",
+	"",
+	"",
 };
 
 
