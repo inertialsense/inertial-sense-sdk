@@ -270,20 +270,35 @@ int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
     SetBlocking(false);
 
     // because non-blocking, connect returns immediately
+    // status return value is unreliable
     connect(m_socket, result->ai_addr, (int)result->ai_addrlen);
 
-    // in order to detect connection we determine whether the socket is writeable
+    #if PLATFORM_IS_WINDOWS
+
     status = ISSocketCanWrite(m_socket, timeoutMilliseconds);
-
-    // cleanup
-	freeaddrinfo(result);
-    if (status <= 0)
-	{
-        // no socket was writeable, fail
-		Close();
+    if (status < 0)
+    {
+        freeaddrinfo(result);
+        Close();
         return -1;
-	}
+    }
 
+    #else
+
+    // check sock_opt_err in order to confirm socket is actually connected
+    int sock_opt_err;
+    socklen_t sock_opt_err_len = sizeof(sock_opt_err);
+    status = getsockopt(m_socket, SOL_SOCKET, SO_ERROR, &sock_opt_err, &sock_opt_err_len);
+    if (sock_opt_err != 0)
+    {
+        freeaddrinfo(result);
+        Close();
+        return -1;
+    }
+
+    #endif
+
+    freeaddrinfo(result);
     return 0;
 }
 
