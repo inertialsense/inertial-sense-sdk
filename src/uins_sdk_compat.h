@@ -29,18 +29,6 @@ uins_device_interface* uins_create_device_interface(
 /** performs any necessary flush or clean up operations, releases instance data resources and frees heap memory from create */
 uins_operation_result uins_destroy_device_interface(uins_device_interface* interface);
 
-/** open the device interface */
-uins_operation_result uins_open(uins_device_interface* interface);
-
-/** close the device interface */
-uins_operation_result uins_close(uins_device_interface* interface);
-
-/** read the specified number of bytes from the device interface into the buffer */
-uins_operation_result uins_read(uins_device_interface* interface, int read_count, uins_data_buffer buffer);
-
-/** write the specified number of bytes from the buffer onto the device interface */
-uins_operation_result uins_write(uins_device_interface* interface, int write_count, uins_data_buffer buffer);
-
 /** copy hex file from this machine to the device interface */
 uins_operation_result uins_update_flash(
     const uins_device_interface* interface,
