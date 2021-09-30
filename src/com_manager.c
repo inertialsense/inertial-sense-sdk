@@ -436,7 +436,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 				int sendData = 1;
 				if (id<DID_COUNT_UINS && cmInstance->regData[id].preTxFnc)
 				{
-					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
+					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle, &bcPtr->dataHdr);
 				}
 				if (sendData)
 				{
@@ -986,7 +986,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	int sendData = 1;
 	if (cmInstance->regData[req->id].preTxFnc)
 	{
-		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle);
+		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
 	}
 
 	
@@ -1210,7 +1210,7 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 		default:
 		{
 			if (msg->txData.size == 0)
-			{	// No data
+			{	
 				return -1;
 			}
 			
