@@ -24,10 +24,10 @@ void RTT_Handler(void)
 	uint32_t status = rtt_get_status(RTT);
 
 	// time has changed
-	if (status & RTT_SR_RTTINC)
-	{
-		g_timer = rtt_read_timer_value(RTT);
-	}
+//	if (status & RTT_SR_RTTINC)
+//	{
+//		g_timer = rtt_read_timer_value(RTT);
+//	}
 
 	// alarm
 	if (status & RTT_SR_ALMS)
@@ -53,7 +53,7 @@ void time_init(void)
 #ifdef NDEBUG
 
 	// interrupt for each tick - release mode only, makes debugging impossible
-	rtt_enable_interrupt(RTT, RTT_MR_RTTINCIEN);
+//	rtt_enable_interrupt(RTT, RTT_MR_RTTINCIEN);
 	
 #endif
 	
@@ -69,9 +69,11 @@ inline volatile uint64_t time_ticks(void)
 
 	// in debug no timer interrupt so read directly from timer register, unsafe as this can cause corrupt time
 	//  but is the only way to debug and step code
-	g_timer = rtt_read_timer_value(RTT);
+	
 
 #endif
+
+	g_timer = rtt_read_timer_value(RTT);
 
 	// this assumes little endian
 	volatile ticks_t ticks;
@@ -99,11 +101,11 @@ inline uint32_t time_msec(void)
 
 	// in debug no timer interrupt so read directly from timer register, unsafe as this can cause corrupt time
 	//  but is the only way to debug and step code
-	g_timer = rtt_read_timer_value(RTT);
+//	g_timer = rtt_read_timer_value(RTT);
 	
 #endif
 	
-	return (uint32_t)((uint64_t)((double)g_timer * TIME_MS_PER_TICK_LF) & 0x00000000FFFFFFFF);
+	return (uint32_t)((uint64_t)((double)time_ticks() * TIME_MS_PER_TICK_LF) & 0x00000000FFFFFFFF);
 }
 
 
@@ -114,11 +116,11 @@ inline uint32_t time_usec(void)
 
 	// in debug no timer interrupt so read directly from timer register, unsafe as this can cause corrupt time
 	//  but is the only way to debug and step code
-	g_timer = rtt_read_timer_value(RTT);
+//	g_timer = rtt_read_timer_value(RTT);
 	
 #endif
 	
-	return (uint32_t)((uint64_t)((double)g_timer * TIME_US_PER_TICK_LF) & 0x00000000FFFFFFFF);
+	return (uint32_t)((uint64_t)((double)time_ticks() * TIME_US_PER_TICK_LF) & 0x00000000FFFFFFFF);
 }
 
 
