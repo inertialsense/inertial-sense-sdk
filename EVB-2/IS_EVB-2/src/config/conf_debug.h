@@ -10,38 +10,10 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef D_I2C_H_
-#define D_I2C_H_
+#ifndef CONF_DEBUG_H_
+#define CONF_DEBUG_H_
 
-#include "compiler.h"
-#include <stdbool.h>
+#define DBG_TX_DCACHE_CLEAN_PIN		0 //GPIO_5_PIN
+#define DBG_RX_DCACHE_CLEAN_PIN		0 //GPIO_8_PIN
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct
-{
-	bool			master;
-	uint32_t 		speed;
-} i2c_cfg_t;
-
-typedef struct
-{
-	Twihs 			*instance;
-	Xdmac 			*rxdma;
-	Xdmac		 	*txdma;
-	i2c_cfg_t 		cfg;
-} i2c_t;
-
-int i2c_get_defaults(i2c_t *init);
-int i2c_init(i2c_t *init);
-
-int i2c_transmit(i2c_t *init, uint16_t address, uint8_t *buf, uint8_t length, bool blocking);
-int i2c_read(i2c_t *init, uint16_t address, uint8_t *buf, uint8_t length, bool blocking);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  // D_I2C_H_
+#endif /* CONF_DEBUG_H_ */

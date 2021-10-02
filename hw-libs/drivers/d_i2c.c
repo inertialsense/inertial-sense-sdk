@@ -22,6 +22,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define BOARD_TWI		TWIHS0
 #define TWI_CLK			400000
 
+int i2c_get_defaults(i2c_t *init)
+{
+	
+	init->cfg.master = true;
+
+	init->cfg.speed = 400000;
+
+
+	return STATUS_OK;
+}
 
 int i2cInit( void )
 {
@@ -31,6 +41,12 @@ int i2cInit( void )
 	
 	/* Enable the peripheral clock for TWI */
 	pmc_enable_periph_clk(BOARD_ID_TWI);
+	
+	
+	
+	
+	
+	
 
 	/* Configure the options of TWI driver */
 	twihs_options_t opt;

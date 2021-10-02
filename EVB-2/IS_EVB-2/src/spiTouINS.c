@@ -70,27 +70,27 @@ static TaskHandle_t xHandlingTask;
 
 void XDMAC_spiTouINS_Handler(void)
 {
-	if( (xdmac_channel_get_interrupt_status(XDMAC, DMA_CH_SPI_INS_TX) & XDMAC_CIS_BIS) && (xdmac_channel_get_interrupt_mask(XDMAC, DMA_CH_SPI_INS_TX) & XDMAC_CIE_BIE) )
+	if( (xdmac_channel_get_interrupt_status(XDMAC, DMA_CH_EVB_SPI_INS_TX) & XDMAC_CIS_BIS) && (xdmac_channel_get_interrupt_mask(XDMAC, DMA_CH_EVB_SPI_INS_TX) & XDMAC_CIE_BIE) )
 	{
 		//Check to see if DMA is finished (as indicated by channel becoming disabled)
-		if ((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_SPI_INS_TX)) == 0)
+		if ((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_EVB_SPI_INS_TX)) == 0)
 		{
 			if(lld_bptr != lld_fptr)	//Not equal means there is data ready to send
 			{
 				//Setup TX DMA
-				xdmac_channel_set_source_addr(XDMAC, DMA_CH_SPI_INS_TX, lld[lld_bptr].mbr_ta);
-				xdmac_channel_set_microblock_control(XDMAC, DMA_CH_SPI_INS_TX, lld[lld_bptr].mbr_ubc);
+				xdmac_channel_set_source_addr(XDMAC, DMA_CH_EVB_SPI_INS_TX, lld[lld_bptr].mbr_ta);
+				xdmac_channel_set_microblock_control(XDMAC, DMA_CH_EVB_SPI_INS_TX, lld[lld_bptr].mbr_ubc);
 
 				//Move pointer
 				lld_bptr = (lld_bptr + 1) & DMA_LLD_MASK;
 
 				//Enable - We don't need to clean cache as DMA data is already flushed to main memory
-				XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_SPI_INS_TX);
+				XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_EVB_SPI_INS_TX);
 			}
 			else
 			{
 				//We are done with the list
-				xdmac_channel_disable_interrupt(XDMAC, DMA_CH_SPI_INS_TX, XDMAC_CIE_BIE);
+				xdmac_channel_disable_interrupt(XDMAC, DMA_CH_EVB_SPI_INS_TX, XDMAC_CIE_BIE);
 		
 				//See if we need to receive more or lower CS line		
 				if(ioport_get_pin_level(INS_DATA_RDY_PIN_IDX))
@@ -175,11 +175,11 @@ static void spiTouINS_task(void *pvParameters)
 		//Check and process any data in the internal buffer into the external buffer.
 
 		//Flush FIFO, content of the FIFO is written to memory
-		xdmac_channel_software_flush_request(XDMAC, DMA_CH_SPI_INS_RX);
+		xdmac_channel_software_flush_request(XDMAC, DMA_CH_EVB_SPI_INS_RX);
 		
 		//Find how much data we have
 		uint32_t bytesReady;
-		uint32_t curDmaAddr = (uint32_t)XDMAC->XDMAC_CHID[DMA_CH_SPI_INS_RX].XDMAC_CDA - (uint32_t)RxBufInternal;
+		uint32_t curDmaAddr = (uint32_t)XDMAC->XDMAC_CHID[DMA_CH_EVB_SPI_INS_RX].XDMAC_CDA - (uint32_t)RxBufInternal;
 		if (curDmaAddr < rxintptr)
 			bytesReady = RX_INT_BUFFER_SIZE - rxintptr + curDmaAddr;
 		else
@@ -263,7 +263,7 @@ void spiTouINS_init(void)
 	XDMAC_CC_DAM_INCREMENTED_AM |
 	XDMAC_CC_PERID(SPI_XDMAC_RX_CH_NUM);
 	cfg.mbr_ubc = RX_INT_BUFFER_SIZE;
-	xdmac_configure_transfer(XDMAC, DMA_CH_SPI_INS_RX, &cfg);
+	xdmac_configure_transfer(XDMAC, DMA_CH_EVB_SPI_INS_RX, &cfg);
 
 	// Configure linked list descriptor (only uses one)
 	rx_lld.mbr_ta = (uint32_t)RxBufInternal;
@@ -275,15 +275,15 @@ void spiTouINS_init(void)
 		RX_INT_BUFFER_SIZE;
 
 	// Set initial descriptor control
-	xdmac_channel_set_descriptor_control(XDMAC, DMA_CH_SPI_INS_RX,	//Updates CNDC register
+	xdmac_channel_set_descriptor_control(XDMAC, DMA_CH_EVB_SPI_INS_RX,	//Updates CNDC register
 	XDMAC_CNDC_NDVIEW_NDV0 |
 	XDMAC_CNDC_NDE_DSCR_FETCH_EN |
 	XDMAC_CNDC_NDDUP_DST_PARAMS_UPDATED);
-	xdmac_channel_set_descriptor_addr(XDMAC, DMA_CH_SPI_INS_RX, (uint32_t)&rx_lld, 0);	//Updates CNDA register
+	xdmac_channel_set_descriptor_addr(XDMAC, DMA_CH_EVB_SPI_INS_RX, (uint32_t)&rx_lld, 0);	//Updates CNDA register
 	
 	rxintptr = 0;
 	SCB_CLEAN_DCACHE_BY_ADDR_32BYTE_ALIGNED(&rx_lld, sizeof(rx_lld));
-	XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_SPI_INS_RX);
+	XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_EVB_SPI_INS_RX);
 	
 //Configure task for processing incoming data
 	createTask(EVB_TASK_SPI_UINS_COM, spiTouINS_task,  "SPI_UINS",  TASK_SPI_TO_UINS_STACK_SIZE,  NULL, TASK_SPI_TO_UINS_PRIORITY,  TASK_SPI_TO_UINS_PERIOD_MS);
@@ -303,7 +303,7 @@ void spiTouINS_init(void)
 	XDMAC_CC_DAM_FIXED_AM |
 	XDMAC_CC_PERID(SPI_XDMAC_TX_CH_NUM);
 	cfg.mbr_ubc = 0;
-	xdmac_configure_transfer(XDMAC, DMA_CH_SPI_INS_TX, &cfg);
+	xdmac_configure_transfer(XDMAC, DMA_CH_EVB_SPI_INS_TX, &cfg);
 	
 	//Setup pointers to lld array
 	lld_fptr = 0;
@@ -350,7 +350,7 @@ static void sendMoreData(int len)
 	NVIC_DisableIRQ(XDMAC_IRQn);
 
 	//Enable DMA if it isn't running
-	if((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_SPI_INS_TX)) == 0)
+	if((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_EVB_SPI_INS_TX)) == 0)
 	{
 		if(lld_bptr != lld_fptr)
 		{
@@ -358,19 +358,19 @@ static void sendMoreData(int len)
 			ioport_set_pin_level(SPI_INS_CS_PIN, IOPORT_PIN_LEVEL_LOW);
 		
 			//Setup TX DMA
-			xdmac_channel_set_source_addr(XDMAC, DMA_CH_SPI_INS_TX, lld[lld_bptr].mbr_ta);
-			xdmac_channel_set_microblock_control(XDMAC, DMA_CH_SPI_INS_TX, lld[lld_bptr].mbr_ubc);
+			xdmac_channel_set_source_addr(XDMAC, DMA_CH_EVB_SPI_INS_TX, lld[lld_bptr].mbr_ta);
+			xdmac_channel_set_microblock_control(XDMAC, DMA_CH_EVB_SPI_INS_TX, lld[lld_bptr].mbr_ubc);
 
 			//Move pointer
 			lld_bptr = (lld_bptr + 1) & DMA_LLD_MASK;
 
 			// Enable DMA interrupt
-			xdmac_enable_interrupt(XDMAC, DMA_CH_SPI_INS_TX);
+			xdmac_enable_interrupt(XDMAC, DMA_CH_EVB_SPI_INS_TX);
 			spi_disable_interrupt(SPI_INS_BASE, SPI_IER_TDRE);
-			xdmac_channel_enable_interrupt(XDMAC, DMA_CH_SPI_INS_TX, XDMAC_CIE_BIE);
+			xdmac_channel_enable_interrupt(XDMAC, DMA_CH_EVB_SPI_INS_TX, XDMAC_CIE_BIE);
 
 			//Enable - cache should have already been cleaned
-			XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_SPI_INS_TX);
+			XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_EVB_SPI_INS_TX);
 		}
 	}
 
@@ -379,10 +379,10 @@ static void sendMoreData(int len)
 
 static uint32_t getTxFree(void)
 {
-	if ((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_SPI_INS_TX)) == 0)
+	if ((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_EVB_SPI_INS_TX)) == 0)
 		return TX_BUFFER_SIZE;
 
-	uint8_t* curDmaAddr = XDMAC->XDMAC_CHID[DMA_CH_SPI_INS_TX].XDMAC_CDA;
+	uint8_t* curDmaAddr = XDMAC->XDMAC_CHID[DMA_CH_EVB_SPI_INS_TX].XDMAC_CDA;
 
 	if (txfptr < curDmaAddr)
 		return (int)(curDmaAddr - txfptr);
@@ -474,7 +474,7 @@ int spiTouINS_serWrite(const unsigned char *buf, int size)
 	NVIC_DisableIRQ(XDMAC_IRQn);
 
 	//Enable DMA if it isn't running
-	if((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_SPI_INS_TX)) == 0)
+	if((XDMAC->XDMAC_GS & (XDMAC_GS_ST0 << DMA_CH_EVB_SPI_INS_TX)) == 0)
 	{
 		if(lld_bptr != lld_fptr)
 		{
@@ -482,19 +482,19 @@ int spiTouINS_serWrite(const unsigned char *buf, int size)
 			ioport_set_pin_level(SPI_INS_CS_PIN, IOPORT_PIN_LEVEL_LOW);
 		
 			//Setup TX DMA
-			xdmac_channel_set_source_addr(XDMAC, DMA_CH_SPI_INS_TX, lld[lld_bptr].mbr_ta);
-			xdmac_channel_set_microblock_control(XDMAC, DMA_CH_SPI_INS_TX, lld[lld_bptr].mbr_ubc);
+			xdmac_channel_set_source_addr(XDMAC, DMA_CH_EVB_SPI_INS_TX, lld[lld_bptr].mbr_ta);
+			xdmac_channel_set_microblock_control(XDMAC, DMA_CH_EVB_SPI_INS_TX, lld[lld_bptr].mbr_ubc);
 
 			//Move pointer
 			lld_bptr = (lld_bptr + 1) & DMA_LLD_MASK;
 
 			// Enable DMA interrupt
-			xdmac_enable_interrupt(XDMAC, DMA_CH_SPI_INS_TX);
+			xdmac_enable_interrupt(XDMAC, DMA_CH_EVB_SPI_INS_TX);
 			spi_disable_interrupt(SPI_INS_BASE, SPI_IER_TDRE);
-			xdmac_channel_enable_interrupt(XDMAC, DMA_CH_SPI_INS_TX, XDMAC_CIE_BIE);
+			xdmac_channel_enable_interrupt(XDMAC, DMA_CH_EVB_SPI_INS_TX, XDMAC_CIE_BIE);
 
 			//Enable - cache should have already been cleaned
-			XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_SPI_INS_TX);
+			XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_EVB_SPI_INS_TX);
 		}
 	}
 
