@@ -10,39 +10,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef D_I2C_H_
-#define D_I2C_H_
+#ifndef CONF_D_I2C_H_
+#define CONF_D_I2C_H_
 
-#include "compiler.h"
-#include "d_dma.h"
-#include "conf_d_i2c.h"
+#define I2C0_CONFIG  (	TWIHS0,		DMA_CH_EVB_I2C_SENSORS_TX,		256,			DMA_CH_EVB_I2C_SENSORS_RX,		256 )
 
-#include <stdbool.h>
+#define MAX_NUMBER_I2C_PORTS         1
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct
-{
-	Twihs 					*instance;
-	uint32_t				instance_id;
-	dma_channel_config_t 	rxdma;
-	dma_channel_config_t	txdma;
-	twihs_options_t 		cfg;
-	uint8_t					last_byte[2];
-} i2c_t;
-
-extern i2c_t i2c0;
-
-int i2c_get_defaults(i2c_t *init);
-int i2c_init(i2c_t *init);
-
-int i2c_transmit(i2c_t *init, uint16_t address, uint8_t *buf, uint8_t length, bool blocking);
-int i2c_read(i2c_t *init, uint16_t address, uint8_t *buf, uint8_t length, bool blocking);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  // D_I2C_H_
+#endif /* CONF_D_I2C_H_ */

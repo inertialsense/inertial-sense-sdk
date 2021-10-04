@@ -1553,6 +1553,9 @@
     <Compile Include="src\config\conf_debug.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\config\conf_d_i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\config\conf_d_quadEnc.h">
       <SubType>compile</SubType>
     </Compile>
