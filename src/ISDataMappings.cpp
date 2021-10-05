@@ -2131,8 +2131,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS",                 // 54
 	"UNUSED_55",                        // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
-	"DID_DUAL_IMU_RAW",                 // 57
-	"DID_DUAL_IMU",                     // 58
+	"DID_IMU3",                         // 57
+	"DID_IMU",                          // 58
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
 	"DID_GPS_RTK_OPT",                  // 61
@@ -2158,8 +2158,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_FLASH_CFG",                // 81
 	"DID_EVB_DEBUG_ARRAY",              // 82
 	"DID_EVB_RTOS_INFO",                // 83
-	"DID_DUAL_IMU_RAW_MAG",             // 84
-	"DID_DUAL_IMU_MAG",                 // 85
+	"DID_IMU3_MAG",                     // 84
+	"DID_IMU_MAG",                      // 85
 	"DID_PREINTEGRATED_IMU_MAG",        // 86
 	"DID_GROUND_VEHICLE",               // 87
 	"DID_POSITION_MEASUREMENT",         // 88
