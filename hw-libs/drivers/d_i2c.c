@@ -48,6 +48,9 @@ int i2c_get_defaults(i2c_t *init)
 	init->cfg.smbus = 0;
 	init->instance = TWIHS0;
 	init->instance_id = ID_TWIHS0;
+	
+	init->txstatus = I2C_TXSTATUS_IDLE;
+	init->rxstatus = I2C_RXSTATUS_IDLE;
 
 	// If/when we add I2C to the uINS-3, this needs to be wrapped in a macro: 
 	init->rxdma.chan = DMA_CH_EVB_I2C_SENSORS_RX;
@@ -91,20 +94,32 @@ int i2c_get_defaults(i2c_t *init)
 
 static void i2c_dma_init_rx(i2c_t *init)
 {
-	xdmac_configure_transfer(XDMAC, init->txdma.chan, &init->rxdma.xdmac);
+	xdmac_configure_transfer(XDMAC, init->rxdma.chan, &init->rxdma.xdmac);
 
 	xdmac_channel_set_descriptor_control(XDMAC, init->rxdma.chan, 0);
 
-	xdmac_enable_interrupt(XDMAC, init->txdma.chan);
-	xdmac_channel_enable_interrupt(XDMAC, init->txdma.chan, _xdmaint);
+	xdmac_enable_interrupt(XDMAC, init->rxdma.chan);
+	xdmac_channel_enable_interrupt(XDMAC, init->rxdma.chan, _xdmaint);
 	NVIC_DisableIRQ(XDMAC_IRQn);
 	NVIC_ClearPendingIRQ(XDMAC_IRQn);
 	NVIC_SetPriority(XDMAC_IRQn, INT_PRIORITY_DMA);
 	NVIC_EnableIRQ(XDMAC_IRQn);
-
-	xdmac_channel_enable(XDMAC, init->txdma.chan);
 }
 
+static void i2c_dma_config_rx(i2c_t *init, uint32_t len)
+{
+	xdmac_configure_transfer(XDMAC, init->rxdma.chan, &init->rxdma.xdmac);
+}
+
+static void i2c_dma_start_rx(i2c_t *init)
+{
+	xdmac_channel_enable(XDMAC, init->rxdma.chan);
+}
+
+static void i2c_dma_stop_rx(i2c_t *init)
+{
+	xdmac_channel_disable(XDMAC, init->rxdma.chan);
+}
 
 static void i2c_dma_init_tx(i2c_t *init)
 {
@@ -131,6 +146,15 @@ static void i2c_dma_start_tx(i2c_t *init)
 	xdmac_channel_enable(XDMAC, init->txdma.chan);
 }
 
+static void i2c_dma_stop_tx(i2c_t *init)
+{
+	xdmac_channel_disable(XDMAC, init->txdma.chan);
+}
+
+
+/*
+ *	Make sure to call i2c_get_defaults() first
+ */
 int i2c_init(i2c_t *init)
 {
 	//Configure pins
@@ -148,7 +172,7 @@ int i2c_init(i2c_t *init)
 	return 0;
 }
 
-int i2c_write(i2c_t *init, uint8_t addr, uint8_t *buf, uint8_t len)
+int i2c_transmit(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len)
 {
 	/* Check argument */
 	if (len == 0) {
@@ -156,7 +180,7 @@ int i2c_write(i2c_t *init, uint8_t addr, uint8_t *buf, uint8_t len)
 	}
 	
 	i2c_dma_config_tx(init, len-1);			// Datasheet says we have to transmit last byte manually
-	init->last_byte[0] = buf[len-1];		// Last byte gets stored so we can transmit it manually
+	init->tx_last_byte = buf[len-1];		// Last byte gets stored
 
 	/* Set write mode, slave address and 3 internal address byte lengths */
 	init->instance->TWIHS_MMR = TWIHS_MMR_DADR(addr);
@@ -164,8 +188,37 @@ int i2c_write(i2c_t *init, uint8_t addr, uint8_t *buf, uint8_t len)
 	/* Set internal address for remote chip (none, just add the internal address to the buffer if there is one) */
 	init->instance->TWIHS_IADR = 0;
 	
+	init->txstatus = I2C_TXSTATUS_TRANSMIT_DMA;
+	
 	i2c_dma_start_tx(init);
+	
+	return 0;
+}
 
+int i2c_read(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len)
+{
+	/* Check argument */
+	if (len == 0) {
+		return -1;
+	}
+	
+	init->rx_len = len;
+	init->rx_buf = buf;
+	
+	i2c_dma_config_rx(init, len-2);			// Datasheet says we have to read last 2 bytes manually
+
+	/* Set write mode, slave address and 3 internal address byte lengths */
+	init->instance->TWIHS_MMR = TWIHS_MMR_DADR(addr);
+	
+	/* Set internal address for remote chip (none, just add the internal address to the buffer if there is one) */
+	init->instance->TWIHS_IADR = 0;
+	
+	init->rxstatus = I2C_RXSTATUS_READ_DMA;
+	
+	i2c_dma_start_rx(init);
+	
+	init->instance->TWIHS_CR |= TWIHS_CR_START;
+	
 	return 0;
 }
 
@@ -174,49 +227,50 @@ void TWIHS0_Handler(void)
 {
 	uint32_t status = TWIHS0->TWIHS_SR;
 	
-	if(status & TWIHS_SR_TXRDY)
+	if((status & TWIHS_SR_TXRDY) && (i2c0.txstatus == I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY))		// TODO: Enable this interrupt
 	{
 		TWIHS0->TWIHS_CR |= TWIHS_CR_STOP;
-		TWIHS0->TWIHS_THR = i2c0.last_byte[0];
+		TWIHS0->TWIHS_THR = i2c0.tx_last_byte;
+	
+		i2c0.txstatus = I2C_TXSTATUS_IDLE;
+	}
+	
+	if(status & TWIHS_SR_RXRDY)
+	{
+		if(i2c0.rxstatus == I2C_RXSTATUS_READ_DMA_WAIT_RXRDY)
+		{
+			TWIHS0->TWIHS_CR |= TWIHS_CR_STOP;
+			
+			i2c0.rx_buf[i2c0.rx_len - 2] = TWIHS0->TWIHS_RHR;
+			
+			i2c0.rxstatus = I2C_RXSTATUS_READ_PENULTIMATE;
+		}
+		else if(i2c0.rxstatus == I2C_RXSTATUS_READ_PENULTIMATE)
+		{
+			i2c0.rx_buf[i2c0.rx_len - 1] = TWIHS0->TWIHS_RHR;
+			
+			i2c0.rxstatus = I2C_RXSTATUS_IDLE;
+		}
 	}
 }
 
-
-
-
-//int i2cRead(uint8_t chip_addr, uint32_t address, uint8_t address_len, void *data, uint32_t len)
-//{
-	//twihs_packet_t packet_rx;
-	//
-	////Configure the data packet
-	//packet_rx.chip        = chip_addr;
-	//packet_rx.addr_length = address_len;
-	//if(address_len == 3)
-	//{
-		//packet_rx.addr[0]     = address >> 16;
-		//packet_rx.addr[1]     = address >> 8;
-		//packet_rx.addr[2]     = address;
-	//}
-	//else if(address_len == 2)
-	//{
-		//packet_rx.addr[0]     = address >> 8;
-		//packet_rx.addr[1]     = address;
-	//}
-	//else if(address_len == 1)
-	//{
-		//packet_rx.addr[0]     = address;
-	//}
-	//else
-	//{
-		//return 0;
-	//}
-		//
-	//packet_rx.buffer      = data;
-	//packet_rx.length      = len;	
-	//
-	////Read Data
-	//if (twihs_master_read(BOARD_TWI, &packet_rx) != TWIHS_SUCCESS)
-		//return 0;
-		//
-	//return len;
-//}
+void XDMAC_i2c_Handler(void)
+{
+	uint32_t status = XDMAC->XDMAC_CHID[i2c0.rxdma.chan].XDMAC_CIS;
+	
+	if((status & XDMAC_CIS_BIS) && (i2c0.rxstatus == I2C_RXSTATUS_READ_DMA))
+	{
+		i2c_dma_stop_rx(&i2c0);
+		
+		i2c0.rxstatus = I2C_RXSTATUS_READ_DMA_WAIT_RXRDY;
+	}
+	
+	status = XDMAC->XDMAC_CHID[i2c0.txdma.chan].XDMAC_CIS;
+	
+	if((status & XDMAC_CIS_BIS) && (i2c0.txstatus == I2C_TXSTATUS_TRANSMIT_DMA))
+	{
+		i2c_dma_stop_tx(&i2c0);
+		
+		i2c0.rxstatus = I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY;
+	}
+}

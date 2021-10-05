@@ -23,6 +23,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+enum
+{
+	I2C_TXSTATUS_IDLE	= 0,
+	I2C_TXSTATUS_TRANSMIT_DMA,
+	I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY,
+	I2C_TXSTATUS_ERROR,	
+};
+
+enum 
+{	
+	I2C_RXSTATUS_IDLE = 0,
+	I2C_RXSTATUS_READ_DMA,
+	I2C_RXSTATUS_READ_DMA_WAIT_RXRDY,
+	I2C_RXSTATUS_READ_PENULTIMATE,
+	I2C_RXSTATUS_READ_LAST,
+	I2C_RXSTATUS_ERROR,	
+};
+
 typedef struct
 {
 	Twihs 					*instance;
@@ -30,7 +48,11 @@ typedef struct
 	dma_channel_config_t 	rxdma;
 	dma_channel_config_t	txdma;
 	twihs_options_t 		cfg;
-	uint8_t					last_byte[2];
+	uint8_t					tx_last_byte;
+	uint8_t					txstatus;
+	uint8_t					rxstatus;
+	uint8_t					*rx_buf;
+	uint8_t					rx_len;
 } i2c_t;
 
 extern i2c_t i2c0;
@@ -38,8 +60,10 @@ extern i2c_t i2c0;
 int i2c_get_defaults(i2c_t *init);
 int i2c_init(i2c_t *init);
 
-int i2c_transmit(i2c_t *init, uint16_t address, uint8_t *buf, uint8_t length, bool blocking);
-int i2c_read(i2c_t *init, uint16_t address, uint8_t *buf, uint8_t length, bool blocking);
+int i2c_transmit(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
+int i2c_read(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
+
+void XDMAC_i2c_Handler(void);
 
 #ifdef __cplusplus
 }

@@ -11,8 +11,49 @@
 //#define DMA_CACHE_DEBUG
 #endif // DEBUG
 
+#ifdef __INERTIAL_SENSE_EVB_2__
+#include "spiTouINS.h"
+#include "d_usartDMA.h"
+#include "d_i2c.h"
+#endif
+
+#include "xdmac.h"
 
 static volatile uint8_t s_xfer_done[DMA_CHAN_COUNT] = {0};
+	
+void XDMAC_Handler(void)
+{	
+#ifdef __INERTIAL_SENSE_EVB_2__
+	
+	
+#ifdef CONF_BOARD_SPI_UINS
+	//Forward for spiTouINS
+	XDMAC_spiTouINS_Handler();
+#endif
+
+	XDMAC_usartDMA_Handler();
+	
+	XDMAC_i2c_Handler();
+
+#else		// uINS-3
+
+#ifdef ENABLE_SPI_COMM_INTERRUPTS
+	uint32_t status;
+
+	// receive status
+	status = xdmac_channel_get_interrupt_status(XDMAC, DMA_CH_SPI_COMM_RX);
+	if (status & XDMAC_CIS_BIS)
+	{
+		NVIC_ClearPendingIRQ(XDMAC_IRQn);
+		NVIC_DisableIRQ(XDMAC_IRQn);
+		_handler();
+		xdmac_channel_enable(XDMAC, DMA_CH_SPI_COMM_RX);
+	}
+#endif // ENABLE_SPI_COMM_INTERRUPTS
+
+#endif
+
+}
 
 #ifdef ENABLE_DMA_INTERRUPTS
 void XDMAC_Handler(void)
