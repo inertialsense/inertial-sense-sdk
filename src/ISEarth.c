@@ -30,7 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
 //_____ F U N C T I O N S __________________________________________________
-// static const double Ra = 6378137.0;			// (m) Earth equatorial radius
+static const double Ra = 6378137.0;			// (m) Earth equatorial radius
 // static const double Rb = 6356752.31424518;	// (m) Earth polar radius Rb = Ra * (1-f)   (from flattening, f = 1/298.257223563)
 
 #define POWA2	40680631590769.000	// = pow(6378137.0,2)
@@ -416,4 +416,84 @@ void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ece
 // 	ecef2lla_d(ecef, lla);
 	ecef2lla(ecef, lla, 5);
 	qe2b2EulerNedLLA(eul, qe2b, lla);
+}
+
+
+/**
+ * @brief primeRadius
+ * @param lat
+ * @return
+ */
+double primeRadius(const double lat)
+{
+    double slat = sin(lat);
+    return Ra/sqrt(1.0-E_SQ*slat*slat);
+}
+
+
+/**
+ * @brief meridonalRadius
+ * @param lat
+ * @return
+ */
+double meridonalRadius(const double lat)
+{
+    double slat = sin(lat);
+    double Rprime = primeRadius(lat);
+    return Rprime * (1-E_SQ) / (1.0-E_SQ*slat*slat);
+}
+
+
+/**
+ * @brief rangeBearing_from_lla
+ * @param lla1
+ * @param lla2
+ * @param rb
+ *
+ * Compute the range and bearing by principle of the osculating sphere: We define a sphere that is tangential to the
+ * WGS84 ellipsoid at latitude 1 (the latitude given in lla1). Then we perform the range and bearing computation on
+ * that sphere instead of on the ellipsoid itself (which requires more complex math).
+ *
+ */
+void rangeBearing_from_lla(const ixVector3d lla1, const ixVector3d lla2, ixVector2d rb)
+{
+    double lat1 = lla1[0];
+    double lon1 = lla1[1];
+    double lat2 = lla2[0];
+    double lon2 = lla2[1];
+    // Principle of osculating sphere: computing spherical angles on ellipsoids is very hard to do, so instead we compute them on a
+    // sphere that is tangential to the ellipsoid at lat1 (i.e. has the same radius of curvature in both directions). By going to a sphere
+    // the concept of latitude has some special conetations: the latitude is the spherical angle that the radius of curvature makes with
+    // the equatorial plane. For a perfect sphere, this concides with the center of the sphere. So we have to translate the (given)
+    // ellispoidal latitudes (lat1 and lat2) to their spherical equivalent as per soculating sphere. For lat1, it turns out (because the
+    // osculating sphere is tangential at lat1) that it's equivalent to the spherical latitude. But for the second latitude, we have to
+    // compute the equivalent spherical latitude. This is done by making the assumption that the distance along the meridian between lat1
+    // and lat2 over the ellipsoid is the same as the distance between spherical lat1 and spherical lat2 along the sphere. So we can
+    // equate the definate integral between ellipsoidal lat1 and lat 2 of the meridional radius of curvature to the definate integral
+    // between spherical lat1 and pherical lat 2 over the prime radius of curvature over.
+    // This results in Rmeridional * (lat2 - lat1) = Rprime * (spherical_lat2 - lat1)
+    // Then form this expression we can compute the spherical_lat2 value
+    //
+    double Rprime = primeRadius(lat1);
+    double avgLat = 0.5*(lat1 + lat2);
+    double Rmeridional = meridonalRadius(avgLat);
+    double sphericalLat2 = lat1 + Rmeridional/Rprime*(lat2 - lat1);
+
+    // Now instead of using lat2, we are going to use spherical lat2, and pretend the earth is a perfect sphere and then we just
+    // complete the spherical triangle through some standard highschool math.
+    //
+    double deltaLon = lon2 - lon1;
+    double cosLat1 = cos(lat1);
+    double sinLat1 = sin(lat1);
+    double cosLat2 = cos(sphericalLat2);
+    double sinLat2 = sin(sphericalLat2);
+    double cosDeltaLon = cos(deltaLon);
+
+    double x = cosLat1 * sinLat2 - sinLat1 * cosLat2 * cosDeltaLon;
+    double y = cosLat2 * sin(deltaLon);
+    double z = sinLat1 * sinLat2 + cosLat1 * cosLat2 * cosDeltaLon;
+
+    double angular_range = atan2(sqrt(x*x + y*y), z);
+    rb[0] =  angular_range * Rprime;
+    rb[1] = atan2(y,x);
 }

@@ -25,7 +25,7 @@ sys.path.append('..')
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
-from pylib.pose import quat2eulerArray, lla2ned, rotate_ecef2ned, quatRotVectArray
+from pylib.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
 
 class logPlot:
@@ -131,7 +131,7 @@ class logPlot:
             if refLla is None:
                 refLla = self.getData(d, DID_INS_2, 'lla')[0]
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
-            euler = quat2eulerArray(self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
             if(np.shape(self.active_devs)[0]==1):
@@ -202,23 +202,22 @@ class logPlot:
         fig.suptitle('NED Vel - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            insVelNed = quatRotVectArray(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
+            insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
             ax[0].plot(time, insVelNed[:,0], label=self.log.serials[d])
             ax[1].plot(time, insVelNed[:,1])
             ax[2].plot(time, insVelNed[:,2])
 
-            try:
-                if np.shape(self.active_devs)[0] == 1:  # Show GPS if #devs is 1
-                    timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
-                    gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'velEcef')
-                    R = rotate_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0]*np.pi/180.0)
-                    gpsVelNed = R.dot(gpsVelEcef.T).T
+            if np.shape(self.active_devs)[0] == 1:  # Show GPS if #devs is 1
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
+                gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'velEcef')
+                qe2n = quat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
+                if len(gpsVelEcef) > 0:
+                    gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
+                    #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
+                    #gpsVelNed = R.dot(gpsVelEcef.T).T
                     ax[0].plot(timeGPS, gpsVelNed[:, 0], label='GPS')
                     ax[1].plot(timeGPS, gpsVelNed[:, 1])
                     ax[2].plot(timeGPS, gpsVelNed[:, 2])
-            except:
-                pass
-                # print("no GPS data available")
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -252,7 +251,7 @@ class logPlot:
         self.configureSubplot(ax[1], 'Pitch', 'deg')
         self.configureSubplot(ax[2], 'Yaw', 'deg')
         for d in self.active_devs:
-            euler = quat2eulerArray(self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1].plot(time, euler[:,1]*RAD2DEG)
@@ -276,7 +275,7 @@ class logPlot:
             insTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
-            euler = quat2eulerArray(self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             if magTime:
                 ax[0].plot(magTime, magHdg * RAD2DEG)
             if gpsTime:
@@ -325,7 +324,10 @@ class logPlot:
                 # ax.text(p1, -cnt * 1.5, 'GPS Update')
                 # cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000100) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Pos/Vel')
+                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Pos')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00004000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Vel')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000080) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'GPS aiding Hdg')
@@ -487,6 +489,7 @@ class logPlot:
             fig = plt.figure()
 
         ax = fig.subplots(4, 1, sharex=True)
+        did_gps_vel = did_gps_pos+(DID_GPS1_VEL-DID_GPS1_POS)
         if did_gps_pos==DID_GPS1_POS:
             gps_num = 1
         else:
@@ -500,12 +503,14 @@ class logPlot:
         for d in self.active_devs:
             r = d == self.active_devs[0]  # plot text w/ first device
             time = getTimeFromTowMs(self.getData(d, did_gps_pos, 'timeOfWeekMs'))
+            velTime = getTimeFromTowMs(self.getData(d, did_gps_vel, 'timeOfWeekMs'))
             gStatus = self.getData(d, did_gps_pos, 'status')
 
             ax[0].plot(time, gStatus & 0xFF, label=self.log.serials[d])
             ax[1].plot(time, self.getData(d, did_gps_pos, 'pDop'), 'm', label="pDop")
             ax[1].plot(time, self.getData(d, did_gps_pos, 'hAcc'), 'r', label="hAcc")
             ax[1].plot(time, self.getData(d, did_gps_pos, 'vAcc'), 'b', label="vAcc")
+            ax[1].plot(velTime, self.getData(d, did_gps_vel, 'sAcc'), 'c', label="sAcc")
             if self.log.data[d, DID_GPS1_RTK_POS] is not []:
                 rtktime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_POS, 'timeOfWeekMs'))
                 ax[1].plot(rtktime, self.getData(d, DID_GPS1_RTK_POS, 'vAcc'), 'g', label="rtkHor")
@@ -747,11 +752,11 @@ class logPlot:
 
             for i in range(3):
                 if pqr1 != []:
-                    ax[i].plot(time, pqr1[:, 0], label=self.log.serials[d])
+                    ax[i].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
                 if pqr2 != []:
-                    ax[i].plot(time, pqr2[:, 0])
+                    ax[i].plot(time, pqr2[:, i] * 180.0/np.pi, label=self.log.serials[d])
                 if pqr3 != []:
-                    ax[i].plot(time, pqr3[:, 0])
+                    ax[i].plot(time, pqr3[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
         ax[0].legend(ncol=2)
         for i in range(3):
@@ -771,11 +776,11 @@ class logPlot:
 
             for i in range(3):
                 if acc1 != []:
-                    ax[i].plot(time, acc1[:, 0], label=self.log.serials[d])
+                    ax[i].plot(time, acc1[:, i], label=self.log.serials[d])
                 if acc2 != []:
-                    ax[i].plot(time, acc2[:, 0])
+                    ax[i].plot(time, acc2[:, i], label=self.log.serials[d])
                 if acc3 != []:
-                    ax[i].plot(time, acc3[:, 0])
+                    ax[i].plot(time, acc3[:, i], label=self.log.serials[d])
 
         ax[0].legend(ncol=2)
         for i in range(3):
@@ -862,14 +867,14 @@ class logPlot:
         self.configureSubplot(ax[2], 'Mag Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time0 = self.getData(d, DID_MAGNETOMETER, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
+            time = self.getData(d, DID_MAGNETOMETER, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
             mag = self.getData(d, DID_MAGNETOMETER, 'mag')
             magX = mag[:,0]
             magY = mag[:,1]
             magZ = mag[:,2]
-            ax[0].plot(time0, magX, label=self.log.serials[d])
-            ax[1].plot(time0, magY)
-            ax[2].plot(time0, magZ)
+            ax[0].plot(time, magX, label=self.log.serials[d])
+            ax[1].plot(time, magY)
+            ax[2].plot(time, magZ)
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -1338,9 +1343,49 @@ class logPlot:
             a.set_title(titles[i])
             a.grid(True)
 
+    def groundVehicle(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
 
+        fig.suptitle('Ground Vehicle - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(8, 2, sharex=True)
 
+        ax[0,0].set_title('Status')
+        ax[0,1].set_title('Mode')
+        ax[1,0].set_title('e_b2w')
+        ax[1,1].set_title('e_b2w_sigma')
+        ax[4,0].set_title('t_b2w')
+        ax[4,1].set_title('t_b2w_sigma')
+        ax[7,0].set_title('Radius')
+        ax[7,1].set_title('Track Width')
 
+        for d in self.active_devs:
+            time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'))
+            wheelConfig = self.getData(d, DID_GROUND_VEHICLE, 'wheelConfig')
+            ax[0,0].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'status'))
+            ax[0,1].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'mode'))
+
+            ax[1,0].plot(time, wheelConfig['transform']['e_b2w'][:, 0], label=self.log.serials[d])
+            ax[2,0].plot(time, wheelConfig['transform']['e_b2w'][:, 1])
+            ax[3,0].plot(time, wheelConfig['transform']['e_b2w'][:, 2])
+            ax[1,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[2,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 1])
+            ax[3,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 2])
+
+            ax[4,0].plot(time, wheelConfig['transform']['t_b2w'][:, 0], label=self.log.serials[d])
+            ax[5,0].plot(time, wheelConfig['transform']['t_b2w'][:, 1])
+            ax[6,0].plot(time, wheelConfig['transform']['t_b2w'][:, 2])
+            ax[4,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[5,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 1])
+            ax[6,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 2])
+
+            ax[7,0].plot(time, wheelConfig['radius'])
+            ax[7,1].plot(time, wheelConfig['track_width'])
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+            
     def showFigs(self):
         if self.show:
             plt.show()
@@ -1352,7 +1397,7 @@ if __name__ == '__main__':
     file = open(home + "/Documents/Inertial_Sense/config.yaml", 'r')
     config = yaml.load(file)
     directory = config["directory"]
-    directory = "/home/superjax/Code/IS-src/cpp/SDK/CLTool/build/IS_logs"
+    directory = "/home/superjax/Code/IS-src/cpp/SDK/cltool/build/IS_logs"
     directory = r"C:\Users\quaternion\Downloads\20181218_Compass_Drive\20181218 Compass Drive\20181218_101023"
     serials = config['serials']
 
@@ -1377,6 +1422,7 @@ if __name__ == '__main__':
     # plotter.nedMap()
     # plotter.magDec()
     plotter.rtkDebug()
-    #plotter.wheelEncoder()
+    # plotter.wheelEncoder()
+    # plotter.groundVehicle()
 
     plotter.showFigs()

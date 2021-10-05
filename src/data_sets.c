@@ -353,9 +353,29 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 90: 
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		offsetsRtkNav,          // 92: DID_GPS2_RTK_CMP_MISC
-		0,                      // 93: 
-		0,                      // 94: 
-		0                       // 95: 
+		0,                      // 93: DID_EVB_DEV_INFO
+		0,                      // 94: DID_CAL_SC3
+		0,                      // 95:
+		0,                      // 96:
+		0,                      // 97:
+		0,                      // 98:
+		0,                      // 99:
+		0,                      // 100:
+		0,                      // 101:
+		0,                      // 102:
+		0,                      // 103:
+		0,                      // 104:
+		0,                      // 105:
+		0,                      // 106:
+		0,                      // 107:
+		0,                      // 108:
+		0,                      // 109:
+		0,                      // 110:
+		0,                      // 111:
+		0,                      // 112:
+		0,                      // 113:
+		0,                      // 114:
+		0                       // 115:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -501,15 +521,35 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 84: DID_IMU3_MAG
 		0,						// 85: DID_IMU_MAG
 		0,						// 86: DID_PREINTEGRATED_IMU_MAG
-		0,						// 87: DID_WHEEL_CONFIG
+		0,						// 87: DID_GROUND_VEHICLE
 		0,						// 88: DID_POSITION_MEASUREMENT
 		0,						// 89: DID_RTK_DEBUG_2
 		0,						// 90: DID_CAN_CONFIG
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		0,                      // 92: DID_GPS2_RTK_CMP_MISC
-		0,                      // 93: 
-		0,                      // 94: 
-		0                       // 95: 
+		0,                      // 93: DID_EVB_DEV_INFO
+		0,						// 44: DID_CAL_SC3
+		0,                      // 95:
+		0,                      // 96:
+		0,                      // 97:
+		0,                      // 98:
+		0,                      // 99:
+		0,                      // 100:
+		0,                      // 101:
+		0,                      // 102:
+		0,                      // 103:
+		0,                      // 104:
+		0,                      // 105:
+		0,                      // 106:
+		0,                      // 107:
+		0,                      // 108:
+		0,                      // 109:
+		0,                      // 110:
+		0,                      // 111:
+		0,                      // 112:
+		0,                      // 113:
+		0,                      // 114:
+		0                       // 115:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -593,7 +633,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
 		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
-		case DID_WHEEL_CONFIG:          return RMC_BITS_WHEEL_CONFIG;
+		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
 		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
 		case DID_IMU3_MAG:              return RMC_BITS_DID_IMU3_MAG;
 		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;
@@ -737,109 +777,6 @@ static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLengt
     written = SNPRINTF(*buffer, *bufferLength, "%c", (degrees >= 0 ? posC : negC));
     *bufferLength -= written;
     *buffer += written;
-}
-
-int gpsToNmeaGGA(const gps_pos_t* gps, char* buffer, int bufferLength)
-{
-    // NMEA GGA line - http://www.gpsinformation.org/dale/nmea.htm#GGA
-    /*
-    GGA          Global Positioning System Fix Data
-    123519       Fix taken at 12:35:19 UTC
-    4807.038,N   Latitude 48 deg 07.038' N
-    01131.000,E  Longitude 11 deg 31.000' E
-    .            Fix quality:	0 = invalid
-    .							1 = GPS fix (SPS)
-    .							2 = DGPS fix
-    .							3 = PPS fix
-    .							4 = Real Time Kinematic
-    .							5 = Float RTK
-    .							6 = estimated (dead reckoning) (2.3 feature)
-    .							7 = Manual input mode
-    .							8 = Simulation mode
-    08           Number of satellites being tracked
-    0.9          Horizontal dilution of position
-    545.4,M      MSL altitude in meters
-    46.9,M       HAE altitude (above geoid / WGS84 ellipsoid)
-    ellipsoid
-    (empty field) time in seconds since last DGPS update
-    (empty field) DGPS station ID number
-    *47          the checksum data, always begins with *
-    */
-
-    if (bufferLength < 128)
-    {
-        return 0;
-    }
-
-    unsigned int checkSum = 0;
-    int fixQuality;
-    switch((gps->status & GPS_STATUS_FIX_MASK))
-    {
-    default:
-    case GPS_STATUS_FIX_NONE:
-        fixQuality = 0;
-        break;
-
-    case GPS_STATUS_FIX_SBAS:
-    case GPS_STATUS_FIX_2D:
-    case GPS_STATUS_FIX_RTK_SINGLE:
-    case GPS_STATUS_FIX_3D:
-        fixQuality = 1;
-        break;
-
-    case GPS_STATUS_FIX_DGPS:
-        fixQuality = 2;
-        break;
-
-    case GPS_STATUS_FIX_TIME_ONLY:
-        fixQuality = 3;
-        break;
-
-    case GPS_STATUS_FIX_RTK_FIX:
-        fixQuality = 4;
-        break;
-
-    case GPS_STATUS_FIX_RTK_FLOAT:
-        fixQuality = 5;
-        break;
-
-    case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
-    case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:
-        fixQuality = 6;
-        break;
-    }
-
-    // write message
-    int written = 1;
-    char* bufferStart = buffer;
-    *buffer++ = '$';
-    bufferLength--;
-    written = SNPRINTF(buffer, bufferLength, "%s", "GPGGA");
-    buffer += written;
-    bufferLength -= written;
-
-    appendGPSTimeOfLastFix(gps, &buffer, &bufferLength);
-    appendGPSCoord(gps, &buffer, &bufferLength, gps->lla[0], ",%02d", 'N', 'S');
-    appendGPSCoord(gps, &buffer, &bufferLength, gps->lla[1], ",%03d", 'E', 'W');
-
-    written = SNPRINTF(buffer, bufferLength, ",%u,%02u,%.2f,%.2f,M,%.2f,M,,",
-                       (unsigned)fixQuality,
-                       (unsigned)(gps->status & GPS_STATUS_NUM_SATS_USED_MASK),
-                       gps->pDop,
-                       gps->hMSL,
-                       gps->hMSL - gps->lla[2]);
-    buffer += written;
-    bufferLength -= written;
-
-    // compute checksum
-    for (char* ptr = bufferStart + 1; ptr < buffer; ptr++)
-    {
-        checkSum ^= *ptr;
-    }
-
-    written = SNPRINTF(buffer, bufferLength, "*%.2x\r\n", checkSum);
-    buffer += written;
-    return (int)(buffer - bufferStart);
 }
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/

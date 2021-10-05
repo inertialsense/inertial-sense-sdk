@@ -30,30 +30,36 @@ using namespace std;
 #if PLATFORM_IS_WINDOWS
 #define APP_EXT                 ".exe"
 #define EXAMPLE_PORT            "COM5"
-#define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549    "
+#define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549       "
 #define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex"
 #define EXAMPLE_BOOTLOADER_FILE "c:\\fw\\SAMx70-Bootloader.bin"
 #define EXAMPLE_SPACE_1         "    "
-#define EXAMPLE_SPACE_2         ""
+#define EXAMPLE_SPACE_2         "   "
 #else
 #define APP_EXT	                ""
 #define EXAMPLE_PORT            "/dev/ttyS2"
-#define EXAMPLE_LOG_DIR         "logs/20170117_222549           "
-#define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex "
-#define EXAMPLE_BOOTLOADER_FILE "fw/SAMx70-Bootloader.bin "
-#define EXAMPLE_SPACE_1         "  "
-#define EXAMPLE_SPACE_2			"    "
+#define EXAMPLE_LOG_DIR         "logs/20170117_222549                "
+#define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex"
+#define EXAMPLE_BOOTLOADER_FILE "fw/SAMx70-Bootloader.bin"
+#define EXAMPLE_SPACE_1         "    "
+#define EXAMPLE_SPACE_2			"         "
 #endif
 
 typedef struct
 {
-	// parsed
-	string comPort; // -c=com_port
-	string updateAppFirmwareFilename; // -b=file_name
-    string updateBootloaderFilename; // -ub=file_name
-    bool bootloaderVerify; // -bv
+	eDataIDs	did;
+	int			periodMultiple;
+} stream_did_t;
+
+typedef struct
+{
+	string comPort; 						// -c com_port
+	string updateAppFirmwareFilename; 		// -b file_name
+    string updateBootloaderFilename; 		// -ub file_name
+    bool bootloaderVerify; 					// -bv
     bool replayDataLog;
     bool softwareReset;
+    bool softwareResetEvb;
     bool magRecal;
     uint32_t magRecalMode;
     survey_in_t surveyIn;
@@ -63,41 +69,26 @@ typedef struct
 
 	uint64_t rmcPreset;
     bool persistentMessages;
-	int streamINS1;
-	int streamINS2;
-	int streamINS3;
-	int streamINS4;
-	int streamDualIMU;
-	int streamIMU1;
-	int streamIMU2;
-    int streamGPS;
-    int streamRtkPos;
-	int streamRtkPosRel;
-	int streamRtkCmpRel;
-    int streamMag;
-	int streamBaro;
-	int streamSysSensors;
-	int streamDThetaVel;
-	int streamRTOS;
-	int streamSensorsADC;
-	int streamWheelEncoder;
+	stream_did_t datasetEdit;				// -edit DID#=periodMultiple
+	vector<stream_did_t> datasets = {};		// -did DID#=periodMultiple
 
 	bool enableLogging;
-	string logType; // -lt=dat
-	string logPath; // -lp=path
-	float maxLogSpacePercent; // -lms=max_space_mb
-	uint32_t maxLogFileSize; // -lmf=max_file_size
-	string logSubFolder; // -lts=1
-	int baudRate; // -baud=3000000
+	string logType; 						// -lt=dat
+	string logPath; 						// -lp path
+	float maxLogSpacePercent; 				// -lms=max_space_mb
+	uint32_t maxLogFileSize; 				// -lmf=max_file_size
+	string logSubFolder; 					// -lts=1
+	int baudRate; 							// -baud=3000000
 	bool disableBroadcastsOnClose;
 
-	string serverConnection; // -svr=type:host:port:url:user:password
-	string host; // -host=ip:port
+	string roverConnection; 				// -rover=type:IP/URL:port:mountpoint:user:password   (server)
+	string baseConnection; 					// -base=IP:port    (client)
 
 	string flashCfg;
 	string evbFlashCfg;
 
 	uint32_t timeoutFlushLoggerSeconds;
+	uint32_t outputOnceDid = 0;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

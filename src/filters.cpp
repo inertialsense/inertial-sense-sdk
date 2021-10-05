@@ -224,7 +224,7 @@ void tripleToSingleImu(imu_t *result, const imu3_t *di)
 
 	if (cnt)
 	{
-		float div = 1/(float)cnt;
+		float div = 1.0f/(float)cnt;
 		mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
 		mul_Vec3_X(imu.I.acc, imu.I.acc, div);
 	}

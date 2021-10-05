@@ -93,6 +93,12 @@ public:
 	*/
 	int SetBlocking(bool blocking);
 
+	/**
+	* Gets information about the current connection (i.e. TCP ip address and port number or serial port name)
+	* @return connection info
+	*/
+	std::string ConnectionInfo() OVERRIDE;
+
 private:
 	cISTcpClient(const cISTcpClient& copy); // Disable copy constructor
 

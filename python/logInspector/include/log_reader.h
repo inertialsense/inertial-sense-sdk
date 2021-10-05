@@ -70,7 +70,7 @@ struct DeviceLog
     vector<debug_array_t> debugArray;
     vector<sensors_mpu_w_temp_t> sensorsCal1;
     vector<sensors_mpu_w_temp_t> sensorsCal2;
-    // vector<sensor_cal_t> calSc;
+    // vector<sensor_cal_v1p2_t> calSc;
     // vector<sensor_cal_mpu_t> calSc1;
     // vector<sensor_cal_mpu_t> calSc2;
     vector<sys_sensors_t> sysSensorsSigma;
@@ -96,7 +96,7 @@ struct DeviceLog
     vector<gps_raw_wrapper_t> gps1Raw {1};
     vector<gps_raw_wrapper_t> gps2Raw {1};
     vector<wheel_encoder_t> wheelEncoder;
-    // vector<wheel_encoder_config_t> wheelEncoderConfig;
+    vector<ground_vehicle_t> groundVehicle;
     vector<diag_msg_t> diagnosticMessage;
     vector<survey_in_t> surveyIn;
 //    vector<evb2_t> evb2;

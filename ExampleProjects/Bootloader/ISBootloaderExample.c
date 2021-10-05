@@ -47,10 +47,10 @@ static void bootloaderStatusText(const void* obj, const char* info)
 
 int main(int argc, char* argv[])
 {
-	if (argc < 3 || argc > 4)
+	if (argc < 4 || argc > 5)
 	{
-		printf("Please pass the com port, firmware file name to bootload, and optionally bootloader file name as the only arguments\r\n");
-		printf("usage: %s {COMx} {Firmware file} {Bootloader file (optional)}\r\n", argv[0]);
+		printf("Please pass the com port, baudrate, firmware file name to bootload, and optionally bootloader file name as the only arguments\r\n");
+		printf("usage: %s {COMx} {Baudrate} {Firmware file} {Bootloader file (optional)}\r\n", argv[0]);
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 IS_uINS-3.hex" 
 		return -1;
 	}
@@ -75,18 +75,19 @@ int main(int argc, char* argv[])
 	// very important - initialize the bootloader params to zeros
 	memset(&param, 0, sizeof(param));
 
+	// the serial port
+	param.port = &serialPort;
+	param.baudRate = atoi(argv[2]);
+
 	// the file to bootload, *.hex
-	param.fileName = argv[2];
+	param.fileName = argv[3];
 
 	// optional - bootloader file, *.bin
 	param.forceBootloaderUpdate = 0;	//do not force update of bootloader
-	if (argc == 4)
-		param.bootName = argv[3];
+	if (argc == 5)
+		param.bootName = argv[4];
 	else
 		param.bootName = 0;
-
-	// the serial port
-	param.port = &serialPort;
 
 	// progress indicators
 	param.uploadProgress = bootloaderUploadProgress;
@@ -95,15 +96,6 @@ int main(int argc, char* argv[])
 
 	// enable verify to read back the firmware and ensure it is correct
 	param.flags.bitFields.enableVerify = 1;
-
-	// optional - define baudrate. If not defined standard baud rates will be attempted.
-	// The default bootloader baudrate is 921600.  If using a system with known baud limits it is best to specify a lower baudrate.
-//	param.baudRate = IS_BAUD_RATE_BOOTLOADER_RS232;
-// 	param.baudRate = IS_BAUD_RATE_BOOTLOADER_SLOW;
-
-	// enable auto-baud, in the event that fast serial communications is not available,
-	//  the bootloader will attempt to fall back to a slower speed
-	// 	param.flags.bitFields.enableAutoBaud = 1;
 
 	// STEP 4: Run bootloader
 

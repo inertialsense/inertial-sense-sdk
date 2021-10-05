@@ -13,11 +13,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <flash_efc.h>
 #include "ASF/common/components/wifi/winc3400/wifi_drv/socket/include/socket.h"
 #include "../../../hw-libs/drivers/d_flash.h"
+#include "version/version.h"
+#include "version/repositoryInfo.h"
+#include "version/buildInfo.h"
 #include "globals.h"
 
 
 dev_info_t                  g_evbDevInfo = {0};
 wheel_encoder_t				g_wheelEncoder = {0};
+uint32_t                    g_wheelEncoderTimeMs = 0;
 evb_status_t                g_status = {0};
 bool                        g_statusToWlocal = true;
 evb_flash_cfg_t*            g_flashCfg;
@@ -41,41 +45,63 @@ void globals_init(void)
 {
 	// Init Device Info struct
 	g_evbDevInfo.hardwareVer[0] = 2;
-	g_evbDevInfo.hardwareVer[1] = 0;
 	switch(g_hdw_detect)
 	{
-	case HDW_DETECT_VER_EVB_2_0_0:				g_evbDevInfo.hardwareVer[2] = 0;	break;
-	default: /* HDW_DETECT_VER_EVB_2_0_1 */		g_evbDevInfo.hardwareVer[2] = 1;	break;
+    default:
+    	g_evbDevInfo.hardwareVer[1] = 0;
+        break;
+	case HDW_DETECT_VER_EVB_2_1_0:
+	case HDW_DETECT_VER_EVB_2_1_1:
+	    g_evbDevInfo.hardwareVer[1] = 1;
+        break;
+	case HDW_DETECT_VER_EVB_2_2_0:
+	    g_evbDevInfo.hardwareVer[1] = 2;
+        break;
+	}
+	switch(g_hdw_detect)
+	{
+    default:
+    	g_evbDevInfo.hardwareVer[2] = 0;
+        break;
+	case HDW_DETECT_VER_EVB_2_0_1:
+	case HDW_DETECT_VER_EVB_2_1_1:
+	    g_evbDevInfo.hardwareVer[2] = 1;	
+        break;
 	}
 	g_evbDevInfo.hardwareVer[3] = 0;
 
-// 	g_evbDevInfo.firmwareVer[0] = FIRMWARE_VERSION_CHAR0;      // Major
-// 	g_evbDevInfo.firmwareVer[1] = FIRMWARE_VERSION_CHAR1;      // Minor
-// 	g_evbDevInfo.firmwareVer[2] = FIRMWARE_VERSION_CHAR2;      // Revision
-// 	g_evbDevInfo.firmwareVer[3] = FIRMWARE_VERSION_CHAR3;		// firmware specific revision
+	g_evbDevInfo.firmwareVer[0] = FIRMWARE_VERSION_CHAR0;       // Major
+	g_evbDevInfo.firmwareVer[1] = FIRMWARE_VERSION_CHAR1;       // Minor
+	g_evbDevInfo.firmwareVer[2] = FIRMWARE_VERSION_CHAR2;       // Revision
+	g_evbDevInfo.firmwareVer[3] = FIRMWARE_VERSION_CHAR3;       // firmware specific revision
 
 	g_evbDevInfo.protocolVer[0] = PROTOCOL_VERSION_CHAR0;		// in com_manager.h
 	g_evbDevInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
 	g_evbDevInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;		// in data_sets.h
 	g_evbDevInfo.protocolVer[3] = PROTOCOL_VERSION_CHAR3;
 
-// 	g_evbDevInfo.repoRevision = REPO_HEAD_COUNT;
-// 	g_evbDevInfo.buildNumber  = BUILD_NUMBER;
+	g_evbDevInfo.repoRevision = REPO_HEAD_COUNT;
+	g_evbDevInfo.buildNumber  = BUILD_NUMBER;
 
 #if defined(DEBUG)
 	g_evbDevInfo.buildDate[0] = 'd';					// Debug
 #else
 	g_evbDevInfo.buildDate[0] = 'r';					// Release
 #endif
-// 	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
-// 	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
-// 	g_evbDevInfo.buildDate[3] = BUILD_DATE_DAY;
 
-// 	g_evbDevInfo.buildTime[0] = BUILD_TIME_HOUR;
-// 	g_evbDevInfo.buildTime[1] = BUILD_TIME_MINUTE;
-// 	g_evbDevInfo.buildTime[2] = BUILD_TIME_SECOND;
-// 	g_evbDevInfo.buildTime[3] = (uint8_t)BUILD_TIME_MILLISECOND;
-// 
+#if 0
+    setBuildDateTimeFromCompileTime(g_evbDevInfo.buildDate, g_evbDevInfo.buildTime);
+#else
+	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
+	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
+	g_evbDevInfo.buildDate[3] = BUILD_DATE_DAY;
+
+	g_evbDevInfo.buildTime[0] = BUILD_TIME_HOUR;
+	g_evbDevInfo.buildTime[1] = BUILD_TIME_MINUTE;
+	g_evbDevInfo.buildTime[2] = BUILD_TIME_SECOND;
+	g_evbDevInfo.buildTime[3] = (uint8_t)BUILD_TIME_MILLISECOND;
+#endif
+
 	strncpy(g_evbDevInfo.manufacturer, "Inertial Sense INC", DEVINFO_MANUFACTURER_STRLEN);
 }
 
@@ -202,16 +228,16 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 		break;
          
 #ifdef CONF_BOARD_CAN1
-	case  EVB2_CB_PRESET_CAN:
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
-		cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
-
-		cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
-        cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
-
-		cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_CAN);
-		cfg->cbf[EVB2_PORT_CAN]	   |= (1<<EVB2_PORT_USB);
-		break;
+	//case  EVB2_CB_PRESET_CAN:
+		//cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_USB);
+		//cfg->cbf[EVB2_PORT_UINS0]  |= (1<<EVB2_PORT_SP330);
+//
+		//cfg->cbf[EVB2_PORT_USB]    |= (1<<EVB2_PORT_UINS0);
+        //cfg->cbf[EVB2_PORT_SP330]  |= (1<<EVB2_PORT_UINS0);
+//
+		//cfg->cbf[EVB2_PORT_UINS1]  |= (1<<EVB2_PORT_CAN);
+		//cfg->cbf[EVB2_PORT_CAN]	   |= (1<<EVB2_PORT_USB);
+		//break;
 #endif
     }        
 
@@ -263,18 +289,33 @@ void com_bridge_apply_preset(evb_flash_cfg_t* cfg)
 #endif
 
 	// Enable CAN
-#ifdef CONF_BOARD_CAN1
-	switch(cfg->cbPreset)
-	{
-		case EVB2_CB_PRESET_CAN:
-		cfg->cbOptions |= EVB2_CB_OPTIONS_CAN_ENABLE;
-		break;
-	}
-#endif
+//#ifdef CONF_BOARD_CAN1
+	//switch(cfg->cbPreset)
+	//{
+		//case EVB2_CB_PRESET_CAN:
+		//cfg->cbOptions |= EVB2_CB_OPTIONS_CAN_ENABLE;
+		//break;
+	//}
+//#endif
 }
 
 
-void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
+void concatStringWithSpace(char* buf, size_t bufLen, const char* concat)
+{
+	if (bufLen > 0)
+	{
+		size_t len = strnlen(buf, bufLen);
+		if (len != 0 && len < bufLen - 1)
+		{
+			buf[len++] = ' ';
+			buf[len] = '\0';
+		}
+		strncat(buf, concat, bufLen - len - 1);
+	}    
+}
+
+
+bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 {
     evb_flash_cfg_t defaults;
     memset(&defaults, 0, sizeof(evb_flash_cfg_t));    
@@ -307,6 +348,7 @@ void nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
     if (cfg->cbPreset == EVB2_CB_PRESET_SPI_RS232){ cfg->cbPreset = EVB2_CB_PRESET_DEFAULT; }
 #endif
 
+    return valid;
 }
 
 
@@ -451,7 +493,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 
 	memset(cfg, 0, sizeof(evb_flash_cfg_t));
 	cfg->size						= sizeof(evb_flash_cfg_t);
-	cfg->key						= 2;			// increment key to force config to revert to defaults (overwrites customer's settings)
+	cfg->key						= 3;			// increment key to force config to revert to defaults (overwrites customer's settings)
 
 	cfg->cbPreset = EVB2_CB_PRESET_DEFAULT;
 
@@ -472,8 +514,70 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->server[1].port = 2000;
 // 	cfg->encoderTickToWheelRad = 0.0359998f;	// Husqvarna lawnmower
 	cfg->encoderTickToWheelRad = 0.108329996f;	// Husqvarna lawnmower
+	// cfg->encoderTickToWheelRad = 0.00523598775598298873f;	// = 2 Pi / (400 count encoder x 3 gear ratio), (ZT mower)
 	
+    cfg->wheelStepPeriodMs = 50;    // 20 Hz
+
 	com_bridge_apply_preset(cfg);
 	
 	cfg->checksum = flashChecksum32(cfg, sizeof(evb_flash_cfg_t));
+}
+
+
+void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4])
+{
+    char date[20] = __DATE__;        //  mmm dd yyyy (e.g. "Jan 14 2012")
+    int day=0, month=0, year=0, hour=0, minute=0, second=0;
+		if (date[0] == 'J' && 
+			date[1] == 'a' && 
+			date[2] == 'n'){ month = 1; }           // month
+    else if(date[0] == 'F' && 
+			date[1] == 'e' && 
+			date[2] == 'b'){ month = 2; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'r'){ month = 3; }
+    else if(date[0] == 'A' && 
+			date[1] == 'p' && 
+			date[2] == 'r'){ month = 4; }
+    else if(date[0] == 'M' && 
+			date[1] == 'a' && 
+			date[2] == 'y'){ month = 5; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'n'){ month = 6; }
+    else if(date[0] == 'J' && 
+			date[1] == 'u' && 
+			date[2] == 'l'){ month = 7; }
+    else if(date[0] == 'A' && 
+			date[1] == 'u' && 
+			date[2] == 'g'){ month = 8; }
+    else if(date[0] == 'S' && 
+			date[1] == 'e' && 
+			date[2] == 'p'){ month = 9; }
+    else if(date[0] == 'O' && 
+			date[1] == 'c' && 
+			date[2] == 't'){ month = 10; }
+    else if(date[0] == 'N' && 
+			date[1] == 'o' && 
+			date[2] == 'v'){ month = 11; }
+    else if(date[0] == 'D' && 
+			date[1] == 'e' && 
+			date[2] == 'c'){ month = 12; }
+    day  = atoi(&date[4]);     // day
+    year = atoi(&date[7]);     // year
+
+    char time[20] = __TIME__;  // hh:mm:ss in 24 hour time (e.g. "22:29:12")
+    hour   = atoi(&time[0]);   // hour
+    minute = atoi(&time[3]);   // minute
+    second = atoi(&time[6]);   // second
+
+    buildDate[1] = year - 2000;
+    buildDate[2] = month;
+    buildDate[3] = day;
+
+    buildTime[0] = hour;
+    buildTime[1] = minute;
+    buildTime[2] = second;
+    buildTime[3] = 0;
 }

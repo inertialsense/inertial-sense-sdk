@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "globals.h"
 #include "../misc/bootloaderShared.h"
 #include "../misc/rtos.h"
+// #include "../misc/nvr.h"
 #include "d_flash.h"
 #include "user_board.h"
 
@@ -110,19 +111,27 @@ uint32_t flash_erase_block(uint32_t address)
 		return FLASH_RC_INVALID;
 	}
 	
+#ifdef ENABLE_WDT
 	WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;	// restart watchdog
+#endif
 
 	flash_unlock(address, address + BOOTLOADER_FLASH_BLOCK_SIZE - 1, 0, 0);
 	return flash_erase_page(address, IFLASH_ERASE_PAGES_16);
 }
+
+#ifdef ENABLE_WDT
+#define UPDATE_WATCHDOG() { WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT; }
+#else
+#define UPDATE_WATCHDOG() {}
+#endif
 
 extern uint32_t efc_perform_fcr(Efc *p_efc, uint32_t ul_fcr); 
 __no_inline RAMFUNC void flash_erase_chip(void)
 {
 	LED_COLOR_RED();
 
-	cpu_irq_disable();
-	WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;	// restart watchdog
+	cpu_irq_disable();	
+	UPDATE_WATCHDOG();
 		
 	// Make sure all blocks are unlocked
 	flash_unlock(IFLASH_ADDR, IFLASH_ADDR + IFLASH_SIZE, NULL, NULL);
@@ -130,24 +139,24 @@ __no_inline RAMFUNC void flash_erase_chip(void)
 	// Issue erase - After this we cannot access any functions in flash as it will be gone.
 	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FCMD(EFC_FCMD_EA);
 	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
-		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+		UPDATE_WATCHDOG();
 
 	//Clear GPNVM Bits
 	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(0) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Protect bit
 	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
-		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+		UPDATE_WATCHDOG();
 	
 	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(1) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Enter SAM-BA
 	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
-		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+		UPDATE_WATCHDOG();
 	
 	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(7) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//TCM config
 	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
-		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+		UPDATE_WATCHDOG();
 	
 	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(8) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//TCM config
 	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
-		WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
+		UPDATE_WATCHDOG();
 			
 	LEDS_ALL_OFF();
 

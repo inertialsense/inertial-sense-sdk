@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CodeLite_Project Name="CLTool" InternalType="Console">
+<CodeLite_Project Name="cltool" InternalType="Console">
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
@@ -55,6 +55,8 @@
     <File Name="../../src/inertialSenseBootLoader.h"/>
     <File Name="../../src/linked_list.c"/>
     <File Name="../../src/linked_list.h"/>
+    <File Name="../../src/message_stats.cpp"/>
+    <File Name="../../src/message_stats.h"/>
     <File Name="../../src/serialPort.c"/>
     <File Name="../../src/serialPort.h"/>
     <File Name="../../src/serialPortPlatform.c"/>
@@ -92,7 +94,7 @@
         <Library Value="pthread"/>
       </Linker>
       <ResourceCompiler Options="" Required="no"/>
-      <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="-baud=921600 -lon -c=*1 -svr=RTCM3:SERIAL:/dev/ttyACM0:57600" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
+      <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="-baud=921600 -lon -c *1 -rover=SERIAL:RTCM3:/dev/ttyACM0:57600" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[]]>
       </Environment>
@@ -133,7 +135,7 @@
         <Library Value="pthread"/>
       </Linker>
       <ResourceCompiler Options="" Required="no"/>
-      <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Release" Command="./$(ProjectName)" CommandArguments="-c=/dev/ttyUSB0 -sSol -loff" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
+      <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Release" Command="./$(ProjectName)" CommandArguments="-c /dev/ttyUSB0 -sSol -loff" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[]]>
       </Environment>

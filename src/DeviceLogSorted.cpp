@@ -186,7 +186,7 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 	}
 
 	// reset data header if it changed
-	if (dataBytes == UINT_MAX)
+	if (dataBytes == (int32_t)UINT_MAX)
 	{
 		currentChunk->m_subHdr.dHdr = *dataHdr;
 	}

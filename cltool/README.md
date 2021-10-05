@@ -1,18 +1,18 @@
 # C++ API - Inertial Sense Class and CLTool Example Project
 
-The <a href="https://github.com/inertialsense/InertialSenseSDK/blob/master/src/InertialSense.cpp">InertialSense C++ class</a>, defined in InertialSense.h/.cpp, provides all SDK capabilities including serial communications, data logging to file, and embedded firmware update for <a href="https://inertialsense.com">InertialSense</a> products.
+The <a href="https://github.com/inertialsense/inertial-sense-sdk/blob/release/src/InertialSense.cpp">InertialSense C++ class</a>, defined in InertialSense.h/.cpp, provides all SDK capabilities including serial communications, data logging to file, and embedded firmware update for <a href="https://inertialsense.com">InertialSense</a> products.
 
 ## CLTool Example
 
-The <a href="https://github.com/inertialsense/InertialSenseSDK/tree/master/CLTool">Command Line Tool (CLTool)</a> is an open source project designed to illustrate InertialSense C++ class implementation.  The CLTool project can be compiled on most operating systems using cmake and gcc and can be used to communicate, log data, and update firmware for Inertial Sense products.  A Visual Studio project for Windows is also included.  See [Using CLTool](../App_Usage/cltool.md) for details on compiling and running the CLTool.
+The <a href="https://github.com/inertialsense/inertial-sense-sdk/tree/master/cltool">Command Line Tool (cltool)</a> is an open source project designed to illustrate InertialSense C++ class implementation.  The cltool project can be compiled on most operating systems using cmake and gcc and can be used to communicate, log data, and update firmware for Inertial Sense products.  A Visual Studio project for Windows is also included.  See [Using cltool](../App_Usage/cltool.md) for details on compiling and running the cltool.
 
 ### Implementation Keywords
-The following keywords are found in the CLTool soure code identify the steps for InertialSense class implementation.
+The following keywords are found in the cltool soure code identify the steps for InertialSense class implementation.
 
 ```C++
 /* SDK Implementation Keywords:
- * [C++ COMM INSTRUCTION] - C++ binding API - InertialSense class with binary communication
- *                          protocol and serial port support for Linux and Windows.
+ * [C++ COMM INSTRUCTION] - C++ binding API, InertialSense class with binary
+ * communication protocol and serial port support for Linux and Windows.
  * [LOGGER INSTRUCTION] - Data logger.
  * [BOOTLOADER INSTRUCTION] - Firmware update feature.
  */
@@ -144,7 +144,7 @@ if (!cltool_setupLogger(inertialSenseInterface))
 
 1. Create build directory
 ``` bash
-$ cd CLTool
+$ cd cltool
 $ mkdir build
 ```
 2. Run cmake from within build directory
@@ -170,14 +170,14 @@ $ ./cltool
 
 ## Compile & Run (Windows MS Visual Studio)
 1. [Install and Configure Visual Studio](../getting-started/#installing-and-configuring-visual-studio)
-2. Open Visual Studio solution file (InertialSenseSDK/CLTool/VS_project/CLTool.sln)
+2. Open Visual Studio solution file (inertial-sense-sdk/cltool/VS_project/cltool.sln)
 3. Build (F7)
 4. Run executable
 ``` bash
-C:\InertialSenseSDK\CLTool\VS_project\Release\cltool.exe
+C:\inertial-sense-sdk\cltool\VS_project\Release\cltool.exe
 ```
 
 
 ## Summary
 
-This section has covered the basic functionality you need to set up and communicate with <a href="https://inertialsense.com">Inertial Sense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/InertialSenseSDK">Inertial Sense SDK</a> GitHub repository, and we will be happy to help.
+This section has covered the basic functionality you need to set up and communicate with <a href="https://inertialsense.com">Inertial Sense</a> products.  If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/inertial-sense-sdk">Inertial Sense SDK</a> GitHub repository, and we will be happy to help.

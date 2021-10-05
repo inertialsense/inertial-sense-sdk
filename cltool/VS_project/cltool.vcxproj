@@ -21,34 +21,34 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F2B29FD9-C54E-4E14-A253-3F8EDE3F542E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>CLTool</RootNamespace>
-    <ProjectName>CLTool</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <RootNamespace>cltool</RootNamespace>
+    <ProjectName>cltool</ProjectName>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -175,8 +175,10 @@
     <ClCompile Include="..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSorted.cpp" />
+    <ClCompile Include="..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\src\InertialSense.cpp" />
     <ClCompile Include="..\..\src\inertialSenseBootLoader.c" />
+    <ClCompile Include="..\..\src\ISClient.cpp" />
     <ClCompile Include="..\..\src\ISComm.c" />
     <ClCompile Include="..\..\src\ISDataMappings.cpp" />
     <ClCompile Include="..\..\src\ISDisplay.cpp" />
@@ -192,6 +194,7 @@
     <ClCompile Include="..\..\src\ISTcpServer.cpp" />
     <ClCompile Include="..\..\src\ISUtilities.cpp" />
     <ClCompile Include="..\..\src\linked_list.c" />
+    <ClCompile Include="..\..\src\protocol_nmea.cpp" />
     <ClCompile Include="..\..\src\ring_buffer.c" />
     <ClCompile Include="..\..\src\serialPort.c" />
     <ClCompile Include="..\..\src\serialPortPlatform.c" />
@@ -218,9 +221,11 @@
     <ClInclude Include="..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\src\DeviceLogSorted.h" />
+    <ClInclude Include="..\..\src\message_stats.h" />
     <ClInclude Include="..\..\src\InertialSense.h" />
     <ClInclude Include="..\..\src\inertialSenseBootLoader.h" />
     <ClInclude Include="..\..\src\InertialSenseSDK.h" />
+    <ClInclude Include="..\..\src\ISClient.h" />
     <ClInclude Include="..\..\src\ISComm.h" />
     <ClInclude Include="..\..\src\ISConstants.h" />
     <ClInclude Include="..\..\src\ISDataMappings.h" />

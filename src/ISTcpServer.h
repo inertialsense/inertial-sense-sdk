@@ -130,6 +130,18 @@ public:
 	*/
 	bool IsOpen() { return m_socket != 0; }
 
+	/**
+	* Get ip address string
+	* @return string of ip address
+	*/
+	string IpAddress() { return m_ipAddress; }
+
+	/**
+	* Get port number
+	* @return int port number
+	*/
+	int32_t Port() { return m_port; }
+
 private:
 	cISTcpServer(const cISTcpServer& copy); // Disable copy constructor
 

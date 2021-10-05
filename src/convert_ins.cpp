@@ -15,7 +15,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISEarth.h"
 
 
-void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result)
+void convertIns1ToIns2(ins_1_t *ins1, ins_2_t *result)
+{
+    result->week		= ins1->week;
+    result->timeOfWeek	= ins1->timeOfWeek;
+    result->insStatus	= ins1->insStatus;
+    result->hdwStatus	= ins1->hdwStatus;
+    euler2quat(ins1->theta, result->qn2b);
+    memcpy(result->uvw, ins1->uvw, sizeof(ixVector3));
+    memcpy(result->lla, ins1->lla, sizeof(ixVector3d));
+}
+
+void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result, double *refLla)
 {
     result->week		= ins2->week;
     result->timeOfWeek	= ins2->timeOfWeek;
@@ -24,10 +35,17 @@ void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result)
     quat2euler(ins2->qn2b, result->theta);
     memcpy(result->uvw, ins2->uvw, sizeof(ixVector3));
     memcpy(result->lla, ins2->lla, sizeof(ixVector3d));
-    memset(result->ned, 0, sizeof(ixVector3));
+    if (refLla)
+    {   // Use ref LLA to solve for NED
+        llaDeg2ned_d(refLla, ins2->lla, result->ned);
+    }
+    else
+    {   // No ref LLA
+        memset(result->ned, 0, sizeof(ixVector3));
+    }
 }
 
-void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result)
+void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result, double *refLla)
 {
     result->week		= ins3->week;
     result->timeOfWeek	= ins3->timeOfWeek;
@@ -36,10 +54,17 @@ void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result)
     quat2euler(ins3->qn2b, result->theta);
     memcpy(result->uvw, ins3->uvw, sizeof(ixVector3));
     memcpy(result->lla, ins3->lla, sizeof(ixVector3d));
-    memset(result->ned, 0, sizeof(ixVector3));
+    if (refLla)
+    {   // Use ref LLA to solve for NED
+        llaDeg2ned_d(refLla, ins3->lla, result->ned);
+    }
+    else
+    {   // No ref LLA
+        memset(result->ned, 0, sizeof(ixVector3));
+    }
 }
 
-void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result)
+void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result, double *refLla)
 {
     ixVector3d llaRad;
 
@@ -52,5 +77,12 @@ void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result)
     ecef2lla(ins4->ecef, llaRad, 5);
     qe2b2EulerNedLLA(result->theta, ins4->qe2b, llaRad);
     lla_Rad2Deg_d(result->lla, llaRad);
-    memset(result->ned, 0, sizeof(ixVector3));
+    if (refLla)
+    {   // Use ref LLA to solve for NED
+        llaDeg2ned_d(refLla, result->lla, result->ned);
+    }
+    else
+    {   // No ref LLA
+        memset(result->ned, 0, sizeof(ixVector3));
+    }
 }

@@ -35,76 +35,98 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
-static bool output_server_bytes(InertialSense* i, const char* prefix = "", const char* suffix = "")
+
+static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refresh=false)
 {
-	static float serverKBps = 0;
-	static uint64_t serverByteCount = 0;
-	static uint64_t updateCount = 0;
-	static uint64_t serverByteRateTimeMsLast = 0;
-	static uint64_t serverByteCountLast = 0;
-
-	if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_QUIET)
-	{
-		uint64_t newServerByteCount = i->GetClientServerByteCount();
-		if (serverByteCount != newServerByteCount)
-		{
-			serverByteCount = newServerByteCount;
-
-			// Data rate of server bytes
-			uint64_t timeMs = getTickCount();
-			uint64_t dtMs = timeMs - serverByteRateTimeMsLast;
-			if (dtMs >= 1000)
-			{
-				uint64_t serverBytesDelta = serverByteCount - serverByteCountLast;
-				serverKBps = ((float)serverBytesDelta / (float)dtMs);
-
-				// Update history
-				serverByteCountLast = serverByteCount;
-				serverByteRateTimeMsLast = timeMs;
-			}
-			printf("%sServer: %02" PRIu64 " (%3.1f KB/s : %lld)     %s", prefix, (++updateCount) % 100, serverKBps, (long long)i->GetClientServerByteCount(), suffix);
-			return true;
-		}
-	}
-	return false;
-}
-
-static void output_client_bytes(InertialSense* i)
-{
-	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET)
+	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
+		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
 	{
 		return;
 	}
 
-	if (g_inertialSenseDisplay.GetDisplayMode() != cInertialSenseDisplay::DMODE_SCROLL)
+	static float serverKBps = 0;
+	static uint64_t serverByteCount = 0;
+	static uint64_t serverByteRateTimeMsLast = 0;
+	static uint64_t serverByteCountLast = 0;
+	static stringstream outstream;
+
+	uint64_t newServerByteCount = i->GetClientServerByteCount();
+	if (serverByteCount != newServerByteCount)
 	{
-		char suffix[256];
-		com_manager_status_t* status = comManagerGetStatus(0);
-		suffix[0] = '\0';
-		if (status != NULLPTR && status->communicationErrorCount != 0 && g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET)
+		serverByteCount = newServerByteCount;
+
+		// Data rate of server bytes
+		uint64_t timeMs = getTickCount();
+		uint64_t dtMs = timeMs - serverByteRateTimeMsLast;
+		if (dtMs >= 1000)
 		{
-			snprintf(suffix, sizeof(suffix), "Com errors: %d     ", status->communicationErrorCount);
+			uint64_t serverBytesDelta = serverByteCount - serverByteCountLast;
+			serverKBps = ((float)serverBytesDelta / (float)dtMs);
+
+			// Update history
+			serverByteCountLast = serverByteCount;
+			serverByteRateTimeMsLast = timeMs;
 		}
-		g_inertialSenseDisplay.Home();
-		if (i->GetClientServerByteCount() == 0)
+
+		outstream.str("");	// clear
+		outstream << "\n";
+		if (server)
 		{
-			cout << endl << suffix;
+			outstream << "Server: " << i->GetTcpServerIpAddressPort()   << "     Tx: ";
 		}
 		else
 		{
-			output_server_bytes(i, "\n", suffix);
+			outstream << "Client: " << i->GetClientConnectionInfo()     << "     Rx: ";
+		}
+		outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->GetClientServerByteCount() << " bytes    \n";
+
+		if (server)
+		{	// Server
+			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
+			if (showMessageSummary)
+			{
+ 				outstream << i->getServerMessageStatsSummary();
+			}
+			refresh = true;
+		}
+		else
+		{	// Client
+			com_manager_status_t* status = comManagerGetStatus(0);
+			if (status != NULLPTR && status->communicationErrorCount>2)
+			{
+				outstream << "Com errors: " << status->communicationErrorCount << "     \n";
+			}
+			if (showMessageSummary)
+			{
+				outstream << i->getClientMessageStatsSummary();
+			}
 		}
 	}
+
+	if (refresh)
+	{
+		cout << outstream.str();
+	}
 }
+
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
+	if (data->hdr.id != g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid)
+	{
+		return;
+	}
     (void)i;
     (void)pHandle;
+
 	// Print data to terminal
-	g_inertialSenseDisplay.ProcessData(data);
-	output_client_bytes(i);
+	bool refresh = g_inertialSenseDisplay.ProcessData(data);
+
+	
+
+	// Collect and print summary list of client messages received
+	display_server_client_status(i, false, false, refresh);
 
 #if 0
 
@@ -165,73 +187,24 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	inertialSenseInterface.BroadcastBinaryData(DID_DEV_INFO, 2000);
 
 	// depending on command line options. stream various data sets
-	if (g_commandLineOptions.streamINS1)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_1, g_commandLineOptions.streamINS1);
+	if (g_commandLineOptions.datasetEdit.did)
+	{	// Dataset to edit
+		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasetEdit.did);
+		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasetEdit.did, g_commandLineOptions.datasetEdit.periodMultiple);
 	}
-	if (g_commandLineOptions.streamINS2)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_2, g_commandLineOptions.streamINS2);
-	}
-	if (g_commandLineOptions.streamINS3)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_3, g_commandLineOptions.streamINS3);
-	}
-	if (g_commandLineOptions.streamINS4)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_INS_4, g_commandLineOptions.streamINS4);
-	}
-	if (g_commandLineOptions.streamSysSensors)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_SYS_SENSORS, g_commandLineOptions.streamSysSensors);
-	}
-	if (g_commandLineOptions.streamDualIMU)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_IMU, g_commandLineOptions.streamDualIMU);
-	}
-	if (g_commandLineOptions.streamDThetaVel)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_PREINTEGRATED_IMU, g_commandLineOptions.streamDThetaVel);
-	}
-	if (g_commandLineOptions.streamGPS)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_GPS1_POS, g_commandLineOptions.streamGPS);
-	}
-    if (g_commandLineOptions.streamRtkPos)
-    {
-        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS, g_commandLineOptions.streamRtkPos);
-    }
-    if (g_commandLineOptions.streamRtkPosRel)
-    {
-        inertialSenseInterface.BroadcastBinaryData(DID_GPS1_RTK_POS_REL, g_commandLineOptions.streamRtkPosRel);
-    }
-	if (g_commandLineOptions.streamRtkCmpRel)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_GPS2_RTK_CMP_REL, g_commandLineOptions.streamRtkCmpRel);
-	}
-    if (g_commandLineOptions.streamMag)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_MAGNETOMETER, g_commandLineOptions.streamMag);
-	}
-	if (g_commandLineOptions.streamBaro)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_BAROMETER, g_commandLineOptions.streamBaro);
-	}
-	if (g_commandLineOptions.streamRTOS)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_RTOS_INFO, g_commandLineOptions.streamRTOS);
-        system_command_t cfg;
-        cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
-        cfg.invCommand = ~cfg.command;
-		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-	}
-	if (g_commandLineOptions.streamSensorsADC)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_SENSORS_ADC, g_commandLineOptions.streamSensorsADC);
-	}
-	if (g_commandLineOptions.streamWheelEncoder)
-	{
-		inertialSenseInterface.BroadcastBinaryData(DID_WHEEL_ENCODER, g_commandLineOptions.streamWheelEncoder);
+	else while (g_commandLineOptions.datasets.size())
+	{	// Datasets to stream
+		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
+		switch (g_commandLineOptions.datasets.back().did)
+		{
+		case DID_RTOS_INFO:
+			system_command_t cfg;
+			cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+			cfg.invCommand = ~cfg.command;
+			inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+			break;
+		}
+		g_commandLineOptions.datasets.pop_back();
 	}
 	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
 	{
@@ -266,22 +239,33 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
+    if (g_commandLineOptions.softwareResetEvb)
+    {   // Issue software reset to EVB
+        uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+    }
 
-	if (g_commandLineOptions.serverConnection.length() != 0)
+	if (g_commandLineOptions.roverConnection.length() != 0)
 	{
-		if (g_commandLineOptions.serverConnection.find("RTCM3:") == 0 ||
-			g_commandLineOptions.serverConnection.find("IS:") == 0 ||
-			g_commandLineOptions.serverConnection.find("UBLOX:") == 0)
+		vector<string> pieces;
+		splitString(g_commandLineOptions.roverConnection, ':', pieces);
+		if (pieces[0] != "TCP" &&
+			pieces[0] != "SERIAL")
 		{
-			if (!inertialSenseInterface.OpenServerConnection(g_commandLineOptions.serverConnection))
-			{
-				cout << "Failed to connect to server." << endl;
-			}
-		}
-		else
-		{
-			cout << "Invalid server connection, must prefix with RTCM3:, IS: or UBLOX:, " << g_commandLineOptions.serverConnection << endl;
+			cout << "Invalid base connection, 1st field must be: TCP or SERIAL\n  -rover=" << g_commandLineOptions.roverConnection << endl;
 			return false;
+		}
+		if (pieces[1] != "RTCM3" &&
+			pieces[1] != "IS" &&
+			pieces[1] != "UBLOX")
+		{
+			cout << "Invalid base connection, 2nd field must be: RTCM3, UBLOX, or IS\n  -rover=" << g_commandLineOptions.roverConnection << endl;
+			return false;
+		}
+
+		if (!inertialSenseInterface.OpenConnectionToServer(g_commandLineOptions.roverConnection))
+		{
+			cout << "Failed to connect to server (base)." << endl;
 		}
 	}
 	if (g_commandLineOptions.flashCfg.length() != 0)
@@ -363,19 +347,29 @@ static int cltool_createHost()
 		cout << "Failed to update EVB flash config" << endl;
 		return -1;
 	}
-	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.host))
+	else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.baseConnection))
 	{
-		cout << "Failed to create host at " << g_commandLineOptions.host << endl;
+		cout << "Failed to create host at " << g_commandLineOptions.baseConnection << endl;
 		return -1;
 	}
 
 	inertialSenseInterface.StopBroadcasts();
 
-	while (!g_inertialSenseDisplay.ControlCWasPressed())
+	unsigned int timeSinceClearMs = 0, curTimeMs;
+	while (!g_inertialSenseDisplay.ExitProgram())
 	{
 		inertialSenseInterface.Update();
+		curTimeMs = current_timeMs();
+		bool refresh = false;
+		if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs)
+		{	// Clear terminal
+			g_inertialSenseDisplay.Clear();
+			timeSinceClearMs = curTimeMs;
+			refresh = true;
+		}
 		g_inertialSenseDisplay.Home();
-		output_server_bytes(&inertialSenseInterface);
+		cout << g_inertialSenseDisplay.Hello();
+		display_server_client_status(&inertialSenseInterface, true, true, refresh);
 	}
 	cout << "Shutting down..." << endl;
 
@@ -389,6 +383,7 @@ static int inertialSenseMain()
 {	
 	// clear display
 	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
+	g_inertialSenseDisplay.SetKeyboardNonBlock();
 	g_inertialSenseDisplay.Clear();
 
 	// if replay data log specified on command line, do that now and return
@@ -421,7 +416,7 @@ static int inertialSenseMain()
         return cltool_updateBootloader();
     }
     // if host was specified on the command line, create a tcp server
-	else if (g_commandLineOptions.host.length() != 0)
+	else if (g_commandLineOptions.baseConnection.length() != 0)
 	{
 		return cltool_createHost();
 	}
@@ -434,7 +429,7 @@ static int inertialSenseMain()
 		serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
 		unsigned char line[512];
 		unsigned char* asciiData;
-		while (!g_inertialSenseDisplay.ControlCWasPressed())
+		while (!g_inertialSenseDisplay.ExitProgram())
 		{
 			int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
 			if (count > 0)
@@ -471,8 +466,16 @@ static int inertialSenseMain()
 			try
 			{
 				// Main loop. Could be in separate thread if desired.
-				while (!g_inertialSenseDisplay.ControlCWasPressed())
+				while (!g_inertialSenseDisplay.ExitProgram())
 				{
+					g_inertialSenseDisplay.GetKeyboardInput();
+
+					if (g_inertialSenseDisplay.UploadNeeded())
+					{
+						cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
+						inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
+					}
+
 					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
 					{
@@ -503,11 +506,11 @@ int cltool_main(int argc, char* argv[])
 	// Parse command line options
 	if (!cltool_parseCommandLine(argc, argv))
 	{
-		g_inertialSenseDisplay.ShutDown();
-
 		// parsing failed
 		return -1;
 	}
+
+	g_inertialSenseDisplay.setOutputOnceDid(g_commandLineOptions.outputOnceDid);
 
 	// InertialSense class example using command line options
 	int result = inertialSenseMain();

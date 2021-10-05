@@ -25,6 +25,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#if defined(INCLUDE_LUNA_DATA_SETS)
+#include "luna_data_sets.h"
+#endif
+
 /**
 * Get the size of an eDataType
 * @param dataType the data type to get size for
@@ -151,6 +155,13 @@ public:
 	static const char* GetDataSetName(uint32_t dataId);
 
 	/**
+	* Get a data set id from name
+	* @param dataId the data id to get a data set name from
+	* @return data set name or NULL if not found
+	*/
+	static uint32_t GetDataSetId(string name);
+
+	/**
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
@@ -164,28 +175,51 @@ public:
 	static uint32_t GetSize(uint32_t dataId);
 
 	/**
-	* Convert a string to a data field
+	* Convert a string to a data field inside a data set.
 	* @param stringBuffer the null terminated string to convert, must not be NULL
 	* @param stringLength the number of chars in stringBuffer
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
-	* @param dataBuffer packet buffer
+	* @param datasetBuffer packet buffer
 	* @param info metadata about the field to convert
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* dataBuffer, const data_info_t& info, int radix = 10, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int radix = 10, bool json = false);
 
 	/**
-	* Convert data to a string
+	* Convert a string to a variable.
+	* @param stringBuffer the null terminated string to convert, must not be NULL
+	* @param stringLength the number of chars in stringBuffer
+	* @param dataBuffer data buffer pointer
+	* @param dataType data type
+	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
+	* @param json true if json, false if csv
+	* @return true if success, false if error
+	*/
+	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, bool json = false);
+
+	/**
+	* Convert dataset field to a string
 	* @param info metadata about the field to convert
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
-	* @param dataBuffer packet buffer
+	* @param datasetBuffer packet buffer
 	* @param stringBuffer the buffer to hold the converted string
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* dataBuffer, data_mapping_string_t stringBuffer, bool json = false);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, bool json = false);
+
+	/**
+	* Convert a variable to a string
+	* @param dataType data type
+	* @param dataFlags data flags 
+	* @param dataBuffer data buffer pointer
+	* @param stringBuffer the buffer to hold the converted string
+	* @param json true if json, false if csv
+	* @return true if success, false if error
+	*/
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
 
 	/**
 	* Get a timestamp from data if available
@@ -207,6 +241,8 @@ public:
 
 private:
 	cISDataMappings();
+
+	static const char* const m_dataIdNames[];
 
 	uint32_t m_lookupSize[DID_COUNT];
 	const data_info_t* m_timestampFields[DID_COUNT];

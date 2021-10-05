@@ -95,14 +95,14 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& 
 		}
 		if (columnHeader == "_ID_")
 		{
-			columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeInt64, "_ID_" });
+			columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeInt64, (eDataFlags)0, "_ID_" });
 		}
 		else
 		{
 			map_name_to_info_t::const_iterator offset = offsetMap->find(columnHeader);
 			if (offset == offsetMap->end())
 			{
-				columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeBinary, columnHeader });
+				columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DataTypeBinary, (eDataFlags)0, columnHeader });
 			}
 			else
 			{
@@ -117,7 +117,11 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& 
 int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf)
 {
 	// Verify file pointer
-	if (pFile == NULL || cISDataMappings::GetSize(dataHdr.id) == 0)
+	if (pFile == NULL)
+	{
+		return 0;
+	}
+	if (cISDataMappings::GetSize(dataHdr.id) == 0)
 	{
 		return 0;
 	}

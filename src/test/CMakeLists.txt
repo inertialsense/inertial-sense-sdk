@@ -10,6 +10,8 @@ add_library(SDK_test
 	test_com_manager_2.cpp
 	test_math.cpp
 	test_ring_buffer.cpp
+	test_InertialSense.cpp
+	test_ISDataMappings.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -47,13 +49,17 @@ add_executable(run_tests
 	test_com_manager_2.cpp
 	test_math.cpp
 	test_ring_buffer.cpp
+	test_InertialSense.cpp
+	test_ISDataMappings.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
 	../ISComm.c
+	../ISDataMappings.cpp
 	../ISEarth.c
 	../ISMatrix.c
 	../ISPose.c
+	../ISUtilities.cpp
 	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c

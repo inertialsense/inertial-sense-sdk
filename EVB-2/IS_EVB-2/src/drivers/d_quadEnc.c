@@ -58,63 +58,71 @@ static void quadEncSetModePosition(Tc *const timercounter, uint32_t ID_timercoun
 #endif
 }
 
-static uint32_t ra_capture[2] = {0, 0};
-static uint32_t ra_capture_timeMs = 0;
-
-void TCCAP0_SPD_Handler(void)
+typedef struct 
 {
-	static bool running = false;
+	uint32_t 		count;
+	uint32_t 		overflow;
+	uint32_t		directionLast;
+	uint32_t		running;
+	uint32_t 		timeMs;
+	uint32_t		pulseCount;		// Number of pulses accumulated in count
+	float			period;
+} capture_t;
+
+static capture_t capture[2] = {};
+
+static void quadEncPeriodSetStopped(capture_t *c)
+{	// Wheels are stationary or spinning very slowly
+	c->running = false;
+	c->count = 0;
+	c->pulseCount = 0;
+	c->period = 0.0f;
+}
+
+// This wheel encoder works by 
+static inline void tc_encoder_handler(capture_t *c, Tc *p_tc, uint32_t ul_channel, uint32_t direction)
+{
+	uint32_t status = tc_get_status(p_tc, ul_channel);
+
+	if (c->directionLast != direction)
+	{	// Switched direction.  Reset velocity measurements and indicate system is not running.
+		c->directionLast = direction;
+		quadEncPeriodSetStopped(c);
+	}
+
+	if (status & TC_SR_COVFS)
+	{	// Counter Overflow
+		c->overflow += 0x00010000;
+	}
 	
-	uint32_t status = tc_get_status(TCCAP0_SPD, TCCAP0_SPD_CHANNEL);
-	
-	if ((status & TC_SR_LDRAS) != 0)
-	{
-		if(running)
+	if (status & TC_SR_LDRAS)
+	{	// RA Loading
+		uint32_t ra_count = tc_read_ra(p_tc, ul_channel);
+		if(c->running != 0)
 		{
-			ra_capture[0] = tc_read_ra(TCCAP0_SPD, TCCAP0_SPD_CHANNEL);
-			ra_capture_timeMs = time_msec();
+			c->count += c->overflow + ra_count;
+			c->pulseCount++;
 		}
 		else
 		{	// First read after stopping is invalid
-			tc_read_ra(TCCAP0_SPD, TCCAP0_SPD_CHANNEL);	//discard read
-			running = true;
+			c->running = true;
+			c->count = 0;
+			c->pulseCount = 0;
 		}
-	}
 
-	if ((status & TC_SR_COVFS) != 0)
-	{	// Timer overflow - assume we are not moving
-		ra_capture[0] = 0;
-		ra_capture_timeMs = time_msec();
-		running = false;
+		c->timeMs = time_msec();
+		c->overflow = 0;
 	}
+}
+
+void TCCAP0_SPD_Handler(void)
+{
+	tc_encoder_handler(&capture[0], TCCAP0_SPD, TCCAP0_SPD_CHANNEL, QE0_POS->TC_QISR & TC_QISR_DIR);	
 }
 
 void TCCAP1_SPD_Handler(void)
 {
-	static bool running = false;
-	
-	uint32_t status = tc_get_status(TCCAP1_SPD, TCCAP1_SPD_CHANNEL);
-	
-	if ((status & TC_SR_LDRAS) != 0)
-	{
-		if(running)
-		{
-			ra_capture[1] = tc_read_ra(TCCAP1_SPD, TCCAP1_SPD_CHANNEL);
-			ra_capture_timeMs = time_msec();
-		}
-		else
-		{	// First read after stopping is invalid
-			tc_read_ra(TCCAP1_SPD, TCCAP1_SPD_CHANNEL);	//discard read
-			running = true;
-		}
-	}
-
-	if ((status & TC_SR_COVFS) != 0)
-	{	// Timer overflow - assume we are not moving
-		ra_capture[1] = 0;
-		ra_capture_timeMs = time_msec();
-		running = false;
-	}
+	tc_encoder_handler(&capture[1], TCCAP1_SPD, TCCAP1_SPD_CHANNEL, QE1_POS->TC_QISR & TC_QISR_DIR);	
 }
 
 static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int timerirq, uint32_t ID_timercounter, uint32_t pck6_pres)
@@ -133,10 +141,10 @@ static void quadEncSetModeSpeed(Tc *const timercounter, int timerchannel, int ti
 	tc_init(timercounter, timerchannel,
 		TC_CMR_TCCLKS_TIMER_CLOCK1  /* Clock Selection */
 		| TC_CMR_LDRA_RISING        /* RA Loading: rising edge of TIOA */
-		| TC_CMR_ABETRG             /* External Trigger: TIOA */
+		| TC_CMR_ABETRG             /* External Trigger Source: TIOA */
 		| TC_CMR_ETRGEDG_RISING	    /* External Trigger Edge: rising */
 	);
-				
+
 	// Setup capture and overflow interrupt		
 	NVIC_DisableIRQ(timerirq);
 	NVIC_ClearPendingIRQ(timerirq);
@@ -194,11 +202,11 @@ void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 	
 	cv = QE0_POS->TC_CHANNEL[0].TC_CV;
 	*pos0 = cv;
-	*dir0 = (QE0_POS->TC_QISR & TC_QISR_DIR) / TC_QISR_DIR;
+	*dir0 = 0x1 && (QE0_POS->TC_QISR & TC_QISR_DIR);
 	
 	cv = QE1_POS->TC_CHANNEL[0].TC_CV;
 	*pos1 = cv;
-	*dir1 = (QE1_POS->TC_QISR & TC_QISR_DIR) / TC_QISR_DIR;
+	*dir1 = 0x1 && (QE1_POS->TC_QISR & TC_QISR_DIR);
 
 	// Reverse direction
 	if (s_direction_reverse_0) { *pos0 = -(*pos0); *dir0 = !(*dir0); }
@@ -207,31 +215,56 @@ void quadEncReadPositionAll(int *pos0, bool *dir0, int *pos1, bool *dir1)
 	taskEXIT_CRITICAL();
 }
 
+static float quadEncReadPeriod(capture_t *c)
+{
+	if (c->running)
+	{
+		uint32_t dtMs = time_msec() - c->timeMs;
+		if (dtMs > 500)		// 100ms timeout
+		// We might try scaling this timeout based on the minimum velocity and number of ticks per radian.  We need to wait longer for lower resolution encoders. 
+		// threshold = rad_per_tick * min_velocity * (125)     Hoverbot ~500ms, ZT ~2ms
+		{	 
+			quadEncPeriodSetStopped(c);
+		}
+	}
+
+	if (c->pulseCount)
+	{
+		c->period = s_tc2sec * (float)(c->count) / (float)(c->pulseCount);
+		c->count = 0;
+		c->pulseCount = 0;
+	}
+// 	else
+// 	{
+// 		c->period = 0.0f;
+// 	}
+
+	return c->period;
+}
+
 void quadEncReadPeriodAll(float *period0, float *period1)
 {
+	// g_debug.i[4] = capture[0].pulseCount;
+	// g_debug.i[5] = capture[1].pulseCount;
+
 	taskENTER_CRITICAL();
 
-	uint32_t dtMs = time_msec() - ra_capture_timeMs;
-	if (dtMs < 100)
-	{
-		*period0 = s_tc2sec * ra_capture[0];
-		*period1 = s_tc2sec * ra_capture[1];
-	}
-	else
-	{	// Return zero if encoder pulses occur slower than 100ms
-		*period0 = 0.0f;
-		*period1 = 0.0f;
-	}	
-
-// 		g_debug.i[0] = *period0;
-// 		g_debug.i[1] = *period1;
+	*period0 = quadEncReadPeriod(&capture[0]);
+	*period1 = quadEncReadPeriod(&capture[1]);
 
 	taskEXIT_CRITICAL();
+
+	// g_debug.i[0] = capture[0].count;
+	// g_debug.i[1] = capture[1].count;
+	// g_debug.i[2] = capture[0].overflow;
+	// g_debug.i[3] = capture[1].overflow;	
+	// g_debug.f[0] = *period0 * 1000.0;
+	// g_debug.f[1] = *period1 * 1000.0;
 }
 
 void test_quad_encoders(void)
 {
-#if	1	//quadEnc testing
+#if	0	//quadEnc testing
 
 	udi_cdc_write_buf("Running\r\n", 9);
 	quadEncInit(239);

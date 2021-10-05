@@ -99,6 +99,7 @@ void board_IO_config(void);
 extern uint8_t                      g_hdw_detect;
 extern dev_info_t                   g_evbDevInfo;
 extern wheel_encoder_t              g_wheelEncoder;
+extern uint32_t                     g_wheelEncoderTimeMs;
 extern evb_status_t                 g_status;
 extern bool                         g_statusToWlocal;
 extern evb_flash_cfg_t*             g_flashCfg;
@@ -124,12 +125,16 @@ int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin 
 int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
 void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin);
+void concatStringWithSpace(char* buf, size_t bufLen, const char* concat);
 
-void nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
+bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
 void nvr_init(void);
 void nvr_slow_maintenance(void);
 
 int error_check_config(evb_flash_cfg_t *cfg);
+
+void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4]);
+
 
 #ifdef __cplusplus
 }

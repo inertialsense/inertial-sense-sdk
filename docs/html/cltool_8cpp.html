@@ -23,7 +23,7 @@
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">SDK
-   &#160;<span id="projectnumber">Release 1.8.4</span>
+   &#160;<span id="projectnumber">Release 1.8.5</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -77,6 +77,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="cltool_8h_source.html">cltool.h</a>&quot;</code><br />
+<code>#include &lt;string.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="_i_s_data_mappings_8h_source.html">ISDataMappings.h</a>&quot;</code><br />
 </div>
 <p><a href="cltool_8cpp_source.html">Go to the source code of this file.</a></p>
@@ -110,6 +111,8 @@ Functions</h2></td></tr>
 <tr class="separator:a99e8806a7c2b246c7203e4a2edfe9796"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a439906cc0e6d0d9116260a0ff859c257"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#a439906cc0e6d0d9116260a0ff859c257">cltool_setupLogger</a> (<a class="el" href="class_inertial_sense.html">InertialSense</a> &amp;inertialSenseInterface)</td></tr>
 <tr class="separator:a439906cc0e6d0d9116260a0ff859c257"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a0af85bbe18afabf8aa941be45923f8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#a5a0af85bbe18afabf8aa941be45923f8">read_did_argument</a> (<a class="el" href="structstream__did__t.html">stream_did_t</a> *dataset, string s)</td></tr>
+<tr class="separator:a5a0af85bbe18afabf8aa941be45923f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad658783b45192edaf3157feae7c65b93"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#ad658783b45192edaf3157feae7c65b93">cltool_parseCommandLine</a> (int argc, char *argv[])</td></tr>
 <tr class="separator:ad658783b45192edaf3157feae7c65b93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17819fe4dd0c75a4d6d408674ca40437"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#a17819fe4dd0c75a4d6d408674ca40437">cltool_replayDataLog</a> ()</td></tr>
@@ -118,10 +121,10 @@ Functions</h2></td></tr>
 <tr class="separator:ab55d36068c600beea5b530eedcd963cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acedc85fc610a222882de7de7bfda5bde"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#acedc85fc610a222882de7de7bfda5bde">cltool_outputHelp</a> ()</td></tr>
 <tr class="separator:acedc85fc610a222882de7de7bfda5bde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6cad4d6b6c42fcf6245852dbe97be0d8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#a6cad4d6b6c42fcf6245852dbe97be0d8">cltool_updateFlashConfig</a> (<a class="el" href="class_inertial_sense.html">InertialSense</a> &amp;inertialSenseInterface, string flashConfigString)</td></tr>
-<tr class="separator:a6cad4d6b6c42fcf6245852dbe97be0d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a106f859223a3f55e1226360a214060da"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#a106f859223a3f55e1226360a214060da">cltool_updateEvbFlashConfig</a> (<a class="el" href="class_inertial_sense.html">InertialSense</a> &amp;inertialSenseInterface, string flashConfigString)</td></tr>
-<tr class="separator:a106f859223a3f55e1226360a214060da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf65b93d23a29089a0a3cb4d1053b547"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#aaf65b93d23a29089a0a3cb4d1053b547">cltool_updateFlashCfg</a> (<a class="el" href="class_inertial_sense.html">InertialSense</a> &amp;inertialSenseInterface, string flashCfgString)</td></tr>
+<tr class="separator:aaf65b93d23a29089a0a3cb4d1053b547"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e01c6d953080c7a6314cff2f84e445a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool_8cpp.html#a5e01c6d953080c7a6314cff2f84e445a">cltool_updateEvbFlashCfg</a> (<a class="el" href="class_inertial_sense.html">InertialSense</a> &amp;inertialSenseInterface, string flashCfgString)</td></tr>
+<tr class="separator:a5e01c6d953080c7a6314cff2f84e445a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -145,7 +148,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00053">53</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00054">54</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -161,7 +164,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00062">62</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00063">63</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -177,7 +180,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00054">54</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00055">55</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -193,7 +196,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00055">55</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00056">56</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -209,7 +212,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00058">58</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00059">59</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -225,7 +228,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00056">56</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00057">57</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -241,7 +244,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00057">57</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00058">58</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -257,7 +260,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00059">59</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00060">60</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -273,7 +276,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00060">60</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00061">61</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -289,7 +292,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00061">61</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00062">62</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -309,7 +312,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00543">543</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00481">481</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -328,7 +331,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00456">456</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00395">395</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -358,7 +361,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00063">63</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00103">103</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -377,7 +380,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00424">424</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00363">363</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -413,7 +416,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00020">20</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00021">21</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -433,18 +436,18 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00027">27</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00028">28</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a106f859223a3f55e1226360a214060da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a106f859223a3f55e1226360a214060da">&#9670;&nbsp;</a></span>cltool_updateEvbFlashConfig()</h2>
+<a id="a5e01c6d953080c7a6314cff2f84e445a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e01c6d953080c7a6314cff2f84e445a">&#9670;&nbsp;</a></span>cltool_updateEvbFlashCfg()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool cltool_updateEvbFlashConfig </td>
+          <td class="memname">bool cltool_updateEvbFlashCfg </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="class_inertial_sense.html">InertialSense</a> &amp;&#160;</td>
           <td class="paramname"><em>inertialSenseInterface</em>, </td>
@@ -453,7 +456,7 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">string&#160;</td>
-          <td class="paramname"><em>flashConfigString</em>&#160;</td>
+          <td class="paramname"><em>flashCfgString</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -463,18 +466,18 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00598">598</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00536">536</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a6cad4d6b6c42fcf6245852dbe97be0d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6cad4d6b6c42fcf6245852dbe97be0d8">&#9670;&nbsp;</a></span>cltool_updateFlashConfig()</h2>
+<a id="aaf65b93d23a29089a0a3cb4d1053b547"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf65b93d23a29089a0a3cb4d1053b547">&#9670;&nbsp;</a></span>cltool_updateFlashCfg()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool cltool_updateFlashConfig </td>
+          <td class="memname">bool cltool_updateFlashCfg </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="class_inertial_sense.html">InertialSense</a> &amp;&#160;</td>
           <td class="paramname"><em>inertialSenseInterface</em>, </td>
@@ -483,7 +486,7 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">string&#160;</td>
-          <td class="paramname"><em>flashConfigString</em>&#160;</td>
+          <td class="paramname"><em>flashCfgString</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -493,7 +496,37 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00548">548</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00486">486</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5a0af85bbe18afabf8aa941be45923f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a0af85bbe18afabf8aa941be45923f8">&#9670;&nbsp;</a></span>read_did_argument()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool read_did_argument </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structstream__did__t.html">stream_did_t</a> *&#160;</td>
+          <td class="paramname"><em>dataset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">string&#160;</td>
+          <td class="paramname"><em>s</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00064">64</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -510,7 +543,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00016">16</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00017">17</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -526,7 +559,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00018">18</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00019">19</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>
@@ -542,7 +575,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00017">17</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool_8cpp_source.html#l00018">18</a> of file <a class="el" href="cltool_8cpp_source.html">cltool.cpp</a>.</p>
 
 </div>
 </div>

@@ -21,6 +21,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "data_sets.h"
 #include "ISConstants.h"
+#include "ISDataMappings.h"
+
+#if !PLATFORM_IS_WINDOWS
+
+#include <termios.h>
+
+#endif
 
 using namespace std;
 
@@ -30,15 +37,32 @@ using namespace std;
 class cInertialSenseDisplay
 {
 public:
+	typedef struct
+	{
+		const map_name_to_info_t 			*mapInfo = NULL;
+		map_name_to_info_t::const_iterator 	mapInfoSelection;
+		map_name_to_info_t::const_iterator 	mapInfoBegin;
+		map_name_to_info_t::const_iterator 	mapInfoEnd;
+
+		bool            editEnabled;
+		std::string     field;
+		uint32_t        did;
+		bool            uploadNeeded;
+		uint8_t 		data[MAX_DATASET_SIZE];
+		data_info_t 	info;
+	} edit_data_t;
+
 	enum eDisplayMode
 	{
 		DMODE_PRETTY,
 		DMODE_SCROLL,
+		DMODE_EDIT,
 		DMODE_STATS,
-		DMODE_QUIET
+		DMODE_QUIET,
 	};
 
 	cInertialSenseDisplay();
+	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
 	eDisplayMode GetDisplayMode() { return m_displayMode; }
@@ -52,11 +76,16 @@ public:
 	string Connected();
 	string Replay(double speed=1.0);
 	string Goodbye();
-	int ReadKey(); // non-block, returns -1 if no key available
-	bool ControlCWasPressed();
+
+	void SetKeyboardNonBlock();
+	void ResetTerminalMode();
+	int KeyboardHit();
+	int GetChar();
+	bool ExitProgram();
+	void SetExitProgram();
 
 	// for the binary protocol, this processes a packet of data
-	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
+	bool ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void DataToStats(const p_data_t* data);
 	string DataToString(const p_data_t* data);
 	char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);
@@ -67,9 +96,9 @@ public:
 	string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
 	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
-	string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);
+	string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
+	string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
 	string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
-	string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
 	string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const string didName);
 	string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr, const string didName);
 	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr, const string didName);
@@ -81,14 +110,31 @@ public:
 	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
 	string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+	string DataToStringGeneric(const p_data_t* data);
+
+	string DatasetToString(const p_data_t* data);
+
+	void GetKeyboardInput();
+	void SelectEditDataset(int did);
+	void VarSelectIncrement();
+	void VarSelectDecrement();
+	void StopEditing();
+	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
+	edit_data_t *EditData() { return &m_editData; }
+	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
 
 private:
 	string VectortoString();
 	void DataToVector(const p_data_t* data);
 
-	vector<string>	m_didMsgs;
-	eDisplayMode m_displayMode;
-	uint16_t m_rxCount;
+	bool m_nonblockingkeyboard;
+	vector<string> m_didMsgs;
+	eDisplayMode m_displayMode = DMODE_PRETTY;
+	uint16_t m_rxCount = 0;
+
+	edit_data_t m_editData = {};
+	int m_outputOnceDid = 0;				// 0 = disabled
+	bool m_interactiveMode = true;
 
 	struct sDidStats
 	{
@@ -103,6 +149,10 @@ private:
 
 	HANDLE m_windowsConsoleIn;
 	HANDLE m_windowsConsoleOut;
+
+#else
+
+    struct termios orig_termios_;
 
 #endif
 
