@@ -1209,11 +1209,6 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 		// Single packet commands/data sets. No data header, just body.
 		default:
 		{
-			if (msg->txData.size == 0)
-			{	
-				return -1;
-			}
-			
 			// Assign packet pointer and encode data as is
 			pkt.body = msg->txData;
 			if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, 0))
