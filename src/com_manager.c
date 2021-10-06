@@ -436,7 +436,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 				int sendData = 1;
 				if (id<DID_COUNT_UINS && cmInstance->regData[id].preTxFnc)
 				{
-					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle);
+					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle, &bcPtr->dataHdr);
 				}
 				if (sendData)
 				{
@@ -923,12 +923,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	// Copy reference to source data
 	bufTxRxPtr_t* dataSetPtr = &cmInstance->regData[req->id].dataSet;
 
-	// Abort if no data pointer is registered or offset + size is out of bounds
-	if (dataSetPtr->txPtr == 0 || dataSetPtr->size == 0)
-	{
-		return -1;
-	}
-	else if (req->offset + req->size > dataSetPtr->size)
+	if (req->offset + req->size > dataSetPtr->size)
 	{
 		req->offset = 0;
 		req->size = dataSetPtr->size;
@@ -978,15 +973,22 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	msg->pkt.bodyHdr.ptr = (uint8_t *)&msg->dataHdr;
 	msg->pkt.bodyHdr.size = sizeof(msg->dataHdr);
 	msg->pkt.txData.size = req->size;
-	msg->pkt.txData.ptr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
+	if (dataSetPtr->txPtr)
+	{
+		msg->pkt.txData.ptr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
+	}
+	else
+	{
+		msg->pkt.txData.ptr = NULL;
+	}
 
 	// Prep data if callback exists
 	int sendData = 1;
 	if (cmInstance->regData[req->id].preTxFnc)
 	{
-		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle);
+		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
 	}
-// 	sendData
+
 	
 	// Constrain request broadcast period if necessary
 	if (req->bc_period_multiple != 0)
@@ -1137,6 +1139,11 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 		case PID_DATA:
 		case PID_SET_DATA:
 		{
+			if (msg->bodyHdr.size == 0)
+			{	// No data
+				return -1;
+			}
+			
 			// Setup packet and encoding state
 			buffer_t bufToEncode;
 			p_data_hdr_t hdr = *(p_data_hdr_t*)msg->bodyHdr.ptr;
@@ -1202,6 +1209,11 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 		// Single packet commands/data sets. No data header, just body.
 		default:
 		{
+			if (msg->txData.size == 0)
+			{	
+				return -1;
+			}
+			
 			// Assign packet pointer and encode data as is
 			pkt.body = msg->txData;
 			if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, 0))
