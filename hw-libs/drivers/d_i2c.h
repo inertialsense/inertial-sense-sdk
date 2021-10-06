@@ -23,6 +23,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+#define I2C_BUF_SIZE_TX	256	
+
 enum
 {
 	I2C_TXSTATUS_IDLE	= 0,
@@ -51,14 +53,15 @@ typedef struct
 {
 	Twihs 					*instance;
 	uint32_t				instance_id;
-	dma_channel_config_t 	rxdma;
-	dma_channel_config_t	txdma;
+	dma_channel_config_t 	rx_dma;
+	dma_channel_config_t	tx_dma;
 	twihs_options_t 		cfg;
 	uint8_t					tx_last_byte;
-	uint8_t					txstatus;
-	uint8_t					rxstatus;
+	uint8_t					tx_status;
+	uint8_t					rx_status;
 	uint8_t					*rx_buf;
 	uint8_t					rx_len;
+	uint8_t					tx_buf[I2C_BUF_SIZE_TX];
 } i2c_t;
 
 extern i2c_t i2c0;
