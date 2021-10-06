@@ -1437,54 +1437,114 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	typedef sensor_compensation_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_SCOMP];
 	uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "pqr1[0]", mpu[0].lpfLsb.pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr1[1]", mpu[0].lpfLsb.pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr1[2]", mpu[0].lpfLsb.pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[0]", mpu[0].lpfLsb.acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[1]", mpu[0].lpfLsb.acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[2]", mpu[0].lpfLsb.acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[0]", mpu[0].lpfLsb.mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[1]", mpu[0].lpfLsb.mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[2]", mpu[0].lpfLsb.mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp1lpf", mpu[0].lpfLsb.temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "temp1", mpu[0].temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "tempRampRate1", mpu[0].tempRampRate, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "tci1", mpu[0].tci, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "m1numTcPts", mpu[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "dtTemp1", mpu[0].dtTemp, 0, DataTypeFloat, float, 0);
+	// Gyros
+	ADD_MAP(m, totalSize, "pqr0.lpfLsb[0]", pqr[0].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr0.lpfLsb[1]", pqr[0].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr0.lpfLsb[2]", pqr[0].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr0.lpfTemp", pqr[0].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr0.k[0]", pqr[0].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr0.k[1]", pqr[0].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr0.k[2]", pqr[0].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr0.temp", pqr[0].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr0.tempRampRate", pqr[0].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr0.tci", pqr[0].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pqr0.numTcPts", pqr[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pqr0.dtTemp", pqr[0].dtTemp, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "pqr2[0]", mpu[1].lpfLsb.pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[1]", mpu[1].lpfLsb.pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[2]", mpu[1].lpfLsb.pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[0]", mpu[1].lpfLsb.acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[1]", mpu[1].lpfLsb.acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[2]", mpu[1].lpfLsb.acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[0]", mpu[1].lpfLsb.mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[1]", mpu[1].lpfLsb.mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[2]", mpu[1].lpfLsb.mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp2lpf", mpu[1].lpfLsb.temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "temp2", mpu[1].temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "tempRampRate2", mpu[1].tempRampRate, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "tci2", mpu[1].tci, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "m2numTcPts", mpu[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "dtTemp2", mpu[1].dtTemp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr1.lpfLsb[0]", pqr[1].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr1.lpfLsb[1]", pqr[1].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr1.lpfLsb[2]", pqr[1].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr1.lpfTemp", pqr[1].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr1.k[0]", pqr[1].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr1.k[1]", pqr[1].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr1.k[2]", pqr[1].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr1.temp", pqr[1].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr1.tempRampRate", pqr[1].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr1.tci", pqr[1].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pqr1.numTcPts", pqr[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pqr1.dtTemp", pqr[1].dtTemp, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "pqr3[0]", mpu[2].lpfLsb.pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr3[1]", mpu[2].lpfLsb.pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr3[2]", mpu[2].lpfLsb.pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc3[0]", mpu[2].lpfLsb.acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc3[1]", mpu[2].lpfLsb.acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc3[2]", mpu[2].lpfLsb.acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag3[0]", mpu[2].lpfLsb.mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag3[1]", mpu[2].lpfLsb.mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag3[2]", mpu[2].lpfLsb.mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp3lpf", mpu[2].lpfLsb.temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "temp3", mpu[2].temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "tempRampRate2", mpu[2].tempRampRate, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "tci3", mpu[2].tci, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "m3numTcPts", mpu[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "dtTemp3", mpu[2].dtTemp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr2.lpfLsb[0]", pqr[2].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr2.lpfLsb[1]", pqr[2].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr2.lpfLsb[2]", pqr[2].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr2.lpfTemp", pqr[2].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "pqr2.k[0]", pqr[2].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr2.k[1]", pqr[2].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr2.k[2]", pqr[2].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr2.temp", pqr[2].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr2.tempRampRate", pqr[2].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr2.tci", pqr[2].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pqr2.numTcPts", pqr[2].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pqr2.dtTemp", pqr[2].dtTemp, 0, DataTypeFloat, float, 0);
 
+	// Accels
+	ADD_MAP(m, totalSize, "acc0.lpfLsb[0]", acc[0].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc0.lpfLsb[1]", acc[0].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc0.lpfLsb[2]", acc[0].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc0.lpfTemp", acc[0].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "acc0.k[0]", acc[0].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc0.k[1]", acc[0].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc0.k[2]", acc[0].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc0.temp", acc[0].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc0.tempRampRate", acc[0].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc0.tci", acc[0].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "acc0.numTcPts", acc[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "acc0.dtTemp", acc[0].dtTemp, 0, DataTypeFloat, float, 0);
+
+	ADD_MAP(m, totalSize, "acc1.lpfLsb[0]", acc[1].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc1.lpfLsb[1]", acc[1].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc1.lpfLsb[2]", acc[1].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc1.lpfTemp", acc[1].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "acc1.k[0]", acc[1].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc1.k[1]", acc[1].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc1.k[2]", acc[1].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc1.temp", acc[1].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc1.tempRampRate", acc[1].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc1.tci", acc[1].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "acc1.numTcPts", acc[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "acc1.dtTemp", acc[1].dtTemp, 0, DataTypeFloat, float, 0);
+
+	ADD_MAP(m, totalSize, "acc2.lpfLsb[0]", acc[2].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc2.lpfLsb[1]", acc[2].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc2.lpfLsb[2]", acc[2].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc2.lpfTemp", acc[2].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "acc2.k[0]", acc[2].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc2.k[1]", acc[2].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc2.k[2]", acc[2].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc2.temp", acc[2].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc2.tempRampRate", acc[2].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc2.tci", acc[2].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "acc2.numTcPts", acc[2].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "acc2.dtTemp", acc[2].dtTemp, 0, DataTypeFloat, float, 0);
+
+	// Magnetometers
+	ADD_MAP(m, totalSize, "mag0.lpfLsb[0]", mag[0].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag0.lpfLsb[1]", mag[0].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag0.lpfLsb[2]", mag[0].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag0.lpfTemp", mag[0].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "mag0.k[0]", mag[0].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag0.k[1]", mag[0].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag0.k[2]", mag[0].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag0.temp", mag[0].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "mag0.tempRampRate", mag[0].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "mag0.tci", mag[0].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mag0.numTcPts", mag[0].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mag0.dtTemp", mag[0].dtTemp, 0, DataTypeFloat, float, 0);
+
+	ADD_MAP(m, totalSize, "mag1.lpfLsb[0]", mag[1].lpfLsb[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag1.lpfLsb[1]", mag[1].lpfLsb[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag1.lpfLsb[2]", mag[1].lpfLsb[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag1.lpfTemp", mag[1].temp, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "mag1.k[0]", mag[1].k[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag1.k[1]", mag[1].k[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag1.k[2]", mag[1].k[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag1.temp", mag[1].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "mag1.tempRampRate", mag[1].tempRampRate, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "mag1.tci", mag[1].tci, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mag1.numTcPts", mag[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mag1.dtTemp", mag[1].dtTemp, 0, DataTypeFloat, float, 0);
+
+	// Other
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "alignAccel[0]", alignAccel[0], 0, DataTypeFloat, float&, 0);
@@ -2071,8 +2131,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS",                 // 54
 	"UNUSED_55",                        // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
-	"DID_DUAL_IMU_RAW",                 // 57
-	"DID_DUAL_IMU",                     // 58
+	"DID_IMU3",                         // 57
+	"DID_IMU",                          // 58
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
 	"DID_GPS_RTK_OPT",                  // 61
@@ -2098,8 +2158,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_FLASH_CFG",                // 81
 	"DID_EVB_DEBUG_ARRAY",              // 82
 	"DID_EVB_RTOS_INFO",                // 83
-	"DID_DUAL_IMU_RAW_MAG",             // 84
-	"DID_DUAL_IMU_MAG",                 // 85
+	"DID_IMU3_MAG",                     // 84
+	"DID_IMU_MAG",                      // 85
 	"DID_PREINTEGRATED_IMU_MAG",        // 86
 	"DID_GROUND_VEHICLE",               // 87
 	"DID_POSITION_MEASUREMENT",         // 88

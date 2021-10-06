@@ -55,9 +55,13 @@ extern "C" {
 #define Vec3_OneGrtrThan_X(v,x)		( ((v[0])>(x))  || ((v[1])>(x))  || ((v[2])>(x)) )
 #define Vec3_AllLessThan_X(v,x)		( ((v[0])<(x))  && ((v[1])<(x))  && ((v[2])<(x)) )
 #define Vec3_AllGrtrThan_X(v,x)		( ((v[0])>(x))  && ((v[1])>(x))  && ((v[2])>(x)) )
-#define Vec3_IsAllZero(v)			( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
+#define Vec3_IsZero(v)				( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
 #define Vec3_IsAnyZero(v)			( ((v[0])==(0.0f))  || ((v[1])==(0.0f))  || ((v[2])==(0.0f)) )
 #define Vec3_IsAnyNonZero(v)		( ((v[0])!=(0.0f))  || ((v[1])!=(0.0f))  || ((v[2])!=(0.0f)) )
+
+#define Mat3x3_IsIdentity(m)        ( (m[0]==1.0f) && (m[1]==0.0f) && (m[2]==0.0f) && \
+                                      (m[3]==0.0f) && (m[4]==1.0f) && (m[5]==0.0f) && \
+                                      (m[6]==0.0f) && (m[7]==0.0f) && (m[8]==1.0f) )
 
 #define set_Vec3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define set_Vec4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
