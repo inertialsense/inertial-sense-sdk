@@ -25,20 +25,18 @@ i2c_t i2c0 = {0};
 #define I2C_BUF_SIZE_TX	256	
 
 #ifndef INT_PRIORITY_DMA
-#define INT_PRIORITY_DMA  3
+#define INT_PRIORITY_DMA	3
 #endif
 
-COMPILER_ALIGNED(32) static volatile uint8_t _rxbuf[I2C_BUF_SIZE_RX];
+#define INT_PRIORITY_I2C	3
+
 COMPILER_ALIGNED(32) static volatile uint8_t _txbuf[I2C_BUF_SIZE_TX];
 
-static const uint32_t _xdmaint =
-	XDMAC_CIE_BIE | // End of Block Interrupt Enable
-	XDMAC_CIE_LIE | // End of Linked List Interrupt Enable
-	XDMAC_CIE_DIE | // End of Disable Interrupt Enable
-	XDMAC_CIE_FIE | // End of Flush Interrupt Enable
-	XDMAC_CIE_RBIE | // Read Bus Error Interrupt Enable
-	XDMAC_CIE_WBIE | // Write Bus Error Interrupt Enable
-	XDMAC_CIE_ROIE; // Request Overflow Error Interrupt Enable
+static const uint32_t _xdmaint = XDMAC_CIE_BIE; // End of Block Interrupt Enable
+
+static const uint32_t _i2cint = 
+	TWIHS_IER_RXRDY |
+	TWIHS_IER_TXRDY;
 
 int i2c_get_defaults(i2c_t *init)
 {
@@ -57,7 +55,6 @@ int i2c_get_defaults(i2c_t *init)
 	init->txdma.chan = DMA_CH_EVB_I2C_SENSORS_TX;
 
 	init->rxdma.xdmac.mbr_sa = (uint32_t)&(init->instance->TWIHS_RHR);
-	init->rxdma.xdmac.mbr_da = (uint32_t)_rxbuf;
 	init->rxdma.xdmac.mbr_cfg =
 		XDMAC_CC_TYPE_PER_TRAN |
 		XDMAC_CC_MBSIZE_SINGLE |
@@ -72,8 +69,8 @@ int i2c_get_defaults(i2c_t *init)
 		XDMAC_CC_PERID(XDMAC_PERID_TWIHS0_RX);
 	init->rxdma.xdmac.mbr_ubc = I2C_BUF_SIZE_RX;
 	
-	init->txdma.xdmac.mbr_sa = (uint32_t)_txbuf;
 	init->txdma.xdmac.mbr_da = (uint32_t)&(init->instance->TWIHS_THR);
+	init->txdma.xdmac.mbr_da = (uint32_t)_txbuf;
 	init->txdma.xdmac.mbr_cfg =
 		XDMAC_CC_TYPE_PER_TRAN |
 		XDMAC_CC_MBSIZE_SINGLE |
@@ -106,8 +103,10 @@ static void i2c_dma_init_rx(i2c_t *init)
 	NVIC_EnableIRQ(XDMAC_IRQn);
 }
 
-static void i2c_dma_config_rx(i2c_t *init, uint32_t len)
+static void i2c_dma_config_rx(i2c_t *init, uint8_t *buf, uint32_t len)
 {
+	init->rxdma.xdmac.mbr_sa = buf;
+	init->txdma.xdmac.mbr_ubc = len;
 	xdmac_configure_transfer(XDMAC, init->rxdma.chan, &init->rxdma.xdmac);
 }
 
@@ -135,8 +134,9 @@ static void i2c_dma_init_tx(i2c_t *init)
 	NVIC_EnableIRQ(XDMAC_IRQn);
 }
 
-static void i2c_dma_config_tx(i2c_t *init, uint32_t len)
+static void i2c_dma_config_tx(i2c_t *init, uint8_t *buf, uint32_t len)
 {
+	memcpy((uint8_t*)_txbuf, buf, len);
 	init->txdma.xdmac.mbr_ubc = len;
 	xdmac_configure_transfer(XDMAC, init->txdma.chan, &init->txdma.xdmac);
 }
@@ -155,9 +155,9 @@ static void i2c_dma_stop_tx(i2c_t *init)
 /*
  *	Make sure to call i2c_get_defaults() first
  */
-int i2c_init(i2c_t *init)
+int i2c_init(i2c_t *init)	// TODO: Rewrite this so it can be used for any instance of I2C
 {
-	//Configure pins
+	// Configure pins
 	ioport_set_pin_peripheral_mode(I2C_0_SDA_PIN, I2C_0_SDA_FLAGS);
 	ioport_set_pin_peripheral_mode(I2C_0_SCL_PIN, I2C_0_SCL_FLAGS);
 	
@@ -165,6 +165,12 @@ int i2c_init(i2c_t *init)
 	
 	if(twihs_master_init(init->instance, &init->cfg) != TWIHS_SUCCESS)
 		return -1;
+		
+	twihs_enable_interrupt(init->instance, _i2cint);
+	NVIC_DisableIRQ(TWIHS0_IRQn);
+	NVIC_ClearPendingIRQ(TWIHS0_IRQn);
+	NVIC_SetPriority(TWIHS0_IRQn, INT_PRIORITY_I2C);
+	NVIC_EnableIRQ(TWIHS0_IRQn);
 	
 	i2c_dma_init_rx(init);
 	i2c_dma_init_tx(init);
@@ -179,7 +185,7 @@ int i2c_transmit(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len)
 		return -1;
 	}
 	
-	i2c_dma_config_tx(init, len-1);			// Datasheet says we have to transmit last byte manually
+	i2c_dma_config_tx(init, buf, len-1);			// Datasheet says we have to transmit last byte manually
 	init->tx_last_byte = buf[len-1];		// Last byte gets stored
 
 	/* Set write mode, slave address and 3 internal address byte lengths */
@@ -205,7 +211,7 @@ int i2c_read(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len)
 	init->rx_len = len;
 	init->rx_buf = buf;
 	
-	i2c_dma_config_rx(init, len-2);			// Datasheet says we have to read last 2 bytes manually
+	i2c_dma_config_rx(init, buf, len-2);			// Datasheet says we have to read last 2 bytes manually
 
 	/* Set write mode, slave address and 3 internal address byte lengths */
 	init->instance->TWIHS_MMR = TWIHS_MMR_DADR(addr);
@@ -222,17 +228,32 @@ int i2c_read(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len)
 	return 0;
 }
 
+uint8_t i2c_get_status(i2c_t *init)
+{
+	uint8_t status = 0;
+	
+	if(init->rxstatus != I2C_RXSTATUS_IDLE)
+		status |= I2C_STATUS_RXBUSY;
+	if(init->txstatus != I2C_TXSTATUS_IDLE)
+		status |= I2C_STATUS_TXBUSY;
+		
+	return status;
+}
+
 
 void TWIHS0_Handler(void)
 {
 	uint32_t status = TWIHS0->TWIHS_SR;
 	
-	if((status & TWIHS_SR_TXRDY) && (i2c0.txstatus == I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY))		// TODO: Enable this interrupt
+	if(status & TWIHS_SR_TXRDY)
 	{
-		TWIHS0->TWIHS_CR |= TWIHS_CR_STOP;
-		TWIHS0->TWIHS_THR = i2c0.tx_last_byte;
-	
-		i2c0.txstatus = I2C_TXSTATUS_IDLE;
+		if(i2c0.txstatus == I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY)
+		{
+			TWIHS0->TWIHS_CR |= TWIHS_CR_STOP;
+			TWIHS0->TWIHS_THR = i2c0.tx_last_byte;
+			
+			i2c0.txstatus = I2C_TXSTATUS_IDLE;
+		}
 	}
 	
 	if(status & TWIHS_SR_RXRDY)

@@ -29,7 +29,7 @@ DBGPIO_END( DBG_RX_DCACHE_CLEAN_PIN ); \
 memcpy((void*)(dst), (const void*)(src), (size));
 
 // defines
-//#define ENABLE_DMA_INTERRUPTS
+//#define ENABLE_DMA_INTERRUPTS		// TODO: This will enable a duplicate XDMAC_Handler in d_dma.c. Might just remove this?
 #ifdef ENABLE_DMA_INTERRUPTS
 #define DMA_INT_ENABLE(_ch_) \
 	xdmac_enable_interrupt(XDMAC, _ch_); \

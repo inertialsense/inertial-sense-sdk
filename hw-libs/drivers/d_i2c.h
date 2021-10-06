@@ -41,6 +41,12 @@ enum
 	I2C_RXSTATUS_ERROR,	
 };
 
+enum
+{
+	I2C_STATUS_RXBUSY	= 0b00000001,
+	I2C_STATUS_TXBUSY	= 0b00000010,
+};
+
 typedef struct
 {
 	Twihs 					*instance;
@@ -62,6 +68,8 @@ int i2c_init(i2c_t *init);
 
 int i2c_transmit(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
 int i2c_read(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
+
+uint8_t i2c_get_status(i2c_t *init);
 
 void XDMAC_i2c_Handler(void);
 

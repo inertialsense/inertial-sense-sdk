@@ -1,6 +1,6 @@
 #include <asf.h>
 #include <string.h>
-#include "d_dma.h"
+
 #ifdef ENABLE_DMA_INTERRUPTS
 #include "conf_interrupts.h"
 #endif // ENABLE_DMA_INTERRUPTS
@@ -13,9 +13,11 @@
 
 #ifdef __INERTIAL_SENSE_EVB_2__
 #include "spiTouINS.h"
+#endif
+
+#include "d_dma.h"
 #include "d_usartDMA.h"
 #include "d_i2c.h"
-#endif
 
 #include "xdmac.h"
 
@@ -23,21 +25,20 @@ static volatile uint8_t s_xfer_done[DMA_CHAN_COUNT] = {0};
 	
 void XDMAC_Handler(void)
 {	
+	XDMAC_usartDMA_Handler();
+	
 #ifdef __INERTIAL_SENSE_EVB_2__
 	
-	
-#ifdef CONF_BOARD_SPI_UINS
-	//Forward for spiTouINS
+	#ifdef CONF_BOARD_SPI_UINS
+		//Forward for spiTouINS
 	XDMAC_spiTouINS_Handler();
-#endif
-
-	XDMAC_usartDMA_Handler();
+	#endif
 	
 	XDMAC_i2c_Handler();
 
 #else		// uINS-3
 
-#ifdef ENABLE_SPI_COMM_INTERRUPTS
+	#ifdef ENABLE_SPI_COMM_INTERRUPTS
 	uint32_t status;
 
 	// receive status
@@ -49,14 +50,14 @@ void XDMAC_Handler(void)
 		_handler();
 		xdmac_channel_enable(XDMAC, DMA_CH_SPI_COMM_RX);
 	}
-#endif // ENABLE_SPI_COMM_INTERRUPTS
+	#endif // ENABLE_SPI_COMM_INTERRUPTS
 
-#endif
+#endif	// __INERTIAL_SENSE_EVB_2__
 
 }
 
 #ifdef ENABLE_DMA_INTERRUPTS
-void XDMAC_Handler(void)
+void XDMAC_Handler(void)		// We can't just merge this with the above function because reading status erases the interrupt flags.
 {
 	uint32_t i;
 	uint32_t status;
