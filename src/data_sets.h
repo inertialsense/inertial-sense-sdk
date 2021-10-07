@@ -790,7 +790,7 @@ typedef struct PACKED
 	/** Position dilution of precision (unitless) */
 	float                   pDop;
 
-	/** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
+	/** Average of all non-zero satellite carrier to noise ratios (signal strengths) in dBHz */
 	float                   cnoMean;
 
 	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
