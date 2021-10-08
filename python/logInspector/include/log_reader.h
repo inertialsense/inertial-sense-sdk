@@ -4,6 +4,7 @@
 
 #include "InertialSense.h"
 #include "ISLogger.h"
+#include "luna_data_sets.h"
 
 //#include "Eigen/Core"
 //#include "Eigen/St    dVector"

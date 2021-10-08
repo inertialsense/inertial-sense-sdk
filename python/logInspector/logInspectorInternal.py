@@ -94,6 +94,7 @@ class logInspectorInternal(LogInspectorWindow):
         self.addButton('RTK Cmp Misc', lambda: self.plot('rtkCmpMisc'))
         self.addButton('Wheel Encoder', lambda: self.plot('wheelEncoder'))
         self.addButton('Ground Vehicle', lambda: self.plot('groundVehicle'))
+        self.addButton('Wheel Control', lambda: self.plot('wheelControl'))
         self.addButton('GPS Raw Time', lambda: self.plot('gpsRawTime'))
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
