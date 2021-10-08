@@ -320,6 +320,7 @@ typedef enum
 	// Duty TESTS	
 	LCM_TEST_DUTY					= 7,	// (Keep as first duty cycle test)
 	LCM_TEST_DUTY_SWEEP				= 8,	// Watchdog disabled in testing
+	LCM_TEST_WHL_ANG_VEL_SWEEP      = 9,
 } eLunaWheelControllerMode;
 
 typedef enum
