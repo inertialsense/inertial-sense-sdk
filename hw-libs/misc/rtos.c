@@ -60,15 +60,24 @@ int createTask
 	return 0;
 }
 
-
 void rtos_monitor(int numRtosTasks)
 {
 	int i;
-
+	
 	#if (configGENERATE_RUN_TIME_STATS == 1)
 	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();
 	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;
+	static uint32_t ulTotalRunTimeLast = 0;
+	ulTotalRunTimeLast = ulTotalRunTime;
 	#endif // (configGENERATE_RUN_TIME_STATS == 1)
+	
+	bool resetStats = false;
+	
+	// Check if the timer wrapped
+	if(ulTotalRunTimeLast > ulTotalRunTime)	
+	{ 
+		resetStats = true;
+	}
 
 	TaskStatus_t status;
 
@@ -86,9 +95,17 @@ void rtos_monitor(int numRtosTasks)
 			g_rtos.task[i].priority    = status.uxCurrentPriority;
 
 			#if (configGENERATE_RUN_TIME_STATS == 1)
-			// Divide by zero
-			if (ulTotalRunTime)
-			g_rtos.task[i].cpuUsage = (float)status.ulRunTimeCounter / fTotalRunTime;
+			if (ulTotalRunTime) // Divide by zero
+			{
+				if(resetStats)
+				{
+					status.ulRunTimeCounter = 0;
+				}
+				else // Wait 1 cycle after a rollover to calculate CPU usage so values don't jump to zero briefly 
+				{
+					g_rtos.task[i].cpuUsage = (float)status.ulRunTimeCounter / fTotalRunTime;
+				}
+			}
 			#endif // (configGENERATE_RUN_TIME_STATS == 1)
 		}
 	}
