@@ -2089,9 +2089,9 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_LUNA_WHEEL_CONTROLLER",    // 114
 	"DID_EVB_LUNA_WHEEL_COMMAND",       // 115
     "DID_EVB_LUNA_AUX_COMMAND",         // 116
-	"",
-	"",
-	"",
+    "",                                 // 117
+    "",                                 // 118
+    ""                                  // 119
 };
 
 
@@ -2141,6 +2141,7 @@ cISDataMappings::cISDataMappings()
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
 	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
     PopulateEvbLunaWheelCommandMappings(m_lookupInfo);
+    PopulateEvbLunaAuxCmdMappings(m_lookupInfo);
 #endif
 
 	PopulateStrobeInTimeMappings(m_lookupInfo);
@@ -2185,7 +2186,7 @@ cISDataMappings::~cISDataMappings()
 
 const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 {
-    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
+    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);//
 
     if (dataId < DID_COUNT)
     {
