@@ -363,7 +363,6 @@ void create_dfu_config(struct dfu_config* config)
 {
 	memset(config, 0, sizeof(config));
 
-    config->verbose = 0;
     config->dfu_root = NULL;
     config->match_path = NULL;
     config->match_vendor_dfu = -1;

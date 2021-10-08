@@ -31,7 +31,6 @@ struct dfu_if {
 };
 
 struct dfu_config {
-    int verbose;
     struct dfu_if *dfu_root;
     char *match_path;
     int match_vendor;

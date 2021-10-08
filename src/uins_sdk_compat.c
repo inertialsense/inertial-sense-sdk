@@ -39,6 +39,8 @@ uins_device_interface* uins_create_device_interface(
 {
     uins_device_interface* interface = malloc(sizeof(uins_device_interface));
 
+    interface->log_level = 1;
+
     // dfu://0483/df11/0/0x08000000
 
     char uri_scheme[5];
@@ -80,6 +82,17 @@ uins_device_interface* uins_create_device_interface(
     return interface;
 }
 
+uins_operation_result uins_change_log_level(uins_device_interface* interface, uins_device_interface_log_level log_level)
+{
+    if (log_level < 0 || log_level > 5)
+    {
+        return IS_OP_ERROR;
+    }
+
+    interface->log_level = log_level;
+    return IS_OP_OK;
+}
+
 uins_operation_result uins_destroy_device_interface(uins_device_interface* interface)
 {
     free(interface);
@@ -107,15 +120,28 @@ uins_operation_result uins_update_flash(
         config.match_product = interface->uri_properties.pid;
         config.match_iface_alt_index = interface->uri_properties.alt;
         config.dfuse_options = interface->uri_properties.address;
-        config.verbose = 3; // more logs
         config.bin_file_path = firmware_file_path;
 
-        int ret = bootloadFileExDfu(config);
-        if (ret == 0) {
+        uins_device_context context;
+        context.interface = interface;
+        context.user_data = user_data;
+        context.progress_callback = upload_progress_callback;
+        context.error_callback = error_callback;
+
+        int ret = uinsBootloadFileExDfu(&context, config);
+        if (ret == 0)
+        {
             return IS_OP_OK;
-        } else {
+        }
+        else
+        {
             return IS_OP_ERROR;
         }
+    }
+    
+    if (interface->uri_properties.scheme == IS_SCHEME_DFU)
+    {
+        // TODO: UART support
     }
 
     // TODO: legacy SAM with serialPort and bootloader calls

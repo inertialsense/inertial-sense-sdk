@@ -16,13 +16,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/uins_sdk_compat.h"
 
-static void on_error(uins_device_interface* interface, const void* user_data, int error_code, const char * error_message)
+static void on_error(const uins_device_interface const * interface, const void* user_data, int error_code, const char * error_message)
 {
 	printf("Bootloader failed! Error: %d %s\n", error_code, error_message);
 	// printf("user data: %s\n", user_data);
 }
 
-static int on_upload_progress(uins_device_interface* interface, const void* user_data, float percent)
+static int on_upload_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
 	printf("Upload: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)
@@ -34,7 +34,7 @@ static int on_upload_progress(uins_device_interface* interface, const void* user
 	return 1; // return zero to abort
 }
 
-static int on_verify_progress(uins_device_interface* interface, const void* user_data, float percent)
+static int on_verify_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
 	printf("Verify: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)

@@ -15,7 +15,7 @@ else()	# Build only this project
 	# set(SYSTEM_INCLUDE_DIRS "/usr/include/" "/usr/include/x86_64-linux-gnu")
 	set(LIBUSB_INCLUDE_DIR "/usr/include/libusb-1.0")
 	set(DFU_UTIL_INCLUDE_DIR "../../hw-libs/dfu-util/src")
-	set(LIBUSB_LIBRARY "/lib/x86_64-linux-gnu/libusb-1.0.so.0.1.0")
+	set(LIBUSB_LIBRARY "/usr/lib/libusb-1.0.so")
 	
 	add_definitions(-DHAVE_UNISTD_H -DHAVE_NANOSLEEP)
 
@@ -24,6 +24,7 @@ else()	# Build only this project
 		../../src/data_sets.c
 		../../src/ISComm.c
 		../../src/uins_sdk_compat.c
+		../../src/uins_log.c
 		../../src/serialPort.c
 		../../src/serialPortPlatform.c
 		../../src/inertialSenseBootLoader.c

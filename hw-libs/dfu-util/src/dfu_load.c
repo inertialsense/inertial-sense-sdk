@@ -45,7 +45,18 @@
 #include "dfu_load.h"
 #include "quirks.h"
 
-int dfuload_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size, int expected_size, int fd)
+#include "../../../src/uins_log.h"
+
+int dfuload_do_upload(
+	const uins_device_interface const * interface,
+	const void* user_data,
+	pfnUinsDeviceInterfaceError error_callback,
+	struct dfu_config* config,
+	struct dfu_if *dif,
+	int xfer_size,
+	int expected_size,
+	int fd
+)
 {
 	off_t total_bytes = 0;
 	unsigned short transaction = 0;
@@ -54,7 +65,7 @@ int dfuload_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_si
 
 	buf = dfu_malloc(xfer_size);
 
-	printf("Copying data from DFU device to PC\n");
+	uinsLogDebug(interface, "Copying data from DFU device to PC\n");
 
 	while (1) {
 		int rc;
@@ -85,19 +96,27 @@ int dfuload_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_si
 		dfu_progress_bar("Upload", total_bytes, total_bytes);
 	} else {
 		dfu_progress_bar("Upload", total_bytes, expected_size);
-		printf("\n");
+		uinsLogDebug(interface, "\n");
 	}
 	if (total_bytes == 0)
-		printf("\nFailed.\n");
+		uinsLogDebug(interface, "\nFailed.\n");
 	else
-		printf("Received a total of %lli bytes\n", (long long) total_bytes);
+		uinsLogDebug(interface, "Received a total of %lli bytes\n", (long long) total_bytes);
 
 	if (expected_size != 0 && total_bytes != expected_size)
 		warnx("Unexpected number of bytes uploaded from device");
 	return ret;
 }
 
-int dfuload_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_size, struct dfu_file* file)
+int dfuload_do_dnload(
+	const uins_device_interface const * interface,
+	const void* user_data,
+	pfnUinsDeviceInterfaceError error_callback,
+	struct dfu_config* config,
+	struct dfu_if *dif,
+	int xfer_size,
+	struct dfu_file* file
+)
 {
 	off_t bytes_sent;
 	off_t expected_size;
@@ -106,7 +125,7 @@ int dfuload_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_si
 	struct dfu_status dst;
 	int ret;
 
-	printf("Copying data from PC to DFU device\n");
+	uinsLogDebug(interface, "Copying data from PC to DFU device\n");
 
 	buf = file->firmware;
 	expected_size = file->size.total - file->size.suffix;
@@ -147,14 +166,16 @@ int dfuload_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_si
 
 			/* Wait while device executes flashing */
 			milli_sleep(dst.bwPollTimeout);
-			if (config->verbose > 1)
-				fprintf(stderr, "Poll timeout %i ms\n", dst.bwPollTimeout);
+			if (interface->log_level > IS_LOG_LEVEL_NONE)
+			{
+				uinsLogError(interface, user_data, 0, "Poll Timeout", error_callback);
+			}
 
 		} while (1);
 
 		if (dst.bStatus != DFU_STATUS_OK) {
-			printf(" failed!\n");
-			printf("DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
+			uinsLogDebug(interface, " failed!\n");
+			uinsLogDebug(interface, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
 				dfu_state_to_string(dst.bState), dst.bStatus,
 				dfu_status_to_string(dst.bStatus));
 			ret = -1;
@@ -173,8 +194,10 @@ int dfuload_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_si
 
 	dfu_progress_bar("Download", bytes_sent, bytes_sent);
 
-	if (config->verbose)
-		printf("Sent a total of %lli bytes\n", (long long) bytes_sent);
+	if (interface->log_level > IS_LOG_LEVEL_INFO)
+	{
+		uinsLogDebug(interface, "Sent a total of %lli bytes\n", (long long) bytes_sent);
+	}
 
 get_status:
 	/* Transition to MANIFEST_SYNC state */
@@ -184,7 +207,7 @@ get_status:
 		      libusb_error_name(ret));
 		goto out;
 	}
-	printf("DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
+	uinsLogDebug(interface, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
 		dfu_state_to_string(dst.bState), dst.bStatus,
 		dfu_status_to_string(dst.bStatus));
 
@@ -200,17 +223,16 @@ get_status:
 		goto get_status;
 		break;
 	case DFU_STATE_dfuMANIFEST_WAIT_RST:
-		printf("Resetting USB to switch back to runtime mode\n");
+		uinsLogDebug(interface, "Resetting USB to switch back to runtime mode\n");
 		ret = libusb_reset_device(dif->dev_handle);
 		if (ret < 0 && ret != LIBUSB_ERROR_NOT_FOUND) {
-			fprintf(stderr, "error resetting after download (%s)\n",
-				libusb_error_name(ret));
+			uinsLogDebug(interface, "error resetting after download (%s)\n", libusb_error_name(ret));
 		}
 		break;
 	case DFU_STATE_dfuIDLE:
 		break;
 	}
-	printf("Done!\n");
+	uinsLogDebug(interface, "Done!\n");
 
 out:
 	return ret;

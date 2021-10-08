@@ -39,6 +39,8 @@
 #include "dfuse_mem.h"
 #include "quirks.h"
 
+#include "../../../src/uins_log.h"
+
 #define DFU_TIMEOUT 5000
 
 static unsigned int quad2uint(unsigned char *p)
@@ -46,7 +48,7 @@ static unsigned int quad2uint(unsigned char *p)
 	return (*p + (*(p + 1) << 8) + (*(p + 2) << 16) + (*(p + 3) << 24));
 }
 
-static void dfuse_parse_options(const char *options, struct dfu_config* config)
+static void dfuse_parse_options(uins_device_context* context, const char *options, struct dfu_config* config)
 {
 	char *end;
 	const char *endword;
@@ -63,7 +65,8 @@ static void dfuse_parse_options(const char *options, struct dfu_config* config)
 			config->dfuse_address = number;
 			config->dfuse_address_present = 1;
 		} else {
-			errx(EX_USAGE, "Invalid dfuse address: %s", options);
+			uinsLogError(context, EX_USAGE, "Invalid dfuse address");
+			return EX_USAGE;
 		}
 		options = endword;
 	}
@@ -108,7 +111,9 @@ static void dfuse_parse_options(const char *options, struct dfu_config* config)
 		if (end == endword) {
 			config->dfuse_length = number;
 		} else {
-			errx(EX_USAGE, "Invalid dfuse modifier: %s", options);
+			uinsLogError(context, 0, "Invalid dfuse modifier");
+			uinsLogDebug(context, "Invalid dfuse modifier: %s", options);
+			return EX_USAGE;
 		}
 		options = endword;
 	}
@@ -165,8 +170,13 @@ static int dfuse_download(struct dfu_if *dif, const unsigned short length,
 
 /* DfuSe only commands */
 /* Leaves the device in dfuDNLOAD-IDLE state */
-static int dfuse_special_command(struct dfu_config* config, struct dfu_if *dif, unsigned int address,
-			  enum dfuse_command command)
+static int dfuse_special_command(
+	uins_device_context* context,
+	struct dfu_config* config,
+	struct dfu_if *dif,
+	unsigned int address,
+	enum dfuse_command command
+)
 {
 	const char* dfuse_command_name[] = { "SET_ADDRESS" , "ERASE_PAGE",
 					     "MASS_ERASE", "READ_UNPROTECT"};
@@ -185,21 +195,21 @@ static int dfuse_special_command(struct dfu_config* config, struct dfu_if *dif, 
 
 		segment = find_segment(dif->mem_layout, address);
 		if (!segment || !(segment->memtype & DFUSE_ERASABLE)) {
-			errx(EX_USAGE, "Page at 0x%08x can not be erased",
-				address);
+			uinsLogError(context, EX_USAGE, "Page can not be erased");
+			uinsLogDebug(context, "Page at 0x%08x can not be erased", address);
+			return EX_USAGE;
 		}
 		page_size = segment->pagesize;
-		if (config->verbose)
-			fprintf(stderr, "Erasing page size %i at address 0x%08x, page "
-			       "starting at 0x%08x\n", page_size, address,
-			       address & ~(page_size - 1));
+		
+		uinsLogDebug(context, "Erasing page size %i at address 0x%08x, page "
+				"starting at 0x%08x\n", page_size, address,
+				address & ~(page_size - 1));
+		
 		buf[0] = 0x41;	/* Erase command */
 		length = 5;
 		config->last_erased_page = address & ~(page_size - 1);
 	} else if (command == SET_ADDRESS) {
-		if (config->verbose > 1)
-			fprintf(stderr, "  Setting address pointer to 0x%08x\n",
-			       address);
+		uinsLogDebug(context, "  Setting address pointer to 0x%08x\n", address);
 		buf[0] = 0x21;	/* Set Address Pointer command */
 		length = 5;
 	} else if (command == MASS_ERASE) {
@@ -209,8 +219,11 @@ static int dfuse_special_command(struct dfu_config* config, struct dfu_if *dif, 
 		buf[0] = 0x92;
 		length = 1;
 	} else {
-		errx(EX_SOFTWARE, "Non-supported special command %d", command);
+		uinsLogError(context, 0, "Non-supported special command");
+		uinsLogDebug(context, "Non-supported special command %d", command);
+		return EX_SOFTWARE;
 	}
+
 	buf[1] = address & 0xff;
 	buf[2] = (address >> 8) & 0xff;
 	buf[3] = (address >> 16) & 0xff;
@@ -218,8 +231,9 @@ static int dfuse_special_command(struct dfu_config* config, struct dfu_if *dif, 
 
 	ret = dfuse_download(dif, length, buf, 0);
 	if (ret < 0) {
-		errx(EX_IOERR, "Error during special command \"%s\" download",
-			dfuse_command_name[command]);
+		uinsLogError(context, 0, "Error during special command download");
+		uinsLogDebug(context, "Error during special command \"%s\" download", dfuse_command_name[command]);
+		return EX_IOERR;
 	}
 	do {
 		ret = dfu_get_status(dif, &dst);
@@ -228,54 +242,64 @@ static int dfuse_special_command(struct dfu_config* config, struct dfu_if *dif, 
 		if (ret == LIBUSB_ERROR_PIPE && polltimeout != 0 && stalls < 3) {
 			dst.bState = DFU_STATE_dfuDNBUSY;
 			stalls++;
-			if (config->verbose)
-				fprintf(stderr, "* Device stalled USB pipe, reusing last poll timeout\n");
+			uinsLogDebug(context, "* Device stalled USB pipe, reusing last poll timeout\n");
 		} else if (ret < 0) {
-			errx(EX_IOERR, "Error during special command \"%s\" get_status",
-			     dfuse_command_name[command]);
+			uinsLogError(context, 0, "Error during special command get_status");
+			uinsLogDebug(context, "Error during special command \"%s\" get_status", dfuse_command_name[command]);
+			return EX_IOERR;
 		} else {
 			polltimeout = dst.bwPollTimeout;
 		}
 		if (firstpoll) {
 			firstpoll = 0;
 			if (dst.bState != DFU_STATE_dfuDNBUSY) {
-				fprintf(stderr, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
+				uinsLogDebug(context, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
 				       dfu_state_to_string(dst.bState), dst.bStatus,
 				       dfu_status_to_string(dst.bStatus));
-				errx(EX_PROTOCOL, "Wrong state after command \"%s\" download",
-				     dfuse_command_name[command]);
+				uinsLogError(context, 0, "Wrong state after command download");
+				uinsLogDebug(context, "Wrong state after command \"%s\" download", dfuse_command_name[command]);
+				return EX_PROTOCOL;
 			}
 			/* STM32F405 lies about mass erase timeout */
 			if (command == MASS_ERASE && dst.bwPollTimeout == 100) {
 				polltimeout = 35000; /* Datasheet says up to 32 seconds */
-				printf("Setting timeout to 35 seconds\n");
+				uinsLogDebug(context, "Setting timeout to 35 seconds\n");
 			}
 		}
 		/* wait while command is executed */
-		if (config->verbose > 1)
-			fprintf(stderr, "   Poll timeout %i ms\n", polltimeout);
+		uinsLogDebug(context, "   Poll timeout %i ms\n", polltimeout);
 		milli_sleep(polltimeout);
 		if (command == READ_UNPROTECT)
 			return ret;
 		/* Workaround for e.g. Black Magic Probe getting stuck */
 		if (dst.bwPollTimeout == 0) {
 			if (++zerotimeouts == 100)
-				errx(EX_IOERR, "Device stuck after special command request");
+			{
+				uinsLogError(context, 0, "Device stuck after special command request");
+				return EX_IOERR;
+			}
 		} else {
 			zerotimeouts = 0;
 		}
 	} while (dst.bState == DFU_STATE_dfuDNBUSY);
 
 	if (dst.bStatus != DFU_STATUS_OK) {
-		errx(EX_IOERR, "%s not correctly executed",
-			dfuse_command_name[command]);
+		uinsLogError(context, 0, "dfuse command failed");
+		uinsLogDebug(context, "dfuse command %s not correctly executed", dfuse_command_name[command]);
+		return EX_IOERR;
 	}
 	return ret;
 }
 
 /* returns number of bytes sent */
-static int dfuse_dnload_chunk(struct dfu_config* config, struct dfu_if *dif, unsigned char *data, int size,
-		       int transaction)
+static int dfuse_dnload_chunk(
+	uins_device_context* context,
+	struct dfu_config* config,
+	struct dfu_if *dif,
+	unsigned char *data,
+	int size,
+	int transaction
+)
 {
 	int bytes_sent;
 	struct dfu_status dst;
@@ -283,7 +307,7 @@ static int dfuse_dnload_chunk(struct dfu_config* config, struct dfu_if *dif, uns
 
 	ret = dfuse_download(dif, size, size ? data : NULL, transaction);
 	if (ret < 0) {
-		errx(EX_IOERR, "Error during download");
+		uinsLogError(context, EX_IOERR, "Error during download");
 		return ret;
 	}
 	bytes_sent = ret;
@@ -291,7 +315,7 @@ static int dfuse_dnload_chunk(struct dfu_config* config, struct dfu_if *dif, uns
 	do {
 		ret = dfu_get_status(dif, &dst);
 		if (ret < 0) {
-			errx(EX_IOERR, "Error during download get_status");
+			uinsLogError(context, EX_IOERR, "Error during download get_status");
 			return ret;
 		}
 		milli_sleep(dst.bwPollTimeout);
@@ -301,11 +325,11 @@ static int dfuse_dnload_chunk(struct dfu_config* config, struct dfu_if *dif, uns
 		 !(config->dfuse_will_reset && (dst.bState == DFU_STATE_dfuDNBUSY)));
 
 	if (dst.bState == DFU_STATE_dfuMANIFEST)
-			printf("Transitioning to dfuMANIFEST state\n");
+			uinsLogDebug(context, "Transitioning to dfuMANIFEST state\n");
 
 	if (dst.bStatus != DFU_STATUS_OK) {
-		printf(" failed!\n");
-		fprintf(stderr, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
+		uinsLogDebug(context, " failed!\n");
+		uinsLogDebug(context, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
 		       dfu_state_to_string(dst.bState), dst.bStatus,
 		       dfu_status_to_string(dst.bStatus));
 		return -1;
@@ -313,11 +337,16 @@ static int dfuse_dnload_chunk(struct dfu_config* config, struct dfu_if *dif, uns
 	return bytes_sent;
 }
 
-static void dfuse_do_leave(struct dfu_config* config, struct dfu_if *dif)
+static void dfuse_do_leave(
+	uins_device_context* context,
+	struct dfu_config* config,
+	struct dfu_if *dif
+)
 {
 	if (config->dfuse_address_present)
-		dfuse_special_command(config, dif, config->dfuse_address, SET_ADDRESS);
-	printf("Submitting leave request...\n");
+		dfuse_special_command(context, config, dif, config->dfuse_address, SET_ADDRESS);
+
+	uinsLogDebug(context, "Submitting leave request...\n");
 	if (dif->quirks & QUIRK_DFUSE_LEAVE) {
 		struct dfu_status dst;
 		/* The device might leave after this request, with or without a response */
@@ -325,11 +354,18 @@ static void dfuse_do_leave(struct dfu_config* config, struct dfu_if *dif)
 		/* Or it might leave after this request, with or without a response */
 		dfu_get_status(dif, &dst);
 	} else {
-		dfuse_dnload_chunk(config, dif, NULL, 0, 2);
+		dfuse_dnload_chunk(context, config, dif, NULL, 0, 2);
 	}
 }
 
-int dfuse_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size, int fd, const char *dfuse_options)
+int dfuse_do_upload(
+	uins_device_context* context,
+	struct dfu_config* config,
+	struct dfu_if *dif,
+	int xfer_size,
+	int fd,
+	const char *dfuse_options
+)
 {
 	int total_bytes = 0;
 	int upload_limit = 0;
@@ -340,7 +376,7 @@ int dfuse_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 	buf = dfu_malloc(xfer_size);
 
 	if (dfuse_options)
-		dfuse_parse_options(dfuse_options, config);
+		dfuse_parse_options(context, dfuse_options, config);
 	if (config->dfuse_length)
 		upload_limit = config->dfuse_length;
 	if (config->dfuse_address_present) {
@@ -348,28 +384,30 @@ int dfuse_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 
 		mem_layout = parse_memory_layout((char *)dif->alt_name, config);
 		if (!mem_layout)
-			errx(EX_IOERR, "Failed to parse memory layout");
+			uinsLogError(context, EX_IOERR, "Failed to parse memory layout");
 		if (dif->quirks & QUIRK_DFUSE_LAYOUT)
 			fixup_dfuse_layout(dif, &mem_layout);
 
 		segment = find_segment(mem_layout, config->dfuse_address);
 		if (!config->dfuse_force &&
 		    (!segment || !(segment->memtype & DFUSE_READABLE)))
-			errx(EX_USAGE, "Page at 0x%08x is not readable",
-				config->dfuse_address);
+		{
+			uinsLogError(context, EX_USAGE, "Page is not readable");
+			uinsLogDebug(context, "Page at 0x%08x is not readable", config->dfuse_address);
+		}
 
 		if (!upload_limit) {
 			if (segment) {
 				upload_limit = segment->end - config->dfuse_address + 1;
-				printf("Limiting upload to end of memory segment, "
+				uinsLogDebug(context, "Limiting upload to end of memory segment, "
 				       "%i bytes\n", upload_limit);
 			} else {
 				/* unknown segment - i.e. "force" has been used */
 				upload_limit = 0x4000;
-				printf("Limiting upload to %i bytes\n", upload_limit);
+				uinsLogDebug(context, "Limiting upload to %i bytes\n", upload_limit);
 			}
 		}
-		dfuse_special_command(config, dif, config->dfuse_address, SET_ADDRESS);
+		dfuse_special_command(context, config, dif, config->dfuse_address, SET_ADDRESS);
 		dfu_abort_to_idle(dif);
 	} else {
 		/* Boot loader decides the start address, unknown to us */
@@ -378,7 +416,7 @@ int dfuse_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 			warnx("Unbound upload not supported on DfuSe devices");
 			upload_limit = 0x4000;
 		}
-		printf("Limiting default upload to %i bytes\n", upload_limit);
+		uinsLogDebug(context, "Limiting default upload to %i bytes\n", upload_limit);
 	}
 
 	dfu_progress_bar("Upload", 0, 1);
@@ -400,7 +438,10 @@ int dfuse_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 		total_bytes += rc;
 
 		if (total_bytes < 0)
-			errx(EX_SOFTWARE, "Received too many bytes");
+		{
+			uinsLogError(context, EX_SOFTWARE, "Received too many bytes");
+			return EX_SOFTWARE;
+		}
 
 		if (rc < xfer_size || total_bytes >= upload_limit) {
 			/* last block, return successfully */
@@ -414,7 +455,9 @@ int dfuse_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 
 	dfu_abort_to_idle(dif);
 	if (config->dfuse_leave)
-		dfuse_do_leave(config, dif);
+	{
+		dfuse_do_leave(context, config, dif);
+	}
 
  out_free:
 	free(buf);
@@ -424,25 +467,29 @@ int dfuse_do_upload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 
 /* Writes an element of any size to the device, taking care of page erases */
 /* returns 0 on success, otherwise -EINVAL */
-static int dfuse_dnload_element(struct dfu_config* config, struct dfu_if *dif, unsigned int dwElementAddress,
-			 unsigned int dwElementSize, unsigned char *data,
-			 int xfer_size)
+static int dfuse_dnload_element(
+	uins_device_context* context,
+	struct dfu_config* config,
+	struct dfu_if *dif,
+	unsigned int dwElementAddress,
+	unsigned int dwElementSize,
+	unsigned char *data,
+	int xfer_size
+)
 {
 	int p;
 	int ret;
 	struct memsegment *segment;
 
 	/* Check at least that we can write to the last address */
-	segment =
-	    find_segment(dif->mem_layout, dwElementAddress + dwElementSize - 1);
-	if (!config->dfuse_force &&
-            (!segment || !(segment->memtype & DFUSE_WRITEABLE))) {
-		errx(EX_USAGE, "Last page at 0x%08x is not writeable",
-			dwElementAddress + dwElementSize - 1);
+	segment = find_segment(dif->mem_layout, dwElementAddress + dwElementSize - 1);
+	if (!config->dfuse_force && (!segment || !(segment->memtype & DFUSE_WRITEABLE)))
+	{
+		uinsLogError(context, EX_USAGE, "Last page is not writeable");
+		uinsLogDebug("Last page at 0x%08x is not writeable", dwElementAddress + dwElementSize - 1);
 	}
 
-	if (!config->verbose)
-		dfu_progress_bar("Erase   ", 0, 1);
+	dfu_progress_bar(context, "Erase   ", 0, 1);
 
 	/* First pass: Erase involved pages if needed */
 	for (p = 0; p < (int)dwElementSize; p += xfer_size) {
@@ -452,11 +499,12 @@ static int dfuse_dnload_element(struct dfu_config* config, struct dfu_if *dif, u
 		int chunk_size = xfer_size;
 
 		segment = find_segment(dif->mem_layout, address);
-		if (!config->dfuse_force &&
-		    (!segment || !(segment->memtype & DFUSE_WRITEABLE))) {
-			errx(EX_USAGE, "Page at 0x%08x is not writeable",
-				address);
+		if (!config->dfuse_force && (!segment || !(segment->memtype & DFUSE_WRITEABLE)))
+		{
+			uinsLogError(context, EX_USAGE, "Page at 0x%08x is not writeable", address);
+			return EX_USAGE;
 		}
+		
 		/* If the location is not in the memory map we skip erasing */
 		/* since we wouldn't know the correct page size for flash erase */
 		if (!segment)
@@ -474,28 +522,24 @@ static int dfuse_dnload_element(struct dfu_config* config, struct dfu_if *dif, u
 			for (erase_address = address;
 			     erase_address < address + chunk_size;
 			     erase_address += page_size)
-				if ((erase_address & ~(page_size - 1)) !=
-				    config->last_erased_page)
-					dfuse_special_command(config, dif,
-							      erase_address,
-							      ERASE_PAGE);
-
-			if (((address + chunk_size - 1) & ~(page_size - 1)) !=
-			    config->last_erased_page) {
-				if (config->verbose > 1)
-					fprintf(stderr, " Chunk extends into next page,"
-					       " erase it as well\n");
-				dfuse_special_command(config, dif,
-						      address + chunk_size - 1,
-						      ERASE_PAGE);
+			{
+				if ((erase_address & ~(page_size - 1)) != config->last_erased_page)
+				{
+					dfuse_special_command(context, config, dif, erase_address, ERASE_PAGE);
+				}
 			}
-			if (!config->verbose)
-				dfu_progress_bar("Erase   ", p, dwElementSize);
+
+			if (((address + chunk_size - 1) & ~(page_size - 1)) != config->last_erased_page)
+			{
+				uinsLogDebug(context, " Chunk extends into next page, erase it as well\n");
+				dfuse_special_command(context, config, dif, address + chunk_size - 1, ERASE_PAGE);
+			}
+			dfu_progress_bar(context, "Erase   ", p, dwElementSize);
 		}
 	}
-	if (!config->verbose)
+	if (!interface->log_level)
 		dfu_progress_bar("Erase   ", dwElementSize, dwElementSize);
-	if (!config->verbose)
+	if (!interface->log_level)
 		dfu_progress_bar("Download", 0, 1);
 
 	/* Second pass: Write data to (erased) pages */
@@ -507,8 +551,8 @@ static int dfuse_dnload_element(struct dfu_config* config, struct dfu_if *dif, u
 		if (p + chunk_size > (int)dwElementSize)
 			chunk_size = dwElementSize - p;
 
-		if (config->verbose) {
-			fprintf(stderr, " Download from image offset "
+		if (interface->log_level) {
+			uinsLogDebug(interface, " Download from image offset "
 			       "%08x to memory %08x-%08x, size %i\n",
 			       p, address, address + chunk_size - 1,
 			       chunk_size);
@@ -516,17 +560,17 @@ static int dfuse_dnload_element(struct dfu_config* config, struct dfu_if *dif, u
 			dfu_progress_bar("Download", p, dwElementSize);
 		}
 		
-		dfuse_special_command(config, dif, address, SET_ADDRESS);
+		dfuse_special_command(interface, user_data, error_callback, config, dif, address, SET_ADDRESS);
 
 		/* transaction = 2 for no address offset */
-		ret = dfuse_dnload_chunk(config, dif, data + p, chunk_size, 2);
+		ret = dfuse_dnload_chunk(interface, user_data, error_callback, config, dif, data + p, chunk_size, 2);
 		if (ret != chunk_size) {
-			errx(EX_IOERR, "Failed to write whole chunk: "
-				"%i of %i bytes", ret, chunk_size);
+			uinsLogError(interface, user_data, EX_IOERR, "Failed to write chunk");
+			uinsLogDebug(interface, "Failed to write whole chunk: %i of %i bytes", ret, chunk_size);
 			return -EINVAL;
 		}
 	}
-	if (!config->verbose)
+	if (!interface->log_level)
 		dfu_progress_bar("Download", dwElementSize, dwElementSize);
 	return 0;
 }
@@ -535,7 +579,7 @@ static void
 dfuse_memcpy(unsigned char *dst, unsigned char **src, int *rem, int size)
 {
 	if (size > *rem) {
-		errx(EX_NOINPUT, "Corrupt DfuSe file: "
+		uinsLogError(interface, user_data, EX_NOINPUT, "Corrupt DfuSe file: "
 		    "Cannot read %d bytes from %d bytes", size, *rem);
 	}
 	if (dst != NULL)
@@ -557,7 +601,7 @@ static int dfuse_do_bin_dnload(struct dfu_config* config, struct dfu_if *dif, in
 	dwElementSize = file->size.total -
 	    file->size.suffix - file->size.prefix;
 
-	printf("Downloading element to address = 0x%08x, size = %i\n",
+	uinsLogDebug(interface, "Downloading element to address = 0x%08x, size = %i\n",
 	       dwElementAddress, dwElementSize);
 
 	data = file->firmware + file->size.prefix;
@@ -565,7 +609,7 @@ static int dfuse_do_bin_dnload(struct dfu_config* config, struct dfu_if *dif, in
 	ret = dfuse_dnload_element(config, dif, dwElementAddress, dwElementSize, data,
 				   xfer_size);
 	if (ret == 0)
-		printf("File downloaded successfully\n");
+		uinsLogDebug(interface, "File downloaded successfully\n");
 
 	return ret;
 }
@@ -595,52 +639,52 @@ static int dfuse_do_dfuse_dnload(struct dfu_config* config, struct dfu_if *dif, 
         /* Must be larger than a minimal DfuSe header and suffix */
 	if (rem < (int)(sizeof(dfuprefix) +
 	    sizeof(targetprefix) + sizeof(elementheader))) {
-		errx(EX_DATAERR, "File too small for a DfuSe file");
+		uinsLogError(interface, user_data, EX_DATAERR, "File too small for a DfuSe file");
         }
 
 	dfuse_memcpy(dfuprefix, &data, &rem, sizeof(dfuprefix));
 
 	if (strncmp((char *)dfuprefix, "DfuSe", 5)) {
-		errx(EX_DATAERR, "No valid DfuSe signature");
+		uinsLogError(interface, user_data, EX_DATAERR, "No valid DfuSe signature");
 		return -EINVAL;
 	}
 	if (dfuprefix[5] != 0x01) {
-		errx(EX_DATAERR, "DFU format revision %i not supported",
+		uinsLogError(interface, user_data, EX_DATAERR, "DFU format revision %i not supported",
 			dfuprefix[5]);
 		return -EINVAL;
 	}
 	bTargets = dfuprefix[10];
-	printf("File contains %i DFU images\n", bTargets);
+	uinsLogDebug(interface, "File contains %i DFU images\n", bTargets);
 
 	for (image = 1; image <= bTargets; image++) {
-		printf("Parsing DFU image %i\n", image);
+		uinsLogDebug(interface, "Parsing DFU image %i\n", image);
 		dfuse_memcpy(targetprefix, &data, &rem, sizeof(targetprefix));
 		if (strncmp((char *)targetprefix, "Target", 6)) {
-			errx(EX_DATAERR, "No valid target signature");
+			uinsLogError(interface, user_data, EX_DATAERR, "No valid target signature");
 			return -EINVAL;
 		}
 		bAlternateSetting = targetprefix[6];
 		if (targetprefix[7])
-			printf("Target name: %s\n", &targetprefix[11]);
+			uinsLogDebug(interface, "Target name: %s\n", &targetprefix[11]);
 		else
-			printf("No target name\n");
+			uinsLogDebug(interface, "No target name\n");
 		dwNbElements = quad2uint((unsigned char *)targetprefix + 270);
-		printf("Image for alternate setting %i, ", bAlternateSetting);
-		printf("(%i elements, ", dwNbElements);
-		printf("total size = %i)\n",
+		uinsLogDebug(interface, "Image for alternate setting %i, ", bAlternateSetting);
+		uinsLogDebug(interface, "(%i elements, ", dwNbElements);
+		uinsLogDebug(interface, "total size = %i)\n",
 		       quad2uint((unsigned char *)targetprefix + 266));
 
 		adif = dif;
 		while (adif) {
 			if (bAlternateSetting == adif->altsetting) {
 				adif->dev_handle = dif->dev_handle;
-				printf("Setting Alternate Interface #%d ...\n",
+				uinsLogDebug(interface, "Setting Alternate Interface #%d ...\n",
 				       adif->altsetting);
 				ret = libusb_set_interface_alt_setting(
 					  adif->dev_handle,
 					  adif->interface, adif->altsetting);
 				if (ret < 0) {
-					errx(EX_IOERR,
+					uinsLogError(interface, user_data, EX_IOERR,
 					  "Cannot set alternate interface: %s",
 					  libusb_error_name(ret));
 				}
@@ -653,14 +697,14 @@ static int dfuse_do_dfuse_dnload(struct dfu_config* config, struct dfu_if *dif, 
 			     bAlternateSetting);
 
 		for (element = 1; element <= dwNbElements; element++) {
-			printf("Parsing element %i, ", element);
+			uinsLogDebug(interface, "Parsing element %i, ", element);
 			dfuse_memcpy(elementheader, &data, &rem, sizeof(elementheader));
 			dwElementAddress =
 			    quad2uint((unsigned char *)elementheader);
 			dwElementSize =
 			    quad2uint((unsigned char *)elementheader + 4);
-			printf("address = 0x%08x, ", dwElementAddress);
-			printf("size = %i\n", dwElementSize);
+			uinsLogDebug(interface, "address = 0x%08x, ", dwElementAddress);
+			uinsLogDebug(interface, "size = %i\n", dwElementSize);
 
 			if (!bFirstAddressSaved) {
 				bFirstAddressSaved = 1;
@@ -668,7 +712,7 @@ static int dfuse_do_dfuse_dnload(struct dfu_config* config, struct dfu_if *dif, 
 			}
 			/* sanity check */
 			if ((int)dwElementSize > rem)
-				errx(EX_DATAERR, "File too small for element size");
+				uinsLogError(interface, user_data, EX_DATAERR, "File too small for element size");
 
 			if (adif)
 				ret = dfuse_dnload_element(config, adif, dwElementAddress,
@@ -687,12 +731,12 @@ static int dfuse_do_dfuse_dnload(struct dfu_config* config, struct dfu_if *dif, 
 	if (rem != 0)
 		warnx("%d bytes leftover", rem);
 
-	printf("Done parsing DfuSe file\n");
+	uinsLogDebug(interface, "Done parsing DfuSe file\n");
 
 	return 0;
 }
 
-int dfuse_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_size, struct dfu_file *file, const char *dfuse_options)
+int dfuse_do_dnload(const uins_device_interface const * interface, const void* user_data, pfnUinsDeviceInterfaceError error_callback, struct dfu_config* config, struct dfu_if *dif, int xfer_size, struct dfu_file *file, const char *dfuse_options)
 {
 	int ret;
 	struct dfu_if *adif;
@@ -704,7 +748,7 @@ int dfuse_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 	while (adif) {
 		adif->mem_layout = parse_memory_layout((char *)adif->alt_name, config);
 		if (!adif->mem_layout)
-			errx(EX_IOERR,
+			uinsLogError(interface, user_data, EX_IOERR,
 			     "Failed to parse memory layout for alternate interface %i",
 			     adif->altsetting);
 		if (adif->quirks & QUIRK_DFUSE_LAYOUT)
@@ -714,36 +758,36 @@ int dfuse_do_dnload(struct dfu_config* config, struct dfu_if *dif, int xfer_size
 
 	if (config->dfuse_unprotect) {
 		if (!config->dfuse_force) {
-			errx(EX_USAGE, "The read unprotect command "
+			uinsLogError(interface, user_data, EX_USAGE, "The read unprotect command "
 				"will erase the flash memory"
 				"and can only be used with force\n");
 		}
 		ret = dfuse_special_command(config, dif, 0, READ_UNPROTECT);
-		printf("Device disconnects, erases flash and resets now\n");
+		uinsLogDebug(interface, "Device disconnects, erases flash and resets now\n");
 		return ret;
 	}
 	if (config->dfuse_mass_erase) {
 		if (!config->dfuse_force) {
-			errx(EX_USAGE, "The mass erase command "
+			uinsLogError(interface, user_data, EX_USAGE, "The mass erase command "
 				"can only be used with force");
 		}
-		printf("Performing mass erase, this can take a moment\n");
+		uinsLogDebug(interface, "Performing mass erase, this can take a moment\n");
 		ret = dfuse_special_command(config, dif, 0, MASS_ERASE);
 	}
 	if (!file->name) {
-		printf("DfuSe command mode\n");
+		uinsLogDebug(interface, "DfuSe command mode\n");
 		ret = 0;
 	} else if (config->dfuse_address_present) {
 		if (file->bcdDFU == 0x11a) {
-			errx(EX_USAGE, "This is a DfuSe file, not "
+			uinsLogError(interface, user_data, EX_USAGE, "This is a DfuSe file, not "
 				"meant for raw download");
 		}
 		ret = dfuse_do_bin_dnload(config, dif, xfer_size, file, config->dfuse_address);
 	} else {
 		if (file->bcdDFU != 0x11a) {
-			printf("file->bcdDFU: %d\n", file->bcdDFU);
+			uinsLogDebug(interface, "file->bcdDFU: %d\n", file->bcdDFU);
 			warnx("Only DfuSe file version 1.1a is supported");
-			errx(EX_USAGE, "(for raw binary download, use the "
+			uinsLogError(interface, user_data, EX_USAGE, "(for raw binary download, use the "
 			     "--dfuse-address option)");
 		}
 		ret = dfuse_do_dfuse_dnload(config, dif, xfer_size, file);

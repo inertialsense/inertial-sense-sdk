@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <limits.h>
 
 #include "uins_types.h"
+#include "uins_log.h"
 
 #include "dfu_types.h"
 #include "dfu_portable.h"
@@ -38,7 +39,7 @@ extern "C" {
 
 // WIP: still need to figure out final form of input parameters, should not be dfu_config
 
-int bootloadFileExDfu(struct dfu_config config);
+int uinsBootloadFileExDfu(uins_device_context* context, struct dfu_config config);
 
 #ifdef __cplusplus
 }

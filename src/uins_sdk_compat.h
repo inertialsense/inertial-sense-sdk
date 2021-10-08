@@ -29,6 +29,16 @@ uins_device_interface* uins_create_device_interface(
 /** performs any necessary flush or clean up operations, releases instance data resources and frees heap memory from create */
 uins_operation_result uins_destroy_device_interface(uins_device_interface* interface);
 
+/** changes the log level of the device interface
+ * 0: nothing
+ * 1: error only (default)
+ * 2: warning
+ * 3: info
+ * 4: debug
+ * 5: silly
+*/
+uins_operation_result uins_change_log_level(uins_device_interface* interface, uins_device_interface_log_level log_level);
+
 /** copy hex file from this machine to the device interface */
 uins_operation_result uins_update_flash(
     const uins_device_interface* interface,

@@ -36,6 +36,8 @@
 #include "dfu_portable.h"
 #include "dfu_file.h"
 
+#include "../../../src/uins_types.h"
+
 #define DFU_SUFFIX_LENGTH 16
 #define LMDFU_PREFIX_LENGTH 8
 #define LPCDFU_PREFIX_LENGTH 16
@@ -118,8 +120,12 @@ static int probe_prefix(struct dfu_file *file)
 	return 0;
 }
 
-void dfu_progress_bar(const char *desc, unsigned long long curr,
-		unsigned long long max)
+void dfu_progress_bar(
+	uins_device_context* context,
+	const char *desc,
+	unsigned long long curr,
+	unsigned long long max
+)
 {
 	static char buf[PROGRESS_BAR_WIDTH + 1];
 	static unsigned long long last_progress = -1;
