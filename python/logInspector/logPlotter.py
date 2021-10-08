@@ -1394,7 +1394,28 @@ class logPlot:
         for a in ax:
             for b in a:
                 b.grid(True)
-            
+
+    def wheelControl(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Wheel Control - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(4, 1, sharex=True)
+
+        ax[0].set_title('Actuator Angle - Left')
+        ax[1].set_title('Actuator Angle - Right')
+        ax[2].set_title('Wheel Velocity - Left')
+        ax[3].set_title('Wheel Velocity - Right')
+
+        for d in self.active_devs:
+            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
+            ax[0].plot(time, self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_l'))
+            ax[1].plot(time, self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_r'))
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
     def showFigs(self):
         if self.show:
             plt.show()
