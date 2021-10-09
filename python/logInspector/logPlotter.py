@@ -1409,8 +1409,14 @@ class logPlot:
 
         for d in self.active_devs:
             time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            ax[0].plot(time, self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_l'))
-            ax[1].plot(time, self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_r'))
+            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_l')
+            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+            ax[0].plot(time, effAct_l)
+            ax[1].plot(time, effAct_r)
+            ax[2].plot(time, vel_l)
+            ax[3].plot(time, vel_r)
 
         for a in ax:
             a.grid(True)
