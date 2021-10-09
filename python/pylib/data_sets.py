@@ -55,7 +55,7 @@ DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
 DID_INL2_MISC                   = 51
-DID_MAGNETOMETER              = 52
+DID_MAGNETOMETER                = 52
 DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
@@ -90,13 +90,15 @@ DID_EVB_RTOS_INFO               = 83
 DID_DUAL_IMU_RAW_MAG            = 84
 DID_DUAL_IMU_MAG                = 85
 DID_PREINTEGRATED_IMU_MAG       = 86
-DID_GROUND_VEHICLE                = 87
+DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
+DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
 
+NUM_DIDS                        = 117
 NUM_DIDS                        = 96
 
 
@@ -189,6 +191,7 @@ did_name_lookup = {
  DID_EVB_RTOS_INFO : "evbRtosInfo",
  DID_RTK_DEBUG_2: "rtkDebug2",
  DID_CAN_CONFIG: "canconfig",
+ DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
 }
 
 class eGpsNavFixStatus(Enum):
