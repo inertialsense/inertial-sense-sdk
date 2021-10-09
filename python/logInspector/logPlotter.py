@@ -1413,8 +1413,7 @@ class logPlot:
             ax[1].plot(time, self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_r'))
 
         for a in ax:
-            for b in a:
-                b.grid(True)
+            a.grid(True)
 
     def showFigs(self):
         if self.show:

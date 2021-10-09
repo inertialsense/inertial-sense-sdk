@@ -99,7 +99,7 @@ DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
 
 NUM_DIDS                        = 117
-NUM_DIDS                        = 96
+# NUM_DIDS                        = 96
 
 
 did_name_lookup = {
