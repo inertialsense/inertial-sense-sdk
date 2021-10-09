@@ -67,11 +67,11 @@ typedef struct
 
 extern i2c_t i2c0;
 
-int i2c_get_defaults(i2c_t *init);
-int i2c_init(i2c_t *init);
+int i2c_master_get_defaults(i2c_t *init);
+int i2c_master_init(i2c_t *init);
 
-int i2c_transmit(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
-int i2c_read(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
+int i2c_master_write(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
+int i2c_master_read(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len);
 
 uint8_t i2c_get_status(i2c_t *init);
 

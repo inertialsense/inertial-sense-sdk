@@ -32,39 +32,6 @@ is_comm_instance_t& evbTaskCommInit(void *pvParameters)
 	serInit(USB_PORT_NUM, 0, NULL, 0);
 #endif
 
-#ifdef CONF_I2C_TEST
-	i2c_get_defaults(&i2c0);
-	i2c_init(&i2c0);
-
-	int init_counter = 0;
-
-	while(1)
-	{
-		// Reset sensor at address 0xBC
-		uint8_t buf = 0xBC;
-		i2c_transmit(&i2c0, 0x00, &buf, 1);
-		vTaskDelay(250);
-		
-		// Request sensor bitmap
-		buf = 0x00;
-		i2c_transmit(&i2c0, 0xBC, &buf, 1);
-		vTaskDelay(10);
-		
-		// Read the sensor bitmap
-		uint8_t rxbuf[10];
-		i2c_read(&i2c0, 0xBC, rxbuf, 10);
-		vTaskDelay(10);
-		
-		uint8_t i2c_status = i2c_get_status(&i2c0);
-		
-		if(((i2c_status & I2C_STATUS_RXBUSY == 0) && (i2c_status & I2C_STATUS_TXBUSY == 0)) || (++init_counter >= 10))
-		{
-			break;
-		}
-	};
-
-#endif
-
     vTaskDelay(200);
 	evbUiRefreshLedCfg();
 
@@ -103,12 +70,6 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
 
     // Stream DIDs data sets
     step_broadcast_data(&comm);
-	
-#ifdef CONF_I2C_TEST
-//	uint8_t buf = 0x00;
-
-//	i2c_transmit(&i2c0, 0xBC, &buf, 1);	
-#endif
 }
 
 
