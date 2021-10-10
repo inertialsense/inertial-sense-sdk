@@ -1413,6 +1413,7 @@ class logPlot:
             effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effAct_r')
             vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+
             ax[0].plot(time, effAct_l)
             ax[1].plot(time, effAct_r)
             ax[2].plot(time, vel_l)
