@@ -26,9 +26,7 @@ i2c_t i2c0 = {0};
 #define INT_PRIORITY_DMA	3
 #endif
 
-#ifndef INT_PRIORITY_I2C
-#define INT_PRIORITY_I2C	2
-#endif
+#define INT_PRIORITY_I2C	INT_PRIORITY_DMA
 
 static const uint32_t _xdmaint = XDMAC_CIE_BIE; // End of Block Interrupt Enable
 
@@ -196,8 +194,9 @@ int i2c_master_write(i2c_t *init, uint16_t addr, uint8_t *buf, uint8_t len)
 	
 	// Bypass DMA
 	if (len == 1) {
-		TWIHS0->TWIHS_THR = buf[0];
-		TWIHS0->TWIHS_CR = TWIHS_CR_STOP;
+		init->instance->TWIHS_THR = buf[0];
+		init->instance->TWIHS_CR = TWIHS_CR_STOP;
+		init->instance->TWIHS_MMR = TWIHS_MMR_DADR(addr);
 		return 0;
 	}
 	
@@ -265,18 +264,19 @@ void TWIHS0_Handler(void)
 {
 	uint32_t status = TWIHS0->TWIHS_SR;
 	
-	//if(status & TWIHS_SR_TXRDY)
-	//{
-		//if(i2c0.tx_status == I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY)
-		//{
-			//TWIHS0->TWIHS_CR |= TWIHS_CR_STOP;
-			//TWIHS0->TWIHS_THR = i2c0.tx_last_byte;
-			//
-			//twihs_disable_interrupt(TWIHS0, TWIHS_IDR_TXRDY);
-			//
-			//i2c0.tx_status = I2C_TXSTATUS_IDLE;
-		//}
-	//}
+	if(status & TWIHS_SR_TXRDY)
+	{
+		twihs_disable_interrupt(TWIHS0, TWIHS_IDR_TXRDY);	// Without this we get spammed by the interrupt
+		
+		if(i2c0.tx_status == I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY)
+		{
+			TWIHS0->TWIHS_CR |= TWIHS_CR_STOP;
+			TWIHS0->TWIHS_THR = i2c0.tx_last_byte;
+
+			
+			i2c0.tx_status = I2C_TXSTATUS_IDLE;
+		}
+	}
 	
 	if(status & TWIHS_SR_RXRDY)
 	{
@@ -328,14 +328,7 @@ void XDMAC_i2c_Handler(void)
 	{
 		i2c_master_dma_stop_tx(&i2c0);
 		
+		twihs_enable_interrupt(TWIHS0, TWIHS_IDR_TXRDY);
 		i2c0.tx_status = I2C_TXSTATUS_TRANSMIT_DMA_WAIT_TXRDY;
-		
-		while((TWIHS0->TWIHS_SR & TWIHS_SR_TXRDY) == 0)
-		{
-			TWIHS0->TWIHS_CR |= TWIHS_CR_STOP;
-			TWIHS0->TWIHS_THR = i2c0.tx_last_byte;
-			
-			i2c0.tx_status = I2C_TXSTATUS_IDLE;
-		}
 	}
 }
