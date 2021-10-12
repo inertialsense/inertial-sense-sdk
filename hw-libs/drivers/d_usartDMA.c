@@ -701,13 +701,8 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 	return size;
 }
 
-void XDMAC_Handler(void)
+void XDMAC_usartDMA_Handler(void)
 {
-#ifdef CONF_BOARD_SPI_UINS	
-	//Forward for spiTouINS
-	XDMAC_spiTouINS_Handler();
-#endif	
-
 	static volatile int xdmacSPICount = 0;
 	
 	for(int i=0;i<MAX_NUMBER_SERIAL_PORTS;i++)
