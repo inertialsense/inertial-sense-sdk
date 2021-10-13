@@ -89,13 +89,13 @@ void fixup_dfuse_layout(struct dfu_if *dif, struct memsegment **segment_list)
 		struct memsegment *seg;
 		int count;
 
-		printf("Found GD32VF103, which reports a bad page size and "
-		       "count for its internal memory.\n");
+		// printf("Found GD32VF103, which reports a bad page size and "
+		//        "count for its internal memory.\n");
 
 		seg = find_segment(*segment_list, GD32VF103_FLASH_BASE);
 		if (!seg) {
-			warnx("Could not fix GD32VF103 layout because there "
-			      "is no segment at 0x%08x", GD32VF103_FLASH_BASE);
+			// warnx("Could not fix GD32VF103 layout because there "
+			//       "is no segment at 0x%08x", GD32VF103_FLASH_BASE);
 			return;
 		}
 
@@ -114,14 +114,14 @@ void fixup_dfuse_layout(struct dfu_if *dif, struct memsegment **segment_list)
 		} else if (dif->serial_name[2] == '4') {
 			count = 16;
 		} else {
-			warnx("Unknown flash size '%c' in part number; "
-			      "defaulting to 128KB.", dif->serial_name[2]);
+			// warnx("Unknown flash size '%c' in part number; "
+			//       "defaulting to 128KB.", dif->serial_name[2]);
 			count = 128;
 		}
 
 		seg->end = seg->start + (count * seg->pagesize) - 1;
 
-		printf("Fixed layout based on part number: page size %d, "
-		       "count %d.\n", seg->pagesize, count);
+		// printf("Fixed layout based on part number: page size %d, "
+		//        "count %d.\n", seg->pagesize, count);
 	}
 }

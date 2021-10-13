@@ -48,9 +48,7 @@
 #include "../../../src/uins_log.h"
 
 int dfuload_do_upload(
-	const uins_device_interface const * interface,
-	const void* user_data,
-	pfnUinsDeviceInterfaceError error_callback,
+	const uins_device_context const * context,
 	struct dfu_config* config,
 	struct dfu_if *dif,
 	int xfer_size,
@@ -65,16 +63,15 @@ int dfuload_do_upload(
 
 	buf = dfu_malloc(xfer_size);
 
-	uinsLogDebug(interface, "Copying data from DFU device to PC\n");
+	uinsLogDebug(context, "Copying data from DFU device to PC\n");
 
 	while (1) {
 		int rc;
-		dfu_progress_bar("Upload", total_bytes, expected_size);
+		dfu_progress_bar(context, "Upload", total_bytes, expected_size);
 		rc = dfu_upload(dif->dev_handle, dif->interface,
 				xfer_size, transaction++, buf);
 		if (rc < 0) {
-			warnx("\nError during upload (%s)",
-			      libusb_error_name(rc));
+			uinsLogWarn(context, rc, "Error during upload");
 			ret = rc;
 			break;
 		}
@@ -93,25 +90,26 @@ int dfuload_do_upload(
 	}
 	free(buf);
 	if (ret == 0) {
-		dfu_progress_bar("Upload", total_bytes, total_bytes);
+		dfu_progress_bar(context, "Upload", total_bytes, total_bytes);
 	} else {
-		dfu_progress_bar("Upload", total_bytes, expected_size);
-		uinsLogDebug(interface, "\n");
+		dfu_progress_bar(context, "Upload", total_bytes, expected_size);
+		uinsLogDebug(context, "\n");
 	}
 	if (total_bytes == 0)
-		uinsLogDebug(interface, "\nFailed.\n");
+		uinsLogDebug(context, "\nFailed.\n");
 	else
-		uinsLogDebug(interface, "Received a total of %lli bytes\n", (long long) total_bytes);
+		uinsLogDebug(context, "Received a total of %lli bytes\n", (long long) total_bytes);
 
 	if (expected_size != 0 && total_bytes != expected_size)
-		warnx("Unexpected number of bytes uploaded from device");
+	{
+		uinsLogWarn(context, 0, "Unexpected number of bytes uploaded from device");
+	}
+
 	return ret;
 }
 
 int dfuload_do_dnload(
-	const uins_device_interface const * interface,
-	const void* user_data,
-	pfnUinsDeviceInterfaceError error_callback,
+	const uins_device_context const * context,
 	struct dfu_config* config,
 	struct dfu_if *dif,
 	int xfer_size,
@@ -125,13 +123,14 @@ int dfuload_do_dnload(
 	struct dfu_status dst;
 	int ret;
 
-	uinsLogDebug(interface, "Copying data from PC to DFU device\n");
+	uinsLogDebug(context, "Copying data from PC to DFU device\n");
 
 	buf = file->firmware;
 	expected_size = file->size.total - file->size.suffix;
 	bytes_sent = 0;
 
-	dfu_progress_bar("Download", 0, 1);
+	dfu_progress_bar(context, "Download", 0, 1);
+
 	while (bytes_sent < expected_size) {
 		off_t bytes_left;
 		int chunk_size;
@@ -145,8 +144,7 @@ int dfuload_do_dnload(
 		ret = dfu_download(dif->dev_handle, dif->interface,
 				   chunk_size, transaction++, chunk_size ? buf : NULL);
 		if (ret < 0) {
-			warnx("Error during download (%s)",
-			      libusb_error_name(ret));
+			uinsLogWarn(context, ret, "Error during download");
 			goto out;
 		}
 		bytes_sent += chunk_size;
@@ -166,22 +164,19 @@ int dfuload_do_dnload(
 
 			/* Wait while device executes flashing */
 			milli_sleep(dst.bwPollTimeout);
-			if (interface->log_level > IS_LOG_LEVEL_NONE)
-			{
-				uinsLogError(interface, user_data, 0, "Poll Timeout", error_callback);
-			}
+			uinsLogError(context, 0, "Poll Timeout");
 
 		} while (1);
 
 		if (dst.bStatus != DFU_STATUS_OK) {
-			uinsLogDebug(interface, " failed!\n");
-			uinsLogDebug(interface, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
+			uinsLogDebug(context, " failed!\n");
+			uinsLogDebug(context, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
 				dfu_state_to_string(dst.bState), dst.bStatus,
 				dfu_status_to_string(dst.bStatus));
 			ret = -1;
 			goto out;
 		}
-		dfu_progress_bar("Download", bytes_sent, bytes_sent + bytes_left);
+		dfu_progress_bar(context, "Download", bytes_sent, bytes_sent + bytes_left);
 	}
 
 	/* send one zero sized download request to signalize end */
@@ -192,22 +187,18 @@ int dfuload_do_dnload(
 		goto out;
 	}
 
-	dfu_progress_bar("Download", bytes_sent, bytes_sent);
+	dfu_progress_bar(context, "Download", bytes_sent, bytes_sent);
 
-	if (interface->log_level > IS_LOG_LEVEL_INFO)
-	{
-		uinsLogDebug(interface, "Sent a total of %lli bytes\n", (long long) bytes_sent);
-	}
+	uinsLogDebug(context, "Sent a total of %lli bytes\n", (long long) bytes_sent);
 
 get_status:
 	/* Transition to MANIFEST_SYNC state */
 	ret = dfu_get_status(dif, &dst);
 	if (ret < 0) {
-		warnx("unable to read DFU status after completion (%s)",
-		      libusb_error_name(ret));
+		uinsLogWarn(context, ret, "unable to read DFU status after completion");
 		goto out;
 	}
-	uinsLogDebug(interface, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
+	uinsLogDebug(context, "DFU state(%u) = %s, status(%u) = %s\n", dst.bState,
 		dfu_state_to_string(dst.bState), dst.bStatus,
 		dfu_status_to_string(dst.bStatus));
 
@@ -223,16 +214,16 @@ get_status:
 		goto get_status;
 		break;
 	case DFU_STATE_dfuMANIFEST_WAIT_RST:
-		uinsLogDebug(interface, "Resetting USB to switch back to runtime mode\n");
+		uinsLogDebug(context, "Resetting USB to switch back to runtime mode\n");
 		ret = libusb_reset_device(dif->dev_handle);
 		if (ret < 0 && ret != LIBUSB_ERROR_NOT_FOUND) {
-			uinsLogDebug(interface, "error resetting after download (%s)\n", libusb_error_name(ret));
+			uinsLogDebug(context, "error resetting after download (%s)\n", libusb_error_name(ret));
 		}
 		break;
 	case DFU_STATE_dfuIDLE:
 		break;
 	}
-	uinsLogDebug(interface, "Done!\n");
+	uinsLogDebug(context, "Done!\n");
 
 out:
 	return ret;

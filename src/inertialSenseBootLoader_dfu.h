@@ -39,7 +39,7 @@ extern "C" {
 
 // WIP: still need to figure out final form of input parameters, should not be dfu_config
 
-int uinsBootloadFileExDfu(uins_device_context* context, struct dfu_config config);
+int uinsBootloadFileExDfu(const uins_device_context const * context, struct dfu_config config);
 
 #ifdef __cplusplus
 }

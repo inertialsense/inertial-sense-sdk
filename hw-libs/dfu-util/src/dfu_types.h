@@ -50,8 +50,8 @@ struct dfu_config {
     unsigned int dfuse_length;
     int dfuse_force;
     int dfuse_leave;
-    int dfuse_unprotect;
-    int dfuse_mass_erase;
+    // int dfuse_unprotect;
+    // int dfuse_mass_erase;
     int dfuse_will_reset;
 	const char *dfuse_options;
 	const char *bin_file_path;

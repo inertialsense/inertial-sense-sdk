@@ -2,7 +2,7 @@
 
 void uinsLog(
 	const uins_device_interface_log_level message_level,
-	uins_device_context* context,
+	const uins_device_context const * context,
 	const int error_code,
 	const char * error_message
 )
@@ -30,23 +30,23 @@ void uinsLog(
 	if (context->error_callback
 		&& (message_level == IS_LOG_LEVEL_ERROR || message_level == IS_LOG_LEVEL_WARN))
 	{
-		client_error_callback(context->interface, context->user_data, error_code, error_message);
+		context->error_callback(context->interface, context->user_data, error_code, error_message);
 	}
 }
 
-void uinsLogError(uins_device_context* context, const int error_code, const char * error_message)
+void uinsLogError(const uins_device_context const * context, const int error_code, const char * error_message)
 {
 	uinsLog(IS_LOG_LEVEL_ERROR, context, error_code, error_message);
 }
 
-void uinsLogWarn(uins_device_context* context, const int error_code, const char * error_message)
+void uinsLogWarn(const uins_device_context const * context, const int error_code, const char * error_message)
 {
 	uinsLog(IS_LOG_LEVEL_WARN, context, error_code, error_message);
 }
 
-void uinsLogDebug(const uins_device_interface const * interface, const char *format, ...)
+void uinsLogDebug(const uins_device_context const * context, const char *format, ...)
 {
-	if (interface->log_level >= IS_LOG_LEVEL_DEBUG)
+	if (context->interface->log_level >= IS_LOG_LEVEL_DEBUG)
 	{
 		va_list args;
 		va_start(args, format);

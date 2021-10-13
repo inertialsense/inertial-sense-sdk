@@ -12,11 +12,11 @@
 extern "C" {
 #endif
 
-void uinsLog(const uins_device_interface_log_level message_level, uins_device_context* context, const int error_code, const char * error_message);
-void uinsLogError(uins_device_context* context, const int error_code, const char * error_message);
-void uinsLogWarn(uins_device_context* context, const int error_code, const char * error_message);
+void uinsLog(const uins_device_interface_log_level message_level, const uins_device_context const * context, const int error_code, const char * error_message);
+void uinsLogError(const uins_device_context const * context, const int error_code, const char * error_message);
+void uinsLogWarn(const uins_device_context const * context, const int error_code, const char * error_message);
 
-void uinsLogDebug(const uins_device_interface const * interface, const char *format, ...);
+void uinsLogDebug(const uins_device_context const * context, const char *format, ...);
 
 #ifdef __cplusplus
 }

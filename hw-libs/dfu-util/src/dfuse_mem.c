@@ -101,7 +101,7 @@ struct memsegment *parse_memory_layout(char *intf_desc, struct dfu_config* confi
 	ret = sscanf(intf_desc, "@%[^/]%n", name, &scanned);
 	if (ret < 1) {
 		free(name);
-		warnx("Could not read name, sscanf returned %d", ret);
+		// warnx("Could not read name, sscanf returned %d", ret);
 		return NULL;
 	}
 	printf("DfuSe interface name: \"%s\"\n", name);
@@ -125,9 +125,7 @@ struct memsegment *parse_memory_layout(char *intf_desc, struct dfu_config* confi
 				    && typestring[0] != '/')
 					memtype = typestring[0];
 				else {
-					warnx("Parsing type identifier '%s' "
-						"failed for segment %i",
-						typestring, count);
+					// warnx("Parsing type identifier '%s' failed for segment %i", typestring, count);
 					continue;
 				}
 			}
@@ -153,22 +151,23 @@ struct memsegment *parse_memory_layout(char *intf_desc, struct dfu_config* confi
 			case 'f':
 			case 'g':
 				if (!memtype) {
-					warnx("Non-valid multiplier '%c', "
-						"interpreted as type "
-						"identifier instead",
-						multiplier);
+					// warnx("Non-valid multiplier '%c', "
+					// 	"interpreted as type "
+					// 	"identifier instead",
+					// 	multiplier);
 					memtype = multiplier;
 					break;
 				}
 				/* if memtype was already set: */
 				/* fall-through */
 			default:
-				warnx("Non-valid multiplier '%c', "
-					"assuming bytes", multiplier);
+				{
+				// warnx("Non-valid multiplier '%c', assuming bytes", multiplier);
+				}
 			}
 
 			if (!memtype) {
-				warnx("No valid type for segment %d\n", count);
+				// warnx("No valid type for segment %d\n", count);
 				continue;
 			}
 
@@ -178,13 +177,12 @@ struct memsegment *parse_memory_layout(char *intf_desc, struct dfu_config* confi
 			segment.memtype = memtype & 7;
 			add_segment(&segment_list, segment);
 
-			if (config->verbose)
-				printf("Memory segment at 0x%08x %3d x %4d = "
-				       "%5d (%s%s%s)\n",
-				       address, sectors, size, sectors * size,
-				       memtype & DFUSE_READABLE  ? "r" : "",
-				       memtype & DFUSE_ERASABLE  ? "e" : "",
-				       memtype & DFUSE_WRITEABLE ? "w" : "");
+			// printf("Memory segment at 0x%08x %3d x %4d = "
+			//        "%5d (%s%s%s)\n",
+			//        address, sectors, size, sectors * size,
+			//        memtype & DFUSE_READABLE  ? "r" : "",
+			//        memtype & DFUSE_ERASABLE  ? "e" : "",
+			//        memtype & DFUSE_WRITEABLE ? "w" : "");
 
 			address += sectors * size;
 

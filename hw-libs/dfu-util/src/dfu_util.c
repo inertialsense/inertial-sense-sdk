@@ -58,7 +58,7 @@ static int find_descriptor(const uint8_t *desc_list, int list_len,
 
 		desclen = (int) desc_list[p];
 		if (desclen == 0) {
-			warnx("Invalid descriptor list");
+			// warnx("Invalid descriptor list");
 			return -1;
 		}
 		if (desc_list[p + 1] == desc_type) {
@@ -82,8 +82,7 @@ static int find_descriptor(const uint8_t *desc_list, int list_len,
  * function does NOT append a NUL terminator to its buffer, so you
  * must use the returned length to ensure you stay within bounds.
  */
-static int get_utf8_string_descriptor(libusb_device_handle *devh,
-    uint8_t desc_index, unsigned char *data, int length)
+static int get_utf8_string_descriptor(libusb_device_handle *devh, uint8_t desc_index, unsigned char *data, int length)
 {
 	unsigned char tbuf[255];
 	uint16_t langid;
@@ -92,11 +91,11 @@ static int get_utf8_string_descriptor(libusb_device_handle *devh,
 	/* get the language IDs and pick the first one */
 	r = libusb_get_string_descriptor(devh, 0, 0, tbuf, sizeof(tbuf));
 	if (r < 0) {
-		warnx("Failed to retrieve language identifiers");
+		// warnx("Failed to retrieve language identifiers");
 		return r;
 	}
 	if (r < 4 || tbuf[0] < 4 || tbuf[1] != LIBUSB_DT_STRING) {		/* must have at least one ID */
-		warnx("Broken LANGID string descriptor");
+		// warnx("Broken LANGID string descriptor");
 		return -1;
 	}
 	langid = tbuf[2] | (tbuf[3] << 8);
@@ -104,19 +103,19 @@ static int get_utf8_string_descriptor(libusb_device_handle *devh,
 	r = libusb_get_string_descriptor(devh, desc_index, langid, tbuf,
 					 sizeof(tbuf));
 	if (r < 0) {
-		warnx("Failed to retrieve string descriptor %d", desc_index);
+		// warnx("Failed to retrieve string descriptor %d", desc_index);
 		return r;
 	}
 	if (r < 2 || tbuf[0] < 2) {
-		warnx("String descriptor %d too short", desc_index);
+		// warnx("String descriptor %d too short", desc_index);
 		return -1;
 	}
 	if (tbuf[1] != LIBUSB_DT_STRING) {	/* sanity check */
-		warnx("Malformed string descriptor %d, type = 0x%02x", desc_index, tbuf[1]);
+		// warnx("Malformed string descriptor %d, type = 0x%02x", desc_index, tbuf[1]);
 		return -1;
 	}
 	if (tbuf[0] > r) {	/* if short read,           */
-		warnx("Patching string descriptor %d length (was %d, received %d)", desc_index, tbuf[0], r);
+		// warnx("Patching string descriptor %d length (was %d, received %d)", desc_index, tbuf[0], r);
 		tbuf[0] = r;	/* fix up descriptor length */
 	}
 
@@ -190,8 +189,7 @@ static void probe_configuration(libusb_device *dev, struct libusb_device_descrip
 		if (!cfg)
 			return;
 
-		ret = find_descriptor(cfg->extra, cfg->extra_length,
-		    USB_DT_DFU, &func_dfu, sizeof(func_dfu));
+		ret = find_descriptor(cfg->extra, cfg->extra_length, USB_DT_DFU, &func_dfu, sizeof(func_dfu));
 		if (ret > -1)
 			goto found_dfu;
 
@@ -209,8 +207,7 @@ static void probe_configuration(libusb_device *dev, struct libusb_device_descrip
 				    intf->bInterfaceSubClass != 1)
 					continue;
 
-				ret = find_descriptor(intf->extra, intf->extra_length, USB_DT_DFU,
-				      &func_dfu, sizeof(func_dfu));
+				ret = find_descriptor(intf->extra, intf->extra_length, USB_DT_DFU, &func_dfu, sizeof(func_dfu));
 				if (ret > -1)
 					goto found_dfu;
 
@@ -230,8 +227,7 @@ static void probe_configuration(libusb_device *dev, struct libusb_device_descrip
 				if (ret > -1)
 					goto found_dfu;
 			}
-			warnx("Device has DFU interface, "
-			    "but has no DFU functional descriptor");
+			// warnx("Device has DFU interface, but has no DFU functional descriptor");
 
 			/* fake version 1.0 */
 			func_dfu.bLength = 7;

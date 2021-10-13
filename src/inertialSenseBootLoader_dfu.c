@@ -27,7 +27,7 @@
 
 #include "inertialSenseBootLoader_dfu.h"
 
-int uinsBootloadFileExDfu(uins_device_context* context, struct dfu_config config)
+int uinsBootloadFileExDfu(const uins_device_context const * context, struct dfu_config config)
 {
 	int expected_size = 0;
 	unsigned int transfer_size = 0;
@@ -58,7 +58,7 @@ int uinsBootloadFileExDfu(uins_device_context* context, struct dfu_config config
 		config.match_config_index = -1;
 	}
 
-	dfu_load_file(&file, MAYBE_SUFFIX, MAYBE_PREFIX, &config);
+	dfu_load_file(context, &file, MAYBE_SUFFIX, MAYBE_PREFIX, &config);
 
 	ret = libusb_init(&ctx);
 	if (ret)
