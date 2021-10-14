@@ -195,7 +195,7 @@ void errorCheckImu3(imu3_t *di)
 }
 
 
-void tripleToSingleImu(imu_t *result, const imu3_t *di)
+int tripleToSingleImu(imu_t *result, const imu3_t *di)
 {
 	imu_t imu = {};
 	imu.time = di->time;
@@ -230,6 +230,7 @@ void tripleToSingleImu(imu_t *result, const imu3_t *di)
 	}
 
 	*result = imu;
+	return cnt;
 }
 
 

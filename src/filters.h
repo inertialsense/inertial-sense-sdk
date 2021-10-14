@@ -483,7 +483,7 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 void errorCheckImu3(imu3_t *di);
 
 // Condense triple IMUs down to one IMU
-void tripleToSingleImu(imu_t *result, const imu3_t *di);
+int tripleToSingleImu(imu_t *result, const imu3_t *di);
 
 // Duplicate one IMU to triple IMUs
 void singleToTripleImu(imu3_t *result, imu_t *imu);
