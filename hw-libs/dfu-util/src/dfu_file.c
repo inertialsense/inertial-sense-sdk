@@ -263,17 +263,17 @@ void dfu_load_file(
 		}
 		file->firmware = dfu_malloc(file->size.total);
 
-		printf("reading\n");
+		// printf("reading\n");
 		while (read_total < file->size.total) {
 			off_t to_read = file->size.total - read_total;
 			/* read() limit on Linux, slightly below MAX_INT on Windows */
 			if (to_read > 0x7ffff000)
 				to_read = 0x7ffff000;
 			read_count = read(f, file->firmware + read_total, to_read);
-			for (size_t i = 0; i != read_count; ++i)
-			{
-				printf(".");
-			}
+			// for (size_t i = 0; i != read_count; ++i)
+			// {
+			// 	printf(".");
+			// }
 			if (read_count == 0)
 				break;
 			if (read_count == -1 && errno != EINTR)
@@ -285,7 +285,7 @@ void dfu_load_file(
 			    (long long) read_total, (long long) file->size.total, file->name);
 		}
 		close(f);
-		printf("\n");
+		// printf("\n");
 	}
 
 	/* Check for possible DFU file suffix by trying to parse one */

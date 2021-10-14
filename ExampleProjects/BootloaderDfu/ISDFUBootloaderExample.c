@@ -18,13 +18,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static void on_error(const uins_device_interface const * interface, const void* user_data, int error_code, const char * error_message)
 {
-	printf("Bootloader failed! Error: %d %s\n", error_code, error_message);
-	// printf("user data: %s\n", user_data);
+	printf("ISDFUBootloaderExample::on_error Bootloader failed! Error: %d %s\n", error_code, error_message);
+	printf("ISDFUBootloaderExample::on_error user data: %s\n", user_data);
 }
 
 static int on_upload_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
-	printf("Upload: %d percent...         \r", (int)(percent * 100.0f));
+	printf("ISDFUBootloaderExample::on_upload_progress Upload: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)
 	{
 		printf("\n");
@@ -36,7 +36,7 @@ static int on_upload_progress(const uins_device_interface const * interface, con
 
 static int on_verify_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
-	printf("Verify: %d percent...         \r", (int)(percent * 100.0f));
+	printf("ISDFUBootloaderExample::on_verify_progress Verify: %d percent...         \r", (int)(percent * 100.0f));
 	if (percent >= 1.0f)
 	{
 		printf("\n");
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
 		IS_VERIFY_ON,
 		on_error,
 		on_upload_progress,
-		on_verify_progress,
+		NULL,	// TODO: on_verify_progress
 		user_data
 	);
 
@@ -76,12 +76,12 @@ int main(int argc, char* argv[])
 	
 	if (bootloader_update_ok)
 	{
-		printf("Bootloader success on %s with file %s\n", uri, firmware_file_path);
+		printf("ISDFUBootloaderExample: Bootloader success on %s with file %s\n", uri, firmware_file_path);
 		return 0;
 	}
 	else
 	{
-		printf("Bootloader failed!\n");
+		printf("ISDFUBootloaderExample: Bootloader failed!\n");
 		return -1;
 	}
 }

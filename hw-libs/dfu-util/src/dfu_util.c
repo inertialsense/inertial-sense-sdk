@@ -239,15 +239,14 @@ static void probe_configuration(libusb_device *dev, struct libusb_device_descrip
 
 found_dfu:
 		if (func_dfu.bLength == 7) {
-			printf("Deducing device DFU version from functional descriptor "
-			    "length\n");
+			// printf("Deducing device DFU version from functional descriptor length\n");
 			func_dfu.bcdDFUVersion = libusb_cpu_to_le16(0x0100);
 		} else if (func_dfu.bLength < 9) {
-			printf("Error obtaining DFU functional descriptor\n");
-			printf("Please report this as a bug!\n");
-			printf("Warning: Assuming DFU version 1.0\n");
+			// printf("Error obtaining DFU functional descriptor\n");
+			// printf("Please report this as a bug!\n");
+			// printf("Warning: Assuming DFU version 1.0\n");
 			func_dfu.bcdDFUVersion = libusb_cpu_to_le16(0x0100);
-			printf("Warning: Transfer size can not be detected\n");
+			// printf("Warning: Transfer size can not be detected\n");
 			func_dfu.wTransferSize = 0;
 		}
 

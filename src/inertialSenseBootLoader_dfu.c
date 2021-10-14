@@ -233,10 +233,12 @@ probe:
 
 		if (config.dfu_root == NULL) {
 			uinsLogError(context, EX_IOERR, "Lost device after RESET?");
-		} else if (config.dfu_root->next != NULL) {
-			uinsLogError(context, EX_IOERR, "More than one DFU capable USB device found! "
-				"Try `--list' and specify the serial number "
-				"or disconnect all but one device");
+			return EX_IOERR;
+		// } else if (config.dfu_root->next != NULL) {
+		// 	uinsLogError(context, EX_IOERR, "More than one DFU capable USB device found! "
+		// 		"Try `--list' and specify the serial number "
+		// 		"or disconnect all but one device");
+		// 	return EX_IOERR;
 		}
 
 		/* Check for DFU mode device */

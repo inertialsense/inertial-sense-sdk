@@ -104,7 +104,7 @@ struct memsegment *parse_memory_layout(char *intf_desc, struct dfu_config* confi
 		// warnx("Could not read name, sscanf returned %d", ret);
 		return NULL;
 	}
-	printf("DfuSe interface name: \"%s\"\n", name);
+	// printf("DfuSe interface name: \"%s\"\n", name);
 
 	intf_desc += scanned;
 	typestring = dfu_malloc(strlen(intf_desc));
