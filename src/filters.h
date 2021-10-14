@@ -484,6 +484,7 @@ void errorCheckImu3(imu3_t *di);
 
 // Condense triple IMUs down to one IMU
 int tripleToSingleImu(imu_t *result, const imu3_t *di);
+int tripleToSingleImu(imu_t *result, const imu3_t *di, bool *exclude);
 
 // Duplicate one IMU to triple IMUs
 void singleToTripleImu(imu3_t *result, imu_t *imu);

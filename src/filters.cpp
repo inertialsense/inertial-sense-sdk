@@ -234,6 +234,36 @@ int tripleToSingleImu(imu_t *result, const imu3_t *di)
 }
 
 
+int tripleToSingleImu(imu_t *result, const imu3_t *di, bool *exclude)
+{
+	imu_t imu = {};
+	imu.time = di->time;
+	imu.status = di->status;
+
+	int cnt = 0;
+
+	for (int idev = 0; idev < 3; idev++)
+	{
+		if (!exclude[idev])
+		{
+			add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
+			add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
+			cnt++;
+		}
+	}
+
+	if (cnt > 0)
+	{
+		float div = 1.0f / (float)cnt;
+		mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
+		mul_Vec3_X(imu.I.acc, imu.I.acc, div);
+	}
+
+	*result = imu;
+	return cnt;
+}
+
+
 void singleToTripleImu(imu3_t *result, imu_t *imu)
 {
 	result->time = imu->time;
