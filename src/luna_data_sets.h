@@ -300,11 +300,13 @@ typedef struct evb_luna_aux_command_t
 typedef enum
 {
     //Possible Commands
-    CMD_BLADE_OFF        = 0,
-    CMD_BLADE_ON         = 1,
-    CMD_EBRAKE_ENGAGE    = 2,
-    CMD_EBRAKE_DISENGAGE = 3,
-    CMD_BEEP             = 4,
+    AUX_CMD_BLADE_OFF           = 0,
+    AUX_CMD_BLADE_ON            = 1,
+    AUX_CMD_EBRAKE_ENGAGE       = 2,
+    AUX_CMD_EBRAKE_DISENGAGE    = 3,
+    AUX_CMD_BEEP                = 4,
+    // AUX_CMD_DIDS_LOG_START      = 5,		// Used in inertial_sense_ros node
+    // AUX_CMD_DIDS_LOG_STOP       = 6,
 } eLunaAuxCommands;
 
 typedef enum
