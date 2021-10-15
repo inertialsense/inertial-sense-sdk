@@ -76,8 +76,7 @@ typedef struct
     float                 	FF_c_est_max[NUM_FF_COEFS];
 
     /** Feedforward coefficients */
-    float                 	FF_c_l[NUM_FF_COEFS];
-    float                 	FF_c_r[NUM_FF_COEFS];
+    float                 	FF_c[NUM_FF_COEFS];
 
 	/** Feedback proportional gain */
 	float					FB_Kp;
@@ -89,20 +88,24 @@ typedef struct
 	float					FB_Kd;
 	
     /** EVB2 velocity Linearization Coefficients */
-    float                   LinearCoEff[NUM_AL_COEFS];
+    float                   LinearCoEff_l[NUM_AL_COEFS];
+    float                   LinearCoEff_r[NUM_AL_COEFS];
 
-	/** Actuator counts per radian velocity controller */
-	float					actuatorEncoderCountsPerRad;
+	// /** Actuator counts per radian velocity controller */
+	// float					actuatorEncoderCountsPerRad;
 
     /** Actuator count [min, max] Duty cycle will drive between these numbers. Duty of 0 - min, duty of 100 - Max */
-    float                   actuatorEncoderRange[2];
+    // float                   actuatorEncoderRange[2];
 
-    /** (rad) Angle that sets actuator zero velocity (center) position relative to home point. */
+    /** Sets actuator zero velocity (center) position relative to home point. */
     float                	actuatorTrim_l;
     float                	actuatorTrim_r;
 
-    /** (rad) Control effort angle (transmission angle) from zero required before wheels actually start spinning. */
-    float                   actuatorDeadbandAngle;
+    /** Limits for actuator angle. */
+    float                	actuatorLimits[2];
+
+    /** Control effort from zero required before wheels actually start spinning. */
+    float                   actuatorDeadband;
 
     /** (rpm) Engine RPM corresponding with control gains. */
     float                   FF_FB_engine_rpm;
@@ -372,25 +375,25 @@ typedef struct
 	float 					velErr_l;
 	float 					velErr_r;
 
-	/** Feedforward control effort (rad) */
+	/** Feedforward control effort (rad or duty cycle) */
 	float 					ff_eff_l;
 	float 					ff_eff_r;
 
-	/** Feedback control effort (rad) */
+	/** Feedback control effort (rad or duty cycle) */
 	float 					fb_eff_l;
 	float 					fb_eff_r;
 
-	/** Control effort at transmission (rad) */
+	/** Control effort = ff_eff_x + fb_eff_x */
 	float 					eff_l;
 	float 					eff_r;
 
-	/** Control effort at actuator (rad) */
-	float 					effAct_l;
-	float 					effAct_r;
+	/** Control effort linearized */
+	float 					effLin_l;
+	float 					effLin_r;
 
-	/** Feedback control effort duty cycle (%, 0-100) */
-	float 					effDuty_l;
-	float 					effDuty_r;
+	/** Control effort at actuator (rad or duty cycle, -1.0 to 1.0) */
+	float 					effOut_l;
+	float 					effOut_r;
 
 } evb_luna_wheel_controller_t;
 
