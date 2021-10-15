@@ -102,7 +102,8 @@ typedef struct
     float                	actuatorTrim_r;
 
     /** Limits for actuator angle. */
-    float                	actuatorLimits[2];
+    float                	actuatorLimits_l[2];
+    float                	actuatorLimits_r[2];
 
     /** Control effort from zero required before wheels actually start spinning. */
     float                   actuatorDeadband;

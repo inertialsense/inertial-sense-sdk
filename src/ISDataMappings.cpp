@@ -963,8 +963,10 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.LinearCoEff_r[4]", wheelControl.LinearCoEff_r[4], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_l", wheelControl.actuatorTrim_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_r", wheelControl.actuatorTrim_r, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits[0]", wheelControl.actuatorLimits[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits[1]", wheelControl.actuatorLimits[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_l[0]", wheelControl.actuatorLimits_l[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_l[1]", wheelControl.actuatorLimits_l[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[0]", wheelControl.actuatorLimits_r[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[1]", wheelControl.actuatorLimits_r[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorDeadband", wheelControl.actuatorDeadband, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_FB_engine_rpm", wheelControl.FF_FB_engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.engine_rpm", wheelControl.engine_rpm, 0, DataTypeFloat, float, 0);
