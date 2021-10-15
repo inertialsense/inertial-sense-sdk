@@ -1395,19 +1395,17 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-    def wheelControl(self, fig=None):
+    def wheelControllerTime(self, fig=None):
         if fig is None:
             fig = plt.figure()
 
-        fig.suptitle('Wheel Control - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(3, 2)
+        fig.suptitle('Wheel Controller Time - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(4, 1, sharex=True)
 
-        ax[0,0].set_title('Actuator Angle - Left')
-        ax[0,1].set_title('Actuator Angle - Right')
-        ax[1,0].set_title('Wheel Velocity - Left')
-        ax[1,1].set_title('Wheel Velocity - Right')
-        ax[2,0].set_title('Actuator Angle vs Velocity - Left')
-        ax[2,1].set_title('Actuator Angle vs Velocity - Right')
+        ax[0].set_title('Actuator Angle - Left')
+        ax[1].set_title('Wheel Velocity - Left')
+        ax[2].set_title('Actuator Angle - Right')
+        ax[3].set_title('Wheel Velocity - Right')
 
         for d in self.active_devs:
             time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
@@ -1416,16 +1414,40 @@ class logPlot:
             vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
 
-            ax[0,0].plot(time, effAct_l)
-            ax[0,1].plot(time, effAct_r)
-            ax[1,0].plot(time, vel_l)
-            ax[1,1].plot(time, vel_r)
-            ax[2,0].plot(vel_l, effAct_l)
-            ax[2,1].plot(vel_r, effAct_r)
+            ax[0].plot(time, effAct_l)
+            ax[1].plot(time, vel_l)
+            ax[2].plot(time, effAct_r)
+            ax[3].plot(time, vel_r)
 
         for a in ax:
-            for b in a:
-                b.grid(True)
+            a.grid(True)
+
+    def wheelControllerVel(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Wheel Controller Velocity - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(2, 1, sharex=False)
+
+        ax[0].set_title('Velocity vs Actuator Angle - Left')
+        ax[1].set_title('Velocity vs Actuator Angle - Right')
+
+        for a in ax:
+            a.set_xlabel('Velocity (rad/s)')
+            a.set_ylabel('Actuator Angle')
+
+        for d in self.active_devs:
+            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
+            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'eff_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'eff_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+
+            ax[0].plot(vel_l, eff_l, '.')
+            ax[1].plot(vel_r, eff_r, '.')
+
+        for a in ax:
+            a.grid(True)
 
     def showFigs(self):
         if self.show:
