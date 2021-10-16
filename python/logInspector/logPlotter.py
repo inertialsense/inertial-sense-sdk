@@ -1453,47 +1453,51 @@ class logPlot:
             eff_l -= actuatorTrim_l
             eff_r -= actuatorTrim_r
 
-            deadband_l = 0.09
-            deadband_r = 0.067
+            deadbandDuty_l = 0.09/2
+            deadbandDuty_r = 0.067/2
+            # deadbandEff_l = deadbandEff_r
+            deadbandVel = 0.05
 
-            effMod_l = eff_l.copy()
-            effMod_r = eff_r.copy()
-            vel = np.linspace(np.min([vel_l, vel_r]), np.max([vel_l, vel_r]), 500)
+            c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
+            c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
 
-            (c_l, effEst_l) = self.linearizeWheelControl(effMod_l, vel_l, deadband_l, vel)
-            (c_r, effEst_r) = self.linearizeWheelControl(effMod_r, vel_r, deadband_r, vel)
-
-            ax[0].plot(vel_l, eff_l, '.')
-            ax[1].plot(vel_r, eff_r, '.')
-
-            # ax[0].plot(vel_l, effMod_l, 'g')
-            # ax[1].plot(vel_r, effMod_r, 'g')
-
-            ax[0].plot(vel, effEst_l, 'r')
-            ax[1].plot(vel, effEst_r, 'r')
+            print("\nADD TO MODEL FILE:")
+            print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[0], c_l[1], c_l[2], c_l[3], c_l[4]))
+            print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[0], c_l[1], c_l[2], c_l[3], c_l[4]))
+            print("  actuatorDeadbandDuty_l: %.9f # (duty) Left  control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_l))
+            print("  actuatorDeadbandDuty_r: %.9f # (duty) Right control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_r))
+            print("  actuatorDeadbandVel: %.9f    # (rad/s) Commanded velocity" % (deadbandVel))
 
         for a in ax:
             a.grid(True)
 
-    def linearizeWheelControl(self, eff, vel, deadband, velLin):
+    def solveInversePlant(self, ax, vel, eff, deadbandVel, deadbandDuty, label):
+            effMod = eff.copy()
 
-            for i in range(len(eff)):
-                if eff[i] >= 0:
-                    eff[i] = eff[i] - deadband/2
+            for i in range(len(effMod)):
+                if effMod[i] >= 0:
+                    effMod[i] = effMod[i] - deadbandDuty
                 else:
-                    eff[i] = eff[i] + deadband/2
+                    effMod[i] = effMod[i] + deadbandDuty
 
-            c = np.polyfit(vel, eff, 4)
+            c = np.polyfit(vel, effMod, 4)
 
+            velLin = np.linspace(np.min(vel)-1, np.max(vel)+1, 1000)
             effEst = np.polyval(c, velLin)
 
             for i in range(len(velLin)):
-                if velLin[i] >= 0:
-                    effEst[i] += deadband/2
+                if velLin[i] > deadbandVel:
+                    effEst[i] += deadbandDuty
+                elif velLin[i] < -deadbandVel:
+                    effEst[i] -= deadbandDuty
                 else:
-                    effEst[i] -= deadband/2
+                    effEst[i] += (deadbandDuty)/deadbandVel * velLin[i]
 
-            return (c, effEst)
+            ax.plot(vel, eff, '.')
+            # ax.plot(vel, effMod, 'g')
+            ax.plot(velLin, effEst, 'r')
+
+            return c
 
 
     def showFigs(self):
