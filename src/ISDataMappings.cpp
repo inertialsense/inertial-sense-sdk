@@ -969,6 +969,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[1]", wheelControl.actuatorLimits_r[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_l", wheelControl.actuatorDeadbandDuty_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_r", wheelControl.actuatorDeadbandDuty_r, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandVel", wheelControl.actuatorDeadbandVel, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_FB_engine_rpm", wheelControl.FF_FB_engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.engine_rpm", wheelControl.engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.testSweepRate", wheelControl.testSweepRate, 0, DataTypeFloat, float, 0);
