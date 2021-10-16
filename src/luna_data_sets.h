@@ -394,9 +394,9 @@ typedef struct
 	float 					effInt_l;
 	float 					effInt_r;
 
-	/** Control effort at actuator (rad or duty cycle, -1.0 to 1.0) */
-	float 					effOut_l;
-	float 					effOut_r;
+	/** Duty cycle control effort at actuator (-1.0 to 1.0) */
+	float 					effDuty_l;
+	float 					effDuty_r;
 
 } evb_luna_wheel_controller_t;
 
