@@ -967,8 +967,8 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_l[1]", wheelControl.actuatorLimits_l[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[0]", wheelControl.actuatorLimits_r[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[1]", wheelControl.actuatorLimits_r[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadband_l", wheelControl.actuatorDeadband_l, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadband_r", wheelControl.actuatorDeadband_r, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_l", wheelControl.actuatorDeadbandDuty_l, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_r", wheelControl.actuatorDeadbandDuty_r, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_FB_engine_rpm", wheelControl.FF_FB_engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.engine_rpm", wheelControl.engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.testSweepRate", wheelControl.testSweepRate, 0, DataTypeFloat, float, 0);
@@ -1036,8 +1036,8 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "fb_eff_r", fb_eff_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "eff_l", eff_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "eff_r", eff_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effLin_l", effLin_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effLin_r", effLin_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "effInt_l", effInt_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "effInt_r", effInt_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effOut_l", effOut_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effOut_r", effOut_r, 0, DataTypeFloat, float, 0);
 

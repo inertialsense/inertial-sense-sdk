@@ -106,8 +106,9 @@ typedef struct
     float                	actuatorLimits_r[2];
 
     /** Control effort from zero (trim) before wheels start spinning. */
-    float                   actuatorDeadband_l;
-    float                   actuatorDeadband_r;
+    float                   actuatorDeadbandDuty_l;
+    float                   actuatorDeadbandDuty_r;
+    float                   actuatorDeadbandVel;
 
     /** (rpm) Engine RPM corresponding with control gains. */
     float                   FF_FB_engine_rpm;
@@ -377,11 +378,11 @@ typedef struct
 	float 					velErr_l;
 	float 					velErr_r;
 
-	/** Feedforward control effort (rad or duty cycle) */
+	/** Feedforward control effort */
 	float 					ff_eff_l;
 	float 					ff_eff_r;
 
-	/** Feedback control effort (rad or duty cycle) */
+	/** Feedback control effort */
 	float 					fb_eff_l;
 	float 					fb_eff_r;
 
@@ -389,9 +390,9 @@ typedef struct
 	float 					eff_l;
 	float 					eff_r;
 
-	/** Control effort linearized */
-	float 					effLin_l;
-	float 					effLin_r;
+	/** Control effort intermediate */
+	float 					effInt_l;
+	float 					effInt_r;
 
 	/** Control effort at actuator (rad or duty cycle, -1.0 to 1.0) */
 	float 					effOut_l;
