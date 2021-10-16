@@ -50,9 +50,16 @@ class Log:
         else:
             self.refINS = False
             self.refdata = []
-        self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
-        self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
-        self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
+
+        self.compassing = None  
+        self.rtk = None  
+        self.navMode = None  
+        
+        if len(self.data[0, DID_DEV_INFO]):
+            self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+            self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+        if len(self.data[0, DID_INS_2]):
+            self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
         # except:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
 
