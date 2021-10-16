@@ -88,8 +88,8 @@ typedef struct
 	float					FB_Kd;
 	
     /** EVB2 velocity Linearization Coefficients */
-    float                   LinearCoEff_l[NUM_AL_COEFS];
-    float                   LinearCoEff_r[NUM_AL_COEFS];
+    float                   InversePlant_l[NUM_AL_COEFS];
+    float                   InversePlant_r[NUM_AL_COEFS];
 
 	// /** Actuator counts per radian velocity controller */
 	// float					actuatorEncoderCountsPerRad;
@@ -105,8 +105,9 @@ typedef struct
     float                	actuatorLimits_l[2];
     float                	actuatorLimits_r[2];
 
-    /** Control effort from zero required before wheels actually start spinning. */
-    float                   actuatorDeadband;
+    /** Control effort from zero (trim) before wheels start spinning. */
+    float                   actuatorDeadband_l;
+    float                   actuatorDeadband_r;
 
     /** (rpm) Engine RPM corresponding with control gains. */
     float                   FF_FB_engine_rpm;
