@@ -1406,15 +1406,15 @@ class logPlot:
         fig.suptitle('Wheel Controller Time - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(4, 1, sharex=True)
 
-        ax[0].set_title('Actuator Angle - Left')
+        ax[0].set_title('effOut - Left')
         ax[1].set_title('Wheel Velocity - Left')
-        ax[2].set_title('Actuator Angle - Right')
+        ax[2].set_title('effOut - Right')
         ax[3].set_title('Wheel Velocity - Right')
 
         for d in self.active_devs:
             time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'eff_l')
-            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'eff_r')
+            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effOut_l')
+            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effOut_r')
             vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
 
@@ -1433,17 +1433,17 @@ class logPlot:
         fig.suptitle('Wheel Controller Velocity - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(2, 1, sharex=False)
 
-        ax[0].set_title('Velocity vs Actuator Angle - Left')
-        ax[1].set_title('Velocity vs Actuator Angle - Right')
+        ax[0].set_title('Velocity vs effOut - Left')
+        ax[1].set_title('Velocity vs effOut - Right')
 
         for a in ax:
             a.set_xlabel('Velocity (rad/s)')
-            a.set_ylabel('Actuator Angle')
+            a.set_ylabel('effOut')
 
         for d in self.active_devs:
             time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'eff_l')
-            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'eff_r')
+            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effOut_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effOut_r')
             vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
 
