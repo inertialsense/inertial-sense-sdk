@@ -1431,7 +1431,7 @@ class logPlot:
             fig = plt.figure()
 
         fig.suptitle('Wheel Controller Velocity - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(2, 1, sharex=False)
+        ax = fig.subplots(2, 1, sharex=True)
 
         ax[0].set_title('Velocity vs effOut - Left')
         ax[1].set_title('Velocity vs effOut - Right')
@@ -1447,11 +1447,54 @@ class logPlot:
             vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
 
+            actuatorTrim_l = 0.54                # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
+            actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
+
+            eff_l -= actuatorTrim_l
+            eff_r -= actuatorTrim_r
+
+            deadband_l = 0.09
+            deadband_r = 0.067
+
+            effMod_l = eff_l.copy()
+            effMod_r = eff_r.copy()
+            vel = np.linspace(np.min([vel_l, vel_r]), np.max([vel_l, vel_r]), 500)
+
+            (c_l, effEst_l) = self.linearizeWheelControl(effMod_l, vel_l, deadband_l, vel)
+            (c_r, effEst_r) = self.linearizeWheelControl(effMod_r, vel_r, deadband_r, vel)
+
             ax[0].plot(vel_l, eff_l, '.')
             ax[1].plot(vel_r, eff_r, '.')
 
+            # ax[0].plot(vel_l, effMod_l, 'g')
+            # ax[1].plot(vel_r, effMod_r, 'g')
+
+            ax[0].plot(vel, effEst_l, 'r')
+            ax[1].plot(vel, effEst_r, 'r')
+
         for a in ax:
             a.grid(True)
+
+    def linearizeWheelControl(self, eff, vel, deadband, velLin):
+
+            for i in range(len(eff)):
+                if eff[i] >= 0:
+                    eff[i] = eff[i] - deadband/2
+                else:
+                    eff[i] = eff[i] + deadband/2
+
+            c = np.polyfit(vel, eff, 4)
+
+            effEst = np.polyval(c, velLin)
+
+            for i in range(len(velLin)):
+                if velLin[i] >= 0:
+                    effEst[i] += deadband/2
+                else:
+                    effEst[i] -= deadband/2
+
+            return (c, effEst)
+
 
     def showFigs(self):
         if self.show:
