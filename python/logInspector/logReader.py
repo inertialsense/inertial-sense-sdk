@@ -42,7 +42,11 @@ class Log:
         self.numDev = self.data.shape[0]
         if self.numDev == 0:
             raise ValueError("No devices found in log")
-        self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
+        try:
+            self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
+        except:
+            print("DID_DEV_INFO missing. 0 will be assigned as Serial Number for each device.")
+            self.serials = [0] * self.numDev
         if 10101 in self.serials:
             self.refINS = True
             refIdx = self.serials.index(10101)
@@ -50,11 +54,15 @@ class Log:
         else:
             self.refINS = False
             self.refdata = []
-        self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
-        self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+        try:
+            self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+            self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+        except Exception as e:
+            print("DID_DEV_INFO missing. RTK/CMP set to 'off'.")
+            self.compassing = False
+            self.rtk = False
+
         self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
-        # except:
-            # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
 
     def exitHack(self):
         self.c_log.exitHack()

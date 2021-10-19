@@ -459,7 +459,7 @@ class LogInspectorWindow(QMainWindow):
         msg.setText("Unable to load log: " + e.__str__())
         msg.setDetailedText(traceback.format_exc())
         msg.exec()
-
+    
     def createFileTree(self):
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(self.config["logs_directory"])
