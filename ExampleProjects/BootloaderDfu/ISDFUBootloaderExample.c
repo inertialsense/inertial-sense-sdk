@@ -19,29 +19,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static void on_error(const uins_device_interface const * interface, const void* user_data, int error_code, const char * error_message)
 {
 	printf("ISDFUBootloaderExample::on_error Bootloader failed! Error: %d %s\n", error_code, error_message);
-	printf("ISDFUBootloaderExample::on_error user data: %s\n", user_data);
+	printf("ISDFUBootloaderExample::on_error user data: %s\n", (const char *) user_data);
 }
 
 static int on_upload_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
-	printf("ISDFUBootloaderExample::on_upload_progress Upload: %d percent...         \r", (int)(percent * 100.0f));
-	if (percent >= 1.0f)
-	{
-		printf("\n");
-	}
-
-	// printf("user data: %s\n", user_data);
+	printf("ISDFUBootloaderExample::on_upload_progress Upload: %f percent\n", percent);
+	printf("user data: %s\n", (const char *) user_data);
 	return 1; // return zero to abort
 }
 
 static int on_verify_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
-	printf("ISDFUBootloaderExample::on_verify_progress Verify: %d percent...         \r", (int)(percent * 100.0f));
-	if (percent >= 1.0f)
-	{
-		printf("\n");
-	}
-	// printf("user data: %s\n", user_data);
+	printf("ISDFUBootloaderExample::on_verify_progress Verify: %f percent\n", percent);
+	printf("user data: %s\n", (const char *) user_data);
 	return 1; // return zero to abort
 }
 
@@ -55,17 +46,18 @@ int main(int argc, char* argv[])
 	// uins_create_device_interface(uins_31(), "file://dev/ttyACM0");
 
 	uins_device_uri uri = "dfu://0483/df11/0/0x08000000";
-	const char* firmware_file_path = "bootloader_entry_test.bin";
+	const char* firmware_file_path = argv[1];
+	printf("firmware path: %s\n", firmware_file_path);
 
 	uins_device_interface* uins = uins_create_device_interface(uins_50(), uri);
 
-	char* user_data = "my own data";
+	const char* user_data = "my own data";
 	
 	uins_operation_result bootloader_update_ok = uins_update_flash(
 		uins,
 		firmware_file_path,
 		IS_UPDATE_APPLICATION_FIRMWARE,
-		IS_VERIFY_ON,
+		IS_VERIFY_OFF,	// TODO: add verify
 		on_error,
 		on_upload_progress,
 		NULL,	// TODO: on_verify_progress

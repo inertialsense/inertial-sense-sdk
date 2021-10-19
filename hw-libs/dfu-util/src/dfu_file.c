@@ -165,7 +165,8 @@ void dfu_progress_bar(
 	
 	if (context->progress_callback)
 	{
-		const float percent = (100ULL * curr) / max;
+		// printf("curr: %llu\t max: %llu\n", curr, max);
+		const float percent = (float) (100ULL * curr) / (float) max;
 		context->progress_callback(context->interface, context->user_data, percent);
 	}
 }

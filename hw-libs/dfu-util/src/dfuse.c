@@ -499,7 +499,7 @@ static int dfuse_dnload_element(
 		uinsLogDebug(context, "Last page at 0x%08x is not writeable", dwElementAddress + dwElementSize - 1);
 	}
 
-	dfu_progress_bar(context, "Erase   ", 0, 1);
+	// dfu_progress_bar(context, "Erase   ", 0, 1);
 
 	/* First pass: Erase involved pages if needed */
 	for (p = 0; p < (int)dwElementSize; p += xfer_size) {
@@ -528,34 +528,36 @@ static int dfuse_dnload_element(
 			chunk_size = dwElementSize - p;
 
 		/* Erase only for flash memory downloads */
-		// if ((segment->memtype & DFUSE_ERASABLE) && !config->dfuse_mass_erase) {
-		// 	/* erase all involved pages */
-		// 	for (erase_address = address;
-		// 	     erase_address < address + chunk_size;
-		// 	     erase_address += page_size)
-		// 	{
-		// 		if ((erase_address & ~(page_size - 1)) != config->last_erased_page)
-		// 		{
-		// 			dfuse_special_command(context, config, dif, erase_address, ERASE_PAGE);
-		// 		}
-		// 	}
+		if ((segment->memtype & DFUSE_ERASABLE) /* && !config->dfuse_mass_erase */) {
+			/* erase all involved pages */
+			for (erase_address = address;
+			     erase_address < address + chunk_size;
+			     erase_address += page_size)
+			{
+				if ((erase_address & ~(page_size - 1)) != config->last_erased_page)
+				{
+					dfuse_special_command(context, config, dif, erase_address, ERASE_PAGE);
+				}
+			}
 
-		// 	if (((address + chunk_size - 1) & ~(page_size - 1)) != config->last_erased_page)
-		// 	{
-		// 		uinsLogDebug(context, " Chunk extends into next page, erase it as well\n");
-		// 		dfuse_special_command(context, config, dif, address + chunk_size - 1, ERASE_PAGE);
-		// 	}
-		// 	dfu_progress_bar(context, "Erase   ", p, dwElementSize);
-		// }
+			if (((address + chunk_size - 1) & ~(page_size - 1)) != config->last_erased_page)
+			{
+				uinsLogDebug(context, " Chunk extends into next page, erase it as well\n");
+				dfuse_special_command(context, config, dif, address + chunk_size - 1, ERASE_PAGE);
+			}
+			
+			// dfu_progress_bar(context, "Erase   ", p, dwElementSize);
+		}
 	}
 
-	if (!context->interface->log_level)
-		dfu_progress_bar(context, "Erase   ", dwElementSize, dwElementSize);
-	if (!context->interface->log_level)
-		dfu_progress_bar(context, "Download", 0, 1);
+	// dfu_progress_bar(context, "Erase   ", dwElementSize, dwElementSize);
+	
+	// dfu_progress_bar(context, "Download", 0, 1);
 
 	/* Second pass: Write data to (erased) pages */
 	for (p = 0; p < (int)dwElementSize; p += xfer_size) {
+		dfu_progress_bar(context, "Download", p, dwElementSize);
+	
 		unsigned int address = dwElementAddress + p;
 		int chunk_size = xfer_size;
 
@@ -568,10 +570,8 @@ static int dfuse_dnload_element(
 			       "%08x to memory %08x-%08x, size %i\n",
 			       p, address, address + chunk_size - 1,
 			       chunk_size);
-		} else {
-			dfu_progress_bar(context, "Download", p, dwElementSize);
 		}
-		
+				
 		dfuse_special_command(context, config, dif, address, SET_ADDRESS);
 
 		/* transaction = 2 for no address offset */
@@ -583,10 +583,7 @@ static int dfuse_dnload_element(
 		}
 	}
 
-	if (!context->interface->log_level)
-	{
-		dfu_progress_bar(context, "Download", dwElementSize, dwElementSize);
-	}
+	dfu_progress_bar(context, "Download", dwElementSize, dwElementSize);
 
 	return 0;
 }
