@@ -22,16 +22,16 @@ static void on_error(const uins_device_interface const * interface, const void* 
 	printf("ISDFUBootloaderExample::on_error user data: %s\n", (const char *) user_data);
 }
 
-static int on_upload_progress(const uins_device_interface const * interface, const void* user_data, float percent)
+static int on_update_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
-	printf("ISDFUBootloaderExample::on_upload_progress Upload: %f percent\n", percent);
+	printf("ISDFUBootloaderExample::on_update_progress %f percent\n", percent);
 	printf("user data: %s\n", (const char *) user_data);
 	return 1; // return zero to abort
 }
 
 static int on_verify_progress(const uins_device_interface const * interface, const void* user_data, float percent)
 {
-	printf("ISDFUBootloaderExample::on_verify_progress Verify: %f percent\n", percent);
+	printf("ISDFUBootloaderExample::on_verify_progress %f percent\n", percent);
 	printf("user data: %s\n", (const char *) user_data);
 	return 1; // return zero to abort
 }
@@ -51,6 +51,8 @@ int main(int argc, char* argv[])
 
 	uins_device_interface* uins = uins_create_device_interface(uins_50(), uri);
 
+	uins_change_log_level(uins, IS_LOG_LEVEL_DEBUG);
+
 	const char* user_data = "my own data";
 	
 	uins_operation_result bootloader_update_ok = uins_update_flash(
@@ -59,7 +61,7 @@ int main(int argc, char* argv[])
 		IS_UPDATE_APPLICATION_FIRMWARE,
 		IS_VERIFY_OFF,	// TODO: add verify
 		on_error,
-		on_upload_progress,
+		on_update_progress,
 		NULL,	// TODO: on_verify_progress
 		user_data
 	);

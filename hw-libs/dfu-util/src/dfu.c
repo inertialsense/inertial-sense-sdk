@@ -380,7 +380,7 @@ void create_dfu_config(struct dfu_config* config)
     config->dfuse_address_present = 0;
     config->dfuse_length = 0;
     config->dfuse_force = 0;
-    config->dfuse_leave = 0;
+    config->dfuse_leave = 1;
     // config->dfuse_unprotect = 0;
     // config->dfuse_mass_erase = 0;
     config->dfuse_will_reset = 0;

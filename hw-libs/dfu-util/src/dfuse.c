@@ -165,12 +165,14 @@ static int dfuse_download(
 		 /* Data          */	 data,
 		 /* wLength       */	 length,
 					 DFU_TIMEOUT);
-	if (status < 0) {
-		/* Silently fail on leave request on some unpredictable devices */
-		if ((dif->quirks & QUIRK_DFUSE_LEAVE) && !length && !data && transaction == 2)
-			return status;
-		// warnx("dfuse_download: libusb_control_transfer returned %d (%s)", status, libusb_error_name(status));
-	}
+
+	// if (status < 0) {
+	// 	/* Silently fail on leave request on some unpredictable devices */
+	// 	if ((dif->quirks & QUIRK_DFUSE_LEAVE) && !length && !data && transaction == 2)
+	// 		return status;
+	// 	// warnx("dfuse_download: libusb_control_transfer returned %d (%s)", status, libusb_error_name(status));
+	// }
+
 	return status;
 }
 
@@ -273,7 +275,7 @@ static int dfuse_special_command(
 			}
 		}
 		/* wait while command is executed */
-		uinsLogDebug(context, "   Poll timeout %i ms\n", polltimeout);
+		// uinsLogDebug(context, "   Poll timeout %i ms\n", polltimeout);
 		milli_sleep(polltimeout);
 		if (command == READ_UNPROTECT)
 			return ret;
@@ -292,6 +294,7 @@ static int dfuse_special_command(
 	if (dst.bStatus != DFU_STATUS_OK) {
 		uinsLogError(context, 0, "dfuse command failed");
 		uinsLogDebug(context, "dfuse command %s not correctly executed", dfuse_command_name[command]);
+		uinsLogDebug(context, "dfuse status %s", dfu_status_to_string(dst.bStatus));
 		return EX_IOERR;
 	}
 	return ret;
@@ -349,18 +352,18 @@ static void dfuse_do_leave(
 	struct dfu_if *dif
 )
 {
-	if (config->dfuse_address_present)
-		dfuse_special_command(context, config, dif, config->dfuse_address, SET_ADDRESS);
-
 	uinsLogDebug(context, "Submitting leave request...\n");
-	if (dif->quirks & QUIRK_DFUSE_LEAVE) {
-		struct dfu_status dst;
-		/* The device might leave after this request, with or without a response */
-		dfuse_download(dif, 0, NULL, 2);
-		/* Or it might leave after this request, with or without a response */
-		dfu_get_status(dif, &dst);
-	} else {
-		dfuse_dnload_chunk(context, config, dif, NULL, 0, 2);
+	dfuse_download(dif, 0, NULL, 2);
+
+	struct dfu_status dst;
+	dfu_get_status(dif, &dst);
+	uinsLogDebug(context, "state: %s\n", dfu_state_to_string(dst.bState));
+	
+	uinsLogDebug(context, "Resetting device...\n");
+	int reset_error = libusb_reset_device(dif->dev_handle);
+	if (reset_error)
+	{
+		uinsLogDebug(context, "Reset Failed: %d\n", libusb_error_name(reset_error));
 	}
 }
 

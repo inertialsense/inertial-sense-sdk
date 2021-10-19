@@ -106,7 +106,7 @@ uins_operation_result uins_update_flash(
     uins_update_flash_style firmware_type,
     uins_verification_style verification_style,
     pfnUinsDeviceInterfaceError error_callback,
-    pfnUinsDeviceInterfaceTaskProgress upload_progress_callback,
+    pfnUinsDeviceInterfaceTaskProgress update_progress_callback,
     pfnUinsDeviceInterfaceTaskProgress verify_progress_callback,
     const void* user_data
 )
@@ -125,7 +125,7 @@ uins_operation_result uins_update_flash(
         uins_device_context context;
         context.interface = interface;
         context.user_data = user_data;
-        context.progress_callback = upload_progress_callback;
+        context.progress_callback = update_progress_callback;
         context.error_callback = error_callback;
 
         int ret = uinsBootloadFileExDfu(&context, config);

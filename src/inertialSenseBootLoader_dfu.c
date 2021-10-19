@@ -67,7 +67,7 @@ int uinsBootloadFileExDfu(const uins_device_context const * context, struct dfu_
 		return EX_IOERR;
 	}
 
-	if (context->interface->log_level > 3) {
+	if (context->interface->log_level > IS_LOG_LEVEL_DEBUG) {
 #if defined(LIBUSB_API_VERSION) && LIBUSB_API_VERSION >= 0x01000106
 		libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_DEBUG);
 #else
