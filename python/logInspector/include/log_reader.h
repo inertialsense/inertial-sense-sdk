@@ -128,6 +128,7 @@ public:
     ~LogReader();
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
+    pybind11::list getSerialNumbers();
     void exitHack();
     
     template <typename T>
@@ -145,4 +146,6 @@ private:
 
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;
+    pybind11::list serialNumbers_; 
+
 };

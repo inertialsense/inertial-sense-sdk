@@ -91,11 +91,14 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     }
 
     cout << "found " << logger_.GetDeviceCount() << " devices\n";
+    vector<int> serialNumbers;
     for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
     {
         cout << logger_.GetDeviceInfo(i)->serialNumber << "\t";
+        serialNumbers.push_back(logger_.GetDeviceInfo(i)->serialNumber);
     }
     cout << endl;
+    serialNumbers_ = py::cast(serialNumbers);
 
     // python_parent_ = python_class;
     g_python_parent = python_class;
@@ -314,6 +317,11 @@ bool LogReader::load()
     return true;
 }
 
+pybind11::list LogReader::getSerialNumbers()
+{ 
+    return serialNumbers_; 
+}
+
 void LogReader::exitHack()
 {
     // Nasty hack
@@ -334,6 +342,7 @@ PYBIND11_MODULE(log_reader, m) {
             .def(py::init<>()) // constructor
             .def("init", &LogReader::init)
             .def("load", &LogReader::load)
+            .def("getSerialNumbers", &LogReader::getSerialNumbers)
             .def("exitHack", &LogReader::exitHack);
 
 #include "pybindMacros.h"
