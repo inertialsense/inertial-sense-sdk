@@ -83,10 +83,10 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
 #define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
-#define DID_MAGNETOMETER_1              (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor 1 output */
+#define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor 1 output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
-#define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
+//#define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_DUAL_IMU_RAW                (eDataIDs)57 /** (dual_imu_t) Dual inertial measurement unit data directly from IMU.  We recommend use of DID_DUAL_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_DUAL_IMU                    (eDataIDs)58 /** (dual_imu_t) Dual inertial measurement unit data down-sampled from 1KHz to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
@@ -102,7 +102,7 @@ typedef uint32_t eDataIDs;
 #define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
 #define DID_GPS1_RAW                    (eDataIDs)69 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
-#define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) [NOT SUPPORTED, INTERNAL USE ONLY] Wheel encoder data to be fused with GPS-INS measurements, set DID_WHEEL_CONFIG for configuration before sending this message */
+#define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) Wheel encoder data to be fused with GPS-INS measurements, set DID_GROUND_VEHICLE for configuration before sending this message */
 #define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
 #define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. Base correction output cannot run during a survey and will be automatically disabled if a survey is started. */
 #define DID_CAL_SC_INFO                 (eDataIDs)74 /** INTERNAL USE ONLY (sensor_cal_info_t) */
@@ -118,7 +118,7 @@ typedef uint32_t eDataIDs;
 #define DID_DUAL_IMU_RAW_MAG			(eDataIDs)84 /** (imu_mag_t) DID_DUAL_IMU_RAW + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
 #define DID_DUAL_IMU_MAG				(eDataIDs)85 /** (imu_mag_t) DID_DUAL_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
 #define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_DUAL_IMU_RAW_MAG, DID_DUAL_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
-#define DID_WHEEL_CONFIG				(eDataIDs)87 /** (wheel_config_t) [NOT SUPPORTED, INTERNAL USE ONLY] Static configuration for wheel encoder measurements. */
+#define DID_GROUND_VEHICLE				(eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
 #define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate*/
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
 #define DID_CAN_CONFIG					(eDataIDs)90 /** (can_config_t) Addresses for CAN messages*/
@@ -176,7 +176,8 @@ enum eInsStatusFlags
 	/** Estimate is COARSE mask (usable but outside spec) */
 	INS_STATUS_ALIGN_COARSE_MASK                = (int)0x00000007,
 
-	INS_STATUS_UNUSED_1                         = (int)0x00000008,
+	/** Velocity aided by wheel sensor */
+	INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
 	/** Attitude estimate is within spec (FINE) */
 	INS_STATUS_ATT_ALIGN_FINE                   = (int)0x00000010,
@@ -190,8 +191,8 @@ enum eInsStatusFlags
 	/** Heading aided by GPS */
 	INS_STATUS_GPS_AIDING_HEADING               = (int)0x00000080,
 
-	/** Position and velocity aided by GPS */
-	INS_STATUS_GPS_AIDING_POS_VEL               = (int)0x00000100,
+	/** Position aided by GPS position */
+	INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
 	/** GPS update event occurred in solution, potentially causing discontinuity in position path */
 	INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
 	/** Reserved for internal purpose */
@@ -203,10 +204,11 @@ enum eInsStatusFlags
 	INS_STATUS_NAV_MODE							= (int)0x00001000,
 
 	/** User should not move (keep system motionless) to assist on-board processing. */
-	INS_STATUS_DO_NOT_MOVE						= (int)0x00002000,
-	
-	INS_STATUS_UNUSED_3				            = (int)0x00004000,
-	INS_STATUS_UNUSED_4				            = (int)0x00008000,
+	INS_STATUS_DO_NOT_MOVE						= (int)0x00002000,	
+	/** Velocity aided by GPS velocity */
+	INS_STATUS_GPS_AIDING_VEL                   = (int)0x00004000,
+	/** Vehicle kinematic calibration is good */
+	INS_STATUS_KINEMATIC_CAL_GOOD	            = (int)0x00008000,
 
 	/** INS/AHRS Solution Status */
 	INS_STATUS_SOLUTION_MASK					= (int)0x000F0000,
@@ -356,6 +358,13 @@ enum eHdwStatusFlags
 	/** Output reset mask - these bits are cleared on output */
 	HDW_STATUS_OUTPUT_RESET_MASK				= (HDW_STATUS_SATURATION_MASK),
 };
+
+// Used to validate GPS position (and velocity)
+#define GPS_THRESH_SATS_USED			5
+#define GPS_THRESH_DOP					5.0f
+#define GPS_THRESH_H_ACC				20.0f
+#define GPS_THRESH_V_ACC				40.0f
+#define GPS_THRESH_S_ACC				2.0f
 
 /** GPS Status */
 enum eGpsStatus
@@ -646,7 +655,7 @@ typedef struct PACKED
 } dual_imu_ok_t;
 
 
-/** (DID_MAGNETOMETER_1, DID_MAGNETOMETER_2) Magnetometer sensor data */
+/** (DID_MAGNETOMETER) Magnetometer sensor data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -781,7 +790,7 @@ typedef struct PACKED
 	/** Position dilution of precision (unitless) */
 	float                   pDop;
 
-	/** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
+	/** Average of all non-zero satellite carrier to noise ratios (signal strengths) in dBHz */
 	float                   cnoMean;
 
 	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
@@ -809,7 +818,7 @@ typedef struct PACKED
 	/** Speed accuracy in meters / second */
 	float					sAcc;
 	
-	/** NMEA input if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA */
+	/** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
 	uint32_t                status;
 } gps_vel_t;
 
@@ -1284,9 +1293,9 @@ typedef struct PACKED
 #define RMC_BITS_DUAL_IMU               0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
 #define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
-#define RMC_BITS_MAGNETOMETER1          0x0000000000000080      // ~10ms
-#define RMC_BITS_MAGNETOMETER2          0x0000000000000100      // "
-
+#define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
+//                                      0x0000000000000100      //
+//                                      0x0000000000000200      //
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1308,7 +1317,7 @@ typedef struct PACKED
 #define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
-#define RMC_BITS_WHEEL_CONFIG           0x0000000100000000
+#define RMC_BITS_GROUND_VEHICLE           0x0000000100000000
 #define RMC_BITS_DUAL_IMU_MAG_RAW       0x0000000200000000
 #define RMC_BITS_DUAL_IMU_MAG			0x0000000400000000
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
@@ -1325,8 +1334,7 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_BITS_NO_IMU      (RMC_BITS_PRESET \
 										| RMC_BITS_INS2 \
 										| RMC_BITS_BAROMETER \
-										| RMC_BITS_MAGNETOMETER1 \
-										| RMC_BITS_MAGNETOMETER2 \
+										| RMC_BITS_MAGNETOMETER \
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_GPS2_POS \
 										| RMC_BITS_GPS1_VEL \
@@ -1349,9 +1357,9 @@ typedef struct PACKED
 										| RMC_BITS_RTK_STATE \
 										| RMC_BITS_RTK_CODE_RESIDUAL \
 										| RMC_BITS_RTK_PHASE_RESIDUAL)
-#define RMC_PRESET_PPD_ROBOT			(RMC_PRESET_PPD_BITS \
+#define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_WHEEL_ENCODER \
-										| RMC_BITS_WHEEL_CONFIG)
+										| RMC_BITS_GROUND_VEHICLE)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -1815,6 +1823,8 @@ enum eIoConfig
 	IO_CONFIG_G1G2_CAN_BUS                      = (int)0x00000004,
 	/** G1,G2 - General Communications on Ser2. Excludes GPS communications. */
 	IO_CONFIG_G1G2_COM2                         = (int)0x00000006,
+	/** G1,G2 - I2C */
+	IO_CONFIG_G1G2_I2C							= (int)0x00000008,
 	/** G1,G2 - MASK.  Note: This G1,G2 setting is overriden when GPS1 or GPS2 is configured to use Ser2. */
 	IO_CONFIG_G1G2_MASK                         = (int)0x0000000E,
 	/** G1,G2 - Default */
@@ -1926,7 +1936,7 @@ enum eIoConfig
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
 
-/** (DID_WHEEL_ENCODER) [NOT SUPPORTED, INTERNAL USE ONLY] Message to communicate wheel encoder measurements to GPS-INS */
+/** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
 typedef struct PACKED
 {
     /** Time of measurement wrt current week */
@@ -1957,7 +1967,6 @@ typedef struct PACKED
 
 enum eWheelCfgBits
 {
-    WHEEL_CFG_BITS_ENABLE_KINEMATIC_CONST   = (int)0x00000001,
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
     WHEEL_CFG_BITS_ENABLE_CONTROL           = (int)0x00000004,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
@@ -1965,32 +1974,83 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
 };
 
-/** (DID_WHEEL_CONFIG) [NOT SUPPORTED, INTERNAL USE ONLY] Configuration of wheel encoders and kinematic constraints. */
+typedef enum
+{
+    GV_MODE_STANDBY                         = 0,
+	GV_MODE_LEARNING                        = 1,
+    GV_CMD_LEARNING_START                   = 2,    // Use provided transform and sigma
+    GV_CMD_LEARNING_RESUME                  = 3,    // Reset sigma values
+    GV_CMD_LEARNING_CLEAR_AND_START         = 4,    // Zero transform and reset sigma values
+    GV_CMD_LEARNING_STOP_AND_SAVE           = 5,
+    GV_CMD_LEARNING_CANCEL                  = 6,
+ } eGroundVehicleMode;
+
 typedef struct PACKED
 {
-    /** Config bits (see eWheelCfgBits) */
-    uint32_t                bits;
+	/** Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
+	float                   e_b2w[3];
 
-	/** Euler angles describing the rotation from imu to left wheel */
-	float                   e_i2l[3];
+	/** Euler angle standard deviation of measurements describing the rotation from imu (body) to the wheel frame (center of the non-steering axle) in radians */
+	float                   e_b2w_sigma[3];
 
-	/** Translation from the imu to the left wheel, expressed in the imu frame */
-	float                   t_i2l[3];
+	/** Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
+	float                   t_b2w[3];
 
-	/** Distance between the left wheel and the right wheel */
-	float                   distance;
+	/** Translation standard deviation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame in meters */
+	float                   t_b2w_sigma[3];
 
-	/** Estimate of wheel diameter */
-	float                   diameter;
+} wheel_transform_t;
+
+typedef struct PACKED
+{
+	/** Config bits (see eWheelCfgBits) */
+	uint32_t                bits;
+
+	/** Euler angles and offset describing the rotation and tranlation from imu (body) to the wheel frame (center of the non-steering axle) */
+	wheel_transform_t       transform;
+
+	/** Distance between the left and right wheels */
+	float                   track_width;
+
+	/** Estimate of wheel radius */
+	float                   radius;
 
 } wheel_config_t;
+
+typedef enum
+{
+	GV_STATUS_LEARNING_ENABLED		= 0x00000001,
+	GV_STATUS_DEAD_RECKONING		= 0x01000000,
+	/** Vehicle kinematic parameters */ 
+	GV_STATUS_KINEMATIC_CAL_GOOD	= 0x02000000,
+	/** Vehicle kinematic learning has converged and is complete. */ 
+	GV_STATUS_LEARNING_CONVERGED    = 0x04000000,
+
+} eGroundVehicleStatus;
+
+/** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
+typedef struct PACKED
+{
+	/** GPS time of week (since Sunday morning) in milliseconds */
+	uint32_t				timeOfWeekMs;
+
+	/** Ground vehicle status flags (eGroundVehicleStatus) */
+	uint32_t                status;
+
+	/** Current mode of the ground vehicle.  Use this field to apply commands. (see eGroundVehicleMode) */
+	uint32_t                mode;
+
+	/** Wheel transform, track width, and wheel radius. */
+	wheel_config_t       	wheelConfig;
+
+} ground_vehicle_t;
 
 typedef enum
 {
     DYN_PORTABLE = 0,
     DYN_STATIONARY = 2,
     DYN_PEDESTRIAN = 3,
-    DYN_AUTOMOTIVE = 4,
+    DYN_GROUND_VEHICLE = 4,
     DYN_MARINE = 5,
     DYN_AIRBORNE_1G = 6,
     DYN_AIRBORNE_2G = 7,
@@ -2034,7 +2094,7 @@ typedef struct PACKED
     /** X,Y,Z offset in meters from Sensor Frame origin to GPS 1 antenna. */
     float					gps1AntOffset[3];
  
-    /** INS dynamic platform model.  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=AUTOMOTIVE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** INS dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t					insDynModel;
 
 	/** Reserved */
@@ -2094,14 +2154,14 @@ typedef struct PACKED
     /** Sensor config to specify the full-scale sensing ranges and output rotation for the IMU and magnetometer (see eSensorConfig in data_sets.h) */
     uint32_t                sensorConfig;
 
-	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
-    wheel_config_t          wheelConfig;
-
 	/** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
 	float                   gpsMinimumElevation;
 
     /** Serial port 2 baud rate in bits per second */
     uint32_t				ser2BaudRate;
+
+	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
+    wheel_config_t          wheelConfig;
 
 } nvm_flash_cfg_t;
 
@@ -3124,7 +3184,7 @@ typedef struct
     /** WiFi IP address */
     uint32_t                wifiIpAddr;
 
-    /** System command */
+    /** System command (see eSystemCommand).  99 = software reset */
     uint32_t                sysCommand;
 
 } evb_status_t;
@@ -3608,6 +3668,7 @@ typedef union PACKED
 	mag_cal_t				magCal;
 	barometer_t				baro;
     wheel_encoder_t         wheelEncoder;
+	ground_vehicle_t		groundVehicle;
 	pos_measurement_t		posMeasurement;
 	preintegrated_imu_t		pImu;
 	gps_pos_t				gpsPos;
@@ -3625,6 +3686,7 @@ typedef union PACKED
 	gps_raw_t				gpsRaw;
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
+	evb_status_t			evbStatus;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	evb_luna_wheel_controller_t     wheelController;

@@ -97,7 +97,7 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 		altitudeMode = "absolute";
 
 	// Style
-	string styleStr, colorStr;
+	string styleStr, colorStr, colorDrStr = "ff00a5ff";	// orange
 
 	iconUrl = "http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png";
 	// 		iconUrl = "http://earth.google.com/images/kml-icons/track-directional/track-none.png";
@@ -147,130 +147,140 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	// Show sample (dot)
 	if (m_showPoints)
 	{
-		// Style
-		styleStr = string("stylesel_");
-
-		Style = new TiXmlElement("Style");
-		Style->SetAttribute("id", styleStr);
-		Document->LinkEndChild(Style);
-
-		// Icon style
-		IconStyle = new TiXmlElement("IconStyle");
-		Style->LinkEndChild(IconStyle);
-
-		elem = new TiXmlElement("color");
-		elem->LinkEndChild(new TiXmlText(colorStr));
-		IconStyle->LinkEndChild(elem);
-
-		elem = new TiXmlElement("colorMode");
-		elem->LinkEndChild(new TiXmlText("normal"));
-		IconStyle->LinkEndChild(elem);
-
-		elem = new TiXmlElement("scale");
-		elem->LinkEndChild(new TiXmlText(iconScale));
-		IconStyle->LinkEndChild(elem);
-
-		heading = new TiXmlElement("heading");
-		heading->LinkEndChild(new TiXmlText("0"));
-		IconStyle->LinkEndChild(heading);
-
-		href = new TiXmlElement("href");
-		href->LinkEndChild(new TiXmlText(iconUrl));
-		elem = new TiXmlElement("Icon");
-		elem->LinkEndChild(href);
-		IconStyle->LinkEndChild(elem);
-
-		// Label style
-		LabelStyle = new TiXmlElement("LabelStyle");
-		Style->LinkEndChild(LabelStyle);
-
-		elem = new TiXmlElement("colorMode");
-		elem->LinkEndChild(new TiXmlText("normal"));
-		LabelStyle->LinkEndChild(elem);
-
-		elem = new TiXmlElement("scale");
-		elem->LinkEndChild(new TiXmlText(labelScale));
-		LabelStyle->LinkEndChild(elem);
-
+		int tracksNum = 0;
 
 		double nextTime = log.data[0].time;
-		for (size_t i = 0; i < log.data.size(); i++)
+		for (size_t i = 0; i < log.data.size(); )
 		{
-			sKmlLogData& item = (log.data[i]);
+			bool deadReckoning = log.data[i].deadReckoning;
 
-			// Log only every iconUpdatePeriodSec
-			if (item.time < nextTime)
+			// Style
+			styleStr = string("stylesel_");
+
+			Style = new TiXmlElement("Style");
+			Style->SetAttribute("id", styleStr);
+			Document->LinkEndChild(Style);
+
+			// Icon style
+			IconStyle = new TiXmlElement("IconStyle");
+			Style->LinkEndChild(IconStyle);
+
+			elem = new TiXmlElement("color");
+			elem->LinkEndChild(new TiXmlText((deadReckoning ? colorDrStr : colorStr)));
+			IconStyle->LinkEndChild(elem);
+
+			elem = new TiXmlElement("colorMode");
+			elem->LinkEndChild(new TiXmlText("normal"));
+			IconStyle->LinkEndChild(elem);
+
+			elem = new TiXmlElement("scale");
+			elem->LinkEndChild(new TiXmlText(iconScale));
+			IconStyle->LinkEndChild(elem);
+
+			heading = new TiXmlElement("heading");
+			heading->LinkEndChild(new TiXmlText("0"));
+			IconStyle->LinkEndChild(heading);
+
+			href = new TiXmlElement("href");
+			href->LinkEndChild(new TiXmlText(iconUrl));
+			elem = new TiXmlElement("Icon");
+			elem->LinkEndChild(href);
+			IconStyle->LinkEndChild(elem);
+
+			// Label style
+			LabelStyle = new TiXmlElement("LabelStyle");
+			Style->LinkEndChild(LabelStyle);
+
+			elem = new TiXmlElement("colorMode");
+			elem->LinkEndChild(new TiXmlText("normal"));
+			LabelStyle->LinkEndChild(elem);
+
+			elem = new TiXmlElement("scale");
+			elem->LinkEndChild(new TiXmlText(labelScale));
+			LabelStyle->LinkEndChild(elem);
+
+			while (i < log.data.size())
 			{
-				continue;
-			}
-			nextTime = item.time - fmod(item.time, m_pointUpdatePeriodSec) + m_pointUpdatePeriodSec;
+				sKmlLogData& item = (log.data[i]);
 
-			// Placemark
-			Placemark = new TiXmlElement("Placemark");
-			Document->LinkEndChild(Placemark);
+				// Log only every iconUpdatePeriodSec
+				if (item.time < nextTime)
+				{
+					i++;
+					continue;
+				}
+				nextTime = item.time - fmod(item.time, m_pointUpdatePeriodSec) + m_pointUpdatePeriodSec;
 
-			// Name
-			elem = new TiXmlElement("name");
-			ostringstream timeStream;
-			switch (kid)
-			{
-			case cDataKML::KID_GPS:
-			case cDataKML::KID_GPS1:
-			case cDataKML::KID_GPS2:
-			case cDataKML::KID_RTK:
-				timeStream << fixed << setprecision(1) << item.time;
-				break;
-			default:
-				timeStream << fixed << setprecision(3) << item.time;
-				break;
-			}
-			elem->LinkEndChild(new TiXmlText(timeStream.str()));
-			Placemark->LinkEndChild(elem);
+				// Placemark
+				Placemark = new TiXmlElement("Placemark");
+				Document->LinkEndChild(Placemark);
 
-			// styleUrl
-			elem = new TiXmlElement("styleUrl");
-			if (item.theta[2] != 0.0f)
-			{	// Style - to indicate heading
-				string styleCntStr = styleStr + to_string(styleCnt++);
-				TiXmlNode *StyleNode = Style->Clone();
-				StyleNode->ToElement()->SetAttribute("id", styleCntStr);
-				StyleNode->FirstChildElement("IconStyle")->FirstChildElement("heading")->FirstChild()->ToText()->SetValue(to_string(item.theta[2] * C_RAD2DEG_F));
-				Document->LinkEndChild(StyleNode);
+				// Name
+				elem = new TiXmlElement("name");
+				ostringstream timeStream;
+				switch (kid)
+				{
+				case cDataKML::KID_GPS:
+				case cDataKML::KID_GPS1:
+				case cDataKML::KID_GPS2:
+				case cDataKML::KID_RTK:
+					timeStream << fixed << setprecision(1) << item.time;
+					break;
+				default:
+					timeStream << fixed << setprecision(3) << item.time;
+					break;
+				}
+				elem->LinkEndChild(new TiXmlText(timeStream.str()));
+				Placemark->LinkEndChild(elem);
 
-				elem->LinkEndChild(new TiXmlText("#" + styleCntStr));
-			}
-			else
-			{
-				elem->LinkEndChild(new TiXmlText("#" + styleStr));
-			}
-			Placemark->LinkEndChild(elem);
+				// styleUrl
+				elem = new TiXmlElement("styleUrl");
+				if (item.theta[2] != 0.0f)
+				{	// Style - to indicate heading
+					string styleCntStr = styleStr + to_string(styleCnt++);
+					TiXmlNode* StyleNode = Style->Clone();
+					StyleNode->ToElement()->SetAttribute("id", styleCntStr);
+					StyleNode->FirstChildElement("IconStyle")->FirstChildElement("heading")->FirstChild()->ToText()->SetValue(to_string(item.theta[2] * C_RAD2DEG_F));
+					Document->LinkEndChild(StyleNode);
 
-			Point = new TiXmlElement("Point");
-			Placemark->LinkEndChild(Point);
+					elem->LinkEndChild(new TiXmlText("#" + styleCntStr));
+				}
+				else
+				{
+					elem->LinkEndChild(new TiXmlText("#" + styleStr));
+				}
+				Placemark->LinkEndChild(elem);
 
-			elem = new TiXmlElement("coordinates");
+				Point = new TiXmlElement("Point");
+				Placemark->LinkEndChild(Point);
+
+				elem = new TiXmlElement("coordinates");
 #if 1
-			double lat = _CLAMP(item.lla[0] * DEG2RADMULT, -C_PIDIV2, C_PIDIV2) * RAD2DEGMULT;
-			double lon = _CLAMP(item.lla[1] * DEG2RADMULT, -C_PI, C_PI) * RAD2DEGMULT;
-			double alt = _CLAMP(item.lla[2], -1000, 100000);
-			snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf", lon, lat, alt);
-			elem->LinkEndChild(new TiXmlText(buf));
+				double lat = _CLAMP(item.lla[0] * DEG2RADMULT, -C_PIDIV2, C_PIDIV2) * RAD2DEGMULT;
+				double lon = _CLAMP(item.lla[1] * DEG2RADMULT, -C_PI, C_PI) * RAD2DEGMULT;
+				double alt = _CLAMP(item.lla[2], -1000, 100000);
+				snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf", lon, lat, alt);
+				elem->LinkEndChild(new TiXmlText(buf));
 #else
-			ostringstream coordinateStream;	// Not getting digits of precision
-			coordinateStream
-				<< fixed
-				<< setprecision(8)
-				<< item->lla[1] << ","  // Lat
-				<< item->lla[0] << ","  // Lon
-				<< setprecision(3)
-				<< item->lla[2] << " "; // Alt
-			elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
+				ostringstream coordinateStream;	// Not getting digits of precision
+				coordinateStream
+					<< fixed
+					<< setprecision(8)
+					<< item->lla[1] << ","  // Lat
+					<< item->lla[0] << ","  // Lon
+					<< setprecision(3)
+					<< item->lla[2] << " "; // Alt
+				elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
 #endif
-			Point->LinkEndChild(elem);
+				Point->LinkEndChild(elem);
 
-			elem = new TiXmlElement("altitudeMode");
-			elem->LinkEndChild(new TiXmlText(altitudeMode));
-			Point->LinkEndChild(elem);
+				elem = new TiXmlElement("altitudeMode");
+				elem->LinkEndChild(new TiXmlText(altitudeMode));
+				Point->LinkEndChild(elem);
+
+				i++;
+			}
+			tracksNum++;
 		}
 	}// if (m_showSample)
 
@@ -278,82 +288,98 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	// Show path (track)
 	if (m_showTracks)
 	{
-		// Track style
-		styleStr = string("stylesel_") + to_string(styleCnt++);
+		int tracksNum = 0;
 
-		Style = new TiXmlElement("Style");
-		Style->SetAttribute("id", styleStr);
-		Document->LinkEndChild(Style);
-
-		LineStyle = new TiXmlElement("LineStyle");
-		Style->LinkEndChild(LineStyle);
-
-		elem = new TiXmlElement("color");
-		elem->LinkEndChild(new TiXmlText(colorStr));
-		LineStyle->LinkEndChild(elem);
-
-		elem = new TiXmlElement("colorMode");
-		elem->LinkEndChild(new TiXmlText("normal"));
-		LineStyle->LinkEndChild(elem);
-
-		elem = new TiXmlElement("width");
-		elem->LinkEndChild(new TiXmlText("2"));
-		LineStyle->LinkEndChild(elem);
-
-		// Track
-		Placemark = new TiXmlElement("Placemark");
-		Document->LinkEndChild(Placemark);
-
-		elem = new TiXmlElement("name");
-		elem->LinkEndChild(new TiXmlText("Tracks"));
-		Placemark->LinkEndChild(elem);
-
-		elem = new TiXmlElement("description");
-		elem->LinkEndChild(new TiXmlText("SN tracks"));
-		Placemark->LinkEndChild(elem);
-
-		elem = new TiXmlElement("styleUrl");
-		elem->LinkEndChild(new TiXmlText("#" + styleStr));
-		Placemark->LinkEndChild(elem);
-
-		LineString = new TiXmlElement("LineString");
-		Placemark->LinkEndChild(LineString);
-
-		ostringstream coordinateStream;
-		int j = 0;
-		for (size_t i = 0; i < log.data.size(); i++)
+		for (size_t i=0; i < log.data.size(); )
 		{
-            sKmlLogData& item = (log.data[i]);
-            double lat = _CLAMP(item.lla[0] * DEG2RADMULT, -C_PIDIV2, C_PIDIV2) * RAD2DEGMULT;
-            double lon = _CLAMP(item.lla[1] * DEG2RADMULT, -C_PI, C_PI) * RAD2DEGMULT;
-            double alt = _CLAMP(item.lla[2], -1000, 100000);
+			bool deadReckoning = log.data[i].deadReckoning;
 
-			if (i >= log.data.size()-2)
+			// Track style
+			styleStr = string("stylesel_") + to_string(styleCnt++);
+
+			Style = new TiXmlElement("Style");
+			Style->SetAttribute("id", styleStr);
+			Document->LinkEndChild(Style);
+
+			LineStyle = new TiXmlElement("LineStyle");
+			Style->LinkEndChild(LineStyle);
+
+			elem = new TiXmlElement("color");
+			elem->LinkEndChild(new TiXmlText( (deadReckoning ? colorDrStr : colorStr) ));
+			LineStyle->LinkEndChild(elem);
+
+			elem = new TiXmlElement("colorMode");
+			elem->LinkEndChild(new TiXmlText("normal"));
+			LineStyle->LinkEndChild(elem);
+
+			elem = new TiXmlElement("width");
+			elem->LinkEndChild(new TiXmlText("2"));
+			LineStyle->LinkEndChild(elem);
+
+			// Track
+			Placemark = new TiXmlElement("Placemark");
+			Document->LinkEndChild(Placemark);
+
+			elem = new TiXmlElement("name");
+			elem->LinkEndChild(new TiXmlText("Tracks"+to_string(tracksNum)));
+			Placemark->LinkEndChild(elem);
+
+			elem = new TiXmlElement("description");
+			elem->LinkEndChild(new TiXmlText("SN tracks"));
+			Placemark->LinkEndChild(elem);
+
+			elem = new TiXmlElement("styleUrl");
+			elem->LinkEndChild(new TiXmlText("#" + styleStr));
+			Placemark->LinkEndChild(elem);
+
+			LineString = new TiXmlElement("LineString");
+			Placemark->LinkEndChild(LineString);
+
+			ostringstream coordinateStream;
+			int j = 0;
+			while (i < log.data.size())
 			{
-				j++;
+				if (deadReckoning != log.data[i].deadReckoning)
+				{	// Switch from dead reckoning type
+					break;
+				}
+
+				sKmlLogData& item = (log.data[i]);
+				double lat = _CLAMP(item.lla[0] * DEG2RADMULT, -C_PIDIV2, C_PIDIV2) * RAD2DEGMULT;
+				double lon = _CLAMP(item.lla[1] * DEG2RADMULT, -C_PI, C_PI) * RAD2DEGMULT;
+				double alt = _CLAMP(item.lla[2], -1000, 100000);
+
+				if (i >= log.data.size() - 2)
+				{
+					j++;
+				}
+
+				snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf ", lon, lat, alt);
+				// 			if (strcmp("-111.65863637,40.05570543,1418.282 ", buf) == 0)
+				// 			{
+				// 				j++;
+				// 			}
+				// 			qDebug() << string(buf);
+				//			std::cout << "Value of str is : ";
+				coordinateStream << string(buf);
+				i++;
 			}
 
-            snprintf(buf, BUF_SIZE, "%.8lf,%.8lf,%.3lf ", lon, lat, alt);
-// 			if (strcmp("-111.65863637,40.05570543,1418.282 ", buf) == 0)
-// 			{
-// 				j++;
-// 			}
-// 			qDebug() << string(buf);
-//			std::cout << "Value of str is : ";
-			coordinateStream << string(buf);
+			elem = new TiXmlElement("coordinates");
+			elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
+			LineString->LinkEndChild(elem);
+
+			elem = new TiXmlElement("extrude");
+			elem->LinkEndChild(new TiXmlText("1"));
+			LineString->LinkEndChild(elem);
+
+			elem = new TiXmlElement("altitudeMode");
+			elem->LinkEndChild(new TiXmlText(altitudeMode));
+			LineString->LinkEndChild(elem);
+
+			tracksNum++;
 		}
 
-		elem = new TiXmlElement("coordinates");
-		elem->LinkEndChild(new TiXmlText(coordinateStream.str()));
-		LineString->LinkEndChild(elem);
-
-		elem = new TiXmlElement("extrude");
-		elem->LinkEndChild(new TiXmlText("1"));
-		LineString->LinkEndChild(elem);
-
-		elem = new TiXmlElement("altitudeMode");
-		elem->LinkEndChild(new TiXmlText(altitudeMode));
-		LineString->LinkEndChild(elem);
 	}
 
 	// Write XML to file

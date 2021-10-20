@@ -72,6 +72,6 @@ var searchData=
   ['rmc_5fpreset_5fppd_5fbits_5fraw_5fimu_7564',['RMC_PRESET_PPD_BITS_RAW_IMU',['../data__sets_8h.html#aba5a6647f5808e6cdfd54c1d6db68729',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fbits_5frtk_5fdbg_7565',['RMC_PRESET_PPD_BITS_RTK_DBG',['../data__sets_8h.html#af621f4bc9fa425bd5bc00e9b2bb490c0',1,'data_sets.h']]],
   ['rmc_5fpreset_5fppd_5fnav_5fperiod_5fmult_7566',['RMC_PRESET_PPD_NAV_PERIOD_MULT',['../data__sets_8h.html#ac4434e93fd2603beef3791f842bb86b2',1,'data_sets.h']]],
-  ['rmc_5fpreset_5fppd_5frobot_7567',['RMC_PRESET_PPD_ROBOT',['../data__sets_8h.html#a8fde050afcfaff93b9fce7741812bc18',1,'data_sets.h']]],
+  ['rmc_5fpreset_5fppd_5frobot_7567',['RMC_PRESET_PPD_GROUND_VEHICLE',['../data__sets_8h.html#a8fde050afcfaff93b9fce7741812bc18',1,'data_sets.h']]],
   ['rtcm3_5fheader_5fsize_7568',['RTCM3_HEADER_SIZE',['../_i_s_comm_8h.html#a4f5c35a4a8d7bc7011d154f678a44107',1,'ISComm.h']]]
 ];

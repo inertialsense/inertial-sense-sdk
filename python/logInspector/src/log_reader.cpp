@@ -178,8 +178,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_INL2_STATES, dev_log_->inl2States );
         HANDLE_MSG( DID_INL2_STATUS, dev_log_->inl2Status );
         // HANDLE_MSG( DID_INL2_MISC, dev_log_->inl2Misc );
-        HANDLE_MSG( DID_MAGNETOMETER_1, dev_log_->magnetometer );
-        HANDLE_MSG( DID_MAGNETOMETER_2, dev_log_->magnetometer );
+        HANDLE_MSG( DID_MAGNETOMETER, dev_log_->magnetometer );
         HANDLE_MSG( DID_BAROMETER, dev_log_->barometer );
         HANDLE_MSG( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos );
         HANDLE_MSG( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw );
@@ -196,7 +195,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS1_RAW, dev_log_->gps1Raw );
         HANDLE_MSG( DID_GPS2_RAW, dev_log_->gps2Raw );
         HANDLE_MSG( DID_WHEEL_ENCODER, dev_log_->wheelEncoder );
-        // HANDLE_MSG( DID_WHEEL_ENCODER_CONFIG, dev_log_->wheelEncoderConfig );
+        HANDLE_MSG( DID_GROUND_VEHICLE, dev_log_->groundVehicle );
         HANDLE_MSG( DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage );
         HANDLE_MSG( DID_SURVEY_IN, dev_log_->surveyIn );
         // HANDLE_MSG( DID_EVB2, dev_log_->evb2 );
@@ -268,8 +267,7 @@ void LogReader::forwardData(int id)
     forward_message( DID_INL2_STATES, dev_log_->inl2States, id );
     forward_message( DID_INL2_STATUS, dev_log_->inl2Status, id );
     // forward_message( DID_INL2_MISC, dev_log_->inl2Misc, id );
-    forward_message( DID_MAGNETOMETER_1, dev_log_->magnetometer, id );
-    forward_message( DID_MAGNETOMETER_2, dev_log_->magnetometer, id );
+    forward_message( DID_MAGNETOMETER, dev_log_->magnetometer, id );
     forward_message( DID_BAROMETER, dev_log_->barometer, id );
     forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, id );
     forward_message( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw, id );
@@ -286,7 +284,7 @@ void LogReader::forwardData(int id)
     forward_message( DID_GPS1_RAW, dev_log_->gps1Raw, id );
     forward_message( DID_GPS2_RAW, dev_log_->gps2Raw, id );
     forward_message( DID_WHEEL_ENCODER, dev_log_->wheelEncoder, id );
-    // forward_message( DID_WHEEL_ENCODER_CONFIG, dev_log_->wheelEncoderConfig, id );
+    forward_message( DID_GROUND_VEHICLE, dev_log_->groundVehicle, id );
     forward_message( DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage, id );
     forward_message( DID_SURVEY_IN, dev_log_->surveyIn, id );
     // forward_message( DID_EVB2, dev_log_->evb2, id );

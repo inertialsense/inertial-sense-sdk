@@ -173,6 +173,9 @@ extern "C" {
 #define   XDMAC_UBC_UBLEN_Msk (0xffffffu << XDMAC_UBC_UBLEN_Pos)
 #define   XDMAC_UBC_UBLEN(value) ((XDMAC_UBC_UBLEN_Msk & ((value) << XDMAC_UBC_UBLEN_Pos)))
 
+// added by InertialSense
+#define DMA_CHAN_BUSY(_ch_)  (xdmac_channel_get_status(XDMAC) & (1 << (_ch_)))
+
 /** XDMA config register for channel */
 typedef struct {
 	/** Microblock Control Member. */

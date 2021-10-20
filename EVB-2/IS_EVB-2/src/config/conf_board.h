@@ -92,7 +92,8 @@
 #define CONF_BOARD_SERIAL_UINS_SER0
 #define CONF_BOARD_SERIAL_UINS_SER1
 #define CONF_BOARD_SERIAL_XBEE
-#define CONF_BOARD_SERIAL_EXT_RADIO
+// HACK: disable external radio to prevent right RK2K wheel from spinning.  We need to move all I/O config into a central function that allows these features to be disabled.
+// #define CONF_BOARD_SERIAL_EXT_RADIO
 #define CONF_BOARD_SERIAL_ATWINC_BLE
 #define CONF_BOARD_SERIAL_SP330
 #define CONF_BOARD_SERIAL_GPIO_H8

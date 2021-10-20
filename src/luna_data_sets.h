@@ -31,20 +31,24 @@ PUSH_PACK_1
 
 typedef enum
 {
-    EVB_LUNA_CFG_BITS_ENABLE_SS_GEOFENCE   			    = 0x00000001,
-    EVB_LUNA_CFG_BITS_ENABLE_SS_BUMP            	    = 0x00000002,
-    EVB_LUNA_CFG_BITS_ENABLE_SS_PROXIMITY       	    = 0x00000004,
+    EVB_LUNA_CFG_BITS_ENABLE_SS_GEOFENCE                = 0x00000001,
+    EVB_LUNA_CFG_BITS_ENABLE_SS_BUMP_ADC                = 0x00000002,
+    EVB_LUNA_CFG_BITS_ENABLE_SS_PROXIMITY               = 0x00000004,
+	EVB_LUNA_CFG_BITS_ENABLE_SS_BUMP_I2C                = 0x00000008,
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL              = 0x00000100,	// On vehicle
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_1     = 0x00000200,	// External buttons
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_2	    = 0x00000400,	// No external buttons
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_MASK  = 0x00000600,
 } eEvbLunaFlashCfgBits;
 
+
 typedef enum
 {
-	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN				= 0x00000000,
-	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT				= 0x00000001,
-	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK					= 0x00000003,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_UNDEFINED             = 0,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT              = 1,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN             = 2,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_PWM                   = 3,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK                  = 0x00000007,
 } eEvbLunaWheelControlConfig_t;
 
 #define NUM_FF_COEFS	2
@@ -61,25 +65,28 @@ typedef struct
 	/** Commanded velocity max (rad/s) */
 	float					velMax;
 
-	/** Feadforward deadband (m/s) */
+	/** Feedforward deadband (m/s) */
 	float					FF_vel_deadband;
 
-	/** Feadforward C0 estimate integral gain */
-	float					FF_c0_est_Ki;
+	/** Feedforward coefficient estimation gain.  Zero to disable estimation..  Zero to disable estimation..  Zero to disable estimation. */
+	float					FF_c_est_Ki[NUM_FF_COEFS];
 
-    /** Feadforward C0 estimate maximum value (rad/s) */
-    float                 	FF_c0_est_max;
+    /** Feedforward coefficient estimation maximum value */
+    float                 	FF_c_est_max[NUM_FF_COEFS];
 
-    /** Feadforward C0 and C1 coefficients */
+    /** Feedforward coefficients */
     float                 	FF_c_l[NUM_FF_COEFS];
     float                 	FF_c_r[NUM_FF_COEFS];
 
-	/** Feadback proportional gain */
+	/** Feedback proportional gain */
 	float					FB_Kp;
 
-	/** Feadback derivative gain */
-	float					FB_Kd;
+    /** Feedback integral gain */
+    float                   FB_Ki;
 
+	/** Feedback derivative gain */
+	float					FB_Kd;
+	
     /** EVB2 velocity Linearization Coefficients */
     float                   LinearCoEff[NUM_AL_COEFS];
 
@@ -202,8 +209,11 @@ typedef enum
 	/** Range Sensor */
 	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000020,
 
-    /** EVB Error bit mask */
+    /** EVB Error bit mask.  Errors in this mask will stop control. */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
+
+	/** Wheel encoder fault */
+	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
 	
 	/** Axis is in an invalid state */
 	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
@@ -303,6 +313,7 @@ typedef enum
 	LCS_FAULT_R						= 0x00000002,
 	LCS_VEL_CMD_LIMITED_L			= 0x00000010,
 	LCS_VEL_CMD_LIMITED_R			= 0x00000020,
+	LCS_VEL_CMD_LIMITED_MASK		= (LCS_VEL_CMD_LIMITED_L | LCS_VEL_CMD_LIMITED_R),
 	LCS_VEL_CMD_SLEW_LIMITED_L		= 0x00000040,
 	LCS_VEL_CMD_SLEW_LIMITED_R		= 0x00000080,
 	LCS_VEL_LIMITED_L_MASK			= (LCS_VEL_CMD_LIMITED_L | LCS_VEL_CMD_SLEW_LIMITED_L),
