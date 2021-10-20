@@ -45,8 +45,6 @@ class Log:
             raise ValueError("No devices found in log")
         if len(self.data[0, DID_DEV_INFO]):
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
-        # else:
-        #     self.serials
         if 10101 in self.serials:
             self.refINS = True
             refIdx = self.serials.index(10101)
