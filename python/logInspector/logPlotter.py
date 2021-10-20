@@ -1403,49 +1403,37 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        fig.suptitle('Sensor Comp Gyro - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(3, 2, sharex=True)
-
-        for d in self.active_devs:
-            ax[0, d].set_title('P Gyro %d' % (d))
-            ax[1, d].set_title('Q Gyro %d' % (d))
-            ax[2, d].set_title('R Gyro %d' % (d))
-
-            mpu = getTimeFromTowMs(self.getData(d, DID_SCOMP, 'mpu'))
-
-            temp = mpu[0]['lpfLsb']['temp']
-            for d in range(2):
-                ax[1,d].plot(temp, mpu[d]['lpfLsb']['pqr'][:, 0], label=self.log.serials[d])
-                ax[2,d].plot(temp, mpu[d]['lpfLsb']['pqr'][:, 1])
-                ax[3,d].plot(temp, mpu[d]['lpfLsb']['pqr'][:, 2])
-
-        for a in ax:
-            for b in a:
-                b.grid(True)
+        self.sensorCompGen(fig, 'pqr')
 
     def sensorCompAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
 
-        fig.suptitle('Sensor Comp Accel - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        self.sensorCompGen(fig, 'acc')
+
+    def sensorCompGen(self, fig, name):
+        fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(3, 2, sharex=True)
 
+        for i in range(2):
+            ax[0, i].set_title('X %s %d' % (name, i))
+            ax[1, i].set_title('Y %s %d' % (name, i))
+            ax[2, i].set_title('Z %s %d' % (name, i))
+
         for d in self.active_devs:
-            ax[0, d].set_title('X Accel %d' % (d))
-            ax[1, d].set_title('Y Accel %d' % (d))
-            ax[2, d].set_title('Z Accel %d' % (d))
+            mpu = self.getData(d, DID_SCOMP, 'mpu')
 
-            mpu = getTimeFromTowMs(self.getData(d, DID_SCOMP, 'mpu'))
-
-            temp = mpu[0]['lpfLsb']['temp']
-            for d in range(2):
-                ax[1,d].plot(temp, mpu[d]['lpfLsb']['acc'][:, 0], label=self.log.serials[d])
-                ax[2,d].plot(temp, mpu[d]['lpfLsb']['acc'][:, 1])
-                ax[3,d].plot(temp, mpu[d]['lpfLsb']['acc'][:, 2])
+            for i in range(2):
+                temp = mpu[:,i]['lpfLsb']['temp']
+                sensor = mpu[:,i]['lpfLsb'][name]
+                ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                ax[1,i].plot(temp, sensor[:,1])
+                ax[2,i].plot(temp, sensor[:,2])
 
         for a in ax:
             for b in a:
                 b.grid(True)
+
 
 
     def showFigs(self):
