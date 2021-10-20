@@ -95,6 +95,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.addButton('Wheel Encoder', lambda: self.plot('wheelEncoder'))
         self.addButton('Ground Vehicle', lambda: self.plot('groundVehicle'))
         self.addButton('GPS Raw Time', lambda: self.plot('gpsRawTime'))
+        self.addButton('Sensor Comp Gyr', lambda: self.plot('sensorCompGyr'))
+        self.addButton('Sensor Comp Acc', lambda: self.plot('sensorCompAcc'))
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
     def createBottomToolbar(self):

@@ -1394,7 +1394,56 @@ class logPlot:
         for a in ax:
             for b in a:
                 b.grid(True)
-            
+
+    def sensorCompGyr(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Sensor Comp Gyro - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, 2, sharex=True)
+
+        for d in self.active_devs:
+            ax[0, d].set_title('P Gyro %d' % (d))
+            ax[1, d].set_title('Q Gyro %d' % (d))
+            ax[2, d].set_title('R Gyro %d' % (d))
+
+            mpu = getTimeFromTowMs(self.getData(d, DID_SCOMP, 'mpu'))
+
+            temp = mpu[0]['lpfLsb']['temp']
+            for d in range(2):
+                ax[1,d].plot(temp, mpu[d]['lpfLsb']['pqr'][:, 0], label=self.log.serials[d])
+                ax[2,d].plot(temp, mpu[d]['lpfLsb']['pqr'][:, 1])
+                ax[3,d].plot(temp, mpu[d]['lpfLsb']['pqr'][:, 2])
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+    def sensorCompAcc(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Sensor Comp Accel - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, 2, sharex=True)
+
+        for d in self.active_devs:
+            ax[0, d].set_title('X Accel %d' % (d))
+            ax[1, d].set_title('Y Accel %d' % (d))
+            ax[2, d].set_title('Z Accel %d' % (d))
+
+            mpu = getTimeFromTowMs(self.getData(d, DID_SCOMP, 'mpu'))
+
+            temp = mpu[0]['lpfLsb']['temp']
+            for d in range(2):
+                ax[1,d].plot(temp, mpu[d]['lpfLsb']['acc'][:, 0], label=self.log.serials[d])
+                ax[2,d].plot(temp, mpu[d]['lpfLsb']['acc'][:, 1])
+                ax[3,d].plot(temp, mpu[d]['lpfLsb']['acc'][:, 2])
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+
     def showFigs(self):
         if self.show:
             plt.show()
