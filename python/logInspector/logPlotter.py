@@ -1395,6 +1395,9 @@ class logPlot:
             ax[7,0].plot(time, wheelConfig['radius'])
             ax[7,1].plot(time, wheelConfig['track_width'])
 
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -1449,9 +1452,13 @@ class logPlot:
                 sensor = mpu[:,i]['lpfLsb'][name]
                 if name=='pqr':
                     sensor *= RAD2DEG
-                ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] )
                 ax[1,i].plot(temp, sensor[:,1])
                 ax[2,i].plot(temp, sensor[:,2])
+
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
 
         for a in ax:
             for b in a:
