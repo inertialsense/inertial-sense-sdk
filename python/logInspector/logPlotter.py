@@ -1402,16 +1402,26 @@ class logPlot:
     def sensorCompGyr(self, fig=None):
         if fig is None:
             fig = plt.figure()
-
         self.sensorCompGen(fig, 'pqr')
 
     def sensorCompAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
-
         self.sensorCompGen(fig, 'acc')
 
-    def sensorCompGen(self, fig, name):
+    def sensorCompGyrTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        self.sensorCompGen(fig, 'pqr', useTime=True)
+
+    def sensorCompAccTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'acc', useTime=True)
+
+
+    def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(3, 2, sharex=True)
 
@@ -1419,13 +1429,26 @@ class logPlot:
             ax[0, i].set_title('X %s %d' % (name, i))
             ax[1, i].set_title('Y %s %d' % (name, i))
             ax[2, i].set_title('Z %s %d' % (name, i))
+            for d in range(3):
+                if useTime:
+                    ax[d,i].set_xlabel("Time (s)")
+                else:
+                    ax[d,i].set_xlabel("Temperature (C)")
+                if name=='pqr':
+                    ax[d,i].set_ylabel("Gyro (deg/s)")
+                else:
+                    ax[d,i].set_ylabel("Accel (m/s^2)")
 
         for d in self.active_devs:
             mpu = self.getData(d, DID_SCOMP, 'mpu')
 
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
+                if useTime:
+                    temp = range(len(temp))
                 sensor = mpu[:,i]['lpfLsb'][name]
+                if name=='pqr':
+                    sensor *= RAD2DEG
                 ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
                 ax[1,i].plot(temp, sensor[:,1])
                 ax[2,i].plot(temp, sensor[:,2])
@@ -1433,7 +1456,6 @@ class logPlot:
         for a in ax:
             for b in a:
                 b.grid(True)
-
 
 
     def showFigs(self):
