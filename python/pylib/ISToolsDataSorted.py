@@ -541,7 +541,7 @@ class cDevice:
         # 50 'EKF Innovations'
         # 51 'EKF Innovations Var'
 
-        self.di[52].set('magnetometer1', np.dtype([
+        self.di[52].set('magnetometer', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('time', f64),
             ('mag', (f32, 3)),
@@ -578,7 +578,7 @@ class cDevice:
 
         # 57 'Communications Loopback'
 
-        self.di[58].set('dualImu', np.dtype([
+        self.di[58].set('imu', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('time', f64),
             ('I', (dtypeImu, 2)),

@@ -43,25 +43,25 @@ DID_NVR_USERPAGE_G1             = 36
 DID_DEBUG_STRING                = 37
 DID_RTOS_INFO                   = 38
 DID_DEBUG_ARRAY                 = 39
-DID_SENSORS_CAL1                = 40
-DID_SENSORS_CAL2                = 41
+# DID_SENSORS_CAL1                = 40
+# DID_SENSORS_CAL2                = 41
 DID_CAL_SC                      = 42
 DID_CAL_SC1                     = 43
 DID_CAL_SC2                     = 44
 DID_SYS_SENSORS_SIGMA           = 45
 DID_SENSORS_ADC_SIGMA           = 46
-DID_INS_DEV_1                   = 47
+# DID_INS_DEV_1                   = 47
 DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
 DID_INL2_MISC                   = 51
-DID_MAGNETOMETER              = 52
+DID_MAGNETOMETER                = 52
 DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
 DID_COMMUNICATIONS_LOOPBACK     = 56
-DID_DUAL_IMU_RAW                = 57
-DID_DUAL_IMU                    = 58
+DID_IMU3                        = 57
+DID_IMU                         = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
 DID_GPS_RTK_OPT                 = 61
@@ -87,15 +87,17 @@ DID_EVB_STATUS                  = 80
 DID_EVB_CONFIG                  = 81
 DID_EVB_DEBUG_ARRAY             = 82
 DID_EVB_RTOS_INFO               = 83
-DID_DUAL_IMU_RAW_MAG            = 84
-DID_DUAL_IMU_MAG                = 85
+DID_IMU3_MAG                    = 84
+DID_IMU_MAG                     = 85
 DID_PREINTEGRATED_IMU_MAG       = 86
-DID_GROUND_VEHICLE                = 87
+DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
+DID_EVB_DEV_INFO                = 93
+DID_CAL_SC3                     = 94
 
 NUM_DIDS                        = 96
 
@@ -143,24 +145,24 @@ did_name_lookup = {
  DID_DEBUG_STRING : "debugString",
  DID_RTOS_INFO : "rtosInfo",
  DID_DEBUG_ARRAY : "debugArray",
- DID_SENSORS_CAL1 : "sensorsCal1",
- DID_SENSORS_CAL2 : "sensorsCal2",
+#  DID_SENSORS_CAL1 : "sensorsCal1",
+#  DID_SENSORS_CAL2 : "sensorsCal2",
  DID_CAL_SC : "calSc",
  DID_CAL_SC1 : "calSc1",
  DID_CAL_SC2 : "calSc2",
  DID_SYS_SENSORS_SIGMA : "sysSensorsSigma",
  DID_SENSORS_ADC_SIGMA : "sensorsAdcSigma",
- DID_INS_DEV_1 : "insDev1",
+#  DID_INS_DEV_1 : "insDev1",
  DID_INL2_STATES : "inl2States",
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",
  DID_INL2_STATUS : "inl2Status",
  DID_INL2_MISC : "inl2Misc",
- DID_MAGNETOMETER : "magnetometer1",
+ DID_MAGNETOMETER : "magnetometer",
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
- DID_DUAL_IMU_RAW : "dualImuRaw",
- DID_DUAL_IMU : "dualImu",
+ DID_IMU3 : "imu3",
+ DID_IMU : "imu",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
  DID_GPS_RTK_OPT : "gpsRtkOpt",

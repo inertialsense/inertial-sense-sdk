@@ -32,14 +32,14 @@ extern "C"
 typedef struct
 {
 	com_manager_t			cm;
-	com_manager_status_t	cmBufStatus[NUM_COM_PORTS] = { 0 };
-	broadcast_msg_t			cmBufBcastMsg[MAX_NUM_BCAST_MSGS] = { 0 };
+	com_manager_status_t	cmBufStatus[NUM_COM_PORTS];
+	broadcast_msg_t			cmBufBcastMsg[MAX_NUM_BCAST_MSGS];
 	struct  
 	{
 		dev_info_t			devInfo;
 		nvm_flash_cfg_t		nvmFlashCfg;
 		ascii_msgs_t		asciiMsgs;
-	}						msgs = { 0 };
+	}						msgs;
 
 	// Used to simulate serial ports
 	ring_buf_t				portRxBuf;
@@ -97,7 +97,7 @@ void disableBroadcasts(CMHANDLE cmHandle, int pHandle)
 {
 }
 
-int prepDevInfo(CMHANDLE cmHandle, int pHandle)
+int prepDevInfo(CMHANDLE cmHandle, int pHandle, p_data_hdr_t* dataHdr)
 {
 	return 1;
 }

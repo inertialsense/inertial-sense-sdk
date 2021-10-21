@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 
 	// instead of the rmc preset (real-time message controller) you can request individual messages...
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-// 	inertialSense.BroadcastBinaryData(DID_DUAL_IMU, 10);
+// 	inertialSense.BroadcastBinaryData(DID_IMU, 10);
 
 
 	// utility class for display and ctrl-c handling

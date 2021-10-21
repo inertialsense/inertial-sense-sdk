@@ -393,7 +393,7 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
 		case DID_PREINTEGRATED_IMU:
-		case DID_DUAL_IMU:
+		case DID_IMU:
 		case DID_INL2_STATES:
 		case DID_GPS_BASE_RAW:
 			if( isTowMode )
@@ -588,7 +588,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	{
 	case DID_EVB_DEV_INFO:
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
-	case DID_DUAL_IMU:          str = DataToStringDualIMU(d.dualImu, data->hdr);        break;
+	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
 	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
 	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
@@ -902,7 +902,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
@@ -921,35 +921,26 @@ string cInertialSenseDisplay::DataToStringDualIMU(const dual_imu_t &imu, const p
 
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
-		for (int i = 0; i < 2; i++)
-		{
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f]",
-				imu.I[i].pqr[0] * C_RAD2DEG_F,
-				imu.I[i].pqr[1] * C_RAD2DEG_F,
-				imu.I[i].pqr[2] * C_RAD2DEG_F);
-		}
-		for (int i = 0; i < 2; i++)
-		{
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, ", acc[%5.1f,%5.1f,%5.1f]",
-				imu.I[i].acc[0], imu.I[i].acc[1], imu.I[i].acc[2]);
-		}
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f]",
+			imu.I.pqr[0] * C_RAD2DEG_F,
+			imu.I.pqr[1] * C_RAD2DEG_F,
+			imu.I.pqr[2] * C_RAD2DEG_F);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", acc[%5.1f,%5.1f,%5.1f]",
+			imu.I.acc[0], imu.I.acc[1], imu.I.acc[2]);
 	}
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
-		for (int i = 0; i < 2; i++)
-		{
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tPQR\t");
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
-				imu.I[i].pqr[0] * C_RAD2DEG_F,		// P angular rate
-				imu.I[i].pqr[1] * C_RAD2DEG_F,		// Q angular rate
-				imu.I[i].pqr[2] * C_RAD2DEG_F);		// R angular rate
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
-			ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
-				imu.I[i].acc[0],					// X acceleration
-				imu.I[i].acc[1],					// Y acceleration
-				imu.I[i].acc[2]);					// Z acceleration
-		}
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tPQR\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+			imu.I.pqr[0] * C_RAD2DEG_F,		// P angular rate
+			imu.I.pqr[1] * C_RAD2DEG_F,		// Q angular rate
+			imu.I.pqr[2] * C_RAD2DEG_F);		// R angular rate
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+			imu.I.acc[0],					// X acceleration
+			imu.I.acc[1],					// Y acceleration
+			imu.I.acc[2]);					// Z acceleration
 	}
 
 	return buf;
@@ -974,39 +965,24 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 
 	if (m_displayMode == DMODE_SCROLL)
 	{	// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta1[%6.3f,%6.3f,%6.3f], vel1[%6.3f,%6.3f,%6.3f]",
-			imu.theta1[0] * C_RAD2DEG_F,
-			imu.theta1[1] * C_RAD2DEG_F,
-			imu.theta1[2] * C_RAD2DEG_F,
-			imu.vel1[0], imu.vel1[1], imu.vel1[2]);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta2[%6.3f,%6.3f,%6.3f], vel2[%6.3f,%6.3f,%6.3f]",
-			imu.theta2[0] * C_RAD2DEG_F,
-			imu.theta2[1] * C_RAD2DEG_F,
-			imu.theta2[2] * C_RAD2DEG_F,
-			imu.vel2[0], imu.vel2[1], imu.vel2[2]);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", theta[%6.3f,%6.3f,%6.3f], vel[%6.3f,%6.3f,%6.3f]",
+			imu.theta[0] * C_RAD2DEG_F,
+			imu.theta[1] * C_RAD2DEG_F,
+			imu.theta[2] * C_RAD2DEG_F,
+			imu.vel[0], imu.vel[1], imu.vel[2]);
 	}
 	else
 	{	// Spacious format
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta1\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.theta1[0] * C_RAD2DEG_F,		// IMU1 P angular rate
-			imu.theta1[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
-			imu.theta1[2] * C_RAD2DEG_F);		// IMU1 R angular rate
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 theta2\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.theta2[0] * C_RAD2DEG_F,		// IMU2 P angular rate
-			imu.theta2[1] * C_RAD2DEG_F,		// IMU2 Q angular rate
-			imu.theta2[2] * C_RAD2DEG_F);		// IMU2 R angular rate
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel1\t");
+			imu.theta[0] * C_RAD2DEG_F,		// IMU1 P angular rate
+			imu.theta[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
+			imu.theta[2] * C_RAD2DEG_F);		// IMU1 R angular rate
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel\t");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-            imu.vel1[0],						// IMU1 X acceleration
-            imu.vel1[1],						// IMU1 Y acceleration
-            imu.vel1[2]);						// IMU1 Z acceleration
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU2 vel2\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
-			imu.vel2[0],						// IMU2 X acceleration
-			imu.vel2[1],						// IMU2 Y acceleration
-			imu.vel2[2]);						// IMU2 Z acceleration
+            imu.vel[0],						// IMU1 X acceleration
+            imu.vel[1],						// IMU1 Y acceleration
+            imu.vel[2]);						// IMU1 Z acceleration
 	}
 
 	return buf;
@@ -1435,12 +1411,16 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 #define SADC_WIDTH	5
 		for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
 		{
-			auto &mpu = sensorsADC.mpu[i];
-			ss << "\tmpu[" << i << "]: " << setprecision(0);
-			ss << "pqr[" << setw(SADC_WIDTH) << mpu.pqr[0] << "," << setw(SADC_WIDTH) << mpu.pqr[1] << "," << setw(SADC_WIDTH) << mpu.pqr[2] << "], ";
-			ss << "acc[" << setw(SADC_WIDTH) << mpu.acc[0] << "," << setw(SADC_WIDTH) << mpu.acc[1] << "," << setw(SADC_WIDTH) << mpu.acc[2] << "], ";
-			ss << "mag[" << setw(SADC_WIDTH) << mpu.mag[0] << "," << setw(SADC_WIDTH) << mpu.mag[1] << "," << setw(SADC_WIDTH) << mpu.mag[2] << "], ";
-			ss << "temp " << setprecision(3) << mpu.temp << ",";
+			auto &imu = sensorsADC.imu[i];
+			ss << "\timu[" << i << "]: " << setprecision(0);
+			ss << "pqr[" << setw(SADC_WIDTH) << imu.pqr[0] << "," << setw(SADC_WIDTH) << imu.pqr[1] << "," << setw(SADC_WIDTH) << imu.pqr[2] << "], ";
+			ss << "acc[" << setw(SADC_WIDTH) << imu.acc[0] << "," << setw(SADC_WIDTH) << imu.acc[1] << "," << setw(SADC_WIDTH) << imu.acc[2] << "], ";
+			ss << "temp " << setprecision(3) << imu.temp << ",";
+		}
+		for (size_t i = 0; i < NUM_MAG_DEVICES; ++i)
+		{
+			auto &mag = sensorsADC.mag[i];
+			ss << "mag[" << setw(SADC_WIDTH) << mag.mag[0] << "," << setw(SADC_WIDTH) << mag.mag[1] << "," << setw(SADC_WIDTH) << mag.mag[2] << "], ";
 			ss << "\n";
 		}
 	}
@@ -1448,12 +1428,16 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
 	{
 		for (size_t i = 0; i < NUM_IMU_DEVICES; ++i)
 		{
-			auto &mpu = sensorsADC.mpu[i];
+			auto &imu = sensorsADC.imu[i];
 			ss << "mpu[" << i << "]: " << setprecision(0);
-			ss << "pqr[" << mpu.pqr[0] << "," << mpu.pqr[1] << "," << mpu.pqr[2] << "], ";
-			ss << "acc[" << mpu.acc[0] << "," << mpu.acc[1] << "," << mpu.acc[2] << "], ";
-			ss << "mag[" << mpu.mag[0] << "," << mpu.mag[1] << "," << mpu.mag[2] << "], ";
-			ss << "temp " << setprecision(3) << mpu.temp << ",";
+			ss << "pqr[" << imu.pqr[0] << "," << imu.pqr[1] << "," << imu.pqr[2] << "], ";
+			ss << "acc[" << imu.acc[0] << "," << imu.acc[1] << "," << imu.acc[2] << "], ";
+			ss << "temp " << setprecision(3) << imu.temp << ",";
+		}
+		for (size_t i = 0; i < NUM_MAG_DEVICES; ++i)
+		{
+			auto &mag = sensorsADC.mag[i];
+			ss << "mag[" << mag.mag[0] << "," << mag.mag[1] << "," << mag.mag[2] << "], ";
 		}
 	}
 

@@ -104,10 +104,9 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
     gps2Raw = log2Data( log, itd.cGPSRaw, 'GPS2Raw')
     gpsBaseRaw = log2Data( log, itd.cGPSRaw, 'GPSBaseRaw')
     imu1 = log2Data( log, itd.cIMU, 'imu1' )
-    dimu = log2Data( log, itd.cIMU, 'dualImu' )
+    dimu = log2Data( log, itd.cIMU, 'imu' )
     dimu = log2Data( log, itd.cIMU, 'preintegratedImu' )
-    mag1 = log2Data( log, itd.cIMU, 'magnetometer1' )
-    mag2 = log2Data( log, itd.cIMU, 'magnetometer2' )
+    mag1 = log2Data( log, itd.cIMU, 'magnetometer' )
     magInfo = log2Data( log, itd.cSIMPLE, 'inl2MagObs')
     varInfo = log2Data( log, itd.cSIMPLE, 'inl2Variance')
     baro = log2Data( log, itd.cIMU, 'barometer' )
@@ -185,8 +184,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
     #         print("Dual IMU keys:", dimu.v.dtype.names)
     #     if mag1:
     #         print("Mag keys:", mag1.v.dtype.names)
-    #     if mag2:
-    #         print("Mag keys:", mag2.v.dtype.names)
     #     if baro:
     #         print("Baro keys:", baro.v.dtype.names)
     #     if gps1Pos:
@@ -233,8 +230,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
         if mag1:
             mag1.time = mag1.time + meanTowOffset - startTow
-        if mag2:
-            mag2.time = mag2.time + meanTowOffset - startTow
         if baro:
             baro.time = baro.time + meanTowOffset - startTow
 
@@ -1298,14 +1293,11 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         pt.labels('Sensors: Mag','gauss')
         if pe['sensorMag'] > 1:
             mag_1 = ft.smooth(mag1.v['mag'][:,:], pe['sensorMag'])
-            mag_2 = ft.smooth(mag2.v['mag'][:,:], pe['sensorMag'])
         else:
             mag_1 = mag1.v['mag'][:,:]
-            mag_2 = mag2.v['mag'][:,:]
 
         pt.plot3Axes(f, mag1.v['time'], mag_1 )
-        pt.plot3Axes(f, mag2.v['time'], mag_2 )
-        legend += ['mag 1','mag 2']
+        legend += ['mag 1']
         plt.legend(legend)
 
         saveFigures('sensorMagnetometer.svg', f)
@@ -1320,8 +1312,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             pt.labels('Sensors: Mag','gauss')
         mag[0].time = mag1.time
         mag[0].mag  = mag1.v['mag'][:,:]
-        mag[1].time = mag2.time
-        mag[1].mag  = mag2.v['mag'][:,:]
 
         if pe['sensorMag'] != 1:
             freq = pe['sensorAcc']
@@ -1330,11 +1320,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
         pt.plot3Axes(f, mag[0].time, mag[0].mag, xlim=xlim )
         legend += ['mag1']
-        if peCheck('sensorSeparate'):
-            plt.legend(legend); f += 1; legend = []
-            pt.labels('Sensors: Mag2','gauss')
-        pt.plot3Axes(f, mag[1].time, mag[1].mag, xlim=xlim )
-        legend += ['mag2']
         plt.legend(legend)
 
         saveFigures('sensorMag.svg', f)

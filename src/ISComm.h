@@ -43,13 +43,14 @@ extern "C" {
 // *****************************************************************************
 
 /** INS/AHRS */
-#define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 #define _DID_INS_LLA_EULER_NED		DID_INS_1				/** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
-#define _DID_INS_LLA_QN2B			DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
+#define _DID_INS_LLA_QN2B			DID_INS_2				/** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
+#define _DID_INS_LLA_QN2B_MSL		DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
+#define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 
 /** IMU */
-#define _DID_IMU_DUAL				DID_DUAL_IMU			/** (see dual_imu_t) Dual IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_IMU_PREINTEGRATED_IMU	DID_PREINTEGRATED_IMU	/** (see preintegrated_imu_t) Dual IMU output: Conning and sculling integrated at IMU update rate. */	
+#define _DID_IMU					DID_IMU					/** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
+#define _DID_IMU_PREINTEGRATED_IMU	DID_PREINTEGRATED_IMU	/** (see preintegrated_imu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
 
 /** GPS */
 #define _DID_GPS1_POS				DID_GPS1_POS			/** (see gps_pos_t) GPS output */
@@ -120,7 +121,7 @@ typedef enum
 // version 1: initial release
 // version 2: 24 bit checksum support
 // version 3: ioConfig change
-#define PROTOCOL_VERSION_CHAR1			(3)
+#define PROTOCOL_VERSION_CHAR1			(4)
 
 // Minor (in data_sets.h)
 // #define PROTOCOL_VERSION_CHAR2		0
