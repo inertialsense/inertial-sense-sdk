@@ -39,6 +39,8 @@ bool d_usartDMA_callback_cdc_enable(void);
 void d_usartDMA_callback_cdc_disable(void);
 void d_usartDMA_callback_cdc_tx_empty_notify(void);
 
+void XDMAC_usartDMA_Handler(void);
+
 /** 
  * \brief Write data on USART.  Returns number of bytes written.
  */

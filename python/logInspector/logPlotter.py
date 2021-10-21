@@ -38,8 +38,9 @@ class logPlot:
         self.d = 1
         self.setActiveSerials(self.log.serials)
 
-        setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
-
+        if len(self.log.data[0, DID_INS_2]):
+            setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
+            
     def setDownSample(self, dwns):
         self.d = dwns
 
@@ -128,8 +129,11 @@ class logPlot:
         fig.suptitle('NED Map - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         for d in self.active_devs:
+            lla = self.getData(d, DID_INS_2, 'lla')
+            if len(lla) == 0:
+                continue
             if refLla is None:
-                refLla = self.getData(d, DID_INS_2, 'lla')[0]
+                refLla = lla[0]
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])

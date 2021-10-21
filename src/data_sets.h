@@ -812,7 +812,7 @@ typedef struct PACKED
 	/** Position dilution of precision (unitless) */
 	float                   pDop;
 
-	/** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
+	/** Average of all non-zero satellite carrier to noise ratios (signal strengths) in dBHz */
 	float                   cnoMean;
 
 	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
@@ -1859,6 +1859,8 @@ enum eIoConfig
 	IO_CONFIG_G1G2_CAN_BUS                      = (int)0x00000004,
 	/** G1,G2 - General Communications on Ser2. Excludes GPS communications. */
 	IO_CONFIG_G1G2_COM2                         = (int)0x00000006,
+	/** G1,G2 - I2C */
+	IO_CONFIG_G1G2_I2C							= (int)0x00000008,
 	/** G1,G2 - MASK.  Note: This G1,G2 setting is overriden when GPS1 or GPS2 is configured to use Ser2. */
 	IO_CONFIG_G1G2_MASK                         = (int)0x0000000E,
 	/** G1,G2 - Default */
