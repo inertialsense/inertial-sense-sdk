@@ -484,7 +484,8 @@ void errorCheckImu3(imu3_t *di);
 
 // Condense triple IMUs down to one IMU
 int tripleToSingleImu(imu_t *result, const imu3_t *di);
-int tripleToSingleImu(imu_t *result, const imu3_t *di, bool *exclude);
+int tripleToSingleImu(imu_t *result, const imu3_t *di, bool *exclude); // for individual IMU exclusion
+void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
 
 // Duplicate one IMU to triple IMUs
 void singleToTripleImu(imu3_t *result, imu_t *imu);
