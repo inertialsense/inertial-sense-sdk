@@ -1442,18 +1442,21 @@ class logPlot:
                 if useTime:
                     temp = range(len(temp))
                 sensor = mpu[:,i]['lpfLsb'][name]
-                if name=='pqr':
-                    sensor *= RAD2DEG
 
                 if name=='acc' and sensor[:,2][0] > 4:
                     sensor[:,2] -= 19.6
 
+                if name=='pqr':
+                    scalar = RAD2DEG
+                else:
+                    scalar = 1.0
+
                 # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
-                ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] )
-                ax[1,i].plot(temp, sensor[:,1])
-                ax[2,i].plot(temp, sensor[:,2])
+                ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
+                ax[1,i].plot(temp, sensor[:,1]*scalar)
+                ax[2,i].plot(temp, sensor[:,2]*scalar)
                 if name=='acc':
-                    ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1))
+                    ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
