@@ -84,7 +84,7 @@
  *	0xE0000000- 0xFFFFFFFF System           -                  -
  */
 
-uint8_t g_hdw_detect;
+uint8_t g_hdw_detect;	// (see eEvbHdwDetectVersion)
 static VoidFuncPtrVoid s_pfnHandleBoardIoCfg = NULLPTR;
 
 

@@ -16,7 +16,7 @@
 #define FIRMWARE_VERSION_CHAR3  0                   // firmware specific revision
 
 
-extern uint8_t g_hdw_detect;
+extern uint8_t g_hdw_detect;    // (see eEvbHdwDetectVersion)
 
 
 
