@@ -1287,6 +1287,9 @@ typedef struct PACKED
 {                                       // Units only apply for calibrated data
 	f_t						mag[3];         // (uT)		Magnetometers
 } sensors_mag_t;
+
+typedef struct PACKED
+{                                       // Units only apply for calibrated data
 	f_t						pqr[3];         // (rad/s)	Gyros
 	f_t						acc[3];         // (m/s^2)	Accelerometers
 	f_t						mag[3];         // (uT)		Magnetometers
@@ -1306,8 +1309,10 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-	sensors_mpu_w_temp_t    lpfLsb;         // Low-passed filter of g_sensors.lsb
-	f_t						temp;			// (°C)	Temperature of MPU
+	f_t						lpfLsb[3];      // Low-pass filtered of g_sensors.lsb
+	f_t						lpfTemp;		// (°C) Low-pass filtered sensor temperature
+	f_t						k[3];			// Slope (moved from flash to here)
+	f_t						temp;			// (°C)	Temperature of sensor
 	f_t                     tempRampRate;   // (°C/s) Temperature ramp rate
 	uint32_t                tci;            // Index of current temperature compensation point
 	uint32_t                numTcPts;       // Total number of tc points
@@ -1316,11 +1321,13 @@ typedef struct PACKED
 
 typedef struct PACKED
 {                                       // Sensor temperature compensation
-	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
+	sensor_comp_unit_t		pqr[NUM_IMU_DEVICES];
+	sensor_comp_unit_t		acc[NUM_IMU_DEVICES];
+	sensor_comp_unit_t		mag[NUM_MAG_DEVICES];
 	uint32_t                sampleCount;    // Number of samples collected
-	uint32_t                calState;       // state machine
+	uint32_t                calState;       // state machine (see eSensorCalState)
 	f_t						alignAccel[3];  // Alignment acceleration
-	uint32_t				status;         // Used to control LED
+	uint32_t				status;         // Used to control LED (see eSensorCalStatus)
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS	4
