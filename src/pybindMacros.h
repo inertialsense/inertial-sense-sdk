@@ -40,8 +40,8 @@ PYBIND11_NUMPY_DTYPE(gps_rtk_misc_t, timeOfWeekMs, accuracyPos, accuracyCov, arT
 PYBIND11_NUMPY_DTYPE(io_t, timeOfWeekMs, gpioStatus);
 
 PYBIND11_NUMPY_DTYPE(sensors_t, mpu);
-PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, temp, tempRampRate, tci, numTcPts, dtTemp);
-PYBIND11_NUMPY_DTYPE(sensor_compensation_t, mpu, sampleCount, calState, alignAccel, status);
+PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, lpfTemp, k, temp, tempRampRate, tci, numTcPts, dtTemp);
+PYBIND11_NUMPY_DTYPE(sensor_compensation_t, pqr, acc, mag, sampleCount, calState, alignAccel, status);
 PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, mpu);
 
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, imu, mag, bar, barTemp, humidity, ana);
