@@ -265,34 +265,29 @@ int tripleToSingleImu(imu_t *result, const imu3_t *di, bool *exclude)
 
 void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)
 {
-	imu_t imu = {};
-	imu.time = di->time;
-	imu.status = di->status;
-
+	float w = 0.0f, a = 0.0f;
 	int cnt_gyro = 0, cnt_acc = 0;
 
 	for (int idev = 0; idev < 3; idev++)
 	{
 		if (!exclude_gyro[idev])
 		{
-			imu.I.pqr[iaxis] += di->I[idev].pqr[iaxis];
+			w += di->I[idev].pqr[iaxis];
 			cnt_gyro++;
 		}
 		if (!exclude_acc[idev])
 		{
-			imu.I.acc[iaxis] += di->I[idev].acc[iaxis];
+			a += di->I[idev].acc[iaxis];
 			cnt_acc++;
 		}
 	}
-	if (cnt_gyro > 0)
-	{
-		imu.I.pqr[iaxis] = imu.I.pqr[iaxis] / (float)cnt_gyro;
-	}
-	if (cnt_acc > 0)
-	{
-		imu.I.acc[iaxis] = imu.I.acc[iaxis] / (float)cnt_acc;
-	}
-	*result = imu;
+	if (cnt_gyro > 0) w = w / (float)cnt_gyro;
+	if (cnt_acc > 0)  a = a / (float)cnt_acc;
+
+	result->I.pqr[iaxis] = w;
+	result->I.acc[iaxis] = a;
+	result->time = di->time;
+	result->status = di->status;
 }
 
 
