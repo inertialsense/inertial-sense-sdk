@@ -91,11 +91,14 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     }
 
     cout << "found " << logger_.GetDeviceCount() << " devices\n";
+    vector<int> serialNumbers;
     for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
     {
         cout << logger_.GetDeviceInfo(i)->serialNumber << "\t";
+        serialNumbers.push_back(logger_.GetDeviceInfo(i)->serialNumber);
     }
     cout << endl;
+    serialNumbers_ = py::cast(serialNumbers);
 
     // python_parent_ = python_class;
     g_python_parent = python_class;
@@ -151,12 +154,12 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
         HANDLE_MSG( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc );
         // HANDLE_MSG( DID_FEATURE_BITS, dev_log_->featureBits );
-        // HANDLE_MSG( DID_SENSORS_IS1, dev_log_->sensorsIs1 );
-        // HANDLE_MSG( DID_SENSORS_IS2, dev_log_->sensorsIs2 );
-        // HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
+        HANDLE_MSG( DID_SENSORS_IS1, dev_log_->sensorsIs1 );
+        HANDLE_MSG( DID_SENSORS_IS2, dev_log_->sensorsIs2 );
+        HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
         HANDLE_MSG( DID_IO, dev_log_->io );
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
-        // HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
+        HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
         HANDLE_MSG( DID_GPS1_VEL, dev_log_->gps1Vel );
         HANDLE_MSG( DID_GPS2_VEL, dev_log_->gps2Vel );
         // HANDLE_MSG( DID_HDW_PARAMS, dev_log_->hdwParams );
@@ -167,8 +170,8 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_RTOS_INFO, dev_log_->rtosInfo );
         HANDLE_MSG( DID_DEBUG_STRING, dev_log_->debugString );
         HANDLE_MSG( DID_DEBUG_ARRAY, dev_log_->debugArray );
-        HANDLE_MSG( DID_SENSORS_CAL1, dev_log_->sensorsCal1 );
-        HANDLE_MSG( DID_SENSORS_CAL2, dev_log_->sensorsCal2 );
+        // HANDLE_MSG( DID_SENSORS_CAL1, dev_log_->sensorsCal1 );
+        // HANDLE_MSG( DID_SENSORS_CAL2, dev_log_->sensorsCal2 );
         // HANDLE_MSG( DID_CAL_SC, dev_log_->calSc );
         // HANDLE_MSG( DID_CAL_SC1, dev_log_->calSc1 );
         // HANDLE_MSG( DID_CAL_SC2, dev_log_->calSc2 );
@@ -178,12 +181,11 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_INL2_STATES, dev_log_->inl2States );
         HANDLE_MSG( DID_INL2_STATUS, dev_log_->inl2Status );
         // HANDLE_MSG( DID_INL2_MISC, dev_log_->inl2Misc );
-        HANDLE_MSG( DID_MAGNETOMETER_1, dev_log_->magnetometer );
-        HANDLE_MSG( DID_MAGNETOMETER_2, dev_log_->magnetometer );
+        HANDLE_MSG( DID_MAGNETOMETER, dev_log_->magnetometer );
         HANDLE_MSG( DID_BAROMETER, dev_log_->barometer );
         HANDLE_MSG( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos );
-        HANDLE_MSG( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw );
-        HANDLE_MSG( DID_DUAL_IMU, dev_log_->dualImu );
+        HANDLE_MSG( DID_IMU3, dev_log_->imu3 );
+        HANDLE_MSG( DID_IMU, dev_log_->imu );
         HANDLE_MSG( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo );
         HANDLE_MSG( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw );
         // HANDLE_MSG( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt );
@@ -196,7 +198,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS1_RAW, dev_log_->gps1Raw );
         HANDLE_MSG( DID_GPS2_RAW, dev_log_->gps2Raw );
         HANDLE_MSG( DID_WHEEL_ENCODER, dev_log_->wheelEncoder );
-        // HANDLE_MSG( DID_WHEEL_ENCODER_CONFIG, dev_log_->wheelEncoderConfig );
+        HANDLE_MSG( DID_GROUND_VEHICLE, dev_log_->groundVehicle );
         HANDLE_MSG( DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage );
         HANDLE_MSG( DID_SURVEY_IN, dev_log_->surveyIn );
         // HANDLE_MSG( DID_EVB2, dev_log_->evb2 );
@@ -241,12 +243,12 @@ void LogReader::forwardData(int id)
     forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, id );
     forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, id );
     // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, id );
-    // forward_message( DID_SENSORS_IS1, dev_log_->sensorsIs1, id );
-    // forward_message( DID_SENSORS_IS2, dev_log_->sensorsIs2, id );
-    // forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, id );
+    forward_message( DID_SENSORS_IS1, dev_log_->sensorsIs1, id );
+    forward_message( DID_SENSORS_IS2, dev_log_->sensorsIs2, id );
+    forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, id );
     forward_message( DID_IO, dev_log_->io, id );
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, id );
-    // forward_message( DID_SCOMP, dev_log_->scomp, id );
+    forward_message( DID_SCOMP, dev_log_->scomp, id );
     forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, id );
     forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, id );
     // forward_message( DID_HDW_PARAMS, dev_log_->hdwParams, id );
@@ -257,8 +259,8 @@ void LogReader::forwardData(int id)
     // forward_message( DID_RTOS_INFO, dev_log_->rtosInfo, id );
     forward_message( DID_DEBUG_STRING, dev_log_->debugString, id );
     forward_message( DID_DEBUG_ARRAY, dev_log_->debugArray, id );
-    forward_message( DID_SENSORS_CAL1, dev_log_->sensorsCal1, id );
-    forward_message( DID_SENSORS_CAL2, dev_log_->sensorsCal2, id );
+    // forward_message( DID_SENSORS_CAL1, dev_log_->sensorsCal1, id );
+    // forward_message( DID_SENSORS_CAL2, dev_log_->sensorsCal2, id );
     // forward_message( DID_CAL_SC, dev_log_->calSc, id );
     // forward_message( DID_CAL_SC1, dev_log_->calSc1, id );
     // forward_message( DID_CAL_SC2, dev_log_->calSc2, id );
@@ -268,12 +270,11 @@ void LogReader::forwardData(int id)
     forward_message( DID_INL2_STATES, dev_log_->inl2States, id );
     forward_message( DID_INL2_STATUS, dev_log_->inl2Status, id );
     // forward_message( DID_INL2_MISC, dev_log_->inl2Misc, id );
-    forward_message( DID_MAGNETOMETER_1, dev_log_->magnetometer, id );
-    forward_message( DID_MAGNETOMETER_2, dev_log_->magnetometer, id );
+    forward_message( DID_MAGNETOMETER, dev_log_->magnetometer, id );
     forward_message( DID_BAROMETER, dev_log_->barometer, id );
     forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, id );
-    forward_message( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw, id );
-    forward_message( DID_DUAL_IMU, dev_log_->dualImu, id );
+    forward_message( DID_IMU3, dev_log_->imu3, id );
+    forward_message( DID_IMU, dev_log_->imu, id );
     forward_message( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, id );
     forward_message( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, id );
     // forward_message( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt, id );
@@ -286,7 +287,7 @@ void LogReader::forwardData(int id)
     forward_message( DID_GPS1_RAW, dev_log_->gps1Raw, id );
     forward_message( DID_GPS2_RAW, dev_log_->gps2Raw, id );
     forward_message( DID_WHEEL_ENCODER, dev_log_->wheelEncoder, id );
-    // forward_message( DID_WHEEL_ENCODER_CONFIG, dev_log_->wheelEncoderConfig, id );
+    forward_message( DID_GROUND_VEHICLE, dev_log_->groundVehicle, id );
     forward_message( DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage, id );
     forward_message( DID_SURVEY_IN, dev_log_->surveyIn, id );
     // forward_message( DID_EVB2, dev_log_->evb2, id );
@@ -316,6 +317,11 @@ bool LogReader::load()
     return true;
 }
 
+pybind11::list LogReader::getSerialNumbers()
+{ 
+    return serialNumbers_; 
+}
+
 void LogReader::exitHack()
 {
     // Nasty hack
@@ -336,6 +342,7 @@ PYBIND11_MODULE(log_reader, m) {
             .def(py::init<>()) // constructor
             .def("init", &LogReader::init)
             .def("load", &LogReader::load)
+            .def("getSerialNumbers", &LogReader::getSerialNumbers)
             .def("exitHack", &LogReader::exitHack);
 
 #include "pybindMacros.h"

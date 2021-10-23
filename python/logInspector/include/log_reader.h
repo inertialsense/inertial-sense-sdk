@@ -52,12 +52,12 @@ struct DeviceLog
     vector<gps_rtk_misc_t> gps1RtkPosMisc;
     vector<gps_rtk_misc_t> gps1RtkCmpMisc;
     // vector<feature_bits_t> featureBits;
-    // vector<sensors_w_temp_t> sensorsIs1;
-    // vector<sensors_w_temp_t> sensorsIs2;
-    // vector<sensors_t> sensorsTcBias;
+    vector<sensors_w_temp_t> sensorsIs1;
+    vector<sensors_w_temp_t> sensorsIs2;
+    vector<sensors_t> sensorsTcBias;
     vector<io_t> io;
     // vector<sys_sensors_adc_t> sensorsAdc;
-    // vector<sensor_compensation_t> scomp;
+    vector<sensor_compensation_t> scomp;
     vector<gps_vel_t> gps1Vel;
     vector<gps_vel_t> gps2Vel;
     // vector<hdw_params_t> hdwParams;
@@ -70,7 +70,7 @@ struct DeviceLog
     vector<debug_array_t> debugArray;
     vector<sensors_mpu_w_temp_t> sensorsCal1;
     vector<sensors_mpu_w_temp_t> sensorsCal2;
-    // vector<sensor_cal_t> calSc;
+    // vector<sensor_cal_v1p2_t> calSc;
     // vector<sensor_cal_mpu_t> calSc1;
     // vector<sensor_cal_mpu_t> calSc2;
     vector<sys_sensors_t> sysSensorsSigma;
@@ -82,8 +82,8 @@ struct DeviceLog
     vector<magnetometer_t> magnetometer;
     vector<barometer_t> barometer;
     vector<gps_pos_t> gps1RtkPos;
-    vector<dual_imu_t> dualImuRaw;
-    vector<dual_imu_t> dualImu;
+    vector<imu3_t> imu3;
+    vector<imu_t> imu;
     vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     vector<gps_raw_wrapper_t> gpsBaseRaw {1};
 //    vector<gps_rtk_opt_t> gpsRtkOpt;
@@ -96,7 +96,7 @@ struct DeviceLog
     vector<gps_raw_wrapper_t> gps1Raw {1};
     vector<gps_raw_wrapper_t> gps2Raw {1};
     vector<wheel_encoder_t> wheelEncoder;
-    // vector<wheel_encoder_config_t> wheelEncoderConfig;
+    vector<ground_vehicle_t> groundVehicle;
     vector<diag_msg_t> diagnosticMessage;
     vector<survey_in_t> surveyIn;
 //    vector<evb2_t> evb2;
@@ -128,6 +128,7 @@ public:
     ~LogReader();
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
+    pybind11::list getSerialNumbers();
     void exitHack();
     
     template <typename T>
@@ -145,4 +146,6 @@ private:
 
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;
+    pybind11::list serialNumbers_; 
+
 };

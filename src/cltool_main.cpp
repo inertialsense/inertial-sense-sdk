@@ -146,8 +146,8 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 		d.ins1.theta;		// euler attitude
 		d.ins1.lla;			// latitude, longitude, altitude
 		break;
-	case DID_DUAL_IMU:				
-		d.dualImu;      
+	case DID_IMU:				
+		d.imu3;      
 		break;
 	case DID_PREINTEGRATED_IMU:		
 		d.pImu;    
@@ -155,10 +155,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	case DID_GPS_NAV:				
 		d.gpsNav;       
 		break;
-	case DID_MAGNETOMETER_1:		
-		d.mag;          
-		break;
-	case DID_MAGNETOMETER_2:		
+	case DID_MAGNETOMETER:		
 		d.mag;          
 		break;
 	case DID_BAROMETER:				
@@ -241,6 +238,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.command = SYS_CMD_SOFTWARE_RESET;
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+    }
+    if (g_commandLineOptions.softwareResetEvb)
+    {   // Issue software reset to EVB
+        uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
     }
 
 	if (g_commandLineOptions.roverConnection.length() != 0)

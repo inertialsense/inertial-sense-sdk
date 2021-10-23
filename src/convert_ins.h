@@ -15,8 +15,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "data_sets.h"
 
-void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result);
-void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result);
-void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result);
+void convertIns1ToIns2(ins_1_t* ins1, ins_2_t* result);
+void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result, double *refLla=NULL);
+void convertIns3ToIns1(ins_3_t *ins3, ins_1_t *result, double *refLla=NULL);
+void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result, double *refLla=NULL);
 
 #endif //IS_SDK_CONVERT_INS_H_

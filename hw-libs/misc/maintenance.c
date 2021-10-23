@@ -229,5 +229,5 @@ void save_persistent_messages(void)
 	// Copy CAN
 	g_nvmInternalFlashCfg->startupCAN = g_CAN;
 
-	nvr_flash_config_write_needed_enable();     
+ 	nvr_flash_config_write_needed_enable();     
 }

@@ -465,14 +465,17 @@ void running_mean_filter_f64( double mean[], float input[], int arraySize, int s
 
 
 // Look for error in dual IMU data
-void errorCheckDualImu(dual_imu_ok_t *di);
+void errorCheckImu3(imu3_t *di);
 
-// Condenses dual IMUs down to one IMU
-void dualToSingleImu(imu_t *result, const dual_imu_ok_t *di);
+// Condense triple IMUs down to one IMU
+void tripleToSingleImu(imu_t *result, const imu3_t *di);
+
+// Duplicate one IMU to triple IMUs
+void singleToTripleImu(imu3_t *result, imu_t *imu);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
-int preintegratedImuToIMU(dual_imu_t *imu, const preintegrated_imu_t *imuInt);
-int imuToPreintegratedImu(preintegrated_imu_t *pImu, const dual_imu_t *imu, float dt);
+int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *imuInt);
+int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt);
 
 
 /** 
@@ -482,8 +485,7 @@ int imuToPreintegratedImu(preintegrated_imu_t *pImu, const dual_imu_t *imu, floa
  * \param imu			Gyro and accelerometer sample.
  * \param imuLast		Previous gyro and accelerometer sample.
  */
-void integrateImu( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast, bool enableIMU1, bool enableIMU2 );
-
+void integrateImu( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast );
 
 
 /** 

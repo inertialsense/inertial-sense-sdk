@@ -94,12 +94,11 @@ public:
 	string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
  	string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
 	string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
-	string DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
-	string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);
+	string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
+	string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
 	string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
-	string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
 	string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const string didName);
 	string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr, const string didName);
 	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr, const string didName);

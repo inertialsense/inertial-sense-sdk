@@ -133,6 +133,9 @@ void nvr_slow_maintenance(void);
 
 int error_check_config(evb_flash_cfg_t *cfg);
 
+void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4]);
+
+
 #ifdef __cplusplus
 }
 #endif

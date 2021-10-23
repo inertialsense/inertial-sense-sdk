@@ -84,7 +84,7 @@
  *	0xE0000000- 0xFFFFFFFF System           -                  -
  */
 
-uint8_t g_hdw_detect;
+uint8_t g_hdw_detect;	// (see eEvbHdwDetectVersion)
 static VoidFuncPtrVoid s_pfnHandleBoardIoCfg = NULLPTR;
 
 
@@ -570,7 +570,7 @@ void board_IO_config(void)
 
 
 
-void board_init(void)
+void board_init()
 {
 	// Hardware Detection - PCB version
 	ioport_set_pin_dir(EVB_HDW_DETECT_0_GPIO, IOPORT_DIR_INPUT);
