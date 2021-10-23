@@ -65,7 +65,7 @@ typedef struct
 	uint8_t					tx_buf[I2C_BUF_SIZE_TX];
 } i2c_t;
 
-extern i2c_t i2c0;
+extern i2c_t sn_i2c;
 
 int i2c_master_get_defaults(i2c_t *init);
 int i2c_master_init(i2c_t *init);
