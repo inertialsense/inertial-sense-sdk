@@ -45,8 +45,6 @@ PYBIND11_NUMPY_DTYPE(sensor_compensation_t, pqr, acc, mag, sampleCount, calState
 PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, mpu);
 
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, imu, mag, bar, barTemp, humidity, ana);
-
-PYBIND11_NUMPY_DTYPE(gps_vel_t, timeOfWeekMs, vel, sAcc, status);
 PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
 PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc);
 PYBIND11_NUMPY_DTYPE(inl2_status_t, ahrs, zero_accel, zero_angrate, accel_motion, rot_motion, zero_vel, ahrs_gps_cnt, att_err, att_coarse, att_aligned, att_aligning, start_proc_done, mag_cal_good, mag_cal_done, stat_magfield);
@@ -70,7 +68,6 @@ PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTim
 // PYBIND11_NUMPY_DTYPE(evb_flash_cfg_t, size, checksum, key, cbPreset, reserved1, cbf, cbOptions, bits, radioPID, radioNID, radioPowerLevel, wifi, server, encoderTickToWheelRad, CANbaud_kbps, can_receive_address, uinsComPort, uinsAuxPort, reserved2, portOptions, h3sp330BaudRate, h4xRadioBaudRate, h8gpioBaudRate);
 PYBIND11_NUMPY_DTYPE(debug_array_t, i, f, lf);
 PYBIND11_NUMPY_DTYPE(debug_string_t, s);
-// PYBIND11_NUMPY_DTYPE(evb_rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
 // PYBIND11_NUMPY_DTYPE(imu_mag_t, imu, mag);
 // PYBIND11_NUMPY_DTYPE(pimu_mag_t, pimu, mag);
 // PYBIND11_NUMPY_DTYPE(pos_measurement_t, timeOfWeek, ecef, psi, accuracyCovUD);
