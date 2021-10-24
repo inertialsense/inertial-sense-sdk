@@ -680,68 +680,68 @@ class logPlot:
 
         self.saveFig(fig, 'rtkRel')
 
-    def loadGyros(self, d):
-        return self.loadIMU(d, 0)
+    def loadGyros(self, device):
+        return self.loadIMU(device, 0)
 
-    def loadAccels(self, d):
-        return self.loadIMU(d, 1)
+    def loadAccels(self, device):
+        return self.loadIMU(device, 1)
 
-    def loadIMU(self, d, accelSensor):   # 0 = gyro, 1 = accelerometer
-        result1 = []
-        result2 = []
-        result3 = []
+    def loadIMU(self, device, accelSensor):   # 0 = gyro, 1 = accelerometer
+        imu1 = []
+        imu2 = []
+        imu3 = []
 
         if accelSensor==0:
-            result1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta')
+            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'theta'))
         else:
-            result1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel')
+            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'vel'))
 
-        if np.shape(result1)[0] != 0:  # DID_PREINTEGRATED_IMU
-            time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
-            dt = time[1:] - time[:-1]
-            dt = np.append(dt, dt[-1])
+        if np.shape(imu1)[0] != 0:  # DID_PREINTEGRATED_IMU
+            time = self.getData(device, DID_PREINTEGRATED_IMU, 'time')
+            dt = self.getData(device, DID_PREINTEGRATED_IMU, 'dt') 
+            # dt = time[1:] - time[:-1]
+            # dt = np.append(dt, dt[-1])
             # Convert from preintegrated IMU to IMU.
             for i in range(3):
-                result1[:, i] /= dt
+                imu1[:, i] /= dt
 
         else:   # DID_IMU
-            time = self.getData(d, DID_IMU, 'time')
+            time = self.getData(device, DID_IMU, 'time')
 
             if len(time) != 0:
-                I = self.getData(d, DID_IMU, 'I')
+                I = self.getData(device, DID_IMU, 'I')
                 dt = time[1:] - time[:-1]
                 dt = np.append(dt, dt[-1])
-                result1 = []
+                imu1 = []
                 for sample in range(0, len(I)):
-                    result1.append(I[sample][accelSensor])
-                result1 = np.array(result1)
+                    imu1.append(I[sample][accelSensor])
+                imu1 = np.array(imu1)
 
             else:   # DID_IMU3
-                time = self.getData(d, DID_IMU3, 'time')
+                time = self.getData(device, DID_IMU3, 'time')
 
                 if len(time) != 0:
-                    I = self.getData(d, DID_IMU3, 'I')
-                    imuStatus = self.getData(d, DID_IMU3, 'status')
+                    I = self.getData(device, DID_IMU3, 'I')
+                    imuStatus = self.getData(device, DID_IMU3, 'status')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
-                    result1 = []
-                    result2 = []
-                    result3 = []
+                    imu1 = []
+                    imu2 = []
+                    imu3 = []
                     if (imuStatus[0] & (0x00010000<<accelSensor)):     # Gyro or accel 1
                         for sample in range(0, len(I)):
-                            result1.append(I[sample][0][accelSensor])
+                            imu1.append(I[sample][0][accelSensor])
                     if (imuStatus[0] & (0x00040000<<accelSensor)):     # Gyro or accel 2
                         for sample in range(0, len(I)):
-                            result2.append(I[sample][1][accelSensor])
+                            imu2.append(I[sample][1][accelSensor])
                     if (imuStatus[0] & (0x00100000<<accelSensor)):     # Gyro or accel 3
                         for sample in range(0, len(I)):
-                            result3.append(I[sample][2][accelSensor])
-                    result1 = np.array(result1)
-                    result2 = np.array(result2)
-                    result3 = np.array(result3)
+                            imu3.append(I[sample][2][accelSensor])
+                    imu1 = np.array(imu1)
+                    imu2 = np.array(imu2)
+                    imu3 = np.array(imu3)
 
-        return (time, dt, result1, result2, result3)
+        return (time, dt, imu1, imu2, imu3)
 
     def imuPQR(self, fig=None):
         if fig is None:
