@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "d_dma.h"
 #include "conf_d_i2c.h"
 #include "twihs.h"
+#include "debug_gpio.h"
 
 #include <stdbool.h>
 
@@ -24,7 +25,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-#define I2C_BUF_SIZE_TX	256	
+#define I2C_BUF_SIZE_TX	256	// MUST be a multiple of 4 (8-bit writes have to fit into 32-bit blocks for pre-tx cache clear to work)
+#define I2C_BUF_SIZE_RX 256	// MUST be a multiple of 4 (8-bit reads have to fit into 32-bit blocks for post-rx cache invalidate to work)
 
 enum
 {
@@ -58,11 +60,12 @@ typedef struct
 	dma_channel_config_t	tx_dma;
 	twihs_options_t 		cfg;
 	uint8_t					tx_last_byte;
-	uint8_t					tx_status;
-	uint8_t					rx_status;
-	uint8_t					*rx_buf;
+	volatile uint8_t		tx_status;
+	volatile uint8_t		rx_status;
+	uint8_t					*rx_buf_dest;	// Destination for data to be copied to after read
 	uint8_t					rx_len;
-	uint8_t					tx_buf[I2C_BUF_SIZE_TX];
+	uint8_t					tx_buf[I2C_BUF_SIZE_TX] __attribute__((aligned(32)));
+	uint8_t					rx_buf[I2C_BUF_SIZE_RX] __attribute__((aligned(32)));
 } i2c_t;
 
 extern i2c_t sn_i2c;
