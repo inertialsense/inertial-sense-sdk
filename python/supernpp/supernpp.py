@@ -73,7 +73,7 @@ class SuperNPP():
 		### Compute RMS ##################################################
 		if self.computeRMS:
 			for subdir in self.subdirs:
-				sdir = subdir / "post_processed"
+				sdir = subdir + "/post_processed"
 				self.log.load(sdir)
 
 				# Compute and output RMS Report
