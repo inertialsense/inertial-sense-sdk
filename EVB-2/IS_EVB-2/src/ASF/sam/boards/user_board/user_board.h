@@ -75,11 +75,14 @@
 #define EVB_HDW_DETECT_1_GPIO       (PIO_PC1_IDX)
 #define EVB_HDW_DETECT_2_GPIO       (PIO_PC2_IDX)
 
-#define HDW_DETECT_VER_EVB_2_0_0	0
-#define HDW_DETECT_VER_EVB_2_0_1	1
-#define HDW_DETECT_VER_EVB_2_1_0	2
-#define HDW_DETECT_VER_EVB_2_1_1	3
-#define HDW_DETECT_VER_EVB_2_2_0	4
+enum eEvbHdwDetectVersion
+{
+    HDW_DETECT_VER_EVB_2_0_0 = 0,
+    HDW_DETECT_VER_EVB_2_0_1 = 1,
+    HDW_DETECT_VER_EVB_2_1_0 = 2,
+    HDW_DETECT_VER_EVB_2_1_1 = 3,
+    HDW_DETECT_VER_EVB_2_2_0 = 4,
+};
 
 // uINS Ser0 UART
 #define UART_INS_SER0_RXD_PIN       (PIO_PA5_IDX)

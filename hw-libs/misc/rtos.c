@@ -414,7 +414,7 @@ void EFC_Handler    (void) { for (;;); }
 #ifdef _SAME70_HSMCI_INSTANCE_
 void HSMCI_Handler  (void) { for (;;); }
 #endif /* _SAME70_HSMCI_INSTANCE_ */
-void TWIHS0_Handler (void) { for (;;); }
+//void TWIHS0_Handler (void) { for (;;); }
 void TWIHS1_Handler (void) { for (;;); }
 //void SPI0_Handler   (void) { for (;;); }
 void SSC_Handler    (void) { for (;;); }

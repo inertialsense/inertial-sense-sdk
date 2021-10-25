@@ -52,12 +52,12 @@ struct DeviceLog
     vector<gps_rtk_misc_t> gps1RtkPosMisc;
     vector<gps_rtk_misc_t> gps1RtkCmpMisc;
     // vector<feature_bits_t> featureBits;
-    // vector<sensors_w_temp_t> sensorsIs1;
-    // vector<sensors_w_temp_t> sensorsIs2;
-    // vector<sensors_t> sensorsTcBias;
+    vector<sensors_w_temp_t> sensorsIs1;
+    vector<sensors_w_temp_t> sensorsIs2;
+    vector<sensors_t> sensorsTcBias;
     vector<io_t> io;
     // vector<sys_sensors_adc_t> sensorsAdc;
-    // vector<sensor_compensation_t> scomp;
+    vector<sensor_compensation_t> scomp;
     vector<gps_vel_t> gps1Vel;
     vector<gps_vel_t> gps2Vel;
     // vector<hdw_params_t> hdwParams;
@@ -128,6 +128,7 @@ public:
     ~LogReader();
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
+    pybind11::list getSerialNumbers();
     void exitHack();
     
     template <typename T>
@@ -145,4 +146,6 @@ private:
 
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;
+    pybind11::list serialNumbers_; 
+
 };

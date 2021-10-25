@@ -38,8 +38,9 @@ class logPlot:
         self.d = 1
         self.setActiveSerials(self.log.serials)
 
-        setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
-
+        if len(self.log.data[0, DID_INS_2]):
+            setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
+            
     def setDownSample(self, dwns):
         self.d = dwns
 
@@ -128,8 +129,11 @@ class logPlot:
         fig.suptitle('NED Map - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         for d in self.active_devs:
+            lla = self.getData(d, DID_INS_2, 'lla')
+            if len(lla) == 0:
+                continue
             if refLla is None:
-                refLla = self.getData(d, DID_INS_2, 'lla')[0]
+                refLla = lla[0]
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
@@ -676,68 +680,68 @@ class logPlot:
 
         self.saveFig(fig, 'rtkRel')
 
-    def loadGyros(self, d):
-        return self.loadIMU(d, 0)
+    def loadGyros(self, device):
+        return self.loadIMU(device, 0)
 
-    def loadAccels(self, d):
-        return self.loadIMU(d, 1)
+    def loadAccels(self, device):
+        return self.loadIMU(device, 1)
 
-    def loadIMU(self, d, accelSensor):   # 0 = gyro, 1 = accelerometer
-        result1 = []
-        result2 = []
-        result3 = []
+    def loadIMU(self, device, accelSensor):   # 0 = gyro, 1 = accelerometer
+        imu1 = []
+        imu2 = []
+        imu3 = []
 
         if accelSensor==0:
-            result1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta')
+            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'theta'))
         else:
-            result1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel')
+            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'vel'))
 
-        if np.shape(result1)[0] != 0:  # DID_PREINTEGRATED_IMU
-            time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
-            dt = time[1:] - time[:-1]
-            dt = np.append(dt, dt[-1])
+        if np.shape(imu1)[0] != 0:  # DID_PREINTEGRATED_IMU
+            time = self.getData(device, DID_PREINTEGRATED_IMU, 'time')
+            dt = self.getData(device, DID_PREINTEGRATED_IMU, 'dt') 
+            # dt = time[1:] - time[:-1]
+            # dt = np.append(dt, dt[-1])
             # Convert from preintegrated IMU to IMU.
             for i in range(3):
-                result1[:, i] /= dt
+                imu1[:, i] /= dt
 
         else:   # DID_IMU
-            time = self.getData(d, DID_IMU, 'time')
+            time = self.getData(device, DID_IMU, 'time')
 
             if len(time) != 0:
-                I = self.getData(d, DID_IMU, 'I')
+                I = self.getData(device, DID_IMU, 'I')
                 dt = time[1:] - time[:-1]
                 dt = np.append(dt, dt[-1])
-                result1 = []
+                imu1 = []
                 for sample in range(0, len(I)):
-                    result1.append(I[sample][accelSensor])
-                result1 = np.array(result1)
+                    imu1.append(I[sample][accelSensor])
+                imu1 = np.array(imu1)
 
             else:   # DID_IMU3
-                time = self.getData(d, DID_IMU3, 'time')
+                time = self.getData(device, DID_IMU3, 'time')
 
                 if len(time) != 0:
-                    I = self.getData(d, DID_IMU3, 'I')
-                    imuStatus = self.getData(d, DID_IMU3, 'status')
+                    I = self.getData(device, DID_IMU3, 'I')
+                    imuStatus = self.getData(device, DID_IMU3, 'status')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
-                    result1 = []
-                    result2 = []
-                    result3 = []
+                    imu1 = []
+                    imu2 = []
+                    imu3 = []
                     if (imuStatus[0] & (0x00010000<<accelSensor)):     # Gyro or accel 1
                         for sample in range(0, len(I)):
-                            result1.append(I[sample][0][accelSensor])
+                            imu1.append(I[sample][0][accelSensor])
                     if (imuStatus[0] & (0x00040000<<accelSensor)):     # Gyro or accel 2
                         for sample in range(0, len(I)):
-                            result2.append(I[sample][1][accelSensor])
+                            imu2.append(I[sample][1][accelSensor])
                     if (imuStatus[0] & (0x00100000<<accelSensor)):     # Gyro or accel 3
                         for sample in range(0, len(I)):
-                            result3.append(I[sample][2][accelSensor])
-                    result1 = np.array(result1)
-                    result2 = np.array(result2)
-                    result3 = np.array(result3)
+                            imu3.append(I[sample][2][accelSensor])
+                    imu1 = np.array(imu1)
+                    imu2 = np.array(imu2)
+                    imu3 = np.array(imu3)
 
-        return (time, dt, result1, result2, result3)
+        return (time, dt, imu1, imu2, imu3)
 
     def imuPQR(self, fig=None):
         if fig is None:
@@ -1382,10 +1386,86 @@ class logPlot:
             ax[7,0].plot(time, wheelConfig['radius'])
             ax[7,1].plot(time, wheelConfig['track_width'])
 
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
         for a in ax:
             for b in a:
                 b.grid(True)
-            
+
+    def sensorCompGyr(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'pqr')
+
+    def sensorCompAcc(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'acc')
+
+    def sensorCompGyrTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        self.sensorCompGen(fig, 'pqr', useTime=True)
+
+    def sensorCompAccTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'acc', useTime=True)
+
+
+    def sensorCompGen(self, fig, name, useTime=False):
+        fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(4, 2, sharex=True)
+
+        for i in range(2):
+            ax[0, i].set_title('X %s %d' % (name, i))
+            ax[1, i].set_title('Y %s %d' % (name, i))
+            ax[2, i].set_title('Z %s %d' % (name, i))
+            ax[3, i].set_title('Magnitude %s %d' % (name, i))
+            for d in range(3):
+                if useTime:
+                    ax[d,i].set_xlabel("Time (s)")
+                else:
+                    ax[d,i].set_xlabel("Temperature (C)")
+                if name=='pqr':
+                    ax[d,i].set_ylabel("Gyro (deg/s)")
+                else:
+                    ax[d,i].set_ylabel("Accel (m/s^2)")
+
+        for d in self.active_devs:
+            mpu = self.getData(d, DID_SCOMP, 'mpu')
+
+            for i in range(2):
+                temp = mpu[:,i]['lpfLsb']['temp']
+                if useTime:
+                    temp = range(len(temp))
+                sensor = mpu[:,i]['lpfLsb'][name]
+
+                if name=='acc' and sensor[:,2][0] > 4:
+                    sensor[:,2] -= 19.6
+
+                if name=='pqr':
+                    scalar = RAD2DEG
+                else:
+                    scalar = 1.0
+
+                # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
+                ax[1,i].plot(temp, sensor[:,1]*scalar)
+                ax[2,i].plot(temp, sensor[:,2]*scalar)
+                if name=='acc':
+                    ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
+
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+
     def showFigs(self):
         if self.show:
             plt.show()
