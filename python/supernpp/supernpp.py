@@ -73,7 +73,7 @@ class SuperNPP():
 		### Compute RMS ##################################################
 		if self.computeRMS:
 			for subdir in self.subdirs:
-				sdir = subdir + "/post_processed"
+				sdir = subdir / "post_processed"
 				self.log.load(sdir)
 
 				# Compute and output RMS Report
@@ -187,6 +187,9 @@ if __name__ == "__main__":
 	# directory = os.path.join('C:/','_IS','goldenlogs','AHRS')
 	# directory = os.path.join('C:/','_IS','goldenlogs')
 	# directory = 'C:/_IS/goldenlogs'
+
+	# serials = ""
+	# directory = 'D:/Dropbox (Inertial Sense)/ISD/logs/202110/20211022_14_NAV_Drive_uins4_branch/20211022_145320'
 
 	if 'directory' not in locals():
 		print("First parameter must be directory!")
