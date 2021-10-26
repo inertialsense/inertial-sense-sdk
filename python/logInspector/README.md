@@ -16,7 +16,7 @@ python3 setup.py build_ext --inplace
 
 ## Running
 
-### To run logInspector open a shell and navigate to the logInspector directory and enter the folloing command:
+### To run logInspector open a shell and navigate to the logInspector directory and enter the following command:
 ``` bash
 python logInspector.py
 ```
