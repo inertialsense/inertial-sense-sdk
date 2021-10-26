@@ -708,11 +708,11 @@ class logPlot:
             imu1 = np.array(imu1)
         else:  # DID_PREINTEGRATED_IMU
             if index==0:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
+                imu0 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'theta1'))
+                imu1 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'theta2'))
             else:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
+                imu0 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel1'))
+                imu1 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel2'))
             time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
             # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
             dt = time[1:] - time[:-1]
