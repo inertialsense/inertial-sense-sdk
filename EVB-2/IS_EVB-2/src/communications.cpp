@@ -308,7 +308,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins1.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins1.timeOfWeek*1000);
 		break;
 	                    
 	case DID_INS_2:
@@ -316,21 +316,21 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		g_msg.ins2 = d.ins2;
 		g_status.week = g_msg.ins2.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins2.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins2.timeOfWeek*1000);
 		break;
 
 	case DID_INS_3:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_3_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins3.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins3.timeOfWeek*1000);
 		break;
 
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
 		g_status.week = d.ins4.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins4.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins4.timeOfWeek*1000);
 		break;
 	}
 	

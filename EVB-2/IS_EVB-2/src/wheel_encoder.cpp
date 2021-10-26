@@ -52,7 +52,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		
 		// Call read encoders
 		g_wheelEncoder.timeOfWeek = time_seclf();
-		g_wheelEncoderTimeMs = (uint32_t)(g_wheelEncoder.timeOfWeek*1000.0);
+		g_wheelEncoderTimeMs = (uint32_t)round(g_wheelEncoder.timeOfWeek*1000.0);
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
 		quadEncReadPeriodAll(&periodL, &periodR);
 
