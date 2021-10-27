@@ -15,7 +15,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "compiler.h"
 #include "d_dma.h"
-#include "conf_d_i2c.h"
 #include "twihs.h"
 #include "debug_gpio.h"
 
