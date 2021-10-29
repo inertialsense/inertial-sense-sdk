@@ -116,13 +116,14 @@ void vApplicationIdleHook(void)
 #endif
 }
 
-
+#ifndef uINS_5
 void vApplicationTickHook(void)
 {
-#if !defined(PLATFORM_IS_EVB_2) && !defined(STM32L452xx)
+#if !defined(PLATFORM_IS_EVB_2)
     DBGPIO_TOGGLE(DBG_RTOS_TICK_HOOK_PIN);  // Debug used to monitor RTOS tick execution
 #endif
 }
+#endif
 
 #ifndef STM32L452xx	// TODO: Implement these functions for STM32L452xx
 static void setGpbrWithTaskInfo(void)
