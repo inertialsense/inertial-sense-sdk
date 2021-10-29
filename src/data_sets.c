@@ -844,3 +844,4 @@ int satNumCalc(int gnssID, int svID) {
 	int prn = svID + (sys == SYS_QZS ? 192 : 0);
 	return satNo(sys, prn);
 }
+
