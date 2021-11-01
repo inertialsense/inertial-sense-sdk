@@ -20,6 +20,7 @@ extern "C" {
 #include "../ASF/sam/drivers/usart/usart.h"
 #include "conf_d_usartDMA.h"
 
+// This is a mirror of port_monitor_helper_t in d_usart.h in the uINS-5 project
 typedef struct
 {
 	uint32_t                timeMsLast;

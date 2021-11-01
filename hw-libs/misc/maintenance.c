@@ -1,14 +1,15 @@
+#ifndef uINS_5
 #include <asf.h>
+#include "bootloaderApp.h"
+#endif
 #include "misc/rtos.h"
 #include "maintenance.h"
 #include "d_flash.h"
-#include "bootloaderApp.h"
 #include "globals.h"
-
-
 
 void led_maintenance(void)
 {
+#ifndef uINS_5
 	if( g_nvmFlashCfg->sysCfgBits & SYS_CFG_BITS_DISABLE_LEDS )
 	{
 		LEDS_ALL_OFF();
@@ -172,11 +173,13 @@ void led_maintenance(void)
 		}			
 	}			
 #endif	
+#endif	// uINS_5
 }
 
 
 void led_sys_heartbeat(void)
 {
+#ifndef uINS_5
 #if LED_SCHEME==LED_SCHEME_BLINK
 	// Pulse LED status
 	if( ++g_led.heartbeat_cnt >= 100 )
@@ -194,6 +197,7 @@ void led_sys_heartbeat(void)
 #else
 	// Breathing LED status
 #endif	
+#endif // uINS_5
 }
 
 
@@ -228,6 +232,7 @@ void save_persistent_messages(void)
     }   
 	// Copy CAN
 	g_nvmInternalFlashCfg->startupCAN = g_CAN;
-
+#ifndef uINS_5 // Fix later
  	nvr_flash_config_write_needed_enable();     
+#endif
 }
