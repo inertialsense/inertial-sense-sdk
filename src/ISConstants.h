@@ -180,9 +180,6 @@ extern void vPortFree(void* pv);
 
 #endif // defined(_MSC_VER)
 
-#define DBGPIO_START(pin)
-#define DBGPIO_END(pin)
-
 #if defined(PLATFORM_IS_EVB_2)
 #define _MKDIR(dir) f_mkdir(dir)
 #define _RMDIR(dir) f_unlink(dir)
