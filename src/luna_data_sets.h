@@ -221,7 +221,10 @@ typedef enum
 
 	/** Wheel encoder fault */
 	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
-	
+
+	/** Mower blade on */
+	EVB_LUNA_STATUS_MOWER_BLADE_ON						= 0x00010000,
+
 	/** Axis is in an invalid state */
 	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
 	
