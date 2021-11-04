@@ -40,11 +40,7 @@ class logPlot:
 
         if len(self.log.data[0, DID_INS_2]):
             setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
-<<<<<<< HEAD
-
-=======
             
->>>>>>> origin/development
     def setDownSample(self, dwns):
         self.d = dwns
 
@@ -1406,7 +1402,6 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
-<<<<<<< HEAD
     def wheelControllerTime(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1512,7 +1507,6 @@ class logPlot:
             ax.plot(velLin, effEst, 'r')
 
             return c
-=======
     def sensorCompGyr(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1584,7 +1578,6 @@ class logPlot:
         for a in ax:
             for b in a:
                 b.grid(True)
->>>>>>> origin/development
 
 
     def showFigs(self):
