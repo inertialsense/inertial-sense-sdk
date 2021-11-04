@@ -91,11 +91,14 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     }
 
     cout << "found " << logger_.GetDeviceCount() << " devices\n";
+    vector<int> serialNumbers;
     for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
     {
         cout << logger_.GetDeviceInfo(i)->serialNumber << "\t";
+        serialNumbers.push_back(logger_.GetDeviceInfo(i)->serialNumber);
     }
     cout << endl;
+    serialNumbers_ = py::cast(serialNumbers);
 
     // python_parent_ = python_class;
     g_python_parent = python_class;
@@ -151,12 +154,12 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
         HANDLE_MSG( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc );
         // HANDLE_MSG( DID_FEATURE_BITS, dev_log_->featureBits );
-        // HANDLE_MSG( DID_SENSORS_IS1, dev_log_->sensorsIs1 );
-        // HANDLE_MSG( DID_SENSORS_IS2, dev_log_->sensorsIs2 );
-        // HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
+        HANDLE_MSG( DID_SENSORS_IS1, dev_log_->sensorsIs1 );
+        HANDLE_MSG( DID_SENSORS_IS2, dev_log_->sensorsIs2 );
+        HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
         HANDLE_MSG( DID_IO, dev_log_->io );
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
-        // HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
+        HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
         HANDLE_MSG( DID_GPS1_VEL, dev_log_->gps1Vel );
         HANDLE_MSG( DID_GPS2_VEL, dev_log_->gps2Vel );
         // HANDLE_MSG( DID_HDW_PARAMS, dev_log_->hdwParams );
@@ -241,12 +244,12 @@ void LogReader::forwardData(int id)
     forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, id );
     forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, id );
     // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, id );
-    // forward_message( DID_SENSORS_IS1, dev_log_->sensorsIs1, id );
-    // forward_message( DID_SENSORS_IS2, dev_log_->sensorsIs2, id );
-    // forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, id );
+    forward_message( DID_SENSORS_IS1, dev_log_->sensorsIs1, id );
+    forward_message( DID_SENSORS_IS2, dev_log_->sensorsIs2, id );
+    forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, id );
     forward_message( DID_IO, dev_log_->io, id );
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, id );
-    // forward_message( DID_SCOMP, dev_log_->scomp, id );
+    forward_message( DID_SCOMP, dev_log_->scomp, id );
     forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, id );
     forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, id );
     // forward_message( DID_HDW_PARAMS, dev_log_->hdwParams, id );
@@ -316,6 +319,11 @@ bool LogReader::load()
     return true;
 }
 
+pybind11::list LogReader::getSerialNumbers()
+{ 
+    return serialNumbers_; 
+}
+
 void LogReader::exitHack()
 {
     // Nasty hack
@@ -336,6 +344,7 @@ PYBIND11_MODULE(log_reader, m) {
             .def(py::init<>()) // constructor
             .def("init", &LogReader::init)
             .def("load", &LogReader::load)
+            .def("getSerialNumbers", &LogReader::getSerialNumbers)
             .def("exitHack", &LogReader::exitHack);
 
 #include "pybindMacros.h"

@@ -6,7 +6,7 @@ PYBIND11_NUMPY_DTYPE(gps_sat_sv_t, gnssId, svId, cno, elev, azim, prRes, flags);
 PYBIND11_NUMPY_DTYPE(sensors_mpu_w_temp_t, pqr, acc, mag, temp);
 PYBIND11_NUMPY_DTYPE(rtos_task_t, name, priority, stackUnused, periodMs, runTimeUs, maxRunTimeUs, averageRunTimeUs, gapCount, cpuUsage, handle);
 PYBIND11_NUMPY_DTYPE(imus_t, pqr, acc);
-// PYBIND11_NUMPY_DTYPE(sensors_mpu_t, pqr, acc, mag);
+PYBIND11_NUMPY_DTYPE(sensors_mpu_t, pqr, acc, mag);
 PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omega_l, omega_r, wrap_count_l, wrap_count_r);
 PYBIND11_NUMPY_DTYPE(wheel_transform_t, e_b2w, e_b2w_sigma, t_b2w, t_b2w_sigma);
 PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
@@ -32,9 +32,15 @@ PYBIND11_NUMPY_DTYPE(mag_cal_t, recalCmd, progress, declination);
 PYBIND11_NUMPY_DTYPE(internal_diagnostic_t, gapCountSerialDriver, gapCountSerialParser, rxOverflowCount, txOverflowCount, checksumFailCount);
 PYBIND11_NUMPY_DTYPE(gps_rtk_rel_t, timeOfWeekMs, differentialAge, arRatio, baseToRoverVector, baseToRoverDistance, baseToRoverHeading, baseToRoverHeadingAcc);
 PYBIND11_NUMPY_DTYPE(gps_rtk_misc_t, timeOfWeekMs, accuracyPos, accuracyCov, arThreshold, gDop, hDop, vDop, baseLla, cycleSlipCount, roverGpsObservationCount, baseGpsObservationCount, roverGlonassObservationCount, baseGlonassObservationCount, roverGalileoObservationCount, baseGalileoObservationCount, roverBeidouObservationCount, baseBeidouObservationCount, roverQzsObservationCount, baseQzsObservationCount, roverGpsEphemerisCount, baseGpsEphemerisCount, roverGlonassEphemerisCount, baseGlonassEphemerisCount, roverGalileoEphemerisCount, baseGalileoEphemerisCount, roverBeidouEphemerisCount, baseBeidouEphemerisCount, roverQzsEphemerisCount, baseQzsEphemerisCount, roverSbasCount, baseSbasCount, baseAntennaCount, ionUtcAlmCount, correctionChecksumFailures, timeToFirstFixMs);
-// PYBIND11_NUMPY_DTYPE(sensors_t, mpu);
 PYBIND11_NUMPY_DTYPE(io_t, timeOfWeekMs, gpioStatus);
+
+PYBIND11_NUMPY_DTYPE(sensors_t, mpu);
+PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, temp, tempRampRate, tci, numTcPts, dtTemp);
+PYBIND11_NUMPY_DTYPE(sensor_compensation_t, mpu, sampleCount, calState, alignAccel, status);
+PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, mpu);
+
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, mpu, bar, barTemp, humidity, ana);
+
 PYBIND11_NUMPY_DTYPE(gps_vel_t, timeOfWeekMs, vel, sAcc, status);
 PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
 PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc);
@@ -75,11 +81,8 @@ PYBIND11_NUMPY_DTYPE(ion_model_utc_alm_t, ion_gps, ion_gal, ion_qzs, ion_cmp, io
 
 // Internal Data types
 // PYBIND11_NUMPY_DTYPE(feature_bits_t, key, featureBits, hash1, hash2);
-// PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, temp, tempRampRate, tci, numTcPts, dtTemp);
 // PYBIND11_NUMPY_DTYPE(imu1_t, pqr, acc, mag);
-// PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, mpu);
 // PYBIND11_NUMPY_DTYPE(sensor_bias_t, timeOfWeekMs, pqr, acc, mslBar, magI, magB);
-// PYBIND11_NUMPY_DTYPE(sensor_compensation_t, mpu, sampleCount, calState, alignAccel, status);
 // PYBIND11_NUMPY_DTYPE(hdw_param_imu_t, pqrDev, accDev, pqrSigma, accSigma, mean);
 // PYBIND11_NUMPY_DTYPE(hdw_params_t, timeOfWeekMs, I, update, gpsCnoSigma, gpsCnoMean);
 // PYBIND11_NUMPY_DTYPE(nvr_manage_t, flash_write_needed, flash_write_count);

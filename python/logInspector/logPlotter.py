@@ -40,7 +40,11 @@ class logPlot:
 
         if len(self.log.data[0, DID_INS_2]):
             setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> origin/development
     def setDownSample(self, dwns):
         self.d = dwns
 
@@ -133,7 +137,7 @@ class logPlot:
             if len(lla) == 0:
                 continue
             if refLla is None:
-                refLla = self.getData(d, DID_INS_2, 'lla')[0]
+                refLla = lla[0]
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
@@ -708,11 +712,11 @@ class logPlot:
             imu1 = np.array(imu1)
         else:  # DID_PREINTEGRATED_IMU
             if index==0:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta2')
+                imu0 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'theta1'))
+                imu1 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'theta2'))
             else:
-                imu0 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel1')
-                imu1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel2')
+                imu0 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel1'))
+                imu1 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel2'))
             time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
             # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
             dt = time[1:] - time[:-1]
@@ -1395,10 +1399,14 @@ class logPlot:
             ax[7,0].plot(time, wheelConfig['radius'])
             ax[7,1].plot(time, wheelConfig['track_width'])
 
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
         for a in ax:
             for b in a:
                 b.grid(True)
 
+<<<<<<< HEAD
     def wheelControllerTime(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1504,6 +1512,79 @@ class logPlot:
             ax.plot(velLin, effEst, 'r')
 
             return c
+=======
+    def sensorCompGyr(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'pqr')
+
+    def sensorCompAcc(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'acc')
+
+    def sensorCompGyrTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        self.sensorCompGen(fig, 'pqr', useTime=True)
+
+    def sensorCompAccTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'acc', useTime=True)
+
+
+    def sensorCompGen(self, fig, name, useTime=False):
+        fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(4, 2, sharex=True)
+
+        for i in range(2):
+            ax[0, i].set_title('X %s %d' % (name, i))
+            ax[1, i].set_title('Y %s %d' % (name, i))
+            ax[2, i].set_title('Z %s %d' % (name, i))
+            ax[3, i].set_title('Magnitude %s %d' % (name, i))
+            for d in range(3):
+                if useTime:
+                    ax[d,i].set_xlabel("Time (s)")
+                else:
+                    ax[d,i].set_xlabel("Temperature (C)")
+                if name=='pqr':
+                    ax[d,i].set_ylabel("Gyro (deg/s)")
+                else:
+                    ax[d,i].set_ylabel("Accel (m/s^2)")
+
+        for d in self.active_devs:
+            mpu = self.getData(d, DID_SCOMP, 'mpu')
+
+            for i in range(2):
+                temp = mpu[:,i]['lpfLsb']['temp']
+                if useTime:
+                    temp = range(len(temp))
+                sensor = mpu[:,i]['lpfLsb'][name]
+
+                if name=='acc' and sensor[:,2][0] > 4:
+                    sensor[:,2] -= 19.6
+
+                if name=='pqr':
+                    scalar = RAD2DEG
+                else:
+                    scalar = 1.0
+
+                # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
+                ax[1,i].plot(temp, sensor[:,1]*scalar)
+                ax[2,i].plot(temp, sensor[:,2]*scalar)
+                if name=='acc':
+                    ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
+
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+>>>>>>> origin/development
 
 
     def showFigs(self):
