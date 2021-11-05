@@ -8,7 +8,7 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
 
 # if(INCLUDE_LUNA_DATA_SETS)	# run "cmake -DINCLUDE_LUNA_DATA_SETS=1 .."
-    add_definitions(-DINCLUDE_LUNA_DATA_SETS)
+add_definitions(-DINCLUDE_LUNA_DATA_SETS)
 # endif()
 
 find_package(pybind11 REQUIRED)
