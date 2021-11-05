@@ -62,6 +62,8 @@ class Log:
             self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
         if len(self.data[0, DID_INS_2]):
             self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
+        # except:
+            # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
 
     def getSerialNumbers(self):
         self.c_log.getSerialNumbers()
