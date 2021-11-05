@@ -1393,6 +1393,111 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
+    def wheelControllerTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Wheel Controller Time - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(4, 1, sharex=True)
+
+        ax[0].set_title('effOut - Left')
+        ax[1].set_title('Wheel Velocity - Left')
+        ax[2].set_title('effOut - Right')
+        ax[3].set_title('Wheel Velocity - Right')
+
+        for d in self.active_devs:
+            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
+            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
+            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+
+            ax[0].plot(time, effAct_l)
+            ax[1].plot(time, vel_l)
+            ax[2].plot(time, effAct_r)
+            ax[3].plot(time, vel_r)
+
+        for a in ax:
+            a.grid(True)
+
+    def wheelControllerVel(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Wheel Controller Velocity - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(2, 1, sharex=True)
+
+        ax[0].set_title('Velocity vs effOut - Left')
+        ax[1].set_title('Velocity vs effOut - Right')
+
+        for a in ax:
+            a.set_xlabel('Velocity (rad/s)')
+            a.set_ylabel('effOut')
+
+        for d in self.active_devs:
+            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
+            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+
+            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
+            actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
+
+            eff_l -= actuatorTrim_l
+            eff_r -= actuatorTrim_r
+
+            # deadbandDuty_l = 0.045
+            deadbandDuty_r = 0.0335
+            deadbandDuty_l = deadbandDuty_r # match left and right
+            deadbandVel = 0.05
+
+            c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
+            c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
+
+            # string = []
+            # for element in c_l:
+            #     string.append("{:.9f}".format(element))
+            # string = "[" + ", ".join(string) + "]"
+            # # print(label, "inverse plant:" , string, " deadband:", deadbandDuty)
+
+            print("\nADD TO MODEL FILE:")
+            print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[4], c_l[3], c_l[2], c_l[1], c_l[0]))
+            print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_r[4], c_r[3], c_r[2], c_r[1], c_r[0]))
+            print("  actuatorDeadbandDuty_l: %.9f # (duty) Left  control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_l))
+            print("  actuatorDeadbandDuty_r: %.9f # (duty) Right control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_r))
+            print("  actuatorDeadbandVel: %.9f    # (rad/s) Commanded velocity" % (deadbandVel))
+
+        for a in ax:
+            a.grid(True)
+
+    def solveInversePlant(self, ax, vel, eff, deadbandVel, deadbandDuty, label):
+            effMod = eff.copy()
+
+            for i in range(len(effMod)):
+                if effMod[i] >= 0:
+                    effMod[i] = effMod[i] - deadbandDuty
+                else:
+                    effMod[i] = effMod[i] + deadbandDuty
+
+            c = np.polyfit(vel, effMod, 4)
+
+            velLin = np.linspace(np.min(vel)-1, np.max(vel)+1, 1000)
+            effEst = np.polyval(c, velLin)
+
+            for i in range(len(velLin)):
+                if velLin[i] > deadbandVel:
+                    effEst[i] += deadbandDuty
+                elif velLin[i] < -deadbandVel:
+                    effEst[i] -= deadbandDuty
+                else:
+                    effEst[i] += deadbandDuty/deadbandVel * velLin[i]
+
+            ax.plot(vel, eff, '.')
+            # ax.plot(vel, effMod, 'g')
+            ax.plot(velLin, effEst, 'r')
+
+            return c
     def sensorCompGyr(self, fig=None):
         if fig is None:
             fig = plt.figure()

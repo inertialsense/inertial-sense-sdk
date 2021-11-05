@@ -135,7 +135,7 @@ typedef uint32_t eDataIDs;
 // 6] Test!
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
-#define DID_COUNT		(eDataIDs)116	// Used in SDK
+#define DID_COUNT		(eDataIDs)120	// Used in SDK
 #define DID_COUNT_UINS	(eDataIDs)96	// Used in uINS
 
 /** Maximum number of data ids */

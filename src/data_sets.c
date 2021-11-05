@@ -375,7 +375,11 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 112:
 		0,                      // 113:
 		0,                      // 114:
-		0                       // 115:
+		0,                      // 116:
+		0,                      // 117:
+		0,                      // 118:
+		0,                      // 119:
+        0                      // 120:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -549,7 +553,11 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 112:
 		0,                      // 113:
 		0,                      // 114:
-		0                       // 115:
+		0,                      // 115:
+		0,                      // 116:
+		0,                      // 117:
+		0,                      // 118:
+		0                      // 119:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
