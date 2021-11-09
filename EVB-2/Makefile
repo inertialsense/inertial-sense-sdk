@@ -114,6 +114,7 @@ C_SRCS += \
           $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/timers.c                                 \
           $(HW_LIBS_DIR)/FreeRTOS_new.cpp                                                                \
           $(HW_LIBS_DIR)/drivers/CAN.c                                                                   \
+          $(HW_LIBS_DIR)/drivers/d_dma.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_flash.c                                                               \
           $(HW_LIBS_DIR)/drivers/d_i2c.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
@@ -121,7 +122,7 @@ C_SRCS += \
           $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
           $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
           $(SRC_DIR)/communications.cpp                                                                  \
-          $(SRC_DIR)/wheel_encoder.cpp                                                                     \
+          $(SRC_DIR)/wheel_encoder.cpp                                                                   \
           $(SRC_DIR)/drivers/d_time.c                                                                    \
           $(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
           $(SRC_DIR)/drivers/d_adc.c                                                                     \

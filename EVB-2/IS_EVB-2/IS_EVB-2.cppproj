@@ -1335,14 +1335,6 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\communications\CAN_comm.h</Link>
     </Compile>
-    <Compile Include="..\..\hw-libs\drivers\d_dma.c">
-      <SubType>compile</SubType>
-      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.c</Link>
-    </Compile>
-    <Compile Include="..\..\hw-libs\drivers\d_dma.h">
-      <SubType>compile</SubType>
-      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.h</Link>
-    </Compile>
     <Compile Include="..\..\hw-libs\printf-master\printf.c">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\printf-master\printf.c</Link>
@@ -1487,6 +1479,14 @@
     <Compile Include="..\..\hw-libs\drivers\CAN.h">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\drivers\CAN.h</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_dma.c">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.c</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_dma.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.c">
       <SubType>compile</SubType>
