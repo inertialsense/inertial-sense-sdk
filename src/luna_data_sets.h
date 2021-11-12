@@ -232,7 +232,10 @@ typedef enum
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
 
 	/** Wheel encoder fault */
-	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
+	EVB_LUNA_STATUS_FAULT_WHEEL_ENCODER                 = 0x00001000,
+
+	/** Bump sensor not communicating */
+	EVB_LUNA_STATUS_FAULT_BUMP_SENSOR_COM               = 0x00002000,
 
 	/** Mower blade on */
 	EVB_LUNA_STATUS_MOWER_BLADE_ON						= 0x00010000,
