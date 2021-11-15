@@ -77,7 +77,7 @@ inline volatile uint64_t time_ticks(void)
 {
 	volatile uint32_t timer;
 	
-	// Read the time twice and compare to make sure data isn't corrupt
+	// Time must be read TWICE in ASF code and compared for corruptness.
 	timer = rtt_read_timer_value(RTT);
 	
 	// this assumes little endian
