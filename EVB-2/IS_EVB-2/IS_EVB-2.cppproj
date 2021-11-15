@@ -1488,6 +1488,14 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\drivers\CAN.h</Link>
     </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_dma.c">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.c</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_dma.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.h</Link>
+    </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.c">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\drivers\d_flash.c</Link>
@@ -1550,6 +1558,12 @@
     <None Include="src\ASF\sam\services\flash_efc\flash_efc.h">
       <SubType>compile</SubType>
     </None>
+    <Compile Include="src\config\conf_debug.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\config\conf_d_i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\config\conf_d_quadEnc.h">
       <SubType>compile</SubType>
     </Compile>
@@ -2851,9 +2865,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\thirdparty\freertos\freertos-10.0.0\Source\timers.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\drivers\d_dma.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ISLogFileFatFs.cpp">
