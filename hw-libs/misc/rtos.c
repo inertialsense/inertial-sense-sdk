@@ -65,11 +65,9 @@ void rtos_monitor(int numRtosTasks)
 	int i;
 	
 	#if (configGENERATE_RUN_TIME_STATS == 1)
-	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();
-	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;
+	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();			// uint64_t gets truncated to uint32_t
+	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;				// Percentage, so divide by 100
 	static uint32_t ulTotalRunTimeLast = 0;
-	ulTotalRunTimeLast = ulTotalRunTime;
-
 	bool resetStats = false;
 	
 	// Check if the timer wrapped
@@ -77,6 +75,8 @@ void rtos_monitor(int numRtosTasks)
 	{ 
 		resetStats = true;
 	}
+
+	ulTotalRunTimeLast = ulTotalRunTime;
 	#endif // (configGENERATE_RUN_TIME_STATS == 1)
 
 	TaskStatus_t status;
@@ -99,11 +99,12 @@ void rtos_monitor(int numRtosTasks)
 			{
 				if(resetStats)
 				{
-					status.ulRunTimeCounter = 0;
+					vTaskResetRunTimeCounter(handle);
 				}
-				else // Wait 1 cycle after a rollover to calculate CPU usage so values don't jump to zero briefly 
+				else
 				{
-					g_rtos.task[i].cpuUsage = (float)status.ulRunTimeCounter / fTotalRunTime;
+					// Can break in ~ 4.9/(avg cpu usage) days bc there is no wrap protection, hence the line above
+					g_rtos.task[i].cpuUsage = (float)status.ulRunTimeCounter / fTotalRunTime;		
 				}
 			}
 			#endif // (configGENERATE_RUN_TIME_STATS == 1)
