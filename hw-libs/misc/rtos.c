@@ -69,8 +69,7 @@ void rtos_monitor(int numRtosTasks)
 	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;
 	static uint32_t ulTotalRunTimeLast = 0;
 	ulTotalRunTimeLast = ulTotalRunTime;
-	#endif // (configGENERATE_RUN_TIME_STATS == 1)
-	
+
 	bool resetStats = false;
 	
 	// Check if the timer wrapped
@@ -78,6 +77,7 @@ void rtos_monitor(int numRtosTasks)
 	{ 
 		resetStats = true;
 	}
+	#endif // (configGENERATE_RUN_TIME_STATS == 1)
 
 	TaskStatus_t status;
 

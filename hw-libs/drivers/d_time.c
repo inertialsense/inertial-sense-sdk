@@ -76,14 +76,9 @@ void time_init(void)
 inline volatile uint64_t time_ticks(void)
 {
 	volatile uint32_t timer;
-	volatile uint32_t compare;
 	
 	// Read the time twice and compare to make sure data isn't corrupt
-	do
-	{
-		timer = rtt_read_timer_value(RTT);
-		compare = rtt_read_timer_value(RTT);
-	} while(timer != compare);
+	timer = rtt_read_timer_value(RTT);
 	
 	// this assumes little endian
 	volatile ticks_t ticks;
