@@ -36,13 +36,15 @@ class Log:
         self.data = []
         self.c_log.init(self, directory, serials)
         self.c_log.load()
+        self.serials = self.c_log.getSerialNumbers()
         self.sanitize()
         self.data = np.array(self.data)
         self.directory = directory
         self.numDev = self.data.shape[0]
         if self.numDev == 0:
             raise ValueError("No devices found in log")
-        self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
+        if len(self.data[0, DID_DEV_INFO]):
+            self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
         if 10101 in self.serials:
             self.refINS = True
             refIdx = self.serials.index(10101)
@@ -50,11 +52,21 @@ class Log:
         else:
             self.refINS = False
             self.refdata = []
-        self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
-        self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
-        self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
+
+        self.compassing = None  
+        self.rtk = None  
+        self.navMode = None  
+        
+        if len(self.data[0, DID_DEV_INFO]):
+            self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+            self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+        if len(self.data[0, DID_INS_2]):
+            self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
         # except:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
+
+    def getSerialNumbers(self):
+        self.c_log.getSerialNumbers()
 
     def exitHack(self):
         self.c_log.exitHack()

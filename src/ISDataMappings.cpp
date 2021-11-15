@@ -177,6 +177,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_EVB_LUNA_REMOTE_KILL] = sizeof(evb_luna_remote_kill_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_wheel_controller_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_COMMAND] = sizeof(evb_luna_wheel_command_t);
+    sizeMap[DID_EVB_LUNA_AUX_COMMAND] = sizeof(evb_luna_aux_command_t);
 
 #endif
 
@@ -945,24 +946,30 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.FF_c_est_Ki[1]", wheelControl.FF_c_est_Ki[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[0]", wheelControl.FF_c_est_max[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[1]", wheelControl.FF_c_est_max[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_l[0]", wheelControl.FF_c_l[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_l[1]", wheelControl.FF_c_l[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_r[0]", wheelControl.FF_c_r[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_r[1]", wheelControl.FF_c_r[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c[0]", wheelControl.FF_c[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c[1]", wheelControl.FF_c[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FB_Kp", wheelControl.FB_Kp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FB_Ki", wheelControl.FB_Ki, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FB_Kd", wheelControl.FB_Kd, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[0]", wheelControl.LinearCoEff[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[1]", wheelControl.LinearCoEff[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[2]", wheelControl.LinearCoEff[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[3]", wheelControl.LinearCoEff[3], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[4]", wheelControl.LinearCoEff[4], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderCountsPerRad", wheelControl.actuatorEncoderCountsPerRad, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[0]", wheelControl.actuatorEncoderRange[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[1]", wheelControl.actuatorEncoderRange[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[0]", wheelControl.InversePlant_l[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[1]", wheelControl.InversePlant_l[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[2]", wheelControl.InversePlant_l[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[3]", wheelControl.InversePlant_l[3], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[4]", wheelControl.InversePlant_l[4], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[0]", wheelControl.InversePlant_r[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[1]", wheelControl.InversePlant_r[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[2]", wheelControl.InversePlant_r[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[3]", wheelControl.InversePlant_r[3], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[4]", wheelControl.InversePlant_r[4], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_l", wheelControl.actuatorTrim_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_r", wheelControl.actuatorTrim_r, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandAngle", wheelControl.actuatorDeadbandAngle, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_l[0]", wheelControl.actuatorLimits_l[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_l[1]", wheelControl.actuatorLimits_l[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[0]", wheelControl.actuatorLimits_r[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[1]", wheelControl.actuatorLimits_r[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_l", wheelControl.actuatorDeadbandDuty_l, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_r", wheelControl.actuatorDeadbandDuty_r, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandVel", wheelControl.actuatorDeadbandVel, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_FB_engine_rpm", wheelControl.FF_FB_engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.engine_rpm", wheelControl.engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.testSweepRate", wheelControl.testSweepRate, 0, DataTypeFloat, float, 0);
@@ -1030,8 +1037,8 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "fb_eff_r", fb_eff_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "eff_l", eff_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "eff_r", eff_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effAct_l", effAct_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effAct_r", effAct_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "effInt_l", effInt_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "effInt_r", effInt_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effDuty_l", effDuty_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effDuty_r", effDuty_r, 0, DataTypeFloat, float, 0);
 
@@ -1047,6 +1054,16 @@ static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_
 	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "fwd_vel", fwd_vel, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "turn_rate", turn_rate, 0, DataTypeFloat, float, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateEvbLunaAuxCmdMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef evb_luna_aux_command_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_EVB_LUNA_AUX_COMMAND];
+    uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "command", command, 0, DataTypeUInt32, uint32_t, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -2077,6 +2094,10 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_LUNA_REMOTE_KILL",         // 113
 	"DID_EVB_LUNA_WHEEL_CONTROLLER",    // 114
 	"DID_EVB_LUNA_WHEEL_COMMAND",       // 115
+    "DID_EVB_LUNA_AUX_COMMAND",         // 116
+    "",                                 // 117
+    "",                                 // 118
+    ""                                  // 119
 };
 
 
@@ -2126,6 +2147,7 @@ cISDataMappings::cISDataMappings()
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
 	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
     PopulateEvbLunaWheelCommandMappings(m_lookupInfo);
+    PopulateEvbLunaAuxCmdMappings(m_lookupInfo);
 #endif
 
 	PopulateStrobeInTimeMappings(m_lookupInfo);
@@ -2170,7 +2192,7 @@ cISDataMappings::~cISDataMappings()
 
 const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 {
-    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
+    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);//
 
     if (dataId < DID_COUNT)
     {

@@ -1,15 +1,3 @@
-/*
-MIT LICENSE
-
-Copyright 2014-2019 Inertial Sense, Inc. - http://inertialsense.com
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
 #ifndef _D_DMA_H_
 #define _D_DMA_H_
 #ifdef __cplusplus
@@ -18,9 +6,6 @@ extern "C" {
 
 // includes
 #include <xdmac.h>
-
-#define DBGPIO_START(x)
-#define DBGPIO_END(x)
 
 // Memcpy then clean Data Cache to memory for before DMA starts
 #define MEMCPY_DCACHE_CLEAN(dst, src, size) \
@@ -44,7 +29,7 @@ DBGPIO_END( DBG_RX_DCACHE_CLEAN_PIN ); \
 memcpy((void*)(dst), (const void*)(src), (size));
 
 // defines
-//#define ENABLE_DMA_INTERRUPTS
+//#define ENABLE_DMA_INTERRUPTS		// TODO: This will enable a duplicate XDMAC_Handler in d_dma.c. Might just remove this?
 #ifdef ENABLE_DMA_INTERRUPTS
 #define DMA_INT_ENABLE(_ch_) \
 	xdmac_enable_interrupt(XDMAC, _ch_); \
@@ -68,6 +53,12 @@ memcpy((void*)(dst), (const void*)(src), (size));
 #define XDMAC_PERID_USART1_RX  10
 #define XDMAC_PERID_USART2_TX  11
 #define XDMAC_PERID_USART2_RX  12
+#define XDMAC_PERID_TWIHS0_TX  14
+#define XDMAC_PERID_TWIHS0_RX  15
+#define XDMAC_PERID_TWIHS1_TX  16
+#define XDMAC_PERID_TWIHS1_RX  17
+#define XDMAC_PERID_TWIHS2_TX  18
+#define XDMAC_PERID_TWIHS2_RX  19
 #define XDMAC_PERID_UART0_TX   20
 #define XDMAC_PERID_UART0_RX   21
 #define XDMAC_PERID_UART1_TX   22
@@ -92,26 +83,53 @@ enum
 	DMA_CH_SPI_SENSORS_RX,
 	DMA_CH_SPI_COMM_TX,
 	DMA_CH_SPI_COMM_RX,
-	DMA_CH_UART_UINS0_TX,
-	DMA_CH_UART_UINS0_RX,
-	DMA_CH_UART_UINS1_TX,
-	DMA_CH_UART_UINS1_RX,
-	DMA_CH_UART_XBEE_TX,
-	DMA_CH_UART_XBEE_RX,
-	DMA_CH_UART_XRADIO_TX,
-	DMA_CH_UART_XRADIO_RX,
-	DMA_CH_UART_WINC_BLE_TX,
-	DMA_CH_UART_WINC_BLE_RX,
-	DMA_CH_UART_SP330_TX,
-	DMA_CH_UART_SP330_RX,
-	DMA_CH_UART_GPIO_TTL_TX,
-	DMA_CH_UART_GPIO_TTL_RX,
-	DMA_CH_SD_CARD,
-	DMA_CH_SPI_INS_TX,
-	DMA_CH_SPI_INS_RX,
+	DMA_CH_USART_SERIAL0_TX,
+	DMA_CH_USART_SERIAL0_RX,
+	DMA_CH_USART_SERIAL1_TX,
+	DMA_CH_USART_SERIAL1_RX,
+	DMA_CH_USART_SERIAL2_TX,
+	DMA_CH_USART_SERIAL2_RX,
+	DMA_CH_USART_GPS1_TX,
+	DMA_CH_USART_GPS1_RX,
+	DMA_CH_USART_GPS2_TX,
+	DMA_CH_USART_GPS2_RX,
+	DMA_CH_I2C_SENSORS_TX,
+	DMA_CH_I2C_SENSORS_RX,
 	// add more channels before this line
 	DMA_CHAN_COUNT,
 	DMA_CHAN_MAX = 24
+};
+
+// enums
+enum
+{
+	// EVB-2 specific
+	DMA_CH_EVB_SPI_SENSORS_TX = 0,
+	DMA_CH_EVB_SPI_SENSORS_RX,
+	DMA_CH_EVB_SPI_COMM_TX,
+	DMA_CH_EVB_SPI_COMM_RX,
+	DMA_CH_EVB_UART_UINS0_TX,
+	DMA_CH_EVB_UART_UINS0_RX,
+	DMA_CH_EVB_UART_UINS1_TX,
+	DMA_CH_EVB_UART_UINS1_RX,
+	DMA_CH_EVB_UART_XBEE_TX,
+	DMA_CH_EVB_UART_XBEE_RX,
+	DMA_CH_EVB_UART_XRADIO_TX,
+	DMA_CH_EVB_UART_XRADIO_RX,
+	DMA_CH_EVB_UART_WINC_BLE_TX,
+	DMA_CH_EVB_UART_WINC_BLE_RX,
+	DMA_CH_EVB_UART_SP330_TX,
+	DMA_CH_EVB_UART_SP330_RX,
+	DMA_CH_EVB_UART_GPIO_TTL_TX,
+	DMA_CH_EVB_UART_GPIO_TTL_RX,
+	DMA_CH_EVB_SD_CARD,
+	DMA_CH_EVB_SPI_INS_TX,
+	DMA_CH_EVB_SPI_INS_RX,
+	DMA_CH_EVB_I2C_SENSORS_TX,
+	DMA_CH_EVB_I2C_SENSORS_RX,
+	// add more channels before this line
+	DMA_EVB_CHAN_COUNT,
+	DMA_EVB_CHAN_MAX = 24
 };
 
 // structs

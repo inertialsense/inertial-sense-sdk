@@ -22,7 +22,8 @@ extern "C" {
 #define DID_EVB_LUNA_REMOTE_KILL        (eDataIDs)113 /** (evb_luna_remote_kill_t) EVB remoteKill system */
 #define DID_EVB_LUNA_WHEEL_CONTROLLER   (eDataIDs)114 /** (evb_luna_wheel_controller_t) EVB wheel control information */
 #define DID_EVB_LUNA_WHEEL_COMMAND      (eDataIDs)115 /** (evb_luna_wheel_command_t) EVB velocity command */
-#define DID_LUNA_COUNT					116				/** Make larger than all Luna DIDs */
+#define DID_EVB_LUNA_AUX_COMMAND        (eDataIDs)116 /** (evb_luna_aux_command_t) EVB auxillary commands */
+#define DID_LUNA_COUNT					117				/** Make larger than all Luna DIDs */
 
 
 PUSH_PACK_1
@@ -31,9 +32,10 @@ PUSH_PACK_1
 
 typedef enum
 {
-    EVB_LUNA_CFG_BITS_ENABLE_SS_GEOFENCE   			    = 0x00000001,
-    EVB_LUNA_CFG_BITS_ENABLE_SS_BUMP            	    = 0x00000002,
-    EVB_LUNA_CFG_BITS_ENABLE_SS_PROXIMITY       	    = 0x00000004,
+    EVB_LUNA_CFG_BITS_ENABLE_SS_GEOFENCE                = 0x00000001,
+    EVB_LUNA_CFG_BITS_ENABLE_SS_BUMP_ADC                = 0x00000002,
+    EVB_LUNA_CFG_BITS_ENABLE_SS_PROXIMITY               = 0x00000004,
+	EVB_LUNA_CFG_BITS_ENABLE_SS_BUMP_I2C                = 0x00000008,
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL              = 0x00000100,	// On vehicle
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_1     = 0x00000200,	// External buttons
     EVB_LUNA_CFG_BITS_ENABLE_SS_REMOTEKILL_CLIENT_2	    = 0x00000400,	// No external buttons
@@ -74,8 +76,7 @@ typedef struct
     float                 	FF_c_est_max[NUM_FF_COEFS];
 
     /** Feedforward coefficients */
-    float                 	FF_c_l[NUM_FF_COEFS];
-    float                 	FF_c_r[NUM_FF_COEFS];
+    float                 	FF_c[NUM_FF_COEFS];
 
 	/** Feedback proportional gain */
 	float					FB_Kp;
@@ -87,20 +88,27 @@ typedef struct
 	float					FB_Kd;
 	
     /** EVB2 velocity Linearization Coefficients */
-    float                   LinearCoEff[NUM_AL_COEFS];
+    float                   InversePlant_l[NUM_AL_COEFS];
+    float                   InversePlant_r[NUM_AL_COEFS];
 
-	/** Actuator counts per radian velocity controller */
-	float					actuatorEncoderCountsPerRad;
+	// /** Actuator counts per radian velocity controller */
+	// float					actuatorEncoderCountsPerRad;
 
     /** Actuator count [min, max] Duty cycle will drive between these numbers. Duty of 0 - min, duty of 100 - Max */
-    float                   actuatorEncoderRange[2];
+    // float                   actuatorEncoderRange[2];
 
-    /** (rad) Angle that sets actuator zero velocity (center) position relative to home point. */
+    /** Sets actuator zero velocity (center) position relative to home point. */
     float                	actuatorTrim_l;
     float                	actuatorTrim_r;
 
-    /** (rad) Control effort angle (transmission angle) from zero required before wheels actually start spinning. */
-    float                   actuatorDeadbandAngle;
+    /** Limits for actuator angle. */
+    float                	actuatorLimits_l[2];
+    float                	actuatorLimits_r[2];
+
+    /** Control effort from zero (trim) before wheels start spinning. */
+    float                   actuatorDeadbandDuty_l;
+    float                   actuatorDeadbandDuty_r;
+    float                   actuatorDeadbandVel;
 
     /** (rpm) Engine RPM corresponding with control gains. */
     float                   FF_FB_engine_rpm;
@@ -202,18 +210,36 @@ typedef enum
 	/** Emergency stop button */
 	EVB_LUNA_STATUS_ERR_ESTOP                           = 0x00000008,
 		
-	/** Bump sensor */
-	EVB_LUNA_STATUS_ERR_BUMP                            = 0x00000010,
+	/** Bump sensor mask */
+	EVB_LUNA_STATUS_ERR_BUMP_MASK                       = 0x000000F0,
+
+	/** Bump sensor front */
+	EVB_LUNA_STATUS_ERR_BUMP_FRONT                      = 0x00000010,
+	
+	/** Bump sensor back */
+	EVB_LUNA_STATUS_ERR_BUMP_BACK                       = 0x00000020,
+	
+	/** Bump sensor left */
+	EVB_LUNA_STATUS_ERR_BUMP_LEFT                       = 0x00000040,
+
+	/** Bump sensor right */
+	EVB_LUNA_STATUS_ERR_BUMP_RIGHT                      = 0x00000080,
 	
 	/** Range Sensor */
-	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000020,
+	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000100,
 
     /** EVB Error bit mask.  Errors in this mask will stop control. */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
 
 	/** Wheel encoder fault */
-	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
-	
+	EVB_LUNA_STATUS_FAULT_WHEEL_ENCODER                 = 0x00001000,
+
+	/** Bump sensor not communicating */
+	EVB_LUNA_STATUS_FAULT_BUMP_SENSOR_COM               = 0x00002000,
+
+	/** Mower blade on */
+	EVB_LUNA_STATUS_MOWER_BLADE_ON						= 0x00010000,
+
 	/** Axis is in an invalid state */
 	EVB_LUNA_STATUS_AXIS_ERR_INVALID_STATE				= 0x01000000,
 	
@@ -289,6 +315,23 @@ typedef struct
 
 } evb_luna_wheel_command_t;
 
+typedef struct evb_luna_aux_command_t
+{
+    uint32_t                    command;
+
+}evb_luna_aux_command_t;
+
+typedef enum
+{
+    //Possible Commands
+    AUX_CMD_BLADE_OFF           = 0,
+    AUX_CMD_BLADE_ON            = 1,
+    AUX_CMD_EBRAKE_ENGAGE       = 2,
+    AUX_CMD_EBRAKE_DISENGAGE    = 3,
+    AUX_CMD_BEEP                = 4,
+    // AUX_CMD_DIDS_LOG_START      = 5,		// Used in inertial_sense_ros node
+    // AUX_CMD_DIDS_LOG_STOP       = 6,
+} eLunaAuxCommands;
 
 typedef enum
 {
@@ -304,6 +347,7 @@ typedef enum
 	// Duty TESTS	
 	LCM_TEST_DUTY					= 7,	// (Keep as first duty cycle test)
 	LCM_TEST_DUTY_SWEEP				= 8,	// Watchdog disabled in testing
+	LCM_TEST_WHL_ANG_VEL_SWEEP      = 9,
 } eLunaWheelControllerMode;
 
 typedef enum
@@ -352,23 +396,23 @@ typedef struct
 	float 					velErr_l;
 	float 					velErr_r;
 
-	/** Feedforward control effort (rad) */
+	/** Feedforward control effort */
 	float 					ff_eff_l;
 	float 					ff_eff_r;
 
-	/** Feedback control effort (rad) */
+	/** Feedback control effort */
 	float 					fb_eff_l;
 	float 					fb_eff_r;
 
-	/** Control effort at transmission (rad) */
+	/** Control effort = ff_eff_x + fb_eff_x */
 	float 					eff_l;
 	float 					eff_r;
 
-	/** Control effort at actuator (rad) */
-	float 					effAct_l;
-	float 					effAct_r;
+	/** Control effort intermediate */
+	float 					effInt_l;
+	float 					effInt_r;
 
-	/** Feedback control effort duty cycle (%, 0-100) */
+	/** Duty cycle control effort at actuator (-1.0 to 1.0) */
 	float 					effDuty_l;
 	float 					effDuty_r;
 
