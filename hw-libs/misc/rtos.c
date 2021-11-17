@@ -288,7 +288,7 @@ void HardFault_Handler(void)
 
 #endif
 }
-#endif
+#else	// uINS_5
 
 void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress );
 
@@ -339,6 +339,8 @@ volatile uint32_t psr;/* Program status register. */
     /* When the following line is hit, the variables contain the register values. */
     for( ;; );
 }
+
+#endif
 
 
 #else
