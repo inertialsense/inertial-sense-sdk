@@ -1088,7 +1088,7 @@ static void bootloaderRestart(serial_port_t* s)
 
 static int bootloaderSync(serial_port_t* s)
 {
-    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNCHO_DFU";
+    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
     static const unsigned char handshakerChar = 'U';
 
     //Most usages of this function we do not know if we can communicate (still doing auto-baud or checking to see if the bootloader or application is running) so trying to reset unit here does not make sense.
