@@ -110,6 +110,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	g_commandLineOptions.enableLogging = CL_DEFAULT_ENABLE_LOGGING;
 	g_commandLineOptions.logType = CL_DEFAULT_LOG_TYPE;
 	g_commandLineOptions.logPath = CL_DEFAULT_LOGS_DIRECTORY;
+	g_commandLineOptions.logSubFolder = cISLogger::CreateCurrentTimestamp();
 	g_commandLineOptions.maxLogFileSize = CL_DEFAULT_MAX_LOG_FILE_SIZE;
 	g_commandLineOptions.maxLogSpacePercent = CL_DEFAULT_MAX_LOG_SPACE_PERCENT;
 	g_commandLineOptions.replaySpeed = CL_DEFAULT_REPLAY_SPEED;
@@ -136,7 +137,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	for (int i = 1; i < argc; i++)
 	{
 		const char* a = argv[i];
-        if (startsWith(a, "-asciiMessages="))
+        if (startsWith(a, "--"))
+        {	// Treat "--" same as "-"
+			a++;
+        }
+        
+		if (startsWith(a, "-asciiMessages="))
         {
             g_commandLineOptions.asciiMessages = &a[15];
         }

@@ -135,7 +135,7 @@ typedef uint32_t eDataIDs;
 // 6] Test!
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
-#define DID_COUNT		(eDataIDs)116	// Used in SDK
+#define DID_COUNT		(eDataIDs)120	// Used in SDK
 #define DID_COUNT_UINS	(eDataIDs)96	// Used in uINS
 
 /** Maximum number of data ids */
@@ -1251,6 +1251,44 @@ typedef struct PACKED
 	f_t						mag[3];         // (uT)		Magnetometers
 	f_t						temp;			// (°C)		Temperature of MPU
 } sensors_mpu_w_temp_t;
+
+typedef struct PACKED
+{                                       // Units only apply for calibrated data
+	f_t						pqr[3];         // (rad/s)	Gyros
+	f_t						acc[3];         // (m/s^2)	Accelerometers
+	f_t						mag[3];         // (uT)		Magnetometers
+} sensors_mpu_t;
+
+// (DID_SENSORS_TC_BIAS)
+typedef struct PACKED
+{                                       // Units only apply for calibrated data
+	sensors_mpu_t			mpu[NUM_IMU_DEVICES];
+} sensors_t;
+
+// (DID_SENSORS_IS1, DID_SENSORS_IS2)
+typedef struct PACKED
+{                                       // Units only apply for calibrated data
+	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
+} sensors_w_temp_t;
+
+typedef struct PACKED
+{
+	sensors_mpu_w_temp_t    lpfLsb;         // Low-passed filter of g_sensors.lsb
+	f_t						temp;			// (°C)	Temperature of MPU
+	f_t                     tempRampRate;   // (°C/s) Temperature ramp rate
+	uint32_t                tci;            // Index of current temperature compensation point
+	uint32_t                numTcPts;       // Total number of tc points
+	f_t                     dtTemp;			// (°C) Temperature from last calibration point
+} sensor_comp_unit_t;
+
+typedef struct PACKED
+{                                       // Sensor temperature compensation
+	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
+	uint32_t                sampleCount;    // Number of samples collected
+	uint32_t                calState;       // state machine
+	f_t						alignAccel[3];  // Alignment acceleration
+	uint32_t				status;         // Used to control LED
+} sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS	4
 typedef struct PACKED
