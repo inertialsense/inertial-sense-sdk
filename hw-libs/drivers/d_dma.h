@@ -7,6 +7,24 @@ extern "C" {
 // includes
 #include <xdmac.h>
 
+#ifdef __INERTIAL_SENSE_EVB_2__
+
+#define MEMCPY_DCACHE_CLEAN(dst, src, size) \
+memcpy((void*)(dst), (const void*)(src), (size)); \
+SCB_CLEAN_DCACHE_BY_ADDR_32BYTE_ALIGNED((dst), (size)); 
+
+// Memcpy then clear Data Cache to memory for before DMA starts
+#define MEMCPY_DCACHE_CLEAN_INVALIDATE(dst, src, size) \
+memcpy((void*)(dst), (const void*)(src), (size)); \
+SCB_CLEANINVALIDATE_DCACHE_BY_ADDR_32BYTE_ALIGNED((dst), (size)); 
+
+// Ensure data cache has valid Rx data prior to memcpy
+#define DCACHE_CLEAN_INVALIDATE_MEMCPY(dst, src, size) \
+SCB_CLEANINVALIDATE_DCACHE_BY_ADDR_32BYTE_ALIGNED((src), (size)); \
+memcpy((void*)(dst), (const void*)(src), (size));
+
+#else
+
 // Memcpy then clean Data Cache to memory for before DMA starts
 #define MEMCPY_DCACHE_CLEAN(dst, src, size) \
 memcpy((void*)(dst), (const void*)(src), (size)); \
@@ -27,6 +45,9 @@ DBGPIO_START( DBG_RX_DCACHE_CLEAN_PIN ); \
 SCB_CLEANINVALIDATE_DCACHE_BY_ADDR_32BYTE_ALIGNED((src), (size)); \
 DBGPIO_END( DBG_RX_DCACHE_CLEAN_PIN ); \
 memcpy((void*)(dst), (const void*)(src), (size));
+
+#endif
+
 
 // defines
 //#define ENABLE_DMA_INTERRUPTS		// TODO: This will enable a duplicate XDMAC_Handler in d_dma.c. Might just remove this?
