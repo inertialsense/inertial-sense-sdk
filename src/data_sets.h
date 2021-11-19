@@ -1344,7 +1344,7 @@ typedef struct PACKED
 
 #define NUM_COM_PORTS       4	// Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
 #ifndef NUM_SERIAL_PORTS
-#define NUM_SERIAL_PORTS	4
+#define NUM_SERIAL_PORTS	6
 #endif
 
 /** Realtime Message Controller (used in rmc_t). 
