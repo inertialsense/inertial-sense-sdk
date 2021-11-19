@@ -250,7 +250,7 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
         state->version = 1;
         state->firstPageSkipBytes = 8192;
     }
-    else if (v >= '2' && v <= '4')
+    else if (v >= '2' && v <= '5')
     {
         // version 2, 3 (which sent v2), 4
         state->version = v-'0';
