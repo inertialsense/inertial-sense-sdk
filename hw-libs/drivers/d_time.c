@@ -19,6 +19,53 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static volatile uint32_t g_rollover = 0;
 static volatile uint32_t g_timer = 0;
 
+#define USE_TC_FOR_FAST_DEBUG	// Define to user TC instead of RTT so faults in RTOS happen faster.
+
+#define TC0_CHANNEL0_ID		23
+#define TC0_CHANNEL1_ID		24
+
+void TC_Handler(void)
+{
+	
+}
+
+	#define TC_WAVEFORM_TIMER_SELECTION		TC_CMR_TCCLKS_TIMER_CLOCK2
+	#define TC_WAVEFORM_DIVISOR				8
+	#define TC_WAVEFORM_FREQUENCY			178
+	#define TC_WAVEFORM_DUTY_CYCLE			30
+	
+static void tc_waveform_initialize(void)
+{
+	// Configure the PMC to enable the TC module.
+	sysclk_enable_peripheral_clock(TC0_CHANNEL0_ID);
+	sysclk_enable_peripheral_clock(TC0_CHANNEL1_ID);
+		
+	tc_init(TC0, 0,
+			TC_CMR_TCCLKS_TIMER_CLOCK2 // Waveform Clock Selection (doesn't matter as we are setting NODIVCLK below)
+			| TC_CMR_WAVE       // Waveform mode is enabled
+			| TC_CMR_ACPA_TOGGLE // RC Compare Effect: clear
+			| (0x2 << TC_CMR_WAVSEL_Pos)     // UP mode
+	);
+	
+	tc_init(TC0, 1,
+			TC_CMR_TCCLKS_XC1 // Waveform Clock Selection
+			| TC_CMR_WAVE       // Waveform mode is enabled
+			| TC_CMR_ACPA_SET   // RA Compare Effect: set
+			| TC_CMR_ACPC_CLEAR // RC Compare Effect: clear
+			| (0x2 << TC_CMR_WAVSEL_Pos)     // UP mode
+	);
+		
+	TC0.TC_CHANNEL[0].TC_EMR |= TC_EMR_NODIVCLK;	// Clock the peripheral directly with no divider
+	TC0.TC_CHANNEL[1].TC_BMR |= 0x2 << TC_BMR_TC1XC1S_Pos;	// Clock the second channel with the first
+	
+	tc_write_ra(TC0, 0, 0x7FFF);
+	tc_write_rc(TC0, 0, 0xFFFF);
+	tc_write_ra(TC0, 1, 0x7FFF);
+	tc_write_rc(TC0, 1, 0xFFFF);
+
+	tc_start(TC0, 1);
+	tc_start(TC0, 0);
+}
 
 void RTT_Handler(void)
 {
