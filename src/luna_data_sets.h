@@ -210,17 +210,32 @@ typedef enum
 	/** Emergency stop button */
 	EVB_LUNA_STATUS_ERR_ESTOP                           = 0x00000008,
 		
-	/** Bump sensor */
-	EVB_LUNA_STATUS_ERR_BUMP                            = 0x00000010,
+	/** Bump sensor mask */
+	EVB_LUNA_STATUS_ERR_BUMP_MASK                       = 0x000000F0,
+
+	/** Bump sensor front */
+	EVB_LUNA_STATUS_ERR_BUMP_FRONT                      = 0x00000010,
+	
+	/** Bump sensor back */
+	EVB_LUNA_STATUS_ERR_BUMP_BACK                       = 0x00000020,
+	
+	/** Bump sensor left */
+	EVB_LUNA_STATUS_ERR_BUMP_LEFT                       = 0x00000040,
+
+	/** Bump sensor right */
+	EVB_LUNA_STATUS_ERR_BUMP_RIGHT                      = 0x00000080,
 	
 	/** Range Sensor */
-	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000020,
+	EVB_LUNA_STATUS_ERR_PROXIMITY                       = 0x00000100,
 
     /** EVB Error bit mask.  Errors in this mask will stop control. */
     EVB_LUNA_STATUS_ERR_MASK                            = 0x00000FFF,
 
 	/** Wheel encoder fault */
-	EVB_LUNA_STATUS_WHEEL_ENCODER_FAULT                 = 0x00001000,
+	EVB_LUNA_STATUS_FAULT_WHEEL_ENCODER                 = 0x00001000,
+
+	/** Bump sensor not communicating */
+	EVB_LUNA_STATUS_FAULT_BUMP_SENSOR_COM               = 0x00002000,
 
 	/** Mower blade on */
 	EVB_LUNA_STATUS_MOWER_BLADE_ON						= 0x00010000,
