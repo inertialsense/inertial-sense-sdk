@@ -787,6 +787,11 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 
 	if ((n = comRead(srcPort, comm.buf.tail, n, ledPin)) > 0)
 	{
+		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422)
+		{
+			com_bridge_forward(srcPort, comm.buf.head, n);
+			return;
+		}
 		if (g_uInsBootloaderEnableTimeMs)
 		{	// When uINS bootloader is enabled forwarding is disabled below is_comm_parse(), so forward bootloader data here.
 			switch (srcPort)
