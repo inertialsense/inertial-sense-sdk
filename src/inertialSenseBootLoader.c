@@ -1100,7 +1100,7 @@ static int bootloaderSync(serial_port_t* s)
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
-        if (serialPortWriteAndWaitForTimeout(s, &handshaker, sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
             return 1;
