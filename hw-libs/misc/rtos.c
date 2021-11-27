@@ -67,10 +67,11 @@ void rtos_monitor(int numRtosTasks)
 {
 	int i;
 
-	#if (configGENERATE_RUN_TIME_STATS == 1)
-	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();
-	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;
-	#endif // (configGENERATE_RUN_TIME_STATS == 1)
+#if (configGENERATE_RUN_TIME_STATS == 1)
+	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();			// uint64_t gets truncated to uint32_t
+	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;				// Percentage, so divide by 100
+	bool resetStats = false;
+#endif // (configGENERATE_RUN_TIME_STATS == 1)
 
 	TaskStatus_t status;
 
@@ -87,11 +88,12 @@ void rtos_monitor(int numRtosTasks)
 			g_rtos.task[i].stackUnused = status.usStackHighWaterMark * sizeof(uint32_t);
 			g_rtos.task[i].priority    = status.uxCurrentPriority;
 
-			#if (configGENERATE_RUN_TIME_STATS == 1)
-			// Divide by zero
-			if (ulTotalRunTime)
-			g_rtos.task[i].cpuUsage = (float)status.ulRunTimeCounter / fTotalRunTime;
-			#endif // (configGENERATE_RUN_TIME_STATS == 1)
+#if (configGENERATE_RUN_TIME_STATS == 1)
+			if (ulTotalRunTime) // Divide by zero
+			{
+				g_rtos.task[i].cpuUsage = (float)status.ulRunTimeCounter / fTotalRunTime;
+			}
+#endif // (configGENERATE_RUN_TIME_STATS == 1)
 		}
 	}
 
@@ -107,6 +109,22 @@ void rtosResetStats(void)
 	}
 }
 
+/*
+ * Call this from the timer overflow interrupt to reset everything at the same time.
+ */
+void rtosResetTaskCounters(void)
+{
+#if (configGENERATE_RUN_TIME_STATS == 1)
+	for (int i=0; i<RTOS_NUM_TASKS; i++)
+	{
+		void* handle = (void*)g_rtos.task[i].handle;
+		if (handle)
+		{
+			vTaskResetRunTimeCounter(handle);
+		}
+	}
+#endif // (configGENERATE_RUN_TIME_STATS == 1)
+}
 
 void vApplicationIdleHook(void)
 {
