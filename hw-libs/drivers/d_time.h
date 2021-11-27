@@ -75,6 +75,7 @@ typedef union
 // prototypes
 void time_init(void);
 volatile uint64_t time_ticks(void);
+volatile uint32_t get_tc_chain_time(void);
 void time_delay(uint32_t ms);
 uint32_t time_msec(void);
 uint32_t time_usec(void);

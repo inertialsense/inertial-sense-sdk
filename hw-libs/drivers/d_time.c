@@ -31,9 +31,10 @@ static void time_init_tc(void)
 	tc_init(TC0, 0,
 			TC_CMR_TCCLKS_TIMER_CLOCK2					// Waveform Clock Selection (doesn't matter as we are setting NODIVCLK below)
 			| TC_CMR_WAVE								// Waveform mode is enabled
-			| TC_CMR_ACPA_CLEAR							// RA Compare Effect: set
-			| TC_CMR_ACPC_SET							// RC Compare Effect: clear
-			| TC_CMR_WAVSEL_UP_RC						// UP mode
+			| TC_CMR_ACPA_CLEAR							// RA Compare Effect
+			| TC_CMR_ACPC_SET							// RC Compare Effect
+			| TC_CMR_WAVSEL_UP							// UP mode
+			| TC_CMR_CPCTRG								// UP mode with automatic trigger on RC Compare
 	);
 	
 	tc_write_ra(TC0, 0, 0x7FFF);
@@ -49,15 +50,18 @@ static void time_init_tc(void)
 		
 	TC0->TC_BMR |= TC_BMR_TC1XC1S_TIOA0;				// Clock the second channel with the first
 	
-	tc_enable_interrupt(TC0, 1, TC_IER_COVFS);			// Trigger interrupt on overflow of 32-bit counter
-	
 	NVIC_DisableIRQ(TC1_IRQn);							// TC0 Channel 1 is on TC1 handler
 	NVIC_ClearPendingIRQ(TC1_IRQn);
 	NVIC_SetPriority(TC1_IRQn, 0);
 	NVIC_EnableIRQ(TC1_IRQn);
+	
+	tc_enable_interrupt(TC0, 1, TC_IER_COVFS);			// Trigger interrupt on overflow of 32-bit counter
 
 	tc_start(TC0, 1);
 	tc_start(TC0, 0);
+	
+	uint32_t previous_time = tc_read_cv(TC0, 0);		
+	while (previous_time == tc_read_cv(TC0, 0));		// Wait for timebase to startup
 }
 
 #ifndef USE_TC_FOR_FAST_DEBUG
@@ -92,7 +96,7 @@ void time_init(void)
 	static int initialized = 0;	if (initialized) { return; } initialized = 1;
 
 #ifndef __INERTIAL_SENSE_EVB_2__
-	timer_time_init();
+	// timer_time_init();
 #endif
 
 #ifndef USE_TC_FOR_FAST_DEBUG
@@ -123,6 +127,10 @@ void time_init(void)
 	g_rollover = 0;	// Reset the rollover now that the timer is fully configured.
 }
 
+inline volatile uint32_t get_tc_chain_time(void)
+{
+	return (uint32_t)((TC0->TC_CHANNEL[1].TC_CV & 0xFFFF) << 16) | (uint16_t)(TC0->TC_CHANNEL[0].TC_CV & 0xFFFF);
+}
 
 inline volatile uint64_t time_ticks(void)
 {
@@ -132,7 +140,7 @@ inline volatile uint64_t time_ticks(void)
 	// Time must be read TWICE in ASF code and compared for corruptness.
 	timer = rtt_read_timer_value(RTT);
 #else
-	timer = ((uint32_t)(TC0->TC_CHANNEL[1].TC_CV) << 16) | (uint32_t)(TC0->TC_CHANNEL[0].TC_CV);
+	timer = get_tc_chain_time();
 #endif
 	
 	// this assumes little endian
