@@ -19,71 +19,73 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static volatile uint32_t g_rollover = 0;
 static volatile uint32_t g_timer = 0;
 
-#define USE_TC_FOR_FAST_DEBUG	// Define to user TC instead of RTT so faults in RTOS happen faster.
-
 #define TC0_CHANNEL0_ID		23
 #define TC0_CHANNEL1_ID		24
-
-void TC_Handler(void)
-{
 	
-}
-
-	#define TC_WAVEFORM_TIMER_SELECTION		TC_CMR_TCCLKS_TIMER_CLOCK2
-	#define TC_WAVEFORM_DIVISOR				8
-	#define TC_WAVEFORM_FREQUENCY			178
-	#define TC_WAVEFORM_DUTY_CYCLE			30
-	
-static void tc_waveform_initialize(void)
+static void time_init_tc(void)
 {
 	// Configure the PMC to enable the TC module.
 	sysclk_enable_peripheral_clock(TC0_CHANNEL0_ID);
 	sysclk_enable_peripheral_clock(TC0_CHANNEL1_ID);
 		
 	tc_init(TC0, 0,
-			TC_CMR_TCCLKS_TIMER_CLOCK2 // Waveform Clock Selection (doesn't matter as we are setting NODIVCLK below)
-			| TC_CMR_WAVE       // Waveform mode is enabled
-			| TC_CMR_ACPA_TOGGLE // RC Compare Effect: clear
-			| (0x2 << TC_CMR_WAVSEL_Pos)     // UP mode
+			TC_CMR_TCCLKS_TIMER_CLOCK2					// Waveform Clock Selection (doesn't matter as we are setting NODIVCLK below)
+			| TC_CMR_WAVE								// Waveform mode is enabled
+			| TC_CMR_ACPA_CLEAR							// RA Compare Effect: set
+			| TC_CMR_ACPC_SET							// RC Compare Effect: clear
+			| TC_CMR_WAVSEL_UP_RC						// UP mode
 	);
-	
-	tc_init(TC0, 1,
-			TC_CMR_TCCLKS_XC1 // Waveform Clock Selection
-			| TC_CMR_WAVE       // Waveform mode is enabled
-			| TC_CMR_ACPA_SET   // RA Compare Effect: set
-			| TC_CMR_ACPC_CLEAR // RC Compare Effect: clear
-			| (0x2 << TC_CMR_WAVSEL_Pos)     // UP mode
-	);
-		
-	TC0.TC_CHANNEL[0].TC_EMR |= TC_EMR_NODIVCLK;	// Clock the peripheral directly with no divider
-	TC0.TC_CHANNEL[1].TC_BMR |= 0x2 << TC_BMR_TC1XC1S_Pos;	// Clock the second channel with the first
 	
 	tc_write_ra(TC0, 0, 0x7FFF);
 	tc_write_rc(TC0, 0, 0xFFFF);
-	tc_write_ra(TC0, 1, 0x7FFF);
-	tc_write_rc(TC0, 1, 0xFFFF);
+	
+	TC0->TC_CHANNEL[0].TC_EMR |= TC_EMR_NODIVCLK;		// Clock the peripheral directly with no divider
+	
+	tc_init(TC0, 1,
+			TC_CMR_TCCLKS_XC1							// Waveform Clock Selection
+			| TC_CMR_WAVE								// Waveform mode is enabled
+			| TC_CMR_WAVSEL_UP							// UP mode
+	);
+		
+	TC0->TC_BMR |= TC_BMR_TC1XC1S_TIOA0;				// Clock the second channel with the first
+	
+	tc_enable_interrupt(TC0, 1, TC_IER_COVFS);			// Trigger interrupt on overflow of 32-bit counter
+	
+	NVIC_DisableIRQ(TC1_IRQn);							// TC0 Channel 1 is on TC1 handler
+	NVIC_ClearPendingIRQ(TC1_IRQn);
+	NVIC_SetPriority(TC1_IRQn, 0);
+	NVIC_EnableIRQ(TC1_IRQn);
 
 	tc_start(TC0, 1);
 	tc_start(TC0, 0);
 }
 
+#ifndef USE_TC_FOR_FAST_DEBUG
 void RTT_Handler(void)
 {
 	uint32_t status = rtt_get_status(RTT);
 
-	// time has changed
-	//	if (status & RTT_SR_RTTINC)
-	//	{
-	//		g_timer = rtt_read_timer_value(RTT);
-	//	}
-
 	// alarm
 	if (status & RTT_SR_ALMS)
 	{
+		rtosResetTaskCounters();
 		g_rollover++;
 	}
 }
 
+#else
+
+void TC1_Handler(void)		// TC0 Channel 1 is on TC1 handler
+{
+	uint32_t status = TC0->TC_CHANNEL[1].TC_SR;
+	
+	if(status & TC_SR_COVFS)
+	{
+		rtosResetTaskCounters();
+		g_rollover++;
+	}
+}
+#endif
 
 void time_init(void)
 {
@@ -93,6 +95,8 @@ void time_init(void)
 	timer_time_init();
 #endif
 
+#ifndef USE_TC_FOR_FAST_DEBUG
+
 	// configure RTT to increment as frequently as possible
 #if SAM4N || SAM4S || SAM4E || SAM4C || SAM4CP || SAM4CM || SAMV71 || SAMV70 || SAME70 || SAMS70
 
@@ -101,20 +105,20 @@ void time_init(void)
 #endif
 
 	rtt_init(RTT, RTPRES);
+	
 	NVIC_DisableIRQ(RTT_IRQn);
 	NVIC_ClearPendingIRQ(RTT_IRQn);
 	NVIC_SetPriority(RTT_IRQn, INT_PRIORITY_RTT);
 	NVIC_EnableIRQ(RTT_IRQn);
-
-#ifdef NDEBUG
-
-	// interrupt for each tick - release mode only, makes debugging impossible
-//	rtt_enable_interrupt(RTT, RTT_MR_RTTINCIEN);
-	
-#endif
 	
 	// notify us when we rollover
 	rtt_write_alarm_time(RTT, 0);
+	
+#else	// USE_TC_FOR_FAST_DEBUG
+
+	time_init_tc();
+	
+#endif
 	
 	g_rollover = 0;	// Reset the rollover now that the timer is fully configured.
 }
@@ -123,9 +127,13 @@ void time_init(void)
 inline volatile uint64_t time_ticks(void)
 {
 	volatile uint32_t timer;
-	
+
+#ifndef USE_TC_FOR_FAST_DEBUG
 	// Time must be read TWICE in ASF code and compared for corruptness.
 	timer = rtt_read_timer_value(RTT);
+#else
+	timer = ((uint32_t)(TC0->TC_CHANNEL[1].TC_CV) << 16) | (uint32_t)(TC0->TC_CHANNEL[0].TC_CV);
+#endif
 	
 	// this assumes little endian
 	volatile ticks_t ticks;
