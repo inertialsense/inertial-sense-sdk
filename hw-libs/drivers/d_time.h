@@ -26,8 +26,6 @@ extern "C" {
 #include "d_timer.h"
 #endif // ENABLE_TC_TIME
 
-#define USE_TC_FOR_FAST_DEBUG	// Define to user TC instead of RTT so faults in RTOS happen faster.
-
 // defines
 #ifdef ENABLE_TC_TIME
 #define RTPRES_SEC              (CHIP_FREQ_MCK/8) // MCK/8
@@ -37,7 +35,6 @@ extern "C" {
 #define RTPRES                  3 // finest allowed granularity
 #endif // ENABLE_TC_TIME
 
-#ifndef USE_TC_FOR_FAST_DEBUG
 #define TIME_TICKS_PER_SEC      (RTPRES_SEC/RTPRES)
 #define TIME_TICKS_PER_MS       (TIME_TICKS_PER_SEC/1000)
 #define TIME_TICKS_PER_US       (TIME_TICKS_PER_SEC/1000000)
@@ -50,21 +47,6 @@ extern "C" {
 #define TIME_MS_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000.0f)
 #define TIME_US_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000000.0f)
 
-#else
-
-#define TIME_TICKS_PER_SEC      (150000000)		// MCK
-#define TIME_TICKS_PER_MS       (TIME_TICKS_PER_SEC/1000)
-#define TIME_TICKS_PER_US       (TIME_TICKS_PER_SEC/1000000)
-
-#define TIME_SECS_PER_TICK_LF   (((double)1)/(double)TIME_TICKS_PER_SEC)
-#define TIME_MS_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*1000.0)
-#define TIME_US_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*1000000.0)
-
-#define TIME_SECS_PER_TICK_F    (((float)1)/(float)TIME_TICKS_PER_SEC)
-#define TIME_MS_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000.0f)
-#define TIME_US_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000000.0f)
-#endif
-
 // typedefs
 typedef union
 {
@@ -75,7 +57,6 @@ typedef union
 // prototypes
 void time_init(void);
 volatile uint64_t time_ticks(void);
-volatile uint32_t get_tc_chain_time(void);
 void time_delay(uint32_t ms);
 uint32_t time_msec(void);
 uint32_t time_usec(void);

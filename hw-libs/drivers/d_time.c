@@ -19,52 +19,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static volatile uint32_t g_rollover = 0;
 static volatile uint32_t g_timer = 0;
 
-#define TC0_CHANNEL0_ID		23
-#define TC0_CHANNEL1_ID		24
-	
-static void time_init_tc(void)
-{
-	// Configure the PMC to enable the TC module.
-	sysclk_enable_peripheral_clock(TC0_CHANNEL0_ID);
-	sysclk_enable_peripheral_clock(TC0_CHANNEL1_ID);
-		
-	tc_init(TC0, 0,
-			TC_CMR_TCCLKS_TIMER_CLOCK2					// Waveform Clock Selection (doesn't matter as we are setting NODIVCLK below)
-			| TC_CMR_WAVE								// Waveform mode is enabled
-			| TC_CMR_ACPA_CLEAR							// RA Compare Effect
-			| TC_CMR_ACPC_SET							// RC Compare Effect
-			| TC_CMR_WAVSEL_UP							// UP mode
-			| TC_CMR_CPCTRG								// UP mode with automatic trigger on RC Compare
-	);
-	
-	tc_write_ra(TC0, 0, 0x7FFF);
-	tc_write_rc(TC0, 0, 0xFFFF);
-	
-	TC0->TC_CHANNEL[0].TC_EMR |= TC_EMR_NODIVCLK;		// Clock the peripheral directly with no divider
-	
-	tc_init(TC0, 1,
-			TC_CMR_TCCLKS_XC1							// Waveform Clock Selection
-			| TC_CMR_WAVE								// Waveform mode is enabled
-			| TC_CMR_WAVSEL_UP							// UP mode
-	);
-		
-	TC0->TC_BMR |= TC_BMR_TC1XC1S_TIOA0;				// Clock the second channel with the first
-	
-	NVIC_DisableIRQ(TC1_IRQn);							// TC0 Channel 1 is on TC1 handler
-	NVIC_ClearPendingIRQ(TC1_IRQn);
-	NVIC_SetPriority(TC1_IRQn, 0);
-	NVIC_EnableIRQ(TC1_IRQn);
-	
-	tc_enable_interrupt(TC0, 1, TC_IER_COVFS);			// Trigger interrupt on overflow of 32-bit counter
-
-	tc_start(TC0, 1);
-	tc_start(TC0, 0);
-	
-	uint32_t previous_time = tc_read_cv(TC0, 0);		
-	while (previous_time == tc_read_cv(TC0, 0));		// Wait for timebase to startup
-}
-
-#ifndef USE_TC_FOR_FAST_DEBUG
 void RTT_Handler(void)
 {
 	uint32_t status = rtt_get_status(RTT);
@@ -77,36 +31,16 @@ void RTT_Handler(void)
 	}
 }
 
-#else
-
-void TC1_Handler(void)		// TC0 Channel 1 is on TC1 handler
-{
-	uint32_t status = TC0->TC_CHANNEL[1].TC_SR;
-	
-	if(status & TC_SR_COVFS)
-	{
-		rtosResetTaskCounters();
-		g_rollover++;
-	}
-}
-#endif
-
 void time_init(void)
 {
 	static int initialized = 0;	if (initialized) { return; } initialized = 1;
 
 #ifndef __INERTIAL_SENSE_EVB_2__
-	// timer_time_init();
+	timer_time_init();
 #endif
-
-#ifndef USE_TC_FOR_FAST_DEBUG
 
 	// configure RTT to increment as frequently as possible
-#if SAM4N || SAM4S || SAM4E || SAM4C || SAM4CP || SAM4CM || SAMV71 || SAMV70 || SAME70 || SAMS70
-
 	rtt_sel_source(RTT, false);
-	
-#endif
 
 	rtt_init(RTT, RTPRES);
 	
@@ -118,29 +52,30 @@ void time_init(void)
 	// notify us when we rollover
 	rtt_write_alarm_time(RTT, 0);
 	
-#else	// USE_TC_FOR_FAST_DEBUG
-
-	time_init_tc();
-	
-#endif
-	
 	g_rollover = 0;	// Reset the rollover now that the timer is fully configured.
-}
-
-inline volatile uint32_t get_tc_chain_time(void)
-{
-	return (uint32_t)((TC0->TC_CHANNEL[1].TC_CV & 0xFFFF) << 16) | (uint16_t)(TC0->TC_CHANNEL[0].TC_CV & 0xFFFF);
 }
 
 inline volatile uint64_t time_ticks(void)
 {
 	volatile uint32_t timer;
 
-#ifndef USE_TC_FOR_FAST_DEBUG
 	// Time must be read TWICE in ASF code and compared for corruptness.
 	timer = rtt_read_timer_value(RTT);
-#else
-	timer = get_tc_chain_time();
+	
+	
+#if 0	// Add an offset to the counter to simulate what happens on wrap.
+	static bool reset = true;
+	
+	if(timer > 0xFFFF && reset)
+	{
+		reset = false;
+		rtosResetTaskCounters();
+		g_rollover++;
+	}
+	
+	timer += 0xFFFF0000;
+	
+	g_debug.i[0] = timer;
 #endif
 	
 	// this assumes little endian
