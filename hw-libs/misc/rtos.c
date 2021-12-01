@@ -18,7 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "globals.h"
 #include "IS_internal.h"
 #include "misc/maintenance.h"
-#ifndef STM32L452xx // uINS-3
+#ifndef uINS_5 // uINS-3
 #include "../../../hdw-src/uINS-3/IS_uINS/src/misc/debug_gpio.h"
 #endif
 #endif
@@ -129,8 +129,8 @@ void rtosResetTaskCounters(void)
 void vApplicationIdleHook(void)
 {
     // Sleep to reduce power consumption
-#ifndef STM32L452xx
-    pmc_enable_sleepmode(0);	// TODO: Implement this function for STM32L452xx
+#ifndef uINS_5
+    pmc_enable_sleepmode(0);	// TODO: Implement this function for uINS_5
 #endif
 }
 
@@ -143,7 +143,7 @@ void vApplicationTickHook(void)
 }
 #endif
 
-#ifndef uINS_5	// TODO: Implement these functions for STM32L452xx
+#ifndef uINS_5	// TODO: Implement these functions for uINS_5
 static void setGpbrWithTaskInfo(void)
 {
     uint32_t task;

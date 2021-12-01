@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#ifndef STM32L452xx
+#ifndef uINS_5
 #include "gpio.h"
 #endif
 
