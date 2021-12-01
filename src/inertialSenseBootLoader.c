@@ -1610,7 +1610,7 @@ int bootloadGetBootloaderVersionFromFile(const char* bootName, int* verMajor, ch
             *verMajor = ver_info[2];
         if (verMinor)
             *verMinor = ver_info[3];
-        return 1;
+        return 0;
     }
 
     //No version found
