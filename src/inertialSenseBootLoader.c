@@ -249,7 +249,7 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
         state->version = 1;
         state->firstPageSkipBytes = 8192;
     }
-    else if (v >= '2' && v <= '4')
+    else if (v >= '2' && v <= '5')
     {
         // version 2, 3 (which sent v2), 4
         state->version = v-'0';
@@ -1087,6 +1087,7 @@ static void bootloaderRestart(serial_port_t* s)
 
 static int bootloaderSync(serial_port_t* s)
 {
+    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
     static const unsigned char handshakerChar = 'U';
 
     //Most usages of this function we do not know if we can communicate (still doing auto-baud or checking to see if the bootloader or application is running) so trying to reset unit here does not make sense.
@@ -1098,7 +1099,7 @@ static int bootloaderSync(serial_port_t* s)
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
-        if (serialPortWriteAndWaitForTimeout(s, &handshakerChar, 1, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
             return 1;
