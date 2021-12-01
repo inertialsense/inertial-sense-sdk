@@ -26,7 +26,7 @@ typedef struct
 static void bootloaderUpdateBootloaderThread(void* state)
 {
     bootload_state_t* s = (bootload_state_t*)state;
-	s->success = (bootloadFileEx(&s->param) == 0);
+    s->success = (bootloadFileEx(&s->param) == 0);
     serialPortClose(&s->serial);
 }
 
