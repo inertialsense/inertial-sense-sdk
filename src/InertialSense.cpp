@@ -714,9 +714,6 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 	vector<string> portStrings;
 	vector<bootload_state_t> state;
 
-	// Initialize as failure and clear at end if successful
-	//results.push_back({ fileName, "Failed to load." });
-
 	if (comPort == "*")
 	{
 		cISSerialPort::GetComPorts(portStrings);
@@ -728,8 +725,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
 
-	// test file exists
-	if (fileName.size() > 0)
+	// file exists?
 	{
 		ifstream tmpStream(fileName);
 		if (!tmpStream.good())
