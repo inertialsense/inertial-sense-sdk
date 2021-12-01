@@ -59,7 +59,7 @@ typedef struct
 	bool forceBootloaderUpdate;				// -fb
     bool bootloaderVerify; 					// -bv
     bool replayDataLog;
-    bool softwareReset;
+    bool softwareResetUins;
     bool softwareResetEvb;
     bool magRecal;
     uint32_t magRecalMode;
@@ -90,6 +90,10 @@ typedef struct
 
 	uint32_t timeoutFlushLoggerSeconds;
 	uint32_t outputOnceDid;
+
+	bool factoryResetUins;
+	bool chipEraseUins;
+	bool chipEraseEvb2;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

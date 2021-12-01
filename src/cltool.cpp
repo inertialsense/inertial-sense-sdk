@@ -158,6 +158,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.comPort = argv[++i];	// use next argument
 		}
+		else if (startsWith(a, "-chipEraseEvb"))
+		{
+			g_commandLineOptions.chipEraseEvb2 = true;
+		}		
+		else if (startsWith(a, "-chipEraseUins"))
+		{
+			g_commandLineOptions.chipEraseUins = true;
+		}		
 		else if (startsWith(a, "-dboc"))
 		{
 			g_commandLineOptions.disableBroadcastsOnClose = true;
@@ -215,6 +223,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.evbFlashCfg = ".";
 		}
+		else if (startsWith(a, "-factoryReset"))
+		{
+			g_commandLineOptions.factoryResetUins = true;
+		}		
 		else if (startsWith(a, "-fb"))
 		{
 			g_commandLineOptions.forceBootloaderUpdate = true;
@@ -310,7 +322,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-reset"))
         {
-            g_commandLineOptions.softwareReset = true;
+            g_commandLineOptions.softwareResetUins = true;
         }
 		else if (startsWith(a, "-rover="))
 		{
@@ -453,6 +465,9 @@ void cltool_outputUsage()
 	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
 	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
 	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+	cout << "    -factoryReset " << boldOff << "  Reset uINS flash config to factory defaults." << endlbOn;
+	cout << "    -chipEraseUins " << boldOff << " CAUTION!!! Erase everything on uINS (firmware, config, calibration, etc.)" << endlbOn;
+	cout << "    -chipEraseEvb2 " << boldOff << " CAUTION!!! Erase everything on EVB2 (firmware, config, etc.)" << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;

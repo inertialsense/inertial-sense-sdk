@@ -232,7 +232,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
-    if (g_commandLineOptions.softwareReset)
+    if (g_commandLineOptions.softwareResetUins)
     {   // Issue software reset
         system_command_t cfg;
         cfg.command = SYS_CMD_SOFTWARE_RESET;
@@ -243,6 +243,33 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {   // Issue software reset to EVB
         uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
         inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+    }
+    if (g_commandLineOptions.chipEraseEvb2)
+    {   // Chip erase EVB
+        uint32_t sysCommand;
+		
+		sysCommand = SYS_CMD_MANF_UNLOCK;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+        sysCommand = SYS_CMD_MANF_CHIP_ERASE;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+    }
+    if (g_commandLineOptions.chipEraseUins)
+    {   // Chip erase uINS
+        uint32_t sysCommand;
+		
+		sysCommand = SYS_CMD_MANF_UNLOCK;
+        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+        sysCommand = SYS_CMD_MANF_CHIP_ERASE;
+        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+    }
+    if (g_commandLineOptions.factoryResetUins)
+    {   // Reset flash config defaults on uINS
+        uint32_t sysCommand;
+		
+		sysCommand = SYS_CMD_MANF_UNLOCK;
+        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+        sysCommand = SYS_CMD_MANF_FACTORY_RESET;
+        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
     }
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
