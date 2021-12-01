@@ -95,7 +95,7 @@ public:
 	{
 		string port;
 		string error;
-	} bootloader_result_t;
+	} bootload_result_t;
 
 	/**
 	* Constructor
@@ -369,10 +369,19 @@ public:
 	* @param baudRate the baud rate to bootload at
 	* @param uploadProgress optional callback for upload progress
 	* @param verifyProgress optional callback for verify progress
+	* @param bootloaderFileName optional bootloader firmware filename
+	* @param forceBootloaderUpdate optional force bootloader firmware to be updated
 	* @return ports and errors, error will be empty if success
 	*/
-	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, const string& bootloaderFileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, pfnBootloadStatus infoProgress = NULLPTR, bool updateBootloader = false);
-	static vector<bootloader_result_t> BootloadFile(const string& comPort, const string& fileName, int baudRate = IS_BAUD_RATE_BOOTLOADER, pfnBootloadProgress uploadProgress = NULLPTR, pfnBootloadProgress verifyProgress = NULLPTR, bool updateBootloader = false);
+	static vector<bootload_result_t> BootloadFile(
+		const string& comPort, 
+		const string& fileName, 
+		int baudRate = IS_BAUD_RATE_BOOTLOADER, 
+		pfnBootloadProgress uploadProgress = NULLPTR, 
+		pfnBootloadProgress verifyProgress = NULLPTR, 
+		pfnBootloadStatus infoProgress = NULLPTR, 
+		const string& bootloaderFileName = "",
+		bool forceBootloaderUpdate = false);
 
 	string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }

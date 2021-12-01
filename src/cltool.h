@@ -54,8 +54,9 @@ typedef struct
 typedef struct
 {
 	string comPort; 						// -c com_port
-	string updateAppFirmwareFilename; 		// -b file_name
+	string updateAppFirmwareFilename; 		// -uf file_name
     string updateBootloaderFilename; 		// -ub file_name
+	bool forceBootloaderUpdate;				// -fb
     bool bootloaderVerify; 					// -bv
     bool replayDataLog;
     bool softwareReset;
@@ -70,7 +71,7 @@ typedef struct
 	uint64_t rmcPreset;
     bool persistentMessages;
 	stream_did_t datasetEdit;				// -edit DID#=periodMultiple
-	vector<stream_did_t> datasets = {};		// -did DID#=periodMultiple
+	vector<stream_did_t> datasets;			// -did DID#=periodMultiple
 
 	bool enableLogging;
 	string logType; 						// -lt=dat
@@ -88,7 +89,7 @@ typedef struct
 	string evbFlashCfg;
 
 	uint32_t timeoutFlushLoggerSeconds;
-	uint32_t outputOnceDid = 0;
+	uint32_t outputOnceDid;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

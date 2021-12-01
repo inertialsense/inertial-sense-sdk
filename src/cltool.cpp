@@ -215,6 +215,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.evbFlashCfg = ".";
 		}
+		else if (startsWith(a, "-fb"))
+		{
+			g_commandLineOptions.forceBootloaderUpdate = true;
+		}
 		else if (startsWith(a, "-flashCfg="))
 		{
 			g_commandLineOptions.flashCfg = &a[10];
@@ -446,8 +450,9 @@ void cltool_outputUsage()
 	cout << "    -stats" << boldOff << "          Display statistics of data received" << endlbOn;
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
 	cout << "    -uf " << boldOff << "FILEPATH    Update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
-	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old." << endlbOn;
-	cout << "    -uv" << boldOff << "             Run verification after application firmware update." << endlbOn;
+	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
+	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
+	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;

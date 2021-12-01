@@ -39,7 +39,7 @@ class cInertialSenseDisplay
 public:
 	typedef struct
 	{
-		const map_name_to_info_t 			*mapInfo = NULL;
+		const map_name_to_info_t 			*mapInfo;
 		map_name_to_info_t::const_iterator 	mapInfoSelection;
 		map_name_to_info_t::const_iterator 	mapInfoBegin;
 		map_name_to_info_t::const_iterator 	mapInfoEnd;
