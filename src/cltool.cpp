@@ -50,6 +50,12 @@ static bool startsWith(const char* str, const char* pre)
 	return lenstr < lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
 }
 
+static bool matches(const char* str, const char* pre)
+{
+	size_t lenpre = strlen(pre), lenstr = strlen(str);
+	return lenstr != lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
+}
+
 #define CL_DEFAULT_BAUD_RATE				IS_COM_BAUDRATE_DEFAULT 
 #define CL_DEFAULT_COM_PORT					"*"
 #define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_PRETTY 
@@ -143,29 +149,29 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         
 		if (startsWith(a, "-asciiMessages="))
-        {
-            g_commandLineOptions.asciiMessages = &a[15];
-        }
+		{
+			g_commandLineOptions.asciiMessages = &a[15];
+		}
 		else if (startsWith(a, "-base="))
 		{
 			g_commandLineOptions.baseConnection = &a[6];
 		}
-        else if (startsWith(a, "-baud="))
+		else if (startsWith(a, "-baud="))
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
-		}
-		else if (startsWith(a, "-c"))
-		{
-			g_commandLineOptions.comPort = argv[++i];	// use next argument
 		}
 		else if (startsWith(a, "-chipEraseEvb"))
 		{
 			g_commandLineOptions.chipEraseEvb2 = true;
-		}		
+		}
 		else if (startsWith(a, "-chipEraseUins"))
 		{
 			g_commandLineOptions.chipEraseUins = true;
-		}		
+		}
+		else if (matches(a, "-c") && (i + 1) < argc)
+		{
+			g_commandLineOptions.comPort = argv[++i];	// use next argument
+		}
 		else if (startsWith(a, "-dboc"))
 		{
 			g_commandLineOptions.disableBroadcastsOnClose = true;
@@ -183,31 +189,30 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			cltool_outputHelp();
 			return false;
 		}
-		else if (startsWith(a, "-did"))
+		else if (startsWith(a, "-did") && (i + 1) < argc)
 		{
-				while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))	// next argument doesn't start with "-"
+			while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))	// next argument doesn't start with "-"
+			{
+				if (g_commandLineOptions.outputOnceDid)
 				{
-					if (g_commandLineOptions.outputOnceDid)
+					i++;
+				}
+				else
+				{
+					stream_did_t dataset = {};
+					if (read_did_argument(&dataset, argv[++i]))		// use next argument
 					{
-						i++;
-					}
-					else
-					{
-						stream_did_t dataset = {};
-						if (read_did_argument(&dataset, argv[++i]))		// use next argument
+						if (dataset.periodMultiple == 0)
 						{
-							if (dataset.periodMultiple == 0)
-							{
-								g_commandLineOptions.outputOnceDid = dataset.did;
-								g_commandLineOptions.datasets.clear();
-							}
-							g_commandLineOptions.datasets.push_back(dataset);
+							g_commandLineOptions.outputOnceDid = dataset.did;
+							g_commandLineOptions.datasets.clear();
 						}
+						g_commandLineOptions.datasets.push_back(dataset);
 					}
 				}
-			
+			}			
 		}
-		else if (startsWith(a, "-edit"))
+		else if (startsWith(a, "-edit") && (i + 1) < argc)
 		{
 			stream_did_t dataset = {};
 			if (read_did_argument(&dataset, argv[++i]))	// use next argument
@@ -272,7 +277,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 				g_commandLineOptions.logSubFolder = subFolder;
 			}
 		}
-		else if (startsWith(a, "-lp"))
+		else if (startsWith(a, "-lp") && (i + 1) < argc)
 		{
 			g_commandLineOptions.logPath = argv[++i];	// use next argument;
 		}
@@ -306,7 +311,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
 		}
-		else if (startsWith(a, "-rp"))
+		else if (startsWith(a, "-rp") && (i + 1) < argc)
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.logPath = argv[++i];	// use next argument
@@ -355,11 +360,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
 		}
-		else if (startsWith(a, "-ub"))
+		else if (startsWith(a, "-ub") && (i + 1) < argc)
 		{
 			g_commandLineOptions.updateBootloaderFilename = argv[++i];	// use next argument
 		}
-        else if (startsWith(a, "-uf"))
+        else if (startsWith(a, "-uf") && (i + 1) < argc)
         {
             g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
         }

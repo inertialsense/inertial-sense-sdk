@@ -1218,9 +1218,9 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
             if (!bootloadUpdateBootloaderSendFile(&params))
                 return -1;
 
-            //Restart process now bootloader is updated
             SLEEP_MS(1000);
-            return 0;
+            //Bootloader updated successfully.  Return 1 to indicate firmware update is now needed.
+            return 1;
         }
 
         return -1;
@@ -1304,8 +1304,8 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                         if (!bootloadUpdateBootloaderSendFile(&params))
                             return -1;
 
-                        //Success.  Return 1 to indicate restart process now bootloader is updated
                         SLEEP_MS(1000);
+                        //Bootloader updated successfully.  Return 1 to indicate firmware update is now needed.
                         return 1;
                     }
                     else
@@ -1558,9 +1558,8 @@ int bootloadFileEx(bootload_params_t* params)
 
     result = bootloadFileInternal(file, params);
 
-    //Restart if we updated bootloader
     if (result == 1)
-    {
+    {    // Bootloader was just updated.  Start firmware update. 
         params->forceBootloaderUpdate = 0;
         result = bootloadFileInternal(file, params);
     }
