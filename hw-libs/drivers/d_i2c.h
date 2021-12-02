@@ -62,8 +62,8 @@ typedef struct
 	volatile uint8_t		rx_status;
 	uint8_t					*rx_buf_dest;	// Destination for data to be copied to after read
 	uint8_t					rx_len;
-	uint8_t					tx_buf[I2C_BUF_SIZE_TX] __attribute__((aligned(32)));
-	uint8_t					rx_buf[I2C_BUF_SIZE_RX] __attribute__((aligned(32)));
+	uint8_t					tx_buf[I2C_BUF_SIZE_TX] __attribute__((aligned(4)));
+	uint8_t					rx_buf[I2C_BUF_SIZE_RX] __attribute__((aligned(4)));
 } i2c_t;
 
 extern i2c_t sn_i2c;
