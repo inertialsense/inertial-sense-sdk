@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include "../../../hw-libs/communications/CAN_comm.h"
 #include "../../../hw-libs/drivers/CAN.h"
+#include "../../../hw-libs/drivers/d_flash.h"
 #include "../../../hw-libs/misc/bootloaderApp.h"
 #include "../../../src/ISUtilities.h"
 #include "../../../src/ISLogger.h"
@@ -566,6 +567,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
+	static uint8_t manfUnlock = false;
 
 	switch(ptype)
 	{
@@ -577,19 +579,22 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 			switch (g_status.sysCommand)
 			{
-			case SYS_CMD_SOFTWARE_RESET:
-			#if 0
-				// Write flash config now
-				//  nvr_flash_config_write_now_before_reset();
-				BEGIN_CRITICAL_SECTION
-				g_nvr_manage_config.flash_write_needed = true;
-				g_nvr_manage_config.flash_write_enable = true;
-				END_CRITICAL_SECTION
-				nvr_slow_maintenance();
-			#endif
-
-				// Reset processor
+			case SYS_CMD_SOFTWARE_RESET:			// Reset processor
 				soft_reset_backup_register(SYS_FAULT_STATUS_USER_RESET);
+				break;
+
+			case SYS_CMD_MANF_UNLOCK:				// Unlock process for chip erase
+				manfUnlock = true;
+				break;
+
+			case SYS_CMD_MANF_CHIP_ERASE:			// chip erase and reboot - do NOT reset calibration!
+				if(manfUnlock)
+				{
+					BEGIN_CRITICAL_SECTION
+					
+					// erase chip
+					flash_erase_chip();
+				}
 				break;
 			}
 			g_status.sysCommand = 0;
