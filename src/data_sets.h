@@ -86,6 +86,7 @@ typedef uint32_t eDataIDs;
 #define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor 1 output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
+#define DID_INL2_COVARIANCE             (eDataIDs)55 /** (inl2_covariance_t) INL2 EKF covariances */
 //#define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_DUAL_IMU_RAW                (eDataIDs)57 /** (dual_imu_t) Dual inertial measurement unit data directly from IMU.  We recommend use of DID_DUAL_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
@@ -927,6 +928,22 @@ typedef struct PACKED
     /** (rad)   Magnetic inclination */
     float					magInc;                 
 } inl2_states_t;
+
+// (DID_INL2_COVARIANCE) INL2 - INS Extended Kalman Filter (EKF) state covariance
+typedef struct PACKED
+{
+    /** GPS time of week (since Sunday morning) in seconds */
+	double                  timeOfWeek;
+
+    /** (rad^2)   EKF attitude error covariance in body frame */
+	float					re2b[3];
+
+    /** ((m/s)^2) EKF velocity covariance in ECEF frame */
+	float					ve[3];
+
+    /** (m^2)     EKF position covariance in ECEF frame */
+    float					ecef[3];
+} inl2_covariance_t;
 
 typedef struct PACKED
 {
