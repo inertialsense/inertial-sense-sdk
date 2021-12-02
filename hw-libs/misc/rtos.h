@@ -64,11 +64,15 @@ int createTask(
 // Monitor state of RTOS (i.e. stack high water mark, unused words).
 void rtos_monitor(int numRtosTasks);
 void rtosResetStats(void);
+void rtosResetTaskCounters(void);
 
 void vApplicationIdleHook(void);
 void vApplicationTickHook(void);
+
+#ifndef uINS_5
 void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed char *pcTaskName);
 void vApplicationMallocFailedHook(uint32_t size, uint32_t remaining, uint32_t prevLR);
+#endif
 
 extern uint32_t g_faultLineNumber;
 extern uint32_t g_faultFileNumber;
