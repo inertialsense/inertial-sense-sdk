@@ -5,13 +5,11 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>
-    </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-c COM81 -uf ../../../cpp/hdw-src/uINS-3/IS_uINS/Release/IS_uINS-3.hex -ub ../../../cpp/hdw-src/SAMx70-Bootloader/SAMx70-Bootloader/Release/SAMx70-Bootloader.bin</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>
-    </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-c COM81 -uf ../../../cpp/hdw-src/uINS-3/IS_uINS/Release/IS_uINS-3.hex -ub ../../../cpp/hdw-src/SAMx70-Bootloader/SAMx70-Bootloader/Release/SAMx70-Bootloader.bin</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
