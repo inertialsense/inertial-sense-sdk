@@ -155,6 +155,7 @@ SECTIONS
         . = ALIGN(4);
         _sbss = . ;
         _szero = .;
+        *(MCAN MCAN.*)
         *(.bss .bss.*)
         *(COMMON)
         . = ALIGN(4);
