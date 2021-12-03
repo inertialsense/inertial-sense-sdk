@@ -162,12 +162,9 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE 2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
-#define NUM_IMU_DEVICES     3
-// #define NUM_MAG_DEVICES     2
-#define NUM_MAG_DEVICES     1
-#warning "need to change number of mags between 3 and 4"
-// #define NUM_IMU_DEVICES     (g_hdw_detect >= HDW_DETECT_VER_IMX_4_x_x ? 3 : 2)
-// #define NUM_MAG_DEVICES     (g_hdw_detect < HDW_DETECT_VER_IMX_4_x_x ? 2 : 1)
+// Leave these at max value of devices across all hardware types: uINS-3, uINS-4, and uINS-5.
+#define NUM_IMU_DEVICES     3		// g_numImuDevices defines the actual number of hardware specific devices
+#define NUM_MAG_DEVICES     2		// g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
 enum eInsStatusFlags
