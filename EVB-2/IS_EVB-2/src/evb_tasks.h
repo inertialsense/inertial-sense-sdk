@@ -1,6 +1,7 @@
 #include <asf.h>
 #include <string>
 #include <stream_buffer.h>
+#include <arm_math.h>
 
 #include "sd_mmc_mem.h"
 #include "wifi.h"
