@@ -1126,8 +1126,8 @@ enum eGenFaultCodes
 	GFC_INIT_SENSORS					= 0x00000100,
 	/*! Fault: SPI bus initialization  */
 	GFC_INIT_SPI						= 0x00000200,
-	/*! Fault: SPI device(s) initialization */
-	GFC_INIT_SPI_DEVICES				= 0x00000400,
+// 	/*! Fault:  */
+// 	GFC_UNUSED							= 0x00000400,
 	/*! Fault: GPS1 init  */
 	GFC_INIT_GPS1						= 0x00000800,
 	/*! Fault: GPS2 init  */
@@ -1144,6 +1144,12 @@ enum eGenFaultCodes
 	GFC_SYS_FAULT_CRITICAL			    = 0x00020000,
 	/*! Sensor(s) saturated */
 	GFC_SENSOR_SATURATION 				= 0x00040000,
+	/*! Fault: IMU initialization */
+	GFC_INIT_IMU						= 0x00100000,
+	/*! Fault: Magnetometer initialization */
+	GFC_INIT_MAGNETOMETER				= 0x00400000,
+	/*! Fault: Barometer initialization */
+	GFC_INIT_BAROMETER					= 0x00200000,
 };
 
 
