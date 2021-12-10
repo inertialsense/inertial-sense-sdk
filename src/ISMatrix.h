@@ -23,6 +23,9 @@ extern "C" {
 
 //_____ M A C R O S ________________________________________________________
 
+#ifndef EPS
+#define EPS (1.0e-16f)  // Smallest number for safe division
+#endif
 
 // Magnitude Squared or Dot Product of vector w/ itself
 #define dot_Vec2(v) ((v)[0]*(v)[0] + (v)[1]*(v)[1])
@@ -38,16 +41,16 @@ extern "C" {
 #define mag_Vec4d(v) (sqrt(dot_Vec4(v)))
 
 #if 1
-#	define recipNorm_Vec2(v)	(1.0f/mag_Vec2(v))
-#	define recipNorm_Vec3(v)	(1.0f/mag_Vec3(v))
-#	define recipNorm_Vec4(v)	(1.0f/mag_Vec4(v))
+#	define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPS))
+#	define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPS))
+#	define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPS))
 #else	// Use fast inverse square root.  0.175% less accurate
 #	define recipNorm_Vec2(v)	(invSqrt(dot_Vec2(v)))
 #	define recipNorm_Vec3(v)	(invSqrt(dot_Vec3(v)))
 #	define recipNorm_Vec4(v)	(invSqrt(dot_Vec4(v)))
 #endif
-#	define recipNorm_Vec3d(v)	(1.0/mag_Vec3d(v))
-#	define recipNorm_Vec4d(v)	(1.0/mag_Vec4d(v))
+#	define recipNorm_Vec3d(v)	(1.0/_MAX(mag_Vec3d(v), EPS))
+#	define recipNorm_Vec4d(v)	(1.0/_MAX(mag_Vec4d(v), EPS))
 
 #define unwrap_Vec3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
