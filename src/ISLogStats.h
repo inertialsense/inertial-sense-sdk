@@ -10,54 +10,52 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef IS_SDK_CREATE_IS_LOG_FILE_H_
-#define IS_SDK_CREATE_IS_LOG_FILE_H_
+#ifndef IS_LOG_STATS_H
+#define IS_LOG_STATS_H
 
-#include "ISConstants.h"
+#include <string>
+#include <cstdint>
 
-#if PLATFORM_IS_EVB_2
-#include "ISLogFileFatFs.h"
-#else
-#include "ISLogFile.h"
-#endif
+#include "data_sets.h"
+#include "ISComm.h"
 
 
-inline cISLogFileBase* CreateISLogFile()
+
+class cLogStatDataId
 {
-#if PLATFORM_IS_EVB_2
-    return new cISLogFileFatFs;
-#else
-    return new cISLogFile;
-#endif
-}
+public:
+	uint64_t count; // count for this data id
+	uint64_t errorCount; // error count for this data id
+	double averageTimeDelta; // average time delta for the data id
+	double totalTimeDelta; // sum of all time deltas
+	double lastTimestamp;
+	double lastTimestampDelta;
+	double minTimestampDelta;
+	double maxTimestampDelta;
+	uint64_t timestampDeltaCount;
+	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
 
-inline cISLogFileBase* CreateISLogFile(const char* filePath, const char* mode)
+	cLogStatDataId();
+	void LogTimestamp(double timestamp);
+	void Printf();
+};
+
+class cLogStats
 {
-#if PLATFORM_IS_EVB_2
-    return new cISLogFileFatFs(filePath, mode);
-#else
-    return new cISLogFile(filePath, mode);
-#endif
-}
+public:
+	cLogStatDataId dataIdStats[DID_COUNT];
+	uint64_t count; // count of all data ids
+	uint64_t errorCount; // total error count
 
-inline cISLogFileBase* CreateISLogFile(const std::string& filePath, const char* mode)
-{
-#if PLATFORM_IS_EVB_2
-    return new cISLogFileFatFs(filePath, mode);
-#else
-    return new cISLogFile(filePath, mode);
-#endif
-}
-
-inline void CloseISLogFile(cISLogFileBase* logFile)
-{
-    if (logFile != NULLPTR)
-    {
-        logFile->close();
-        delete logFile;
-        logFile = NULLPTR;
-    }
-}
+	cLogStats();
+	void Clear();
+	void LogError(const p_data_hdr_t* hdr);
+	void LogData(uint32_t dataId);
+	void LogDataAndTimestamp(uint32_t dataId, double timestamp);
+	void Printf();
+	void WriteToFile(const std::string& fileName);
+};
 
 
-#endif //IS_SDK_CREATE_IS_LOG_FILE_H_
+
+#endif // IS_LOG_STATS_H
