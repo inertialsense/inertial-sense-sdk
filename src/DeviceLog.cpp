@@ -38,7 +38,6 @@ cDeviceLog::cDeviceLog()
     m_logSize = 0;
     m_fileCount = 0;
     memset(&m_devInfo, 0, sizeof(dev_info_t));
-    //m_logStats = new cLogStats;
 	m_altClampToGround = true;
 	m_showTracks = true;
 	m_showPointTimestamps = true;
