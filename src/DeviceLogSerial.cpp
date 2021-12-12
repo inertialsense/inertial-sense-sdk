@@ -50,6 +50,17 @@ bool cDeviceLogSerial::CloseAllFiles()
 }
 
 
+bool cDeviceLogSerial::Clear()
+{
+	cDeviceLog::Clear();
+
+	// Close file
+	CloseISLogFile(m_pFile);
+
+	return true;
+}
+
+
 bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
     cDeviceLog::SaveData(dataHdr, dataBuf);

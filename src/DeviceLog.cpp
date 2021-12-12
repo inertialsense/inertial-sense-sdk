@@ -45,12 +45,14 @@ cDeviceLog::cDeviceLog()
 	m_pointUpdatePeriodSec = 1.0f;
 }
 
+
 cDeviceLog::~cDeviceLog()
 {
     // Close open files
     CloseISLogFile(m_pFile);
     CloseAllFiles();
 }
+
 
 void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
@@ -82,9 +84,18 @@ bool cDeviceLog::CloseAllFiles()
 	serialNumString << m_devInfo.serialNumber;
     m_logStats.WriteToFile(m_directory + "/stats_SN" + serialNumString.str() + ".txt");
 #endif
-    m_logStats.Clear();
-    return true;
+
+	Clear();
+	return true;
 }
+
+
+bool cDeviceLog::Clear()
+{
+	m_logStats.Clear();
+	return true;
+}
+
 
 bool cDeviceLog::OpenWithSystemApp()
 {
@@ -110,6 +121,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
 	}
     return true;
 }
+
 
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
 {

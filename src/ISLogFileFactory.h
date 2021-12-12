@@ -49,7 +49,7 @@ inline cISLogFileBase* CreateISLogFile(const std::string& filePath, const char* 
 #endif
 }
 
-inline void CloseISLogFile(cISLogFileBase* logFile)
+inline void CloseISLogFile(cISLogFileBase*& logFile)
 {
     if (logFile != NULLPTR)
     {
