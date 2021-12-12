@@ -31,10 +31,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if PLATFORM_IS_EVB_2
 #include "drivers/d_time.h"
+#include "ISLogFileFatFs.h"
+#else
+#include "ISLogFile.h"
 #endif
 
 #include "ISConstants.h"
-#include "ISLogFile.h"
 #include "ISLogStats.h"
 
 using namespace std;
