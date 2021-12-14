@@ -830,7 +830,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 				com_bridge_forward(srcPort, comm.pktPtr, pktSize);
 
 				// Send uINS data to Logging task
-				if (srcPort == g_flashCfg->uinsComPort)
+				if (srcPort == g_flashCfg->uinsComPort && pktSize > 0)
 				{
 					is_evb_log_stream stm;
 					stm.marker = DATA_CHUNK_MARKER;
@@ -838,12 +838,15 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 					switch (ptype)
 					{
 					case _PTYPE_INERTIAL_SENSE_DATA:
-						handle_data_from_uINS(comm.dataHdr, comm.dataPtr);
+						if (comm.dataHdr.size > 0)
+						{
+							handle_data_from_uINS(comm.dataHdr, comm.dataPtr);
 					
-						stm.size = sizeof(p_data_hdr_t) + comm.dataHdr.size;
-						xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
-						xStreamBufferSend(g_xStreamBufferUINS, (void*)&(comm.dataHdr), sizeof(p_data_hdr_t), 0);
-						xStreamBufferSend(g_xStreamBufferUINS, (void*)(comm.dataPtr), comm.dataHdr.size, 0);
+							stm.size = sizeof(p_data_hdr_t) + comm.dataHdr.size;
+							xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
+							xStreamBufferSend(g_xStreamBufferUINS, (void*)&(comm.dataHdr), sizeof(p_data_hdr_t), 0);
+							xStreamBufferSend(g_xStreamBufferUINS, (void*)(comm.dataPtr), comm.dataHdr.size, 0);							
+						}
 						break;
 					case _PTYPE_UBLOX:
 #if UBLOX_LOG_ENABLE
@@ -854,6 +857,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 						break;
 					}
 				}
+
 			}
 		}
 	}	
