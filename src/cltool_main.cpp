@@ -497,6 +497,9 @@ static int inertialSenseMain()
 						// device disconnected, exit
 						break;
 					}
+
+					// Update display
+					g_inertialSenseDisplay.PrintData();
 				}
 			}
 			catch (...)
