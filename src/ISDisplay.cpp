@@ -479,14 +479,14 @@ bool cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	return true;
 }
 
-#define REFRESH_PERIOD_MS	100		// 10Hz 
-void cInertialSenseDisplay::PrintData()
+// Print data to standard out at the following refresh rate.
+void cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 {
 	unsigned int curTimeMs = current_timeMs();
 	static unsigned int timeSinceRefreshMs = 0;
 
 	// Limit display refresh rate
-	if (curTimeMs - timeSinceRefreshMs < REFRESH_PERIOD_MS)
+	if (curTimeMs - timeSinceRefreshMs < refreshPeriodMs)
 	{
 		return;
 	}
