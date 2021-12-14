@@ -498,7 +498,7 @@ static int inertialSenseMain()
 						break;
 					}
 
-					// Print display to standard out
+					// Print to standard output
 					g_inertialSenseDisplay.PrintData();
 				}
 			}

@@ -449,7 +449,7 @@ bool cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		}
 	}
 
-	// Display Data
+	// Save data to be displayed from PrintData()
 	switch (m_displayMode)
 	{
 	default:
