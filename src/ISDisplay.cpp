@@ -458,6 +458,12 @@ bool cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	case DMODE_PRETTY:
 		// Data stays at fixed location (no scroll history)
 		DataToVector(data);
+		if (m_outputOnceDid == data->hdr.id)
+		{	// Exit as soon as we display DID
+			Home();
+			cout << VectortoString();
+			exit(1);
+		}
 		break;
 
 	case DMODE_EDIT:
@@ -495,17 +501,14 @@ void cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	// Display Data
 	switch (m_displayMode)
 	{
+	default:	// Do not display
+		break;
+
 	case DMODE_PRETTY:
 		Home();
-		if (m_outputOnceDid)
-		{
-			cout << VectortoString();
-			exit(1);
-		}
 		if (m_enableReplay)
 			cout << Replay(m_replaySpeedX) << endl;
 		else
-
 			cout << Connected() << endl;
 
 		cout << VectortoString();

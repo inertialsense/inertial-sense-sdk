@@ -140,7 +140,7 @@ private:
 	double m_replaySpeedX = 1.0;
 
 	edit_data_t m_editData = {};
-	int m_outputOnceDid = 0;				// 0 = disabled
+	uint32_t m_outputOnceDid = 0;			// Set to DID to display then exit cltool.  0 = disabled
 	bool m_interactiveMode = true;
 
 	struct sDidStats
