@@ -40,7 +40,7 @@ typedef struct
 unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len);
 string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID);
 string messageDescriptionRtcm3(int id);
-void messageStatsAppend(string message, mul_msg_stats_t &msgStats, int ptype, int id, int timeMs);
+void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int timeMs);
 string messageStatsSummary(mul_msg_stats_t &msgStats);
 
 

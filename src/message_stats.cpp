@@ -107,7 +107,7 @@ static void updateTimeMs(msg_stats_t &s, int timeMs)
 	s.timeMs = timeMs;
 }
 
-void messageStatsAppend(string message, mul_msg_stats_t &msgStats, int ptype, int id, int timeMs)
+void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int timeMs)
 {
 	switch (ptype)
 	{
