@@ -317,7 +317,7 @@ typedef struct
 
 typedef struct evb_luna_aux_command_t
 {
-    uint32_t                    command;
+    uint32_t                    command;	// (see eLunaAuxCommands)
 
 }evb_luna_aux_command_t;
 
