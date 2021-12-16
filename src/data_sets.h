@@ -935,7 +935,7 @@ typedef struct PACKED
     /** GPS time of week (since Sunday morning) in seconds */
 	double                  timeOfWeek;
 
-    /** (rad^2, m^2)   EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames */
+    /** (rad^2, m^2)  EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames */
 	float					covPoseLD[21];
 
     /** ((m/s)^2, (rad/s)^2)   EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames */
