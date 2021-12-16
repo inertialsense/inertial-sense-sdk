@@ -132,11 +132,11 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
 	sizeMap[DID_IMU] = sizeof(imu_t);
-    sizeMap[DID_IMU3] = sizeof(imu3_t);
+    sizeMap[DID_IMU3_RAW] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
-	sizeMap[DID_IMU3_MAG] = sizeof(imu3_mag_t);
+	sizeMap[DID_IMU3_RAW_MAG] = sizeof(imu3_mag_t);
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
 
@@ -654,7 +654,7 @@ static void PopulateIMUDeltaThetaVelocityMagMappings(map_name_to_info_t mappings
 static void PopulateIMU3MagnetometerMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef imu3_mag_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_IMU3_MAG];
+	map_name_to_info_t& m = mappings[DID_IMU3_RAW_MAG];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "time", imu.time, 0, DataTypeDouble, double, 0);
 	ADD_MAP(m, totalSize, "pqr1[0]", imu.I[0].pqr[0], 0, DataTypeFloat, float&, 0);
@@ -2148,7 +2148,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS",                 // 54
 	"UNUSED_55",                        // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
-	"DID_IMU3",                         // 57
+	"DID_IMU3_RAW",                     // 57
 	"DID_IMU",                          // 58
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
@@ -2175,7 +2175,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_FLASH_CFG",                // 81
 	"DID_EVB_DEBUG_ARRAY",              // 82
 	"DID_EVB_RTOS_INFO",                // 83
-	"DID_IMU3_MAG",                     // 84
+	"DID_IMU3_RAW_MAG",                 // 84
 	"DID_IMU_MAG",                      // 85
 	"DID_PREINTEGRATED_IMU_MAG",        // 86
 	"DID_GROUND_VEHICLE",               // 87
@@ -2219,7 +2219,7 @@ cISDataMappings::cISDataMappings()
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
-    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3);
+    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateINS1Mappings(m_lookupInfo);
