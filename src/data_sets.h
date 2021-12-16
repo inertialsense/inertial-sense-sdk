@@ -1117,7 +1117,7 @@ enum eGenFaultCodes
 	GFC_UNHANDLED_INTERRUPT				= 0x00000010,
 	/*! Fault: sensor initialization  */
 	GFC_INIT_SENSORS					= 0x00000100,
-	/*! Fault: SPI initialization  */
+	/*! Fault: SPI bus initialization  */
 	GFC_INIT_SPI						= 0x00000200,
 	/*! Fault: SPI configuration  */
 	GFC_CONFIG_SPI						= 0x00000400,

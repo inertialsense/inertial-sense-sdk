@@ -232,7 +232,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
-    if (g_commandLineOptions.softwareReset)
+    if (g_commandLineOptions.softwareResetUins)
     {   // Issue software reset
         system_command_t cfg;
         cfg.command = SYS_CMD_SOFTWARE_RESET;
@@ -243,6 +243,39 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {   // Issue software reset to EVB
         uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
         inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+    }
+    if (g_commandLineOptions.chipEraseEvb2)
+    {   // Chip erase EVB
+        uint32_t sysCommand;
+		
+		sysCommand = SYS_CMD_MANF_UNLOCK;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+        sysCommand = SYS_CMD_MANF_CHIP_ERASE;
+        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
+    }
+    if (g_commandLineOptions.chipEraseUins)
+    {   // Chip erase uINS
+		system_command_t cfg;
+
+		cfg.command = SYS_CMD_MANF_UNLOCK;
+		cfg.invCommand = ~cfg.command;
+		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+
+		cfg.command = SYS_CMD_MANF_CHIP_ERASE;
+		cfg.invCommand = ~cfg.command;
+		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+    }
+    if (g_commandLineOptions.factoryResetUins)
+    {   // Reset flash config defaults on uINS
+		system_command_t cfg;
+
+		cfg.command = SYS_CMD_MANF_UNLOCK;
+		cfg.invCommand = ~cfg.command;
+		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+
+		cfg.command = SYS_CMD_MANF_FACTORY_RESET;
+		cfg.invCommand = ~cfg.command;
+		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
@@ -279,17 +312,23 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	return true;
 }
 
-static int cltool_updateAppFirmware()
+static int cltool_updateFirmware()
 {
 	// [BOOTLOADER INSTRUCTION] Update firmware
-	cout << "Updating application firmware using file at " << g_commandLineOptions.updateAppFirmwareFilename << endl;
-	vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, 
+	if (g_commandLineOptions.updateBootloaderFilename.size() > 0)
+	{
+		cout << "Checking bootloader firmware: " << g_commandLineOptions.updateBootloaderFilename << endl;
+	}
+	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
+	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort,
         g_commandLineOptions.updateAppFirmwareFilename, 
-		g_commandLineOptions.updateBootloaderFilename,
         g_commandLineOptions.baudRate, 
         bootloadUploadProgress,
 		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0),
-		bootloadStatusInfo);
+		bootloadStatusInfo,
+		g_commandLineOptions.updateBootloaderFilename,
+		g_commandLineOptions.forceBootloaderUpdate
+		);
 	cout << endl << "Results:" << endl;
 	int errorCount = 0;
 	for (size_t i = 0; i < results.size(); i++)
@@ -302,31 +341,6 @@ static int cltool_updateAppFirmware()
 		cout << endl << errorCount << " ports failed." << endl;
 	}
 	return (errorCount == 0 ? 0 : -1);
-}
-
-static int cltool_updateBootloader()
-{
-    cout << "Updating bootloader using file at " << g_commandLineOptions.updateBootloaderFilename << endl;
-    vector<InertialSense::bootloader_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort, 
-        g_commandLineOptions.updateBootloaderFilename,
-		"",
-        g_commandLineOptions.baudRate, 
-        bootloadUploadProgress,
-        (g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0), 
-		bootloadStatusInfo,
-        true);
-    cout << endl << "Results:" << endl;
-    int errorCount = 0;
-    for (size_t i = 0; i < results.size(); i++)
-    {
-        cout << results[i].port << ": " << (results[i].error.size() == 0 ? "Success\n" : results[i].error);
-        errorCount += (int)(results[i].error.size() != 0);
-    }
-    if (errorCount != 0)
-    {
-        cout << endl << errorCount << " ports failed." << endl;
-    }
-    return (errorCount == 0 ? 0 : -1);
 }
 
 static int cltool_createHost()
@@ -397,25 +411,26 @@ static int inertialSenseMain()
 	{
         if (g_commandLineOptions.updateAppFirmwareFilename.substr(g_commandLineOptions.updateAppFirmwareFilename.length() - 4) != ".hex")
         {
-            cout << "Incorrect file extension." << endl;
+            cout << "Incorrect firmware file extension: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
             return -1;
         }
+
+		if (g_commandLineOptions.updateBootloaderFilename.length() != 0 &&
+			g_commandLineOptions.updateBootloaderFilename.substr(g_commandLineOptions.updateBootloaderFilename.length() - 4) != ".bin")
+		{
+			cout << "Incorrect bootloader file extension: " << g_commandLineOptions.updateBootloaderFilename << endl;
+			return -1;
+		}
 
 		// [BOOTLOADER INSTRUCTION] 1.) Run bootloader
-		return cltool_updateAppFirmware();
+		return cltool_updateFirmware();
 	}
-    // if bootloader filename was specified on the command line, do that now and return
-    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)
-    {
-        if (g_commandLineOptions.updateBootloaderFilename.substr(g_commandLineOptions.updateBootloaderFilename.length() - 4) != ".bin")
-        {
-            cout << "Incorrect file extension." << endl;
-            return -1;
-        }
-
-        return cltool_updateBootloader();
-    }
-    // if host was specified on the command line, create a tcp server
+	else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)
+	{
+		cout << "option -uf [FILENAME] must be used with option -ub [FILENAME] " << endl;
+		return -1;
+	}
+	// if host was specified on the command line, create a tcp server
 	else if (g_commandLineOptions.baseConnection.length() != 0)
 	{
 		return cltool_createHost();
@@ -482,6 +497,9 @@ static int inertialSenseMain()
 						// device disconnected, exit
 						break;
 					}
+
+					// Print to standard output
+					g_inertialSenseDisplay.PrintData();
 				}
 			}
 			catch (...)

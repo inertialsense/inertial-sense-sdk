@@ -39,7 +39,7 @@ class cInertialSenseDisplay
 public:
 	typedef struct
 	{
-		const map_name_to_info_t 			*mapInfo = NULL;
+		const map_name_to_info_t 			*mapInfo;
 		map_name_to_info_t::const_iterator 	mapInfoSelection;
 		map_name_to_info_t::const_iterator 	mapInfoBegin;
 		map_name_to_info_t::const_iterator 	mapInfoEnd;
@@ -50,6 +50,7 @@ public:
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;
+		p_data_t		pData;
 	} edit_data_t;
 
 	enum eDisplayMode
@@ -86,7 +87,9 @@ public:
 
 	// for the binary protocol, this processes a packet of data
 	bool ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
+	void PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
 	void DataToStats(const p_data_t* data);
+	void PrintStats();
 	string DataToString(const p_data_t* data);
 	char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);
 	char* InsStatusToSolStatusString(char* ptr, char* ptrEnd, const uint32_t insStatus);
@@ -133,8 +136,11 @@ private:
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;
 
+	bool m_enableReplay = false;
+	double m_replaySpeedX = 1.0;
+
 	edit_data_t m_editData = {};
-	int m_outputOnceDid = 0;				// 0 = disabled
+	uint32_t m_outputOnceDid = 0;			// Set to DID to display then exit cltool.  0 = disabled
 	bool m_interactiveMode = true;
 
 	struct sDidStats
