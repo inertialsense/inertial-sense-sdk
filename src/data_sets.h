@@ -1126,8 +1126,8 @@ enum eGenFaultCodes
 	GFC_INIT_SENSORS					= 0x00000100,
 	/*! Fault: SPI bus initialization  */
 	GFC_INIT_SPI						= 0x00000200,
-// 	/*! Fault:  */
-// 	GFC_UNUSED							= 0x00000400,
+	/*! Fault: SPI configuration  */
+	GFC_CONFIG_SPI						= 0x00000400,
 	/*! Fault: GPS1 init  */
 	GFC_INIT_GPS1						= 0x00000800,
 	/*! Fault: GPS2 init  */
