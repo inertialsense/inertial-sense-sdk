@@ -383,6 +383,18 @@ static __inline void max_Vec3( ixVector3 result, const ixVector3 v1, const ixVec
 }
 
 /* Zero vector
+ * v(2) = { 0, 0 }
+ */
+static __inline void zero_Vec2( ixVector2 v )
+{
+    memset( v, 0, sizeof(ixVector2) );
+}
+static __inline void zero_Vec2d( ixVector2d v )
+{
+    memset( v, 0, sizeof(ixVector2d) );
+}
+
+/* Zero vector
  * v(3) = { 0, 0, 0 }
  */
 static __inline void zero_Vec3( ixVector3 v )
