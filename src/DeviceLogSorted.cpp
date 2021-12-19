@@ -71,8 +71,6 @@ void cDeviceLogSorted::InitDeviceForReading()
 
 bool cDeviceLogSorted::CloseAllFiles()
 {
-    cDeviceLog::CloseAllFiles();
-
 	// Write to file and clear any non-empty chunks to file
 	for (uint32_t id = 0; id < DID_COUNT; id++)
 	{
@@ -94,8 +92,12 @@ bool cDeviceLogSorted::CloseAllFiles()
         }
 	}
 
-	// Close existing file
-	CloseISLogFile(m_pFile);
+	cDeviceLog::CloseAllFiles();
+
+	if (m_pFile)
+	{	// Close existing file
+		CloseISLogFile(m_pFile);
+	}
 
 	return true;
 }

@@ -82,8 +82,6 @@ void cDeviceLogCSV::InitDeviceForReading()
 
 bool cDeviceLogCSV::CloseAllFiles()
 {
-	cDeviceLog::CloseAllFiles();
-
 	for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end(); i++)
 	{
 		cCsvLog& log = i->second;
@@ -94,6 +92,9 @@ bool cDeviceLogCSV::CloseAllFiles()
 		}
 	}
 	m_logs.clear();
+
+	cDeviceLog::CloseAllFiles();
+
 	return true;
 }
 

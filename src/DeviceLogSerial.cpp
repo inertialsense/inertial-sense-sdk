@@ -38,13 +38,15 @@ void cDeviceLogSerial::InitDeviceForWriting(int pHandle, std::string timestamp, 
 
 bool cDeviceLogSerial::CloseAllFiles()
 {
-    cDeviceLog::CloseAllFiles();
-
 	// Write any remaining chunk data to file
 	WriteChunkToFile();
 
-	// Close file
-	CloseISLogFile(m_pFile);
+	cDeviceLog::CloseAllFiles();
+
+	if (m_pFile != NULLPTR)
+	{	// Close file
+		CloseISLogFile(m_pFile);
+	}
 
 	return true;
 }

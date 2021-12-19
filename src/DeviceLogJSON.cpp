@@ -37,12 +37,14 @@ using namespace std;
 
 bool cDeviceLogJSON::CloseAllFiles()
 {
-	cDeviceLog::CloseAllFiles();
 	if (m_pFile != NULLPTR)
 	{
 		m_pFile->putch(']');
 		CloseISLogFile(m_pFile);
 	}
+
+	cDeviceLog::CloseAllFiles();
+
 	return true;
 }
 
