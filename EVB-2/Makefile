@@ -7,16 +7,17 @@ DEBUG ?=
 #################################
 # GNU ARM Embedded Toolchain
 #################################
-CC=arm-none-eabi-gcc
-CXX=arm-none-eabi-g++
-LD=arm-none-eabi-ld
-AR=arm-none-eabi-ar
-AS=arm-none-eabi-as
-CP=arm-none-eabi-objcopy
-OD=arm-none-eabi-objdump
-NM=arm-none-eabi-nm
-SIZE=arm-none-eabi-size
-A2L=arm-none-eabi-addr2line
+COMPILER_DIR    = /opt/arm-none-eabi-uins3/bin
+CC=$(COMPILER_DIR)/arm-none-eabi-gcc
+CXX=$(COMPILER_DIR)/arm-none-eabi-g++
+LD=$(COMPILER_DIR)/arm-none-eabi-ld
+AR=$(COMPILER_DIR)/arm-none-eabi-ar
+AS=$(COMPILER_DIR)/arm-none-eabi-as
+CP=$(COMPILER_DIR)/arm-none-eabi-objcopy
+OD=$(COMPILER_DIR)/arm-none-eabi-objdump
+NM=$(COMPILER_DIR)/arm-none-eabi-nm
+SIZE=$(COMPILER_DIR)/arm-none-eabi-size
+A2L=$(COMPILER_DIR)/arm-none-eabi-addr2line
 
 #################################
 # Working directories
