@@ -1600,6 +1600,8 @@ enum eSysConfigBits
 	/** Prevent built-in test (BIT) from running automatically on startup */
 	SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
 
+	/** Disable wheel encoder fusion */
+	SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
 };
