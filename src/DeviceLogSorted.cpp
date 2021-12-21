@@ -55,17 +55,54 @@ void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, 
 
 void cDeviceLogSorted::InitDeviceForReading()
 {
-    for (uint32_t i = 0; i < DID_COUNT; i++)
-    {
-        if (m_chunks[i])
-        {
-            delete m_chunks[i];
-            m_chunks[i] = NULLPTR;
-        }
-    }
+	// Clear chunk array
+	for (uint32_t id = 0; id < DID_COUNT; id++)
+	{
+		if (m_chunks[id] != NULLPTR)
+		{
+			delete m_chunks[id];
+			m_chunks[id] = NULLPTR;
+		}
+	}
     m_dataSerNum = 0;
 	m_lastSerNum = 0xFFFFFFFF;
 	cDeviceLog::InitDeviceForReading();
+
+	// Open all files
+	OpenAllReadFiles();
+}
+
+
+bool cDeviceLogSorted::OpenAllReadFiles()
+{
+	// Close files if open
+	for (int i = 0; i < m_pFiles.size(); i++)
+	{	
+		CloseISLogFile(m_pFiles[i]);
+	}
+	m_pFiles.clear();
+
+	for (m_fileCount = 0; m_fileCount < m_fileNames.size(); m_fileCount++)
+	{
+		m_fileName = m_fileNames[m_fileCount];
+		m_pFiles.push_back(CreateISLogFile(m_fileName, "rb"));
+
+		if (m_pFiles.back())
+		{	// Success
+#if LOG_DEBUG_FILE_READ
+			printf("cDeviceLog::OpenNextReadFile %s\n", m_fileName.c_str());
+#endif
+		}
+		else
+		{	// Failure
+#if LOG_DEBUG_FILE_READ
+			printf("cDeviceLog::OpenNextReadFile FAILED %s\n", m_fileName.c_str());
+#endif
+			return false;
+		}
+	}
+
+	return true;
 }
 
 
@@ -151,6 +188,8 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
     {
         dataBytes = sizeof(int32_t) + dataHdr->size;
     }
+
+	// If Chunk is too full, write chunk to file and clear chunk.
 	if (dataBytes > currentChunk->GetBuffFree())
 	{
 		// Create new file if needed
@@ -164,7 +203,7 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 
         if (nBytes != 0)
         {
-            // Write to file and clear chunk
+            // Write chunk to file and clear chunk
             if ((nBytes = currentChunk->WriteToFile(m_pFile, 1)) <= 0)
             {
                 return false;
@@ -223,24 +262,24 @@ p_data_t* cDeviceLogSorted::ReadData()
 			return data;
 		}
 
-		// No more data.  Clear existing chunk array
-        for (uint32_t id = 0; id < DID_COUNT; id++)
-        {
-            if (m_chunks[id] != NULLPTR)
-            {
-                delete m_chunks[id];
-                m_chunks[id] = NULLPTR;
-            }
-        }
+		//// No more data.  Clear existing chunk array
+		//for (uint32_t id = 0; id < DID_COUNT; id++)
+		//{
+		//	if (m_chunks[id] != NULLPTR)
+		//	{
+		//		delete m_chunks[id];
+		//		m_chunks[id] = NULLPTR;
+		//	}
+		//}
 
-		while (!ReadAllChunksFromFile())
-		{
-			if (!OpenNextReadFile())
-			{
-				// No more files or data
-				return NULL;
-			}
-		}
+		//while (!ReadAllChunksFromFile())
+		//{
+		//	if (!OpenNextReadFile())
+		//	{
+		//		// No more files or data
+		//		return NULL;
+		//	}
+		//}
 	}
 }
 
@@ -261,7 +300,11 @@ tryAgain:
         chunk = m_chunks[id];
         if (chunk == NULLPTR || chunk->GetDataSize() == 0)
 		{
-			continue;
+			// Search for next chuck in all files
+			if (!ReadNextChunkFromFiles(id))
+			{
+				continue;
+			}
 		}
 		cnkData = (p_cnk_data_t*)chunk->GetDataPtr();
         if (cnkData == NULLPTR)
@@ -326,68 +369,76 @@ tryAgain:
 	goto tryAgain;
 }
 
-// This function reads all chunks from a file and appends them to an existing chuck list 
-bool cDeviceLogSorted::ReadAllChunksFromFile()
+
+// This function reads the next sorted chunk matching the specified DID from all of the files.  The file pointers are advanced 
+// if the current chunk dataSerNum is older than the current m_dataSerNum.  Files are closed if the last chuch dataSerNum 
+// is older than the current m_dataSerNum.
+bool cDeviceLogSorted::ReadNextChunkFromFiles(uint32_t id)
 {
 	unsigned int id;
+
+	// Error check ID
+	if (id >= DID_COUNT || id == DID_NULL)
+	{
+		return false;
+	}
 
 	// Reset data serial number and file data size
 	m_fileSize = 0;
 
 	// Read chunk and append it to existing chunks of same type
-	while (ReadChunkFromFile(&m_readChunk))
+	if (!ReadChunkFromFiles(&m_readChunk, id))
 	{
-		id = m_readChunk.m_subHdr.dHdr.id;
+		return false;
+	}
 
-		// Error check ID
-		if (id >= DID_COUNT || id == DID_NULL)
-		{
-            continue;
-		}
+	id = m_readChunk.m_subHdr.dHdr.id;
 
-        if (m_chunks[id] == NULLPTR)
-        {
-            m_chunks[id] = new cSortedDataChunk();
-        }
+	if (m_chunks[id] == NULLPTR)
+	{
+		m_chunks[id] = new cSortedDataChunk();
+	}
 
-        cSortedDataChunk* chunk = m_chunks[id];
+	cSortedDataChunk* chunk = m_chunks[id];
 
-        if (chunk->GetDataSize() == 0)
-		{
-			// Empty source chunk, copy Header
-			chunk->m_subHdr = m_readChunk.m_subHdr;
+	if (chunk->GetDataSize() == 0)
+	{
+		// Empty source chunk, copy Header
+		chunk->m_subHdr = m_readChunk.m_subHdr;
 
-            // Find lowest serial number (used for sorting data)
-            p_cnk_data_t* cdat = (p_cnk_data_t*)m_readChunk.GetDataPtr();
-			m_dataSerNum = _MIN(m_dataSerNum, cdat->dataSerNum);
-		}
+		// Find lowest serial number (used for sorting data)
+		p_cnk_data_t* cdat = (p_cnk_data_t*)m_readChunk.GetDataPtr();
+		m_dataSerNum = _MIN(m_dataSerNum, cdat->dataSerNum);
+	}
 
-		// add data count
-		chunk->m_subHdr.dCount += m_readChunk.m_subHdr.dCount;
+	// add data count
+	chunk->m_subHdr.dCount += m_readChunk.m_subHdr.dCount;
 
-		// Resize chunk if necessary
+	// Resize chunk if necessary
 //         if (m_readChunk.GetDataSize() > chunk->GetBuffFree())
 //         {
 //             chunk->Resize(chunk->GetDataSize() + m_readChunk.GetDataSize());
 //         }
 
-		// Append data
-		chunk->PushBack(m_readChunk.GetDataPtr(), m_readChunk.GetDataSize());
-	}
+	// Append data
+	chunk->PushBack(m_readChunk.GetDataPtr(), m_readChunk.GetDataSize());
 
 	return m_fileSize != 0;
 }
 
 
-bool cDeviceLogSorted::ReadChunkFromFile(cSortedDataChunk *chunk)
+// This function reads the next sorted chunk matching the specified DID from all of the files.  The file pointers are advanced 
+// if the current chunk dataSerNum is older than the current m_dataSerNum.  Files are closed if the last chuch dataSerNum 
+// is older than the current m_dataSerNum.
+bool cDeviceLogSorted::ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id)
 {
-	if (m_pFile == NULLPTR || chunk == NULLPTR)
+	if (m_pFiles.size() == 0 || m_pFiles.front() == NULLPTR || chunk == NULLPTR)
 	{
 		return false;
 	}
 
 	// Read chunk from file
-	int nBytes = chunk->ReadFromFile(m_pFile);
+	int nBytes = chunk->ReadFromFiles(m_pFiles, id);
 
 	// Validate chunk: non-zero size and is sorted type
 	int hdrSize = sizeof(p_data_hdr_t);

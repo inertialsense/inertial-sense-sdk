@@ -434,6 +434,10 @@ p_data_t* cISLogger::ReadNextData(unsigned int& device)
 		{
 			++device;
 		}
+		else
+		{
+			return data;
+		}
 	}
 	return NULL;
 }
@@ -541,6 +545,8 @@ const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
 	return m_devices[device]->GetDeviceInfo();
 }
 
+int g_readCount = 0;
+
 bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
 	m_logStats->Clear();
@@ -585,8 +591,20 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 				}
 			}
 
+			if (data->hdr.id == 5)
+			{
+				double timestamp1 = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+				if (timestamp1 >= 933.8385)
+				{
+					int j=0;
+					j++;
+				}
+			}
+
 			// Save data
             LogData(dev, &data->hdr, data->buf);
+
+			g_readCount++;
 		}
 	}
 	CloseAllFiles();

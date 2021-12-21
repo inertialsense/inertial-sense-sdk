@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define LOG_DEBUG_GEN			(PLATFORM_IS_EMBEDDED==0)		
 #define LOG_DEBUG_FILE_WRITE	0		// Enable chunk debug printout
-#define LOG_DEBUG_FILE_READ		0		// 
+#define LOG_DEBUG_FILE_READ		1		// 
 #define LOG_DEBUG_CHUNK_WRITE	0		// Enable file debug printout
 #define LOG_DEBUG_CHUNK_READ	0
 #define LOG_CHUNK_STATS			0		// 0 = disabled, 1 = summary, 2 = detailed
@@ -45,6 +45,9 @@ public:
 
     virtual int getch() = 0;
     virtual std::size_t read(void* bytes, std::size_t len) = 0;
+    virtual int seek(long int offset, int origin = SEEK_CUR);
+    virtual int getpos(fpos_t* pos);
+    virtual int setpos(fpos_t* pos);
 };
 
 

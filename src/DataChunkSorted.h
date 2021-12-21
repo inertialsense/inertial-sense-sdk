@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define DATA_CHUNK_SORTED_H
 
 #include <stdint.h>
+#include <vector>
 
 #include "com_manager.h"
 #include "DataChunk.h"
@@ -47,6 +48,8 @@ class cSortedDataChunk : public cDataChunk
 public:
     cSortedDataChunk(const char* name = "EMPT");
 	void Clear() OVERRIDE;
+
+	int32_t ReadFromFiles(vector<cISLogFileBase*> &pFiles, uint32_t id, uint32_t dataSerNum);
 
 	int32_t WriteAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;
 	int32_t ReadAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;

@@ -30,6 +30,7 @@ public:
 
 	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
 	void InitDeviceForReading() OVERRIDE;
+	bool OpenAllReadFiles();
 	bool CloseAllFiles() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
@@ -39,13 +40,16 @@ public:
     cSortedDataChunk *m_chunks[DID_COUNT];
 
 	p_data_t* SerializeDataFromChunks();
-	bool ReadAllChunksFromFile();
-	bool ReadChunkFromFile(cSortedDataChunk *chunk);
+	bool ReadNextChunkFromFiles(uint32_t id);
+	bool ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id);
 
 	uint32_t m_dataSerNum;
 	uint32_t m_lastSerNum;
 	p_data_t m_data;
 	cSortedDataChunk m_readChunk;
+
+	vector<cISLogFileBase*> m_pFiles;
+
 };
 
 #endif // DEVICE_LOG_SORTED_H

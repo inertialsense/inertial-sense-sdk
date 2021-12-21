@@ -161,3 +161,42 @@ std::size_t cISLogFile::read(void* bytes, std::size_t len)
         return 0;
     }
 }
+
+
+int cISLogFile::seek(long int offset, int origin)
+{
+    if (m_file)
+    {
+        return fseek(m_file, offset, origin);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
+int cISLogFile::getpos(fpos_t* pos)
+{
+    if (m_file)
+    {
+        return fgetpos(m_file, pos);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
+int cISLogFile::setpos(fpos_t* pos)
+{
+    if (m_file)
+    {
+        return fsetpos(m_file, pos);
+    }
+    else
+    {
+        return 0;
+    }
+}
