@@ -35,14 +35,17 @@ extern "C" {
 #define RTPRES                  3 // finest allowed granularity
 #endif // ENABLE_TC_TIME
 
+//#define TIME_TICKS_PER_SEC      (RTPRES_SEC/RTPRES*(1<<15)) // Use for quicker overrun case
 #define TIME_TICKS_PER_SEC      (RTPRES_SEC/RTPRES)
 #define TIME_TICKS_PER_MS       (TIME_TICKS_PER_SEC/1000)
 #define TIME_TICKS_PER_US       (TIME_TICKS_PER_SEC/1000000)
 
+//#define TIME_SECS_PER_TICK_LF   (((double)RTPRES)/(double)RTPRES_SEC/(double)(1<<15)) // Use for quicker overrun case
 #define TIME_SECS_PER_TICK_LF   (((double)RTPRES)/(double)RTPRES_SEC)
 #define TIME_MS_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*1000.0)
 #define TIME_US_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*1000000.0)
 
+//#define TIME_SECS_PER_TICK_F    (((float)RTPRES)/(float)RTPRES_SEC/(float)(1<<15)) // Use for quicker overrun case
 #define TIME_SECS_PER_TICK_F    (((float)RTPRES)/(float)RTPRES_SEC)
 #define TIME_MS_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000.0f)
 #define TIME_US_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000000.0f)

@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "d_time.h"
 #include "d_timer.h"
 #include "misc/rtos.h"
+#include "globals.h"
 
 #include "conf_interrupts.h"
 static volatile uint32_t g_rollover = 0;
@@ -21,10 +22,8 @@ static volatile uint32_t g_timer = 0;
 
 void RTT_Handler(void)
 {
-	uint32_t status = rtt_get_status(RTT);
-
 	// alarm
-	if (status & RTT_SR_ALMS)
+	if (RTT->RTT_SR & RTT_SR_ALMS)
 	{
 		rtosResetTaskCounters();
 		g_rollover++;
@@ -44,45 +43,44 @@ void time_init(void)
 
 	rtt_init(RTT, RTPRES);
 	
+	// notify us when we rollover
+#if 0	// Bit shift 15 for faster rollover, works once.
+	rtt_write_alarm_time(RTT, 0x1FFFF);
+#else	// Standard operation
+	rtt_write_alarm_time(RTT, 0);
+#endif
+	
+	rtt_enable_interrupt(RTT, RTT_MR_ALMIEN);
+	
 	NVIC_DisableIRQ(RTT_IRQn);
 	NVIC_ClearPendingIRQ(RTT_IRQn);
 	NVIC_SetPriority(RTT_IRQn, INT_PRIORITY_RTT);
 	NVIC_EnableIRQ(RTT_IRQn);
-	
-	// notify us when we rollover
-	rtt_write_alarm_time(RTT, 0);
 	
 	g_rollover = 0;	// Reset the rollover now that the timer is fully configured.
 }
 
 inline volatile uint64_t time_ticks(void)
 {
-	volatile uint32_t timer;
-
 	// Time must be read TWICE in ASF code and compared for corruptness.
-	timer = rtt_read_timer_value(RTT);
 	
-	
-#if 0	// Add an offset to the counter to simulate what happens on wrap.
-	static bool reset = true;
-	
-	if(timer > 0xFFFF && reset)
+	volatile uint32_t timer = RTT->RTT_VR;
+//	volatile uint64_t timer = RTT->RTT_VR;
+
+	while (timer != RTT->RTT_VR) 
 	{
-		reset = false;
-		rtosResetTaskCounters();
-		g_rollover++;
+		timer = RTT->RTT_VR;
 	}
-	
-	timer += 0xFFFF0000;
-	
-	g_debug.i[0] = timer;
+
+#if 0	// Bit shift the timer to make overflow happen quicker (testing)
+	timer = timer << 15;
 #endif
 	
 	// this assumes little endian
 	volatile ticks_t ticks;
 	ticks.u32[1] = g_rollover;
-	ticks.u32[0] = timer;
-
+	ticks.u32[0] = (uint32_t)timer;
+	
 	return ticks.u64;
 }
 
