@@ -45,9 +45,11 @@ public:
 
     virtual int getch() = 0;
     virtual std::size_t read(void* bytes, std::size_t len) = 0;
-    virtual int seek(long int offset, int origin = SEEK_CUR);
-    virtual int getpos(fpos_t* pos);
-    virtual int setpos(fpos_t* pos);
+    virtual int seek(long int offset, int origin = SEEK_CUR) = 0;
+    virtual int getpos(fpos_t* pos) = 0;
+    virtual int setpos(fpos_t* pos) = 0;
+    virtual int isEmpty() = 0;
+
 };
 
 

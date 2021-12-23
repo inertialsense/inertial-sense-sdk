@@ -50,6 +50,7 @@ public:
 	void Clear() OVERRIDE;
 
 	int32_t ReadFromFiles(vector<cISLogFileBase*> &pFiles, uint32_t id, uint32_t dataSerNum);
+	cISLogFileBase* TrimFile(int i, vector<cISLogFileBase*>& pFiles, fpos_t& restorePos);
 
 	int32_t WriteAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;
 	int32_t ReadAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;

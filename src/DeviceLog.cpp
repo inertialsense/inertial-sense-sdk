@@ -63,6 +63,7 @@ void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::s
 	m_maxDiskSpace = maxDiskSpace;
 	m_maxFileSize = maxFileSize;
 	m_logSize = 0;
+	m_writeMode = true;
 }
 
 
@@ -71,6 +72,7 @@ void cDeviceLog::InitDeviceForReading()
 	m_fileSize = 0;
 	m_logSize = 0;
 	m_fileCount = 0;
+	m_writeMode = false;
 }
 
 

@@ -30,6 +30,7 @@ using namespace std;
 void cDeviceLogSerial::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 //     m_chunk.Init(chunkSize);
+	m_chunk.Clear();
 	m_chunk.m_hdr.pHandle = pHandle;
 
 	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);

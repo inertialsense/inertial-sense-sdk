@@ -34,6 +34,7 @@ public:
     int seek(long int offset, int origin = SEEK_CUR) OVERRIDE;
     int getpos(fpos_t* pos) OVERRIDE;
     int setpos(fpos_t* pos) OVERRIDE;
+    int isEmpty() OVERRIDE;
 
 private:
     FILE *m_file;

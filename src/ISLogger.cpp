@@ -43,6 +43,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
+#define DEBUG_PRINT		0
+
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 
 const string cISLogger::g_emptyString;
@@ -148,6 +150,8 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 	{
 		m_maxFileSize = maxFileSize;
 	}
+
+	m_maxFileSize = _MIN(m_maxFileSize, maxFileSize);
 
 	// create root dir
 	_MKDIR(m_directory.c_str());
@@ -545,7 +549,8 @@ const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
 	return m_devices[device]->GetDeviceInfo();
 }
 
-int g_readCount = 0;
+int g_copyReadCount;
+int g_copyReadDid;
 
 bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
@@ -562,16 +567,28 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		const dev_info_t* devInfo = log.GetDeviceInfo(dev);
 		SetDeviceInfo(devInfo, dev);
 
-#if LOG_DEBUG_GEN
+#if LOG_DEBUG_GEN || DEBUG_PRINT
 		printf("cISLogger::CopyLog SN%d type %d, (%d of %d)\n", devInfo->serialNumber, logType, dev+1, log.GetDeviceCount());
 #endif
 
 		// Set KML configuration
 		m_devices[dev]->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 
-		// Copy data
-		while ((data = log.ReadData(dev)))
+		// Copy data		
+		for (g_copyReadCount = 0; (data = log.ReadData(dev)); g_copyReadCount++)
 		{
+
+#if DEBUG_PRINT
+			double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+			printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
+			if (data->hdr.id == 12)
+			{
+				int j = 0;
+				j++;
+			}
+			g_copyReadDid = data->hdr.id;
+#endif
+
 			// CSV special cases 
 			if (logType == eLogType::LOGTYPE_CSV)
 			{
@@ -603,8 +620,6 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 
 			// Save data
             LogData(dev, &data->hdr, data->buf);
-
-			g_readCount++;
 		}
 	}
 	CloseAllFiles();

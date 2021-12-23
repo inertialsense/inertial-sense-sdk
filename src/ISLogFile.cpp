@@ -162,7 +162,8 @@ std::size_t cISLogFile::read(void* bytes, std::size_t len)
     }
 }
 
-
+// Sets the position indicator associated with the file stream to a new position. 
+// Values for origin: SEEK_SET = from beginning, SEEK_CUR = current position, SEEK_END = end of file
 int cISLogFile::seek(long int offset, int origin)
 {
     if (m_file)
@@ -175,7 +176,7 @@ int cISLogFile::seek(long int offset, int origin)
     }
 }
 
-
+// Retrieves the current position in the stream.
 int cISLogFile::getpos(fpos_t* pos)
 {
     if (m_file)
@@ -188,7 +189,7 @@ int cISLogFile::getpos(fpos_t* pos)
     }
 }
 
-
+// Restores the current position in the stream to pos
 int cISLogFile::setpos(fpos_t* pos)
 {
     if (m_file)
@@ -200,3 +201,16 @@ int cISLogFile::setpos(fpos_t* pos)
         return 0;
     }
 }
+
+int cISLogFile::isEmpty()
+{
+    if (m_file)
+    {
+        return feof(m_file);
+    }
+    else
+    {
+        return 0;
+    }
+}
+

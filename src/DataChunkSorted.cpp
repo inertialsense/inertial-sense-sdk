@@ -40,92 +40,103 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 		return -1;
 	}
 
-
-
-
-
-
 	// reset state, prepare to read from file
 	Clear();
 
-	// Read chunk header
-	int32_t nBytes = static_cast<int32_t>(pFile->read(&m_hdr, sizeof(sChunkHeader)));
+	int32_t nBytes = -1;
+	fpos_t restorePos;
 
-	// Error checking
-	if (m_hdr.dataSize != ~(m_hdr.invDataSize) || nBytes <= 0)
+	// Search through all files for chunk with matching DID
+	for (int i = 0; i < pFiles.size(); )
 	{
-		return -1;
-	}
+		cISLogFileBase* pFile = pFiles[i];
 
-	// Read additional chunk header
-	nBytes += ReadAdditionalChunkHeader(pFile);
+		// Set backup file pointer
+		pFile->getpos(&restorePos);
 
-	//     // Error check data size
-	//     if (m_hdr.dataSize > MAX_DATASET_SIZE)
-	//     {
-	//         return -1;
-	//     }
+		// Search through single file for chunk with matching DID
+		bool allowFileTrim = true;	// This flag indicates there is/are new chunk(s) that should not be trimmed from the restorePos file pointer position. 
+		while(1)
+		{	
+			nBytes = ReadFromFile(pFile);
 
-		// Read chunk data
-	m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
-	nBytes += GetDataSize();
-
-#if LOG_DEBUG_CHUNK_READ
-	static int totalBytes = 0;
-	totalBytes += nBytes;
-	printf("cDataChunk::ReadFromFile %d : %d  -  %x %d  ", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
-	if ((nBytes > 0) && (m_hdr.marker != DATA_CHUNK_MARKER))
-	{
-		printf("MARKER MISMATCH!");
-	}
-	printf("\n");
-#endif
-
-	if (m_hdr.marker == DATA_CHUNK_MARKER && nBytes == static_cast<int>(GetHeaderSize() + m_hdr.dataSize))
-	{
-
-#if LOG_CHUNK_STATS
-		static bool start = true;
-		int totalBytes = 0;
-		for (int id = 0; id < DID_COUNT; id++)
-			if (m_stats[id].total)
-			{
-				if (start)
-				{
-					start = false;
-					logStats("------------------------------------------------\n");
-					logStats("Chunk Data Summary\n");
-					logStats("   ID:  Count:  Sizeof:  Total:\n");
-				}
-				logStats(" %4d%8d    %5d %7d\n", id, m_stats[id].count, m_stats[id].size, m_stats[id].total);
-				totalBytes += m_stats[id].total;
+			if (nBytes <= 0)
+			{	// Match not found in file
+				break;
 			}
-		start = true;
-		if (totalBytes)
-		{
-			logStats("------------------------------------------------\n");
-			logStats("                      %8d Total bytes\n", totalBytes);
-		}
-		logStats("\n");
-		logStats("================================================\n");
-		logStats("            *.dat Data Log File\n");
-		logStats("================================================\n");
-		m_Hdr.print();
-#if LOG_CHUNK_STATS==2
-		logStats("------------------------------------------------\n");
-		logStats("Chunk Data\n");
-#endif
-		memset(m_stats, 0, sizeof(m_stats));
-#endif
 
-		return nBytes;
+			p_cnk_data_t* cnkData = (p_cnk_data_t*)GetDataPtr();
+			if (cnkData == NULLPTR)
+			{	// No more data.  Match not found
+				break;
+			}
+
+			if (m_subHdr.dHdr.id == id)
+			{	// Found chunk
+				if (allowFileTrim)
+				{	
+					pFile = TrimFile(i, pFiles, restorePos);
+				}
+				break;
+			}
+			else
+			{	// Chunk not found
+				nBytes = -1;
+			}
+
+			if (allowFileTrim)
+			{
+				if (cnkData->dataSerNum < dataSerNum)
+				{	// Move file pointer past old chunks
+					pFile = TrimFile(i, pFiles, restorePos);
+				}
+				else
+				{
+					allowFileTrim = false;
+				}
+			}
+		}
+
+		if (pFile)
+		{ 	// Restore file pointer if file is still opened
+			pFile->setpos(&restorePos);
+		}
+
+		if (nBytes > 0)
+		{	// Found chunk
+			return nBytes;
+		}
+
+		// No matching chunks in file
+		i++;
+	}
+
+	return -1;
+}
+
+
+cISLogFileBase* cSortedDataChunk::TrimFile(int i, vector<cISLogFileBase*>& pFiles, fpos_t &restorePos)
+{
+	cISLogFileBase* pFile = pFiles[i];
+
+	// Move file pointer past old chunks
+	pFile->getpos(&restorePos);
+
+	if (pFile->isEmpty())
+	{	// No more data in file
+		pFile->close();
+
+		// Remove file at index from vector
+		pFiles.erase(pFiles.begin() + i);
+	}
+
+	if (i < pFiles.size())
+	{	// More files available
+		return pFiles[i];
 	}
 	else
-	{
-		Clear();
-
-		// Error reading from file
-		return -1;
+	{	// No more files available
+		return NULLPTR;
 	}
 }
 

@@ -38,10 +38,12 @@ public:
 	string LogFileExtention() OVERRIDE { return string(".sdat"); }
 
     cSortedDataChunk *m_chunks[DID_COUNT];
+	bool m_chunksAvailable[DID_COUNT];
 
 	p_data_t* SerializeDataFromChunks();
 	bool ReadNextChunkFromFiles(uint32_t id);
 	bool ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id);
+	bool WriteChunkToFile(uint32_t id);
 
 	uint32_t m_dataSerNum;
 	uint32_t m_lastSerNum;
