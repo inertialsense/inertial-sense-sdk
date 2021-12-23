@@ -10,7 +10,7 @@ import glob
 import sys
 import simplekml
 import ctypes as ct
-import pylib.pose as pose
+import inertialsense_math.pose as pose
 import pylib.filterTools as ft
 
 # Profiling code 
