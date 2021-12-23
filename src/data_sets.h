@@ -402,9 +402,9 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING       = (int)0x02000000,      // RTK error: base position moved when it should be stationary
     GPS_STATUS_FLAGS_RTK_BASE_POSITION_INVALID      = (int)0x03000000,      // RTK error: base position is invalid or not surveyed well
     GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK         = (int)0x03000000,      // RTK error: base position error bitmask
-    GPS_STATUS_FLAGS_GPS_RECEIVER_CONFIG_ERROR      = (int)0x04000000,
+    GPS_STATUS_FLAGS_GPS_RECEIVER_CONFIG_INCOMPLETE = (int)0x04000000,
     GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR|
-                                                    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK|GPS_STATUS_FLAGS_GPS_RECEIVER_CONFIG_ERROR),
+                                                    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK|GPS_STATUS_FLAGS_GPS_RECEIVER_CONFIG_INCOMPLETE),
 	GPS_STATUS_FLAGS_RTK_POSITION_VALID             = (int)0x08000000,      // RTK precision position is valid on GPS1 (i.e. < 20cm accuracy)
 	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x10000000,      // RTK moving base heading is valid on GPS2
     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_BAD    = (int)0x00002000,
