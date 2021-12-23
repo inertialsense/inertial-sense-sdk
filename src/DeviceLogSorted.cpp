@@ -29,7 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DeviceLogSorted.h"
 
 #define LOG_DEBUG_PRINT_CHUNK_SAVE		1
-#define LOG_DEBUG_PRINT_CHUNK_READ		0
+#define LOG_DEBUG_PRINT_CHUNK_READ		1
 #define LOG_DEBUG_PRINT_DID_SAVE		0
 #define LOG_DEBUG_PRINT_DID_READ		0
 
@@ -123,10 +123,7 @@ bool cDeviceLogSorted::CloseAllFiles()
 		for (uint32_t id = 1; id < DID_COUNT; id++)
 		{
 			// Write to file and clear chunk
-			if (!WriteChunkToFile(id))
-			{
-				return false;
-			}
+			WriteChunkToFile(id);
 		}
 	}
 	// Close file pointer used for writing
@@ -198,12 +195,6 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 		}
 		chunk = m_chunks[id];
 
-		// File is large enough to be closed
-		if (m_fileSize >= m_maxFileSize)
-		{
-			CloseISLogFile(m_pFile);
-		}
-
 		// Reset data header in case it changed
 		chunk->m_subHdr.dHdr = *dataHdr;
 	}
@@ -254,7 +245,7 @@ bool cDeviceLogSorted::WriteChunkToFile(uint32_t id)
 
 #if LOG_DEBUG_PRINT_CHUNK_SAVE
 	p_cnk_data_t* cnkData = (p_cnk_data_t*)(m_chunks[id]->GetDataPtr());
-	printf("sorted chunk save:   DID: %2d  dCount: %3d  nBytes: %3d   dataSN: %2d\n", m_chunks[id]->m_subHdr.dHdr.id, m_chunks[id]->m_subHdr.dCount, nBytes, cnkData->dataSerNum);
+	printf("sorted chunk save:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", m_chunks[id]->m_subHdr.dHdr.id, m_chunks[id]->m_subHdr.dCount, nBytes, cnkData->dataSerNum);
 
 	//if (m_dataSerNum >= 1250)
 	if (m_dataSerNum >= 2500)
@@ -278,6 +269,12 @@ bool cDeviceLogSorted::WriteChunkToFile(uint32_t id)
 
 	// Remove data
 	m_chunks[id]->Clear();
+
+	// File is large enough to be closed
+	if (m_fileSize >= m_maxFileSize)
+	{
+		CloseISLogFile(m_pFile);
+	}
 
 	return true;
 }
@@ -497,7 +494,7 @@ bool cDeviceLogSorted::ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id)
 
 #if LOG_DEBUG_PRINT_CHUNK_READ
 	p_cnk_data_t* cnkData = (p_cnk_data_t*)(chunk->GetDataPtr());
-	printf("sorted chunk read:   DID: %2d  dCount: %3d  nBytes: %3d   dataSN: %2d\n", chunk->m_subHdr.dHdr.id, chunk->m_subHdr.dCount, nBytes, cnkData->dataSerNum);
+	printf("sorted chunk read:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", chunk->m_subHdr.dHdr.id, chunk->m_subHdr.dCount, nBytes-sizeof(sChunkHeader)-sizeof(sChunkSubHeader), cnkData->dataSerNum);
 
 	if (m_dataSerNum >= 2500)
 	{
