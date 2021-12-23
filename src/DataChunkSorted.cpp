@@ -71,8 +71,8 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 				break;
 			}
 
-			if (m_subHdr.dHdr.id == id)
-			{	// Found chunk
+			if (m_subHdr.dHdr.id == id && GetDataSerNum() >= dataSerNum)
+			{	// Found matching chunk
 				if (allowFileTrim)
 				{	
 					pFile = TrimFile(i, pFiles, restorePos);
@@ -86,8 +86,9 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 
 			if (allowFileTrim)
 			{
-				if (cnkData->dataSerNum < dataSerNum)
-				{	// Move file pointer past old chunks
+				uint32_t readDataSerNum = GetDataSerNum();
+				if (readDataSerNum < dataSerNum || readDataSerNum == UINT_MAX)
+				{	// Move file pointer past old/invalid chunks
 					pFile = TrimFile(i, pFiles, restorePos);
 				}
 				else
@@ -158,4 +159,18 @@ int32_t cSortedDataChunk::ReadAdditionalChunkHeader(cISLogFileBase* pFile)
 int32_t cSortedDataChunk::GetHeaderSize()
 {
     return int32_t((sizeof(sChunkHeader) + sizeof(sChunkSubHeader)));
+}
+
+
+uint32_t cSortedDataChunk::GetDataSerNum()
+{
+	p_cnk_data_t* cnkData = (p_cnk_data_t*)GetDataPtr();
+	if (cnkData == NULLPTR)
+	{
+		return UINT_MAX;
+	}
+	else
+	{
+		return cnkData->dataSerNum;
+	}
 }

@@ -209,10 +209,23 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 
 #if LOG_DEBUG_PRINT_DID_SAVE
 	double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-	printf("sorted did save: %d  DID: %2d  size: %3d  time: %.4lf\n", m_dataSerNum, dataHdr->id, nBytes-sizeof(uint32_t), timestamp);
+	printf("sorted did save: %d  DID: %2d  size: %3d  time: %.4lf\n", m_dataSerNum, dataHdr->id, nBytes-(int)sizeof(uint32_t), timestamp);
 	if (nBytes - sizeof(uint32_t) != dataHdr->size)
 	{
 		while (1) printf("cDeviceLogSorted::SaveData error!!!\n");
+	}
+
+	extern int g_copyReadCount;
+	if (m_dataSerNum != g_copyReadCount)
+	{
+		int j = 0;
+		j++;
+	}
+
+	if (m_dataSerNum%8000 == 7999)
+	{
+		int j = 0;
+		j++;
 	}
 #endif
 
@@ -235,7 +248,7 @@ bool cDeviceLogSorted::WriteChunkToFile(uint32_t id)
 	int nBytes = m_chunks[id]->GetDataSize();
 	if (nBytes <= 0)
 	{	// No data
-		return false;
+		return true;
 	}
 
 	// Create new file if needed
@@ -245,8 +258,7 @@ bool cDeviceLogSorted::WriteChunkToFile(uint32_t id)
 	}
 
 #if LOG_DEBUG_PRINT_CHUNK_SAVE
-	p_cnk_data_t* cnkData = (p_cnk_data_t*)(m_chunks[id]->GetDataPtr());
-	printf("sorted chunk save:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", m_chunks[id]->m_subHdr.dHdr.id, m_chunks[id]->m_subHdr.dCount, nBytes, cnkData->dataSerNum);
+	printf("sorted chunk save:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", m_chunks[id]->m_subHdr.dHdr.id, m_chunks[id]->m_subHdr.dCount, nBytes, m_chunks[id]->GetDataSerNum());
 #endif
 
 	if (nBytes != 0)
@@ -291,12 +303,12 @@ p_data_t* cDeviceLogSorted::ReadData()
 		{	// Found data
             cDeviceLog::OnReadData(data);       // Record statistics
 
+#if LOG_DEBUG_PRINT_DID_READ
+			double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+			printf("sorted did read: %d  DID: %2d  size: %3d  time: %.4lf\n", m_dataSerNum-1, data->hdr.id, data->hdr.size, timestamp);
+#endif
 		}
 
-#if LOG_DEBUG_PRINT_DID_READ
-		double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
-		printf("sorted did read: %d  DID: %2d  size: %3d  time: %.4lf\n", m_dataSerNum, data->hdr.id, data->hdr.size, timestamp);
-#endif
 		return data;
 	}
 }
@@ -310,7 +322,6 @@ tryAgain:
 	uint32_t foundId = UINT_MAX;
 	uint32_t minSerialNum = UINT_MAX;
     cSortedDataChunk *chunk;
-	p_cnk_data_t* cnkData;
 
 	// while there is data in any chunk, find the chunk with the next id
 	for (uint32_t id = 1; id < DID_COUNT; id++)
@@ -334,20 +345,21 @@ tryAgain:
 				continue;
 			}
 		}
-		cnkData = (p_cnk_data_t*)chunk->GetDataPtr();
-        if (cnkData == NULLPTR)
+
+		uint32_t dataSerNum = chunk->GetDataSerNum();
+        if (dataSerNum == UINT_MAX)
         {
             continue;
         }
-		if (cnkData->dataSerNum == m_dataSerNum)
+		if (dataSerNum == m_dataSerNum)
 		{	// Found exact match.
 			foundId = id;
 			break;
 		}
-		if (cnkData->dataSerNum < minSerialNum)
+		if (dataSerNum < minSerialNum)
 		{	// Search for lowest serial number
 			foundId = id;
-			minSerialNum = cnkData->dataSerNum;
+			minSerialNum = dataSerNum;
 		}
 	}
 
@@ -357,7 +369,7 @@ tryAgain:
 	}
 
     chunk = m_chunks[foundId];
-	cnkData = (p_cnk_data_t*)chunk->GetDataPtr();
+	p_cnk_data_t* cnkData = (p_cnk_data_t*)(chunk->GetDataPtr());
 
 #if 0	// Error check for gap data serial number.  Verify we didn't drop any data.
 
@@ -374,8 +386,7 @@ tryAgain:
 #endif
 
 	// Increment data serial number to one larger than current
-	m_dataSerNum = cnkData->dataSerNum + 1;
-
+	m_dataSerNum = chunk->GetDataSerNum() + 1;
 	
 	if (chunk->m_subHdr.dHdr.size <= MAX_DATASET_SIZE)
 	{   
@@ -440,8 +451,7 @@ bool cDeviceLogSorted::ReadNextChunkFromFiles(uint32_t id)
 		chunk->m_subHdr = m_readChunk.m_subHdr;
 
 		// Find lowest serial number (used for sorting data)
-		p_cnk_data_t* cnkData = (p_cnk_data_t*)m_readChunk.GetDataPtr();
-		m_dataSerNum = _MIN(m_dataSerNum, cnkData->dataSerNum);
+		m_dataSerNum = _MIN(m_dataSerNum, m_readChunk.GetDataSerNum());
 	}
 
 	// add data count
@@ -478,8 +488,7 @@ bool cDeviceLogSorted::ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id)
 	}
 
 #if LOG_DEBUG_PRINT_CHUNK_READ
-	p_cnk_data_t* cnkData = (p_cnk_data_t*)(chunk->GetDataPtr());
-	printf("sorted chunk read:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", chunk->m_subHdr.dHdr.id, chunk->m_subHdr.dCount, nBytes-sizeof(sChunkHeader)-sizeof(sChunkSubHeader), cnkData->dataSerNum);
+	printf("sorted chunk read:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", chunk->m_subHdr.dHdr.id, chunk->m_subHdr.dCount, (int)(nBytes-sizeof(sChunkHeader)-sizeof(sChunkSubHeader)), chunk->GetDataSerNum());
 #endif
 
 	// Validate chunk: non-zero size and is sorted type
@@ -504,7 +513,6 @@ void cDeviceLogSorted::SetSerialNumber(uint32_t serialNumber)
 	{
         m_chunks[DID_DEV_INFO] = new cSortedDataChunk();
 		m_chunks[DID_DEV_INFO]->m_subHdr.dHdr.id = DID_DEV_INFO;
-		m_chunks[DID_DEV_INFO]->m_subHdr.dHdr.size = sizeof(dev_info_t);
 		m_chunks[DID_DEV_INFO]->m_hdr.pHandle = m_pHandle;
 	}
     m_chunks[DID_DEV_INFO]->m_hdr.devSerialNum = serialNumber;

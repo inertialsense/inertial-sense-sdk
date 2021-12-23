@@ -78,14 +78,17 @@ void cDeviceLog::InitDeviceForReading()
 
 bool cDeviceLog::CloseAllFiles()
 {
+	if (m_writeMode)
+	{
 #if 1
-    string str = m_directory + "/stats_SN" + to_string(m_devInfo.serialNumber) + ".txt";
-    m_logStats.WriteToFile(str);
+		string str = m_directory + "/stats_SN" + to_string(m_devInfo.serialNumber) + ".txt";
+		m_logStats.WriteToFile(str);
 #else   // stringstream not working on embedded platform
-	ostringstream serialNumString;
-	serialNumString << m_devInfo.serialNumber;
-    m_logStats.WriteToFile(m_directory + "/stats_SN" + serialNumString.str() + ".txt");
+		ostringstream serialNumString;
+		serialNumString << m_devInfo.serialNumber;
+		m_logStats.WriteToFile(m_directory + "/stats_SN" + serialNumString.str() + ".txt");
 #endif
+	}
     return true;
 }
 

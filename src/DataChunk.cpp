@@ -84,7 +84,7 @@ int32_t cDataChunk::PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2, int32_t d
 
 uint8_t* cDataChunk::GetDataPtr()
 {
-	return (GetDataSize() == 0 ? NULLPTR : m_dataHead);
+	return (GetDataSize() <= 0 ? NULLPTR : m_dataHead);
 }
 
 

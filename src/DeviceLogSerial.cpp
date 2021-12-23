@@ -41,8 +41,10 @@ bool cDeviceLogSerial::CloseAllFiles()
 {
     cDeviceLog::CloseAllFiles();
 
-	// Write any remaining chunk data to file
-	WriteChunkToFile();
+	if (m_writeMode)
+	{	// Write any remaining chunk data to file
+		WriteChunkToFile();
+	}
 
 	// Close file
 	CloseISLogFile(m_pFile);

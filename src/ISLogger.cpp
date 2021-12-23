@@ -44,6 +44,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
+#define LOG_DEBUG_PRINT_READ		0
+
 
 const string cISLogger::g_emptyString;
 
@@ -546,8 +548,9 @@ const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
 }
 
 int g_copyReadCount;
+int g_copyReadDid;
 
-bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
 	m_logStats.Clear();
 	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
@@ -572,8 +575,15 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		// Copy data		
 		for (g_copyReadCount = 0; (data = log.ReadData(dev)); g_copyReadCount++)
 		{
+
+#if LOG_DEBUG_PRINT_READ
+			double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+			printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
+			g_copyReadDid = data->hdr.id;
+#endif
+
 			// CSV special cases 
-			if (logType == eLogType::LOGTYPE_CSV)
+			if (logType == eLogType::LOGTYPE_CSV && enableCsvIns2ToIns1Conversion)
 			{
 				if (data->hdr.id == DID_INS_2)
 				{	// Convert INS2 to INS1 when creating .csv logs

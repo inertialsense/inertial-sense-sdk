@@ -55,6 +55,7 @@ public:
 	int32_t WriteAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;
 	int32_t ReadAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;
 	int32_t GetHeaderSize() OVERRIDE;
+	uint32_t GetDataSerNum();
 
 	sChunkSubHeader m_subHdr;
 };

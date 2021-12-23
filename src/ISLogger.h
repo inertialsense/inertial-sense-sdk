@@ -89,7 +89,15 @@ public:
 	uint32_t GetDeviceCount() { return (uint32_t)m_devices.size(); }
 	bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
 	const dev_info_t* GetDeviceInfo(unsigned int device = 0);
-	bool CopyLog(cISLogger& log, const string& timestamp = g_emptyString, const string& outputDir = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool CopyLog(
+		cISLogger& log, 
+		const string& timestamp = g_emptyString, 
+		const string& outputDir = g_emptyString, 
+		eLogType logType = LOGTYPE_DAT, 
+		float maxDiskSpacePercent = 0.5f, 
+		uint32_t maxFileSize = 1024 * 1024 * 5, 
+		bool useSubFolderTimestamp = true,
+		bool enableCsvIns2ToIns1Conversion = true);
 	const cLogStats& GetStats() { return m_logStats; }
 	eLogType GetType() { return m_logType; }
 
