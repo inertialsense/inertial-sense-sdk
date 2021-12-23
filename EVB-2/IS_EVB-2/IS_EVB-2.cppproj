@@ -1416,6 +1416,14 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\ISLogger.h</Link>
     </Compile>
+    <Compile Include="..\..\src\ISLogStats.cpp">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\ISLogStats.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\src\ISLogStats.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\ISLogStats.h</Link>
+    </Compile>
     <Compile Include="..\..\src\DeviceLog.cpp">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\DeviceLog.cpp</Link>
