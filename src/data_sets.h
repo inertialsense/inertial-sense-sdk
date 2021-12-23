@@ -402,10 +402,11 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING       = (int)0x02000000,      // RTK error: base position moved when it should be stationary
     GPS_STATUS_FLAGS_RTK_BASE_POSITION_INVALID      = (int)0x03000000,      // RTK error: base position is invalid or not surveyed well
     GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK         = (int)0x03000000,      // RTK error: base position error bitmask
+    GPS_STATUS_FLAGS_GPS_RECEIVER_CONFIG_ERROR      = (int)0x04000000,
     GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR|
-                                                    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK),
-	GPS_STATUS_FLAGS_RTK_POSITION_VALID             = (int)0x04000000,      // RTK precision position is valid on GPS1 (i.e. < 20cm accuracy)
-	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x08000000,      // RTK moving base heading is valid on GPS2
+                                                    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK|GPS_STATUS_FLAGS_GPS_RECEIVER_CONFIG_ERROR),
+	GPS_STATUS_FLAGS_RTK_POSITION_VALID             = (int)0x08000000,      // RTK precision position is valid on GPS1 (i.e. < 20cm accuracy)
+	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x10000000,      // RTK moving base heading is valid on GPS2
     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_BAD    = (int)0x00002000,
     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_UNSET  = (int)0x00004000,
     GPS_STATUS_FLAGS_RTK_COMPASSING_MASK            = (GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED|
@@ -1102,7 +1103,7 @@ enum eGenFaultCodes
 	GFC_UNHANDLED_INTERRUPT				= 0x00000010,
 	/*! Fault: sensor initialization  */
 	GFC_INIT_SENSORS					= 0x00000100,
-	/*! Fault: SPI bus initialization  */
+	/*! Fault: SPI initialization  */
 	GFC_INIT_SPI						= 0x00000200,
 	/*! Fault: SPI configuration  */
 	GFC_CONFIG_SPI						= 0x00000400,
@@ -1577,7 +1578,7 @@ enum eSysConfigBits
 	/*! Disable LEDs */
 	SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
 
-	/** Magnetometer recalibration.  (see eMagRecalMode) 1 = multi-axis, 2 = single-axis */
+	/** Magnetometer recalibration.  0 = multi-axis, 1 = single-axis */
 	SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
 	SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
@@ -1600,8 +1601,6 @@ enum eSysConfigBits
 	/** Prevent built-in test (BIT) from running automatically on startup */
 	SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
 
-	/** Disable wheel encoder fusion */
-	SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
 };
