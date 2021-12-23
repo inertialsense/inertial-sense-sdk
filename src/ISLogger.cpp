@@ -43,8 +43,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-#define DEBUG_PRINT		0
-
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 
 const string cISLogger::g_emptyString;
@@ -548,7 +546,6 @@ const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
 }
 
 int g_copyReadCount;
-int g_copyReadDid;
 
 bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
@@ -575,18 +572,6 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		// Copy data		
 		for (g_copyReadCount = 0; (data = log.ReadData(dev)); g_copyReadCount++)
 		{
-
-#if DEBUG_PRINT
-			double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
-			printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
-			if (data->hdr.id == 12)
-			{
-				int j = 0;
-				j++;
-			}
-			g_copyReadDid = data->hdr.id;
-#endif
-
 			// CSV special cases 
 			if (logType == eLogType::LOGTYPE_CSV)
 			{

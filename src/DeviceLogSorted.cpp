@@ -28,10 +28,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "DeviceLogSorted.h"
 
-#define LOG_DEBUG_PRINT_CHUNK_SAVE		1
-#define LOG_DEBUG_PRINT_CHUNK_READ		1
+#define LOG_DEBUG_PRINT_CHUNK_SAVE		0
+#define LOG_DEBUG_PRINT_CHUNK_READ		0
 #define LOG_DEBUG_PRINT_DID_SAVE		0
 #define LOG_DEBUG_PRINT_DID_READ		0
+
 
 cDeviceLogSorted::cDeviceLogSorted()
 {
@@ -246,13 +247,6 @@ bool cDeviceLogSorted::WriteChunkToFile(uint32_t id)
 #if LOG_DEBUG_PRINT_CHUNK_SAVE
 	p_cnk_data_t* cnkData = (p_cnk_data_t*)(m_chunks[id]->GetDataPtr());
 	printf("sorted chunk save:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", m_chunks[id]->m_subHdr.dHdr.id, m_chunks[id]->m_subHdr.dCount, nBytes, cnkData->dataSerNum);
-
-	//if (m_dataSerNum >= 1250)
-	if (m_dataSerNum >= 2500)
-	{
-		int j = 0;
-		j++;
-	}
 #endif
 
 	if (nBytes != 0)
@@ -317,15 +311,6 @@ tryAgain:
 	uint32_t minSerialNum = UINT_MAX;
     cSortedDataChunk *chunk;
 	p_cnk_data_t* cnkData;
-
-	//if (m_dataSerNum >= 158209)
-extern int g_copyReadCount;
-	if (1250 == g_copyReadCount)
-	//if (m_dataSerNum != g_copyReadCount)
-	{
-		int j = 0;
-		j++;
-	}
 
 	// while there is data in any chunk, find the chunk with the next id
 	for (uint32_t id = 1; id < DID_COUNT; id++)
@@ -495,12 +480,6 @@ bool cDeviceLogSorted::ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id)
 #if LOG_DEBUG_PRINT_CHUNK_READ
 	p_cnk_data_t* cnkData = (p_cnk_data_t*)(chunk->GetDataPtr());
 	printf("sorted chunk read:   DID:%3d  dCount: %5d  nBytes: %6d   dataSN: %2d\n", chunk->m_subHdr.dHdr.id, chunk->m_subHdr.dCount, nBytes-sizeof(sChunkHeader)-sizeof(sChunkSubHeader), cnkData->dataSerNum);
-
-	if (m_dataSerNum >= 2500)
-	{
-		int j = 0;
-		j++;
-	}
 #endif
 
 	// Validate chunk: non-zero size and is sorted type
