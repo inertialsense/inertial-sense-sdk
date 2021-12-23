@@ -74,9 +74,7 @@ bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
 cISLogger::cISLogger()
 {
 	m_enabled = false;
-	m_logStats = new cLogStats;
-	m_logStats->Clear();
-	m_errorFile = CreateISLogFile();
+	m_logStats.Clear();
 	m_lastCommTime = 0;
 	m_timeoutFlushSeconds = 0;
 }
@@ -85,8 +83,7 @@ cISLogger::cISLogger()
 cISLogger::~cISLogger()
 {
 	Cleanup();
-	CloseISLogFile(m_errorFile);
-	delete m_logStats;
+	m_errorFile.close();
 }
 
 
@@ -101,7 +98,7 @@ void cISLogger::Cleanup()
 		}
 	}
 	m_devices.clear();
-	m_logStats->Clear();
+	m_logStats.Clear();
 }
 
 
@@ -254,7 +251,8 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 		m_devices[i]->InitDeviceForWriting(i, m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
 	}
 
-	m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
+	//m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
+	//m_errorFile.open((m_directory + "/errors.txt"), "w");
 
     return ISFileManager::PathIsDir(m_directory);
 }
@@ -358,29 +356,29 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 
 	if (!m_enabled)
 	{
-        m_errorFile->lprintf("Logger is not enabled\r\n");
+        m_errorFile.lprintf("Logger is not enabled\r\n");
 		return false;
 	}
 	else if (device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
-        m_errorFile->lprintf("Invalid device handle or NULL data\r\n");
+        m_errorFile.lprintf("Invalid device handle or NULL data\r\n");
 		return false;
 	}
 	else if (LogHeaderIsCorrupt(dataHdr))
 	{
-        m_errorFile->lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
-		m_logStats->LogError(dataHdr);
+        m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
+		m_logStats.LogError(dataHdr);
 	}
     else if (!m_devices[device]->SaveData(dataHdr, dataBuf))
     {
-        m_errorFile->lprintf("Underlying log implementation failed to save\r\n");
-        m_logStats->LogError(dataHdr);
+        m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
+        m_logStats.LogError(dataHdr);
     }
 #if 1
     else
     {
         double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-        m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
+        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -416,14 +414,14 @@ p_data_t* cISLogger::ReadData(unsigned int device)
 	p_data_t* data = NULL;
 	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
 	{
-	    m_errorFile->lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
-		m_logStats->LogError(&data->hdr);
+	    m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
+		m_logStats.LogError(&data->hdr);
 		data = NULL;
 	}
 	if (data != NULL)
 	{
         double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
-		m_logStats->LogDataAndTimestamp(data->hdr.id, timestamp);
+		m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
 	}
 	return data;
 }
@@ -454,8 +452,8 @@ void cISLogger::CloseAllFiles()
 		m_devices[i]->CloseAllFiles();
 	}
 
-    m_logStats->WriteToFile(m_directory + "/stats.txt");
-    CloseISLogFile(m_errorFile);
+    m_logStats.WriteToFile(m_directory + "/stats.txt");
+	m_errorFile.close();
 }
 
 
@@ -554,7 +552,7 @@ int g_copyReadDid;
 
 bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
-	m_logStats->Clear();
+	m_logStats.Clear();
 	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
 	{
 		return false;
@@ -605,16 +603,6 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 					hdr.size = sizeof(ins_1_t);
 					hdr.offset = 0;
 					LogData(dev, &hdr, (uint8_t*)&ins1);
-				}
-			}
-
-			if (data->hdr.id == 5)
-			{
-				double timestamp1 = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
-				if (timestamp1 >= 933.8385)
-				{
-					int j=0;
-					j++;
 				}
 			}
 
@@ -672,174 +660,3 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
     return true;
 }
 
-cLogStatDataId::cLogStatDataId()
-{
-	count = 0;
-	errorCount = 0;
-	averageTimeDelta = 0.0;
-	totalTimeDelta = 0.0;
-	lastTimestamp = 0.0;
-	lastTimestampDelta = 0.0;
-	maxTimestampDelta = 0.0;
-    minTimestampDelta = 1.0E6;
-    timestampDeltaCount = 0;
-	timestampDropCount = 0;
-}
-
-void cLogStatDataId::LogTimestamp(double timestamp)
-{
-    // check for corrupt data
-    if (_ISNAN(timestamp) || timestamp < 0.0 || timestamp > 999999999999.0)
-    {
-        return;
-    }
-    else if (lastTimestamp > 0.0)
-    {
-        double delta = fabs(timestamp - lastTimestamp);
-        minTimestampDelta = _MIN(delta, minTimestampDelta);
-        maxTimestampDelta = _MAX(delta, maxTimestampDelta);
-        totalTimeDelta += delta;
-        averageTimeDelta = (totalTimeDelta / (double)++timestampDeltaCount);
-        if (lastTimestampDelta != 0.0 && (fabs(delta - lastTimestampDelta) > (lastTimestampDelta * 0.5)))
-        {
-            timestampDropCount++;
-        }
-        lastTimestampDelta = delta;
-	}
-    lastTimestamp = timestamp;
-}
-
-void cLogStatDataId::Printf()
-{
-	
-#if !PLATFORM_IS_EMBEDDED
-	
-	printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
-	printf(" Time delta: (ave, min, max) %f, %f, %f\r\n", averageTimeDelta, minTimestampDelta, maxTimestampDelta);
-	printf(" Time delta drop: %llu\r\n", (unsigned long long)timestampDropCount);
-	
-#endif
-
-}
-
-cLogStats::cLogStats()
-{
-	Clear();
-}
-
-void cLogStats::Clear()
-{
-	memset(dataIdStats, 0, sizeof(dataIdStats));
-    for (uint32_t id = 0; id < DID_COUNT; id++)
-    {
-        dataIdStats[id].minTimestampDelta = 1.0E6;
-    }
-	errorCount = 0;
-	count = 0;
-}
-
-void cLogStats::LogError(const p_data_hdr_t* hdr)
-{
-	errorCount++;
-	if (hdr != NULL && hdr->id < DID_COUNT)
-	{
-		cLogStatDataId& d = dataIdStats[hdr->id];
-		d.errorCount++;
-	}
-}
-
-void cLogStats::LogData(uint32_t dataId)
-{
-	if (dataId < DID_COUNT)
-	{
-		cLogStatDataId& d = dataIdStats[dataId];
-		d.count++;
-		count++;
-	}
-}
-
-void cLogStats::LogDataAndTimestamp(uint32_t dataId, double timestamp)
-{
-	if (dataId < DID_COUNT)
-	{
-		cLogStatDataId& d = dataIdStats[dataId];
-		d.count++;
-		count++;
-		if (timestamp != 0.0)
-		{
-			d.LogTimestamp(timestamp);
-		}
-	}
-}
-
-void cLogStats::Printf()
-{
-	
-#if !PLATFORM_IS_EMBEDDED
-	
-	printf("LOG STATS\r\n");
-	printf("----------");
-	printf("Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
-	for (uint32_t id = 0; id < DID_COUNT; id++)
-	{
-		if (dataIdStats[id].count != 0)
-		{
-			printf(" DID: %d\r\n", id);
-			dataIdStats[id].Printf();
-			printf("\r\n");
-		}
-	}
-	
-#endif
-	
-}
-
-void cLogStats::WriteToFile(const string &file_name)
-{
-    if (count != 0)
-    {
-        // flush log stats to disk
-#if 1
-        cISLogFileBase *statsFile = CreateISLogFile(file_name, "wb");        
-        statsFile->lprintf("Total count: %d,   Total errors: \r\n\r\n", count, errorCount);
-        for (uint32_t id = 0; id < DID_COUNT; id++)
-        {
-            cLogStatDataId& stat = dataIdStats[id];
-            if (stat.count == 0 && stat.errorCount == 0)
-            {   // Exclude zero count stats
-                continue;
-            }
-
-            statsFile->lprintf("Data Id: %d (%s)\r\n", id, cISDataMappings::GetDataSetName(id));
-            statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
-            statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
-            statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
-            statsFile->lprintf("\r\n");
-        }
-        CloseISLogFile(statsFile);
-#else
-        // The following code doesn't work on the EVB-2.  Converting stringstream to a string causes the system to hang.
-    	CONST_EXPRESSION char CRLF[]= "\r\n";
-        stringstream stats;
-        stats << fixed << setprecision(6);
-        stats << "Total count: " << count << ",   Total errors: " << errorCount << CRLF << CRLF;
-        for (uint32_t id = 0; id < DID_COUNT; id++)
-        {
-            cLogStatDataId& stat = dataIdStats[id];
-            if (stat.count == 0 && stat.errorCount == 0)
-            {   // Exclude zero count stats
-                continue;
-            }
-
-            stats << "Data Id: " << id << " (" << cISDataMappings::GetDataSetName(id) << ")" << CRLF;
-            stats << "Count: " << stat.count << ",   Errors: " << stat.errorCount << CRLF;
-            stats << "Timestamp Delta (ave, min, max): " << stat.averageTimeDelta << ", " << stat.minTimestampDelta << ", " << stat.maxTimestampDelta << CRLF;
-            stats << "Timestamp Drops: " << stat.timestampDropCount << CRLF;
-            stats << CRLF;
-        }
-        cISLogFileBase *statsFile = CreateISLogFile(file_name, "wb");
-        statsFile->puts(stats.str().c_str());
-        CloseISLogFile(statsFile);
-#endif
-    }
-}
