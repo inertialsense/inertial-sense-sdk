@@ -44,7 +44,7 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 	Clear();
 
 	int32_t nBytes = -1;
-	fpos_t restorePos;
+	long int restorePos;
 
 	// Search through all files for chunk with matching DID
 	for (int i = 0; i < pFiles.size(); )
@@ -52,7 +52,7 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 		cISLogFileBase* pFile = pFiles[i];
 
 		// Set backup file pointer
-		pFile->getpos(&restorePos);
+		restorePos = pFile->tell();
 
 		// Search through single file for chunk with matching DID
 		bool allowFileTrim = true;	// This flag indicates there is/are new chunk(s) that should not be trimmed from the restorePos file pointer position. 
@@ -100,7 +100,7 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 
 		if (pFile)
 		{ 	// Restore file pointer if file is still opened
-			pFile->setpos(&restorePos);
+			pFile->seek(restorePos);
 		}
 
 		if (nBytes > 0)
@@ -116,14 +116,15 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 }
 
 
-cISLogFileBase* cSortedDataChunk::TrimFile(int i, vector<cISLogFileBase*>& pFiles, fpos_t &restorePos)
+cISLogFileBase* cSortedDataChunk::TrimFile(int i, vector<cISLogFileBase*>& pFiles, long int &restorePos)
 {
 	cISLogFileBase* pFile = pFiles[i];
 
 	// Move file pointer past old chunks
-	pFile->getpos(&restorePos);
+	//pFile->getpos(&restorePos);
+	restorePos = pFile->tell();
 
-	if (pFile->isEmpty())
+	if (pFile->eof())
 	{	// No more data in file
 		pFile->close();
 

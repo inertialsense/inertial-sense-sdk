@@ -45,10 +45,9 @@ public:
 
     virtual int getch() = 0;
     virtual std::size_t read(void* bytes, std::size_t len) = 0;
-    virtual int seek(long int offset, int origin = SEEK_CUR) = 0;
-    virtual int getpos(fpos_t* pos) = 0;
-    virtual int setpos(fpos_t* pos) = 0;
-    virtual int isEmpty() = 0;
+    virtual int seek(long int offset, int origin = SEEK_SET) = 0;   // origin = SEEK_SET means offset is from start of file
+    virtual long int tell() = 0;
+    virtual int eof() = 0;		// returns non-zero at end of file
 
 };
 
