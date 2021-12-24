@@ -36,7 +36,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "cltool.h"
 
 
-static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refresh=false)
+static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
 {
 	if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
 		g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
@@ -87,7 +87,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 			{
  				outstream << i->getServerMessageStatsSummary();
 			}
-			refresh = true;
+			refreshDisplay = true;
 		}
 		else
 		{	// Client
@@ -103,7 +103,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 		}
 	}
 
-	if (refresh)
+	if (refreshDisplay)
 	{
 		cout << outstream.str();
 	}
@@ -121,12 +121,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
     (void)pHandle;
 
 	// Print data to terminal
-	bool refresh = g_inertialSenseDisplay.ProcessData(data);
-
-	
-
-	// Collect and print summary list of client messages received
-	display_server_client_status(i, false, false, refresh);
+	g_inertialSenseDisplay.ProcessData(data);
 
 #if 0
 
@@ -493,13 +488,15 @@ static int inertialSenseMain()
 
 					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
-					{
-						// device disconnected, exit
+					{	// device disconnected, exit
 						break;
 					}
 
 					// Print to standard output
-					g_inertialSenseDisplay.PrintData();
+					bool refreshDisplay = g_inertialSenseDisplay.PrintData();
+
+					// Collect and print summary list of client messages received
+					display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
 				}
 			}
 			catch (...)
