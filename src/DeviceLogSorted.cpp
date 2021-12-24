@@ -210,23 +210,6 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 #if LOG_DEBUG_PRINT_DID_SAVE
 	double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
 	printf("sorted did save: %d  DID: %2d  size: %3d  time: %.4lf\n", m_dataSerNum, dataHdr->id, nBytes-(int)sizeof(uint32_t), timestamp);
-	if (nBytes - sizeof(uint32_t) != dataHdr->size)
-	{
-		while (1) printf("cDeviceLogSorted::SaveData error!!!\n");
-	}
-
-	extern int g_copyReadCount;
-	if (m_dataSerNum != g_copyReadCount)
-	{
-		int j = 0;
-		j++;
-	}
-
-	if (m_dataSerNum%8000 == 7999)
-	{
-		int j = 0;
-		j++;
-	}
 #endif
 
 	// Prep for next save
