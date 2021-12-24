@@ -32,6 +32,7 @@ add_library(SDK_test
 	../ISFileManager.cpp
 	../ISLogFile.cpp
 	../ISLogger.cpp
+	../ISLogStats.cpp
 	../ISMatrix.c
 	../ISPose.c
 	../ISUtilities.cpp

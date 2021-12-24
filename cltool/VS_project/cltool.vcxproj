@@ -186,6 +186,7 @@
     <ClCompile Include="..\..\src\ISFileManager.cpp" />
     <ClCompile Include="..\..\src\ISLogFile.cpp" />
     <ClCompile Include="..\..\src\ISLogger.cpp" />
+    <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\ISMatrix.c" />
     <ClCompile Include="..\..\src\ISPose.c" />
     <ClCompile Include="..\..\src\ISSerialPort.cpp" />
@@ -236,6 +237,7 @@
     <ClInclude Include="..\..\src\ISLogFileBase.h" />
     <ClInclude Include="..\..\src\ISLogFileFactory.h" />
     <ClInclude Include="..\..\src\ISLogger.h" />
+    <ClInclude Include="..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\src\ISMatrix.h" />
     <ClInclude Include="..\..\src\ISPose.h" />
     <ClInclude Include="..\..\src\ISSerialPort.h" />

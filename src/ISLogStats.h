@@ -10,48 +10,52 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef DEVICE_LOG_SORTED_H
-#define DEVICE_LOG_SORTED_H
+#ifndef IS_LOG_STATS_H
+#define IS_LOG_STATS_H
 
-#include <stdio.h>
 #include <string>
-#include <vector>
-#include <list>
+#include <cstdint>
 
-#include "DeviceLog.h"
-#include "DataChunkSorted.h"
+#include "data_sets.h"
+#include "ISComm.h"
 
-using namespace std;
 
-class cDeviceLogSorted : public cDeviceLog
+
+class cLogStatDataId
 {
 public:
-    cDeviceLogSorted();
+	uint64_t count; // count for this data id
+	uint64_t errorCount; // error count for this data id
+	double averageTimeDelta; // average time delta for the data id
+	double totalTimeDelta; // sum of all time deltas
+	double lastTimestamp;
+	double lastTimestampDelta;
+	double minTimestampDelta;
+	double maxTimestampDelta;
+	uint64_t timestampDeltaCount;
+	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
 
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
-	void InitDeviceForReading() OVERRIDE;
-	bool OpenAllReadFiles();
-	bool CloseAllFiles() OVERRIDE;
-    bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
-	p_data_t* ReadData() OVERRIDE;
-	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-	string LogFileExtention() OVERRIDE { return string(".sdat"); }
-
-    cSortedDataChunk *m_chunks[DID_COUNT];
-	bool m_chunksAvailable[DID_COUNT];
-
-	p_data_t* SerializeDataFromChunks();
-	bool ReadNextChunkFromFiles(uint32_t id);
-	bool ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id);
-	bool WriteChunkToFile(uint32_t id);
-
-	uint32_t m_dataSerNum;
-	uint32_t m_lastSerNum;
-	p_data_t m_data;
-	cSortedDataChunk m_readChunk;
-
-	vector<cISLogFileBase*> m_pFiles;
-
+	cLogStatDataId();
+	void LogTimestamp(double timestamp);
+	void Printf();
 };
 
-#endif // DEVICE_LOG_SORTED_H
+class cLogStats
+{
+public:
+	cLogStatDataId dataIdStats[DID_COUNT];
+	uint64_t count; // count of all data ids
+	uint64_t errorCount; // total error count
+
+	cLogStats();
+	void Clear();
+	void LogError(const p_data_hdr_t* hdr);
+	void LogData(uint32_t dataId);
+	void LogDataAndTimestamp(uint32_t dataId, double timestamp);
+	void Printf();
+	void WriteToFile(const std::string& fileName);
+};
+
+
+
+#endif // IS_LOG_STATS_H
