@@ -26,6 +26,7 @@ extern "C" {
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
+#include <limits.h>
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
@@ -427,9 +428,6 @@ extern void vPortFree(void* pv);
 
 #endif
 
-#ifndef UINT_MAX
-#define UINT_MAX      0xffffffff
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Time
