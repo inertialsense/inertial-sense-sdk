@@ -82,7 +82,7 @@ void cDeviceLogSorted::InitDeviceForReading()
 bool cDeviceLogSorted::OpenAllReadFiles()
 {
 	// Close files if open
-	for (int i = 0; i < m_pFiles.size(); i++)
+	for (unsigned int i = 0; i < m_pFiles.size(); i++)
 	{	
 		CloseISLogFile(m_pFiles[i]);
 	}
@@ -131,7 +131,7 @@ bool cDeviceLogSorted::CloseAllFiles()
 	CloseISLogFile(m_pFile);
 
 	// Close file pointer array used for reading
-	for (int i = 0; i < m_pFiles.size(); i++)
+	for (unsigned int i = 0; i < m_pFiles.size(); i++)
 	{
 		CloseISLogFile(m_pFiles[i]);
 	}

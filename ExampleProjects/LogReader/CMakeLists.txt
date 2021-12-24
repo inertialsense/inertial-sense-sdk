@@ -39,6 +39,7 @@ add_executable(ISLogReaderExample
 	../../src/ISFileManager.cpp
 	../../src/ISLogFile.cpp
 	../../src/ISLogger.cpp
+	../../src/ISLogStats.cpp
 	../../src/ISMatrix.c
 	../../src/ISPose.c
 	../../src/ISSerialPort.cpp

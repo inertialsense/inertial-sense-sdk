@@ -47,7 +47,7 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 	long int restorePos;
 
 	// Search through all files for chunk with matching DID
-	for (int i = 0; i < pFiles.size(); )
+	for (unsigned int i = 0; i < pFiles.size(); )
 	{
 		cISLogFileBase* pFile = pFiles[i];
 
@@ -116,7 +116,7 @@ int32_t cSortedDataChunk::ReadFromFiles(vector<cISLogFileBase*>& pFiles, uint32_
 }
 
 
-cISLogFileBase* cSortedDataChunk::TrimFile(int i, vector<cISLogFileBase*>& pFiles, long int &restorePos)
+cISLogFileBase* cSortedDataChunk::TrimFile(unsigned int i, vector<cISLogFileBase*>& pFiles, long int &restorePos)
 {
 	cISLogFileBase* pFile = pFiles[i];
 
