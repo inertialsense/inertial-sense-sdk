@@ -73,6 +73,7 @@ protected:
 	string                  m_directory;
 	string                  m_timeStamp;
 	string                  m_fileName;
+	bool                    m_writeMode;	// Logger initialized for writting
 	dev_info_t              m_devInfo;
 	int                     m_pHandle;
 	uint64_t                m_fileSize;

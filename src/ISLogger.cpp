@@ -44,6 +44,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
+#define LOG_DEBUG_PRINT_READ		0
+
 
 const string cISLogger::g_emptyString;
 
@@ -72,9 +74,7 @@ bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
 cISLogger::cISLogger()
 {
 	m_enabled = false;
-	//m_logStats = new cLogStats;
 	m_logStats.Clear();
-	//m_errorFile = CreateISLogFile();
 	m_lastCommTime = 0;
 	m_timeoutFlushSeconds = 0;
 }
@@ -84,7 +84,6 @@ cISLogger::~cISLogger()
 {
 	Cleanup();
 	m_errorFile.close();
-	//delete m_logStats;
 }
 
 
@@ -148,6 +147,8 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string& directory, const 
 	{
 		m_maxFileSize = maxFileSize;
 	}
+
+	m_maxFileSize = _MIN(m_maxFileSize, maxFileSize);
 
 	// create root dir
 	_MKDIR(m_directory.c_str());
@@ -435,6 +436,10 @@ p_data_t* cISLogger::ReadNextData(unsigned int& device)
 		{
 			++device;
 		}
+		else
+		{
+			return data;
+		}
 	}
 	return NULL;
 }
@@ -542,7 +547,10 @@ const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
 	return m_devices[device]->GetDeviceInfo();
 }
 
-bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+int g_copyReadCount;
+int g_copyReadDid;
+
+bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
 	m_logStats.Clear();
 	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
@@ -557,18 +565,25 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		const dev_info_t* devInfo = log.GetDeviceInfo(dev);
 		SetDeviceInfo(devInfo, dev);
 
-#if LOG_DEBUG_GEN
+#if LOG_DEBUG_GEN || DEBUG_PRINT
 		printf("cISLogger::CopyLog SN%d type %d, (%d of %d)\n", devInfo->serialNumber, logType, dev+1, log.GetDeviceCount());
 #endif
 
 		// Set KML configuration
 		m_devices[dev]->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 
-		// Copy data
-		while ((data = log.ReadData(dev)))
+		// Copy data		
+		for (g_copyReadCount = 0; (data = log.ReadData(dev)); g_copyReadCount++)
 		{
+
+#if LOG_DEBUG_PRINT_READ
+			double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+			printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
+			g_copyReadDid = data->hdr.id;
+#endif
+
 			// CSV special cases 
-			if (logType == eLogType::LOGTYPE_CSV)
+			if (logType == eLogType::LOGTYPE_CSV && enableCsvIns2ToIns1Conversion)
 			{
 				if (data->hdr.id == DID_INS_2)
 				{	// Convert INS2 to INS1 when creating .csv logs

@@ -161,3 +161,43 @@ std::size_t cISLogFile::read(void* bytes, std::size_t len)
         return 0;
     }
 }
+
+// Sets the position indicator associated with the file stream to a new position relative to 
+// origin: SEEK_SET = beginning of file, SEEK_CUR = current position, SEEK_END = end of file
+int cISLogFile::seek(long int offset, int origin)
+{
+    if (m_file)
+    {
+        return fseek(m_file, offset, origin);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+// Returns the byte offset from the start of the file.
+long int cISLogFile::tell()
+{
+    if (m_file)
+    {
+        return ftell(m_file);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+int cISLogFile::eof()
+{
+    if (m_file)
+    {
+        return feof(m_file);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
