@@ -45,14 +45,12 @@ cDeviceLog::cDeviceLog()
 	m_logStats.Clear();
 }
 
-
 cDeviceLog::~cDeviceLog()
 {
     // Close open files
     CloseISLogFile(m_pFile);
     CloseAllFiles();
 }
-
 
 void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
@@ -88,7 +86,6 @@ bool cDeviceLog::CloseAllFiles()
     return true;
 }
 
-
 bool cDeviceLog::OpenWithSystemApp()
 {
 
@@ -113,7 +110,6 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
 	}
     return true;
 }
-
 
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
 {

@@ -46,21 +46,6 @@ bool cDeviceLogSerial::CloseAllFiles()
 		WriteChunkToFile();
 	}
 
-	cDeviceLog::CloseAllFiles();
-
-	if (m_pFile != NULLPTR)
-	{	// Close file
-		CloseISLogFile(m_pFile);
-	}
-
-	return true;
-}
-
-
-bool cDeviceLogSerial::Clear()
-{
-	cDeviceLog::Clear();
-
 	// Close file
 	CloseISLogFile(m_pFile);
 

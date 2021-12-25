@@ -38,13 +38,13 @@ void cDeviceLogKML::InitDeviceForWriting(int pHandle, std::string timestamp, std
 
 bool cDeviceLogKML::CloseAllFiles()
 {
+    cDeviceLog::CloseAllFiles();
+
 	for (int kid = 0; kid < cDataKML::MAX_NUM_KID; kid++)
 	{
 		// Close file
 		CloseWriteFile(kid, m_Log[kid]);
 	}
-
-	cDeviceLog::CloseAllFiles();
 
 	return true;
 }
