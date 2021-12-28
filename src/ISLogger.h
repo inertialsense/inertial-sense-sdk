@@ -31,17 +31,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if PLATFORM_IS_EVB_2
 #include "drivers/d_time.h"
+#include "ISLogFileFatFs.h"
+#else
+#include "ISLogFile.h"
 #endif
 
 #include "ISConstants.h"
-#include "ISLogFile.h"
+#include "ISLogStats.h"
 
 using namespace std;
 
 // default logging path if none specified
 #define DEFAULT_LOGS_DIRECTORY "IS_logs"
 
-class cLogStats;
 
 class cISLogger
 {
@@ -87,8 +89,16 @@ public:
 	uint32_t GetDeviceCount() { return (uint32_t)m_devices.size(); }
 	bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
 	const dev_info_t* GetDeviceInfo(unsigned int device = 0);
-	bool CopyLog(cISLogger& log, const string& timestamp = g_emptyString, const string& outputDir = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
-	const cLogStats& GetStats() { return *m_logStats; }
+	bool CopyLog(
+		cISLogger& log, 
+		const string& timestamp = g_emptyString, 
+		const string& outputDir = g_emptyString, 
+		eLogType logType = LOGTYPE_DAT, 
+		float maxDiskSpacePercent = 0.5f, 
+		uint32_t maxFileSize = 1024 * 1024 * 5, 
+		bool useSubFolderTimestamp = true,
+		bool enableCsvIns2ToIns1Conversion = true);
+	const cLogStats& GetStats() { return m_logStats; }
 	eLogType GetType() { return m_logType; }
 
 	/**
@@ -178,8 +188,12 @@ private:
 	vector<cDeviceLog*>		m_devices;
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;
-	cLogStats*				m_logStats;
-	cISLogFileBase*         m_errorFile;
+	cLogStats				m_logStats;
+#if PLATFORM_IS_EVB_2
+	cISLogFileFatFs         m_errorFile;
+#else
+	cISLogFile				m_errorFile;
+#endif
 
 	bool					m_altClampToGround;
 	bool					m_showSample;
@@ -190,39 +204,5 @@ private:
 	time_t					m_timeoutFlushSeconds;
 };
 
-class cLogStatDataId
-{
-public:
-	uint64_t count; // count for this data id
-	uint64_t errorCount; // error count for this data id
-	double averageTimeDelta; // average time delta for the data id
-	double totalTimeDelta; // sum of all time deltas
-	double lastTimestamp;
-	double lastTimestampDelta;
-    double minTimestampDelta;
-    double maxTimestampDelta;
-	uint64_t timestampDeltaCount;
-	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
-
-	cLogStatDataId();
-	void LogTimestamp(double timestamp);
-	void Printf();
-};
-
-class cLogStats
-{
-public:
-	cLogStatDataId dataIdStats[DID_COUNT];
-	uint64_t count; // count of all data ids
-	uint64_t errorCount; // total error count
-
-	cLogStats();
-	void Clear();
-	void LogError(const p_data_hdr_t* hdr);
-	void LogData(uint32_t dataId);
-	void LogDataAndTimestamp(uint32_t dataId, double timestamp);
-	void Printf();
-    void WriteToFile(const string& fileName);
-};
 
 #endif // IS_LOGGER_H

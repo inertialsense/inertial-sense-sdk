@@ -19,9 +19,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 
 #define LOG_DEBUG_GEN			(PLATFORM_IS_EMBEDDED==0)		
-#define LOG_DEBUG_FILE_WRITE	0		// Enable chunk debug printout
+#define LOG_DEBUG_FILE_WRITE	0		// Enable file debug printout
 #define LOG_DEBUG_FILE_READ		0		// 
-#define LOG_DEBUG_CHUNK_WRITE	0		// Enable file debug printout
+#define LOG_DEBUG_CHUNK_WRITE	0		// Enable chunk debug printout
 #define LOG_DEBUG_CHUNK_READ	0
 #define LOG_CHUNK_STATS			0		// 0 = disabled, 1 = summary, 2 = detailed
 
@@ -45,6 +45,10 @@ public:
 
     virtual int getch() = 0;
     virtual std::size_t read(void* bytes, std::size_t len) = 0;
+    virtual int seek(long int offset, int origin = SEEK_SET) = 0;   // origin = SEEK_SET means offset is from start of file
+    virtual long int tell() = 0;
+    virtual int eof() = 0;		// returns non-zero at end of file
+
 };
 
 

@@ -26,6 +26,7 @@ extern "C" {
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
+#include <limits.h>
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
