@@ -907,6 +907,20 @@ UBaseType_t uxTaskPriorityGetFromISR( TaskHandle_t xTask ) PRIVILEGED_FUNCTION;
 eTaskState eTaskGetState( TaskHandle_t xTask ) PRIVILEGED_FUNCTION;
 
 /**
+ * vTaskResetRunTimeCounter( TaskHandle_t xTask )
+ * 
+ * configUSE_TRACE_FACILITY must be defined as 1 for this function to be
+ * available.  See the configuration section for more information.
+ * 
+ * @param xTask Handle of the task which will have its runtime counter reset to 0
+ *
+ * This function resets the ulRunTimeCounter of the task in question to 0. 
+ * Call this once after wrap is detected, but before using ulRunTimeCounter in 
+ * calculations.
+ */
+void vTaskResetRunTimeCounter( TaskHandle_t xTask );
+
+/**
  * task. h
  * <pre>void vTaskGetInfo( TaskHandle_t xTask, TaskStatus_t *pxTaskStatus, BaseType_t xGetFreeStackSpace, eTaskState eState );</pre>
  *
