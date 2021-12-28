@@ -41,6 +41,7 @@ C_SRCS += \
           $(SDK_DIR)/src/ISUtilities.cpp                                                                 \
           $(SDK_DIR)/src/ISFileManager.cpp                                                               \
           $(SDK_DIR)/src/ISLogger.cpp                                                                    \
+          $(SDK_DIR)/src/ISLogStats.cpp                                                                  \
           $(SDK_DIR)/src/DeviceLog.cpp                                                                   \
           $(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
           $(SDK_DIR)/src/DataChunk.cpp                                                                   \
