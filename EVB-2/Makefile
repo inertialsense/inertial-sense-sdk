@@ -119,12 +119,12 @@ C_SRCS += \
           $(HW_LIBS_DIR)/drivers/d_flash.c                                                               \
           $(HW_LIBS_DIR)/drivers/d_i2c.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
+          $(HW_LIBS_DIR)/drivers/d_time.c                                                                \
           $(HW_LIBS_DIR)/misc/bootloaderApp.c                                                            \
           $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
           $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
           $(SRC_DIR)/communications.cpp                                                                  \
           $(SRC_DIR)/wheel_encoder.cpp                                                                   \
-          $(SRC_DIR)/drivers/d_time.c                                                                    \
           $(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
           $(SRC_DIR)/drivers/d_adc.c                                                                     \
           $(SRC_DIR)/globals.c                                                                           \
