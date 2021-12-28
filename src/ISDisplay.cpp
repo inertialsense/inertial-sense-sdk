@@ -333,15 +333,18 @@ void cInertialSenseDisplay::SetExitProgram()
 }
 
 // Return true on refresh
-bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
+void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, double replaySpeedX)
 {
 	if (m_displayMode == DMODE_QUIET)
 	{
-		return false;
+		return;
 	}
 
 	unsigned int curTimeMs = current_timeMs();
 	m_rxCount++;
+
+	m_enableReplay = enableReplay;
+	m_replaySpeedX = replaySpeedX;
 
 	if (enableReplay)
 	{
@@ -359,8 +362,8 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		{
 			// Time of week - double
 		case DID_INS_1:
-		case DID_INS_2:				
-			msgTimeMs = (unsigned int)(1000.0*d.ins1.timeOfWeek); 
+		case DID_INS_2:
+			msgTimeMs = (unsigned int)(1000.0 * d.ins1.timeOfWeek);
 			isTowMode = true;
 			break;
 
@@ -371,10 +374,10 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			break;
 
 		case DID_GPS1_POS:
-        case DID_GPS1_RTK_POS:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
-			gpsTowMsOffset = (unsigned int)(1000.0*d.gpsPos.towOffset); 
-			isTowMode = true; 
+		case DID_GPS1_RTK_POS:
+			msgTimeMs = d.gpsPos.timeOfWeekMs;
+			gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+			isTowMode = true;
 			break;
 
 		case DID_GPS1_RTK_POS_REL:
@@ -384,7 +387,7 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 		case DID_GPS1_RTK_POS_MISC:
 			msgTimeMs = d.gpsPos.timeOfWeekMs;
-			gpsTowMsOffset = (unsigned int)(1000.0*d.gpsPos.towOffset);
+			gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
 			isTowMode = false;
 			break;
 
@@ -396,10 +399,10 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		case DID_DUAL_IMU:
 		case DID_INL2_STATES:
 		case DID_GPS_BASE_RAW:
-			if( isTowMode )
-				msgTimeMs = (unsigned int)(1000.0*d.imu.time) + gpsTowMsOffset; 
+			if (isTowMode)
+				msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
 			else
-				msgTimeMs = (unsigned int)(1000.0*d.imu.time);
+				msgTimeMs = (unsigned int)(1000.0 * d.imu.time);
 			break;
 
 			// Unidentified data type
@@ -408,14 +411,14 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 
 		// Control replay rate
-		if (msgTimeMs != 0 && replaySpeedX>0.0)
+		if (msgTimeMs != 0 && replaySpeedX > 0.0)
 		{
 			for (;;)
 			{
 				curTimeMs = current_timeMs();
 
 				// Replay speed
-				unsigned int replayTimeMs = (unsigned int)(long)(((double)curTimeMs)*replaySpeedX);
+				unsigned int replayTimeMs = (unsigned int)(long)(((double)curTimeMs) * replaySpeedX);
 
 				// Reinitialize message offset
 				if ((msgTimeMs + msgTimeMsOffset - replayTimeMs) > 1500)
@@ -433,7 +436,6 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 	}
 
 
-	static unsigned int timeSinceRefreshMs = 0;
 	static unsigned int timeSinceClearMs = 0;
 	static char idHist[DID_COUNT] = { 0 };
 	if (m_displayMode != DMODE_SCROLL)
@@ -447,75 +449,87 @@ bool cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		}
 	}
 
-
-	// Display Data
-#define REFRESH_PERIOD_MS	100		// 10Hz 
+	// Save data to be displayed from PrintData()
 	switch (m_displayMode)
 	{
 	default:
 		m_displayMode = DMODE_PRETTY;
 		// fall through
 	case DMODE_PRETTY:
-
 		// Data stays at fixed location (no scroll history)
 		DataToVector(data);
-
-		// Limit printData display updates
-		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
-		{
-			timeSinceRefreshMs = curTimeMs;
-
+		if (m_outputOnceDid == data->hdr.id)
+		{	// Exit as soon as we display DID
 			Home();
-			if (m_outputOnceDid)
-			{
-				cout << VectortoString();
-				exit(1);
-			}
-			if (enableReplay)
-				cout << Replay(replaySpeedX) << endl;
-			else
-
-				cout << Connected() << endl;
-
 			cout << VectortoString();
-			return true;
+			exit(1);
 		}
 		break;
 
 	case DMODE_EDIT:
-		// Limit printData display updates
-		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS &&
-			data->hdr.id == m_editData.did)
+		if (m_editData.did == data->hdr.id)
 		{
-			timeSinceRefreshMs = curTimeMs;
-
-			Home();
-			if (enableReplay)
-				cout << Replay(replaySpeedX) << endl;
-			else
-				cout << Connected() << endl;
-
-			// Generic column format
-			cout << DatasetToString(data);
-			return true;
+			m_editData.pData = *data;
 		}
 		break;
 
 	case DMODE_STATS:
-		// Limit printData display updates
-		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
-		{
-			timeSinceRefreshMs = curTimeMs;
-
-			Home();
-			cout << Connected() << endl;
-			DataToStats(data);
-			return true;
-		}
+		DataToStats(data);
 		break;
 
 	case DMODE_SCROLL:	// Scroll display 
 		cout << DataToString(data) << endl;
+		break;
+	}
+}
+
+// Print data to standard out at the following refresh rate.  Return true to refresh display.
+bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
+{
+	unsigned int curTimeMs = current_timeMs();
+	static unsigned int timeSinceRefreshMs = 0;
+
+	// Limit display refresh rate
+	if (curTimeMs - timeSinceRefreshMs < refreshPeriodMs)
+	{
+		return false;
+	}
+	timeSinceRefreshMs = curTimeMs;
+
+	// Display Data
+	switch (m_displayMode)
+	{
+	default:	// Do not display
+		break;
+
+	case DMODE_PRETTY:
+		Home();
+		if (m_enableReplay)
+			cout << Replay(m_replaySpeedX) << endl;
+		else
+			cout << Connected() << endl;
+
+		cout << VectortoString();
+		return true;
+
+	case DMODE_EDIT:
+		Home();
+		if (m_enableReplay)
+			cout << Replay(m_replaySpeedX) << endl;
+		else
+			cout << Connected() << endl;
+
+		// Generic column format
+		cout << DatasetToString(&m_editData.pData);
+		return true;
+
+	case DMODE_STATS:
+		Home();
+		cout << Connected() << endl;
+		PrintStats();
+		return true;
+
+	case DMODE_SCROLL:	// Scroll display 
 		break;
 	}
 
@@ -558,17 +572,20 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 
 	// Update stats
 	int curTimeMs = current_timeMs();
-	sDidStats &s = m_didStats[id];
+	sDidStats& s = m_didStats[id];
 	s.count++;
-	if(s.lastTimeMs)
+	if (s.lastTimeMs)
 		s.dtMs = curTimeMs - s.lastTimeMs;
 	s.lastTimeMs = curTimeMs;
+}
 
+void cInertialSenseDisplay::PrintStats()
+{
 	// Display stats
 	printf("                Name  DID    Count        dt\n");
 	for (int i = 0; i < (int)m_didStats.size(); i++)
 	{
-		s = m_didStats[i];
+		sDidStats& s = m_didStats[i];
 		if (s.count)
 		{
 			printf("%20s %4d %9d %9.3lf\n", cISDataMappings::GetDataSetName(i), i, s.count, s.dtMs*0.001);
@@ -1608,6 +1625,13 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			int radix = (m_editData.info.dataFlags == DataFlagsDisplayHex ? 16 : 10);
 			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize, radix);
 			m_editData.uploadNeeded = true;
+
+			// Copy data into local Rx buffer
+			if (m_editData.pData.hdr.id == m_editData.did &&
+				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
+			{
+				memcpy(m_editData.pData.buf + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+			}
 		}
 		StopEditing();
 		break;
@@ -1646,6 +1670,12 @@ void cInertialSenseDisplay::SelectEditDataset(int did)
 	}
 
 	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+
+	// Stuff zeros in so that write-only datasets will appear
+	p_data_t data = {};
+	data.hdr.id = did;
+	data.hdr.size = cISDataMappings::GetSize(did);
+	ProcessData(&data);
 }
 
 

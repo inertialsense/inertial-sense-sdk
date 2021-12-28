@@ -10,38 +10,52 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __GPS_STATS_H__
-#define __GPS_STATS_H__
+#ifndef IS_LOG_STATS_H
+#define IS_LOG_STATS_H
 
 #include <string>
+#include <cstdint>
 
-using namespace std;
+#include "data_sets.h"
+#include "ISComm.h"
 
 
-typedef struct
+
+class cLogStatDataId
 {
-    int count;
-    int timeMs;
-    int prevTimeMs;
-    string description;
-} msg_stats_t;
+public:
+	uint64_t count; // count for this data id
+	uint64_t errorCount; // error count for this data id
+	double averageTimeDelta; // average time delta for the data id
+	double totalTimeDelta; // sum of all time deltas
+	double lastTimestamp;
+	double lastTimestampDelta;
+	double minTimestampDelta;
+	double maxTimestampDelta;
+	uint64_t timestampDeltaCount;
+	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
 
-typedef struct
+	cLogStatDataId();
+	void LogTimestamp(double timestamp);
+	void Printf();
+};
+
+class cLogStats
 {
-    std::map<int, msg_stats_t> isb;
-    std::map<int, msg_stats_t> ascii;
-    std::map<int, msg_stats_t> ublox;
-    std::map<int, msg_stats_t> rtcm3;
-    msg_stats_t ack;
-    msg_stats_t parseError;
-} mul_msg_stats_t;
+public:
+	cLogStatDataId dataIdStats[DID_COUNT];
+	uint64_t count; // count of all data ids
+	uint64_t errorCount; // total error count
+
+	cLogStats();
+	void Clear();
+	void LogError(const p_data_hdr_t* hdr);
+	void LogData(uint32_t dataId);
+	void LogDataAndTimestamp(uint32_t dataId, double timestamp);
+	void Printf();
+	void WriteToFile(const std::string& fileName);
+};
 
 
-unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len);
-string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID);
-string messageDescriptionRtcm3(int id);
-void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int timeMs);
-string messageStatsSummary(mul_msg_stats_t &msgStats);
 
-
-#endif // __GPS_STATS_H__
+#endif // IS_LOG_STATS_H

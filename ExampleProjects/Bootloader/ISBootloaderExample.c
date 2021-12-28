@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 
 	// STEP 4: Run bootloader
 
-	if (bootloadFileEx(&param))
+	if (bootloadFileEx(&param)==0)
 	{
 		printf("Bootloader success on port %s with file %s\n", serialPort.port, param.fileName);
 		return 0;

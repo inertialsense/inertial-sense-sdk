@@ -83,7 +83,7 @@ public:
 	bool PopFront(int32_t size);
     int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0); // Returns number of bytes written to file and clears the chunk
 	int32_t ReadFromFile(cISLogFileBase* pFile);
-	bool PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2 = NULL, int32_t d2Size = 0);
+	int32_t PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2 = NULL, int32_t d2Size = 0);
 
 	virtual void Clear();
 

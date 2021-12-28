@@ -505,7 +505,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800082852</avrtoolserialnumber>
+    <avrtoolserialnumber>J41800098599</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020C01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -540,7 +540,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800082852</ToolNumber>
+      <ToolNumber>J41800098599</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <com_atmel_avrdbg_tool_samice>
@@ -1423,6 +1423,14 @@
     <Compile Include="..\..\src\ISLogger.h">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\ISLogger.h</Link>
+    </Compile>
+    <Compile Include="..\..\src\ISLogStats.cpp">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\ISLogStats.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\src\ISLogStats.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\ISLogStats.h</Link>
     </Compile>
     <Compile Include="..\..\src\DeviceLog.cpp">
       <SubType>compile</SubType>
