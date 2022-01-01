@@ -39,6 +39,9 @@ public:
 
     int getch() OVERRIDE;
     std::size_t read(void* bytes, std::size_t len) OVERRIDE;
+	int seek(long int offset, int origin) OVERRIDE;
+	long int tell() OVERRIDE;
+    int eof() OVERRIDE;
 
 private:
     FIL m_file;

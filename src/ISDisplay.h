@@ -86,8 +86,8 @@ public:
 	void SetExitProgram();
 
 	// for the binary protocol, this processes a packet of data
-	bool ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
-	void PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
+	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
+	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
 	void DataToStats(const p_data_t* data);
 	void PrintStats();
 	string DataToString(const p_data_t* data);

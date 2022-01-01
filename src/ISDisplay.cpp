@@ -333,11 +333,11 @@ void cInertialSenseDisplay::SetExitProgram()
 }
 
 // Return true on refresh
-bool cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, double replaySpeedX)
+void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, double replaySpeedX)
 {
 	if (m_displayMode == DMODE_QUIET)
 	{
-		return false;
+		return;
 	}
 
 	unsigned int curTimeMs = current_timeMs();
@@ -481,12 +481,10 @@ bool cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		cout << DataToString(data) << endl;
 		break;
 	}
-
-	return true;
 }
 
-// Print data to standard out at the following refresh rate.
-void cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
+// Print data to standard out at the following refresh rate.  Return true to refresh display.
+bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 {
 	unsigned int curTimeMs = current_timeMs();
 	static unsigned int timeSinceRefreshMs = 0;
@@ -494,7 +492,7 @@ void cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	// Limit display refresh rate
 	if (curTimeMs - timeSinceRefreshMs < refreshPeriodMs)
 	{
-		return;
+		return false;
 	}
 	timeSinceRefreshMs = curTimeMs;
 
@@ -512,7 +510,7 @@ void cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 			cout << Connected() << endl;
 
 		cout << VectortoString();
-		break;
+		return true;
 
 	case DMODE_EDIT:
 		Home();
@@ -523,17 +521,19 @@ void cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 
 		// Generic column format
 		cout << DatasetToString(&m_editData.pData);
-		break;
+		return true;
 
 	case DMODE_STATS:
 		Home();
 		cout << Connected() << endl;
 		PrintStats();
-		break;
+		return true;
 
 	case DMODE_SCROLL:	// Scroll display 
 		break;
 	}
+
+	return false;
 }
 
 string cInertialSenseDisplay::VectortoString()

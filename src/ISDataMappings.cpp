@@ -104,12 +104,14 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
+	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
 	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
 	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
 	sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
 	sizeMap[DID_GROUND_VEHICLE] = sizeof(ground_vehicle_t);
 	sizeMap[DID_SYS_CMD] = sizeof(system_command_t);
+	sizeMap[DID_RMC] = sizeof(rmc_t);
 	sizeMap[DID_INS_1] = sizeof(ins_1_t);
 	sizeMap[DID_INS_2] = sizeof(ins_2_t);
 	sizeMap[DID_INS_3] = sizeof(ins_3_t);
@@ -139,6 +141,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_IMU3_RAW_MAG] = sizeof(imu3_mag_t);
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
+	sizeMap[DID_IO] = sizeof(io_t);
 
 	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
 	sizeMap[DID_EVB_FLASH_CFG] = sizeof(evb_flash_cfg_t);
@@ -239,6 +242,34 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef io_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_IO];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "gpioStatus", gpioStatus, 0, DataTypeUInt32, uint32_t, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateSysFaultMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef system_fault_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_SYS_FAULT];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g1Task", g1Task, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g2FileNum", g2FileNum, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g3LineNum", g3LineNum, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g4", g4, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g5Lr", g5Lr, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "pc", pc, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "psr", psr, 0, DataTypeUInt32, uint32_t, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
 static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t dataId)
 {
 	typedef imu_t MAP_TYPE;
@@ -333,6 +364,17 @@ static void PopulateSysSensorsMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "ana4", ana1, 0, DataTypeFloat, float, 0);
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateRMCMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef rmc_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_RMC];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "bits", bits, 0, DataTypeUInt64, uint64_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "options", options, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+
+	ASSERT_SIZE(totalSize);
 }
 
 static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2218,10 +2260,12 @@ cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
+	PopulateSysFaultMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
+	PopulateRMCMappings(m_lookupInfo);
 	PopulateINS1Mappings(m_lookupInfo);
 	PopulateINS2Mappings(m_lookupInfo);
 	PopulateINS3Mappings(m_lookupInfo);
@@ -2253,6 +2297,7 @@ cISDataMappings::cISDataMappings()
 	PopulateEvbFlashCfgMappings(m_lookupInfo);
 	PopulateDebugArrayMappings(m_lookupInfo, DID_EVB_DEBUG_ARRAY);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
+	PopulateIOMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
