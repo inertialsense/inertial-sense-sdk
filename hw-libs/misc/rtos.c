@@ -128,8 +128,11 @@ void vApplicationIdleHook(void)
 {
     // Sleep to reduce power consumption
 #ifndef uINS_5
-    pmc_enable_sleepmode(0);	// TODO: Implement this function for uINS_5
+	PMC->PMC_FSMR &= (uint32_t) ~PMC_FSMR_LPM; // Enter Sleep mode
 #endif
+    SCB->SCR &= (uint32_t) ~SCB_SCR_SLEEPDEEP_Msk;	// Common to both Cortex M4 and M7
+    __DSB();
+    __WFI();
 }
 
 #ifndef uINS_5
