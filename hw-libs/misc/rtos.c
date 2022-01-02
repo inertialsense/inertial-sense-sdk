@@ -61,7 +61,6 @@ int createTask
 	return 0;
 }
 
-
 void rtos_monitor(int numRtosTasks)
 {
 	int i;
