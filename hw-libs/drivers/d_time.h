@@ -12,18 +12,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #ifndef _D_TIME_H_
 #define _D_TIME_H_
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdint.h>
 
 // defines
 //#define ENABLE_TC_TIME
 
 // includes
-// #include "user_board.h" // BOARD_FREQ_SLCK_XTAL
+#include "user_board.h" // BOARD_FREQ_SLCK_XTAL
 #ifdef ENABLE_TC_TIME
 #include "d_timer.h"
 #endif // ENABLE_TC_TIME
@@ -37,14 +35,17 @@ extern "C" {
 #define RTPRES                  3 // finest allowed granularity
 #endif // ENABLE_TC_TIME
 
+//#define TIME_TICKS_PER_SEC      (RTPRES_SEC/RTPRES*(1<<15)) // Use for quicker overrun case
 #define TIME_TICKS_PER_SEC      (RTPRES_SEC/RTPRES)
 #define TIME_TICKS_PER_MS       (TIME_TICKS_PER_SEC/1000)
 #define TIME_TICKS_PER_US       (TIME_TICKS_PER_SEC/1000000)
 
+//#define TIME_SECS_PER_TICK_LF   (((double)RTPRES)/(double)RTPRES_SEC/(double)(1<<15)) // Use for quicker overrun case
 #define TIME_SECS_PER_TICK_LF   (((double)RTPRES)/(double)RTPRES_SEC)
 #define TIME_MS_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*1000.0)
 #define TIME_US_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*1000000.0)
 
+//#define TIME_SECS_PER_TICK_F    (((float)RTPRES)/(float)RTPRES_SEC/(float)(1<<15)) // Use for quicker overrun case
 #define TIME_SECS_PER_TICK_F    (((float)RTPRES)/(float)RTPRES_SEC)
 #define TIME_MS_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000.0f)
 #define TIME_US_PER_TICK_F      (TIME_SECS_PER_TICK_F*1000000.0f)
@@ -69,8 +70,8 @@ double time_seclf(void);
 double time_mseclf(void);
 double time_useclf(void);
 
+
 #ifdef __cplusplus
 }
 #endif
-
 #endif // _D_TIME_H_
