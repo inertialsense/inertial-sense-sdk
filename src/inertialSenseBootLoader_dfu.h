@@ -32,6 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "dfu_load.h"
 #include "dfu_util.h"
 #include "dfuse.h"
+#include "dfuse_mem.h"
 
 #ifdef __cplusplus
 extern "C" {

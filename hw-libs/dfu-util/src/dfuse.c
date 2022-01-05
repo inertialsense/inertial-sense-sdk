@@ -485,7 +485,7 @@ int dfuse_do_upload(
 
 /* Writes an element of any size to the device, taking care of page erases */
 /* returns 0 on success, otherwise -EINVAL */
-static int dfuse_dnload_element(
+int dfuse_dnload_element(
 	const uins_device_context const * context,
 	struct dfu_config* config,
 	struct dfu_if *dif,

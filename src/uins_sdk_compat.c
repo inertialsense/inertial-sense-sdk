@@ -111,7 +111,6 @@ uins_operation_result uins_destroy_device_interface(uins_device_interface* inter
 uins_operation_result uins_update_flash(
     const uins_device_interface* interface,
     const char* firmware_file_path,
-    const char* options_file_path,
     uins_update_flash_style firmware_type,
     uins_verification_style verification_style,
     pfnUinsDeviceInterfaceError error_callback,
@@ -152,11 +151,21 @@ uins_operation_result uins_update_flash(
             struct dfu_config options_config;
             create_dfu_config(&options_config);
 
-            options_config.bin_file_path = options_file_path;
+            unsigned char options[] = {
+                0xaa,0xf8,0xff,0xfb, 0x55,0x07,0x00,0x04,
+                0xff,0xff,0xff,0xff, 0x00,0x00,0x00,0x00,
+                0x00,0x00,0xff,0xff, 0xff,0xff,0x00,0x00,
+                0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00,
+                0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00
+            };
+            
+            options_config.bin_file_data = options;
+            
             options_config.match_vendor = 0x0483;
             options_config.match_product = 0xdf11;
             options_config.match_iface_alt_index = 1;
-            options_config.dfuse_options = "0x1FFF7800";
+            // options_config.dfuse_options = "0x1FFF7800";
+            options_config.dfuse_address = 0x1FFF7800;
             options_config.match_serial = interface->uri_properties.serial_number;
             options_config.match_serial_dfu = interface->uri_properties.serial_number;
             options_config.dfuse_skip_get_status_after_download = 1;

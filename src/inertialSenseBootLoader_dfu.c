@@ -191,19 +191,22 @@ int uinsBootloadFileExDfu(const uins_device_context const * context, struct dfu_
 
 	// create_dfu_config(&config);
 
-	memset(&file, 0, sizeof(file));
-	file.name = config.bin_file_path;
+	if (config.bin_file_path != NULL)
+	{
+		memset(&file, 0, sizeof(file));
+		file.name = config.bin_file_path;
 
-	/* make sure all prints are flushed */
-	setvbuf(stdout, NULL, _IONBF, 0);
+		/* make sure all prints are flushed */
+		setvbuf(stdout, NULL, _IONBF, 0);
 
 
-	if (config.match_config_index == 0) {
-		/* Handle "-c 0" (unconfigured device) as don't care */
-		config.match_config_index = -1;
+		if (config.match_config_index == 0) {
+			/* Handle "-c 0" (unconfigured device) as don't care */
+			config.match_config_index = -1;
+		}
+
+		dfu_load_file(context, &file, MAYBE_SUFFIX, MAYBE_PREFIX, &config);
 	}
-
-	dfu_load_file(context, &file, MAYBE_SUFFIX, MAYBE_PREFIX, &config);
 
 	ret = libusb_init(&ctx);
 	if (ret)
@@ -231,7 +234,7 @@ probe:
 			libusb_exit(ctx);
 			return EX_IOERR;
 		}
-	} else if (file.bcdDFU == 0x11a && dfuse_multiple_alt(config.dfu_root)) {
+	} else if (config.bin_file_path != NULL && file.bcdDFU == 0x11a && dfuse_multiple_alt(config.dfu_root)) {
 		uinsLogDebug(context, "Multiple alternate interfaces for DfuSe file\n");
 	} else if (config.dfu_root->next != NULL) {
 		/* We cannot safely support more than one DFU capable device
@@ -535,9 +538,17 @@ status_again:
 		*/
 	}
 
-	if (dfuse_device || config.dfuse_options || file.bcdDFU == 0x11a) {
+	if (config.bin_file_path == NULL)
+	{
+		config.dfu_root->mem_layout = parse_memory_layout("@Option Bytes  /0x1FFF7800/01*040 e", &config);
+		ret = dfuse_dnload_element(context, &config, config.dfu_root, config.dfuse_address, config.dfu_root->mem_layout->pagesize, config.bin_file_data, transfer_size);
+	}
+	else if (dfuse_device || config.dfuse_options || file.bcdDFU == 0x11a)
+	{
 		ret = dfuse_do_dnload(context, &config, config.dfu_root, transfer_size, &file, config.dfuse_options);
-	} else {
+	}
+	else
+	{
 		ret = dfuload_do_dnload(context, &config, config.dfu_root, transfer_size, &file);
 	}
 	if (ret < 0)

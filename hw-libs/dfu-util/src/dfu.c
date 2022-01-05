@@ -388,4 +388,5 @@ void create_dfu_config(struct dfu_config* config)
     config->dfuse_skip_get_status_after_download = 0;
 
 	config->bin_file_path = NULL;
+    config->bin_file_data = NULL;
 }

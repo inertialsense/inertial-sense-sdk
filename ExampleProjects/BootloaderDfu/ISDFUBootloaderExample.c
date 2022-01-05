@@ -55,9 +55,6 @@ int main(int argc, char* argv[])
 	const char* firmware_file_path = argv[1];
 	printf("firmware path: %s\n", firmware_file_path);
 
-	const char* options_file_path = argv[2];
-	printf("options path: %s\n", options_file_path);
-
 	uins_device_uri_list uri_list;
 	uins_probe_device_list(&uri_list, listCallback);
 
@@ -78,7 +75,6 @@ int main(int argc, char* argv[])
 	uins_operation_result bootloader_update_ok = uins_update_flash(
 		uins,
 		firmware_file_path,
-		options_file_path,
 		IS_UPDATE_APPLICATION_FIRMWARE,
 		IS_VERIFY_OFF,	// TODO: add verify
 		on_error,

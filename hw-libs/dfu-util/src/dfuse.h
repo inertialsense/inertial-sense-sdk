@@ -32,4 +32,14 @@ int dfuse_do_dnload(const uins_device_context const * context, struct dfu_config
 
 int dfuse_multiple_alt(struct dfu_if *dfu_root);
 
+int dfuse_dnload_element(
+	const uins_device_context const * context,
+	struct dfu_config* config,
+	struct dfu_if *dif,
+	unsigned int dwElementAddress,
+	unsigned int dwElementSize,
+	unsigned char *data,
+	int xfer_size
+);
+
 #endif /* DFUSE_H */
