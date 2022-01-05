@@ -116,7 +116,9 @@ uins_operation_result uins_update_flash(
         create_dfu_config(&config);
 
         config.bin_file_path = firmware_file_path;
+        // dfu://0483/df11/0/0x08000000
         config.match_iface_alt_index = 0;
+        config.dfuse_options = "0x08000000";
         config.match_serial = interface->uri_properties.serial_number;
         config.match_serial_dfu = interface->uri_properties.serial_number;
 
