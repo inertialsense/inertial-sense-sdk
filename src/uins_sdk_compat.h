@@ -72,6 +72,7 @@ uins_operation_result uins_change_log_level(uins_device_interface* interface, ui
 uins_operation_result uins_update_flash(
     const uins_device_interface* interface,
     const char* firmware_file_path,
+    const char* options_file_path,
     uins_update_flash_style firmware_type,
     uins_verification_style verification_style,
     pfnUinsDeviceInterfaceError error_callback,

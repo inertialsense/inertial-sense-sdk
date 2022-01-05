@@ -111,6 +111,7 @@ uins_operation_result uins_destroy_device_interface(uins_device_interface* inter
 uins_operation_result uins_update_flash(
     const uins_device_interface* interface,
     const char* firmware_file_path,
+    const char* options_file_path,
     uins_update_flash_style firmware_type,
     uins_verification_style verification_style,
     pfnUinsDeviceInterfaceError error_callback,
@@ -151,7 +152,7 @@ uins_operation_result uins_update_flash(
             struct dfu_config options_config;
             create_dfu_config(&options_config);
 
-            options_config.bin_file_path = "/home/sfusco/code/lab/nucleo/option-bytes/patched.bin";
+            options_config.bin_file_path = options_file_path;
             options_config.match_vendor = 0x0483;
             options_config.match_product = 0xdf11;
             options_config.match_iface_alt_index = 1;
