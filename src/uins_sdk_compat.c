@@ -148,6 +148,22 @@ uins_operation_result uins_update_flash(
         int ret = uinsBootloadFileExDfu(&context, config);
         if (ret == 0)
         {
+            struct dfu_config options_config;
+            create_dfu_config(&options_config);
+
+            options_config.bin_file_path = "/home/sfusco/code/lab/nucleo/option-bytes/patched.bin";
+            options_config.match_vendor = 0x0483;
+            options_config.match_product = 0xdf11;
+            options_config.match_iface_alt_index = 1;
+            options_config.dfuse_options = "0x1FFF7800";
+            options_config.match_serial = interface->uri_properties.serial_number;
+            options_config.match_serial_dfu = interface->uri_properties.serial_number;
+            options_config.dfuse_skip_get_status_after_download = 1;
+            options_config.dfuse_leave = 0;
+            options_config.dfuse_will_reset = 1;
+
+            uinsBootloadFileExDfu(&context, options_config);
+
             return IS_OP_OK;
         }
         else

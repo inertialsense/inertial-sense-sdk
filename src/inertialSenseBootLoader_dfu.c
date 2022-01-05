@@ -547,7 +547,7 @@ status_again:
 	
 	// break; // MODE_DOWNLOAD
 
-	if (EX_OK == ret) {
+	if (EX_OK == ret && !config.dfuse_will_reset) {
 		// ret = dfu_detach(config.dfu_root->dev_handle, config.dfu_root->interface, 1000);
 		// if (ret < 0) {
 		// 	uinsLogWarn(context, ret, "can't detach");

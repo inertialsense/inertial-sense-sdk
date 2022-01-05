@@ -324,6 +324,11 @@ static int dfuse_dnload_chunk(
 	do {
 		ret = dfu_get_status(dif, &dst);
 		if (ret < 0) {
+			if (-9 == ret && config->dfuse_skip_get_status_after_download)
+			{
+				// option bytes fails get status but resets device
+				return bytes_sent;
+			}
 			uinsLogError(context, EX_IOERR, "Error during download get_status");
 			return ret;
 		}
@@ -466,9 +471,9 @@ int dfuse_do_upload(
 
 	dfu_progress_bar(context, "Upload", total_bytes, total_bytes);
 
-	dfu_abort_to_idle(dif);
 	if (config->dfuse_leave)
 	{
+		dfu_abort_to_idle(dif);
 		dfuse_do_leave(context, config, dif);
 	}
 
