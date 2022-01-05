@@ -110,6 +110,11 @@ uins_operation_result uins_update_flash(
     const void* user_data
 )
 {
+    if (!firmware_file_path)
+    {
+        return IS_OP_ERROR;
+    }
+
     if (interface->uri_properties.scheme == IS_SCHEME_DFU)
     {
         struct dfu_config config;

@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		printf("ISDFUBootloaderExample: Bootloader failed!\n");
+		printf("ISDFUBootloaderExample: Bootloader failed to update %s with file %s!\n", uri, firmware_file_path);
 		return -1;
 	}
 }
