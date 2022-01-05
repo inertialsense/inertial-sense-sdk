@@ -32,13 +32,22 @@ uins_device uins_50()
     return d;
 }
 
-void uins_list_devices(uins_device_uri_list* list, uins_list_devices_callback_fn callback_fn)
+void uins_probe_device_list(uins_device_uri_list* list, uins_list_devices_callback_fn callback_fn)
 {
     // TODO: backward compatibility with other urls
     // TODO: filter parameters
 
     // dfu://0483/df11/0/0x08000000
     uinsProbeDfuDevices(list, callback_fn);
+}
+
+void uins_free_device_list(uins_device_uri_list* list)
+{
+    for (int i=0; i != list->size; ++i)
+    {
+        free(list->devices[i]);
+    }
+    list->size = 0;
 }
 
 uins_device_interface* uins_create_device_interface(
@@ -123,8 +132,8 @@ uins_operation_result uins_update_flash(
         create_dfu_config(&config);
 
         config.bin_file_path = firmware_file_path;
-        config.match_vendor = "0483";
-        config.match_product = "df11";
+        config.match_vendor = 0x0483;
+        config.match_product = 0xdf11;
         config.match_iface_alt_index = 0;
         config.dfuse_options = "0x08000000";
         config.match_serial = interface->uri_properties.serial_number;

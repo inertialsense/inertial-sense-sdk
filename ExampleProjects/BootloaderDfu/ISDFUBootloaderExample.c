@@ -48,17 +48,20 @@ static void listCallback(uins_device_uri uri)
 
 int main(int argc, char* argv[])
 {
+	int rc = -1;
+
 	// uins_create_device_interface(uins_31(), "file://dev/ttyACM0");
 
 	const char* firmware_file_path = argv[1];
 	printf("firmware path: %s\n", firmware_file_path);
 
 	uins_device_uri_list uri_list;
-	uins_list_devices(&uri_list, listCallback);
+	uins_probe_device_list(&uri_list, listCallback);
 
 	if (uri_list.size < 1)
 	{
 		printf("failed to find dfu device");
+		uins_free_device_list(&uri_list);
 		return -1;
 	}
 
@@ -80,17 +83,20 @@ int main(int argc, char* argv[])
 		user_data
 	);
 
-	uins_destroy_device_interface(uins);
-	
 	if (bootloader_update_ok)
 	{
 		printf("ISDFUBootloaderExample: Bootloader success on %s with file %s\n", uri, firmware_file_path);
-		return 0;
+		rc = 0;
 	}
 	else
 	{
 		printf("ISDFUBootloaderExample: Bootloader failed to update %s with file %s!\n", uri, firmware_file_path);
-		return -1;
+		rc = -1;
 	}
+
+	uins_free_device_list(&uri_list);
+	uins_destroy_device_interface(uins);
+	
+	return rc;
 }
 

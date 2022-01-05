@@ -22,7 +22,15 @@ uins_device uins_50();
  * @param list list of device uris
  * @param callback_fn called for each device found
  */
-void uins_list_devices(uins_device_uri_list* list, uins_list_devices_callback_fn callback_fn);
+void uins_probe_device_list(uins_device_uri_list* list, uins_list_devices_callback_fn callback_fn);
+
+/**
+ * @brief frees the memory from the probed devices
+ * 
+ * @param list list of device uris
+ * @param callback_fn 
+ */
+void uins_free_device_list(uins_device_uri_list* list);
 
 /**
  * @brief copies a device uri to the list
