@@ -5,11 +5,32 @@
 
 #ifdef __cplusplus
 extern "C" {
+
+// TODO: namespace
+// TODO: api version constant
+// TODO: winapi macros
+
 #endif
 
 uins_device uins_31();
 uins_device uins_40();
 uins_device uins_50();
+
+/**
+ * @brief probes the USB bus, builds device uris and adds them to the list
+ * 
+ * @param list list of device uris
+ * @param callback_fn called for each device found
+ */
+void uins_list_devices(uins_device_uri_list* list, uins_list_devices_callback_fn callback_fn);
+
+/**
+ * @brief copies a device uri to the list
+ * 
+ * @param list list of device uris
+ * @param uri new uri to add to the list
+ */
+void uins_add_device(uins_device_uri_list* list, uins_device_uri uri);
 
 /**
  * @brief Create a device interface object

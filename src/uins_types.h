@@ -43,7 +43,7 @@ typedef struct
     communications_flags bootloader_flash_support;
 } uins_device;
 
-typedef const unsigned char * uins_device_uri;
+typedef unsigned char * uins_device_uri;
 
 typedef enum {
     IS_SCHEME_UNKNOWN = 0,
@@ -52,13 +52,17 @@ typedef enum {
     IS_SCHEME_UART
 } uins_device_scheme;
 
-typedef struct
+typedef enum uins_serial_number_max_size
+{
+    // IS_SN_MAX_SIZE_V3 = 13
+    // IS_SN_MAX_SIZE_V4 = 13
+    IS_SN_MAX_SIZE_V5 = 13
+} uins_serial_number_max_size;
+
+typedef struct uins_device_uri_properties
 {
     uins_device_scheme scheme;
-    unsigned int vid;
-    unsigned int pid;
-    unsigned int alt;
-    char address[11];
+    char serial_number[IS_SN_MAX_SIZE_V5];
 } uins_device_uri_properties;
 
 typedef enum {
@@ -100,6 +104,14 @@ typedef struct uins_device_context
     pfnUinsDeviceInterfaceTaskProgress progress_callback;
     pfnUinsDeviceInterfaceError error_callback;
 } uins_device_context;
+
+typedef void (*uins_list_devices_callback_fn)(uins_device_uri);
+
+typedef struct uins_device_uri_list
+{
+    int size;
+    uins_device_uri devices[256];
+} uins_device_uri_list;
 
 #ifdef __cplusplus
 }

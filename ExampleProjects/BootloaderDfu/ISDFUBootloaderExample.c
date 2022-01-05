@@ -12,8 +12,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 
-// STEP 1: Add Includes
-// Change these include paths to the correct paths for your project
 #include "../../src/uins_sdk_compat.h"
 
 static void on_error(const uins_device_interface const * interface, const void* user_data, int error_code, const char * error_message)
@@ -39,16 +37,32 @@ static int on_verify_progress(const uins_device_interface const * interface, con
 static void bootloaderStatusText(const void* obj, const char* info)
 {
 	printf("%s\n", info);
+
 }
+
+static void listCallback(uins_device_uri uri)
+{
+	printf("found %s\n", uri);
+}
+
 
 int main(int argc, char* argv[])
 {
 	// uins_create_device_interface(uins_31(), "file://dev/ttyACM0");
 
-	uins_device_uri uri = "dfu://0483/df11/0/0x08000000";
 	const char* firmware_file_path = argv[1];
 	printf("firmware path: %s\n", firmware_file_path);
 
+	uins_device_uri_list uri_list;
+	uins_list_devices(&uri_list, listCallback);
+
+	if (uri_list.size < 1)
+	{
+		printf("failed to find dfu device");
+		return -1;
+	}
+
+	uins_device_uri uri = uri_list.devices[0];
 	uins_device_interface* uins = uins_create_device_interface(uins_50(), uri);
 
 	uins_change_log_level(uins, IS_LOG_LEVEL_DEBUG);

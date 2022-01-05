@@ -32,6 +32,15 @@ uins_device uins_50()
     return d;
 }
 
+void uins_list_devices(uins_device_uri_list* list, uins_list_devices_callback_fn callback_fn)
+{
+    // TODO: backward compatibility with other urls
+    // TODO: filter parameters
+
+    // dfu://0483/df11/0/0x08000000
+    uinsProbeDfuDevices(list, callback_fn);
+}
+
 uins_device_interface* uins_create_device_interface(
     uins_device device,
     const uins_device_uri uri
@@ -44,18 +53,12 @@ uins_device_interface* uins_create_device_interface(
     // dfu://0483/df11/0/0x08000000
 
     char uri_scheme[5];
-    unsigned int vendor_id;
-    unsigned int product_id;
-    unsigned int alt_id;
-    char dfuse_address[11];
+    char serial_number[IS_SN_MAX_SIZE_V5];
 
     int uri_scan_status = sscanf(uri,
-        "%5[^:]%*[:/]%x/%x/%u/%s",
+        "%5[^:]%*[:/]%s",
         uri_scheme,
-        &vendor_id,
-        &product_id,
-        &alt_id,
-        dfuse_address);
+        serial_number);
 
     if(strncmp(uri_scheme, "sam", 3) == 0)
     {
@@ -64,7 +67,7 @@ uins_device_interface* uins_create_device_interface(
     else if(strncmp(uri_scheme, "dfu", 3) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_DFU;
-        strcpy(interface->uri_properties.address, dfuse_address);
+        strcpy(interface->uri_properties.serial_number, serial_number);
     }
     else if(strncmp(uri_scheme, "uart", 4) == 0)
     {
@@ -75,10 +78,6 @@ uins_device_interface* uins_create_device_interface(
         interface->uri_properties.scheme = IS_SCHEME_UNKNOWN;
     }
 
-    interface->uri_properties.vid = vendor_id;
-    interface->uri_properties.pid = product_id;
-    interface->uri_properties.alt = alt_id;
-   
     return interface;
 }
 
@@ -116,11 +115,10 @@ uins_operation_result uins_update_flash(
         struct dfu_config config;
         create_dfu_config(&config);
 
-        config.match_vendor = interface->uri_properties.vid;
-        config.match_product = interface->uri_properties.pid;
-        config.match_iface_alt_index = interface->uri_properties.alt;
-        config.dfuse_options = interface->uri_properties.address;
         config.bin_file_path = firmware_file_path;
+        config.match_iface_alt_index = 0;
+        config.match_serial = interface->uri_properties.serial_number;
+        config.match_serial_dfu = interface->uri_properties.serial_number;
 
         uins_device_context context;
         context.interface = interface;
@@ -138,8 +136,7 @@ uins_operation_result uins_update_flash(
             return IS_OP_ERROR;
         }
     }
-    
-    if (interface->uri_properties.scheme == IS_SCHEME_DFU)
+    else if (interface->uri_properties.scheme == IS_SCHEME_UART)
     {
         // TODO: UART support
     }

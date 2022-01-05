@@ -27,6 +27,152 @@
 
 #include "inertialSenseBootLoader_dfu.h"
 
+int uins_add_device(uins_device_uri_list* list, uins_device_uri uri)
+{
+	list->devices[list->size] = malloc(strlen(uri) + 1);
+	strcpy(list->devices[list->size], uri);
+
+	list->size += 1;
+}
+
+void buildUri(uins_device_uri_list* list, struct libusb_device_descriptor* desc, libusb_device_handle* devh, uins_list_devices_callback_fn callback)
+{
+	int libusb_result;
+	const size_t sn_size = 13;
+	const size_t url_buffer_size = sn_size + 6;
+	char url_buffer[url_buffer_size];
+	unsigned char serial_number[sn_size];
+
+	libusb_result = libusb_get_string_descriptor_ascii(devh, desc->iSerialNumber, serial_number, sizeof(serial_number));
+	
+	snprintf(url_buffer, url_buffer_size, "dfu://%s", serial_number);
+	callback(url_buffer);
+
+	uins_add_device(list, url_buffer);
+}
+
+void uinsPrintDeviceInfo(
+	libusb_context* ctx,
+	struct libusb_device *dev,
+	struct libusb_device_descriptor* desc,
+	struct libusb_config_descriptor* cfg,
+	libusb_device_handle* devh
+)
+{
+	int libusb_result;
+	struct usb_dfu_func_descriptor dfu_descriptor;
+	const struct libusb_interface *uif;
+	int intf_idx;
+	const struct libusb_interface_descriptor *intf;
+	unsigned char interface_name[255];
+
+	printf("---\n");
+	printf("vendor id: 0x%x\n", desc->idVendor);
+	printf("product id: 0x%x\n", desc->idProduct);
+
+	uint8_t address = libusb_get_device_address(dev);
+	printf("address: 0x%x\n", address);
+
+	uint8_t bus_number = libusb_get_bus_number(dev);
+	printf("bus number: 0x%x\n", bus_number);
+
+	unsigned char serial_number[255];
+	libusb_result = libusb_get_string_descriptor_ascii(devh, desc->iSerialNumber, serial_number, sizeof(serial_number));
+	printf("serial number: %s\n", serial_number);
+
+	unsigned char manufacturer_name[255];
+	libusb_result = libusb_get_string_descriptor_ascii(devh, desc->iManufacturer, manufacturer_name, sizeof(manufacturer_name));
+	printf("manufacturer: %s\n", manufacturer_name);
+
+	for (intf_idx = 0; intf_idx < cfg->bNumInterfaces; intf_idx++)
+	{
+		uif = &cfg->interface[intf_idx];
+		if (!uif)
+			break;
+
+		for (int alt_idx = 0; alt_idx < cfg->interface[intf_idx].num_altsetting; alt_idx++)
+		{
+			intf = &uif->altsetting[alt_idx];
+			if (intf->bInterfaceClass != 0xfe || intf->bInterfaceSubClass != 1)
+				continue;
+
+			printf("alt index: %d\n", alt_idx);
+
+			libusb_result = libusb_get_string_descriptor_ascii(devh, intf->iInterface, (void *)interface_name, sizeof(interface_name));
+			printf("interface name: %s\n", interface_name);
+
+			/*
+			libusb_result = libusb_get_descriptor(devh, USB_DT_DFU, 0, (void *)&dfu_descriptor, sizeof(dfu_descriptor));
+
+			printf("bcdDFUVersion: %d\n", dfu_descriptor.bcdDFUVersion);
+			printf("bDescriptorType: %d\n", dfu_descriptor.bDescriptorType);
+			printf("bLength: %d\n", dfu_descriptor.bLength);
+			printf("bmAttributes: %d\n", dfu_descriptor.bmAttributes);
+			printf("wDetachTimeOut: %d\n", dfu_descriptor.wDetachTimeOut);
+			printf("wTransferSize: %d\n", dfu_descriptor.wTransferSize);
+			*/
+
+			printf("\n");
+		}
+	}
+
+}
+
+void uinsProbeDfuDevices(uins_device_uri_list* uri_list, uins_list_devices_callback_fn callback)
+{
+	// TODO: libusb_result asserts
+	// TODO: integrate this probe function with uinsBootloadFileExDfu and remove old match logic
+
+	libusb_context* ctx;
+	libusb_device** device_list;
+	ssize_t device_count;
+	ssize_t i;
+	int cfg_idx;
+	int libusb_result;
+	struct libusb_device *dev;
+	struct libusb_device_descriptor desc;
+	libusb_device_handle* dev_handle;
+	struct libusb_config_descriptor* cfg;
+
+	libusb_result = libusb_init(&ctx);
+
+	device_count = libusb_get_device_list(ctx, &device_list);
+	for (i = 0; i < device_count; ++i) {
+		dev = device_list[i];
+
+		libusb_result = libusb_get_device_descriptor(dev, &desc);
+
+		if (desc.idVendor != UINS5_DESCRIPTOR_VENDOR_ID || desc.idProduct != UINS5_DESCRIPTOR_PRODUCT_ID)
+		{
+			// bail early, must be some other usb device
+			continue;
+		}
+
+		for (cfg_idx = 0; cfg_idx != desc.bNumConfigurations; cfg_idx++)
+		{
+			libusb_result = libusb_open(dev, &dev_handle);
+			if (0 == libusb_result)
+			{
+				libusb_result = libusb_get_config_descriptor(dev, cfg_idx, &cfg);
+
+				// uinsPrintDeviceInfo(ctx, dev, &desc, cfg, dev_handle);
+
+				buildUri(uri_list, &desc, dev_handle, callback);
+
+				libusb_free_config_descriptor(cfg);
+				libusb_close(dev_handle);
+			}
+			else
+			{
+				fprintf(stderr, "failed to open device: %s", libusb_error_name(libusb_result));
+			}
+		}
+	}
+
+	libusb_free_device_list(device_list, 1);
+	libusb_exit(ctx);
+}
+
 int uinsBootloadFileExDfu(const uins_device_context const * context, struct dfu_config config)
 {
 	int expected_size = 0;
@@ -35,7 +181,6 @@ int uinsBootloadFileExDfu(const uins_device_context const * context, struct dfu_
 	libusb_context *ctx;
 	struct dfu_file file;
 	char *end;
-	int final_reset = 0;
 	int wait_device = 0;
 	int ret;
 	int dfuse_device = 0;
@@ -402,18 +547,18 @@ status_again:
 	
 	// break; // MODE_DOWNLOAD
 
-	if (!ret && final_reset) {
-		ret = dfu_detach(config.dfu_root->dev_handle, config.dfu_root->interface, 1000);
-		if (ret < 0) {
-			/* Even if detach failed, just carry on to leave the
-                           device in a known state */
-			uinsLogWarn(context, ret, "can't detach");
-		}
+	if (EX_OK == ret) {
+		// ret = dfu_detach(config.dfu_root->dev_handle, config.dfu_root->interface, 1000);
+		// if (ret < 0) {
+		// 	uinsLogWarn(context, ret, "can't detach");
+		// }
 		uinsLogDebug(context, "Resetting USB to switch back to Run-Time mode\n");
 		ret = libusb_reset_device(config.dfu_root->dev_handle);
-		if (ret < 0 && ret != LIBUSB_ERROR_NOT_FOUND) {
+		if (ret < 0 /* && ret != LIBUSB_ERROR_NOT_FOUND */) {
 			uinsLogWarn(context, ret, "error resetting after download");
 			ret = EX_IOERR;
+		} else {
+			ret = EX_OK;
 		}
 	}
 
