@@ -204,7 +204,7 @@ int i2c_master_init(i2c_t *i2c_init)	// TODO: Rewrite this so it can be used for
 	i2c_init->instance->TWIHS_FILTR |= TWIHS_FILTR_FILT | 0x7 << TWIHS_FILTR_THRES_Pos;
 	i2c_init->instance->TWIHS_CWGR = 
 		  I2C_HOLD << TWIHS_CWGR_HOLD_Pos 
-		| I2C_CLDIV << TWIHS_CWGR_CLDIV_Pos 
+		| I2C_CKDIV << TWIHS_CWGR_CKDIV_Pos 
 		| I2C_CHDIV << TWIHS_CWGR_CHDIV_Pos 
 		| I2C_CLDIV << TWIHS_CWGR_CLDIV_Pos;
 #endif
