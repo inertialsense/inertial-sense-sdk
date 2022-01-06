@@ -68,8 +68,8 @@ class Log:
     def getSerialNumbers(self):
         self.c_log.getSerialNumbers()
 
-    def exitHack(self):
-        self.c_log.exitHack()
+    def exitHack(self, exit_code=0):
+        self.c_log.exitHack(exit_code)
         
     def did_callback(self, did, arr, dev_id):
         if did >= NUM_DIDS:

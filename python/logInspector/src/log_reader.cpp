@@ -324,10 +324,10 @@ pybind11::list LogReader::getSerialNumbers()
     return serialNumbers_; 
 }
 
-void LogReader::exitHack()
+void LogReader::exitHack(int exit_code)
 {
     // Nasty hack
-    exit(0);
+    exit(exit_code);
 }
 
 // Look at the pybind documentation to understand what is going on here.
