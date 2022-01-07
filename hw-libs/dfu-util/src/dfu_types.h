@@ -55,6 +55,8 @@ struct dfu_config {
     int dfuse_will_reset;
 	const char *dfuse_options;
 	const char *bin_file_path;
+    unsigned char *bin_file_data;
+    int dfuse_skip_get_status_after_download;
 };
 
 struct dfu_file {

@@ -32,13 +32,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "dfu_load.h"
 #include "dfu_util.h"
 #include "dfuse.h"
+#include "dfuse_mem.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// WIP: still need to figure out final form of input parameters, should not be dfu_config
+typedef enum uins5_descriptor_enum
+{
+  UINS5_DESCRIPTOR_VENDOR_ID = 0x0483,
+  UINS5_DESCRIPTOR_PRODUCT_ID = 0xdf11
+} uins5_descriptor;
 
+typedef enum uins5_dfu_interface_alternatives_enum
+{
+  UINS5_DFU_INTERFACE_ALTERNATIVE_FLASH    = 0, // @Internal Flash  /0x08000000/0256*0002Kg
+  UINS5_DFU_INTERFACE_ALTERNATIVE_OPTIONS  = 1, // @Option Bytes  /0x1FFF7800/01*040 e
+  UINS5_DFU_INTERFACE_ALTERNATIVE_OTP      = 2, // @OTP Memory /0x1FFF7000/01*0001Ke
+  UINS5_DFU_INTERFACE_ALTERNATIVE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
+} uins5_dfu_interface_alternatives;
+
+void uinsProbeDfuDevices(uins_device_uri_list* uri_list, uins_list_devices_callback_fn callback_fn);
+
+// WIP: still need to figure out final form of input parameters, should not be dfu_config
 int uinsBootloadFileExDfu(const uins_device_context const * context, struct dfu_config config);
 
 #ifdef __cplusplus
