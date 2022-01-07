@@ -63,6 +63,7 @@ typedef struct uins_device_uri_properties
 {
     uins_device_scheme scheme;
     char serial_number[IS_SN_MAX_SIZE_V5];
+    // TODO: add version here
 } uins_device_uri_properties;
 
 typedef enum {

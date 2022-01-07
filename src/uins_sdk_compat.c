@@ -37,7 +37,8 @@ void uins_probe_device_list(uins_device_uri_list* list, uins_list_devices_callba
     // TODO: backward compatibility with other urls
     // TODO: filter parameters
 
-    // dfu://0483/df11/0/0x08000000
+    // old style dfu://0483/df11/0/0x08000000
+    // new style dfu://serialnumber
     uinsProbeDfuDevices(list, callback_fn);
 }
 
