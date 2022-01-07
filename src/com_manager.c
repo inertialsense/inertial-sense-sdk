@@ -1594,13 +1594,6 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 int comManagerValidateBaudRate(unsigned int baudRate)
 {
 	// Valid baudrates for InertialSense hardware
-	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
-	{
-		if (g_validBaudRates[i] == baudRate)
-		{
-			return 0;
-		}
-	}
-	return -1;
+	return validateBaudRate(baudRate);
 }
 

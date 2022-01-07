@@ -689,6 +689,9 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
 char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *com, const unsigned int maxsize);
 
+/** Returns -1 if the baudrate is not a standard baudrate. */
+int validateBaudRate(unsigned int baudRate);
+
 #ifdef __cplusplus
 }
 #endif
