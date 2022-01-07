@@ -133,9 +133,9 @@ uins_operation_result uins_update_flash(
         create_dfu_config(&config);
 
         config.bin_file_path = firmware_file_path;
-        config.match_vendor = 0x0483;
-        config.match_product = 0xdf11;
-        config.match_iface_alt_index = 0;
+        config.match_vendor = UINS5_DESCRIPTOR_VENDOR_ID;
+        config.match_product = UINS5_DESCRIPTOR_PRODUCT_ID;
+        config.match_iface_alt_index = UINS5_DFU_INTERFACE_ALTERNATIVE_FLASH;
         config.dfuse_options = "0x08000000";
         config.match_serial = interface->uri_properties.serial_number;
         config.match_serial_dfu = interface->uri_properties.serial_number;
@@ -162,9 +162,9 @@ uins_operation_result uins_update_flash(
             
             options_config.bin_file_data = options;
             
-            options_config.match_vendor = 0x0483;
-            options_config.match_product = 0xdf11;
-            options_config.match_iface_alt_index = 1;
+            options_config.match_vendor = UINS5_DESCRIPTOR_VENDOR_ID;
+            options_config.match_product = UINS5_DESCRIPTOR_PRODUCT_ID;
+            options_config.match_iface_alt_index = UINS5_DFU_INTERFACE_ALTERNATIVE_OPTIONS;
             // options_config.dfuse_options = "0x1FFF7800";
             options_config.dfuse_address = 0x1FFF7800;
             options_config.match_serial = interface->uri_properties.serial_number;
