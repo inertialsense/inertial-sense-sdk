@@ -92,11 +92,6 @@ int serTxFree( int serialNum );
 int serFindCharacter( int serialNum, uint8_t ch);
 
 /**
- * \brief Returns -1 if the baudrate is not a standard baudrate.
- */
-int validateBaudRate(unsigned int baudRate);
-
-/**
  * \brief Change USART baudrate.  0 on success, -1 on failure.
  */
 int serSetBaudRate( int serialNum, int baudrate );
