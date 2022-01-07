@@ -131,7 +131,7 @@ public:
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
     pybind11::list getSerialNumbers();
-    void exitHack();
+    void exitHack(int exit_code=0);
     
     template <typename T>
     void forward_message(eDataIDs did, std::vector<T>& vec, int id);
