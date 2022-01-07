@@ -14,7 +14,7 @@ import pdb
 
 from pylab import plt
 from scipy.interpolate import interp1d
-from pylib.pose import norm, qlog, qexp, lla2ned, quat2eulerArray, meanOfQuatArray, qboxminus, qboxplus, qmult, qinv
+from inertialsense_math.pose import norm, qlog, qexp, lla2ned, quat2eulerArray, meanOfQuatArray, qboxminus, qboxplus, qmult, qinv
 import yaml
 
 RAD2DEG = 180 / np.pi

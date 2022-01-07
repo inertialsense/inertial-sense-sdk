@@ -4,7 +4,7 @@ import os
 import simplekml
 # import pdb
 
-import pylib.pose as ps
+import inertialsense_math.pose as pose
 import pylib.ISToolsDataSorted as itd
 import pylib.filterTools as ft
 import pylib.plotTools as plotTools
@@ -14,7 +14,6 @@ import datetime
 
 import time as systime
 from pylib.ISToolsDataSorted import cObj, refLla, getTimeFromTowMs, getTimeFromTow
-from pylib import pose
 
 RAD2DEG = 180/np.pi
 DEG2RAD = np.pi/180
@@ -1115,9 +1114,9 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
     if peCheck('staticBiasAttEst'):
         f += 1;    legend = []
-        [ imu1.accAtt,  imu1.accBias] = ps.acc2AttAndBias( imu1.fltAcc())
+        [ imu1.accAtt,  imu1.accBias] = pose.acc2AttAndBias( imu1.fltAcc())
         if rIns:
-            [rImu.accAtt, rImu.accBias] = ps.acc2AttAndBias(rImu.fltAcc())
+            [rImu.accAtt, rImu.accBias] = pose.acc2AttAndBias(rImu.fltAcc())
             pt.plot3Axes(f, rImu.v['time'], rImu.accBias, options=rInsColor)
             legend += ['RefIMU'];
         pt.plot3Axes(f, imu1.time, imu1.accBias, 'IMU Accel Bias','m/s^2' )

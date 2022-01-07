@@ -22,10 +22,12 @@ RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
 
 sys.path.append('..')
+sys.path.append('../math/src')
+
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
-from pylib.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
+from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
 
 class logPlot:
