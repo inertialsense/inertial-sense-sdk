@@ -3504,6 +3504,19 @@ static void prvCheckTasksWaitingTermination( void )
 /*-----------------------------------------------------------*/
 
 #if( configUSE_TRACE_FACILITY == 1 )
+	void vTaskResetRunTimeCounter( TaskHandle_t xTask )
+	{
+	TCB_t *pxTCB;
+
+		/* xTask is NULL then get the state of the calling task. */
+		pxTCB = prvGetTCBFromHandle( xTask );
+
+		pxTCB->ulRunTimeCounter = 0;
+	}
+#endif /* configUSE_TRACE_FACILITY */
+/*-----------------------------------------------------------*/
+
+#if( configUSE_TRACE_FACILITY == 1 )
 
 	void vTaskGetInfo( TaskHandle_t xTask, TaskStatus_t *pxTaskStatus, BaseType_t xGetFreeStackSpace, eTaskState eState )
 	{

@@ -7,16 +7,17 @@ DEBUG ?=
 #################################
 # GNU ARM Embedded Toolchain
 #################################
-CC=arm-none-eabi-gcc
-CXX=arm-none-eabi-g++
-LD=arm-none-eabi-ld
-AR=arm-none-eabi-ar
-AS=arm-none-eabi-as
-CP=arm-none-eabi-objcopy
-OD=arm-none-eabi-objdump
-NM=arm-none-eabi-nm
-SIZE=arm-none-eabi-size
-A2L=arm-none-eabi-addr2line
+COMPILER_DIR    = /opt/arm-none-eabi-uins3/bin
+CC=$(COMPILER_DIR)/arm-none-eabi-gcc
+CXX=$(COMPILER_DIR)/arm-none-eabi-g++
+LD=$(COMPILER_DIR)/arm-none-eabi-ld
+AR=$(COMPILER_DIR)/arm-none-eabi-ar
+AS=$(COMPILER_DIR)/arm-none-eabi-as
+CP=$(COMPILER_DIR)/arm-none-eabi-objcopy
+OD=$(COMPILER_DIR)/arm-none-eabi-objdump
+NM=$(COMPILER_DIR)/arm-none-eabi-nm
+SIZE=$(COMPILER_DIR)/arm-none-eabi-size
+A2L=$(COMPILER_DIR)/arm-none-eabi-addr2line
 
 #################################
 # Working directories
@@ -40,6 +41,7 @@ C_SRCS += \
           $(SDK_DIR)/src/ISUtilities.cpp                                                                 \
           $(SDK_DIR)/src/ISFileManager.cpp                                                               \
           $(SDK_DIR)/src/ISLogger.cpp                                                                    \
+          $(SDK_DIR)/src/ISLogStats.cpp                                                                  \
           $(SDK_DIR)/src/DeviceLog.cpp                                                                   \
           $(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
           $(SDK_DIR)/src/DataChunk.cpp                                                                   \
@@ -114,15 +116,16 @@ C_SRCS += \
           $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/timers.c                                 \
           $(HW_LIBS_DIR)/FreeRTOS_new.cpp                                                                \
           $(HW_LIBS_DIR)/drivers/CAN.c                                                                   \
+          $(HW_LIBS_DIR)/drivers/d_dma.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_flash.c                                                               \
           $(HW_LIBS_DIR)/drivers/d_i2c.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
+          $(HW_LIBS_DIR)/drivers/d_time.c                                                                \
           $(HW_LIBS_DIR)/misc/bootloaderApp.c                                                            \
           $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
           $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
           $(SRC_DIR)/communications.cpp                                                                  \
-          $(SRC_DIR)/wheel_encoder.cpp                                                                     \
-          $(SRC_DIR)/drivers/d_time.c                                                                    \
+          $(SRC_DIR)/wheel_encoder.cpp                                                                   \
           $(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
           $(SRC_DIR)/drivers/d_adc.c                                                                     \
           $(SRC_DIR)/globals.c                                                                           \

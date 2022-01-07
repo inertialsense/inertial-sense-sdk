@@ -206,9 +206,9 @@ void rtos_maintenance(void)
 	}
 
 	// Check if task runtime has gone over the allotted period
-	for (size_t i = TASK_SAMPLE; i < TASK_MAINTENANCE; i++)
+	for (size_t i = 0; i < TASK_MAINTENANCE; i++)
 	{
-		if(g_rtos.task[TASK_SAMPLE].maxRunTimeUs > (g_rtos.task[TASK_SAMPLE].periodMs * 1000))
+		if(g_rtos.task[i].maxRunTimeUs > (g_rtos.task[i].periodMs * 1000))
 		{
 			g_insStatus |= INS_STATUS_RTOS_TASK_PERIOD_OVERRUN;
 		}

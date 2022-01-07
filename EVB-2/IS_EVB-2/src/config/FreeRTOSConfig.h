@@ -49,7 +49,7 @@
 	#include "board.h"
 #endif
 #include "sysclk.h"
-#include "../drivers/d_time.h"
+#include "drivers/d_time.h"
 #include "../../../../src/data_sets.h"
 
 #define configUSE_PREEMPTION					1

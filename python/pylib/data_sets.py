@@ -60,7 +60,7 @@ DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
 DID_COMMUNICATIONS_LOOPBACK     = 56
-DID_IMU3                        = 57
+DID_IMU3_RAW                    = 57
 DID_IMU                         = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
@@ -87,7 +87,7 @@ DID_EVB_STATUS                  = 80
 DID_EVB_CONFIG                  = 81
 DID_EVB_DEBUG_ARRAY             = 82
 DID_EVB_RTOS_INFO               = 83
-DID_IMU3_MAG                    = 84
+DID_IMU3_RAW_MAG                = 84
 DID_IMU_MAG                     = 85
 DID_PREINTEGRATED_IMU_MAG       = 86
 DID_GROUND_VEHICLE              = 87
@@ -98,8 +98,10 @@ DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
 DID_CAL_SC3                     = 94
+DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
 
-NUM_DIDS                        = 96
+NUM_DIDS                        = 117
+# NUM_DIDS                        = 96
 
 
 did_name_lookup = {
@@ -161,7 +163,7 @@ did_name_lookup = {
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
- DID_IMU3 : "imu3",
+ DID_IMU3_RAW : "imu3",
  DID_IMU : "imu",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
@@ -191,6 +193,7 @@ did_name_lookup = {
  DID_EVB_RTOS_INFO : "evbRtosInfo",
  DID_RTK_DEBUG_2: "rtkDebug2",
  DID_CAN_CONFIG: "canconfig",
+ DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
 }
 
 class eGpsNavFixStatus(Enum):

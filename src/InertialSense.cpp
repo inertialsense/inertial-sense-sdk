@@ -18,30 +18,15 @@ using namespace std;
 typedef struct
 {
 	bootload_params_t param;
-	bool result;
+	bool success;
 	serial_port_t serial;
 	void* thread;
-} bootloader_state_t;
-
-static void bootloaderThread(void* state)
-{
-	bootloader_state_t* s = (bootloader_state_t*)state;
-	serialPortOpen(&s->serial, s->serial.port, s->param.baudRate, 1);
-	if (!enableBootloader(&s->serial, s->param.baudRate, s->param.error, BOOTLOADER_ERROR_LENGTH, s->param.bootloadEnableCmd))
-	{
-		serialPortClose(&s->serial);
-		s->result = false;
-		return;
-	}
-	s->result = (bootloadFileEx(&s->param) != 0);
-	serialPortClose(&s->serial);
-}
+} bootload_state_t;
 
 static void bootloaderUpdateBootloaderThread(void* state)
 {
-    bootloader_state_t* s = (bootloader_state_t*)state;
-    serialPortOpen(&s->serial, s->serial.port, s->param.baudRate, 1);
-    s->result = (bootloadUpdateBootloaderEx(&s->param) != 0);
+    bootload_state_t* s = (bootload_state_t*)state;
+    s->success = (bootloadFileEx(&s->param) == 0);
     serialPortClose(&s->serial);
 }
 
@@ -723,16 +708,11 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, bool updateBootloader)
+vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, const string& bootloaderFileName, bool forceBootloaderUpdate)
 {
-	return BootloadFile(comPort, fileName, "", baudRate, uploadProgress, verifyProgress, NULLPTR, updateBootloader);
-}
-
-vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, const string& bootloaderFileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, bool updateBootloader)
-{
-	vector<bootloader_result_t> results;
+	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<bootloader_state_t> state;
+	vector<bootload_state_t> state;
 
 	if (comPort == "*")
 	{
@@ -745,7 +725,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
 
-	// test file exists
+	// file exists?
 	{
 		ifstream tmpStream(fileName);
 		if (!tmpStream.good())
@@ -770,6 +750,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 			state[i].param.statusText = infoProgress;
 			state[i].param.fileName = fileName.c_str();
 			state[i].param.bootName = bootloaderFileName.c_str();
+			state[i].param.forceBootloaderUpdate = forceBootloaderUpdate;
 			state[i].param.port = &state[i].serial;
 			state[i].param.verifyFileName = NULLPTR;
 			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
@@ -784,14 +765,8 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 				strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
 			}
 
-            if (updateBootloader)
-            {   // Update bootloader firmware
-                state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
-            }
-            else
-            {   // Update application firmware
-                state[i].thread = threadCreateAndStart(bootloaderThread, &state[i]);
-            }
+            // Update application and bootloader firmware
+            state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
 		}
 
 		// wait for all threads to finish

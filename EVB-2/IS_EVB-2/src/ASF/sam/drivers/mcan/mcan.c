@@ -52,36 +52,56 @@ extern "C" {
 /* Get a value of 2 to 15 bit. */
 #define BIT_2_TO_15_MASK         0x0000fffc
 
-/* Message ram definition. */
-COMPILER_ALIGNED(4)
-static struct mcan_rx_element_buffer mcan0_rx_buffer[CONF_MCAN0_RX_BUFFER_NUM];
-COMPILER_ALIGNED(4)
-static struct mcan_rx_element_fifo_0 mcan0_rx_fifo_0[CONF_MCAN0_RX_FIFO_0_NUM];
-COMPILER_ALIGNED(4)
-static struct mcan_rx_element_fifo_1 mcan0_rx_fifo_1[CONF_MCAN0_RX_FIFO_1_NUM];
-COMPILER_ALIGNED(4)
-static struct mcan_tx_element mcan0_tx_buffer[CONF_MCAN0_TX_BUFFER_NUM + CONF_MCAN0_TX_FIFO_QUEUE_NUM];
-COMPILER_ALIGNED(4)
-static struct mcan_tx_event_element mcan0_tx_event_fifo[CONF_MCAN0_TX_EVENT_FIFO];
-COMPILER_ALIGNED(4)
-static struct mcan_standard_message_filter_element mcan0_rx_standard_filter[CONF_MCAN0_RX_STANDARD_ID_FILTER_NUM];
-COMPILER_ALIGNED(4)
-static struct mcan_extended_message_filter_element mcan0_rx_extended_filter[CONF_MCAN0_RX_EXTENDED_ID_FILTER_NUM];
+/**
+	Message ram definition.
+
+	NOTE: Align to beginning of .bss section (custom linker script should look like this):
+
+	.bss (NOLOAD) :
+	{
+		. = ALIGN(4);
+		_sbss = . ;
+		_szero = .;
+		*(MCAN MCAN.*)
+		*(.bss .bss.*)
+		*(COMMON)
+		. = ALIGN(4);
+		_ebss = . ;
+		_ezero = .;
+	} > ram
+ 
+	This makes sure the MCAN variables get put first so they don't extend too far in RAM (0x2040ffff is the boundary, see later in this file)
+ */
 
 COMPILER_ALIGNED(4)
-static struct mcan_rx_element_buffer mcan1_rx_buffer[CONF_MCAN1_RX_BUFFER_NUM];
+__attribute__((__section__("MCAN"))) static struct mcan_rx_element_buffer mcan0_rx_buffer[CONF_MCAN0_RX_BUFFER_NUM];
 COMPILER_ALIGNED(4)
-static struct mcan_rx_element_fifo_0 mcan1_rx_fifo_0[CONF_MCAN1_RX_FIFO_0_NUM];
+__attribute__((__section__("MCAN"))) static struct mcan_rx_element_fifo_0 mcan0_rx_fifo_0[CONF_MCAN0_RX_FIFO_0_NUM];
 COMPILER_ALIGNED(4)
-static struct mcan_rx_element_fifo_1 mcan1_rx_fifo_1[CONF_MCAN1_RX_FIFO_1_NUM];
+__attribute__((__section__("MCAN"))) static struct mcan_rx_element_fifo_1 mcan0_rx_fifo_1[CONF_MCAN0_RX_FIFO_1_NUM];
 COMPILER_ALIGNED(4)
-static struct mcan_tx_element mcan1_tx_buffer[CONF_MCAN1_TX_BUFFER_NUM + CONF_MCAN1_TX_FIFO_QUEUE_NUM];
+__attribute__((__section__("MCAN"))) static struct mcan_tx_element mcan0_tx_buffer[CONF_MCAN0_TX_BUFFER_NUM + CONF_MCAN0_TX_FIFO_QUEUE_NUM];
 COMPILER_ALIGNED(4)
-static struct mcan_tx_event_element mcan1_tx_event_fifo[CONF_MCAN1_TX_EVENT_FIFO];
+__attribute__((__section__("MCAN"))) static struct mcan_tx_event_element mcan0_tx_event_fifo[CONF_MCAN0_TX_EVENT_FIFO];
 COMPILER_ALIGNED(4)
-static struct mcan_standard_message_filter_element mcan1_rx_standard_filter[CONF_MCAN1_RX_STANDARD_ID_FILTER_NUM];
+__attribute__((__section__("MCAN"))) static struct mcan_standard_message_filter_element mcan0_rx_standard_filter[CONF_MCAN0_RX_STANDARD_ID_FILTER_NUM];
 COMPILER_ALIGNED(4)
-static struct mcan_extended_message_filter_element mcan1_rx_extended_filter[CONF_MCAN1_RX_EXTENDED_ID_FILTER_NUM];
+__attribute__((__section__("MCAN"))) static struct mcan_extended_message_filter_element mcan0_rx_extended_filter[CONF_MCAN0_RX_EXTENDED_ID_FILTER_NUM];
+
+COMPILER_ALIGNED(4)
+__attribute__((__section__("MCAN"))) static struct mcan_rx_element_buffer mcan1_rx_buffer[CONF_MCAN1_RX_BUFFER_NUM] ;
+COMPILER_ALIGNED(4)
+__attribute__((__section__("MCAN"))) static struct mcan_rx_element_fifo_0 mcan1_rx_fifo_0[CONF_MCAN1_RX_FIFO_0_NUM];
+COMPILER_ALIGNED(4)
+__attribute__((__section__("MCAN"))) static struct mcan_rx_element_fifo_1 mcan1_rx_fifo_1[CONF_MCAN1_RX_FIFO_1_NUM];
+COMPILER_ALIGNED(4)
+__attribute__((__section__("MCAN"))) static struct mcan_tx_element mcan1_tx_buffer[CONF_MCAN1_TX_BUFFER_NUM + CONF_MCAN1_TX_FIFO_QUEUE_NUM];
+COMPILER_ALIGNED(4)
+__attribute__((__section__("MCAN"))) static struct mcan_tx_event_element mcan1_tx_event_fifo[CONF_MCAN1_TX_EVENT_FIFO];
+COMPILER_ALIGNED(4)
+__attribute__((__section__("MCAN"))) static struct mcan_standard_message_filter_element mcan1_rx_standard_filter[CONF_MCAN1_RX_STANDARD_ID_FILTER_NUM];
+COMPILER_ALIGNED(4)
+__attribute__((__section__("MCAN"))) static struct mcan_extended_message_filter_element mcan1_rx_extended_filter[CONF_MCAN1_RX_EXTENDED_ID_FILTER_NUM];
 
 /**
  * \brief initialize MCAN memory .

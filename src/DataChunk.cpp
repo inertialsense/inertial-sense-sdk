@@ -56,14 +56,14 @@ void cDataChunk::SetName(const char name[4])
 }
 
 
-bool cDataChunk::PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2, int32_t d2Size)
+int32_t cDataChunk::PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2, int32_t d2Size)
 {
 	// Ensure data will fit
-	int32_t count = d1Size + d2Size;
+	int32_t nBytes = d1Size + d2Size;
 	if (m_dataHead == NULLPTR ||
-		count > GetBuffFree())
+		nBytes > GetBuffFree())
 	{
-		return false;
+		return 0;
 	}
 	if (d1Size > 0)
 	{
@@ -78,13 +78,13 @@ bool cDataChunk::PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2, int32_t d2Si
 		m_hdr.dataSize += d2Size;
 	}
 	m_hdr.invDataSize = ~m_hdr.dataSize;
-	return true;
+	return nBytes;
 }
 
 
 uint8_t* cDataChunk::GetDataPtr()
 {
-	return (GetDataSize() == 0 ? NULLPTR : m_dataHead);
+	return (GetDataSize() <= 0 ? NULLPTR : m_dataHead);
 }
 
 

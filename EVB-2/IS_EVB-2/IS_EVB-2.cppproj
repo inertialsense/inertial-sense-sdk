@@ -505,7 +505,7 @@
 </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800082852</avrtoolserialnumber>
+    <avrtoolserialnumber>J41800098599</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020C01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -540,7 +540,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800082852</ToolNumber>
+      <ToolNumber>J41800098599</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <com_atmel_avrdbg_tool_samice>
@@ -1335,13 +1335,13 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\communications\CAN_comm.h</Link>
     </Compile>
-    <Compile Include="..\..\hw-libs\drivers\d_dma.c">
+    <Compile Include="..\..\hw-libs\drivers\d_time.c">
       <SubType>compile</SubType>
-      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.c</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_time.c</Link>
     </Compile>
-    <Compile Include="..\..\hw-libs\drivers\d_dma.h">
+    <Compile Include="..\..\hw-libs\drivers\d_time.h">
       <SubType>compile</SubType>
-      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_time.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\printf-master\printf.c">
       <SubType>compile</SubType>
@@ -1424,6 +1424,14 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\ISLogger.h</Link>
     </Compile>
+    <Compile Include="..\..\src\ISLogStats.cpp">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\ISLogStats.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\src\ISLogStats.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\ISLogStats.h</Link>
+    </Compile>
     <Compile Include="..\..\src\DeviceLog.cpp">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\DeviceLog.cpp</Link>
@@ -1487,6 +1495,14 @@
     <Compile Include="..\..\hw-libs\drivers\CAN.h">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\drivers\CAN.h</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_dma.c">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.c</Link>
+    </Compile>
+    <Compile Include="..\..\hw-libs\drivers\d_dma.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\hw-libs\drivers\d_dma.h</Link>
     </Compile>
     <Compile Include="..\..\hw-libs\drivers\d_flash.c">
       <SubType>compile</SubType>
@@ -2289,12 +2305,6 @@
     <None Include="src\config\conf_winc.h">
       <SubType>compile</SubType>
     </None>
-    <Compile Include="src\drivers\d_time.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\drivers\d_time.h">
-      <SubType>compile</SubType>
-    </Compile>
     <None Include="src\ASF\common\components\memory\sd_mmc\sd_mmc_mem.h">
       <SubType>compile</SubType>
     </None>

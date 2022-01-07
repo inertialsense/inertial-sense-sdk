@@ -2,7 +2,11 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
+#ifdef uINS_5
+#include "../hardware/board.h"
+#else
 #include "board.h"
+#endif
 // #include "communications.h"
 #include "../SDK/src/ISConstants.h"
 #include "../SDK/src/com_manager.h"

@@ -27,14 +27,14 @@ void XDMAC_Handler(void)
 {	
 	XDMAC_usartDMA_Handler();
 	
+	XDMAC_i2c_Handler();
+	
 #ifdef __INERTIAL_SENSE_EVB_2__
 	
 	#ifdef CONF_BOARD_SPI_UINS
 		//Forward for spiTouINS
 	XDMAC_spiTouINS_Handler();
 	#endif
-	
-	XDMAC_i2c_Handler();
 
 #else		// uINS-3
 

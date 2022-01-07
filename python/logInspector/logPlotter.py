@@ -680,68 +680,68 @@ class logPlot:
 
         self.saveFig(fig, 'rtkRel')
 
-    def loadGyros(self, d):
-        return self.loadIMU(d, 0)
+    def loadGyros(self, device):
+        return self.loadIMU(device, 0)
 
-    def loadAccels(self, d):
-        return self.loadIMU(d, 1)
+    def loadAccels(self, device):
+        return self.loadIMU(device, 1)
 
-    def loadIMU(self, d, accelSensor):   # 0 = gyro, 1 = accelerometer
-        result1 = []
-        result2 = []
-        result3 = []
+    def loadIMU(self, device, accelSensor):   # 0 = gyro, 1 = accelerometer
+        imu1 = []
+        imu2 = []
+        imu3 = []
 
         if accelSensor==0:
-            result1 = self.getData(d, DID_PREINTEGRATED_IMU, 'theta')
+            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'theta'))
         else:
-            result1 = self.getData(d, DID_PREINTEGRATED_IMU, 'vel')
+            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'vel'))
 
-        if np.shape(result1)[0] != 0:  # DID_PREINTEGRATED_IMU
-            time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
-            dt = time[1:] - time[:-1]
-            dt = np.append(dt, dt[-1])
+        if np.shape(imu1)[0] != 0:  # DID_PREINTEGRATED_IMU
+            time = self.getData(device, DID_PREINTEGRATED_IMU, 'time')
+            dt = self.getData(device, DID_PREINTEGRATED_IMU, 'dt') 
+            # dt = time[1:] - time[:-1]
+            # dt = np.append(dt, dt[-1])
             # Convert from preintegrated IMU to IMU.
             for i in range(3):
-                result1[:, i] /= dt
+                imu1[:, i] /= dt
 
         else:   # DID_IMU
-            time = self.getData(d, DID_IMU, 'time')
+            time = self.getData(device, DID_IMU, 'time')
 
             if len(time) != 0:
-                I = self.getData(d, DID_IMU, 'I')
+                I = self.getData(device, DID_IMU, 'I')
                 dt = time[1:] - time[:-1]
                 dt = np.append(dt, dt[-1])
-                result1 = []
+                imu1 = []
                 for sample in range(0, len(I)):
-                    result1.append(I[sample][accelSensor])
-                result1 = np.array(result1)
+                    imu1.append(I[sample][accelSensor])
+                imu1 = np.array(imu1)
 
-            else:   # DID_IMU3
-                time = self.getData(d, DID_IMU3, 'time')
+            else:   # DID_IMU3_RAW
+                time = self.getData(device, DID_IMU3_RAW, 'time')
 
                 if len(time) != 0:
-                    I = self.getData(d, DID_IMU3, 'I')
-                    imuStatus = self.getData(d, DID_IMU3, 'status')
+                    I = self.getData(device, DID_IMU3_RAW, 'I')
+                    imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
-                    result1 = []
-                    result2 = []
-                    result3 = []
+                    imu1 = []
+                    imu2 = []
+                    imu3 = []
                     if (imuStatus[0] & (0x00010000<<accelSensor)):     # Gyro or accel 1
                         for sample in range(0, len(I)):
-                            result1.append(I[sample][0][accelSensor])
+                            imu1.append(I[sample][0][accelSensor])
                     if (imuStatus[0] & (0x00040000<<accelSensor)):     # Gyro or accel 2
                         for sample in range(0, len(I)):
-                            result2.append(I[sample][1][accelSensor])
+                            imu2.append(I[sample][1][accelSensor])
                     if (imuStatus[0] & (0x00100000<<accelSensor)):     # Gyro or accel 3
                         for sample in range(0, len(I)):
-                            result3.append(I[sample][2][accelSensor])
-                    result1 = np.array(result1)
-                    result2 = np.array(result2)
-                    result3 = np.array(result3)
+                            imu3.append(I[sample][2][accelSensor])
+                    imu1 = np.array(imu1)
+                    imu2 = np.array(imu2)
+                    imu3 = np.array(imu3)
 
-        return (time, dt, result1, result2, result3)
+        return (time, dt, imu1, imu2, imu3)
 
     def imuPQR(self, fig=None):
         if fig is None:
@@ -1393,6 +1393,111 @@ class logPlot:
             for b in a:
                 b.grid(True)
 
+    def wheelControllerTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Wheel Controller Time - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(4, 1, sharex=True)
+
+        ax[0].set_title('effOut - Left')
+        ax[1].set_title('Wheel Velocity - Left')
+        ax[2].set_title('effOut - Right')
+        ax[3].set_title('Wheel Velocity - Right')
+
+        for d in self.active_devs:
+            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
+            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
+            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+
+            ax[0].plot(time, effAct_l)
+            ax[1].plot(time, vel_l)
+            ax[2].plot(time, effAct_r)
+            ax[3].plot(time, vel_r)
+
+        for a in ax:
+            a.grid(True)
+
+    def wheelControllerVel(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Wheel Controller Velocity - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(2, 1, sharex=True)
+
+        ax[0].set_title('Velocity vs effOut - Left')
+        ax[1].set_title('Velocity vs effOut - Right')
+
+        for a in ax:
+            a.set_xlabel('Velocity (rad/s)')
+            a.set_ylabel('effOut')
+
+        for d in self.active_devs:
+            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
+            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+
+            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
+            actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
+
+            eff_l -= actuatorTrim_l
+            eff_r -= actuatorTrim_r
+
+            # deadbandDuty_l = 0.045
+            deadbandDuty_r = 0.0335
+            deadbandDuty_l = deadbandDuty_r # match left and right
+            deadbandVel = 0.05
+
+            c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
+            c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
+
+            # string = []
+            # for element in c_l:
+            #     string.append("{:.9f}".format(element))
+            # string = "[" + ", ".join(string) + "]"
+            # # print(label, "inverse plant:" , string, " deadband:", deadbandDuty)
+
+            print("\nADD TO MODEL FILE:")
+            print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[4], c_l[3], c_l[2], c_l[1], c_l[0]))
+            print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_r[4], c_r[3], c_r[2], c_r[1], c_r[0]))
+            print("  actuatorDeadbandDuty_l: %.9f # (duty) Left  control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_l))
+            print("  actuatorDeadbandDuty_r: %.9f # (duty) Right control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_r))
+            print("  actuatorDeadbandVel: %.9f    # (rad/s) Commanded velocity" % (deadbandVel))
+
+        for a in ax:
+            a.grid(True)
+
+    def solveInversePlant(self, ax, vel, eff, deadbandVel, deadbandDuty, label):
+            effMod = eff.copy()
+
+            for i in range(len(effMod)):
+                if effMod[i] >= 0:
+                    effMod[i] = effMod[i] - deadbandDuty
+                else:
+                    effMod[i] = effMod[i] + deadbandDuty
+
+            c = np.polyfit(vel, effMod, 4)
+
+            velLin = np.linspace(np.min(vel)-1, np.max(vel)+1, 1000)
+            effEst = np.polyval(c, velLin)
+
+            for i in range(len(velLin)):
+                if velLin[i] > deadbandVel:
+                    effEst[i] += deadbandDuty
+                elif velLin[i] < -deadbandVel:
+                    effEst[i] -= deadbandDuty
+                else:
+                    effEst[i] += deadbandDuty/deadbandVel * velLin[i]
+
+            ax.plot(vel, eff, '.')
+            # ax.plot(vel, effMod, 'g')
+            ax.plot(velLin, effEst, 'r')
+
+            return c
     def sensorCompGyr(self, fig=None):
         if fig is None:
             fig = plt.figure()

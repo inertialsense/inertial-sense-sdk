@@ -26,6 +26,7 @@ extern "C" {
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
+#include <limits.h>
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
@@ -179,9 +180,6 @@ extern void vPortFree(void* pv);
 #endif
 
 #endif // defined(_MSC_VER)
-
-#define DBGPIO_START(pin)
-#define DBGPIO_END(pin)
 
 #if defined(PLATFORM_IS_EVB_2)
 #define _MKDIR(dir) f_mkdir(dir)
