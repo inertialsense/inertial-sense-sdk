@@ -2140,7 +2140,7 @@ typedef struct PACKED
     /** Serial port 1 baud rate in bits per second */
     uint32_t				ser1BaudRate;
 
-    /** Roll, pitch, yaw euler angle rotation in radians from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll. */
+    /** Rotation in radians about the X, Y, Z axes from INS Sensor Frame to Intermediate Output Frame.  Order applied: Z, Y, X. */
     float					insRotation[3];
 
     /** X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame. */
