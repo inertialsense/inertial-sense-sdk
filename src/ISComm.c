@@ -82,12 +82,13 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 }
 
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = { 
-	IS_BAUDRATE_18750000, 
-	IS_BAUDRATE_9375000, 
-	IS_BAUDRATE_3125000, 
-	IS_BAUDRATE_921600, 
-	IS_BAUDRATE_460800, 
-	IS_BAUDRATE_230400, 
+	                        // Actual on uINS:
+	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only) 
+	IS_BAUDRATE_9375000,    // 9375000
+	IS_BAUDRATE_3125000,    // 3125000
+	IS_BAUDRATE_921600,     // 937734 (default)
+	IS_BAUDRATE_460800,     // 468600
+	IS_BAUDRATE_230400,     // 232700
 	IS_BAUDRATE_115200, 
 	IS_BAUDRATE_57600, 
 	IS_BAUDRATE_38400, 
