@@ -53,7 +53,7 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3000000, 1))
+	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_3125000, 1))
 	{
 		printf("Failed to open serial port on com port %s\r\n", argv[1]);
 		return -2;
