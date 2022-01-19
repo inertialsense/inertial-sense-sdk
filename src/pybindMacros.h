@@ -13,7 +13,7 @@ PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
 PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
 PYBIND11_NUMPY_DTYPE(evb_luna_wheel_controller_t, timeMs, dt, mode, status, velCmd_l, velCmd_r, velCmdSlew_l, velCmdSlew_r, vel_l, vel_r, velErr_l, velErr_r, ff_eff_l, ff_eff_r, fb_eff_l, fb_eff_r, eff_l, eff_r, effInt_l, effInt_r, effDuty_l, effDuty_r);
 
-// Public Typcs
+// Public Types
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
 PYBIND11_NUMPY_DTYPE(system_fault_t, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr);
 PYBIND11_NUMPY_DTYPE(preintegrated_imu_t, time, theta1, theta2, vel1, vel2, dt, status);
@@ -38,6 +38,7 @@ PYBIND11_NUMPY_DTYPE(sensors_t, mpu);
 PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, temp, tempRampRate, tci, numTcPts, dtTemp);
 PYBIND11_NUMPY_DTYPE(sensor_compensation_t, mpu, sampleCount, calState, alignAccel, status);
 PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, mpu);
+PYBIND11_NUMPY_DTYPE(imu_t, time, I);
 
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, mpu, bar, barTemp, humidity, ana);
 
