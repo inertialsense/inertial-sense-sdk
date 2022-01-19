@@ -2188,7 +2188,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_MAGNETOMETER",                 // 52
 	"DID_BAROMETER",                    // 53
 	"DID_GPS1_RTK_POS",                 // 54
-	"UNUSED_55",                        // 55
+	"DID_ROS_COVARIANCE_POSE_TWIST",    // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
 	"DID_IMU3_RAW",                     // 57
 	"DID_IMU",                          // 58
