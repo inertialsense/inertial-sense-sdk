@@ -59,8 +59,8 @@
 //#define CONFIG_SYSCLK_PRES          SYSCLK_PRES_64
 //#define CONFIG_SYSCLK_PRES          SYSCLK_PRES_3
 
-// ===== System Clock (MCK) Division Options     (Fmck = Fhclk / (SYSCLK_DIV))
-#define CONFIG_SYSCLK_DIV            2
+// ===== System Clock (MCK) Division Options     (Fmck = Fhclk / (SYSCLK_DIV)).   MCK max freq is 150 MHz.
+#define CONFIG_SYSCLK_DIV           2
 
 #if 1   // HCLK: 300 MHz, MCK: 150 MHz
 // ===== PLL0 (A) Options   (Fpll = (Fclk * PLL_mul) / PLL_div)
