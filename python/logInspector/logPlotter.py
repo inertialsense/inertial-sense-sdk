@@ -716,12 +716,18 @@ class logPlot:
                 imu0 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel1'))
                 imu1 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel2'))
             time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
-            dt = time[1:] - time[:-1]
-            dt = np.append(dt, dt[-1])
-            for i in range(3):
-                imu0[:, i] *= self.d/dt
-                imu1[:, i] *= self.d/dt
+            if len(time)!=0:
+                # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
+                dt = time[1:] - time[:-1]
+                dt = np.append(dt, dt[-1])
+                for i in range(3):
+                    imu0[:, i] *= self.d/dt
+                    imu1[:, i] *= self.d/dt
+            else:
+                imu0 = None
+                imu0 = None
+                time = None
+                dt = None
 
         return (imu0, imu1, time, dt)
 
@@ -738,10 +744,20 @@ class logPlot:
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refPqr = refImu['pqr']
 
             for i in range(3):
-                ax[i, 0].plot(time, pqr0[:, i] * 180.0/np.pi, label=self.log.serials[d])
-                ax[i, 1].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                if pqr0 != None:
+                    ax[i, 0].plot(time, pqr0[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                if pqr1 != None:
+                    ax[i, 1].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                if len(refTime) != 0:
+                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
+                    ax[i, 1].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -764,8 +780,10 @@ class logPlot:
             (acc0, acc1, time, dt) = self.loadAccels(d)
 
             for i in range(3):
-                ax[i, 0].plot(time, acc0[:, i], label=self.log.serials[d])
-                ax[i, 1].plot(time, acc1[:, i], label=self.log.serials[d])
+                if acc0 != None:
+                    ax[i, 0].plot(time, acc0[:, i], label=self.log.serials[d])
+                if acc1 != None:
+                    ax[i, 1].plot(time, acc1[:, i], label=self.log.serials[d])
 
         ax[0,0].legend(ncol=2)
         for i in range(3):

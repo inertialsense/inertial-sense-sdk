@@ -10,8 +10,8 @@ import datetime
 from os.path import expanduser
 from scipy.interpolate import interp1d
 
-sys.path.append('..')
-sys.path.append('../math/src')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from log_reader import LogReader
 # from ci_hdw.data_sets import *

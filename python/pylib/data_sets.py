@@ -96,6 +96,8 @@ DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
+DID_EVB_DEV_INFO                = 93
+DID_REFERENCE_IMU               = 94
 DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
 
 NUM_DIDS                        = 117
