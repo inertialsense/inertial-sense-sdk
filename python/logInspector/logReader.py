@@ -4,19 +4,19 @@ import glob
 import serial
 import os
 import subprocess
+import yaml
+import datetime
+
 from os.path import expanduser
 from scipy.interpolate import interp1d
 
-import sys
-# Add the ptdraft folder path to the sys.path list
-import sys
 sys.path.append('..')
+sys.path.append('../math/src')
+
 from log_reader import LogReader
-import yaml
 # from ci_hdw.data_sets import *
 from pylib.data_sets import *
-from pylib.pose import *
-import datetime
+from inertialsense_math.pose import *
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 
 RAD2DEG = 180.0 / np.pi
