@@ -142,6 +142,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
 	sizeMap[DID_IO] = sizeof(io_t);
+	sizeMap[DID_REFERENCE_IMU] = sizeof(imu_t);
 
 	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
 	sizeMap[DID_EVB_FLASH_CFG] = sizeof(evb_flash_cfg_t);
@@ -715,6 +716,22 @@ static void PopulateIMUMagnetometerMappings(map_name_to_info_t mappings[DID_COUN
 	ADD_MAP(m, totalSize, "mag2[2]", mag2.mag[2], 0, DataTypeFloat, float&, 0);
 
 	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateReferenceIMUMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef imu_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_REFERENCE_IMU];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "pqr[0]", I.pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr[1]", I.pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr[2]", I.pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[0]", I.acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[1]", I.acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[2]", I.acc[2], 0, DataTypeFloat, float&, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -1461,6 +1478,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	typedef sensor_compensation_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_SCOMP];
 	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "pqr1[0]", mpu[0].lpfLsb.pqr[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[1]", mpu[0].lpfLsb.pqr[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[2]", mpu[0].lpfLsb.pqr[2], 0, DataTypeFloat, float&, 0);
@@ -2185,6 +2203,7 @@ cISDataMappings::cISDataMappings()
 	PopulateDebugArrayMappings(m_lookupInfo, DID_EVB_DEBUG_ARRAY);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
 	PopulateIOMappings(m_lookupInfo);
+	PopulateReferenceIMUMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);

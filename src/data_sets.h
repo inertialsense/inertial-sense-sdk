@@ -1299,6 +1299,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {                                       // Sensor temperature compensation
+	uint32_t                timeMs;         // (ms) Time since boot up.
 	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
 	uint32_t                sampleCount;    // Number of samples collected
 	uint32_t                calState;       // state machine
