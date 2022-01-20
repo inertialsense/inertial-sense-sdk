@@ -21,8 +21,9 @@ RESET = r"\u001b[0m"
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
 
-sys.path.append('..')
-sys.path.append('../math/src')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
@@ -744,6 +745,7 @@ class logPlot:
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
+
             refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
             if len(refTime)!=0:
                 refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
@@ -755,6 +757,7 @@ class logPlot:
                     ax[i, 0].plot(time, pqr0[:, i] * 180.0/np.pi, label=self.log.serials[d])
                 if pqr1 != None:
                     ax[i, 1].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
+
                 if len(refTime) != 0:
                     ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
                     ax[i, 1].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
@@ -779,11 +782,21 @@ class logPlot:
         for d in self.active_devs:
             (acc0, acc1, time, dt) = self.loadAccels(d)
 
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refAcc = refImu['acc']
+
             for i in range(3):
                 if acc0 != None:
                     ax[i, 0].plot(time, acc0[:, i], label=self.log.serials[d])
                 if acc1 != None:
                     ax[i, 1].plot(time, acc1[:, i], label=self.log.serials[d])
+
+                if len(refTime) != 0:
+                    ax[i, 0].plot(refTime, refAcc[:, i], color='red')
+                    ax[i, 1].plot(refTime, refAcc[:, i], color='red')
 
         ax[0,0].legend(ncol=2)
         for i in range(3):

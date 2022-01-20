@@ -11,6 +11,7 @@ from os.path import expanduser
 from scipy.interpolate import interp1d
 
 file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
 sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from log_reader import LogReader
