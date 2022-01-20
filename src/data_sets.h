@@ -1302,9 +1302,9 @@ typedef struct PACKED
 	uint32_t                timeMs;         // (ms) Time since boot up.
 	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
 	uint32_t                sampleCount;    // Number of samples collected
-	uint32_t                calState;       // state machine
+	uint32_t                calState;       // State machine (see eScompCalState)
+	uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
 	f_t						alignAccel[3];  // Alignment acceleration
-	uint32_t				status;         // Used to control LED
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS	4

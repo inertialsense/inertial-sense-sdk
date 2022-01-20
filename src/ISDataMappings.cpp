@@ -1511,10 +1511,10 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "dtTemp2", mpu[1].dtTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "alignAccel[0]", alignAccel[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "alignAccel[1]", alignAccel[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "alignAccel[2]", alignAccel[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }

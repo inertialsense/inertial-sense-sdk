@@ -111,7 +111,7 @@ void led_maintenance(void)
 			break;
 		
 		case SC_ACCEL_ALIGN_CHECK:
-			if( g_sc.status == SC_STATUS_ALIGNED )
+			if( (g_sc.status&SC_STATUS_ALIGNMENT_MASK) == SC_STATUS_ALIGNMENT_GOOD )
 			{	
 				LED_COLOR_GREEN();
 			}

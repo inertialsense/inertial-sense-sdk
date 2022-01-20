@@ -1561,7 +1561,6 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc', useTime=True)
 
-
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(4, 2, sharex=True)
@@ -1582,12 +1581,12 @@ class logPlot:
                     ax[d,i].set_ylabel("Accel (m/s^2)")
 
         for d in self.active_devs:
+            time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
             mpu = self.getData(d, DID_SCOMP, 'mpu')
+            status = self.getData(d, DID_SCOMP, 'status')
 
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
-                if useTime:
-                    temp = range(len(temp))
                 sensor = mpu[:,i]['lpfLsb'][name]
 
                 if name=='acc' and sensor[:,2][0] > 4:
@@ -1598,12 +1597,25 @@ class logPlot:
                 else:
                     scalar = 1.0
 
+                if useTime:
+                    temp = time
+
                 # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
                 ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
                 ax[1,i].plot(temp, sensor[:,1]*scalar)
                 ax[2,i].plot(temp, sensor[:,2]*scalar)
                 if name=='acc':
                     ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
+
+                if useTime:
+                    # Show sensor valid status bit
+                    if name=='acc':
+                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                    else:
+                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y')
+                    ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
+                    ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
