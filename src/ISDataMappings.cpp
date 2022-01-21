@@ -142,6 +142,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
 	sizeMap[DID_IO] = sizeof(io_t);
+	sizeMap[DID_REFERENCE_IMU] = sizeof(imu_t);
 
 	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
 	sizeMap[DID_EVB_FLASH_CFG] = sizeof(evb_flash_cfg_t);
@@ -724,6 +725,22 @@ static void PopulateIMU3MagnetometerMappings(map_name_to_info_t mappings[DID_COU
 	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&, 0);
 
 	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateReferenceIMUMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef imu_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_REFERENCE_IMU];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "pqr[0]", I.pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr[1]", I.pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr[2]", I.pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[0]", I.acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[1]", I.acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[2]", I.acc[2], 0, DataTypeFloat, float&, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -1496,6 +1513,8 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	typedef sensor_compensation_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_SCOMP];
 	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
+
 	// Gyros
 	ADD_MAP(m, totalSize, "pqr0.lpfLsb[0]", pqr[0].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr0.lpfLsb[1]", pqr[0].lpfLsb[1], 0, DataTypeFloat, float&, 0);
@@ -1606,10 +1625,10 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	// Other
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "alignAccel[0]", alignAccel[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "alignAccel[1]", alignAccel[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "alignAccel[2]", alignAccel[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2188,7 +2207,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_MAGNETOMETER",                 // 52
 	"DID_BAROMETER",                    // 53
 	"DID_GPS1_RTK_POS",                 // 54
-	"UNUSED_55",                        // 55
+	"DID_ROS_COVARIANCE_POSE_TWIST",    // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
 	"DID_IMU3_RAW",                     // 57
 	"DID_IMU",                          // 58
@@ -2227,7 +2246,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS2_RTK_CMP_REL",             // 91
 	"DID_GPS2_RTK_CMP_MISC",            // 92
 	"DID_EVB_DEV_INFO",                 // 93
-	"DID_CAL_SC3",                      // 94
+	"UNUSED_94",                        // 94
 	"UNUSED_95",                        // 95 
 	"UNUSED_96",                        // 96 
 	"UNUSED_97",                        // 97 
@@ -2298,6 +2317,7 @@ cISDataMappings::cISDataMappings()
 	PopulateDebugArrayMappings(m_lookupInfo, DID_EVB_DEBUG_ARRAY);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
 	PopulateIOMappings(m_lookupInfo);
+	PopulateReferenceIMUMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);

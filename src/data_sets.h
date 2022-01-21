@@ -125,6 +125,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
+#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -407,7 +408,7 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR|
                                                     GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK),
 	GPS_STATUS_FLAGS_RTK_POSITION_VALID             = (int)0x04000000,      // RTK precision position is valid on GPS1 (i.e. < 20cm accuracy)
-	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x08000000,      // RTK moving base heading is valid on GPS2
+	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x08000000,      // RTK moving base heading is valid on GPS2.  Indicates RTK fix and hold with single band RTK compassing.
     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_BAD    = (int)0x00002000,
     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_UNSET  = (int)0x00004000,
     GPS_STATUS_FLAGS_RTK_COMPASSING_MASK            = (GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED|
@@ -1340,6 +1341,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {                                       // Sensor temperature compensation
+<<<<<<< HEAD
 	sensor_comp_unit_t		pqr[NUM_IMU_DEVICES];
 	sensor_comp_unit_t		acc[NUM_IMU_DEVICES];
 	sensor_comp_unit_t		mag[NUM_MAG_DEVICES];
@@ -1347,6 +1349,14 @@ typedef struct PACKED
 	uint32_t                calState;       // state machine (see eSensorCalState)
 	f_t						alignAccel[3];  // Alignment acceleration
 	uint32_t				status;         // Used to control LED (see eSensorCalStatus)
+=======
+	uint32_t                timeMs;         // (ms) Time since boot up.
+	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
+	uint32_t                sampleCount;    // Number of samples collected
+	uint32_t                calState;       // State machine (see eScompCalState)
+	uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
+	f_t						alignAccel[3];  // Alignment acceleration
+>>>>>>> origin/SN-938_temp_calibration_python
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS	4

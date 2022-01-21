@@ -21,11 +21,14 @@ RESET = r"\u001b[0m"
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
 
-sys.path.append('..')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
+
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
-from pylib.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
+from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
 
 class logPlot:
@@ -754,6 +757,12 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, pqr1, pqr2, pqr3) = self.loadGyros(d)
 
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refPqr = refImu['pqr']
+
             for i in range(3):
                 if pqr1 != []:
                     ax[i].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
@@ -761,6 +770,9 @@ class logPlot:
                     ax[i].plot(time, pqr2[:, i] * 180.0/np.pi, label=self.log.serials[d])
                 if pqr3 != []:
                     ax[i].plot(time, pqr3[:, i] * 180.0/np.pi, label=self.log.serials[d])
+
+                if len(refTime) != 0:
+                    ax[i].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
 
         ax[0].legend(ncol=2)
         for i in range(3):
@@ -778,6 +790,12 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc1, acc2, acc3) = self.loadAccels(d)
 
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refAcc = refImu['acc']
+
             for i in range(3):
                 if acc1 != []:
                     ax[i].plot(time, acc1[:, i], label=self.log.serials[d])
@@ -785,6 +803,9 @@ class logPlot:
                     ax[i].plot(time, acc2[:, i], label=self.log.serials[d])
                 if acc3 != []:
                     ax[i].plot(time, acc3[:, i], label=self.log.serials[d])
+
+                if len(refTime) != 0:
+                    ax[i].plot(refTime, refAcc[:, i], color='red')
 
         ax[0].legend(ncol=2)
         for i in range(3):
@@ -1519,7 +1540,6 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc', useTime=True)
 
-
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(4, 2, sharex=True)
@@ -1540,12 +1560,12 @@ class logPlot:
                     ax[d,i].set_ylabel("Accel (m/s^2)")
 
         for d in self.active_devs:
+            time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
             mpu = self.getData(d, DID_SCOMP, 'mpu')
+            status = self.getData(d, DID_SCOMP, 'status')
 
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
-                if useTime:
-                    temp = range(len(temp))
                 sensor = mpu[:,i]['lpfLsb'][name]
 
                 if name=='acc' and sensor[:,2][0] > 4:
@@ -1556,12 +1576,25 @@ class logPlot:
                 else:
                     scalar = 1.0
 
+                if useTime:
+                    temp = time
+
                 # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
                 ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
                 ax[1,i].plot(temp, sensor[:,1]*scalar)
                 ax[2,i].plot(temp, sensor[:,2]*scalar)
                 if name=='acc':
                     ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
+
+                if useTime:
+                    # Show sensor valid status bit
+                    if name=='acc':
+                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                    else:
+                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y')
+                    ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
+                    ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)

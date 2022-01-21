@@ -928,8 +928,7 @@ static int serEnable(int serialNum)
 	if (ser->uinfo.isUsartNotUart)
 	{	// Initialize USART
 		if (ser->uinfo.isSpiUsart)
-		{
-			// Initialize the USART in SPI slave mode.
+		{	// Initialize the USART in SPI slave mode.
 			usart_spi_opt_t opt = {
 				.baudrate     = 3000000,  // ignored when configuring for slave mode
 				.char_length  = US_MR_CHRL_8_BIT,
@@ -939,8 +938,7 @@ static int serEnable(int serialNum)
 			usart_init_spi_slave((Usart*)ser->usart, &opt);
 		}
 		else
-		{
-			// Initialize the USART in RS232 mode.
+		{	// Initialize the USART in RS232 mode.
 			usart_init_rs232((Usart*)ser->usart, &(ser->usart_options), sysclk_get_peripheral_hz());
 		}
 		

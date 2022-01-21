@@ -77,6 +77,7 @@ public:
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
 	bool Enabled() { return m_enabled; }
 	void CloseAllFiles();
+	void FlushToFile();
 	void OpenWithSystemApp();
 	string TimeStamp() { return m_timeStamp; }
 	string LogDirectory() { return m_directory; }
