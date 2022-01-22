@@ -39,7 +39,7 @@ class Log:
         self.c_log.load()
         self.serials = self.c_log.getSerialNumbers()
         self.sanitize()
-        self.data = np.array(self.data)
+        self.data = np.array(self.data, dtype=object)
         self.directory = directory
         self.numDev = self.data.shape[0]
         if self.numDev == 0:
