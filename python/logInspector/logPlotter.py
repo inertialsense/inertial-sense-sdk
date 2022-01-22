@@ -1561,12 +1561,12 @@ class logPlot:
 
         for d in self.active_devs:
             time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
-            mpu = self.getData(d, DID_SCOMP, 'mpu')
+            imu = self.getData(d, DID_SCOMP, name)
             status = self.getData(d, DID_SCOMP, 'status')
 
             for i in range(2):
-                temp = mpu[:,i]['lpfLsb']['temp']
-                sensor = mpu[:,i]['lpfLsb'][name]
+                temp = imu[:,i]['lpfTemp']
+                sensor = imu[:,i]['lpfLsb']
 
                 if name=='acc' and sensor[:,2][0] > 4:
                     sensor[:,2] -= 19.6
