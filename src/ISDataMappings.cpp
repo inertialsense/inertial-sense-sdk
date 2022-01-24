@@ -733,12 +733,13 @@ static void PopulateReferenceIMUMappings(map_name_to_info_t mappings[DID_COUNT])
 	map_name_to_info_t& m = mappings[DID_REFERENCE_IMU];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "pqr[0]", I.pqr[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr[1]", I.pqr[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr[2]", I.pqr[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc[0]", I.acc[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc[1]", I.acc[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc[2]", I.acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "I.pqr[0]", I.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I.pqr[1]", I.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I.pqr[2]", I.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I.acc[0]", I.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I.acc[1]", I.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I.acc[2]", I.acc[2], 0, DataTypeFloat, float&, 0);
 
     ASSERT_SIZE(totalSize);
 }
