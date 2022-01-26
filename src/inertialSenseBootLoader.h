@@ -86,26 +86,11 @@ Boot load a .hex or .bin file to a device
 @param uploadProgress called periodically during firmware upload - can be NULL
 @param verifyProgress called periodically during firmware verification - can be NULL
 
-@return 0 if failure, non-zero if success
+@return 0 on success, -1 on failure
 */
 int bootloadFile(serial_port_t* port, const char* fileName, const char* bootName,
     const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
-
-/**
-Boot load a new bootloader .bin file to device. Device must be in application or bootloader assist mode, not bootloader mode.
-@param port the serial port, must be initialized and have the port set
-@param fileName the new bootloader .bin file
-@param error a buffer to store any error messages in - can be NULL
-@param errorLength the number of bytes available in error
-@param obj custom user object that will be passed in the callback
-@param uploadProgress called periodically during firmware upload - can be NULL
-@param verifyProgress called periodically during firmware verification - can be NULL
-@retur 0 if failure, non-zero if success
-*/
-int bootloadUpdateBootloader(serial_port_t* port, const char* fileName, 
-    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
-int bootloadUpdateBootloaderEx(bootload_params_t* p);
 
 /**
 Retrieve the bootloader version from .bin file
@@ -114,7 +99,7 @@ Retrieve the bootloader version from .bin file
 @param pointer to int to store major version
 @param pointer to char to store minor version
 
-@return 0 if failure, 1 if success
+@return 0 on success, -1 on failure
 */
 int bootloadGetBootloaderVersionFromFile(const char* bootName, int* verMajor, char* verMinor);
 
@@ -126,7 +111,7 @@ Enable bootloader mode for a device
 @param error a buffer to store any error messages - can be NULL
 @param errorLength the number of bytes available in error
 
-@return 0 if failure, non-zero if success
+@return 0 on success, -1 on failure
 */
 int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd);
 
@@ -137,7 +122,7 @@ Disables the bootloader and goes back to program mode
 @error a buffer to store any error messages - can be NULL
 @errorLength the number of bytes available in error
 
-@return 0 if failure, non-zero if success
+@return 0 on success, -1 on failure
 */
 int disableBootloader(serial_port_t* port, char* error, int errorLength);
 

@@ -86,10 +86,10 @@ typedef uint32_t eDataIDs;
 #define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output */
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
-// #define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
+#define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF covariances matrix lower diagonals */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
-#define DID_IMU3                        (eDataIDs)57 /** (imu3_t) Inertial measurement unit data directly from IMU.  We recommend use of DID_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
-#define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from 1KHz to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
+#define DID_IMU3_RAW                    (eDataIDs)57 /** (imu3_t) Inertial measurement unit data directly from IMU.  We recommend use of DID_IMU or DID_PREINTEGRATED_IMU as they are oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GPS_RTK_OPT                 (eDataIDs)61 /** (gps_rtk_opt_t) RTK options - requires little endian CPU. */
@@ -115,9 +115,9 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_cfg_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-#define DID_IMU3_MAG                    (eDataIDs)84 /** (imu3_mag_t) DID_IMU3 + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU3_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
-#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU3_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
-#define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER + MAGNETOMETER_2 Only one of DID_IMU3_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
+#define DID_IMU3_RAW_MAG                (eDataIDs)84 /** (imu3_mag_t) DID_IMU3_RAW + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. We recommend use of DID_IMU_MAG or DID_PREINTEGRATED_IMU_MAG as they are oversampled and contain less noise. */
+#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
+#define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
 #define DID_GROUND_VEHICLE				(eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
 #define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate*/
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
@@ -135,7 +135,7 @@ typedef uint32_t eDataIDs;
 // 6] Test!
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
-#define DID_COUNT		(eDataIDs)116	// Used in SDK
+#define DID_COUNT		(eDataIDs)120	// Used in SDK
 #define DID_COUNT_UINS	(eDataIDs)96	// Used in uINS
 
 /** Maximum number of data ids */
@@ -162,10 +162,9 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE 2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
-#define NUM_IMU_DEVICES     3
-#define NUM_MAG_DEVICES     2
-// #define NUM_IMU_DEVICES     (g_hdw_detect >= HDW_DETECT_VER_IMX_4_x_x ? 3 : 2)
-// #define NUM_MAG_DEVICES     (g_hdw_detect >= HDW_DETECT_VER_IMX_4_x_x ? 2 : 1)
+// Max number of devices across all hardware types: uINS-3, uINS-4, and uINS-5
+#define NUM_IMU_DEVICES     3		// g_numImuDevices defines the actual number of hardware specific devices
+#define NUM_MAG_DEVICES     2		// g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -634,7 +633,7 @@ typedef struct PACKED
 } imu_t;
 
 
-/** (DID_IMU3) Dual Inertial Measurement Units (IMUs) data */
+/** (DID_IMU3_RAW) Dual Inertial Measurement Units (IMUs) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -712,7 +711,7 @@ typedef struct PACKED
 } imu_mag_t;
 
 
-/** (DID_IMU3_MAG) triple imu + mag */
+/** (DID_IMU3_RAW_MAG) triple imu + mag */
 typedef struct PACKED
 {
 	/** Trimple imu */
@@ -950,6 +949,20 @@ typedef struct PACKED
     float					magInc;                 
 } inl2_states_t;
 
+// (DID_ROS_COVARIANCE_POSE_TWIST) INL2 - INS Extended Kalman Filter (EKF) state covariance
+typedef struct PACKED
+{
+    /** GPS time of week (since Sunday morning) in seconds */
+	double                  timeOfWeek;
+
+    /** (rad^2, m^2)  EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames */
+	float					covPoseLD[21];
+
+    /** ((m/s)^2, (rad/s)^2)   EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames */
+	float					covTwistLD[21];
+
+} ros_covariance_pose_twist_t;
+
 // (DID_INL2_STATUS)
 typedef struct PACKED
 {
@@ -1125,10 +1138,10 @@ enum eGenFaultCodes
 	GFC_UNHANDLED_INTERRUPT				= 0x00000010,
 	/*! Fault: sensor initialization  */
 	GFC_INIT_SENSORS					= 0x00000100,
-	/*! Fault: SPI initialization  */
+	/*! Fault: SPI bus initialization  */
 	GFC_INIT_SPI						= 0x00000200,
-	/*! Fault: SPI configuration  */
-	GFC_CONFIG_SPI						= 0x00000400,
+// 	/*! Fault:  */
+// 	GFC_UNUSED							= 0x00000400,
 	/*! Fault: GPS1 init  */
 	GFC_INIT_GPS1						= 0x00000800,
 	/*! Fault: GPS2 init  */
@@ -1145,6 +1158,12 @@ enum eGenFaultCodes
 	GFC_SYS_FAULT_CRITICAL			    = 0x00020000,
 	/*! Sensor(s) saturated */
 	GFC_SENSOR_SATURATION 				= 0x00040000,
+	/*! Fault: IMU initialization */
+	GFC_INIT_IMU						= 0x00100000,
+	/*! Fault: Magnetometer initialization */
+	GFC_INIT_MAGNETOMETER				= 0x00400000,
+	/*! Fault: Barometer initialization */
+	GFC_INIT_BAROMETER					= 0x00200000,
 };
 
 
@@ -1619,7 +1638,7 @@ enum eSysConfigBits
 	/*! Disable LEDs */
 	SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
 
-	/** Magnetometer recalibration.  0 = multi-axis, 1 = single-axis */
+	/** Magnetometer recalibration.  (see eMagRecalMode) 1 = multi-axis, 2 = single-axis */
 	SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
 	SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
@@ -1642,6 +1661,8 @@ enum eSysConfigBits
 	/** Prevent built-in test (BIT) from running automatically on startup */
 	SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
 
+	/** Disable wheel encoder fusion */
+	SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
 };

@@ -34,6 +34,7 @@ static void soft_reset_internal(void)
 #else
     usart_reset((Usart*)SERIAL0);
     usart_reset((Usart*)SERIAL1);
+    usart_reset((Usart*)SERIAL2);
 #endif    
     set_reset_pin_enabled(1);
     RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;

@@ -19,7 +19,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   100Hz Sample Rate
+//   100Hz (10ms) Sample Rate
 #define	ALPH_100SR_0p001CF	(0.0000099999f)		// 0.001Hz corner freq @ 100Hz sample rate
 #define	BETA_100SR_0p001CF	(0.9999900001f)
 #define	ALPH_100SR_0p01CF	(0.0000999900f)		// 0.01Hz corner freq @ 100Hz sample rate
@@ -49,7 +49,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   200Hz Sample Rate
+//   200Hz (5ms) Sample Rate
 #define	ALPH_200SR_0p001CF	(0.0000050000f)		// 0.001Hz corner freq @ 200Hz sample rate
 #define	BETA_200SR_0p001CF	(0.9999950000f)
 #define	ALPH_200SR_0p01CF	(0.0000499975f)		// 0.01Hz corner freq @ 200Hz sample rate
@@ -83,7 +83,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   250Hz Sample Rate
+//   250Hz (4ms) Sample Rate
 #define	ALPH_250SR_0p001CF	(0.0000040000f)		// 0.001Hz corner freq @ 250Hz sample rate
 #define	BETA_250SR_0p001CF	(0.9999960000f)
 #define	ALPH_250SR_0p01CF	(0.0000399984f)		// 0.01Hz corner freq @ 250Hz sample rate
@@ -119,7 +119,45 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   400Hz Sample Rate
+//   333Hz (3ms) Sample Rate
+#define	ALPH_333SR_0p001CF	(0.0000030000f)		// 0.001Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_0p001CF	(0.9999970000f)
+#define	ALPH_333SR_0p01CF	(0.0000299991f)		// 0.01Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_0p01CF	(0.9999700009f)
+#define	ALPH_333SR_0p1CF	(0.0002999100f)		// 0.1Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_0p1CF	(0.9997000900f)
+#define	ALPH_333SR_1CF    	(0.0029910269f)		// 1Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_1CF    	(0.9970089731f)
+#define	ALPH_333SR_2CF    	(0.0059642147f)		// 2Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_2CF    	(0.9940357853f)
+#define	ALPH_333SR_5CF    	(0.0147783251f)		// 5Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_5CF    	(0.9852216749f)
+#define	ALPH_333SR_10CF   	(0.0291262136f)		// 10Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_10CF   	(0.9708737864f)
+#define	ALPH_333SR_20CF   	(0.0566037736f)		// 20Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_20CF   	(0.9433962264f)
+#define	ALPH_333SR_30CF   	(0.0825688073f)		// 30Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_30CF   	(0.9174311927f)
+#define	ALPH_333SR_50CF   	(0.1304347826f)		// 50Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_50CF   	(0.8695652174f)
+#define	ALPH_333SR_75CF   	(0.1836734694f)		// 75Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_75CF   	(0.8163265306f)
+#define	ALPH_333SR_100CF	(0.2307692308f)		// 100Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_100CF	(0.7692307692f)
+#define	ALPH_333SR_150CF	(0.3103448276f)		// 150Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_150CF	(0.6896551724f)
+#define	ALPH_333SR_200CF	(0.3750000000f)		// 200Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_200CF	(0.6250000000f)
+#define	ALPH_333SR_300CF   	(0.4736842105f)		// 300Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_300CF   	(0.5263157895f)
+#define	ALPH_333SR_400CF   	(0.5454545455f)		// 400Hz corner freq @ 333Hz sample rate
+#define	BETA_333SR_400CF   	(0.4545454545f)
+
+
+// Low Pass Filter Coefficients
+//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
+//   Beta = 1.0 - Alpha
+//   400Hz (2.5ms) Sample Rate
 #define	ALPH_400SR_0p001CF	(0.0000025000f)		// 0.001Hz corner freq @ 400Hz sample rate
 #define	BETA_400SR_0p001CF	(0.9999975000f)
 #define	ALPH_400SR_0p01CF	(0.0000249994f)		// 0.01Hz corner freq @ 400Hz sample rate
@@ -157,7 +195,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   500Hz Sample Rate
+//   500Hz (2ms) Sample Rate
 #define	ALPH_500SR_0p001CF	(0.0000020000f)		// 0.001Hz corner freq @ 500Hz sample rate
 #define	BETA_500SR_0p001CF	(0.9999980000f)
 #define	ALPH_500SR_0p01CF	(0.0000199996f)		// 0.01Hz corner freq @ 500Hz sample rate
@@ -199,7 +237,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   1000Hz Sample Rate
+//   1000Hz (1ms) Sample Rate
 #define	ALPH_1000SR_0p001CF	(0.0000010000f)		// 0.001Hz corner freq @ 1000Hz sample rate
 #define	BETA_1000SR_0p001CF	(0.9999990000f)
 #define	ALPH_1000SR_0p01CF	(0.0000099999f)		// 0.01Hz corner freq @ 1000Hz sample rate
@@ -243,7 +281,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   2000Hz Sample Rate
+//   2000Hz (0.5ms) Sample Rate
 #define	ALPH_2000SR_0p001CF	(0.0000005000f)		// 0.001Hz corner freq @ 2000Hz sample rate
 #define	BETA_2000SR_0p001CF	(0.9999995000f)
 #define	ALPH_2000SR_0p01CF	(0.0000050000f)		// 0.01Hz corner freq @ 2000Hz sample rate
@@ -289,7 +327,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   4000Hz Sample Rate
+//   4000Hz (0.25ms) Sample Rate
 #define	ALPH_4000SR_0p001CF	(0.0000002500f)		// 0.001Hz corner freq @ 4000Hz sample rate
 #define	BETA_4000SR_0p001CF	(0.9999997500f)
 #define	ALPH_4000SR_0p01CF	(0.0000025000f)		// 0.01Hz corner freq @ 4000Hz sample rate
@@ -337,7 +375,7 @@
 // Low Pass Filter Coefficients
 //   Alpha = (Fc/Fs)/(1 + Fc/Fs)
 //   Beta = 1.0 - Alpha
-//   8000Hz Sample Rate
+//   8000Hz (0.125ms) Sample Rate
 #define	ALPH_8000SR_0p001CF	(0.0000001250f)		// 0.001Hz corner freq @ 8000Hz sample rate
 #define	BETA_8000SR_0p001CF	(0.9999998750f)
 #define	ALPH_8000SR_0p01CF	(0.0000012500f)		// 0.01Hz corner freq @ 8000Hz sample rate

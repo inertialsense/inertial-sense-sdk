@@ -230,7 +230,7 @@ bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 	}
 
 	// Write date to file
-    int nBytes = m_csv.WriteDataToFile(++m_nextId, log.pFile, *dataHdr, dataBuf);
+    int nBytes = m_csv.WriteDataToFile(m_nextId++, log.pFile, *dataHdr, dataBuf);
 	if (ferror(log.pFile) != 0)
 	{
 		return false;

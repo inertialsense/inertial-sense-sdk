@@ -315,9 +315,9 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsOnlyTimeFirst,	// 52: DID_MAGNETOMETER
 		offsetsOnlyTimeFirst,	// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		0,						// 55: 
+		offsetsOnlyTimeFirst,	// 55: DID_ROS_COVARIANCE_POSE_TWIST
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
-		offsetsOnlyTimeFirst,	// 57: DID_IMU3
+		offsetsOnlyTimeFirst,	// 57: DID_IMU3_RAW
 		offsetsOnlyTimeFirst,	// 58: DID_IMU
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
@@ -344,7 +344,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         offsetsDebugArray,      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-        offsetsImuMag,          // 84: DID_IMU3_MAG
+        offsetsImuMag,          // 84: DID_IMU3_RAW_MAG
         offsetsImuMag,          // 85: DID_IMU_MAG
         offsetsPreImuMag,		// 86: DID_PREINTEGRATED_IMU_MAG
 		0,                      // 87: 
@@ -375,7 +375,11 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 112:
 		0,                      // 113:
 		0,                      // 114:
-		0                       // 115:
+		0,                      // 116:
+		0,                      // 117:
+		0,                      // 118:
+		0,                      // 119:
+        0                      // 120:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -489,9 +493,9 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 52: DID_MAGNETOMETER
 		0,						// 53: DID_BAROMETER
 		0,						// 54: DID_GPS1_RTK_POS
-		0,						// 55: 
+		0,						// 55: DID_ROS_COVARIANCE_POSE_TWIST
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
-		0,						// 57: DID_IMU3
+		0,						// 57: DID_IMU3_RAW
 		0,						// 58: DID_IMU
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
@@ -518,7 +522,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         0,                      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-		0,						// 84: DID_IMU3_MAG
+		0,						// 84: DID_IMU3_RAW_MAG
 		0,						// 85: DID_IMU_MAG
 		0,						// 86: DID_PREINTEGRATED_IMU_MAG
 		0,						// 87: DID_GROUND_VEHICLE
@@ -549,7 +553,11 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 112:
 		0,                      // 113:
 		0,                      // 114:
-		0                       // 115:
+		0,                      // 115:
+		0,                      // 116:
+		0,                      // 117:
+		0,                      // 118:
+		0                      // 119:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -606,7 +614,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_INS_2:					return RMC_BITS_INS2;
 		case DID_INS_3:					return RMC_BITS_INS3;
 		case DID_INS_4:					return RMC_BITS_INS4;
-		case DID_IMU3:					return RMC_BITS_DID_IMU3;
+		case DID_IMU3_RAW:				return RMC_BITS_DID_IMU3;
 		case DID_IMU:					return RMC_BITS_IMU;
 		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
@@ -635,7 +643,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
 		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
 		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
-		case DID_IMU3_MAG:              return RMC_BITS_DID_IMU3_MAG;
+		case DID_IMU3_RAW_MAG:          return RMC_BITS_DID_IMU3_MAG;
 		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;
 		default:                        return defaultRmcBits;
 	}
@@ -844,3 +852,4 @@ int satNumCalc(int gnssID, int svID) {
 	int prn = svID + (sys == SYS_QZS ? 192 : 0);
 	return satNo(sys, prn);
 }
+

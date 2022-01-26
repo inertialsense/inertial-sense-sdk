@@ -31,6 +31,8 @@
     <File Name="../../src/ISDisplay.h"/>
     <File Name="../../src/ISLogger.cpp"/>
     <File Name="../../src/ISLogger.h"/>
+    <File Name="../../src/ISLogStats.cpp"/>
+    <File Name="../../src/ISLogStats.h"/>
     <File Name="../../src/ISMatrix.c"/>
     <File Name="../../src/ISMatrix.h"/>
     <File Name="../../src/ISPose.c"/>

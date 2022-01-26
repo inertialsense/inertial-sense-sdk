@@ -23,7 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "DeviceLog.h"
 #include "ISFileManager.h"
-#include "ISLogger.h"
 #include "ISConstants.h"
 #include "ISDataMappings.h"
 #include "ISLogFileFactory.h"
@@ -39,11 +38,11 @@ cDeviceLog::cDeviceLog()
     m_logSize = 0;
     m_fileCount = 0;
     memset(&m_devInfo, 0, sizeof(dev_info_t));
-    m_logStats = new cLogStats;
 	m_altClampToGround = true;
 	m_showTracks = true;
 	m_showPointTimestamps = true;
 	m_pointUpdatePeriodSec = 1.0f;
+	m_logStats.Clear();
 }
 
 cDeviceLog::~cDeviceLog()
@@ -51,7 +50,6 @@ cDeviceLog::~cDeviceLog()
     // Close open files
     CloseISLogFile(m_pFile);
     CloseAllFiles();
-    delete m_logStats;
 }
 
 void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
@@ -63,6 +61,8 @@ void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::s
 	m_maxDiskSpace = maxDiskSpace;
 	m_maxFileSize = maxFileSize;
 	m_logSize = 0;
+	m_writeMode = true;
+	m_logStats.Clear();
 }
 
 
@@ -71,20 +71,18 @@ void cDeviceLog::InitDeviceForReading()
 	m_fileSize = 0;
 	m_logSize = 0;
 	m_fileCount = 0;
+	m_writeMode = false;
+	m_logStats.Clear();
 }
 
 
 bool cDeviceLog::CloseAllFiles()
 {
-#if 1
-    string str = m_directory + "/stats_SN" + to_string(m_devInfo.serialNumber) + ".txt";
-    m_logStats->WriteToFile(str);
-#else   // stringstream not working on embedded platform
-	ostringstream serialNumString;
-	serialNumString << m_devInfo.serialNumber;
-    m_logStats->WriteToFile(m_directory + "/stats_SN" + serialNumString.str() + ".txt");
-#endif
-    m_logStats->Clear();
+	if (m_writeMode)
+	{
+		string str = m_directory + "/stats_SN" + to_string(m_devInfo.serialNumber) + ".txt";
+		m_logStats.WriteToFile(str);
+	}
     return true;
 }
 
@@ -108,7 +106,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
     if (dataHdr != NULL)
     {
         double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-        m_logStats->LogDataAndTimestamp(dataHdr->id, timestamp);
+        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 	}
     return true;
 }
@@ -269,7 +267,7 @@ void cDeviceLog::OnReadData(p_data_t* data)
     if (data != NULL)
     {
         double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
-        m_logStats->LogDataAndTimestamp(data->hdr.id, timestamp);
+        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
 }
 

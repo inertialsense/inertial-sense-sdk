@@ -64,6 +64,9 @@
     <ClCompile Include="..\..\..\src\ISLogger.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\ISLogStats.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\src\tinyxml.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
@@ -184,6 +187,9 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISLogger.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISLogStats.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\tinyxml.h">

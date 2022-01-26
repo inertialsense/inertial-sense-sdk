@@ -7,8 +7,6 @@ from __future__ import print_function
 
 import numpy as np
 from numpy import sin, cos, tan, arccos, arcsin, arctan2, arctan, r_, c_, dot, pi
-from tqdm import tqdm
-# import pylib.plotTools as pt
 
 
 def quatInit():
@@ -1261,7 +1259,7 @@ def meanOfQuat(q):
 def meanOfQuatArray(q):
     assert q.shape[2] == 4
     mu = np.empty((q.shape[0], 4))
-    for i in tqdm(range(q.shape[0])):
+    for i in range(q.shape[0]):
         mu[None, i, :] = meanOfQuat(q[i, :, :])
     return mu
 

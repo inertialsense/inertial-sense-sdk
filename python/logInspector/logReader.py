@@ -4,19 +4,19 @@ import glob
 import serial
 import os
 import subprocess
+import yaml
+import datetime
+
 from os.path import expanduser
 from scipy.interpolate import interp1d
 
-import sys
-# Add the ptdraft folder path to the sys.path list
-import sys
 sys.path.append('..')
+sys.path.append('../math/src')
+
 from log_reader import LogReader
-import yaml
 # from ci_hdw.data_sets import *
 from pylib.data_sets import *
-from pylib.pose import *
-import datetime
+from inertialsense_math.pose import *
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 
 RAD2DEG = 180.0 / np.pi
@@ -62,6 +62,8 @@ class Log:
             self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
         if len(self.data[0, DID_INS_2]):
             self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
+        # except:
+            # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
 
     def getSerialNumbers(self):
         self.c_log.getSerialNumbers()
