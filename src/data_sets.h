@@ -1378,7 +1378,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
-#define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset
+#define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset and data should be broadcast.  This will set the RMC broadcast period multiple to 1 by default.
 
 #define RMC_PRESET_PPD_NAV_PERIOD_MULT	25
 #define RMC_PRESET_INS_NAV_PERIOD_MULT	1   // fastest rate (nav filter update rate)
