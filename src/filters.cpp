@@ -234,7 +234,7 @@ int tripleToSingleImu(imu_t *result, const imu3_t *di)
 }
 
 
-int tripleToSingleImu(imu_t *result, const imu3_t *di, bool *exclude)
+int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
 {
 	imu_t imu = {};
 	imu.time = di->time;
