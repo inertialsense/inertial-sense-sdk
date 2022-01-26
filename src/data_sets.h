@@ -1370,7 +1370,7 @@ typedef struct PACKED
 #define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
-#define RMC_BITS_GROUND_VEHICLE           0x0000000100000000
+#define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
 #define RMC_BITS_DUAL_IMU_MAG_RAW       0x0000000200000000
 #define RMC_BITS_DUAL_IMU_MAG			0x0000000400000000
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
@@ -1378,7 +1378,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
-#define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset
+#define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define RMC_PRESET_PPD_NAV_PERIOD_MULT	25
 #define RMC_PRESET_INS_NAV_PERIOD_MULT	1   // fastest rate (nav filter update rate)
