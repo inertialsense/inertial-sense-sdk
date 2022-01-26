@@ -2247,7 +2247,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS2_RTK_CMP_REL",             // 91
 	"DID_GPS2_RTK_CMP_MISC",            // 92
 	"DID_EVB_DEV_INFO",                 // 93
-	"UNUSED_94",                        // 94
+	"UNUSED_94",                        // 94 
 	"UNUSED_95",                        // 95 
 	"UNUSED_96",                        // 96 
 	"UNUSED_97",                        // 97 
