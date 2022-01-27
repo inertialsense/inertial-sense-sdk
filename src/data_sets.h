@@ -406,7 +406,7 @@ enum eGpsStatus
     GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR|
                                                     GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK),
 	GPS_STATUS_FLAGS_RTK_POSITION_VALID             = (int)0x04000000,      // RTK precision position is valid on GPS1 (i.e. < 20cm accuracy)
-	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x08000000,      // RTK moving base heading is valid on GPS2
+	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x08000000,      // RTK moving base heading is valid on GPS2.  Indicates RTK fix and hold with single band RTK compassing.
     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_BAD    = (int)0x00002000,
     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_UNSET  = (int)0x00004000,
     GPS_STATUS_FLAGS_RTK_COMPASSING_MASK            = (GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED|
@@ -1370,7 +1370,7 @@ typedef struct PACKED
 #define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
-#define RMC_BITS_GROUND_VEHICLE           0x0000000100000000
+#define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
 #define RMC_BITS_DUAL_IMU_MAG_RAW       0x0000000200000000
 #define RMC_BITS_DUAL_IMU_MAG			0x0000000400000000
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
@@ -1378,7 +1378,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
-#define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset
+#define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define RMC_PRESET_PPD_NAV_PERIOD_MULT	25
 #define RMC_PRESET_INS_NAV_PERIOD_MULT	1   // fastest rate (nav filter update rate)
