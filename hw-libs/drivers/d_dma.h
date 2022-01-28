@@ -6,6 +6,7 @@ extern "C" {
 
 // includes
 #include <xdmac.h>
+#include "core_cm7_4p30.h"
 
 // Memcpy then clean Data Cache to memory for before DMA starts
 #define MEMCPY_DCACHE_CLEAN(dst, src, size) \

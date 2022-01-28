@@ -27,6 +27,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "board_opt.h"
 #include "globals.h"
 #include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #ifdef TESTBED
 #define mbr_ta	mbr_da
