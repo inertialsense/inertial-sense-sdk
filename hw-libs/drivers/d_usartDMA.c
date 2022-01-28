@@ -26,6 +26,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISComm.h"
 #include "board_opt.h"
 #include "globals.h"
+#include "FreeRTOSConfig.h"
+
+#ifdef TESTBED
+#define mbr_ta	mbr_da
+#endif
 
 
 //Structures for driver
@@ -534,7 +539,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 		{
 			*s_overrunStatus |= HDW_STATUS_ERR_COM_TX_LIMITED;
 		}
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
 		g_internal_diagnostic.txOverflowCount[serialNum]++;
 #endif
 	}
@@ -814,7 +819,7 @@ int serRead(int serialNum, unsigned char *buf, int size)
 		{
 			*s_overrunStatus |= HDW_STATUS_ERR_COM_RX_OVERRUN;
 		}
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED)
 		g_internal_diagnostic.rxOverflowCount[serialNum]++;
 #endif
 		size = 0;
@@ -858,7 +863,7 @@ int serRead(int serialNum, unsigned char *buf, int size)
 		dma->lastUsedRx = dmaUsed - size;
 	}
 	
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED)
 	if (size > 0)
 	{
 		uint32_t currentTime = time_msec();
