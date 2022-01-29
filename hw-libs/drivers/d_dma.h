@@ -133,6 +133,19 @@ enum
 	DMA_EVB_CHAN_MAX = 24
 };
 
+// enums
+enum
+{
+	// testbed specific
+	DMA_CH_TESTBED_UINS_TX = 0,
+	DMA_CH_TESTBED_UINS_RX,			// Unused
+	DMA_CH_TESTBED_SENSONOR_TX,
+	DMA_CH_TESTBED_SENSONOR_RX,
+	// add more channels before this line
+	DMA_TESTBED_CHAN_COUNT,
+	DMA_TESTBED_CHAN_MAX = 24
+};
+
 // structs
 typedef struct
 {
