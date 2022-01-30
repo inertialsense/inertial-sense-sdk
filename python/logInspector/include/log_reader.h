@@ -132,6 +132,7 @@ public:
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
     pybind11::list getSerialNumbers();
+    pybind11::list protocolVersion();
     void exitHack(int exit_code=0);
     
     template <typename T>

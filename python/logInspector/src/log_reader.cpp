@@ -326,6 +326,16 @@ pybind11::list LogReader::getSerialNumbers()
     return serialNumbers_; 
 }
 
+pybind11::list LogReader::protocolVersion()
+{ 
+    vector<int> version;
+    version.push_back(PROTOCOL_VERSION_CHAR0);
+    version.push_back(PROTOCOL_VERSION_CHAR1);
+    version.push_back(PROTOCOL_VERSION_CHAR2);
+    version.push_back(PROTOCOL_VERSION_CHAR3);
+    return py::cast(version);
+}
+
 void LogReader::exitHack(int exit_code)
 {
     // Nasty hack
@@ -347,6 +357,7 @@ PYBIND11_MODULE(log_reader, m) {
             .def("init", &LogReader::init)
             .def("load", &LogReader::load)
             .def("getSerialNumbers", &LogReader::getSerialNumbers)
+            .def("protocolVersion", &LogReader::protocolVersion)
             .def("exitHack", &LogReader::exitHack);
 
 #include "pybindMacros.h"
