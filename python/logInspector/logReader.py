@@ -67,7 +67,10 @@ class Log:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
 
     def getSerialNumbers(self):
-        self.c_log.getSerialNumbers()
+        return self.c_log.getSerialNumbers()
+
+    def protocolVersion(self):
+        return self.c_log.protocolVersion()
 
     def exitHack(self, exit_code=0):
         self.c_log.exitHack(exit_code)
