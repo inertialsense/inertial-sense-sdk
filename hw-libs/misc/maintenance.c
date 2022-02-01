@@ -121,7 +121,8 @@ void led_maintenance(void)
 			}
 			break;
 
-		case SC_ORTH_SAMPLE_MEAN:				
+		case SC_ORTH_SAMPLE_MEAN_IS1:
+		case SC_ORTH_SAMPLE_MEAN_IS2:
 			LED_COLOR_CYAN();
 			break;
 			
