@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <vector>
 #include "ISLogFileBase.h"
+#include "ISLogStats.h"
 
 extern "C"
 {
@@ -30,7 +31,6 @@ using namespace std;
 #define IS_LOG_FILE_PREFIX_LENGTH 6
 #define IS_LOG_TIMESTAMP_LENGTH 15
 
-class cLogStats;
 
 class cDeviceLog
 {
@@ -72,6 +72,7 @@ protected:
 	string                  m_directory;
 	string                  m_timeStamp;
 	string                  m_fileName;
+	bool                    m_writeMode;	// Logger initialized for writting
 	dev_info_t              m_devInfo;
 	int                     m_pHandle;
 	uint64_t                m_fileSize;
@@ -86,7 +87,7 @@ protected:
 	double                  m_pointUpdatePeriodSec;
 
 private:
-    cLogStats*              m_logStats;
+    cLogStats               m_logStats;
 };
 
 #endif // DEVICE_LOG_H

@@ -31,6 +31,8 @@
     <File Name="../../src/ISDisplay.h"/>
     <File Name="../../src/ISLogger.cpp"/>
     <File Name="../../src/ISLogger.h"/>
+    <File Name="../../src/ISLogStats.cpp"/>
+    <File Name="../../src/ISLogStats.h"/>
     <File Name="../../src/ISMatrix.c"/>
     <File Name="../../src/ISMatrix.h"/>
     <File Name="../../src/ISPose.c"/>
@@ -55,6 +57,8 @@
     <File Name="../../src/inertialSenseBootLoader.h"/>
     <File Name="../../src/linked_list.c"/>
     <File Name="../../src/linked_list.h"/>
+    <File Name="../../src/message_stats.cpp"/>
+    <File Name="../../src/message_stats.h"/>
     <File Name="../../src/serialPort.c"/>
     <File Name="../../src/serialPort.h"/>
     <File Name="../../src/serialPortPlatform.c"/>

@@ -38,6 +38,7 @@
     <ClCompile Include="..\..\..\src\ISDisplay.cpp" />
     <ClCompile Include="..\..\..\src\ISEarth.c" />
     <ClCompile Include="..\..\..\src\ISLogger.cpp" />
+    <ClCompile Include="..\..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\..\src\ISMatrix.c" />
     <ClCompile Include="..\..\..\src\ISPose.c" />
     <ClCompile Include="..\..\..\src\ISSerialPort.cpp" />
@@ -73,6 +74,7 @@
     <ClInclude Include="..\..\..\src\ISDisplay.h" />
     <ClInclude Include="..\..\..\src\ISEarth.h" />
     <ClInclude Include="..\..\..\src\ISLogger.h" />
+    <ClInclude Include="..\..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\..\src\ISMatrix.h" />
     <ClInclude Include="..\..\..\src\ISPose.h" />
     <ClInclude Include="..\..\..\src\ISSerialPort.h" />

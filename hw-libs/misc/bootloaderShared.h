@@ -157,7 +157,8 @@ extern "C" {
 
 #define PORT_SEL_SER0	0
 #define PORT_SEL_SER1	1
-#define PORT_SEL_USB	2
+#define PORT_SEL_SER2	2
+#define PORT_SEL_USB	3
 
 typedef union
 {

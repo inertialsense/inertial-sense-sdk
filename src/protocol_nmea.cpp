@@ -1100,7 +1100,7 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 /* G_RMC Message
 * Provides speed (speed and course over ground)
 */
-int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6])
+int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1129,7 +1129,7 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 			
 	gtime_t gtm = epochToTime(datetime);
 	double iTOWd = timeToGpst(gtm, 0);
-	gpsVel->timeOfWeekMs = (uint32_t)((iTOWd + 0.00001) * 1000.0);
+	gpsVel->timeOfWeekMs = (uint32_t)round((iTOWd + 0.00001) * 1000.0);
 			
 	//Speed data in NED
 	gpsVel->vel[0] = spdm_s * cosf(cogRad);
@@ -1138,7 +1138,7 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 	//dependencies_.gpsVel->sAcc = 0;
 			
 	//Indicate it is coming from NMEA
-	gpsVel->status |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+	gpsVel->status = GPS_STATUS_FLAGS_GPS_NMEA_DATA | statusFlags;
 
 	return 0;	
 }

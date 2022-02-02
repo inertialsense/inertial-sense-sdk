@@ -39,6 +39,7 @@ add_executable(ISLogReaderExample
 	../../src/ISFileManager.cpp
 	../../src/ISLogFile.cpp
 	../../src/ISLogger.cpp
+	../../src/ISLogStats.cpp
 	../../src/ISMatrix.c
 	../../src/ISPose.c
 	../../src/ISSerialPort.cpp
@@ -47,6 +48,7 @@ add_executable(ISLogReaderExample
 	../../src/ISTcpServer.cpp
 	../../src/ISUtilities.cpp
 	../../src/linked_list.c
+	../../src/message_stats.cpp
 	../../src/protocol_nmea.cpp
 	../../src/serialPort.c
 	../../src/serialPortPlatform.c

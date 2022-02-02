@@ -56,8 +56,7 @@ extern "C" {
 
 /** Magnetometer, Barometer, and other Sensor */
 #define _DID_MAG_CAL				DID_MAG_CAL				/** (see mag_cal_t) Magnetometer calibration */
-#define _DID_MAGNETOMETER_1			DID_MAGNETOMETER_1		/** (see magnetometer_t) Magnetometer sensor 1 output */
-#define _DID_MAGNETOMETER_2			DID_MAGNETOMETER_2		/** (see magnetometer_t) Magnetometer sensor 2 output */
+#define _DID_MAGNETOMETER			DID_MAGNETOMETER		/** (see magnetometer_t) Magnetometer sensor output */
 #define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
 #define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */
 #define _DID_POS_MEASUREMENT		DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
@@ -136,17 +135,19 @@ PUSH_PACK_1
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
-	IS_BAUDRATE_9600 = 9600,
-	IS_BAUDRATE_19200 = 19200,
-	IS_BAUDRATE_38400 = 38400,
-	IS_BAUDRATE_57600 = 57600,
-	IS_BAUDRATE_115200 = 115200,
-	IS_BAUDRATE_230400 = 230400,
-	IS_BAUDRATE_460800 = 460800,
-	IS_BAUDRATE_921600 = 921600,
-	IS_BAUDRATE_3000000 = 3000000,
+	IS_BAUDRATE_9600        = 9600,
+	IS_BAUDRATE_19200       = 19200,
+	IS_BAUDRATE_38400       = 38400,
+	IS_BAUDRATE_57600       = 57600,
+	IS_BAUDRATE_115200      = 115200,		// Actual on uINS:
+	IS_BAUDRATE_230400      = 230400,		// 232700
+	IS_BAUDRATE_460800      = 460800,		// 468600
+	IS_BAUDRATE_921600      = 921600,		// 937734 (default)
+	IS_BAUDRATE_3125000     = 3125000,		// 3125000
+	IS_BAUDRATE_9375000     = 9375000,		// 9375000
+	IS_BAUDRATE_18750000    = 18750000,		// 18750000 (uINS ser1 only)
 
-	IS_BAUDRATE_COUNT = 9
+	IS_BAUDRATE_COUNT = 12
 } baud_rate_t;
 
 /** List of valid baud rates */

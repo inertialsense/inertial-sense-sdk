@@ -701,13 +701,8 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 	return size;
 }
 
-void XDMAC_Handler(void)
+void XDMAC_usartDMA_Handler(void)
 {
-#ifdef CONF_BOARD_SPI_UINS	
-	//Forward for spiTouINS
-	XDMAC_spiTouINS_Handler();
-#endif	
-
 	static volatile int xdmacSPICount = 0;
 	
 	for(int i=0;i<MAX_NUMBER_SERIAL_PORTS;i++)
@@ -933,8 +928,7 @@ static int serEnable(int serialNum)
 	if (ser->uinfo.isUsartNotUart)
 	{	// Initialize USART
 		if (ser->uinfo.isSpiUsart)
-		{
-			// Initialize the USART in SPI slave mode.
+		{	// Initialize the USART in SPI slave mode.
 			usart_spi_opt_t opt = {
 				.baudrate     = 3000000,  // ignored when configuring for slave mode
 				.char_length  = US_MR_CHRL_8_BIT,
@@ -944,8 +938,7 @@ static int serEnable(int serialNum)
 			usart_init_spi_slave((Usart*)ser->usart, &opt);
 		}
 		else
-		{
-			// Initialize the USART in RS232 mode.
+		{	// Initialize the USART in RS232 mode.
 			usart_init_rs232((Usart*)ser->usart, &(ser->usart_options), sysclk_get_peripheral_hz());
 		}
 		

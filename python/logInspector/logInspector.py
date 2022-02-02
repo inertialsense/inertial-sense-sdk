@@ -20,11 +20,12 @@ from logReader import Log
 from logPlotter import logPlot
 import traceback
 import yaml
-import sys
 
 sys.path.append('..')
 sys.path.append('../supernpp/')
 sys.path.append('../ci_hdw/')
+sys.path.append('../math/src')
+
 from pylib.data_sets import *
 import subprocess
 import re
@@ -527,7 +528,7 @@ class LogInspectorWindow(QMainWindow):
         nppActionCold = menu.addAction("Run NPP - Start Cold")
         nppActionFactory = menu.addAction("Run NPP - Start Factory")
         setDataInfoDirAction = menu.addAction("Set as dataInfo.json directory")
-        openAction = menu.addAction("Open folder")
+        exploreAction = menu.addAction("Explore folder")
         cleanFolderAction = menu.addAction("Clean folder")
         deleteFolderAction = menu.addAction("Delete folder")
         action = menu.exec_(self.fileTree.viewport().mapToGlobal(event))
@@ -558,7 +559,7 @@ class LogInspectorWindow(QMainWindow):
             spp.run()
         if action == setDataInfoDirAction:
             setDataInformationDirectory(selected_directory)
-        if action == openAction:
+        if action == exploreAction:
             openFolderWithFileBrowser(selected_directory)
         if action == cleanFolderAction:
             cleanFolder(selected_directory)

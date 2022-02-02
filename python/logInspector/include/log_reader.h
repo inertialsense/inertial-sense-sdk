@@ -4,6 +4,7 @@
 
 #include "InertialSense.h"
 #include "ISLogger.h"
+#include "luna_data_sets.h"
 
 //#include "Eigen/Core"
 //#include "Eigen/St    dVector"
@@ -52,12 +53,12 @@ struct DeviceLog
     vector<gps_rtk_misc_t> gps1RtkPosMisc;
     vector<gps_rtk_misc_t> gps1RtkCmpMisc;
     // vector<feature_bits_t> featureBits;
-    // vector<sensors_w_temp_t> sensorsIs1;
-    // vector<sensors_w_temp_t> sensorsIs2;
-    // vector<sensors_t> sensorsTcBias;
+    vector<sensors_w_temp_t> sensorsIs1;
+    vector<sensors_w_temp_t> sensorsIs2;
+    vector<sensors_t> sensorsTcBias;
     vector<io_t> io;
     // vector<sys_sensors_adc_t> sensorsAdc;
-    // vector<sensor_compensation_t> scomp;
+    vector<sensor_compensation_t> scomp;
     vector<gps_vel_t> gps1Vel;
     vector<gps_vel_t> gps2Vel;
     // vector<hdw_params_t> hdwParams;
@@ -96,7 +97,8 @@ struct DeviceLog
     vector<gps_raw_wrapper_t> gps1Raw {1};
     vector<gps_raw_wrapper_t> gps2Raw {1};
     vector<wheel_encoder_t> wheelEncoder;
-    // vector<wheel_encoder_config_t> wheelEncoderConfig;
+    vector<ground_vehicle_t> groundVehicle;
+    vector<evb_luna_wheel_controller_t> evbWheelController;
     vector<diag_msg_t> diagnosticMessage;
     vector<survey_in_t> surveyIn;
 //    vector<evb2_t> evb2;
@@ -128,6 +130,7 @@ public:
     ~LogReader();
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
+    pybind11::list getSerialNumbers();
     void exitHack();
     
     template <typename T>
@@ -145,4 +148,6 @@ private:
 
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;
+    pybind11::list serialNumbers_; 
+
 };

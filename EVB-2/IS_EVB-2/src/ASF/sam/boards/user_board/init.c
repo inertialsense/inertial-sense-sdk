@@ -42,7 +42,7 @@
 #include "../../../../../../../src/data_sets.h"
 #include "../../../../../../../hw-libs/drivers/d_usartDMA.h"
 #include "../../../../../../../hw-libs/drivers/CAN.h"
-#include "../../../../drivers/d_time.h"
+#include "../../../../../../../hw-libs/drivers/d_time.h"
 #include "../../../../spiTouINS.h"
 #include "../../../../xbee.h"
 #include "../../../../wifi.h"
@@ -558,7 +558,7 @@ void board_IO_config(void)
 	if (g_flashCfg->cbOptions&EVB2_CB_OPTIONS_CAN_ENABLE)
 	{
 		serSetBaudRate(EVB2_PORT_UINS1, 921600);
-		CAN_init(g_flashCfg->CANbaud_kbps*1000. g_flashCfg->can_receive_address);
+		CAN_init(g_flashCfg->CANbaud_kbps*1000, g_flashCfg->can_receive_address);
 	}
 #endif
 
@@ -570,7 +570,7 @@ void board_IO_config(void)
 
 
 
-void board_init(void)
+void board_init()
 {
 	// Hardware Detection - PCB version
 	ioport_set_pin_dir(EVB_HDW_DETECT_0_GPIO, IOPORT_DIR_INPUT);

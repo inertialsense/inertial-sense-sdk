@@ -216,3 +216,20 @@ std::size_t cISLogFileFatFs::read(void* bytes, std::size_t len)
     f_read(&m_file, bytes, len, &bytes_read);
     return bytes_read;
 }
+
+int cISLogFileFatFs::seek(long int offset, int origin)
+{
+	return f_lseek(&m_file, offset);
+}
+
+long int cISLogFileFatFs::tell()
+{
+	return f_tell(&m_file);
+}
+
+int cISLogFileFatFs::eof()
+{
+	return f_eof(&m_file);
+}
+
+

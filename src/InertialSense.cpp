@@ -18,30 +18,15 @@ using namespace std;
 typedef struct
 {
 	bootload_params_t param;
-	bool result;
+	bool success;
 	serial_port_t serial;
 	void* thread;
-} bootloader_state_t;
-
-static void bootloaderThread(void* state)
-{
-	bootloader_state_t* s = (bootloader_state_t*)state;
-	serialPortOpen(&s->serial, s->serial.port, s->param.baudRate, 1);
-	if (!enableBootloader(&s->serial, s->param.baudRate, s->param.error, BOOTLOADER_ERROR_LENGTH, s->param.bootloadEnableCmd))
-	{
-		serialPortClose(&s->serial);
-		s->result = false;
-		return;
-	}
-	s->result = (bootloadFileEx(&s->param) != 0);
-	serialPortClose(&s->serial);
-}
+} bootload_state_t;
 
 static void bootloaderUpdateBootloaderThread(void* state)
 {
-    bootloader_state_t* s = (bootloader_state_t*)state;
-    serialPortOpen(&s->serial, s->serial.port, s->param.baudRate, 1);
-    s->result = (bootloadUpdateBootloaderEx(&s->param) != 0);
+    bootload_state_t* s = (bootload_state_t*)state;
+    s->success = (bootloadFileEx(&s->param) == 0);
     serialPortClose(&s->serial);
 }
 
@@ -333,6 +318,7 @@ bool InertialSense::OpenConnectionToServer(const string& connectionString)
 {
 	CloseServerConnection();
 
+	// calls new cISTcpClient or new cISSerialPort
 	m_clientStream = cISClient::OpenConnectionToServer(connectionString, &m_forwardGpgga);
 
 	return m_clientStream!=NULLPTR;
@@ -340,10 +326,14 @@ bool InertialSense::OpenConnectionToServer(const string& connectionString)
 
 void InertialSense::CloseServerConnection()
 {
-	m_tcpClient.Close();
 	m_tcpServer.Close();
 	m_serialServer.Close();
-	m_clientStream = NULLPTR;
+
+	if (m_clientStream != NULLPTR)
+	{
+		delete m_clientStream;
+		m_clientStream = NULLPTR;
+	}
 }
 
 // [type]:[ip/url]:[port]
@@ -422,17 +412,75 @@ bool InertialSense::Update()
 
 bool InertialSense::UpdateServer()
 {
-	uint8_t buffer[PKT_BUF_SIZE];
-
 	// as a tcp server, only the first serial port is read from
-	int count = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, buffer, sizeof(buffer), 0);
-	if (count > 0)
+	is_comm_instance_t *comm = &(m_gpComm);
+	protocol_type_t ptype = _PTYPE_NONE;
+
+	// Get available size of comm buffer
+	int n = is_comm_free(comm);
+
+	// Read data directly into comm buffer
+	if ((n = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, comm->buf.tail, n, 0)))
 	{
-		// forward data on to connected clients
-		m_clientServerByteCount += count;
-		if (m_tcpServer.Write(buffer, count) != count)
+		// Update comm buffer tail pointer
+		comm->buf.tail += n;
+
+		// Search comm buffer for valid packets
+		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 		{
-			cout << endl << "Failed to write bytes to tcp server!" << endl;
+			int id = 0;	// len = 0;
+			string str;
+
+			switch (ptype)
+			{
+			case _PTYPE_RTCM3:
+			case _PTYPE_UBLOX:
+				// forward data on to connected clients
+				m_clientServerByteCount += comm->dataHdr.size;
+				if (m_tcpServer.Write(comm->dataPtr, comm->dataHdr.size) != (int)comm->dataHdr.size)
+				{
+					cout << endl << "Failed to write bytes to tcp server!" << endl;
+				}
+				if (ptype == _PTYPE_RTCM3)
+				{
+					// len = messageStatsGetbitu(comm->dataPtr, 14, 10);
+					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
+					if ((id == 1029) && (comm->dataHdr.size < 1024))
+					{
+						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
+					}
+				}
+				else if (ptype == _PTYPE_UBLOX)
+				{
+					id = *((uint16_t*)(&comm->dataPtr[2]));
+				}
+				break;
+
+			case _PTYPE_PARSE_ERROR:
+				break;
+
+			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD:
+				id = comm->dataHdr.id;
+				break;
+
+			case _PTYPE_ASCII_NMEA:
+				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
+					uint8_t *pStart = comm->dataPtr + 2;
+					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
+					pStart = _MAX(pStart, pEnd - 8);
+					memcpy(&id, pStart, (pEnd - pStart));
+				}
+				break;
+
+			default:
+				break;
+			}
+
+			if (ptype != _PTYPE_NONE)
+			{	// Record message info
+				messageStatsAppend(str, m_serverMessageStats, ptype, id, current_timeMs());
+			}
 		}
 	}
 	m_tcpServer.Update();
@@ -452,7 +500,6 @@ bool InertialSense::UpdateClient()
 	protocol_type_t ptype = _PTYPE_NONE;
 	static int error = 0;
 
-	// Read a set of bytes (fast method)
 	// Get available size of comm buffer
 	int n = is_comm_free(comm);
 
@@ -465,12 +512,28 @@ bool InertialSense::UpdateClient()
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 		{
+			int id = 0;
+			string str;
+
 			switch (ptype)
 			{
 			case _PTYPE_UBLOX:
 			case _PTYPE_RTCM3:
 				m_clientServerByteCount += comm->dataHdr.size;
 				OnPacketReceived(comm->dataPtr, comm->dataHdr.size);
+
+				if (ptype == _PTYPE_RTCM3)
+				{
+					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
+					if ((id == 1029) && (comm->dataHdr.size < 1024))
+					{
+						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
+					}
+				}
+				else if (ptype == _PTYPE_UBLOX)
+				{
+					id = *((uint16_t*)(&comm->dataPtr[2]));
+				}
 				break;
 
 			case _PTYPE_PARSE_ERROR:
@@ -478,13 +541,26 @@ bool InertialSense::UpdateClient()
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD:
+				id = comm->dataHdr.id;
 				break;
 
 			case _PTYPE_ASCII_NMEA:
+				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
+					uint8_t *pStart = comm->dataPtr + 2;
+					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
+					pStart = _MAX(pStart, pEnd - 8);
+					memcpy(&id, pStart, (pEnd - pStart));
+				}
 				break;
 
 			default:
 				break;
+			}
+
+			if (ptype != _PTYPE_NONE)
+			{	// Record message info
+				messageStatsAppend(str, m_clientMessageStats, ptype, id, current_timeMs());
 			}
 		}
 	}
@@ -632,16 +708,11 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, bool updateBootloader)
+vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, const string& bootloaderFileName, bool forceBootloaderUpdate)
 {
-	return BootloadFile(comPort, fileName, "", baudRate, uploadProgress, verifyProgress, NULLPTR, updateBootloader);
-}
-
-vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, const string& bootloaderFileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, bool updateBootloader)
-{
-	vector<bootloader_result_t> results;
+	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<bootloader_state_t> state;
+	vector<bootload_state_t> state;
 
 	if (comPort == "*")
 	{
@@ -654,7 +725,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
 
-	// test file exists
+	// file exists?
 	{
 		ifstream tmpStream(fileName);
 		if (!tmpStream.good())
@@ -679,6 +750,7 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 			state[i].param.statusText = infoProgress;
 			state[i].param.fileName = fileName.c_str();
 			state[i].param.bootName = bootloaderFileName.c_str();
+			state[i].param.forceBootloaderUpdate = forceBootloaderUpdate;
 			state[i].param.port = &state[i].serial;
 			state[i].param.verifyFileName = NULLPTR;
 			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
@@ -693,14 +765,8 @@ vector<InertialSense::bootloader_result_t> InertialSense::BootloadFile(const str
 				strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
 			}
 
-            if (updateBootloader)
-            {   // Update bootloader firmware
-                state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
-            }
-            else
-            {   // Update application firmware
-                state[i].thread = threadCreateAndStart(bootloaderThread, &state[i]);
-            }
+            // Update application and bootloader firmware
+            state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
 		}
 
 		// wait for all threads to finish
@@ -734,22 +800,29 @@ bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)
 void InertialSense::OnClientConnecting(cISTcpServer* server)
 {
 	(void)server;
-	cout << endl << "Client connecting..." << endl;
+	// cout << endl << "Client connecting..." << endl;
 }
 
 void InertialSense::OnClientConnected(cISTcpServer* server, socket_t socket)
 {
-	cout << endl << "Client connected: " << (int)socket << endl;
+	// cout << endl << "Client connected: " << (int)socket << endl;
+	m_clientConnectionsCurrent++;
+	m_clientConnectionsTotal++;
 }
 
 void InertialSense::OnClientConnectFailed(cISTcpServer* server)
 {
-	cout << endl << "Client connection failed!" << endl;
+	// cout << endl << "Client connection failed!" << endl;
 }
 
 void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
 {
-	cout << endl << "Client disconnected: " << (int)socket << endl;
+	// cout << endl << "Client disconnected: " << (int)socket << endl;
+	m_clientConnectionsCurrent--;
+	if (m_clientConnectionsCurrent<0)
+	{
+		m_clientConnectionsCurrent = 0;
+	}
 }
 
 bool InertialSense::OpenSerialPorts(const char* port, int baudRate)

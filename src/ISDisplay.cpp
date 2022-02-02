@@ -85,7 +85,6 @@ static void signalFunction(int sig)
 
 cInertialSenseDisplay::cInertialSenseDisplay()
 {
-	cout << endl << Hello() << endl;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -146,6 +145,10 @@ void cInertialSenseDisplay::ShutDown()
 
 void cInertialSenseDisplay::Clear(void)
 {
+	if (!m_interactiveMode)
+	{
+		return;
+	}
 
 #if PLATFORM_IS_WINDOWS
 
@@ -163,11 +166,14 @@ void cInertialSenseDisplay::Clear(void)
 	printf( "\x1B[2J" ); // VT100 terminal command
 
 #endif
-
 }
 
 void cInertialSenseDisplay::Home(void)
 {
+	if (!m_interactiveMode)
+	{
+		return;
+	}
 
 #if PLATFORM_IS_WINDOWS
 
@@ -326,8 +332,8 @@ void cInertialSenseDisplay::SetExitProgram()
 	s_exitProgram = true;
 }
 
-
-void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, double replaySpeedX)
+// Return true on refresh
+void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, double replaySpeedX)
 {
 	if (m_displayMode == DMODE_QUIET)
 	{
@@ -336,6 +342,9 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 	unsigned int curTimeMs = current_timeMs();
 	m_rxCount++;
+
+	m_enableReplay = enableReplay;
+	m_replaySpeedX = replaySpeedX;
 
 	if (enableReplay)
 	{
@@ -353,8 +362,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		{
 			// Time of week - double
 		case DID_INS_1:
-		case DID_INS_2:				
-			msgTimeMs = (unsigned int)(1000.0*d.ins1.timeOfWeek); 
+		case DID_INS_2:
+			msgTimeMs = (unsigned int)(1000.0 * d.ins1.timeOfWeek);
 			isTowMode = true;
 			break;
 
@@ -365,10 +374,10 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 			break;
 
 		case DID_GPS1_POS:
-        case DID_GPS1_RTK_POS:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
-			gpsTowMsOffset = (unsigned int)(1000.0*d.gpsPos.towOffset); 
-			isTowMode = true; 
+		case DID_GPS1_RTK_POS:
+			msgTimeMs = d.gpsPos.timeOfWeekMs;
+			gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+			isTowMode = true;
 			break;
 
 		case DID_GPS1_RTK_POS_REL:
@@ -378,22 +387,22 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 		case DID_GPS1_RTK_POS_MISC:
 			msgTimeMs = d.gpsPos.timeOfWeekMs;
-			gpsTowMsOffset = (unsigned int)(1000.0*d.gpsPos.towOffset);
+			gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
 			isTowMode = false;
 			break;
 
 			// Time since boot - double
-		case DID_MAGNETOMETER_1:
+		case DID_MAGNETOMETER:
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
 		case DID_PREINTEGRATED_IMU:
 		case DID_DUAL_IMU:
 		case DID_INL2_STATES:
 		case DID_GPS_BASE_RAW:
-			if( isTowMode )
-				msgTimeMs = (unsigned int)(1000.0*d.imu.time) + gpsTowMsOffset; 
+			if (isTowMode)
+				msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
 			else
-				msgTimeMs = (unsigned int)(1000.0*d.imu.time);
+				msgTimeMs = (unsigned int)(1000.0 * d.imu.time);
 			break;
 
 			// Unidentified data type
@@ -402,14 +411,14 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 
 
 		// Control replay rate
-		if (msgTimeMs != 0 && replaySpeedX>0.0)
+		if (msgTimeMs != 0 && replaySpeedX > 0.0)
 		{
 			for (;;)
 			{
 				curTimeMs = current_timeMs();
 
 				// Replay speed
-				unsigned int replayTimeMs = (unsigned int)(long)(((double)curTimeMs)*replaySpeedX);
+				unsigned int replayTimeMs = (unsigned int)(long)(((double)curTimeMs) * replaySpeedX);
 
 				// Reinitialize message offset
 				if ((msgTimeMs + msgTimeMsOffset - replayTimeMs) > 1500)
@@ -427,7 +436,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 	}
 
 
-	static unsigned int timeSinceRefreshMs = 0;
 	static unsigned int timeSinceClearMs = 0;
 	static char idHist[DID_COUNT] = { 0 };
 	if (m_displayMode != DMODE_SCROLL)
@@ -441,72 +449,91 @@ void cInertialSenseDisplay::ProcessData(p_data_t *data, bool enableReplay, doubl
 		}
 	}
 
-
-	// Display Data
-#define REFRESH_PERIOD_MS	100		// 10Hz 
+	// Save data to be displayed from PrintData()
 	switch (m_displayMode)
 	{
 	default:
 		m_displayMode = DMODE_PRETTY;
 		// fall through
 	case DMODE_PRETTY:
-
 		// Data stays at fixed location (no scroll history)
 		DataToVector(data);
-
-		// Limit printData display updates
-		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
-		{
-			timeSinceRefreshMs = curTimeMs;
-
+		if (m_outputOnceDid == data->hdr.id)
+		{	// Exit as soon as we display DID
 			Home();
-			if (enableReplay)
-				cout << Replay(replaySpeedX) << endl;
-			else
-				cout << Connected() << endl;
-
 			cout << VectortoString();
+			exit(1);
 		}
 		break;
 
 	case DMODE_EDIT:
-		// Limit printData display updates
-		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS &&
-			data->hdr.id == m_editData.did)
+		if (m_editData.did == data->hdr.id)
 		{
-			timeSinceRefreshMs = curTimeMs;
-
-			Home();
-			if (enableReplay)
-				cout << Replay(replaySpeedX) << endl;
-			else
-				cout << Connected() << endl;
-
-			// Generic column format
-			cout << DatasetToString(data);
+			m_editData.pData = *data;
 		}
 		break;
 
 	case DMODE_STATS:
-		// Limit printData display updates
-		if (curTimeMs - timeSinceRefreshMs > REFRESH_PERIOD_MS)
-		{
-			timeSinceRefreshMs = curTimeMs;
-
-			Home();
-			cout << Connected() << endl;
-			DataToStats(data);
-		}
+		DataToStats(data);
 		break;
-
 
 	case DMODE_SCROLL:	// Scroll display 
 		cout << DataToString(data) << endl;
 		break;
 	}
+}
 
+// Print data to standard out at the following refresh rate.  Return true to refresh display.
+bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
+{
+	unsigned int curTimeMs = current_timeMs();
+	static unsigned int timeSinceRefreshMs = 0;
 
+	// Limit display refresh rate
+	if (curTimeMs - timeSinceRefreshMs < refreshPeriodMs)
+	{
+		return false;
+	}
+	timeSinceRefreshMs = curTimeMs;
 
+	// Display Data
+	switch (m_displayMode)
+	{
+	default:	// Do not display
+		break;
+
+	case DMODE_PRETTY:
+		Home();
+		if (m_enableReplay)
+			cout << Replay(m_replaySpeedX) << endl;
+		else
+			cout << Connected() << endl;
+
+		cout << VectortoString();
+		return true;
+
+	case DMODE_EDIT:
+		Home();
+		if (m_enableReplay)
+			cout << Replay(m_replaySpeedX) << endl;
+		else
+			cout << Connected() << endl;
+
+		// Generic column format
+		cout << DatasetToString(&m_editData.pData);
+		return true;
+
+	case DMODE_STATS:
+		Home();
+		cout << Connected() << endl;
+		PrintStats();
+		return true;
+
+	case DMODE_SCROLL:	// Scroll display 
+		break;
+	}
+
+	return false;
 }
 
 string cInertialSenseDisplay::VectortoString()
@@ -545,17 +572,20 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 
 	// Update stats
 	int curTimeMs = current_timeMs();
-	sDidStats &s = m_didStats[id];
+	sDidStats& s = m_didStats[id];
 	s.count++;
-	if(s.lastTimeMs)
+	if (s.lastTimeMs)
 		s.dtMs = curTimeMs - s.lastTimeMs;
 	s.lastTimeMs = curTimeMs;
+}
 
+void cInertialSenseDisplay::PrintStats()
+{
 	// Display stats
 	printf("                Name  DID    Count        dt\n");
 	for (int i = 0; i < (int)m_didStats.size(); i++)
 	{
-		s = m_didStats[i];
+		sDidStats& s = m_didStats[i];
 		if (s.count)
 		{
 			printf("%20s %4d %9d %9.3lf\n", cISDataMappings::GetDataSetName(i), i, s.count, s.dtMs*0.001);
@@ -573,6 +603,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	string str;
 	switch (data->hdr.id)
 	{
+	case DID_EVB_DEV_INFO:
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
 	case DID_DUAL_IMU:          str = DataToStringDualIMU(d.dualImu, data->hdr);        break;
 	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
@@ -580,10 +611,9 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
 	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
-	case DID_MAGNETOMETER_1:
-	case DID_MAGNETOMETER_2:    str = DataToStringMag(d.mag, data->hdr);                break;
+	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
+	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
-	case DID_BAROMETER:         str = DataToStringBaro(d.baro, data->hdr);              break;
 	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_POS");				break;
 	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS2_POS");				break;
 	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr, "DID_GPS1_RTK_POS");			break;
@@ -621,7 +651,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 		(hdwStatus & HDW_STATUS_GPS_SATELLITE_RX) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
         (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
-        (insStatus & INS_STATUS_GPS_AIDING_POS_VEL) != 0);
+        (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
 	if (insStatus & INS_STATUS_NAV_MODE)
 	{
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: NAV ");
@@ -999,7 +1029,37 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_i
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringBarometer(const barometer_t &baro, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+	static double lastTime = 0;
+	double dtMs = 1000.0*(baro.time - lastTime);
+	lastTime = baro.time;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", baro.time);
+#endif
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fkPa", baro.bar);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.1fm", baro.mslBar);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fC", baro.barTemp);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", Humid. %.1f%%", baro.humidity);
+
+	if (m_displayMode == DMODE_PRETTY)
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+	}
+
+	return buf;
+}
+
+string cInertialSenseDisplay::DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];
@@ -1056,36 +1116,6 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 			mag.progress,
 			mag.declination * C_RAD2DEG_F);
 	}
-
-	if (m_displayMode == DMODE_PRETTY)
-	{
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
-	}
-
-	return buf;
-}
-
-string cInertialSenseDisplay::DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr)
-{
-	(void)hdr;
-	char buf[BUF_SIZE];
-	char* ptr = buf;
-	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
-
-#if DISPLAY_DELTA_TIME==1
-	static double lastTime = 0;
-	double dtMs = 1000.0*(baro.time - lastTime);
-	lastTime = baro.time;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
-#else
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", baro.time);
-#endif
-
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fkPa", baro.bar);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.1fm", baro.mslBar);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %.2fC", baro.barTemp);
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ", Humid. %.1f%%", baro.humidity);
 
 	if (m_displayMode == DMODE_PRETTY)
 	{
@@ -1595,6 +1625,13 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			int radix = (m_editData.info.dataFlags == DataFlagsDisplayHex ? 16 : 10);
 			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize, radix);
 			m_editData.uploadNeeded = true;
+
+			// Copy data into local Rx buffer
+			if (m_editData.pData.hdr.id == m_editData.did &&
+				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
+			{
+				memcpy(m_editData.pData.buf + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+			}
 		}
 		StopEditing();
 		break;
@@ -1633,6 +1670,12 @@ void cInertialSenseDisplay::SelectEditDataset(int did)
 	}
 
 	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+
+	// Stuff zeros in so that write-only datasets will appear
+	p_data_t data = {};
+	data.hdr.id = did;
+	data.hdr.size = cISDataMappings::GetSize(did);
+	ProcessData(&data);
 }
 
 

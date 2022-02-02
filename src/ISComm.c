@@ -81,7 +81,19 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 	return bits;
 }
 
-const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = { IS_BAUDRATE_3000000, IS_BAUDRATE_921600, IS_BAUDRATE_460800, IS_BAUDRATE_230400, IS_BAUDRATE_115200, IS_BAUDRATE_57600, IS_BAUDRATE_38400, IS_BAUDRATE_19200, IS_BAUDRATE_9600 };
+const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = { 
+	                        // Actual on uINS:
+	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only) 
+	IS_BAUDRATE_9375000,    // 9375000
+	IS_BAUDRATE_3125000,    // 3125000
+	IS_BAUDRATE_921600,     // 937734 (default)
+	IS_BAUDRATE_460800,     // 468600
+	IS_BAUDRATE_230400,     // 232700
+	IS_BAUDRATE_115200, 
+	IS_BAUDRATE_57600, 
+	IS_BAUDRATE_38400, 
+	IS_BAUDRATE_19200, 
+	IS_BAUDRATE_9600 };
 static int s_packetEncodingEnabled = 1;
 
 // Replace special character with encoded equivalent and add to buffer
@@ -523,6 +535,7 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
 protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 {
 	is_comm_buffer_t *buf = &(instance->buf);
+	protocol_type_t ptype;
 
 	// Search for packet
 	while (buf->scan < buf->tail)
@@ -577,15 +590,17 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			}
 			break;
 		case UBLOX_START_BYTE1:
-			if (processUbloxByte(instance) != _PTYPE_NONE)
+			ptype = processUbloxByte(instance);
+			if (ptype != _PTYPE_NONE)
 			{
-				return _PTYPE_UBLOX;
+				return ptype;
 			}
 			break;
 		case RTCM3_START_BYTE:
-			if (processRtcm3Byte(instance) != _PTYPE_NONE)
+			ptype = processRtcm3Byte(instance);
+			if (ptype != _PTYPE_NONE)
 			{
-				return _PTYPE_RTCM3;
+				return ptype;
 			}
 		}
 	}

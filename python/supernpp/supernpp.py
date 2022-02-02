@@ -34,6 +34,8 @@ class SuperNPP():
 		self.findLogFiles(self.directory)
 		print("  subdirs:", self.subdirs)
 
+	def getSerialNumbers(self):
+		self.log.getSerialNumbers()
 
 	def exitHack(self):
 		self.log.exitHack()

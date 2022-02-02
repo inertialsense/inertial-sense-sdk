@@ -14,27 +14,19 @@ cd logInspector
 python3 setup.py build_ext --inplace
 ```
 
-### Create the config file.
-
-```
-C:\Users\[USER]\Documents\Inertial_Sense\config.yaml
-```
-
-### Add the following or similar contents to this file.
-
-```
-directory: C:\Users\<username>\Documents\Inertial_Sense\Logs\20181116_SKI\morning_run_1\back\20181116_175352
-logs_directory: C:\Users\<username>\Documents\Inertial_Sense\Logs
-
-serials: ["ALL"]
-```
-
 ## Running
 
-### To run logInspector open a shell and navigate to the logInspector directory and enter the folloing commands:
+### To run logInspector open a shell and navigate to the logInspector directory and enter the following command:
 ``` bash
 python logInspector.py
 ```
+
+### Windows build run batch file:
+A Windows batch file is provided as a conenience to build and run the LogInspector in one command.  
+``` bash
+SDK\python\logInspector\_build_run_log_inspector.bat
+```
+
 ## Usage
 logInspector can open and plot [.dat PPD log files](https://docs.inertialsense.com/user-manual/application-notes/data_logging/#logging-ppd-in-evaltool). The lower left hand corner file browser allows you to enter a "working directory" in the directory field. The log directory can be selected from the directory tree.
 Once the log is opened, the buttons in the upper left hand corner are used to graph various data sets.

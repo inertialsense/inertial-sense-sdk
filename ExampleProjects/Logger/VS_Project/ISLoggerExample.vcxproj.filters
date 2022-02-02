@@ -64,6 +64,9 @@
     <ClCompile Include="..\..\..\src\ISLogger.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\ISLogStats.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\src\tinyxml.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
@@ -127,6 +130,9 @@
     <ClCompile Include="..\..\..\src\ISClient.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\message_stats.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h">
@@ -181,6 +187,9 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISLogger.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISLogStats.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\tinyxml.h">
@@ -241,6 +250,9 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISClient.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\message_stats.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
   </ItemGroup>

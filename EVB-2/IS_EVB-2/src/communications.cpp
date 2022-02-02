@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include "../../../hw-libs/communications/CAN_comm.h"
 #include "../../../hw-libs/drivers/CAN.h"
+#include "../../../hw-libs/drivers/d_flash.h"
 #include "../../../hw-libs/misc/bootloaderApp.h"
 #include "../../../src/ISUtilities.h"
 #include "../../../src/ISLogger.h"
@@ -278,7 +279,7 @@ void uINS_stream_enable_std(void)
 void uINS_stream_enable_PPD(void)
 {
     rmc_t rmc;
-    rmc.bits = RMC_PRESET_PPD_BITS;
+    rmc.bits = RMC_PRESET_PPD_GROUND_VEHICLE;
     rmc.options = 0;
     int len = is_comm_set_data(&g_commTx, DID_RMC, 0, sizeof(rmc_t), &rmc);
     comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);
@@ -290,7 +291,7 @@ void uINS_stream_enable_PPD(void)
 
 void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 {
-	uDatasets d;
+	uDatasets d = {0};
 
 	if( copyDataPToStructP2(&d, &dataHdr, data, sizeof(uDatasets)) )
 	{	// Invalid
@@ -308,7 +309,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins1.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins1.timeOfWeek*1000);
 		break;
 	                    
 	case DID_INS_2:
@@ -316,21 +317,21 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		g_msg.ins2 = d.ins2;
 		g_status.week = g_msg.ins2.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins2.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins2.timeOfWeek*1000);
 		break;
 
 	case DID_INS_3:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_3_t)){ /* Invalid */ return; }
 		g_status.week = d.ins1.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins3.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins3.timeOfWeek*1000);
 		break;
 
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
 		g_status.week = d.ins4.week;
 		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)(d.ins4.timeOfWeek*1000);
+		g_status.timeOfWeekMs = (uint32_t)round(d.ins4.timeOfWeek*1000);
 		break;
 	}
 	
@@ -566,6 +567,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
+	static uint8_t manfUnlock = false;
 
 	switch(ptype)
 	{
@@ -574,6 +576,28 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		{	// From host to EVB
 		case DID_EVB_STATUS:
 			is_comm_copy_to_struct(&g_status, comm, sizeof(evb_status_t));
+
+			switch (g_status.sysCommand)
+			{
+			case SYS_CMD_SOFTWARE_RESET:			// Reset processor
+				soft_reset_backup_register(SYS_FAULT_STATUS_USER_RESET);
+				break;
+
+			case SYS_CMD_MANF_UNLOCK:				// Unlock process for chip erase
+				manfUnlock = true;
+				break;
+
+			case SYS_CMD_MANF_CHIP_ERASE:			// chip erase and reboot - do NOT reset calibration!
+				if(manfUnlock)
+				{
+					BEGIN_CRITICAL_SECTION
+					
+					// erase chip
+					flash_erase_chip();
+				}
+				break;
+			}
+			g_status.sysCommand = 0;
 			break;
 				
 		case DID_EVB_FLASH_CFG:
@@ -612,7 +636,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		// 	{
 		// 		g_ermc.bits = *((uint64_t*)(comm->dataPtr));	// RMC is not the same as ERMC (EVB RMC).  We may need to translate this if necessary.
 		// 	}
-		// 	break;
+			// break;
 
 		case PID_STOP_BROADCASTS_ALL_PORTS:
 		case PID_STOP_DID_BROADCAST:
@@ -768,6 +792,11 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 
 	if ((n = comRead(srcPort, comm.buf.tail, n, ledPin)) > 0)
 	{
+		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422)
+		{
+			com_bridge_forward(srcPort, comm.buf.head, n);
+			return;
+		}
 		if (g_uInsBootloaderEnableTimeMs)
 		{	// When uINS bootloader is enabled forwarding is disabled below is_comm_parse(), so forward bootloader data here.
 			switch (srcPort)
@@ -801,7 +830,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 				com_bridge_forward(srcPort, comm.pktPtr, pktSize);
 
 				// Send uINS data to Logging task
-				if (srcPort == g_flashCfg->uinsComPort)
+				if (srcPort == g_flashCfg->uinsComPort && pktSize > 0)
 				{
 					is_evb_log_stream stm;
 					stm.marker = DATA_CHUNK_MARKER;
@@ -809,12 +838,15 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 					switch (ptype)
 					{
 					case _PTYPE_INERTIAL_SENSE_DATA:
-						handle_data_from_uINS(comm.dataHdr, comm.dataPtr);
+						if (comm.dataHdr.size > 0)
+						{
+							handle_data_from_uINS(comm.dataHdr, comm.dataPtr);
 					
-						stm.size = sizeof(p_data_hdr_t) + comm.dataHdr.size;
-						xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
-						xStreamBufferSend(g_xStreamBufferUINS, (void*)&(comm.dataHdr), sizeof(p_data_hdr_t), 0);
-						xStreamBufferSend(g_xStreamBufferUINS, (void*)(comm.dataPtr), comm.dataHdr.size, 0);
+							stm.size = sizeof(p_data_hdr_t) + comm.dataHdr.size;
+							xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
+							xStreamBufferSend(g_xStreamBufferUINS, (void*)&(comm.dataHdr), sizeof(p_data_hdr_t), 0);
+							xStreamBufferSend(g_xStreamBufferUINS, (void*)(comm.dataPtr), comm.dataHdr.size, 0);							
+						}
 						break;
 					case _PTYPE_UBLOX:
 #if UBLOX_LOG_ENABLE
@@ -825,6 +857,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 						break;
 					}
 				}
+
 			}
 		}
 	}	
@@ -964,19 +997,19 @@ void step_com_bridge(is_comm_instance_t &comm)
 #endif
 
 #ifdef CONF_BOARD_CAN1
-	uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
-	uint32_t id;
-	uint8_t lenCAN;
-	is_can_message msg;
-	msg.startByte = CAN_HDR;
-	msg.endByte = CAN_FTR;
-	if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
-	{
-		msg.address = id;
-		msg.payload = *(is_can_payload*)can_rx_message;
-		msg.dlc = lenCAN;
-		com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
-	}
+	//uint8_t can_rx_message[CONF_MCAN_ELEMENT_DATA_SIZE];
+	//uint32_t id;
+	//uint8_t lenCAN;
+	//is_can_message msg;
+	//msg.startByte = CAN_HDR;
+	//msg.endByte = CAN_FTR;
+	//if((lenCAN = mcan_receive_message(&id, can_rx_message)) > 0)// && --timeout > 0))
+	//{
+		//msg.address = id;
+		//msg.payload = *(is_can_payload*)can_rx_message;
+		//msg.dlc = lenCAN;
+		//com_bridge_forward(EVB2_PORT_CAN,(uint8_t*)&msg, sizeof(is_can_message));
+	//}
 	/*Test CAN*/
 		//static uint8_t tx_message_1[8] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};
 		//mcan_send_message(0x100000A5, tx_message_1, CONF_MCAN_ELEMENT_DATA_SIZE);

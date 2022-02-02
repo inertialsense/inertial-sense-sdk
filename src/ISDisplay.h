@@ -39,7 +39,7 @@ class cInertialSenseDisplay
 public:
 	typedef struct
 	{
-		const map_name_to_info_t 			*mapInfo = NULL;
+		const map_name_to_info_t 			*mapInfo;
 		map_name_to_info_t::const_iterator 	mapInfoSelection;
 		map_name_to_info_t::const_iterator 	mapInfoBegin;
 		map_name_to_info_t::const_iterator 	mapInfoEnd;
@@ -50,6 +50,7 @@ public:
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;
+		p_data_t		pData;
 	} edit_data_t;
 
 	enum eDisplayMode
@@ -86,7 +87,9 @@ public:
 
 	// for the binary protocol, this processes a packet of data
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
+	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
 	void DataToStats(const p_data_t* data);
+	void PrintStats();
 	string DataToString(const p_data_t* data);
 	char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);
 	char* InsStatusToSolStatusString(char* ptr, char* ptrEnd, const uint32_t insStatus);
@@ -97,9 +100,9 @@ public:
 	string DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
 	string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
-	string DataToStringMag(const magnetometer_t &mag, const p_data_hdr_t& hdr);
+	string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
+	string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
 	string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
-	string DataToStringBaro(const barometer_t &baro, const p_data_hdr_t& hdr);
 	string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const string didName);
 	string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr, const string didName);
 	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr, const string didName);
@@ -122,6 +125,7 @@ public:
 	void StopEditing();
 	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
 	edit_data_t *EditData() { return &m_editData; }
+	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
 
 private:
 	string VectortoString();
@@ -132,7 +136,12 @@ private:
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;
 
+	bool m_enableReplay = false;
+	double m_replaySpeedX = 1.0;
+
 	edit_data_t m_editData = {};
+	uint32_t m_outputOnceDid = 0;			// Set to DID to display then exit cltool.  0 = disabled
+	bool m_interactiveMode = true;
 
 	struct sDidStats
 	{

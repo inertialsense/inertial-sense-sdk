@@ -40,6 +40,7 @@ C_SRCS += \
           $(SDK_DIR)/src/ISUtilities.cpp                                                                 \
           $(SDK_DIR)/src/ISFileManager.cpp                                                               \
           $(SDK_DIR)/src/ISLogger.cpp                                                                    \
+          $(SDK_DIR)/src/ISLogStats.cpp                                                                  \
           $(SDK_DIR)/src/DeviceLog.cpp                                                                   \
           $(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
           $(SDK_DIR)/src/DataChunk.cpp                                                                   \
@@ -114,15 +115,16 @@ C_SRCS += \
           $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/timers.c                                 \
           $(HW_LIBS_DIR)/FreeRTOS_new.cpp                                                                \
           $(HW_LIBS_DIR)/drivers/CAN.c                                                                   \
+          $(HW_LIBS_DIR)/drivers/d_dma.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_flash.c                                                               \
           $(HW_LIBS_DIR)/drivers/d_i2c.c                                                                 \
           $(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
+          $(HW_LIBS_DIR)/drivers/d_time.c                                                                \
           $(HW_LIBS_DIR)/misc/bootloaderApp.c                                                            \
           $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
           $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
           $(SRC_DIR)/communications.cpp                                                                  \
-          $(SRC_DIR)/wheel_encoder.cpp                                                                     \
-          $(SRC_DIR)/drivers/d_time.c                                                                    \
+          $(SRC_DIR)/wheel_encoder.cpp                                                                   \
           $(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
           $(SRC_DIR)/drivers/d_adc.c                                                                     \
           $(SRC_DIR)/globals.c                                                                           \

@@ -43,6 +43,7 @@
     <ClCompile Include="..\..\..\src\ISFileManager.cpp" />
     <ClCompile Include="..\..\..\src\ISLogFile.cpp" />
     <ClCompile Include="..\..\..\src\ISLogger.cpp" />
+    <ClCompile Include="..\..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\..\src\ISMatrix.c" />
     <ClCompile Include="..\..\..\src\ISPose.c" />
     <ClCompile Include="..\..\..\src\ISSerialPort.cpp" />
@@ -50,6 +51,7 @@
     <ClCompile Include="..\..\..\src\ISTcpClient.cpp" />
     <ClCompile Include="..\..\..\src\ISTcpServer.cpp" />
     <ClCompile Include="..\..\..\src\ISUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\..\src\protocol_nmea.cpp" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
     <ClCompile Include="..\..\..\src\serialPortPlatform.c" />
@@ -86,6 +88,7 @@
     <ClInclude Include="..\..\..\src\ISLogFileBase.h" />
     <ClInclude Include="..\..\..\src\ISLogFileFactory.h" />
     <ClInclude Include="..\..\..\src\ISLogger.h" />
+    <ClInclude Include="..\..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\..\src\ISMatrix.h" />
     <ClInclude Include="..\..\..\src\ISPose.h" />
     <ClInclude Include="..\..\..\src\ISSerialPort.h" />
@@ -93,6 +96,7 @@
     <ClInclude Include="..\..\..\src\ISTcpClient.h" />
     <ClInclude Include="..\..\..\src\ISTcpServer.h" />
     <ClInclude Include="..\..\..\src\ISUtilities.h" />
+    <ClInclude Include="..\..\..\src\message_stats.h" />
     <ClInclude Include="..\..\..\src\protocol_nmea.h" />
     <ClInclude Include="..\..\..\src\serialPort.h" />
     <ClInclude Include="..\..\..\src\serialPortPlatform.h" />
@@ -104,7 +108,7 @@
     <ProjectGuid>{2F1DB5F4-5AF6-4536-AB32-A5441FECD677}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ISSimpleExample</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>ISLoggerExample</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -124,13 +128,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

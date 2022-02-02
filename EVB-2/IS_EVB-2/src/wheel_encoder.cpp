@@ -52,7 +52,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		
 		// Call read encoders
 		g_wheelEncoder.timeOfWeek = time_seclf();
-		g_wheelEncoderTimeMs = (uint32_t)(g_wheelEncoder.timeOfWeek*1000.0);
+		g_wheelEncoderTimeMs = (uint32_t)round(g_wheelEncoder.timeOfWeek*1000.0);
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
 		quadEncReadPeriodAll(&periodL, &periodR);
 
@@ -96,12 +96,17 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		{
 			n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 
-#if 0		// Send to uINS
+#if 1		// Send to uINS
 			comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
 #else		// Send to Luna
 			comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
 #endif
 		}
+
+#if 0
+		n = is_comm_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));
+		comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
+#endif	
 
 #if 0
 		n = is_comm_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));

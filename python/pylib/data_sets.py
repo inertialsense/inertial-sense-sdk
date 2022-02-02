@@ -55,7 +55,7 @@ DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
 DID_INL2_MISC                   = 51
-DID_MAGNETOMETER_1              = 52
+DID_MAGNETOMETER                = 52
 DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
@@ -90,14 +90,16 @@ DID_EVB_RTOS_INFO               = 83
 DID_DUAL_IMU_RAW_MAG            = 84
 DID_DUAL_IMU_MAG                = 85
 DID_PREINTEGRATED_IMU_MAG       = 86
-DID_WHEEL_CONFIG                = 87
+DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
+DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
 
-NUM_DIDS                        = 96
+NUM_DIDS                        = 117
+# NUM_DIDS                        = 96
 
 
 did_name_lookup = {
@@ -155,7 +157,7 @@ did_name_lookup = {
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",
  DID_INL2_STATUS : "inl2Status",
  DID_INL2_MISC : "inl2Misc",
- DID_MAGNETOMETER_1 : "magnetometer1",
+ DID_MAGNETOMETER : "magnetometer1",
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
@@ -174,6 +176,7 @@ did_name_lookup = {
  DID_GPS1_RAW : "gps1Raw",
  DID_GPS2_RAW : "gps2Raw",
  DID_WHEEL_ENCODER : "wheelEncoder",
+ DID_GROUND_VEHICLE : "groundVehicle",
  DID_DIAGNOSTIC_MESSAGE : "diagnosticMessage",
  DID_SURVEY_IN : "surveyIn",
  DID_EVB2 : "evb2",
@@ -188,6 +191,7 @@ did_name_lookup = {
  DID_EVB_RTOS_INFO : "evbRtosInfo",
  DID_RTK_DEBUG_2: "rtkDebug2",
  DID_CAN_CONFIG: "canconfig",
+ DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
 }
 
 class eGpsNavFixStatus(Enum):
@@ -203,7 +207,7 @@ class eGpsNavFixStatus(Enum):
     def from_ins_status(insStatus):
         INS_STATUS_NAV_FIX_STATUS_MASK   = 0x07000000
         INS_STATUS_NAV_FIX_STATUS_OFFSET = 24
-        return eNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
+        return eGpsNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
     def __str__(self):
         return self.name

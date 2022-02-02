@@ -104,12 +104,14 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
-	sizeMap[DID_MAGNETOMETER_1] = sizeof(magnetometer_t);
-	sizeMap[DID_MAGNETOMETER_2] = sizeof(magnetometer_t);
+	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
+	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
 	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
-    sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
-    sizeMap[DID_SYS_CMD] = sizeof(system_command_t);
+	sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
+	sizeMap[DID_GROUND_VEHICLE] = sizeof(ground_vehicle_t);
+	sizeMap[DID_SYS_CMD] = sizeof(system_command_t);
+	sizeMap[DID_RMC] = sizeof(rmc_t);
 	sizeMap[DID_INS_1] = sizeof(ins_1_t);
 	sizeMap[DID_INS_2] = sizeof(ins_2_t);
 	sizeMap[DID_INS_3] = sizeof(ins_3_t);
@@ -139,6 +141,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_DUAL_IMU_RAW_MAG] = sizeof(imu_mag_t);
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
+	sizeMap[DID_IO] = sizeof(io_t);
 
 	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
 	sizeMap[DID_EVB_FLASH_CFG] = sizeof(evb_flash_cfg_t);
@@ -177,6 +180,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_EVB_LUNA_REMOTE_KILL] = sizeof(evb_luna_remote_kill_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_wheel_controller_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_COMMAND] = sizeof(evb_luna_wheel_command_t);
+    sizeMap[DID_EVB_LUNA_AUX_COMMAND] = sizeof(evb_luna_aux_command_t);
 
 #endif
 
@@ -236,6 +240,34 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     ADD_MAP(m, totalSize, "addInfo", addInfo, DEVINFO_ADDINFO_STRLEN, DataTypeString, char[DEVINFO_ADDINFO_STRLEN], 0);
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef io_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_IO];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "gpioStatus", gpioStatus, 0, DataTypeUInt32, uint32_t, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateSysFaultMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef system_fault_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_SYS_FAULT];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g1Task", g1Task, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g2FileNum", g2FileNum, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g3LineNum", g3LineNum, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g4", g4, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "g5Lr", g5Lr, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "pc", pc, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "psr", psr, 0, DataTypeUInt32, uint32_t, 0);
+
+	ASSERT_SIZE(totalSize);
 }
 
 static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t dataId)
@@ -309,6 +341,17 @@ static void PopulateSysSensorsMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "ana4", ana1, 0, DataTypeFloat, float, 0);
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateRMCMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef rmc_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_RMC];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "bits", bits, 0, DataTypeUInt64, uint64_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "options", options, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+
+	ASSERT_SIZE(totalSize);
 }
 
 static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT])
@@ -560,10 +603,10 @@ static void PopulateGPSCNOMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+static void PopulateMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef magnetometer_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[id];
+	map_name_to_info_t& m = mappings[DID_MAGNETOMETER];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "mag[0]", mag[0], 0, DataTypeFloat, float&, 0);
@@ -691,6 +734,33 @@ static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateGroundVehicleMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef ground_vehicle_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_GROUND_VEHICLE];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+	ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w[0]", wheelConfig.transform.e_b2w[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w[1]", wheelConfig.transform.e_b2w[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w[2]", wheelConfig.transform.e_b2w[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w_sigma[0]", wheelConfig.transform.e_b2w_sigma[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w_sigma[1]", wheelConfig.transform.e_b2w_sigma[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w_sigma[2]", wheelConfig.transform.e_b2w_sigma[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w[0]", wheelConfig.transform.t_b2w[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w[1]", wheelConfig.transform.t_b2w[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w[2]", wheelConfig.transform.t_b2w[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w_sigma[0]", wheelConfig.transform.t_b2w_sigma[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w_sigma[1]", wheelConfig.transform.t_b2w_sigma[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w_sigma[2]", wheelConfig.transform.t_b2w_sigma[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "wheelConfig.track_width", wheelConfig.track_width, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheelConfig.radius", wheelConfig.radius, 0, DataTypeFloat, float, 0);
+
+    ASSERT_SIZE(totalSize);
+}
+
 static void PopulateConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 {
     typedef system_command_t MAP_TYPE;
@@ -753,17 +823,23 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "startupGPSDtMs", startupGPSDtMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "sensorConfig", sensorConfig, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-    ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[0]", wheelConfig.e_i2l[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[1]", wheelConfig.e_i2l[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.e_i2l[2]", wheelConfig.e_i2l[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[0]", wheelConfig.t_i2l[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[1]", wheelConfig.t_i2l[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.t_i2l[2]", wheelConfig.t_i2l[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.distance", wheelConfig.distance, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelConfig.diameter", wheelConfig.diameter, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "ser2BaudRate", ser2BaudRate, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.bits", wheelConfig.bits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w[0]", wheelConfig.transform.e_b2w[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w[1]", wheelConfig.transform.e_b2w[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w[2]", wheelConfig.transform.e_b2w[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w_sigma[0]", wheelConfig.transform.e_b2w_sigma[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w_sigma[1]", wheelConfig.transform.e_b2w_sigma[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.e_b2w_sigma[2]", wheelConfig.transform.e_b2w_sigma[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w[0]", wheelConfig.transform.t_b2w[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w[1]", wheelConfig.transform.t_b2w[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w[2]", wheelConfig.transform.t_b2w[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w_sigma[0]", wheelConfig.transform.t_b2w_sigma[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w_sigma[1]", wheelConfig.transform.t_b2w_sigma[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w_sigma[2]", wheelConfig.transform.t_b2w_sigma[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.track_width", wheelConfig.track_width, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelConfig.radius", wheelConfig.radius, 0, DataTypeFloat, float, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -783,7 +859,7 @@ static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "loggerMode", loggerMode, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "loggerElapsedTimeMs", loggerElapsedTimeMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "wifiIpAddr", wifiIpAddr, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "sysCommand", sysCommand, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "sysCommand", sysCommand, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -908,28 +984,40 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "wheelControl.slewRate", wheelControl.slewRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.velMax", wheelControl.velMax, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_vel_deadband", wheelControl.FF_vel_deadband, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c0_est_Ki", wheelControl.FF_c0_est_Ki, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.slewRate", wheelControl.slewRate, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_l[0]", wheelControl.FF_c_l[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_l[1]", wheelControl.FF_c_l[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_r[0]", wheelControl.FF_c_r[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.FF_c_r[1]", wheelControl.FF_c_r[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_est_Ki[0]", wheelControl.FF_c_est_Ki[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c_est_Ki[1]", wheelControl.FF_c_est_Ki[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[0]", wheelControl.FF_c_est_max[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "wheelControl.FF_c_est_max[1]", wheelControl.FF_c_est_max[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c[0]", wheelControl.FF_c[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FF_c[1]", wheelControl.FF_c[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.FB_Kp", wheelControl.FB_Kp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.FB_Ki", wheelControl.FB_Ki, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FB_Kd", wheelControl.FB_Kd, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[0]", wheelControl.LinearCoEff[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[1]", wheelControl.LinearCoEff[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[2]", wheelControl.LinearCoEff[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[3]", wheelControl.LinearCoEff[3], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.LinearCoEff[4]", wheelControl.LinearCoEff[4], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderCountsPerRad", wheelControl.actuatorEncoderCountsPerRad, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[0]", wheelControl.actuatorEncoderRange[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorEncoderRange[1]", wheelControl.actuatorEncoderRange[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[0]", wheelControl.InversePlant_l[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[1]", wheelControl.InversePlant_l[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[2]", wheelControl.InversePlant_l[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[3]", wheelControl.InversePlant_l[3], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_l[4]", wheelControl.InversePlant_l[4], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[0]", wheelControl.InversePlant_r[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[1]", wheelControl.InversePlant_r[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[2]", wheelControl.InversePlant_r[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[3]", wheelControl.InversePlant_r[3], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.InversePlant_r[4]", wheelControl.InversePlant_r[4], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_l", wheelControl.actuatorTrim_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.actuatorTrim_r", wheelControl.actuatorTrim_r, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandAngle", wheelControl.actuatorDeadbandAngle, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_l[0]", wheelControl.actuatorLimits_l[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_l[1]", wheelControl.actuatorLimits_l[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[0]", wheelControl.actuatorLimits_r[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorLimits_r[1]", wheelControl.actuatorLimits_r[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_l", wheelControl.actuatorDeadbandDuty_l, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandDuty_r", wheelControl.actuatorDeadbandDuty_r, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "wheelControl.actuatorDeadbandVel", wheelControl.actuatorDeadbandVel, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.FF_FB_engine_rpm", wheelControl.FF_FB_engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.engine_rpm", wheelControl.engine_rpm, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelControl.testSweepRate", wheelControl.testSweepRate, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheelControl.config", wheelControl.config, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "wheelControl.wheelRadius", wheelControl.wheelRadius, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheelControl.wheelBaseline", wheelControl.wheelBaseline, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -991,8 +1079,8 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "fb_eff_r", fb_eff_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "eff_l", eff_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "eff_r", eff_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effAct_l", effAct_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effAct_r", effAct_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "effInt_l", effInt_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "effInt_r", effInt_r, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effDuty_l", effDuty_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "effDuty_r", effDuty_r, 0, DataTypeFloat, float, 0);
 
@@ -1006,8 +1094,18 @@ static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "wheel_l", wheel_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "wheel_r", wheel_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "fwd_vel", fwd_vel, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "turn_rate", turn_rate, 0, DataTypeFloat, float, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateEvbLunaAuxCmdMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef evb_luna_aux_command_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_EVB_LUNA_AUX_COMMAND];
+    uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "command", command, 0, DataTypeUInt32, uint32_t, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -1974,10 +2072,10 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_COVARIANCE_LD",           // 49
 	"DID_INL2_STATUS",                  // 50
 	"DID_INL2_MISC",                    // 51
-	"DID_MAGNETOMETER_1",               // 52
+	"DID_MAGNETOMETER",                 // 52
 	"DID_BAROMETER",                    // 53
 	"DID_GPS1_RTK_POS",                 // 54
-	"DID_MAGNETOMETER_2",               // 55
+	"DID_ROS_COVARIANCE_POSE_TWIST",    // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
 	"DID_DUAL_IMU_RAW",                 // 57
 	"DID_DUAL_IMU",                     // 58
@@ -2009,7 +2107,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_DUAL_IMU_RAW_MAG",             // 84
 	"DID_DUAL_IMU_MAG",                 // 85
 	"DID_PREINTEGRATED_IMU_MAG",        // 86
-	"DID_WHEEL_CONFIG",                 // 87
+	"DID_GROUND_VEHICLE",               // 87
 	"DID_POSITION_MEASUREMENT",         // 88
 	"DID_RTK_DEBUG_2",                  // 89
 	"DID_CAN_CONFIG",                   // 90
@@ -2038,6 +2136,10 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_LUNA_REMOTE_KILL",         // 113
 	"DID_EVB_LUNA_WHEEL_CONTROLLER",    // 114
 	"DID_EVB_LUNA_WHEEL_COMMAND",       // 115
+    "DID_EVB_LUNA_AUX_COMMAND",         // 116
+    "",                                 // 117
+    "",                                 // 118
+    ""                                  // 119
 };
 
 
@@ -2045,10 +2147,12 @@ cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
-    PopulateIMUMappings(m_lookupInfo, DID_DUAL_IMU);
+	PopulateSysFaultMappings(m_lookupInfo);
+	PopulateIMUMappings(m_lookupInfo, DID_DUAL_IMU);
     PopulateIMUMappings(m_lookupInfo, DID_DUAL_IMU_RAW);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
+	PopulateRMCMappings(m_lookupInfo);
 	PopulateINS1Mappings(m_lookupInfo);
 	PopulateINS2Mappings(m_lookupInfo);
 	PopulateINS3Mappings(m_lookupInfo);
@@ -2068,11 +2172,11 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS2_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
-	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_1);
-    PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER_2);
+	PopulateMagnetometerMappings(m_lookupInfo);
     PopulateBarometerMappings(m_lookupInfo);
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
     PopulateWheelEncoderMappings(m_lookupInfo);
+    PopulateGroundVehicleMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
 	PopulateDebugArrayMappings(m_lookupInfo, DID_DEBUG_ARRAY);
@@ -2080,6 +2184,7 @@ cISDataMappings::cISDataMappings()
 	PopulateEvbFlashCfgMappings(m_lookupInfo);
 	PopulateDebugArrayMappings(m_lookupInfo, DID_EVB_DEBUG_ARRAY);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
+	PopulateIOMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
@@ -2087,6 +2192,7 @@ cISDataMappings::cISDataMappings()
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
 	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
     PopulateEvbLunaWheelCommandMappings(m_lookupInfo);
+    PopulateEvbLunaAuxCmdMappings(m_lookupInfo);
 #endif
 
 	PopulateStrobeInTimeMappings(m_lookupInfo);
@@ -2131,7 +2237,7 @@ cISDataMappings::~cISDataMappings()
 
 const char* cISDataMappings::GetDataSetName(uint32_t dataId)
 {
-    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
+    STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);//
 
     if (dataId < DID_COUNT)
     {
