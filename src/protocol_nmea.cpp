@@ -288,7 +288,7 @@ int strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
 int gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
 	int n = SNPRINTF(a, aSize, "$PGPSP");
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)(pos.timeOfWeekMs - pos.leapS * 1000);	// 1
+	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)(pos.timeOfWeekMs - pos.leapS * 1000));	// 1
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.week);			// 2
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.status);		// 3
 
