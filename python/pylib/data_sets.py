@@ -212,7 +212,7 @@ class eGpsNavFixStatus(Enum):
     def from_ins_status(insStatus):
         INS_STATUS_NAV_FIX_STATUS_MASK   = 0x07000000
         INS_STATUS_NAV_FIX_STATUS_OFFSET = 24
-        return eNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
+        return eGpsNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
     def __str__(self):
         return self.name
