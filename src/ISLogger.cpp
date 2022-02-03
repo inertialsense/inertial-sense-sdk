@@ -457,6 +457,15 @@ void cISLogger::CloseAllFiles()
 }
 
 
+void cISLogger::FlushToFile()
+{
+	for( unsigned int i = 0; i < m_devices.size(); i++ )
+	{
+		m_devices[i]->FlushToFile();
+	}
+}
+
+
 void cISLogger::OpenWithSystemApp()
 {
 	for (unsigned int i = 0; i < m_devices.size(); i++)

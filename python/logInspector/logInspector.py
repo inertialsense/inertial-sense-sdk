@@ -21,10 +21,11 @@ from logPlotter import logPlot
 import traceback
 import yaml
 
-sys.path.append('..')
-sys.path.append('../supernpp/')
-sys.path.append('../ci_hdw/')
-sys.path.append('../math/src')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../ci_hdw'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
+sys.path.append(os.path.normpath(file_path + '/../supernpp'))
 
 from pylib.data_sets import *
 import subprocess

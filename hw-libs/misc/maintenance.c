@@ -111,7 +111,7 @@ void led_maintenance(void)
 			break;
 		
 		case SC_ACCEL_ALIGN_CHECK:
-			if( g_sc.status == SC_STATUS_ALIGNED )
+			if( (g_sc.status&SC_STATUS_ALIGNMENT_MASK) == SC_STATUS_ALIGNMENT_GOOD )
 			{	
 				LED_COLOR_GREEN();
 			}
@@ -121,7 +121,8 @@ void led_maintenance(void)
 			}
 			break;
 
-		case SC_ORTH_SAMPLE_MEAN:				
+		case SC_ORTH_SAMPLE_MEAN_IS1:
+		case SC_ORTH_SAMPLE_MEAN_IS2:
 			LED_COLOR_CYAN();
 			break;
 			
