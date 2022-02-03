@@ -97,10 +97,11 @@ DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
-DID_CAL_SC3                     = 94
+DID_UNUSED_94                   = 94
+DID_REFERENCE_IMU               = 95
 DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
 
-NUM_DIDS                        = 117
+NUM_DIDS                        = 120
 # NUM_DIDS                        = 96
 
 
@@ -191,8 +192,10 @@ did_name_lookup = {
  DID_EVB_CONFIG : "evbConfig",
  DID_EVB_DEBUG_ARRAY : "evbDebugArray",
  DID_EVB_RTOS_INFO : "evbRtosInfo",
- DID_RTK_DEBUG_2: "rtkDebug2",
- DID_CAN_CONFIG: "canconfig",
+ DID_RTK_DEBUG_2 : "rtkDebug2",
+ DID_CAN_CONFIG : "canconfig",
+ DID_EVB_DEV_INFO : "evbDevInfo",
+ DID_REFERENCE_IMU : "referenceImu",
  DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
 }
 
@@ -209,7 +212,7 @@ class eGpsNavFixStatus(Enum):
     def from_ins_status(insStatus):
         INS_STATUS_NAV_FIX_STATUS_MASK   = 0x07000000
         INS_STATUS_NAV_FIX_STATUS_OFFSET = 24
-        return eNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
+        return eGpsNavFixStatus((insStatus&INS_STATUS_NAV_FIX_STATUS_MASK)>>INS_STATUS_NAV_FIX_STATUS_OFFSET)
 
     def __str__(self):
         return self.name

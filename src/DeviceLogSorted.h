@@ -32,6 +32,7 @@ public:
 	void InitDeviceForReading() OVERRIDE;
 	bool OpenAllReadFiles();
 	bool CloseAllFiles() OVERRIDE;
+	bool FlushToFile() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
