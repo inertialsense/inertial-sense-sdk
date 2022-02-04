@@ -288,7 +288,7 @@ int strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
 int gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
 	int n = SNPRINTF(a, aSize, "$PGPSP");
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.timeOfWeekMs);	// 1
+	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)(pos.timeOfWeekMs - pos.leapS * 1000));	// 1
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.week);			// 2
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.status);		// 3
 
@@ -429,7 +429,7 @@ int gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 // 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
 
 	int n = SNPRINTF(a, aSize, "$GPGGA");
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs);	// 1
+	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
 	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 2,3
 	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 4,5
 	n += SNPRINTF(a+n, aSize-n, 
@@ -474,7 +474,7 @@ int gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	int n = SNPRINTF(a, aSize, "$GPGLL");
 	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 1,2
 	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 3,4
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs);	// 5
+	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS * 1000);	// 5
 	n += SNPRINTF(a+n, aSize-n, ",A");	// 6
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
@@ -607,7 +607,7 @@ int gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, f
 	// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
 
 	int n = SNPRINTF(a, aSize, "$GPRMC");
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs);					// 1	// time of last fix
+	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);					// 1	// time of last fix
 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
 	{
 		n += SNPRINTF(a+n, aSize-n, ",A");												// 2	// A=active (good)
@@ -657,7 +657,7 @@ int gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 	*/
 
 	int n = SNPRINTF(a, aSize, "$GPZDA");									//Field 1
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs + pos.leapS*1000);		//Field 2 
+	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);		//Field 2 
 	n += asciiSnprintfGPSDateOfLastFixCSV(a+n, aSize-n, pos);				// 2,3,4
 	n += SNPRINTF(a+n, aSize-n, ",00,00");									// 5,6
 	
@@ -685,7 +685,7 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 	*/
 	
 	int n = SNPRINTF(a, aSize, "$PASHR");																//Field 1 - Name
-	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs + pos.leapS*1000);	//Field 2 - UTC Time
+	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	//Field 2 - UTC Time
 
 	n += SNPRINTF(a+n, aSize-n, ",%.2f", RAD2DEG(ins1.theta[2]));										//Field 3 - Heading value in decimal degrees.
 	n += SNPRINTF(a+n, aSize-n, ",T");																	//Field 4 - T (heading respect to True North)
