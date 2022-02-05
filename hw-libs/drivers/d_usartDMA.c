@@ -1489,7 +1489,11 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_USART2_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_USART2_RX;
 		ser->uinfo.isUsartNotUart    = true;
+#ifndef __INERTIAL_SENSE_EVB_2__	// Only allow this on the uINS for now
 		ser->uinfo.isSpi			 = g_spi_comm_select;
+#else
+		ser->uinfo.isSpi			 = false;
+#endif
 	}
 	else if( ser->peripheral == UART0 )
 	{
