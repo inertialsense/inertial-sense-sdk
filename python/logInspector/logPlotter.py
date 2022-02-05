@@ -57,16 +57,21 @@ class logPlot:
         ax.set_title(title)
         ax.set_xlabel(xlabel)
 
-    def saveFig(self, fig, name):
+    def saveFig(self, fig, name, sizeInches=[]):
         if self.save:
-            fsize = fig.get_size_inches()
-            # fig.set_size_inches(16,16)
-            fig.set_size_inches(20, 20)
+            restoreSize = fig.get_size_inches()
+            if not sizeInches:
+                if self.format == 'png':     # Increase size/resolution for saved png
+                    sizeInches = [16,11]
+                    # sizeInches = [20,14]
+                else: # svg or png
+                    sizeInches = [11,8]
+            fig.set_size_inches(sizeInches)
             directory = os.path.dirname(self.directory + '/figures/')
             if not os.path.exists(directory):
                 os.makedirs(directory)
             fig.savefig(os.path.join(directory + "/" + name + '.' + self.format), bbox_inches='tight')
-            fig.set_size_inches(fsize)
+            fig.set_size_inches(restoreSize)
 
     def getData(self, dev, DID, field):
         try:
