@@ -49,6 +49,7 @@ typedef enum
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT              = 1,
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN             = 2,
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_PWM                   = 3,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_Z1R					= 4,
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK                  = 0x00000007,
 } eEvbLunaWheelControlConfig_t;
 

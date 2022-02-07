@@ -38,6 +38,11 @@ void step_wheel_encoder(is_comm_instance_t &comm)
         return;
     }
 
+	if(g_flashCfg->wheelCfgBits&WHEEL_CFG_BITS_ENCODER_SOURCE)
+	{
+		return;	// EVB is providing wheel encoders
+	}
+
 	int chL, chR;
 	bool dirL, dirR;
 	int n=0;
