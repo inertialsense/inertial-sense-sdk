@@ -126,6 +126,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
+#define DID_UNUSED_94                   (eDataIDs)94 /** () */
+#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -1298,11 +1300,12 @@ typedef struct PACKED
 
 typedef struct PACKED
 {                                       // Sensor temperature compensation
+	uint32_t                timeMs;         // (ms) Time since boot up.
 	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
 	uint32_t                sampleCount;    // Number of samples collected
-	uint32_t                calState;       // state machine
+	uint32_t                calState;       // State machine (see eScompCalState)
+	uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
 	f_t						alignAccel[3];  // Alignment acceleration
-	uint32_t				status;         // Used to control LED
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS	4
@@ -2140,7 +2143,7 @@ typedef struct PACKED
     /** Serial port 1 baud rate in bits per second */
     uint32_t				ser1BaudRate;
 
-    /** Roll, pitch, yaw euler angle rotation in radians from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll. */
+    /** Rotation in radians about the X, Y, Z axes from INS Sensor Frame to Intermediate Output Frame.  Order applied: Z, Y, X. */
     float					insRotation[3];
 
     /** X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame. */

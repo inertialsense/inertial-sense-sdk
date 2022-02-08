@@ -21,8 +21,9 @@ RESET = r"\u001b[0m"
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
 
-sys.path.append('..')
-sys.path.append('../math/src')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
@@ -56,16 +57,21 @@ class logPlot:
         ax.set_title(title)
         ax.set_xlabel(xlabel)
 
-    def saveFig(self, fig, name):
+    def saveFig(self, fig, name, sizeInches=[]):
         if self.save:
-            fsize = fig.get_size_inches()
-            # fig.set_size_inches(16,16)
-            fig.set_size_inches(20, 20)
+            restoreSize = fig.get_size_inches()
+            if not sizeInches:
+                if self.format == 'png':     # Increase size/resolution for saved png
+                    sizeInches = [16,11]
+                    # sizeInches = [20,14]
+                else: # svg or png
+                    sizeInches = [11,8]
+            fig.set_size_inches(sizeInches)
             directory = os.path.dirname(self.directory + '/figures/')
             if not os.path.exists(directory):
                 os.makedirs(directory)
             fig.savefig(os.path.join(directory + "/" + name + '.' + self.format), bbox_inches='tight')
-            fig.set_size_inches(fsize)
+            fig.set_size_inches(restoreSize)
 
     def getData(self, dev, DID, field):
         try:
@@ -716,12 +722,18 @@ class logPlot:
                 imu0 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel1'))
                 imu1 = np.copy(self.getData(d, DID_PREINTEGRATED_IMU, 'vel2'))
             time = self.getData(d, DID_PREINTEGRATED_IMU, 'time')
-            # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
-            dt = time[1:] - time[:-1]
-            dt = np.append(dt, dt[-1])
-            for i in range(3):
-                imu0[:, i] *= self.d/dt
-                imu1[:, i] *= self.d/dt
+            if len(time)!=0:
+                # dt = self.getData(d, DID_PREINTEGRATED_IMU, 'dt') # this doesn't account for LogInspector downsampling
+                dt = time[1:] - time[:-1]
+                dt = np.append(dt, dt[-1])
+                for i in range(3):
+                    imu0[:, i] *= self.d/dt
+                    imu1[:, i] *= self.d/dt
+            else:
+                imu0 = None
+                imu0 = None
+                time = None
+                dt = None
 
         return (imu0, imu1, time, dt)
 
@@ -739,9 +751,21 @@ class logPlot:
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
 
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refPqr = refImu['pqr']
+
             for i in range(3):
-                ax[i, 0].plot(time, pqr0[:, i] * 180.0/np.pi, label=self.log.serials[d])
-                ax[i, 1].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                if pqr0 != None:
+                    ax[i, 0].plot(time, pqr0[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                if pqr1 != None:
+                    ax[i, 1].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
+
+                if len(refTime) != 0:
+                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
+                    ax[i, 1].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -763,9 +787,21 @@ class logPlot:
         for d in self.active_devs:
             (acc0, acc1, time, dt) = self.loadAccels(d)
 
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refAcc = refImu['acc']
+
             for i in range(3):
-                ax[i, 0].plot(time, acc0[:, i], label=self.log.serials[d])
-                ax[i, 1].plot(time, acc1[:, i], label=self.log.serials[d])
+                if acc0 != None:
+                    ax[i, 0].plot(time, acc0[:, i], label=self.log.serials[d])
+                if acc1 != None:
+                    ax[i, 1].plot(time, acc1[:, i], label=self.log.serials[d])
+
+                if len(refTime) != 0:
+                    ax[i, 0].plot(refTime, refAcc[:, i], color='red')
+                    ax[i, 1].plot(refTime, refAcc[:, i], color='red')
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -1530,7 +1566,6 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc', useTime=True)
 
-
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(4, 2, sharex=True)
@@ -1551,12 +1586,12 @@ class logPlot:
                     ax[d,i].set_ylabel("Accel (m/s^2)")
 
         for d in self.active_devs:
+            time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
             mpu = self.getData(d, DID_SCOMP, 'mpu')
+            status = self.getData(d, DID_SCOMP, 'status')
 
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
-                if useTime:
-                    temp = range(len(temp))
                 sensor = mpu[:,i]['lpfLsb'][name]
 
                 if name=='acc' and sensor[:,2][0] > 4:
@@ -1567,12 +1602,25 @@ class logPlot:
                 else:
                     scalar = 1.0
 
+                if useTime:
+                    temp = time
+
                 # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
                 ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
                 ax[1,i].plot(temp, sensor[:,1]*scalar)
                 ax[2,i].plot(temp, sensor[:,2]*scalar)
                 if name=='acc':
                     ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
+
+                if useTime:
+                    # Show sensor valid status bit
+                    if name=='acc':
+                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                    else:
+                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y')
+                    ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
+                    ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
