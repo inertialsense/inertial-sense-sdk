@@ -12,6 +12,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISComm.h"
 
+const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
+	// Actual on uINS:
+	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only)
+	IS_BAUDRATE_9375000,    // 9375000
+	IS_BAUDRATE_3125000,    // 3125000
+	IS_BAUDRATE_921600,     // 937734 (default)
+	IS_BAUDRATE_460800,     // 468600
+	IS_BAUDRATE_230400,     // 232700
+	IS_BAUDRATE_115200,
+	IS_BAUDRATE_57600,
+	IS_BAUDRATE_38400,
+	IS_BAUDRATE_19200,
+	IS_BAUDRATE_9600 
+};
+
+static int s_packetEncodingEnabled = 1;
+
+
 /**
 * Calculate 24 bit crc used in formats like RTCM3 - note that no bounds checking is done on buffer
 * @param buffer the buffer to calculate the CRC for
@@ -80,21 +98,6 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 	}
 	return bits;
 }
-
-const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = { 
-	                        // Actual on uINS:
-	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only) 
-	IS_BAUDRATE_9375000,    // 9375000
-	IS_BAUDRATE_3125000,    // 3125000
-	IS_BAUDRATE_921600,     // 937734 (default)
-	IS_BAUDRATE_460800,     // 468600
-	IS_BAUDRATE_230400,     // 232700
-	IS_BAUDRATE_115200, 
-	IS_BAUDRATE_57600, 
-	IS_BAUDRATE_38400, 
-	IS_BAUDRATE_19200, 
-	IS_BAUDRATE_9600 };
-static int s_packetEncodingEnabled = 1;
 
 int validateBaudRate(unsigned int baudRate)
 {
