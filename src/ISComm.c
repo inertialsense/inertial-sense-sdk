@@ -112,19 +112,6 @@ int validateBaudRate(unsigned int baudRate)
 	return -1;
 }
 
-int validateBaudRate(unsigned int baudRate)
-{
-	// Valid baudrates for InertialSense hardware
-	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
-	{
-		if (g_validBaudRates[i] == baudRate)
-		{
-			return 0;
-		}
-	}
-	return -1;
-}
-
 // Replace special character with encoded equivalent and add to buffer
 static uint8_t* encodeByteAddToBuffer(uint32_t val, uint8_t* ptrDest)
 {
