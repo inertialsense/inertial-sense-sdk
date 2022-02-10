@@ -520,7 +520,7 @@ void GMAC_Handler   (void) { for (;;); }
 #ifdef _SAME70_TWIHS2_INSTANCE_
 void TWIHS2_Handler (void) { for (;;); }
 #endif /* _SAME70_TWIHS2_INSTANCE_ */
-void SPI1_Handler   (void) { for (;;); }
+// void SPI1_Handler   (void) { for (;;); }
 void QSPI_Handler   (void) { for (;;); }
 //void UART2_Handler  (void) { for (;;); }
 //void UART3_Handler  (void) { for (;;); }
