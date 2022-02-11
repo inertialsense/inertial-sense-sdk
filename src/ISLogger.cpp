@@ -228,23 +228,21 @@ bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directo
 
 bool cISLogger::InitDevicesForWriting(int numDevices)
 {
+	// Remove all devices
 	Cleanup();
 
-	// Add devices
-	m_devices.resize(numDevices);
-
-	// Create and init new devices
+	// Add new devices
 	for (int i = 0; i < numDevices; i++)
 	{
 		switch (m_logType)
 		{
 		default:
-		case LOGTYPE_DAT:	m_devices[i] = new cDeviceLogSerial();	break;
+		case LOGTYPE_DAT:	m_devices.push_back(new cDeviceLogSerial());	break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-		case LOGTYPE_SDAT:	m_devices[i] = new cDeviceLogSorted();	break;
-		case LOGTYPE_CSV:	m_devices[i] = new cDeviceLogCSV();		break;
-		case LOGTYPE_JSON:	m_devices[i] = new cDeviceLogJSON();	break;
-		case LOGTYPE_KML:	m_devices[i] = new cDeviceLogKML();		break;
+		case LOGTYPE_SDAT:	m_devices.push_back(new cDeviceLogSorted());	break;
+		case LOGTYPE_CSV:	m_devices.push_back(new cDeviceLogCSV());		break;
+		case LOGTYPE_JSON:	m_devices.push_back(new cDeviceLogJSON());		break;
+		case LOGTYPE_KML:	m_devices.push_back(new cDeviceLogKML());		break;
 #endif
 		}
 
@@ -324,11 +322,11 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
                         switch (logType)
                         {
                         default:
-                        case cISLogger::LOGTYPE_DAT: m_devices.push_back(new cDeviceLogSerial()); break;
+                        case cISLogger::LOGTYPE_DAT:    m_devices.push_back(new cDeviceLogSerial()); break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-                        case cISLogger::LOGTYPE_SDAT: m_devices.push_back(new cDeviceLogSorted()); break;
-                        case cISLogger::LOGTYPE_CSV: m_devices.push_back(new cDeviceLogCSV()); break;
-                        case cISLogger::LOGTYPE_JSON: m_devices.push_back(new cDeviceLogJSON()); break;
+                        case cISLogger::LOGTYPE_SDAT:   m_devices.push_back(new cDeviceLogSorted()); break;
+                        case cISLogger::LOGTYPE_CSV:    m_devices.push_back(new cDeviceLogCSV()); break;
+                        case cISLogger::LOGTYPE_JSON:   m_devices.push_back(new cDeviceLogJSON()); break;
 #endif
                         }
                         m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
