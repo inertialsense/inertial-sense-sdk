@@ -1161,6 +1161,10 @@ enum eSystemCommand
     SYS_CMD_ENABLE_RTOS_STATS                   = 4,
     SYS_CMD_ZERO_MOTION                         = 5,
 
+    SYS_CMD_ZERO_GYRO_BIAS                      = 6,
+    SYS_CMD_ZERO_ACCEL_V_AXIS_BIAS              = 7,
+    SYS_CMD_ZERO_GYRO_ACCEL_V_AXIS_BIAS         = 8,
+
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
@@ -1484,62 +1488,66 @@ typedef struct PACKED
 /** Built-in test state */
 enum eBitState
 {
-	BIT_STATE_OFF					= (int)0,
-	BIT_STATE_DONE					= (int)1,
-	BIT_STATE_CMD_FULL_STATIONARY	= (int)2,	// (FULL) More comprehensive test.  Requires system be completely stationary without vibrations. 
-	BIT_STATE_CMD_BASIC_MOVING		= (int)3,	// (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-	BIT_STATE_RESERVED_1			= (int)4,
-	BIT_STATE_RESERVED_2			= (int)5,
-	BIT_STATE_RUNNING				= (int)6,
-	BIT_STATE_FINISH				= (int)7,
-	BIT_STATE_COMMAND_OFF			= (int)8
+	BIT_STATE_OFF					                    = (int)0,
+	BIT_STATE_DONE				                        = (int)1,   // Test is finished
+    BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,   // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
+    BIT_STATE_CMD_BASIC_MOVING                          = (int)3,   // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
+    BIT_STATE_RESERVED_1                                = (int)4,   
+    BIT_STATE_RESERVED_2                                = (int)5,   
+    BIT_STATE_RUNNING                                   = (int)6,   
+    BIT_STATE_FINISHING                                 = (int)7,	// Computing results
+    BIT_STATE_CMD_OFF                                   = (int)8,   // Stop built-in test
 };
 
-/** Hardware built-in test flags */
+/** Hardware built-in test (BIT) flags */
 enum eHdwBitStatusFlags
 {
-	HDW_BIT_PASSED_MASK				= (int)0x0000000F,
-	HDW_BIT_PASSED_ALL				= (int)0x00000001,
-	HDW_BIT_PASSED_NO_GPS			= (int)0x00000002,	// Passed w/o valid GPS signal
-	HDW_BIT_MODE_MASK				= (int)0x000000F0,	// BIT mode run
-	HDW_BIT_MODE_OFFSET				= (int)4,
+    HDW_BIT_PASSED_MASK             = (int)0x0000000F,
+    HDW_BIT_PASSED_ALL              = (int)0x00000001,
+    HDW_BIT_PASSED_NO_GPS           = (int)0x00000002,    // Passed w/o valid GPS signal
+    HDW_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
+    HDW_BIT_MODE_OFFSET             = (int)4,
 #define HDW_BIT_MODE(hdwBitStatus) ((hdwBitStatus&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
-	HDW_BIT_FAILED_MASK				= (int)0xFFFFFF00,
-	HDW_BIT_FAILED_AHRS_MASK		= (int)0xFFFF0F00,
-	HDW_BIT_FAULT_NOISE_PQR			= (int)0x00000100,
-	HDW_BIT_FAULT_NOISE_ACC			= (int)0x00000200,
-	HDW_BIT_FAULT_MAGNETOMETER      = (int)0x00000400,
-	HDW_BIT_FAULT_BAROMETER         = (int)0x00000800,
-	HDW_BIT_FAULT_GPS_NO_COM		= (int)0x00001000,	// No GPS serial communications
-	HDW_BIT_FAULT_GPS_POOR_CNO		= (int)0x00002000,	// Poor GPS signal strength.  Check antenna
-	HDW_BIT_FAULT_GPS_POOR_ACCURACY	= (int)0x00002000,	// Low number of satellites, or bad accuracy 
-	HDW_BIT_FAULT_GPS_NOISE			= (int)0x00004000,	// (Not implemented)
+    HDW_BIT_FAILED_MASK             = (int)0xFFFFFF00,
+    HDW_BIT_FAILED_AHRS_MASK        = (int)0xFFFF0F00,
+    HDW_BIT_FAULT_NOISE_PQR         = (int)0x00000100,
+    HDW_BIT_FAULT_NOISE_ACC         = (int)0x00000200,
+    HDW_BIT_FAULT_MAGNETOMETER      = (int)0x00000400,
+    HDW_BIT_FAULT_BAROMETER         = (int)0x00000800,
+    HDW_BIT_FAULT_GPS_NO_COM        = (int)0x00001000,    // No GPS serial communications
+    HDW_BIT_FAULT_GPS_POOR_CNO      = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
+    HDW_BIT_FAULT_GPS_POOR_ACCURACY = (int)0x00002000,    // Low number of satellites, or bad accuracy 
+    HDW_BIT_FAULT_GPS_NOISE         = (int)0x00004000,    // (Not implemented)
 };
 
 /** Calibration built-in test flags */
 enum eCalBitStatusFlags
 {
-	CAL_BIT_PASSED_MASK				= (int)0x0000000F,
-	CAL_BIT_PASSED_ALL				= (int)0x00000001,
-	CAL_BIT_MODE_MASK				= (int)0x000000F0,	// BIT mode run
-	CAL_BIT_MODE_OFFSET				= (int)4,
+    CAL_BIT_PASSED_MASK             = (int)0x0000000F,
+    CAL_BIT_PASSED_ALL              = (int)0x00000001,
+    CAL_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
+    CAL_BIT_MODE_OFFSET             = (int)4,
 #define CAL_BIT_MODE(calBitStatus) ((calBitStatus&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
-	CAL_BIT_FAILED_MASK				= (int)0xFFFFFF00,
-	CAL_BIT_FAULT_TCAL_EMPTY		= (int)0x00000100,	// Temperature calibration not present
-	CAL_BIT_FAULT_TCAL_TSPAN		= (int)0x00000200,	// Temperature calibration temperature range is inadequate
-	CAL_BIT_FAULT_TCAL_INCONSISTENT	= (int)0x00000400,	// Temperature calibration number of points or slopes are not consistent
-	CAL_BIT_FAULT_TCAL_CORRUPT		= (int)0x00000800,	// Temperature calibration memory corruption
-	CAL_BIT_FAULT_TCAL_PQR_BIAS		= (int)0x00001000,	// Temperature calibration gyro bias
-	CAL_BIT_FAULT_TCAL_PQR_SLOPE	= (int)0x00002000,	// Temperature calibration gyro slope
-	CAL_BIT_FAULT_TCAL_PQR_LIN		= (int)0x00004000,	// Temperature calibration gyro linearity
-	CAL_BIT_FAULT_TCAL_ACC_BIAS		= (int)0x00008000,	// Temperature calibration accelerometer bias
-	CAL_BIT_FAULT_TCAL_ACC_SLOPE	= (int)0x00010000,	// Temperature calibration accelerometer slope
-	CAL_BIT_FAULT_TCAL_ACC_LIN		= (int)0x00020000,	// Temperature calibration accelerometer linearity
-	CAL_BIT_FAULT_CAL_SERIAL_NUM	= (int)0x00040000,	// Calibration info: wrong device serial number
-	CAL_BIT_FAULT_ORTO_EMPTY		= (int)0x00100000,	// Cross-axis alignment is not calibrated
-	CAL_BIT_FAULT_ORTO_INVALID		= (int)0x00200000,	// Cross-axis alignment is poorly formed
-	CAL_BIT_FAULT_MOTION_PQR		= (int)0x00400000,	// Motion on gyros
-	CAL_BIT_FAULT_MOTION_ACC		= (int)0x00800000,	// Motion on accelerometers
+    CAL_BIT_FAILED_MASK             = (int)0x00FFFF00,
+    CAL_BIT_FAULT_TCAL_EMPTY        = (int)0x00000100,    // Temperature calibration not present
+    CAL_BIT_FAULT_TCAL_TSPAN        = (int)0x00000200,    // Temperature calibration temperature range is inadequate
+    CAL_BIT_FAULT_TCAL_INCONSISTENT = (int)0x00000400,    // Temperature calibration number of points or slopes are not consistent
+    CAL_BIT_FAULT_TCAL_CORRUPT      = (int)0x00000800,    // Temperature calibration memory corruption
+    CAL_BIT_FAULT_TCAL_PQR_BIAS     = (int)0x00001000,    // Temperature calibration gyro bias
+    CAL_BIT_FAULT_TCAL_PQR_SLOPE    = (int)0x00002000,    // Temperature calibration gyro slope
+    CAL_BIT_FAULT_TCAL_PQR_LIN      = (int)0x00004000,    // Temperature calibration gyro linearity
+    CAL_BIT_FAULT_TCAL_ACC_BIAS     = (int)0x00008000,    // Temperature calibration accelerometer bias
+    CAL_BIT_FAULT_TCAL_ACC_SLOPE    = (int)0x00010000,    // Temperature calibration accelerometer slope
+    CAL_BIT_FAULT_TCAL_ACC_LIN      = (int)0x00020000,    // Temperature calibration accelerometer linearity
+    CAL_BIT_FAULT_CAL_SERIAL_NUM    = (int)0x00040000,    // Calibration info: wrong device serial number
+    CAL_BIT_FAULT_ORTO_EMPTY        = (int)0x00100000,    // Cross-axis alignment is not calibrated
+    CAL_BIT_FAULT_ORTO_INVALID      = (int)0x00200000,    // Cross-axis alignment is poorly formed
+    CAL_BIT_FAULT_MOTION_PQR        = (int)0x00400000,    // Motion on gyros
+    CAL_BIT_FAULT_MOTION_ACC        = (int)0x00800000,    // Motion on accelerometers
+    CAL_BIT_NOTICE_IMU1_PQR_BIAS    = (int)0x01000000,    // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU2_PQR_BIAS    = (int)0x02000000,    // IMU 2 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU1_ACC_BIAS    = (int)0x10000000,    // IMU 1 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
+    CAL_BIT_NOTICE_IMU2_ACC_BIAS    = (int)0x20000000,    // IMU 2 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
 };
 
 
@@ -1567,10 +1575,10 @@ typedef struct PACKED
 	float                   tcPqrLinearity;
 	float                   tcAccLinearity;
 
-	/** PQR motion (angular rate) */
+	/** Gyro bias error (rad/s) */
 	float                   pqr;
 
-	/** ACC motion w/ gravity removed (linear acceleration) */
+	/** Accelerometer bias error (m/s^2) */
 	float                   acc;
 
 	/** Angular rate standard deviation */
