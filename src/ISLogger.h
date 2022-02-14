@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <vector>
 #include <map>
+#include <mutex>
 
 #include "DeviceLogSerial.h"
 
@@ -186,7 +187,8 @@ private:
 	bool					m_enabled;
 	string					m_directory;
 	string					m_timeStamp;
-	vector<cDeviceLog*>		m_devices;
+	vector<shared_ptr<cDeviceLog>>	m_devices;
+
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;
 	cLogStats				m_logStats;
@@ -203,6 +205,7 @@ private:
 	double					m_iconUpdatePeriodSec;
 	time_t					m_lastCommTime;
 	time_t					m_timeoutFlushSeconds;
+
 };
 
 
