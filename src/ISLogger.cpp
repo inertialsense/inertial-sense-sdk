@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <regex>
 #include <set>
 #include <sstream>
+// #include <mutex>
 
 #include "ISFileManager.h"
 #include "ISLogger.h"
@@ -48,7 +49,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 const string cISLogger::g_emptyString;
-static std::mutex g_devices_mutex;
 
 
 bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
@@ -91,7 +91,7 @@ cISLogger::~cISLogger()
 
 void cISLogger::Cleanup()
 {
-	// const std::lock_guard<std::mutex> lock(g_devices_mutex);
+	cMutexLocker logMutexLocker(&m_devicesMutex);
 	m_devices.clear();
 	m_logStats.Clear();
 }
@@ -228,7 +228,7 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 
 	// Add new devices
 	{	
-		// const std::lock_guard<std::mutex> lock(g_devices_mutex);
+		cMutexLocker logMutexLocker(&m_devicesMutex);
 		for (int i = 0; i < numDevices; i++)
 		{
 			switch (m_logType)
@@ -318,7 +318,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 
                         // Add devices
 						{
-							// const std::lock_guard<std::mutex> lock(g_devices_mutex);
+							cMutexLocker logMutexLocker(&m_devicesMutex);
 							switch (logType)
 							{
 							default:
