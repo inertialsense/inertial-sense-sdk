@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <regex>
 #include <set>
 #include <sstream>
+#include <mutex>
 
 #include "ISFileManager.h"
 #include "ISLogger.h"
