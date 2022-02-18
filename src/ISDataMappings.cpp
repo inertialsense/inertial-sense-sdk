@@ -104,6 +104,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
+	sizeMap[DID_BIT] = sizeof(bit_t);
 	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
 	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
@@ -250,6 +251,31 @@ static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT])
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "gpioStatus", gpioStatus, 0, DataTypeUInt32, uint32_t, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef bit_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_BIT];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "hdwBitStatus", hdwBitStatus, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "calBitStatus", calBitStatus, 0, DataTypeUInt32, uint32_t, 0);
+
+    ADD_MAP(m, totalSize, "tcPqrBias", tcPqrBias, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcAccBias", tcAccBias, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcPqrSlope", tcPqrSlope, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcAccSlope", tcAccSlope, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcPqrLinearity", tcPqrLinearity, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcAccLinearity", tcAccLinearity, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "acc", pqr, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr", acc, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -2280,6 +2306,7 @@ cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
+	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
