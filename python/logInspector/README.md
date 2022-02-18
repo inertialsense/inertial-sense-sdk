@@ -18,7 +18,7 @@ python3 setup.py build_ext --inplace
 
 ### To run logInspector open a shell and navigate to the logInspector directory and enter the following command:
 ``` bash
-python logInspector.py
+python3 logInspector.py
 ```
 
 ### Windows build run batch file:

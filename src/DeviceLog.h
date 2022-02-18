@@ -40,6 +40,7 @@ public:
 	virtual void InitDeviceForWriting(int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize);
 	virtual void InitDeviceForReading();
     virtual bool CloseAllFiles();
+	virtual bool FlushToFile() { return true; };
 	virtual bool OpenWithSystemApp();
     virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf);
     virtual p_data_t* ReadData() = 0;

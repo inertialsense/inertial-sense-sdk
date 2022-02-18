@@ -119,14 +119,9 @@ bool cDeviceLogSorted::OpenAllReadFiles()
 
 bool cDeviceLogSorted::CloseAllFiles()
 {
-	if (m_writeMode)
-	{	// Write to file and clear any non-empty chunks to file
-		for (uint32_t id = 1; id < DID_COUNT; id++)
-		{
-			// Write to file and clear chunk
-			WriteChunkToFile(id);
-		}
-	}
+	// Write remaining data to file
+	FlushToFile();
+
 	// Close file pointer used for writing
 	CloseISLogFile(m_pFile);
 
@@ -140,6 +135,23 @@ bool cDeviceLogSorted::CloseAllFiles()
 	cDeviceLog::CloseAllFiles();
 
 	return true;
+}
+
+
+bool cDeviceLogSorted::FlushToFile()
+{
+	if (m_writeMode)
+	{	// Write to file and clear any non-empty chunks to file
+		for (uint32_t id = 1; id < DID_COUNT; id++)
+		{
+			// Write to file and clear chunk
+			WriteChunkToFile(id);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 

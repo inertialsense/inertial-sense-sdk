@@ -59,6 +59,7 @@ struct DeviceLog
     vector<io_t> io;
     // vector<sys_sensors_adc_t> sensorsAdc;
     vector<sensor_compensation_t> scomp;
+    vector<imu_t> refImu;
     vector<gps_vel_t> gps1Vel;
     vector<gps_vel_t> gps2Vel;
     // vector<hdw_params_t> hdwParams;
@@ -131,7 +132,8 @@ public:
     bool init(py::object python_class, std::string log_directory, pybind11::list serials);
     bool load();
     pybind11::list getSerialNumbers();
-    void exitHack();
+    pybind11::list protocolVersion();
+    void exitHack(int exit_code=0);
     
     template <typename T>
     void forward_message(eDataIDs did, std::vector<T>& vec, int id);

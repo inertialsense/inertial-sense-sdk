@@ -10,8 +10,9 @@ import datetime
 from os.path import expanduser
 from scipy.interpolate import interp1d
 
-sys.path.append('..')
-sys.path.append('../math/src')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from log_reader import LogReader
 # from ci_hdw.data_sets import *
@@ -38,7 +39,7 @@ class Log:
         self.c_log.load()
         self.serials = self.c_log.getSerialNumbers()
         self.sanitize()
-        self.data = np.array(self.data)
+        self.data = np.array(self.data, dtype=object)
         self.directory = directory
         self.numDev = self.data.shape[0]
         if self.numDev == 0:
@@ -66,10 +67,13 @@ class Log:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
 
     def getSerialNumbers(self):
-        self.c_log.getSerialNumbers()
+        return self.c_log.getSerialNumbers()
 
-    def exitHack(self):
-        self.c_log.exitHack()
+    def protocolVersion(self):
+        return self.c_log.protocolVersion()
+
+    def exitHack(self, exit_code=0):
+        self.c_log.exitHack(exit_code)
         
     def did_callback(self, did, arr, dev_id):
         if did >= NUM_DIDS:

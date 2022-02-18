@@ -175,6 +175,7 @@
     <ClCompile Include="..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSorted.cpp" />
+    <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\src\InertialSense.cpp" />
     <ClCompile Include="..\..\src\inertialSenseBootLoader.c" />
@@ -222,6 +223,7 @@
     <ClInclude Include="..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\src\DeviceLogSorted.h" />
+    <ClInclude Include="..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\src\message_stats.h" />
     <ClInclude Include="..\..\src\InertialSense.h" />
     <ClInclude Include="..\..\src\inertialSenseBootLoader.h" />
