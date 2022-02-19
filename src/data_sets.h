@@ -342,8 +342,8 @@ enum eHdwStatusFlags
 	HDW_STATUS_ERR_TEMPERATURE					= (int)0x02000000,
 	/** Vibrations effecting accuracy */
 // 	HDW_STATUS_ERR_VIBRATION					= (int)0x04000000,
-
-	HDW_STATUS_UNUSED_6				            = (int)0x08000000,
+	/** Built-in self-test running */
+	HDW_STATUS_BIT_RUNNING						= (int)0x08000000,
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
