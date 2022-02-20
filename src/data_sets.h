@@ -335,14 +335,19 @@ enum eHdwStatusFlags
 	HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET		= 20,
 #define HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
-	/** Built-in self-test failure */
-	HDW_STATUS_BIT_FAULT						= (int)0x01000000,
+	/** (BIT) Built-in self-test running */
+	HDW_STATUS_BIT_RUNNING						= (int)0x01000000,
+	/** (BIT) Built-in self-test passed */
+	HDW_STATUS_BIT_PASSED						= (int)0x02000000,
+	/** (BIT) Built-in self-test failure */
+	HDW_STATUS_BIT_FAULT						= (int)0x03000000,
+	/** (BIT) Built-in self-test mask */
+	HDW_STATUS_BIT_MASK							= (int)0x03000000,
+
 	/** Temperature outside spec'd operating range */
-	HDW_STATUS_ERR_TEMPERATURE					= (int)0x02000000,
-	/** Vibrations effecting accuracy */
-// 	HDW_STATUS_ERR_VIBRATION					= (int)0x04000000,
-	/** Built-in self-test running */
-	HDW_STATUS_BIT_RUNNING						= (int)0x08000000,
+	HDW_STATUS_ERR_TEMPERATURE					= (int)0x04000000,
+
+	HDW_STATUS_UNSUED_6							= (int)0x08000000,
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
@@ -1161,9 +1166,9 @@ enum eSystemCommand
     SYS_CMD_ENABLE_RTOS_STATS                   = 4,
     SYS_CMD_ZERO_MOTION                         = 5,
 
-    SYS_CMD_ZERO_GYRO_BIAS                      = 6,
-    SYS_CMD_ZERO_ACCEL_V_AXIS_BIAS              = 7,
-    SYS_CMD_ZERO_GYRO_ACCEL_V_AXIS_BIAS         = 8,
+    SYS_CMD_ZERO_GYRO_BIAS                      = 6,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
+    SYS_CMD_ZERO_ACCEL_V_AXIS_BIAS              = 7,	// "
+    SYS_CMD_ZERO_GYRO_ACCEL_V_AXIS_BIAS         = 8,	// "
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
     SYS_CMD_SAVE_FLASH                          = 97,
