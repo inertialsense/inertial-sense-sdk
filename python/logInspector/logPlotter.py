@@ -740,14 +740,8 @@ class logPlot:
     def imuPQR(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 2, sharex=True)
-        self.configureSubplot(ax[0, 0], 'Gyro0 P (deg/s)', 'sec')
-        self.configureSubplot(ax[0, 1], 'Gyro1 P (deg/s)', 'sec')
-        self.configureSubplot(ax[1, 0], 'Gyro0 Q (deg/s)', 'sec')
-        self.configureSubplot(ax[1, 1], 'Gyro1 Q (deg/s)', 'sec')
-        self.configureSubplot(ax[2, 0], 'Gyro0 R (deg/s)', 'sec')
-        self.configureSubplot(ax[2, 1], 'Gyro1 R (deg/s)', 'sec')
-        fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
 
@@ -757,11 +751,17 @@ class logPlot:
                 refImu = refImu
                 refPqr = refImu['pqr']
 
+        ax = fig.subplots(3, 2, sharex=True)
+        fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
             for i in range(3):
-                if pqr0 != None:
-                    ax[i, 0].plot(time, pqr0[:, i] * 180.0/np.pi, label=self.log.serials[d])
-                if pqr1 != None:
-                    ax[i, 1].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
+                for n, pqr in enumerate([ pqr0, pqr1 ]):
+                    if pqr.any(None):
+                        mean = np.mean(pqr[:, i])
+                        std = np.std(pqr[:, i])
+                        self.configureSubplot(ax[i, n], 'Gyro%d ' % n + axislable + ' (deg/s), mean: %.3g, std: %.3g' % (mean, std), 'sec')
+                        ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
                 if len(refTime) != 0:
                     ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
@@ -776,14 +776,7 @@ class logPlot:
     def imuAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 2, sharex=True)
-        self.configureSubplot(ax[0,0], 'Acc0 X (m/s^2)', 'sec')
-        self.configureSubplot(ax[0,1], 'Acc1 X (m/s^2)', 'sec')
-        self.configureSubplot(ax[1,0], 'Acc0 Y (m/s^2)', 'sec')
-        self.configureSubplot(ax[1,1], 'Acc1 Y (m/s^2)', 'sec')
-        self.configureSubplot(ax[2,0], 'Acc0 Z (m/s^2)', 'sec')
-        self.configureSubplot(ax[2,1], 'Acc1 Z (m/s^2)', 'sec')
-        fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
         for d in self.active_devs:
             (acc0, acc1, time, dt) = self.loadAccels(d)
 
@@ -793,11 +786,17 @@ class logPlot:
                 refImu = refImu
                 refAcc = refImu['acc']
 
+        ax = fig.subplots(3, 2, sharex=True)
+        fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
             for i in range(3):
-                if acc0 != None:
-                    ax[i, 0].plot(time, acc0[:, i], label=self.log.serials[d])
-                if acc1 != None:
-                    ax[i, 1].plot(time, acc1[:, i], label=self.log.serials[d])
+                axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
+                for n, acc in enumerate([ acc0, acc1 ]):
+                    if acc.any(None):
+                        mean = np.mean(acc[:, i])
+                        std = np.std(acc[:, i])
+                        self.configureSubplot(ax[i, n], 'Accel%d ' % n + axislable + ' (m/s^2), mean: %.3g, std: %.3g' % (mean, std), 'sec')
+                        ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
                 if len(refTime) != 0:
                     ax[i, 0].plot(refTime, refAcc[:, i], color='red')
