@@ -760,7 +760,7 @@ class logPlot:
                     if pqr.any(None):
                         mean = np.mean(pqr[:, i])
                         std = np.std(pqr[:, i])
-                        self.configureSubplot(ax[i, n], 'Gyro%d ' % n + axislable + ' (deg/s), mean: %.3g, std: %.3g' % (mean, std), 'sec')
+                        self.configureSubplot(ax[i, n], 'Gyro%d ' % n + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                         ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
                 if len(refTime) != 0:
@@ -795,7 +795,7 @@ class logPlot:
                     if acc.any(None):
                         mean = np.mean(acc[:, i])
                         std = np.std(acc[:, i])
-                        self.configureSubplot(ax[i, n], 'Accel%d ' % n + axislable + ' (m/s^2), mean: %.3g, std: %.3g' % (mean, std), 'sec')
+                        self.configureSubplot(ax[i, n], 'Accel%d ' % n + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                         ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
                 if len(refTime) != 0:
