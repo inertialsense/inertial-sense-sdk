@@ -978,7 +978,7 @@ static int serEnable(int serialNum)
 	return 0;
 }
 
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
 
 static int spiEnable(int serialNum)
 {
@@ -1537,7 +1537,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.isUsartNotUart    = false;
 		ser->uinfo.isSpi			 = false;
 	}
-#ifndef __INERTIAL_SENSE_EVB_2__	// Only allow this on the uINS for now
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
 	else if( ser->peripheral == SPI1 )
 	{
 		ser->uinfo.ul_id             = ID_SPI1;
@@ -1626,7 +1626,7 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t
 	// Enable the peripheral clock in the PMC
 	sysclk_enable_peripheral_clock(ser->uinfo.ul_id);
 
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
 	if(ser->uinfo.isSpi && g_hdw_detect >= HDW_DETECT_VER_IMX_3_2_4)		// uINS-3.2 and above use dedicated SPI peripheral
 	{
 		// Initialize the SPI
@@ -1689,4 +1689,6 @@ void UART4_Handler(void) { UART4->UART_CR = UART_CR_RSTSTA; }
 void USART0_Handler(void) { USART0->US_CR = US_CR_RSTSTA; }
 void USART1_Handler(void) { USART1->US_CR = US_CR_RSTSTA; }
 void USART2_Handler(void) { USART2->US_CR = US_CR_RSTSTA; }
+#if !defined(TESTBED) 
 void SPI1_Handler(void) { volatile uint32_t sr = SPI1->SPI_SR; }		// Errors cleared by reading SR
+#endif
