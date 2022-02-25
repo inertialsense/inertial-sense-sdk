@@ -126,7 +126,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
-#define DID_UNUSED_94                   (eDataIDs)94 /** () */
+#define DID_ZERO_CAL                    (eDataIDs)94 /** () */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
@@ -1166,11 +1166,14 @@ enum eSystemCommand
     SYS_CMD_ENABLE_RTOS_STATS                   = 4,
     SYS_CMD_ZERO_MOTION                         = 5,
 
-    SYS_CMD_ZERO_GYRO_BIAS                      = 6,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
-    SYS_CMD_ZERO_ACCEL_V_AXIS_BIAS              = 7,	// "
-    SYS_CMD_ZERO_GYRO_ACCEL_V_AXIS_BIAS         = 8,	// "
-
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
+
+    SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
+    SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
+    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
+    SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
+    SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
+
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
     SYS_CMD_SOFTWARE_RESET                      = 99,
