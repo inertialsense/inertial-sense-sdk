@@ -126,7 +126,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
-#define DID_ZERO_CAL                    (eDataIDs)94 /** () */
+#define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
@@ -625,7 +625,7 @@ typedef struct PACKED
 } imus_t;
 
 
-/** Inertial Measurement Unit (IMU) data */
+/** (DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1596,6 +1596,82 @@ typedef struct PACKED
 	float                   accSigma;
 	
 } bit_t;
+
+
+enum eInfieldCalState
+{
+	/* User Commands: */
+    INFIELD_CAL_STATE_CMD_OFF                      = 0,
+
+	/* User Sample Command: Initiate 5 second sensor sampling and averaging. */
+    INFIELD_CAL_STATE_CMD_START_SAMPLE             = 1,  
+
+	// User Zero Commands: Run INFIELD_CAL_STATE_CMD_SAMPLE at least once prior to running the following commands.
+    INFIELD_CAL_STATE_CMD_ZERO_IMU                 = 5,		// Zero gyro and accel calibration.  
+    INFIELD_CAL_STATE_CMD_ZERO_GYRO                = 6,		// Zero gyro calibration. 
+    INFIELD_CAL_STATE_CMD_ZERO_ACCEL               = 7,		// Zero accel calibration.  
+    INFIELD_CAL_STATE_CMD_ZERO_ACCEL_ALIGN_INS     = 8,		// Zero accel calibration and .  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_ZERO_IMU_ALIGN_INS       = 9,		// Zero gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
+    
+	// Status: (User should not set these)
+    INFIELD_CAL_STATE_SAMPLING                     = 10,	// System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_WAITING_FOR_USER             = 12,	// Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_RUN_BIT                      = 13,	// Followup calibration zero with BIT
+
+	// Error Status:
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES             = 100,	// Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT           = 101,	// Error: Calibration zero is not 
+};
+
+// enum eImuFieldCal
+// {
+// 	// INFIELD_CAL_DATA_Z = 0,    // 
+// 	// INFIELD_CAL_DATA_Y,        // 
+// 	// INFIELD_CAL_DATA_X_VERTICAL,        // 
+// 	// INFIELD_CAL_DATA_Y_UP,					// Roll -90
+// 	// INFIELD_CAL_DATA_X_DOWN,				// Pitch -90
+// 	// INFIELD_CAL_DATA_X_UP,					// Pitch 90
+
+// 	// INFIELD_CAL_DATA_Z_DOWN			= 0,	// Roll 0
+// 	// INFIELD_CAL_DATA_Z_UP,					// Roll 180
+// 	// INFIELD_CAL_DATA_Y_DOWN,				// Roll 90
+// 	// INFIELD_CAL_DATA_Y_UP,					// Roll -90
+// 	// INFIELD_CAL_DATA_X_DOWN,				// Pitch -90
+// 	// INFIELD_CAL_DATA_X_UP,					// Pitch 90
+// 	INFIELD_CAL_DATA_ORIENTATION_COUNT,
+// }
+
+/** Inertial Measurement Unit (IMU) data */
+typedef struct PACKED
+{
+	/** Acceleration X, Y, Z in meters / second squared */
+	float                   acc[3];
+} imus_acc_t;
+
+typedef struct PACKED
+{
+	imus_acc_t              dev[NUM_IMU_DEVICES];
+
+	float					yaw;		// (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
+} infield_cal_direction_t;
+
+typedef struct PACKED
+{
+	infield_cal_direction_t down;		// Pointed toward earth
+	infield_cal_direction_t up;			// Pointed toward sky
+} infield_cal_vaxis_t;
+
+// (DID_INFIELD_CAL)
+typedef struct PACKED
+{
+	uint8_t                 state;		// (see eInfieldCalState)
+
+	uint32_t                sampleCount;
+
+	imus_t                  imu[NUM_IMU_DEVICES];
+
+	infield_cal_vaxis_t		calData[3];		// Vertical axis: 0 = X, 1 = Y, 2 = Z
+} infield_cal_t;
 
 
 /** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
