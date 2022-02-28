@@ -245,6 +245,16 @@ void vectorBodyToReference(const  ixVector3 v, const ixEuler rot, ixVector3 resu
  */
 void vectorReferenceToBody(const  ixVector3 v, const ixEuler rot, ixVector3 result);
 
+/*
+ * Vector to euler roll angle
+ */
+float vectorToRoll(const ixVector3 v);
+
+/*
+ * Vector to euler pitch angle
+ */
+float vectorToPitch(const ixVector3 v);
+
 
 #ifdef __cplusplus
 }

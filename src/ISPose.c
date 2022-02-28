@@ -675,4 +675,25 @@ void vectorReferenceToBody(const ixVector3 v, const ixEuler rot, ixVector3 resul
 }
 
 
+/*
+ * Vector to euler roll angle
+ */
+float vectorToRoll(const ixVector3 v)
+{
+	return -atan2f(-v[2], v[1]);
+}
 
+
+/*
+ * Vector to euler pitch angle
+ */
+float vectorToPitch(const ixVector3 v)
+{
+	float mag = mag_Vec3(v);
+	if(mag == 0.0f)
+	{	
+		return 0.0f;
+	}
+
+	return asinf(v[0]/mag);
+}

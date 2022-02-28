@@ -762,6 +762,7 @@ extern void vPortFree(void* pv);
 #define UNWRAP_F32(x)				{ if((x) < (-C_PI_F)) { (x) += (C_TWOPI_F); } if((x) > (C_PI_F))    { (x) -= (C_TWOPI_F); } }	// unwrap to +- PI
 #define UNWRAP_ZERO_TWOPI_F64(x)	{ if((x) < (0.0))     { (x) += (C_TWOPI);   } if((x) > (C_TWOPI))   { (x) -= (C_TWOPI);   } }	// unwrap to 0 to TWOPI
 #define UNWRAP_ZERO_TWOPI_F32(x)	{ if((x) < (0.f))     { (x) += (C_TWOPI_F); } if((x) > (C_TWOPI_F)) { (x) -= (C_TWOPI_F); } }	// unwrap to 0 to TWOPI
+#define UNWRAP_PIDIV4_F32(x)		{ while((x) < (-C_PIDIV4_F )) { (x) += (C_PIDIV2_F); } while((x) > (C_PIDIV4_F)) { (x) -= (C_PIDIV2_F); } }	// unwrap to +- PI/4 (45 degrees)
 	
 #define _SIN        sinf
 #define _COS        cosf

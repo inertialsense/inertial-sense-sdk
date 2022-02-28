@@ -23,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <regex>
 #include <set>
 #include <sstream>
-// #include <mutex>
+#include <mutex>
 
 #include "ISFileManager.h"
 #include "ISLogger.h"
@@ -50,6 +50,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 const string cISLogger::g_emptyString;
 
+#if !PLATFORM_IS_EMBEDDED
+static std::mutex g_devices_mutex;
+#endif
 
 bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 {
@@ -93,7 +96,9 @@ cISLogger::~cISLogger()
 
 void cISLogger::Cleanup()
 {
-	cMutexLocker logMutexLocker(&m_devicesMutex);
+#if !PLATFORM_IS_EMBEDDED
+	const std::lock_guard<std::mutex> lock(g_devices_mutex);
+#endif
 	m_devices.clear();
 	m_logStats.Clear();
 }
@@ -230,7 +235,9 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 
 	// Add new devices
 	{	
-		cMutexLocker logMutexLocker(&m_devicesMutex);
+#if !PLATFORM_IS_EMBEDDED
+		const std::lock_guard<std::mutex> lock(g_devices_mutex);
+#endif
 		for (int i = 0; i < numDevices; i++)
 		{
 			switch (m_logType)
@@ -320,7 +327,9 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 
                         // Add devices
 						{
-							cMutexLocker logMutexLocker(&m_devicesMutex);
+#if !PLATFORM_IS_EMBEDDED
+							const std::lock_guard<std::mutex> lock(g_devices_mutex);
+#endif
 							switch (logType)
 							{
 							default:

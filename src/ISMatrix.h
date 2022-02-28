@@ -334,6 +334,13 @@ void div_Vec4_Vec4( ixVector4 result, const ixVector4 v1, const ixVector4 v2 );
 /* Negate*/
 void neg_Vec3(ixVector3 result, const ixVector3 v);
 
+/* Average
+ * result(3) = (v1(3) + v2(3)) * 0.5
+ */
+void mean_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 );
+void mean_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d v2 );
+
+
 /* Min of vector elements
  * = min( v[0], v[1], v[2] }
  */
