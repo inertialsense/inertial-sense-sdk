@@ -774,6 +774,12 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "imu[1].acc[0]", imu[1].acc[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "imu[1].acc[1]", imu[1].acc[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "imu[1].acc[2]", imu[1].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].pqr[0]", imu[2].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].pqr[1]", imu[2].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].pqr[2]", imu[2].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].acc[0]", imu[2].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].acc[1]", imu[2].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].acc[2]", imu[2].acc[2], 0, DataTypeFloat, float&, 0);
 
     ADD_MAP(m, totalSize, "calData[0].down.dev[0].acc[0]", calData[0].down.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].down.dev[0].acc[1]", calData[0].down.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
@@ -781,6 +787,9 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "calData[0].down.dev[1].acc[0]", calData[0].down.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].down.dev[1].acc[1]", calData[0].down.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].down.dev[1].acc[2]", calData[0].down.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[2].acc[0]", calData[0].down.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[2].acc[1]", calData[0].down.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[2].acc[2]", calData[0].down.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].down.yaw", calData[0].down.yaw, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "calData[0].up.dev[0].acc[0]", calData[0].up.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].up.dev[0].acc[1]", calData[0].up.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
@@ -788,6 +797,9 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "calData[0].up.dev[1].acc[0]", calData[0].up.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].up.dev[1].acc[1]", calData[0].up.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].up.dev[1].acc[2]", calData[0].up.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[2].acc[0]", calData[0].up.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[2].acc[1]", calData[0].up.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[2].acc[2]", calData[0].up.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[0].up.yaw", calData[0].up.yaw, 0, DataTypeFloat, float, 0);
 
     ADD_MAP(m, totalSize, "calData[1].down.dev[0].acc[0]", calData[1].down.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
@@ -796,6 +808,9 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "calData[1].down.dev[1].acc[0]", calData[1].down.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[1].down.dev[1].acc[1]", calData[1].down.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[1].down.dev[1].acc[2]", calData[1].down.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[2].acc[0]", calData[1].down.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[2].acc[1]", calData[1].down.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[2].acc[2]", calData[1].down.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[1].down.yaw", calData[1].down.yaw, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "calData[1].up.dev[0].acc[0]", calData[1].up.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[1].up.dev[0].acc[1]", calData[1].up.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
@@ -803,6 +818,9 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "calData[1].up.dev[1].acc[0]", calData[1].up.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[1].up.dev[1].acc[1]", calData[1].up.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[1].up.dev[1].acc[2]", calData[1].up.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[2].acc[0]", calData[1].up.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[2].acc[1]", calData[1].up.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[2].acc[2]", calData[1].up.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[1].up.yaw", calData[1].up.yaw, 0, DataTypeFloat, float, 0);
 
     ADD_MAP(m, totalSize, "calData[2].down.dev[0].acc[0]", calData[2].down.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
@@ -811,6 +829,9 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "calData[2].down.dev[1].acc[0]", calData[2].down.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[2].down.dev[1].acc[1]", calData[2].down.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[2].down.dev[1].acc[2]", calData[2].down.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[2].acc[0]", calData[2].down.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[2].acc[1]", calData[2].down.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[2].acc[2]", calData[2].down.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[2].down.yaw", calData[2].down.yaw, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "calData[2].up.dev[0].acc[0]", calData[2].up.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[2].up.dev[0].acc[1]", calData[2].up.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
@@ -818,6 +839,9 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "calData[2].up.dev[1].acc[0]", calData[2].up.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[2].up.dev[1].acc[1]", calData[2].up.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[2].up.dev[1].acc[2]", calData[2].up.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[2].acc[0]", calData[2].up.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[2].acc[1]", calData[2].up.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[2].acc[2]", calData[2].up.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "calData[2].up.yaw", calData[2].up.yaw, 0, DataTypeFloat, float, 0);
 
     ASSERT_SIZE(totalSize);
