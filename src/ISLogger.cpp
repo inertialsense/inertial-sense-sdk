@@ -76,7 +76,9 @@ bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
     return (data != NULL && LogHeaderIsCorrupt(&data->hdr));
 }
 
-cISLogger::cISLogger()
+
+cISLogger::cISLogger() 
+	: m_devicesMutex()
 {
 	m_enabled = false;
 	m_logStats.Clear();

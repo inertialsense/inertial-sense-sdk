@@ -125,7 +125,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
-#define DID_UNUSED_94                   (eDataIDs)94 /** () */
+#define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
@@ -336,14 +336,19 @@ enum eHdwStatusFlags
 	HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET		= 20,
 #define HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
-	/** Built-in self-test failure */
-	HDW_STATUS_BIT_FAULT						= (int)0x01000000,
+	/** (BIT) Built-in self-test running */
+	HDW_STATUS_BIT_RUNNING						= (int)0x01000000,
+	/** (BIT) Built-in self-test passed */
+	HDW_STATUS_BIT_PASSED						= (int)0x02000000,
+	/** (BIT) Built-in self-test failure */
+	HDW_STATUS_BIT_FAULT						= (int)0x03000000,
+	/** (BIT) Built-in self-test mask */
+	HDW_STATUS_BIT_MASK							= (int)0x03000000,
+
 	/** Temperature outside spec'd operating range */
-	HDW_STATUS_ERR_TEMPERATURE					= (int)0x02000000,
-	/** Vibrations effecting accuracy */
-// 	HDW_STATUS_ERR_VIBRATION					= (int)0x04000000,
-	/** Built-in self-test running */
-	HDW_STATUS_BIT_RUNNING						= (int)0x08000000,
+	HDW_STATUS_ERR_TEMPERATURE					= (int)0x04000000,
+
+	HDW_STATUS_UNSUED_6							= (int)0x08000000,
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
@@ -621,7 +626,7 @@ typedef struct PACKED
 } imus_t;
 
 
-/** (DID_IMU) Inertial Measurement Unit (IMU) data */
+/** (DID_IMU, DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1188,11 +1193,14 @@ enum eSystemCommand
     SYS_CMD_ENABLE_RTOS_STATS                   = 4,
     SYS_CMD_ZERO_MOTION                         = 5,
 
-    SYS_CMD_ZERO_GYRO_BIAS                      = 6,
-    SYS_CMD_ZERO_ACCEL_V_AXIS_BIAS              = 7,
-    SYS_CMD_ZERO_GYRO_ACCEL_V_AXIS_BIAS         = 8,
-
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
+
+    SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
+    SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
+    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
+    SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
+    SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
+
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
     SYS_CMD_SOFTWARE_RESET                      = 99,
@@ -1636,7 +1644,68 @@ typedef struct PACKED
 } bit_t;
 
 
-/** System Configuration (used with nvm_flash_cfg_t.sysCfgBits) */
+enum eInfieldCalState
+{
+	/* User Commands: */
+    INFIELD_CAL_STATE_CMD_OFF                      = 0,
+
+	/* User Sample Command: Initiate 5 second sensor sampling and averaging. */
+    INFIELD_CAL_STATE_CMD_START_SAMPLE             = 1,
+    INFIELD_CAL_STATE_CMD_CLEAR                    = 2,		// Erase prior calibration
+
+	// User Zero Commands: Run INFIELD_CAL_STATE_CMD_SAMPLE at least once prior to running the following commands.
+    INFIELD_CAL_STATE_CMD_ZERO_IMU                 = 5,		// Zero gyro and accel calibration.  
+    INFIELD_CAL_STATE_CMD_ZERO_GYRO                = 6,		// Zero gyro calibration. 
+    INFIELD_CAL_STATE_CMD_ZERO_ACCEL               = 7,		// Zero accel calibration.  
+    INFIELD_CAL_STATE_CMD_ZERO_ACCEL_ALIGN_INS     = 8,		// Zero accel calibration.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_ZERO_IMU_ALIGN_INS       = 9,		// Zero gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
+    INFIELD_CAL_STATE_CMD_ZERO_ACCEL_ALIGN_INS_BIASED = 10,	// Zero accel calibration.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_ZERO_IMU_ALIGN_INS_BIASED= 11,	// Zero gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
+    
+	// Status: (User should not set these)
+    INFIELD_CAL_STATE_SAMPLING                     = 20,	// System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_WAITING_FOR_USER             = 21,	// Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_RUN_BIT_AND_CLEAR            = 22,	// Follow up calibration zero with BIT
+
+	// Error Status:
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES             = 100,	// Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT           = 101,	// Error: Calibration zero is not 
+};
+
+/** Inertial Measurement Unit (IMU) data */
+typedef struct PACKED
+{
+	/** Vertical axis acceleration (m/s^2) */
+	float                   acc[3];
+} imus_acc_t;
+
+typedef struct PACKED
+{
+	imus_acc_t              dev[NUM_IMU_DEVICES];
+
+	float					yaw;		// (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
+} infield_cal_direction_t;
+
+typedef struct PACKED
+{
+	infield_cal_direction_t down;		// Pointed toward earth
+	infield_cal_direction_t up;			// Pointed toward sky
+} infield_cal_vaxis_t;
+
+// (DID_INFIELD_CAL)
+typedef struct PACKED
+{
+	uint32_t                state;		// (see eInfieldCalState)
+
+	uint32_t                sampleCount;
+
+	imus_t                  imu[NUM_IMU_DEVICES];
+
+	infield_cal_vaxis_t		calData[3];		// Vertical axis: 0 = X, 1 = Y, 2 = Z
+} infield_cal_t;
+
+
+/** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
 enum eSysConfigBits
 {
 	UNUSED1                                             = (int)0x00000001,

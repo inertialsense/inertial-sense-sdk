@@ -39,6 +39,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISConstants.h"
 #include "ISLogStats.h"
+#include "ISUtilities.h"
 
 using namespace std;
 
@@ -188,7 +189,7 @@ private:
 	string					m_directory;
 	string					m_timeStamp;
 	vector<shared_ptr<cDeviceLog>>	m_devices;
-
+	cMutex                  m_devicesMutex;
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;
 	cLogStats				m_logStats;
