@@ -349,7 +349,7 @@ int llaDegValid( double lla[3] )
 }
 
 /* IGF-80 gravity model with WGS-84 ellipsoid refinement */
-float gravity_igf80(double lat, double alt)
+float gravity_igf80(double lat_rad, double alt)
 {
     double g0, sinmu2;
 
@@ -360,7 +360,7 @@ float gravity_igf80(double lat, double alt)
     // Square of first eccentricity e^2 = 1 - (1 - f)^2 = 1 - (b/a)^2;
     //double e2 = 0.00669437999013;
 
-    sinmu2 = sin(lat) * sin(lat);
+    sinmu2 = sin(lat_rad) * sin(lat_rad);
     g0 = GEQ * (1.0 + K_GRAV * sinmu2) / sqrt(1.0 - E_SQ * sinmu2);
 
     // Free air correction
