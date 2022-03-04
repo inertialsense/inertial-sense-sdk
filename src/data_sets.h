@@ -1616,7 +1616,7 @@ enum eInfieldCalState
     
     // Status: (User should not set these)
     INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
-    INFIELD_CAL_STATE_WAITING_FOR_USER                  = 21,   // Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_SAMPLING_DONE_WAITING_FOR_USER    = 21,   // Sampling finished. Waiting for user input.  User must send a command to exit this state.
     INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 22,   // Follow up calibration zero with BIT and copy out IMU biases.
     INFIELD_CAL_STATE_FINISHED                          = 23,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
 
@@ -1651,13 +1651,13 @@ typedef struct PACKED
 	/** Used to set and monitor the state of the infield calibration system. (see eInfieldCalState) */
 	uint32_t                state;		
 
-	/** Number of averaged samples collected during sampling. */
+	/** Number of samples used in IMU average. sampleCount = 0 means "imu" member contains the IMU bias from flash.  */
 	uint32_t                sampleCount;
 
-	/** Dual purpose variable.  1.) During sampling this is the averaged IMU data. 2.) When state =  this is a mirror of the IMU motion calibration bias from flash. */ 
+	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleCount != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleCount = 0. */ 
 	imus_t                  imu[NUM_IMU_DEVICES];
 
-	/** Collected data used to solve for the bias error and INS rotation.   Vertical axis: 0 = X, 1 = Y, 2 = Z  */
+	/** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
 	infield_cal_vaxis_t		calData[3];
 
 } infield_cal_t;
