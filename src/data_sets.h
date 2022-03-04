@@ -1600,30 +1600,29 @@ typedef struct PACKED
 
 enum eInfieldCalState
 {
-	/* User Commands: */
-    INFIELD_CAL_STATE_CMD_OFF                      = 0,
+    /* User Commands: */
+    INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
-	/* User Sample Command: Initiate 5 second sensor sampling and averaging. */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE             = 1,
-    INFIELD_CAL_STATE_CMD_CLEAR                    = 2,		// Erase prior calibration
+    /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
+    INFIELD_CAL_STATE_CMD_START_SAMPLE                  = 1,
+    INFIELD_CAL_STATE_CMD_CLEAR                         = 2,    // Clear existing samples.  (Does not change flash calibration).
 
-	// User Zero Commands: Run INFIELD_CAL_STATE_CMD_SAMPLE at least once prior to running the following commands.
-    INFIELD_CAL_STATE_CMD_ZERO_IMU                 = 5,		// Zero gyro and accel calibration.  
-    INFIELD_CAL_STATE_CMD_ZERO_GYRO                = 6,		// Zero gyro calibration. 
-    INFIELD_CAL_STATE_CMD_ZERO_ACCEL               = 7,		// Zero accel calibration.  
-    INFIELD_CAL_STATE_CMD_ZERO_ACCEL_ALIGN_INS     = 8,		// Zero accel calibration.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_ZERO_IMU_ALIGN_INS       = 9,		// Zero gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
-    INFIELD_CAL_STATE_CMD_ZERO_ACCEL_ALIGN_INS_BIASED = 10,	// Zero accel calibration.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_ZERO_IMU_ALIGN_INS_BIASED= 11,	// Zero gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
+    // User Store Commands: Run INFIELD_CAL_STATE_CMD_SAMPLE at least once prior to running the following commands.
+    INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute and save gyro and accel calibration.  
+    INFIELD_CAL_STATE_CMD_STORE_GYRO                    = 6,    // Compute and save gyro calibration. 
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL                   = 7,    // Compute and save accel calibration.  
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL_ALIGN_INS         = 8,    // Compute and save accel calibration.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_STORE_IMU_ALIGN_INS           = 9,    // Compute and save gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
     
-	// Status: (User should not set these)
-    INFIELD_CAL_STATE_SAMPLING                     = 20,	// System is averaging the IMU data.  Minimize all motion and vibration.
-    INFIELD_CAL_STATE_WAITING_FOR_USER             = 21,	// Waiting for user input.  User must send a command to exit this state.
-    INFIELD_CAL_STATE_RUN_BIT_AND_CLEAR            = 22,	// Follow up calibration zero with BIT
+    // Status: (User should not set these)
+    INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_WAITING_FOR_USER                  = 21,   // Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 22,   // Follow up calibration zero with BIT and copy out IMU biases.
+    INFIELD_CAL_STATE_FINISHED                          = 23,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
 
-	// Error Status:
-    INFIELD_CAL_STATE_ERROR_NO_SAMPLES             = 100,	// Error: No samples have been collected
-    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT           = 101,	// Error: Calibration zero is not 
+    // Error Status:
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES                  = 100,  // Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 101,  // Error: Calibration zero is not 
 };
 
 /** Inertial Measurement Unit (IMU) data */
@@ -1649,13 +1648,18 @@ typedef struct PACKED
 // (DID_INFIELD_CAL)
 typedef struct PACKED
 {
-	uint32_t                state;		// (see eInfieldCalState)
+	/** Used to set and monitor the state of the infield calibration system. (see eInfieldCalState) */
+	uint32_t                state;		
 
+	/** Number of averaged samples collected during sampling. */
 	uint32_t                sampleCount;
 
+	/** Dual purpose variable.  1.) During sampling this is the averaged IMU data. 2.) When state =  this is a mirror of the IMU motion calibration bias from flash. */ 
 	imus_t                  imu[NUM_IMU_DEVICES];
 
-	infield_cal_vaxis_t		calData[3];		// Vertical axis: 0 = X, 1 = Y, 2 = Z
+	/** Collected data used to solve for the bias error and INS rotation.   Vertical axis: 0 = X, 1 = Y, 2 = Z  */
+	infield_cal_vaxis_t		calData[3];
+
 } infield_cal_t;
 
 
