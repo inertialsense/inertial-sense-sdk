@@ -255,6 +255,11 @@ float vectorToRoll(const ixVector3 v);
  */
 float vectorToPitch(const ixVector3 v);
 
+/*
+ * Returns the pitch angle of the vector selected axis.
+ */
+float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis);
+
 
 #ifdef __cplusplus
 }

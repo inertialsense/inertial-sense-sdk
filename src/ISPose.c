@@ -697,3 +697,17 @@ float vectorToPitch(const ixVector3 v)
 
 	return asinf(v[0]/mag);
 }
+
+/*
+ * Returns the pitch angle of the vector selected axis.
+ */
+float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis)
+{
+	float mag = mag_Vec3(v);
+	if (mag == 0.0f)
+	{
+		return 0.0f;
+	}
+
+	return asinf(v[pitchAxis] / mag);
+}
