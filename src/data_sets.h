@@ -1604,8 +1604,8 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
     /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 1,	// Don't save sample into cal data.
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 2,	// Save sample into cal data.
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 1,	// Save sample into cal data.
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 2,	// Don't save sample into cal data.
     INFIELD_CAL_STATE_CMD_CLEAR                         = 3,    // Clear existing samples.  (Does not change flash calibration).
 
     // User Store Commands: Run INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL at least once prior to running the following commands.
