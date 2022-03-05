@@ -1604,15 +1604,17 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
     /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE                  = 1,
-    INFIELD_CAL_STATE_CMD_CLEAR                         = 2,    // Clear existing samples.  (Does not change flash calibration).
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 1,	// Don't save sample into cal data.
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 2,	// Save sample into cal data.
+    INFIELD_CAL_STATE_CMD_CLEAR                         = 3,    // Clear existing samples.  (Does not change flash calibration).
 
-    // User Store Commands: Run INFIELD_CAL_STATE_CMD_SAMPLE at least once prior to running the following commands.
-    INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute and save gyro and accel calibration.  
-    INFIELD_CAL_STATE_CMD_STORE_GYRO                    = 6,    // Compute and save gyro calibration. 
-    INFIELD_CAL_STATE_CMD_STORE_ACCEL                   = 7,    // Compute and save accel calibration.  
-    INFIELD_CAL_STATE_CMD_STORE_ACCEL_ALIGN_INS         = 8,    // Compute and save accel calibration.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_STORE_IMU_ALIGN_INS           = 9,    // Compute and save gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
+    // User Store Commands: Run INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL at least once prior to running the following commands.
+    INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute gyro and accel bias.  
+    INFIELD_CAL_STATE_CMD_STORE_GYRO                    = 6,    // Compute gyro bias. 
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL                   = 7,    // Compute accel bias.  
+    INFIELD_CAL_STATE_CMD_STORE_ALIGN_INS               = 8,    // Estimate INS rotation to align INS with vehicle frame.  Don't compute IMU bias.
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL_ALIGN_INS         = 9,    // Compute accel bias.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_STORE_IMU_ALIGN_INS           = 10,   // Compute gyro and accel bias.  Estimate INS rotation to align INS with vehicle frame. 
     
     // Status: (User should not set these)
     INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
