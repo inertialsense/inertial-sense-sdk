@@ -245,6 +245,21 @@ void vectorBodyToReference(const  ixVector3 v, const ixEuler rot, ixVector3 resu
  */
 void vectorReferenceToBody(const  ixVector3 v, const ixEuler rot, ixVector3 result);
 
+/*
+ * Vector to euler roll angle
+ */
+float vectorToRoll(const ixVector3 v);
+
+/*
+ * Vector to euler pitch angle
+ */
+float vectorToPitch(const ixVector3 v);
+
+/*
+ * Returns the pitch angle of the vector selected axis.
+ */
+float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis);
+
 
 #ifdef __cplusplus
 }

@@ -160,6 +160,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_IO, dev_log_->io );
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
         HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
+        HANDLE_MSG( DID_REFERENCE_IMU, dev_log_->refImu );
         HANDLE_MSG( DID_GPS1_VEL, dev_log_->gps1Vel );
         HANDLE_MSG( DID_GPS2_VEL, dev_log_->gps2Vel );
         // HANDLE_MSG( DID_HDW_PARAMS, dev_log_->hdwParams );
@@ -250,6 +251,7 @@ void LogReader::forwardData(int id)
     forward_message( DID_IO, dev_log_->io, id );
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, id );
     forward_message( DID_SCOMP, dev_log_->scomp, id );
+    forward_message( DID_REFERENCE_IMU, dev_log_->refImu, id );
     forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, id );
     forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, id );
     // forward_message( DID_HDW_PARAMS, dev_log_->hdwParams, id );
@@ -324,10 +326,20 @@ pybind11::list LogReader::getSerialNumbers()
     return serialNumbers_; 
 }
 
-void LogReader::exitHack()
+pybind11::list LogReader::protocolVersion()
+{ 
+    vector<int> version;
+    version.push_back(PROTOCOL_VERSION_CHAR0);
+    version.push_back(PROTOCOL_VERSION_CHAR1);
+    version.push_back(PROTOCOL_VERSION_CHAR2);
+    version.push_back(PROTOCOL_VERSION_CHAR3);
+    return py::cast(version);
+}
+
+void LogReader::exitHack(int exit_code)
 {
     // Nasty hack
-    exit(0);
+    exit(exit_code);
 }
 
 // Look at the pybind documentation to understand what is going on here.
@@ -345,6 +357,7 @@ PYBIND11_MODULE(log_reader, m) {
             .def("init", &LogReader::init)
             .def("load", &LogReader::load)
             .def("getSerialNumbers", &LogReader::getSerialNumbers)
+            .def("protocolVersion", &LogReader::protocolVersion)
             .def("exitHack", &LogReader::exitHack);
 
 #include "pybindMacros.h"
