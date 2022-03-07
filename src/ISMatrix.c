@@ -753,6 +753,18 @@ void neg_Vec3(ixVector3 result, const ixVector3 v)
     result[2] = -v[2];
 }
 
+void mean_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
+{
+	add_Vec3_Vec3(result, v1, v2);
+	mul_Vec3_X(result, result, 0.5f);
+}
+
+void mean_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d v2 )
+{
+	add_Vec3d_Vec3d(result, v1, v2);
+	mul_Vec3d_X(result, result, 0.5);
+}
+
 void cpy_MatRxC_MatMxN( f_t *result, i_t r, i_t c, i_t r_offset, i_t c_offset, f_t *A, i_t m, i_t n )
 {
 	// Ensure source matrix A fits within result matrix

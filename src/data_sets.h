@@ -126,7 +126,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
-#define DID_UNUSED_94                   (eDataIDs)94 /** () */
+#define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
@@ -335,14 +335,19 @@ enum eHdwStatusFlags
 	HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET		= 20,
 #define HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
-	/** Built-in self-test failure */
-	HDW_STATUS_BIT_FAULT						= (int)0x01000000,
-	/** Temperature outside spec'd operating range */
-	HDW_STATUS_ERR_TEMPERATURE					= (int)0x02000000,
-	/** Vibrations effecting accuracy */
-// 	HDW_STATUS_ERR_VIBRATION					= (int)0x04000000,
+	/** (BIT) Built-in self-test running */
+	HDW_STATUS_BIT_RUNNING						= (int)0x01000000,
+	/** (BIT) Built-in self-test passed */
+	HDW_STATUS_BIT_PASSED						= (int)0x02000000,
+	/** (BIT) Built-in self-test failure */
+	HDW_STATUS_BIT_FAULT						= (int)0x03000000,
+	/** (BIT) Built-in self-test mask */
+	HDW_STATUS_BIT_MASK							= (int)0x03000000,
 
-	HDW_STATUS_UNUSED_6				            = (int)0x08000000,
+	/** Temperature outside spec'd operating range */
+	HDW_STATUS_ERR_TEMPERATURE					= (int)0x04000000,
+
+	HDW_STATUS_UNSUED_6							= (int)0x08000000,
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
@@ -620,7 +625,7 @@ typedef struct PACKED
 } imus_t;
 
 
-/** Inertial Measurement Unit (IMU) data */
+/** (DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1162,6 +1167,13 @@ enum eSystemCommand
     SYS_CMD_ZERO_MOTION                         = 5,
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
+
+    SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
+    SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
+    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
+    SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
+    SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
+
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
     SYS_CMD_SOFTWARE_RESET                      = 99,
@@ -1484,62 +1496,66 @@ typedef struct PACKED
 /** Built-in test state */
 enum eBitState
 {
-	BIT_STATE_OFF					= (int)0,
-	BIT_STATE_DONE					= (int)1,
-	BIT_STATE_CMD_FULL_STATIONARY	= (int)2,	// (FULL) More comprehensive test.  Requires system be completely stationary without vibrations. 
-	BIT_STATE_CMD_BASIC_MOVING		= (int)3,	// (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-	BIT_STATE_RESERVED_1			= (int)4,
-	BIT_STATE_RESERVED_2			= (int)5,
-	BIT_STATE_RUNNING				= (int)6,
-	BIT_STATE_FINISH				= (int)7,
-	BIT_STATE_COMMAND_OFF			= (int)8
+	BIT_STATE_OFF					                    = (int)0,
+	BIT_STATE_DONE				                        = (int)1,   // Test is finished
+    BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,   // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
+    BIT_STATE_CMD_BASIC_MOVING                          = (int)3,   // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
+    BIT_STATE_RESERVED_1                                = (int)4,   
+    BIT_STATE_RESERVED_2                                = (int)5,   
+    BIT_STATE_RUNNING                                   = (int)6,   
+    BIT_STATE_FINISHING                                 = (int)7,	// Computing results
+    BIT_STATE_CMD_OFF                                   = (int)8,   // Stop built-in test
 };
 
-/** Hardware built-in test flags */
+/** Hardware built-in test (BIT) flags */
 enum eHdwBitStatusFlags
 {
-	HDW_BIT_PASSED_MASK				= (int)0x0000000F,
-	HDW_BIT_PASSED_ALL				= (int)0x00000001,
-	HDW_BIT_PASSED_NO_GPS			= (int)0x00000002,	// Passed w/o valid GPS signal
-	HDW_BIT_MODE_MASK				= (int)0x000000F0,	// BIT mode run
-	HDW_BIT_MODE_OFFSET				= (int)4,
+    HDW_BIT_PASSED_MASK             = (int)0x0000000F,
+    HDW_BIT_PASSED_ALL              = (int)0x00000001,
+    HDW_BIT_PASSED_NO_GPS           = (int)0x00000002,    // Passed w/o valid GPS signal
+    HDW_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
+    HDW_BIT_MODE_OFFSET             = (int)4,
 #define HDW_BIT_MODE(hdwBitStatus) ((hdwBitStatus&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
-	HDW_BIT_FAILED_MASK				= (int)0xFFFFFF00,
-	HDW_BIT_FAILED_AHRS_MASK		= (int)0xFFFF0F00,
-	HDW_BIT_FAULT_NOISE_PQR			= (int)0x00000100,
-	HDW_BIT_FAULT_NOISE_ACC			= (int)0x00000200,
-	HDW_BIT_FAULT_MAGNETOMETER      = (int)0x00000400,
-	HDW_BIT_FAULT_BAROMETER         = (int)0x00000800,
-	HDW_BIT_FAULT_GPS_NO_COM		= (int)0x00001000,	// No GPS serial communications
-	HDW_BIT_FAULT_GPS_POOR_CNO		= (int)0x00002000,	// Poor GPS signal strength.  Check antenna
-	HDW_BIT_FAULT_GPS_POOR_ACCURACY	= (int)0x00002000,	// Low number of satellites, or bad accuracy 
-	HDW_BIT_FAULT_GPS_NOISE			= (int)0x00004000,	// (Not implemented)
+    HDW_BIT_FAILED_MASK             = (int)0xFFFFFF00,
+    HDW_BIT_FAILED_AHRS_MASK        = (int)0xFFFF0F00,
+    HDW_BIT_FAULT_NOISE_PQR         = (int)0x00000100,
+    HDW_BIT_FAULT_NOISE_ACC         = (int)0x00000200,
+    HDW_BIT_FAULT_MAGNETOMETER      = (int)0x00000400,
+    HDW_BIT_FAULT_BAROMETER         = (int)0x00000800,
+    HDW_BIT_FAULT_GPS_NO_COM        = (int)0x00001000,    // No GPS serial communications
+    HDW_BIT_FAULT_GPS_POOR_CNO      = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
+    HDW_BIT_FAULT_GPS_POOR_ACCURACY = (int)0x00002000,    // Low number of satellites, or bad accuracy 
+    HDW_BIT_FAULT_GPS_NOISE         = (int)0x00004000,    // (Not implemented)
 };
 
 /** Calibration built-in test flags */
 enum eCalBitStatusFlags
 {
-	CAL_BIT_PASSED_MASK				= (int)0x0000000F,
-	CAL_BIT_PASSED_ALL				= (int)0x00000001,
-	CAL_BIT_MODE_MASK				= (int)0x000000F0,	// BIT mode run
-	CAL_BIT_MODE_OFFSET				= (int)4,
+    CAL_BIT_PASSED_MASK             = (int)0x0000000F,
+    CAL_BIT_PASSED_ALL              = (int)0x00000001,
+    CAL_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
+    CAL_BIT_MODE_OFFSET             = (int)4,
 #define CAL_BIT_MODE(calBitStatus) ((calBitStatus&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
-	CAL_BIT_FAILED_MASK				= (int)0xFFFFFF00,
-	CAL_BIT_FAULT_TCAL_EMPTY		= (int)0x00000100,	// Temperature calibration not present
-	CAL_BIT_FAULT_TCAL_TSPAN		= (int)0x00000200,	// Temperature calibration temperature range is inadequate
-	CAL_BIT_FAULT_TCAL_INCONSISTENT	= (int)0x00000400,	// Temperature calibration number of points or slopes are not consistent
-	CAL_BIT_FAULT_TCAL_CORRUPT		= (int)0x00000800,	// Temperature calibration memory corruption
-	CAL_BIT_FAULT_TCAL_PQR_BIAS		= (int)0x00001000,	// Temperature calibration gyro bias
-	CAL_BIT_FAULT_TCAL_PQR_SLOPE	= (int)0x00002000,	// Temperature calibration gyro slope
-	CAL_BIT_FAULT_TCAL_PQR_LIN		= (int)0x00004000,	// Temperature calibration gyro linearity
-	CAL_BIT_FAULT_TCAL_ACC_BIAS		= (int)0x00008000,	// Temperature calibration accelerometer bias
-	CAL_BIT_FAULT_TCAL_ACC_SLOPE	= (int)0x00010000,	// Temperature calibration accelerometer slope
-	CAL_BIT_FAULT_TCAL_ACC_LIN		= (int)0x00020000,	// Temperature calibration accelerometer linearity
-	CAL_BIT_FAULT_CAL_SERIAL_NUM	= (int)0x00040000,	// Calibration info: wrong device serial number
-	CAL_BIT_FAULT_ORTO_EMPTY		= (int)0x00100000,	// Cross-axis alignment is not calibrated
-	CAL_BIT_FAULT_ORTO_INVALID		= (int)0x00200000,	// Cross-axis alignment is poorly formed
-	CAL_BIT_FAULT_MOTION_PQR		= (int)0x00400000,	// Motion on gyros
-	CAL_BIT_FAULT_MOTION_ACC		= (int)0x00800000,	// Motion on accelerometers
+    CAL_BIT_FAILED_MASK             = (int)0x00FFFF00,
+    CAL_BIT_FAULT_TCAL_EMPTY        = (int)0x00000100,    // Temperature calibration not present
+    CAL_BIT_FAULT_TCAL_TSPAN        = (int)0x00000200,    // Temperature calibration temperature range is inadequate
+    CAL_BIT_FAULT_TCAL_INCONSISTENT = (int)0x00000400,    // Temperature calibration number of points or slopes are not consistent
+    CAL_BIT_FAULT_TCAL_CORRUPT      = (int)0x00000800,    // Temperature calibration memory corruption
+    CAL_BIT_FAULT_TCAL_PQR_BIAS     = (int)0x00001000,    // Temperature calibration gyro bias
+    CAL_BIT_FAULT_TCAL_PQR_SLOPE    = (int)0x00002000,    // Temperature calibration gyro slope
+    CAL_BIT_FAULT_TCAL_PQR_LIN      = (int)0x00004000,    // Temperature calibration gyro linearity
+    CAL_BIT_FAULT_TCAL_ACC_BIAS     = (int)0x00008000,    // Temperature calibration accelerometer bias
+    CAL_BIT_FAULT_TCAL_ACC_SLOPE    = (int)0x00010000,    // Temperature calibration accelerometer slope
+    CAL_BIT_FAULT_TCAL_ACC_LIN      = (int)0x00020000,    // Temperature calibration accelerometer linearity
+    CAL_BIT_FAULT_CAL_SERIAL_NUM    = (int)0x00040000,    // Calibration info: wrong device serial number
+    CAL_BIT_FAULT_ORTO_EMPTY        = (int)0x00100000,    // Cross-axis alignment is not calibrated
+    CAL_BIT_FAULT_ORTO_INVALID      = (int)0x00200000,    // Cross-axis alignment is poorly formed
+    CAL_BIT_FAULT_MOTION_PQR        = (int)0x00400000,    // Motion on gyros
+    CAL_BIT_FAULT_MOTION_ACC        = (int)0x00800000,    // Motion on accelerometers
+    CAL_BIT_NOTICE_IMU1_PQR_BIAS    = (int)0x01000000,    // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU2_PQR_BIAS    = (int)0x02000000,    // IMU 2 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU1_ACC_BIAS    = (int)0x10000000,    // IMU 1 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
+    CAL_BIT_NOTICE_IMU2_ACC_BIAS    = (int)0x20000000,    // IMU 2 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
 };
 
 
@@ -1567,10 +1583,10 @@ typedef struct PACKED
 	float                   tcPqrLinearity;
 	float                   tcAccLinearity;
 
-	/** PQR motion (angular rate) */
+	/** Gyro bias error (rad/s) */
 	float                   pqr;
 
-	/** ACC motion w/ gravity removed (linear acceleration) */
+	/** Accelerometer bias error (m/s^2) */
 	float                   acc;
 
 	/** Angular rate standard deviation */
@@ -1580,6 +1596,73 @@ typedef struct PACKED
 	float                   accSigma;
 	
 } bit_t;
+
+
+enum eInfieldCalState
+{
+    /* User Commands: */
+    INFIELD_CAL_STATE_CMD_OFF                           = 0,
+
+    /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 1,	// Save sample into cal data.
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 2,	// Don't save sample into cal data.
+    INFIELD_CAL_STATE_CMD_CLEAR                         = 3,    // Clear existing samples.  (Does not change flash calibration).
+
+    // User Store Commands: Run INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL at least once prior to running the following commands.
+    INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute gyro and accel bias.  
+    INFIELD_CAL_STATE_CMD_STORE_GYRO                    = 6,    // Compute gyro bias. 
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL                   = 7,    // Compute accel bias.  
+    INFIELD_CAL_STATE_CMD_STORE_ALIGN_INS               = 8,    // Estimate INS rotation to align INS with vehicle frame.  Don't compute IMU bias.
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL_ALIGN_INS         = 9,    // Compute accel bias.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_STORE_IMU_ALIGN_INS           = 10,   // Compute gyro and accel bias.  Estimate INS rotation to align INS with vehicle frame. 
+    
+    // Status: (User should not set these)
+    INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_SAMPLING_DONE_WAITING_FOR_USER    = 21,   // Sampling finished. Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 22,   // Follow up calibration zero with BIT and copy out IMU biases.
+    INFIELD_CAL_STATE_FINISHED                          = 23,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
+
+    // Error Status:
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES                  = 100,  // Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 101,  // Error: Calibration zero is not 
+};
+
+/** Inertial Measurement Unit (IMU) data */
+typedef struct PACKED
+{
+	/** Vertical axis acceleration (m/s^2) */
+	float                   acc[3];
+} imus_acc_t;
+
+typedef struct PACKED
+{
+	imus_acc_t              dev[NUM_IMU_DEVICES];
+
+	float					yaw;		// (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
+} infield_cal_direction_t;
+
+typedef struct PACKED
+{
+	infield_cal_direction_t down;		// Pointed toward earth
+	infield_cal_direction_t up;			// Pointed toward sky
+} infield_cal_vaxis_t;
+
+// (DID_INFIELD_CAL)
+typedef struct PACKED
+{
+	/** Used to set and monitor the state of the infield calibration system. (see eInfieldCalState) */
+	uint32_t                state;		
+
+	/** Number of samples used in IMU average. sampleCount = 0 means "imu" member contains the IMU bias from flash.  */
+	uint32_t                sampleCount;
+
+	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleCount != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleCount = 0. */ 
+	imus_t                  imu[NUM_IMU_DEVICES];
+
+	/** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
+	infield_cal_vaxis_t		calData[3];
+
+} infield_cal_t;
 
 
 /** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
