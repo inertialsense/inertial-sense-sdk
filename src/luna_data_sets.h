@@ -297,6 +297,34 @@ typedef struct
 
 } evb_luna_remote_kill_t;
 
+typedef enum
+{
+	RUNMODE_STANDBY                      	= 0,
+	RUNMODE_TELEOP                       	= 1,
+    RUNMODE_TELEOP_RECORD_PATH           	= 2,
+	RUNMODE_MANUAL_RECORD_PATH           	= 3,
+	RUNMODE_RECORD_FINISH                	= 4,
+	RUNMODE_TELEOP_RECORD_AUTO_UNDO      	= 5,
+	RUNMODE_AUTONOMOUS                   	= 6,
+	RUNMODE_AUTONOMOUS_SKIP_WAYPOINT     	= 7,
+	RUNMODE_FAULT                        	= 8,
+
+	// Velocity TESTS
+	RUNMODE_TEST_VEL_DUAL_CMD				= 9,	// Use left vel cmd to drive left and right together
+	RUNMODE_TEST_VEL_CMD				    = 10,
+	RUNMODE_TEST_VEL_SWEEP				    = 11,
+
+	// Effort TESTS
+	RUNMODE_TEST_EFFORT					    = 12,	// (Keep as first effort test)
+
+	// Duty TESTS	
+	RUNMODE_TEST_DUTY			    		= 13,	// (Keep as first duty cycle test)
+	RUNMODE_TEST_DUTY_SWEEP				    = 14,	// Watchdog disabled in testing
+	RUNMODE_TEST_WHL_ANG_VEL_SWEEP          = 15,
+
+	RUNMODE_COUNT
+} eLunaWheelCmdRunmode;
+
 /**
 * (DID_EVB_LUNA_WHEEL_CMD) EVB Luna wheel command.
 */
@@ -306,7 +334,7 @@ typedef struct
 	uint32_t                timeMs;
 
 	/** Control mode (see eLunaWheelControllerMode) */
-	uint32_t                mode;
+	eLunaWheelCmdRunmode   	runMode;
 
 	/** Forward velocity (m/s) */
 	float					fwd_vel;
