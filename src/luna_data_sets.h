@@ -336,23 +336,6 @@ typedef enum
 
 typedef enum
 {
-	LCM_DISABLED					= 0,
-	LCM_STOP						= 1,
-	LCM_ENABLE						= 2,	// With watchdog
-	// Velocity TESTS
-	LCM_TEST_VEL_DUAL_CMD			= 3,	// Use left vel cmd to drive left and right together
-	LCM_TEST_VEL_CMD				= 4,
-	LCM_TEST_VEL_SWEEP				= 5,
-	// Effort TESTS
-	LCM_TEST_EFFORT					= 6,	// (Keep as first effort test)
-	// Duty TESTS	
-	LCM_TEST_DUTY					= 7,	// (Keep as first duty cycle test)
-	LCM_TEST_DUTY_SWEEP				= 8,	// Watchdog disabled in testing
-	LCM_TEST_WHL_ANG_VEL_SWEEP      = 9,
-} eLunaWheelControllerMode;
-
-typedef enum
-{
 	LCS_FAULT_L						= 0x00000001,
 	LCS_FAULT_R						= 0x00000002,
 	LCS_VEL_CMD_LIMITED_L			= 0x00000010,
