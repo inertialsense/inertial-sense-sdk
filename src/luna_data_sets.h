@@ -299,28 +299,29 @@ typedef struct
 
 typedef enum
 {
-	RUNMODE_STANDBY                      	= 0,
-	RUNMODE_TELEOP                       	= 1,
-    RUNMODE_TELEOP_RECORD_PATH           	= 2,
-	RUNMODE_MANUAL_RECORD_PATH           	= 3,
-	RUNMODE_RECORD_FINISH                	= 4,
-	RUNMODE_TELEOP_RECORD_AUTO_UNDO      	= 5,
-	RUNMODE_AUTONOMOUS                   	= 6,
-	RUNMODE_AUTONOMOUS_SKIP_WAYPOINT     	= 7,
-	RUNMODE_FAULT                        	= 8,
+	RUNMODE_STANDBY                     	= 0,
+	RUNMODE_STOP							= 1,
+	RUNMODE_TELEOP                       	= 2,
+    RUNMODE_TELEOP_RECORD_PATH           	= 3,
+	RUNMODE_MANUAL_RECORD_PATH           	= 4,
+	RUNMODE_RECORD_FINISH                	= 5,
+	RUNMODE_TELEOP_RECORD_AUTO_UNDO      	= 6,
+	RUNMODE_AUTONOMOUS                   	= 7,
+	RUNMODE_AUTONOMOUS_SKIP_WAYPOINT     	= 8,
+	RUNMODE_FAULT                        	= 9,
 
 	// Velocity TESTS
-	RUNMODE_TEST_VEL_DUAL_CMD				= 9,	// Use left vel cmd to drive left and right together
-	RUNMODE_TEST_VEL_CMD				    = 10,
-	RUNMODE_TEST_VEL_SWEEP				    = 11,
+	RUNMODE_TEST_VEL_DUAL_CMD				= 10,	// Use left vel cmd to drive left and right together
+	RUNMODE_TEST_VEL_CMD				    = 11,
+	RUNMODE_TEST_VEL_SWEEP				    = 12,
 
 	// Effort TESTS
-	RUNMODE_TEST_EFFORT					    = 12,	// (Keep as first effort test)
+	RUNMODE_TEST_EFFORT					    = 13,	// (Keep as first effort test)
 
 	// Duty TESTS	
-	RUNMODE_TEST_DUTY			    		= 13,	// (Keep as first duty cycle test)
-	RUNMODE_TEST_DUTY_SWEEP				    = 14,	// Watchdog disabled in testing
-	RUNMODE_TEST_WHL_ANG_VEL_SWEEP          = 15,
+	RUNMODE_TEST_DUTY			    		= 14,	// (Keep as first duty cycle test)
+	RUNMODE_TEST_DUTY_SWEEP				    = 15,	// Watchdog disabled in testing
+	RUNMODE_TEST_WHL_ANG_VEL_SWEEP          = 16,
 
 	RUNMODE_COUNT
 } eLunaWheelCmdRunmode;
@@ -333,7 +334,7 @@ typedef struct
 	/** Local system time in milliseconds */
 	uint32_t                timeMs;
 
-	/** Control mode (see eLunaWheelControllerMode) */
+	/** Control mode (see eLunaWheelCmdRunmode) */
 	eLunaWheelCmdRunmode   	runMode;
 
 	/** Forward velocity (m/s) */
@@ -386,8 +387,8 @@ typedef struct
 	/** Delta time */
 	float                	dt;
 
-	/** Wheel control mode: (see eLunaWheelControllerMode) */
-	uint32_t            	mode;
+	/** Wheel control mode: (see eLunaWheelCmdRunmode) */
+	uint32_t            	runMode;
 
 	/** Wheel control status (see eLunaWheelControllerStatus) */
 	uint32_t            	status;
