@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -751,6 +751,18 @@ void neg_Vec3(ixVector3 result, const ixVector3 v)
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
+}
+
+void mean_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
+{
+	add_Vec3_Vec3(result, v1, v2);
+	mul_Vec3_X(result, result, 0.5f);
+}
+
+void mean_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d v2 )
+{
+	add_Vec3d_Vec3d(result, v1, v2);
+	mul_Vec3d_X(result, result, 0.5);
 }
 
 void cpy_MatRxC_MatMxN( f_t *result, i_t r, i_t c, i_t r_offset, i_t c_offset, f_t *A, i_t m, i_t n )

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -104,6 +104,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
+	sizeMap[DID_BIT] = sizeof(bit_t);
 	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
 	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
@@ -142,6 +143,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
 	sizeMap[DID_IO] = sizeof(io_t);
+	sizeMap[DID_INFIELD_CAL] = sizeof(infield_cal_t);
 	sizeMap[DID_REFERENCE_IMU] = sizeof(imu_t);
 
 	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
@@ -250,6 +252,31 @@ static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT])
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "gpioStatus", gpioStatus, 0, DataTypeUInt32, uint32_t, 0);
+
+	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef bit_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_BIT];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "hdwBitStatus", hdwBitStatus, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "calBitStatus", calBitStatus, 0, DataTypeUInt32, uint32_t, 0);
+
+    ADD_MAP(m, totalSize, "tcPqrBias", tcPqrBias, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcAccBias", tcAccBias, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcPqrSlope", tcPqrSlope, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcAccSlope", tcAccSlope, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcPqrLinearity", tcPqrLinearity, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "tcAccLinearity", tcAccLinearity, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "acc", pqr, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr", acc, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -725,6 +752,99 @@ static void PopulateIMU3MagnetometerMappings(map_name_to_info_t mappings[DID_COU
 	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&, 0);
 
 	ASSERT_SIZE(totalSize);
+}
+
+static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef infield_cal_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_INFIELD_CAL];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
+
+	ADD_MAP(m, totalSize, "imu[0].pqr[0]", imu[0].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[0].pqr[1]", imu[0].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[0].pqr[2]", imu[0].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[0].acc[0]", imu[0].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[0].acc[1]", imu[0].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[0].acc[2]", imu[0].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[1].pqr[0]", imu[1].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[1].pqr[1]", imu[1].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[1].pqr[2]", imu[1].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[1].acc[0]", imu[1].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[1].acc[1]", imu[1].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[1].acc[2]", imu[1].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].pqr[0]", imu[2].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].pqr[1]", imu[2].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].pqr[2]", imu[2].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].acc[0]", imu[2].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].acc[1]", imu[2].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imu[2].acc[2]", imu[2].acc[2], 0, DataTypeFloat, float&, 0);
+
+    ADD_MAP(m, totalSize, "calData[0].down.dev[0].acc[0]", calData[0].down.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[0].acc[1]", calData[0].down.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[0].acc[2]", calData[0].down.dev[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[1].acc[0]", calData[0].down.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[1].acc[1]", calData[0].down.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[1].acc[2]", calData[0].down.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[2].acc[0]", calData[0].down.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[2].acc[1]", calData[0].down.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.dev[2].acc[2]", calData[0].down.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].down.yaw", calData[0].down.yaw, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[0].acc[0]", calData[0].up.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[0].acc[1]", calData[0].up.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[0].acc[2]", calData[0].up.dev[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[1].acc[0]", calData[0].up.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[1].acc[1]", calData[0].up.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[1].acc[2]", calData[0].up.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[2].acc[0]", calData[0].up.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[2].acc[1]", calData[0].up.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.dev[2].acc[2]", calData[0].up.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[0].up.yaw", calData[0].up.yaw, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "calData[1].down.dev[0].acc[0]", calData[1].down.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[0].acc[1]", calData[1].down.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[0].acc[2]", calData[1].down.dev[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[1].acc[0]", calData[1].down.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[1].acc[1]", calData[1].down.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[1].acc[2]", calData[1].down.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[2].acc[0]", calData[1].down.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[2].acc[1]", calData[1].down.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.dev[2].acc[2]", calData[1].down.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].down.yaw", calData[1].down.yaw, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[0].acc[0]", calData[1].up.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[0].acc[1]", calData[1].up.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[0].acc[2]", calData[1].up.dev[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[1].acc[0]", calData[1].up.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[1].acc[1]", calData[1].up.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[1].acc[2]", calData[1].up.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[2].acc[0]", calData[1].up.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[2].acc[1]", calData[1].up.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.dev[2].acc[2]", calData[1].up.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[1].up.yaw", calData[1].up.yaw, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "calData[2].down.dev[0].acc[0]", calData[2].down.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[0].acc[1]", calData[2].down.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[0].acc[2]", calData[2].down.dev[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[1].acc[0]", calData[2].down.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[1].acc[1]", calData[2].down.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[1].acc[2]", calData[2].down.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[2].acc[0]", calData[2].down.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[2].acc[1]", calData[2].down.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.dev[2].acc[2]", calData[2].down.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].down.yaw", calData[2].down.yaw, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[0].acc[0]", calData[2].up.dev[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[0].acc[1]", calData[2].up.dev[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[0].acc[2]", calData[2].up.dev[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[1].acc[0]", calData[2].up.dev[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[1].acc[1]", calData[2].up.dev[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[1].acc[2]", calData[2].up.dev[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[2].acc[0]", calData[2].up.dev[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[2].acc[1]", calData[2].up.dev[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.dev[2].acc[2]", calData[2].up.dev[2].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "calData[2].up.yaw", calData[2].up.yaw, 0, DataTypeFloat, float, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateReferenceIMUMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2247,7 +2367,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS2_RTK_CMP_REL",             // 91
 	"DID_GPS2_RTK_CMP_MISC",            // 92
 	"DID_EVB_DEV_INFO",                 // 93
-	"UNUSED_94",                        // 94 
+	"DID_INFIELD_CAL",                  // 94 
 	"DID_REFERENCE_IMU",                // 95 
 	"UNUSED_96",                        // 96 
 	"UNUSED_97",                        // 97 
@@ -2280,6 +2400,7 @@ cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
+	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
@@ -2319,6 +2440,7 @@ cISDataMappings::cISDataMappings()
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
 	PopulateIOMappings(m_lookupInfo);
 	PopulateReferenceIMUMappings(m_lookupInfo);
+	PopulateInfieldCalMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
