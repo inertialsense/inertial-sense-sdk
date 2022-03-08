@@ -186,9 +186,6 @@ typedef struct
 	/** Status (eEvbLunaStatus) Reset faults by setting these to zero */
 	uint32_t                evbLunaStatus;
 
-	/** Motor state (eLunaMotorState) */
-	uint32_t                motorState;
-
 	/** Remotekill mode (eLunaRemoteKillMode) */
 	uint32_t                remoteKillMode;
 
@@ -254,13 +251,6 @@ typedef enum
 	EVB_LUNA_STATUS_AXIS_ERR_MASK						= 0xFF000000,
 
 } eEvbLunaStatus;
-
-typedef enum
-{
-	LMS_UNSPECIFIED					= 0,
-	LMS_MOTOR_CONTROL_ENABLE		= 1,	// Motor control enabled.
-	LMS_MOTOR_CONTROL_DISABLE		= 2,	// Motor control disabled.  Engine shutoff is controlled only by remote kill.
-} eLunaMotorState;
 
 typedef enum
 {
@@ -335,7 +325,7 @@ typedef struct
 	uint32_t                timeMs;
 
 	/** Control mode (see eLunaWheelCmdRunmode) */
-	eLunaWheelCmdRunmode   	runMode;
+	uint32_t	   			runMode;
 
 	/** Forward velocity (m/s) */
 	float					fwd_vel;
