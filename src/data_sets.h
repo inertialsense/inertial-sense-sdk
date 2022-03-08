@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -1197,7 +1197,7 @@ enum eSystemCommand
 
     SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
     SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
-    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
+    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY is run automatically following this command
     SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
     SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
 
@@ -1546,7 +1546,7 @@ enum eBitState
 	BIT_STATE_DONE				                        = (int)1,   // Test is finished
     BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,   // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
     BIT_STATE_CMD_BASIC_MOVING                          = (int)3,   // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-    BIT_STATE_RESERVED_1                                = (int)4,   
+    BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY         = (int)4,   // Same as BIT_STATE_CMD_FULL_STATIONARY but with higher requirements for accuracy.
     BIT_STATE_RESERVED_2                                = (int)5,   
     BIT_STATE_RUNNING                                   = (int)6,   
     BIT_STATE_FINISHING                                 = (int)7,	// Computing results
@@ -1646,30 +1646,31 @@ typedef struct PACKED
 
 enum eInfieldCalState
 {
-	/* User Commands: */
-    INFIELD_CAL_STATE_CMD_OFF                      = 0,
+    /* User Commands: */
+    INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
-	/* User Sample Command: Initiate 5 second sensor sampling and averaging. */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE             = 1,
-    INFIELD_CAL_STATE_CMD_CLEAR                    = 2,		// Erase prior calibration
+    /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 1,	// Save sample into cal data.
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 2,	// Don't save sample into cal data.
+    INFIELD_CAL_STATE_CMD_CLEAR                         = 3,    // Clear existing samples.  (Does not change flash calibration).
 
-	// User Zero Commands: Run INFIELD_CAL_STATE_CMD_SAMPLE at least once prior to running the following commands.
-    INFIELD_CAL_STATE_CMD_ZERO_IMU                 = 5,		// Zero gyro and accel calibration.  
-    INFIELD_CAL_STATE_CMD_ZERO_GYRO                = 6,		// Zero gyro calibration. 
-    INFIELD_CAL_STATE_CMD_ZERO_ACCEL               = 7,		// Zero accel calibration.  
-    INFIELD_CAL_STATE_CMD_ZERO_ACCEL_ALIGN_INS     = 8,		// Zero accel calibration.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_ZERO_IMU_ALIGN_INS       = 9,		// Zero gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
-    INFIELD_CAL_STATE_CMD_ZERO_ACCEL_ALIGN_INS_BIASED = 10,	// Zero accel calibration.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_ZERO_IMU_ALIGN_INS_BIASED= 11,	// Zero gyro and accel calibration.  Estimate INS rotation to align INS with vehicle frame. 
+    // User Store Commands: Run INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL at least once prior to running the following commands.
+    INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute gyro and accel bias.  
+    INFIELD_CAL_STATE_CMD_STORE_GYRO                    = 6,    // Compute gyro bias. 
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL                   = 7,    // Compute accel bias.  
+    INFIELD_CAL_STATE_CMD_STORE_ALIGN_INS               = 8,    // Estimate INS rotation to align INS with vehicle frame.  Don't compute IMU bias.
+    INFIELD_CAL_STATE_CMD_STORE_ACCEL_ALIGN_INS         = 9,    // Compute accel bias.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_STORE_IMU_ALIGN_INS           = 10,   // Compute gyro and accel bias.  Estimate INS rotation to align INS with vehicle frame. 
     
-	// Status: (User should not set these)
-    INFIELD_CAL_STATE_SAMPLING                     = 20,	// System is averaging the IMU data.  Minimize all motion and vibration.
-    INFIELD_CAL_STATE_WAITING_FOR_USER             = 21,	// Waiting for user input.  User must send a command to exit this state.
-    INFIELD_CAL_STATE_RUN_BIT_AND_CLEAR            = 22,	// Follow up calibration zero with BIT
+    // Status: (User should not set these)
+    INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_SAMPLING_DONE_WAITING_FOR_USER    = 21,   // Sampling finished. Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 22,   // Follow up calibration zero with BIT and copy out IMU biases.
+    INFIELD_CAL_STATE_FINISHED                          = 23,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
 
-	// Error Status:
-    INFIELD_CAL_STATE_ERROR_NO_SAMPLES             = 100,	// Error: No samples have been collected
-    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT           = 101,	// Error: Calibration zero is not 
+    // Error Status:
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES                  = 100,  // Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 101,  // Error: Calibration zero is not 
 };
 
 /** Inertial Measurement Unit (IMU) data */
@@ -1695,13 +1696,18 @@ typedef struct PACKED
 // (DID_INFIELD_CAL)
 typedef struct PACKED
 {
-	uint32_t                state;		// (see eInfieldCalState)
+	/** Used to set and monitor the state of the infield calibration system. (see eInfieldCalState) */
+	uint32_t                state;		
 
+	/** Number of samples used in IMU average. sampleCount = 0 means "imu" member contains the IMU bias from flash.  */
 	uint32_t                sampleCount;
 
+	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleCount != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleCount = 0. */ 
 	imus_t                  imu[NUM_IMU_DEVICES];
 
-	infield_cal_vaxis_t		calData[3];		// Vertical axis: 0 = X, 1 = Y, 2 = Z
+	/** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
+	infield_cal_vaxis_t		calData[3];
+
 } infield_cal_t;
 
 
