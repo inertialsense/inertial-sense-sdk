@@ -1170,7 +1170,7 @@ enum eSystemCommand
 
     SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
     SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
-    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
+    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY is run automatically following this command
     SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
     SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
 
@@ -1500,7 +1500,7 @@ enum eBitState
 	BIT_STATE_DONE				                        = (int)1,   // Test is finished
     BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,   // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
     BIT_STATE_CMD_BASIC_MOVING                          = (int)3,   // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-    BIT_STATE_RESERVED_1                                = (int)4,   
+    BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY         = (int)4,   // Same as BIT_STATE_CMD_FULL_STATIONARY but with higher requirements for accuracy.
     BIT_STATE_RESERVED_2                                = (int)5,   
     BIT_STATE_RUNNING                                   = (int)6,   
     BIT_STATE_FINISHING                                 = (int)7,	// Computing results
