@@ -1627,6 +1627,19 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 101,  // Error: Calibration zero is not 
 };
 
+enum eInfieldCalStatus
+{
+	INFIELD_CAL_STATUS_SAMPLE_DN                        = 0x00000001,
+    INFIELD_CAL_STATUS_SAMPLE_UP                        = 0x00000002,
+    INFIELD_CAL_STATUS_SAMPLE_DN_180_AVERAGE            = 0x00000004,
+    INFIELD_CAL_STATUS_SAMPLE_UP_180_AVERAGE            = 0x00000008,
+    INFIELD_CAL_STATUS_SAMPLE_MASK                      = 0x0000000F,
+
+    INFIELD_CAL_STATUS_SAMPLE_X_OFFSET                  = 0,
+    INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET                  = 4,
+    INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET                  = 8,
+};
+
 /** Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
@@ -1651,7 +1664,10 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** Used to set and monitor the state of the infield calibration system. (see eInfieldCalState) */
-	uint32_t                state;		
+	uint32_t                state;
+
+	/** Infield calibration status. (see eInfieldCalStatus) */
+	uint32_t                status;
 
 	/** Number of samples used in IMU average. sampleCount = 0 means "imu" member contains the IMU bias from flash.  */
 	uint32_t                sampleCount;
