@@ -1062,7 +1062,7 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "runMode", runMode, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "velCmd_l", velCmd_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velCmd_r", velCmd_r, 0, DataTypeFloat, float, 0);
@@ -1092,7 +1092,7 @@ static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_WHEEL_COMMAND];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "runMode", runMode, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "fwd_vel", fwd_vel, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "turn_rate", turn_rate, 0, DataTypeFloat, float, 0);
 
