@@ -1604,9 +1604,10 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
     /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 1,	// Save sample into cal data.
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 2,	// Don't save sample into cal data.
-    INFIELD_CAL_STATE_CMD_CLEAR                         = 3,    // Clear existing samples.  (Does not change flash calibration).
+    INFIELD_CAL_STATE_CMD_INIT                          = 1,	// Initialize infield calibration
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 2,	// Save sample into cal data.
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 3,	// Don't save sample into cal data.
+    INFIELD_CAL_STATE_CMD_CLEAR                         = 4,    // Clear existing samples.  (Does not change flash calibration).
 
     // User Store Commands: Run INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL at least once prior to running the following commands.
     INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute gyro and accel bias.  
@@ -1618,13 +1619,15 @@ enum eInfieldCalState
     
     // Status: (User should not set these)
     INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
-    INFIELD_CAL_STATE_SAMPLING_DONE_WAITING_FOR_USER    = 21,   // Sampling finished. Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_SAMPLING_WAITING_FOR_USER_INPUT   = 21,   // Waiting for user input.  User must send a command to exit this state.
     INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 22,   // Follow up calibration zero with BIT and copy out IMU biases.
     INFIELD_CAL_STATE_FINISHED                          = 23,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
 
     // Error Status:
-    INFIELD_CAL_STATE_ERROR_NO_SAMPLES                  = 100,  // Error: No samples have been collected
-    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 101,  // Error: Calibration zero is not 
+    INFIELD_CAL_STATE_ERROR_MOTION_DETECTED_SAMPLE_ABORT= 100,  // Error: Motion detected. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_NOT_VERTICAL_SAMPLE_ABORT   = 101,  // Error: System not vertical. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES                  = 102,  // Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 103,  // Error: Calibration zero is not 
 };
 
 enum eInfieldCalStatus
@@ -1638,6 +1641,8 @@ enum eInfieldCalStatus
     INFIELD_CAL_STATUS_SAMPLE_X_OFFSET                  = 0,
     INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET                  = 4,
     INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET                  = 8,
+
+	INFIELD_CAL_VERTICALLY_ALIGNED                      = 0x00010000,
 };
 
 /** Inertial Measurement Unit (IMU) data */
