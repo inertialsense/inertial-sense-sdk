@@ -1603,13 +1603,14 @@ enum eInfieldCalState
     /** User Commands: */
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
-    /** Initialization Commands.  Select one to set the mode and clear prior samples.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
-    INFIELD_CAL_STATE_CMD_INIT_IMU                      = 1,    // Zero accels and gyros.
-    INFIELD_CAL_STATE_CMD_INIT_GYRO                     = 2,    // Zero only gyros.
-    INFIELD_CAL_STATE_CMD_INIT_ACCEL                    = 3,    // Zero only accels.
+    /** Initialization Commands.  Select one to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
+    INFIELD_CAL_STATE_CMD_INIT_IMU                      = 1,    // Zero accel and gyro biases.
+    INFIELD_CAL_STATE_CMD_INIT_GYRO                     = 2,    // Zero only gyro  biases.
+    INFIELD_CAL_STATE_CMD_INIT_ACCEL                    = 3,    // Zero only accel biases.
     INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS                = 4,    // Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_INIT_ACCEL_ALIGN_INS          = 5,    // Zero accel.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_INIT_IMU_ALIGN_INS            = 6,    // Compute gyro and accel bias.  Estimate INS rotation to align INS with vehicle frame. 
+    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_IMU            = 5,    // Zero gyro and accel biases.  Estimate INS rotation to align INS with vehicle frame. 
+    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_GYRO           = 6,    // Zero only gyro  biases.  Estimate INS rotation to align INS with vehicle frame. 
+    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_ACCEL          = 7,    // Zero only accel biases.  Estimate INS rotation to align INS with vehicle frame.
     INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the init command to disable motion detection fault (allow for more tolerant sampling).
 
     /** Sample and End Commands: */
