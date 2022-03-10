@@ -1624,10 +1624,11 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_FINISHED                          = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
 
     /** Error Status: (read only) */
-    INFIELD_CAL_STATE_ERROR_MOTION_DETECTED_SAMPLE_ABORT= 100,  // Error: Motion detected. Sampling aborted. 
-    INFIELD_CAL_STATE_ERROR_NOT_VERTICAL_SAMPLE_ABORT   = 101,  // Error: System not vertical. Sampling aborted. 
-    INFIELD_CAL_STATE_ERROR_NO_SAMPLES_COLLECTED        = 102,  // Error: No samples have been collected
-    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 103,  // Error: Calibration zero is not 
+    INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED             = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set. 
+    INFIELD_CAL_STATE_ERROR_MOTION_DETECTED_SAMPLE_ABORT= 101,  // Error: Motion detected. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_NOT_VERTICAL_SAMPLE_ABORT   = 102,  // Error: System not vertical. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES_COLLECTED        = 103,  // Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 104,  // Error: Calibration zero is not 
 
     /** Internal Use Only */
 	INFIELD_CAL_STATE_CMD_MASK                          = 0x0000FFFF,
@@ -1650,9 +1651,11 @@ enum eInfieldCalStatus
 	INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO                = 0x00020000,	// Zero gyro bias.
 	INFIELD_CAL_STATUS_ENABLED_ALIGN_INS                = 0x00040000,	// INS alignment to estimate INS rotation.
 	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00080000,	// Require no motion during sampling. 
+	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x000F0000,
+	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x00100000,	// Used for BIT 
 
-	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x00100000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
-	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x00200000,	// System is not stationary and cannot be used for infield calibration.
+	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x01000000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
+	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x02000000,	// System is not stationary and cannot be used for infield calibration.
 };
 
 /** Inertial Measurement Unit (IMU) data */
