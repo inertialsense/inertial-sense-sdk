@@ -1687,10 +1687,10 @@ typedef struct PACKED
 	/** Infield calibration status. (see eInfieldCalStatus) */
 	uint32_t                status;
 
-	/** Number of samples used in IMU average. sampleCount = 0 means "imu" member contains the IMU bias from flash.  */
-	uint32_t                sampleCount;
+	/** Number of samples used in IMU average. sampleTimeMs = 0 means "imu" member contains the IMU bias from flash.  */
+	uint32_t                sampleTimeMs;
 
-	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleCount != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleCount = 0. */ 
+	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleTimeMs != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleTimeMs = 0. */ 
 	imus_t                  imu[NUM_IMU_DEVICES];
 
 	/** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
