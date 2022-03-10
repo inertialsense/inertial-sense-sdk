@@ -1603,7 +1603,7 @@ enum eInfieldCalState
     /** User Commands: */
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
-    /** Initialization Commands.  Select one to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
+    /** Initialization Commands.  Select one of the following to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
     INFIELD_CAL_STATE_CMD_INIT_IMU                      = 1,    // Zero accel and gyro biases.
     INFIELD_CAL_STATE_CMD_INIT_GYRO                     = 2,    // Zero only gyro  biases.
     INFIELD_CAL_STATE_CMD_INIT_ACCEL                    = 3,    // Zero only accel biases.
@@ -1611,11 +1611,11 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_IMU            = 5,    // Zero gyro and accel biases.  Estimate INS rotation to align INS with vehicle frame. 
     INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_GYRO           = 6,    // Zero only gyro  biases.  Estimate INS rotation to align INS with vehicle frame. 
     INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_ACCEL          = 7,    // Zero only accel biases.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the init command to disable motion detection fault (allow for more tolerant sampling).
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
 
     /** Sample and End Commands: */
     INFIELD_CAL_STATE_CMD_START_SAMPLE                  = 8,	// Initiate 5 second sensor sampling and averaging.  Run for each orientation and 180 degree yaw rotation.
-    INFIELD_CAL_STATE_CMD_FINISH_AND_SAVE               = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
+    INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH               = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
     
     /** Status: (read only) */
     INFIELD_CAL_STATE_SAMPLING_WAITING_FOR_USER_INPUT   = 50,   // Waiting for user input.  User must send a command to exit this state.
@@ -1625,8 +1625,8 @@ enum eInfieldCalState
 
     /** Error Status: (read only) */
     INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED             = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set. 
-    INFIELD_CAL_STATE_ERROR_MOTION_DETECTED_SAMPLE_ABORT= 101,  // Error: Motion detected. Sampling aborted. 
-    INFIELD_CAL_STATE_ERROR_NOT_VERTICAL_SAMPLE_ABORT   = 102,  // Error: System not vertical. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_MOTION_DETECTED= 101,  // Error: Motion detected. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_NOT_VERTICAL   = 102,  // Error: System not vertical. Sampling aborted. 
     INFIELD_CAL_STATE_ERROR_NO_SAMPLES_COLLECTED        = 103,  // Error: No samples have been collected
     INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 104,  // Error: Calibration zero is not 
 
@@ -3862,6 +3862,7 @@ typedef union PACKED
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
 	evb_status_t			evbStatus;
+	infield_cal_t			infieldCal;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	evb_luna_wheel_controller_t     wheelController;
