@@ -132,6 +132,33 @@ void led_maintenance(void)
 			break;
 		}
 	}
+	else if (g_infieldCal.state)
+	{
+		switch (g_infieldCal.state)
+		{
+		// case ?:
+		// 	LED_COLOR_RED();
+		// 	break;
+
+		default:
+			if( g_infieldCal.status & INFIELD_CAL_STATUS_MOTION_DETECTED ||
+				(g_infieldCal.status & INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL &&
+				 g_infieldCal.status & INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL) )
+			{	// Not ready
+				LED_COLOR_YELLOW();
+			}
+			else
+			{	// Ready for sampling
+				LED_COLOR_GREEN();
+			}
+			break;
+
+		case INFIELD_CAL_STATE_SAMPLING:
+		case INFIELD_CAL_STATE_RUN_BIT_AND_FINISH:
+			LED_COLOR_PURPLE();
+			break;
+		}
+	}
 	else
 	{
 		// Allow for GPS red pulse

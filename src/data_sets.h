@@ -1600,31 +1600,62 @@ typedef struct PACKED
 
 enum eInfieldCalState
 {
-    /* User Commands: */
+    /** User Commands: */
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
-    /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 1,	// Save sample into cal data.
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 2,	// Don't save sample into cal data.
-    INFIELD_CAL_STATE_CMD_CLEAR                         = 3,    // Clear existing samples.  (Does not change flash calibration).
+    /** Initialization Commands.  Select one of the following to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
+    INFIELD_CAL_STATE_CMD_INIT_IMU                      = 1,    // Zero accel and gyro biases.
+    INFIELD_CAL_STATE_CMD_INIT_GYRO                     = 2,    // Zero only gyro  biases.
+    INFIELD_CAL_STATE_CMD_INIT_ACCEL                    = 3,    // Zero only accel biases.
+    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS                = 4,    // Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_IMU            = 5,    // Zero gyro and accel biases.  Estimate INS rotation to align INS with vehicle frame. 
+    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_GYRO           = 6,    // Zero only gyro  biases.  Estimate INS rotation to align INS with vehicle frame. 
+    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_ACCEL          = 7,    // Zero only accel biases.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
 
-    // User Store Commands: Run INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL at least once prior to running the following commands.
-    INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute gyro and accel bias.  
-    INFIELD_CAL_STATE_CMD_STORE_GYRO                    = 6,    // Compute gyro bias. 
-    INFIELD_CAL_STATE_CMD_STORE_ACCEL                   = 7,    // Compute accel bias.  
-    INFIELD_CAL_STATE_CMD_STORE_ALIGN_INS               = 8,    // Estimate INS rotation to align INS with vehicle frame.  Don't compute IMU bias.
-    INFIELD_CAL_STATE_CMD_STORE_ACCEL_ALIGN_INS         = 9,    // Compute accel bias.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_STORE_IMU_ALIGN_INS           = 10,   // Compute gyro and accel bias.  Estimate INS rotation to align INS with vehicle frame. 
+    /** Sample and End Commands: */
+    INFIELD_CAL_STATE_CMD_START_SAMPLE                  = 8,	// Initiate 5 second sensor sampling and averaging.  Run for each orientation and 180 degree yaw rotation.
+    INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH               = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
     
-    // Status: (User should not set these)
-    INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
-    INFIELD_CAL_STATE_SAMPLING_DONE_WAITING_FOR_USER    = 21,   // Sampling finished. Waiting for user input.  User must send a command to exit this state.
-    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 22,   // Follow up calibration zero with BIT and copy out IMU biases.
-    INFIELD_CAL_STATE_FINISHED                          = 23,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
+    /** Status: (read only) */
+    INFIELD_CAL_STATE_SAMPLING_WAITING_FOR_USER_INPUT   = 50,   // Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_SAMPLING                          = 51,   // System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 52,   // Follow up calibration zero with BIT and copy out IMU biases.
+    INFIELD_CAL_STATE_FINISHED                          = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
 
-    // Error Status:
-    INFIELD_CAL_STATE_ERROR_NO_SAMPLES                  = 100,  // Error: No samples have been collected
-    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 101,  // Error: Calibration zero is not 
+    /** Error Status: (read only) */
+    INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED             = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set. 
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_MOTION_DETECTED= 101,  // Error: Motion detected. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_NOT_VERTICAL   = 102,  // Error: System not vertical. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES_COLLECTED        = 103,  // Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 104,  // Error: Calibration zero is not 
+
+    /** Internal Use Only */
+	INFIELD_CAL_STATE_CMD_MASK                          = 0x0000FFFF,
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 11,	// Initiate 5 second sensor sample and averaging.  Does not save sample into cal data.
+};
+
+enum eInfieldCalStatus
+{
+	INFIELD_CAL_STATUS_SAMPLE_DN                        = 0x00000001,
+    INFIELD_CAL_STATUS_SAMPLE_DN_180_AVERAGE            = 0x00000002,
+    INFIELD_CAL_STATUS_SAMPLE_UP                        = 0x00000004,
+    INFIELD_CAL_STATUS_SAMPLE_UP_180_AVERAGE            = 0x00000008,
+    INFIELD_CAL_STATUS_SAMPLE_MASK                      = 0x0000000F,
+
+    INFIELD_CAL_STATUS_SAMPLE_X_OFFSET                  = 0,
+    INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET                  = 4,
+    INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET                  = 8,
+
+	INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL               = 0x00010000,	// Zero accel bias.  Require vertical alignment for sampling. 
+	INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO                = 0x00020000,	// Zero gyro bias.
+	INFIELD_CAL_STATUS_ENABLED_ALIGN_INS                = 0x00040000,	// INS alignment to estimate INS rotation.
+	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00080000,	// Require no motion during sampling. 
+	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x000F0000,
+	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x00100000,	// Used for BIT 
+
+	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x01000000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
+	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x02000000,	// System is not stationary and cannot be used for infield calibration.
 };
 
 /** Inertial Measurement Unit (IMU) data */
@@ -1651,12 +1682,15 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** Used to set and monitor the state of the infield calibration system. (see eInfieldCalState) */
-	uint32_t                state;		
+	uint32_t                state;
 
-	/** Number of samples used in IMU average. sampleCount = 0 means "imu" member contains the IMU bias from flash.  */
-	uint32_t                sampleCount;
+	/** Infield calibration status. (see eInfieldCalStatus) */
+	uint32_t                status;
 
-	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleCount != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleCount = 0. */ 
+	/** Number of samples used in IMU average. sampleTimeMs = 0 means "imu" member contains the IMU bias from flash.  */
+	uint32_t                sampleTimeMs;
+
+	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleTimeMs != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleTimeMs = 0. */ 
 	imus_t                  imu[NUM_IMU_DEVICES];
 
 	/** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
@@ -3828,6 +3862,7 @@ typedef union PACKED
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
 	evb_status_t			evbStatus;
+	infield_cal_t			infieldCal;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	evb_luna_wheel_controller_t     wheelController;
