@@ -263,9 +263,6 @@ enum eInsStatusFlags
 	INS_STATUS_RTOS_TASK_PERIOD_OVERRUN			= (int)0x40000000,
 	/** General fault (eGenFaultCodes) */
 	INS_STATUS_GENERAL_FAULT					= (int)0x80000000,
-
-	/** Output reset mask - these bits are cleared on output */
-	INS_STATUS_OUTPUT_RESET_MASK				= (0),
 };
 
 /** GPS navigation fix type */
@@ -362,9 +359,6 @@ enum eHdwStatusFlags
 
 	/** Critical System Fault - CPU error */
 	HDW_STATUS_FAULT_SYS_CRITICAL				= (int)0x80000000,
-
-	/** Output reset mask - these bits are cleared on output */
-	HDW_STATUS_OUTPUT_RESET_MASK				= (HDW_STATUS_SATURATION_MASK),
 };
 
 // Used to validate GPS position (and velocity)
