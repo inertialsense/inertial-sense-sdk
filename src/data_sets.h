@@ -1604,13 +1604,13 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
     /** Initialization Commands.  Select one of the following to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
-    INFIELD_CAL_STATE_CMD_INIT_IMU                      = 1,    // Zero accel and gyro biases.
-    INFIELD_CAL_STATE_CMD_INIT_GYRO                     = 2,    // Zero only gyro  biases.
-    INFIELD_CAL_STATE_CMD_INIT_ACCEL                    = 3,    // Zero only accel biases.
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS                = 4,    // Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_IMU            = 5,    // Zero gyro and accel biases.  Estimate INS rotation to align INS with vehicle frame. 
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_GYRO           = 6,    // Zero only gyro  biases.  Estimate INS rotation to align INS with vehicle frame. 
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_ACCEL          = 7,    // Zero only accel biases.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_IMU                     = 1,    // Zero accel and gyro biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_GYRO                    = 2,    // Zero only gyro  biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ACCEL                   = 3,    // Zero only accel biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE                = 4,    // Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_IMU            = 5,    // Zero gyro and accel biases.  Zero (level) INS attitude by adjusting INS rotation. 
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_GYRO           = 6,    // Zero only gyro  biases.  Zero (level) INS attitude by adjusting INS rotation. 
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_ACCEL          = 7,    // Zero only accel biases.  Zero (level) INS attitude by adjusting INS rotation.
     INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
 
     /** Sample and End Commands: */
@@ -1618,7 +1618,7 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH               = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
     
     /** Status: (read only) */
-    INFIELD_CAL_STATE_SAMPLING_WAITING_FOR_USER_INPUT   = 50,   // Waiting for user input.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_INITIALIZED_READY_FOR_SAMPLING    = 50,   // Initialized and waiting for user to intiate.  User must send a command to exit this state.
     INFIELD_CAL_STATE_SAMPLING                          = 51,   // System is averaging the IMU data.  Minimize all motion and vibration.
     INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 52,   // Follow up calibration zero with BIT and copy out IMU biases.
     INFIELD_CAL_STATE_FINISHED                          = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
@@ -1637,25 +1637,32 @@ enum eInfieldCalState
 
 enum eInfieldCalStatus
 {
-	INFIELD_CAL_STATUS_SAMPLE_DN                        = 0x00000001,
-    INFIELD_CAL_STATUS_SAMPLE_DN_180_AVERAGE            = 0x00000002,
-    INFIELD_CAL_STATUS_SAMPLE_UP                        = 0x00000004,
-    INFIELD_CAL_STATUS_SAMPLE_UP_180_AVERAGE            = 0x00000008,
-    INFIELD_CAL_STATUS_SAMPLE_MASK                      = 0x0000000F,
+	INFIELD_CAL_STATUS_AXIS_DN_GRAVITY                  = 0x00000001,	// Axis points in direction of gravity more than any other axis.
+	INFIELD_CAL_STATUS_AXIS_DN_SAMPLED                  = 0x00000002,	// Sampled
+    INFIELD_CAL_STATUS_AXIS_DN_SAMPLED_180              = 0x00000004,	// Sampled based on average of two orientations with 180 degree delta yaw. 
+	INFIELD_CAL_STATUS_AXIS_UP_GRAVITY                  = 0x00000008,	// Axis points in direction of gravity more than any other axis.
+	INFIELD_CAL_STATUS_AXIS_UP_SAMPLED                  = 0x00000010,	// Sampled
+    INFIELD_CAL_STATUS_AXIS_UP_SAMPLED_180              = 0x00000020,	// Sampled based on average of two orientations with 180 degree delta yaw.
 
     INFIELD_CAL_STATUS_SAMPLE_X_OFFSET                  = 0,
-    INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET                  = 4,
-    INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET                  = 8,
+    INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET                  = 6,
+    INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET                  = 12,
+	
+    INFIELD_CAL_STATUS_AXIS_MASK                        = 0x0000003F,
+	INFIELD_CAL_STATUS_AXES_GRAVITY_MASK                = ( \
+		((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_X_OFFSET) | \
+		((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET) | \
+		((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET) ),
 
-	INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL               = 0x00010000,	// Zero accel bias.  Require vertical alignment for sampling. 
-	INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO                = 0x00020000,	// Zero gyro bias.
-	INFIELD_CAL_STATUS_ENABLED_ALIGN_INS                = 0x00040000,	// INS alignment to estimate INS rotation.
-	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00080000,	// Require no motion during sampling. 
-	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x000F0000,
-	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x00100000,	// Used for BIT 
+	INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL               = 0x00100000,	// Zero accel bias.  Require vertical alignment for sampling. 
+	INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO                = 0x00200000,	// Zero gyro bias.
+	INFIELD_CAL_STATUS_ENABLED_ZERO_ATTITUDE            = 0x00400000,	// Zero (level) INS attitude by adjusting INS rotation.
+	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00800000,	// Require no motion during sampling. 
+	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x00F00000,
+	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x01000000,	// Used for BIT 
 
-	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x01000000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
-	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x02000000,	// System is not stationary and cannot be used for infield calibration.
+	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x10000000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
+	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x20000000,	// System is not stationary and cannot be used for infield calibration.
 };
 
 /** Inertial Measurement Unit (IMU) data */
