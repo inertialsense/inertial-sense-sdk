@@ -1583,10 +1583,10 @@ typedef struct PACKED
 	float                   tcPqrLinearity;
 	float                   tcAccLinearity;
 
-	/** Gyro bias error (rad/s) */
+	/** Gyro error (rad/s) */
 	float                   pqr;
 
-	/** Accelerometer bias error (m/s^2) */
+	/** Accelerometer error (m/s^2) */
 	float                   acc;
 
 	/** Angular rate standard deviation */
