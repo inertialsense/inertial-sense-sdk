@@ -751,7 +751,7 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
 	map_name_to_info_t& m = mappings[DID_INFIELD_CAL];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "sampleTimeMs", sampleTimeMs, 0, DataTypeUInt32, uint32_t, 0);
 
 	ADD_MAP(m, totalSize, "imu[0].pqr[0]", imu[0].pqr[0], 0, DataTypeFloat, float&, 0);

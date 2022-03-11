@@ -1604,13 +1604,13 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
     /** Initialization Commands.  Select one of the following to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
-    INFIELD_CAL_STATE_CMD_INIT_IMU                      = 1,    // Zero accel and gyro biases.
-    INFIELD_CAL_STATE_CMD_INIT_GYRO                     = 2,    // Zero only gyro  biases.
-    INFIELD_CAL_STATE_CMD_INIT_ACCEL                    = 3,    // Zero only accel biases.
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS                = 4,    // Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_IMU            = 5,    // Zero gyro and accel biases.  Estimate INS rotation to align INS with vehicle frame. 
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_GYRO           = 6,    // Zero only gyro  biases.  Estimate INS rotation to align INS with vehicle frame. 
-    INFIELD_CAL_STATE_CMD_INIT_ALIGN_INS_ACCEL          = 7,    // Zero only accel biases.  Estimate INS rotation to align INS with vehicle frame.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_IMU                     = 1,    // Zero accel and gyro biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_GYRO                    = 2,    // Zero only gyro  biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ACCEL                   = 3,    // Zero only accel biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE                = 4,    // Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_IMU            = 5,    // Zero gyro and accel biases.  Zero (level) INS attitude by adjusting INS rotation. 
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_GYRO           = 6,    // Zero only gyro  biases.  Zero (level) INS attitude by adjusting INS rotation. 
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_ACCEL          = 7,    // Zero only accel biases.  Zero (level) INS attitude by adjusting INS rotation.
     INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
 
     /** Sample and End Commands: */
@@ -1656,7 +1656,7 @@ enum eInfieldCalStatus
 
 	INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL               = 0x00100000,	// Zero accel bias.  Require vertical alignment for sampling. 
 	INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO                = 0x00200000,	// Zero gyro bias.
-	INFIELD_CAL_STATUS_ENABLED_ALIGN_INS                = 0x00400000,	// INS alignment to estimate INS rotation.
+	INFIELD_CAL_STATUS_ENABLED_ZERO_ATTITUDE            = 0x00400000,	// Zero (level) INS attitude by adjusting INS rotation.
 	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00800000,	// Require no motion during sampling. 
 	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x00F00000,
 	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x01000000,	// Used for BIT 
