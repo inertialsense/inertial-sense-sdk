@@ -1271,7 +1271,9 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                 //printf("Bootloader file version: %d%c.\n", fileVerMajor, fileVerMinor);
 
                 //Check bootloader version against file
-                if (blVerMajor < fileVerMajor || blVerMinor < fileVerMinor || p->forceBootloaderUpdate > 0)
+                if (blVerMajor < fileVerMajor || 
+                    (blVerMajor == fileVerMajor && blVerMinor < fileVerMinor) || 
+                    p->forceBootloaderUpdate > 0)
                 {
                     if (sambaSupport)
                     {
