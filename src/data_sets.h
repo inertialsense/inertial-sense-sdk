@@ -166,6 +166,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
 #define NUM_IMU_DEVICES     2
+#define NUM_MAG_DEVICES     2
 
 /** INS status flags */
 enum eInsStatusFlags
