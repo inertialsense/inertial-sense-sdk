@@ -3507,7 +3507,7 @@ enum eEvb2ComBridgePreset
     /** [uINS Hub] LED-PUR (uINS-COM): USB, RS422, H8.  (uINS-AUX): WiFi, XRadio.  Off: XBee */
     EVB2_CB_PRESET_RS422_WIFI = 4,
 
-    /** [uINS Hub] LED-CYA (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee */
+    /** [uINS Hub] LED-CYA (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee.  A reset is required following selection of this CBPreset to enable SPI on the uINS, in order to assert uINS pin 10 (G9/nSPI_EN) during bootup. */
     EVB2_CB_PRESET_SPI_RS232 = 5,
 
     /** [USB Hub]  LED-YEL (USB): RS232, H8, XBee, XRadio. */
