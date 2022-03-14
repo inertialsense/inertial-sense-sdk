@@ -290,14 +290,14 @@ typedef struct
 typedef enum
 {
 	RUNMODE_STANDBY                     	= 0,
-	RUNMODE_STOP							= 1,
-	RUNMODE_TELEOP                       	= 2,
-    RUNMODE_TELEOP_RECORD_PATH           	= 3,
-	RUNMODE_RECORD_FINISH                	= 4,
-	RUNMODE_TELEOP_RECORD_AUTO_UNDO      	= 5,
-	RUNMODE_AUTONOMOUS                   	= 6,
-	RUNMODE_AUTONOMOUS_SKIP_WAYPOINT     	= 7,
-	RUNMODE_FAULT                        	= 8,
+	RUNMODE_TELEOP                       	= 1,
+    RUNMODE_TELEOP_RECORD_PATH           	= 2,
+	RUNMODE_RECORD_FINISH                	= 3,
+	RUNMODE_TELEOP_RECORD_AUTO_UNDO      	= 4,
+	RUNMODE_AUTONOMOUS                   	= 5,
+	RUNMODE_AUTONOMOUS_SKIP_WAYPOINT     	= 6,
+	RUNMODE_FAULT                        	= 7,
+	RUNMODE_STOP							= 8,
 
 	// Velocity TESTS
 	RUNMODE_TEST_VEL_DUAL_CMD				= 9,	// Use left vel cmd to drive left and right together

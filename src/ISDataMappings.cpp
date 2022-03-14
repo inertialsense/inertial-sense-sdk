@@ -1029,7 +1029,7 @@ static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT])
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "evbLunaStatus", evbLunaStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-	ADD_MAP(m, totalSize, "remoteKillMode", remoteKillMode, 0, DataTypeFloat, uint32_t, 0);
+	ADD_MAP(m, totalSize, "remoteKillMode", remoteKillMode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "supplyVoltage", supplyVoltage, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
