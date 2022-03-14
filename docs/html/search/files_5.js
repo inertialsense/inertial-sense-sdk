@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['protocol_5fnmea_2ecpp_4006',['protocol_nmea.cpp',['../protocol__nmea_8cpp.html',1,'']]],
-  ['protocol_5fnmea_2eh_4007',['protocol_nmea.h',['../protocol__nmea_8h.html',1,'']]],
-  ['pybindmacros_2eh_4008',['pybindMacros.h',['../pybind_macros_8h.html',1,'']]]
+  ['message_5fstats_2ecpp',['message_stats.cpp',['../message__stats_8cpp.html',1,'']]],
+  ['message_5fstats_2eh',['message_stats.h',['../message__stats_8h.html',1,'']]]
 ];
