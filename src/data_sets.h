@@ -1163,12 +1163,6 @@ enum eSystemCommand
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
 
-    SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
-    SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
-    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY is run automatically following this command
-    SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
-    SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
-
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
     SYS_CMD_SOFTWARE_RESET                      = 99,
