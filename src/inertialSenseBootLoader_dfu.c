@@ -1,11 +1,10 @@
 /**
- * @file inertialSenseBootLoader_dfu.h
+ * @file inertialSenseBootLoader_dfu.c
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief DFU firmware update routines for Inertial Sense products
+ * @author Steven Fusco ()
+ * @brief Inertial Sense bootloader for DFU-capable STM32 defices
  * @version 0.1
  * @date 2022-03-14
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc.
  * 
  */
 
@@ -20,16 +19,6 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
-/**
- * @file inertialSenseBootLoader_dfu.c
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @author Steven Fusco ()
- * @brief Inertial Sense bootloader for DFU-capable STM32 defices
- * @version 0.1
- * @date 2022-03-14
- * 
- */
 
 #include "inertialSenseBootLoader_dfu.h"
 
