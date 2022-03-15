@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['obs_5ft_3877',['obs_t',['../structobs__t.html',1,'']]]
+  ['nocase_5fcompare',['nocase_compare',['../structs_case_insensitive_compare_1_1nocase__compare.html',1,'sCaseInsensitiveCompare']]]
 ];
