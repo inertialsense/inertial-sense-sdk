@@ -1488,7 +1488,7 @@ typedef struct PACKED
 	float                   bias_cal[3];    // Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal)
 } inl2_mag_obs_info_t;
 
-/** Built-in test state */
+/** Built-in Test: State */
 enum eBitState
 {
 	BIT_STATE_OFF					                    = (int)0,
@@ -1500,8 +1500,12 @@ enum eBitState
     BIT_STATE_RUNNING                                   = (int)6,   
     BIT_STATE_FINISHING                                 = (int)7,	// Computing results
     BIT_STATE_CMD_OFF                                   = (int)8,   // Stop built-in test
+};
 
-    BIT_STATE_TEST_SIM_GPS_NOISE                        = (int)100, // Simulate CNO noise
+/** Built-in Test: Test Mode */
+enum eBitTestMode
+{
+    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)1,   // Simulate CNO noise
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -1591,6 +1595,9 @@ typedef struct PACKED
 
 	/** Acceleration standard deviation */
 	float                   accSigma;
+
+	/** Self-test mode (see eBitTestMode) */
+	uint32_t                testMode;
 
 } bit_t;
 
