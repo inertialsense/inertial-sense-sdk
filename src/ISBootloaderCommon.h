@@ -35,9 +35,9 @@ extern "C" {
 
 #endif
 
-uins_device uins_3(uint8_t minor);
-uins_device uins_4(uint8_t minor);
-uins_device uins_5(uint8_t minor);
+is_device uins_3(uint8_t minor);
+is_device uins_4(uint8_t minor);
+is_device uins_5(uint8_t minor);
 
 /**
  * @brief probes the USB bus, builds device uris and adds them to the list
@@ -45,7 +45,7 @@ uins_device uins_5(uint8_t minor);
  * @param list list of device uris
  * @param callback_fn called for each device found
  */
-void uins_probe_device_list(uins_device_uri_list* list, uins_list_devices_callback_fn callback_fn);
+void is_probe_device_list(is_device_uri_list* list, is_list_devices_callback_fn callback_fn);
 
 /**
  * @brief frees the memory from the probed devices
@@ -53,7 +53,7 @@ void uins_probe_device_list(uins_device_uri_list* list, uins_list_devices_callba
  * @param list list of device uris
  * @param callback_fn 
  */
-void uins_free_device_list(uins_device_uri_list* list);
+void is_free_device_list(is_device_uri_list* list);
 
 /**
  * @brief copies a device uri to the list
@@ -61,7 +61,7 @@ void uins_free_device_list(uins_device_uri_list* list);
  * @param list list of device uris
  * @param uri new uri to add to the list
  */
-void uins_add_device(uins_device_uri_list* list, uins_device_uri uri);
+void is_add_device(is_device_uri_list* list, is_device_uri uri);
 
 /**
  * @brief Create a device interface object
@@ -73,13 +73,13 @@ void uins_add_device(uins_device_uri_list* list, uins_device_uri uri);
  * @return a newly allocated device interface on the heap
  * @see uins_destroy_device_interface 
  */
-uins_device_interface* uins_create_device_interface(
-    uins_device device,
-    const uins_device_uri unique_identifier
+is_device_interface* uins_create_device_interface(
+    is_device device,
+    const is_device_uri unique_identifier
 );
 
 /** performs any necessary flush or clean up operations, releases instance data resources and frees heap memory from create */
-uins_operation_result uins_destroy_device_interface(uins_device_interface* interface);
+is_operation_result uins_destroy_device_interface(is_device_interface* interface);
 
 /** changes the log level of the device interface
  * 0: nothing
@@ -89,18 +89,26 @@ uins_operation_result uins_destroy_device_interface(uins_device_interface* inter
  * 4: debug
  * 5: silly
 */
-uins_operation_result uins_change_log_level(uins_device_interface* interface, uins_device_interface_log_level log_level);
+is_operation_result uins_change_log_level(is_device_interface* interface, is_device_interface_log_level log_level);
 
 /** copy hex file from this machine to the device interface */
-uins_operation_result uins_update_flash(
-    const uins_device_interface* interface,
+is_operation_result uins_update_flash(
+    const is_device_interface* interface,
     const char* firmware_file_path,
-    uins_update_flash_style firmware_type,
-    uins_verification_style verification_style,
-    pfnUinsDeviceInterfaceError error_callback,
-    pfnUinsDeviceInterfaceTaskProgress upload_progress_callback,
-    pfnUinsDeviceInterfaceTaskProgress verify_progress_callback,
+    is_update_flash_style firmware_type,
+    is_verification_style verification_style,
+    pfnIsDeviceInterfaceError error_callback,
+    pfnIsDeviceInterfaceTaskProgress upload_progress_callback,
+    pfnIsDeviceInterfaceTaskProgress verify_progress_callback,
     const void* user_data
+);
+
+void is_print_device_info(
+	libusb_context* ctx,
+	struct libusb_device *dev,
+	struct libusb_device_descriptor* desc,
+	struct libusb_config_descriptor* cfg,
+	libusb_device_handle* devh
 );
 
 #ifdef __cplusplus

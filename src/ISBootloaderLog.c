@@ -24,8 +24,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderLog.h"
 
 void uinsLog(
-	const uins_device_interface_log_level message_level,
-	const uins_device_context const * context,
+	const is_device_interface_log_level message_level,
+	const is_device_context const * context,
 	const int error_code,
 	const char * error_message
 )
@@ -57,17 +57,17 @@ void uinsLog(
 	}
 }
 
-void uinsLogError(const uins_device_context const * context, const int error_code, const char * error_message)
+void uinsLogError(const is_device_context const * context, const int error_code, const char * error_message)
 {
 	uinsLog(IS_LOG_LEVEL_ERROR, context, error_code, error_message);
 }
 
-void uinsLogWarn(const uins_device_context const * context, const int error_code, const char * error_message)
+void uinsLogWarn(const is_device_context const * context, const int error_code, const char * error_message)
 {
 	uinsLog(IS_LOG_LEVEL_WARN, context, error_code, error_message);
 }
 
-void uinsLogDebug(const uins_device_context const * context, const char *format, ...)
+void uinsLogDebug(const is_device_context const * context, const char *format, ...)
 {
 	if (context->interface->log_level >= IS_LOG_LEVEL_DEBUG)
 	{

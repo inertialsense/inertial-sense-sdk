@@ -40,55 +40,61 @@ typedef enum {
     IS_DEVICE_INTERFACE_FLAG_RSVD5      = 0b01000000,
 
     IS_DEVICE_INTERFACE_FLAG_DEBUG      = 0b10000000,
-} uins_device_interface_flags;
+} is_device_interface_flags;
 
 typedef enum {
     IS_UPDATE_BOOTLOADER        = 1,
     IS_UPDATE_UINS_FIRMWARE     = 2,
     IS_UPDATE_EVB_FIRMARE       = 3,    
-} uins_update_flash_style;
+} is_update_flash_style;
 
 typedef enum {
     IS_VERIFY_ON  = 1,
     IS_VERIFY_OFF = 2
-} uins_verification_style;
+} is_verification_style;
 
 typedef unsigned char communications_flags;   // 1111 1111
 
 typedef enum {
     IS_OP_ERROR     = 0,
     IS_OP_OK        = 1
-} uins_operation_result;
+} is_operation_result;
+
+typedef enum {
+    IS_UINS         = 0,
+    IS_EVB          = 1,
+} is_device_type;
 
 typedef struct
 {
+    is_device_type type; 
     int version_major;
     int version_minor;
     communications_flags bootloader_flash_support;
-} uins_device;
+    uint16_t vid;
+    uint16_t pid;
+} is_device;
 
-typedef unsigned char * uins_device_uri;
+typedef unsigned char * is_device_uri;
 
 typedef enum {
     IS_SCHEME_UNKNOWN = 0,
     IS_SCHEME_SAMBA,
     IS_SCHEME_DFU,
     IS_SCHEME_STM32UART
-} uins_device_scheme;
+} is_device_scheme;
 
-typedef enum uins_serial_number_max_size
-{
+typedef enum {
     // IS_SN_MAX_SIZE_V3 = 13
     // IS_SN_MAX_SIZE_V4 = 13
     IS_SN_MAX_SIZE_V5 = 13
-} uins_serial_number_max_size;
+} is_serial_number_max_size;
 
-typedef struct uins_device_uri_properties
+typedef struct
 {
-    uins_device_scheme scheme;
+    is_device_scheme scheme;
     char serial_number[IS_SN_MAX_SIZE_V5];
-    // TODO: add version here
-} uins_device_uri_properties;
+} is_device_uri_properties;
 
 typedef enum {
     IS_LOG_LEVEL_NONE  = 0,
@@ -97,7 +103,7 @@ typedef enum {
     IS_LOG_LEVEL_INFO  = 3,
     IS_LOG_LEVEL_DEBUG = 4,
     IS_LOG_LEVEL_SILLY = 5
-} uins_device_interface_log_level;
+} is_device_interface_log_level;
 
 /** a unique id for a device interface
  * 
@@ -107,36 +113,36 @@ typedef enum {
  *  dfu://vendorid/productid/altid/index_number/f .... 
  *  stm32uart://vendorid/productid/115200
  */
-typedef struct uins_device_interface
+typedef struct
 {
-    uins_device device;
-    uins_device_uri_properties uri_properties;
+    is_device device;
+    is_device_uri_properties uri_properties;
     int read_timeout_ms;
     int write_timeout_ms;
-    uins_device_interface_log_level log_level;
+    is_device_interface_log_level log_level;
     void * instance_data;
-} uins_device_interface;
+} is_device_interface;
 
-typedef void(*pfnUinsDeviceInterfaceError)(const uins_device_interface const * interface, const void* user_data, int error_code, const char * error_message);
-typedef int(*pfnUinsDeviceInterfaceTaskProgress)(const uins_device_interface const * interface, const void* user_data, float percent);
+typedef void(*pfnIsDeviceInterfaceError)(const is_device_interface const * interface, const void* user_data, int error_code, const char * error_message);
+typedef int(*pfnIsDeviceInterfaceTaskProgress)(const is_device_interface const * interface, const void* user_data, float percent);
 
 typedef const unsigned char * const uins_data_buffer;
 
-typedef struct uins_device_context
+typedef struct
 {
-    const uins_device_interface const * interface;
+    const is_device_interface const * interface;
     const void* user_data;
-    pfnUinsDeviceInterfaceTaskProgress progress_callback;
-    pfnUinsDeviceInterfaceError error_callback;
-} uins_device_context;
+    pfnIsDeviceInterfaceTaskProgress progress_callback;
+    pfnIsDeviceInterfaceError error_callback;
+} is_device_context;
 
-typedef void (*uins_list_devices_callback_fn)(uins_device_uri);
+typedef void (*is_list_devices_callback_fn)(is_device_uri);
 
-typedef struct uins_device_uri_list
+typedef struct
 {
     int size;
-    uins_device_uri devices[256];
-} uins_device_uri_list;
+    is_device_uri devices[256];
+} is_device_uri_list;
 
 #ifdef __cplusplus
 }
