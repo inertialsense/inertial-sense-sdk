@@ -802,7 +802,7 @@ typedef struct PACKED
 	/** GPS leap second (GPS-UTC) offset. Receiver's best knowledge of the leap seconds offset from UTC to GPS time. Subtract from GPS time of week to get UTC time of week. (18 seconds as of December 31, 2016) */
 	uint8_t					leapS;
 
-	/** Number of satellites used in the solution */
+	/** Number of satellites used */
 	uint8_t					satsUsed;
 
 	/** Standard deviation of cnoMean over past 5 seconds (dBHz x10) */
@@ -1500,6 +1500,8 @@ enum eBitState
     BIT_STATE_RUNNING                                   = (int)6,   
     BIT_STATE_FINISHING                                 = (int)7,	// Computing results
     BIT_STATE_CMD_OFF                                   = (int)8,   // Stop built-in test
+
+    BIT_STATE_TEST_SIM_GPS_NOISE                        = (int)100, // Simulate CNO noise
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -1589,7 +1591,7 @@ typedef struct PACKED
 
 	/** Acceleration standard deviation */
 	float                   accSigma;
-	
+
 } bit_t;
 
 
