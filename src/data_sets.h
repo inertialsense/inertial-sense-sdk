@@ -802,9 +802,15 @@ typedef struct PACKED
 	/** GPS leap second (GPS-UTC) offset. Receiver's best knowledge of the leap seconds offset from UTC to GPS time. Subtract from GPS time of week to get UTC time of week. (18 seconds as of December 31, 2016) */
 	uint8_t					leapS;
 
+	/** Number of satellites used in the solution */
+	uint8_t					satsUsed;
+
+	/** Standard deviation of cnoMean over past 5 seconds (dBHz x10) */
+	uint8_t					cnoMeanSigma;
+
 	/** Reserved for future use */
-	uint8_t					reserved[3];
-	
+	uint8_t					reserved;
+
 } gps_pos_t;
 
 

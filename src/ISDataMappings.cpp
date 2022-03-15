@@ -498,9 +498,9 @@ static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	ADD_MAP(m, totalSize, "cnoMean", cnoMean, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "towOffset", towOffset, 0, DataTypeDouble, double, 0);
 	ADD_MAP(m, totalSize, "leapS", leapS, 0, DataTypeUInt8, uint8_t, 0);
-	ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
-	ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
-	ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "satsUsed", satsUsed, 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "cnoMeanSigma", cnoMeanSigma, 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
