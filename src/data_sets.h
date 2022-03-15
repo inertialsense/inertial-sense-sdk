@@ -1505,7 +1505,7 @@ enum eBitState
 /** Built-in Test: Test Mode */
 enum eBitTestMode
 {
-    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)1,   // Simulate CNO noise
+    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100, // Simulate CNO noise
 };
 
 /** Hardware built-in test (BIT) flags */
