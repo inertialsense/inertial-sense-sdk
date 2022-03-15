@@ -1,34 +1,57 @@
-#include "uins_sdk_compat.h"
+/**
+ * @file ISBootloaderCommon.c
+ * @author Dave Cutting (davidcutting42@gmail.com)
+ * @brief Inertial Sense routines for updating embedded systems
+ * @version 0.1
+ * @date 2022-03-15
+ * 
+ * @copyright Copyright (c) 2022 Inertial Sense, Inc
+ * 
+ */
+
+/*
+MIT LICENSE
+
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#include "ISBootloaderCommon.h"
 
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 #include "inertialSenseBootLoader.h"
-#include "inertialSenseBootLoader_dfu.h"
+#include "ISBootloaderDfu.h"
 
-uins_device uins_31()
+uins_device uins_3(uint8_t minor)
 {
     uins_device d;
     d.version_major = 3;
-    d.version_minor = 1;
-    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAM;
+    d.version_minor = minor;
+    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
     return d;
 }
 
-uins_device uins_40()
+uins_device uins_4(uint8_t minor)
 {
     uins_device d;
     d.version_major = 4;
-    d.version_minor = 0;
-    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAM;
+    d.version_minor = minor;
+    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
     return d;
 }
 
-uins_device uins_50()
+uins_device uins_5(uint8_t minor)
 {
     uins_device d;
     d.version_major = 5;
-    d.version_minor = 0;
-    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_DFU | IS_DEVICE_INTERFACE_FLAG_UART;
+    d.version_minor = minor;
+    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_DFU | IS_DEVICE_INTERFACE_FLAG_STM32UART;
     return d;
 }
 
@@ -72,16 +95,16 @@ uins_device_interface* uins_create_device_interface(
 
     if(strncmp(uri_scheme, "sam", 3) == 0)
     {
-        interface->uri_properties.scheme = IS_SCHEME_SAM;
+        interface->uri_properties.scheme = IS_SCHEME_SAMBA;
     }
     else if(strncmp(uri_scheme, "dfu", 3) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_DFU;
         strcpy(interface->uri_properties.serial_number, serial_number);
     }
-    else if(strncmp(uri_scheme, "uart", 4) == 0)
+    else if(strncmp(uri_scheme, "stm32uart", 4) == 0)
     {
-        interface->uri_properties.scheme = IS_SCHEME_UART;
+        interface->uri_properties.scheme = IS_SCHEME_STM32UART;
     }
     else
     {
@@ -120,34 +143,33 @@ uins_operation_result uins_update_flash(
     const void* user_data
 )
 {
-    if (!firmware_file_path)
+    uins_dfu_config config;
+
+    config.filename = firmware_file_path;
+
+    if(!firmware_file_path)
     {
         return IS_OP_ERROR;
     }
 
-    if (interface->uri_properties.scheme == IS_SCHEME_DFU)
+    if(interface->uri_properties.scheme == IS_SCHEME_UNKNOWN)
     {
-        // TODO: once we integrate the probe function dfu_config can go away 
+        return IS_OP_ERROR;
+    }
 
-        struct dfu_config config;
-        create_dfu_config(&config);
-
-        config.bin_file_path = firmware_file_path;
-        config.match_vendor = UINS5_DESCRIPTOR_VENDOR_ID;
-        config.match_product = UINS5_DESCRIPTOR_PRODUCT_ID;
-        config.match_iface_alt_index = UINS5_DFU_INTERFACE_ALTERNATIVE_FLASH;
-        config.dfuse_options = "0x08000000";
-        config.match_serial = interface->uri_properties.serial_number;
-        config.match_serial_dfu = interface->uri_properties.serial_number;
-
+    if(interface->uri_properties.scheme == IS_SCHEME_DFU)
+    {
         uins_device_context context;
         context.interface = interface;
         context.user_data = user_data;
         context.progress_callback = update_progress_callback;
         context.error_callback = error_callback;
 
-        int ret = uinsBootloadFileExDfu(&context, config);
-        if (ret == 0)
+        int ret = uinsBootloadFileExDfu(&context, &config);
+        
+        // OPTION BYTES PROGRAMMING
+        /* 
+        if(ret == 0)
         {
             struct dfu_config options_config;
             create_dfu_config(&options_config);
@@ -181,12 +203,16 @@ uins_operation_result uins_update_flash(
         {
             return IS_OP_ERROR;
         }
+        */
     }
-    else if (interface->uri_properties.scheme == IS_SCHEME_UART)
+    else if(interface->uri_properties.scheme == IS_SCHEME_STM32UART)
     {
         // TODO: UART support
     }
+    else if(interface->uri_properties.scheme == IS_SCHEME_SAMBA)
+    {
+        // TODO: SAM-BA support
+    }
 
-    // TODO: legacy SAM with serialPort and bootloader calls
     return IS_OP_ERROR;
 }

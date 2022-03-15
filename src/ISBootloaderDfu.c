@@ -1,10 +1,11 @@
 /**
- * @file inertialSenseBootLoader_dfu.c
+ * @file ISBootloaderDfu.c
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @author Steven Fusco ()
- * @brief Inertial Sense bootloader for DFU-capable STM32 defices
+ * @brief Inertial Sense routines for updating DFU capable devices (STM32)
  * @version 0.1
- * @date 2022-03-14
+ * @date 2022-03-15
+ * 
+ * @copyright Copyright (c) 2022 Inertial Sense, Inc
  * 
  */
 
@@ -20,7 +21,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "inertialSenseBootLoader_dfu.h"
+#include "ISBootloaderDfu.h"
 
 int uins_add_device(uins_device_uri_list* list, uins_device_uri uri)
 {

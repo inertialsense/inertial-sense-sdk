@@ -1,27 +1,51 @@
-#ifndef __IS_UINS_TYPES_H
-#define __IS_UINS_TYPES_H
+/**
+ * @file ISBootloaderTypes.h
+ * @author Dave Cutting (davidcutting42@gmail.com)
+ * @brief Inertial Sense definitions for bootloading devices
+ * @version 0.1
+ * @date 2022-03-15
+ * 
+ * @copyright Copyright (c) 2022 Inertial Sense, Inc
+ * 
+ */
+
+/*
+MIT LICENSE
+
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#ifndef __IS_BOOTLOADER_TYPES_H
+#define __IS_BOOTLOADER_TYPES_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef enum {
-    IS_DEVICE_INTERFACE_FLAG_SAM   = 0b00000000,  // default
-    IS_DEVICE_INTERFACE_FLAG_DFU   = 0b00000001,
-    IS_DEVICE_INTERFACE_FLAG_UART  = 0b00000010,
+    IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000000,  // default
+    IS_DEVICE_INTERFACE_FLAG_DFU        = 0b00000001,
+    IS_DEVICE_INTERFACE_FLAG_STM32UART  = 0b00000010,
 
-    IS_DEVICE_INTERFACE_FLAG_RSVD1 = 0b00000100,
-    IS_DEVICE_INTERFACE_FLAG_RSVD2 = 0b00001000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD3 = 0b00010000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD4 = 0b00100000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD5 = 0b01000000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD1      = 0b00000100,
+    IS_DEVICE_INTERFACE_FLAG_RSVD2      = 0b00001000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD3      = 0b00010000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD4      = 0b00100000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD5      = 0b01000000,
 
-    IS_DEVICE_INTERFACE_FLAG_DEBUG = 0b10000000,
+    IS_DEVICE_INTERFACE_FLAG_DEBUG      = 0b10000000,
 } uins_device_interface_flags;
 
 typedef enum {
-    IS_UPDATE_BOOTLOADER           = 1,
-    IS_UPDATE_APPLICATION_FIRMWARE = 2
+    IS_UPDATE_BOOTLOADER        = 1,
+    IS_UPDATE_UINS_FIRMWARE     = 2,
+    IS_UPDATE_EVB_FIRMARE       = 3,    
 } uins_update_flash_style;
 
 typedef enum {
@@ -47,9 +71,9 @@ typedef unsigned char * uins_device_uri;
 
 typedef enum {
     IS_SCHEME_UNKNOWN = 0,
-    IS_SCHEME_SAM,
+    IS_SCHEME_SAMBA,
     IS_SCHEME_DFU,
-    IS_SCHEME_UART
+    IS_SCHEME_STM32UART
 } uins_device_scheme;
 
 typedef enum uins_serial_number_max_size
@@ -79,9 +103,9 @@ typedef enum {
  * 
  * Examples:
  *  file://dev/ttyACM0
- *  sam://vendorid/productid
+ *  samba://vendorid/productid/921600
  *  dfu://vendorid/productid/altid/index_number/f .... 
- *  uart://vendorid/productid/115200
+ *  stm32uart://vendorid/productid/115200
  */
 typedef struct uins_device_interface
 {
@@ -118,4 +142,4 @@ typedef struct uins_device_uri_list
 }
 #endif
 
-#endif // __IS_UINS_TYPES_H
+#endif // __IS_BOOTLOADER_TYPES_H

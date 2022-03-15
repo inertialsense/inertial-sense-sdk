@@ -1,7 +1,30 @@
-#ifndef __IS_UINS_SDK_COMPAT_H
-#define __IS_UINS_SDK_COMPAT_H
+/**
+ * @file ISBootloaderCommon.h
+ * @author Dave Cutting (davidcutting42@gmail.com)
+ * @brief Inertial Sense routines for updating embedded systems
+ * @version 0.1
+ * @date 2022-03-15
+ * 
+ * @copyright Copyright (c) 2022 Inertial Sense, Inc
+ * 
+ */
 
-#include "uins_types.h"
+/*
+MIT LICENSE
+
+Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#ifndef __IS_BOOTLOADER_COMMON_H
+#define __IS_BOOTLOADER_COMMON_H
+
+#include "ISBootloaderTypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,9 +35,9 @@ extern "C" {
 
 #endif
 
-uins_device uins_31();
-uins_device uins_40();
-uins_device uins_50();
+uins_device uins_3(uint8_t minor);
+uins_device uins_4(uint8_t minor);
+uins_device uins_5(uint8_t minor);
 
 /**
  * @brief probes the USB bus, builds device uris and adds them to the list
@@ -84,4 +107,4 @@ uins_operation_result uins_update_flash(
 }
 #endif
 
-#endif // __IS_UINS_SDK_COMPAT_H
+#endif // __IS_BOOTLOADER_COMMON_H

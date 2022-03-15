@@ -1,11 +1,11 @@
 /**
- * @file inertialSenseBootLoader_dfu.h
+ * @file ISBootloaderDfu.h
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief DFU firmware update routines for Inertial Sense products
+ * @brief Inertial Sense routines for updating DFU capable devices (STM32)
  * @version 0.1
- * @date 2022-03-14
+ * @date 2022-03-15
  * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc.
+ * @copyright Copyright (c) 2022 Inertial Sense, Inc
  * 
  */
 
@@ -21,8 +21,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __INERTIALSENSEBOOTLOADER_DFU_H
-#define __INERTIALSENSEBOOTLOADER_DFU_H
+#ifndef __IS_BOOTLOADER_DFU_H
+#define __IS_BOOTLOADER_DFU_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,8 +35,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdbool.h>
 
 #include "ihex.h"
-#include "uins_log.h"
-#include "uins_types.h"
+#include "ISBootloaderLog.h"
+#include "ISBootloaderTypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,7 +123,14 @@ typedef struct
 
 typedef struct 
 {
-	char filename[260];
+	/* Filename of the hex file */
+	const char* filename;
+
+	/* USB vendor ID */
+	uint16_t vendor_id;
+	
+	/* USB product ID */
+	uint16_t product_id;
 } uins_dfu_config;
 
 void uinsProbeDfuDevices(uins_device_uri_list* uri_list, uins_list_devices_callback_fn callback_fn);
@@ -143,4 +150,4 @@ eDfuError dfu_wait_for_state(libusb_device* dev, libusb_device_handle** dev_hand
 }
 #endif
 
-#endif	// __INERTIALSENSEBOOTLOADER_DFU_H
+#endif	// __IS_BOOTLOADER_DFU_H
