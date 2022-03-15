@@ -105,14 +105,6 @@ typedef enum {
     IS_LOG_LEVEL_SILLY = 5
 } is_device_interface_log_level;
 
-/** a unique id for a device interface
- * 
- * Examples:
- *  file://dev/ttyACM0
- *  samba://vendorid/productid/921600
- *  dfu://vendorid/productid/altid/index_number/f .... 
- *  stm32uart://vendorid/productid/115200
- */
 typedef struct
 {
     is_device device;
@@ -121,6 +113,7 @@ typedef struct
     int write_timeout_ms;
     is_device_interface_log_level log_level;
     void * instance_data;
+    libusb_device_handle** dev_handle;
 } is_device_interface;
 
 typedef void(*pfnIsDeviceInterfaceError)(const is_device_interface const * interface, const void* user_data, int error_code, const char * error_message);
@@ -134,6 +127,8 @@ typedef struct
     const void* user_data;
     pfnIsDeviceInterfaceTaskProgress progress_callback;
     pfnIsDeviceInterfaceError error_callback;
+    ihex_image_section_t* image;
+    uint32_t num_image_sections;
 } is_device_context;
 
 typedef void (*is_list_devices_callback_fn)(is_device_uri);

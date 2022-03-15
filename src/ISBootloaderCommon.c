@@ -114,11 +114,11 @@ is_device_interface* is_create_device_interface(
 
     // dfu://serialnum
 
-    char uri_scheme[5];
+    char uri_scheme[9];
     char serial_number[IS_SN_MAX_SIZE_V5];
 
     int uri_scan_status = sscanf(uri,
-        "%5[^:]%*[:/]%s",
+        "%9[^:]%*[:/]%s",
         uri_scheme,
         serial_number);
 
@@ -175,18 +175,26 @@ is_operation_result is_update_flash(
 )
 {
     is_dfu_config config;
-
-    config.filename = firmware_file_path;
+    int ret = IS_OP_ERROR;
 
     if(!firmware_file_path)
     {
-        return IS_OP_ERROR;
+        return ret;
     }
 
-    if(interface->uri_properties.scheme == IS_SCHEME_UNKNOWN)
+    // TODO: Open firmware image outside this function so it can be shared between devices
+    // TODO: Check that firmware image is .hex
+    // TODO: Add support for .bin files
+    // TODO: Move to using ihex_image_section_t for SAM-BA bootloaders as well
+
+    // Load the firmware image from the .hex file provided
+    ihex_image_section_t image[NUM_IHEX_SECTIONS];
+    int num_sections = 0;
+    if(interface->uri_properties.scheme != IS_SCHEME_SAMBA)
     {
-        return IS_OP_ERROR;
+        num_sections = ihex_load_sections(firmware_file_path, image, NUM_IHEX_SECTIONS);
     }
+    config.image = image;
 
     if(interface->uri_properties.scheme == IS_SCHEME_DFU)
     {
@@ -195,8 +203,10 @@ is_operation_result is_update_flash(
         context.user_data = user_data;
         context.progress_callback = update_progress_callback;
         context.error_callback = error_callback;
+        context.image = image;
+        context.num_image_sections = num_sections;
 
-        int ret = is_dfu_flash(&context, &config);
+        int ret = is_dfu_flash(&context);
         
         // OPTION BYTES PROGRAMMING
         /* 
@@ -245,7 +255,10 @@ is_operation_result is_update_flash(
         // TODO: SAM-BA support
     }
 
-    return IS_OP_ERROR;
+    // Free the memory associated with the firmware image
+    ihex_unload_sections(image, num_sections);
+
+    return ret;
 }
 
 void is_print_device_info(

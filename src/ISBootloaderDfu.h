@@ -42,9 +42,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-#define STM32_PAGE_SIZE 0x800
-#define STM32_PAGE_ERROR_MASK 0x7FF
-
 typedef enum
 {
 	UINS5_DESCRIPTOR_VENDOR_ID = 0x0483,
@@ -61,18 +58,27 @@ typedef enum
 
 typedef struct 
 {
-	/* Filename of the hex file */
-	const char* filename;
-
-	/* USB vendor ID */
-	uint16_t vendor_id;
-	
-	/* USB product ID */
-	uint16_t product_id;
+	ihex_image_section_t* image;
+	int num_image_sections;
 } is_dfu_config;
 
+/**
+ * @brief Probes for DFU devices (currently ones with VID and PID of STM32 bootloader)
+ * 
+ * @param uri_list list of URIs that will be filled
+ * @param callback_fn callback when device is found
+ */
 void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn callback_fn);
-int is_dfu_flash(const is_device_context const * context, is_dfu_config* config);
+
+/**
+ * @brief 
+ * 
+ * @param context contains info about specific device
+ * @param config contains info about the image to be flashed
+ * @param dev_handle 
+ * @return is_operation_result 
+ */
+is_operation_result is_dfu_flash(const is_device_context const * context);
 
 #ifdef __cplusplus
 }

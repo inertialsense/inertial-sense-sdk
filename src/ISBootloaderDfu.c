@@ -23,7 +23,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderDfu.h"
 
-typedef enum
+#define STM32_PAGE_SIZE 0x800
+#define STM32_PAGE_ERROR_MASK 0x7FF
+
+typedef enum	// Internal only, can change as needed
 {
 	DFU_ERROR_NONE = 0,
 	DFU_ERROR_NO_DEVICE = -1,
@@ -34,7 +37,7 @@ typedef enum
 	DFU_ERROR_TIMEOUT = -6,
 } dfu_error;
 
-typedef enum
+typedef enum	// From DFU manual, do not change
 {
 	DFU_STATUS_OK = 0,
 	DFU_STATUS_ERR_TARGET,
@@ -56,7 +59,7 @@ typedef enum
 	DFU_STATUS_NUM,
 } dfu_status;
 
-typedef enum
+typedef enum	// From DFU manual, do not change
 {
 	DFU_STATE_APP_IDLE = 0,
 	DFU_STATE_APP_DETACH,
@@ -83,7 +86,7 @@ static dfu_error dfu_CLRSTATUS(libusb_device_handle** dev_handle);
 static dfu_error dfu_GETSTATE(libusb_device_handle** dev_handle, uint8_t* buf);
 static dfu_error dfu_ABORT(libusb_device_handle** dev_handle);
 
-static dfu_error dfu_wait_for_state(libusb_device* dev, libusb_device_handle** dev_handle, dfu_state required_state);
+static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state);
 
 void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn callback)
 {
@@ -139,34 +142,79 @@ void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn call
 	libusb_exit(ctx);
 }
 
-int is_dfu_flash(const is_device_context const * context, is_dfu_config* config)
+is_operation_result is_dfu_flash(const is_device_context const * context)
 {
-	int expected_size = 0;
-	unsigned int transfer_size = 0;
-	libusb_context *ctx;
-	int num_sections = 0;
-	
-	ihex_image_section_t image[NUM_IHEX_SECTIONS];
-	num_sections = ihex_load_sections(config->filename, image, NUM_IHEX_SECTIONS);
+	libusb_claim_interface(*context->interface->dev_handle, 0);
 
-	int ret = libusb_init(&ctx);
-	if (ret)
+	// Cancel any existing operations and reset status to good
+	dfu_ABORT(context->interface->dev_handle);
+	dfu_wait_for_state(context->interface->dev_handle, DFU_STATE_IDLE);
+
+	// Erase memory (only erase pages where firmware lives)
+	for(size_t i = 0; i < context->num_image_sections; i++)
 	{
-		uinsLogError(context, ret, "unable to initialize libusb");
-		return -1;
+		if(context->image[i].address & STM32_PAGE_ERROR_MASK)
+		{
+			continue;	// Page is not aligned with write location
+		}
+
+		if(context->image[i].image == NULL || context->image[i].len == 0)
+		{
+			continue;	// Null image
+		}
+
+		uint32_t byteInSection = 0;
+
+		do {
+			uint32_t pageAddress = byteInSection + context->image[i].address;
+			uint8_t eraseCommand[5];
+
+			eraseCommand[0] = 0x41;
+			memcpy(&eraseCommand[1], &pageAddress, 4);
+
+			int ret = dfu_DNLOAD(context->interface->dev_handle, 0, eraseCommand, 5);
+			dfu_wait(context->interface->dev_handle, DFU_STATE_DNLOAD_IDLE);
+
+			byteInSection += STM32_PAGE_SIZE;
+		} while(byteInSection < context->image[i].len - 1);
 	}
 
-	if (context->interface->log_level > IS_LOG_LEVEL_DEBUG) {
-#if defined(LIBUSB_API_VERSION) && LIBUSB_API_VERSION >= 0x01000106
-		libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_DEBUG);
-#else
-		libusb_set_debug(ctx, 255);
-#endif
-	}
-probe:
-	probe_devices(ctx, &config);
+	// Write memory
+	for(size_t i = 0; i < context->num_image_sections; i++)
+	{
+		dfu_set_address_pointer(context->interface->dev_handle, context->image[i].address);
 
-	return ret;
+		uint32_t byteInSection = 0;
+
+		do {
+			uint8_t payload[STM32_PAGE_SIZE] = { 0 };
+			uint32_t payloadLen = STM32_PAGE_SIZE;
+			uint32_t bytesRemaining = context->image[i].len - byteInSection;
+			if (payloadLen > bytesRemaining)
+			{
+				payloadLen = bytesRemaining;
+			}
+
+			// Copy image into buffer for transmission
+			// TODO: Should this actually be 0xFF so we don't write to unused sections?
+			memset(payload, 0x00, STM32_PAGE_SIZE);
+			memcpy(payload, &context->image[i].image[byteInSection], payloadLen);
+
+			uint8_t blockNum = byteInSection / STM32_PAGE_SIZE;
+	
+			int ret = dfu_DNLOAD(context->interface->dev_handle, blockNum + 2, payload, STM32_PAGE_SIZE);		
+			dfu_wait(context->interface->dev_handle, DFU_STATE_DNLOAD_IDLE);
+
+			byteInSection += payloadLen;
+		} while (byteInSection < context->image[i].len - 1);
+	}
+
+	dfu_ABORT(context->interface->dev_handle);
+	dfu_wait(context->interface->dev_handle, DFU_STATE_IDLE);
+
+	libusb_release_interface(*context->interface->dev_handle, 0);
+
+	return IS_OP_OK;
 }
 
 static void is_dfu_build_uri(is_device_uri_list* list, struct libusb_device_descriptor* desc, libusb_device_handle* handle, is_list_devices_callback_fn callback)
@@ -265,7 +313,7 @@ static dfu_error dfu_DETACH(libusb_device_handle** dev_handle, uint8_t timeout)
 	return DFU_ERROR_NONE;
 }
 
-static dfu_error dfu_wait_for_state(libusb_device* dev, libusb_device_handle** dev_handle, dfu_state required_state)
+static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state)
 {
 	dfu_status status;
 	uint32_t waitTime = 0;
