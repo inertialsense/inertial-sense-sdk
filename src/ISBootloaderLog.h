@@ -2,10 +2,6 @@
  * @file ISBootloaderLog.h
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense logging functions for bootloaders
- * @version 0.1
- * @date 2022-03-15
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc
  * 
  */
 

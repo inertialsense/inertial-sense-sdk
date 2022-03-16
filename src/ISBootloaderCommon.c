@@ -2,10 +2,6 @@
  * @file ISBootloaderCommon.c
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense routines for updating embedded systems
- * @version 0.1
- * @date 2022-03-15
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc
  * 
  */
 
@@ -35,8 +31,6 @@ is_device uins_3(uint8_t minor)
     d.version_major = 3;
     d.version_minor = minor;
     d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
-    d.vid = 0x0000; 
-    d.pid = 0x0000;
     return d;
 }
 
@@ -47,8 +41,6 @@ is_device uins_4(uint8_t minor)
     d.version_major = 4;
     d.version_minor = minor;
     d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
-    d.vid = 0x0000;
-    d.pid = 0x0000;
     return d;
 }
 
@@ -59,8 +51,6 @@ is_device uins_5(uint8_t minor)
     d.version_major = 5;
     d.version_minor = minor;
     d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_DFU | IS_DEVICE_INTERFACE_FLAG_STM32UART;
-    d.vid = UINS5_DESCRIPTOR_VENDOR_ID;
-    d.pid = UINS5_DESCRIPTOR_PRODUCT_ID;
     return d;
 }
 
@@ -71,17 +61,7 @@ is_device evb_2(uint8_t minor)
     d.version_major = 2;
     d.version_minor = minor;
     d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
-    d.vid = 0x0000;
-    d.pid = 0x0000;
     return d;
-}
-
-void is_add_device(is_device_uri_list* list, is_device_uri uri)
-{
-	list->devices[list->size] = malloc(strlen(uri) + 1);
-	strcpy(list->devices[list->size], uri);
-
-	list->size += 1;
 }
 
 void is_probe_device_list(is_device_uri_list* list, is_list_devices_callback_fn callback_fn)
@@ -103,6 +83,14 @@ void is_free_device_list(is_device_uri_list* list)
     list->size = 0;
 }
 
+void is_add_device(is_device_uri_list* list, is_device_uri uri)
+{
+	list->devices[list->size] = malloc(strlen(uri) + 1);
+	strcpy(list->devices[list->size], uri);
+
+	list->size += 1;
+}
+
 is_device_interface* is_create_device_interface(
     is_device device,
     const is_device_uri uri
@@ -110,32 +98,46 @@ is_device_interface* is_create_device_interface(
 {
     is_device_interface* interface = malloc(sizeof(is_device_interface));
 
-    interface->log_level = 1;
+    interface->log_level = IS_LOG_LEVEL_ERROR;
 
     // dfu://serialnum
 
     char uri_scheme[9];
     char serial_number[IS_SN_MAX_SIZE_V5];
+    char vid[4];
+    char pid[4];
+    char* end;
+    long val;
 
     int uri_scan_status = sscanf(uri,
-        "%9[^:]%*[:/]%s",
+        "%9[^:]%*[:/]%s/%4[^/]%4",
         uri_scheme,
-        serial_number);
+        serial_number,
+        vid,
+        pid);
 
-    if(strncmp(uri_scheme, "samba", 3) == 0)
+    // TODO: Sanitize input and check output
+    val = strtol(vid, &end, 'F');
+    interface->uri_properties.vid = (uint16_t)val;
+    val = strtol(pid, &end, 'F');
+    interface->uri_properties.pid = (uint16_t)val;
+
+    if(strncmp(uri_scheme, "samba", 5) == 0)
     {
-        // TODO: Add serial number or COM port, etc.
         interface->uri_properties.scheme = IS_SCHEME_SAMBA;
+        interface->uri_properties.match = IS_DEVICE_MATCH_FLAG_VID | IS_DEVICE_MATCH_FLAG_PID;
     }
     else if(strncmp(uri_scheme, "dfu", 3) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_DFU;
-        strcpy(interface->uri_properties.serial_number, serial_number);
+        interface->uri_properties.match = IS_DEVICE_MATCH_FLAG_VID | IS_DEVICE_MATCH_FLAG_PID | IS_DEVICE_MATCH_FLAG_SN;
+        strncpy(interface->uri_properties.serial_number, serial_number, IS_SN_MAX_SIZE_V5);
     }
-    else if(strncmp(uri_scheme, "stm32uart", 4) == 0)
+    else if(strncmp(uri_scheme, "stm32uart", 9) == 0)
     {
-        // TODO: Add serial number or COM port, etc.
         interface->uri_properties.scheme = IS_SCHEME_STM32UART;
+        interface->uri_properties.match = IS_DEVICE_MATCH_FLAG_VID | IS_DEVICE_MATCH_FLAG_PID | IS_DEVICE_MATCH_FLAG_SN;
+        strncpy(interface->uri_properties.serial_number, serial_number, IS_SN_MAX_SIZE_V5);
     }
     else
     {
@@ -145,7 +147,14 @@ is_device_interface* is_create_device_interface(
     return interface;
 }
 
-is_operation_result uins_change_log_level(is_device_interface* interface, is_device_interface_log_level log_level)
+is_operation_result is_destroy_device_interface(is_device_interface* interface)
+{
+    free(interface);
+
+    return IS_OP_OK;
+}
+
+is_operation_result is_device_change_log_level(is_device_interface* interface, is_device_interface_log_level log_level)
 {
     if (log_level < 0 || log_level > 5)
     {
@@ -156,9 +165,64 @@ is_operation_result uins_change_log_level(is_device_interface* interface, is_dev
     return IS_OP_OK;
 }
 
-is_operation_result uins_destroy_device_interface(is_device_interface* interface)
+is_operation_result is_get_libusb_handles(
+    const is_device_interface const * interf, 
+    libusb_device** device_list, 
+    size_t device_count,
+    libusb_device_handle** match_list,
+    size_t* match_count
+)
 {
-    free(interface);
+    libusb_device** dev;
+    libusb_device_handle* dev_handle;
+    struct libusb_device_descriptor desc;
+    struct libusb_config_descriptor* cfg;
+    int libusb_result;
+    *match_count = 0;
+
+    for (size_t i = 0; i < device_count; ++i) {
+        dev = device_list[i];
+
+        libusb_result = libusb_get_device_descriptor(dev, &desc);
+
+        if ((desc.idVendor != interf->uri_properties.vid) && (interf->uri_properties.match & IS_DEVICE_MATCH_FLAG_VID))
+            continue;   // must be some other usb device
+
+        if ((desc.idProduct != interf->uri_properties.pid) && (interf->uri_properties.match & IS_DEVICE_MATCH_FLAG_PID))
+            continue;   // must be some other usb device
+
+        libusb_result = libusb_open(dev, &dev_handle);
+        if (libusb_result == 0)
+        {
+            if(!(interf->uri_properties.match & IS_DEVICE_MATCH_FLAG_SN))
+            {
+                // Don't check for serial number (SAM-BA bootloaders, etc.)
+                // Device found
+                match_list[(*match_count)++] = dev_handle;
+                continue;
+            }
+
+            int libusb_result;
+            const size_t sn_size = IS_SN_MAX_SIZE_V5;
+            const size_t url_buffer_size = sn_size + 6;
+            char url_buffer[url_buffer_size];
+            unsigned char serial_number[sn_size];
+
+            // Get the string containing the serial number from the device
+            libusb_result = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
+        
+            if(strncmp(serial_number, interf->uri_properties.serial_number, IS_SN_MAX_SIZE_V5) == 0)
+            {
+                // Device found
+                match_list[(*match_count)++] = dev_handle;
+                continue;
+            }
+        }
+
+        libusb_close(dev_handle);
+    }
+
+    libusb_free_device_list(device_list, 1);
 
     return IS_OP_OK;
 }
@@ -174,27 +238,19 @@ is_operation_result is_update_flash(
     const void* user_data
 )
 {
-    is_dfu_config config;
     int ret = IS_OP_ERROR;
+    int libusb_ret = LIBUSB_SUCCESS;
+    int ihex_ret = -1;
 
     if(!firmware_file_path)
     {
         return ret;
     }
 
-    // TODO: Open firmware image outside this function so it can be shared between devices
-    // TODO: Check that firmware image is .hex
-    // TODO: Add support for .bin files
-    // TODO: Move to using ihex_image_section_t for SAM-BA bootloaders as well
-
-    // Load the firmware image from the .hex file provided
-    ihex_image_section_t image[NUM_IHEX_SECTIONS];
-    int num_sections = 0;
-    if(interface->uri_properties.scheme != IS_SCHEME_SAMBA)
-    {
-        num_sections = ihex_load_sections(firmware_file_path, image, NUM_IHEX_SECTIONS);
-    }
-    config.image = image;
+    // Load the firmware into memory. Even if we don't use it now (SAM-BA), this is a good check
+    ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
+    ihex_ret = ihex_load_sections(firmware_file_path, image, MAX_NUM_IHEX_SECTIONS);
+    if(ihex_ret <= 0) return ret;
 
     if(interface->uri_properties.scheme == IS_SCHEME_DFU)
     {
@@ -203,10 +259,8 @@ is_operation_result is_update_flash(
         context.user_data = user_data;
         context.progress_callback = update_progress_callback;
         context.error_callback = error_callback;
-        context.image = image;
-        context.num_image_sections = num_sections;
 
-        int ret = is_dfu_flash(&context);
+        int ret = is_dfu_flash(&context, image, ihex_ret, (libusb_device_handle*)interface->dev_handle);
         
         // OPTION BYTES PROGRAMMING
         /* 
@@ -256,7 +310,7 @@ is_operation_result is_update_flash(
     }
 
     // Free the memory associated with the firmware image
-    ihex_unload_sections(image, num_sections);
+    ihex_unload_sections(image, ihex_ret);
 
     return ret;
 }

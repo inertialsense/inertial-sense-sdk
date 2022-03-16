@@ -2,10 +2,6 @@
  * @file ISBootloaderCommon.h
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense routines for updating embedded systems
- * @version 0.1
- * @date 2022-03-15
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc
  * 
  */
 
@@ -35,9 +31,16 @@ extern "C" {
 
 #endif
 
+/*
+    Steps:
+        - Create a device with uins_3, uins_4, uins_5, evb_2, etc.
+        - 
+*/
+
 is_device uins_3(uint8_t minor);
 is_device uins_4(uint8_t minor);
 is_device uins_5(uint8_t minor);
+is_device evb_2(uint8_t minor);
 
 /**
  * @brief probes the USB bus, builds device uris and adds them to the list
@@ -54,6 +57,7 @@ void is_probe_device_list(is_device_uri_list* list, is_list_devices_callback_fn 
  * @param callback_fn 
  */
 void is_free_device_list(is_device_uri_list* list);
+
 
 /**
  * @brief copies a device uri to the list
@@ -73,13 +77,13 @@ void is_add_device(is_device_uri_list* list, is_device_uri uri);
  * @return a newly allocated device interface on the heap
  * @see uins_destroy_device_interface 
  */
-is_device_interface* uins_create_device_interface(
+is_device_interface* is_create_device_interface(
     is_device device,
     const is_device_uri unique_identifier
 );
 
 /** performs any necessary flush or clean up operations, releases instance data resources and frees heap memory from create */
-is_operation_result uins_destroy_device_interface(is_device_interface* interface);
+is_operation_result is_destroy_device_interface(is_device_interface* interface);
 
 /** changes the log level of the device interface
  * 0: nothing
@@ -89,10 +93,28 @@ is_operation_result uins_destroy_device_interface(is_device_interface* interface
  * 4: debug
  * 5: silly
 */
-is_operation_result uins_change_log_level(is_device_interface* interface, is_device_interface_log_level log_level);
+is_operation_result is_device_change_log_level(is_device_interface* interface, is_device_interface_log_level log_level);
+
+/**
+ * @brief Get a list of libusb handles that match the criteria in `interf`
+ * 
+ * @param interf defines the device parameters to match with
+ * @param device_list libusb-generated device list
+ * @param device_count number of devices in `device_list`
+ * @param match_list pass in an array of `libusb_device_handle*`, function will fill with list of device handles
+ * @param match_count number of device handles at end of function execution
+ * @return is_operation_result 
+ */
+is_operation_result is_get_libusb_handles(
+    const is_device_interface* const interf, 
+    libusb_device** device_list, 
+    size_t device_count,
+    libusb_device_handle** match_list,
+    size_t* match_count
+);
 
 /** copy hex file from this machine to the device interface */
-is_operation_result uins_update_flash(
+is_operation_result is_update_flash(
     const is_device_interface* interface,
     const char* firmware_file_path,
     is_update_flash_style firmware_type,

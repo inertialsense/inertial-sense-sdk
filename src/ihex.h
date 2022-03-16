@@ -2,10 +2,6 @@
  * @file ihex.h
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Intel HEX file read routines for embedded firmware
- * @version 0.1
- * @date 2022-03-13
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc.
  * 
  */
 
@@ -31,19 +27,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-// TODO: Fix malloc stuff in ihex_load_sections so it is more efficient. Should not need NUM_IHEX_SECTIONS
-#define NUM_IHEX_SECTIONS 32
+#define MAX_NUM_IHEX_SECTIONS 	64		
+#define MAX_IHEX_SECTION_LEN 	0x080000	// 32K
 
 typedef struct
 {
-	/* Address the image section needs to be programmed to */
-	uint32_t address;
+    /* Address the image section needs to be programmed to */
+    uint32_t address;
 
-	/* Pointer to the section data */
-	uint8_t* image;
+    /* Pointer to the section data */
+    uint8_t* image;
 
-	/* Length of this section*/
-	uint32_t len;
+    /* Length of this section*/
+    uint32_t len;
 } ihex_image_section_t;
 
 /**

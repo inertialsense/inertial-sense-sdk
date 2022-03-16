@@ -1,11 +1,7 @@
 /**
  * @file ISBootloaderDfu.h
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating DFU capable devices (STM32)
- * @version 0.1
- * @date 2022-03-15
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc
+ * @brief Inertial Sense routines for updating DFU capable devices (uINS-5)
  * 
  */
 
@@ -37,6 +33,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ihex.h"
 #include "ISBootloaderLog.h"
 #include "ISBootloaderTypes.h"
+#include "ISBootloaderCommon.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,26 +41,22 @@ extern "C" {
 
 typedef enum
 {
-	UINS5_DESCRIPTOR_VENDOR_ID = 0x0483,
-	UINS5_DESCRIPTOR_PRODUCT_ID = 0xdf11
+    UINS5_DESCRIPTOR_VENDOR_ID = 0x0483,
+    UINS5_DESCRIPTOR_PRODUCT_ID = 0xdf11
 } uins5_descriptor;
 
 typedef enum
 {
-	UINS5_DFU_INTERFACE_FLASH    = 0, // @Internal Flash  /0x08000000/0256*0002Kg
-	UINS5_DFU_INTERFACE_OPTIONS  = 1, // @Option Bytes  /0x1FFF7800/01*040 e
-	UINS5_DFU_INTERFACE_OTP      = 2, // @OTP Memory /0x1FFF7000/01*0001Ke
-	UINS5_DFU_INTERFACE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
+    UINS5_DFU_INTERFACE_FLASH    = 0, // @Internal Flash  /0x08000000/0256*0002Kg
+    UINS5_DFU_INTERFACE_OPTIONS  = 1, // @Option Bytes  /0x1FFF7800/01*040 e
+    UINS5_DFU_INTERFACE_OTP      = 2, // @OTP Memory /0x1FFF7000/01*0001Ke
+    UINS5_DFU_INTERFACE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
 } uins5_dfu_interface_alternatives;
-
-typedef struct 
-{
-	ihex_image_section_t* image;
-	int num_image_sections;
-} is_dfu_config;
 
 /**
  * @brief Probes for DFU devices (currently ones with VID and PID of STM32 bootloader)
+ * 
+ * @note Call once, will get all devices available
  * 
  * @param uri_list list of URIs that will be filled
  * @param callback_fn callback when device is found
@@ -71,14 +64,20 @@ typedef struct
 void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn callback_fn);
 
 /**
- * @brief 
+ * @brief Flash a firmware image
  * 
- * @param context contains info about specific device
- * @param config contains info about the image to be flashed
- * @param dev_handle 
+ * @param context info about the device
+ * @param image array of sections in the hex file
+ * @param image_sections number of sections populated in the image array
+ * @param dev_handle handle to device
  * @return is_operation_result 
  */
-is_operation_result is_dfu_flash(const is_device_context const * context);
+is_operation_result is_dfu_flash(
+    const is_device_context const * context, 
+    const ihex_image_section_t const * image,
+    int image_sections,
+    libusb_device_handle* dev_handle
+);
 
 #ifdef __cplusplus
 }

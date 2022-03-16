@@ -1,11 +1,7 @@
 /**
  * @file ISBootloaderDfu.c
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating DFU capable devices (STM32)
- * @version 0.1
- * @date 2022-03-15
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc
+ * @brief Inertial Sense routines for updating DFU capable devices (uINS-5)
  * 
  */
 
@@ -21,6 +17,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/*
+    https://www.usb.org/sites/default/files/DFU_1.1.pdf
+    https://www.st.com/resource/en/application_note/cd00264379-usb-dfu-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
+*/
+
 #include "ISBootloaderDfu.h"
 
 #define STM32_PAGE_SIZE 0x800
@@ -28,55 +29,55 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 typedef enum	// Internal only, can change as needed
 {
-	DFU_ERROR_NONE = 0,
-	DFU_ERROR_NO_DEVICE = -1,
-	DFU_ERROR_LIBUSB = -2,
-	DFU_ERROR_STATUS = -3,
-	DFU_ERROR_INVALID_ARG = -4,
-	DFU_ERROR_NO_FILE = -5,
-	DFU_ERROR_TIMEOUT = -6,
+    DFU_ERROR_NONE = 0,
+    DFU_ERROR_NO_DEVICE = -1,
+    DFU_ERROR_LIBUSB = -2,
+    DFU_ERROR_STATUS = -3,
+    DFU_ERROR_INVALID_ARG = -4,
+    DFU_ERROR_NO_FILE = -5,
+    DFU_ERROR_TIMEOUT = -6,
 } dfu_error;
 
 typedef enum	// From DFU manual, do not change
 {
-	DFU_STATUS_OK = 0,
-	DFU_STATUS_ERR_TARGET,
-	DFU_STATUS_ERR_FILE,
-	DFU_STATUS_ERR_WRITE,
-	DFU_STATUS_ERR_ERASED,
-	DFU_STATUS_ERR_CHECK_ERASED,
-	DFU_STATUS_ERR_PROG,
-	DFU_STATUS_ERR_VERIFY,
-	DFU_STATUS_ERR_ADDRESS,
-	DFU_STATUS_ERR_NOTDONE,
-	DFU_STATUS_ERR_FIRMWARE,
-	DFU_STATUS_ERR_VENDOR,
-	DFU_STATUS_ERR_USBR,
-	DFU_STATUS_ERR_POR,
-	DFU_STATUS_ERR_UNKNOWN,
-	DFU_STATUS_ERR_STALLEDPKT,
-	
-	DFU_STATUS_NUM,
+    DFU_STATUS_OK = 0,
+    DFU_STATUS_ERR_TARGET,
+    DFU_STATUS_ERR_FILE,
+    DFU_STATUS_ERR_WRITE,
+    DFU_STATUS_ERR_ERASED,
+    DFU_STATUS_ERR_CHECK_ERASED,
+    DFU_STATUS_ERR_PROG,
+    DFU_STATUS_ERR_VERIFY,
+    DFU_STATUS_ERR_ADDRESS,
+    DFU_STATUS_ERR_NOTDONE,
+    DFU_STATUS_ERR_FIRMWARE,
+    DFU_STATUS_ERR_VENDOR,
+    DFU_STATUS_ERR_USBR,
+    DFU_STATUS_ERR_POR,
+    DFU_STATUS_ERR_UNKNOWN,
+    DFU_STATUS_ERR_STALLEDPKT,
+    
+    DFU_STATUS_NUM,
 } dfu_status;
 
 typedef enum	// From DFU manual, do not change
 {
-	DFU_STATE_APP_IDLE = 0,
-	DFU_STATE_APP_DETACH,
-	DFU_STATE_IDLE,
-	DFU_STATE_DNLOAD_SYNC,
-	DFU_STATE_DNBUSY, 
-	DFU_STATE_DNLOAD_IDLE,
-	DFU_STATE_MANIFEST_SYNC,
-	DFU_STATE_MANIFEST,
-	DFU_STATE_MANIFEST_WAIT_RESET,
-	DFU_STATE_UPLOAD_IDLE,
-	DFU_STATE_ERROR,
+    DFU_STATE_APP_IDLE = 0,
+    DFU_STATE_APP_DETACH,
+    DFU_STATE_IDLE,
+    DFU_STATE_DNLOAD_SYNC,
+    DFU_STATE_DNBUSY, 
+    DFU_STATE_DNLOAD_IDLE,
+    DFU_STATE_MANIFEST_SYNC,
+    DFU_STATE_MANIFEST,
+    DFU_STATE_MANIFEST_WAIT_RESET,
+    DFU_STATE_UPLOAD_IDLE,
+    DFU_STATE_ERROR,
 
-	DFU_STATE_NUM,
+    DFU_STATE_NUM,
 } dfu_state;
 
-static void is_dfu_build_uri(is_device_uri_list* list, struct libusb_device_descriptor* desc, libusb_device_handle* handle, is_list_devices_callback_fn callback);
+static void is_dfu_add_uri(is_device_uri_list* list, struct libusb_device_descriptor* desc, libusb_device_handle* handle, is_list_devices_callback_fn callback);
 
 static dfu_error dfu_DETACH(libusb_device_handle** dev_handle, uint8_t timeout);
 static dfu_error dfu_DNLOAD(libusb_device_handle** dev_handle, uint8_t wValue, uint8_t* buf, uint16_t len);
@@ -90,253 +91,259 @@ static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state
 
 void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn callback)
 {
-	// TODO: libusb_result asserts
+    // TODO: libusb_result asserts
 
-	libusb_context* ctx;
-	libusb_device** device_list;
-	ssize_t device_count;
-	ssize_t i;
-	int cfg_idx;
-	int libusb_result;
-	struct libusb_device *dev;
-	struct libusb_device_descriptor desc;
-	libusb_device_handle* dev_handle;
-	struct libusb_config_descriptor* cfg;
+    libusb_context* ctx;
+    libusb_device** device_list;
+    ssize_t device_count;
+    ssize_t i;
+    int cfg_idx;
+    int libusb_result;
+    struct libusb_device *dev;
+    struct libusb_device_descriptor desc;
+    libusb_device_handle* dev_handle;
+    struct libusb_config_descriptor* cfg;
 
-	libusb_result = libusb_init(&ctx);
+    libusb_result = libusb_init(&ctx);
 
-	device_count = libusb_get_device_list(ctx, &device_list);
-	for (i = 0; i < device_count; ++i) {
-		dev = device_list[i];
+    device_count = libusb_get_device_list(ctx, &device_list);
+    for (i = 0; i < device_count; ++i) {
+        dev = device_list[i];
 
-		libusb_result = libusb_get_device_descriptor(dev, &desc);
+        libusb_result = libusb_get_device_descriptor(dev, &desc);
 
-		if (desc.idVendor != UINS5_DESCRIPTOR_VENDOR_ID || desc.idProduct != UINS5_DESCRIPTOR_PRODUCT_ID)
-		{
-			// bail early, must be some other usb device
-			continue;
-		}
+        if (desc.idVendor != UINS5_DESCRIPTOR_VENDOR_ID || desc.idProduct != UINS5_DESCRIPTOR_PRODUCT_ID)
+        {
+            // bail early, must be some other usb device
+            continue;
+        }
 
-		for (cfg_idx = 0; cfg_idx != desc.bNumConfigurations; cfg_idx++)
-		{
-			libusb_result = libusb_open(dev, &dev_handle);
-			if (0 == libusb_result)
-			{
-				libusb_result = libusb_get_config_descriptor(dev, cfg_idx, &cfg);
+        for (cfg_idx = 0; cfg_idx != desc.bNumConfigurations; cfg_idx++)
+        {
+            libusb_result = libusb_open(dev, &dev_handle);
+            if (0 == libusb_result)
+            {
+                libusb_result = libusb_get_config_descriptor(dev, cfg_idx, &cfg);
 
-				// uinsPrintDeviceInfo(ctx, dev, &desc, cfg, dev_handle);
+                // uinsPrintDeviceInfo(ctx, dev, &desc, cfg, dev_handle);
 
-				is_dfu_build_uri(uri_list, &desc, dev_handle, callback);
+                is_dfu_add_uri(uri_list, &desc, dev_handle, callback);
 
-				libusb_free_config_descriptor(cfg);
-				libusb_close(dev_handle);
-			}
-			else
-			{
-				fprintf(stderr, "failed to open device: %s", libusb_error_name(libusb_result));
-			}
-		}
-	}
+                libusb_free_config_descriptor(cfg);
+                libusb_close(dev_handle);
+            }
+            else
+            {
+                fprintf(stderr, "failed to open device: %s", libusb_error_name(libusb_result));
+            }
+        }
+    }
 
-	libusb_free_device_list(device_list, 1);
-	libusb_exit(ctx);
+    libusb_free_device_list(device_list, 1);
+    libusb_exit(ctx);
 }
 
-is_operation_result is_dfu_flash(const is_device_context const * context)
+is_operation_result is_dfu_flash(
+    const is_device_context const * context, 
+    const ihex_image_section_t const * image,
+    int image_sections,
+    libusb_device_handle* dev_handle
+)
 {
-	libusb_claim_interface(*context->interface->dev_handle, 0);
+    libusb_claim_interface(dev_handle, 0);
 
-	// Cancel any existing operations and reset status to good
-	dfu_ABORT(context->interface->dev_handle);
-	dfu_wait_for_state(context->interface->dev_handle, DFU_STATE_IDLE);
+    // Cancel any existing operations and reset status to good
+    dfu_ABORT(dev_handle);
+    dfu_wait_for_state(dev_handle, DFU_STATE_IDLE);
 
-	// Erase memory (only erase pages where firmware lives)
-	for(size_t i = 0; i < context->num_image_sections; i++)
-	{
-		if(context->image[i].address & STM32_PAGE_ERROR_MASK)
-		{
-			continue;	// Page is not aligned with write location
-		}
+    // Erase memory (only erase pages where firmware lives)
+    for(size_t i = 0; i < image_sections; i++)
+    {
+        if(image[i].address & STM32_PAGE_ERROR_MASK)
+        {
+            continue;	// Page is not aligned with write location
+        }
 
-		if(context->image[i].image == NULL || context->image[i].len == 0)
-		{
-			continue;	// Null image
-		}
+        if(image[i].image == NULL || image[i].len == 0)
+        {
+            continue;	// Null image
+        }
 
-		uint32_t byteInSection = 0;
+        uint32_t byteInSection = 0;
 
-		do {
-			uint32_t pageAddress = byteInSection + context->image[i].address;
-			uint8_t eraseCommand[5];
+        do {
+            uint32_t pageAddress = byteInSection + image[i].address;
+            uint8_t eraseCommand[5];
 
-			eraseCommand[0] = 0x41;
-			memcpy(&eraseCommand[1], &pageAddress, 4);
+            eraseCommand[0] = 0x41;
+            memcpy(&eraseCommand[1], &pageAddress, 4);
 
-			int ret = dfu_DNLOAD(context->interface->dev_handle, 0, eraseCommand, 5);
-			dfu_wait(context->interface->dev_handle, DFU_STATE_DNLOAD_IDLE);
+            int ret = dfu_DNLOAD(dev_handle, 0, eraseCommand, 5);
+            dfu_wait_for_state(dev_handle, DFU_STATE_DNLOAD_IDLE);
 
-			byteInSection += STM32_PAGE_SIZE;
-		} while(byteInSection < context->image[i].len - 1);
-	}
+            byteInSection += STM32_PAGE_SIZE;
+        } while(byteInSection < image[i].len - 1);
+    }
 
-	// Write memory
-	for(size_t i = 0; i < context->num_image_sections; i++)
-	{
-		dfu_set_address_pointer(context->interface->dev_handle, context->image[i].address);
+    // Write memory
+    for(size_t i = 0; i < image_sections; i++)
+    {
+        dfu_set_address_pointer(dev_handle, image[i].address);
 
-		uint32_t byteInSection = 0;
+        uint32_t byteInSection = 0;
 
-		do {
-			uint8_t payload[STM32_PAGE_SIZE] = { 0 };
-			uint32_t payloadLen = STM32_PAGE_SIZE;
-			uint32_t bytesRemaining = context->image[i].len - byteInSection;
-			if (payloadLen > bytesRemaining)
-			{
-				payloadLen = bytesRemaining;
-			}
+        do {
+            uint8_t payload[STM32_PAGE_SIZE] = { 0 };
+            uint32_t payloadLen = STM32_PAGE_SIZE;
+            uint32_t bytesRemaining = image[i].len - byteInSection;
+            if (payloadLen > bytesRemaining)
+            {
+                payloadLen = bytesRemaining;
+            }
 
-			// Copy image into buffer for transmission
-			// TODO: Should this actually be 0xFF so we don't write to unused sections?
-			memset(payload, 0x00, STM32_PAGE_SIZE);
-			memcpy(payload, &context->image[i].image[byteInSection], payloadLen);
+            // Copy image into buffer for transmission
+            // TODO: Should this actually be 0xFF so we don't write to unused sections?
+            memset(payload, 0x00, STM32_PAGE_SIZE);
+            memcpy(payload, &image[i].image[byteInSection], payloadLen);
 
-			uint8_t blockNum = byteInSection / STM32_PAGE_SIZE;
-	
-			int ret = dfu_DNLOAD(context->interface->dev_handle, blockNum + 2, payload, STM32_PAGE_SIZE);		
-			dfu_wait(context->interface->dev_handle, DFU_STATE_DNLOAD_IDLE);
+            uint8_t blockNum = byteInSection / STM32_PAGE_SIZE;
+    
+            int ret = dfu_DNLOAD(dev_handle, blockNum + 2, payload, STM32_PAGE_SIZE);		
+            dfu_wait_for_state(dev_handle, DFU_STATE_DNLOAD_IDLE);
 
-			byteInSection += payloadLen;
-		} while (byteInSection < context->image[i].len - 1);
-	}
+            byteInSection += payloadLen;
+        } while (byteInSection < image[i].len - 1);
+    }
 
-	dfu_ABORT(context->interface->dev_handle);
-	dfu_wait(context->interface->dev_handle, DFU_STATE_IDLE);
+    dfu_ABORT(dev_handle);
+    dfu_wait_for_state(dev_handle, DFU_STATE_IDLE);
 
-	libusb_release_interface(*context->interface->dev_handle, 0);
+    libusb_release_interface(dev_handle, 0);
 
-	return IS_OP_OK;
+    return IS_OP_OK;
 }
 
-static void is_dfu_build_uri(is_device_uri_list* list, struct libusb_device_descriptor* desc, libusb_device_handle* handle, is_list_devices_callback_fn callback)
+static void is_dfu_add_uri(is_device_uri_list* list, struct libusb_device_descriptor* desc, libusb_device_handle* handle, is_list_devices_callback_fn callback)
 {
-	int libusb_result;
-	const size_t sn_size = IS_SN_MAX_SIZE_V5;
-	const size_t url_buffer_size = sn_size + 6;
-	char url_buffer[url_buffer_size];
-	unsigned char serial_number[sn_size];
+    int libusb_result;
+    const size_t sn_size = IS_SN_MAX_SIZE_V5;
+    const size_t url_buffer_size = sn_size + 6;
+    char url_buffer[url_buffer_size];
+    unsigned char serial_number[sn_size];
 
-	libusb_result = libusb_get_string_descriptor_ascii(handle, desc->iSerialNumber, serial_number, sizeof(serial_number));
-	
-	snprintf(url_buffer, url_buffer_size, "dfu://%s", serial_number);
-	if(callback != NULL)
-	{
-		callback(url_buffer);
-	}
+    // Get the string containing the serial number from the device
+    libusb_result = libusb_get_string_descriptor_ascii(handle, desc->iSerialNumber, serial_number, sizeof(serial_number));
+    
+    snprintf(url_buffer, url_buffer_size, "dfu://%s", serial_number);
+    if(callback != NULL)
+    {
+        callback(url_buffer);
+    }
 
-	uins_add_device(list, url_buffer);
+    is_add_device(list, url_buffer);
 }
 
 static dfu_error dfu_GETSTATUS(libusb_device_handle** dev_handle, dfu_status* status, uint32_t* delay, dfu_state* state, uint8_t* i_string)
 {
-	uint8_t buf[6] = { 0 };
+    uint8_t buf[6] = { 0 };
 
-	if (libusb_control_transfer(*dev_handle, 0b10100001, 0x03, 0, 0, buf, 6, 100) < LIBUSB_SUCCESS)
-	{
-		return DFU_ERROR_LIBUSB;
-	}
+    if (libusb_control_transfer(*dev_handle, 0b10100001, 0x03, 0, 0, buf, 6, 100) < LIBUSB_SUCCESS)
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
-	*status = (dfu_status)buf[0];
-	*delay = (buf[3] << 16) | (buf[2] << 8) | buf[1];
-	*state = (dfu_state)buf[4];
-	*i_string = buf[5];				// Index of the description string. 0 = doesn't exist
+    *status = (dfu_status)buf[0];
+    *delay = (buf[3] << 16) | (buf[2] << 8) | buf[1];
+    *state = (dfu_state)buf[4];
+    *i_string = buf[5];				// Index of the description string. 0 = doesn't exist
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }
 
 static dfu_error dfu_CLRSTATUS(libusb_device_handle** dev_handle)
 {
-	if (libusb_control_transfer(*dev_handle, 0b00100001, 0x04, 0, 0, NULL, 0, 100) < LIBUSB_SUCCESS)
-	{
-		return DFU_ERROR_LIBUSB;
-	}
+    if (libusb_control_transfer(*dev_handle, 0b00100001, 0x04, 0, 0, NULL, 0, 100) < LIBUSB_SUCCESS)
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }
 
 static dfu_error dfu_GETSTATE(libusb_device_handle** dev_handle, uint8_t* buf)
 {
-	if (libusb_control_transfer(*dev_handle, 0b10100001, 0x05, 0, 0, buf, 1, 100) < LIBUSB_SUCCESS)
-	{
-		return DFU_ERROR_LIBUSB;
-	}
+    if (libusb_control_transfer(*dev_handle, 0b10100001, 0x05, 0, 0, buf, 1, 100) < LIBUSB_SUCCESS)
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }
 
 static dfu_error dfu_ABORT(libusb_device_handle** dev_handle)
 {
-	if (libusb_control_transfer(*dev_handle, 0b00100001, 0x06, 0, 0, NULL, 0, 100) < LIBUSB_SUCCESS)
-	{
-		return DFU_ERROR_LIBUSB;
-	}
+    if (libusb_control_transfer(*dev_handle, 0b00100001, 0x06, 0, 0, NULL, 0, 100) < LIBUSB_SUCCESS)
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }
 
 static dfu_error dfu_UPLOAD(libusb_device_handle** dev_handle, uint8_t wValue, uint8_t* buf, uint16_t len)
 {
-	if (libusb_control_transfer(*dev_handle, 0b10100001, 0x02, wValue, 0, buf, len, 100) < LIBUSB_SUCCESS)
-	{
-		return DFU_ERROR_LIBUSB;
-	}
+    if (libusb_control_transfer(*dev_handle, 0b10100001, 0x02, wValue, 0, buf, len, 100) < LIBUSB_SUCCESS)
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }
 
 static dfu_error dfu_DNLOAD(libusb_device_handle** dev_handle, uint8_t wValue, uint8_t* buf, uint16_t len)
 {
-	if (libusb_control_transfer(*dev_handle, 0b00100001, 0x01, wValue, 0, buf, len, 100) < LIBUSB_SUCCESS)
-	{
-		return DFU_ERROR_LIBUSB;
-	}
+    if (libusb_control_transfer(*dev_handle, 0b00100001, 0x01, wValue, 0, buf, len, 100) < LIBUSB_SUCCESS)
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }
 
 static dfu_error dfu_DETACH(libusb_device_handle** dev_handle, uint8_t timeout)
 {
-	if (libusb_control_transfer(*dev_handle, 0b00100001, 0x00, timeout, 0, NULL, 0, 100) < LIBUSB_SUCCESS)
-	{
-		return DFU_ERROR_LIBUSB;
-	}
+    if (libusb_control_transfer(*dev_handle, 0b00100001, 0x00, timeout, 0, NULL, 0, 100) < LIBUSB_SUCCESS)
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }
 
 static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state)
 {
-	dfu_status status;
-	uint32_t waitTime = 0;
-	dfu_state state;
-	uint8_t stringIndex;
+    dfu_status status;
+    uint32_t waitTime = 0;
+    dfu_state state;
+    uint8_t stringIndex;
 
-	uint8_t tryCounter = 0;
+    uint8_t tryCounter = 0;
 
-	dfu_error ret = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
-	if (ret != DFU_ERROR_NONE) return ret;
+    dfu_error ret = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
+    if (ret != DFU_ERROR_NONE) return ret;
 
-	while (status != DFU_STATUS_OK || state != required_state)
-	{
-		if (status != DFU_STATUS_OK) dfu_CLRSTATUS(dev_handle);
+    while (status != DFU_STATUS_OK || state != required_state)
+    {
+        if (status != DFU_STATUS_OK) dfu_CLRSTATUS(dev_handle);
 
-		Sleep(waitTime);	// TODO: Make pause work with multi-threading
+        Sleep(waitTime);	// TODO: Make pause work with multi-threading
 
-		ret = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
-		if (ret != DFU_ERROR_NONE) return ret;
+        ret = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
+        if (ret != DFU_ERROR_NONE) return ret;
 
-		tryCounter++;
-		if (tryCounter > 4) return DFU_ERROR_TIMEOUT;
-	}
+        tryCounter++;
+        if (tryCounter > 4) return DFU_ERROR_TIMEOUT;
+    }
 
-	return DFU_ERROR_NONE;
+    return DFU_ERROR_NONE;
 }

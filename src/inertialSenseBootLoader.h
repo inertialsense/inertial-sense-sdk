@@ -1,3 +1,10 @@
+/**
+ * @file inertialSenseBootLoader.h
+ * @brief Routines for updating Inertial Sense products with the SAM-BA 
+ *  bootloader (uINS-3, uINS-4, EVB-2)
+ * 
+ */
+
 /*
 MIT LICENSE
 

@@ -2,10 +2,6 @@
  * @file ISBootloaderTypes.h
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense definitions for bootloading devices
- * @version 0.1
- * @date 2022-03-15
- * 
- * @copyright Copyright (c) 2022 Inertial Sense, Inc
  * 
  */
 
@@ -53,7 +49,7 @@ typedef enum {
     IS_VERIFY_OFF = 2
 } is_verification_style;
 
-typedef unsigned char communications_flags;   // 1111 1111
+typedef uint8_t communications_flags;   // 1111 1111
 
 typedef enum {
     IS_OP_ERROR     = 0,
@@ -71,8 +67,6 @@ typedef struct
     int version_major;
     int version_minor;
     communications_flags bootloader_flash_support;
-    uint16_t vid;
-    uint16_t pid;
 } is_device;
 
 typedef unsigned char * is_device_uri;
@@ -90,10 +84,30 @@ typedef enum {
     IS_SN_MAX_SIZE_V5 = 13
 } is_serial_number_max_size;
 
+typedef enum {
+    IS_COMPORT_MAX_SIZE = 16
+} is_comport_port_max_length;
+
+typedef enum {
+    IS_DEVICE_MATCH_FLAG_VID        = 0b00000001,
+    IS_DEVICE_MATCH_FLAG_PID        = 0b00000010,
+    IS_DEVICE_MATCH_FLAG_SN         = 0b00000100,
+    IS_DEVICE_MATCH_FLAG_RSVD1      = 0b00001000,
+    IS_DEVICE_MATCH_FLAG_RSVD2      = 0b00010000,
+    IS_DEVICE_MATCH_FLAG_RSVD3      = 0b00100000,
+    IS_DEVICE_MATCH_FLAG_RSVD4      = 0b01000000,
+    IS_DEVICE_MATCH_FLAG_RSVD5      = 0b10000000,
+} is_device_interface_flags;
+
+typedef uint8_t match_flags;   // 1111 1111
+
 typedef struct
 {
     is_device_scheme scheme;
+    match_flags match;
     char serial_number[IS_SN_MAX_SIZE_V5];
+    uint16_t vid;
+    uint16_t pid;
 } is_device_uri_properties;
 
 typedef enum {
@@ -109,11 +123,9 @@ typedef struct
 {
     is_device device;
     is_device_uri_properties uri_properties;
-    int read_timeout_ms;
-    int write_timeout_ms;
+    void* dev_handle;   // usually cast to libusb_device_handle
     is_device_interface_log_level log_level;
     void * instance_data;
-    libusb_device_handle** dev_handle;
 } is_device_interface;
 
 typedef void(*pfnIsDeviceInterfaceError)(const is_device_interface const * interface, const void* user_data, int error_code, const char * error_message);
@@ -127,8 +139,6 @@ typedef struct
     const void* user_data;
     pfnIsDeviceInterfaceTaskProgress progress_callback;
     pfnIsDeviceInterfaceError error_callback;
-    ihex_image_section_t* image;
-    uint32_t num_image_sections;
 } is_device_context;
 
 typedef void (*is_list_devices_callback_fn)(is_device_uri);
