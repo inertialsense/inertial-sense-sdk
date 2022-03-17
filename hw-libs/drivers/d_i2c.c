@@ -24,7 +24,12 @@ i2c_t sn_i2c = {.instance_id = ID_TWIHS1, .instance = TWIHS1};
 #endif
 
 //Configuration for TWI instance
-#define TWI_CLK			400000
+#define TWI_CLK			400000		// EVB-2 uses below parameters to manually set the clock waveform
+
+#define I2C_HOLD		0x3F		// Valid values 0x0 to 0x3F
+#define I2C_CKDIV		0x6			// Valid values 0x1 to 0x7
+#define I2C_CHDIV		0xF			// Valid values 0x0 to 0xFF
+#define I2C_CLDIV		0xF			// Valid values 0x0 to 0xFF
 
 #ifndef INT_PRIORITY_DMA
 #define INT_PRIORITY_DMA	3
@@ -194,6 +199,15 @@ int i2c_master_init(i2c_t *i2c_init)	// TODO: Rewrite this so it can be used for
 	
 	if(twihs_master_init(i2c_init->instance, &i2c_init->cfg) != TWIHS_SUCCESS)
 		return -1;
+		
+#ifdef __INERTIAL_SENSE_EVB_2__		// Set the clock waveform generator register manually on the EVB2 
+	i2c_init->instance->TWIHS_FILTR |= TWIHS_FILTR_FILT | 0x7 << TWIHS_FILTR_THRES_Pos;
+	i2c_init->instance->TWIHS_CWGR = 
+		  I2C_HOLD << TWIHS_CWGR_HOLD_Pos 
+		| I2C_CKDIV << TWIHS_CWGR_CKDIV_Pos 
+		| I2C_CHDIV << TWIHS_CWGR_CHDIV_Pos 
+		| I2C_CLDIV << TWIHS_CWGR_CLDIV_Pos;
+#endif
 
 	if(i2c_init->instance == TWIHS0)
 	{
@@ -216,7 +230,6 @@ int i2c_master_init(i2c_t *i2c_init)	// TODO: Rewrite this so it can be used for
 		NVIC_SetPriority(TWIHS2_IRQn, INT_PRIORITY_I2C);
 		NVIC_EnableIRQ(TWIHS2_IRQn);
 	}
-	
 	
 	i2c_master_dma_init_rx(i2c_init);
 	i2c_master_dma_init_tx(i2c_init);
