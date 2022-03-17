@@ -89,6 +89,32 @@ static dfu_error dfu_CLRSTATUS(libusb_device_handle** dev_handle);
 static dfu_error dfu_GETSTATE(libusb_device_handle** dev_handle, uint8_t* buf);
 static dfu_error dfu_ABORT(libusb_device_handle** dev_handle);
 
+/**
+ * @brief Program option bytes and reset device
+ * 
+ * @param bytes data to program
+ * @param size must be equal to full length of option byte section
+ * @param dev_handle handle to device
+ * @return is_operation_result 
+ */
+is_operation_result is_dfu_write_option_bytes(
+    uint8_t* bytes,
+    int size, 
+    libusb_device_handle* dev_handle
+);
+
+/**
+ * @brief Leave DFU mode
+ * @note Only works if the option bytes are set to *not* enter DFU mode after reset. 
+ *  If option bytes are not set, you can leave DFU mode with `is_dfu_write_option_bytes`,
+ *  which will exit DFU mode automatically.
+ * @see is_dfu_write_option_bytes
+ * 
+ * @param dev_handle 
+ * @return is_operation_result 
+ */
+is_operation_result is_dfu_leave(libusb_device_handle* dev_handle);
+
 static dfu_error dfu_set_address_pointer(libusb_device_handle** dev_handle, uint32_t address);
 static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state);
 
@@ -148,7 +174,7 @@ void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn call
 
 is_operation_result is_dfu_flash(
     const is_device_context const * context, 
-    const ihex_image_section_t const * image,
+    ihex_image_section_t* image,
     int image_sections,
     libusb_device_handle* dev_handle
 )
@@ -158,6 +184,13 @@ is_operation_result is_dfu_flash(
     // Cancel any existing operations and reset status to good
     dfu_ABORT(&dev_handle);
     dfu_wait_for_state(&dev_handle, DFU_STATE_IDLE);
+
+    if(image[0].address == 0) {
+        for(size_t i = 0; i < image_sections; i++)
+        {
+            image[i].address += 0x08000000;
+        }
+    }
 
     // Erase memory (only erase pages where firmware lives)
     for(size_t i = 0; i < image_sections; i++)
@@ -206,7 +239,7 @@ is_operation_result is_dfu_flash(
 
             // Copy image into buffer for transmission
             // TODO: Should this actually be 0xFF so we don't write to unused sections?
-            memset(payload, 0x00, STM32_PAGE_SIZE);
+            memset(payload, 0xFF, STM32_PAGE_SIZE);
             memcpy(payload, &image[i].image[byteInSection], payloadLen);
 
             uint8_t blockNum = byteInSection / STM32_PAGE_SIZE;
@@ -220,6 +253,16 @@ is_operation_result is_dfu_flash(
 
     dfu_ABORT(&dev_handle);
     dfu_wait_for_state(&dev_handle, DFU_STATE_IDLE);
+
+    uint8_t options[] = {
+        0xaa,0xf8,0xff,0xfb, 0x55,0x07,0x00,0x04,
+        0xff,0xff,0xff,0xff, 0x00,0x00,0x00,0x00,
+        0x00,0x00,0xff,0xff, 0xff,0xff,0x00,0x00,
+        0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00,
+        0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00
+    };
+
+    is_dfu_write_option_bytes(options, sizeof(options), (libusb_device_handle*)dev_handle);
 
     libusb_release_interface(dev_handle, 0);
 
@@ -244,6 +287,44 @@ static void is_dfu_add_uri(is_device_uri_list* list, struct libusb_device_descri
     }
 
     is_add_device(list, url_buffer);
+}
+
+static is_operation_result is_dfu_write_option_bytes(
+    uint8_t* bytes,
+    int size, 
+    libusb_device_handle* dev_handle
+)
+{
+    // Cancel any existing operations and reset status to good
+    dfu_ABORT(&dev_handle);
+    dfu_wait_for_state(&dev_handle, DFU_STATE_IDLE);
+
+    int ret_alt = libusb_set_interface_alt_setting(dev_handle, 0, UINS5_DFU_INTERFACE_OPTIONS);
+
+    dfu_error set_ret = dfu_set_address_pointer(&dev_handle, 0x1FFF7800);
+
+    int ret = dfu_DNLOAD(&dev_handle, 2, bytes, size);
+    dfu_wait_for_state(&dev_handle, DFU_STATE_DNLOAD_IDLE);	
+
+    // Device will reset automatically here
+
+    return IS_OP_OK;
+}
+
+static is_operation_result is_dfu_leave(libusb_device_handle* dev_handle)
+{
+    // Cancel any existing operations and reset status to good
+    dfu_ABORT(&dev_handle);
+    dfu_wait_for_state(&dev_handle, DFU_STATE_IDLE);
+
+    dfu_error set_ret = dfu_set_address_pointer(&dev_handle, 0x08000000);
+
+    int ret = dfu_DNLOAD(&dev_handle, 0, NULL, 0);
+    if(dfu_wait_for_state(&dev_handle, DFU_STATE_MANIFEST) != DFU_ERROR_NONE) return IS_OP_ERROR;
+
+    ret = libusb_reset_device(dev_handle);
+
+    return IS_OP_OK;
 }
 
 static dfu_error dfu_GETSTATUS(libusb_device_handle** dev_handle, dfu_status* status, uint32_t* delay, dfu_state* state, uint8_t* i_string)

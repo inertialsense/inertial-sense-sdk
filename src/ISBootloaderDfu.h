@@ -24,7 +24,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
-#include <libusb.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -34,6 +33,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderLog.h"
 #include "ISBootloaderTypes.h"
 #include "ISBootloaderCommon.h"
+#include "libusb/libusb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +55,6 @@ typedef enum
 
 /**
  * @brief Probes for DFU devices (currently ones with VID and PID of STM32 bootloader)
- * 
  * @note Call once, will get all devices available
  * 
  * @param uri_list list of URIs that will be filled
@@ -74,7 +73,7 @@ void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn call
  */
 is_operation_result is_dfu_flash(
     const is_device_context const * context, 
-    const ihex_image_section_t const * image,
+    ihex_image_section_t* image,
     int image_sections,
     libusb_device_handle* dev_handle
 );

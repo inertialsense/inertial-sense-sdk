@@ -115,7 +115,6 @@ is_device_interface* is_create_device_interface(
         vid,
         pid);
 
-    // TODO: Sanitize input and check output
     val = strtoul(vid, NULL, 16);
     interface->uri_properties.vid = (uint16_t)val;
     val = strtoul(pid, NULL, 16);
@@ -277,35 +276,10 @@ is_operation_result is_update_flash(
 
         ret = is_dfu_flash(&context, image, ihex_ret, (libusb_device_handle*)dev_handle);
         
-        // OPTION BYTES PROGRAMMING
-        /* 
-        if(ret == 0)
+        // OPTION BYTES PROGRAMMING (resets device)
+        if(ret == IS_OP_OK)
         {
-            struct dfu_config options_config;
-            create_dfu_config(&options_config);
-
-            unsigned char options[] = {
-                0xaa,0xf8,0xff,0xfb, 0x55,0x07,0x00,0x04,
-                0xff,0xff,0xff,0xff, 0x00,0x00,0x00,0x00,
-                0x00,0x00,0xff,0xff, 0xff,0xff,0x00,0x00,
-                0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00,
-                0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00
-            };
             
-            options_config.bin_file_data = options;
-            
-            options_config.match_vendor = UINS5_DESCRIPTOR_VENDOR_ID;
-            options_config.match_product = UINS5_DESCRIPTOR_PRODUCT_ID;
-            options_config.match_iface_alt_index = UINS5_DFU_INTERFACE_ALTERNATIVE_OPTIONS;
-            // options_config.dfuse_options = "0x1FFF7800";
-            options_config.dfuse_address = 0x1FFF7800;
-            options_config.match_serial = interface->uri_properties.serial_number;
-            options_config.match_serial_dfu = interface->uri_properties.serial_number;
-            options_config.dfuse_skip_get_status_after_download = 1;
-            options_config.dfuse_leave = 0;
-            options_config.dfuse_will_reset = 1;
-
-            uinsBootloadFileExDfu(&context, options_config);
 
             return IS_OP_OK;
         }
@@ -313,7 +287,6 @@ is_operation_result is_update_flash(
         {
             return IS_OP_ERROR;
         }
-        */
     }
     else if(interface->uri_properties.scheme == IS_SCHEME_STM32UART)
     {
