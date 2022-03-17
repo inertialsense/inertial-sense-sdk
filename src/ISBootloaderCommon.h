@@ -67,14 +67,6 @@ void is_probe_device_list(is_device_uri_list* list, is_list_devices_callback_fn 
 void is_free_device_list(is_device_uri_list* list);
 
 /**
- * @brief copies a device uri to the list (not usually used by user, use is_probe_device_list instead)
- * 
- * @param list list of device uris
- * @param uri new uri to add to the list
- */
-void is_add_device(is_device_uri_list* list, is_device_uri uri);
-
-/**
  * @brief Create a device interface object
  * 
  * @param device The device type to search for

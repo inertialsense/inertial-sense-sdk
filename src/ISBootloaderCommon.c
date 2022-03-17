@@ -24,6 +24,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "inertialSenseBootLoader.h"
 #include "ISBootloaderDfu.h"
 
+static void is_add_device(
+    is_device_uri_list* list, 
+    struct libusb_device_descriptor* desc, 
+    libusb_device_handle* handle, 
+    is_list_devices_callback_fn callback
+);
+
 is_device uins_3(uint8_t minor)
 {
     is_device d;
@@ -64,14 +71,58 @@ is_device evb_2(uint8_t minor)
     return d;
 }
 
-void is_probe_device_list(is_device_uri_list* list, is_list_devices_callback_fn callback_fn)
+void is_probe_device_list(is_device_uri_list* uri_list, is_list_devices_callback_fn callback)
 {
-    // TODO: backward compatibility with other urls
-    // TODO: filter parameters
+    int ret_libusb;
+    libusb_context* ctx;
+    libusb_device** device_list;
+    size_t device_count;
+    struct libusb_device *dev;
+    struct libusb_device_descriptor desc;
+    libusb_device_handle* dev_handle;
+    struct libusb_config_descriptor* cfg;
 
-    // old style dfu://0483/df11/0/0x08000000
-    // new style dfu://serialnumber
-    is_dfu_probe(list, callback_fn);
+    ret_libusb = libusb_init(&ctx);
+    if (ret_libusb < LIBUSB_SUCCESS) 
+    {
+        libusb_exit(ctx);
+        return;
+    } 
+
+    device_count = libusb_get_device_list(ctx, &device_list);
+    for (size_t i = 0; i < device_count; ++i) {
+        dev = device_list[i];
+
+        ret_libusb = libusb_get_device_descriptor(dev, &desc);
+        if (ret_libusb < LIBUSB_SUCCESS) continue;
+
+        for (size_t cfg_idx = 0; cfg_idx < desc.bNumConfigurations; cfg_idx++)
+        {
+            ret_libusb = libusb_open(dev, &dev_handle);
+
+            if (ret_libusb == LIBUSB_SUCCESS)
+            {
+                ret_libusb = libusb_get_config_descriptor(dev, cfg_idx, &cfg);
+                if (ret_libusb < LIBUSB_SUCCESS) {
+                    libusb_free_config_descriptor(cfg);
+                    libusb_close(dev_handle); 
+                    continue;
+                }
+
+                is_add_device(uri_list, &desc, dev_handle, callback);
+
+                libusb_free_config_descriptor(cfg);
+                libusb_close(dev_handle);
+            }
+            else
+            {
+                continue;
+            }
+        }
+    }
+
+    libusb_free_device_list(device_list, 1);
+    libusb_exit(ctx);
 }
 
 void is_free_device_list(is_device_uri_list* list)
@@ -83,8 +134,36 @@ void is_free_device_list(is_device_uri_list* list)
     list->size = 0;
 }
 
-void is_add_device(is_device_uri_list* list, is_device_uri uri)
+static void is_add_device(
+    is_device_uri_list* list, 
+    struct libusb_device_descriptor* desc, 
+    libusb_device_handle* handle, 
+    is_list_devices_callback_fn callback
+)
 {
+    int ret_libusb;
+    
+    unsigned char serial_number[IS_SN_MAX_SIZE];
+    char uri[256];
+
+    // Get the string containing the serial number from the device
+    ret_libusb = libusb_get_string_descriptor_ascii(handle, desc->iSerialNumber, serial_number, sizeof(serial_number));
+    if (ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0';
+
+    if(desc->bDeviceClass == 0xFE && desc->bDeviceSubClass == 0x01 && desc->bDeviceProtocol == 0x02)    // TODO: Switch to interface
+    {
+        sprintf(uri, "dfu://%s/%04X/%04X", serial_number, desc->idVendor, desc->idProduct);
+    }
+    else
+    {
+        // TODO: Need to probe for serial number from uINS-3/4 or EVB-2 here
+        sprintf(uri, "samba://%s/%04X/%04X", serial_number, desc->idVendor, desc->idProduct);
+
+        // TODO: Add stm32uart support
+    }
+    
+    if(callback) callback(uri);
+
 	list->devices[list->size] = malloc(strlen(uri) + 1);
 	strcpy(list->devices[list->size], uri);
 
@@ -103,7 +182,7 @@ is_device_interface* is_create_device_interface(
     // dfu://serialnum
 
     char uri_scheme[9];
-    char serial_number[IS_SN_MAX_SIZE_V5];
+    char serial_number[IS_SN_MAX_SIZE];
     char vid[5];
     char pid[5];
     long val;
@@ -120,6 +199,8 @@ is_device_interface* is_create_device_interface(
     val = strtoul(pid, NULL, 16);
     interface->uri_properties.pid = (uint16_t)val;
 
+    strncpy(interface->uri_properties.serial_number, serial_number, IS_SN_MAX_SIZE);
+
     if(strncmp(uri_scheme, "samba", 5) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_SAMBA;
@@ -129,13 +210,12 @@ is_device_interface* is_create_device_interface(
     {
         interface->uri_properties.scheme = IS_SCHEME_DFU;
         interface->uri_properties.match = IS_DEVICE_MATCH_FLAG_VID | IS_DEVICE_MATCH_FLAG_PID | IS_DEVICE_MATCH_FLAG_SN;
-        strncpy(interface->uri_properties.serial_number, serial_number, IS_SN_MAX_SIZE_V5);
     }
     else if(strncmp(uri_scheme, "stm32uart", 9) == 0)
     {
         interface->uri_properties.scheme = IS_SCHEME_STM32UART;
         interface->uri_properties.match = IS_DEVICE_MATCH_FLAG_VID | IS_DEVICE_MATCH_FLAG_PID | IS_DEVICE_MATCH_FLAG_SN;
-        strncpy(interface->uri_properties.serial_number, serial_number, IS_SN_MAX_SIZE_V5);
+        
     }
     else
     {
@@ -205,7 +285,7 @@ is_operation_result is_get_libusb_handles(
             }
 
             int libusb_result;
-            const size_t sn_size = IS_SN_MAX_SIZE_V5;
+            const size_t sn_size = IS_SN_MAX_SIZE;
             const size_t url_buffer_size = sn_size + 6;
             char url_buffer[url_buffer_size];
             unsigned char serial_number[sn_size];
@@ -213,7 +293,7 @@ is_operation_result is_get_libusb_handles(
             // Get the string containing the serial number from the device
             libusb_result = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
         
-            if(strncmp(serial_number, interf->uri_properties.serial_number, IS_SN_MAX_SIZE_V5) == 0)
+            if(strncmp(serial_number, interf->uri_properties.serial_number, IS_SN_MAX_SIZE) == 0)
             {
                 // Device found
                 match_list[(*match_count)++] = dev_handle;

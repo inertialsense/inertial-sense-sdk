@@ -83,7 +83,7 @@ typedef enum {
 typedef enum {
     // IS_SN_MAX_SIZE_V3 = 13
     // IS_SN_MAX_SIZE_V4 = 13
-    IS_SN_MAX_SIZE_V5 = 13
+    IS_SN_MAX_SIZE = 20
 } is_serial_number_max_size;
 
 typedef enum {
@@ -107,7 +107,7 @@ typedef struct
 {
     is_device_scheme scheme;
     match_flags match;
-    char serial_number[IS_SN_MAX_SIZE_V5];
+    char serial_number[IS_SN_MAX_SIZE];
     uint16_t vid;
     uint16_t pid;
 } is_device_uri_properties;

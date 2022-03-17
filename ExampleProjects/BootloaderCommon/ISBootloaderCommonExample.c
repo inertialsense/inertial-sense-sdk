@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 
 	if (uri_list.size < 1)
 	{
-		printf("failed to find device");
+		printf("failed to find device\n");
 		is_free_device_list(&uri_list);
 		return -1;
 	}
@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 	is_get_libusb_handles(interface, context, device_list, &device_count, match_list, &match_count);
 	if(match_count < 1)
 	{
-		printf("No devices");
+		printf("No devices\n");
 	}
 
 	is_device_change_log_level(interface, IS_LOG_LEVEL_DEBUG);
