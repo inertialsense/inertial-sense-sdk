@@ -742,17 +742,21 @@ enum eImuStatus
 	/** Sensor saturation on IMU2 gyro */
 	IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
 	/** Sensor saturation on IMU1 accelerometer */
-	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000004,
+	IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
+	/** Sensor saturation on IMU1 accelerometer */
+	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000010,
 	/** Sensor saturation on IMU2 accelerometer */
-	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000008,
+	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000020,
+	/** Sensor saturation on IMU3 accelerometer */
+	IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000040,
 	/** Sensor saturation mask */
-	IMU_STATUS_SATURATION_MASK                  = (int)0x0000000F,
+	IMU_STATUS_SATURATION_MASK                  = (int)0x000000FF,
 
-	/** Reserved */
-	IMU_STATUS_RESERVED1						= (int)0x00000020,
+	/** Magnetometer sample occured */
+	IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
 	
 	/** Reserved */
-	IMU_STATUS_RESERVED2						= (int)0x00000040,
+	// IMU_STATUS_RESERVED2						= (int)0x00000400,
 
 
 //     /** Sensor saturation happened within past 10 seconds */
@@ -780,6 +784,8 @@ enum eImuStatus
 	IMU_STATUS_ACC3_OK                          = (int)0x00200000,
 	/** IMU gyros and accelerometers available */
 	IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
+	/** IMU gyros and accelerometers available bit offset  */
+	IMU_STATUS_IMU_OK_BIT_OFFSET                = (int)2,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
