@@ -168,17 +168,20 @@ is_operation_result is_device_change_log_level(is_device_interface* interface, i
 is_operation_result is_get_libusb_handles(
     const is_device_interface const * interf, 
     libusb_device** device_list, 
-    size_t device_count,
+    size_t* device_count,
     libusb_device_handle** match_list,
     size_t* match_count
 )
 {
-    libusb_device** dev;
+    libusb_device* dev;
     libusb_device_handle* dev_handle;
     struct libusb_device_descriptor desc;
     struct libusb_config_descriptor* cfg;
     int libusb_result;
     *match_count = 0;
+
+    libusb_result = libusb_init(NULL);
+    *device_count = libusb_get_device_list(NULL, &device_list);
 
     for (size_t i = 0; i < device_count; ++i) {
         dev = device_list[i];
@@ -227,6 +230,22 @@ is_operation_result is_get_libusb_handles(
     return IS_OP_OK;
 }
 
+is_operation_result is_release_libusb_handles(
+    libusb_device** device_list, 
+    libusb_device_handle** match_list,
+    size_t match_count
+)
+{
+    for (size_t i = 0; i < match_count; ++i) {
+        libusb_close(match_list[i]);
+    }
+
+    libusb_free_device_list(device_list, 1);
+    libusb_exit(NULL);
+
+    return IS_OP_OK;
+}
+
 is_operation_result is_update_flash(
     const is_device_interface* interface,
     const char* firmware_file_path,
@@ -235,7 +254,8 @@ is_operation_result is_update_flash(
     pfnIsDeviceInterfaceError error_callback,
     pfnIsDeviceInterfaceTaskProgress update_progress_callback,
     pfnIsDeviceInterfaceTaskProgress verify_progress_callback,
-    const void* user_data
+    const void* user_data,
+    void* dev_handle
 )
 {
     int ret = IS_OP_ERROR;
@@ -260,7 +280,7 @@ is_operation_result is_update_flash(
         context.progress_callback = update_progress_callback;
         context.error_callback = error_callback;
 
-        int ret = is_dfu_flash(&context, image, ihex_ret, (libusb_device_handle*)interface->dev_handle);
+        int ret = is_dfu_flash(&context, image, ihex_ret, (libusb_device_handle*)dev_handle);
         
         // OPTION BYTES PROGRAMMING
         /* 

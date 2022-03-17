@@ -12,22 +12,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 
-#include "../../src/uins_sdk_compat.h"
+#include "../../src/ISBootloaderCommon.h"
 
-static void on_error(const uins_device_interface const * interface, const void* user_data, int error_code, const char * error_message)
+static void on_error(const is_device_interface const * interface, const void* user_data, int error_code, const char * error_message)
 {
 	printf("ISDFUBootloaderExample::on_error Bootloader failed! Error: %d %s\n", error_code, error_message);
 	printf("ISDFUBootloaderExample::on_error user data: %s\n", (const char *) user_data);
 }
 
-static int on_update_progress(const uins_device_interface const * interface, const void* user_data, float percent)
+static int on_update_progress(const is_device_interface const * interface, const void* user_data, float percent)
 {
 	printf("ISDFUBootloaderExample::on_update_progress %f percent\n", percent);
 	printf("user data: %s\n", (const char *) user_data);
 	return 1; // return zero to abort
 }
 
-static int on_verify_progress(const uins_device_interface const * interface, const void* user_data, float percent)
+static int on_verify_progress(const is_device_interface const * interface, const void* user_data, float percent)
 {
 	printf("ISDFUBootloaderExample::on_verify_progress %f percent\n", percent);
 	printf("user data: %s\n", (const char *) user_data);
@@ -40,7 +40,7 @@ static void bootloaderStatusText(const void* obj, const char* info)
 
 }
 
-static void listCallback(uins_device_uri uri)
+static void listCallback(is_device_uri uri)
 {
 	printf("found %s\n", uri);
 }
@@ -50,37 +50,41 @@ int main(int argc, char* argv[])
 {
 	int rc = -1;
 
-	// uins_create_device_interface(uins_31(), "file://dev/ttyACM0");
-
 	const char* firmware_file_path = argv[1];
 	printf("firmware path: %s\n", firmware_file_path);
 
-	uins_device_uri_list uri_list;
-	uins_probe_device_list(&uri_list, listCallback);
+	is_device_uri_list uri_list;
+	is_probe_device_list(&uri_list, listCallback);
 
 	if (uri_list.size < 1)
 	{
-		printf("failed to find dfu device");
-		uins_free_device_list(&uri_list);
+		printf("failed to find device");
+		is_free_device_list(&uri_list);
 		return -1;
 	}
 
-	uins_device_uri uri = uri_list.devices[0];
-	uins_device_interface* uins = uins_create_device_interface(uins_50(), uri);
+	is_device_uri uri = uri_list.devices[0];
+	is_device_interface* interface = is_create_device_interface(uins_5(0), uri);
 
-	uins_change_log_level(uins, IS_LOG_LEVEL_DEBUG);
+	libusb_device** device_list;	// Libusb allocates memory for the pointers
+	libusb_device_handle* match_list[256];	// Libusb does not allocate memory for the pointers
+	size_t device_count = 0, match_count = 0;
+	is_get_libusb_handles(interface, device_list, &device_count, match_list, &match_count);
+
+	is_device_change_log_level(interface, IS_LOG_LEVEL_DEBUG);
 
 	const char* user_data = "my own data";
 	
-	uins_operation_result bootloader_update_ok = uins_update_flash(
-		uins,
+	is_operation_result bootloader_update_ok = is_update_flash(
+		interface,
 		firmware_file_path,
-		IS_UPDATE_APPLICATION_FIRMWARE,
+		IS_UPDATE_UINS_FIRMWARE,
 		IS_VERIFY_OFF,	// TODO: add verify
 		on_error,
 		on_update_progress,
 		NULL,	// TODO: on_verify_progress
-		user_data
+		user_data,
+		(void*)match_list[0]	// TODO: Multiple updates
 	);
 
 	if (bootloader_update_ok)
@@ -94,8 +98,9 @@ int main(int argc, char* argv[])
 		rc = -1;
 	}
 
-	uins_free_device_list(&uri_list);
-	uins_destroy_device_interface(uins);
+	is_release_libusb_handles(device_list, match_list, match_count);
+	uins_destroy_device_interface(interface);
+	is_free_device_list(&uri_list);
 	
 	return rc;
 }

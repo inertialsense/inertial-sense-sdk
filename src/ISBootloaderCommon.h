@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __IS_BOOTLOADER_COMMON_H
 
 #include "ISBootloaderTypes.h"
+#include "ISBootloaderDfu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,8 +34,15 @@ extern "C" {
 
 /*
     Steps:
-        - Create a device with uins_3, uins_4, uins_5, evb_2, etc.
-        - 
+        - Create an object of type `is_device_uri_list`
+        - Probe device list with `is_probe_device_list()` to fill the uri list 
+            with identifiers for each attached device
+        - Get a device interface by passing the `is_device` struct to `is_create_device_interface()`
+        - (DFU/UART) `is_get_libusb_handles()` gives a list of handles matching the interface
+        - Pass one of the handles to `is_update_flash()`. Threading should start here.
+        - Call `is_release_libusb_handles()` to release libusb handles and exit libusb
+        - Free device interface with `is_destroy_device_interface`
+        - Free device list with `is_free_device_list`
 */
 
 is_device uins_3(uint8_t minor);
@@ -58,9 +66,8 @@ void is_probe_device_list(is_device_uri_list* list, is_list_devices_callback_fn 
  */
 void is_free_device_list(is_device_uri_list* list);
 
-
 /**
- * @brief copies a device uri to the list
+ * @brief copies a device uri to the list (not usually used by user, use is_probe_device_list instead)
  * 
  * @param list list of device uris
  * @param uri new uri to add to the list
@@ -71,11 +78,9 @@ void is_add_device(is_device_uri_list* list, is_device_uri uri);
  * @brief Create a device interface object
  * 
  * @param device The device type to search for
- * @param interface The device interface to initialize and populate with values.  NULL if not found.
  * @param unique_identifier A unique uri to the device interface
- * @param optional_callback_handler If not NULL, the callback handler to signal when the interface is used for subsequent operations
  * @return a newly allocated device interface on the heap
- * @see uins_destroy_device_interface 
+ * @see is_destroy_device_interface 
  */
 is_device_interface* is_create_device_interface(
     is_device device,
@@ -106,11 +111,25 @@ is_operation_result is_device_change_log_level(is_device_interface* interface, i
  * @return is_operation_result 
  */
 is_operation_result is_get_libusb_handles(
-    const is_device_interface* const interf, 
+    const is_device_interface const * interf, 
     libusb_device** device_list, 
-    size_t device_count,
+    size_t* device_count,
     libusb_device_handle** match_list,
     size_t* match_count
+);
+
+/**
+ * @brief Release (close) libusb devices and libusb_exit()  
+ * 
+ * @param device_list list of all devices found by libusb
+ * @param match_list matching device list created by `is_get_libusb_handles`
+ * @param match_count numer of devices matched by `is_get_libusb_handles`
+ * @return is_operation_result 
+ */
+is_operation_result is_release_libusb_handles(
+    libusb_device** device_list, 
+    libusb_device_handle** match_list,
+    size_t match_count
 );
 
 /** copy hex file from this machine to the device interface */
@@ -122,7 +141,8 @@ is_operation_result is_update_flash(
     pfnIsDeviceInterfaceError error_callback,
     pfnIsDeviceInterfaceTaskProgress upload_progress_callback,
     pfnIsDeviceInterfaceTaskProgress verify_progress_callback,
-    const void* user_data
+    const void* user_data,
+    void* dev_handle
 );
 
 void is_print_device_info(
@@ -130,7 +150,7 @@ void is_print_device_info(
 	struct libusb_device *dev,
 	struct libusb_device_descriptor* desc,
 	struct libusb_config_descriptor* cfg,
-	libusb_device_handle* devh
+	libusb_device_handle* dev_handle
 );
 
 #ifdef __cplusplus
