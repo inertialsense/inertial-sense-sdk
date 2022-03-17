@@ -36,24 +36,24 @@ static int parse_hex_line(char* theline, uint8_t bytes[], int* addr, int* num, i
     if (theline[0] != ':') return 0;
     if (strlen(theline) < 11) return 0;		
     ptr = theline+1;
-    if (!sscanf_s(ptr, "%02x", &len)) return 0;
+    if (!sscanf(ptr, "%02x", &len)) return 0;
     ptr += 2;
     if ( strlen(theline) < (11 + (len * 2)) ) return 0;
-    if (!sscanf_s(ptr, "%04x", addr)) return 0;
+    if (!sscanf(ptr, "%04x", addr)) return 0;
     ptr += 4;
       /* printf("Line: length=%d Addr=%d\n", len, *addr); */
-    if (!sscanf_s(ptr, "%02x", code)) return 0;
+    if (!sscanf(ptr, "%02x", code)) return 0;
     ptr += 2;
     sum = (len & 255) + ((*addr >> 8) & 255) + (*addr & 255) + (*code & 255);
     while(*num != len) 
     {
-        if (!sscanf_s(ptr, "%02hhx", &bytes[*num])) return 0;
+        if (!sscanf(ptr, "%02hhx", &bytes[*num])) return 0;
         ptr += 2;
         sum += bytes[*num] & 0xFF;
         (*num)++;
         if (*num >= 256) return 0;
     }
-    if (!sscanf_s(ptr, "%02x", &cksum)) return 0;
+    if (!sscanf(ptr, "%02x", &cksum)) return 0;
     if ( ((sum & 255) + (cksum & 255)) & 255 ) return 0; /* checksum error */
     return 1;
 }
@@ -128,7 +128,7 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
     }
     
     // Base the section length on what address the end is at, since hex file may skip over unused bytes in some lines
-    section->len = maxaddr + 1;
+    section->len = maxaddr - minaddr + 1;
 
     // Allocate a buffer for the image to reside in
     section->image = malloc(section->len);
@@ -138,17 +138,17 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
         section->address = address;
 
         printf("   Loaded %d bytes between:", section->len);
-        printf(" %08X to %08X at address:", minaddr, maxaddr);
-        printf(" %08X\n", section->address);
+        printf(" 0x%04X to 0x%04X at address:", minaddr, maxaddr);
+        printf(" 0x%08X\n", section->address);
 
-        memcpy(section->image, image_local, section->len);
+        memcpy(section->image, &image_local[minaddr], section->len);
 
         free(image_local);
         
         return eof ? 1 : 0; // Return 1 if end of file reached
     }
 
-    free(image_local);	
+    free(image_local);
     
     return -1;	// Malloc failed or nothing in sector
 }
@@ -167,7 +167,10 @@ static void ihex_unload_section(ihex_image_section_t* section)
 int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, size_t num_slots)
 {
     FILE* ihex_file;
-    fopen_s(&ihex_file, ihex_filename, "r");
+    ihex_file = fopen(ihex_filename, "r");
+    if(ihex_file==NULL) return -1;
+
+    printf("NumSections: %x", ihex_file);
     int iter = 0;
     int numSections = 0;
 
@@ -181,6 +184,9 @@ int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, s
         numSections++;
         if (ret == 1) break;	    // Last sector in file found (EOF)
     } while (++iter < num_slots);
+
+
+    printf("NumSections: %x", ihex_file);
 
     // ACT ON SECTIONS HERE
     fclose(ihex_file);

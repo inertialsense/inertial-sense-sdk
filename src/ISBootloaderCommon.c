@@ -104,22 +104,21 @@ is_device_interface* is_create_device_interface(
 
     char uri_scheme[9];
     char serial_number[IS_SN_MAX_SIZE_V5];
-    char vid[4];
-    char pid[4];
-    char* end;
+    char vid[5];
+    char pid[5];
     long val;
 
     int uri_scan_status = sscanf(uri,
-        "%9[^:]%*[:/]%s/%4[^/]%4",
+        "%9[^:]%*[:/]%99[^/]/%99[^/]/%s",
         uri_scheme,
         serial_number,
         vid,
         pid);
 
     // TODO: Sanitize input and check output
-    val = strtol(vid, &end, 'F');
+    val = strtoul(vid, NULL, 16);
     interface->uri_properties.vid = (uint16_t)val;
-    val = strtol(pid, &end, 'F');
+    val = strtoul(pid, NULL, 16);
     interface->uri_properties.pid = (uint16_t)val;
 
     if(strncmp(uri_scheme, "samba", 5) == 0)
@@ -167,6 +166,7 @@ is_operation_result is_device_change_log_level(is_device_interface* interface, i
 
 is_operation_result is_get_libusb_handles(
     const is_device_interface const * interf, 
+    libusb_context* ctx,
     libusb_device** device_list, 
     size_t* device_count,
     libusb_device_handle** match_list,
@@ -180,10 +180,10 @@ is_operation_result is_get_libusb_handles(
     int libusb_result;
     *match_count = 0;
 
-    libusb_result = libusb_init(NULL);
-    *device_count = libusb_get_device_list(NULL, &device_list);
+    libusb_result = libusb_init(&ctx);
+    *device_count = libusb_get_device_list(ctx, &device_list);
 
-    for (size_t i = 0; i < device_count; ++i) {
+    for (size_t i = 0; i < *device_count; ++i) {
         dev = device_list[i];
 
         libusb_result = libusb_get_device_descriptor(dev, &desc);
@@ -225,8 +225,6 @@ is_operation_result is_get_libusb_handles(
         libusb_close(dev_handle);
     }
 
-    libusb_free_device_list(device_list, 1);
-
     return IS_OP_OK;
 }
 
@@ -262,10 +260,7 @@ is_operation_result is_update_flash(
     int libusb_ret = LIBUSB_SUCCESS;
     int ihex_ret = -1;
 
-    if(!firmware_file_path)
-    {
-        return ret;
-    }
+    if(!firmware_file_path) return ret;
 
     // Load the firmware into memory. Even if we don't use it now (SAM-BA), this is a good check
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
@@ -280,7 +275,7 @@ is_operation_result is_update_flash(
         context.progress_callback = update_progress_callback;
         context.error_callback = error_callback;
 
-        int ret = is_dfu_flash(&context, image, ihex_ret, (libusb_device_handle*)dev_handle);
+        ret = is_dfu_flash(&context, image, ihex_ret, (libusb_device_handle*)dev_handle);
         
         // OPTION BYTES PROGRAMMING
         /* 

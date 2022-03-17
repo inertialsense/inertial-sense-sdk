@@ -24,6 +24,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 typedef enum {
     IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000000,  // default
     IS_DEVICE_INTERFACE_FLAG_DFU        = 0b00000001,
@@ -97,7 +99,7 @@ typedef enum {
     IS_DEVICE_MATCH_FLAG_RSVD3      = 0b00100000,
     IS_DEVICE_MATCH_FLAG_RSVD4      = 0b01000000,
     IS_DEVICE_MATCH_FLAG_RSVD5      = 0b10000000,
-} is_device_interface_flags;
+} is_device_match_flags;
 
 typedef uint8_t match_flags;   // 1111 1111
 

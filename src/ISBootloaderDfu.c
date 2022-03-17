@@ -24,6 +24,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderDfu.h"
 
+#include <time.h>
+
 #define STM32_PAGE_SIZE 0x800
 #define STM32_PAGE_ERROR_MASK 0x7FF
 
@@ -87,6 +89,7 @@ static dfu_error dfu_CLRSTATUS(libusb_device_handle** dev_handle);
 static dfu_error dfu_GETSTATE(libusb_device_handle** dev_handle, uint8_t* buf);
 static dfu_error dfu_ABORT(libusb_device_handle** dev_handle);
 
+static dfu_error dfu_set_address_pointer(libusb_device_handle** dev_handle, uint32_t address);
 static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state);
 
 void is_dfu_probe(is_device_uri_list* uri_list, is_list_devices_callback_fn callback)
@@ -153,8 +156,8 @@ is_operation_result is_dfu_flash(
     libusb_claim_interface(dev_handle, 0);
 
     // Cancel any existing operations and reset status to good
-    dfu_ABORT(dev_handle);
-    dfu_wait_for_state(dev_handle, DFU_STATE_IDLE);
+    dfu_ABORT(&dev_handle);
+    dfu_wait_for_state(&dev_handle, DFU_STATE_IDLE);
 
     // Erase memory (only erase pages where firmware lives)
     for(size_t i = 0; i < image_sections; i++)
@@ -178,8 +181,8 @@ is_operation_result is_dfu_flash(
             eraseCommand[0] = 0x41;
             memcpy(&eraseCommand[1], &pageAddress, 4);
 
-            int ret = dfu_DNLOAD(dev_handle, 0, eraseCommand, 5);
-            dfu_wait_for_state(dev_handle, DFU_STATE_DNLOAD_IDLE);
+            int ret = dfu_DNLOAD(&dev_handle, 0, eraseCommand, 5);
+            dfu_wait_for_state(&dev_handle, DFU_STATE_DNLOAD_IDLE);
 
             byteInSection += STM32_PAGE_SIZE;
         } while(byteInSection < image[i].len - 1);
@@ -188,7 +191,7 @@ is_operation_result is_dfu_flash(
     // Write memory
     for(size_t i = 0; i < image_sections; i++)
     {
-        dfu_set_address_pointer(dev_handle, image[i].address);
+        dfu_set_address_pointer(&dev_handle, image[i].address);
 
         uint32_t byteInSection = 0;
 
@@ -208,15 +211,15 @@ is_operation_result is_dfu_flash(
 
             uint8_t blockNum = byteInSection / STM32_PAGE_SIZE;
     
-            int ret = dfu_DNLOAD(dev_handle, blockNum + 2, payload, STM32_PAGE_SIZE);		
-            dfu_wait_for_state(dev_handle, DFU_STATE_DNLOAD_IDLE);
+            int ret = dfu_DNLOAD(&dev_handle, blockNum + 2, payload, STM32_PAGE_SIZE);		
+            dfu_wait_for_state(&dev_handle, DFU_STATE_DNLOAD_IDLE);
 
             byteInSection += payloadLen;
         } while (byteInSection < image[i].len - 1);
     }
 
-    dfu_ABORT(dev_handle);
-    dfu_wait_for_state(dev_handle, DFU_STATE_IDLE);
+    dfu_ABORT(&dev_handle);
+    dfu_wait_for_state(&dev_handle, DFU_STATE_IDLE);
 
     libusb_release_interface(dev_handle, 0);
 
@@ -227,14 +230,14 @@ static void is_dfu_add_uri(is_device_uri_list* list, struct libusb_device_descri
 {
     int libusb_result;
     const size_t sn_size = IS_SN_MAX_SIZE_V5;
-    const size_t url_buffer_size = sn_size + 6;
+    const size_t url_buffer_size = sn_size + 16;
     char url_buffer[url_buffer_size];
     unsigned char serial_number[sn_size];
 
     // Get the string containing the serial number from the device
     libusb_result = libusb_get_string_descriptor_ascii(handle, desc->iSerialNumber, serial_number, sizeof(serial_number));
     
-    snprintf(url_buffer, url_buffer_size, "dfu://%s", serial_number);
+    snprintf(url_buffer, url_buffer_size, "dfu://%s/%04X/%04X", serial_number, desc->idVendor, desc->idProduct);
     if(callback != NULL)
     {
         callback(url_buffer);
@@ -320,6 +323,16 @@ static dfu_error dfu_DETACH(libusb_device_handle** dev_handle, uint8_t timeout)
     return DFU_ERROR_NONE;
 }
 
+static dfu_error dfu_set_address_pointer(libusb_device_handle** dev_handle, uint32_t address)
+{
+    unsigned char data[5] = { 0 };
+	data[0] = 0x21;
+	memcpy(&data[1], &address, 4);
+
+	dfu_DNLOAD(dev_handle, 0, data, 5);
+    return dfu_wait_for_state(dev_handle, DFU_STATE_DNLOAD_IDLE);
+}
+
 static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state)
 {
     dfu_status status;
@@ -336,7 +349,8 @@ static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state
     {
         if (status != DFU_STATUS_OK) dfu_CLRSTATUS(dev_handle);
 
-        Sleep(waitTime);	// TODO: Make pause work with multi-threading
+        const struct timespec delay_ts = { 0L, waitTime * 1000L * 1000L };
+		nanosleep(&delay_ts, NULL); // TODO: Windows
 
         ret = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
         if (ret != DFU_ERROR_NONE) return ret;

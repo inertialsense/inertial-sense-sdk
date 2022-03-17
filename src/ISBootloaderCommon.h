@@ -112,6 +112,7 @@ is_operation_result is_device_change_log_level(is_device_interface* interface, i
  */
 is_operation_result is_get_libusb_handles(
     const is_device_interface const * interf, 
+    libusb_context* ctx,
     libusb_device** device_list, 
     size_t* device_count,
     libusb_device_handle** match_list,

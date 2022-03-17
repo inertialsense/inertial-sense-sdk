@@ -54,6 +54,7 @@ int main(int argc, char* argv[])
 	printf("firmware path: %s\n", firmware_file_path);
 
 	is_device_uri_list uri_list;
+	uri_list.size = 0;
 	is_probe_device_list(&uri_list, listCallback);
 
 	if (uri_list.size < 1)
@@ -62,14 +63,19 @@ int main(int argc, char* argv[])
 		is_free_device_list(&uri_list);
 		return -1;
 	}
-
+	
 	is_device_uri uri = uri_list.devices[0];
 	is_device_interface* interface = is_create_device_interface(uins_5(0), uri);
 
-	libusb_device** device_list;	// Libusb allocates memory for the pointers
+	libusb_context* context = NULL;
+	libusb_device** device_list = NULL;	// Libusb allocates memory for the pointers
 	libusb_device_handle* match_list[256];	// Libusb does not allocate memory for the pointers
 	size_t device_count = 0, match_count = 0;
-	is_get_libusb_handles(interface, device_list, &device_count, match_list, &match_count);
+	is_get_libusb_handles(interface, context, device_list, &device_count, match_list, &match_count);
+	if(match_count < 1)
+	{
+		printf("No devices");
+	}
 
 	is_device_change_log_level(interface, IS_LOG_LEVEL_DEBUG);
 
@@ -99,7 +105,7 @@ int main(int argc, char* argv[])
 	}
 
 	is_release_libusb_handles(device_list, match_list, match_count);
-	uins_destroy_device_interface(interface);
+	is_destroy_device_interface(interface);
 	is_free_device_list(&uri_list);
 	
 	return rc;
