@@ -52,20 +52,8 @@ int main(int argc, char* argv[])
 
 	const char* firmware_file_path = argv[1];
 	printf("firmware path: %s\n", firmware_file_path);
-
-	is_device_uri_list uri_list;
-	uri_list.size = 0;
-	is_probe_device_list(&uri_list, listCallback);
-
-	if (uri_list.size < 1)
-	{
-		printf("failed to find device\n");
-		is_free_device_list(&uri_list);
-		return -1;
-	}
 	
-	is_device_uri uri = uri_list.devices[0];
-	is_device_interface* interface = is_create_device_interface(uins_5(0), uri);
+	is_device_interface* interface = is_create_device_interface(uins_5(0));
 
 	libusb_context* context = NULL;
 	libusb_device** device_list = NULL;	// Libusb allocates memory for the pointers

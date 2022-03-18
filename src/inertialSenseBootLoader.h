@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 #include "serialPort.h"
+#include "ISBootloaderCommon.h"
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
@@ -50,12 +51,6 @@ extern "C" {
 #ifndef BOOTLOADER_ERROR_LENGTH
 #define BOOTLOADER_ERROR_LENGTH	512		// Set to zero to disable
 #endif
-
-/** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
-typedef int(*pfnBootloadProgress)(const void* obj, float percent);
-
-/** Bootloader information string function prototype. */
-typedef void(*pfnBootloadStatus)(const void* obj, const char* infoString);
 
 typedef struct
 {

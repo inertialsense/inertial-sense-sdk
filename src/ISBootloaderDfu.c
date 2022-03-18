@@ -231,6 +231,7 @@ is_operation_result is_dfu_flash(
     };
 
     // ret_is = is_dfu_write_option_bytes(options, sizeof(options), (libusb_device_handle*)dev_handle);
+    // if check
 
     ret_libusb = libusb_release_interface(dev_handle, 0);
     if (ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR;    

@@ -51,32 +51,14 @@ is_device uins_5(uint8_t minor);
 is_device evb_2(uint8_t minor);
 
 /**
- * @brief probes the USB bus, builds device uris and adds them to the list
- * 
- * @param list list of device uris
- * @param callback_fn called for each device found
- */
-void is_probe_device_list(is_device_uri_list* list, is_list_devices_callback_fn callback_fn);
-
-/**
- * @brief frees the memory from the probed devices
- * 
- * @param list list of device uris
- * @param callback_fn 
- */
-void is_free_device_list(is_device_uri_list* list);
-
-/**
  * @brief Create a device interface object
  * 
  * @param device The device type to search for
- * @param unique_identifier A unique uri to the device interface
  * @return a newly allocated device interface on the heap
  * @see is_destroy_device_interface 
  */
 is_device_interface* is_create_device_interface(
-    is_device device,
-    const is_device_uri unique_identifier
+    is_device device
 );
 
 /** performs any necessary flush or clean up operations, releases instance data resources and frees heap memory from create */
@@ -96,7 +78,7 @@ is_operation_result is_device_change_log_level(is_device_interface* interface, i
  * @brief Get a list of libusb handles that match the criteria in `interf`
  * 
  * @param interf defines the device parameters to match with
- * @param device_list libusb-generated device list
+ * @param device_list libusb-generated device list, will be allocated and filled in this function
  * @param device_count number of devices in `device_list`
  * @param match_list pass in an array of `libusb_device_handle*`, function will fill with list of device handles
  * @param match_count number of device handles at end of function execution

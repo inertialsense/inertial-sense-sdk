@@ -42,8 +42,7 @@ typedef enum {
 
 typedef enum {
     IS_UPDATE_BOOTLOADER        = 1,
-    IS_UPDATE_UINS_FIRMWARE     = 2,
-    IS_UPDATE_EVB_FIRMARE       = 3,    
+    IS_UPDATE_FIRMWARE          = 2,
 } is_update_flash_style;
 
 typedef enum {
@@ -70,8 +69,6 @@ typedef struct
     int version_minor;
     communications_flags bootloader_flash_support;
 } is_device;
-
-typedef unsigned char * is_device_uri;
 
 typedef enum {
     IS_SCHEME_UNKNOWN = 0,
@@ -110,7 +107,8 @@ typedef struct
     char serial_number[IS_SN_MAX_SIZE];
     uint16_t vid;
     uint16_t pid;
-} is_device_uri_properties;
+    char filename[64];    // String that must exist in firmware file name. '\0' disables check  
+} is_device_match_properties;
 
 typedef enum {
     IS_LOG_LEVEL_NONE  = 0,
@@ -124,32 +122,34 @@ typedef enum {
 typedef struct
 {
     is_device device;
-    is_device_uri_properties uri_properties;
-    void* dev_handle;   // usually cast to libusb_device_handle
+    is_device_match_properties match_props;
     is_device_interface_log_level log_level;
     void * instance_data;
+    void * handle;
 } is_device_interface;
 
-typedef void(*pfnIsDeviceInterfaceError)(const is_device_interface const * interface, const void* user_data, int error_code, const char * error_message);
-typedef int(*pfnIsDeviceInterfaceTaskProgress)(const is_device_interface const * interface, const void* user_data, float percent);
-
-typedef const unsigned char * const uins_data_buffer;
+/** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
+typedef int(*pfnBootloadProgress)(const void* obj, float percent);
+/** Bootloader information string function prototype. */
+typedef void(*pfnBootloadStatus)(const void* obj, const char* infoString);
 
 typedef struct
 {
-    const is_device_interface const * interface;
+    is_device_interface* interface;
+    char* firmware_file_path;
+    char* bootloader_file_path;
+    int baud_rate;   // Does not apply in DFU
+    bool force_bootloader_update; // Does not apply in DFU
+    is_update_flash_style firmware_type;
+    is_verification_style verification_style;
+    pfnBootloadProgress update_progress_callback;
+    pfnBootloadProgress verify_progress_callback;
+    pfnBootloadStatus info_callback;
     const void* user_data;
-    pfnIsDeviceInterfaceTaskProgress progress_callback;
-    pfnIsDeviceInterfaceError error_callback;
+    void* port_handle;  // Cast to serial_port_t or libusb_dev_handle
+    void* port_id;  // Can be cast to char* for COM port
+    void* thread;
 } is_device_context;
-
-typedef void (*is_list_devices_callback_fn)(is_device_uri);
-
-typedef struct
-{
-    int size;
-    is_device_uri devices[256];
-} is_device_uri_list;
 
 #ifdef __cplusplus
 }

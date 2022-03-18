@@ -49,6 +49,8 @@ extern "C"
 
 	#include "serialPortPlatform.h"
 	#include "inertialSenseBootLoader.h"
+
+	#include "ISBootloaderCommon.h"
 }
 
 #include <functional>

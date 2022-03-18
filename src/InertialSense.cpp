@@ -708,11 +708,20 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, const string& bootloaderFileName, bool forceBootloaderUpdate)
+vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
+	const string& comPort, 
+	const string& fileName, 
+	int baudRate, 
+	pfnBootloadProgress uploadProgress, 
+	pfnBootloadProgress verifyProgress, 
+	pfnBootloadStatus infoProgress, 
+	const string& bootloaderFileName, 
+	bool forceBootloaderUpdate
+)
 {
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<bootload_state_t> state;
+	vector<is_device_context> state;
 
 	if (comPort == "*")
 	{
@@ -725,6 +734,8 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 	sort(portStrings.begin(), portStrings.end());
 	state.resize(portStrings.size());
 
+	// Add DFU stuff to state and bypass this next section to avoid getting shut down
+
 	// file exists?
 	{
 		ifstream tmpStream(fileName);
@@ -732,7 +743,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 		{
 			for (size_t i = 0; i < state.size(); i++)
 			{
-				results.push_back({ state[i].serial.port, "File does not exist" });
+				results.push_back({ ((serial_port_t*)state[i].port_handle)->port, "File does not exist" });
 			}
 		}
 	}
@@ -742,6 +753,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 		// for each port requested, setup a thread to do the bootloader for that port
 		for (size_t i = 0; i < state.size(); i++)
 		{
+			/*
             memset(state[i].param.error, 0, BOOTLOADER_ERROR_LENGTH);
 			serialPortPlatformInit(&state[i].serial);
 			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
@@ -764,9 +776,11 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 			{	// Enable uINS bootloader
 				strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
 			}
+			*/
 
             // Update application and bootloader firmware
-            state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
+            // state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
+			state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
 		}
 
 		// wait for all threads to finish
