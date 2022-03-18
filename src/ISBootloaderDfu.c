@@ -125,7 +125,6 @@ is_operation_result is_dfu_flash(
 {
     int ret_libusb;
     dfu_error ret_dfu;
-    is_operation_result ret_is;
 
     ret_libusb = libusb_claim_interface(dev_handle, 0);
     if (ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR; 
@@ -231,12 +230,12 @@ is_operation_result is_dfu_flash(
         0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00
     };
 
-    ret_is = is_dfu_write_option_bytes(options, sizeof(options), (libusb_device_handle*)dev_handle);
+    // ret_is = is_dfu_write_option_bytes(options, sizeof(options), (libusb_device_handle*)dev_handle);
 
     ret_libusb = libusb_release_interface(dev_handle, 0);
     if (ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR;    
 
-    return ret_is;
+    return IS_OP_OK;
 }
 
 static is_operation_result is_dfu_write_option_bytes(

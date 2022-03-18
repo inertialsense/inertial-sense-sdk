@@ -27,6 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static void is_add_device(
     is_device_uri_list* list, 
     struct libusb_device_descriptor* desc, 
+    struct libusb_config_descriptor* conf_desc,
     libusb_device_handle* handle, 
     is_list_devices_callback_fn callback
 );
@@ -71,7 +72,10 @@ is_device evb_2(uint8_t minor)
     return d;
 }
 
-void is_probe_device_list(is_device_uri_list* uri_list, is_list_devices_callback_fn callback)
+void is_probe_device_list(
+    is_device_uri_list* uri_list,
+    is_list_devices_callback_fn callback
+)
 {
     int ret_libusb;
     libusb_context* ctx;
@@ -90,35 +94,40 @@ void is_probe_device_list(is_device_uri_list* uri_list, is_list_devices_callback
     } 
 
     device_count = libusb_get_device_list(ctx, &device_list);
-    for (size_t i = 0; i < device_count; ++i) {
+    for (size_t i = 0; i < device_count; ++i) 
+    {
         dev = device_list[i];
 
+        ret_libusb = libusb_open(dev, &dev_handle);
+        if (ret_libusb < LIBUSB_SUCCESS) 
+        {
+            libusb_close(dev_handle); 
+            continue;
+        }
+
         ret_libusb = libusb_get_device_descriptor(dev, &desc);
-        if (ret_libusb < LIBUSB_SUCCESS) continue;
+        if (ret_libusb < LIBUSB_SUCCESS) 
+        {
+            libusb_close(dev_handle); 
+            continue;
+        }
 
         for (size_t cfg_idx = 0; cfg_idx < desc.bNumConfigurations; cfg_idx++)
         {
-            ret_libusb = libusb_open(dev, &dev_handle);
-
-            if (ret_libusb == LIBUSB_SUCCESS)
+            ret_libusb = libusb_get_config_descriptor(dev, cfg_idx, &cfg);
+            if (ret_libusb < LIBUSB_SUCCESS) 
             {
-                ret_libusb = libusb_get_config_descriptor(dev, cfg_idx, &cfg);
-                if (ret_libusb < LIBUSB_SUCCESS) {
-                    libusb_free_config_descriptor(cfg);
-                    libusb_close(dev_handle); 
-                    continue;
-                }
-
-                is_add_device(uri_list, &desc, dev_handle, callback);
-
                 libusb_free_config_descriptor(cfg);
-                libusb_close(dev_handle);
-            }
-            else
-            {
+                libusb_close(dev_handle); 
                 continue;
             }
+
+            is_add_device(uri_list, &desc, cfg, dev_handle, callback);
+
+            libusb_free_config_descriptor(cfg);
         }
+
+        libusb_close(dev_handle);
     }
 
     libusb_free_device_list(device_list, 1);
@@ -137,6 +146,7 @@ void is_free_device_list(is_device_uri_list* list)
 static void is_add_device(
     is_device_uri_list* list, 
     struct libusb_device_descriptor* desc, 
+    struct libusb_config_descriptor* conf_desc,
     libusb_device_handle* handle, 
     is_list_devices_callback_fn callback
 )
@@ -148,18 +158,31 @@ static void is_add_device(
 
     // Get the string containing the serial number from the device
     ret_libusb = libusb_get_string_descriptor_ascii(handle, desc->iSerialNumber, serial_number, sizeof(serial_number));
-    if (ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0';
+    if (ret_libusb < LIBUSB_SUCCESS) 
+    {
+        // Set the serial number as 0
+        serial_number[0] = '0';
+        serial_number[1] = '\0';
+    }
 
-    if(desc->bDeviceClass == 0xFE && desc->bDeviceSubClass == 0x01 && desc->bDeviceProtocol == 0x02)    // TODO: Switch to interface
+    if(conf_desc->interface->altsetting[0].bInterfaceClass == 0xFE && 
+        conf_desc->interface->altsetting[0].bInterfaceSubClass == 0x01 && 
+        conf_desc->interface->altsetting[0].bInterfaceProtocol == 0x02
+    )
     {
         sprintf(uri, "dfu://%s/%04X/%04X", serial_number, desc->idVendor, desc->idProduct);
     }
-    else
+    else if(desc->bDeviceClass == 0x02 &&
+        conf_desc->interface->altsetting[0].bInterfaceClass == 0x02
+    )
     {
-        // TODO: Need to probe for serial number from uINS-3/4 or EVB-2 here
         sprintf(uri, "samba://%s/%04X/%04X", serial_number, desc->idVendor, desc->idProduct);
 
         // TODO: Add stm32uart support
+    }
+    else
+    {
+        return;
     }
     
     if(callback) callback(uri);
@@ -326,6 +349,7 @@ is_operation_result is_release_libusb_handles(
 is_operation_result is_update_flash(
     const is_device_interface* interface,
     const char* firmware_file_path,
+    const char* com_port,
     is_update_flash_style firmware_type,
     is_verification_style verification_style,
     pfnIsDeviceInterfaceError error_callback,
@@ -336,18 +360,18 @@ is_operation_result is_update_flash(
 )
 {
     int ret = IS_OP_ERROR;
-    int libusb_ret = LIBUSB_SUCCESS;
-    int ihex_ret = -1;
-
+    
     if(!firmware_file_path) return ret;
-
-    // Load the firmware into memory. Even if we don't use it now (SAM-BA), this is a good check
-    ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
-    ihex_ret = ihex_load_sections(firmware_file_path, image, MAX_NUM_IHEX_SECTIONS);
-    if(ihex_ret <= 0) return ret;
 
     if(interface->uri_properties.scheme == IS_SCHEME_DFU)
     {
+        int ihex_ret;
+
+        // Load the firmware into memory. Even if we don't use it now (SAM-BA), this is a good check
+        ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
+        ihex_ret = ihex_load_sections(firmware_file_path, image, MAX_NUM_IHEX_SECTIONS);
+        if(ihex_ret <= 0) return ret;
+
         is_device_context context;
         context.interface = interface;
         context.user_data = user_data;
@@ -355,30 +379,20 @@ is_operation_result is_update_flash(
         context.error_callback = error_callback;
 
         ret = is_dfu_flash(&context, image, ihex_ret, (libusb_device_handle*)dev_handle);
-        
-        // OPTION BYTES PROGRAMMING (resets device)
-        if(ret == IS_OP_OK)
-        {
-            
 
-            return IS_OP_OK;
-        }
-        else
-        {
-            return IS_OP_ERROR;
-        }
-    }
-    else if(interface->uri_properties.scheme == IS_SCHEME_STM32UART)
-    {
-        // TODO: UART support
+        // Free the memory associated with the firmware image
+        ihex_unload_sections(image, ihex_ret);
     }
     else if(interface->uri_properties.scheme == IS_SCHEME_SAMBA)
     {
         // TODO: SAM-BA support
     }
+    else if(interface->uri_properties.scheme == IS_SCHEME_STM32UART)
+    {
+        // TODO: UART support
+    }
 
-    // Free the memory associated with the firmware image
-    ihex_unload_sections(image, ihex_ret);
+    
 
     return ret;
 }
