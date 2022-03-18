@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -355,7 +355,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 90: 
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		offsetsRtkNav,          // 92: DID_GPS2_RTK_CMP_MISC
-		0,                      // 93: 
+		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: 
 		0,                      // 95:
 		0,                      // 96:
@@ -533,7 +533,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 90: DID_CAN_CONFIG
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		0,                      // 92: DID_GPS2_RTK_CMP_MISC
-		0,                      // 93: 
+		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: 
 		0,                      // 95:
 		0,                      // 96:

@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['nocase_5fcompare_3876',['nocase_compare',['../structs_case_insensitive_compare_1_1nocase__compare.html',1,'sCaseInsensitiveCompare']]]
+  ['msg_5fstats_5ft',['msg_stats_t',['../structmsg__stats__t.html',1,'']]],
+  ['mul_5fmsg_5fstats_5ft',['mul_msg_stats_t',['../structmul__msg__stats__t.html',1,'']]]
 ];

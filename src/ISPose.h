@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -244,6 +244,21 @@ void vectorBodyToReference(const  ixVector3 v, const ixEuler rot, ixVector3 resu
  * Rotate vector from reference frame to body frame by euler angles, in order: psi, theta, phi
  */
 void vectorReferenceToBody(const  ixVector3 v, const ixEuler rot, ixVector3 result);
+
+/*
+ * Vector to euler roll angle
+ */
+float vectorToRoll(const ixVector3 v);
+
+/*
+ * Vector to euler pitch angle
+ */
+float vectorToPitch(const ixVector3 v);
+
+/*
+ * Returns the pitch angle of the vector selected axis.
+ */
+float vectorSelectedAxisToPitch(const ixVector3 v, int pitchAxis);
 
 
 #ifdef __cplusplus
