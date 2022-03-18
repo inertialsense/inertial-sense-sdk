@@ -49,6 +49,7 @@ typedef enum
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_HOVERBOT              = 1,
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_ZERO_TURN             = 2,
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_PWM                   = 3,
+	EVB_WHEEL_CONTROL_CONFIG_TYPE_Z1R					= 4,
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK                  = 0x00000007,
 } eEvbLunaWheelControlConfig_t;
 
@@ -185,9 +186,6 @@ typedef struct
 	/** Status (eEvbLunaStatus) Reset faults by setting these to zero */
 	uint32_t                evbLunaStatus;
 
-	/** Motor state (eLunaMotorState) */
-	uint32_t                motorState;
-
 	/** Remotekill mode (eLunaRemoteKillMode) */
 	uint32_t                remoteKillMode;
 
@@ -256,13 +254,6 @@ typedef enum
 
 typedef enum
 {
-	LMS_UNSPECIFIED					= 0,
-	LMS_MOTOR_CONTROL_ENABLE		= 1,	// Motor control enabled.
-	LMS_MOTOR_CONTROL_DISABLE		= 2,	// Motor control disabled.  Engine shutoff is controlled only by remote kill.
-} eLunaMotorState;
-
-typedef enum
-{
 	LRKM_UNSPECIFIED				= 0,
 	LRKM_ENABLE						= 1,	// Keep alive motors enabled.
 	LRKM_DISABLE					= 2,	// Disable motors.
@@ -296,6 +287,34 @@ typedef struct
 
 } evb_luna_remote_kill_t;
 
+typedef enum
+{
+	RUNMODE_STANDBY                     	= 0,
+	RUNMODE_TELEOP                       	= 1,
+    RUNMODE_TELEOP_RECORD_PATH           	= 2,
+	RUNMODE_RECORD_FINISH                	= 3,
+	RUNMODE_TELEOP_RECORD_AUTO_UNDO      	= 4,
+	RUNMODE_AUTONOMOUS                   	= 5,
+	RUNMODE_AUTONOMOUS_SKIP_WAYPOINT     	= 6,
+	RUNMODE_FAULT                        	= 7,
+	RUNMODE_STOP							= 8,
+
+	// Velocity TESTS
+	RUNMODE_TEST_VEL_DUAL_CMD				= 9,	// Use left vel cmd to drive left and right together
+	RUNMODE_TEST_VEL_CMD				    = 10,
+	RUNMODE_TEST_VEL_SWEEP				    = 11,
+
+	// Effort TESTS
+	RUNMODE_TEST_EFFORT					    = 12,	// (Keep as first effort test)
+
+	// Duty TESTS	
+	RUNMODE_TEST_DUTY			    		= 13,	// (Keep as first duty cycle test)
+	RUNMODE_TEST_DUTY_SWEEP				    = 14,	// Watchdog disabled in testing
+	RUNMODE_TEST_WHL_ANG_VEL_SWEEP          = 15,
+
+	RUNMODE_COUNT
+} eLunaWheelCmdRunmode;
+
 /**
 * (DID_EVB_LUNA_WHEEL_CMD) EVB Luna wheel command.
 */
@@ -304,8 +323,8 @@ typedef struct
 	/** Local system time in milliseconds */
 	uint32_t                timeMs;
 
-	/** Control mode (see eLunaWheelControllerMode) */
-	uint32_t                mode;
+	/** Control mode (see eLunaWheelCmdRunmode) */
+	uint32_t	   			runMode;
 
 	/** Forward velocity (m/s) */
 	float					fwd_vel;
@@ -335,23 +354,6 @@ typedef enum
 
 typedef enum
 {
-	LCM_DISABLED					= 0,
-	LCM_STOP						= 1,
-	LCM_ENABLE						= 2,	// With watchdog
-	// Velocity TESTS
-	LCM_TEST_VEL_DUAL_CMD			= 3,	// Use left vel cmd to drive left and right together
-	LCM_TEST_VEL_CMD				= 4,
-	LCM_TEST_VEL_SWEEP				= 5,
-	// Effort TESTS
-	LCM_TEST_EFFORT					= 6,	// (Keep as first effort test)
-	// Duty TESTS	
-	LCM_TEST_DUTY					= 7,	// (Keep as first duty cycle test)
-	LCM_TEST_DUTY_SWEEP				= 8,	// Watchdog disabled in testing
-	LCM_TEST_WHL_ANG_VEL_SWEEP      = 9,
-} eLunaWheelControllerMode;
-
-typedef enum
-{
 	LCS_FAULT_L						= 0x00000001,
 	LCS_FAULT_R						= 0x00000002,
 	LCS_VEL_CMD_LIMITED_L			= 0x00000010,
@@ -374,8 +376,8 @@ typedef struct
 	/** Delta time */
 	float                	dt;
 
-	/** Wheel control mode: (see eLunaWheelControllerMode) */
-	uint32_t            	mode;
+	/** Wheel control mode: (see eLunaWheelCmdRunmode) */
+	uint32_t            	runMode;
 
 	/** Wheel control status (see eLunaWheelControllerStatus) */
 	uint32_t            	status;
