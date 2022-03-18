@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum {
     IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000000,  // default
@@ -56,19 +57,6 @@ typedef enum {
     IS_OP_ERROR     = 0,
     IS_OP_OK        = 1
 } is_operation_result;
-
-typedef enum {
-    IS_UINS         = 0,
-    IS_EVB          = 1,
-} is_device_type;
-
-typedef struct
-{
-    is_device_type type; 
-    int version_major;
-    int version_minor;
-    communications_flags bootloader_flash_support;
-} is_device;
 
 typedef enum {
     IS_SCHEME_UNKNOWN = 0,
@@ -121,7 +109,6 @@ typedef enum {
 
 typedef struct
 {
-    is_device device;
     is_device_match_properties match_props;
     is_device_interface_log_level log_level;
     void * instance_data;

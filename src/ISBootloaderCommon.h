@@ -107,18 +107,12 @@ is_operation_result is_release_libusb_handles(
     size_t match_count
 );
 
-/** copy hex file from this machine to the device interface */
-is_operation_result is_update_flash(
-    const is_device_interface* interface,
-    const char* firmware_file_path,
-    is_update_flash_style firmware_type,
-    is_verification_style verification_style,
-    pfnIsDeviceInterfaceError error_callback,
-    pfnIsDeviceInterfaceTaskProgress upload_progress_callback,
-    pfnIsDeviceInterfaceTaskProgress verify_progress_callback,
-    const void* user_data,
-    void* dev_handle
-);
+/**
+ * @brief Write flash to device
+ * 
+ * @param context setup struct of type is_device_context
+ */
+void is_update_flash(void* context);
 
 void is_print_device_info(
 	libusb_context* ctx,

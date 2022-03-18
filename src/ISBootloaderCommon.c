@@ -24,46 +24,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "inertialSenseBootLoader.h"
 #include "ISBootloaderDfu.h"
 
-is_device uins_3(uint8_t minor)
-{
-    is_device d;
-    d.type = IS_UINS;
-    d.version_major = 3;
-    d.version_minor = minor;
-    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
-    return d;
-}
-
-is_device uins_4(uint8_t minor)
-{
-    is_device d;
-    d.type = IS_UINS;
-    d.version_major = 4;
-    d.version_minor = minor;
-    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
-    return d;
-}
-
-is_device uins_5(uint8_t minor)
-{
-    is_device d;
-    d.type = IS_UINS;
-    d.version_major = 5;
-    d.version_minor = minor;
-    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_DFU | IS_DEVICE_INTERFACE_FLAG_STM32UART;
-    return d;
-}
-
-is_device evb_2(uint8_t minor)
-{
-    is_device d;
-    d.type = IS_EVB;
-    d.version_major = 2;
-    d.version_minor = minor;
-    d.bootloader_flash_support = IS_DEVICE_INTERFACE_FLAG_SAMBA;
-    return d;
-}
-
 is_device_interface* is_create_device_interface(
     is_device device
 )
@@ -83,7 +43,6 @@ is_device_interface* is_create_device_interface(
         interface->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
         interface->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
         interface->match_props.serial_number[0] = '\0';
-        strcpy(interface->match_props.filename, "IS_uINS_5");
     }
     else
     {
@@ -199,9 +158,7 @@ is_operation_result is_release_libusb_handles(
     return IS_OP_OK;
 }
 
-is_operation_result is_update_flash(
-    void* context
-)
+void is_update_flash(void* context)
 {
     is_device_context* ctx = (is_device_context*)context;
     int ret = IS_OP_ERROR;
