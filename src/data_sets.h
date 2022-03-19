@@ -2202,6 +2202,9 @@ typedef enum
 	/** Vehicle kinematic learning has converged and is complete. */ 
 	GV_STATUS_LEARNING_CONVERGED    = 0x04000000,
 
+	/** Vehicle kinematic learning data (wheel_config_t) is missing. */ 
+	GV_STATUS_LEARNING_NEEDED       = 0x08000000,
+
 } eGroundVehicleStatus;
 
 /** (DID_GROUND_VEHICLE) Configuration of ground vehicle kinematic constraints. */
