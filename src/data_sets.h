@@ -2206,12 +2206,20 @@ typedef struct PACKED
 
 typedef enum
 {
+	/** Kinematic learing is solving for the translation from IMU to wheel (wheel_config). */ 
 	GV_STATUS_LEARNING_ENABLED		= 0x00000001,
+	
+	/** Navigation is running without GPS input. */ 
 	GV_STATUS_DEAD_RECKONING		= 0x01000000,
-	/** Vehicle kinematic parameters */ 
+
+	/** Vehicle kinematic parameters agree with GPS. */ 
 	GV_STATUS_KINEMATIC_CAL_GOOD	= 0x02000000,
+
 	/** Vehicle kinematic learning has converged and is complete. */ 
 	GV_STATUS_LEARNING_CONVERGED    = 0x04000000,
+
+	/** Vehicle kinematic learning data (wheel_config_t) is missing. */ 
+	GV_STATUS_LEARNING_NEEDED       = 0x08000000,
 
 } eGroundVehicleStatus;
 
