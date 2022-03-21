@@ -48,16 +48,25 @@ typedef enum
 } samba_descriptor;
 
 /**
+ * @brief Create a SAM-BA bootloader context
+ * 
+ * @param firmware_file_name 
+ * @param port_name i.e. COMx, /dev/ttyACMx
+ * @return is_device_context* 
+ */
+is_device_context* is_create_samba_context(
+    const char* firmware_file_name,
+    const char* port_name
+);
+
+/**
  * @brief Flash a firmware image
  * 
  * @param context info about the device
  * @param firmware_path system path to the firmware image
  * @return is_operation_result 
  */
-is_operation_result is_samba_flash(
-    const is_device_context const * context, 
-    const char * firmware_path
-);
+is_operation_result is_samba_flash(is_device_context* ctx);
 
 #ifdef __cplusplus
 }

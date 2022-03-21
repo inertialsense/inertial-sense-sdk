@@ -87,6 +87,41 @@ static dfu_error dfu_CLRSTATUS(libusb_device_handle** dev_handle);
 static dfu_error dfu_GETSTATE(libusb_device_handle** dev_handle, uint8_t* buf);
 static dfu_error dfu_ABORT(libusb_device_handle** dev_handle);
 
+is_device_context* is_create_dfu_context(
+    const char* firmware_file_name, 
+    const char* sn
+)
+{
+    is_device_context* ctx = malloc(sizeof(is_device_context));
+
+    if(strstr(firmware_file_name, is_uins_5_firmware_needle))
+    {   // uINS-5
+        ctx->scheme = IS_SCHEME_DFU;
+        ctx->match_props.type = IS_DEVICE_UINS;
+        ctx->match_props.match = 
+            IS_DEVICE_MATCH_FLAG_VID | 
+            IS_DEVICE_MATCH_FLAG_PID | 
+            IS_DEVICE_MATCH_FLAG_TYPE | 
+            IS_DEVICE_MATCH_FLAG_MAJOR;
+        ctx->match_props.major = 5;
+        ctx->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
+        ctx->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
+
+        if(strlen(sn) != 0)
+        {
+            strncpy(ctx->match_props.serial_number, sn, IS_SN_MAX_SIZE);
+            ctx->match_props.match |= IS_DEVICE_MATCH_FLAG_SN;
+        }
+    }
+    else
+    {
+        free(ctx);
+        return NULL;
+    }
+
+    return ctx;
+}
+
 /**
  * @brief Program option bytes and reset device
  * 

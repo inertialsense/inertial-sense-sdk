@@ -54,6 +54,18 @@ typedef enum
 } stm32_dfu_interface_alternatives;
 
 /**
+ * @brief Create a DFU bootloader context for a single device
+ * 
+ * @param firmware_file_name 
+ * @param sn serial number of target device to match with
+ * @return is_device_context* 
+ */
+is_device_context* is_create_dfu_context(
+    const char* firmware_file_name, 
+    const char* sn
+);
+
+/**
  * @brief Flash a firmware image
  * 
  * @param context info about the device

@@ -743,7 +743,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		{
 			for (size_t i = 0; i < state.size(); i++)
 			{
-				results.push_back({ ((serial_port_t*)state[i].port_handle)->port, "File does not exist" });
+				results.push_back({ (serial_port_t*)state[i].handle.name, "File does not exist" });
 			}
 		}
 	}
@@ -780,7 +780,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 
             // Update application and bootloader firmware
             // state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
-			state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
+			state[i].thread = threadCreateAndStart(is_update_flash, &state[i]);
 		}
 
 		// wait for all threads to finish
@@ -792,7 +792,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		// if any thread failed, we return failure
 		for (size_t i = 0; i < state.size(); i++)
 		{
-			results.push_back({ state[i].serial.port, state[i].param.error });
+			results.push_back({ state[i].handle.name, state[i]. });
 		}
 	}
 

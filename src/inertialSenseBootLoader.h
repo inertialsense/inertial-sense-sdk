@@ -64,7 +64,6 @@ typedef struct
 	pfnBootloadProgress verifyProgress; // verify progress
     pfnBootloadStatus statusText;       // receives status text for progress
 	const char* verifyFileName; // optional, writes verify file to the path if not 0
-	int numberOfDevices; // number of devices if bootloading in parallel
 	int baudRate; // baud rate to connect to
     union
     {

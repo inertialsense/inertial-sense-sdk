@@ -34,45 +34,15 @@ extern "C" {
 
 /*
     Steps:
-        - Create an object of type `is_device_uri_list`
-        - Probe device list with `is_probe_device_list()` to fill the uri list 
-            with identifiers for each attached device
-        - Get a device interface by passing the `is_device` struct to `is_create_device_interface()`
-        - (DFU/UART) `is_get_libusb_handles()` gives a list of handles matching the interface
-        - Pass one of the handles to `is_update_flash()`. Threading should start here.
-        - Call `is_release_libusb_handles()` to release libusb handles and exit libusb
-        - Free device interface with `is_destroy_device_interface`
-        - Free device list with `is_free_device_list`
+        - Get the list of DFU-capable devices and VCP (SAM-BA) bootloader devices
+        - Use `is_create_device_context()` to create a context for one device. Specify
+            the com posrt name, or ion DFU devices the serial number.
+        - Pass a context to `is_update_flash()`. Threading should start here.
+        - Free device interface with `is_destroy_device_context`
 */
-
-is_device uins_3(uint8_t minor);
-is_device uins_4(uint8_t minor);
-is_device uins_5(uint8_t minor);
-is_device evb_2(uint8_t minor);
-
-/**
- * @brief Create a device interface object
- * 
- * @param device The device type to search for
- * @return a newly allocated device interface on the heap
- * @see is_destroy_device_interface 
- */
-is_device_interface* is_create_device_interface(
-    is_device device
-);
 
 /** performs any necessary flush or clean up operations, releases instance data resources and frees heap memory from create */
-is_operation_result is_destroy_device_interface(is_device_interface* interface);
-
-/** changes the log level of the device interface
- * 0: nothing
- * 1: error only (default)
- * 2: warning
- * 3: info
- * 4: debug
- * 5: silly
-*/
-is_operation_result is_device_change_log_level(is_device_interface* interface, is_device_interface_log_level log_level);
+is_operation_result is_destroy_device_context(is_device_context* ctx);
 
 /**
  * @brief Get a list of libusb handles that match the criteria in `interf`
@@ -85,8 +55,8 @@ is_operation_result is_device_change_log_level(is_device_interface* interface, i
  * @return is_operation_result 
  */
 is_operation_result is_get_libusb_handles(
-    const is_device_interface const * interf, 
-    libusb_context* ctx,
+    is_device_context * ctx, 
+    libusb_context* lusb_ctx,
     libusb_device** device_list, 
     size_t* device_count,
     libusb_device_handle** match_list,

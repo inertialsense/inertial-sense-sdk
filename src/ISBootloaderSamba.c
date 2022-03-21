@@ -24,40 +24,71 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "inertialSenseBootLoader.h"
 #include "InertialSense.h"
 
-is_operation_result is_samba_flash(
-    const is_device_context const * context, 
-    const char * firmware_path
+is_device_context* is_create_samba_context(
+    const char* firmware_file_name,
+    const char* port_name
 )
 {
-    bootload_state_t state;
+    is_device_context* ctx = malloc(sizeof(is_device_context));
 
-    memset(state.param.error, 0, BOOTLOADER_ERROR_LENGTH);
-    serialPortPlatformInit(&state.serial);
-    serialPortSetPort(&state.serial, portStrings.c_str());
-    state.param.uploadProgress = uploadProgress;
-    state.param.verifyProgress = verifyProgress;
-    state.param.statusText = infoProgress;
-    state.param.fileName = fileName.c_str();
-    state.param.bootName = bootloaderFileName.c_str();
-    state.param.forceBootloaderUpdate = forceBootloaderUpdate;
-    state.param.port = &state.serial;
-    state.param.verifyFileName = NULLPTR;
-    state.param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
-    state.param.numberOfDevices = (int)state.size();
-    state.param.baudRate = baudRate;			
-    if (strstr(state.param.fileName, "EVB") != NULL)
-    {   // Enable EVB bootloader
-        strncpy(state.param.bootloadEnableCmd, "EBLE", 4);
+    if(strstr(firmware_file_name, is_uins_3_firmware_needle))
+    {   // uINS-3/4
+        ctx->scheme = IS_SCHEME_SAMBA;
+        ctx->match_props.type = IS_DEVICE_UINS;
+        ctx->match_props.match = 
+            IS_DEVICE_MATCH_FLAG_VID | 
+            IS_DEVICE_MATCH_FLAG_PID | 
+            IS_DEVICE_MATCH_FLAG_TYPE | 
+            IS_DEVICE_MATCH_FLAG_MAJOR;
+        ctx->match_props.major = 3;
+        ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
+        ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
+
+        ctx->handle.name
+    } 
+    else if(strstr(firmware_file_name, is_evb_2_firmware_needle))
+    {   // EVB-2
+        ctx->scheme = IS_SCHEME_SAMBA;
+        ctx->match_props.type = IS_DEVICE_EVB;
+        ctx->match_props.match = 
+            IS_DEVICE_MATCH_FLAG_VID | 
+            IS_DEVICE_MATCH_FLAG_PID | 
+            IS_DEVICE_MATCH_FLAG_TYPE | 
+            IS_DEVICE_MATCH_FLAG_MAJOR;
+        ctx->match_props.major = 2;
+        ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
+        ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
     }
     else
-    {	// Enable uINS bootloader
-        strncpy(state.param.bootloadEnableCmd, "BLEN", 4);
+    {
+        free(ctx);
+        return NULL;
     }
 
-    // Update application and bootloader firmware
-    state.thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state);
+    return ctx;
+}
 
-    int bootloadFileEx(bootload_params_t* params);
+is_operation_result is_samba_flash(is_device_context* ctx)
+{
+    bootload_params_t params;
+
+    memset(params.error, 0, BOOTLOADER_ERROR_LENGTH);
+    serialPortPlatformInit((serial_port_t*)ctx->port_handle);
+    serialPortSetPort((serial_port_t*)ctx->port_handle, (const char*)ctx->port_id);
+    params.uploadProgress = ctx->update_progress_callback;
+    params.verifyProgress = ctx->verify_progress_callback;
+    params.statusText = ctx->info_callback;
+    params.fileName = (const char*)ctx->firmware_file_path;
+    params.bootName = ctx->bootloader_file_path;
+    params.forceBootloaderUpdate = ctx->force_bootloader_update;
+    params.port = (serial_port_t*)ctx->port_handle;
+    params.verifyFileName = NULL;   // TODO: Add verify
+    params.flags.bitFields.enableVerify = (ctx->verification_style == IS_VERIFY_ON);
+    params.baudRate = ctx->baud_rate;
+
+    bootloadFileEx(&params);
+
+    strncpy(ctx->error, params.error, BOOTLOADER_ERROR_LENGTH);
 
     return IS_OP_OK;
 }

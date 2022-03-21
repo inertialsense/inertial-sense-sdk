@@ -1219,7 +1219,6 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
             params.uploadProgress = p->uploadProgress;
             params.verifyProgress = p->verifyProgress;
             params.statusText = p->statusText;
-            params.numberOfDevices = 1;
             params.flags.bitFields.enableVerify = 1;
 
             if (!bootloadUpdateBootloaderSendFile(&params))
@@ -1305,7 +1304,6 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                         params.uploadProgress = p->uploadProgress;
                         params.verifyProgress = p->verifyProgress;
                         params.statusText = p->statusText;
-                        params.numberOfDevices = 1;
                         params.flags.bitFields.enableVerify = 1;
 
                         if (!bootloadUpdateBootloaderSendFile(&params))
@@ -1494,7 +1492,6 @@ int bootloadFile(serial_port_t* port, const char* fileName, const char * bootNam
     params.obj = obj;
     params.uploadProgress = uploadProgress;
     params.verifyProgress = verifyProgress;
-    params.numberOfDevices = 1;
     params.flags.bitFields.enableVerify = (verifyProgress != 0);
 
     return bootloadFileEx(&params);
