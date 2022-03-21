@@ -77,6 +77,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createButtonColumn(self):
         super(logInspectorInternal, self).createButtonColumn()
+        self.addButton('AV PQR', lambda: self.plot('allanVariancePQR'))
+        self.addButton('AV Accel', lambda: self.plot('allanVarianceAcc'))
         self.addButton('Debug Int', lambda: self.plot('debugiArr'))
         self.addButton('Debug Float', lambda: self.plot('debugfArr'))
         self.addButton('Debug Double', lambda: self.plot('debuglfArr'))
