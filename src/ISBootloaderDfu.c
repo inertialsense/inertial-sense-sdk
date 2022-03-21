@@ -246,7 +246,7 @@ is_device_context* is_create_dfu_context(
             cfg->interface->altsetting[0].bInterfaceProtocol == 0x02
         )
         {   // Add to list
-            if((strcmp(sn, serial_number) == 0) || !(ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN))
+            if(!(ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) || (strcmp(sn, serial_number) == 0))
             {
                 ctx->handle.libusb = dev_handle;
                 ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
@@ -334,18 +334,18 @@ is_operation_result is_dfu_flash(is_device_context* context)
             memcpy(&eraseCommand[1], &pageAddress, 4);
 
             ret_libusb = dfu_DNLOAD(&context->handle.libusb, 0, eraseCommand, 5);
-            if (ret_libusb < LIBUSB_SUCCESS) 
-            {
-                ihex_unload_sections(image, image_sections);
-                return IS_OP_ERROR;  
-            }
+            // if (ret_libusb < LIBUSB_SUCCESS) 
+            // {
+            //     ihex_unload_sections(image, image_sections);
+            //     return IS_OP_ERROR;  
+            // }
 
             ret_dfu = dfu_wait_for_state(&context->handle.libusb, DFU_STATE_DNLOAD_IDLE);
-            if (ret_dfu < DFU_ERROR_NONE) 
-            {
-                ihex_unload_sections(image, image_sections);
-                return IS_OP_ERROR;  
-            }
+            // if (ret_dfu < DFU_ERROR_NONE) 
+            // {
+            //     ihex_unload_sections(image, image_sections);
+            //     return IS_OP_ERROR;  
+            // }
 
             byteInSection += STM32_PAGE_SIZE;
         } while(byteInSection < image[i].len - 1);
@@ -560,7 +560,10 @@ static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state
     uint8_t tryCounter = 0;
 
     ret_libusb = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
-    if (ret_libusb < LIBUSB_SUCCESS) return DFU_ERROR_LIBUSB;
+    if (ret_libusb < LIBUSB_SUCCESS) 
+    {
+        return DFU_ERROR_LIBUSB;
+    }
 
     while (status != DFU_STATUS_OK || state != required_state)
     {
@@ -570,11 +573,16 @@ static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state
             if (ret_libusb < LIBUSB_SUCCESS) return DFU_ERROR_LIBUSB;
         }
 
-        const struct timespec delay_ts = { 0L, waitTime * 1000L * 1000L };
-		nanosleep(&delay_ts, NULL); // TODO: Windows
+		SLEEP_MS(_MAX(waitTime, 10)); // TODO: Windows
 
+        dfu_status statusArch = status;
+        dfu_state archive = state;
+        uint32_t waitTimeArch = waitTime;
         ret_libusb = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
-        if (ret_libusb < LIBUSB_SUCCESS) return DFU_ERROR_LIBUSB;
+        if (ret_libusb < LIBUSB_SUCCESS) 
+        {
+            return DFU_ERROR_LIBUSB;
+        }
 
         tryCounter++;
         if (tryCounter > 4) return DFU_ERROR_TIMEOUT;

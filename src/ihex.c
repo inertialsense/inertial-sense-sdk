@@ -170,7 +170,6 @@ int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, s
     ihex_file = fopen(ihex_filename, "r");
     if(ihex_file==NULL) return -1;
 
-    printf("NumSections: %x", ihex_file);
     int iter = 0;
     int numSections = 0;
 
@@ -185,8 +184,7 @@ int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, s
         if (ret == 1) break;	    // Last sector in file found (EOF)
     } while (++iter < num_slots);
 
-
-    printf("NumSections: %x", ihex_file);
+    printf("NumSections: %x", iter);
 
     // ACT ON SECTIONS HERE
     fclose(ihex_file);

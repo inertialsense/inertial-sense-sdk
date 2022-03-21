@@ -747,7 +747,8 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 			else if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
 			{	// Enable uINS-5 bootoader
 				is_jump_to_bootloader(comPort.c_str(), baudRate, "BLEN");
-				ctx[i] = is_create_dfu_context(fileName.c_str(), 0);
+				// ctx[i] = is_create_dfu_context(fileName.c_str(), 0);
+				continue;
 			}
 			else if(strstr(fileName.c_str(), is_uins_3_firmware_needle) != NULL)
 			{	// Enable uINS-3 bootloader
@@ -776,9 +777,14 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		// Update all the dfu devices that weren't a serial port before
 		is_dfu_serial_list dfu_list;
 		is_list_dfu(&dfu_list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
-		for(int i = 0; i < dfu_list.present; i++);
+		for(int i = 0; i < dfu_list.present; i++)
 		{
-			is_device_context* ctx_dfu = is_create_dfu_context(fileName.c_str(), 0);
+			is_device_context* ctx_dfu = is_create_dfu_context(fileName.c_str(), dfu_list.list[i].sn);
+
+			if(!ctx_dfu)
+			{
+				continue;
+			}
 
 			// Update application firmware
 			memset(ctx_dfu->error, 0, BOOTLOADER_ERROR_LENGTH);
@@ -795,13 +801,19 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		// wait for all threads to finish
 		for (size_t i = 0; i < ctx.size(); i++)
 		{
-			threadJoinAndFree(ctx[i]->thread);
+			if(ctx[i] != NULL)
+			{
+				threadJoinAndFree(ctx[i]->thread);
+			}
 		}
 
 		// if any thread failed, we return failure
 		for (size_t i = 0; i < ctx.size(); i++)
 		{
-			results.push_back({ ctx[i]->handle.port_name, ctx[i]->error });
+			if(ctx[i] != NULL)
+			{
+				results.push_back({ ctx[i]->handle.serial_num, ctx[i]->error });
+			}
 		}
 	}
 

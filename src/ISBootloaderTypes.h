@@ -27,7 +27,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <libusb.h>
+#include "libusb/libusb.h"
 
 #include "serialPort.h"
 

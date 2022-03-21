@@ -47,7 +47,10 @@ is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, co
         if (baudRates[i] == 0)
             continue;
 
-        serialPortClose(&port);
+        serialPortPlatformInit(&port);
+        serialPortSetPort(&port, portName);
+
+        // serialPortClose(&port);
         if (serialPortOpenRetry(&port, portName, baudRates[i], 1) == 0)
         {
             serialPortClose(&port);
