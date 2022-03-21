@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -166,6 +166,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
 #define NUM_IMU_DEVICES     2
+#define NUM_MAG_DEVICES     2
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -263,9 +264,6 @@ enum eInsStatusFlags
 	INS_STATUS_RTOS_TASK_PERIOD_OVERRUN			= (int)0x40000000,
 	/** General fault (eGenFaultCodes) */
 	INS_STATUS_GENERAL_FAULT					= (int)0x80000000,
-
-	/** Output reset mask - these bits are cleared on output */
-	INS_STATUS_OUTPUT_RESET_MASK				= (0),
 };
 
 /** GPS navigation fix type */
@@ -362,9 +360,6 @@ enum eHdwStatusFlags
 
 	/** Critical System Fault - CPU error */
 	HDW_STATUS_FAULT_SYS_CRITICAL				= (int)0x80000000,
-
-	/** Output reset mask - these bits are cleared on output */
-	HDW_STATUS_OUTPUT_RESET_MASK				= (HDW_STATUS_SATURATION_MASK),
 };
 
 // Used to validate GPS position (and velocity)
@@ -807,9 +802,15 @@ typedef struct PACKED
 	/** GPS leap second (GPS-UTC) offset. Receiver's best knowledge of the leap seconds offset from UTC to GPS time. Subtract from GPS time of week to get UTC time of week. (18 seconds as of December 31, 2016) */
 	uint8_t					leapS;
 
+	/** Number of satellites used */
+	uint8_t					satsUsed;
+
+	/** Standard deviation of cnoMean over past 5 seconds (dBHz x10) */
+	uint8_t					cnoMeanSigma;
+
 	/** Reserved for future use */
-	uint8_t					reserved[3];
-	
+	uint8_t					reserved;
+
 } gps_pos_t;
 
 
@@ -1168,12 +1169,6 @@ enum eSystemCommand
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
 
-    SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
-    SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
-    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY is run automatically following this command
-    SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
-    SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
-
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
     SYS_CMD_SOFTWARE_RESET                      = 99,
@@ -1493,18 +1488,24 @@ typedef struct PACKED
 	float                   bias_cal[3];    // Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal)
 } inl2_mag_obs_info_t;
 
-/** Built-in test state */
+/** Built-in Test: State */
 enum eBitState
 {
 	BIT_STATE_OFF					                    = (int)0,
 	BIT_STATE_DONE				                        = (int)1,   // Test is finished
     BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,   // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
     BIT_STATE_CMD_BASIC_MOVING                          = (int)3,   // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-    BIT_STATE_RESERVED_1                                = (int)4,   
+    BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY         = (int)4,   // Same as BIT_STATE_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
     BIT_STATE_RESERVED_2                                = (int)5,   
     BIT_STATE_RUNNING                                   = (int)6,   
     BIT_STATE_FINISHING                                 = (int)7,	// Computing results
     BIT_STATE_CMD_OFF                                   = (int)8,   // Stop built-in test
+};
+
+/** Built-in Test: Test Mode */
+enum eBitTestMode
+{
+    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100, // Simulate CNO noise
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -1583,10 +1584,10 @@ typedef struct PACKED
 	float                   tcPqrLinearity;
 	float                   tcAccLinearity;
 
-	/** Gyro bias error (rad/s) */
+	/** Gyro error (rad/s) */
 	float                   pqr;
 
-	/** Accelerometer bias error (m/s^2) */
+	/** Accelerometer error (m/s^2) */
 	float                   acc;
 
 	/** Angular rate standard deviation */
@@ -1594,37 +1595,78 @@ typedef struct PACKED
 
 	/** Acceleration standard deviation */
 	float                   accSigma;
-	
+
+	/** Self-test mode (see eBitTestMode) */
+	uint32_t                testMode;
+
 } bit_t;
 
 
 enum eInfieldCalState
 {
-    /* User Commands: */
+    /** User Commands: */
     INFIELD_CAL_STATE_CMD_OFF                           = 0,
 
-    /* User Sample Command: Initiate 5 second sensor sampling and averaging. */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL              = 1,	// Save sample into cal data.
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 2,	// Don't save sample into cal data.
-    INFIELD_CAL_STATE_CMD_CLEAR                         = 3,    // Clear existing samples.  (Does not change flash calibration).
+    /** Initialization Commands.  Select one of the following to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_IMU                     = 1,    // Zero accel and gyro biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_GYRO                    = 2,    // Zero only gyro  biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ACCEL                   = 3,    // Zero only accel biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE                = 4,    // Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_IMU            = 5,    // Zero gyro and accel biases.  Zero (level) INS attitude by adjusting INS rotation. 
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_GYRO           = 6,    // Zero only gyro  biases.  Zero (level) INS attitude by adjusting INS rotation. 
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_ACCEL          = 7,    // Zero only accel biases.  Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
 
-    // User Store Commands: Run INFIELD_CAL_STATE_CMD_START_SAMPLE_CAL at least once prior to running the following commands.
-    INFIELD_CAL_STATE_CMD_STORE_IMU                     = 5,    // Compute gyro and accel bias.  
-    INFIELD_CAL_STATE_CMD_STORE_GYRO                    = 6,    // Compute gyro bias. 
-    INFIELD_CAL_STATE_CMD_STORE_ACCEL                   = 7,    // Compute accel bias.  
-    INFIELD_CAL_STATE_CMD_STORE_ALIGN_INS               = 8,    // Estimate INS rotation to align INS with vehicle frame.  Don't compute IMU bias.
-    INFIELD_CAL_STATE_CMD_STORE_ACCEL_ALIGN_INS         = 9,    // Compute accel bias.  Estimate INS rotation to align INS with vehicle frame.
-    INFIELD_CAL_STATE_CMD_STORE_IMU_ALIGN_INS           = 10,   // Compute gyro and accel bias.  Estimate INS rotation to align INS with vehicle frame. 
+    /** Sample and End Commands: */
+    INFIELD_CAL_STATE_CMD_START_SAMPLE                  = 8,	// Initiate 5 second sensor sampling and averaging.  Run for each orientation and 180 degree yaw rotation.
+    INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH               = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
     
-    // Status: (User should not set these)
-    INFIELD_CAL_STATE_SAMPLING                          = 20,   // System is averaging the IMU data.  Minimize all motion and vibration.
-    INFIELD_CAL_STATE_SAMPLING_DONE_WAITING_FOR_USER    = 21,   // Sampling finished. Waiting for user input.  User must send a command to exit this state.
-    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 22,   // Follow up calibration zero with BIT and copy out IMU biases.
-    INFIELD_CAL_STATE_FINISHED                          = 23,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
+    /** Status: (read only) */
+    INFIELD_CAL_STATE_INITIALIZED_READY_FOR_SAMPLING    = 50,   // Initialized and waiting for user to intiate.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_SAMPLING                          = 51,   // System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 52,   // Follow up calibration zero with BIT and copy out IMU biases.
+    INFIELD_CAL_STATE_FINISHED                          = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
 
-    // Error Status:
-    INFIELD_CAL_STATE_ERROR_NO_SAMPLES                  = 100,  // Error: No samples have been collected
-    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 101,  // Error: Calibration zero is not 
+    /** Error Status: (read only) */
+    INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED             = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set. 
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_MOTION_DETECTED= 101,  // Error: Motion detected. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_NOT_VERTICAL   = 102,  // Error: System not vertical. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_NO_SAMPLES_COLLECTED        = 103,  // Error: No samples have been collected
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                = 104,  // Error: Calibration zero is not 
+
+    /** Internal Use Only */
+	INFIELD_CAL_STATE_CMD_MASK                          = 0x0000FFFF,
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT              = 11,	// Initiate 5 second sensor sample and averaging.  Does not save sample into cal data.
+};
+
+enum eInfieldCalStatus
+{
+	INFIELD_CAL_STATUS_AXIS_DN_GRAVITY                  = 0x00000001,	// Axis points in direction of gravity more than any other axis.
+	INFIELD_CAL_STATUS_AXIS_DN_SAMPLED                  = 0x00000002,	// Sampled
+    INFIELD_CAL_STATUS_AXIS_DN_SAMPLED_180              = 0x00000004,	// Sampled based on average of two orientations with 180 degree delta yaw. 
+	INFIELD_CAL_STATUS_AXIS_UP_GRAVITY                  = 0x00000008,	// Axis points in direction of gravity more than any other axis.
+	INFIELD_CAL_STATUS_AXIS_UP_SAMPLED                  = 0x00000010,	// Sampled
+    INFIELD_CAL_STATUS_AXIS_UP_SAMPLED_180              = 0x00000020,	// Sampled based on average of two orientations with 180 degree delta yaw.
+
+    INFIELD_CAL_STATUS_SAMPLE_X_OFFSET                  = 0,
+    INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET                  = 6,
+    INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET                  = 12,
+	
+    INFIELD_CAL_STATUS_AXIS_MASK                        = 0x0000003F,
+	INFIELD_CAL_STATUS_AXES_GRAVITY_MASK                = ( \
+		((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_X_OFFSET) | \
+		((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET) | \
+		((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET) ),
+
+	INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL               = 0x00100000,	// Zero accel bias.  Require vertical alignment for sampling. 
+	INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO                = 0x00200000,	// Zero gyro bias.
+	INFIELD_CAL_STATUS_ENABLED_ZERO_ATTITUDE            = 0x00400000,	// Zero (level) INS attitude by adjusting INS rotation.
+	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00800000,	// Require no motion during sampling. 
+	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x00F00000,
+	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x01000000,	// Used for BIT 
+
+	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x10000000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
+	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x20000000,	// System is not stationary and cannot be used for infield calibration.
 };
 
 /** Inertial Measurement Unit (IMU) data */
@@ -1651,12 +1693,15 @@ typedef struct PACKED
 typedef struct PACKED
 {
 	/** Used to set and monitor the state of the infield calibration system. (see eInfieldCalState) */
-	uint32_t                state;		
+	uint32_t                state;
 
-	/** Number of samples used in IMU average. sampleCount = 0 means "imu" member contains the IMU bias from flash.  */
-	uint32_t                sampleCount;
+	/** Infield calibration status. (see eInfieldCalStatus) */
+	uint32_t                status;
 
-	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleCount != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleCount = 0. */ 
+	/** Number of samples used in IMU average. sampleTimeMs = 0 means "imu" member contains the IMU bias from flash.  */
+	uint32_t                sampleTimeMs;
+
+	/** Dual purpose variable.  1.) This is the averaged IMU sample when sampleTimeMs != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleTimeMs = 0. */ 
 	imus_t                  imu[NUM_IMU_DEVICES];
 
 	/** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
@@ -2113,6 +2158,7 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
+	WHEEL_CFG_BITS_ENCODER_SOURCE			= (int)0x00000400,	// 0 = uINS, 1 = EVB
 };
 
 typedef enum
@@ -2160,12 +2206,20 @@ typedef struct PACKED
 
 typedef enum
 {
+	/** Kinematic learing is solving for the translation from IMU to wheel (wheel_config). */ 
 	GV_STATUS_LEARNING_ENABLED		= 0x00000001,
+	
+	/** Navigation is running without GPS input. */ 
 	GV_STATUS_DEAD_RECKONING		= 0x01000000,
-	/** Vehicle kinematic parameters */ 
+
+	/** Vehicle kinematic parameters agree with GPS. */ 
 	GV_STATUS_KINEMATIC_CAL_GOOD	= 0x02000000,
+
 	/** Vehicle kinematic learning has converged and is complete. */ 
 	GV_STATUS_LEARNING_CONVERGED    = 0x04000000,
+
+	/** Vehicle kinematic learning data (wheel_config_t) is missing. */ 
+	GV_STATUS_LEARNING_NEEDED       = 0x08000000,
 
 } eGroundVehicleStatus;
 
@@ -3472,7 +3526,7 @@ enum eEvb2ComBridgePreset
     /** [uINS Hub] LED-PUR (uINS-COM): USB, RS422, H8.  (uINS-AUX): WiFi, XRadio.  Off: XBee */
     EVB2_CB_PRESET_RS422_WIFI = 4,
 
-    /** [uINS Hub] LED-CYA (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee */
+    /** [uINS Hub] LED-CYA (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee.  A reset is required following selection of this CBPreset to enable SPI on the uINS, in order to assert uINS pin 10 (G9/nSPI_EN) during bootup. */
     EVB2_CB_PRESET_SPI_RS232 = 5,
 
     /** [USB Hub]  LED-YEL (USB): RS232, H8, XBee, XRadio. */
@@ -3828,6 +3882,7 @@ typedef union PACKED
 	sys_sensors_adc_t       sensorsAdc;
 	rmc_t					rmc;
 	evb_status_t			evbStatus;
+	infield_cal_t			infieldCal;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	evb_luna_wheel_controller_t     wheelController;

@@ -139,8 +139,8 @@ class BuildExt(build_ext):
 setup(
     name='log_reader',
     version=__version__,
-    author='James Jackson',
-    author_email='superjax08@gmail.com',
+    author='Walt Johnson',
+    author_email='walt@inertialsense.com',
     description='pybind interface to reading InertialSense Log files',
     long_description='',
     ext_modules=ext_modules,

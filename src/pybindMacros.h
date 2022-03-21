@@ -11,7 +11,7 @@ PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omeg
 PYBIND11_NUMPY_DTYPE(wheel_transform_t, e_b2w, e_b2w_sigma, t_b2w, t_b2w_sigma);
 PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
 PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
-PYBIND11_NUMPY_DTYPE(evb_luna_wheel_controller_t, timeMs, dt, mode, status, velCmd_l, velCmd_r, velCmdSlew_l, velCmdSlew_r, vel_l, vel_r, velErr_l, velErr_r, ff_eff_l, ff_eff_r, fb_eff_l, fb_eff_r, eff_l, eff_r, effInt_l, effInt_r, effDuty_l, effDuty_r);
+PYBIND11_NUMPY_DTYPE(evb_luna_wheel_controller_t, timeMs, dt, runMode, status, velCmd_l, velCmd_r, velCmdSlew_l, velCmdSlew_r, vel_l, vel_r, velErr_l, velErr_r, ff_eff_l, ff_eff_r, fb_eff_l, fb_eff_r, eff_l, eff_r, effInt_l, effInt_r, effDuty_l, effDuty_r);
 
 // Public Types
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);

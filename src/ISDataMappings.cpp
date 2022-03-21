@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -274,9 +274,10 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ADD_MAP(m, totalSize, "acc", pqr, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "pqr", acc, 0, DataTypeFloat, float, 0);
-
     ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
+
+	ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt32, uint32_t, 0);
 
 	ASSERT_SIZE(totalSize);
 }
@@ -498,9 +499,9 @@ static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	ADD_MAP(m, totalSize, "cnoMean", cnoMean, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "towOffset", towOffset, 0, DataTypeDouble, double, 0);
 	ADD_MAP(m, totalSize, "leapS", leapS, 0, DataTypeUInt8, uint8_t, 0);
-	ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
-	ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
-	ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "satsUsed", satsUsed, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "cnoMeanSigma", cnoMeanSigma, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -751,7 +752,8 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
 	map_name_to_info_t& m = mappings[DID_INFIELD_CAL];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "sampleTimeMs", sampleTimeMs, 0, DataTypeUInt32, uint32_t, 0);
 
 	ADD_MAP(m, totalSize, "imu[0].pqr[0]", imu[0].pqr[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "imu[0].pqr[1]", imu[0].pqr[1], 0, DataTypeFloat, float&, 0);
@@ -1142,8 +1144,7 @@ static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT])
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "evbLunaStatus", evbLunaStatus, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-	ADD_MAP(m, totalSize, "motorState", motorState, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "remoteKillMode", remoteKillMode, 0, DataTypeFloat, uint32_t, 0);
+	ADD_MAP(m, totalSize, "remoteKillMode", remoteKillMode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "supplyVoltage", supplyVoltage, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
@@ -1176,7 +1177,7 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "runMode", runMode, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "velCmd_l", velCmd_l, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velCmd_r", velCmd_r, 0, DataTypeFloat, float, 0);
@@ -1206,7 +1207,7 @@ static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_WHEEL_COMMAND];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "mode", mode, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "runMode", runMode, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "fwd_vel", fwd_vel, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "turn_rate", turn_rate, 0, DataTypeFloat, float, 0);
 
