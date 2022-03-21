@@ -833,7 +833,7 @@ class logPlot:
                 ax[d][i].grid(True)
         self.saveFig(fig, 'accIMU')
 
-    def allanVariancAccPQR(self, fig=None):
+    def allanVariancePQR(self, fig=None):
         if fig is None:
             fig = plt.figure()
 
@@ -843,11 +843,6 @@ class logPlot:
 
         for d in self.active_devs:
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
-            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
-            if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
-                refImu = refImu
-                refPqr = refImu['pqr']
 
             for i in range(3):
                 axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
@@ -864,16 +859,13 @@ class logPlot:
                             self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                             ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
-                if len(refTime) != 0:
-                    ax[i].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
-
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
             for d in range(3):
                 ax[d][i].grid(True)
         self.saveFig(fig, 'pqrIMU')
 
-    def allanVariancAcc(self, fig=None):
+    def allanVarianceAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
 
@@ -883,11 +875,6 @@ class logPlot:
 
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
-            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
-            if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
-                refImu = refImu
-                refAcc = refImu['acc']
 
             for i in range(3):
                 axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
@@ -903,9 +890,6 @@ class logPlot:
                                 alable += ' '
                             self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                             ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
-
-                if len(refTime) != 0:
-                    ax[i].plot(refTime, refAcc[:, i], color='red')
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)
