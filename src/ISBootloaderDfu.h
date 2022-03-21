@@ -52,6 +52,16 @@ typedef enum
     STM32_DFU_INTERFACE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
 } stm32_dfu_interface_alternatives;
 
+typedef struct 
+{
+    char sn[IS_SN_MAX_SIZE];
+} dfu_serialnumber;
+typedef struct 
+{
+    dfu_serialnumber list[256];
+    size_t present;
+} is_dfu_serial_list;
+
 /**
  * @brief Create a DFU bootloader context for a single device
  * 
@@ -64,6 +74,12 @@ is_device_context* is_create_dfu_context(
     const char* sn
 );
 
+is_operation_result is_list_dfu(
+    is_dfu_serial_list* list,
+    uint16_t vid,
+    uint16_t pid
+);
+
 /**
  * @brief Flash a firmware image
  * 
@@ -73,12 +89,7 @@ is_device_context* is_create_dfu_context(
  * @param dev_handle handle to device
  * @return is_operation_result 
  */
-is_operation_result is_dfu_flash(
-    const is_device_context const * context, 
-    ihex_image_section_t* image,
-    int image_sections,
-    libusb_device_handle* dev_handle
-);
+is_operation_result is_dfu_flash(is_device_context* context);
 
 #ifdef __cplusplus
 }

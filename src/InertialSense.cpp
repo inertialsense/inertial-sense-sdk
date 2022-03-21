@@ -12,23 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "protocol_nmea.h"
 #include "InertialSense.h"
+#include "ISBootloaderCommon.h"
 
 using namespace std;
-
-typedef struct
-{
-	bootload_params_t param;
-	bool success;
-	serial_port_t serial;
-	void* thread;
-} bootload_state_t;
-
-static void bootloaderUpdateBootloaderThread(void* state)
-{
-    bootload_state_t* s = (bootload_state_t*)state;
-    s->success = (bootloadFileEx(&s->param) == 0);
-    serialPortClose(&s->serial);
-}
 
 static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
@@ -721,7 +707,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 {
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<is_device_context> state;
+	vector<is_device_context*> ctx;
 
 	if (comPort == "*")
 	{
@@ -732,7 +718,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		splitString(comPort, ',', portStrings);
 	}
 	sort(portStrings.begin(), portStrings.end());
-	state.resize(portStrings.size());
+	ctx.resize(portStrings.size());
 
 	// Add DFU stuff to state and bypass this next section to avoid getting shut down
 
@@ -741,9 +727,9 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		ifstream tmpStream(fileName);
 		if (!tmpStream.good())
 		{
-			for (size_t i = 0; i < state.size(); i++)
+			for (size_t i = 0; i < ctx.size(); i++)
 			{
-				results.push_back({ (serial_port_t*)state[i].handle.name, "File does not exist" });
+				results.push_back({ ctx[i]->handle.serial_num, "File does not exist" });
 			}
 		}
 	}
@@ -751,48 +737,71 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	if (results.size() == 0)
 	{
 		// for each port requested, setup a thread to do the bootloader for that port
-		for (size_t i = 0; i < state.size(); i++)
+		for (size_t i = 0; i < ctx.size(); i++)
 		{
-			/*
-            memset(state[i].param.error, 0, BOOTLOADER_ERROR_LENGTH);
-			serialPortPlatformInit(&state[i].serial);
-			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
-			state[i].param.uploadProgress = uploadProgress;
-			state[i].param.verifyProgress = verifyProgress;
-			state[i].param.statusText = infoProgress;
-			state[i].param.fileName = fileName.c_str();
-			state[i].param.bootName = bootloaderFileName.c_str();
-			state[i].param.forceBootloaderUpdate = forceBootloaderUpdate;
-			state[i].param.port = &state[i].serial;
-			state[i].param.verifyFileName = NULLPTR;
-			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
-            state[i].param.numberOfDevices = (int)state.size();
-            state[i].param.baudRate = baudRate;			
-			if (strstr(state[i].param.fileName, "EVB") != NULL)
+			if (strstr(fileName.c_str(), is_evb_2_firmware_needle) != NULL)
 			{   // Enable EVB bootloader
-				strncpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
+				is_jump_to_bootloader(comPort.c_str(), baudRate, "EBLE");
+				ctx[i] = is_create_samba_context(fileName.c_str(), portStrings[i].c_str());
+			}
+			else if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
+			{	// Enable uINS-5 bootoader
+				is_jump_to_bootloader(comPort.c_str(), baudRate, "BLEN");
+				ctx[i] = is_create_dfu_context(fileName.c_str(), 0);
+			}
+			else if(strstr(fileName.c_str(), is_uins_3_firmware_needle) != NULL)
+			{	// Enable uINS-3 bootloader
+				is_jump_to_bootloader(comPort.c_str(), baudRate, "BLEN");
+				ctx[i] = is_create_samba_context(fileName.c_str(), portStrings[i].c_str());
 			}
 			else
-			{	// Enable uINS bootloader
-				strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
+			{
+				results.push_back({ ctx[i]->handle.serial_num, "Invalid firmware file name" });
+				continue;
 			}
-			*/
 
             // Update application and bootloader firmware
-            // state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
-			state[i].thread = threadCreateAndStart(is_update_flash, &state[i]);
+			memset(ctx[i]->error, 0, BOOTLOADER_ERROR_LENGTH);
+			ctx[i]->baud_rate = baudRate;
+			ctx[i]->firmware_file_path = fileName.c_str();
+			ctx[i]->bootloader_file_path = bootloaderFileName.c_str();
+			ctx[i]->update_progress_callback = uploadProgress;
+			ctx[i]->verify_progress_callback = verifyProgress;
+			ctx[i]->info_callback = infoProgress;
+			ctx[i]->force_bootloader_update = forceBootloaderUpdate;
+			ctx[i]->success = false;
+			ctx[i]->thread = threadCreateAndStart(is_update_flash, ctx[i]);
+		}
+
+		// Update all the dfu devices that weren't a serial port before
+		is_dfu_serial_list dfu_list;
+		is_list_dfu(&dfu_list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
+		for(int i = 0; i < dfu_list.present; i++);
+		{
+			is_device_context* ctx_dfu = is_create_dfu_context(fileName.c_str(), 0);
+
+			// Update application firmware
+			memset(ctx_dfu->error, 0, BOOTLOADER_ERROR_LENGTH);
+			ctx_dfu->firmware_file_path = fileName.c_str();
+			ctx_dfu->update_progress_callback = uploadProgress;
+			ctx_dfu->verify_progress_callback = verifyProgress;
+			ctx_dfu->info_callback = infoProgress;
+			ctx_dfu->success = false;
+			ctx_dfu->thread = threadCreateAndStart(is_update_flash, ctx_dfu);
+
+			ctx.push_back(ctx_dfu);
 		}
 
 		// wait for all threads to finish
-		for (size_t i = 0; i < state.size(); i++)
+		for (size_t i = 0; i < ctx.size(); i++)
 		{
-			threadJoinAndFree(state[i].thread);
+			threadJoinAndFree(ctx[i]->thread);
 		}
 
 		// if any thread failed, we return failure
-		for (size_t i = 0; i < state.size(); i++)
+		for (size_t i = 0; i < ctx.size(); i++)
 		{
-			results.push_back({ state[i].handle.name, state[i]. });
+			results.push_back({ ctx[i]->handle.port_name, ctx[i]->error });
 		}
 	}
 

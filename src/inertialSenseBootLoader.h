@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 #include "serialPort.h"
-#include "ISBootloaderCommon.h"
+#include "ISBootloaderTypes.h"
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
@@ -46,10 +46,6 @@ extern "C" {
 #define BOOTLOADER_RETRIES         30
 #else
 #define BOOTLOADER_RETRIES         1
-#endif
-
-#ifndef BOOTLOADER_ERROR_LENGTH
-#define BOOTLOADER_ERROR_LENGTH	512		// Set to zero to disable
 #endif
 
 typedef struct

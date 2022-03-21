@@ -31,8 +31,11 @@ else()	# Build only this project
 		
 		../../src/ISBootloaderCommon.c
 		../../src/ISBootloaderDfu.c
-		../../src/ISBootloaderLog.c
-		
+		../../src/ISBootloaderSamba.c
+		../../src/serialPort.c
+		../../src/serialPortPlatform.c
+		../../src/inertialSenseBootLoader.c
+
 		../../src/ihex.c
 
 		# ../../src/libusb/core.c
@@ -59,6 +62,7 @@ else()	# Build only this project
 
 	target_link_libraries(ISBootloaderCommonExample
 		${LIBUSB_LIBRARY}
+		m
 	)
 
 endif()

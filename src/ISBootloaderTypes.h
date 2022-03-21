@@ -27,11 +27,17 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "inertialSenseBootLoader.h"
+#include <libusb.h>
 
-const char* is_uins_3_firmware_needle = "uINS_3";
-const char* is_uins_5_firmware_needle = "uINS_5";
-const char* is_evb_2_firmware_needle = "EVB_2";
+#include "serialPort.h"
+
+#ifndef BOOTLOADER_ERROR_LENGTH
+#define BOOTLOADER_ERROR_LENGTH	512		// Set to zero to disable
+#endif
+
+extern const char* is_uins_5_firmware_needle;
+extern const char* is_uins_3_firmware_needle;
+extern const char* is_evb_2_firmware_needle;
 
 typedef enum {
     IS_DEVICE_UNKNOWN = 0,
@@ -125,16 +131,13 @@ typedef enum {
     IS_HANDLE_TYPE_SERIAL
 } is_handle_type;
 
-
-typedef union
+typedef struct
 {
-    is_handle_type type;
-    const char* name;
-    union
-    {
-        libusb_device_handle* libusb;
-        serial_port_t* serial;
-    } handle;
+    is_handle_type status;
+    const char* port_name;          // COM port name. Invalid in DFU mode.
+    char serial_num[IS_SN_MAX_SIZE];            
+    serial_port_t* port;            // Invalid once device enters DFU mode
+    libusb_device_handle* libusb;   // DFU only. Invalid until DFU mode reached.
 } is_device_handle;
 
 
@@ -142,10 +145,10 @@ typedef struct
 {
     is_device_match_properties match_props;
     is_device_scheme scheme;
-    char* firmware_file_path;
-    char* bootloader_file_path;                     // Does not apply in DFU
-    int baud_rate;                                  // Does not apply in DFU
+    const char* firmware_file_path;
+    const char* bootloader_file_path;               // Does not apply in DFU
     bool force_bootloader_update;                   // Does not apply in DFU
+    int baud_rate;                                  
     is_verification_style verification_style;
     pfnBootloadProgress update_progress_callback;
     pfnBootloadProgress verify_progress_callback;

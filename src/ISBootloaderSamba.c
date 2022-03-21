@@ -22,7 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderSamba.h"
 #include "inertialSenseBootLoader.h"
-#include "InertialSense.h"
+#include "serialPort.h"
 
 is_device_context* is_create_samba_context(
     const char* firmware_file_name,
@@ -43,8 +43,6 @@ is_device_context* is_create_samba_context(
         ctx->match_props.major = 3;
         ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
         ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
-
-        ctx->handle.name
     } 
     else if(strstr(firmware_file_name, is_evb_2_firmware_needle))
     {   // EVB-2
@@ -65,6 +63,9 @@ is_device_context* is_create_samba_context(
         return NULL;
     }
 
+    strncpy(ctx->handle.port_name, port_name, 64);
+    ctx->handle.status = IS_HANDLE_TYPE_SERIAL;
+
     return ctx;
 }
 
@@ -72,16 +73,15 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 {
     bootload_params_t params;
 
-    memset(params.error, 0, BOOTLOADER_ERROR_LENGTH);
-    serialPortPlatformInit((serial_port_t*)ctx->port_handle);
-    serialPortSetPort((serial_port_t*)ctx->port_handle, (const char*)ctx->port_id);
+    serialPortPlatformInit((serial_port_t*)ctx->handle.port);
+    serialPortSetPort((serial_port_t*)ctx->handle.port, (const char*)ctx->handle.port_name);
     params.uploadProgress = ctx->update_progress_callback;
     params.verifyProgress = ctx->verify_progress_callback;
     params.statusText = ctx->info_callback;
     params.fileName = (const char*)ctx->firmware_file_path;
     params.bootName = ctx->bootloader_file_path;
     params.forceBootloaderUpdate = ctx->force_bootloader_update;
-    params.port = (serial_port_t*)ctx->port_handle;
+    params.port = (serial_port_t*)ctx->handle.port;
     params.verifyFileName = NULL;   // TODO: Add verify
     params.flags.bitFields.enableVerify = (ctx->verification_style == IS_VERIFY_ON);
     params.baudRate = ctx->baud_rate;

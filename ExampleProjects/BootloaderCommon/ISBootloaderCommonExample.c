@@ -14,23 +14,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "../../src/ISBootloaderCommon.h"
 
-static void on_error(const is_device_context const * ctx, const void* user_data, int error_code, const char * error_message)
+static void infoProgress(const void* obj, const char* info_string)
 {
-	printf("ISDFUBootloaderExample::on_error Bootloader failed! Error: %d %s\n", error_code, error_message);
-	printf("ISDFUBootloaderExample::on_error user data: %s\n", (const char *) user_data);
+	printf("ISDFUBootloaderExample::on_error Bootloader failed! Error: %s\n", info_string);
+	//printf("ISDFUBootloaderExample::on_error user data: %s\n", (const char *) user_data);
 }
 
-static int on_update_progress(const is_device_context const * ctx, const void* user_data, float percent)
+static int uploadProgress(const void* obj, float percent)
 {
 	printf("ISDFUBootloaderExample::on_update_progress %f percent\n", percent);
-	printf("user data: %s\n", (const char *) user_data);
+	// printf("user data: %s\n", (const char *) user_data);
 	return 1; // return zero to abort
 }
 
-static int on_verify_progress(const is_device_context const * ctx, const void* user_data, float percent)
+static int verifyProgress(const void* obj, float percent)
 {
 	printf("ISDFUBootloaderExample::on_verify_progress %f percent\n", percent);
-	printf("user data: %s\n", (const char *) user_data);
+	// printf("user data: %s\n", (const char *) user_data);
 	return 1; // return zero to abort
 }
 
@@ -38,49 +38,57 @@ int main(int argc, char* argv[])
 {
 	int rc = -1;
 
-	const char* firmware_file_path = argv[1];
-	printf("firmware path: %s\n", firmware_file_path);
-	
-	is_device_context* ctx = is_create_device_context(firmware_file_path, "\0");
+	char* fileName = argv[1];
+	printf("firmware path: %s\n", fileName);
+	char* comPort = argv[2];
 
-	libusb_context* lusb_ctx = NULL;
-	libusb_device** device_list = NULL;	// Libusb allocates memory for the pointers
-	libusb_device_handle* match_list[256];	// Libusb does not allocate memory for the pointers
-	size_t device_count = 0, match_count = 0;
-	is_get_libusb_handles(ctx, lusb_ctx, device_list, &device_count, match_list, &match_count);
-	if(match_count < 1)
-	{
-		printf("No devices\n");
+	is_dfu_serial_list dfu_list;
+
+	is_list_dfu(&dfu_list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
+
+	is_device_context* ctx;
+
+	if (strstr(fileName, is_evb_2_firmware_needle) != NULL)
+	{   // Enable EVB bootloader
+		is_jump_to_bootloader(comPort, 921600, "EBLE");
+		ctx = is_create_samba_context(fileName, comPort);
 	}
-	const char* user_data = "my own data";
-	
-	ctx->baud_rate = 921600;
-	ctx->bootloader_file_path = NULL;
-	ctx->firmware_file_path = firmware_file_path;
-	ctx->force_bootloader_update = false;
-	ctx->info_callback = info_callback;
-	ctx->port_handle = match_list[0];
-	ctx->port_id = NULL;
-	ctx->update_progress_callback = progress_callback;
-	ctx->user_data = user_data;
-	ctx->verification_style = IS_VERIFY_OFF;
-	ctx->verify_progress_callback = verify_callback;
+	else if(strstr(fileName, is_uins_5_firmware_needle) != NULL)
+	{	// Enable uINS-5 bootoader
+		if(dfu_list.present == 0) return 0;
+		if(comPort) is_jump_to_bootloader(comPort, 921600, "BLEN");
+		ctx = is_create_dfu_context(fileName, dfu_list.list[0].sn);
+	}
+	else if(strstr(fileName, is_uins_3_firmware_needle) != NULL)
+	{	// Enable uINS-3 bootloader
+		is_jump_to_bootloader(comPort, 921600, "BLEN");
+		ctx = is_create_samba_context(fileName, comPort);
+	}
 
-	is_update_flash((void*)ctx);
+	if(!ctx) return 0;
+
+	// Update application and bootloader firmware
+	memset(ctx->error, 0, BOOTLOADER_ERROR_LENGTH);
+	ctx->baud_rate = 921600;
+	ctx->firmware_file_path = fileName;
+	ctx->bootloader_file_path = NULL;
+	ctx->update_progress_callback = uploadProgress;
+	ctx->verify_progress_callback = verifyProgress;
+	ctx->info_callback = infoProgress;
+	ctx->force_bootloader_update = false;
+	ctx->success = false;
+	is_update_flash(ctx);
 
 	if (ctx->success)
 	{
-		printf("ISDFUBootloaderExample: Bootloader success on %s:%s with file %s\n", ctx->port_id, ctx->match_props.serial_number, firmware_file_path);
+		printf("ISDFUBootloaderExample: Bootloader success on %s:%s with file %s\n", ctx->handle.port_name, ctx->match_props.serial_number, fileName);
 		rc = 0;
 	}
 	else
 	{
-		printf("ISDFUBootloaderExample: Bootloader failed to update %s:%s with file %s!\n", ctx->port_id, ctx->match_props.serial_number, firmware_file_path);
+		printf("ISDFUBootloaderExample: Bootloader failed to update %s:%s with file %s!\n", ctx->handle.port_name, ctx->match_props.serial_number, fileName);
 		rc = -1;
 	}
-
-	is_release_libusb_handles(device_list, match_list, match_count);
-	is_destroy_device_context(ctx);
 	
 	return rc;
 }

@@ -22,103 +22,49 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 #include "inertialSenseBootLoader.h"
-#include "ISBootloaderDfu.h"
-#include "ISBootloaderSamba.h"
 
-is_operation_result is_destroy_device_context(is_device_context* ctx)
+#include "ISUtilities.h"
+
+const char* is_uins_5_firmware_needle = "uINS_5";
+const char* is_uins_3_firmware_needle = "uINS_3";
+const char* is_evb_2_firmware_needle = "EVB_2";
+
+void is_destroy_context(is_device_context* ctx)
 {
     free(ctx);
-
-    return IS_OP_OK;
 }
 
-int is_get_handles(is_device_context** ctx, int max_num_handles)
+is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, const char* bootloadEnableCmd)
 {
-    libusb_device** device_list;
-    libusb_device* dev;
-    libusb_device_handle* dev_handle;
-    struct libusb_device_descriptor* desc;
-    struct libusb_config_descriptor* cfg;
-    int ret_libusb;
-    int match_count = 0;
+    int baudRates[] = { baudRate, IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
 
-    if(max_num_handles <= 0) return 0;
+    // detect if device is already in bootloader mode
+    serial_port_t port;
 
-    ret_libusb = libusb_init(NULL);
-    if(ret_libusb < 0) return -1;
+    unsigned char c = 0;
+    for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
+    {
+        if (baudRates[i] == 0)
+            continue;
 
-    int device_count = libusb_get_device_list(NULL, &device_list);
-
-    for (size_t i = 0; i < device_count; ++i) {
-        dev = device_list[i];
-
-        ret_libusb = libusb_get_device_descriptor(dev, &desc);
-        if(ret_libusb < 0) continue;
-
-        if ((desc->idVendor != ctx[match_count]->match_props.vid) && (ctx[match_count]->match_props.match & IS_DEVICE_MATCH_FLAG_VID))
-            continue;   // must be some other usb device
-
-        if ((desc->idProduct != ctx[match_count]->match_props.pid) && (ctx[match_count]->match_props.match & IS_DEVICE_MATCH_FLAG_PID))
-            continue;   // must be some other usb device
-
-        ret_libusb = libusb_open(dev, &dev_handle);
-        if (ret_libusb < 0)
+        serialPortClose(&port);
+        if (serialPortOpenRetry(&port, portName, baudRates[i], 1) == 0)
         {
-            libusb_close(dev_handle);
-            continue;
+            serialPortClose(&port);
+            return IS_OP_ERROR;
         }
-
-        unsigned char serial_number[IS_SN_MAX_SIZE];
-
-        // Get the string containing the serial number from the device
-        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc->iSerialNumber, serial_number, sizeof(serial_number));
-        if (ret_libusb < LIBUSB_SUCCESS) 
-        {   // Set the serial number as none
-            serial_number[0] = '\0';
-        }
-
-        bool sn_matches = !(ctx[match_count]->match_props.match & IS_DEVICE_MATCH_FLAG_SN) || 
-            (strncmp(serial_number, ctx[match_count]->match_props.serial_number, IS_SN_MAX_SIZE) == 0) ||
-            ctx[match_count]->match_props.serial_number[0] == '\0';
-
-        if(cfg->interface->altsetting[0].bInterfaceClass == 0xFE && 
-            cfg->interface->altsetting[0].bInterfaceSubClass == 0x01 && 
-            cfg->interface->altsetting[0].bInterfaceProtocol == 0x02 &&
-            sn_matches 
-        )
-        {   // Add 
-            ctx[match_count++]->handle.handle.libusb = dev_handle;
-
-            if(match_count >= max_num_handles)
-            {
-                libusb_close(dev_handle);
-                libusb_free_device_list(device_list, 1);
-                return match_count;
-            }
-        }
-        else
-        {   // Not a DFU device, or serial number doesn't match
-            libusb_close(dev_handle);
-            continue;
+        for (size_t loop = 0; loop < 10; loop++)
+        {
+            serialPortWriteAscii(&port, "STPB", 4);
+            serialPortWriteAscii(&port, bootloadEnableCmd, 4);
+            
+            // TODO: Probe to check if this is a uINS-5 DFU device
+            // TODO: Check for DFU/SAM-BA mode here (maybe by looking if the port disappeared for DFU?)
         }
     }
 
-    libusb_free_device_list(device_list, 1);
-
-    return match_count;
-}
-
-is_operation_result is_release_handles(
-    libusb_device** device_list, 
-    libusb_device_handle** match_list,
-    size_t match_count
-)
-{
-    for (size_t i = 0; i < match_count; ++i) {
-        libusb_close(match_list[i]);
-    }
-
-    libusb_exit(NULL);
+    serialPortClose(&port);
+    SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
 
     return IS_OP_OK;
 }
@@ -127,28 +73,23 @@ void is_update_flash(void* context)
 {
     is_device_context* ctx = (is_device_context*)context;
     int ret = IS_OP_ERROR;
+    ctx->success = false;
     
-    if(!ctx->firmware_file_path) return ret;  // No firmware present
+    if(!ctx->firmware_file_path) return;  // No firmware present
 
     if(ctx->scheme == IS_SCHEME_DFU)
     {
-        int ihex_ret;
 
-        // Load the firmware into memory. Even if we don't use it now (SAM-BA), this is a good check
-        ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
-        ihex_ret = ihex_load_sections(ctx->firmware_file_path, image, MAX_NUM_IHEX_SECTIONS);
-        if(ihex_ret <= 0) return ret;
-
-        ret = is_dfu_flash(ctx, image, ihex_ret, (libusb_device_handle*)ctx->handle.handle.libusb);
-
-        ihex_unload_sections(image, ihex_ret);
+        ret = is_dfu_flash(ctx);
     }
     else if(ctx->scheme == IS_SCHEME_SAMBA)
     {
         ret = is_samba_flash(ctx);
     }
 
-    ctx->success = (ret == IS_OP_OK ? true : false);
+    if(ret == IS_OP_OK) ctx->success = true;
+
+    is_destroy_context(ctx);
 
     return;
 }
