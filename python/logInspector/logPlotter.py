@@ -1,6 +1,9 @@
 import math
 from typing import List, Any, Union
 
+# If allantools are not installed, run "pip install allantools" first
+import allantools
+
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -849,15 +852,17 @@ class logPlot:
                 for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
                     if pqr != [] and n<pqrCount:
                         if pqr.any(None):
-                            mean = np.mean(pqr[:, i])
-                            std = np.std(pqr[:, i])
+                            t = np.logspace(-1, 4, 100)  # tau values from 0.1 to 10000
+                            (t2, ad, ade, adn) = allantools.oadev(pqr[:, i], rate=1/dt[0], data_type="freq", taus=t)  # Compute the overlapping ADEV                            
+                            arw = 0.0
+                            bi = 0.0
                             alable = 'Gyro'
                             if pqrCount > 1:
                                 alable += '%d ' % n
                             else:
                                 alable += ' '
-                            self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
-                            ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                            self.configureSubplot(ax[i, n], alable + axislable + ' (deg/hr), ARW: %.4g, BI: %.3g' % (arw, bi), 'sec')
+                            ax[i, n].loglog(t2, ad * 180.0/np.pi * 3600, label=self.log.serials[d])
 
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
@@ -881,15 +886,17 @@ class logPlot:
                 for n, acc in enumerate([ acc0, acc1, acc2 ]):
                     if acc != [] and n<accCount:
                         if acc.any(None):
-                            mean = np.mean(acc[:, i])
-                            std = np.std(acc[:, i])
+                            t = np.logspace(-1, 4, 100)  # tau values from 0.1 to 10000
+                            (t2, ad, ade, adn) = allantools.oadev(acc[:, i], rate=1/dt[0], data_type="freq", taus=t)  # Compute the overlapping ADEV                            
+                            rw = 0.0
+                            bi = 0.0
                             alable = 'Accel'
                             if accCount > 1:
                                 alable += '%d ' % n
                             else:
                                 alable += ' '
-                            self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
-                            ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
+                            self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), RW: %.4g, BI: %.3g' % (rw, bi), 'sec')
+                            ax[i, n].loglog(t2, ad, label=self.log.serials[d])
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)
