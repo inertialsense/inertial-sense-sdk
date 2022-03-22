@@ -222,7 +222,7 @@ class LogInspectorWindow(QMainWindow):
         if os.path.exists(self.configFilePath):
             # config.yaml found.  Read from file.
             file = open(self.configFilePath, 'r')
-            self.config = yaml.load(file)
+            self.config = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
         else:
             # config.yaml not found.  Create new file.
