@@ -5,7 +5,9 @@
 extern "C" {
 #endif
 
+#ifndef TESTBED
 #include "gpio.h"
+#endif
 
 
 //_____ M A C R O S ________________________________________________________

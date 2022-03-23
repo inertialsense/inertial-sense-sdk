@@ -398,11 +398,13 @@ static __inline void max_Vec3( ixVector3 result, const ixVector3 v1, const ixVec
  */
 static __inline void zero_Vec2( ixVector2 v )
 {
-    memset( v, 0, sizeof(ixVector2) );
+	v[0] = 0.0f;
+	v[1] = 0.0f;
 }
 static __inline void zero_Vec2d( ixVector2d v )
 {
-    memset( v, 0, sizeof(ixVector2d) );
+	v[0] = 0.0;
+	v[1] = 0.0;
 }
 
 /* Zero vector
@@ -410,11 +412,15 @@ static __inline void zero_Vec2d( ixVector2d v )
  */
 static __inline void zero_Vec3( ixVector3 v )
 {
-    memset( v, 0, sizeof(ixVector3) );
+	v[0] = 0.0f;
+	v[1] = 0.0f;
+	v[2] = 0.0f;
 }
 static __inline void zero_Vec3d( ixVector3d v )
 {
-    memset( v, 0, sizeof(ixVector3d) );
+	v[0] = 0.0;
+	v[1] = 0.0;
+	v[2] = 0.0;
 }
 
 /* Zero vector
@@ -422,11 +428,17 @@ static __inline void zero_Vec3d( ixVector3d v )
  */
 static __inline void zero_Vec4( ixVector4 v )
 {
-    memset( v, 0, sizeof(ixVector4) );
+	v[0] = 0.0f;
+	v[1] = 0.0f;
+	v[2] = 0.0f;
+	v[3] = 0.0f;
 }
 static __inline void zero_Vec4d( ixVector4d v )
 {
-    memset( v, 0, sizeof(ixVector4d) );
+	v[0] = 0.0;
+	v[1] = 0.0;
+	v[2] = 0.0;
+	v[3] = 0.0;
 }
 
 /* Zero vector
@@ -434,7 +446,10 @@ static __inline void zero_Vec4d( ixVector4d v )
 */
 static __inline void zero_VecN( f_t *v, i_t n )
 {
-	memset( v, 0, sizeof( f_t )*n );
+	for (int i=0; i<n; i++)
+	{
+		v[i] = 0.0f;
+	}
 }
 
 /* Zero matrix
@@ -442,7 +457,10 @@ static __inline void zero_VecN( f_t *v, i_t n )
 */
 static __inline void zero_MatMxN( f_t *M, i_t m, i_t n )
 {
-	memset( M, 0, sizeof( f_t )*m*n );
+	for (int i=0; i<(m*n); i++)
+	{
+		M[i] = 0.0f;
+	}
 }
 
 
@@ -451,11 +469,15 @@ static __inline void zero_MatMxN( f_t *M, i_t m, i_t n )
  */
 static __inline void cpy_Vec3_Vec3( ixVector3 result, const ixVector3 v )
 {
-    memcpy( result, v, sizeof(ixVector3) );
+	result[0] = v[0];
+	result[1] = v[1];
+	result[2] = v[2];
 }
 static __inline void cpy_Vec3d_Vec3d( ixVector3d result, const ixVector3d v )
 {
-    memcpy( result, v, sizeof(ixVector3d) );
+	result[0] = v[0];
+	result[1] = v[1];
+	result[2] = v[2];
 }
 static __inline void cpy_Vec3d_Vec3( ixVector3d result, const  ixVector3 v )
 {
@@ -471,23 +493,21 @@ static __inline void cpy_Vec3_Vec3d( ixVector3 result, const ixVector3d v )
 }
 
 /* Copy vector
-* result(n) = v(n)
-*/
-static __inline void cpy_VecN_VecN( f_t *result, const f_t *v, i_t n )
-{
-	memcpy( result, v, sizeof( f_t )*n );
-}
-
-/* Copy vector
  * result(4) = v(4)
  */
 static __inline void cpy_Vec4_Vec4( ixVector4 result, const ixVector4 v )
 {
-    memcpy( result, v, sizeof(ixVector4) );
+	result[0] = v[0];
+	result[1] = v[1];
+	result[2] = v[2];
+	result[3] = v[3];
 }
 static __inline void cpy_Vec4d_Vec4d( ixVector4d result, const ixVector4d v )
 {
-    memcpy( result, v, sizeof(ixVector4d) );
+	result[0] = v[0];
+	result[1] = v[1];
+	result[2] = v[2];
+	result[3] = v[3];
 }
 static __inline void cpy_Vec4d_Vec4( ixVector4d result, const ixVector4 v )
 {
@@ -504,12 +524,26 @@ static __inline void cpy_Vec4_Vec4d( ixVector4 result, const ixVector4d v )
 	result[3] = (f_t)v[3];
 }
 
+/* Copy vector
+* result(n) = v(n)
+*/
+static __inline void cpy_VecN_VecN( f_t *result, const f_t *v, i_t n )
+{
+	for (int i=0; i<n; i++)
+	{
+		result[i] = v[i];
+	}
+}
+
 /* Copy matrix
 * result(mxn) = M(mxn)
 */
 static __inline void cpy_MatMxN( f_t *result, const f_t *M, i_t m, i_t n )
 {
-	memcpy( result, M, sizeof( f_t )*m*n );
+	for (int i=0; i<(m*n); i++)
+	{
+		result[i] = M[i];
+	}
 }
 
 /* Copy matrix A(mxn) into result(rxc) matrix, starting at offset_r, offset_c.  Matrix A must fit inside result matrix dimensions.
