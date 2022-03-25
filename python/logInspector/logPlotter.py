@@ -741,7 +741,6 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-
         for d in self.active_devs:
             (pqr0, pqr1, time, dt) = self.loadGyros(d)
 
@@ -757,15 +756,15 @@ class logPlot:
             for i in range(3):
                 axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                 for n, pqr in enumerate([ pqr0, pqr1 ]):
-                    if pqr.any(None):
+                    if pqr != None and pqr.any(None):
                         mean = np.mean(pqr[:, i])
                         std = np.std(pqr[:, i])
                         self.configureSubplot(ax[i, n], 'Gyro%d ' % n + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                         ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
                 if len(refTime) != 0:
-                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
-                    ax[i, 1].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
+                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
+                    ax[i, 1].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -792,15 +791,15 @@ class logPlot:
             for i in range(3):
                 axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                 for n, acc in enumerate([ acc0, acc1 ]):
-                    if acc.any(None):
+                    if acc != None and acc.any(None):
                         mean = np.mean(acc[:, i])
                         std = np.std(acc[:, i])
                         self.configureSubplot(ax[i, n], 'Accel%d ' % n + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                         ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
                 if len(refTime) != 0:
-                    ax[i, 0].plot(refTime, refAcc[:, i], color='red')
-                    ax[i, 1].plot(refTime, refAcc[:, i], color='red')
+                    ax[i, 0].plot(refTime, refAcc[:, i], color='red', label="reference")
+                    ax[i, 1].plot(refTime, refAcc[:, i], color='red', label="reference")
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -1589,12 +1588,15 @@ class logPlot:
             mpu = self.getData(d, DID_SCOMP, 'mpu')
             status = self.getData(d, DID_SCOMP, 'status')
 
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refVal = refImu[name]
+
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
                 sensor = mpu[:,i]['lpfLsb'][name]
-
-                if name=='acc' and sensor[:,2][0] > 4:
-                    sensor[:,2] -= 19.6
 
                 if name=='pqr':
                     scalar = RAD2DEG
@@ -1611,15 +1613,19 @@ class logPlot:
                 if name=='acc':
                     ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
 
-                if useTime:
+                if useTime and 1:
                     # Show sensor valid status bit
                     if name=='acc':
                         valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
                     else:
                         valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
-                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y')
+                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
                     ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
                     ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
+
+                    if len(refTime) != 0:
+                        for j in range(3):
+                            ax[j, i].plot(refTime, refVal[:, j] * scalar, color='red', label="reference")
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
