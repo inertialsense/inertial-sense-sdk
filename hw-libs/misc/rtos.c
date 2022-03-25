@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
 #include "globals.h"
 #include "IS_internal.h"
+#endif
 #ifndef uINS_5 // uINS-3
 #include "../../../hdw-src/uINS-3/IS_uINS/src/misc/debug_gpio.h"
 #endif
