@@ -2182,7 +2182,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_CAL_SC2",                      // 44
 	"DID_SYS_SENSORS_SIGMA",            // 45
 	"DID_SENSORS_ADC_SIGMA",            // 46
-	"DID_INS_DEV_1",                    // 47
+	"DID_REFERENCE_MAG",                // 47
 	"DID_INL2_STATES",                  // 48
 	"DID_INL2_COVARIANCE_LD",           // 49
 	"DID_INL2_STATUS",                  // 50
