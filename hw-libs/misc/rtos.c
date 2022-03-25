@@ -14,13 +14,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "task.h"
 #include "rtos.h"
 
-#if !defined(PLATFORM_IS_EVB_2)
+#if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
 #include "globals.h"
 #include "IS_internal.h"
+#endif
 #ifndef uINS_5 // uINS-3
 #include "../../../hdw-src/uINS-3/IS_uINS/src/misc/debug_gpio.h"
 #endif
+
+#ifdef TESTBED
+#include "globals.h"
 #endif
+
 #include "bootloaderApp.h"
 
 uint32_t g_faultLineNumber;
@@ -138,7 +143,7 @@ void vApplicationIdleHook(void)
 #ifndef uINS_5
 void vApplicationTickHook(void)
 {
-#if !defined(PLATFORM_IS_EVB_2)
+#if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
     DBGPIO_TOGGLE(DBG_RTOS_TICK_HOOK_PIN);  // Debug used to monitor RTOS tick execution
 #endif
 }

@@ -17,7 +17,10 @@
 
 #include "d_dma.h"
 #include "d_usartDMA.h"
+
+#ifndef TESTBED
 #include "d_i2c.h"
+#endif
 
 #include "xdmac.h"
 

@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MCAN_TEST_RECV_ID_STD	0x126
 #define MCAN_TEST_RECV_ID_EXT	0x100000A6
 
-static struct mcan_module mcan_instance;
+struct mcan_module mcan_instance;
 
 void CAN_init(uint32_t baudrate, uint32_t rx_address)
 {
