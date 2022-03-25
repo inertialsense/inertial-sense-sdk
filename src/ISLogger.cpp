@@ -219,7 +219,8 @@ bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directo
 	else
 	{
 		// Only use first 15 characters for the timestamp
-		m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
+		// m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
+		m_timeStamp = timeStamp;
 	}
 
 	return InitSaveCommon(logType, directory, subDirectory, numDevices, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
