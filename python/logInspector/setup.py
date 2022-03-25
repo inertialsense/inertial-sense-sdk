@@ -152,7 +152,8 @@ setup(
         'pyserial', 
         'scipy', 
         'tqdm',
-        'simplekml'],
+        'simplekml',
+        'allantools'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )

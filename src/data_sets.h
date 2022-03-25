@@ -742,17 +742,21 @@ enum eImuStatus
 	/** Sensor saturation on IMU2 gyro */
 	IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
 	/** Sensor saturation on IMU1 accelerometer */
-	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000004,
+	IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
+	/** Sensor saturation on IMU1 accelerometer */
+	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000010,
 	/** Sensor saturation on IMU2 accelerometer */
-	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000008,
+	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000020,
+	/** Sensor saturation on IMU3 accelerometer */
+	IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000040,
 	/** Sensor saturation mask */
-	IMU_STATUS_SATURATION_MASK                  = (int)0x0000000F,
+	IMU_STATUS_SATURATION_MASK                  = (int)0x000000FF,
 
-	/** Reserved */
-	IMU_STATUS_RESERVED1						= (int)0x00000020,
+	/** Magnetometer sample occured */
+	IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
 	
 	/** Reserved */
-	IMU_STATUS_RESERVED2						= (int)0x00000040,
+	// IMU_STATUS_RESERVED2						= (int)0x00000400,
 
 
 //     /** Sensor saturation happened within past 10 seconds */
@@ -780,6 +784,8 @@ enum eImuStatus
 	IMU_STATUS_ACC3_OK                          = (int)0x00200000,
 	/** IMU gyros and accelerometers available */
 	IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
+	/** IMU gyros and accelerometers available bit offset  */
+	IMU_STATUS_IMU_OK_BIT_OFFSET                = (int)2,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
@@ -821,9 +827,15 @@ typedef struct PACKED
 	/** GPS leap second (GPS-UTC) offset. Receiver's best knowledge of the leap seconds offset from UTC to GPS time. Subtract from GPS time of week to get UTC time of week. (18 seconds as of December 31, 2016) */
 	uint8_t					leapS;
 
+	/** Number of satellites used */
+	uint8_t					satsUsed;
+
+	/** Standard deviation of cnoMean over past 5 seconds (dBHz x10) */
+	uint8_t					cnoMeanSigma;
+
 	/** Reserved for future use */
-	uint8_t					reserved[3];
-	
+	uint8_t					reserved;
+
 } gps_pos_t;
 
 
@@ -1189,12 +1201,6 @@ enum eSystemCommand
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
 
-    SYS_CMD_ZERO_IMU_CAL_RESET                  = 20,	// 
-    SYS_CMD_ZERO_IMU_CAL_SAMPLE                 = 21,	// 
-    SYS_CMD_ZERO_IMU_CAL_GYRO_BIAS              = 22,	// Built-In Test (BIT) BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY is run automatically following this command
-    SYS_CMD_ZERO_IMU_CAL_ACCEL_BIAS             = 23,	// "
-    SYS_CMD_ZERO_IMU_CAL_GYRO_ACCEL_BIAS        = 24,	// "
-
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
     SYS_CMD_SOFTWARE_RESET                      = 99,
@@ -1533,7 +1539,7 @@ typedef struct PACKED
 	float                   bias_cal[3];    // Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal)
 } inl2_mag_obs_info_t;
 
-/** Built-in test state */
+/** Built-in Test: State */
 enum eBitState
 {
 	BIT_STATE_OFF					                    = (int)0,
@@ -1545,6 +1551,12 @@ enum eBitState
     BIT_STATE_RUNNING                                   = (int)6,   
     BIT_STATE_FINISHING                                 = (int)7,	// Computing results
     BIT_STATE_CMD_OFF                                   = (int)8,   // Stop built-in test
+};
+
+/** Built-in Test: Test Mode */
+enum eBitTestMode
+{
+    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100, // Simulate CNO noise
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -1634,7 +1646,10 @@ typedef struct PACKED
 
 	/** Acceleration standard deviation */
 	float                   accSigma;
-	
+
+	/** Self-test mode (see eBitTestMode) */
+	uint32_t                testMode;
+
 } bit_t;
 
 
@@ -2194,6 +2209,7 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
+	WHEEL_CFG_BITS_ENCODER_SOURCE			= (int)0x00000400,	// 0 = uINS, 1 = EVB
 };
 
 typedef enum
@@ -2241,12 +2257,20 @@ typedef struct PACKED
 
 typedef enum
 {
+	/** Kinematic learing is solving for the translation from IMU to wheel (wheel_config). */ 
 	GV_STATUS_LEARNING_ENABLED		= 0x00000001,
+	
+	/** Navigation is running without GPS input. */ 
 	GV_STATUS_DEAD_RECKONING		= 0x01000000,
-	/** Vehicle kinematic parameters */ 
+
+	/** Vehicle kinematic parameters agree with GPS. */ 
 	GV_STATUS_KINEMATIC_CAL_GOOD	= 0x02000000,
+
 	/** Vehicle kinematic learning has converged and is complete. */ 
 	GV_STATUS_LEARNING_CONVERGED    = 0x04000000,
+
+	/** Vehicle kinematic learning data (wheel_config_t) is missing. */ 
+	GV_STATUS_LEARNING_NEEDED       = 0x08000000,
 
 } eGroundVehicleStatus;
 

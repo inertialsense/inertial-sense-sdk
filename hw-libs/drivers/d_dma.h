@@ -6,6 +6,7 @@ extern "C" {
 
 // includes
 #include <xdmac.h>
+#include "core_cm7_4p30.h"
 
 #ifdef __INERTIAL_SENSE_EVB_2__
 
@@ -151,6 +152,19 @@ enum
 	// add more channels before this line
 	DMA_EVB_CHAN_COUNT,
 	DMA_EVB_CHAN_MAX = 24
+};
+
+// enums
+enum
+{
+	// testbed specific
+	DMA_CH_TESTBED_UINS_TX = 0,
+	DMA_CH_TESTBED_UINS_RX,			// Unused
+	DMA_CH_TESTBED_SENSONOR_TX,
+	DMA_CH_TESTBED_SENSONOR_RX,
+	// add more channels before this line
+	DMA_TESTBED_CHAN_COUNT,
+	DMA_TESTBED_CHAN_MAX = 24
 };
 
 // structs
