@@ -60,6 +60,7 @@ struct DeviceLog
     // vector<sys_sensors_adc_t> sensorsAdc;
     vector<sensor_compensation_t> scomp;
     vector<imu_t> refImu;
+    vector<magnetometer_t> refMag;
     vector<gps_vel_t> gps1Vel;
     vector<gps_vel_t> gps2Vel;
     // vector<hdw_params_t> hdwParams;

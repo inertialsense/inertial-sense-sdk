@@ -927,6 +927,13 @@ class logPlot:
             ax[2].plot(time0, mag0y)
             ax[4].plot(time0, mag0z)
 
+            refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
+            if len(refTime)!=0:
+                refMag = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+                refMag = refMag
+                for i in range(3):
+                    ax[2*i].plot(refTime, refMag[:, i], color='red', label="reference")
+
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)

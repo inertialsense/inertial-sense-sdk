@@ -309,7 +309,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 44: DID_CAL_SC2
 		offsetsOnlyTimeFirst,	// 45: DID_SYS_SENSORS_SIGMA
 		offsetsOnlyTimeFirst,	// 46: DID_SENSORS_ADC_SIGMA
-		0,                      // 47: DID_REFERENCE_MAG
+		0,                      // 47: DID_REFERENCE_MAGNETOMETER
 		offsetsInl2States,      // 48: DID_INL2_STATES
 		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
@@ -487,7 +487,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 44: DID_CAL_SC2
 		0,						// 45: DID_SYS_SENSORS_SIGMA
 		0,						// 46: DID_SENSORS_ADC_SIGMA
-		0,                      // 47: DID_REFERENCE_MAG
+		0,                      // 47: DID_REFERENCE_MAGNETOMETER
 		0,                      // 48: DID_INL2_STATES
 		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC

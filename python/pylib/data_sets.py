@@ -50,7 +50,7 @@ DID_CAL_SC1                     = 43
 DID_CAL_SC2                     = 44
 DID_SYS_SENSORS_SIGMA           = 45
 DID_SENSORS_ADC_SIGMA           = 46
-DID_REFERENCE_MAG               = 47
+DID_REFERENCE_MAGNETOMETER      = 47
 DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
@@ -195,7 +195,7 @@ did_name_lookup = {
  DID_CAN_CONFIG : "canconfig",
  DID_EVB_DEV_INFO : "evbDevInfo",
  DID_REFERENCE_IMU : "referenceImu",
- DID_REFERENCE_MAG : "referenceMag",
+ DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
  DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
 }
 
