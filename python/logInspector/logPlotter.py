@@ -918,7 +918,10 @@ class logPlot:
         self.configureSubplot(ax[5], 'Mag1 Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time0 = self.getData(d, DID_MAGNETOMETER, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
+            time0 = self.getData(d, DID_MAGNETOMETER, 'time')
+            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+            if np.shape(towOffset)[0] != 0:
+                time0 = time0 + towOffset[-1]
             mag0 = self.getData(d, DID_MAGNETOMETER, 'mag')
             mag0x = mag0[:,0]
             mag0y = mag0[:,1]
@@ -1560,6 +1563,11 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc')
 
+    def sensorCompMag(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag')
+
     def sensorCompGyrTime(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1570,6 +1578,11 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc', useTime=True)
+
+    def sensorCompMagTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag', useTime=True)
 
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
@@ -1587,19 +1600,26 @@ class logPlot:
                     ax[d,i].set_xlabel("Temperature (C)")
                 if name=='pqr':
                     ax[d,i].set_ylabel("Gyro (deg/s)")
-                else:
+                elif name=='acc':
                     ax[d,i].set_ylabel("Accel (m/s^2)")
+                elif name=='mag':
+                    ax[d,i].set_ylabel("Mag")
 
         for d in self.active_devs:
             time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
             mpu = self.getData(d, DID_SCOMP, 'mpu')
             status = self.getData(d, DID_SCOMP, 'status')
 
-            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
-            if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
-                refImu = refImu
-                refVal = refImu[name]
+            if name=='mag':
+                refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
+                if len(refTime)!=0:
+                    refVal = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+            else:
+                refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+                if len(refTime)!=0:
+                    refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                    refImu = refImu
+                    refVal = refImu[name]
 
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
