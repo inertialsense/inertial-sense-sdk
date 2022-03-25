@@ -78,7 +78,7 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_SYS_SENSORS_SIGMA           (eDataIDs)45 /** INTERNAL USE ONLY (sys_sensors_t) */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
-#define DID_INS_DEV_1                   (eDataIDs)47 /** INTERNAL USE ONLY (ins_dev_1_t) (not needed) */
+#define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) */
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */

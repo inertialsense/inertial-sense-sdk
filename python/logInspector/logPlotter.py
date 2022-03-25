@@ -1030,7 +1030,10 @@ class logPlot:
         self.configureSubplot(ax[2], 'Mag Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = self.getData(d, DID_MAGNETOMETER, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
+            time = self.getData(d, DID_MAGNETOMETER, 'time')
+            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+            if np.shape(towOffset)[0] != 0:
+                time = time + towOffset[-1]
             mag = self.getData(d, DID_MAGNETOMETER, 'mag')
             magX = mag[:,0]
             magY = mag[:,1]
@@ -1038,6 +1041,13 @@ class logPlot:
             ax[0].plot(time, magX, label=self.log.serials[d])
             ax[1].plot(time, magY)
             ax[2].plot(time, magZ)
+
+            refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
+            if len(refTime)!=0:
+                refMag = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+                refMag = refMag
+                for i in range(3):
+                    ax[2*i].plot(refTime, refMag[:, i], color='red', label="reference")
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -1667,6 +1677,11 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc')
 
+    def sensorCompMag(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag')
+
     def sensorCompGyrTime(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1677,6 +1692,11 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc', useTime=True)
+
+    def sensorCompMagTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag', useTime=True)
 
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
@@ -1694,19 +1714,26 @@ class logPlot:
                     ax[d,i].set_xlabel("Temperature (C)")
                 if name=='pqr':
                     ax[d,i].set_ylabel("Gyro (deg/s)")
-                else:
+                elif name=='acc':
                     ax[d,i].set_ylabel("Accel (m/s^2)")
+                elif name=='mag':
+                    ax[d,i].set_ylabel("Mag")
 
         for d in self.active_devs:
             time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
             imu = self.getData(d, DID_SCOMP, name)
             status = self.getData(d, DID_SCOMP, 'status')
 
-            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
-            if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
-                refImu = refImu
-                refVal = refImu[name]
+            if name=='mag':
+                refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
+                if len(refTime)!=0:
+                    refVal = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+            else:
+                refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+                if len(refTime)!=0:
+                    refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                    refImu = refImu
+                    refVal = refImu[name]
 
             for i in range(2):
                 temp = imu[:,i]['lpfTemp']
@@ -1727,13 +1754,13 @@ class logPlot:
                 if name=='acc':
                     ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
 
-                if useTime:
+                if useTime and 1:
                     # Show sensor valid status bit
                     if name=='acc':
                         valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
                     else:
                         valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
-                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y')
+                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
                     ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
                     ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
 
