@@ -38,38 +38,63 @@ is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, co
 {
     int baudRates[] = { baudRate, IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
 
-    // detect if device is already in bootloader mode
     serial_port_t port;
 
+    serialPortPlatformInit(&port);
+    serialPortSetPort(&port, portName);
+
+    is_dfu_serial_list list;
+    is_list_dfu(&list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
+
+    int start_num = list.present;
+
+    // in case we are in program mode, try and send the commands to go into bootloader mode
     unsigned char c = 0;
     for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
     {
         if (baudRates[i] == 0)
             continue;
 
-        serialPortPlatformInit(&port);
-        serialPortSetPort(&port, portName);
-
-        // serialPortClose(&port);
+        serialPortClose(&port);
         if (serialPortOpenRetry(&port, portName, baudRates[i], 1) == 0)
         {
             serialPortClose(&port);
-            return IS_OP_ERROR;
+            return 0;
         }
         for (size_t loop = 0; loop < 10; loop++)
         {
             serialPortWriteAscii(&port, "STPB", 4);
             serialPortWriteAscii(&port, bootloadEnableCmd, 4);
-            
-            // TODO: Probe to check if this is a uINS-5 DFU device
-            // TODO: Check for DFU/SAM-BA mode here (maybe by looking if the port disappeared for DFU?)
+            c = 0;
+            if (serialPortReadCharTimeout(&port, &c, 13) == 1)
+            {
+                if (c == '$')
+                {
+                    // done, we got into bootloader mode
+                    i = 9999;
+                    break;
+                }
+            }
+            else
+            {
+                // Flush and close the port to prepare for DFU check
+                serialPortFlush(&port);
+
+                // List DFU devices
+                is_list_dfu(&list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
+                
+                if(list.present > start_num) 
+                {   // If a new DFU device has shown up, break
+                    i = 9999;
+                    break;
+                }
+            }
         }
     }
 
     serialPortClose(&port);
     SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
-
-    return IS_OP_OK;
+    return 0;
 }
 
 void is_update_flash(void* context)

@@ -70,7 +70,6 @@ typedef struct
  * @return is_device_context* 
  */
 is_device_context* is_create_dfu_context(
-    const char* firmware_file_name, 
     const char* sn
 );
 

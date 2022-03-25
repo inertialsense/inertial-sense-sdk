@@ -40,12 +40,6 @@ extern const char* is_uins_3_firmware_needle;
 extern const char* is_evb_2_firmware_needle;
 
 typedef enum {
-    IS_DEVICE_UNKNOWN = 0,
-    IS_DEVICE_UINS = 1,
-    IS_DEVICE_EVB = 2,
-} is_device_type;
-
-typedef enum {
     IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000000,  // default
     IS_DEVICE_INTERFACE_FLAG_DFU        = 0b00000001,
     IS_DEVICE_INTERFACE_FLAG_STM32UART  = 0b00000010,
@@ -104,7 +98,6 @@ typedef uint8_t match_flags;   // 1111 1111
 typedef struct
 {
     match_flags match;
-    is_device_type type;
     uint8_t major;
     uint8_t minor; 
     char serial_number[IS_SN_MAX_SIZE];
@@ -134,7 +127,7 @@ typedef enum {
 typedef struct
 {
     is_handle_type status;
-    const char* port_name;          // COM port name. Invalid in DFU mode.
+    char port_name[256];          // COM port name. Invalid in DFU mode.
     char serial_num[IS_SN_MAX_SIZE];            
     serial_port_t* port;            // Invalid once device enters DFU mode
     libusb_device_handle* libusb;   // DFU only. Invalid until DFU mode reached.

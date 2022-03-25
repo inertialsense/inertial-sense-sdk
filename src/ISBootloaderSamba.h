@@ -54,7 +54,6 @@ typedef enum
  * @return is_device_context* 
  */
 is_device_context* is_create_samba_context(
-    const char* firmware_file_name,
     const char* port_name
 );
 

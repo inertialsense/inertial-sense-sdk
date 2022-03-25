@@ -25,43 +25,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPort.h"
 
 is_device_context* is_create_samba_context(
-    const char* firmware_file_name,
     const char* port_name
 )
 {
     is_device_context* ctx = malloc(sizeof(is_device_context));
 
-    if(strstr(firmware_file_name, is_uins_3_firmware_needle))
-    {   // uINS-3/4
-        ctx->scheme = IS_SCHEME_SAMBA;
-        ctx->match_props.type = IS_DEVICE_UINS;
-        ctx->match_props.match = 
-            IS_DEVICE_MATCH_FLAG_VID | 
-            IS_DEVICE_MATCH_FLAG_PID | 
-            IS_DEVICE_MATCH_FLAG_TYPE | 
-            IS_DEVICE_MATCH_FLAG_MAJOR;
-        ctx->match_props.major = 3;
-        ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
-        ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
-    } 
-    else if(strstr(firmware_file_name, is_evb_2_firmware_needle))
-    {   // EVB-2
-        ctx->scheme = IS_SCHEME_SAMBA;
-        ctx->match_props.type = IS_DEVICE_EVB;
-        ctx->match_props.match = 
-            IS_DEVICE_MATCH_FLAG_VID | 
-            IS_DEVICE_MATCH_FLAG_PID | 
-            IS_DEVICE_MATCH_FLAG_TYPE | 
-            IS_DEVICE_MATCH_FLAG_MAJOR;
-        ctx->match_props.major = 2;
-        ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
-        ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
-    }
-    else
-    {
-        free(ctx);
-        return NULL;
-    }
+    ctx->scheme = IS_SCHEME_SAMBA;
+    ctx->match_props.match = 
+        IS_DEVICE_MATCH_FLAG_VID | 
+        IS_DEVICE_MATCH_FLAG_PID | 
+        IS_DEVICE_MATCH_FLAG_TYPE | 
+        IS_DEVICE_MATCH_FLAG_MAJOR;
+    ctx->match_props.major = 2;
+    ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
+    ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
 
     strncpy(ctx->handle.port_name, port_name, 64);
     ctx->handle.status = IS_HANDLE_TYPE_SERIAL;
@@ -72,6 +49,9 @@ is_device_context* is_create_samba_context(
 is_operation_result is_samba_flash(is_device_context* ctx)
 {
     bootload_params_t params;
+
+    serial_port_t serial;
+    ctx->handle.port = &serial;
 
     serialPortPlatformInit((serial_port_t*)ctx->handle.port);
     serialPortSetPort((serial_port_t*)ctx->handle.port, (const char*)ctx->handle.port_name);

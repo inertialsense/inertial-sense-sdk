@@ -735,33 +735,38 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	}
 
 	if (results.size() == 0)
-	{
-		// for each port requested, setup a thread to do the bootloader for that port
-		for (size_t i = 0; i < ctx.size(); i++)
+	{	// for each port requested, setup a thread to do the bootloader for that port
+		for (size_t i = 0; i < portStrings.size(); i++)
 		{
 			if (strstr(fileName.c_str(), is_evb_2_firmware_needle) != NULL)
-			{   // Enable EVB bootloader
-				is_jump_to_bootloader(comPort.c_str(), baudRate, "EBLE");
-				ctx[i] = is_create_samba_context(fileName.c_str(), portStrings[i].c_str());
+			{  
+				is_jump_to_bootloader(portStrings[i].c_str(), baudRate, "EBLE");
+				ctx[i] = is_create_samba_context(portStrings[i].c_str());
 			}
 			else if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
-			{	// Enable uINS-5 bootoader
-				is_jump_to_bootloader(comPort.c_str(), baudRate, "BLEN");
-				// ctx[i] = is_create_dfu_context(fileName.c_str(), 0);
-				continue;
+			{	
+				is_jump_to_bootloader(portStrings[i].c_str(), baudRate, "BLEN");
+				ctx.clear();	// We will re-form the ctx list with DFU ctx pointers,
+								//  since there might already be devices in DFU mode.
 			}
 			else if(strstr(fileName.c_str(), is_uins_3_firmware_needle) != NULL)
-			{	// Enable uINS-3 bootloader
-				is_jump_to_bootloader(comPort.c_str(), baudRate, "BLEN");
-				ctx[i] = is_create_samba_context(fileName.c_str(), portStrings[i].c_str());
+			{	
+				is_jump_to_bootloader(portStrings[i].c_str(), baudRate, "BLEN");
+				ctx[i] = is_create_samba_context(portStrings[i].c_str());
 			}
-			else
-			{
-				results.push_back({ ctx[i]->handle.serial_num, "Invalid firmware file name" });
-				continue;
-			}
+		}
 
-            // Update application and bootloader firmware
+		// Add all the DFU devices present to the list
+		is_dfu_serial_list dfu_list; 
+		is_list_dfu(&dfu_list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
+		for(size_t i = 0; i < dfu_list.present; i++)
+		{
+			ctx.push_back(is_create_dfu_context(dfu_list.list[i].sn));
+		}
+
+		for (size_t i = 0; i < ctx.size(); i++)
+		{
+			// Update application and bootloader firmware
 			memset(ctx[i]->error, 0, BOOTLOADER_ERROR_LENGTH);
 			ctx[i]->baud_rate = baudRate;
 			ctx[i]->firmware_file_path = fileName.c_str();
@@ -773,31 +778,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 			ctx[i]->success = false;
 			ctx[i]->thread = threadCreateAndStart(is_update_flash, ctx[i]);
 		}
-
-		// Update all the dfu devices that weren't a serial port before
-		is_dfu_serial_list dfu_list;
-		is_list_dfu(&dfu_list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
-		for(int i = 0; i < dfu_list.present; i++)
-		{
-			is_device_context* ctx_dfu = is_create_dfu_context(fileName.c_str(), dfu_list.list[i].sn);
-
-			if(!ctx_dfu)
-			{
-				continue;
-			}
-
-			// Update application firmware
-			memset(ctx_dfu->error, 0, BOOTLOADER_ERROR_LENGTH);
-			ctx_dfu->firmware_file_path = fileName.c_str();
-			ctx_dfu->update_progress_callback = uploadProgress;
-			ctx_dfu->verify_progress_callback = verifyProgress;
-			ctx_dfu->info_callback = infoProgress;
-			ctx_dfu->success = false;
-			ctx_dfu->thread = threadCreateAndStart(is_update_flash, ctx_dfu);
-
-			ctx.push_back(ctx_dfu);
-		}
-
+	
 		// wait for all threads to finish
 		for (size_t i = 0; i < ctx.size(); i++)
 		{

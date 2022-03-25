@@ -130,9 +130,11 @@ is_operation_result is_list_dfu(
         ret_libusb = libusb_open(dev, &dev_handle);
         if (ret_libusb < 0)
         {
-            libusb_close(dev_handle);
             continue;
         }
+
+        ret_libusb = libusb_reset_device(dev_handle);
+        if (ret_libusb < LIBUSB_SUCCESS) continue; 
 
         ret_libusb = libusb_set_interface_alt_setting(dev_handle, 0, 0);
         ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
@@ -158,6 +160,7 @@ is_operation_result is_list_dfu(
             {
                 libusb_close(dev_handle);
                 libusb_free_device_list(device_list, 1);
+                libusb_exit(NULL);
                 return IS_OP_OK;
             }
         }
@@ -166,12 +169,12 @@ is_operation_result is_list_dfu(
     }
 
     libusb_free_device_list(device_list, 1);
+    libusb_exit(NULL);
 
     return IS_OP_OK;
 }
 
 is_device_context* is_create_dfu_context(
-    const char* firmware_file_name, 
     const char* sn
 )
 {
@@ -185,7 +188,6 @@ is_device_context* is_create_dfu_context(
     is_device_context* ctx = malloc(sizeof(is_device_context));
 
     ctx->scheme = IS_SCHEME_DFU;
-    ctx->match_props.type = IS_DEVICE_UINS;
     ctx->match_props.match = 
         IS_DEVICE_MATCH_FLAG_VID | 
         IS_DEVICE_MATCH_FLAG_PID | 
@@ -453,7 +455,8 @@ static is_operation_result is_dfu_write_option_bytes(
     int ret = dfu_DNLOAD(&dev_handle, 2, bytes, size);
     dfu_wait_for_state(&dev_handle, DFU_STATE_DNLOAD_IDLE);	
 
-    // Device will reset automatically here
+    ret_libusb = libusb_reset_device(dev_handle);
+    if (ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR; 
 
     return IS_OP_OK;
 }
