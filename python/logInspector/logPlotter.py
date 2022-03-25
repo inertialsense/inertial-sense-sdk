@@ -777,7 +777,7 @@ class logPlot:
                 axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                 for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
                     if pqr != [] and n<pqrCount:
-                        if pqr.any(None):
+                        if pqr != None and pqr.any(None):
                             mean = np.mean(pqr[:, i])
                             std = np.std(pqr[:, i])
                             alable = 'Gyro'
@@ -789,7 +789,7 @@ class logPlot:
                             ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
                 if len(refTime) != 0:
-                    ax[i].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
+                    ax[i].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
 
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
@@ -817,7 +817,7 @@ class logPlot:
                 axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                 for n, acc in enumerate([ acc0, acc1, acc2 ]):
                     if acc != [] and n<accCount:
-                        if acc.any(None):
+                        if acc != None and acc.any(None):
                             mean = np.mean(acc[:, i])
                             std = np.std(acc[:, i])
                             alable = 'Accel'
@@ -829,7 +829,7 @@ class logPlot:
                             ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
                 if len(refTime) != 0:
-                    ax[i].plot(refTime, refAcc[:, i], color='red')
+                    ax[i].plot(refTime, refAcc[:, i], color='red', label="reference")
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)
@@ -1702,12 +1702,15 @@ class logPlot:
             imu = self.getData(d, DID_SCOMP, name)
             status = self.getData(d, DID_SCOMP, 'status')
 
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refVal = refImu[name]
+
             for i in range(2):
                 temp = imu[:,i]['lpfTemp']
                 sensor = imu[:,i]['lpfLsb']
-
-                if name=='acc' and sensor[:,2][0] > 4:
-                    sensor[:,2] -= 19.6
 
                 if name=='pqr':
                     scalar = RAD2DEG
@@ -1733,6 +1736,10 @@ class logPlot:
                     ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y')
                     ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
                     ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
+
+                    if len(refTime) != 0:
+                        for j in range(3):
+                            ax[j, i].plot(refTime, refVal[:, j] * scalar, color='red', label="reference")
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
