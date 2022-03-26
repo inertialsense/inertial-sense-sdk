@@ -30,7 +30,9 @@ void XDMAC_Handler(void)
 {	
 	XDMAC_usartDMA_Handler();
 	
+#ifndef TESTBED
 	XDMAC_i2c_Handler();
+#endif
 	
 #ifdef __INERTIAL_SENSE_EVB_2__
 	

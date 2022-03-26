@@ -8,7 +8,7 @@ extern "C" {
 #include <xdmac.h>
 #include "core_cm7_4p30.h"
 
-#ifdef __INERTIAL_SENSE_EVB_2__
+#if defined(__INERTIAL_SENSE_EVB_2__) || 1
 
 #define MEMCPY_DCACHE_CLEAN(dst, src, size) \
 memcpy((void*)(dst), (const void*)(src), (size)); \
