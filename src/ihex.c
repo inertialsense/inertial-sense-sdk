@@ -38,7 +38,7 @@ static int parse_hex_line(char* theline, uint8_t bytes[], int* addr, int* num, i
     ptr = theline+1;
     if (!sscanf(ptr, "%02x", &len)) return 0;
     ptr += 2;
-    if ( strlen(theline) < (11 + (len * 2)) ) return 0;
+    if ( strlen(theline) < (11 + ((size_t)len * 2)) ) return 0;
     if (!sscanf(ptr, "%04x", addr)) return 0;
     ptr += 4;
       /* printf("Line: length=%d Addr=%d\n", len, *addr); */
@@ -63,7 +63,7 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
     char line[512];	// Max line length is 256
     int addr, n, status;
     uint8_t bytes[256];	
-    int i, total=0, lineno=1;
+    int i, lineno=1;
     int minaddr=65536, maxaddr=0;
     bool alreadysetaddr = false;
     bool eof = false;
@@ -164,14 +164,14 @@ static void ihex_unload_section(ihex_image_section_t* section)
     }
 }
 
-int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, size_t num_slots)
+size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, size_t num_slots)
 {
     FILE* ihex_file;
     ihex_file = fopen(ihex_filename, "r");
     if(ihex_file==NULL) return -1;
 
-    int iter = 0;
-    int numSections = 0;
+    size_t iter = 0;
+    size_t numSections = 0;
 
     printf("Loading sections from %s\n", ihex_filename);
 
@@ -184,8 +184,6 @@ int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, s
         if (ret == 1) break;	    // Last sector in file found (EOF)
     } while (++iter < num_slots);
 
-    printf("NumSections: %x", iter);
-
     // ACT ON SECTIONS HERE
     fclose(ihex_file);
 
@@ -197,7 +195,7 @@ int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, s
 void ihex_unload_sections(ihex_image_section_t* section, size_t num)
 {
     // Free section memory
-    for (int i = 0; i < num; i++)
+    for (size_t i = 0; i < num; i++)
     {
         ihex_unload_section(&section[i]);
     }

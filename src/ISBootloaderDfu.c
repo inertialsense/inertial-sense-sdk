@@ -28,16 +28,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <time.h>
 
-typedef struct 
-{
-    uint16_t vid;
-    uint16_t pid;
-} device_vid_pid;
-
-device_vid_pid matches[] = { 
-    {STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID} 
-};
-
 #define STM32_PAGE_SIZE 0x800
 #define STM32_PAGE_ERROR_MASK 0x7FF
 
@@ -106,7 +96,7 @@ static dfu_error dfu_GETSTATE(libusb_device_handle** dev_handle, uint8_t* buf);
 static dfu_error dfu_ABORT(libusb_device_handle** dev_handle);
 
 is_operation_result is_list_dfu(
-    is_dfu_serial_list* list
+    is_dfu_list* list
 )
 {
     list->present = 0;
@@ -121,7 +111,7 @@ is_operation_result is_list_dfu(
     ret_libusb = libusb_init(NULL);
     if(ret_libusb < 0) return IS_OP_ERROR;
 
-    int device_count = libusb_get_device_list(NULL, &device_list);
+    size_t device_count = libusb_get_device_list(NULL, &device_list);
 
     for (size_t i = 0; i < device_count; ++i) {
         dev = device_list[i];
@@ -129,48 +119,54 @@ is_operation_result is_list_dfu(
         ret_libusb = libusb_get_device_descriptor(dev, &desc);
         if(ret_libusb < 0) continue;
 
+        // Check vendor and product IDs against list
         size_t j;
-        size_t match_list_len = sizeof(matches)/sizeof(device_vid_pid);
+        size_t match_list_len = sizeof(dfu_matches)/sizeof(is_device_vid_pid);
         for(j = 0; j < match_list_len; j++)
         {
-            if (desc.idVendor != matches[j].vid) continue;   // must be some other usb device
-            if (desc.idProduct != matches[j].pid) continue;   // must be some other usb device
+            if (desc.idVendor != dfu_matches[j].vid) continue;      // must be some other usb device
+            if (desc.idProduct != dfu_matches[j].pid) continue;     // must be some other usb device
             break;  // We found a device
         }
-
         if(j >= match_list_len) continue;    // We didn't find a match
 
+        ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
+
+        // USB-IF DFU interface class numbers
+        if(cfg->interface->altsetting[0].bInterfaceClass != 0xFE || 
+            cfg->interface->altsetting[0].bInterfaceSubClass != 0x01 || 
+            cfg->interface->altsetting[0].bInterfaceProtocol != 0x02
+        ) continue;
+
+        // Open the device
         ret_libusb = libusb_open(dev, &dev_handle);
-        if (ret_libusb < 0) continue;
+        if (ret_libusb < LIBUSB_SUCCESS) continue;
 
         // Reset the device
         ret_libusb = libusb_reset_device(dev_handle);
-        if (ret_libusb < LIBUSB_SUCCESS) continue; 
-
-        ret_libusb = libusb_set_interface_alt_setting(dev_handle, 0, 0);
-        ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
-
-        unsigned char serial_number[IS_SN_MAX_SIZE];
+        if(ret_libusb < LIBUSB_SUCCESS) 
+        {
+            libusb_close(dev_handle);
+            continue; 
+        }
 
         // Get the string containing the serial number from the device
+        unsigned char serial_number[IS_SN_MAX_SIZE];
         ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
-        if (ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
+        if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
+        
+        // Add to list
+        strncpy(list->id[list->present].sn, (char*)serial_number, IS_SN_MAX_SIZE);
+        list->id[list->present].usb.vid = desc.idVendor;
+        list->id[list->present].usb.pid = desc.idProduct;
 
-        // USB-IF official DFU interface class numbers
-        if(cfg->interface->altsetting[0].bInterfaceClass == 0xFE && 
-            cfg->interface->altsetting[0].bInterfaceSubClass == 0x01 && 
-            cfg->interface->altsetting[0].bInterfaceProtocol == 0x02
-        )
-        {   // Add to list
-            strncpy(list->list[list->present++].sn, serial_number, IS_SN_MAX_SIZE);
-
-            if(list->present >= DFU_SERIAL_LIST_LEN)
-            {
-                libusb_close(dev_handle);
-                libusb_free_device_list(device_list, 1);
-                libusb_exit(NULL);
-                return IS_OP_OK;
-            }
+        list->present++;
+        if(list->present >= IS_DFU_LIST_LEN)
+        {
+            libusb_close(dev_handle);
+            libusb_free_device_list(device_list, 1);
+            libusb_exit(NULL);
+            return IS_OP_OK;
         }
 
         libusb_close(dev_handle);
@@ -183,7 +179,7 @@ is_operation_result is_list_dfu(
 }
 
 is_device_context* is_create_dfu_context(
-    const char* sn
+    is_dfu_id* id
 )
 {
     libusb_device** device_list;
@@ -202,70 +198,66 @@ is_device_context* is_create_dfu_context(
         IS_DEVICE_MATCH_FLAG_TYPE | 
         IS_DEVICE_MATCH_FLAG_MAJOR;
     ctx->match_props.major = 5;
-    ctx->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
-    ctx->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
+    ctx->match_props.vid = id->usb.vid;
+    ctx->match_props.pid = id->usb.pid;
 
-    if(sn != NULL)
+    if(id->sn != NULL)
     {
-        strncpy(ctx->match_props.serial_number, sn, IS_SN_MAX_SIZE);
+        strncpy(ctx->match_props.serial_number, id->sn, IS_SN_MAX_SIZE);
         ctx->match_props.match |= IS_DEVICE_MATCH_FLAG_SN;
     }
 
     ret_libusb = libusb_init(NULL);
     if(ret_libusb < 0) return IS_OP_ERROR;
 
-    int device_count = libusb_get_device_list(NULL, &device_list);
+    size_t device_count = libusb_get_device_list(NULL, &device_list);
 
-    for (size_t i = 0; i < device_count; ++i) {
+    // Obtain a device handle
+    for(size_t i = 0; i < device_count; ++i) 
+    {
+        ret_libusb = libusb_get_device_descriptor(device_list[i], &desc);
+        if (ret_libusb < 0) continue;
+
+        if(desc.idVendor != id->usb.vid) continue;
+        if(desc.idProduct != id->usb.pid) continue;
+
+        ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
+        if (ret_libusb < 0) continue;
+
+        // USB-IF DFU interface class numbers
+        if(cfg->interface->altsetting[0].bInterfaceClass != 0xFE || 
+            cfg->interface->altsetting[0].bInterfaceSubClass != 0x01 || 
+            cfg->interface->altsetting[0].bInterfaceProtocol != 0x02
+        ) continue;
+
+        // Open the device
         ret_libusb = libusb_open(device_list[i], &dev_handle);
-        if(ret_libusb < 0)
+        if (ret_libusb < 0) continue;
+
+        // Reset the device
+        ret_libusb = libusb_reset_device(dev_handle);
+        if(ret_libusb < LIBUSB_SUCCESS) 
+        {
+            libusb_close(dev_handle);
+            continue; 
+        }
+
+        // Get the string containing the serial number from the device
+        unsigned char serial_number[IS_SN_MAX_SIZE];
+        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
+        if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
+
+        // Check the serial number
+        if((ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) && (strcmp(id->sn, (char*)serial_number) != 0)) 
         {
             libusb_close(dev_handle);
             continue;
         }
-
-        unsigned char serial_number[IS_SN_MAX_SIZE];
-
-        ret_libusb = libusb_get_device_descriptor(device_list[i], &desc);
-
-        if(desc.idVendor != STM32_DESCRIPTOR_VENDOR_ID)
-        {
-            libusb_close(dev_handle);
-            continue;   // must be some other usb device
-        }
-
-        if(desc.idProduct != STM32_DESCRIPTOR_PRODUCT_ID)
-        {
-            libusb_close(dev_handle);
-            continue;   // must be some other usb device
-        }
-
-        ret_libusb = libusb_set_interface_alt_setting(dev_handle, 0, 0);
-        ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
-
-        // Get the string containing the serial number from the device
-        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
-        if (ret_libusb < LIBUSB_SUCCESS) 
-        {   // Set the serial number as none
-            serial_number[0] = '\0';
-        }
-
-        // USB-IF official DFU interface class numbers
-        if(cfg->interface->altsetting[0].bInterfaceClass == 0xFE && 
-            cfg->interface->altsetting[0].bInterfaceSubClass == 0x01 && 
-            cfg->interface->altsetting[0].bInterfaceProtocol == 0x02
-        )
-        {   // Add to list
-            if(!(ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) || (strcmp(sn, serial_number) == 0))
-            {
-                ctx->handle.libusb = dev_handle;
-                ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
-                libusb_free_device_list(device_list, 1);
-                return ctx;
-            }
-        }
-
-        libusb_close(dev_handle);
+        
+        ctx->handle.libusb = dev_handle;
+        ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
+        libusb_free_device_list(device_list, 1);
+        return ctx;
     }
 
     libusb_free_device_list(device_list, 1);
@@ -294,7 +286,7 @@ is_operation_result is_dfu_flash(is_device_context* context)
     int ret_libusb;
     dfu_error ret_dfu;
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
-    int image_sections;
+    size_t image_sections;
     is_operation_result ret_is;
 
     ret_libusb = libusb_claim_interface(context->handle.libusb, 0);

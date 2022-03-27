@@ -39,6 +39,12 @@ extern const char* is_uins_5_firmware_needle;
 extern const char* is_uins_3_firmware_needle;
 extern const char* is_evb_2_firmware_needle;
 
+typedef struct 
+{
+    uint16_t vid;
+    uint16_t pid;
+} is_device_vid_pid;
+
 typedef enum {
     IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000000,  // default
     IS_DEVICE_INTERFACE_FLAG_DFU        = 0b00000001,

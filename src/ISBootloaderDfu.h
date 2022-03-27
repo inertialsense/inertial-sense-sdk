@@ -42,7 +42,11 @@ typedef enum
 {
     STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
     STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11
-} dfu_descriptor;
+} is_dfu_descriptor;
+
+static const is_device_vid_pid dfu_matches[] = { 
+    {STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID} 
+};
 
 typedef enum
 {
@@ -50,20 +54,21 @@ typedef enum
     STM32_DFU_INTERFACE_OPTIONS  = 1, // @Option Bytes  /0x1FFF7800/01*040 e
     STM32_DFU_INTERFACE_OTP      = 2, // @OTP Memory /0x1FFF7000/01*0001Ke
     STM32_DFU_INTERFACE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
-} stm32l4_dfu_interface_alternatives;
+} is_stm32l4_dfu_interface_alternatives;
 
 typedef struct 
 {
     char sn[IS_SN_MAX_SIZE];
-} dfu_serialnumber;
+    is_device_vid_pid usb;
+} is_dfu_id;
 
-#define DFU_SERIAL_LIST_LEN     256
+#define IS_DFU_LIST_LEN     256
 
 typedef struct 
 {
-    dfu_serialnumber list[DFU_SERIAL_LIST_LEN];
+    is_dfu_id id[IS_DFU_LIST_LEN];
     size_t present;
-} is_dfu_serial_list;
+} is_dfu_list;
 
 /**
  * @brief Create a DFU bootloader context for a single device
@@ -73,10 +78,10 @@ typedef struct
  * @return is_device_context* 
  */
 is_device_context* is_create_dfu_context(
-    const char* sn
+    is_dfu_id* id
 );
 
-is_operation_result is_list_dfu(is_dfu_serial_list* list);
+is_operation_result is_list_dfu(is_dfu_list* list);
 
 /**
  * @brief Flash a firmware image

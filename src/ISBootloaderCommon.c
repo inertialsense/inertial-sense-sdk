@@ -43,10 +43,10 @@ is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, co
     serialPortPlatformInit(&port);
     serialPortSetPort(&port, portName);
 
-    is_dfu_serial_list list;
+    is_dfu_list list;
     is_list_dfu(&list);
 
-    int start_num = list.present;
+    size_t start_num = list.present;
 
     // in case we are in program mode, try and send the commands to go into bootloader mode
     unsigned char c = 0;
@@ -59,14 +59,14 @@ is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, co
         if (serialPortOpenRetry(&port, portName, baudRates[i], 1) == 0)
         {
             serialPortClose(&port);
-            return 0;
+            return IS_OP_ERROR;
         }
         for (size_t loop = 0; loop < 10; loop++)
         {
             serialPortWriteAscii(&port, "STPB", 4);
             serialPortWriteAscii(&port, bootloadEnableCmd, 4);
             c = 0;
-            if (serialPortReadCharTimeout(&port, &c, 13) == 1)
+            if (serialPortReadCharTimeout(&port, &c, 10) == 1)
             {
                 if (c == '$')
                 {
@@ -79,22 +79,20 @@ is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, co
             {
                 // Flush and close the port to prepare for DFU check
                 serialPortFlush(&port);
-
-                // List DFU devices
-                is_list_dfu(&list);
-                
-                if(list.present > start_num) 
-                {   // If a new DFU device has shown up, break
-                    i = 9999;
-                    break;
-                }
             }
+        }
+        
+        // List DFU devices
+        is_list_dfu(&list);
+        if(list.present > start_num) 
+        {   // If a new DFU device has shown up, break
+            break;
         }
     }
 
     serialPortClose(&port);
     SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
-    return 0;
+    return IS_OP_OK;
 }
 
 void is_update_flash(void* context)

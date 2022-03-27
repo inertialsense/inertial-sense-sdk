@@ -757,11 +757,11 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		}
 
 		// Add all the DFU devices present to the list
-		is_dfu_serial_list dfu_list; 
+		is_dfu_list dfu_list; 
 		is_list_dfu(&dfu_list);
 		for(size_t i = 0; i < dfu_list.present; i++)
 		{
-			ctx.push_back(is_create_dfu_context(dfu_list.list[i].sn));
+			ctx.push_back(is_create_dfu_context(&dfu_list.id[i]));
 		}
 
 		for (size_t i = 0; i < ctx.size(); i++)

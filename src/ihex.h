@@ -50,7 +50,7 @@ typedef struct
  * @param num_slots the maximum number of sections to read from the file
  * @return int the number of sections actually read
  */
-int ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, size_t num_slots);
+size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, size_t num_slots);
 
 /**
  * @brief Free the memory associated with an image
