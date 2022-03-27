@@ -44,7 +44,7 @@ is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, co
     serialPortSetPort(&port, portName);
 
     is_dfu_serial_list list;
-    is_list_dfu(&list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
+    is_list_dfu(&list);
 
     int start_num = list.present;
 
@@ -81,7 +81,7 @@ is_operation_result is_jump_to_bootloader(const char* portName, int baudRate, co
                 serialPortFlush(&port);
 
                 // List DFU devices
-                is_list_dfu(&list, STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID);
+                is_list_dfu(&list);
                 
                 if(list.present > start_num) 
                 {   // If a new DFU device has shown up, break
@@ -107,7 +107,6 @@ void is_update_flash(void* context)
 
     if(ctx->scheme == IS_SCHEME_DFU)
     {
-
         ret = is_dfu_flash(ctx);
     }
     else if(ctx->scheme == IS_SCHEME_SAMBA)

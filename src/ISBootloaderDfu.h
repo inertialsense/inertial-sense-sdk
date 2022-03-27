@@ -42,7 +42,7 @@ typedef enum
 {
     STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
     STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11
-} stm32_dfu_descriptor;
+} dfu_descriptor;
 
 typedef enum
 {
@@ -50,15 +50,18 @@ typedef enum
     STM32_DFU_INTERFACE_OPTIONS  = 1, // @Option Bytes  /0x1FFF7800/01*040 e
     STM32_DFU_INTERFACE_OTP      = 2, // @OTP Memory /0x1FFF7000/01*0001Ke
     STM32_DFU_INTERFACE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
-} stm32_dfu_interface_alternatives;
+} stm32l4_dfu_interface_alternatives;
 
 typedef struct 
 {
     char sn[IS_SN_MAX_SIZE];
 } dfu_serialnumber;
+
+#define DFU_SERIAL_LIST_LEN     256
+
 typedef struct 
 {
-    dfu_serialnumber list[256];
+    dfu_serialnumber list[DFU_SERIAL_LIST_LEN];
     size_t present;
 } is_dfu_serial_list;
 
@@ -73,11 +76,7 @@ is_device_context* is_create_dfu_context(
     const char* sn
 );
 
-is_operation_result is_list_dfu(
-    is_dfu_serial_list* list,
-    uint16_t vid,
-    uint16_t pid
-);
+is_operation_result is_list_dfu(is_dfu_serial_list* list);
 
 /**
  * @brief Flash a firmware image

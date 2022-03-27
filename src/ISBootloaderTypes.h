@@ -72,15 +72,8 @@ typedef enum {
     IS_SCHEME_STM32UART
 } is_device_scheme;
 
-typedef enum {
-    // IS_SN_MAX_SIZE_V3 = 13
-    // IS_SN_MAX_SIZE_V4 = 13
-    IS_SN_MAX_SIZE = 20
-} is_serial_number_max_size;
-
-typedef enum {
-    IS_COMPORT_MAX_SIZE = 16
-} is_comport_port_max_length;
+#define IS_SN_MAX_SIZE      20
+#define IS_COMPORT_MAX_SIZE 16
 
 typedef enum {
     IS_DEVICE_MATCH_FLAG_VID        = 0b00000001,
