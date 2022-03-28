@@ -179,7 +179,10 @@ is_operation_result is_list_dfu(
 }
 
 is_device_context* is_create_dfu_context(
-    is_dfu_id* id
+    is_dfu_id* id,
+    const char* port_name,
+    const char* enable_command,
+    int baud_rate
 )
 {
     libusb_device** device_list;
@@ -197,11 +200,19 @@ is_device_context* is_create_dfu_context(
         IS_DEVICE_MATCH_FLAG_PID | 
         IS_DEVICE_MATCH_FLAG_TYPE | 
         IS_DEVICE_MATCH_FLAG_MAJOR;
-    ctx->match_props.major = 5;
     ctx->match_props.vid = id->usb.vid;
     ctx->match_props.pid = id->usb.pid;
+    ctx->baud_rate = baud_rate;
 
-    if(id->sn != NULL)
+    strncpy(ctx->bl_enable_command, enable_command, 4);
+
+    strncpy(ctx->handle.port_name, port_name, 64);
+    ctx->baud_rate = IS_BAUD_RATE_BOOTLOADER;
+
+    serialPortPlatformInit(&ctx->handle.port);
+    serialPortSetPort(&ctx->handle.port, ctx->handle.port_name);
+
+    if(id->sn[0] != '\0')
     {
         strncpy(ctx->match_props.serial_number, id->sn, IS_SN_MAX_SIZE);
         ctx->match_props.match |= IS_DEVICE_MATCH_FLAG_SN;
@@ -262,8 +273,7 @@ is_device_context* is_create_dfu_context(
 
     libusb_free_device_list(device_list, 1);
 
-    free(ctx);
-    return NULL;
+    return ctx;
 }
 
 /**

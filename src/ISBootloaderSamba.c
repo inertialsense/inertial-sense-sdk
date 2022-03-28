@@ -25,7 +25,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPort.h"
 
 is_device_context* is_create_samba_context(
-    const char* port_name
+    const char* port_name,
+    const char* enable_command,
+    int baud_rate
 )
 {
     is_device_context* ctx = malloc(sizeof(is_device_context));
@@ -36,12 +38,18 @@ is_device_context* is_create_samba_context(
         IS_DEVICE_MATCH_FLAG_PID | 
         IS_DEVICE_MATCH_FLAG_TYPE | 
         IS_DEVICE_MATCH_FLAG_MAJOR;
-    ctx->match_props.major = 2;
     ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
     ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
+    ctx->baud_rate = baud_rate;
+
+    strncpy(ctx->bl_enable_command, enable_command, 4);
 
     strncpy(ctx->handle.port_name, port_name, 64);
     ctx->handle.status = IS_HANDLE_TYPE_SERIAL;
+
+    memset(&ctx->handle.port, 0, sizeof(serial_port_t));
+    serialPortPlatformInit(&ctx->handle.port);
+    serialPortSetPort(&ctx->handle.port, (const char*)ctx->handle.port_name);
 
     return ctx;
 }
@@ -50,18 +58,13 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 {
     bootload_params_t params;
 
-    serial_port_t serial;
-    ctx->handle.port = &serial;
-
-    serialPortPlatformInit((serial_port_t*)ctx->handle.port);
-    serialPortSetPort((serial_port_t*)ctx->handle.port, (const char*)ctx->handle.port_name);
     params.uploadProgress = ctx->update_progress_callback;
     params.verifyProgress = ctx->verify_progress_callback;
     params.statusText = ctx->info_callback;
     params.fileName = (const char*)ctx->firmware_file_path;
     params.bootName = ctx->bootloader_file_path;
     params.forceBootloaderUpdate = ctx->force_bootloader_update;
-    params.port = (serial_port_t*)ctx->handle.port;
+    params.port = &ctx->handle.port;
     params.verifyFileName = NULL;   // TODO: Add verify
     params.flags.bitFields.enableVerify = (ctx->verification_style == IS_VERIFY_ON);
     params.baudRate = ctx->baud_rate;

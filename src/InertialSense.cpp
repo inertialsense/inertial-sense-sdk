@@ -735,37 +735,67 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	}
 
 	if (results.size() == 0)
-	{	// for each port requested, setup a thread to do the bootloader for that port
-		for (size_t i = 0; i < portStrings.size(); i++)
+	{	
+		// Jump to the bootloader
+		for (size_t i = 0; i < ctx.size(); i++)
 		{
 			if (strstr(fileName.c_str(), is_evb_2_firmware_needle) != NULL)
 			{  
-				is_jump_to_bootloader(portStrings[i].c_str(), baudRate, "EBLE");
-				ctx[i] = is_create_samba_context(portStrings[i].c_str());
-			}
-			else if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
-			{	
-				is_jump_to_bootloader(portStrings[i].c_str(), baudRate, "BLEN");
-				ctx.clear();	// We will re-form the ctx list with DFU ctx pointers,
-								//  since there might already be devices in DFU mode.
+				ctx[i] = is_create_samba_context(portStrings[i].c_str(), "EBLE", baudRate);
+				ctx[i]->match_props.major = 2;
 			}
 			else if(strstr(fileName.c_str(), is_uins_3_firmware_needle) != NULL)
 			{	
-				is_jump_to_bootloader(portStrings[i].c_str(), baudRate, "BLEN");
-				ctx[i] = is_create_samba_context(portStrings[i].c_str());
+				ctx[i] = is_create_samba_context(portStrings[i].c_str(), "BLEN", baudRate);
+				ctx[i]->match_props.major = 3;
+			}
+			else if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
+			{
+				is_dfu_id id = { 0 };
+				ctx[i] = is_create_dfu_context(&id, portStrings[i].c_str(), "BLEN", baudRate);
+				ctx[i]->match_props.major = 5;
+			}
+
+			if(is_check_version(ctx[i]) == IS_OP_OK && ctx[i]->scheme != IS_SCHEME_UNKNOWN)
+			{
+				if(ctx[i]->scheme == IS_SCHEME_DFU)
+				{
+					is_jump_to_bootloader(ctx[i]);
+				}
+			}
+			else
+			{
+				is_destroy_context(ctx[i]);
+				ctx.erase(ctx.begin() + i);
+				portStrings.erase(portStrings.begin() + i);
+				i--;
 			}
 		}
 
-		// Add all the DFU devices present to the list
-		is_dfu_list dfu_list; 
-		is_list_dfu(&dfu_list);
-		for(size_t i = 0; i < dfu_list.present; i++)
+		// For DFU devices
+		if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
 		{
-			ctx.push_back(is_create_dfu_context(&dfu_list.id[i]));
-		}
+			// Destroy all the placeholder contexts
+			for(size_t i = 0; i < ctx.size(); i++) is_destroy_context(ctx[i]);
+			ctx.clear();
 
+			// Add all the DFU devices present to context list
+			is_dfu_list dfu_list; 
+			is_list_dfu(&dfu_list);
+			for(size_t i = 0; i < dfu_list.present; i++)
+			{
+				ctx.push_back(is_create_dfu_context(&dfu_list.id[i], "\0", "BLEN", baudRate));
+			}
+		}
+		
+		// Start update threads
+		// TODO: Open file ONCE and pass parsed file to threads
 		for (size_t i = 0; i < ctx.size(); i++)
 		{
+			if(ctx[i] == NULL)
+			{
+				continue;
+			}
 			// Update application and bootloader firmware
 			memset(ctx[i]->error, 0, BOOTLOADER_ERROR_LENGTH);
 			ctx[i]->baud_rate = baudRate;
@@ -775,11 +805,11 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 			ctx[i]->verify_progress_callback = verifyProgress;
 			ctx[i]->info_callback = infoProgress;
 			ctx[i]->force_bootloader_update = forceBootloaderUpdate;
-			ctx[i]->success = false;
+			ctx[i]->success = false;	// is_update_flash will set to true if good.
 			ctx[i]->thread = threadCreateAndStart(is_update_flash, ctx[i]);
 		}
 	
-		// wait for all threads to finish
+		// Wait for all threads to finish
 		for (size_t i = 0; i < ctx.size(); i++)
 		{
 			if(ctx[i] != NULL)
@@ -788,7 +818,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 			}
 		}
 
-		// if any thread failed, we return failure
+		// If any thread failed, we return failure
 		for (size_t i = 0; i < ctx.size(); i++)
 		{
 			if(ctx[i] != NULL)

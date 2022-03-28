@@ -128,7 +128,7 @@ typedef struct
     is_handle_type status;
     char port_name[256];          // COM port name. Invalid in DFU mode.
     char serial_num[IS_SN_MAX_SIZE];            
-    serial_port_t* port;            // Invalid once device enters DFU mode
+    serial_port_t port;            // Invalid once device enters DFU mode
     libusb_device_handle* libusb;   // DFU only. Invalid until DFU mode reached.
 } is_device_handle;
 
@@ -149,6 +149,7 @@ typedef struct
     is_device_handle handle;
     void* thread;
     bool success;
+    char bl_enable_command[5];
     char error[BOOTLOADER_ERROR_LENGTH];
 } is_device_context;
 

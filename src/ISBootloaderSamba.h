@@ -54,7 +54,9 @@ typedef enum
  * @return is_device_context* 
  */
 is_device_context* is_create_samba_context(
-    const char* port_name
+    const char* port_name,
+    const char* enable_command,
+    int baud_rate
 );
 
 /**
