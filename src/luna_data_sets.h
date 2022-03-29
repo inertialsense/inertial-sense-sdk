@@ -382,19 +382,19 @@ typedef struct
 	/** Wheel control status (see eLunaWheelControllerStatus) */
 	uint32_t            	status;
 
-	/** Velocity commanded */
+	/** Velocity commanded (rad/s) */
 	float 					velCmd_l;
 	float 					velCmd_r;
 
-	/** Velocity commanded after slew rate */
+	/** Velocity commanded after slew rate (rad/s) */
 	float 					velCmdSlew_l;
 	float 					velCmdSlew_r;
 
-	/** Velocity */
+	/** Velocity (rad/s) */
 	float 					vel_l;
 	float 					vel_r;
 
-	/** Velocity error */
+	/** Velocity error (rad/s) */
 	float 					velErr_l;
 	float 					velErr_r;
 
