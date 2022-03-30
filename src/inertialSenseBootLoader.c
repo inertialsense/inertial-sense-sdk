@@ -19,8 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 #include <math.h>
-#include "inertialSenseBootLoader.h"
 #include "ISConstants.h"
+#include "inertialSenseBootLoader.h"
 #include "ISUtilities.h"
 
 #define MAX_SEND_COUNT 510

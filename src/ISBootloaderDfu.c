@@ -22,9 +22,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     https://www.st.com/resource/en/application_note/cd00264379-usb-dfu-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
 */
 
+#include "ISUtilities.h"
 #include "ISBootloaderDfu.h"
 #include "inertialSenseBootLoader.h"
-#include "ISUtilities.h"
 
 #include <time.h>
 

@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderSamba.h"
 #include "inertialSenseBootLoader.h"
 #include "serialPort.h"
+#include "serialPortPlatform.h"
 
 is_device_context* is_create_samba_context(
     const char* port_name,
