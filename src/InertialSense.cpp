@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "protocol_nmea.h"
 #include "InertialSense.h"
-#include "ISBootloaderCommon.h"
+#include "ISBootloader.h"
 
 using namespace std;
 
@@ -707,7 +707,6 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 {
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<is_device_context*> ctx;
 
 	if (comPort == "*")
 	{
@@ -718,113 +717,35 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		splitString(comPort, ',', portStrings);
 	}
 	sort(portStrings.begin(), portStrings.end());
-	ctx.resize(portStrings.size());
-
-	// Add DFU stuff to state and bypass this next section to avoid getting shut down
 
 	// file exists?
+	ifstream tmpStream(fileName);
+	if (!tmpStream.good())
 	{
-		ifstream tmpStream(fileName);
-		if (!tmpStream.good())
+		for (size_t i = 0; i < portStrings.size(); i++)
 		{
-			for (size_t i = 0; i < ctx.size(); i++)
-			{
-				results.push_back({ ctx[i]->handle.serial_num, "File does not exist" });
-			}
+			results.push_back({ portStrings[i], "File does not exist" });
 		}
+		return results;
 	}
 
-	if (results.size() == 0)
-	{	
-		// Jump to the bootloader
-		for (size_t i = 0; i < ctx.size(); i++)
-		{
-			if (strstr(fileName.c_str(), is_evb_2_firmware_needle) != NULL)
-			{  
-				ctx[i] = is_create_samba_context(portStrings[i].c_str(), "EBLE", baudRate);
-				ctx[i]->match_props.major = 2;
-			}
-			else if(strstr(fileName.c_str(), is_uins_3_firmware_needle) != NULL)
-			{	
-				ctx[i] = is_create_samba_context(portStrings[i].c_str(), "BLEN", baudRate);
-				ctx[i]->match_props.major = 3;
-			}
-			else if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
-			{
-				is_dfu_id id = { 0 };
-				ctx[i] = is_create_dfu_context(&id, portStrings[i].c_str(), "BLEN", baudRate);
-				ctx[i]->match_props.major = 5;
-			}
+	// Copy the same path into all, the underlying code will pick which devices to update based on the file name.
+	is_firmware_settings firmware;
+	strncpy(firmware.uins_3_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.uins_4_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.uins_5_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.evb_2_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.samba_bootloader_path, bootloaderFileName.c_str(), 256);
+	firmware.samba_force_update = forceBootloaderUpdate;
 
-			if(is_check_version(ctx[i]) == IS_OP_OK && ctx[i]->scheme != IS_SCHEME_UNKNOWN)
-			{
-				if(ctx[i]->scheme == IS_SCHEME_DFU)
-				{
-					is_jump_to_bootloader(ctx[i]);
-				}
-			}
-			else
-			{
-				is_destroy_context(ctx[i]);
-				ctx.erase(ctx.begin() + i);
-				portStrings.erase(portStrings.begin() + i);
-				i--;
-			}
-		}
+	ISBootloader::update(portStrings, baudRate, &firmware, uploadProgress, verifyProgress, infoProgress);
 
-		// For DFU devices
-		if(strstr(fileName.c_str(), is_uins_5_firmware_needle) != NULL)
+	// If any thread failed, we return failure
+	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
+	{
+		if(ISBootloader::ctx[i] != NULL)
 		{
-			// Destroy all the placeholder contexts
-			for(size_t i = 0; i < ctx.size(); i++) is_destroy_context(ctx[i]);
-			ctx.clear();
-
-			// Add all the DFU devices present to context list
-			is_dfu_list dfu_list; 
-			is_list_dfu(&dfu_list);
-			for(size_t i = 0; i < dfu_list.present; i++)
-			{
-				ctx.push_back(is_create_dfu_context(&dfu_list.id[i], "\0", "BLEN", baudRate));
-			}
-		}
-		
-		// Start update threads
-		// TODO: Open file ONCE and pass parsed file to threads
-		for (size_t i = 0; i < ctx.size(); i++)
-		{
-			if(ctx[i] == NULL)
-			{
-				continue;
-			}
-			// Update application and bootloader firmware
-			memset(ctx[i]->error, 0, BOOTLOADER_ERROR_LENGTH);
-			ctx[i]->baud_rate = baudRate;
-			ctx[i]->firmware_file_path = fileName.c_str();
-			ctx[i]->bootloader_file_path = bootloaderFileName.c_str();
-			ctx[i]->update_progress_callback = uploadProgress;
-			ctx[i]->verify_progress_callback = verifyProgress;
-			ctx[i]->info_callback = infoProgress;
-			ctx[i]->force_bootloader_update = forceBootloaderUpdate;
-			ctx[i]->success = false;	// is_update_flash will set to true if good.
-			ctx[i]->thread = threadCreateAndStart(is_update_flash, ctx[i]);
-		}
-	
-		// Wait for all threads to finish
-		for (size_t i = 0; i < ctx.size(); i++)
-		{
-			if(ctx[i] != NULL)
-			{
-				threadJoinAndFree(ctx[i]->thread);
-			}
-		}
-
-		// If any thread failed, we return failure
-		for (size_t i = 0; i < ctx.size(); i++)
-		{
-			if(ctx[i] != NULL)
-			{
-				results.push_back({ ctx[i]->handle.serial_num, ctx[i]->error });
-			}
+			results.push_back({ ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->error });
 		}
 	}
 

@@ -178,21 +178,13 @@ is_operation_result is_list_dfu(
     return IS_OP_OK;
 }
 
-is_device_context* is_create_dfu_context(
-    is_dfu_id* id,
-    const char* port_name,
-    const char* enable_command,
-    int baud_rate
-)
+is_operation_result is_init_dfu_context(is_device_context* ctx)
 {
     libusb_device** device_list;
-    libusb_device* dev;
     libusb_device_handle* dev_handle;
     struct libusb_device_descriptor desc;
     struct libusb_config_descriptor* cfg;
     int ret_libusb;
-
-    is_device_context* ctx = malloc(sizeof(is_device_context));
 
     ctx->scheme = IS_SCHEME_DFU;
     ctx->match_props.match = 
@@ -200,21 +192,14 @@ is_device_context* is_create_dfu_context(
         IS_DEVICE_MATCH_FLAG_PID | 
         IS_DEVICE_MATCH_FLAG_TYPE | 
         IS_DEVICE_MATCH_FLAG_MAJOR;
-    ctx->match_props.vid = id->usb.vid;
-    ctx->match_props.pid = id->usb.pid;
-    ctx->baud_rate = baud_rate;
 
-    strncpy(ctx->bl_enable_command, enable_command, 4);
-
-    strncpy(ctx->handle.port_name, port_name, 64);
-    ctx->baud_rate = IS_BAUD_RATE_BOOTLOADER;
+    strncpy(ctx->bl_enable_command, "BLEN", 5);
 
     serialPortPlatformInit(&ctx->handle.port);
     serialPortSetPort(&ctx->handle.port, ctx->handle.port_name);
 
-    if(id->sn[0] != '\0')
+    if(strlen(ctx->match_props.serial_number) != 0)
     {
-        strncpy(ctx->match_props.serial_number, id->sn, IS_SN_MAX_SIZE);
         ctx->match_props.match |= IS_DEVICE_MATCH_FLAG_SN;
     }
 
@@ -229,8 +214,8 @@ is_device_context* is_create_dfu_context(
         ret_libusb = libusb_get_device_descriptor(device_list[i], &desc);
         if (ret_libusb < 0) continue;
 
-        if(desc.idVendor != id->usb.vid) continue;
-        if(desc.idProduct != id->usb.pid) continue;
+        if(desc.idVendor != ctx->match_props.vid) continue;
+        if(desc.idProduct != ctx->match_props.pid) continue;
 
         ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
         if (ret_libusb < 0) continue;
@@ -259,7 +244,7 @@ is_device_context* is_create_dfu_context(
         if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
 
         // Check the serial number
-        if((ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) && (strcmp(id->sn, (char*)serial_number) != 0)) 
+        if((ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) && (strcmp(ctx->match_props.serial_number, (char*)serial_number) != 0)) 
         {
             libusb_close(dev_handle);
             continue;
@@ -268,12 +253,12 @@ is_device_context* is_create_dfu_context(
         ctx->handle.libusb = dev_handle;
         ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
         libusb_free_device_list(device_list, 1);
-        return ctx;
+        return IS_OP_OK;
     }
 
     libusb_free_device_list(device_list, 1);
 
-    return ctx;
+    return IS_OP_ERROR; // Didn't find a device
 }
 
 /**
@@ -311,7 +296,7 @@ is_operation_result is_dfu_flash(is_device_context* context)
     if (ret_dfu < DFU_ERROR_NONE) return IS_OP_ERROR;
 
     // Load the firmware image
-    image_sections = ihex_load_sections(context->firmware_file_path, image, MAX_NUM_IHEX_SECTIONS);
+    image_sections = ihex_load_sections(context->firmware.uins_5_firmware_path, image, MAX_NUM_IHEX_SECTIONS);
     if(image_sections <= 0) return IS_OP_ERROR;
 
     // If starting address is 0, set it to 0x08000000 (start of flash memory)
@@ -435,7 +420,7 @@ is_operation_result is_dfu_flash(is_device_context* context)
     ret_libusb = libusb_release_interface(context->handle.libusb, 0);
     if (ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR;    
 
-    return IS_OP_OK;
+    return ret_is;
 }
 
 static is_operation_result is_dfu_write_option_bytes(
@@ -588,9 +573,6 @@ static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state
 
 		SLEEP_MS(_MAX(waitTime, 10)); // TODO: Windows
 
-        dfu_status statusArch = status;
-        dfu_state archive = state;
-        uint32_t waitTimeArch = waitTime;
         ret_libusb = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
         if (ret_libusb < LIBUSB_SUCCESS) 
         {

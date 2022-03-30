@@ -137,9 +137,9 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
     {
         section->address = address;
 
-        printf("   Loaded %d bytes between:", section->len);
-        printf(" 0x%04X to 0x%04X at address:", minaddr, maxaddr);
-        printf(" 0x%08X\n", section->address);
+        // printf("   Loaded %d bytes between:", section->len);
+        // printf(" 0x%04X to 0x%04X at address:", minaddr, maxaddr);
+        // printf(" 0x%08X\n", section->address);
 
         memcpy(section->image, &image_local[minaddr], section->len);
 
@@ -173,7 +173,7 @@ size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image
     size_t iter = 0;
     size_t numSections = 0;
 
-    printf("Loading sections from %s\n", ihex_filename);
+    // printf("Loading sections from %s\n", ihex_filename);
 
     // Find sections
     do {
@@ -187,7 +187,7 @@ size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image
     // ACT ON SECTIONS HERE
     fclose(ihex_file);
 
-    printf("\n");
+    // printf("\n");
 
     return numSections;
 }

@@ -126,20 +126,41 @@ typedef enum {
 typedef struct
 {
     is_handle_type status;
-    char port_name[256];          // COM port name. Invalid in DFU mode.
-    char serial_num[IS_SN_MAX_SIZE];            
-    serial_port_t port;            // Invalid once device enters DFU mode
+    char port_name[256];            // COM port name. Invalid in DFU mode.        
+    serial_port_t port;             // Invalid once device enters DFU mode
     libusb_device_handle* libusb;   // DFU only. Invalid until DFU mode reached.
 } is_device_handle;
 
+typedef struct 
+{
+    // uINS-3/4 (empty string if not updating)
+    // In most applications, these will be the same file. Hardware detection takes care of the rest.
+    char uins_3_firmware_path[256];
+    char uins_4_firmware_path[256];
+
+    // EVB-2 (empty string if not updating)
+    char evb_2_firmware_path[256];
+
+    // Bootloader (uINS-3/4, EVB-2)
+    char samba_bootloader_path[256];
+    bool samba_force_update;
+
+    // uINS-5 (empty string if not updating)
+    char uins_5_firmware_path[256];
+} is_firmware_settings;
 
 typedef struct
 {
+    uint8_t uins_version[4];
+    uint8_t evb_version[4];     // Index [0] set to 0 if not present
+} is_hdw_info;
+
+typedef struct
+{
+    is_hdw_info hdw_info;
+    is_firmware_settings firmware;
     is_device_match_properties match_props;
     is_device_scheme scheme;
-    const char* firmware_file_path;
-    const char* bootloader_file_path;               // Does not apply in DFU
-    bool force_bootloader_update;                   // Does not apply in DFU
     int baud_rate;                                  
     is_verification_style verification_style;
     pfnBootloadProgress update_progress_callback;
@@ -152,7 +173,6 @@ typedef struct
     char bl_enable_command[5];
     char error[BOOTLOADER_ERROR_LENGTH];
 } is_device_context;
-
 
 #ifdef __cplusplus
 }

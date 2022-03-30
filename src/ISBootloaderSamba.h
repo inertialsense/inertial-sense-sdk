@@ -45,26 +45,8 @@ typedef enum
     SAMBA_DESCRIPTOR_PRODUCT_ID = 0x6124
 } samba_descriptor;
 
-/**
- * @brief Create a SAM-BA bootloader context
- * 
- * @param firmware_file_name 
- * @param port_name i.e. COMx, /dev/ttyACMx
- * @return is_device_context* 
- */
-is_device_context* is_create_samba_context(
-    const char* port_name,
-    const char* enable_command,
-    int baud_rate
-);
 
-/**
- * @brief Flash a firmware image
- * 
- * @param context info about the device
- * @param firmware_path system path to the firmware image
- * @return is_operation_result 
- */
+is_device_context* is_init_samba_context(is_device_context* ctx);
 is_operation_result is_samba_flash(is_device_context* ctx);
 
 #ifdef __cplusplus

@@ -20,19 +20,14 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "ISUtilities.h"
 #include "ISBootloaderSamba.h"
 #include "inertialSenseBootLoader.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
 
-is_device_context* is_create_samba_context(
-    const char* port_name,
-    const char* enable_command,
-    int baud_rate
-)
+is_device_context* is_init_samba_context(is_device_context* ctx)
 {
-    is_device_context* ctx = malloc(sizeof(is_device_context));
-
     ctx->scheme = IS_SCHEME_SAMBA;
     ctx->match_props.match = 
         IS_DEVICE_MATCH_FLAG_VID | 
@@ -41,12 +36,6 @@ is_device_context* is_create_samba_context(
         IS_DEVICE_MATCH_FLAG_MAJOR;
     ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
     ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
-    ctx->baud_rate = baud_rate;
-
-    strncpy(ctx->bl_enable_command, enable_command, 4);
-
-    strncpy(ctx->handle.port_name, port_name, 64);
-    ctx->handle.status = IS_HANDLE_TYPE_SERIAL;
 
     memset(&ctx->handle.port, 0, sizeof(serial_port_t));
     serialPortPlatformInit(&ctx->handle.port);
@@ -62,15 +51,43 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     params.uploadProgress = ctx->update_progress_callback;
     params.verifyProgress = ctx->verify_progress_callback;
     params.statusText = ctx->info_callback;
-    params.fileName = (const char*)ctx->firmware_file_path;
-    params.bootName = ctx->bootloader_file_path;
-    params.forceBootloaderUpdate = ctx->force_bootloader_update;
+    params.forceBootloaderUpdate = ctx->firmware.samba_force_update;
     params.port = &ctx->handle.port;
     params.verifyFileName = NULL;   // TODO: Add verify
     params.flags.bitFields.enableVerify = (ctx->verification_style == IS_VERIFY_ON);
     params.baudRate = ctx->baud_rate;
 
-    bootloadFileEx(&params);
+    if(ctx->firmware.samba_bootloader_path[0] != 0 )
+    {
+        params.bootName = (const char*)ctx->firmware.samba_bootloader_path;
+    }
+
+    int sleep_time = 0;
+
+    /* Upload EVB firmware */
+    if(ctx->hdw_info.evb_version[0] == 2 && strlen(ctx->firmware.evb_2_firmware_path) != 0)
+    {
+        params.fileName = (const char*)ctx->firmware.evb_2_firmware_path;
+        strncpy(params.bootloadEnableCmd, "EBLE", 4);
+        bootloadFileEx(&params);
+        sleep_time = 5000;
+    }
+
+    /* Upload uINS-3/4 firmware */
+    if(ctx->hdw_info.uins_version[0] == 3 && strlen(ctx->firmware.uins_3_firmware_path) != 0)
+    {
+        SLEEP_MS(sleep_time);   // Wait for boot
+        params.fileName = (const char*)ctx->firmware.uins_3_firmware_path;
+        strncpy(params.bootloadEnableCmd, "BLEN", 4);
+        bootloadFileEx(&params);
+    }
+    else if(ctx->hdw_info.uins_version[0] == 4 && strlen(ctx->firmware.uins_4_firmware_path) != 0)
+    {
+        SLEEP_MS(sleep_time);   // Wait for boot
+        params.fileName = (const char*)ctx->firmware.uins_4_firmware_path;
+        strncpy(params.bootloadEnableCmd, "BLEN", 4);
+        bootloadFileEx(&params);
+    }
 
     strncpy(ctx->error, params.error, BOOTLOADER_ERROR_LENGTH);
 

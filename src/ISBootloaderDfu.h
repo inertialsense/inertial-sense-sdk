@@ -69,19 +69,8 @@ typedef struct
     size_t present;
 } is_dfu_list;
 
-/**
- * @brief Create a DFU bootloader context for a single device
- * 
- * @param id identifying info of the device
- * @param port_name name of the serial port the device starts out as
- * @return is_device_context* 
- */
-is_device_context* is_create_dfu_context(
-    is_dfu_id* id,
-    const char* port_name,
-    const char* enable_command,
-    int baud_rate
-);
+
+is_operation_result is_init_dfu_context(is_device_context* ctx);
 
 is_operation_result is_list_dfu(is_dfu_list* list);
 

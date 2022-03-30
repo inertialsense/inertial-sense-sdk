@@ -1,5 +1,5 @@
 /**
- * @file ISBootloaderParallel.h
+ * @file ISBootloader.h
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense routines for updating embedded systems
  * 
@@ -16,3 +16,56 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
+#ifndef __IS_BOOTLOADER_H_
+#define __IS_BOOTLOADER_H_
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
+#include "ISBootloaderCommon.h"
+#include "ISUtilities.h"
+
+using namespace std;
+
+class ISBootloader
+{
+public:
+    ISBootloader() {};
+    ~ISBootloader() {};
+
+    /**
+     * @brief Update flash on specified Inertial Sense devices
+     * 
+     * @param comPorts 
+     * @param baudRate 
+     * @param firmware 
+     * @param results 
+     * @param uploadProgress 
+     * @param verifyProgress 
+     * @param infoProgress 
+     * @return is_operation_result 
+     */
+    static is_operation_result update(
+        vector<string>&             comPorts,
+        int                         baudRate,
+        is_firmware_settings*       firmware,
+        pfnBootloadProgress         uploadProgress, 
+        pfnBootloadProgress         verifyProgress, 
+        pfnBootloadStatus           infoProgress
+    );
+
+    static vector<is_device_context*> ctx;
+
+private:
+    static void update_thread(void* context);
+    
+};
+
+#endif // __IS_BOOTLOADER_H_

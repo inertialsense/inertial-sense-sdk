@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 /*
-    Steps:
+    Steps: OLD
         - Get the list of DFU-capable devices and VCP (SAM-BA) bootloader devices
         - Use `is_create_device_context()` to create a context for one device. Specify
             the com port name or, on DFU devices, the serial number.
@@ -42,9 +42,18 @@ extern "C" {
         - Free device interface with `is_destroy_device_context`
 */
 
+is_device_context* is_create_context(
+    is_device_handle* handle, 
+    is_firmware_settings* firmware,
+    int baud_rate,
+    is_verification_style verify,
+    pfnBootloadProgress upload_cb,
+    pfnBootloadProgress verify_cb,
+    pfnBootloadStatus info_cb
+);
 void is_destroy_context(is_device_context* ctx);
 
-is_operation_result is_check_version(is_device_context* ctx);
+is_hdw_info is_check_version(is_device_context* ctx);
 is_operation_result is_jump_to_bootloader(is_device_context* ctx);
 
 /**

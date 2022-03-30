@@ -28,34 +28,81 @@ const char* is_uins_5_firmware_needle = "uINS_5";
 const char* is_uins_3_firmware_needle = "uINS_3";
 const char* is_evb_2_firmware_needle = "EVB_2";
 
+is_device_context* is_create_context(
+    is_device_handle* handle, 
+    is_firmware_settings* firmware,
+    int baud_rate,
+    is_verification_style verify,
+    pfnBootloadProgress upload_cb,
+    pfnBootloadProgress verify_cb,
+    pfnBootloadStatus info_cb
+)
+{
+    is_device_context* ctx = malloc(sizeof(is_device_context));
+    memset(ctx, 0, sizeof(is_device_context));
+
+    memcpy(&ctx->handle, handle, sizeof(is_device_handle));
+    memcpy(&ctx->firmware, firmware, sizeof(is_firmware_settings));
+    ctx->baud_rate = baud_rate;
+    ctx->verification_style = verify;
+    ctx->update_progress_callback = upload_cb;
+    ctx->verify_progress_callback = verify_cb;
+    ctx->info_callback = info_cb;
+    ctx->success = false;
+    memset(ctx->error, 0, BOOTLOADER_ERROR_LENGTH);
+
+    return ctx;
+}
+
 void is_destroy_context(is_device_context* ctx)
 {
     free(ctx);
 }
 
-is_operation_result is_check_version(is_device_context* ctx)
+is_hdw_info is_check_version(is_device_context* ctx)
 {
+    is_hdw_info hdw_info = { 0 };
+
     if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->baud_rate, 1) == 0)
     {
         serialPortClose(&ctx->handle.port);
-        return IS_OP_ERROR;
+        return hdw_info;
     }
 
     // Get DID_DEV_INFO from the uINS.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer));
-    size_t messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
+    int messageSize;
+    
+    messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
     if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
     {
-        printf("Failed to request device info\r\n");
         serialPortClose(&ctx->handle.port);
-        return IS_OP_ERROR;
+        return hdw_info;
     }
+    messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
+    if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
+    {
+        serialPortClose(&ctx->handle.port);
+        return hdw_info;
+    }
+    messageSize = is_comm_get_data(&comm, DID_EVB_STATUS, 0, 0, 0);
+    if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
+    {
+        serialPortClose(&ctx->handle.port);
+        return hdw_info;
+    }
+
+    SLEEP_MS(10);
+
     protocol_type_t ptype;
     int n = is_comm_free(&comm);
     dev_info_t* dev_info = NULL;
-    if (n = serialPortReadTimeout(&ctx->handle.port, comm.buf.tail, n, 50))
+    dev_info_t* evb_dev_info = NULL;
+    evb_status_t* evb_status = NULL;
+    manufacturing_info_t* manufacturing_info = NULL;
+    if ((n = serialPortReadTimeout(&ctx->handle.port, comm.buf.start, n, 50)))
     {
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
@@ -64,40 +111,56 @@ is_operation_result is_check_version(is_device_context* ctx)
             {
                 dev_info = (dev_info_t*)comm.dataPtr;
             }
+            if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_EVB_DEV_INFO)
+            {
+                evb_dev_info = (dev_info_t*)comm.dataPtr;
+            }
+            if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_EVB_STATUS)
+            {
+                evb_status = (evb_status_t*)comm.dataPtr;
+            }
+            if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_MANUFACTURING_INFO)
+            {
+                manufacturing_info = (manufacturing_info_t*)comm.dataPtr;
+            }
         }
     }
-
-    uint8_t major = 0;
 
     if(dev_info)
     {
-        major = dev_info->hardwareVer[0];
+        memcpy(hdw_info.uins_version, dev_info->hardwareVer, 4);
 
-        if(major != ctx->match_props.major)
-        {
-            printf("Wrong device version\r\n");
-            serialPortClose(&ctx->handle.port);
-            ctx->scheme = IS_SCHEME_UNKNOWN;
-            return IS_OP_ERROR; 
-        }
+        snprintf(ctx->match_props.serial_number, IS_SN_MAX_SIZE, "%u%u%u", 
+            manufacturing_info->serialNumber, manufacturing_info->lotNumber, manufacturing_info->key);
+
+        printf(ctx->match_props.serial_number); // TODO: Check to see if the order is correct
     }
-    else
+    if(dev_info && evb_status)
     {
-        printf("Failed to get device info, device may already be in bootloader mode\r\n");
+        memcpy(hdw_info.evb_version, evb_dev_info->hardwareVer, 4);
     }
-
+    
     serialPortClose(&ctx->handle.port);
-    return IS_OP_OK;
+    return hdw_info;
 }
 
 is_operation_result is_jump_to_bootloader(is_device_context* ctx)
 {
+    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
+    {
+        return IS_OP_OK;
+    }
+
     int baudRates[] = { ctx->baud_rate, IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
 
     is_dfu_list list;
     is_list_dfu(&list);
 
     size_t start_num = list.present;
+
+    char info[256] = { 0 };
+    snprintf(info, 256, "%s: Starting bootloader...", ctx->handle.port_name);
+    if(ctx->info_callback) ctx->info_callback((void*)ctx, info);
 
     // in case we are in program mode, try and send the commands to go into bootloader mode
     unsigned char c = 0;
@@ -125,6 +188,8 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
                     if(c == '$')
                     {
                         // done, we got into bootloader mode
+                        snprintf(info, 256, "%s: Successfully entered SAM-BA bootloader", ctx->handle.port_name);
+                        if(ctx->info_callback) ctx->info_callback((void*)ctx, info);
                         i = 9999;
                         break;
                     }
@@ -141,6 +206,8 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
                 is_list_dfu(&list);
                 if(list.present > start_num) 
                 {   // If a new DFU device has shown up, break
+                    snprintf(info, 256, "%s: Successfully entered DFU bootloader", ctx->handle.port_name);
+                    if(ctx->info_callback) ctx->info_callback((void*)ctx, info);
                     i = 9999;
                     break;
                 }
@@ -159,12 +226,6 @@ void is_update_flash(void* context)
     is_device_context* ctx = (is_device_context*)context;
     int ret = IS_OP_ERROR;
     ctx->success = false;
-    
-    if(!ctx->firmware_file_path) 
-    {
-        is_destroy_context(ctx);
-        return;  // No firmware present
-    }
 
     if(ctx->scheme == IS_SCHEME_DFU)
     {
@@ -181,8 +242,6 @@ void is_update_flash(void* context)
     }
 
     if(ret == IS_OP_OK) ctx->success = true;
-
-    is_destroy_context(ctx);
 
     return;
 }
