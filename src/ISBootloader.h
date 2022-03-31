@@ -29,8 +29,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 #include <vector>
 
-#include "ISBootloaderCommon.h"
 #include "ISUtilities.h"
+#include "ISBootloaderCommon.h"
+#include "ISBootloaderTypes.h"
 
 using namespace std;
 
@@ -41,16 +42,21 @@ public:
     ~ISBootloader() {};
 
     /**
-     * @brief Update flash on specified Inertial Sense devices
-     * 
-     * @param comPorts 
-     * @param baudRate 
-     * @param firmware 
-     * @param results 
-     * @param uploadProgress 
-     * @param verifyProgress 
-     * @param infoProgress 
-     * @return is_operation_result 
+     * @brief get_num_devices
+     * @param comPorts
+     * @return
+     */
+    static size_t get_num_devices(vector<string>& comPorts);
+
+    /**
+     * @brief update
+     * @param comPorts
+     * @param baudRate
+     * @param firmware
+     * @param uploadProgress
+     * @param verifyProgress
+     * @param infoProgress
+     * @return
      */
     static is_operation_result update(
         vector<string>&             comPorts,

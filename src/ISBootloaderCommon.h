@@ -44,6 +44,7 @@ extern "C" {
 
 is_device_context* is_create_context(
     is_device_handle* handle, 
+    is_device_match_properties* match_props,
     is_firmware_settings* firmware,
     int baud_rate,
     is_verification_style verify,

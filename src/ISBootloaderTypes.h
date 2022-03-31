@@ -102,6 +102,7 @@ typedef struct
     char serial_number[IS_SN_MAX_SIZE];
     uint16_t vid;
     uint16_t pid;
+    size_t index;
 } is_device_match_properties;
 
 typedef enum {
@@ -172,6 +173,8 @@ typedef struct
     bool success;
     char bl_enable_command[5];
     char error[BOOTLOADER_ERROR_LENGTH];
+    float updateProgress;
+    float verifyProgress;
 } is_device_context;
 
 #ifdef __cplusplus

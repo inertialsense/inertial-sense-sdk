@@ -18,8 +18,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISBootloader.h"
+#include "ISBootloaderDfu.h"
 
 vector<is_device_context*> ISBootloader::ctx;
+
+size_t ISBootloader::get_num_devices(vector<string>& comPorts)
+{
+    size_t ret = 0;
+
+    is_dfu_list dfu_list;
+    is_list_dfu(&dfu_list);
+
+    ret += dfu_list.present;
+    ret += comPorts.size();
+
+    return ret;
+}
 
 is_operation_result ISBootloader::update(
 	vector<string>&             comPorts,
@@ -33,32 +47,37 @@ is_operation_result ISBootloader::update(
 	is_dfu_list dfu_list;
 	size_t i;
 
-	if(ctx.size() > 0) 
-	{
-		infoProgress(NULL, "Error: bootloader already busy - devices present in bootload context list");
-		return IS_OP_ERROR;
-	}
+    for(i = 0; i < ctx.size(); i++)
+    {
+        is_destroy_context(ctx[i]);
+    }
+    ctx.clear();
 
     if(libusb_init(NULL) < 0) return IS_OP_ERROR;
 	is_list_dfu(&dfu_list);
+
+    size_t idx = 0; // Tracks the instances so callbacks can match with a list
 
 	for(i = 0; i < dfu_list.present; i++)
 	{	// Create contexts for devices already in DFU mode
 		is_device_handle handle;
 		memset(&handle, 0, sizeof(is_device_handle));
 		handle.status = IS_HANDLE_TYPE_LIBUSB;
+        is_device_match_properties match_props;
+        memcpy(&match_props.serial_number, &dfu_list.id[i].sn, IS_SN_MAX_SIZE);
+        match_props.vid = dfu_list.id[i].usb.vid;
+        match_props.pid = dfu_list.id[i].usb.pid;
+        match_props.index = idx++;
 		ctx.push_back(is_create_context(
 			&handle, 
+            &match_props,
 			firmware, 
 			baudRate, 
 			verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
 			uploadProgress, 
 			verifyProgress, 
 			infoProgress
-		));
-		memcpy(&ctx[i]->match_props.serial_number, &dfu_list.id[i].sn, IS_SN_MAX_SIZE);
-		ctx[i]->match_props.vid = dfu_list.id[i].usb.vid;
-		ctx[i]->match_props.pid = dfu_list.id[i].usb.pid;
+        ));
 	}
 
 	for(i = 0; i < comPorts.size(); i++)
@@ -67,8 +86,11 @@ is_operation_result ISBootloader::update(
 		memset(&handle, 0, sizeof(is_device_handle));
 		strncpy(handle.port_name, comPorts[i].c_str(), 256);
 		handle.status = IS_HANDLE_TYPE_SERIAL;
+        is_device_match_properties match_props;
+        match_props.index = idx++;
 		ctx.push_back(is_create_context(
 			&handle, 
+            &match_props,
 			firmware, 
 			baudRate, 
 			verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
@@ -86,7 +108,7 @@ is_operation_result ISBootloader::update(
 	for (i = 0; i < ctx.size(); i++)
 	{	// Wait for threads to finish
 		if(ctx[i] != NULL) threadJoinAndFree(ctx[i]->thread);
-	}
+    }
 
 	libusb_exit(NULL);
 
@@ -95,56 +117,5 @@ is_operation_result ISBootloader::update(
 
 void ISBootloader::update_thread(void* context)
 {
-	is_device_context* ctx = (is_device_context*)context;
-
-	is_check_version(ctx);
-
-	if((ctx->hdw_info.uins_version[0] == 5 || ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) &&
-		strstr(ctx->firmware.uins_5_firmware_path, is_uins_5_firmware_needle))
-	{
-		ctx->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
-		ctx->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
-
-		is_init_dfu_context(ctx);
-		is_jump_to_bootloader(ctx);
-	}
-	else if(ctx->hdw_info.uins_version[0] == 4 && strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
-	{
-		is_init_samba_context(ctx);
-	}
-	else if(ctx->hdw_info.uins_version[0] == 3 && strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
-	{
-		is_init_samba_context(ctx);
-	}
-	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
-	{
-		is_init_samba_context(ctx);
-	}
-	else
-	{
-		// Assume that we have a SAM-BA bootloader, and bootload based on filename, with uINS-4, uINS-3, EVB-2 in that order
-		if(strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
-		{
-			ctx->hdw_info.uins_version[0] = 4;
-			ctx->hdw_info.evb_version[0] = 0;
-		}
-		else if(strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
-		{
-			ctx->hdw_info.uins_version[0] = 3;
-			ctx->hdw_info.evb_version[0] = 0;
-		}
-		else if(strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
-		{
-			ctx->hdw_info.uins_version[0] = 0;
-			ctx->hdw_info.evb_version[0] = 2;
-		}
-		else
-		{
-			return;
-		}
-		
-		is_init_samba_context(ctx);
-	}
-
-	is_update_flash((void*)ctx);
+	is_update_flash(context);
 }
