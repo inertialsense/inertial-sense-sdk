@@ -122,7 +122,28 @@ void ISBootloader::update_thread(void* context)
 	}
 	else
 	{
-		ctx->info_callback(NULL, "None of the firmware files supplied matched");
+		// Assume that we have a SAM-BA bootloader, and bootload based on filename, with uINS-4, uINS-3, EVB-2 in that order
+		if(strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
+		{
+			ctx->hdw_info.uins_version[0] = 4;
+			ctx->hdw_info.evb_version[0] = 0;
+		}
+		else if(strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
+		{
+			ctx->hdw_info.uins_version[0] = 3;
+			ctx->hdw_info.evb_version[0] = 0;
+		}
+		else if(strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
+		{
+			ctx->hdw_info.uins_version[0] = 0;
+			ctx->hdw_info.evb_version[0] = 2;
+		}
+		else
+		{
+			return;
+		}
+		
+		is_init_samba_context(ctx);
 	}
 
 	is_update_flash((void*)ctx);
