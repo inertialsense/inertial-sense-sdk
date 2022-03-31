@@ -37,10 +37,6 @@ is_device_context* is_init_samba_context(is_device_context* ctx)
     ctx->match_props.vid = SAMBA_DESCRIPTOR_VENDOR_ID;
     ctx->match_props.pid = SAMBA_DESCRIPTOR_PRODUCT_ID;
 
-    memset(&ctx->handle.port, 0, sizeof(serial_port_t));
-    serialPortPlatformInit(&ctx->handle.port);
-    serialPortSetPort(&ctx->handle.port, (const char*)ctx->handle.port_name);
-
     return ctx;
 }
 
@@ -68,7 +64,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     if(ctx->hdw_info.evb_version[0] == 2 && strlen(ctx->firmware.evb_2_firmware_path) != 0)
     {
         params.fileName = (const char*)ctx->firmware.evb_2_firmware_path;
-        strncpy(params.bootloadEnableCmd, "EBLE", 4);
+        strncpy(params.bootloadEnableCmd, "EBLE", 5);
         bootloadFileEx(&params);
         sleep_time = 5000;
     }
@@ -78,14 +74,14 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     {
         SLEEP_MS(sleep_time);   // Wait for boot
         params.fileName = (const char*)ctx->firmware.uins_3_firmware_path;
-        strncpy(params.bootloadEnableCmd, "BLEN", 4);
+        strncpy(params.bootloadEnableCmd, "BLEN", 5);
         bootloadFileEx(&params);
     }
     else if(ctx->hdw_info.uins_version[0] == 4 && strlen(ctx->firmware.uins_4_firmware_path) != 0)
     {
         SLEEP_MS(sleep_time);   // Wait for boot
         params.fileName = (const char*)ctx->firmware.uins_4_firmware_path;
-        strncpy(params.bootloadEnableCmd, "BLEN", 4);
+        strncpy(params.bootloadEnableCmd, "BLEN", 5);
         bootloadFileEx(&params);
     }
 

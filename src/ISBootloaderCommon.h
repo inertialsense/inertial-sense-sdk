@@ -53,7 +53,7 @@ is_device_context* is_create_context(
 );
 void is_destroy_context(is_device_context* ctx);
 
-is_hdw_info is_check_version(is_device_context* ctx);
+is_operation_result is_check_version(is_device_context* ctx);
 is_operation_result is_jump_to_bootloader(is_device_context* ctx);
 
 /**

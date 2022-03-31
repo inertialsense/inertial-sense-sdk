@@ -39,15 +39,13 @@ is_operation_result ISBootloader::update(
 		return IS_OP_ERROR;
 	}
 
+    if(libusb_init(NULL) < 0) return IS_OP_ERROR;
 	is_list_dfu(&dfu_list);
 
 	for(i = 0; i < dfu_list.present; i++)
 	{	// Create contexts for devices already in DFU mode
 		is_device_handle handle;
 		memset(&handle, 0, sizeof(is_device_handle));
-		memcpy(&ctx[i]->match_props.serial_number, &dfu_list.id[i].sn, IS_SN_MAX_SIZE);
-		ctx[i]->match_props.vid = dfu_list.id[i].usb.vid;
-		ctx[i]->match_props.pid = dfu_list.id[i].usb.pid;
 		handle.status = IS_HANDLE_TYPE_LIBUSB;
 		ctx.push_back(is_create_context(
 			&handle, 
@@ -58,6 +56,9 @@ is_operation_result ISBootloader::update(
 			verifyProgress, 
 			infoProgress
 		));
+		memcpy(&ctx[i]->match_props.serial_number, &dfu_list.id[i].sn, IS_SN_MAX_SIZE);
+		ctx[i]->match_props.vid = dfu_list.id[i].usb.vid;
+		ctx[i]->match_props.pid = dfu_list.id[i].usb.pid;
 	}
 
 	for(i = 0; i < comPorts.size(); i++)
@@ -87,6 +88,8 @@ is_operation_result ISBootloader::update(
 		if(ctx[i] != NULL) threadJoinAndFree(ctx[i]->thread);
 	}
 
+	libusb_exit(NULL);
+
 	return IS_OP_OK;
 }
 
@@ -96,46 +99,30 @@ void ISBootloader::update_thread(void* context)
 
 	is_check_version(ctx);
 
-	if(ctx->hdw_info.uins_version[0] == 5 || ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
+	if((ctx->hdw_info.uins_version[0] == 5 || ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) &&
+		strstr(ctx->firmware.uins_5_firmware_path, is_uins_5_firmware_needle))
 	{
-		if(strstr(ctx->firmware.uins_5_firmware_path, is_uins_5_firmware_needle) == NULL)
-		{	// Check firmware name
-			strcpy(ctx->error, "Firmware specified is not for uINS-5");
-			return;
-		}
+		ctx->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
+		ctx->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
 
 		is_init_dfu_context(ctx);
 		is_jump_to_bootloader(ctx);
 	}
-	else if(ctx->hdw_info.uins_version[0] == 4)
+	else if(ctx->hdw_info.uins_version[0] == 4 && strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
 	{
-		if(strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle) == NULL)
-		{	// Check firmware name (uINS-4 uses uINS-3 firmware)
-			strcpy(ctx->error, "Firmware specified is not for uINS-4");
-			return;
-		}
-			
 		is_init_samba_context(ctx);
 	}
-	else if(ctx->hdw_info.uins_version[0] == 3)
+	else if(ctx->hdw_info.uins_version[0] == 3 && strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
 	{
-		if(strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle) == NULL)
-		{	// Check firmware name
-			strcpy(ctx->error, "Firmware specified is not for uINS-3");
-			return;
-		}
-			
 		is_init_samba_context(ctx);
 	}
-	else if(ctx->hdw_info.evb_version[0] == 2)
+	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
 	{
-		if(strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle) == NULL)
-		{	// Check firmware name
-			strcpy(ctx->error, "Firmware specified is not for EVB-2");
-			return;
-		}
-			
 		is_init_samba_context(ctx);
+	}
+	else
+	{
+		ctx->info_callback(NULL, "None of the firmware files supplied matched");
 	}
 
 	is_update_flash((void*)ctx);

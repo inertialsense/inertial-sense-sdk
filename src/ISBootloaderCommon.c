@@ -59,15 +59,34 @@ void is_destroy_context(is_device_context* ctx)
     free(ctx);
 }
 
-is_hdw_info is_check_version(is_device_context* ctx)
+static void IntToUnicode(uint32_t value, uint8_t* pbuf, uint8_t len)
 {
-    is_hdw_info hdw_info = { 0 };
+    size_t idx = 0;
 
+    for(idx = 0; idx < len; idx++)
+    {
+        if((value >> 28) < 0xA) pbuf[2*idx] = (value >> 28) + '0';
+        else pbuf[2*idx] = (value >> 28) + 'A' - 10; 
+        
+        value = value << 4;
+        
+        pbuf[2*idx + 1] = 0;
+    }
+}
+
+is_operation_result is_check_version(is_device_context* ctx)
+{
+    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) return IS_OP_OK;
+
+    serialPortPlatformInit(&ctx->handle.port);
+    serialPortSetPort(&ctx->handle.port, ctx->handle.port_name);
     if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->baud_rate, 1) == 0)
     {
         serialPortClose(&ctx->handle.port);
-        return hdw_info;
+        return IS_OP_ERROR;
     }
+
+    serialPortFlush(&ctx->handle.port);
 
     // Get DID_DEV_INFO from the uINS.
     is_comm_instance_t comm;
@@ -79,19 +98,31 @@ is_hdw_info is_check_version(is_device_context* ctx)
     if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
     {
         serialPortClose(&ctx->handle.port);
-        return hdw_info;
+        return IS_OP_ERROR;
+    }
+    // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
+    if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
+    {
+        serialPortClose(&ctx->handle.port);
+        return IS_OP_ERROR;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
     if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
     {
         serialPortClose(&ctx->handle.port);
-        return hdw_info;
+        return IS_OP_ERROR;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_STATUS, 0, 0, 0);
     if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
     {
         serialPortClose(&ctx->handle.port);
-        return hdw_info;
+        return IS_OP_ERROR;
+    }
+    messageSize = is_comm_get_data(&comm, DID_MANUFACTURING_INFO, 0, 0, 0);
+    if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
+    {
+        serialPortClose(&ctx->handle.port);
+        return IS_OP_ERROR;
     }
 
     SLEEP_MS(10);
@@ -102,6 +133,7 @@ is_hdw_info is_check_version(is_device_context* ctx)
     dev_info_t* evb_dev_info = NULL;
     evb_status_t* evb_status = NULL;
     manufacturing_info_t* manufacturing_info = NULL;
+    uint8_t evb_version[4];
     if ((n = serialPortReadTimeout(&ctx->handle.port, comm.buf.start, n, 50)))
     {
         comm.buf.tail += n;
@@ -110,38 +142,28 @@ is_hdw_info is_check_version(is_device_context* ctx)
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_DEV_INFO)
             {
                 dev_info = (dev_info_t*)comm.dataPtr;
+                memcpy(ctx->hdw_info.uins_version, dev_info->hardwareVer, 4);
             }
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_EVB_DEV_INFO)
             {
                 evb_dev_info = (dev_info_t*)comm.dataPtr;
+                memcpy(evb_version, evb_dev_info->hardwareVer, 4);
             }
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_EVB_STATUS)
             {
                 evb_status = (evb_status_t*)comm.dataPtr;
+                if(evb_status->firmwareVer) memcpy(ctx->hdw_info.evb_version, evb_version, 4);   // Only copy EVB status stuff if it is plugged through EVB port
             }
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_MANUFACTURING_INFO)
             {
                 manufacturing_info = (manufacturing_info_t*)comm.dataPtr;
+                sprintf(ctx->match_props.serial_number, "%X%X", manufacturing_info->serialNumber + manufacturing_info->lotNumber, (uint16_t)(manufacturing_info->key >> 16));
             }
         }
     }
-
-    if(dev_info)
-    {
-        memcpy(hdw_info.uins_version, dev_info->hardwareVer, 4);
-
-        snprintf(ctx->match_props.serial_number, IS_SN_MAX_SIZE, "%u%u%u", 
-            manufacturing_info->serialNumber, manufacturing_info->lotNumber, manufacturing_info->key);
-
-        printf(ctx->match_props.serial_number); // TODO: Check to see if the order is correct
-    }
-    if(dev_info && evb_status)
-    {
-        memcpy(hdw_info.evb_version, evb_dev_info->hardwareVer, 4);
-    }
     
     serialPortClose(&ctx->handle.port);
-    return hdw_info;
+    return IS_OP_OK;
 }
 
 is_operation_result is_jump_to_bootloader(is_device_context* ctx)
@@ -180,7 +202,7 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
         {
             serialPortWriteAscii(&ctx->handle.port, "STPB", 4);
             serialPortWriteAscii(&ctx->handle.port, ctx->bl_enable_command, 4);
-            if(ctx->match_props.major < 5)
+            if(ctx->hdw_info.uins_version[0] != 5 ) // || ctx->hdw_info.evb_version[0] == 2
             {
                 c = 0;
                 if(serialPortReadCharTimeout(&ctx->handle.port, &c, 10) == 1)
@@ -200,7 +222,7 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
                     serialPortFlush(&ctx->handle.port);
                 }
             }
-            else if(ctx->match_props.major == 5)
+            else if(ctx->hdw_info.uins_version[0] == 5)
             {
                 // List DFU devices
                 is_list_dfu(&list);
@@ -208,11 +230,11 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
                 {   // If a new DFU device has shown up, break
                     snprintf(info, 256, "%s: Successfully entered DFU bootloader", ctx->handle.port_name);
                     if(ctx->info_callback) ctx->info_callback((void*)ctx, info);
+                    ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
                     i = 9999;
                     break;
                 }
             }
-            
         }
     }
 
@@ -242,6 +264,7 @@ void is_update_flash(void* context)
     }
 
     if(ret == IS_OP_OK) ctx->success = true;
+    else strcpy(ctx->error, "Error in update flash");
 
     return;
 }
