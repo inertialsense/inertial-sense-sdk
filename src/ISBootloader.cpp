@@ -35,13 +35,28 @@ size_t ISBootloader::get_num_devices(vector<string>& comPorts)
     return ret;
 }
 
+static bool any_in_progress(vector<is_device_context*>& ctx)
+{
+    for(size_t i = 0; i < ctx.size(); i++)
+    {
+        if(ctx[i]->update_in_progress)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 is_operation_result ISBootloader::update(
 	vector<string>&             comPorts,
 	int                         baudRate,
 	is_firmware_settings*       firmware,
 	pfnBootloadProgress         uploadProgress, 
 	pfnBootloadProgress         verifyProgress, 
-	pfnBootloadStatus           infoProgress
+    pfnBootloadStatus           infoProgress,
+    void*                       user_data,
+    void						(*waitAction)()
 )
 {
 	is_dfu_list dfu_list;
@@ -76,7 +91,8 @@ is_operation_result ISBootloader::update(
 			verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
 			uploadProgress, 
 			verifyProgress, 
-			infoProgress
+            infoProgress,
+            user_data
         ));
 	}
 
@@ -96,7 +112,8 @@ is_operation_result ISBootloader::update(
 			verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
 			uploadProgress, 
 			verifyProgress, 
-			infoProgress
+            infoProgress,
+            user_data
 		));
 	}
 
@@ -105,9 +122,22 @@ is_operation_result ISBootloader::update(
 		ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
 	}
 
-	for (i = 0; i < ctx.size(); i++)
-	{	// Wait for threads to finish
-		if(ctx[i] != NULL) threadJoinAndFree(ctx[i]->thread);
+	while (1)
+    {	// Wait for threads to finish
+        if(!any_in_progress(ctx))
+        {
+            break;
+        }
+
+        waitAction();
+
+        for(i = 0; i < ctx.size(); i++)
+        {
+            if((ctx[i]->thread != NULL) && !ctx[i]->update_in_progress)
+            {
+                threadJoinAndFree(ctx[i]->thread);
+            }
+        }
     }
 
 	libusb_exit(NULL);

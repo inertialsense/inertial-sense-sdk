@@ -167,7 +167,6 @@ typedef struct
     pfnBootloadProgress update_progress_callback;
     pfnBootloadProgress verify_progress_callback;
     pfnBootloadStatus info_callback;
-    const void* user_data;
     is_device_handle handle;
     void* thread;
     bool success;
@@ -175,6 +174,10 @@ typedef struct
     char error[BOOTLOADER_ERROR_LENGTH];
     float updateProgress;
     float verifyProgress;
+    void* user_data;
+    bool update_in_progress;
+    char infoString[256];
+    bool infoString_new;
 } is_device_context;
 
 #ifdef __cplusplus

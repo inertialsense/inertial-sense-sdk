@@ -24,9 +24,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPortPlatform.h"
 #include "inertialSenseBootLoader.h"
 
-const char* is_uins_5_firmware_needle = "uINS_5";
-const char* is_uins_3_firmware_needle = "uINS_3";
-const char* is_evb_2_firmware_needle = "EVB_2";
+const char* is_uins_5_firmware_needle = "uINS-5";
+const char* is_uins_3_firmware_needle = "uINS-3";
+const char* is_evb_2_firmware_needle = "EVB-2";
 
 is_device_context* is_create_context(
     is_device_handle* handle,
@@ -36,7 +36,8 @@ is_device_context* is_create_context(
     is_verification_style verify,
     pfnBootloadProgress upload_cb,
     pfnBootloadProgress verify_cb,
-    pfnBootloadStatus info_cb
+    pfnBootloadStatus info_cb,
+    void* user_data
 )
 {
     is_device_context* ctx = malloc(sizeof(is_device_context));
@@ -54,6 +55,9 @@ is_device_context* is_create_context(
     memset(ctx->error, 0, BOOTLOADER_ERROR_LENGTH);
     ctx->updateProgress = 0.0;
     ctx->verifyProgress = 0.0;
+    ctx->user_data = user_data;
+    ctx->update_in_progress = true;
+    ctx->infoString_new = false;
 
     return ctx;
 }
@@ -169,9 +173,7 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
 
     size_t start_num = list.present;
 
-    char info[256] = { 0 };
-    snprintf(info, 256, "%s: Starting bootloader...", ctx->handle.port_name);
-    if(ctx->info_callback) ctx->info_callback((void*)ctx, info);
+    if(ctx->info_callback) ctx->info_callback((void*)ctx, "Starting bootloader...");
 
     // in case we are in program mode, try and send the commands to go into bootloader mode
     unsigned char c = 0;
@@ -199,8 +201,7 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
                     if(c == '$')
                     {
                         // done, we got into bootloader mode
-                        snprintf(info, 256, "%s: Successfully entered SAM-BA bootloader", ctx->handle.port_name);
-                        if(ctx->info_callback) ctx->info_callback((void*)ctx, info);
+                        if(ctx->info_callback) ctx->info_callback((void*)ctx, "Successfully entered SAM-BA bootloader");
                         i = 9999;
                         break;
                     }
@@ -217,8 +218,7 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
                 is_list_dfu(&list);
                 if(list.present > start_num) 
                 {   // If a new DFU device has shown up, break
-                    snprintf(info, 256, "%s: Successfully entered DFU bootloader", ctx->handle.port_name);
-                    if(ctx->info_callback) ctx->info_callback((void*)ctx, info);
+                    if(ctx->info_callback) ctx->info_callback((void*)ctx, "Successfully entered DFU bootloader");
                     ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
                     i = 9999;
                     break;
@@ -279,6 +279,7 @@ void is_update_flash(void* context)
 		}
 		else
 		{
+            ctx->update_in_progress = false;
 			return;
 		}
 		
@@ -299,11 +300,13 @@ void is_update_flash(void* context)
     else
     {
         strcpy(ctx->error, "Wrong bootloader scheme for device");
+        ctx->update_in_progress = false;
         return;
     }
 
     if(ret == IS_OP_OK) ctx->success = true;
     else strcpy(ctx->error, "Error in update flash");
 
+    ctx->update_in_progress = false;
     return;
 }

@@ -52,6 +52,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     params.verifyFileName = NULL;   // TODO: Add verify
     params.flags.bitFields.enableVerify = (ctx->verification_style == IS_VERIFY_ON);
     params.baudRate = ctx->baud_rate;
+    params.obj = ctx;
 
     if(ctx->firmware.samba_bootloader_path[0] != 0 )
     {

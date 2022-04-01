@@ -64,7 +64,9 @@ public:
         is_firmware_settings*       firmware,
         pfnBootloadProgress         uploadProgress, 
         pfnBootloadProgress         verifyProgress, 
-        pfnBootloadStatus           infoProgress
+        pfnBootloadStatus           infoProgress,
+        void*                       user_data,
+        void						(*waitAction)()
     );
 
     static vector<is_device_context*> ctx;

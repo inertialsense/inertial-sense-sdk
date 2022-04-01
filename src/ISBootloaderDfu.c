@@ -349,7 +349,7 @@ is_operation_result is_dfu_flash(is_device_context* context)
             byteInSection += STM32_PAGE_SIZE;
             bytes_written_total += STM32_PAGE_SIZE;
 
-            context->update_progress_callback(NULL, 0.25f * ((float)bytes_written_total / (float)image_total_len));
+            context->update_progress_callback(context, 0.25f * ((float)bytes_written_total / (float)image_total_len));
         } while(byteInSection < image[i].len - 1);
     }
 
@@ -399,7 +399,7 @@ is_operation_result is_dfu_flash(is_device_context* context)
             byteInSection += payloadLen;
             bytes_written_total += payloadLen;
 
-            context->update_progress_callback(NULL, 0.25f + 0.75f * ((float)bytes_written_total / (float)image_total_len));
+            context->update_progress_callback(context, 0.25f + 0.75f * ((float)bytes_written_total / (float)image_total_len));
         } while (byteInSection < image[i].len - 1);
     }
 
