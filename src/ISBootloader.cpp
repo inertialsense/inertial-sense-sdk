@@ -39,7 +39,7 @@ static bool any_in_progress(vector<is_device_context*>& ctx)
 {
     for(size_t i = 0; i < ctx.size(); i++)
     {
-        if(ctx[i]->update_in_progress)
+        if(ctx[i]->thread != NULL)
         {
             return true;
         }
@@ -49,18 +49,18 @@ static bool any_in_progress(vector<is_device_context*>& ctx)
 }
 
 is_operation_result ISBootloader::update(
-	vector<string>&             comPorts,
-	int                         baudRate,
-	is_firmware_settings*       firmware,
-	pfnBootloadProgress         uploadProgress, 
-	pfnBootloadProgress         verifyProgress, 
+    vector<string>&             comPorts,
+    int                         baudRate,
+    is_firmware_settings*       firmware,
+    pfnBootloadProgress         uploadProgress, 
+    pfnBootloadProgress         verifyProgress, 
     pfnBootloadStatus           infoProgress,
     void*                       user_data,
     void						(*waitAction)()
 )
 {
-	is_dfu_list dfu_list;
-	size_t i;
+    is_dfu_list dfu_list;
+    size_t i;
 
     for(i = 0; i < ctx.size(); i++)
     {
@@ -69,68 +69,61 @@ is_operation_result ISBootloader::update(
     ctx.clear();
 
     if(libusb_init(NULL) < 0) return IS_OP_ERROR;
-	is_list_dfu(&dfu_list);
+    is_list_dfu(&dfu_list);
 
     size_t idx = 0; // Tracks the instances so callbacks can match with a list
 
-	for(i = 0; i < dfu_list.present; i++)
-	{	// Create contexts for devices already in DFU mode
-		is_device_handle handle;
-		memset(&handle, 0, sizeof(is_device_handle));
-		handle.status = IS_HANDLE_TYPE_LIBUSB;
+    for(i = 0; i < dfu_list.present; i++)
+    {	// Create contexts for devices already in DFU mode
+        is_device_handle handle;
+        memset(&handle, 0, sizeof(is_device_handle));
+        handle.status = IS_HANDLE_TYPE_LIBUSB;
         is_device_match_properties match_props;
         memcpy(&match_props.serial_number, &dfu_list.id[i].sn, IS_SN_MAX_SIZE);
         match_props.vid = dfu_list.id[i].usb.vid;
         match_props.pid = dfu_list.id[i].usb.pid;
         match_props.index = idx++;
-		ctx.push_back(is_create_context(
-			&handle, 
+        ctx.push_back(is_create_context(
+            &handle, 
             &match_props,
-			firmware, 
-			baudRate, 
-			verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
-			uploadProgress, 
-			verifyProgress, 
+            firmware, 
+            baudRate, 
+            verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
+            uploadProgress, 
+            verifyProgress, 
             infoProgress,
             user_data
         ));
-	}
+    }
 
-	for(i = 0; i < comPorts.size(); i++)
-	{	// Create contexts for devices still in serial mode
-		is_device_handle handle;
-		memset(&handle, 0, sizeof(is_device_handle));
-		strncpy(handle.port_name, comPorts[i].c_str(), 256);
-		handle.status = IS_HANDLE_TYPE_SERIAL;
+    for(i = 0; i < comPorts.size(); i++)
+    {	// Create contexts for devices still in serial mode
+        is_device_handle handle;
+        memset(&handle, 0, sizeof(is_device_handle));
+        strncpy(handle.port_name, comPorts[i].c_str(), 256);
+        handle.status = IS_HANDLE_TYPE_SERIAL;
         is_device_match_properties match_props;
         match_props.index = idx++;
-		ctx.push_back(is_create_context(
-			&handle, 
+        ctx.push_back(is_create_context(
+            &handle, 
             &match_props,
-			firmware, 
-			baudRate, 
-			verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
-			uploadProgress, 
-			verifyProgress, 
+            firmware, 
+            baudRate, 
+            verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
+            uploadProgress, 
+            verifyProgress, 
             infoProgress,
             user_data
-		));
-	}
+        ));
+    }
 
-	for(i = 0; i < ctx.size(); i++)
-	{	// Start threads
-		ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
-	}
+    for(i = 0; i < ctx.size(); i++)
+    {	// Start threads
+        ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
+    }
 
-	while (1)
+    while (1)
     {	// Wait for threads to finish
-        if(!any_in_progress(ctx))
-        {
-            break;
-        }
-
-        waitAction();
-
         for(i = 0; i < ctx.size(); i++)
         {
             if((ctx[i]->thread != NULL) && !ctx[i]->update_in_progress)
@@ -138,15 +131,22 @@ is_operation_result ISBootloader::update(
                 threadJoinAndFree(ctx[i]->thread);
                 ctx[i]->thread = NULL;
             }
+
+            if(!any_in_progress(ctx))
+            {
+                libusb_exit(NULL);
+                return IS_OP_OK;
+            }
         }
+
+        if(waitAction != NULL) waitAction();
     }
-
-	libusb_exit(NULL);
-
-	return IS_OP_OK;
+    
+    libusb_exit(NULL);
+    return IS_OP_OK;
 }
 
 void ISBootloader::update_thread(void* context)
 {
-	is_update_flash(context);
+    is_update_flash(context);
 }

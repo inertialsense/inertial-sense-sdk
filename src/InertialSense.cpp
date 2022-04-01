@@ -694,6 +694,50 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
+void InertialSense::BootloadStatusUpdate()
+{
+    for(size_t i = 0; i < ISBootloader::ctx.size(); i++)
+    {
+        if(ISBootloader::ctx[i]->infoString_new)
+        {
+            if(strlen(ISBootloader::ctx[i]->handle.port_name))
+            {
+                printf("%s: %s\r\n", ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->infoString);
+            }
+            else if(strlen(ISBootloader::ctx[i]->match_props.serial_number))
+            {
+                printf("DFU %s: %s\r\n", ISBootloader::ctx[i]->match_props.serial_number, ISBootloader::ctx[i]->infoString);
+            }
+            else
+            {
+                printf("Unknown: %s\r\n", ISBootloader::ctx[i]->infoString);
+			}
+
+            ISBootloader::ctx[i]->infoString_new = false;
+        }
+    }
+
+	float progress = 0.0;
+    size_t num_devices = ISBootloader::ctx.size();
+
+    for(size_t i = 0; i < num_devices; i++)
+    {
+		if(ISBootloader::ctx[i]->verification_style == IS_VERIFY_OFF)
+		{
+			progress += ISBootloader::ctx[i]->updateProgress;
+		}
+		else
+		{
+			progress += ISBootloader::ctx[i]->updateProgress * 0.5;
+			progress += ISBootloader::ctx[i]->verifyProgress * 0.5;
+		}
+    }
+
+    progress /= num_devices;
+	int percent = progress * 100;
+	printf("\rProgress: %d%%\r", percent);
+}
+
 vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	const string& comPort, 
 	const string& fileName, 
@@ -738,7 +782,9 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	strncpy(firmware.samba_bootloader_path, bootloaderFileName.c_str(), 256);
 	firmware.samba_force_update = forceBootloaderUpdate;
 
-	ISBootloader::update(portStrings, baudRate, &firmware, uploadProgress, verifyProgress, infoProgress);
+	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+	ISBootloader::update(portStrings, baudRate, &firmware, uploadProgress, verifyProgress, infoProgress, NULL, BootloadStatusUpdate);
+	fputs("\e[?25h", stdout);	// Turn cursor back on
 
 	// If any thread failed, we return failure
 	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)

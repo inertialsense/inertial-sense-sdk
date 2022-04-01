@@ -433,6 +433,7 @@ private:
 	bool OpenSerialPorts(const char* port, int baudRate);
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
+	static void BootloadStatusUpdate();
 };
 
 #endif

@@ -115,9 +115,9 @@ typedef enum {
 } is_device_interface_log_level;
 
 /** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
-typedef int(*pfnBootloadProgress)(const void* obj, float percent);
+typedef int(*pfnBootloadProgress)(void* obj, float percent);
 /** Bootloader information string function prototype. */
-typedef void(*pfnBootloadStatus)(const void* obj, const char* infoString);
+typedef void(*pfnBootloadStatus)(void* obj, const char* infoString);
 
 typedef enum {
     IS_HANDLE_TYPE_LIBUSB,

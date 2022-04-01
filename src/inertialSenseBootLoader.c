@@ -1420,7 +1420,7 @@ static int samBaFlashEraseWritePage(serial_port_t* port, size_t offset,
     return samBaFlashWaitForReady(port);
 }
 
-static int samBaVerify(serial_port_t* port, uint32_t checksum, const void* obj, pfnBootloadProgress verifyProgress)
+static int samBaVerify(serial_port_t* port, uint32_t checksum, void* obj, pfnBootloadProgress verifyProgress)
 {
     uint32_t checksum2 = 0;
     uint32_t nextAddress;
@@ -1482,7 +1482,7 @@ static int samBaSoftReset(serial_port_t* port)
 }
 
 int bootloadFile(serial_port_t* port, const char* fileName, const char * bootName,
-    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
+    void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
     bootload_params_t params;
     memset(&params, 0, sizeof(params));

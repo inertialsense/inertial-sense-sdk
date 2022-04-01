@@ -55,7 +55,7 @@ typedef struct
     int forceBootloaderUpdate;
 	serial_port_t* port; // connect with this serial port
 	char error[BOOTLOADER_ERROR_LENGTH];
-	const void* obj; // user defined pointer
+	void* obj; // user defined pointer
 	pfnBootloadProgress uploadProgress; // upload progress
 	pfnBootloadProgress verifyProgress; // verify progress
     pfnBootloadStatus statusText;       // receives status text for progress
@@ -86,7 +86,7 @@ Boot load a .hex or .bin file to a device
 @return 0 on success, -1 on failure
 */
 int bootloadFile(serial_port_t* port, const char* fileName, const char* bootName,
-    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
+    void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
 
 /**
