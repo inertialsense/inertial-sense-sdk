@@ -136,6 +136,7 @@ is_operation_result ISBootloader::update(
             if((ctx[i]->thread != NULL) && !ctx[i]->update_in_progress)
             {
                 threadJoinAndFree(ctx[i]->thread);
+                ctx[i]->thread = NULL;
             }
         }
     }
