@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISPose.h"
 #include "ISEarth.h"
+#include "ISBootloaderTypes.h"
 
 #if PLATFORM_IS_EMBEDDED
 
@@ -390,40 +391,33 @@ uint64_t getTickCount(void)
 
 }
 
-int bootloadUploadProgress(const void* port, float percent)
+int bootloadUploadProgress(void* obj, float percent)
 {
-	// Suppress compiler warnings
-	(void)port;
+	if(obj == NULL) return 1;
 
-	printf("\rUpload: %d%%     \r", (int)(percent * 100.0f));
-	if (percent == 1.0f)
-	{
-		printf("\r\n");
-	}
-	fflush(stdout);	// stdout stream is buffered (in Linux) so output is only seen after a newline '\n' or fflush().  
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->updateProgress = percent;
 
-	return 1; // could return 0 to abort
+    return ctx->update_in_progress;
 }
 
-int bootloadVerifyProgress(const void* port, float percent)
+int bootloadVerifyProgress(void* obj, float percent)
 {
-	// Suppress compiler warnings
-	(void)port;
+	if(obj == NULL) return 1;
 
-	printf("\rVerify: %d%%     \r", (int)(percent * 100.0f));
-	if (percent == 1.0f)
-	{
-		printf("\r\n");
-	}
-	fflush(stdout);	// stdout stream is buffered (in Linux) so output is only seen after a newline '\n' or fflush().  
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->verifyProgress = percent;
 
-	return 1; // could return 0 to abort
+    return ctx->update_in_progress;
 }
 
-void bootloadStatusInfo(const void* port, const char* str)
+void bootloadStatusInfo(void* obj, const char* str)
 {
-	(void)port;
-	cout << str << endl;
+    if(obj == NULL) return;
+
+    is_device_context* ctx = (is_device_context*)obj;
+    strncpy(ctx->infoString, str, 256);
+    ctx->infoString_new = true;
 }
 
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec)

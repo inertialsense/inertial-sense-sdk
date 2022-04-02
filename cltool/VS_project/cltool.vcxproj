@@ -71,6 +71,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>cltool</TargetName>
+    <LibraryPath>..\..\src\libusb\msvc;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -97,7 +98,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies);..\..\src\libusb\msvc\libusb-1.0.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -175,6 +176,11 @@
     <ClCompile Include="..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSorted.cpp" />
+    <ClCompile Include="..\..\src\ihex.c" />
+    <ClCompile Include="..\..\src\ISBootloader.cpp" />
+    <ClCompile Include="..\..\src\ISBootloaderCommon.c" />
+    <ClCompile Include="..\..\src\ISBootloaderDfu.c" />
+    <ClCompile Include="..\..\src\ISBootloaderSamba.c" />
     <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\src\InertialSense.cpp" />
@@ -187,7 +193,6 @@
     <ClCompile Include="..\..\src\ISFileManager.cpp" />
     <ClCompile Include="..\..\src\ISLogFile.cpp" />
     <ClCompile Include="..\..\src\ISLogger.cpp" />
-    <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\ISMatrix.c" />
     <ClCompile Include="..\..\src\ISPose.c" />
     <ClCompile Include="..\..\src\ISSerialPort.cpp" />
@@ -223,7 +228,14 @@
     <ClInclude Include="..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\src\DeviceLogSorted.h" />
+    <ClInclude Include="..\..\src\ihex.h" />
+    <ClInclude Include="..\..\src\ISBootloader.h" />
+    <ClInclude Include="..\..\src\ISBootloaderCommon.h" />
+    <ClInclude Include="..\..\src\ISBootloaderDfu.h" />
+    <ClInclude Include="..\..\src\ISBootloaderSamba.h" />
+    <ClInclude Include="..\..\src\ISBootloaderTypes.h" />
     <ClInclude Include="..\..\src\ISLogStats.h" />
+    <ClInclude Include="..\..\src\libusb\libusb.h" />
     <ClInclude Include="..\..\src\message_stats.h" />
     <ClInclude Include="..\..\src\InertialSense.h" />
     <ClInclude Include="..\..\src\inertialSenseBootLoader.h" />
@@ -239,7 +251,6 @@
     <ClInclude Include="..\..\src\ISLogFileBase.h" />
     <ClInclude Include="..\..\src\ISLogFileFactory.h" />
     <ClInclude Include="..\..\src\ISLogger.h" />
-    <ClInclude Include="..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\src\ISMatrix.h" />
     <ClInclude Include="..\..\src\ISPose.h" />
     <ClInclude Include="..\..\src\ISSerialPort.h" />
@@ -254,6 +265,12 @@
     <ClInclude Include="..\..\src\time_conversion.h" />
     <ClInclude Include="..\..\src\tinystr.h" />
     <ClInclude Include="..\..\src\tinyxml.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\src\libusb\msvc\libusb-1.0.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\libusb\msvc\libusb-1.0.pdb" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
