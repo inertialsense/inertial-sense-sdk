@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -136,17 +136,19 @@ PUSH_PACK_1
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
-	IS_BAUDRATE_9600 = 9600,
-	IS_BAUDRATE_19200 = 19200,
-	IS_BAUDRATE_38400 = 38400,
-	IS_BAUDRATE_57600 = 57600,
-	IS_BAUDRATE_115200 = 115200,
-	IS_BAUDRATE_230400 = 230400,
-	IS_BAUDRATE_460800 = 460800,
-	IS_BAUDRATE_921600 = 921600,
-	IS_BAUDRATE_3000000 = 3000000,
+	IS_BAUDRATE_9600        = 9600,
+	IS_BAUDRATE_19200       = 19200,
+	IS_BAUDRATE_38400       = 38400,
+	IS_BAUDRATE_57600       = 57600,
+	IS_BAUDRATE_115200      = 115200,		// Actual on uINS:
+	IS_BAUDRATE_230400      = 230400,		// 232700
+	IS_BAUDRATE_460800      = 460800,		// 468600
+	IS_BAUDRATE_921600      = 921600,		// 937734 (default)
+	IS_BAUDRATE_3125000     = 3125000,		// 3125000
+	IS_BAUDRATE_9375000     = 9375000,		// 9375000
+	IS_BAUDRATE_18750000    = 18750000,		// 18750000 (uINS ser1 only)
 
-	IS_BAUDRATE_COUNT = 9
+	IS_BAUDRATE_COUNT = 12
 } baud_rate_t;
 
 /** List of valid baud rates */
@@ -679,6 +681,8 @@ void is_enable_packet_encoding(int enabled); // default is enabled
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
+
+int validateBaudRate(unsigned int baudRate);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -119,14 +119,9 @@ bool cDeviceLogSorted::OpenAllReadFiles()
 
 bool cDeviceLogSorted::CloseAllFiles()
 {
-	if (m_writeMode)
-	{	// Write to file and clear any non-empty chunks to file
-		for (uint32_t id = 1; id < DID_COUNT; id++)
-		{
-			// Write to file and clear chunk
-			WriteChunkToFile(id);
-		}
-	}
+	// Write remaining data to file
+	FlushToFile();
+
 	// Close file pointer used for writing
 	CloseISLogFile(m_pFile);
 
@@ -140,6 +135,23 @@ bool cDeviceLogSorted::CloseAllFiles()
 	cDeviceLog::CloseAllFiles();
 
 	return true;
+}
+
+
+bool cDeviceLogSorted::FlushToFile()
+{
+	if (m_writeMode)
+	{	// Write to file and clear any non-empty chunks to file
+		for (uint32_t id = 1; id < DID_COUNT; id++)
+		{
+			// Write to file and clear chunk
+			WriteChunkToFile(id);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 

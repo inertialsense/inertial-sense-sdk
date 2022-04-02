@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -12,23 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "protocol_nmea.h"
 #include "InertialSense.h"
+#include "ISBootloader.h"
 
 using namespace std;
-
-typedef struct
-{
-	bootload_params_t param;
-	bool success;
-	serial_port_t serial;
-	void* thread;
-} bootload_state_t;
-
-static void bootloaderUpdateBootloaderThread(void* state)
-{
-    bootload_state_t* s = (bootload_state_t*)state;
-    s->success = (bootloadFileEx(&s->param) == 0);
-    serialPortClose(&s->serial);
-}
 
 static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
@@ -708,11 +694,63 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, const string& bootloaderFileName, bool forceBootloaderUpdate)
+void InertialSense::BootloadStatusUpdate()
+{
+    for(size_t i = 0; i < ISBootloader::ctx.size(); i++)
+    {
+        if(ISBootloader::ctx[i]->infoString_new)
+        {
+            if(strlen(ISBootloader::ctx[i]->handle.port_name))
+            {
+                printf("%s: %s\r\n", ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->infoString);
+            }
+            else if(strlen(ISBootloader::ctx[i]->match_props.serial_number))
+            {
+                printf("DFU %s: %s\r\n", ISBootloader::ctx[i]->match_props.serial_number, ISBootloader::ctx[i]->infoString);
+            }
+            else
+            {
+                printf("Unknown: %s\r\n", ISBootloader::ctx[i]->infoString);
+			}
+
+            ISBootloader::ctx[i]->infoString_new = false;
+        }
+    }
+
+	float progress = 0.0;
+    size_t num_devices = ISBootloader::ctx.size();
+
+    for(size_t i = 0; i < num_devices; i++)
+    {
+		if(ISBootloader::ctx[i]->verification_style == IS_VERIFY_OFF)
+		{
+			progress += ISBootloader::ctx[i]->updateProgress;
+		}
+		else
+		{
+			progress += ISBootloader::ctx[i]->updateProgress * 0.5f;
+			progress += ISBootloader::ctx[i]->verifyProgress * 0.5f;
+		}
+    }
+
+    progress /= num_devices;
+	int percent = (int)(progress * 100.0f);
+	printf("\rProgress: %d%%\r", percent);
+}
+
+vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
+	const string& comPort, 
+	const string& fileName, 
+	int baudRate, 
+	pfnBootloadProgress uploadProgress, 
+	pfnBootloadProgress verifyProgress, 
+	pfnBootloadStatus infoProgress, 
+	const string& bootloaderFileName, 
+	bool forceBootloaderUpdate
+)
 {
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<bootload_state_t> state;
 
 	if (comPort == "*")
 	{
@@ -723,62 +761,43 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 		splitString(comPort, ',', portStrings);
 	}
 	sort(portStrings.begin(), portStrings.end());
-	state.resize(portStrings.size());
 
 	// file exists?
+	ifstream tmpStream(fileName);
+	if (!tmpStream.good())
 	{
-		ifstream tmpStream(fileName);
-		if (!tmpStream.good())
+		for (size_t i = 0; i < portStrings.size(); i++)
 		{
-			for (size_t i = 0; i < state.size(); i++)
-			{
-				results.push_back({ state[i].serial.port, "File does not exist" });
-			}
+			results.push_back({ portStrings[i], "File does not exist" });
 		}
+		return results;
 	}
 
-	if (results.size() == 0)
+	// Copy the same path into all, the underlying code will pick which devices to update based on the file name.
+	is_firmware_settings firmware;
+	strncpy(firmware.uins_3_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.uins_4_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.uins_5_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.evb_2_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.samba_bootloader_path, bootloaderFileName.c_str(), 256);
+	firmware.samba_force_update = forceBootloaderUpdate;
+
+	#if !PLATFORM_IS_WINDOWS
+	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+	#endif
+	
+	ISBootloader::update(portStrings, baudRate, &firmware, uploadProgress, verifyProgress, infoProgress, NULL, BootloadStatusUpdate);
+	
+	#if !PLATFORM_IS_WINDOWS
+	fputs("\e[?25h", stdout);	// Turn cursor back on
+	#endif
+
+	// If any thread failed, we return failure
+	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
 	{
-		// for each port requested, setup a thread to do the bootloader for that port
-		for (size_t i = 0; i < state.size(); i++)
+		if(ISBootloader::ctx[i] != NULL)
 		{
-            memset(state[i].param.error, 0, BOOTLOADER_ERROR_LENGTH);
-			serialPortPlatformInit(&state[i].serial);
-			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
-			state[i].param.uploadProgress = uploadProgress;
-			state[i].param.verifyProgress = verifyProgress;
-			state[i].param.statusText = infoProgress;
-			state[i].param.fileName = fileName.c_str();
-			state[i].param.bootName = bootloaderFileName.c_str();
-			state[i].param.forceBootloaderUpdate = forceBootloaderUpdate;
-			state[i].param.port = &state[i].serial;
-			state[i].param.verifyFileName = NULLPTR;
-			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
-            state[i].param.numberOfDevices = (int)state.size();
-            state[i].param.baudRate = baudRate;			
-			if (strstr(state[i].param.fileName, "EVB") != NULL)
-			{   // Enable EVB bootloader
-				strncpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
-			}
-			else
-			{	// Enable uINS bootloader
-				strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
-			}
-
-            // Update application and bootloader firmware
-            state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
-		}
-
-		// wait for all threads to finish
-		for (size_t i = 0; i < state.size(); i++)
-		{
-			threadJoinAndFree(state[i].thread);
-		}
-
-		// if any thread failed, we return failure
-		for (size_t i = 0; i < state.size(); i++)
-		{
-			results.push_back({ state[i].serial.port, state[i].param.error });
+			results.push_back({ ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->error });
 		}
 	}
 

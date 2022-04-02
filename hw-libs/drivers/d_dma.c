@@ -17,7 +17,10 @@
 
 #include "d_dma.h"
 #include "d_usartDMA.h"
+
+#ifndef TESTBED
 #include "d_i2c.h"
+#endif
 
 #include "xdmac.h"
 
@@ -27,7 +30,9 @@ void XDMAC_Handler(void)
 {	
 	XDMAC_usartDMA_Handler();
 	
+#ifndef TESTBED
 	XDMAC_i2c_Handler();
+#endif
 	
 #ifdef __INERTIAL_SENSE_EVB_2__
 	

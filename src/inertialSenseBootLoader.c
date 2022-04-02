@@ -1,7 +1,14 @@
+/**
+ * @file inertialSenseBootLoader.c
+ * @brief Routines for updating Inertial Sense products with the SAM-BA 
+ *  bootloader (uINS-3, uINS-4, EVB-2)
+ * 
+ */
+
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -12,8 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 #include <math.h>
-#include "inertialSenseBootLoader.h"
 #include "ISConstants.h"
+#include "inertialSenseBootLoader.h"
 #include "ISUtilities.h"
 
 #define MAX_SEND_COUNT 510
@@ -1212,7 +1219,6 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
             params.uploadProgress = p->uploadProgress;
             params.verifyProgress = p->verifyProgress;
             params.statusText = p->statusText;
-            params.numberOfDevices = 1;
             params.flags.bitFields.enableVerify = 1;
 
             if (!bootloadUpdateBootloaderSendFile(&params))
@@ -1271,7 +1277,9 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                 //printf("Bootloader file version: %d%c.\n", fileVerMajor, fileVerMinor);
 
                 //Check bootloader version against file
-                if (blVerMajor < fileVerMajor || blVerMinor < fileVerMinor || p->forceBootloaderUpdate > 0)
+                if (blVerMajor < fileVerMajor || 
+                    (blVerMajor == fileVerMajor && blVerMinor < fileVerMinor) || 
+                    p->forceBootloaderUpdate > 0)
                 {
                     if (sambaSupport)
                     {
@@ -1298,7 +1306,6 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                         params.uploadProgress = p->uploadProgress;
                         params.verifyProgress = p->verifyProgress;
                         params.statusText = p->statusText;
-                        params.numberOfDevices = 1;
                         params.flags.bitFields.enableVerify = 1;
 
                         if (!bootloadUpdateBootloaderSendFile(&params))
@@ -1413,7 +1420,7 @@ static int samBaFlashEraseWritePage(serial_port_t* port, size_t offset,
     return samBaFlashWaitForReady(port);
 }
 
-static int samBaVerify(serial_port_t* port, uint32_t checksum, const void* obj, pfnBootloadProgress verifyProgress)
+static int samBaVerify(serial_port_t* port, uint32_t checksum, void* obj, pfnBootloadProgress verifyProgress)
 {
     uint32_t checksum2 = 0;
     uint32_t nextAddress;
@@ -1475,7 +1482,7 @@ static int samBaSoftReset(serial_port_t* port)
 }
 
 int bootloadFile(serial_port_t* port, const char* fileName, const char * bootName,
-    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
+    void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress)
 {
     bootload_params_t params;
     memset(&params, 0, sizeof(params));
@@ -1487,7 +1494,6 @@ int bootloadFile(serial_port_t* port, const char* fileName, const char * bootNam
     params.obj = obj;
     params.uploadProgress = uploadProgress;
     params.verifyProgress = verifyProgress;
-    params.numberOfDevices = 1;
     params.flags.bitFields.enableVerify = (verifyProgress != 0);
 
     return bootloadFileEx(&params);
@@ -1495,14 +1501,18 @@ int bootloadFile(serial_port_t* port, const char* fileName, const char * bootNam
 
 int bootloadFileEx(bootload_params_t* params)
 {
-	if (strstr(params->fileName, "EVB") != NULL)
-	{   // Enable EVB bootloader
-		strncpy(params->bootloadEnableCmd, "EBLE", 4);
-	}
-	else
-	{	// Enable uINS bootloader
-		strncpy(params->bootloadEnableCmd, "BLEN", 4);
-	}
+    if(strnlen(params->bootloadEnableCmd, 16) != 4)
+    {
+        if (strstr(params->fileName, "EVB") != NULL)
+        {   // Enable EVB bootloader
+            strncpy(params->bootloadEnableCmd, "EBLE", 16);
+        }
+        else
+        {	// Enable uINS bootloader
+            strncpy(params->bootloadEnableCmd, "BLEN", 16);
+        }
+    }
+	
 
 	int result = -1;    // 0 = success
 

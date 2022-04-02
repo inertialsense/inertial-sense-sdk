@@ -1,6 +1,9 @@
 import math
 from typing import List, Any, Union
 
+# If allantools are not installed, run "pip install allantools" first
+import allantools
+
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -20,12 +23,16 @@ RESET = r"\u001b[0m"
 
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
+RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
-sys.path.append('..')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
+
 from logReader import Log
 from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
-from pylib.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
+from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
 
 class logPlot:
@@ -54,16 +61,21 @@ class logPlot:
         ax.set_title(title)
         ax.set_xlabel(xlabel)
 
-    def saveFig(self, fig, name):
+    def saveFig(self, fig, name, sizeInches=[]):
         if self.save:
-            fsize = fig.get_size_inches()
-            # fig.set_size_inches(16,16)
-            fig.set_size_inches(20, 20)
+            restoreSize = fig.get_size_inches()
+            if not sizeInches:
+                if self.format == 'png':     # Increase size/resolution for saved png
+                    sizeInches = [16,11]
+                    # sizeInches = [20,14]
+                else: # svg or png
+                    sizeInches = [11,8]
+            fig.set_size_inches(sizeInches)
             directory = os.path.dirname(self.directory + '/figures/')
             if not os.path.exists(directory):
                 os.makedirs(directory)
             fig.savefig(os.path.join(directory + "/" + name + '.' + self.format), bbox_inches='tight')
-            fig.set_size_inches(fsize)
+            fig.set_size_inches(restoreSize)
 
     def getData(self, dev, DID, field):
         try:
@@ -690,6 +702,7 @@ class logPlot:
         imu1 = []
         imu2 = []
         imu3 = []
+        imuCount = 1
 
         if accelSensor==0:
             imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'theta'))
@@ -740,67 +753,185 @@ class logPlot:
                     imu1 = np.array(imu1)
                     imu2 = np.array(imu2)
                     imu3 = np.array(imu3)
+                    imuCount = 3
 
-        return (time, dt, imu1, imu2, imu3)
+        return (time, dt, imu1, imu2, imu3, imuCount)
 
     def imuPQR(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
-        self.configureSubplot(ax[0], 'Gyro P (deg/s)', 'sec')
-        self.configureSubplot(ax[1], 'Gyro Q (deg/s)', 'sec')
-        self.configureSubplot(ax[2], 'Gyro R (deg/s)', 'sec')
+
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+        ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
         for d in self.active_devs:
-            (time, dt, pqr1, pqr2, pqr3) = self.loadGyros(d)
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refPqr = refImu['pqr']
 
             for i in range(3):
-                if pqr1 != []:
-                    ax[i].plot(time, pqr1[:, i] * 180.0/np.pi, label=self.log.serials[d])
-                if pqr2 != []:
-                    ax[i].plot(time, pqr2[:, i] * 180.0/np.pi, label=self.log.serials[d])
-                if pqr3 != []:
-                    ax[i].plot(time, pqr3[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
+                for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                    if pqr != [] and n<pqrCount:
+                        if pqr != None and pqr.any(None):
+                            mean = np.mean(pqr[:, i])
+                            std = np.std(pqr[:, i])
+                            alable = 'Gyro'
+                            if pqrCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
+                            ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
-        ax[0].legend(ncol=2)
-        for i in range(3):
-            ax[i].grid(True)
+                if len(refTime) != 0:
+                    ax[i].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
+
+        for i in range(pqrCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
         self.saveFig(fig, 'pqrIMU')
 
     def imuAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
-        self.configureSubplot(ax[0], 'Acc X (m/s^2)', 'sec')
-        self.configureSubplot(ax[1], 'Acc Y (m/s^2)', 'sec')
-        self.configureSubplot(ax[2], 'Acc Z (m/s^2)', 'sec')
+
+        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+        ax = fig.subplots(3, accCount, sharex=True, squeeze=False)
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
         for d in self.active_devs:
-            (time, dt, acc1, acc2, acc3) = self.loadAccels(d)
+            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refAcc = refImu['acc']
 
             for i in range(3):
-                if acc1 != []:
-                    ax[i].plot(time, acc1[:, i], label=self.log.serials[d])
-                if acc2 != []:
-                    ax[i].plot(time, acc2[:, i], label=self.log.serials[d])
-                if acc3 != []:
-                    ax[i].plot(time, acc3[:, i], label=self.log.serials[d])
+                axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
+                for n, acc in enumerate([ acc0, acc1, acc2 ]):
+                    if acc != [] and n<accCount:
+                        if acc != None and acc.any(None):
+                            mean = np.mean(acc[:, i])
+                            std = np.std(acc[:, i])
+                            alable = 'Accel'
+                            if accCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
+                            ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
-        ax[0].legend(ncol=2)
-        for i in range(3):
-            ax[i].grid(True)
+                if len(refTime) != 0:
+                    ax[i].plot(refTime, refAcc[:, i], color='red', label="reference")
+
+        for i in range(accCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
+        self.saveFig(fig, 'accIMU')
+
+    def allanVariancePQR(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+        ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
+        fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+
+            for i in range(3):
+                axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
+                for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                    if pqr != [] and n<pqrCount:
+                        if pqr.any(None):
+                            # Averaging window tau values from dt to Nsamples/10
+                            t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(pqr[:,i])), 200)
+                            # Compute the overlapping ADEV
+                            (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                            # Compute random walk and bias instability
+                            t_bi_max = 1000
+                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                            bi = np.amin(ad[0:idx_max])
+                            rw_idx = (np.abs(t2 - 0.4)).argmin()
+                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                            alable = 'Gyro'
+                            if pqrCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/\sqrt{hr}$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
+                            ax[i, n].loglog(t2, ad * RAD2DEG*3600, label=self.log.serials[d])
+
+        for i in range(pqrCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
+        self.saveFig(fig, 'pqrIMU')
+
+    def allanVarianceAcc(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+        ax = fig.subplots(3, accCount, sharex=True, squeeze=False)
+        fig.suptitle('Allan Variance: Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+
+            for i in range(3):
+                axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
+                for n, acc in enumerate([ acc0, acc1, acc2 ]):
+                    if acc != [] and n<accCount:
+                        if acc.any(None):
+                            # Averaging window tau values from dt to Nsamples/10
+                            t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(acc[:,i])), 200)
+                            # Compute the overlapping ADEV
+                            (t2, ad, ade, adn) = allantools.oadev(acc[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                            # Compute random walk and bias instability
+                            t_bi_max = 1000
+                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                            bi = np.amin(ad[0:idx_max])
+                            rw_idx = (np.abs(t2 - 0.4)).argmin()
+                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                            alable = 'Accel'
+                            if accCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.4g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (rw * 3600/RTHR2RTS, bi), 'sec')
+                            ax[i, n].loglog(t2, ad, label=self.log.serials[d])
+
+        for i in range(accCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
         self.saveFig(fig, 'accIMU')
 
     def accelPSD(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
-        self.configureSubplot(ax[0], 'AccX 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
-        self.configureSubplot(ax[1], 'AccY 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
-        self.configureSubplot(ax[2], 'AccZ 0 PSD (dB (m/s^2)^2/Hz)', 'Hz')
+
+        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+        ax = fig.subplots(3, accCount, sharex=True, squeeze=False)
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        
         for d in self.active_devs:
-            (time, dt, acc1, acc2, acc3) = self.loadAccels(d)
+            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refAcc = refImu['acc']
 
             N = time.size
             psd = np.zeros((N//2, 3))
@@ -808,34 +939,50 @@ class logPlot:
             Fs = 1 / np.mean(dt)
             f = np.linspace(0, 0.5*Fs, N // 2)
 
-            for i in range(3):
-                sp0 = np.fft.fft(acc1[:,i] / 9.8)
-                sp0 = sp0[:N // 2]
-                # psd = abssp*abssp
-                # freq = np.fft.fftfreq(time.shape[-1])
-#                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                psd[:,i] = 1/N/Fs * np.abs(sp0)**2
-                psd[1:-1,i] = 2 * psd[1:-1,i]
+            for n, acc in enumerate([ acc0, acc1, acc2 ]):
+                if acc != [] and n<accCount:
+                    if acc.any(None):
+                        for i in range(3):
+                            sp0 = np.fft.fft(acc[:,i] / 9.8)
+                            sp0 = sp0[:N // 2]
+                            # psd = abssp*abssp
+                            # freq = np.fft.fftfreq(time.shape[-1])
+            #                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
+                            psd[:,i] = 1/N/Fs * np.abs(sp0)**2
+                            psd[1:-1,i] = 2 * psd[1:-1,i]
 
-            for i in range(3):
-                # ax[i].loglog(f, psd[:, i])
-                ax[i].plot(f, 10*np.log10(psd[:, i]))
+                        for i in range(3):
+                            axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
+                            # ax[i].loglog(f, psd[:, i])
+                            alable = 'Accel'
+                            if accCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' PSD (dB (m/s^2)^2/Hz)', 'Hz')
+                            ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
 
-        ax[0].legend(ncol=2)
-        for i in range(3):
-            ax[i].grid(True)
+        for i in range(accCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
         self.saveFig(fig, 'accelPSD')
 
     def gyroPSD(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
-        self.configureSubplot(ax[0], 'Gyr0 X PSD (dB dps^2/Hz)', 'Hz')
-        self.configureSubplot(ax[1], 'Gyr0 Y PSD (dB dps^2/Hz)', 'Hz')
-        self.configureSubplot(ax[2], 'Gyr0 Z PSD (dB dps^2/Hz)', 'Hz')
+
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+        ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        
         for d in self.active_devs:
-            (time, dt, pqr1, pqr2, pqr3) = self.loadGyros(d)
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            if len(refTime)!=0:
+                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = refImu
+                refAcc = refImu['acc']
 
             N = time.size
             Nhalf = N // 2 + 1
@@ -843,22 +990,34 @@ class logPlot:
             # 1/T = frequency
             Fs = 1 / np.mean(dt)
             f = np.linspace(0, 0.5*Fs, Nhalf)
-            
-            for i in range(3):
-                sp0 = np.fft.fft(pqr1[:,i] * 180.0/np.pi)
-                sp0 = sp0[:Nhalf]
-                # psd = abssp*abssp
-                # freq = np.fft.fftfreq(time.shape[-1])
-    #                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
-                psd[:,i] = 1/N/Fs * np.abs(sp0)**2
-                psd[1:-1,i] = 2 * psd[1:-1,i]
 
-            for i in range(3):
-                ax[i].plot(f, 10*np.log10(psd[:, i]))
+            for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                if pqr != [] and n<pqrCount:
+                    if pqr.any(None):            
+                        for i in range(3):
+                            sp0 = np.fft.fft(pqr[:,i] * 180.0/np.pi)
+                            sp0 = sp0[:Nhalf]
+                            # psd = abssp*abssp
+                            # freq = np.fft.fftfreq(time.shape[-1])
+                #                    np.append(psd, [1/N/Fs * np.abs(sp0)**2], axis=1)
+                            psd[:,i] = 1/N/Fs * np.abs(sp0)**2
+                            psd[1:-1,i] = 2 * psd[1:-1,i]
 
-        ax[0].legend(ncol=2)
-        for i in range(3):
-            ax[i].grid(True)
+                        for i in range(3):
+                            axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
+                            # ax[i].loglog(f, psd[:, i])
+                            alable = 'Gyro'
+                            if pqrCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' PSD (dB dps^2/Hz)', 'Hz')
+                            ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
+
+        for i in range(pqrCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
         self.saveFig(fig, 'gyroPSD')
 
     def magnetometer(self, fig=None):
@@ -871,7 +1030,10 @@ class logPlot:
         self.configureSubplot(ax[2], 'Mag Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = self.getData(d, DID_MAGNETOMETER, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
+            time = self.getData(d, DID_MAGNETOMETER, 'time')
+            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+            if np.shape(towOffset)[0] != 0:
+                time = time + towOffset[-1]
             mag = self.getData(d, DID_MAGNETOMETER, 'mag')
             magX = mag[:,0]
             magY = mag[:,1]
@@ -879,6 +1041,13 @@ class logPlot:
             ax[0].plot(time, magX, label=self.log.serials[d])
             ax[1].plot(time, magY)
             ax[2].plot(time, magZ)
+
+            refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
+            if len(refTime)!=0:
+                refMag = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+                refMag = refMag
+                for i in range(3):
+                    ax[2*i].plot(refTime, refMag[:, i], color='red', label="reference")
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -1508,6 +1677,11 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc')
 
+    def sensorCompMag(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag')
+
     def sensorCompGyrTime(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1519,6 +1693,10 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc', useTime=True)
 
+    def sensorCompMagTime(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag', useTime=True)
 
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
@@ -1536,25 +1714,38 @@ class logPlot:
                     ax[d,i].set_xlabel("Temperature (C)")
                 if name=='pqr':
                     ax[d,i].set_ylabel("Gyro (deg/s)")
-                else:
+                elif name=='acc':
                     ax[d,i].set_ylabel("Accel (m/s^2)")
+                elif name=='mag':
+                    ax[d,i].set_ylabel("Mag")
 
         for d in self.active_devs:
-            mpu = self.getData(d, DID_SCOMP, 'mpu')
+            time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
+            imu = self.getData(d, DID_SCOMP, name)
+            status = self.getData(d, DID_SCOMP, 'status')
+
+            if name=='mag':
+                refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
+                if len(refTime)!=0:
+                    refVal = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+            else:
+                refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+                if len(refTime)!=0:
+                    refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                    refImu = refImu
+                    refVal = refImu[name]
 
             for i in range(2):
-                temp = mpu[:,i]['lpfLsb']['temp']
-                if useTime:
-                    temp = range(len(temp))
-                sensor = mpu[:,i]['lpfLsb'][name]
-
-                if name=='acc' and sensor[:,2][0] > 4:
-                    sensor[:,2] -= 19.6
+                temp = imu[:,i]['lpfTemp']
+                sensor = imu[:,i]['lpfLsb']
 
                 if name=='pqr':
                     scalar = RAD2DEG
                 else:
                     scalar = 1.0
+
+                if useTime:
+                    temp = time
 
                 # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
                 ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
@@ -1562,6 +1753,20 @@ class logPlot:
                 ax[2,i].plot(temp, sensor[:,2]*scalar)
                 if name=='acc':
                     ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
+
+                if useTime and 1:
+                    # Show sensor valid status bit
+                    if name=='acc':
+                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                    else:
+                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
+                    ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
+                    ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
+
+                    if len(refTime) != 0:
+                        for j in range(3):
+                            ax[j, i].plot(refTime, refVal[:, j] * scalar, color='red', label="reference")
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)

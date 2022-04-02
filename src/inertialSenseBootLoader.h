@@ -1,7 +1,14 @@
+/**
+ * @file inertialSenseBootLoader.h
+ * @brief Routines for updating Inertial Sense products with the SAM-BA 
+ *  bootloader (uINS-3, uINS-4, EVB-2)
+ * 
+ */
+
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -18,6 +25,7 @@ extern "C" {
 #endif
 
 #include "serialPort.h"
+#include "ISBootloaderTypes.h"
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
@@ -40,16 +48,6 @@ extern "C" {
 #define BOOTLOADER_RETRIES         1
 #endif
 
-#ifndef BOOTLOADER_ERROR_LENGTH
-#define BOOTLOADER_ERROR_LENGTH	512		// Set to zero to disable
-#endif
-
-/** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
-typedef int(*pfnBootloadProgress)(const void* obj, float percent);
-
-/** Bootloader information string function prototype. */
-typedef void(*pfnBootloadStatus)(const void* obj, const char* infoString);
-
 typedef struct
 {
 	const char* fileName; // read from this file
@@ -57,12 +55,11 @@ typedef struct
     int forceBootloaderUpdate;
 	serial_port_t* port; // connect with this serial port
 	char error[BOOTLOADER_ERROR_LENGTH];
-	const void* obj; // user defined pointer
+	void* obj; // user defined pointer
 	pfnBootloadProgress uploadProgress; // upload progress
 	pfnBootloadProgress verifyProgress; // verify progress
     pfnBootloadStatus statusText;       // receives status text for progress
 	const char* verifyFileName; // optional, writes verify file to the path if not 0
-	int numberOfDevices; // number of devices if bootloading in parallel
 	int baudRate; // baud rate to connect to
     union
     {
@@ -89,7 +86,7 @@ Boot load a .hex or .bin file to a device
 @return 0 on success, -1 on failure
 */
 int bootloadFile(serial_port_t* port, const char* fileName, const char* bootName,
-    const void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
+    void* obj, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress);
 int bootloadFileEx(bootload_params_t* params);
 
 /**

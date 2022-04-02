@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <regex>
 #include <set>
 #include <sstream>
+#include <mutex>
 
 #include "ISFileManager.h"
 #include "ISLogger.h"
@@ -48,6 +49,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 const string cISLogger::g_emptyString;
+
+#if !PLATFORM_IS_EMBEDDED
+static std::mutex g_devices_mutex;
+#endif
 
 bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 {
@@ -89,14 +94,9 @@ cISLogger::~cISLogger()
 
 void cISLogger::Cleanup()
 {
-	// Delete old devices
-	for (unsigned int i = 0; i < m_devices.size(); i++)
-	{
-		if (m_devices[i] != NULLPTR)
-		{
-			delete m_devices[i];
-		}
-	}
+#if !PLATFORM_IS_EMBEDDED
+	const std::lock_guard<std::mutex> lock(g_devices_mutex);
+#endif
 	m_devices.clear();
 	m_logStats.Clear();
 }
@@ -219,7 +219,8 @@ bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directo
 	else
 	{
 		// Only use first 15 characters for the timestamp
-		m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
+		// m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
+		m_timeStamp = timeStamp;
 	}
 
 	return InitSaveCommon(logType, directory, subDirectory, numDevices, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
@@ -228,27 +229,30 @@ bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directo
 
 bool cISLogger::InitDevicesForWriting(int numDevices)
 {
+	// Remove all devices
 	Cleanup();
 
-	// Add devices
-	m_devices.resize(numDevices);
-
-	// Create and init new devices
-	for (int i = 0; i < numDevices; i++)
-	{
-		switch (m_logType)
-		{
-		default:
-		case LOGTYPE_DAT:	m_devices[i] = new cDeviceLogSerial();	break;
-#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-		case LOGTYPE_SDAT:	m_devices[i] = new cDeviceLogSorted();	break;
-		case LOGTYPE_CSV:	m_devices[i] = new cDeviceLogCSV();		break;
-		case LOGTYPE_JSON:	m_devices[i] = new cDeviceLogJSON();	break;
-		case LOGTYPE_KML:	m_devices[i] = new cDeviceLogKML();		break;
+	// Add new devices
+	{	
+#if !PLATFORM_IS_EMBEDDED
+		const std::lock_guard<std::mutex> lock(g_devices_mutex);
 #endif
-		}
+		for (int i = 0; i < numDevices; i++)
+		{
+			switch (m_logType)
+			{
+			default:
+			case LOGTYPE_DAT:	m_devices.push_back(make_shared<cDeviceLogSerial>());	break;
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
+			case LOGTYPE_SDAT:	m_devices.push_back(make_shared<cDeviceLogSorted>());	break;
+			case LOGTYPE_CSV:	m_devices.push_back(make_shared<cDeviceLogCSV>());		break;
+			case LOGTYPE_JSON:	m_devices.push_back(make_shared<cDeviceLogJSON>());		break;
+			case LOGTYPE_KML:	m_devices.push_back(make_shared<cDeviceLogKML>());		break;
+#endif
+			}
 
-		m_devices[i]->InitDeviceForWriting(i, m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
+			m_devices[i]->InitDeviceForWriting(i, m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
+		}
 	}
 
 	//m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
@@ -321,15 +325,20 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
                         serialNumbers.insert(serialNumber);
 
                         // Add devices
-                        switch (logType)
-                        {
-                        default:
-                        case cISLogger::LOGTYPE_DAT: m_devices.push_back(new cDeviceLogSerial()); break;
-#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-                        case cISLogger::LOGTYPE_SDAT: m_devices.push_back(new cDeviceLogSorted()); break;
-                        case cISLogger::LOGTYPE_CSV: m_devices.push_back(new cDeviceLogCSV()); break;
-                        case cISLogger::LOGTYPE_JSON: m_devices.push_back(new cDeviceLogJSON()); break;
+						{
+#if !PLATFORM_IS_EMBEDDED
+							const std::lock_guard<std::mutex> lock(g_devices_mutex);
 #endif
+							switch (logType)
+							{
+							default:
+							case cISLogger::LOGTYPE_DAT:    m_devices.push_back(make_shared<cDeviceLogSerial>()); break;
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
+							case cISLogger::LOGTYPE_SDAT:   m_devices.push_back(make_shared<cDeviceLogSorted>()); break;
+							case cISLogger::LOGTYPE_CSV:    m_devices.push_back(make_shared<cDeviceLogCSV>()); break;
+							case cISLogger::LOGTYPE_JSON:   m_devices.push_back(make_shared<cDeviceLogJSON>()); break;
+#endif
+							}
                         }
                         m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
 
@@ -454,6 +463,15 @@ void cISLogger::CloseAllFiles()
 
     m_logStats.WriteToFile(m_directory + "/stats.txt");
 	m_errorFile.close();
+}
+
+
+void cISLogger::FlushToFile()
+{
+	for( unsigned int i = 0; i < m_devices.size(); i++ )
+	{
+		m_devices[i]->FlushToFile();
+	}
 }
 
 

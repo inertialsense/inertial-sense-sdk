@@ -77,6 +77,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createButtonColumn(self):
         super(logInspectorInternal, self).createButtonColumn()
+        self.addButton('Allan Var. PQR', lambda: self.plot('allanVariancePQR'))
+        self.addButton('Allan Var. Accel', lambda: self.plot('allanVarianceAcc'))
         self.addButton('Debug Int', lambda: self.plot('debugiArr'))
         self.addButton('Debug Float', lambda: self.plot('debugfArr'))
         self.addButton('Debug Double', lambda: self.plot('debuglfArr'))
@@ -99,8 +101,10 @@ class logInspectorInternal(LogInspectorWindow):
         self.addButton('GPS Raw Time', lambda: self.plot('gpsRawTime'))
         self.addButton('Sensor Comp Gyr', lambda: self.plot('sensorCompGyr'))
         self.addButton('Sensor Comp Acc', lambda: self.plot('sensorCompAcc'))
+        self.addButton('Sensor Comp Mag', lambda: self.plot('sensorCompMag'))
         self.addButton('Snsr Comp Gyr Time', lambda: self.plot('sensorCompGyrTime'))
         self.addButton('Snsr Comp Acc Time', lambda: self.plot('sensorCompAccTime'))
+        self.addButton('Snsr Comp Mag Time', lambda: self.plot('sensorCompMagTime'))
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
     def createBottomToolbar(self):

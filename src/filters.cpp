@@ -93,11 +93,6 @@ void iir_filter_s16(iif_filter_t *f, short input[], float output[])
 }
 
 
-
-
-
-
-
 /** 
  * \brief Running Average Filter
  *  A running average of the input array is collected in the mean array.  Filter
@@ -149,6 +144,37 @@ void running_mean_filter_f64( double mean[], float input[], int arraySize, int s
         mean[i] = (1.0-alpha)*mean[i] + (alpha)*(double)input[i];
 }
 
+
+/**
+ * \brief Recursive Moving Average and Variance Filter
+ * Recursive computation of moving average and variance given their previous
+ * values, new element in the set, number of elements in the set (window size) and
+ * assuming that one of the elements in the set is removed when new one is
+ * added (i.e. fixed window size).
+ * Reference: http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation
+ *
+ * \param mean          Moving average of the set
+ * \param var           Moving variance of the set
+ * \param input         Floating point value added to the set
+ * \param sampleCount   Number of samples in the sliding window
+ */
+void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount)
+{
+    float dx, div;
+
+    if (sampleCount <= 0) return;
+
+    dx = input - *mean;
+
+    // Expected moving average
+    div = 1.0f / (float)sampleCount;
+    *mean += dx * div;
+
+    // Expected moving variance
+    *var = ((float)(sampleCount * sampleCount - sampleCount - 1) * (*var) + (float)(sampleCount - 1) * dx * dx) * div * div;
+}
+
+
 #define INVALID_ACCEL 1.0e-6f
 void errorCheckImu3(imu3_t *di)
 {
@@ -169,7 +195,7 @@ void errorCheckImu3(imu3_t *di)
 }
 
 
-void tripleToSingleImu(imu_t *result, const imu3_t *di)
+int tripleToSingleImu(imu_t *result, const imu3_t *di)
 {
 	imu_t imu = {};
 	imu.time = di->time;
@@ -204,6 +230,64 @@ void tripleToSingleImu(imu_t *result, const imu3_t *di)
 	}
 
 	*result = imu;
+	return cnt;
+}
+
+
+int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
+{
+	imu_t imu = {};
+	imu.time = di->time;
+	imu.status = di->status;
+
+	int cnt = 0;
+
+	for (int idev = 0; idev < 3; idev++)
+	{
+		if (!exclude[idev])
+		{
+			add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
+			add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
+			cnt++;
+		}
+	}
+
+	if (cnt > 0)
+	{
+		float div = 1.0f / (float)cnt;
+		mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
+		mul_Vec3_X(imu.I.acc, imu.I.acc, div);
+	}
+
+	*result = imu;
+	return cnt;
+}
+
+void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)
+{
+	float w = 0.0f, a = 0.0f;
+	int cnt_gyro = 0, cnt_acc = 0;
+
+	for (int idev = 0; idev < 3; idev++)
+	{
+		if (!exclude_gyro[idev])
+		{
+			w += di->I[idev].pqr[iaxis];
+			cnt_gyro++;
+		}
+		if (!exclude_acc[idev])
+		{
+			a += di->I[idev].acc[iaxis];
+			cnt_acc++;
+		}
+	}
+	if (cnt_gyro > 0) w = w / (float)cnt_gyro;
+	if (cnt_acc > 0)  a = a / (float)cnt_acc;
+
+	result->I.pqr[iaxis] = w;
+	result->I.acc[iaxis] = a;
+	result->time = di->time;
+	result->status = di->status;
 }
 
 
