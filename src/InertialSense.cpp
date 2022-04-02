@@ -728,13 +728,13 @@ void InertialSense::BootloadStatusUpdate()
 		}
 		else
 		{
-			progress += ISBootloader::ctx[i]->updateProgress * 0.5;
-			progress += ISBootloader::ctx[i]->verifyProgress * 0.5;
+			progress += ISBootloader::ctx[i]->updateProgress * 0.5f;
+			progress += ISBootloader::ctx[i]->verifyProgress * 0.5f;
 		}
     }
 
     progress /= num_devices;
-	int percent = progress * 100;
+	int percent = (int)(progress * 100.0f);
 	printf("\rProgress: %d%%\r", percent);
 }
 
@@ -782,9 +782,15 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	strncpy(firmware.samba_bootloader_path, bootloaderFileName.c_str(), 256);
 	firmware.samba_force_update = forceBootloaderUpdate;
 
+	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+	#endif
+	
 	ISBootloader::update(portStrings, baudRate, &firmware, uploadProgress, verifyProgress, infoProgress, NULL, BootloadStatusUpdate);
+	
+	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
+	#endif
 
 	// If any thread failed, we return failure
 	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
