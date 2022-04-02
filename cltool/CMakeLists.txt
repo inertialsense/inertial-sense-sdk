@@ -71,22 +71,14 @@ add_executable(cltool
 	../src/tinyxmlparser.cpp
 )
 
-# Need to apt install libusb-dev
-find_path(LIBUSB_INCLUDE_DIR
-	NAMES libusb.h
-	PATH_SUFFIXES "include" "libusb" "libusb-1.0"
-)
 find_library(LIBUSB_LIBRARY
 	NAMES usb-1.0
 	PATH_SUFFIXES "lib" "lib32" "lib64"
 )
 
 target_include_directories(cltool PUBLIC
-	# ${SYSTEM_INCLUDE_DIRS}
-	${LIBUSB_INCLUDE_DIR}
 	../../src
 	../../src/libusb
-	../../src/libusb/os
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
