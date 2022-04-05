@@ -485,19 +485,21 @@ typedef struct PACKED
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
 {
-	/** Serial number */
+	/** Inertial Sense serial number */
 	uint32_t		serialNumber;
 
-	/** Lot number */
+	/** Inertial Sense lot number */
 	uint32_t		lotNumber;
 
-	/** Manufacturing date (YYYYMMDDHHMMSS) */
+	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
 	/** Key */
 	uint32_t		key;
-} manufacturing_info_t;
 
+	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
+	uint32_t 		uid[4];
+} manufacturing_info_t;
 
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
 typedef struct PACKED
