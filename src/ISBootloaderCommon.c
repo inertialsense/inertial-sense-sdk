@@ -127,7 +127,7 @@ is_operation_result is_check_version(is_device_context* ctx)
     evb_status_t* evb_status = NULL;
     manufacturing_info_t* manufacturing_info = NULL;
     uint8_t evb_version[4];
-    if ((n = serialPortReadTimeout(&ctx->handle.port, comm.buf.start, n, 50)))
+    if ((n = serialPortReadTimeout(&ctx->handle.port, comm.buf.start, n, 200)))
     {
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
@@ -145,12 +145,12 @@ is_operation_result is_check_version(is_device_context* ctx)
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_EVB_STATUS)
             {
                 evb_status = (evb_status_t*)comm.dataPtr;
-                if(evb_status->firmwareVer) memcpy(ctx->hdw_info.evb_version, evb_version, 4);   // Only copy EVB status stuff if it is plugged through EVB port
+                if(evb_status->firmwareVer[0]) memcpy(ctx->hdw_info.evb_version, evb_version, 4);   // Only copy EVB status stuff if it is plugged through EVB port
             }
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_MANUFACTURING_INFO)
             {
                 manufacturing_info = (manufacturing_info_t*)comm.dataPtr;
-                sprintf(ctx->match_props.serial_number, "%X%X", manufacturing_info->serialNumber + manufacturing_info->lotNumber, (uint16_t)(manufacturing_info->key >> 16));
+                sprintf(ctx->match_props.serial_number, "%X%X", manufacturing_info->uid[0] + manufacturing_info->uid[2], (uint16_t)(manufacturing_info->uid[1] >> 16));
             }
         }
     }
