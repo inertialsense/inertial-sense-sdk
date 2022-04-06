@@ -98,7 +98,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies);..\..\src\libusb\msvc\libusb-1.0.lib</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies);..\..\src\libusb\msvc\libusb-1.0-32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -265,12 +265,6 @@
     <ClInclude Include="..\..\src\time_conversion.h" />
     <ClInclude Include="..\..\src\tinystr.h" />
     <ClInclude Include="..\..\src\tinyxml.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\src\libusb\msvc\libusb-1.0.lib" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\src\libusb\msvc\libusb-1.0.pdb" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

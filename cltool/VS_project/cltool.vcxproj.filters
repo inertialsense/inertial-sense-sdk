@@ -322,10 +322,4 @@
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\src\libusb\msvc\libusb-1.0.lib" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\src\libusb\msvc\libusb-1.0.pdb" />
-  </ItemGroup>
 </Project>
