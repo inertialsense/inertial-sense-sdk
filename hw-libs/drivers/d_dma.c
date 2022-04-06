@@ -31,8 +31,8 @@ void XDMAC_Handler(void)
 	XDMAC_usartDMA_Handler();
 	
 #ifndef TESTBED
+
 	XDMAC_i2c_Handler();
-#endif
 	
 #ifdef __INERTIAL_SENSE_EVB_2__
 	
@@ -58,6 +58,8 @@ void XDMAC_Handler(void)
 	#endif // ENABLE_SPI_COMM_INTERRUPTS
 
 #endif	// __INERTIAL_SENSE_EVB_2__
+
+#endif // #ifndef TESTBED
 
 }
 
