@@ -214,6 +214,11 @@ void neg_Mat3x3(ixMatrix3 result, const ixMatrix3 m);
  */
 void mul_Mat3x3_X(ixMatrix3 result, const ixMatrix3 m, const f_t x);
 
+/* Divide
+ * result(3x3) = m(3x3) ./ x
+ */
+void div_Mat3x3_X(ixVector3 result, const ixMatrix3 m, const f_t x);
+
 /* Multiply
  * result(3x3) = v1(3x1) * v2(1x3)
  */
@@ -291,6 +296,7 @@ void mul_Vec4d_X( ixVector4d result, const ixVector4d v, const double x );
  * result(3x1) = v(3) ./ x
  */
 void div_Vec3_X( ixVector3 result, const ixVector3 v, const f_t x );
+void div_Vec3d_X(ixVector3d result, const ixVector3d v, const double x);
 
 /* Divide
  * result(4x1) = v(4) ./ x
