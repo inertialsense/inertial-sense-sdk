@@ -473,6 +473,22 @@ void neg_Mat3x3(ixMatrix3 result, const ixMatrix3 m)
     result[8] = -m[8];
 }
 
+void mul_Mat3x3_X(ixMatrix3 result, const ixMatrix3 m, const f_t x)
+{
+	// Row 1
+	result[0] = m[0] * x;
+	result[1] = m[1] * x;
+	result[2] = m[2] * x;
+	// Row 2
+	result[3] = m[3] * x;
+	result[4] = m[4] * x;
+	result[5] = m[5] * x;
+	// Row 3
+	result[6] = m[6] * x;
+	result[7] = m[7] * x;
+	result[8] = m[8] * x;
+}
+
 void mul_Vec3x1_Vec1x3( ixMatrix3 result, const ixVector3 v1, const  ixVector3 v2 )
 {
 	// Row 1
