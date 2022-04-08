@@ -160,6 +160,8 @@ extern "C" {
 #define PORT_SEL_SER2	2
 #define PORT_SEL_USB	3
 
+#define BOOTLOADER_UINS_RESET_GPS 0   // LEGACY.  NOT needed now that we use a sync char pattern for bootloader handshake.
+
 typedef union
 {
 	struct  
