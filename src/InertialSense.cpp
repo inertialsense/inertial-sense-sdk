@@ -12,7 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "protocol_nmea.h"
 #include "InertialSense.h"
+#ifndef EXCLUDE_BOOTLOADER
 #include "ISBootloader.h"
+#endif
 
 using namespace std;
 
@@ -696,6 +698,8 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 
 void InertialSense::BootloadStatusUpdate()
 {
+#ifndef EXCLUDE_BOOTLOADER
+
     for(size_t i = 0; i < ISBootloader::ctx.size(); i++)
     {
         if(ISBootloader::ctx[i]->infoString_new)
@@ -736,6 +740,8 @@ void InertialSense::BootloadStatusUpdate()
     progress /= num_devices;
 	int percent = (int)(progress * 100.0f);
 	printf("\rProgress: %d%%\r", percent);
+
+#endif // EXCLUDE_BOOTLOADER
 }
 
 vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
@@ -749,6 +755,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	bool forceBootloaderUpdate
 )
 {
+#ifndef EXCLUDE_BOOTLOADER
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
 
@@ -802,6 +809,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	}
 
 	return results;
+#endif // EXCLUDE_BOOTLOADER
 }
 
 bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)

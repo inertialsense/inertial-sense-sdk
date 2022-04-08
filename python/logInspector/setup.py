@@ -22,8 +22,7 @@ class get_pybind_include(object):
 
 
 ext_modules = [
-    Extension(
-        'log_reader',
+    Extension('log_reader',
         ['src/log_reader.cpp',
          '../../src/cltool.cpp',
          '../../src/cltool_main.cpp',
@@ -69,7 +68,8 @@ ext_modules = [
          '../../src/tinyxml.cpp',
          '../../src/tinyxmlerror.cpp',
          '../../src/tinyxmlparser.cpp'],
-        include_dirs=[
+        define_macros = [('EXCLUDE_BOOTLOADER', 1)],
+        include_dirs = [
             # Path to pybind11 headers
             'include',
             '../src',
