@@ -27,7 +27,7 @@ ifeq ($(OS),Windows_NT) # Windows (any, not just NT)
 
 # Windows mkdir isn't same as linux
 mkdir = mkdir $(subst /,\,$(1)) > nul 2>&1 || (exit 0)
-rm = rmdir /Q /S $(subst /,\,$(1))
+rm = rmdir /Q /S $(subst /,\,$(1)) > nul 2>&1 || (exit 0)
 
 COMPILER_DIR := C:/PROGRA~2/Atmel/Studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
 
@@ -87,15 +87,15 @@ BUILD_MODE = debug
 DEBUG_FLAGS = -g3
 OPT_FLAGS = -O0
 DEFS += -DDEBUG
-OBJECT_DIR = $(ROOT)/Debug/cpp/hdw-src
-BIN_DIR = $(ROOT)/Debug
+OBJECT_DIR = Debug/cpp/hdw-src
+BIN_DIR = Debug
 else
 BUILD_MODE = release
 DEBUG_FLAGS = -g3
 OPT_FLAGS = -O3
 DEFS += -DNDEBUG
-OBJECT_DIR = $(ROOT)/Release/cpp/hdw-src
-BIN_DIR = $(ROOT)/Release
+OBJECT_DIR = Release/cpp/hdw-src
+BIN_DIR = Release
 endif
 
 #################################
@@ -103,125 +103,125 @@ endif
 #################################
 
 C_SRCS += \
-    $(SDK_DIR)/src/ISUtilities.cpp                                                                 \
-    $(SDK_DIR)/src/ISFileManager.cpp                                                               \
-    $(SDK_DIR)/src/ISLogger.cpp                                                                    \
-    $(SDK_DIR)/src/ISLogStats.cpp                                                                  \
-    $(SDK_DIR)/src/DeviceLog.cpp                                                                   \
-    $(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
-    $(SDK_DIR)/src/DataChunk.cpp                                                                   \
-    $(SDK_DIR)/src/ISDataMappings.cpp                                                              \
-    $(SDK_DIR)/src/ISPose.cpp                                                                      \
-    $(SDK_DIR)/src/convert_ins.cpp                                                                 \
-    $(SDK_DIR)/src/data_sets.c                                                                     \
-    $(SDK_DIR)/src/com_manager.c                                                                   \
-    $(SDK_DIR)/src/ISComm.c                                                                        \
-    $(ASF_DIR)/sam/utils/syscalls/gcc/syscalls.c                                                   \
-    $(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc.c                                            \
-    $(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc_mem.c                                        \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/common/source/nm_common.c                  \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/m2m_wifi.c                   \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/bsp/source/nm_bsp_same70.c                 \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/socket/source/socket.c                     \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/m2m_hif.c                    \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmbus.c                      \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmspi.c                      \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/bus_wrapper/source/nm_bus_wrapper_same70.c \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmasic.c                     \
-    $(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmdrv.c                      \
-    $(ASF_DIR)/common/services/clock/same70/sysclk.c                                               \
-    $(ASF_DIR)/common/services/delay/sam/cycle_counter.c                                           \
-    $(ASF_DIR)/common/services/serial/usart_serial.c                                               \
-    $(ASF_DIR)/common/services/sleepmgr/sam/sleepmgr.c                                             \
-    $(ASF_DIR)/common/services/spi/sam_spi/spi_master.c                                            \
-    $(ASF_DIR)/common/services/spi/sam_usart_spi/usart_spi.c                                       \
-    $(ASF_DIR)/common/services/storage/ctrl_access/ctrl_access.c                                   \
-    $(ASF_DIR)/common/services/usb/class/cdc/device/udi_cdc.c                                      \
-    $(ASF_DIR)/common/services/usb/class/cdc/device/udi_cdc_desc.c                                 \
-    $(ASF_DIR)/common/services/usb/udc/udc.c                                                       \
-    $(ASF_DIR)/common/utils/interrupt/interrupt_sam_nvic.c                                         \
-    $(ASF_DIR)/common/utils/stdio/read.c                                                           \
-    $(ASF_DIR)/common/utils/stdio/write.c                                                          \
-    $(ASF_DIR)/sam/boards/user_board/init.c                                                        \
-    $(ASF_DIR)/sam/drivers/efc/efc.c                                                               \
-    $(ASF_DIR)/sam/drivers/hsmci/hsmci.c                                                           \
-    $(ASF_DIR)/sam/drivers/mcan/mcan.c                                                             \
-    $(ASF_DIR)/sam/drivers/mpu/mpu.c                                                               \
-    $(ASF_DIR)/sam/drivers/pio/pio.c                                                               \
-    $(ASF_DIR)/sam/drivers/pio/pio_handler.c                                                       \
-    $(ASF_DIR)/sam/drivers/pmc/pmc.c                                                               \
-    $(ASF_DIR)/sam/drivers/pmc/sleep.c                                                             \
-    $(ASF_DIR)/sam/drivers/pwm/pwm.c                                                               \
-    $(ASF_DIR)/sam/drivers/rtc/rtc.c                                                               \
-    $(ASF_DIR)/sam/drivers/rtt/rtt.c                                                               \
-    $(ASF_DIR)/sam/drivers/spi/spi.c                                                               \
-    $(ASF_DIR)/sam/drivers/tc/tc.c                                                                 \
-    $(ASF_DIR)/sam/drivers/twihs/twihs.c                                                           \
-    $(ASF_DIR)/sam/drivers/uart/uart.c                                                             \
-    $(ASF_DIR)/sam/drivers/usart/usart.c                                                           \
-    $(ASF_DIR)/sam/drivers/usbhs/usbhs_device.c                                                    \
-    $(ASF_DIR)/sam/drivers/wdt/wdt.c                                                               \
-    $(ASF_DIR)/sam/drivers/afec/afec.c                                                             \
-    $(ASF_DIR)/sam/drivers/xdmac/xdmac.c                                                           \
-    $(ASF_DIR)/sam/services/flash_efc/flash_efc.c                                                  \
-    $(ASF_DIR)/sam/utils/cmsis/same70/source/templates/gcc/startup_same70.c                        \
-    $(ASF_DIR)/sam/utils/cmsis/same70/source/templates/system_same70.c                             \
-    $(ASF_DIR)/thirdparty/fatfs/fatfs-port-r0.09/diskio.c                                          \
-    $(ASF_DIR)/thirdparty/fatfs/fatfs-port-r0.09/sam/fattime_rtc.c                                 \
-    $(ASF_DIR)/thirdparty/fatfs/fatfs-r0.09/src/ff.c                                               \
-    $(ASF_DIR)/thirdparty/fatfs/fatfs-r0.09/src/option/ccsbcs.c                                    \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/croutine.c                               \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/event_groups.c                           \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/list.c                                   \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/portable/GCC/ARM_CM7/r0p1/port.c         \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/portable/MemMang/heap_4.c                \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/queue.c                                  \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/stream_buffer.c                          \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/tasks.c                                  \
-    $(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/timers.c                                 \
-    $(HW_LIBS_DIR)/FreeRTOS_new.cpp                                                                \
-    $(HW_LIBS_DIR)/drivers/CAN.c                                                                   \
-    $(HW_LIBS_DIR)/drivers/d_dma.c                                                                 \
-    $(HW_LIBS_DIR)/drivers/d_flash.c                                                               \
-    $(HW_LIBS_DIR)/drivers/d_i2c.c                                                                 \
-    $(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
-    $(HW_LIBS_DIR)/drivers/d_time.c                                                                \
-    $(HW_LIBS_DIR)/misc/bootloaderApp.c                                                            \
-    $(HW_LIBS_DIR)/misc/rtos.c                                                                     \
-    $(HW_LIBS_DIR)/printf-master/printf.c                                                          \
-    $(SRC_DIR)/communications.cpp                                                                  \
-    $(SRC_DIR)/wheel_encoder.cpp                                                                   \
-    $(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
-    $(SRC_DIR)/drivers/d_adc.c                                                                     \
-    $(SRC_DIR)/globals.c                                                                           \
-    $(SRC_DIR)/ISLogFileFatFs.cpp                                                                  \
-    $(SRC_DIR)/sd_card_logger.cpp                                                                  \
-    $(SRC_DIR)/spiTouINS.c                                                                         \
-    $(SRC_DIR)/user_interface.cpp                                                                  \
-    $(SRC_DIR)/wifi.c                                                                              \
-    $(SRC_DIR)/xbee.cpp                                                                            \
-    $(SRC_DIR)/main.cpp                                                                            \
-    $(SRC_DIR)/evb_tasks.cpp                                                                       \
+	$(SDK_DIR)/src/ISUtilities.cpp                                                                 \
+	$(SDK_DIR)/src/ISFileManager.cpp                                                               \
+	$(SDK_DIR)/src/ISLogger.cpp                                                                    \
+	$(SDK_DIR)/src/ISLogStats.cpp                                                                  \
+	$(SDK_DIR)/src/DeviceLog.cpp                                                                   \
+	$(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
+	$(SDK_DIR)/src/DataChunk.cpp                                                                   \
+	$(SDK_DIR)/src/ISDataMappings.cpp                                                              \
+	$(SDK_DIR)/src/ISPose.cpp                                                                      \
+	$(SDK_DIR)/src/convert_ins.cpp                                                                 \
+	$(SDK_DIR)/src/data_sets.c                                                                     \
+	$(SDK_DIR)/src/com_manager.c                                                                   \
+	$(SDK_DIR)/src/ISComm.c                                                                        \
+	$(ASF_DIR)/sam/utils/syscalls/gcc/syscalls.c                                                   \
+	$(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc.c                                            \
+	$(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc_mem.c                                        \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/common/source/nm_common.c                  \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/m2m_wifi.c                   \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/bsp/source/nm_bsp_same70.c                 \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/socket/source/socket.c                     \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/m2m_hif.c                    \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmbus.c                      \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmspi.c                      \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/bus_wrapper/source/nm_bus_wrapper_same70.c \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmasic.c                     \
+	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv/driver/source/nmdrv.c                      \
+	$(ASF_DIR)/common/services/clock/same70/sysclk.c                                               \
+	$(ASF_DIR)/common/services/delay/sam/cycle_counter.c                                           \
+	$(ASF_DIR)/common/services/serial/usart_serial.c                                               \
+	$(ASF_DIR)/common/services/sleepmgr/sam/sleepmgr.c                                             \
+	$(ASF_DIR)/common/services/spi/sam_spi/spi_master.c                                            \
+	$(ASF_DIR)/common/services/spi/sam_usart_spi/usart_spi.c                                       \
+	$(ASF_DIR)/common/services/storage/ctrl_access/ctrl_access.c                                   \
+	$(ASF_DIR)/common/services/usb/class/cdc/device/udi_cdc.c                                      \
+	$(ASF_DIR)/common/services/usb/class/cdc/device/udi_cdc_desc.c                                 \
+	$(ASF_DIR)/common/services/usb/udc/udc.c                                                       \
+	$(ASF_DIR)/common/utils/interrupt/interrupt_sam_nvic.c                                         \
+	$(ASF_DIR)/common/utils/stdio/read.c                                                           \
+	$(ASF_DIR)/common/utils/stdio/write.c                                                          \
+	$(ASF_DIR)/sam/boards/user_board/init.c                                                        \
+	$(ASF_DIR)/sam/drivers/efc/efc.c                                                               \
+	$(ASF_DIR)/sam/drivers/hsmci/hsmci.c                                                           \
+	$(ASF_DIR)/sam/drivers/mcan/mcan.c                                                             \
+	$(ASF_DIR)/sam/drivers/mpu/mpu.c                                                               \
+	$(ASF_DIR)/sam/drivers/pio/pio.c                                                               \
+	$(ASF_DIR)/sam/drivers/pio/pio_handler.c                                                       \
+	$(ASF_DIR)/sam/drivers/pmc/pmc.c                                                               \
+	$(ASF_DIR)/sam/drivers/pmc/sleep.c                                                             \
+	$(ASF_DIR)/sam/drivers/pwm/pwm.c                                                               \
+	$(ASF_DIR)/sam/drivers/rtc/rtc.c                                                               \
+	$(ASF_DIR)/sam/drivers/rtt/rtt.c                                                               \
+	$(ASF_DIR)/sam/drivers/spi/spi.c                                                               \
+	$(ASF_DIR)/sam/drivers/tc/tc.c                                                                 \
+	$(ASF_DIR)/sam/drivers/twihs/twihs.c                                                           \
+	$(ASF_DIR)/sam/drivers/uart/uart.c                                                             \
+	$(ASF_DIR)/sam/drivers/usart/usart.c                                                           \
+	$(ASF_DIR)/sam/drivers/usbhs/usbhs_device.c                                                    \
+	$(ASF_DIR)/sam/drivers/wdt/wdt.c                                                               \
+	$(ASF_DIR)/sam/drivers/afec/afec.c                                                             \
+	$(ASF_DIR)/sam/drivers/xdmac/xdmac.c                                                           \
+	$(ASF_DIR)/sam/services/flash_efc/flash_efc.c                                                  \
+	$(ASF_DIR)/sam/utils/cmsis/same70/source/templates/gcc/startup_same70.c                        \
+	$(ASF_DIR)/sam/utils/cmsis/same70/source/templates/system_same70.c                             \
+	$(ASF_DIR)/thirdparty/fatfs/fatfs-port-r0.09/diskio.c                                          \
+	$(ASF_DIR)/thirdparty/fatfs/fatfs-port-r0.09/sam/fattime_rtc.c                                 \
+	$(ASF_DIR)/thirdparty/fatfs/fatfs-r0.09/src/ff.c                                               \
+	$(ASF_DIR)/thirdparty/fatfs/fatfs-r0.09/src/option/ccsbcs.c                                    \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/croutine.c                               \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/event_groups.c                           \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/list.c                                   \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/portable/GCC/ARM_CM7/r0p1/port.c         \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/portable/MemMang/heap_4.c                \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/queue.c                                  \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/stream_buffer.c                          \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/tasks.c                                  \
+	$(ASF_DIR)/thirdparty/freertos/freertos-10.0.0/Source/timers.c                                 \
+	$(HW_LIBS_DIR)/FreeRTOS_new.cpp                                                                \
+	$(HW_LIBS_DIR)/drivers/CAN.c                                                                   \
+	$(HW_LIBS_DIR)/drivers/d_dma.c                                                                 \
+	$(HW_LIBS_DIR)/drivers/d_flash.c                                                               \
+	$(HW_LIBS_DIR)/drivers/d_i2c.c                                                                 \
+	$(HW_LIBS_DIR)/drivers/d_usartDMA.c                                                            \
+	$(HW_LIBS_DIR)/drivers/d_time.c                                                                \
+	$(HW_LIBS_DIR)/misc/bootloaderApp.c                                                            \
+	$(HW_LIBS_DIR)/misc/rtos.c                                                                     \
+	$(HW_LIBS_DIR)/printf-master/printf.c                                                          \
+	$(SRC_DIR)/communications.cpp                                                                  \
+	$(SRC_DIR)/wheel_encoder.cpp                                                                   \
+	$(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
+	$(SRC_DIR)/drivers/d_adc.c                                                                     \
+	$(SRC_DIR)/globals.c                                                                           \
+	$(SRC_DIR)/ISLogFileFatFs.cpp                                                                  \
+	$(SRC_DIR)/sd_card_logger.cpp                                                                  \
+	$(SRC_DIR)/spiTouINS.c                                                                         \
+	$(SRC_DIR)/user_interface.cpp                                                                  \
+	$(SRC_DIR)/wifi.c                                                                              \
+	$(SRC_DIR)/xbee.cpp                                                                            \
+	$(SRC_DIR)/main.cpp                                                                            \
+	$(SRC_DIR)/evb_tasks.cpp                                                                       \
 
 #################################
 # Include Directories
 #################################
 
 INCLUDES +=	\
-    $(SRC_DIR) \
-    $(SRC_DIR)/config \
-    $(SRC_DIR)/drivers 
+	$(SRC_DIR) \
+	$(SRC_DIR)/config \
+	$(SRC_DIR)/drivers 
 
 INCLUDES += $(SDK_DIR)/src
 
 INCLUDES += \
-    $(HW_LIBS_DIR)                \
-    $(HW_LIBS_DIR)/communications \
-    $(HW_LIBS_DIR)/config         \
-    $(HW_LIBS_DIR)/drivers        \
-    $(HW_LIBS_DIR)/hardware       \
-    $(HW_LIBS_DIR)/libusb/include \
-    $(HW_LIBS_DIR)/printf-master  
+	$(HW_LIBS_DIR)                \
+	$(HW_LIBS_DIR)/communications \
+	$(HW_LIBS_DIR)/config         \
+	$(HW_LIBS_DIR)/drivers        \
+	$(HW_LIBS_DIR)/hardware       \
+	$(HW_LIBS_DIR)/libusb/include \
+	$(HW_LIBS_DIR)/printf-master  
 
 INCLUDES += \
 	$(ASF_DIR)/common/boards                                                        \
@@ -314,8 +314,8 @@ DEFS= \
 
 # CPU type flags
 CPU_FLAGS = -mcpu=cortex-m7 \
-        -mthumb \
-        -mfloat-abi=softfp \
+		-mthumb \
+		-mfloat-abi=softfp \
 		-mfpu=fpv5-d16
 
 # Dependency flags
@@ -383,7 +383,7 @@ main-build: pre-build
 
 clean:
 	$(info Cleaning project)
-	$(rm) $(BIN_DIR)
+	@$(call rm,$(BIN_DIR))
 
 -include $(DEPENDENCIES)
 
