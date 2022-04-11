@@ -402,7 +402,7 @@ $(TARGET_HEX): $(TARGET_ELF)
 $(TARGET_ELF): $(OBJECTS)
 	$(info Linking $@ in $(BUILD_MODE) mode...)
 	@$(CXX) -o $@ $(OBJECTS) $(FLAGS_LD)  
-	@$(OD) -h -S $@ > $(BIN_DIR)/$(IS_TARGET).lss
+	@$(OD) -h -S $@ > $(TARGET_LSS)
 	$(info Program size table:)
 	@$(SIZE) $@
 
