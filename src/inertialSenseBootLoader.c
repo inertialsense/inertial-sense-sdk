@@ -1090,7 +1090,6 @@ static void bootloaderRestart(serial_port_t* s)
 static int bootloaderSync(serial_port_t* s)
 {
     static const unsigned char handshakerChar = 'U';
-    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
 
     //Most usages of this function we do not know if we can communicate (still doing auto-baud or checking to see if the bootloader or application is running) so trying to reset unit here does not make sense.
     //This was probably added because the PC bootloader was doing multiple syncs in a row but the hardware bootloader only allowed one.
@@ -1109,6 +1108,8 @@ static int bootloaderSync(serial_port_t* s)
     }
 
 #if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in (2022 Q4) after bootloader v5a is out of circulation. WHJ
+
+    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
 
     // Attempt handshake using extended string for bootloader v5a
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
