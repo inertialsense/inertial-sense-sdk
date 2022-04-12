@@ -777,7 +777,7 @@ class logPlot:
                 axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                 for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
                     if pqr != [] and n<pqrCount:
-                        if pqr != None and pqr.any(None):
+                        if (pqr is not None) and pqr.any(None):
                             mean = np.mean(pqr[:, i])
                             std = np.std(pqr[:, i])
                             alable = 'Gyro'
@@ -817,7 +817,7 @@ class logPlot:
                 axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                 for n, acc in enumerate([ acc0, acc1, acc2 ]):
                     if acc != [] and n<accCount:
-                        if acc != None and acc.any(None):
+                        if (acc is not None) and acc.any(None):
                             mean = np.mean(acc[:, i])
                             std = np.std(acc[:, i])
                             alable = 'Accel'
