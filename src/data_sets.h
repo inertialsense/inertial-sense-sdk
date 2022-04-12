@@ -814,8 +814,7 @@ typedef struct PACKED
     /** GPS time of week (since Sunday morning) in milliseconds */
     uint32_t                timeOfWeekMs;
 
-	/** if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0, Speed in ECEF {vx,vy,vz} (m/s)
-		if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA = 1, Speed in NED {vN, vE, 0} (m/s) */
+	/** If status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0, Speed in ECEF {vx,vy,vz} (m/s).  If status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA = 1, Speed in NED {vN, vE, 0} (m/s) */
 	float					vel[3];	
 
 	/** Speed accuracy in meters / second */
