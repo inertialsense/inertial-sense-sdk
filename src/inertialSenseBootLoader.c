@@ -24,6 +24,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SAM_BA_FLASH_START_ADDRESS 0x00400000
 #define SAM_BA_BOOTLOADER_SIZE 16384
 
+#define SUPPORT_BOOTLOADER_V5A      // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in (2022 Q4) after bootloader v5a is out of circulation. WHJ
+
 #define X_SOH 0x01
 #define X_EOT 0x04
 #define X_ACK 0x06
@@ -1088,6 +1090,7 @@ static void bootloaderRestart(serial_port_t* s)
 static int bootloaderSync(serial_port_t* s)
 {
     static const unsigned char handshakerChar = 'U';
+    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
 
     //Most usages of this function we do not know if we can communicate (still doing auto-baud or checking to see if the bootloader or application is running) so trying to reset unit here does not make sense.
     //This was probably added because the PC bootloader was doing multiple syncs in a row but the hardware bootloader only allowed one.
@@ -1104,6 +1107,20 @@ static int bootloaderSync(serial_port_t* s)
             return 1;
         }
     }
+
+#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in (2022 Q4) after bootloader v5a is out of circulation. WHJ
+
+    // Attempt handshake using extended string for bootloader v5a
+    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
+    {
+        if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        {	// Success
+            serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+            return 1;
+        }
+    }
+
+#endif
 
     return 0;
 }
