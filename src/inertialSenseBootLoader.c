@@ -1107,7 +1107,7 @@ static int bootloaderSync(serial_port_t* s)
         }
     }
 
-#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in (2022 Q4) after bootloader v5a is out of circulation. WHJ
+#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in 2022 Q4 after bootloader v5a is out of circulation. WHJ
 
     static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
 
