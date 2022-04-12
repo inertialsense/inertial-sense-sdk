@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SAM_BA_FLASH_START_ADDRESS 0x00400000
 #define SAM_BA_BOOTLOADER_SIZE 16384
 
-#define SUPPORT_BOOTLOADER_V5A      // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in (2022 Q4) after bootloader v5a is out of circulation. WHJ
+#define SUPPORT_BOOTLOADER_V5A      // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 
 #define X_SOH 0x01
 #define X_EOT 0x04
@@ -1107,7 +1107,7 @@ static int bootloaderSync(serial_port_t* s)
         }
     }
 
-#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in 2022 Q4 after bootloader v5a is out of circulation. WHJ
+#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 
     static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
 
