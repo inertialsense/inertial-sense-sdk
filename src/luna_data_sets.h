@@ -306,7 +306,7 @@ typedef struct
 	uint32_t                timeMs;
 
 	/** Control mode (see eLunaWheelControllerMode) */
-	uint32_t                mode;
+	uint32_t                modeCmd;
 
 	/** Forward velocity (m/s) */
 	float					fwd_vel;
@@ -376,7 +376,7 @@ typedef struct
 	float                	dt;
 
 	/** Wheel control mode: (see eLunaWheelControllerMode) */
-	uint32_t            	mode;
+	uint32_t            	current_mode;
 
 	/** Wheel control status (see eLunaWheelControllerStatus) */
 	uint32_t            	status;
