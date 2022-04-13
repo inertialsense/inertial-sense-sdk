@@ -144,7 +144,8 @@ setup(
     description='pybind interface to reading InertialSense Log files',
     long_description='',
     ext_modules=ext_modules,
-    install_requires=['pybind11>=2.2', 
+    install_requires=[
+        'pybind11>=2.2', 
         'pyqt5<=5.13', 
         'numpy', 
         'matplotlib', 
