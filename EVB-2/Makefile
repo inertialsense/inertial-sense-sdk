@@ -301,7 +301,7 @@ TARGET_MAP=$(BIN_DIR)/$(IS_TARGET).map
 # Flags
 #################################
 
-DEFS= \
+DEFS += \
 	-D__SAME70Q20B__ \
 	-DBOARD=USER_BOARD \
 	-DARM_MATH_CM7=true \
@@ -313,10 +313,11 @@ DEFS= \
 	-DCONF_PERIPH
 
 # CPU type flags
-CPU_FLAGS = -mcpu=cortex-m7 \
-		-mthumb \
-		-mfloat-abi=softfp \
-		-mfpu=fpv5-d16
+CPU_FLAGS = \
+	-mcpu=cortex-m7 \
+	-mthumb \
+	-mfloat-abi=softfp \
+	-mfpu=fpv5-d16
 
 # Dependency flags
 DEP_FLAGS = -MD -MP -MF $(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o)
