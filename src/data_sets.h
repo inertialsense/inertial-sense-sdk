@@ -55,8 +55,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
-#define DID_SENSORS_IS1                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Cross-axis aligned w/ scale factor */
-#define DID_SENSORS_IS2                 (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated */
+#define DID_SENSORS_IS1                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output.  Common scale factor applied to ADC output. */
+#define DID_SENSORS_IS2                 (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
 #define DID_IO                          (eDataIDs)27 /** (io_t) I/O */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
@@ -71,8 +71,8 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
-#define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
-#define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
+#define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) Calibrated IMU1 output.  Temperature compensated and motion calibrated. */
+#define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) Calibrated IMU2 output.  Temperature compensated and motion calibrated. */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_mem_t) */
 #define DID_CAL_SC1                     (eDataIDs)43 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_CAL_SC2                     (eDataIDs)44 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
@@ -1267,18 +1267,30 @@ typedef struct PACKED
 
 /* (DID_SENSORS_CAL1, DID_SENSORS_CAL2) */
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
-	f_t						pqr[3];         // (rad/s)	Angular rate
-	f_t						acc[3];         // (m/s^2)	Linear acceleration
-	f_t						mag[3];         // (uT)		Magnetometers
-	f_t						temp;			// (°C)		Temperature of MPU
+{
+	/** (rad/s) Angular rate.  Units only apply for calibrated data. */
+	f_t						pqr[3];
+
+	/** (m/s^2) Linear acceleration.  Units only apply for calibrated data. */
+	f_t						acc[3];
+
+	/** (uT) Magnetometers.  Units only apply for calibrated data. */
+	f_t						mag[3];
+
+	/** (°C) Temperature of MPU.  Units only apply for calibrated data. */
+	f_t						temp;
 } sensors_mpu_w_temp_t;
 
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
-	f_t						pqr[3];         // (rad/s)	Gyros
-	f_t						acc[3];         // (m/s^2)	Accelerometers
-	f_t						mag[3];         // (uT)		Magnetometers
+{
+	/** (rad/s) Gyros.  Units only apply for calibrated data. */
+	f_t						pqr[3];
+
+	/** (m/s^2) Accelerometers.  Units only apply for calibrated data. */
+	f_t						acc[3];
+
+	/** (uT) Magnetometers.  Units only apply for calibrated data. */
+	f_t						mag[3];
 } sensors_mpu_t;
 
 // (DID_SENSORS_TC_BIAS)
@@ -1289,7 +1301,8 @@ typedef struct PACKED
 
 // (DID_SENSORS_IS1, DID_SENSORS_IS2)
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
+{                                       
+	/** Units only apply for calibrated data */
 	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
 } sensors_w_temp_t;
 
