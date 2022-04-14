@@ -1481,22 +1481,53 @@ typedef struct PACKED
 
 typedef struct PACKED
 {											// INL2 - Magnetometer observer info 
-	uint32_t				timeOfWeekMs;	// Timestamp in milliseconds
+	/** Timestamp in milliseconds */
+	uint32_t				timeOfWeekMs;	
+
+	/** Number of calibration samples */
 	uint32_t				Ncal_samples;
-	uint32_t				ready;			// Data ready to be processed
-	uint32_t				calibrated;		// Calibration data present.  Set to -1 to force mag recalibration.
-	uint32_t				auto_recal;		// Allow mag to auto-recalibrate
-	uint32_t				outlier;		// Bad sample data
-	float					magHdg;			// Heading from magnetometer
-	float					insHdg;			// Heading from INS
-	float					magInsHdgDelta;	// Difference between mag heading and (INS heading plus mag declination)
-	float					nis;			// Normalized innovation squared (likelihood metric)
-	float					nis_threshold;	// Threshold for maximum NIS
-	float					Wcal[9];		// Magnetometer calibration matrix. Must be initialized with a unit matrix, not zeros!
-	uint32_t				activeCalSet;	// active calibration set (0 or 1)
-	float					magHdgOffset;	// Offset between magnetometer heading and estimate heading
-    float                   Tcal;           // Scaled computed variance between calibrated magnetometer samples. 
-	float                   bias_cal[3];    // Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal)
+
+	/** Data ready to be processed */
+	uint32_t				ready;
+
+	/** Calibration data present.  Set to -1 to force mag recalibration. */	
+	uint32_t				calibrated;
+
+	/** Allow mag to auto-recalibrate */
+	uint32_t				auto_recal;
+
+	/** Bad sample data */		
+	uint32_t				outlier;
+
+	/** Heading from magnetometer */
+	float					magHdg;
+
+	/** Heading from INS */			
+	float					insHdg;
+
+	/** Difference between mag heading and (INS heading plus mag declination) */
+	float					magInsHdgDelta;
+
+	/** Normalized innovation squared (likelihood metric) */
+	float					nis;
+
+	/** Threshold for maximum NIS */
+	float					nis_threshold;
+
+	/** Magnetometer calibration matrix. Must be initialized with a unit matrix, not zeros! */
+	float					Wcal[9];
+
+	/** Active calibration set (0 or 1) */
+	uint32_t				activeCalSet;
+
+	/** Offset between magnetometer heading and estimate heading */
+	float					magHdgOffset;
+
+	/** Scaled computed variance between calibrated magnetometer samples.  */
+    float                   Tcal;
+
+	/** Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal) */
+	float                   bias_cal[3];
 } inl2_mag_obs_info_t;
 
 /** Built-in Test: State */
