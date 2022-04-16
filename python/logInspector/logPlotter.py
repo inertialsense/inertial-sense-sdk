@@ -756,7 +756,7 @@ class logPlot:
             for i in range(3):
                 axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                 for n, pqr in enumerate([ pqr0, pqr1 ]):
-                    if pqr != None and pqr.any(None):
+                    if (pqr is not None) and pqr.any(None):
                         mean = np.mean(pqr[:, i])
                         std = np.std(pqr[:, i])
                         self.configureSubplot(ax[i, n], 'Gyro%d ' % n + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
@@ -791,7 +791,7 @@ class logPlot:
             for i in range(3):
                 axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                 for n, acc in enumerate([ acc0, acc1 ]):
-                    if acc != None and acc.any(None):
+                    if (acc is not None) and acc.any(None):
                         mean = np.mean(acc[:, i])
                         std = np.std(acc[:, i])
                         self.configureSubplot(ax[i, n], 'Accel%d ' % n + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
