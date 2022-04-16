@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['mag_5fcal_5ft_5752',['mag_cal_t',['../data__sets_8h.html#abd5b0c7e90ab439886a0898b93e33484',1,'data_sets.h']]],
-  ['magnetometer_5ft_5753',['magnetometer_t',['../data__sets_8h.html#aa2914dee15ba9a097ed1cee43bfb856f',1,'data_sets.h']]],
-  ['manufacturing_5finfo_5ft_5754',['manufacturing_info_t',['../data__sets_8h.html#aae14634cda1eb5a58fb72684f531c76c',1,'data_sets.h']]],
-  ['map_5fname_5fto_5finfo_5ft_5755',['map_name_to_info_t',['../_i_s_data_mappings_8h.html#ab539505899fa9fc79a929a8d14fbd609',1,'ISDataMappings.h']]]
+  ['mag_5fcal_5ft',['mag_cal_t',['../data__sets_8h.html#a68043a4edcfd178227c2afd61bd9f586',1,'data_sets.h']]],
+  ['magnetometer_5ft',['magnetometer_t',['../data__sets_8h.html#a4be00f4285847c80d813a66ec60492ef',1,'data_sets.h']]],
+  ['manufacturing_5finfo_5ft',['manufacturing_info_t',['../data__sets_8h.html#af0077fa3982cfd6365eb7f3286145d1a',1,'data_sets.h']]],
+  ['map_5fname_5fto_5finfo_5ft',['map_name_to_info_t',['../_i_s_data_mappings_8h.html#ab539505899fa9fc79a929a8d14fbd609',1,'ISDataMappings.h']]]
 ];

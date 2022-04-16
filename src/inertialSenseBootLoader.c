@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -23,6 +23,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SAM_BA_FLASH_PAGE_SIZE 512
 #define SAM_BA_FLASH_START_ADDRESS 0x00400000
 #define SAM_BA_BOOTLOADER_SIZE 16384
+
+#define SUPPORT_BOOTLOADER_V5A      // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 
 #define X_SOH 0x01
 #define X_EOT 0x04
@@ -1087,7 +1089,6 @@ static void bootloaderRestart(serial_port_t* s)
 
 static int bootloaderSync(serial_port_t* s)
 {
-    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
     static const unsigned char handshakerChar = 'U';
 
     //Most usages of this function we do not know if we can communicate (still doing auto-baud or checking to see if the bootloader or application is running) so trying to reset unit here does not make sense.
@@ -1099,12 +1100,28 @@ static int bootloaderSync(serial_port_t* s)
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
+        if (serialPortWriteAndWaitForTimeout(s, &handshakerChar, 1, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        {	// Success
+            serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+            return 1;
+        }
+    }
+
+#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
+
+    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
+
+    // Attempt handshake using extended string for bootloader v5a
+    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
+    {
         if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
             return 1;
         }
     }
+
+#endif
 
     return 0;
 }
@@ -1271,7 +1288,9 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                 //printf("Bootloader file version: %d%c.\n", fileVerMajor, fileVerMinor);
 
                 //Check bootloader version against file
-                if (blVerMajor < fileVerMajor || blVerMinor < fileVerMinor || p->forceBootloaderUpdate > 0)
+                if (blVerMajor < fileVerMajor || 
+                    (blVerMajor == fileVerMajor && blVerMinor < fileVerMinor) || 
+                    p->forceBootloaderUpdate > 0)
                 {
                     if (sambaSupport)
                     {

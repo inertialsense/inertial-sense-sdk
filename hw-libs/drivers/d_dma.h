@@ -6,6 +6,7 @@ extern "C" {
 
 // includes
 #include <xdmac.h>
+#include "core_cm7_4p30.h"
 
 // Memcpy then clean Data Cache to memory for before DMA starts
 #define MEMCPY_DCACHE_CLEAN(dst, src, size) \
@@ -85,8 +86,8 @@ enum
 	DMA_CH_SPI_COMM_RX,
 	DMA_CH_USART_SERIAL0_TX,
 	DMA_CH_USART_SERIAL0_RX,
-	DMA_CH_USART_SERIAL1_TX,
-	DMA_CH_USART_SERIAL1_RX,
+	DMA_CH_USART_SERIAL1_TX,	// Also used for SPI on uINS
+	DMA_CH_USART_SERIAL1_RX,	// Also used for SPI on uINS
 	DMA_CH_USART_SERIAL2_TX,
 	DMA_CH_USART_SERIAL2_RX,
 	DMA_CH_USART_GPS1_TX,
@@ -130,6 +131,19 @@ enum
 	// add more channels before this line
 	DMA_EVB_CHAN_COUNT,
 	DMA_EVB_CHAN_MAX = 24
+};
+
+// enums
+enum
+{
+	// testbed specific
+	DMA_CH_TESTBED_UINS_TX = 0,
+	DMA_CH_TESTBED_UINS_RX,			// Unused
+	DMA_CH_TESTBED_SENSONOR_TX,
+	DMA_CH_TESTBED_SENSONOR_RX,
+	// add more channels before this line
+	DMA_TESTBED_CHAN_COUNT,
+	DMA_TESTBED_CHAN_MAX = 24
 };
 
 // structs

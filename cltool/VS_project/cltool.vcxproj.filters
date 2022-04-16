@@ -279,5 +279,8 @@
     <ClInclude Include="..\..\src\message_stats.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ISLogStats.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

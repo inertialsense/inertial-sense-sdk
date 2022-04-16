@@ -26,7 +26,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISComm.h"
 #include "board_opt.h"
 #include "globals.h"
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
+#ifdef TESTBED
+#define mbr_ta	mbr_da
+#endif
+
+#ifndef __INERTIAL_SENSE_EVB_2__
+#include "user_board.h"
+#endif
 
 //Structures for driver
 #define DMA_LLD_COUNT	32	//Must be 2^x in size
@@ -80,13 +90,13 @@ typedef struct
 	uint32_t xdmacUsartTxPerId; // XDMAC channel "HW Interface Number (XDMAC_CC.PERID)".  Refer to datasheet.
 	uint32_t xdmacUsartRxPerId;
 	uint8_t isUsartNotUart;
-	uint8_t isSpiUsart;
+	uint8_t isSpi;
 } usart_info_t;
 
 typedef struct
 {
-	volatile void *usart;
-	sam_usart_opt_t usart_options;
+	volatile void *peripheral;
+	sam_usart_opt_t usart_options;		// Ignore on pure SPI peripheral (USART as SPI uses this)
 	dmaBuffer_tx_t	dmaTx;
 	dmaBuffer_rx_t	dmaRx;
 	usart_info_t uinfo;
@@ -231,7 +241,7 @@ static inline const uint8_t* getCurrentRxDmaAddress( dmaBuffer_rx_t *dma )
 static inline dmaBuffer_tx_t * getTxDma( uint32_t serialNum )
 {
 	// Get the DMA buffer pointer
-	if (serialNum >= MAX_NUMBER_SERIAL_PORTS || !g_usartDMA[serialNum].usart)
+	if (serialNum >= MAX_NUMBER_SERIAL_PORTS || !g_usartDMA[serialNum].peripheral)
 		return 0;
 	
 	return (dmaBuffer_tx_t*)&(g_usartDMA[serialNum].dmaTx);
@@ -240,7 +250,7 @@ static inline dmaBuffer_tx_t * getTxDma( uint32_t serialNum )
 static inline dmaBuffer_rx_t * getRxDma( uint32_t serialNum )
 {
 	// Get the DMA buffer pointer
-	if (serialNum >= MAX_NUMBER_SERIAL_PORTS || !g_usartDMA[serialNum].usart)
+	if (serialNum >= MAX_NUMBER_SERIAL_PORTS || !g_usartDMA[serialNum].peripheral)
 		return 0;
 	
 	return (dmaBuffer_rx_t*)&(g_usartDMA[serialNum].dmaRx);
@@ -361,7 +371,7 @@ int serTxClear( int serialNum )
 
 	//Check to see if we are in SPI mode
 	usartDMA_t *ser = (usartDMA_t*)&g_usartDMA[serialNum];
-	if (ser->uinfo.isSpiUsart)
+	if (ser->uinfo.isSpi)
 	{
 		xdmac_channel_config_t cfg = {0};
 		cfg.mbr_sa = (uint32_t)noData_indicator;
@@ -534,7 +544,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 		{
 			*s_overrunStatus |= HDW_STATUS_ERR_COM_TX_LIMITED;
 		}
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
 		g_internal_diagnostic.txOverflowCount[serialNum]++;
 #endif
 	}
@@ -559,7 +569,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 
 		// Setup DMA
 		dma->lld[dma->lld_fptr].mbr_ta = (uint32_t)dma->ptr;
-		if (ser->uinfo.isSpiUsart)
+		if (ser->uinfo.isSpi)
 		{
 			dma->lld[dma->lld_fptr].mbr_ubc = XDMAC_UBC_NVIEW_NDV0 | XDMAC_UBC_NDE_FETCH_EN | XDMAC_UBC_NSEN_UPDATED | XDMAC_UBC_UBLEN(size);
 			dma->lld[dma->lld_fptr].mbr_nda = (uint32_t)&(ser->dmaTx.lld_spi_noData[dma->lld_fptr]);	//Data lld points to noData lld
@@ -592,7 +602,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 
 			// Setup DMA for end
 			dma->lld[bufptr].mbr_ta = (uint32_t)dma->ptr;
-			if (ser->uinfo.isSpiUsart)
+			if (ser->uinfo.isSpi)
 			{
 				dma->lld[bufptr].mbr_ubc = XDMAC_UBC_NVIEW_NDV0 | XDMAC_UBC_NDE_FETCH_EN | XDMAC_UBC_NSEN_UPDATED | XDMAC_UBC_UBLEN(bytesToEnd);
 				dma->lld[bufptr].mbr_nda = (uint32_t)&(ser->dmaTx.lld[(bufptr + 1) & DMA_LLD_MASK]);	//Data lld points to next data lld
@@ -612,7 +622,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 
 		// Setup DMA for beginning
 		dma->lld[bufptr].mbr_ta = (uint32_t)dma->buf;
-		if (ser->uinfo.isSpiUsart)
+		if (ser->uinfo.isSpi)
 		{
 			dma->lld[bufptr].mbr_ubc = XDMAC_UBC_NVIEW_NDV0 | XDMAC_UBC_NDE_FETCH_EN | XDMAC_UBC_NSEN_UPDATED | XDMAC_UBC_UBLEN(bytesWrapped);
 			dma->lld[bufptr].mbr_nda = (uint32_t)&(ser->dmaTx.lld_spi_noData[bufptr]);	//Data lld points to noData lld
@@ -636,13 +646,12 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 	// Indicate Transmit
 	SER_INDICATE_TX();
 
-	if (ser->uinfo.isSpiUsart)
+	if (ser->uinfo.isSpi)
 	{
 #if CONF_BOARD_USART_SPI_DATAREADY_ENABLE == 1
 		//Block interrupt handler from running while we add data so there isn't a race condition on the data ready pin
 		NVIC_DisableIRQ(XDMAC_IRQn);
 #endif
-
 		//Connect up the new lld nodes
 		uint32_t newLld = (dma->lld_bptr + 1) & DMA_LLD_MASK;
 		ser->dmaTx.lld_spi_noData[dma->lld_bptr].mbr_nda = (uint32_t)&(ser->dmaTx.lld[newLld]);
@@ -708,7 +717,7 @@ void XDMAC_usartDMA_Handler(void)
 	for(int i=0;i<MAX_NUMBER_SERIAL_PORTS;i++)
 	{
 		//Make sure port is valid
-		if(g_usartDMA[i].usart == 0)
+		if(g_usartDMA[i].peripheral == 0)
 			continue;
 
 		volatile dmaBuffer_tx_t	*dma = &(g_usartDMA[i].dmaTx);
@@ -718,7 +727,7 @@ void XDMAC_usartDMA_Handler(void)
 		{
 #if CONF_BOARD_USART_SPI_DATAREADY_ENABLE == 1
 			//See if we are in SPI mode on this USART
-			if (g_usartDMA[i].uinfo.isSpiUsart)
+			if (g_usartDMA[i].uinfo.isSpi)
 			{
 				//See if we are at the end of the list
 				if((uint32_t)(dma->lld_spi_noData[dma->lld_bptr].mbr_nda) == dma->dmaChId->XDMAC_CNDA)
@@ -814,7 +823,7 @@ int serRead(int serialNum, unsigned char *buf, int size)
 		{
 			*s_overrunStatus |= HDW_STATUS_ERR_COM_RX_OVERRUN;
 		}
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED)
 		g_internal_diagnostic.rxOverflowCount[serialNum]++;
 #endif
 		size = 0;
@@ -858,7 +867,7 @@ int serRead(int serialNum, unsigned char *buf, int size)
 		dma->lastUsedRx = dmaUsed - size;
 	}
 	
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED)
 	if (size > 0)
 	{
 		uint32_t currentTime = time_msec();
@@ -927,7 +936,7 @@ static int serEnable(int serialNum)
 	// Re-init UART
 	if (ser->uinfo.isUsartNotUart)
 	{	// Initialize USART
-		if (ser->uinfo.isSpiUsart)
+		if (ser->uinfo.isSpi)
 		{	// Initialize the USART in SPI slave mode.
 			usart_spi_opt_t opt = {
 				.baudrate     = 3000000,  // ignored when configuring for slave mode
@@ -935,16 +944,16 @@ static int serEnable(int serialNum)
 				.spi_mode     = SPI_MODE_3,
 				.channel_mode = US_MR_CHMODE_NORMAL
 			};
-			usart_init_spi_slave((Usart*)ser->usart, &opt);
+			usart_init_spi_slave((Usart*)ser->peripheral, &opt);
 		}
 		else
 		{	// Initialize the USART in RS232 mode.
-			usart_init_rs232((Usart*)ser->usart, &(ser->usart_options), sysclk_get_peripheral_hz());
+			usart_init_rs232((Usart*)ser->peripheral, &(ser->usart_options), sysclk_get_peripheral_hz());
 		}
 		
 		// Enable the receiver and transmitter.
-		usart_enable_tx((Usart*)ser->usart);
-		usart_enable_rx((Usart*)ser->usart);
+		usart_enable_tx((Usart*)ser->peripheral);
+		usart_enable_rx((Usart*)ser->peripheral);
 	}
 	else
 	{	// Initialize UART
@@ -960,27 +969,41 @@ static int serEnable(int serialNum)
 		};
 		
 		// Initialize the UART in normal mode.
-		uart_init((Uart*)ser->usart, &p_uart_opt);
+		uart_init((Uart*)ser->peripheral, &p_uart_opt);
 		
 		// Enable the receiver and transmitter.
-		uart_enable((Uart*)ser->usart);
+		uart_enable((Uart*)ser->peripheral);
 	}
 
 	return 0;
 }
 
-#ifndef __INERTIAL_SENSE_EVB_2__
-int validateBaudRate(unsigned int baudRate)
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
+
+static int spiEnable(int serialNum)
 {
-	// Valid baudrates for InertialSense hardware
-	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
+	usartDMA_t *ser = (usartDMA_t*)&g_usartDMA[serialNum];
+
+	if (!ser->uinfo.isSpi)
 	{
-		if (g_validBaudRates[i] == baudRate)
-		{
-			return 0;
-		}
+		return -1;
 	}
-	return -1;
+	
+	uint32_t chip_select = spi_get_pcs(0);
+
+	/* Configure an SPI peripheral. */
+	// spi_enable_clock(SPI_SLAVE_BASE);		// We already do this in the parent function.
+	spi_disable((Spi*)ser->peripheral);
+	spi_reset((Spi*)ser->peripheral);
+	spi_set_slave_mode((Spi*)ser->peripheral);
+	spi_disable_mode_fault_detect((Spi*)ser->peripheral);
+	spi_set_peripheral_chip_select_value((Spi*)ser->peripheral, chip_select);	// TODO: Make configurable. Currently hard coded to NPCS0
+	spi_set_clock_polarity((Spi*)ser->peripheral, 0, SPI_SLAVE_CLK_POLARITY);	// TODO: Make configurable. Currently hard coded to NPCS0
+	spi_set_clock_phase((Spi*)ser->peripheral, 0, SPI_SLAVE_CLK_PHASE);			// TODO: Make configurable. Currently hard coded to NPCS0
+	spi_set_bits_per_transfer((Spi*)ser->peripheral, 0, SPI_CSR_BITS_8_BIT);	// TODO: Make configurable. Currently hard coded to NPCS0
+	spi_enable((Spi*)ser->peripheral);
+	
+	return 0;
 }
 #endif
 
@@ -988,10 +1011,10 @@ int validateBaudRate(unsigned int baudRate)
 int serSetBaudRate( int serialNum, int baudrate )
 {
 	usartDMA_t *ser = (usartDMA_t*)&g_usartDMA[serialNum];
-	if( !ser->usart ) return -1;
+	if( !ser->peripheral ) return -1;
 
 	// If we are not SPI, update baudrate
-	if (ser->uinfo.isSpiUsart == 0)
+	if (ser->uinfo.isSpi == 0)
 	{
 		// Update baudrate setting
 #ifndef __INERTIAL_SENSE_EVB_2__
@@ -1077,7 +1100,8 @@ static void serDmaTxInit(usartDMA_t *ser)
 	ser->dmaTx.lld_fptr = 0;
 	ser->dmaTx.lld_bptr = 0;
 
-	if (ser->uinfo.isSpiUsart)
+
+	if (ser->uinfo.isSpi)
 	{
 		// The datasheet says that when a transfer happens and there is no data in the TX buffer, it will send a 0xFF. Its true right after reset, it will send 0xFF.
 		// But that appears to be not true after data has been sent. If the last bit sent was high, the line stays high and will send a 0xFF, if the last bit was low, it will stay low and send 0x00.
@@ -1142,7 +1166,7 @@ static void serLoopback(int portNum)
 		// Write data
 		if (bytesRead)
 		{
-			if (g_usartDMA[portNum].uinfo.isSpiUsart)
+			if (g_usartDMA[portNum].uinfo.isSpi)
 			{
 				//we need to omit zero data for the test
 				int i, cnt = 0;
@@ -1173,7 +1197,7 @@ static void serLoopback(int portNum)
 		// Aggregate data
 		if (serRead(portNum, &(rxBuf[bytesRead]), 1, 0))
 		{	
-			if (g_usartDMA[portNum].uinfo.isSpiUsart)
+			if (g_usartDMA[portNum].uinfo.isSpi)
 			{
 				if(rxBuf[bytesRead] != 0)
 					++bytesRead;
@@ -1218,18 +1242,18 @@ static void serLoopback(int portNum)
 	xdmac_channel_disable(XDMAC, ser->dmaRx.dmaChNumber);
 
 	// For SPI mode, preload data for transmit
-	if (ser->uinfo.isSpiUsart)
+	if (ser->uinfo.isSpi)
 	{
-		((Usart*)ser->usart)->US_THR = 0;
+		((Usart*)ser->peripheral)->US_THR = 0;
 	}
 
 	while(1)
 	{
-		uint32_t status = usart_get_status((Usart*)ser->usart);
+		uint32_t status = usart_get_status((Usart*)ser->peripheral);
 
 		if(status & US_CSR_RXRDY && status & US_CSR_TXRDY)
 		{
-			((Usart*)ser->usart)->US_THR = ((Usart*)ser->usart)->US_RHR;
+			((Usart*)ser->peripheral)->US_THR = ((Usart*)ser->peripheral)->US_RHR;
 		}
 
 		watchdog_maintenance_force(); // ensure watch dog does not kill us
@@ -1238,7 +1262,7 @@ static void serLoopback(int portNum)
 
 #if ENABLE_COMM_LOOPBACK_DRIVER==4	//Assembles a packet before sending back
     LEDS_ALL_OFF();
-	((Usart*)g_usartDMA[portNum].usart)->US_THR = 0;
+	((Usart*)g_usartDMA[portNum].peripheral)->US_THR = 0;
 	
 	while (1)
 	{
@@ -1340,7 +1364,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 			break;
 #if MAX_NUMBER_SERIAL_PORTS >= 1
 		case 0:
-			ser->usart = ARGN(0, PORT0_CONFIG);
+			ser->peripheral = ARGN(0, PORT0_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT0_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT0_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT0_CONFIG);
@@ -1351,7 +1375,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 #endif
 #if MAX_NUMBER_SERIAL_PORTS >= 2
 		case 1:
-			ser->usart = ARGN(0, PORT1_CONFIG);
+			ser->peripheral = ARGN(0, PORT1_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT1_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT1_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT1_CONFIG);
@@ -1362,7 +1386,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 #endif
 #if MAX_NUMBER_SERIAL_PORTS >= 3
 		case 2:
-			ser->usart = ARGN(0, PORT2_CONFIG);
+			ser->peripheral = ARGN(0, PORT2_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT2_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT2_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT2_CONFIG);
@@ -1373,7 +1397,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 #endif
 #if MAX_NUMBER_SERIAL_PORTS >= 4
 		case 3:
-			ser->usart = ARGN(0, PORT3_CONFIG);
+			ser->peripheral = ARGN(0, PORT3_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT3_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT3_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT3_CONFIG);
@@ -1384,7 +1408,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 #endif
 #if MAX_NUMBER_SERIAL_PORTS >= 5
 		case 4:
-			ser->usart = ARGN(0, PORT4_CONFIG);
+			ser->peripheral = ARGN(0, PORT4_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT4_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT4_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT4_CONFIG);
@@ -1395,7 +1419,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 #endif
 #if MAX_NUMBER_SERIAL_PORTS >= 6
 		case 5:
-			ser->usart = ARGN(0, PORT5_CONFIG);
+			ser->peripheral = ARGN(0, PORT5_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT5_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT5_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT5_CONFIG);
@@ -1406,7 +1430,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 #endif
 #if MAX_NUMBER_SERIAL_PORTS >= 7
 		case 6:
-			ser->usart = ARGN(0, PORT6_CONFIG);
+			ser->peripheral = ARGN(0, PORT6_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT6_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT6_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT6_CONFIG);
@@ -1417,7 +1441,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 #endif
 #if MAX_NUMBER_SERIAL_PORTS >= 8
 		case 7:
-			ser->usart = ARGN(0, PORT7_CONFIG);
+			ser->peripheral = ARGN(0, PORT7_CONFIG);
 			ser->dmaTx.size			= ARGN(2, PORT7_CONFIG);
 			ser->dmaRx.size			= ARGN(4, PORT7_CONFIG);
 			ser->dmaTx.dmaChNumber  = ARGN(1, PORT7_CONFIG);
@@ -1429,7 +1453,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 	}
 
 	// Setup hardware specific items
-	if( ser->usart == USART0 )
+	if( ser->peripheral == USART0 )
 	{
 		ser->uinfo.ul_id             = ID_USART0;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(USART0->US_THR);
@@ -1437,9 +1461,9 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_USART0_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_USART0_RX;
 		ser->uinfo.isUsartNotUart    = true;
-		ser->uinfo.isSpiUsart		 = false;
+		ser->uinfo.isSpi			 = false;
 	}
-	else if( ser->usart == USART1 )
+	else if( ser->peripheral == USART1 )
 	{
 		ser->uinfo.ul_id             = ID_USART1;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(USART1->US_THR);
@@ -1447,9 +1471,9 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_USART1_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_USART1_RX;
 		ser->uinfo.isUsartNotUart    = true;
-		ser->uinfo.isSpiUsart		 = false;
+		ser->uinfo.isSpi			 = false;
 	}
-	else if( ser->usart == USART2 )
+	else if( ser->peripheral == USART2 )
 	{
 		ser->uinfo.ul_id             = ID_USART2;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(USART2->US_THR);
@@ -1457,13 +1481,13 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_USART2_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_USART2_RX;
 		ser->uinfo.isUsartNotUart    = true;
-#if CONF_BOARD_USART_SPI == 1
-		ser->uinfo.isSpiUsart        = g_spi_comm_select;
+#ifndef __INERTIAL_SENSE_EVB_2__	// Only allow this on the uINS for now
+		ser->uinfo.isSpi			 = g_spi_comm_select;
 #else
-		ser->uinfo.isSpiUsart		 = false;
+		ser->uinfo.isSpi			 = false;
 #endif
 	}
-	else if( ser->usart == UART0 )
+	else if( ser->peripheral == UART0 )
 	{
 		ser->uinfo.ul_id             = ID_UART0;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(UART0->UART_THR);
@@ -1471,9 +1495,9 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_UART0_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_UART0_RX;
 		ser->uinfo.isUsartNotUart	 = false;
-		ser->uinfo.isSpiUsart		 = false;
+		ser->uinfo.isSpi			 = false;
 	}
-	else if( ser->usart == UART1 )
+	else if( ser->peripheral == UART1 )
 	{
 		ser->uinfo.ul_id             = ID_UART1;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(UART1->UART_THR);
@@ -1481,9 +1505,9 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_UART1_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_UART1_RX;
 		ser->uinfo.isUsartNotUart	 = false;
-		ser->uinfo.isSpiUsart		 = false;
+		ser->uinfo.isSpi			 = false;
 	}
-	else if( ser->usart == UART2 )
+	else if( ser->peripheral == UART2 )
 	{
 		ser->uinfo.ul_id             = ID_UART2;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(UART2->UART_THR);
@@ -1491,9 +1515,9 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_UART2_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_UART2_RX;
 		ser->uinfo.isUsartNotUart	 = false;
-		ser->uinfo.isSpiUsart		 = false;
+		ser->uinfo.isSpi			 = false;
 	}
-	else if( ser->usart == UART3 )
+	else if( ser->peripheral == UART3 )
 	{
 		ser->uinfo.ul_id             = ID_UART3;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(UART3->UART_THR);
@@ -1501,9 +1525,9 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_UART3_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_UART3_RX;
 		ser->uinfo.isUsartNotUart    = false;
-		ser->uinfo.isSpiUsart        = false;
+		ser->uinfo.isSpi			 = false;
 	}
-	else if( ser->usart == UART4 )
+	else if( ser->peripheral == UART4 )
 	{
 		ser->uinfo.ul_id             = ID_UART4;
 		ser->uinfo.usartTxTHR        = (uint32_t)&(UART4->UART_THR);
@@ -1511,15 +1535,27 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_UART4_TX;
 		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_UART4_RX;
 		ser->uinfo.isUsartNotUart    = false;
-		ser->uinfo.isSpiUsart        = false;
+		ser->uinfo.isSpi			 = false;
 	}
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
+	else if( ser->peripheral == SPI1 )
+	{
+		ser->uinfo.ul_id             = ID_SPI1;
+		ser->uinfo.usartTxTHR        = (uint32_t)&(SPI1->SPI_TDR);
+		ser->uinfo.usartRxRHR        = (uint32_t)&(SPI1->SPI_RDR);
+		ser->uinfo.xdmacUsartTxPerId = XDMAC_PERID_SPI1_TX;
+		ser->uinfo.xdmacUsartRxPerId = XDMAC_PERID_SPI1_RX;
+		ser->uinfo.isUsartNotUart    = false;
+		ser->uinfo.isSpi			 = true;
+	}
+#endif
 	else
 	{
 #ifdef USB_PORT_NUM
 		if( serialNumber != USB_PORT_NUM )
 #endif		
 		{
-			// "Invalid USART selected!!!"
+			// "Invalid peripheral selected!!!"
 			return -1;
 		}
 	}        
@@ -1590,13 +1626,27 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t
 	// Enable the peripheral clock in the PMC
 	sysclk_enable_peripheral_clock(ser->uinfo.ul_id);
 
-	// Re-init UART
-	serSetBaudRate(serialNum, ser->usart_options.baudrate);
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
+	if(ser->uinfo.isSpi && g_hdw_detect >= HDW_DETECT_VER_IMX_3_2_4)		// uINS-3.2 and above use dedicated SPI peripheral
+	{
+		// Initialize the SPI
+		spiEnable(serialNum);
+		
+		// Turn on error interrupts
+		spi_enable_interrupt((Spi*) ser->peripheral, SPI_IER_MODF | SPI_IER_OVRES | SPI_IER_NSSR | SPI_IER_UNDES);
+		NVIC_EnableIRQ(ser->uinfo.ul_id);
+	}
+	else																	// uINS-3.1 and below use USART in SPI mode
+#endif
+	{
+		// Re-init UART
+		serSetBaudRate(serialNum, ser->usart_options.baudrate);
 
-	// Enable interrupt for errors
-	usart_enable_interrupt((Usart *)ser->usart, UART_IER_OVRE | UART_IER_FRAME | UART_IER_PARE);
-	NVIC_EnableIRQ(ser->uinfo.ul_id);
-	
+		// Enable interrupt for errors
+		usart_enable_interrupt((Usart *)ser->peripheral, UART_IER_OVRE | UART_IER_FRAME | UART_IER_PARE);
+		NVIC_EnableIRQ(ser->uinfo.ul_id);
+	}
+
 	/* Initialize and enable DMA controller */
 	pmc_enable_periph_clk(ID_XDMAC);
 
@@ -1618,7 +1668,7 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t
 	XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << (ser->dmaRx.dmaChNumber));
 
 	// For SPI mode, TX DMA needs to run all the time
-	if (ser->uinfo.isSpiUsart)
+	if (ser->uinfo.isSpi)
 	{
 		XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << (ser->dmaTx.dmaChNumber));
 	}
@@ -1639,3 +1689,6 @@ void UART4_Handler(void) { UART4->UART_CR = UART_CR_RSTSTA; }
 void USART0_Handler(void) { USART0->US_CR = US_CR_RSTSTA; }
 void USART1_Handler(void) { USART1->US_CR = US_CR_RSTSTA; }
 void USART2_Handler(void) { USART2->US_CR = US_CR_RSTSTA; }
+#if !defined(TESTBED) 
+void SPI1_Handler(void) { volatile uint32_t sr = SPI1->SPI_SR; }		// Errors cleared by reading SR
+#endif
