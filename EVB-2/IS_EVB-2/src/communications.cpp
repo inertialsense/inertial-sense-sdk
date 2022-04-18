@@ -289,6 +289,17 @@ void uINS_stream_enable_PPD(void)
 }
 
 
+void time_sync_evb_from_uINS(uint32_t week,	double timeOfWeek)
+{
+	g_towOffset = timeOfWeek - time_seclf();
+
+	g_status.week = week;
+	g_statusToWlocal = false;
+	g_status.timeOfWeekMs = (uint32_t)round(timeOfWeek*1000.0);
+	g_status.towOffset = g_towOffset;
+}
+
+
 void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 {
 	uDatasets d = {0};
@@ -307,31 +318,23 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 
 	case DID_INS_1:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
-		g_status.week = d.ins1.week;
-		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)round(d.ins1.timeOfWeek*1000);
+		time_sync_evb_from_uINS(d.ins1.week, d.ins1.timeOfWeek);
 		break;
 	                    
 	case DID_INS_2:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
 		g_msg.ins2 = d.ins2;
-		g_status.week = g_msg.ins2.week;
-		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)round(d.ins2.timeOfWeek*1000);
+		time_sync_evb_from_uINS(d.ins2.week, d.ins2.timeOfWeek);
 		break;
 
 	case DID_INS_3:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_3_t)){ /* Invalid */ return; }
-		g_status.week = d.ins1.week;
-		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)round(d.ins3.timeOfWeek*1000);
+		time_sync_evb_from_uINS(d.ins3.week, d.ins3.timeOfWeek);
 		break;
 
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
-		g_status.week = d.ins4.week;
-		g_statusToWlocal = false;
-		g_status.timeOfWeekMs = (uint32_t)round(d.ins4.timeOfWeek*1000);
+		time_sync_evb_from_uINS(d.ins4.week, d.ins4.timeOfWeek);
 		break;
 	}
 	
@@ -341,6 +344,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		s_pfnHandleUinsData(dataHdr, d);
 	}
 }
+
 
 // Convert DID to message out control mask
 uint64_t evbDidToErmcBit(uint32_t dataId)

@@ -113,6 +113,8 @@ extern date_time_t                  g_gps_date_time;
 //extern uint32_t					g_can_receive_address;
 extern bool                         g_gpsTimeSync;
 extern uint32_t                     g_comm_time_ms;
+extern double                       g_comm_time;
+extern double                       g_towOffset;
 extern bool                         g_loggerEnabled;
 extern uint32_t                     g_uInsBootloaderEnableTimeMs;
 extern bool                         g_enRtosStats;

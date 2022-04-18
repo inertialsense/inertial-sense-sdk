@@ -3424,6 +3424,9 @@ typedef struct
     /** System command (see eSystemCommand).  99 = software reset */
     uint32_t                sysCommand;
 
+	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
+	double                  towOffset;
+
 } evb_status_t;
 
 #define WIFI_SSID_PSK_SIZE      40
