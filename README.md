@@ -24,8 +24,7 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
 
 ### Hardware Design Files
 
- * [uINS PCB Design Libraries](https://docs.inertialsense.com/downloads/PCB-Design-Libraries.zip) - Schematic and layout files for printed circuit board designs.
- * [uINS, uAHRS, uIMU CAD Model](https://docs.inertialsense.com/downloads/CAD-Models-STEP.zip) - 3D step model of uINS and EVB used for CAD and circuit board designs.
+ * [IS-hdw repository](https://github.com/inertialsense/IS-hdw) CAD models of our products and PCB design assets for integration
 
 ### Support
 
