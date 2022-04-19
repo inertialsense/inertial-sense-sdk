@@ -182,7 +182,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_EVB_LUNA_STATUS] = sizeof(evb_luna_status_t);
 	sizeMap[DID_EVB_LUNA_SENSORS] = sizeof(evb_luna_sensors_t);
 	sizeMap[DID_EVB_LUNA_REMOTE_KILL] = sizeof(evb_luna_remote_kill_t);
-	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_wheel_controller_t);
+	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_velocity_control_t);
 	sizeMap[DID_EVB_LUNA_WHEEL_COMMAND] = sizeof(evb_luna_wheel_command_t);
     sizeMap[DID_EVB_LUNA_AUX_COMMAND] = sizeof(evb_luna_aux_command_t);
 
@@ -1175,31 +1175,35 @@ static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT
 
 static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[DID_COUNT])
 {
-	typedef evb_luna_wheel_controller_t MAP_TYPE;
+	typedef evb_luna_velocity_control_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_WHEEL_CONTROLLER];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "current_mode", current_mode, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-	ADD_MAP(m, totalSize, "velCmd_l", velCmd_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "velCmd_r", velCmd_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "velCmdSlew_l", velCmdSlew_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "velCmdSlew_r", velCmdSlew_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "vel_l", vel_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "vel_r", vel_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "velErr_l", velErr_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "velErr_r", velErr_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "ff_eff_l", ff_eff_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "ff_eff_r", ff_eff_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "fb_eff_l", fb_eff_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "fb_eff_r", fb_eff_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "eff_l", eff_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "eff_r", eff_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effInt_l", effInt_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effInt_r", effInt_r, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effDuty_l", effDuty_l, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "effDuty_r", effDuty_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.velCmd_f", vehicle.velCmd_f, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.velCmd_w", vehicle.velCmd_w, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.vel_f", vehicle.vel_f, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.vel_w", vehicle.vel_w, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.velCmd_l", wheel.velCmd_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.velCmd_r", wheel.velCmd_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.velCmdSlew_l", wheel.velCmdSlew_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.velCmdSlew_r", wheel.velCmdSlew_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.vel_l", wheel.vel_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.vel_r", wheel.vel_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.velErr_l", wheel.velErr_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.velErr_r", wheel.velErr_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.ff_eff_l", wheel.ff_eff_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.ff_eff_r", wheel.ff_eff_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.fb_eff_l", wheel.fb_eff_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.fb_eff_r", wheel.fb_eff_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.eff_l", wheel.eff_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.eff_r", wheel.eff_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.effInt_l", wheel.effInt_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.effInt_r", wheel.effInt_r, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.effDuty_l", wheel.effDuty_l, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel.effDuty_r", wheel.effDuty_r, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }

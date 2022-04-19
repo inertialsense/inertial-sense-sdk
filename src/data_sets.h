@@ -3930,7 +3930,7 @@ typedef union PACKED
 	infield_cal_t			infieldCal;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
-	evb_luna_wheel_controller_t     wheelController;
+	evb_luna_velocity_control_t     wheelController;
 #endif
 } uDatasets;
 

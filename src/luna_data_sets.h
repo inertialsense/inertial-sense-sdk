@@ -20,7 +20,7 @@ extern "C" {
 #define DID_EVB_LUNA_STATUS             (eDataIDs)111 /** (evb_luna_status_t) EVB Luna status. */
 #define DID_EVB_LUNA_SENSORS            (eDataIDs)112 /** (evb_luna_sensors_t) EVB Luna sensors (proximity, etc.). */
 #define DID_EVB_LUNA_REMOTE_KILL        (eDataIDs)113 /** (evb_luna_remote_kill_t) EVB remoteKill system */
-#define DID_EVB_LUNA_WHEEL_CONTROLLER   (eDataIDs)114 /** (evb_luna_wheel_controller_t) EVB wheel control information */
+#define DID_EVB_LUNA_WHEEL_CONTROLLER   (eDataIDs)114 /** (evb_luna_velocity_control_t) EVB wheel control information */
 #define DID_EVB_LUNA_WHEEL_COMMAND      (eDataIDs)115 /** (evb_luna_wheel_command_t) EVB velocity command */
 #define DID_EVB_LUNA_AUX_COMMAND        (eDataIDs)116 /** (evb_luna_aux_command_t) EVB auxillary commands */
 #define DID_LUNA_COUNT					117				/** Make larger than all Luna DIDs */
@@ -364,36 +364,33 @@ typedef enum
 	LCS_VEL_LIMITED_R_MASK			= (LCS_VEL_CMD_LIMITED_R | LCS_VEL_CMD_SLEW_LIMITED_R),
 } eLunaWheelControllerStatus;
 
-/**
-* (DID_EVB_LUNA_WHEEL_CONTROLLER) EVB Luna wheel controller info.
-*/
 typedef struct
 {
-	/** Local system time in milliseconds */
-	uint32_t                timeMs;
+	/** Vehicle forward and angular velocity, Commanded (m/s, rad/s) */
+	float 					velCmd_f;
+	float 					velCmd_w;
 
-	/** Delta time */
-	float                	dt;
+	/** Vehicle forward and angular velocity (m/s, rad/s) */
+	float 					vel_f;
+	float 					vel_w;
 
-	/** Wheel control mode: (see eLunaWheelControllerMode) */
-	uint32_t            	current_mode;
+} evb_luna_velocity_control_vehicle_t;
 
-	/** Wheel control status (see eLunaWheelControllerStatus) */
-	uint32_t            	status;
-
-	/** Velocity commanded (rad/s) */
+typedef struct
+{
+	/** Wheel velocity, Commanded (rad/s) */
 	float 					velCmd_l;
 	float 					velCmd_r;
 
-	/** Velocity commanded after slew rate (rad/s) */
+	/** Wheel velocity commanded after slew rate (rad/s) */
 	float 					velCmdSlew_l;
 	float 					velCmdSlew_r;
 
-	/** Velocity (rad/s) */
+	/** Wheel velocity (rad/s) */
 	float 					vel_l;
 	float 					vel_r;
 
-	/** Velocity error (rad/s) */
+	/** Wheel velocity error (rad/s) */
 	float 					velErr_l;
 	float 					velErr_r;
 
@@ -417,7 +414,32 @@ typedef struct
 	float 					effDuty_l;
 	float 					effDuty_r;
 
-} evb_luna_wheel_controller_t;
+} evb_luna_velocity_control_wheel_t;
+
+/**
+* (DID_EVB_LUNA_WHEEL_CONTROLLER) EVB Luna wheel controller info.
+*/
+typedef struct
+{
+	/** Local system time in milliseconds */
+	uint32_t                timeMs;
+
+	/** Delta time */
+	float                	dt;
+
+	/** Wheel control mode: (see eLunaWheelControllerMode) */
+	uint32_t            	current_mode;
+
+	/** Wheel control status (see eLunaWheelControllerStatus) */
+	uint32_t            	status;
+
+	/** Vehicle velocity control */
+	evb_luna_velocity_control_vehicle_t     vehicle;
+
+	/** Wheel velocity control */
+	evb_luna_velocity_control_wheel_t       wheel;
+
+} evb_luna_velocity_control_t;
 
 
 POP_PACK
