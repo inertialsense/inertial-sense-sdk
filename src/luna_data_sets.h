@@ -21,7 +21,7 @@ extern "C" {
 #define DID_EVB_LUNA_SENSORS            (eDataIDs)112 /** (evb_luna_sensors_t) EVB Luna sensors (proximity, etc.). */
 #define DID_EVB_LUNA_REMOTE_KILL        (eDataIDs)113 /** (evb_luna_remote_kill_t) EVB remoteKill system */
 #define DID_EVB_LUNA_WHEEL_CONTROLLER   (eDataIDs)114 /** (evb_luna_velocity_control_t) EVB wheel control information */
-#define DID_EVB_LUNA_WHEEL_COMMAND      (eDataIDs)115 /** (evb_luna_wheel_command_t) EVB velocity command */
+#define DID_EVB_LUNA_VELOCITY_COMMAND   (eDataIDs)115 /** (evb_luna_velocity_command_t) EVB velocity command */
 #define DID_EVB_LUNA_AUX_COMMAND        (eDataIDs)116 /** (evb_luna_aux_command_t) EVB auxillary commands */
 #define DID_LUNA_COUNT					117				/** Make larger than all Luna DIDs */
 
@@ -298,7 +298,7 @@ typedef struct
 } evb_luna_remote_kill_t;
 
 /**
-* (DID_EVB_LUNA_WHEEL_CMD) EVB Luna wheel command.
+* (DID_EVB_LUNA_VELOCITY_COMMAND) EVB Luna wheel command.
 */
 typedef struct
 {
@@ -314,7 +314,7 @@ typedef struct
 	/** Turn rate (rad/s) */
 	float					turn_rate;
 
-} evb_luna_wheel_command_t;
+} evb_luna_velocity_command_t;
 
 typedef struct evb_luna_aux_command_t
 {
