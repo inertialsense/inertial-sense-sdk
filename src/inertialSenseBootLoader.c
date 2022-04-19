@@ -24,6 +24,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SAM_BA_FLASH_START_ADDRESS 0x00400000
 #define SAM_BA_BOOTLOADER_SIZE 16384
 
+#define SUPPORT_BOOTLOADER_V5A      // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
+
 #define X_SOH 0x01
 #define X_EOT 0x04
 #define X_ACK 0x06
@@ -1087,7 +1089,6 @@ static void bootloaderRestart(serial_port_t* s)
 
 static int bootloaderSync(serial_port_t* s)
 {
-    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
     static const unsigned char handshakerChar = 'U';
 
     //Most usages of this function we do not know if we can communicate (still doing auto-baud or checking to see if the bootloader or application is running) so trying to reset unit here does not make sense.
@@ -1099,12 +1100,28 @@ static int bootloaderSync(serial_port_t* s)
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
+        if (serialPortWriteAndWaitForTimeout(s, &handshakerChar, 1, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        {	// Success
+            serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+            return 1;
+        }
+    }
+
+#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
+
+    static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
+
+    // Attempt handshake using extended string for bootloader v5a
+    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
+    {
         if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
             return 1;
         }
     }
+
+#endif
 
     return 0;
 }
