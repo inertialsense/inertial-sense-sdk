@@ -1,11 +1,16 @@
 var searchData=
 [
-  ['sensors_5fmpu_5fw_5ftemp_5ft_5793',['sensors_mpu_w_temp_t',['../data__sets_8h.html#aaa1dfeb45aff96920d2725b9169b926b',1,'data_sets.h']]],
-  ['serial_5fport_5ft_5794',['serial_port_t',['../serial_port_8h.html#a30b5bf7f70b4f65f4842cab84d23bb93',1,'serialPort.h']]],
-  ['size_5ftype_5795',['size_type',['../class_ti_xml_string.html#abeb2c1893a04c17904f7c06546d0b971',1,'TiXmlString']]],
-  ['strobe_5fin_5ftime_5ft_5796',['strobe_in_time_t',['../data__sets_8h.html#a95d22e270e4369122ce3255673eeda25',1,'data_sets.h']]],
-  ['sys_5fparams_5ft_5797',['sys_params_t',['../data__sets_8h.html#a6dfae3be019cfdd8f33e615315ff4538',1,'data_sets.h']]],
-  ['sys_5fsensors_5fadc_5ft_5798',['sys_sensors_adc_t',['../data__sets_8h.html#a92dfc37c7a3fd67b310d4ab809b87684',1,'data_sets.h']]],
-  ['sys_5fsensors_5ft_5799',['sys_sensors_t',['../data__sets_8h.html#ab0ee3ccee0cb01c0a955db65740f7f4f',1,'data_sets.h']]],
-  ['system_5fcommand_5ft_5800',['system_command_t',['../data__sets_8h.html#ac6ab0cc885d7cd976048b4811f088ac9',1,'data_sets.h']]]
+  ['sensor_5fcomp_5funit_5ft',['sensor_comp_unit_t',['../data__sets_8h.html#abbe0123ea22016012aa4bfe96a2ddf31',1,'data_sets.h']]],
+  ['sensor_5fcompensation_5ft',['sensor_compensation_t',['../data__sets_8h.html#aa7d3800557cd1871a4d8a52f26c5546b',1,'data_sets.h']]],
+  ['sensors_5fmpu_5ft',['sensors_mpu_t',['../data__sets_8h.html#a82c48f4436d39164f04b2e4be4765816',1,'data_sets.h']]],
+  ['sensors_5fmpu_5fw_5ftemp_5ft',['sensors_mpu_w_temp_t',['../data__sets_8h.html#a3430ece916b875c5286de1dba2f2bc74',1,'data_sets.h']]],
+  ['sensors_5ft',['sensors_t',['../data__sets_8h.html#a1e688fbf6fdfa1d6c8fd9fa9977a0d55',1,'data_sets.h']]],
+  ['sensors_5fw_5ftemp_5ft',['sensors_w_temp_t',['../data__sets_8h.html#a0124d84eee18168157535aacc5738c8a',1,'data_sets.h']]],
+  ['serial_5fport_5ft',['serial_port_t',['../serial_port_8h.html#a30b5bf7f70b4f65f4842cab84d23bb93',1,'serialPort.h']]],
+  ['size_5ftype',['size_type',['../class_ti_xml_string.html#abeb2c1893a04c17904f7c06546d0b971',1,'TiXmlString']]],
+  ['strobe_5fin_5ftime_5ft',['strobe_in_time_t',['../data__sets_8h.html#abb93c4f050ba2e23e87fb37e7d179000',1,'data_sets.h']]],
+  ['sys_5fparams_5ft',['sys_params_t',['../data__sets_8h.html#a013685399ef07abc9b3a836637ce403c',1,'data_sets.h']]],
+  ['sys_5fsensors_5fadc_5ft',['sys_sensors_adc_t',['../data__sets_8h.html#a57e3f80d9cb1bbf4e73c8f6430ae914a',1,'data_sets.h']]],
+  ['sys_5fsensors_5ft',['sys_sensors_t',['../data__sets_8h.html#ae76a29dfc404f721487cff4d70d2745d',1,'data_sets.h']]],
+  ['system_5fcommand_5ft',['system_command_t',['../data__sets_8h.html#a3f99bdb11013898e89e44eddfbbd2319',1,'data_sets.h']]]
 ];

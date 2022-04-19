@@ -237,7 +237,6 @@
     <ClInclude Include="..\..\src\ISLogFileBase.h" />
     <ClInclude Include="..\..\src\ISLogFileFactory.h" />
     <ClInclude Include="..\..\src\ISLogger.h" />
-    <ClInclude Include="..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\src\ISMatrix.h" />
     <ClInclude Include="..\..\src\ISPose.h" />
     <ClInclude Include="..\..\src\ISSerialPort.h" />

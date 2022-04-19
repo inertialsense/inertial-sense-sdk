@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 
 #include "DeviceLogSerial.h"
 
@@ -77,6 +78,7 @@ public:
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
 	bool Enabled() { return m_enabled; }
 	void CloseAllFiles();
+	void FlushToFile();
 	void OpenWithSystemApp();
 	string TimeStamp() { return m_timeStamp; }
 	string LogDirectory() { return m_directory; }
@@ -185,7 +187,8 @@ private:
 	bool					m_enabled;
 	string					m_directory;
 	string					m_timeStamp;
-	vector<cDeviceLog*>		m_devices;
+	vector<shared_ptr<cDeviceLog>>	m_devices;
+
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;
 	cLogStats				m_logStats;
@@ -202,6 +205,7 @@ private:
 	double					m_iconUpdatePeriodSec;
 	time_t					m_lastCommTime;
 	time_t					m_timeoutFlushSeconds;
+
 };
 
 

@@ -21,10 +21,11 @@ from logPlotter import logPlot
 import traceback
 import yaml
 
-sys.path.append('..')
-sys.path.append('../supernpp/')
-sys.path.append('../ci_hdw/')
-sys.path.append('../math/src')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../ci_hdw'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
+sys.path.append(os.path.normpath(file_path + '/../supernpp'))
 
 from pylib.data_sets import *
 import subprocess
@@ -221,7 +222,7 @@ class LogInspectorWindow(QMainWindow):
         if os.path.exists(self.configFilePath):
             # config.yaml found.  Read from file.
             file = open(self.configFilePath, 'r')
-            self.config = yaml.load(file)
+            self.config = yaml.safe_load(file)
             file.close()
         else:
             # config.yaml not found.  Create new file.

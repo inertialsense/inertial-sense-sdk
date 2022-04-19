@@ -43,7 +43,8 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
 {
     vTaskDelay(task.periodMs);
 
-    g_comm_time_ms = time_msec();
+    g_comm_time = time_seclf();
+    g_comm_time_ms = (uint32_t)round(g_comm_time * 1000.0);
 
     if (g_statusToWlocal)
     {

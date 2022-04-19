@@ -6,8 +6,10 @@
 // #include "communications.h"
 #include "../SDK/src/ISConstants.h"
 #include "../SDK/src/com_manager.h"
+#ifndef TESTBED
 #include "conf_common.h"
 #include "misc/utilities.h"
+#endif
 #include "globals.h"
 
 #include "misc/debug.h"

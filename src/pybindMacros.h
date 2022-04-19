@@ -11,9 +11,9 @@ PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omeg
 PYBIND11_NUMPY_DTYPE(wheel_transform_t, e_b2w, e_b2w_sigma, t_b2w, t_b2w_sigma);
 PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
 PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
-PYBIND11_NUMPY_DTYPE(evb_luna_wheel_controller_t, timeMs, dt, mode, status, velCmd_l, velCmd_r, velCmdSlew_l, velCmdSlew_r, vel_l, vel_r, velErr_l, velErr_r, ff_eff_l, ff_eff_r, fb_eff_l, fb_eff_r, eff_l, eff_r, effInt_l, effInt_r, effDuty_l, effDuty_r);
+PYBIND11_NUMPY_DTYPE(evb_luna_wheel_controller_t, timeMs, dt, runMode, status, velCmd_l, velCmd_r, velCmdSlew_l, velCmdSlew_r, vel_l, vel_r, velErr_l, velErr_r, ff_eff_l, ff_eff_r, fb_eff_l, fb_eff_r, eff_l, eff_r, effInt_l, effInt_r, effDuty_l, effDuty_r);
 
-// Public Typcs
+// Public Types
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
 PYBIND11_NUMPY_DTYPE(system_fault_t, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr);
 PYBIND11_NUMPY_DTYPE(preintegrated_imu_t, time, theta1, theta2, vel1, vel2, dt, status);
@@ -36,8 +36,9 @@ PYBIND11_NUMPY_DTYPE(io_t, timeOfWeekMs, gpioStatus);
 
 PYBIND11_NUMPY_DTYPE(sensors_t, mpu);
 PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, temp, tempRampRate, tci, numTcPts, dtTemp);
-PYBIND11_NUMPY_DTYPE(sensor_compensation_t, mpu, sampleCount, calState, alignAccel, status);
+PYBIND11_NUMPY_DTYPE(sensor_compensation_t, timeMs, mpu, sampleCount, calState, status, alignAccel);
 PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, mpu);
+PYBIND11_NUMPY_DTYPE(imu_t, time, I);
 
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, mpu, bar, barTemp, humidity, ana);
 
@@ -86,7 +87,6 @@ PYBIND11_NUMPY_DTYPE(ion_model_utc_alm_t, ion_gps, ion_gal, ion_qzs, ion_cmp, io
 // PYBIND11_NUMPY_DTYPE(hdw_param_imu_t, pqrDev, accDev, pqrSigma, accSigma, mean);
 // PYBIND11_NUMPY_DTYPE(hdw_params_t, timeOfWeekMs, I, update, gpsCnoSigma, gpsCnoMean);
 // PYBIND11_NUMPY_DTYPE(nvr_manage_t, flash_write_needed, flash_write_count);
-// PYBIND11_NUMPY_DTYPE(ins_dev_1_t, week, timeOfWeek, insStatus, hdwStatus, euler, uvw, lla, ned, eulerErr, uvwErr, nedErr);
 // PYBIND11_NUMPY_DTYPE(inl2_misc_t, gps_time_last_valid);
 // PYBIND11_NUMPY_DTYPE(rtk_debug_2_t, time, satBiasFloat, satBiasFix, qualL, sat, satBiasStd, satLockCnt, num_biases, reserved);
 

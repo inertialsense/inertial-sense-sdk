@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -11,6 +11,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISComm.h"
+
+const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
+	// Actual on uINS:
+	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only)
+	IS_BAUDRATE_9375000,    // 9375000
+	IS_BAUDRATE_3125000,    // 3125000
+	IS_BAUDRATE_921600,     // 937734 (default)
+	IS_BAUDRATE_460800,     // 468600
+	IS_BAUDRATE_230400,     // 232700
+	IS_BAUDRATE_115200,
+	IS_BAUDRATE_57600,
+	IS_BAUDRATE_38400,
+	IS_BAUDRATE_19200,
+	IS_BAUDRATE_9600 
+};
+
+static int s_packetEncodingEnabled = 1;
+
 
 /**
 * Calculate 24 bit crc used in formats like RTCM3 - note that no bounds checking is done on buffer
@@ -81,20 +99,18 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 	return bits;
 }
 
-const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = { 
-	                        // Actual on uINS:
-	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only) 
-	IS_BAUDRATE_9375000,    // 9375000
-	IS_BAUDRATE_3125000,    // 3125000
-	IS_BAUDRATE_921600,     // 937734 (default)
-	IS_BAUDRATE_460800,     // 468600
-	IS_BAUDRATE_230400,     // 232700
-	IS_BAUDRATE_115200, 
-	IS_BAUDRATE_57600, 
-	IS_BAUDRATE_38400, 
-	IS_BAUDRATE_19200, 
-	IS_BAUDRATE_9600 };
-static int s_packetEncodingEnabled = 1;
+int validateBaudRate(unsigned int baudRate)
+{
+	// Valid baudrates for InertialSense hardware
+	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
+	{
+		if (g_validBaudRates[i] == baudRate)
+		{
+			return 0;
+		}
+	}
+	return -1;
+}
 
 // Replace special character with encoded equivalent and add to buffer
 static uint8_t* encodeByteAddToBuffer(uint32_t val, uint8_t* ptrDest)

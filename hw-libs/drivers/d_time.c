@@ -12,9 +12,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <asf.h>
 #include "d_time.h"
-#include "d_timer.h"
 #include "misc/rtos.h"
 #include "globals.h"
+
+#ifndef TESTBED
+#include "d_timer.h"
+#endif
 
 #include "conf_interrupts.h"
 static volatile uint32_t g_rollover = 0;
@@ -34,7 +37,7 @@ void time_init(void)
 {
 	static int initialized = 0;	if (initialized) { return; } initialized = 1;
 
-#ifndef __INERTIAL_SENSE_EVB_2__
+#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
 	timer_time_init();
 #endif
 

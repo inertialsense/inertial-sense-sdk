@@ -2,6 +2,7 @@
 ExampleProjects/Arduino/ReadIS/src/
 EVB-2/IS_EVB-2/Debug/
 EVB-2/IS_EVB-2/Release/
+EVB-2/IS_EVB-2.elf
 build/
 obj/
 *.map

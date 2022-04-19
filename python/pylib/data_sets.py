@@ -50,7 +50,7 @@ DID_CAL_SC1                     = 43
 DID_CAL_SC2                     = 44
 DID_SYS_SENSORS_SIGMA           = 45
 DID_SENSORS_ADC_SIGMA           = 46
-DID_INS_DEV_1                   = 47
+DID_REFERENCE_MAGNETOMETER      = 47
 DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
@@ -96,9 +96,12 @@ DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
+DID_EVB_DEV_INFO                = 93
+DID_UNUSED_94                   = 94
+DID_REFERENCE_IMU               = 95
 DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
 
-NUM_DIDS                        = 117
+NUM_DIDS                        = 120
 # NUM_DIDS                        = 96
 
 
@@ -152,7 +155,6 @@ did_name_lookup = {
  DID_CAL_SC2 : "calSc2",
  DID_SYS_SENSORS_SIGMA : "sysSensorsSigma",
  DID_SENSORS_ADC_SIGMA : "sensorsAdcSigma",
- DID_INS_DEV_1 : "insDev1",
  DID_INL2_STATES : "inl2States",
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",
  DID_INL2_STATUS : "inl2Status",
@@ -189,8 +191,11 @@ did_name_lookup = {
  DID_EVB_CONFIG : "evbConfig",
  DID_EVB_DEBUG_ARRAY : "evbDebugArray",
  DID_EVB_RTOS_INFO : "evbRtosInfo",
- DID_RTK_DEBUG_2: "rtkDebug2",
- DID_CAN_CONFIG: "canconfig",
+ DID_RTK_DEBUG_2 : "rtkDebug2",
+ DID_CAN_CONFIG : "canconfig",
+ DID_EVB_DEV_INFO : "evbDevInfo",
+ DID_REFERENCE_IMU : "referenceImu",
+ DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
  DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
 }
 

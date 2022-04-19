@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -43,9 +43,10 @@ extern "C" {
 // *****************************************************************************
 
 /** INS/AHRS */
-#define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 #define _DID_INS_LLA_EULER_NED		DID_INS_1				/** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
-#define _DID_INS_LLA_QN2B			DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
+#define _DID_INS_LLA_QN2B			DID_INS_2				/** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
+#define _DID_INS_LLA_QN2B_MSL		DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
+#define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 
 /** IMU */
 #define _DID_IMU_DUAL				DID_DUAL_IMU			/** (see dual_imu_t) Dual IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
@@ -680,6 +681,8 @@ void is_enable_packet_encoding(int enabled); // default is enabled
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
+
+int validateBaudRate(unsigned int baudRate);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
