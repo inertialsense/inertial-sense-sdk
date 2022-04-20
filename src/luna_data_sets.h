@@ -53,14 +53,25 @@ typedef enum
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK                  = 0x00000007,
 } eEvbLunaWheelControlConfig_t;
 
+
+typedef struct
+{
+	/** Forward Velocity Feedback proportional gain */
+	float					u_FB_Kp;
+
+	/** Turn Rate Feedback proportional gain */
+	float					w_FB_Kp;
+
+    /** Turn Rate Feedforward */
+    float                 	w_FF;
+
+} evb_luna_velocity_control_vehicle_cfg_t;
+
 #define NUM_FF_COEFS	2
 #define NUM_AL_COEFS	5
 
 typedef struct
 {
-	/** Timeout period before motors disable is triggered.*/
-	uint32_t				cmdTimeoutMs;
-  
 	/** Commanded velocity slew rate (rad/s/s) */
 	float					slewRate;
 
@@ -79,6 +90,9 @@ typedef struct
     /** Feedforward coefficients */
     float                 	FF_c[NUM_FF_COEFS];
 
+    /** (rpm) Engine RPM corresponding with control gains. */
+    float                   FF_FB_engine_rpm;
+
 	/** Feedback proportional gain */
 	float					FB_Kp;
 
@@ -87,16 +101,10 @@ typedef struct
 
 	/** Feedback derivative gain */
 	float					FB_Kd;
-	
+
     /** EVB2 velocity Linearization Coefficients */
     float                   InversePlant_l[NUM_AL_COEFS];
     float                   InversePlant_r[NUM_AL_COEFS];
-
-	// /** Actuator counts per radian velocity controller */
-	// float					actuatorEncoderCountsPerRad;
-
-    /** Actuator count [min, max] Duty cycle will drive between these numbers. Duty of 0 - min, duty of 100 - Max */
-    // float                   actuatorEncoderRange[2];
 
     /** Sets actuator zero velocity (center) position relative to home point. */
     float                	actuatorTrim_l;
@@ -111,17 +119,18 @@ typedef struct
     float                   actuatorDeadbandDuty_r;
     float                   actuatorDeadbandVel;
 
-    /** (rpm) Engine RPM corresponding with control gains. */
-    float                   FF_FB_engine_rpm;
-
-    /** (rpm) Current engine RPM.  Used for wheel control gain scheduling. */
-    float                   engine_rpm;
-
 	/** Test sweep rate (rad/s) */
 	float					testSweepRate;
 
+} evb_luna_velocity_control_wheel_cfg_t;
+
+typedef struct
+{
 	/** Various config like motor control types, etc. (eEvbLunaWheelControlConfig_t) */
 	uint32_t				config;
+
+	/** Timeout period before motors disable is triggered.*/
+	uint32_t				cmdTimeoutMs;
 
 	/** (m) Wheel radius */
 	float 					wheelRadius;
@@ -129,7 +138,16 @@ typedef struct
 	/** (m) Wheel baseline, distance between wheels */
 	float					wheelBaseline;
 
-} evb_luna_wheel_control_cfg_t;
+    /** (rpm) Current engine RPM.  Used for wheel control gain scheduling. */
+    float                   engine_rpm;
+
+	/** Wheel control */
+	evb_luna_velocity_control_wheel_cfg_t       wheel;
+
+	/** Vehicle control */
+	evb_luna_velocity_control_vehicle_cfg_t     vehicle;
+
+} evb_luna_velocity_control_cfg_t;
 
 /**
 * (DID_EVB_LUNA_FLASH_CFG) EVB-2 Luna specific flash config.
@@ -170,8 +188,8 @@ typedef struct
     /** Proximity threshhold for prox error.*/
     float                   minProxDistance;
 
-	/** Wheel velocity control */
-	evb_luna_wheel_control_cfg_t wheelControl;
+	/** Velocity control */
+	evb_luna_velocity_control_cfg_t velControl;
 
 } evb_luna_flash_cfg_t;
 
