@@ -15,9 +15,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../../hw-libs/drivers/CAN.h"
 #include "../../../hw-libs/drivers/d_flash.h"
 #include "../../../hw-libs/misc/bootloaderApp.h"
-#include "../../../src/ISUtilities.h"
-#include "../../../src/ISLogger.h"
+#include "../../../src/convert_ins.h"
 #include "../../../src/filters.h"
+#include "../../../src/ISEarth.h"
+#include "../../../src/ISLogger.h"
+#include "../../../src/ISUtilities.h"
 #include "../drivers/d_quadEnc.h"
 #include "../src/protocol_nmea.h"
 #include "ISLogFileFatFs.h"
@@ -320,12 +322,22 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	case DID_INS_1:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
 		time_sync_evb_from_uINS(d.ins1.week, d.ins1.timeOfWeek);
+		g_uins.ins1 = d.ins1;
+		convertIns1ToIns2(&d.ins1, &g_uins.ins2);
 		break;
 	                    
 	case DID_INS_2:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
-		g_uins.ins2 = d.ins2;
 		time_sync_evb_from_uINS(d.ins2.week, d.ins2.timeOfWeek);
+		g_uins.ins2 = d.ins2;
+		if(g_uins.refLlaValid)
+		{
+			convertIns2ToIns1(&d.ins2, &g_uins.ins1, g_uins.flashCfg.refLla);
+		}
+		else
+		{
+			convertIns2ToIns1(&d.ins2, &g_uins.ins1);
+		}
 		break;
 
 	case DID_INS_3:
@@ -345,6 +357,12 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		preintegratedImuToIMU(&(dimu.imu), &(g_uins.pImu));
 		dimu.imu1ok = dimu.imu2ok = 1;
 		dualToSingleImu(&g_imu, &dimu);
+		break;
+
+	case DID_FLASH_CONFIG:	// uINS
+		if(dataHdr.size+dataHdr.offset > sizeof(nvm_flash_cfg_t)){ /* Invalid */ return; }
+		g_uins.flashCfg = d.flashCfg;
+		g_uins.refLlaValid = (bool)llaDegValid(g_uins.flashCfg.refLla);
 		break;
 	}
 	

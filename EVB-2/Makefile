@@ -112,6 +112,7 @@ C_SRCS += \
 	$(SDK_DIR)/src/filters.cpp                                                                     \
 	$(SDK_DIR)/src/ISComm.c                                                                        \
 	$(SDK_DIR)/src/ISDataMappings.cpp                                                              \
+	$(SDK_DIR)/src/ISEarth.c                                                                       \
 	$(SDK_DIR)/src/ISFileManager.cpp                                                               \
 	$(SDK_DIR)/src/ISLogger.cpp                                                                    \
 	$(SDK_DIR)/src/ISLogStats.cpp                                                                  \
