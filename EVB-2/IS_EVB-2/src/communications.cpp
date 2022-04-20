@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../../hw-libs/misc/bootloaderApp.h"
 #include "../../../src/ISUtilities.h"
 #include "../../../src/ISLogger.h"
+#include "../../../src/filters.h"
 #include "../drivers/d_quadEnc.h"
 #include "../src/protocol_nmea.h"
 #include "ISLogFileFatFs.h"
@@ -239,7 +240,7 @@ void callback_cdc_set_dtr(uint8_t port, bool b_enable)
 // This function never gets called because of a bug in Atmel CDC driver.  Bummer.
 // void callback_cdc_set_rts(uint8_t port, bool b_enable)
 // {
-// 	switch(g_msg.evb.comBridgeCfg)
+// 	switch(g_uins.evb.comBridgeCfg)
 // 	{
 //     case EVB2_CBC_USBxXBEE:
 //         if (b_enable)
@@ -313,7 +314,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	switch(dataHdr.id)
 	{
 	case DID_DEV_INFO:
-		copyDataPToStructP2(&g_msg.uInsInfo, &dataHdr, data, sizeof(dev_info_t));
+		copyDataPToStructP2(&g_uins.uInsInfo, &dataHdr, data, sizeof(dev_info_t));
 		break;
 
 	case DID_INS_1:
@@ -323,7 +324,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	                    
 	case DID_INS_2:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
-		g_msg.ins2 = d.ins2;
+		g_uins.ins2 = d.ins2;
 		time_sync_evb_from_uINS(d.ins2.week, d.ins2.timeOfWeek);
 		break;
 
@@ -335,6 +336,15 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
 		time_sync_evb_from_uINS(d.ins4.week, d.ins4.timeOfWeek);
+		break;
+
+	case DID_PREINTEGRATED_IMU:
+		if(dataHdr.size+dataHdr.offset > sizeof(preintegrated_imu_t)){ /* Invalid */ return; }
+		g_uins.pImu = d.pImu;
+		dual_imu_ok_t dimu;
+		preintegratedImuToIMU(&(dimu.imu), &(g_uins.pImu));
+		dimu.imu1ok = dimu.imu2ok = 1;
+		dualToSingleImu(&g_imu, &dimu);
 		break;
 	}
 	

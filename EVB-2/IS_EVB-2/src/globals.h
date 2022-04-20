@@ -52,9 +52,10 @@ typedef struct
 
 typedef struct
 {
-    dev_info_t      uInsInfo;
-    ins_2_t         ins2;
-}evb_msg_t;
+    dev_info_t              uInsInfo;
+    ins_2_t                 ins2;
+    preintegrated_imu_t     pImu;
+} uins_msg_t;
 
 typedef struct PACKED      // Non-volatile memory state
 {
@@ -105,7 +106,8 @@ extern bool                         g_statusToWlocal;
 extern evb_flash_cfg_t*             g_flashCfg;
 extern nvr_manage_t                 g_nvr_manage_config;
 extern nvm_config_t                 g_userPage;
-extern evb_msg_t                    g_msg;
+extern uins_msg_t                   g_uins;
+extern imu_t                        g_imu;
 extern debug_array_t                g_debug;
 extern evb_rtos_info_t              g_rtos;
 extern date_time_t                  g_gps_date_time;

@@ -88,7 +88,7 @@ static void start_logger(cISLogger& logger, is_comm_instance_t &comm)
 //     logger.InitSave(LOGTYPE_DAT, cISLogger::g_emptyString, 1, 0.5f, 1024 * 1024 * 5, 131072);
     logger.InitSave(cISLogger::LOGTYPE_DAT, "IS_logs", 1, 0.5f, 1024 * 1024 * 5, 16384);
 //     logger.InitSave();
-    logger.SetDeviceInfo(&g_msg.uInsInfo);   // set uINS serial number 
+    logger.SetDeviceInfo(&g_uins.uInsInfo);   // set uINS serial number 
     logger.EnableLogging(true);
 }
 
@@ -171,7 +171,7 @@ void time_sync_from_uINS(void)
     {
         timeOfWeekMsLast = g_status.timeOfWeekMs;
         int32_t gpsSeconds = g_status.timeOfWeekMs/1000;
-        convertMjdToDate( convertGpsToMjd(g_msg.ins2.week, gpsSeconds), (int32_t*)&g_gps_date_time.year, (int32_t*)&g_gps_date_time.month, (int32_t*)&g_gps_date_time.day);
+        convertMjdToDate( convertGpsToMjd(g_uins.ins2.week, gpsSeconds), (int32_t*)&g_gps_date_time.year, (int32_t*)&g_gps_date_time.month, (int32_t*)&g_gps_date_time.day);
         convertGpsToHMS( gpsSeconds, (int32_t*)&g_gps_date_time.hour, (int32_t*)&g_gps_date_time.minute, (int32_t*)&g_gps_date_time.second );
 
 #if USE_RTC_DATE_TIME   // use RTC
