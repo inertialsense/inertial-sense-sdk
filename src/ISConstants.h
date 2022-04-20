@@ -35,6 +35,8 @@ extern "C" {
 #ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
+#define ECEF2LLA_METHOD 0  // Method to compute LLA from ECEF position (0 through 5)
+
 
 // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
 #define _WINSOCKAPI_

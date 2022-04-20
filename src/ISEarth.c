@@ -530,7 +530,7 @@ void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ece
 	ixVector3d lla;
 
 // 	ecef2lla_d(ecef, lla);
-	ecef2lla(ecef, lla, 0);
+	ecef2lla(ecef, lla, ECEF2LLA_METHOD);
 	qe2b2EulerNedLLA(eul, qe2b, lla);
 }
 

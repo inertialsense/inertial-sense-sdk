@@ -74,7 +74,7 @@ void convertIns4ToIns1(ins_4_t *ins4, ins_1_t *result, double *refLla)
     result->hdwStatus	= ins4->hdwStatus;
 
     quatConjRot(result->uvw, ins4->qe2b, ins4->ve);
-    ecef2lla(ins4->ecef, llaRad, 0);
+    ecef2lla(ins4->ecef, llaRad, ECEF2LLA_METHOD);
     qe2b2EulerNedLLA(result->theta, ins4->qe2b, llaRad);
     lla_Rad2Deg_d(result->lla, llaRad);
     if (refLla)
