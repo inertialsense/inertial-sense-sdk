@@ -63,7 +63,7 @@ typedef struct
 	float					w_FB_Kp;
 
     /** Turn Rate Feedforward */
-    float                 	w_FF;
+    float                 	w_FF_c0;
 
 } evb_luna_velocity_control_vehicle_cfg_t;
 
