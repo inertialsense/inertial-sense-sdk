@@ -12,7 +12,7 @@ PYBIND11_NUMPY_DTYPE(wheel_transform_t, e_b2w, e_b2w_sigma, t_b2w, t_b2w_sigma);
 PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
 PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_vehicle_t, velCmd_f, velCmd_w, vel_f, vel_w);
-PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_wheel_t, velCmd_l, velCmd_r, velCmdSlew_l, velCmdSlew_r, vel_l, vel_r, velErr_l, velErr_r, ff_eff_l, ff_eff_r, fb_eff_l, fb_eff_r, eff_l, eff_r, effInt_l, effInt_r, effDuty_l, effDuty_r);
+PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_wheel_t, velCmd_l, velCmd_r, velCmdSlew_l, velCmdSlew_r, vel_l, vel_r, err_l, err_r, ff_eff_l, ff_eff_r, fb_eff_l, fb_eff_r, eff_l, eff_r, effInt_l, effInt_r, effDuty_l, effDuty_r);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_t, timeMs, dt, runMode, status, vehicle, wheel);
 
 // Public Types

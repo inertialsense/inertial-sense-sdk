@@ -323,7 +323,7 @@ typedef struct
 	/** Local system time in milliseconds */
 	uint32_t                timeMs;
 
-	/** Control mode (see eLunaWheelControllerMode) */
+	/** Control mode (see eLunaVelocityControlMode) */
 	uint32_t                modeCmd;
 
 	/** Forward velocity (m/s) */
@@ -354,33 +354,33 @@ typedef enum
 
 typedef enum
 {
-	LCM_DISABLED					= 0,
-	LCM_STOP						= 1,
-	LCM_ENABLE						= 2,	// With watchdog
+	LVC_MODE_DISABLED                   = 0,
+	LVC_MODE_STOP                       = 1,
+	LVC_MODE_ENABLE                     = 2,	// With watchdog
 	// Velocity TESTS
-	LCM_TEST_VEL_DUAL_CMD			= 3,	// Use left vel cmd to drive left and right together
-	LCM_TEST_VEL_CMD				= 4,
-	LCM_TEST_VEL_SWEEP				= 5,
+	LVC_MODE_TEST_VEL_DUAL_CMD          = 3,	// Use left vel cmd to drive left and right together
+	LVC_MODE_TEST_VEL_CMD               = 4,
+	LVC_MODE_TEST_VEL_SWEEP             = 5,
 	// Effort TESTS
-	LCM_TEST_EFFORT					= 6,	// (Keep as first effort test)
+	LVC_MODE_TEST_EFFORT                = 6,	// (Keep as first effort test)
 	// Duty TESTS	
-	LCM_TEST_DUTY					= 7,	// (Keep as first duty cycle test)
-	LCM_TEST_DUTY_SWEEP				= 8,	// Watchdog disabled in testing
-	LCM_TEST_WHL_ANG_VEL_SWEEP      = 9,
-} eLunaWheelControllerMode;
+	LVC_MODE_TEST_DUTY                  = 7,	// (Keep as first duty cycle test)
+	LVC_MODE_TEST_DUTY_SWEEP            = 8,	// Watchdog disabled in testing
+	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 9,
+} eLunaVelocityControlMode;
 
 typedef enum
 {
-	LCS_FAULT_L						= 0x00000001,
-	LCS_FAULT_R						= 0x00000002,
-	LCS_VEL_CMD_LIMITED_L			= 0x00000010,
-	LCS_VEL_CMD_LIMITED_R			= 0x00000020,
-	LCS_VEL_CMD_LIMITED_MASK		= (LCS_VEL_CMD_LIMITED_L | LCS_VEL_CMD_LIMITED_R),
-	LCS_VEL_CMD_SLEW_LIMITED_L		= 0x00000040,
-	LCS_VEL_CMD_SLEW_LIMITED_R		= 0x00000080,
-	LCS_VEL_LIMITED_L_MASK			= (LCS_VEL_CMD_LIMITED_L | LCS_VEL_CMD_SLEW_LIMITED_L),
-	LCS_VEL_LIMITED_R_MASK			= (LCS_VEL_CMD_LIMITED_R | LCS_VEL_CMD_SLEW_LIMITED_R),
-} eLunaWheelControllerStatus;
+	LVC_STATUS_FAULT_L                  = 0x00000001,
+	LVC_STATUS_FAULT_R                  = 0x00000002,
+	LVC_STATUS_VEL_CMD_LIMITED_L        = 0x00000010,
+	LVC_STATUS_VEL_CMD_LIMITED_R        = 0x00000020,
+	LVC_STATUS_VEL_CMD_LIMITED_MASK     = (LVC_STATUS_VEL_CMD_LIMITED_L | LVC_STATUS_VEL_CMD_LIMITED_R),
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_L   = 0x00000040,
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_R   = 0x00000080,
+	LVC_STATUS_VEL_LIMITED_L_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_L | LVC_STATUS_VEL_CMD_SLEW_LIMITED_L),
+	LVC_STATUS_VEL_LIMITED_R_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_R | LVC_STATUS_VEL_CMD_SLEW_LIMITED_R),
+} eLunaVelocityControlStatus;
 
 typedef struct
 {
@@ -391,6 +391,14 @@ typedef struct
 	/** Vehicle forward and angular velocity (m/s, rad/s) */
 	float 					vel_f;
 	float 					vel_w;
+
+	/** Vehicle forward and angular velocity, error (m/s, rad/s) */
+	float 					err_f;
+	float 					err_w;
+
+	/** Vehicle forward and angular velocity, effort (m/s, rad/s) */
+	float 					eff_f;
+	float 					eff_w;
 
 } evb_luna_velocity_control_vehicle_t;
 
@@ -409,8 +417,8 @@ typedef struct
 	float 					vel_r;
 
 	/** Wheel velocity error (rad/s) */
-	float 					velErr_l;
-	float 					velErr_r;
+	float 					err_l;
+	float 					err_r;
 
 	/** Feedforward control effort */
 	float 					ff_eff_l;
@@ -445,10 +453,10 @@ typedef struct
 	/** Delta time */
 	float                	dt;
 
-	/** Wheel control mode: (see eLunaWheelControllerMode) */
+	/** Wheel control mode: (see eLunaVelocityControlMode) */
 	uint32_t            	current_mode;
 
-	/** Wheel control status (see eLunaWheelControllerStatus) */
+	/** Wheel control status (see eLunaVelocityControlStatus) */
 	uint32_t            	status;
 
 	/** Vehicle velocity control */
