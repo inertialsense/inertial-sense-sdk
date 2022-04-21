@@ -59,7 +59,7 @@ void ecef2lla(const double *Pe, double *LLA, const int method)
 {
     int i, iter = 0;
     double p, p2, z2, Rn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0, w,
-           F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6, z_i;
+           F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6, z_i, z2_k_k;
 
     // Earth equatorial radius
     // Re = 6378137; // m
@@ -108,22 +108,25 @@ void ecef2lla(const double *Pe, double *LLA, const int method)
 
     case 1:
         // The equation can be solved by Newton - Raphson iteration method :
-        // k_next = (c + (1 - e ^ 2) * z ^ 2 * k ^ 3) / (c - p ^ 2) =
-        // = 1 + (p ^ 2 + (1 - e ^ 2) * z ^ 2 * k ^ 3) / (c - p ^ 2)
+        // k_next = (c + (1 - e^2) * z^2 * k^3) / (c - p^2) =
+        //        = 1 + (p^2 + (1 - e^2) * z^2 * k^3) / (c - p^2)
         // where
-        // c = 1 / (R * e ^ 2) * (p ^ 2 + (1 - e ^ 2) * z ^ 2 * k ^ 2) ^ (3 / 2)
+        // c = 1 / (R * e^2) * (p^2 + (1 - e^2) * z^2 * k^2) ^ (3/2)
         // Initial value k0 is a good start when h is near zero.
         // Even a single iteration produces a sufficiently accurate solution.
         
         k = ONE_DIV_ONE_MINUS_E_SQ;
-        for (i = 0; i < 1; i++) {
-            c = sqrt(pow(p2 + ONE_MINUS_E_SQ * z2 * k * k, 3)) / E2xREQ;
-            k = 1 + (p2 + ONE_MINUS_E_SQ * z2 * k * k * k) / (c - p2);
-        }
+        z2_k_k = z2 * k * k;
+//        for (i = 0; i < 1; i++) {
+            val = p2 + ONE_MINUS_E_SQ * z2_k_k;
+            c = sqrt(val * val * val) / E2xREQ;
+            k = 1 + (p2 + ONE_MINUS_E_SQ * z2_k_k * k) / (c - p2);
+            z2_k_k = z2 * k * k;
+//        }
         // Latitude
         LLA[0] = atan2(k * Pe[2], p);
         // Altitude above planetary ellipsoid
-        LLA[2] = ONE_DIV_E_SQ * (1.0 / k - ONE_MINUS_E_SQ) * sqrt(p2 + z2 * k * k);
+        LLA[2] = ONE_DIV_E_SQ * (1.0 / k - ONE_MINUS_E_SQ) * sqrt(p2 + z2_k_k);
         break;
 
     case 2:
@@ -155,8 +158,9 @@ void ecef2lla(const double *Pe, double *LLA, const int method)
         Q = sqrt(1.0 + 2.0 * E_POW4 * P);
         val = MAX(0.0, 0.5 * POWA2 * (1.0 + 1.0 / Q) - P * z2 * ONE_MINUS_E_SQ / (Q * (1.0 + Q)) - 0.5 * P * p2);
         r0 = -(P * p * E_SQ) / (1.0 + Q) + sqrt(val);
-        U = sqrt(MAX(0.0, pow(p - E_SQ * r0, 2) + z2));
-        V = sqrt(MAX(0, pow(p - E_SQ * r0, 2) + ONE_MINUS_E_SQ * z2));
+        val = p - E_SQ * r0;
+        U = sqrt(MAX(0.0, val * val + z2));
+        V = sqrt(MAX(0, val * val + ONE_MINUS_E_SQ * z2));
         z0 = POWB2 * Pe[2] / MAX(Ra * V, EPS);
         // Latitude
         LLA[0] = atan2(Pe[2] + E_PRIME_SQ * z0, p);
