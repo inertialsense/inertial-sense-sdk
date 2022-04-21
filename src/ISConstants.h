@@ -28,6 +28,8 @@ extern "C" {
 #include <time.h>
 #include <limits.h>
 
+#define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
+
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
 #define PLATFORM_IS_WINDOWS 1
@@ -35,8 +37,6 @@ extern "C" {
 #ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
-#define ECEF2LLA_METHOD 0  // Method to compute LLA from ECEF position (0 through 5)
-
 
 // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
 #define _WINSOCKAPI_
@@ -91,7 +91,6 @@ extern "C" {
 #define PLATFORM_IS_ARM 1
 #define CPU_IS_LITTLE_ENDIAN 1
 #define CPU_IS_BIG_ENDIAN 0
-#define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega168__) ||defined(__AVR_ATmega168P__) ||defined(__AVR_ATmega328P__)
 #define PLATFORM_IS_EMBEDDED 1
