@@ -196,7 +196,7 @@ did_name_lookup = {
  DID_EVB_DEV_INFO : "evbDevInfo",
  DID_REFERENCE_IMU : "referenceImu",
  DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
- DID_EVB_LUNA_VELOCITY_CONTROL : "evbWheelController",
+ DID_EVB_LUNA_VELOCITY_CONTROL : "evbVelocityControl",
 }
 
 class eGpsNavFixStatus(Enum):

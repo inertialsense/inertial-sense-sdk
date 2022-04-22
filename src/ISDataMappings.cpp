@@ -2264,7 +2264,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_LUNA_SENSORS",             // 112
 	"DID_EVB_LUNA_REMOTE_KILL",         // 113
 	"DID_EVB_LUNA_VELOCITY_CONTROL",    // 114
-	"DID_EVB_LUNA_VELOCITY_COMMAND",       // 115
+	"DID_EVB_LUNA_VELOCITY_COMMAND",    // 115
     "DID_EVB_LUNA_AUX_COMMAND",         // 116
     "",                                 // 117
     "",                                 // 118
