@@ -20,7 +20,7 @@ extern "C" {
 #define DID_EVB_LUNA_STATUS             (eDataIDs)111 /** (evb_luna_status_t) EVB Luna status. */
 #define DID_EVB_LUNA_SENSORS            (eDataIDs)112 /** (evb_luna_sensors_t) EVB Luna sensors (proximity, etc.). */
 #define DID_EVB_LUNA_REMOTE_KILL        (eDataIDs)113 /** (evb_luna_remote_kill_t) EVB remoteKill system */
-#define DID_EVB_LUNA_WHEEL_CONTROLLER   (eDataIDs)114 /** (evb_luna_velocity_control_t) EVB wheel control information */
+#define DID_EVB_LUNA_VELOCITY_CONTROL   (eDataIDs)114 /** (evb_luna_velocity_control_t) EVB wheel control information */
 #define DID_EVB_LUNA_VELOCITY_COMMAND   (eDataIDs)115 /** (evb_luna_velocity_command_t) EVB velocity command */
 #define DID_EVB_LUNA_AUX_COMMAND        (eDataIDs)116 /** (evb_luna_aux_command_t) EVB auxillary commands */
 #define DID_LUNA_COUNT					117				/** Make larger than all Luna DIDs */
@@ -443,7 +443,7 @@ typedef struct
 } evb_luna_velocity_control_wheel_t;
 
 /**
-* (DID_EVB_LUNA_WHEEL_CONTROLLER) EVB Luna wheel controller info.
+* (DID_EVB_LUNA_VELOCITY_CONTROL) EVB Luna wheel controller info.
 */
 typedef struct
 {
@@ -453,11 +453,11 @@ typedef struct
 	/** Delta time */
 	float                	dt;
 
-	/** Wheel control mode: (see eLunaVelocityControlMode) */
-	uint32_t            	current_mode;
-
 	/** Wheel control status (see eLunaVelocityControlStatus) */
 	uint32_t            	status;
+
+	/** Wheel control mode: (see eLunaVelocityControlMode) */
+	uint32_t            	current_mode;
 
 	/** Vehicle velocity control */
 	evb_luna_velocity_control_vehicle_t     vehicle;

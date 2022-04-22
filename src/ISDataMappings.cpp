@@ -182,7 +182,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_EVB_LUNA_STATUS] = sizeof(evb_luna_status_t);
 	sizeMap[DID_EVB_LUNA_SENSORS] = sizeof(evb_luna_sensors_t);
 	sizeMap[DID_EVB_LUNA_REMOTE_KILL] = sizeof(evb_luna_remote_kill_t);
-	sizeMap[DID_EVB_LUNA_WHEEL_CONTROLLER] = sizeof(evb_luna_velocity_control_t);
+	sizeMap[DID_EVB_LUNA_VELOCITY_CONTROL] = sizeof(evb_luna_velocity_control_t);
 	sizeMap[DID_EVB_LUNA_VELOCITY_COMMAND] = sizeof(evb_luna_velocity_command_t);
     sizeMap[DID_EVB_LUNA_AUX_COMMAND] = sizeof(evb_luna_aux_command_t);
 
@@ -1179,7 +1179,7 @@ static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT
 static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_luna_velocity_control_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_EVB_LUNA_WHEEL_CONTROLLER];
+	map_name_to_info_t& m = mappings[DID_EVB_LUNA_VELOCITY_CONTROL];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "timeMs", timeMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "dt", dt, 0, DataTypeFloat, float, 0);
@@ -2263,7 +2263,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_LUNA_STATUS",              // 111
 	"DID_EVB_LUNA_SENSORS",             // 112
 	"DID_EVB_LUNA_REMOTE_KILL",         // 113
-	"DID_EVB_LUNA_WHEEL_CONTROLLER",    // 114
+	"DID_EVB_LUNA_VELOCITY_CONTROL",    // 114
 	"DID_EVB_LUNA_VELOCITY_COMMAND",       // 115
     "DID_EVB_LUNA_AUX_COMMAND",         // 116
     "",                                 // 117

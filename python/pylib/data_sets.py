@@ -99,7 +99,7 @@ DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
 DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
-DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
+DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
 NUM_DIDS                        = 120
 # NUM_DIDS                        = 96
@@ -196,7 +196,7 @@ did_name_lookup = {
  DID_EVB_DEV_INFO : "evbDevInfo",
  DID_REFERENCE_IMU : "referenceImu",
  DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
- DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
+ DID_EVB_LUNA_VELOCITY_CONTROL : "evbWheelController",
 }
 
 class eGpsNavFixStatus(Enum):
