@@ -56,6 +56,11 @@ typedef enum
 
 typedef struct
 {
+	/** Commanded velocity max (m/s) */
+	float					velCruise;
+	float					velMax;
+	float					velMin;
+
 	/** Forward Velocity Feedback proportional gain */
 	float					u_FB_Kp;
 
@@ -359,8 +364,8 @@ typedef enum
 	LVC_MODE_STOP                       = 1,
 	LVC_MODE_ENABLE                     = 2,	// With watchdog
 	// Velocity TESTS
-	LVC_MODE_TEST_VEL_DUAL_CMD          = 3,	// Use left vel cmd to drive left and right together
-	LVC_MODE_TEST_VEL_CMD               = 4,
+	LVC_MODE_TEST_VEL_VEHICLE_CMD       = 3,	// Use left vel cmd to drive left and right together
+	LVC_MODE_TEST_VEL_WHEEL_CMD         = 4,
 	LVC_MODE_TEST_VEL_SWEEP             = 5,
 	// Effort TESTS
 	LVC_MODE_TEST_EFFORT                = 6,	// (Keep as first effort test)
@@ -368,6 +373,8 @@ typedef enum
 	LVC_MODE_TEST_DUTY                  = 7,	// (Keep as first duty cycle test)
 	LVC_MODE_TEST_DUTY_SWEEP            = 8,	// Watchdog disabled in testing
 	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 9,
+	// Solve for Feedforward	
+	LVC_MODE_SOLVE_FEEDFORWARD          = 10,
 } eLunaVelocityControlMode;
 
 typedef enum
