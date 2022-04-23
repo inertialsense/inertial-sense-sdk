@@ -88,7 +88,8 @@ typedef struct
     float                 	FF_c_est_max[NUM_FF_COEFS];
 
     /** Feedforward coefficients */
-    float                 	FF_c[NUM_FF_COEFS];
+    float                 	FF_c_l[NUM_FF_COEFS];
+    float                 	FF_c_r[NUM_FF_COEFS];
 
     /** (rpm) Engine RPM corresponding with control gains. */
     float                   FF_FB_engine_rpm;
