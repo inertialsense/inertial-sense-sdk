@@ -8,10 +8,11 @@ include_directories(${GTEST_INCLUDE_DIRS})
 add_library(SDK_test
 	test_com_manager.cpp
 	test_com_manager_2.cpp
-	test_math.cpp
-	test_ring_buffer.cpp
 	test_InertialSense.cpp
 	test_ISDataMappings.cpp
+	test_ISPolynomial.cpp
+	test_math.cpp
+	test_ring_buffer.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
