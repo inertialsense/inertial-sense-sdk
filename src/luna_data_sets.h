@@ -147,11 +147,11 @@ typedef struct
     /** (rpm) Current engine RPM.  Used for wheel control gain scheduling. */
     float                   engine_rpm;
 
-	/** Wheel control */
-	evb_luna_velocity_control_wheel_cfg_t       wheel;
-
 	/** Vehicle control */
 	evb_luna_velocity_control_vehicle_cfg_t     vehicle;
+
+	/** Wheel control */
+	evb_luna_velocity_control_wheel_cfg_t       wheel;
 
 } evb_luna_velocity_control_cfg_t;
 
