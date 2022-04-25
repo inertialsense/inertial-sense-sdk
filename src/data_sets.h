@@ -2096,6 +2096,15 @@ enum eSensorConfig
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_90    = (int)21,
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_180   = (int)22,
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_N90   = (int)23,
+
+	/** Triple IMU fault detection level. Higher levels add new features to previous levels */
+	SENSOR_CFG_IMU_FAULT_DETECT_MASK	   	= (int)0x0000000F,
+	SENSOR_CFG_IMU_FAULT_DETECT_OFFSET		= (int)24,
+	SENSOR_CFG_IMU_FAULT_DETECT_NONE		= (int)0,	// Simple averaging
+	SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE		= (int)1,	// One or more IMUs is offline or stuck
+	SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS	= (int)2,
+	SENSOR_CFG_IMU_FAULT_DETECT_BIAS_JUMPS	= (int)3,
+	SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
