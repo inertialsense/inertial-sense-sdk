@@ -374,7 +374,7 @@ typedef enum
 	LVC_MODE_TEST_DUTY_SWEEP            = 8,	// Watchdog disabled in testing
 	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 9,
 	// Solve for Feedforward	
-	LVC_MODE_SOLVE_FEEDFORWARD          = 10,
+	LVC_MODE_MEASURE_FEEDFORWARD          = 10,
 } eLunaVelocityControlMode;
 
 typedef enum
@@ -413,40 +413,31 @@ typedef struct
 typedef struct
 {
 	/** Wheel velocity, Commanded (rad/s) */
-	float 					velCmd_l;
-	float 					velCmd_r;
+	float 					velCmd;
 
 	/** Wheel velocity commanded after slew rate (rad/s) */
-	float 					velCmdSlew_l;
-	float 					velCmdSlew_r;
+	float 					velCmdSlew;
 
 	/** Wheel velocity (rad/s) */
-	float 					vel_l;
-	float 					vel_r;
+	float 					vel;
 
 	/** Wheel velocity error (rad/s) */
-	float 					err_l;
-	float 					err_r;
+	float 					err;
 
 	/** Feedforward control effort */
-	float 					ff_eff_l;
-	float 					ff_eff_r;
+	float 					ff_eff;
 
 	/** Feedback control effort */
-	float 					fb_eff_l;
-	float 					fb_eff_r;
+	float 					fb_eff;
 
 	/** Control effort = ff_eff_x + fb_eff_x */
-	float 					eff_l;
-	float 					eff_r;
+	float 					eff;
 
 	/** Control effort intermediate */
-	float 					effInt_l;
-	float 					effInt_r;
+	float 					effInt;
 
 	/** Duty cycle control effort at actuator (-1.0 to 1.0) */
-	float 					effDuty_l;
-	float 					effDuty_r;
+	float 					effDuty;
 
 } evb_luna_velocity_control_wheel_t;
 
@@ -471,7 +462,8 @@ typedef struct
 	evb_luna_velocity_control_vehicle_t     vehicle;
 
 	/** Wheel velocity control */
-	evb_luna_velocity_control_wheel_t       wheel;
+	evb_luna_velocity_control_wheel_t       wheel_l;
+	evb_luna_velocity_control_wheel_t       wheel_r;
 
 } evb_luna_velocity_control_t;
 
