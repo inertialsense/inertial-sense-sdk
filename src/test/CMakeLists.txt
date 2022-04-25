@@ -8,10 +8,11 @@ include_directories(${GTEST_INCLUDE_DIRS})
 add_library(SDK_test
 	test_com_manager.cpp
 	test_com_manager_2.cpp
-	test_math.cpp
-	test_ring_buffer.cpp
 	test_InertialSense.cpp
 	test_ISDataMappings.cpp
+	test_ISPolynomial.cpp
+	test_math.cpp
+	test_ring_buffer.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -34,6 +35,7 @@ add_library(SDK_test
 	../ISLogger.cpp
 	../ISLogStats.cpp
 	../ISMatrix.c
+	../ISPolynomial.c
 	../ISPose.c
 	../ISUtilities.cpp
 	../protocol_nmea.cpp
@@ -52,6 +54,7 @@ add_executable(run_tests
 	test_ring_buffer.cpp
 	test_InertialSense.cpp
 	test_ISDataMappings.cpp
+	test_ISPolynomial.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -59,6 +62,7 @@ add_executable(run_tests
 	../ISDataMappings.cpp
 	../ISEarth.c
 	../ISMatrix.c
+	../ISPolynomial.c
 	../ISPose.c
 	../ISUtilities.cpp
 	../protocol_nmea.cpp
