@@ -485,19 +485,21 @@ typedef struct PACKED
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
 {
-	/** Serial number */
+	/** Inertial Sense serial number */
 	uint32_t		serialNumber;
 
-	/** Lot number */
+	/** Inertial Sense lot number */
 	uint32_t		lotNumber;
 
-	/** Manufacturing date (YYYYMMDDHHMMSS) */
+	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
 	/** Key */
 	uint32_t		key;
-} manufacturing_info_t;
 
+	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
+	uint32_t 		uid[4];
+} manufacturing_info_t;
 
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
 typedef struct PACKED
@@ -1152,8 +1154,8 @@ enum eGenFaultCodes
 	GFC_INIT_SENSORS					= 0x00000100,
 	/*! Fault: SPI bus initialization  */
 	GFC_INIT_SPI						= 0x00000200,
-// 	/*! Fault:  */
-// 	GFC_UNUSED							= 0x00000400,
+	/*! Fault: SPI configuration  */
+	GFC_CONFIG_SPI						= 0x00000400,
 	/*! Fault: GPS1 init  */
 	GFC_INIT_GPS1						= 0x00000800,
 	/*! Fault: GPS2 init  */
@@ -1176,6 +1178,8 @@ enum eGenFaultCodes
 	GFC_INIT_MAGNETOMETER				= 0x00400000,
 	/*! Fault: Barometer initialization */
 	GFC_INIT_BAROMETER					= 0x00200000,
+	/*! Fault: I2C initialization */
+	GFC_INIT_I2C						= 0x00800000,
 };
 
 
@@ -2092,15 +2096,6 @@ enum eSensorConfig
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_90    = (int)21,
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_180   = (int)22,
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_N90   = (int)23,
-
-	/** Triple IMU fault detection level. Higher levels add new features to previous levels */
-	SENSOR_CFG_IMU_FAULT_DETECT_MASK	   	= (int)0x0000000F,
-	SENSOR_CFG_IMU_FAULT_DETECT_OFFSET		= (int)24,
-	SENSOR_CFG_IMU_FAULT_DETECT_NONE		= (int)0,	// Simple averaging
-	SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE		= (int)1,	// One or more IMUs is offline or stuck
-	SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS	= (int)2,
-	SENSOR_CFG_IMU_FAULT_DETECT_BIAS_JUMPS	= (int)3,
-	SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
