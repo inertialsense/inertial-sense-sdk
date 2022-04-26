@@ -19,9 +19,34 @@ extern "C" {
 #endif
 
 
-// Curve fit polynomial to x,y data.
-// Returns 1 on success, -1 on failure
-char ixPolyFit(const int n, const float x[], const float y[], float coef[], const int num_coef);
+/** ixPolyFit() polynomial curve fit
+n = number of samples
+x = input data array
+y = output data array
+coef = polynomial coefficients
+num_coef = 1 + the highest degree (or order) of the monomials with non-zero coefficients
+
+	2nd Order Example:
+		y    =     A       c
+	[ y1 ] = [ x1  1 ] [ c0 ]
+	[ y2 ]   [ X2  1 ] [ c1 ]
+	[ yn ]   [ x2  1 ]
+	(n x 1)   (n x 2)  (2 x 1)
+
+	c = inv(At A) At y
+
+	3rd Order Example:
+		y    =        A          c
+	[ y1 ] = [ x1^2  x1  1 ] [ c0 ]
+	[ y2 ]   [ x2^2  X2  1 ] [ c1 ]
+	[ yn ]   [ xn^2  x2  1 ] [ c2 ]
+	(n x 1)      (n x 3)     (3 x 1)
+
+	c = inv(At A) At y
+
+@return 0 on success, -1 on failure
+*/
+char ixPolyFit(const int n, const float x[], const float y[], float coef[], const int num_coefs);
 
 // ----------------------------------------------------------------------------
 //  y = horner(degree, coef, x) evaluates a polynomial y = f(x) at x.  The polynomial has
@@ -32,7 +57,7 @@ char ixPolyFit(const int n, const float x[], const float y[], float coef[], cons
 //         decreasing order.  In other words, the polynomial is assumed to be
 //         written in the form
 //
-//            y = coef[0]*x^n + coef[1]*x^(n-1) + ... + coef[n-1]*x + coef[n]
+//            y(x) = coef[0]*x^n + coef[1]*x^(n-1) + ... + coef[n-1]*x + coef[n]
 //
 //         where n is the order (coef_size-1) of the polynomial and the largest index in coef is n.
 float ixPolyHorner(const int coef_size, const float coef[], const float x);

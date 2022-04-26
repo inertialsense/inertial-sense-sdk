@@ -11,47 +11,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <math.h>
-#include "../../SDK/src/ISMatrix.h"
+#include "ISMatrix.h"
 #include "ISPolynomial.h"
 
 
-/** ixPolyFit() polynomial curve fit
-n = number of samples
-x = input data array
-y = output data array
-coef = polynomial coefficients
-order = the highest degree (or order) of the monomials with non-zero coefficients
-
-	2nd Order Example:
-		y    =     A       c
-	[ y1 ] = [ x1  1 ] [ c0 ]
-	[ y2 ]   [ X2  1 ] [ c1 ]
-	[ yn ]   [ x2  1 ]
-	(n x 1)   (n x 2)  (2 x 1)
-
-	c = inv(At A) At y
-
-	3rd Order Example:
-		y    =        A          c
-	[ y1 ] = [ x1^2  x1  1 ] [ c0 ]
-	[ y2 ]   [ x2^2  X2  1 ] [ c1 ]
-	[ yn ]   [ xn^2  x2  1 ] [ c2 ]
-	(n x 1)      (n x 3)     (3 x 1)
-
-	c = inv(At A) At y
-
-@return 0 on success, -1 on failure
-*/
-char ixPolyFit(const int n, const float x[], const float y[], float coef[], const int num_coef)
+// 0 on success, -1 on failure
+char ixPolyFit(const int n, const float x[], const float y[], float coef[], const int num_coefs)
 {
 #define MAX_NUM_COEF		3
 #define MAX_NUMBER_SAMPLES  10
 
-	if (num_coef < 2 || num_coef > MAX_NUM_COEF ||
-        n < num_coef || n > MAX_NUMBER_SAMPLES)
+	if (num_coefs < 2 || num_coefs > MAX_NUM_COEF ||
+        n < num_coefs || n > MAX_NUMBER_SAMPLES)
 		return -1;
 
-	int p = num_coef;
+	int p = num_coefs;
 
 #define P_MAX	(MAX_NUM_COEF)
 
@@ -61,7 +35,7 @@ char ixPolyFit(const int n, const float x[], const float y[], float coef[], cons
 	float Aty[P_MAX];
 
 	// Populate A matrix
-	switch (num_coef)
+	switch (num_coefs)
 	{
 	case 2:	// 1st order 
 		for (int i = 0; i < n; i++)
@@ -84,7 +58,7 @@ char ixPolyFit(const int n, const float x[], const float y[], float coef[], cons
 	mul_MatMxN(AtA, A, A, p, n, p, 1, 0, 0);
 
 	// iAtA[pxp] = (AtA[pxp])^-1
-	switch (num_coef)
+	switch (num_coefs)
 	{
 	case 2: inv_Mat2(iAtA, AtA); break;		// 1st order
 	case 3: inv_Mat3(iAtA, AtA); break;		// 2nd order
