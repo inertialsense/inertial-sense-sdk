@@ -352,6 +352,11 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		time_sync_evb_from_uINS(d.ins4.week, d.ins4.timeOfWeek);
 		break;
 
+	case DID_INL2_STATES:
+		if(dataHdr.size+dataHdr.offset > sizeof(inl2_states_t)){ /* Invalid */ return; }
+		g_uins.inl2States = d.inl2States;
+		break;
+
 	case DID_PREINTEGRATED_IMU:
 		if(dataHdr.size+dataHdr.offset > sizeof(preintegrated_imu_t)){ /* Invalid */ return; }
 		g_uins.pImu = d.pImu;
@@ -359,6 +364,8 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		preintegratedImuToIMU(&(dimu.imu), &(g_uins.pImu));
 		dimu.imu1ok = dimu.imu2ok = 1;
 		dualToSingleImu(&g_imu, &dimu);
+		sub_Vec3_Vec3(g_imu.I.pqr, g_imu.I.pqr, g_uins.inl2States.biasPqr);	// Subtract EKF bias estimates
+		sub_Vec3_Vec3(g_imu.I.acc, g_imu.I.acc, g_uins.inl2States.biasAcc);
 		g_imuUpdateTimeMs = g_comm_time_ms;
 		break;
 
