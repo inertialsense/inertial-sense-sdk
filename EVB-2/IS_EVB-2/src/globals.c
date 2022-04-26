@@ -29,6 +29,8 @@ nvr_manage_t                g_nvr_manage_config;
 nvm_config_t                g_userPage = {0};
 uins_msg_t                  g_uins = {0};
 imu_t                       g_imu = {0};
+uint32_t                    g_insUpdateTimeMs = 0;
+uint32_t                    g_imuUpdateTimeMs = 0;
 debug_array_t               g_debug = {0};
 evb_rtos_info_t             g_rtos = {0};
 date_time_t                 g_gps_date_time = {0};

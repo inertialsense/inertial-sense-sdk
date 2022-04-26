@@ -324,6 +324,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		time_sync_evb_from_uINS(d.ins1.week, d.ins1.timeOfWeek);
 		g_uins.ins1 = d.ins1;
 		convertIns1ToIns2(&d.ins1, &g_uins.ins2);
+		g_insUpdateTimeMs = g_comm_time_ms;
 		break;
 	                    
 	case DID_INS_2:
@@ -338,6 +339,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		{
 			convertIns2ToIns1(&d.ins2, &g_uins.ins1);
 		}
+		g_insUpdateTimeMs = g_comm_time_ms;
 		break;
 
 	case DID_INS_3:
@@ -357,6 +359,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		preintegratedImuToIMU(&(dimu.imu), &(g_uins.pImu));
 		dimu.imu1ok = dimu.imu2ok = 1;
 		dualToSingleImu(&g_imu, &dimu);
+		g_imuUpdateTimeMs = g_comm_time_ms;
 		break;
 
 	case DID_FLASH_CONFIG:	// uINS
