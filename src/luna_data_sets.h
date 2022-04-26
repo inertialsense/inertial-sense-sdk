@@ -60,7 +60,7 @@ typedef struct
 	float					velCruise;
 	float					velMin;
 	float					velMax;
-	/** Test sweep rate (m/s) */
+	/** Test sweep rate (m/s/s) */
 	float					testSweepRate;
 
 	/** Forward Velocity Feedback proportional gain */
