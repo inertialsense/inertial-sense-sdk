@@ -198,7 +198,7 @@ TEST(ISPolynomial, ixPolyHorner)
 }
 
 
-TEST(ISPolynomial, ixPolyFit_first_order)
+TEST(ISPolynomial, ixPolyFit_1st_order)
 {
 #undef N_COEF
 #undef N_SAMPLES
@@ -223,4 +223,29 @@ TEST(ISPolynomial, ixPolyFit_first_order)
 	}
 }
 
+
+TEST(ISPolynomial, ixPolyFit_2nd_order)
+{
+#undef N_COEF
+#undef N_SAMPLES
+#define N_COEF      3	// 1st order poly
+#define N_SAMPLES	5
+
+	float coef[N_COEF] = { 1.2f, 3.4f, 5.6f };	// y = c[0]*x^2 + c[1]*x + c[2]
+	float x[N_SAMPLES] = { 0, 1, 2, 3, 4 };
+	float y[N_SAMPLES] = { 0 };
+	float result[N_COEF];
+
+	for (int i = 0; i < N_SAMPLES; i++)
+	{
+		y[i] = ixPolyHorner(N_COEF, coef, x[i]);
+	}
+
+	EXPECT_TRUE(ixPolyFit(N_SAMPLES, x, y, result, N_COEF) == 0);
+
+	for (int i = 0; i < N_COEF; i++)
+	{
+		REQUIRE_SORTA_CLOSE(coef[i], result[i]);
+	}
+}
 
