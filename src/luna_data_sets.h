@@ -118,7 +118,7 @@ typedef struct
     float                	actuatorTrim_l;
     float                	actuatorTrim_r;
 
-    /** Limits for actuator angle. */
+    /** Wheel controller effort limits for 1. actuator angle or 2. velocity, based on actuator type. */
     float                	actuatorLimits_l[2];
     float                	actuatorLimits_r[2];
 
