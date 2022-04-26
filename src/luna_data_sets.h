@@ -58,8 +58,10 @@ typedef struct
 {
 	/** Commanded velocity max (m/s) */
 	float					velCruise;
-	float					velMax;
 	float					velMin;
+	float					velMax;
+	/** Test sweep rate (m/s) */
+	float					testSweepRate;
 
 	/** Forward Velocity Feedback proportional gain */
 	float					u_FB_Kp;
@@ -124,9 +126,6 @@ typedef struct
     float                   actuatorDeadbandDuty_l;
     float                   actuatorDeadbandDuty_r;
     float                   actuatorDeadbandVel;
-
-	/** Test sweep rate (rad/s) */
-	float					testSweepRate;
 
 } evb_luna_velocity_control_wheel_cfg_t;
 
@@ -374,7 +373,7 @@ typedef enum
 	LVC_MODE_TEST_DUTY_SWEEP            = 8,	// Watchdog disabled in testing
 	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 9,
 	// Solve for Feedforward	
-	LVC_MODE_MEASURE_FEEDFORWARD          = 10,
+	LVC_MODE_CALIBRATE_FEEDFORWARD      = 10,
 } eLunaVelocityControlMode;
 
 typedef enum
