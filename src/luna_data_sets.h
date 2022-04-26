@@ -421,13 +421,16 @@ typedef struct
 	float 					vel;
 
 	/** Wheel velocity error (rad/s) */
-	float 					err;
+	float 					velErr;
 
 	/** Feedforward control effort */
 	float 					ff_eff;
 
 	/** Feedback control effort */
 	float 					fb_eff;
+
+	/** Feedback integral control effort */
+	float 					fb_eff_integral;
 
 	/** Control effort = ff_eff_x + fb_eff_x */
 	float 					eff;
