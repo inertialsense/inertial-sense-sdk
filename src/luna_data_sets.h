@@ -61,7 +61,7 @@ typedef struct
 	float					u_min;
 	float					u_max;
 
-	/** Turn rate velocity (m/s) */
+	/** Turn rate velocity (rad/s) */
 	float					w_max;
 
 	/** Test sweep rate (m/s/s) */
