@@ -56,20 +56,24 @@ typedef enum
 
 typedef struct
 {
-	/** Commanded velocity max (m/s) */
-	float					velCruise;
-	float					velMin;
-	float					velMax;
+	/** Forward velocity (m/s) */
+	float					u_cruise;
+	float					u_min;
+	float					u_max;
+
+	/** Turn rate velocity (m/s) */
+	float					w_max;
+
 	/** Test sweep rate (m/s/s) */
 	float					testSweepRate;
 
-	/** Forward Velocity Feedback proportional gain */
+	/** Forward velocity feedback proportional gain */
 	float					u_FB_Kp;
 
-	/** Turn Rate Feedback proportional gain */
+	/** Turn rate feedback proportional gain */
 	float					w_FB_Kp;
 
-    /** Turn Rate Feedforward */
+    /** Turn rate feedforward */
     float                 	w_FF_c0;
 
 } evb_luna_velocity_control_vehicle_cfg_t;
