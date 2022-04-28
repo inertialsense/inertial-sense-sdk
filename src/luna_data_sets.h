@@ -433,7 +433,7 @@ typedef struct
 	float 					vel;
 
 	/** Wheel velocity error (rad/s) */
-	float 					velErr;
+	float 					err;
 
 	/** Feedforward control effort */
 	float 					ff_eff;
