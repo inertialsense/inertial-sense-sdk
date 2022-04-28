@@ -1105,7 +1105,9 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "velControl.vehicle.u_cruise",        velControl.vehicle.u_cruise, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_min",           velControl.vehicle.u_min, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_max",           velControl.vehicle.u_max, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.u_slewLimit",          velControl.vehicle.u_slewLimit, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_max",           velControl.vehicle.w_max, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_slewLimit",          velControl.vehicle.w_slewLimit, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_FB_Kp",         velControl.vehicle.u_FB_Kp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FB_Kp",         velControl.vehicle.w_FB_Kp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FF_c0",         velControl.vehicle.w_FF_c0, 0, DataTypeFloat, float, 0);
@@ -1193,6 +1195,8 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "vehicle.velCmd_f", vehicle.velCmd_f, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.velCmd_w", vehicle.velCmd_w, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.velCmdSlew_f", vehicle.velCmdSlew_f, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.velCmdSlew_w", vehicle.velCmdSlew_w, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.vel_f", vehicle.vel_f, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.vel_w", vehicle.vel_w, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.err_f", vehicle.err_f, 0, DataTypeFloat, float, 0);

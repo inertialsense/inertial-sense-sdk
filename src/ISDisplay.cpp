@@ -1646,6 +1646,27 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	case 'q':
 		SetExitProgram();
 		break;
+
+#if 0
+	// Luna teleop control input
+        case ' ':                       
+            vel_forward_ = 0;           // stop all
+            vel_angular_ = 0;
+            streamTeleop_ = true;
+            break;
+        case 'j':                       
+            vel_angular_ -= 0.25;       // turn more to left
+            streamTeleop_ = true;
+            break;
+        case 'l':                       
+            vel_angular_ += 0.25;       // turn more to right
+            streamTeleop_ = true;
+            break;
+        case 'k':
+            vel_angular_ = 0;           // stop turning
+            streamTeleop_ = true;
+            break;
+#endif
 	}
 }
 

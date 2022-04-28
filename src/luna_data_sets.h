@@ -60,9 +60,11 @@ typedef struct
 	float					u_cruise;
 	float					u_min;
 	float					u_max;
+	float					u_slewLimit;
 
 	/** Turn rate velocity (rad/s) */
 	float					w_max;
+	float					w_slewLimit;
 
 	/** Test sweep rate (m/s/s) */
 	float					testSweepRate;
@@ -391,6 +393,8 @@ typedef enum
 	LVC_STATUS_VEL_CMD_SLEW_LIMITED_R   = 0x00000080,
 	LVC_STATUS_VEL_LIMITED_L_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_L | LVC_STATUS_VEL_CMD_SLEW_LIMITED_L),
 	LVC_STATUS_VEL_LIMITED_R_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_R | LVC_STATUS_VEL_CMD_SLEW_LIMITED_R),
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_F   = 0x00010000,
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_W   = 0x00020000,
 } eLunaVelocityControlStatus;
 
 typedef struct
@@ -398,6 +402,10 @@ typedef struct
 	/** Vehicle forward and angular velocity, Commanded (m/s, rad/s) */
 	float 					velCmd_f;
 	float 					velCmd_w;
+
+	/** Vehicle forward and angular velocity, slew rate limited commanded (m/s, rad/s) */
+	float 					velCmdSlew_f;
+	float 					velCmdSlew_w;
 
 	/** Vehicle forward and angular velocity (m/s, rad/s) */
 	float 					vel_f;
