@@ -99,7 +99,7 @@ struct DeviceLog
     vector<gps_raw_wrapper_t> gps2Raw {1};
     vector<wheel_encoder_t> wheelEncoder;
     vector<ground_vehicle_t> groundVehicle;
-    vector<evb_luna_velocity_control_t> evbWheelController;
+    vector<evb_luna_velocity_control_t> evbVelocityControl;
     vector<diag_msg_t> diagnosticMessage;
     vector<survey_in_t> surveyIn;
 //    vector<evb2_t> evb2;
