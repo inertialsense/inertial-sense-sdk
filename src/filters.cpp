@@ -203,23 +203,15 @@ int tripleToSingleImu(imu_t *result, const imu3_t *di)
 
 	int cnt = 0;
 
-	if ((di->status&IMU_STATUS_IMU1_OK)==IMU_STATUS_IMU1_OK)
+	for (int d=0; d<3; d++)
 	{
-		add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[0].pqr);
-		add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[0].acc);
-		cnt++;
-	}
-	if ((di->status&IMU_STATUS_IMU2_OK)==IMU_STATUS_IMU2_OK)
-	{
-		add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[1].pqr);
-		add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[1].acc);
-		cnt++;
-	}
-	if ((di->status&IMU_STATUS_IMU3_OK)==IMU_STATUS_IMU3_OK)
-	{
-		add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[2].pqr);
-		add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[2].acc);
-		cnt++;
+		int imuOkBitMask = IMU_STATUS_IMU1_OK<<d;
+		if ((di->status&imuOkBitMask)==imuOkBitMask)
+		{
+			add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[d].pqr);
+			add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[d].acc);
+			cnt++;
+		}
 	}
 
 	if (cnt)

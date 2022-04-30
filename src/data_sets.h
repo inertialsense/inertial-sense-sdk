@@ -741,14 +741,14 @@ enum eImuStatus
 {
 	/** Sensor saturation on IMU1 gyro */
 	IMU_STATUS_SATURATION_IMU1_GYR              = (int)0x00000001,
-	/** Sensor saturation on IMU1 accelerometer */
-	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000002,
 	/** Sensor saturation on IMU2 gyro */
-	IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000004,
-	/** Sensor saturation on IMU2 accelerometer */
-	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000008,
+	IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
 	/** Sensor saturation on IMU3 gyro */
-	IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000010,
+	IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
+	/** Sensor saturation on IMU1 accelerometer */
+	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000008,
+	/** Sensor saturation on IMU2 accelerometer */
+	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000010,
 	/** Sensor saturation on IMU3 accelerometer */
 	IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000020,
 	/** Sensor saturation mask */
@@ -760,34 +760,31 @@ enum eImuStatus
 	/** Reserved */
 	// IMU_STATUS_RESERVED2						= (int)0x00000400,
 
-
 //     /** Sensor saturation happened within past 10 seconds */
 //     IMU_STATUS_SATURATION_HISTORY               = (int)0x00000100,
 //     /** Sample rate fault happened within past 10 seconds */
 //     IMU_STATUS_SAMPLE_RATE_FAULT_HISTORY        = (int)0x00000200,
 
-	/** IMU1 gyros and accelerometers available */
-	IMU_STATUS_IMU1_OK                          = (int)0x00030000,
 	/** IMU1 gyros available */
 	IMU_STATUS_GYR1_OK                          = (int)0x00010000,
-	/** IMU1 accelerometers available */
-	IMU_STATUS_ACC1_OK                          = (int)0x00020000,
 	/** IMU2 gyros and accelerometers available */
-	IMU_STATUS_IMU2_OK                          = (int)0x000C0000,
-	/** IMU2 gyros available */
-	IMU_STATUS_GYR2_OK                          = (int)0x00040000,
-	/** IMU2 accelerometers available */
-	IMU_STATUS_ACC2_OK                          = (int)0x00080000,
-	/** IMU3 gyros and accelerometers available */
-	IMU_STATUS_IMU3_OK                          = (int)0x00300000,
+	IMU_STATUS_GYR2_OK                          = (int)0x00020000,
 	/** IMU3 gyros available */
-	IMU_STATUS_GYR3_OK                          = (int)0x00100000,
+	IMU_STATUS_GYR3_OK                          = (int)0x00040000,
+	/** IMU1 accelerometers available */
+	IMU_STATUS_ACC1_OK                          = (int)0x00080000,
+	/** IMU2 accelerometers available */
+	IMU_STATUS_ACC2_OK                          = (int)0x00100000,
 	/** IMU3 accelerometers available */
 	IMU_STATUS_ACC3_OK                          = (int)0x00200000,
+	/** IMU1 available */
+	IMU_STATUS_IMU1_OK                          = (int)(IMU_STATUS_GYR1_OK | IMU_STATUS_ACC1_OK),
+	/** IMU2 available */
+	IMU_STATUS_IMU2_OK                          = (int)(IMU_STATUS_GYR2_OK | IMU_STATUS_ACC2_OK),
+	/** IMU3 available */
+	IMU_STATUS_IMU3_OK                          = (int)(IMU_STATUS_GYR3_OK | IMU_STATUS_ACC3_OK),
 	/** IMU gyros and accelerometers available */
 	IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
-	/** IMU gyros and accelerometers available bit offset  */
-	IMU_STATUS_IMU_OK_BIT_OFFSET                = (int)2,
 };
 
 /** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
