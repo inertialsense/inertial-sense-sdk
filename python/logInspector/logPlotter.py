@@ -1707,9 +1707,9 @@ class logPlot:
 
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(4, 2, sharex=True)
+        ax = fig.subplots(4, 3, sharex=True)
 
-        for i in range(2):
+        for i in range(3):
             ax[0, i].set_title('X %s %d' % (name, i))
             ax[1, i].set_title('Y %s %d' % (name, i))
             ax[2, i].set_title('Z %s %d' % (name, i))
@@ -1742,7 +1742,7 @@ class logPlot:
                     refImu = refImu
                     refVal = refImu[name]
 
-            for i in range(2):
+            for i in range(3):
                 temp = imu[:,i]['lpfTemp']
                 sensor = imu[:,i]['lpfLsb']
 

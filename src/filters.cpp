@@ -311,6 +311,7 @@ int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *pImu)
     }
 
 	imu->time = pImu->time;
+	imu->status = pImu->status;
     float divDt = 1.0f / pImu->dt;
 	mul_Vec3_X(imu->I.pqr, pImu->theta, divDt);
 	mul_Vec3_X(imu->I.acc, pImu->vel, divDt);
@@ -327,6 +328,7 @@ int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt)
 
     pImu->time = imu->time;
     pImu->dt = dt;
+	pImu->status = imu->status;
     mul_Vec3_X(pImu->theta, imu->I.pqr, dt);
     mul_Vec3_X(pImu->vel, imu->I.acc, dt);
     return 1;

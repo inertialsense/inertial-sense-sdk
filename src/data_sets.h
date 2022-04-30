@@ -741,18 +741,18 @@ enum eImuStatus
 {
 	/** Sensor saturation on IMU1 gyro */
 	IMU_STATUS_SATURATION_IMU1_GYR              = (int)0x00000001,
+	/** Sensor saturation on IMU1 accelerometer */
+	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000002,
 	/** Sensor saturation on IMU2 gyro */
-	IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000002,
-	/** Sensor saturation on IMU1 accelerometer */
-	IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000004,
-	/** Sensor saturation on IMU1 accelerometer */
-	IMU_STATUS_SATURATION_IMU1_ACC              = (int)0x00000010,
+	IMU_STATUS_SATURATION_IMU2_GYR              = (int)0x00000004,
 	/** Sensor saturation on IMU2 accelerometer */
-	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000020,
+	IMU_STATUS_SATURATION_IMU2_ACC              = (int)0x00000008,
+	/** Sensor saturation on IMU3 gyro */
+	IMU_STATUS_SATURATION_IMU3_GYR              = (int)0x00000010,
 	/** Sensor saturation on IMU3 accelerometer */
-	IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000040,
+	IMU_STATUS_SATURATION_IMU3_ACC              = (int)0x00000020,
 	/** Sensor saturation mask */
-	IMU_STATUS_SATURATION_MASK                  = (int)0x000000FF,
+	IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
 	/** Magnetometer sample occured */
 	IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
