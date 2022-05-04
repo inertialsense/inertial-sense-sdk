@@ -989,6 +989,10 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
 	}
 
+	if (req->id == DID_REFERENCE_IMU)
+	{
+		return -1;
+	}
 	
 	// Constrain request broadcast period if necessary
 	if (req->bc_period_multiple != 0)

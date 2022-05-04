@@ -282,6 +282,22 @@ int i2c_master_read(i2c_t *i2c_init, uint16_t addr, uint8_t *buf, uint8_t len)
 	i2c_init->rx_len = len;
 	i2c_init->rx_buf_dest = buf;
 	
+	if (len == 1) {
+		i2c_init->rx_status = I2C_RXSTATUS_READ_PENULTIMATE;
+		i2c_init->instance->TWIHS_MMR = TWIHS_MMR_DADR(addr) | TWIHS_MMR_MREAD;
+		twihs_enable_interrupt(sn_i2c.instance, TWIHS_IER_RXRDY);
+		i2c_init->instance->TWIHS_CR |= TWIHS_CR_START | TWIHS_CR_STOP;
+		return 0;
+	}
+	
+	if (len == 2) {
+		i2c_init->rx_status = I2C_RXSTATUS_READ_DMA_WAIT_RXRDY;
+		i2c_init->instance->TWIHS_MMR = TWIHS_MMR_DADR(addr) | TWIHS_MMR_MREAD;
+		twihs_enable_interrupt(sn_i2c.instance, TWIHS_IER_RXRDY);
+		i2c_init->instance->TWIHS_CR |= TWIHS_CR_START;
+		return 0;
+	}
+	
 	i2c_master_dma_config_rx(i2c_init, i2c_init->rx_buf, len-2);			// Datasheet says we have to read last 2 bytes manually
 
 	/* Set write mode, slave address and 3 internal address byte lengths */

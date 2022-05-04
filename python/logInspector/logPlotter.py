@@ -1059,15 +1059,22 @@ class logPlot:
         try:
             if fig is None:
                 fig = plt.figure()
-            ax = fig.subplots(2, 1, sharex=True)
+            ax = fig.subplots(3, 1, sharex=True)
             fig.suptitle('Temperature - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            self.configureSubplot(ax[0], 'IMU Temperature (C)', '')
+            self.configureSubplot(ax[1], 'Barometer Temperature (C)', '')
+            self.configureSubplot(ax[2], 'MCU Temperature (C)', '')
 
             for d in self.active_devs:
                 time = getTimeFromTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'))
                 tempImu = self.getData(d, DID_SYS_PARAMS, 'imuTemp')
                 tempBar = self.getData(d, DID_SYS_PARAMS, 'baroTemp')
+                tempMcu = self.getData(d, DID_SYS_PARAMS, 'mcuTemp')
+                
                 ax[0].plot(time, tempImu, label=self.log.serials[d])
                 ax[1].plot(time, tempBar)
+                ax[1].plot(time, tempMcu)
             for a in ax:
                 a.grid(True)
             self.saveFig(fig, 'Temp')
@@ -1700,9 +1707,9 @@ class logPlot:
 
     def sensorCompGen(self, fig, name, useTime=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(4, 2, sharex=True)
+        ax = fig.subplots(4, 3, sharex=True)
 
-        for i in range(2):
+        for i in range(3):
             ax[0, i].set_title('X %s %d' % (name, i))
             ax[1, i].set_title('Y %s %d' % (name, i))
             ax[2, i].set_title('Z %s %d' % (name, i))
@@ -1735,7 +1742,7 @@ class logPlot:
                     refImu = refImu
                     refVal = refImu[name]
 
-            for i in range(2):
+            for i in range(3):
                 temp = imu[:,i]['lpfTemp']
                 sensor = imu[:,i]['lpfLsb']
 
