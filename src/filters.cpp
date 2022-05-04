@@ -205,7 +205,7 @@ int tripleToSingleImu(imu_t *result, const imu3_t *di)
 
 	for (int d=0; d<3; d++)
 	{
-		int imuOkBitMask = IMU_STATUS_IMU1_OK<<d;
+		uint32_t imuOkBitMask = IMU_STATUS_IMU1_OK<<d;
 		if ((di->status&imuOkBitMask)==imuOkBitMask)
 		{
 			add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[d].pqr);

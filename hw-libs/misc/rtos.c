@@ -70,7 +70,6 @@ void rtos_monitor(int numRtosTasks)
 #if (configGENERATE_RUN_TIME_STATS == 1)
 	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();			// uint64_t gets truncated to uint32_t
 	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;				// Percentage, so divide by 100
-	bool resetStats = false;
 #endif // (configGENERATE_RUN_TIME_STATS == 1)
 
 	TaskStatus_t status;

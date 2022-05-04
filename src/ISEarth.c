@@ -57,7 +57,7 @@ static const double Rb = 6356752.31424518;	// (m) Earth polar radius Rb = Ra * (
 /* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m) */
 void ecef2lla(const double *Pe, double *LLA, const int method)
 {
-    int i, iter = 0;
+    int iter = 0;
     double p, p2, z2, Rn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0, w,
            F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6, z_i, z2_k_k;
 
