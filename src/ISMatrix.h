@@ -138,7 +138,7 @@ static __inline float invSqrt(float number)
  * If add >  0, OUT += A * B.
  * If add <  0, OUT -= A * B.
  */
-void mul_MatMxN( void * result, const void * A_ptr, const void * B_ptr, i_t m, i_t n, i_t p, char transpose_B, char add );
+void mul_MatMxN( f_t *result, const f_t *A_ptr, const f_t *B_ptr, i_t m, i_t n, i_t p, char transpose_A, char transpose_B, char add );
 
 /* Initialize square matrix as identity (0's with 1's in the diagonal)
 * result(nxn) = eye(nxn)

@@ -2146,8 +2146,10 @@ enum eIoConfig
 	IO_CONFIG_GPS_TYPE_UBX_F9P					= (int)1,
 	/** GPS type - NMEA */
 	IO_CONFIG_GPS_TYPE_NMEA						= (int)2,
+	/** GPS type - external ublox source (no config by uINS) */
+	IO_CONFIG_GPS_TYPE_UBX_NO_INIT				= (int)3,
 	/** GPS type - last type */
-	IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
+	IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_UBX_NO_INIT,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
@@ -3931,7 +3933,7 @@ typedef union PACKED
 	infield_cal_t			infieldCal;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
-	evb_luna_wheel_controller_t     wheelController;
+	evb_luna_velocity_control_t     wheelController;
 #endif
 } uDatasets;
 

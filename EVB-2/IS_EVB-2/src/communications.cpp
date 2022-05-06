@@ -15,8 +15,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../../hw-libs/drivers/CAN.h"
 #include "../../../hw-libs/drivers/d_flash.h"
 #include "../../../hw-libs/misc/bootloaderApp.h"
-#include "../../../src/ISUtilities.h"
+#include "../../../src/convert_ins.h"
+#include "../../../src/filters.h"
+#include "../../../src/ISEarth.h"
 #include "../../../src/ISLogger.h"
+#include "../../../src/ISUtilities.h"
 #include "../drivers/d_quadEnc.h"
 #include "../src/protocol_nmea.h"
 #include "ISLogFileFatFs.h"
@@ -239,7 +242,7 @@ void callback_cdc_set_dtr(uint8_t port, bool b_enable)
 // This function never gets called because of a bug in Atmel CDC driver.  Bummer.
 // void callback_cdc_set_rts(uint8_t port, bool b_enable)
 // {
-// 	switch(g_msg.evb.comBridgeCfg)
+// 	switch(g_uins.evb.comBridgeCfg)
 // 	{
 //     case EVB2_CBC_USBxXBEE:
 //         if (b_enable)
@@ -313,18 +316,30 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	switch(dataHdr.id)
 	{
 	case DID_DEV_INFO:
-		copyDataPToStructP2(&g_msg.uInsInfo, &dataHdr, data, sizeof(dev_info_t));
+		copyDataPToStructP2(&g_uins.uInsInfo, &dataHdr, data, sizeof(dev_info_t));
 		break;
 
 	case DID_INS_1:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
 		time_sync_evb_from_uINS(d.ins1.week, d.ins1.timeOfWeek);
+		g_uins.ins1 = d.ins1;
+		convertIns1ToIns2(&d.ins1, &g_uins.ins2);
+		g_insUpdateTimeMs = g_comm_time_ms;
 		break;
 	                    
 	case DID_INS_2:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
-		g_msg.ins2 = d.ins2;
 		time_sync_evb_from_uINS(d.ins2.week, d.ins2.timeOfWeek);
+		g_uins.ins2 = d.ins2;
+		if(g_uins.refLlaValid)
+		{
+			convertIns2ToIns1(&d.ins2, &g_uins.ins1, g_uins.flashCfg.refLla);
+		}
+		else
+		{
+			convertIns2ToIns1(&d.ins2, &g_uins.ins1);
+		}
+		g_insUpdateTimeMs = g_comm_time_ms;
 		break;
 
 	case DID_INS_3:
@@ -335,6 +350,29 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
 		time_sync_evb_from_uINS(d.ins4.week, d.ins4.timeOfWeek);
+		break;
+
+	case DID_INL2_STATES:
+		if(dataHdr.size+dataHdr.offset > sizeof(inl2_states_t)){ /* Invalid */ return; }
+		g_uins.inl2States = d.inl2States;
+		break;
+
+	case DID_PREINTEGRATED_IMU:
+		if(dataHdr.size+dataHdr.offset > sizeof(preintegrated_imu_t)){ /* Invalid */ return; }
+		g_uins.pImu = d.pImu;
+		dual_imu_ok_t dimu;
+		preintegratedImuToIMU(&(dimu.imu), &(g_uins.pImu));
+		dimu.imu1ok = dimu.imu2ok = 1;
+		dualToSingleImu(&g_imu, &dimu);
+		sub_Vec3_Vec3(g_imu.I.pqr, g_imu.I.pqr, g_uins.inl2States.biasPqr);	// Subtract EKF bias estimates
+		sub_Vec3_Vec3(g_imu.I.acc, g_imu.I.acc, g_uins.inl2States.biasAcc);
+		g_imuUpdateTimeMs = g_comm_time_ms;
+		break;
+
+	case DID_FLASH_CONFIG:	// uINS
+		if(dataHdr.size+dataHdr.offset > sizeof(nvm_flash_cfg_t)){ /* Invalid */ return; }
+		g_uins.flashCfg = d.flashCfg;
+		g_uins.refLlaValid = (bool)llaDegValid(g_uins.flashCfg.refLla);
 		break;
 	}
 	
