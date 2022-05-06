@@ -103,19 +103,22 @@ endif
 #################################
 
 C_SRCS += \
-	$(SDK_DIR)/src/ISUtilities.cpp                                                                 \
-	$(SDK_DIR)/src/ISFileManager.cpp                                                               \
-	$(SDK_DIR)/src/ISLogger.cpp                                                                    \
-	$(SDK_DIR)/src/ISLogStats.cpp                                                                  \
+	$(SDK_DIR)/src/com_manager.c                                                                   \
+	$(SDK_DIR)/src/convert_ins.cpp                                                                 \
+	$(SDK_DIR)/src/data_sets.c                                                                     \
 	$(SDK_DIR)/src/DeviceLog.cpp                                                                   \
 	$(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
 	$(SDK_DIR)/src/DataChunk.cpp                                                                   \
-	$(SDK_DIR)/src/ISDataMappings.cpp                                                              \
-	$(SDK_DIR)/src/ISPose.cpp                                                                      \
-	$(SDK_DIR)/src/convert_ins.cpp                                                                 \
-	$(SDK_DIR)/src/data_sets.c                                                                     \
-	$(SDK_DIR)/src/com_manager.c                                                                   \
+	$(SDK_DIR)/src/filters.cpp                                                                     \
 	$(SDK_DIR)/src/ISComm.c                                                                        \
+	$(SDK_DIR)/src/ISDataMappings.cpp                                                              \
+	$(SDK_DIR)/src/ISEarth.c                                                                       \
+	$(SDK_DIR)/src/ISFileManager.cpp                                                               \
+	$(SDK_DIR)/src/ISLogger.cpp                                                                    \
+	$(SDK_DIR)/src/ISLogStats.cpp                                                                  \
+	$(SDK_DIR)/src/ISMatrix.c                                                                      \
+	$(SDK_DIR)/src/ISPose.cpp                                                                      \
+	$(SDK_DIR)/src/ISUtilities.cpp                                                                 \
 	$(ASF_DIR)/sam/utils/syscalls/gcc/syscalls.c                                                   \
 	$(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc.c                                            \
 	$(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc_mem.c                                        \
@@ -143,6 +146,7 @@ C_SRCS += \
 	$(ASF_DIR)/common/utils/stdio/read.c                                                           \
 	$(ASF_DIR)/common/utils/stdio/write.c                                                          \
 	$(ASF_DIR)/sam/boards/user_board/init.c                                                        \
+	$(ASF_DIR)/sam/drivers/afec/afec.c                                                             \
 	$(ASF_DIR)/sam/drivers/efc/efc.c                                                               \
 	$(ASF_DIR)/sam/drivers/hsmci/hsmci.c                                                           \
 	$(ASF_DIR)/sam/drivers/mcan/mcan.c                                                             \
@@ -161,7 +165,6 @@ C_SRCS += \
 	$(ASF_DIR)/sam/drivers/usart/usart.c                                                           \
 	$(ASF_DIR)/sam/drivers/usbhs/usbhs_device.c                                                    \
 	$(ASF_DIR)/sam/drivers/wdt/wdt.c                                                               \
-	$(ASF_DIR)/sam/drivers/afec/afec.c                                                             \
 	$(ASF_DIR)/sam/drivers/xdmac/xdmac.c                                                           \
 	$(ASF_DIR)/sam/services/flash_efc/flash_efc.c                                                  \
 	$(ASF_DIR)/sam/utils/cmsis/same70/source/templates/gcc/startup_same70.c                        \
@@ -190,18 +193,18 @@ C_SRCS += \
 	$(HW_LIBS_DIR)/misc/rtos.c                                                                     \
 	$(HW_LIBS_DIR)/printf-master/printf.c                                                          \
 	$(SRC_DIR)/communications.cpp                                                                  \
-	$(SRC_DIR)/wheel_encoder.cpp                                                                   \
-	$(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
-	$(SRC_DIR)/drivers/d_adc.c                                                                     \
+	$(SRC_DIR)/evb_tasks.cpp                                                                       \
 	$(SRC_DIR)/globals.c                                                                           \
 	$(SRC_DIR)/ISLogFileFatFs.cpp                                                                  \
+	$(SRC_DIR)/main.cpp                                                                            \
 	$(SRC_DIR)/sd_card_logger.cpp                                                                  \
 	$(SRC_DIR)/spiTouINS.c                                                                         \
 	$(SRC_DIR)/user_interface.cpp                                                                  \
+	$(SRC_DIR)/wheel_encoder.cpp                                                                   \
 	$(SRC_DIR)/wifi.c                                                                              \
 	$(SRC_DIR)/xbee.cpp                                                                            \
-	$(SRC_DIR)/main.cpp                                                                            \
-	$(SRC_DIR)/evb_tasks.cpp                                                                       \
+	$(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
+	$(SRC_DIR)/drivers/d_adc.c                                                                     \
 
 #################################
 # Include Directories
