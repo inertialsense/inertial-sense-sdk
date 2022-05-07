@@ -1149,9 +1149,6 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "velControl.wheel.actuatorDeadbandDuty_r", velControl.wheel.actuatorDeadbandDuty_r, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.wheel.actuatorDeadbandVel", velControl.wheel.actuatorDeadbandVel, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "potV_l", potV_l, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "potV_r", potV_r, 0, DataTypeFloat, float, 0);
-
 	ASSERT_SIZE(totalSize);
 }
 
@@ -1230,6 +1227,9 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "wheel_r.eff",                wheel_r.eff, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_r.effInt",             wheel_r.effInt, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_r.effDuty",            wheel_r.effDuty, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "potV_l", potV_l, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "potV_r", potV_r, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }
