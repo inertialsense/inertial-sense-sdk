@@ -395,6 +395,7 @@ typedef enum
 	LVC_STATUS_VEL_LIMITED_R_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_R | LVC_STATUS_VEL_CMD_SLEW_LIMITED_R),
 	LVC_STATUS_VEL_CMD_SLEW_LIMITED_F   = 0x00010000,
 	LVC_STATUS_VEL_CMD_SLEW_LIMITED_W   = 0x00020000,
+	LVC_STATUS_VEL_CMD_MANUAL_INPUT		= 0x00040000,
 } eLunaVelocityControlStatus;
 
 typedef struct
@@ -425,6 +426,9 @@ typedef struct
 {
 	/** Wheel velocity, Commanded (rad/s) */
 	float 					velCmd;
+	
+	/** Wheel velocity, Manually Commanded (rad/s) */
+	float 					velCmdMnl;
 
 	/** Wheel velocity commanded after slew rate (rad/s) */
 	float 					velCmdSlew;
