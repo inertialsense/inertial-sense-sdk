@@ -1748,8 +1748,10 @@ class logPlot:
 
                 if name=='pqr':
                     scalar = RAD2DEG
-                else:
+                    yspan = 2.5 # deg/s
+                else:   # 'acc'
                     scalar = 1.0
+                    yspan = 0.5 # m/s^2 
 
                 if useTime:
                     temp = time
@@ -1781,7 +1783,11 @@ class logPlot:
         for a in ax:
             for b in a:
                 b.grid(True)
-
+                lim = b.get_ylim()
+                mid = 0.5 * (lim[0] + lim[1])
+                span = lim[1] - lim[0]
+                span = max(span, yspan)
+                b.set_ylim([mid-span/2, mid+span/2])
 
     def showFigs(self):
         if self.show:
