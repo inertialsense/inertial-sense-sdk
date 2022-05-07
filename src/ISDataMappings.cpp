@@ -1186,7 +1186,7 @@ static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT
 	ASSERT_SIZE(totalSize);
 }
 
-static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateEvbLunaVelocityControlMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_luna_velocity_control_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_VELOCITY_CONTROL];
@@ -1207,6 +1207,7 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "vehicle.eff_w", vehicle.eff_w, 0, DataTypeFloat, float, 0);
 
 	ADD_MAP(m, totalSize, "wheel_l.velCmd",             wheel_l.velCmd, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel_l.velCmdMnl",          wheel_l.velCmdMnl, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_l.velCmdSlew",         wheel_l.velCmdSlew, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_l.vel",                wheel_l.vel, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_l.err",                wheel_l.err, 0, DataTypeFloat, float, 0);
@@ -1218,6 +1219,7 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "wheel_l.effDuty",            wheel_l.effDuty, 0, DataTypeFloat, float, 0);
 
 	ADD_MAP(m, totalSize, "wheel_r.velCmd",             wheel_r.velCmd, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "wheel_r.velCmdMnl",          wheel_r.velCmdMnl, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_r.velCmdSlew",         wheel_r.velCmdSlew, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_r.vel",                wheel_r.vel, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_r.err",                wheel_r.err, 0, DataTypeFloat, float, 0);
@@ -1234,7 +1236,7 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ASSERT_SIZE(totalSize);
 }
 
-static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateEvbLunaVelocityCommandMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_luna_velocity_command_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_VELOCITY_COMMAND];
@@ -2342,8 +2344,8 @@ cISDataMappings::cISDataMappings()
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
     PopulateCoyoteStatusMappings(m_lookupInfo);
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
-	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
-    PopulateEvbLunaWheelCommandMappings(m_lookupInfo);
+	PopulateEvbLunaVelocityControlMappings(m_lookupInfo);
+    PopulateEvbLunaVelocityCommandMappings(m_lookupInfo);
     PopulateEvbLunaAuxCmdMappings(m_lookupInfo);
 #endif
 
