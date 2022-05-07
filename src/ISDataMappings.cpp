@@ -1102,6 +1102,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
 	ADD_MAP(m, totalSize, "velControl.wheelRadius", 	        velControl.wheelRadius, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velControl.wheelBaseline",           velControl.wheelBaseline, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.engine_rpm",              velControl.engine_rpm, 0, DataTypeFloat, float, 0);
+
     ADD_MAP(m, totalSize, "velControl.vehicle.u_cruise",        velControl.vehicle.u_cruise, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_min",           velControl.vehicle.u_min, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_max",           velControl.vehicle.u_max, 0, DataTypeFloat, float, 0);
@@ -1112,6 +1113,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FB_Kp",         velControl.vehicle.w_FB_Kp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FF_c0",         velControl.vehicle.w_FF_c0, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.testSweepRate",   velControl.vehicle.testSweepRate, 0, DataTypeFloat, float, 0);
+
     ADD_MAP(m, totalSize, "velControl.wheel.slewRate",          velControl.wheel.slewRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.wheel.velMax",            velControl.wheel.velMax, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.wheel.FF_vel_deadband",   velControl.wheel.FF_vel_deadband, 0, DataTypeFloat, float, 0);
@@ -1146,6 +1148,9 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "velControl.wheel.actuatorDeadbandDuty_l", velControl.wheel.actuatorDeadbandDuty_l, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.wheel.actuatorDeadbandDuty_r", velControl.wheel.actuatorDeadbandDuty_r, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.wheel.actuatorDeadbandVel", velControl.wheel.actuatorDeadbandVel, 0, DataTypeFloat, float, 0);
+
+    ADD_MAP(m, totalSize, "potV_l", potV_l, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "potV_r", potV_r, 0, DataTypeFloat, float, 0);
 
 	ASSERT_SIZE(totalSize);
 }

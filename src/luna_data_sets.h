@@ -483,6 +483,10 @@ typedef struct
 	evb_luna_velocity_control_wheel_t       wheel_l;
 	evb_luna_velocity_control_wheel_t       wheel_r;
 
+	/** Manual control */
+	float                   potV_l;
+	float                   potV_r;
+
 } evb_luna_velocity_control_t;
 
 
