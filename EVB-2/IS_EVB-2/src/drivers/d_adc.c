@@ -64,15 +64,8 @@ int adc1_init(void)
 	return 0;
 }
 
-
-float adc4_voltage(void)
+float adc_voltage(Afec *const afec, enum afec_channel_num afec_ch)
 {
-	volatile uint32_t data = afec_channel_get_value(AFEC0, AFEC_CHANNEL_4);
-	return (float)data * ADC_VOLT_REF / ADC_MAX_DIGITAL / 1000.0f;
-}
-
-float adc1_voltage(void)
-{
-	volatile uint32_t data = afec_channel_get_value(AFEC0, AFEC_CHANNEL_1);
+	volatile uint32_t data = afec_channel_get_value(afec, afec_ch);
 	return (float)data * ADC_VOLT_REF / ADC_MAX_DIGITAL / 1000.0f;
 }

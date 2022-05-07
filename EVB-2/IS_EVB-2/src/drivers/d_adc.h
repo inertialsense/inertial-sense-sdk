@@ -11,9 +11,9 @@ extern "C" {
 // prototypes
 int afec0_init(void);
 int adc4_init(void);
-float adc4_voltage(void);
 int adc1_init(void);
-float adc1_voltage(void);
+
+float adc_voltage(Afec *const afec, enum afec_channel_num afec_ch);
 
 #ifdef __cplusplus
 }
