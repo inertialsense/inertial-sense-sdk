@@ -87,7 +87,7 @@ void rtos_monitor(int numRtosTasks)
 		if (handle)
 		{
 			vTaskGetInfo(handle, &status, 1, eRunning);
-			g_rtos.task[i].stackUnused = status.usStackHighWaterMark * sizeof(uint32_t);
+			g_rtos.task[i].stackUnused = status.usStackHighWaterMark;
 			g_rtos.task[i].priority    = status.uxCurrentPriority;
 
 #if (configGENERATE_RUN_TIME_STATS == 1)
