@@ -43,6 +43,9 @@ static void soft_reset_internal(void)
 	__disable_irq();
 	__DMB();
 
+
+
+#ifndef uINS_5
 #if defined(PLATFORM_IS_EVB_2)
 #else
     usart_reset((Usart*)SERIAL0);
@@ -50,7 +53,6 @@ static void soft_reset_internal(void)
     usart_reset((Usart*)SERIAL2);
 #endif    
 
-#ifndef uINS_5
     set_reset_pin_enabled(1);
     RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;
 #else
@@ -147,9 +149,12 @@ void enable_bootloader(int pHandle)
 void enable_bootloader_assistant(void)
 {
     unlockUserFlash();
-    
+
+#ifndef uINS_5
     //this enables SAM-BA
     flash_clear_gpnvm(1);
+#endif
+
     soft_reset_backup_register(SYS_FAULT_STATUS_ENABLE_BOOTLOADER);
 }
 
