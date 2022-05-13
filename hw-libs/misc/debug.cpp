@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #ifdef uINS_5
-#include "../hardware/board.h"
+#include "uINS-5.h"
 #else
 #include "board.h"
 #endif

@@ -10,7 +10,13 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#ifndef uINS_5
 #include <asf.h>
+#else
+#include "stm32l4xx.h"
+#include "d_flash.h"
+#endif
+
 #include <string.h>
 #include "../../src/data_sets.h"
 #include "../../hw-libs/misc/rtos.h"
@@ -19,25 +25,37 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 void unlockUserFlash(void)
 {
+#ifndef uINS_5
     // unlock 64K of config data at end in event that downgrade of firmware is happening, old firmware did not attempt to unlock before flash writes
     for (uint32_t flashUnlockStart = BOOTLOADER_FLASH_USER_DATA_START_ADDRESS; flashUnlockStart < BOOTLOADER_FLASH_USER_DATA_END_ADDRESS; flashUnlockStart += BOOTLOADER_FLASH_BLOCK_SIZE)
     {
         flash_unlock(flashUnlockStart, flashUnlockStart + BOOTLOADER_FLASH_BLOCK_SIZE - 1, 0, 0); // unlock is inclusive
     }
+#else
+    // uINS-5 can currently only lock/unlock all of memory
+    // TODO: Use write protect to protect user area and bootloader from erase.
+#endif
 }
 
 
 static void soft_reset_internal(void)
 {
-    Disable_global_interrupt();
+	__disable_irq();
+	__DMB();
+
 #if defined(PLATFORM_IS_EVB_2)
 #else
     usart_reset((Usart*)SERIAL0);
     usart_reset((Usart*)SERIAL1);
     usart_reset((Usart*)SERIAL2);
 #endif    
+
+#ifndef uINS_5
     set_reset_pin_enabled(1);
     RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;
+#else
+    __NVIC_SystemReset();
+#endif
 
     while(1);
 }
@@ -49,7 +67,12 @@ void soft_reset_no_backup_register(void)
 
 void soft_reset_backup_register(uint32_t sysFaultStatus)
 {
+#ifndef uINS_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= sysFaultStatus;    // Report cause of reset
+#else
+    RTC->BKP0R |= sysFaultStatus;    // Report cause of reset
+#endif
+
     soft_reset_internal();
 }
 
@@ -87,21 +110,34 @@ void enable_bootloader(int pHandle)
     memcpy(&header, (void*)BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE);
     strncpy(header.data.jumpSignature, BOOTLOADER_JUMP_SIGNATURE_STAY_IN_BOOTLOADER, sizeof(header.data.jumpSignature));
 
+
+#ifndef uINS_5
     // unlock bootloader header 
 	flash_unlock(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS + BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE - 1, 0, 0);
-    
-    // this flash write is allowed to erase and write a 512 byte page because it is in the small sector, last param of 1 does this
-    flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 1);
-    
-    // unlock flash in case of firmware downgrade
-    unlockUserFlash();
+
+	// this flash write is allowed to erase and write a 512 byte page because it is in the small sector, last param of 1 does this
+	flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 1);
+
+	// unlock flash in case of firmware downgrade
+	unlockUserFlash();
+#else
+	flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 0);
+#endif
     
 	// Let the bootloader know which port to use for the firmware update.  Set key and port number.
-	GPBR->SYS_GPBR[3] = PORT_SEL_KEY_SYS_GPBR_3;
+#ifndef uINS_5
+    GPBR->SYS_GPBR[3] = PORT_SEL_KEY_SYS_GPBR_3;
 	GPBR->SYS_GPBR[4] = PORT_SEL_KEY_SYS_GPBR_4;
 	GPBR->SYS_GPBR[5] = PORT_SEL_KEY_SYS_GPBR_5;
 	GPBR->SYS_GPBR[6] = PORT_SEL_KEY_SYS_GPBR_6;
 	GPBR->SYS_GPBR[7] = pHandle;
+#else
+    RTC->BKP3R = PORT_SEL_KEY_SYS_GPBR_3;
+    RTC->BKP4R = PORT_SEL_KEY_SYS_GPBR_4;
+    RTC->BKP5R = PORT_SEL_KEY_SYS_GPBR_5;
+    RTC->BKP6R = PORT_SEL_KEY_SYS_GPBR_6;
+    RTC->BKP7R = pHandle;
+#endif
 
     // reset processor
     soft_reset_backup_register(SYS_FAULT_STATUS_ENABLE_BOOTLOADER);
