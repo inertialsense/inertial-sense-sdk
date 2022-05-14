@@ -75,6 +75,9 @@ typedef struct
 	/** Turn rate feedback proportional gain */
 	float					w_FB_Kp;
 
+	/** Turn rate feedback integral gain */
+	float					w_FB_Ki;
+
     /** Turn rate feedforward */
     float                 	w_FF_c0;
 
