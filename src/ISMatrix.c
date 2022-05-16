@@ -19,20 +19,15 @@ void LU( const f_t *M, i_t n, f_t *L, f_t *U );
 char solve_upper( f_t *result, i_t n, f_t *A, f_t *b );
 char solve_lower( f_t *result, i_t n, f_t *A, f_t *b );
 
-void mul_MatMxN( void * result, const void * A_ptr, const void * B_ptr, i_t m, i_t n, i_t p, char transpose_B, char add )
+void mul_MatMxN( f_t *result, const f_t *A, const f_t *B, i_t m, i_t n, i_t p, char transpose_A, char transpose_B, char add )
 {
 	i_t i;
 	i_t j;
 	i_t k;
 
-	f_t * matOut = (f_t*)result;
-	const f_t * A = (const f_t*)A_ptr;
-	const f_t * B = (const f_t*)B_ptr;
-
 	for (i = 0; i < m; i++)
 	{
-		const f_t * A_i = A + i * n;
-		f_t * O_i = matOut + i * p;
+		f_t * O_i = result + i * p;
 
 		for (j = 0; j < p; j++)
 		{
@@ -41,8 +36,13 @@ void mul_MatMxN( void * result, const void * A_ptr, const void * B_ptr, i_t m, i
 
 			for (k = 0; k < n; k++)
 			{
-				const f_t * a = A_i + k;
+				const f_t * a;
 				const f_t * b;
+
+				if (transpose_A)
+					a = A + k * m + i;
+				else
+					a = A + i * n + k;
 
 				if (is_zero(a))
 					continue;
@@ -283,7 +283,7 @@ char inv_MatN( f_t *result, const f_t *M, i_t n )
 
 	// result = invU * invL
 	if( !error )
-		mul_MatMxN( result, invU, invL, n, n, n, 0, 0 );
+		mul_MatMxN( result, invU, invL, n, n, n, 0, 0, 0 );
 
 	FREE( L );
 	FREE( U );

@@ -56,7 +56,12 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		encoderSendTimeMs = 0;
 		
 		// Call read encoders
-		g_wheelEncoder.timeOfWeek = g_status.timeOfWeekMs;
+#if WHEEL_ENCODER_TIME_FROM_TOW == 1
+		g_wheelEncoder.timeOfWeek = g_comm_time + g_towOffset;
+#else
+		g_wheelEncoder.timeOfWeek = g_comm_time;
+#endif
+
 		g_wheelEncoderTimeMs = (uint32_t)round(g_wheelEncoder.timeOfWeek*1000.0);
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
 		quadEncReadPeriodAll(&periodL, &periodR);

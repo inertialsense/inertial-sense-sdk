@@ -20,8 +20,8 @@ extern "C" {
 #define DID_EVB_LUNA_STATUS             (eDataIDs)111 /** (evb_luna_status_t) EVB Luna status. */
 #define DID_EVB_LUNA_SENSORS            (eDataIDs)112 /** (evb_luna_sensors_t) EVB Luna sensors (proximity, etc.). */
 #define DID_EVB_LUNA_REMOTE_KILL        (eDataIDs)113 /** (evb_luna_remote_kill_t) EVB remoteKill system */
-#define DID_EVB_LUNA_WHEEL_CONTROLLER   (eDataIDs)114 /** (evb_luna_wheel_controller_t) EVB wheel control information */
-#define DID_EVB_LUNA_WHEEL_COMMAND      (eDataIDs)115 /** (evb_luna_wheel_command_t) EVB velocity command */
+#define DID_EVB_LUNA_VELOCITY_CONTROL   (eDataIDs)114 /** (evb_luna_velocity_control_t) EVB wheel control information */
+#define DID_EVB_LUNA_VELOCITY_COMMAND   (eDataIDs)115 /** (evb_luna_velocity_command_t) EVB velocity command */
 #define DID_EVB_LUNA_AUX_COMMAND        (eDataIDs)116 /** (evb_luna_aux_command_t) EVB auxillary commands */
 #define DID_LUNA_COUNT					117				/** Make larger than all Luna DIDs */
 
@@ -53,14 +53,38 @@ typedef enum
 	EVB_WHEEL_CONTROL_CONFIG_TYPE_MASK                  = 0x00000007,
 } eEvbLunaWheelControlConfig_t;
 
+
+typedef struct
+{
+	/** Forward velocity (m/s) */
+	float					u_cruise;
+	float					u_min;
+	float					u_max;
+	float					u_slewLimit;
+
+	/** Turn rate velocity (rad/s) */
+	float					w_max;
+	float					w_slewLimit;
+
+	/** Test sweep rate (m/s/s) */
+	float					testSweepRate;
+
+	/** Forward velocity feedback proportional gain */
+	float					u_FB_Kp;
+
+	/** Turn rate feedback proportional gain */
+	float					w_FB_Kp;
+
+    /** Turn rate feedforward */
+    float                 	w_FF_c0;
+
+} evb_luna_velocity_control_vehicle_cfg_t;
+
 #define NUM_FF_COEFS	2
 #define NUM_AL_COEFS	5
 
 typedef struct
 {
-	/** Timeout period before motors disable is triggered.*/
-	uint32_t				cmdTimeoutMs;
-  
 	/** Commanded velocity slew rate (rad/s/s) */
 	float					slewRate;
 
@@ -70,14 +94,18 @@ typedef struct
 	/** Feedforward deadband (m/s) */
 	float					FF_vel_deadband;
 
-	/** Feedforward coefficient estimation gain.  Zero to disable estimation..  Zero to disable estimation..  Zero to disable estimation. */
+	/** Feedforward coefficient estimation gain.  Zero to disable estimation. */
 	float					FF_c_est_Ki[NUM_FF_COEFS];
 
     /** Feedforward coefficient estimation maximum value */
     float                 	FF_c_est_max[NUM_FF_COEFS];
 
     /** Feedforward coefficients */
-    float                 	FF_c[NUM_FF_COEFS];
+    float                 	FF_c_l[NUM_FF_COEFS];
+    float                 	FF_c_r[NUM_FF_COEFS];
+
+    /** (rpm) Engine RPM corresponding with control gains. */
+    float                   FF_FB_engine_rpm;
 
 	/** Feedback proportional gain */
 	float					FB_Kp;
@@ -87,22 +115,16 @@ typedef struct
 
 	/** Feedback derivative gain */
 	float					FB_Kd;
-	
+
     /** EVB2 velocity Linearization Coefficients */
     float                   InversePlant_l[NUM_AL_COEFS];
     float                   InversePlant_r[NUM_AL_COEFS];
-
-	// /** Actuator counts per radian velocity controller */
-	// float					actuatorEncoderCountsPerRad;
-
-    /** Actuator count [min, max] Duty cycle will drive between these numbers. Duty of 0 - min, duty of 100 - Max */
-    // float                   actuatorEncoderRange[2];
 
     /** Sets actuator zero velocity (center) position relative to home point. */
     float                	actuatorTrim_l;
     float                	actuatorTrim_r;
 
-    /** Limits for actuator angle. */
+    /** Wheel controller effort limits for 1. actuator angle or 2. velocity, based on actuator type. */
     float                	actuatorLimits_l[2];
     float                	actuatorLimits_r[2];
 
@@ -111,17 +133,15 @@ typedef struct
     float                   actuatorDeadbandDuty_r;
     float                   actuatorDeadbandVel;
 
-    /** (rpm) Engine RPM corresponding with control gains. */
-    float                   FF_FB_engine_rpm;
+} evb_luna_velocity_control_wheel_cfg_t;
 
-    /** (rpm) Current engine RPM.  Used for wheel control gain scheduling. */
-    float                   engine_rpm;
-
-	/** Test sweep rate (rad/s) */
-	float					testSweepRate;
-
+typedef struct
+{
 	/** Various config like motor control types, etc. (eEvbLunaWheelControlConfig_t) */
 	uint32_t				config;
+
+	/** Timeout period before motors disable is triggered.*/
+	uint32_t				cmdTimeoutMs;
 
 	/** (m) Wheel radius */
 	float 					wheelRadius;
@@ -129,7 +149,16 @@ typedef struct
 	/** (m) Wheel baseline, distance between wheels */
 	float					wheelBaseline;
 
-} evb_luna_wheel_control_cfg_t;
+    /** (rpm) Current engine RPM.  Used for wheel control gain scheduling. */
+    float                   engine_rpm;
+
+	/** Vehicle control */
+	evb_luna_velocity_control_vehicle_cfg_t     vehicle;
+
+	/** Wheel control */
+	evb_luna_velocity_control_wheel_cfg_t       wheel;
+
+} evb_luna_velocity_control_cfg_t;
 
 /**
 * (DID_EVB_LUNA_FLASH_CFG) EVB-2 Luna specific flash config.
@@ -170,8 +199,8 @@ typedef struct
     /** Proximity threshhold for prox error.*/
     float                   minProxDistance;
 
-	/** Wheel velocity control */
-	evb_luna_wheel_control_cfg_t wheelControl;
+	/** Velocity control */
+	evb_luna_velocity_control_cfg_t velControl;
 
 } evb_luna_flash_cfg_t;
 
@@ -185,6 +214,9 @@ typedef struct
 	
 	/** Status (eEvbLunaStatus) Reset faults by setting these to zero */
 	uint32_t                evbLunaStatus;
+
+	/** Motor state (eLunaMotorState) */
+	uint32_t                motorState;
 
 	/** Remotekill mode (eLunaRemoteKillMode) */
 	uint32_t                remoteKillMode;
@@ -254,6 +286,13 @@ typedef enum
 
 typedef enum
 {
+	LMS_UNSPECIFIED					= 0,
+	LMS_MOTOR_CONTROL_ENABLE		= 1,	// Motor control enabled.
+	LMS_MOTOR_CONTROL_DISABLE		= 2,	// Motor control disabled.  Engine shutoff is controlled only by remote kill.
+} eLunaMotorState;
+
+typedef enum
+{
 	LRKM_UNSPECIFIED				= 0,
 	LRKM_ENABLE						= 1,	// Keep alive motors enabled.
 	LRKM_DISABLE					= 2,	// Disable motors.
@@ -287,44 +326,16 @@ typedef struct
 
 } evb_luna_remote_kill_t;
 
-typedef enum
-{
-	RUNMODE_STANDBY                     	= 0,
-	RUNMODE_TELEOP                       	= 1,
-    RUNMODE_TELEOP_RECORD_PATH           	= 2,
-	RUNMODE_RECORD_FINISH                	= 3,
-	RUNMODE_TELEOP_RECORD_AUTO_UNDO      	= 4,
-	RUNMODE_AUTONOMOUS                   	= 5,
-	RUNMODE_AUTONOMOUS_SKIP_WAYPOINT     	= 6,
-	RUNMODE_FAULT                        	= 7,
-	RUNMODE_STOP							= 8,
-
-	// Velocity TESTS
-	RUNMODE_TEST_VEL_DUAL_CMD				= 9,	// Use left vel cmd to drive left and right together
-	RUNMODE_TEST_VEL_CMD				    = 10,
-	RUNMODE_TEST_VEL_SWEEP				    = 11,
-
-	// Effort TESTS
-	RUNMODE_TEST_EFFORT					    = 12,	// (Keep as first effort test)
-
-	// Duty TESTS	
-	RUNMODE_TEST_DUTY			    		= 13,	// (Keep as first duty cycle test)
-	RUNMODE_TEST_DUTY_SWEEP				    = 14,	// Watchdog disabled in testing
-	RUNMODE_TEST_WHL_ANG_VEL_SWEEP          = 15,
-
-	RUNMODE_COUNT
-} eLunaWheelCmdRunmode;
-
 /**
-* (DID_EVB_LUNA_WHEEL_CMD) EVB Luna wheel command.
+* (DID_EVB_LUNA_VELOCITY_COMMAND) EVB Luna wheel command.
 */
 typedef struct
 {
 	/** Local system time in milliseconds */
 	uint32_t                timeMs;
 
-	/** Control mode (see eLunaWheelCmdRunmode) */
-	uint32_t	   			runMode;
+	/** Control mode (see eLunaVelocityControlMode) */
+	uint32_t                modeCmd;
 
 	/** Forward velocity (m/s) */
 	float					fwd_vel;
@@ -332,7 +343,7 @@ typedef struct
 	/** Turn rate (rad/s) */
 	float					turn_rate;
 
-} evb_luna_wheel_command_t;
+} evb_luna_velocity_command_t;
 
 typedef struct evb_luna_aux_command_t
 {
@@ -354,19 +365,98 @@ typedef enum
 
 typedef enum
 {
-	LCS_FAULT_L						= 0x00000001,
-	LCS_FAULT_R						= 0x00000002,
-	LCS_VEL_CMD_LIMITED_L			= 0x00000010,
-	LCS_VEL_CMD_LIMITED_R			= 0x00000020,
-	LCS_VEL_CMD_LIMITED_MASK		= (LCS_VEL_CMD_LIMITED_L | LCS_VEL_CMD_LIMITED_R),
-	LCS_VEL_CMD_SLEW_LIMITED_L		= 0x00000040,
-	LCS_VEL_CMD_SLEW_LIMITED_R		= 0x00000080,
-	LCS_VEL_LIMITED_L_MASK			= (LCS_VEL_CMD_LIMITED_L | LCS_VEL_CMD_SLEW_LIMITED_L),
-	LCS_VEL_LIMITED_R_MASK			= (LCS_VEL_CMD_LIMITED_R | LCS_VEL_CMD_SLEW_LIMITED_R),
-} eLunaWheelControllerStatus;
+	LVC_MODE_DISABLED                   = 0,
+	LVC_MODE_STOP                       = 1,
+	LVC_MODE_ENABLE                     = 2,	// With watchdog
+	// Velocity TESTS
+	LVC_MODE_TEST_VEL_VEHICLE_CMD       = 3,	// Use left vel cmd to drive left and right together
+	LVC_MODE_TEST_VEL_WHEEL_CMD         = 4,
+	LVC_MODE_TEST_VEL_SWEEP             = 5,
+	// Effort TESTS
+	LVC_MODE_TEST_EFFORT                = 6,	// (Keep as first effort test)
+	// Duty TESTS	
+	LVC_MODE_TEST_DUTY                  = 7,	// (Keep as first duty cycle test)
+	LVC_MODE_TEST_DUTY_SWEEP            = 8,	// Watchdog disabled in testing
+	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 9,
+	// Solve for Feedforward	
+	LVC_MODE_CALIBRATE_FEEDFORWARD      = 10,
+} eLunaVelocityControlMode;
+
+typedef enum
+{
+	LVC_STATUS_FAULT_L                  = 0x00000001,
+	LVC_STATUS_FAULT_R                  = 0x00000002,
+	LVC_STATUS_VEL_CMD_LIMITED_L        = 0x00000010,
+	LVC_STATUS_VEL_CMD_LIMITED_R        = 0x00000020,
+	LVC_STATUS_VEL_CMD_LIMITED_MASK     = (LVC_STATUS_VEL_CMD_LIMITED_L | LVC_STATUS_VEL_CMD_LIMITED_R),
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_L   = 0x00000040,
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_R   = 0x00000080,
+	LVC_STATUS_VEL_LIMITED_L_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_L | LVC_STATUS_VEL_CMD_SLEW_LIMITED_L),
+	LVC_STATUS_VEL_LIMITED_R_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_R | LVC_STATUS_VEL_CMD_SLEW_LIMITED_R),
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_F   = 0x00010000,
+	LVC_STATUS_VEL_CMD_SLEW_LIMITED_W   = 0x00020000,
+} eLunaVelocityControlStatus;
+
+typedef struct
+{
+	/** Vehicle forward and angular velocity, Commanded (m/s, rad/s) */
+	float 					velCmd_f;
+	float 					velCmd_w;
+
+	/** Vehicle forward and angular velocity, slew rate limited commanded (m/s, rad/s) */
+	float 					velCmdSlew_f;
+	float 					velCmdSlew_w;
+
+	/** Vehicle forward and angular velocity (m/s, rad/s) */
+	float 					vel_f;
+	float 					vel_w;
+
+	/** Vehicle forward and angular velocity, error (m/s, rad/s) */
+	float 					err_f;
+	float 					err_w;
+
+	/** Vehicle forward and angular velocity, effort (m/s, rad/s) */
+	float 					eff_f;
+	float 					eff_w;
+
+} evb_luna_velocity_control_vehicle_t;
+
+typedef struct
+{
+	/** Wheel velocity, Commanded (rad/s) */
+	float 					velCmd;
+
+	/** Wheel velocity commanded after slew rate (rad/s) */
+	float 					velCmdSlew;
+
+	/** Wheel velocity (rad/s) */
+	float 					vel;
+
+	/** Wheel velocity error (rad/s) */
+	float 					err;
+
+	/** Feedforward control effort */
+	float 					ff_eff;
+
+	/** Feedback control effort */
+	float 					fb_eff;
+
+	/** Feedback integral control effort */
+	float 					fb_eff_integral;
+
+	/** Control effort = ff_eff_x + fb_eff_x */
+	float 					eff;
+
+	/** Control effort intermediate */
+	float 					effInt;
+
+	/** Duty cycle control effort at actuator (-1.0 to 1.0) */
+	float 					effDuty;
+
+} evb_luna_velocity_control_wheel_t;
 
 /**
-* (DID_EVB_LUNA_WHEEL_CONTROLLER) EVB Luna wheel controller info.
+* (DID_EVB_LUNA_VELOCITY_CONTROL) EVB Luna wheel controller info.
 */
 typedef struct
 {
@@ -376,49 +466,20 @@ typedef struct
 	/** Delta time */
 	float                	dt;
 
-	/** Wheel control mode: (see eLunaWheelCmdRunmode) */
-	uint32_t            	runMode;
-
-	/** Wheel control status (see eLunaWheelControllerStatus) */
+	/** Wheel control status (see eLunaVelocityControlStatus) */
 	uint32_t            	status;
 
-	/** Velocity commanded (rad/s) */
-	float 					velCmd_l;
-	float 					velCmd_r;
+	/** Wheel control mode: (see eLunaVelocityControlMode) */
+	uint32_t            	current_mode;
 
-	/** Velocity commanded after slew rate (rad/s) */
-	float 					velCmdSlew_l;
-	float 					velCmdSlew_r;
+	/** Vehicle velocity control */
+	evb_luna_velocity_control_vehicle_t     vehicle;
 
-	/** Velocity (rad/s) */
-	float 					vel_l;
-	float 					vel_r;
+	/** Wheel velocity control */
+	evb_luna_velocity_control_wheel_t       wheel_l;
+	evb_luna_velocity_control_wheel_t       wheel_r;
 
-	/** Velocity error (rad/s) */
-	float 					velErr_l;
-	float 					velErr_r;
-
-	/** Feedforward control effort */
-	float 					ff_eff_l;
-	float 					ff_eff_r;
-
-	/** Feedback control effort */
-	float 					fb_eff_l;
-	float 					fb_eff_r;
-
-	/** Control effort = ff_eff_x + fb_eff_x */
-	float 					eff_l;
-	float 					eff_r;
-
-	/** Control effort intermediate */
-	float 					effInt_l;
-	float 					effInt_r;
-
-	/** Duty cycle control effort at actuator (-1.0 to 1.0) */
-	float 					effDuty_l;
-	float 					effDuty_r;
-
-} evb_luna_wheel_controller_t;
+} evb_luna_velocity_control_t;
 
 
 POP_PACK
