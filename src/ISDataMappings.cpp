@@ -1044,7 +1044,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "h4xRadioBaudRate", h4xRadioBaudRate, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "h8gpioBaudRate", h8gpioBaudRate, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "wheelCfgBits", wheelCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-    ADD_MAP(m, totalSize, "wheelStepPeriodMs", wheelStepPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "velocityControlPeriodMs", velocityControlPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
