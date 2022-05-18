@@ -410,6 +410,10 @@ typedef struct
 	float 					velCmd_f;
 	float 					velCmd_w;
 
+	/** Wheel velocity, Manually Commanded (m/s, rad/s) */
+	float 					velCmdMnl_f;
+	float 					velCmdMnl_w;
+
 	/** Vehicle forward and angular velocity, slew rate limited commanded (m/s, rad/s) */
 	float 					velCmdSlew_f;
 	float 					velCmdSlew_w;
@@ -433,9 +437,6 @@ typedef struct
 	/** Wheel velocity, Commanded (rad/s) */
 	float 					velCmd;
 	
-	/** Wheel velocity, Manually Commanded (rad/s) */
-	float 					velCmdMnl;
-
 	/** Wheel velocity commanded after slew rate (rad/s) */
 	float 					velCmdSlew;
 

@@ -11,8 +11,8 @@ PYBIND11_NUMPY_DTYPE(wheel_encoder_t, timeOfWeek, status, theta_l, theta_r, omeg
 PYBIND11_NUMPY_DTYPE(wheel_transform_t, e_b2w, e_b2w_sigma, t_b2w, t_b2w_sigma);
 PYBIND11_NUMPY_DTYPE(wheel_config_t, bits, transform, track_width, radius);
 PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
-PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_vehicle_t, velCmd_f, velCmd_w, velCmdSlew_f, velCmdSlew_w, vel_f, vel_w, err_f, err_w, eff_f, eff_w);
-PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_wheel_t, velCmd, velCmdMnl, velCmdSlew, vel, err, ff_eff, fb_eff, fb_eff_integral, eff, effInt, effDuty);
+PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_vehicle_t, velCmd_f, velCmd_w, velCmdMnl_f, velCmdMnl_w, velCmdSlew_f, velCmdSlew_w, vel_f, vel_w, err_f, err_w, eff_f, eff_w);
+PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_wheel_t, velCmd, velCmdSlew, vel, err, ff_eff, fb_eff, fb_eff_integral, eff, effInt, effDuty);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_t, timeMs, dt, current_mode, status, vehicle, wheel_l, wheel_r, potV_l, potV_r);
 
 // Public Types
