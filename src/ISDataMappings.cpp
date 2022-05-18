@@ -1106,13 +1106,14 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP(m, totalSize, "velControl.vehicle.u_cruise",        velControl.vehicle.u_cruise, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_min",           velControl.vehicle.u_min, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_max",           velControl.vehicle.u_max, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "velControl.vehicle.u_slewLimit",          velControl.vehicle.u_slewLimit, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.u_slewLimit",     velControl.vehicle.u_slewLimit, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_max",           velControl.vehicle.w_max, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "velControl.vehicle.w_slewLimit",          velControl.vehicle.w_slewLimit, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_slewLimit",     velControl.vehicle.w_slewLimit, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_FB_Kp",         velControl.vehicle.u_FB_Kp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FB_Kp",         velControl.vehicle.w_FB_Kp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FB_Ki",         velControl.vehicle.w_FB_Ki, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FF_c0",         velControl.vehicle.w_FF_c0, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_FF_deadband",   velControl.vehicle.w_FF_deadband, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.testSweepRate",   velControl.vehicle.testSweepRate, 0, DataTypeFloat, float, 0);
 
     ADD_MAP(m, totalSize, "velControl.wheel.slewRate",          velControl.wheel.slewRate, 0, DataTypeFloat, float, 0);

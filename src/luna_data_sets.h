@@ -78,8 +78,11 @@ typedef struct
 	/** Turn rate feedback integral gain */
 	float					w_FB_Ki;
 
-    /** Turn rate feedforward */
+    /** Turn rate feedforward (rad/s) */
     float                 	w_FF_c0;
+
+    /** Turn rate feedforward deadband (rad/s) */
+    float                 	w_FF_deadband;
 
 } evb_luna_velocity_control_vehicle_cfg_t;
 
