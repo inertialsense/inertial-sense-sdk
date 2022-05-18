@@ -262,7 +262,7 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
     {
         // version 2, 3 (which sent v2), 4
         state->version = v-'0';
-        state->firstPageSkipBytes = 16384;
+        state->firstPageSkipBytes = 32768;
     }
     else
     {
