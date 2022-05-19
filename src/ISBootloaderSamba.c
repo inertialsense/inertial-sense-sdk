@@ -81,6 +81,20 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         strncpy(params.bootloadEnableCmd, "BLEN", 5);
         bootloadFileEx(&params);
     }
+    else if(ctx->hdw_info.uins_version[0] == 5 && strlen(ctx->firmware.uins_5_firmware_path) != 0)
+    {
+        SLEEP_MS(sleep_time);   // Wait for boot
+        params.fileName = (const char*)ctx->firmware.uins_5_firmware_path;
+        strncpy(params.bootloadEnableCmd, "BLEN", 5);
+        bootloadFileEx(&params);
+    }
+    else
+    {
+        SLEEP_MS(sleep_time);   // Wait for boot
+        params.fileName = (const char*)ctx->firmware.uins_5_firmware_path;
+        strncpy(params.bootloadEnableCmd, "BLEN", 5);
+        bootloadFileEx(&params);
+    }
 
     strncpy(ctx->error, params.error, BOOTLOADER_ERROR_LENGTH);
 
