@@ -1347,13 +1347,19 @@ typedef struct PACKED
 
 // (DID_SENSORS_TC_BIAS)
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
+{
+    /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
+	double                  time;                                       // Units only apply for calibrated data
+
 	sensors_mpu_t			mpu[NUM_IMU_DEVICES];
 } sensors_t;
 
 // (DID_SENSORS_IS1, DID_SENSORS_IS2)
 typedef struct PACKED
-{                                       
+{
+    /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
+	double                  time;
+                                           
 	/** Units only apply for calibrated data */
 	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
 } sensors_w_temp_t;
