@@ -375,18 +375,19 @@ typedef enum
 	LVC_MODE_DISABLED                   = 0,
 	LVC_MODE_STOP                       = 1,
 	LVC_MODE_ENABLE                     = 2,	// With watchdog
+	LVC_MODE_MANUAL                     = 3,	// 
 	// Velocity TESTS
-	LVC_MODE_TEST_VEL_VEHICLE_CMD       = 3,	// Use left vel cmd to drive left and right together
-	LVC_MODE_TEST_VEL_WHEEL_CMD         = 4,
-	LVC_MODE_TEST_VEL_SWEEP             = 5,
+	LVC_MODE_TEST_VEL_VEHICLE_CMD       = 4,	// Use left vel cmd to drive left and right together
+	LVC_MODE_TEST_VEL_WHEEL_CMD         = 5,
+	LVC_MODE_TEST_VEL_SWEEP             = 6,
 	// Effort TESTS
-	LVC_MODE_TEST_EFFORT                = 6,	// (Keep as first effort test)
+	LVC_MODE_TEST_EFFORT                = 7,	// (Keep as first effort test)
 	// Duty TESTS	
-	LVC_MODE_TEST_DUTY                  = 7,	// (Keep as first duty cycle test)
-	LVC_MODE_TEST_DUTY_SWEEP            = 8,	// Watchdog disabled in testing
-	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 9,
+	LVC_MODE_TEST_DUTY                  = 8,	// (Keep as first duty cycle test)
+	LVC_MODE_TEST_DUTY_SWEEP            = 9,	// Watchdog disabled in testing
+	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 10,
 	// Solve for Feedforward	
-	LVC_MODE_CALIBRATE_FEEDFORWARD      = 10,
+	LVC_MODE_CALIBRATE_FEEDFORWARD      = 11,
 } eLunaVelocityControlMode;
 
 typedef enum
