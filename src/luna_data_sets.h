@@ -57,13 +57,14 @@ typedef enum
 typedef struct
 {
 	/** Forward velocity (m/s) */
-	float					u_cruise;
 	float					u_min;
-	float					u_max;
+	float					u_cruise;
+	float					u_max_manual;
 	float					u_slewLimit;
 
 	/** Turn rate velocity (rad/s) */
-	float					w_max;
+	float					w_max_autonomous;
+	float					w_max_manual;
 	float					w_slewLimit;
 
 	/** Test sweep rate (m/s/s) */
