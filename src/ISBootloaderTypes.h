@@ -134,20 +134,11 @@ typedef struct
 
 typedef struct 
 {
-    // uINS-3/4 (empty string if not updating)
-    // In most applications, these will be the same file. Hardware detection takes care of the rest.
-    char uins_3_firmware_path[256];
-    char uins_4_firmware_path[256];
-
-    // EVB-2 (empty string if not updating)
-    char evb_2_firmware_path[256];
+    char firmware_path[256];
 
     // Bootloader (uINS-3/4, EVB-2)
     char samba_bootloader_path[256];
     bool samba_force_update;
-
-    // uINS-5 (empty string if not updating)
-    char uins_5_firmware_path[256];
 } is_firmware_settings;
 
 typedef struct

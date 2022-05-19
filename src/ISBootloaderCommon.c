@@ -241,7 +241,7 @@ void is_update_flash(void* context)
 	is_check_version(ctx);
 
 	if((ctx->hdw_info.uins_version[0] == 5 || ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) &&
-		strstr(ctx->firmware.uins_5_firmware_path, is_uins_5_firmware_needle))
+		strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
 	{
         is_init_samba_context(ctx);
 
@@ -255,15 +255,15 @@ void is_update_flash(void* context)
 		// is_init_dfu_context(ctx);
 		// is_jump_to_bootloader(ctx);
 	}
-	else if(ctx->hdw_info.uins_version[0] == 4 && strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
+	else if(ctx->hdw_info.uins_version[0] == 4 && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 	{
 		is_init_samba_context(ctx);
 	}
-	else if(ctx->hdw_info.uins_version[0] == 3 && strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
+	else if(ctx->hdw_info.uins_version[0] == 3 && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 	{
 		is_init_samba_context(ctx);
 	}
-	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
+	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
 	{
 		is_init_samba_context(ctx);
 	}
@@ -272,7 +272,7 @@ void is_update_flash(void* context)
 		is_init_samba_context(ctx);
 
 		// Assume that we have a SAM-BA bootloader, and bootload based on filename, with uINS-4, uINS-3, EVB-2 in that order
-        if(strstr(ctx->firmware.uins_5_firmware_path, is_uins_5_firmware_needle))
+        if(strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
 		{
 			ctx->hdw_info.uins_version[0] = 5;
 			ctx->hdw_info.evb_version[0] = 0;
@@ -281,17 +281,17 @@ void is_update_flash(void* context)
                 IS_DEVICE_MATCH_FLAG_TYPE | 
                 IS_DEVICE_MATCH_FLAG_MAJOR;
 		}
-        else if(strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
+        else if(strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 		{
 			ctx->hdw_info.uins_version[0] = 4;
 			ctx->hdw_info.evb_version[0] = 0;
 		}
-		else if(strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
+		else if(strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 		{
 			ctx->hdw_info.uins_version[0] = 3;
 			ctx->hdw_info.evb_version[0] = 0;
 		}
-		else if(strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
+		else if(strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
 		{
 			ctx->hdw_info.uins_version[0] = 0;
 			ctx->hdw_info.evb_version[0] = 2;
