@@ -3465,7 +3465,8 @@ typedef enum
     EVB_CFG_BITS_SERVER_SELECT_MASK             = 0x0000000C,
     EVB_CFG_BITS_SERVER_SELECT_OFFSET           = 2,
     EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,		// Don't enable PPD stream when log button is pressed
-    EVB_CFG_BITS_ENABLE_ADC                     = 0x00000200,
+    EVB_CFG_BITS_ENABLE_ADC4                    = 0x00000200,
+	EVB_CFG_BITS_ENABLE_ADC10					= 0x00000400,
 } eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3
@@ -3552,7 +3553,7 @@ typedef struct
 	uint32_t                wheelCfgBits;
 
 	/** Wheel update period.  Sets the wheel encoder and control update period. (ms) */
-	uint32_t				wheelStepPeriodMs;
+	uint32_t				velocityControlPeriodMs;
 
 } evb_flash_cfg_t;
 

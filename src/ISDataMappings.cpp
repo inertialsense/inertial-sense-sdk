@@ -1044,7 +1044,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "h4xRadioBaudRate", h4xRadioBaudRate, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "h8gpioBaudRate", h8gpioBaudRate, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "wheelCfgBits", wheelCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-    ADD_MAP(m, totalSize, "wheelStepPeriodMs", wheelStepPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "velocityControlPeriodMs", velocityControlPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1102,16 +1102,21 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
 	ADD_MAP(m, totalSize, "velControl.wheelRadius", 	        velControl.wheelRadius, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "velControl.wheelBaseline",           velControl.wheelBaseline, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.engine_rpm",              velControl.engine_rpm, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "velControl.vehicle.u_cruise",        velControl.vehicle.u_cruise, 0, DataTypeFloat, float, 0);
+
     ADD_MAP(m, totalSize, "velControl.vehicle.u_min",           velControl.vehicle.u_min, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "velControl.vehicle.u_max",           velControl.vehicle.u_max, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "velControl.vehicle.u_slewLimit",          velControl.vehicle.u_slewLimit, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "velControl.vehicle.w_max",           velControl.vehicle.w_max, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "velControl.vehicle.w_slewLimit",          velControl.vehicle.w_slewLimit, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.u_cruise",        velControl.vehicle.u_cruise, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.u_max_manual",    velControl.vehicle.u_max_manual, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.u_slewLimit",     velControl.vehicle.u_slewLimit, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_max_autonomous",velControl.vehicle.w_max_autonomous, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_max_manual",    velControl.vehicle.w_max_manual, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_slewLimit",     velControl.vehicle.w_slewLimit, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.u_FB_Kp",         velControl.vehicle.u_FB_Kp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FB_Kp",         velControl.vehicle.w_FB_Kp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_FB_Ki",         velControl.vehicle.w_FB_Ki, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.w_FF_c0",         velControl.vehicle.w_FF_c0, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "velControl.vehicle.w_FF_deadband",   velControl.vehicle.w_FF_deadband, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.vehicle.testSweepRate",   velControl.vehicle.testSweepRate, 0, DataTypeFloat, float, 0);
+
     ADD_MAP(m, totalSize, "velControl.wheel.slewRate",          velControl.wheel.slewRate, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.wheel.velMax",            velControl.wheel.velMax, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "velControl.wheel.FF_vel_deadband",   velControl.wheel.FF_vel_deadband, 0, DataTypeFloat, float, 0);
@@ -1184,7 +1189,7 @@ static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT
 	ASSERT_SIZE(totalSize);
 }
 
-static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateEvbLunaVelocityControlMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_luna_velocity_control_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_VELOCITY_CONTROL];
@@ -1195,6 +1200,8 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "vehicle.velCmd_f", vehicle.velCmd_f, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.velCmd_w", vehicle.velCmd_w, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.velCmdMnl_f", vehicle.velCmdMnl_f, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "vehicle.velCmdMnl_w", vehicle.velCmdMnl_w, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.velCmdSlew_f", vehicle.velCmdSlew_f, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.velCmdSlew_w", vehicle.velCmdSlew_w, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "vehicle.vel_f", vehicle.vel_f, 0, DataTypeFloat, float, 0);
@@ -1226,10 +1233,13 @@ static void PopulateEvbLunaWheelControllerMappings(map_name_to_info_t mappings[D
 	ADD_MAP(m, totalSize, "wheel_r.effInt",             wheel_r.effInt, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "wheel_r.effDuty",            wheel_r.effDuty, 0, DataTypeFloat, float, 0);
 
+    ADD_MAP(m, totalSize, "potV_l", potV_l, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "potV_r", potV_r, 0, DataTypeFloat, float, 0);
+
 	ASSERT_SIZE(totalSize);
 }
 
-static void PopulateEvbLunaWheelCommandMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateEvbLunaVelocityCommandMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef evb_luna_velocity_command_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_EVB_LUNA_VELOCITY_COMMAND];
@@ -2337,8 +2347,8 @@ cISDataMappings::cISDataMappings()
     PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
     PopulateCoyoteStatusMappings(m_lookupInfo);
     PopulateEvbLunaSensorsMappings(m_lookupInfo);
-	PopulateEvbLunaWheelControllerMappings(m_lookupInfo);
-    PopulateEvbLunaWheelCommandMappings(m_lookupInfo);
+	PopulateEvbLunaVelocityControlMappings(m_lookupInfo);
+    PopulateEvbLunaVelocityCommandMappings(m_lookupInfo);
     PopulateEvbLunaAuxCmdMappings(m_lookupInfo);
 #endif
 
