@@ -57,13 +57,14 @@ typedef enum
 typedef struct
 {
 	/** Forward velocity (m/s) */
-	float					u_cruise;
 	float					u_min;
-	float					u_max;
+	float					u_cruise;
+	float					u_max_manual;
 	float					u_slewLimit;
 
 	/** Turn rate velocity (rad/s) */
-	float					w_max;
+	float					w_max_autonomous;
+	float					w_max_manual;
 	float					w_slewLimit;
 
 	/** Test sweep rate (m/s/s) */
@@ -75,8 +76,14 @@ typedef struct
 	/** Turn rate feedback proportional gain */
 	float					w_FB_Kp;
 
-    /** Turn rate feedforward */
+	/** Turn rate feedback integral gain */
+	float					w_FB_Ki;
+
+    /** Turn rate feedforward (rad/s) */
     float                 	w_FF_c0;
+
+    /** Turn rate feedforward deadband (rad/s) */
+    float                 	w_FF_deadband;
 
 } evb_luna_velocity_control_vehicle_cfg_t;
 
@@ -368,18 +375,19 @@ typedef enum
 	LVC_MODE_DISABLED                   = 0,
 	LVC_MODE_STOP                       = 1,
 	LVC_MODE_ENABLE                     = 2,	// With watchdog
+	LVC_MODE_MANUAL                     = 3,	// 
 	// Velocity TESTS
-	LVC_MODE_TEST_VEL_VEHICLE_CMD       = 3,	// Use left vel cmd to drive left and right together
-	LVC_MODE_TEST_VEL_WHEEL_CMD         = 4,
-	LVC_MODE_TEST_VEL_SWEEP             = 5,
+	LVC_MODE_TEST_VEL_VEHICLE_CMD       = 4,	// Use left vel cmd to drive left and right together
+	LVC_MODE_TEST_VEL_WHEEL_CMD         = 5,
+	LVC_MODE_TEST_VEL_SWEEP             = 6,
 	// Effort TESTS
-	LVC_MODE_TEST_EFFORT                = 6,	// (Keep as first effort test)
+	LVC_MODE_TEST_EFFORT                = 7,	// (Keep as first effort test)
 	// Duty TESTS	
-	LVC_MODE_TEST_DUTY                  = 7,	// (Keep as first duty cycle test)
-	LVC_MODE_TEST_DUTY_SWEEP            = 8,	// Watchdog disabled in testing
-	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 9,
+	LVC_MODE_TEST_DUTY                  = 8,	// (Keep as first duty cycle test)
+	LVC_MODE_TEST_DUTY_SWEEP            = 9,	// Watchdog disabled in testing
+	LVC_MODE_TEST_WHL_ANG_VEL_SWEEP     = 10,
 	// Solve for Feedforward	
-	LVC_MODE_CALIBRATE_FEEDFORWARD      = 10,
+	LVC_MODE_CALIBRATE_FEEDFORWARD      = 11,
 } eLunaVelocityControlMode;
 
 typedef enum
@@ -395,6 +403,7 @@ typedef enum
 	LVC_STATUS_VEL_LIMITED_R_MASK       = (LVC_STATUS_VEL_CMD_LIMITED_R | LVC_STATUS_VEL_CMD_SLEW_LIMITED_R),
 	LVC_STATUS_VEL_CMD_SLEW_LIMITED_F   = 0x00010000,
 	LVC_STATUS_VEL_CMD_SLEW_LIMITED_W   = 0x00020000,
+	LVC_STATUS_VEL_CMD_MANUAL_INPUT		= 0x00040000,
 } eLunaVelocityControlStatus;
 
 typedef struct
@@ -402,6 +411,10 @@ typedef struct
 	/** Vehicle forward and angular velocity, Commanded (m/s, rad/s) */
 	float 					velCmd_f;
 	float 					velCmd_w;
+
+	/** Wheel velocity, Manually Commanded (m/s, rad/s) */
+	float 					velCmdMnl_f;
+	float 					velCmdMnl_w;
 
 	/** Vehicle forward and angular velocity, slew rate limited commanded (m/s, rad/s) */
 	float 					velCmdSlew_f;
@@ -425,7 +438,7 @@ typedef struct
 {
 	/** Wheel velocity, Commanded (rad/s) */
 	float 					velCmd;
-
+	
 	/** Wheel velocity commanded after slew rate (rad/s) */
 	float 					velCmdSlew;
 
@@ -478,6 +491,10 @@ typedef struct
 	/** Wheel velocity control */
 	evb_luna_velocity_control_wheel_t       wheel_l;
 	evb_luna_velocity_control_wheel_t       wheel_r;
+
+	/** Manual control */
+	float                   potV_l;
+	float                   potV_r;
 
 } evb_luna_velocity_control_t;
 

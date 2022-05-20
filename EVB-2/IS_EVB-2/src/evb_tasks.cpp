@@ -207,9 +207,15 @@ void evbMainInitComm(void)
     communications_init();
 
 #ifdef CONF_BOARD_ADC
-	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC)
+	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC4)
 	{
-		adc_init();
+		afec0_init();
+		adc4_init();
+	}
+	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC10)
+	{
+		afec0_init();
+		adc1_init();
 	}
 #endif
 }

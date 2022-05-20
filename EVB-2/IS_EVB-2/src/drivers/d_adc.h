@@ -9,8 +9,11 @@ extern "C" {
 #define ADC_MAX_DIGITAL  4096UL  // the maximal digital value
 
 // prototypes
-int adc_init(void);
-float adc_voltage(void);
+int afec0_init(void);
+int adc4_init(void);
+int adc1_init(void);
+
+float adc_voltage(Afec *const afec, enum afec_channel_num afec_ch);
 
 #ifdef __cplusplus
 }
