@@ -193,7 +193,9 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx)
         {
             serialPortWriteAscii(&ctx->handle.port, "STPB", 4);
             serialPortWriteAscii(&ctx->handle.port, ctx->bl_enable_command, 4);
-            if(ctx->hdw_info.uins_version[0] != 5 ) // || ctx->hdw_info.evb_version[0] == 2
+            
+            if(1)
+            // if(ctx->hdw_info.uins_version[0] != 5 ) // || ctx->hdw_info.evb_version[0] == 2
             {
                 c = 0;
                 if(serialPortReadCharTimeout(&ctx->handle.port, &c, 10) == 1)
@@ -239,40 +241,57 @@ void is_update_flash(void* context)
 	is_check_version(ctx);
 
 	if((ctx->hdw_info.uins_version[0] == 5 || ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) &&
-		strstr(ctx->firmware.uins_5_firmware_path, is_uins_5_firmware_needle))
+		strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
 	{
-		ctx->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
-		ctx->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
+        is_init_samba_context(ctx);
 
-		is_init_dfu_context(ctx);
-		is_jump_to_bootloader(ctx);
+        ctx->match_props.match =  
+            IS_DEVICE_MATCH_FLAG_TYPE | 
+            IS_DEVICE_MATCH_FLAG_MAJOR;
+
+		// ctx->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
+		// ctx->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
+
+		// is_init_dfu_context(ctx);
+		// is_jump_to_bootloader(ctx);
 	}
-	else if(ctx->hdw_info.uins_version[0] == 4 && strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
+	else if(ctx->hdw_info.uins_version[0] == 4 && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 	{
 		is_init_samba_context(ctx);
 	}
-	else if(ctx->hdw_info.uins_version[0] == 3 && strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
+	else if(ctx->hdw_info.uins_version[0] == 3 && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 	{
 		is_init_samba_context(ctx);
 	}
-	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
+	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
 	{
 		is_init_samba_context(ctx);
 	}
 	else
 	{
+		is_init_samba_context(ctx);
+
 		// Assume that we have a SAM-BA bootloader, and bootload based on filename, with uINS-4, uINS-3, EVB-2 in that order
-		if(strstr(ctx->firmware.uins_4_firmware_path, is_uins_3_firmware_needle))
+        if(strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
+		{
+			ctx->hdw_info.uins_version[0] = 5;
+			ctx->hdw_info.evb_version[0] = 0;
+
+            ctx->match_props.match =  
+                IS_DEVICE_MATCH_FLAG_TYPE | 
+                IS_DEVICE_MATCH_FLAG_MAJOR;
+		}
+        else if(strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 		{
 			ctx->hdw_info.uins_version[0] = 4;
 			ctx->hdw_info.evb_version[0] = 0;
 		}
-		else if(strstr(ctx->firmware.uins_3_firmware_path, is_uins_3_firmware_needle))
+		else if(strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 		{
 			ctx->hdw_info.uins_version[0] = 3;
 			ctx->hdw_info.evb_version[0] = 0;
 		}
-		else if(strstr(ctx->firmware.evb_2_firmware_path, is_evb_2_firmware_needle))
+		else if(strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
 		{
 			ctx->hdw_info.uins_version[0] = 0;
 			ctx->hdw_info.evb_version[0] = 2;
@@ -282,8 +301,6 @@ void is_update_flash(void* context)
             ctx->update_in_progress = false;
 			return;
 		}
-		
-		is_init_samba_context(ctx);
 	}
     
     int ret = IS_OP_ERROR;

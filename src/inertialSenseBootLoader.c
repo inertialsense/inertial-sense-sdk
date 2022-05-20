@@ -264,6 +264,12 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
         state->version = v-'0';
         state->firstPageSkipBytes = 16384;
     }
+    else if (v == '6')
+    {
+        // version 6 (uINS-5)
+        state->version = v-'0';
+        state->firstPageSkipBytes = 24576;
+    }
     else
     {
         bootloader_perror(state->param->port, "Invalid version sent from bootloader: 0x%02X\n", (int)v);

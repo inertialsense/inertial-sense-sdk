@@ -57,29 +57,34 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 
     int sleep_time = 0;
 
-    /* Upload EVB firmware */
-    if(ctx->hdw_info.evb_version[0] == 2 && strlen(ctx->firmware.evb_2_firmware_path) != 0)
+    /* Upload uINS-3/4 firmware */
+    if(ctx->hdw_info.uins_version[0] == 3)
     {
-        params.fileName = (const char*)ctx->firmware.evb_2_firmware_path;
+        SLEEP_MS(sleep_time);   // Wait for boot
+        params.fileName = (const char*)ctx->firmware.firmware_path;
+        strncpy(params.bootloadEnableCmd, "BLEN", 5);
+        bootloadFileEx(&params);
+    }
+    else if(ctx->hdw_info.uins_version[0] == 4)
+    {
+        SLEEP_MS(sleep_time);   // Wait for boot
+        params.fileName = (const char*)ctx->firmware.firmware_path;
+        strncpy(params.bootloadEnableCmd, "BLEN", 5);
+        bootloadFileEx(&params);
+    }
+    else if(ctx->hdw_info.uins_version[0] == 5)
+    {
+        SLEEP_MS(sleep_time);   // Wait for boot
+        params.fileName = (const char*)ctx->firmware.firmware_path;
+        strncpy(params.bootloadEnableCmd, "BLEN", 5);
+        bootloadFileEx(&params);
+    }
+    else if(ctx->hdw_info.evb_version[0] == 2)
+    {
+        params.fileName = (const char*)ctx->firmware.firmware_path;
         strncpy(params.bootloadEnableCmd, "EBLE", 5);
         bootloadFileEx(&params);
         sleep_time = 5000;
-    }
-
-    /* Upload uINS-3/4 firmware */
-    if(ctx->hdw_info.uins_version[0] == 3 && strlen(ctx->firmware.uins_3_firmware_path) != 0)
-    {
-        SLEEP_MS(sleep_time);   // Wait for boot
-        params.fileName = (const char*)ctx->firmware.uins_3_firmware_path;
-        strncpy(params.bootloadEnableCmd, "BLEN", 5);
-        bootloadFileEx(&params);
-    }
-    else if(ctx->hdw_info.uins_version[0] == 4 && strlen(ctx->firmware.uins_4_firmware_path) != 0)
-    {
-        SLEEP_MS(sleep_time);   // Wait for boot
-        params.fileName = (const char*)ctx->firmware.uins_4_firmware_path;
-        strncpy(params.bootloadEnableCmd, "BLEN", 5);
-        bootloadFileEx(&params);
     }
 
     strncpy(ctx->error, params.error, BOOTLOADER_ERROR_LENGTH);

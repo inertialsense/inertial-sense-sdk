@@ -290,7 +290,7 @@ is_operation_result is_dfu_flash(is_device_context* context)
     if (ret_dfu < DFU_ERROR_NONE) return IS_OP_ERROR;
 
     // Load the firmware image
-    image_sections = ihex_load_sections(context->firmware.uins_5_firmware_path, image, MAX_NUM_IHEX_SECTIONS);
+    image_sections = ihex_load_sections(context->firmware.firmware_path, image, MAX_NUM_IHEX_SECTIONS);
     if(image_sections <= 0) return IS_OP_ERROR;
 
     int image_total_len = 0;

@@ -6,6 +6,10 @@ extern "C" {
 
 #include <stdint.h>
 
+#ifdef uINS_5
+#include "d_flash.h"	// Contains overrides for macros below
+#endif
+
 // uINS-3 flash layout - uINS Flash Memory Map
 /*
   page size:           512  (0x200)
@@ -54,11 +58,6 @@ extern "C" {
 // size of the user application in flash memory
 #ifndef BOOTLOADER_FLASH_USER_APPLICATION_SIZE
 #define BOOTLOADER_FLASH_USER_APPLICATION_SIZE ((uint32_t)966656) // 966656 = EC000, 1MB flash - 16K bootloader - 64K footer
-#endif
-
-// note: the default is accurate for user flash memory, but sectors are smaller in the bootloader and start of application space
-#ifndef BOOTLOADER_FLASH_SECTOR_SIZE
-#define BOOTLOADER_FLASH_SECTOR_SIZE ((uint32_t)131072) // 128 KB
 #endif
 
 // size of flash page

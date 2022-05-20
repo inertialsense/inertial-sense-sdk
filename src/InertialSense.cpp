@@ -782,10 +782,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 
 	// Copy the same path into all, the underlying code will pick which devices to update based on the file name.
 	is_firmware_settings firmware;
-	strncpy(firmware.uins_3_firmware_path, fileName.c_str(), 256);
-	strncpy(firmware.uins_4_firmware_path, fileName.c_str(), 256);
-	strncpy(firmware.uins_5_firmware_path, fileName.c_str(), 256);
-	strncpy(firmware.evb_2_firmware_path, fileName.c_str(), 256);
+	strncpy(firmware.firmware_path, fileName.c_str(), 256);
 	strncpy(firmware.samba_bootloader_path, bootloaderFileName.c_str(), 256);
 	firmware.samba_force_update = forceBootloaderUpdate;
 
