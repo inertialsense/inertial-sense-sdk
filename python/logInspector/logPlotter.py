@@ -1164,19 +1164,29 @@ class logPlot:
             dtGps = dtGps / self.d
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:])
 
-            dtImu = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
-            dtImu = dtImu / self.d
-
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if np.size(towOffset) > 0:
                 towOffset = towOffset[-1]
             else:
                 towOffset = 0
-            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)
+
+            if len(self.getData(d, DID_PREINTEGRATED_IMU, 'time')):
+                dtImu = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
+                dtImu = dtImu / self.d
+                timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)
+                ax[2].plot(timeImu, dtImu)
+            
+            elif len(self.getData(d, DID_IMU3_RAW, 'time')):
+                dtImu = self.getData(d, DID_IMU3_RAW, 'time')[1:] - self.getData(d, DID_IMU3_RAW, 'time')[0:-1]
+                dtImu = dtImu / self.d
+                timeImu = getTimeFromTow(self.getData(d, DID_IMU3_RAW, 'time')[1:] + towOffset)
+                ax[2].plot(timeImu, dtImu)
+
+            
+            
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
-            ax[2].plot(timeImu, dtImu)
 
         self.setPlotYSpanMin(ax[0], 0.01)
         self.setPlotYSpanMin(ax[1], 0.01)
@@ -1582,11 +1592,11 @@ class logPlot:
         ax[3].set_title('Wheel Velocity - Right')
 
         for d in self.active_devs:
-            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
-            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
-            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
-            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+            time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
+            effAct_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+            effAct_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
 
             ax[0].plot(time, effAct_l)
             ax[1].plot(time, vel_l)
@@ -1611,11 +1621,11 @@ class logPlot:
             a.set_ylabel('effOut')
 
         for d in self.active_devs:
-            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
-            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
-            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
-            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+            time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
+            eff_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
 
             actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
             actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point

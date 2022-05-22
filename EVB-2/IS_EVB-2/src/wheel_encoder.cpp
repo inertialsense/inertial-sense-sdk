@@ -51,12 +51,17 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 	static wheel_encoder_t wheelEncoderLast = {0};
 
 	++encoderSendTimeMs;
-	if(encoderSendTimeMs >= (int)g_flashCfg->wheelStepPeriodMs)
+	if(encoderSendTimeMs >= (int)g_flashCfg->velocityControlPeriodMs)
 	{  
 		encoderSendTimeMs = 0;
 		
 		// Call read encoders
-		g_wheelEncoder.timeOfWeek = g_status.timeOfWeekMs;
+#if WHEEL_ENCODER_TIME_FROM_TOW == 1
+		g_wheelEncoder.timeOfWeek = g_comm_time + g_towOffset;
+#else
+		g_wheelEncoder.timeOfWeek = g_comm_time;
+#endif
+
 		g_wheelEncoderTimeMs = (uint32_t)round(g_wheelEncoder.timeOfWeek*1000.0);
 		quadEncReadPositionAll(&chL, &dirL, &chR, &dirR);
 		quadEncReadPeriodAll(&periodL, &periodR);

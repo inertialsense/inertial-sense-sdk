@@ -1456,6 +1456,10 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\DataChunk.cpp</Link>
     </Compile>
+    <Compile Include="..\..\src\filters.cpp">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\filters.cpp</Link>
+    </Compile>
     <Compile Include="..\..\src\ISDataMappings.h">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\ISDataMappings.h</Link>

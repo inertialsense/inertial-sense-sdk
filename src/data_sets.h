@@ -1347,13 +1347,19 @@ typedef struct PACKED
 
 // (DID_SENSORS_TC_BIAS)
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
+{
+    /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
+	double                  time;                                       // Units only apply for calibrated data
+
 	sensors_mpu_t			mpu[NUM_IMU_DEVICES];
 } sensors_t;
 
 // (DID_SENSORS_IS1, DID_SENSORS_IS2)
 typedef struct PACKED
-{                                       
+{
+    /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
+	double                  time;
+                                           
 	/** Units only apply for calibrated data */
 	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
 } sensors_w_temp_t;
@@ -1715,7 +1721,8 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_IMU            = 5,    // Zero gyro and accel biases.  Zero (level) INS attitude by adjusting INS rotation. 
     INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_GYRO           = 6,    // Zero only gyro  biases.  Zero (level) INS attitude by adjusting INS rotation. 
     INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_ACCEL          = 7,    // Zero only accel biases.  Zero (level) INS attitude by adjusting INS rotation.
-    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT     = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_REQUIRE_VERTIAL   = 0x00020000,	// Bitwise AND this with the above init commands to disable vertical alignment requirement for accelerometer bias calibration (allow for more tolerant sampling).
 
     /** Sample and End Commands: */
     INFIELD_CAL_STATE_CMD_START_SAMPLE                  = 8,	// Initiate 5 second sensor sampling and averaging.  Run for each orientation and 180 degree yaw rotation.
@@ -1764,6 +1771,7 @@ enum eInfieldCalStatus
 	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00800000,	// Require no motion during sampling. 
 	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x00F00000,
 	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x01000000,	// Used for BIT 
+	INFIELD_CAL_STATUS_DISABLED_REQUIRE_VERTICAL        = 0x02000000,	// Do not require vertical alignment for accelerometer calibration. 
 
 	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x10000000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
 	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x20000000,	// System is not stationary and cannot be used for infield calibration.
@@ -3493,6 +3501,9 @@ typedef struct
     /** System command (see eSystemCommand).  99 = software reset */
     uint32_t                sysCommand;
 
+	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
+	double                  towOffset;
+
 } evb_status_t;
 
 #define WIFI_SSID_PSK_SIZE      40
@@ -3527,7 +3538,8 @@ typedef enum
     EVB_CFG_BITS_SERVER_SELECT_MASK             = 0x0000000C,
     EVB_CFG_BITS_SERVER_SELECT_OFFSET           = 2,
     EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,		// Don't enable PPD stream when log button is pressed
-    EVB_CFG_BITS_ENABLE_ADC                     = 0x00000200,
+    EVB_CFG_BITS_ENABLE_ADC4                    = 0x00000200,
+	EVB_CFG_BITS_ENABLE_ADC10					= 0x00000400,
 } eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3
@@ -3614,7 +3626,7 @@ typedef struct
 	uint32_t                wheelCfgBits;
 
 	/** Wheel update period.  Sets the wheel encoder and control update period. (ms) */
-	uint32_t				wheelStepPeriodMs;
+	uint32_t				velocityControlPeriodMs;
 
 } evb_flash_cfg_t;
 
@@ -3996,7 +4008,7 @@ typedef union PACKED
 	infield_cal_t			infieldCal;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
-	evb_luna_wheel_controller_t     wheelController;
+	evb_luna_velocity_control_t     wheelController;
 #endif
 } uDatasets;
 

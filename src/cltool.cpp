@@ -228,6 +228,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.evbFlashCfg = ".";
 		}
+        else if (startsWith(a, "-evbReset"))
+        {
+            g_commandLineOptions.softwareResetEvb = true;
+        }
 		else if (startsWith(a, "-factoryReset"))
 		{
 			g_commandLineOptions.factoryResetUins = true;

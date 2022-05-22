@@ -30,7 +30,7 @@ class plotWindow():
         layout = QVBoxLayout()
         new_tab.setLayout(layout)
 
-        figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
+        figure.subplots_adjust(left=0.07, right=0.95, bottom=0.05, top=0.91, wspace=0.25, hspace=0.25)
         new_canvas = FigureCanvas(figure)
 
         new_toolbar = NavigationToolbar(new_canvas, new_tab)
