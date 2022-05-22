@@ -27,7 +27,10 @@ bool                        g_statusToWlocal = true;
 evb_flash_cfg_t*            g_flashCfg;
 nvr_manage_t                g_nvr_manage_config;
 nvm_config_t                g_userPage = {0};
-evb_msg_t                   g_msg = {0};
+uins_msg_t                  g_uins = {0};
+imu_t                       g_imu = {0};
+uint32_t                    g_insUpdateTimeMs = 0;
+uint32_t                    g_imuUpdateTimeMs = 0;
 debug_array_t               g_debug = {0};
 evb_rtos_info_t             g_rtos = {0};
 date_time_t                 g_gps_date_time = {0};
@@ -35,6 +38,8 @@ date_time_t                 g_gps_date_time = {0};
 //uint32					g_can_receive_address = 0;
 bool                        g_gpsTimeSync = false;
 uint32_t                    g_comm_time_ms = 0;
+double                      g_comm_time = 0;
+double                      g_towOffset = 0;
 bool                        g_loggerEnabled = false;
 uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
@@ -516,7 +521,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->encoderTickToWheelRad = 0.108329996f;	// Husqvarna lawnmower
 	// cfg->encoderTickToWheelRad = 0.00523598775598298873f;	// = 2 Pi / (400 count encoder x 3 gear ratio), (ZT mower)
 	
-    cfg->wheelStepPeriodMs = 50;    // 20 Hz
+    cfg->velocityControlPeriodMs = 50;    // 20 Hz
 
 	com_bridge_apply_preset(cfg);
 	

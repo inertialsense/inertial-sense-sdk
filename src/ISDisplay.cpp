@@ -582,13 +582,13 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 void cInertialSenseDisplay::PrintStats()
 {
 	// Display stats
-	printf("                Name  DID    Count        dt\n");
+	printf("    Count      dt  DID  Name \n");
 	for (int i = 0; i < (int)m_didStats.size(); i++)
 	{
 		sDidStats& s = m_didStats[i];
 		if (s.count)
 		{
-			printf("%20s %4d %9d %9.3lf\n", cISDataMappings::GetDataSetName(i), i, s.count, s.dtMs*0.001);
+			printf("%9d %7.3lf %4d  %s\n", s.count, s.dtMs*0.001, i, cISDataMappings::GetDataSetName(i));
 		}
 	}
 }
