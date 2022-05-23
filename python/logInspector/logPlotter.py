@@ -703,6 +703,8 @@ class logPlot:
         imu2 = []
         imu3 = []
         imuCount = 1
+        time = None
+        dt = None
 
         if accelSensor==0:
             imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'theta'))
