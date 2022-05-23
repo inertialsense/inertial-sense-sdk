@@ -697,6 +697,8 @@ class logPlot:
     def loadIMU(self, d, index):   # 0 = gyro, 1 = accelerometer
         imu0 = []
         imu1 = []
+        time = None
+        dt = None
 
         I1 = self.getData(d, DID_DUAL_IMU, 'I')[:, 0]
         I2 = self.getData(d, DID_DUAL_IMU, 'I')[:, 1]
