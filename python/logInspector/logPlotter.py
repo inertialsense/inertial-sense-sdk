@@ -697,6 +697,8 @@ class logPlot:
     def loadIMU(self, d, index):   # 0 = gyro, 1 = accelerometer
         imu0 = []
         imu1 = []
+        time = None
+        dt = None
 
         I1 = self.getData(d, DID_DUAL_IMU, 'I')[:, 0]
         I2 = self.getData(d, DID_DUAL_IMU, 'I')[:, 1]
@@ -1461,11 +1463,11 @@ class logPlot:
         ax[3].set_title('Wheel Velocity - Right')
 
         for d in self.active_devs:
-            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
-            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
-            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
-            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+            time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
+            effAct_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+            effAct_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
 
             ax[0].plot(time, effAct_l)
             ax[1].plot(time, vel_l)
@@ -1490,11 +1492,11 @@ class logPlot:
             a.set_ylabel('effOut')
 
         for d in self.active_devs:
-            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
-            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
-            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
-            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+            time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
+            eff_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
 
             actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
             actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
