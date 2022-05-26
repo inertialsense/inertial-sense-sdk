@@ -1598,6 +1598,7 @@ static void PopulateSensorsISMappings(map_name_to_info_t mappings[DID_COUNT], ui
 	typedef sensors_w_temp_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[id];
 	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "pqr1[0]", mpu[0].pqr[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[1]", mpu[0].pqr[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[2]", mpu[0].pqr[2], 0, DataTypeFloat, float&, 0);
@@ -1637,6 +1638,7 @@ static void PopulateSensorsTCMappings(map_name_to_info_t mappings[DID_COUNT])
 	typedef sensors_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_SENSORS_TC_BIAS];
 	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "pqr1[0]", mpu[0].pqr[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[1]", mpu[0].pqr[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "pqr1[2]", mpu[0].pqr[2], 0, DataTypeFloat, float&, 0);
