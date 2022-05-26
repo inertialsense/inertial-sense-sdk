@@ -790,8 +790,9 @@ class logPlot:
                             self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                             ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
-                if len(refTime) != 0:
-                    ax[i].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
+            if len(refTime)!=0 and d==0:    # Only plot reference IMU for first device
+                for i in range(3):
+                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
 
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
@@ -830,8 +831,9 @@ class logPlot:
                             self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                             ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
-                if len(refTime) != 0:
-                    ax[i].plot(refTime, refAcc[:, i], color='red', label="reference")
+            if len(refTime)!=0 and d==0:    # Only plot reference IMU for first device
+                for i in range(3):
+                    ax[i, 0].plot(refTime, refAcc[:, i], color='red', label="reference")
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)
@@ -917,7 +919,7 @@ class logPlot:
             ax[0][i].legend(ncol=2)
             for d in range(3):
                 ax[d][i].grid(True)
-        self.saveFig(fig, 'accIMU')
+        self.saveFig(fig, 'accIMU')        
 
     def accelPSD(self, fig=None):
         if fig is None:
