@@ -873,7 +873,7 @@ class logPlot:
                             else:
                                 alable += ' '
                             self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/\sqrt{hr}$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
-                            ax[i, n].loglog(t2, ad * RAD2DEG*3600, label=self.log.serials[d])
+                            ax[i, n].loglog(t2, ad * RAD2DEG*3600, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600))
 
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
@@ -913,7 +913,7 @@ class logPlot:
                             else:
                                 alable += ' '
                             self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.4g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (rw * 3600/RTHR2RTS, bi), 'sec')
-                            ax[i, n].loglog(t2, ad, label=self.log.serials[d])
+                            ax[i, n].loglog(t2, ad, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * 3600/RTHR2RTS, bi))
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)

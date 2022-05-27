@@ -62,7 +62,12 @@ def setGpsWeek(week):
 
 def getTimeFromTowMs(ms):
     global WEEK_TIME
-    return [WEEK_TIME + datetime.timedelta(milliseconds=int(i)) for i in ms]
+    if "WEEK_TIME" in locals():
+        # GPS time available
+        return [WEEK_TIME + datetime.timedelta(milliseconds=int(i)) for i in ms]
+    else:   
+        # GPS time is NOT available
+        return ms * 0.001
 
 def getTimeFromTow(s):
     global WEEK_TIME
