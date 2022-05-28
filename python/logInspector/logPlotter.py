@@ -1818,8 +1818,8 @@ class logPlot:
         for d in self.active_devs:
             imu = self.getData(d, DID_SCOMP, 'acc')
             reference = self.getData(d, DID_SCOMP, 'reference')
-
-            for i in range(3):
+# Below this is broken
+            for i in range(3): 
                 ax[0,i].plot(imu[:,0], reference[:])
                 ax[1,i].plot(imu[:,1], reference[:])
                 ax[2,i].plot(imu[:,2], reference[:])
