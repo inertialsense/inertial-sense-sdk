@@ -1,3 +1,4 @@
+from ctypes import sizeof
 import math
 from typing import List, Any, Union
 
@@ -1829,9 +1830,18 @@ class logPlot:
                 refdata1 = reference['acc'][sampleCount > 10000,i]
                 refdata2 = reference['acc'][sampleCount > 10000,i]
 
-                ax[i,0].plot(data0, refdata0)
-                ax[i,1].plot(data1, refdata0)
-                ax[i,2].plot(data2, refdata0)
+                # ax[i,0].plot(data0, refdata0)
+                # ax[i,1].plot(data1, refdata0)
+                # ax[i,2].plot(data2, refdata0)
+
+                residual0 = [a - b for a, b in zip(refdata0, data0)]
+                residual1 = [a - b for a, b in zip(refdata0, data0)]
+                residual2 = [a - b for a, b in zip(refdata0, data0)]
+
+                ax[i,0].plot(range(0,np.size(residual0)), residual0)
+                ax[i,1].plot(range(0,np.size(residual1)), residual1)
+                ax[i,2].plot(range(0,np.size(residual2)), residual2)
+
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
