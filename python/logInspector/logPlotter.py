@@ -1803,6 +1803,41 @@ class logPlot:
                 span = max(span, yspan)
                 b.set_ylim([mid-span/2, mid+span/2])
 
+    def linearityAcc(self, fig=None):
+        fig.suptitle('Accelerometer Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, 3, sharex=True)
+
+        for i in range(3):
+            ax[0, i].set_title('Accel%d X' % (i))
+            ax[1, i].set_title('Accel%d Y' % (i))
+            ax[2, i].set_title('Accel%d Z ' % (i))
+            for d in range(3):
+                ax[d,i].set_xlabel("m/s^2")
+                ax[d,i].set_ylabel("m/s^2")
+
+        for d in self.active_devs:
+            imu = self.getData(d, DID_SCOMP, 'acc')
+            reference = self.getData(d, DID_SCOMP, 'reference')
+
+            for i in range(3):
+                ax[0,i].plot(imu[:,0], reference[:])
+                ax[1,i].plot(imu[:,1], reference[:])
+                ax[2,i].plot(imu[:,2], reference[:])
+
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
+        yspan = 0.5 # m/s^2 
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+                lim = b.get_ylim()
+                mid = 0.5 * (lim[0] + lim[1])
+                span = lim[1] - lim[0]
+                span = max(span, yspan)
+                b.set_ylim([mid-span/2, mid+span/2])
+
     def showFigs(self):
         if self.show:
             plt.show()

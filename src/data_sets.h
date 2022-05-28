@@ -1382,6 +1382,7 @@ typedef struct PACKED
 	sensor_comp_unit_t		pqr[NUM_IMU_DEVICES];
 	sensor_comp_unit_t		acc[NUM_IMU_DEVICES];
 	sensor_comp_unit_t		mag[NUM_MAG_DEVICES];
+	imus_t 					reference;		// External reference IMU
 	uint32_t                sampleCount;    // Number of samples collected
 	uint32_t                calState;       // state machine (see eScompCalState)
 	uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
@@ -1460,6 +1461,7 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
+#define RMC_BITS_REFERENCE_IMU			0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs (4ms default)
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
