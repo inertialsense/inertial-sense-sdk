@@ -1805,7 +1805,7 @@ class logPlot:
 
     def linearityAcc(self, fig=None):
         fig.suptitle('Accelerometer Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(3, 3, sharex=True)
+        ax = fig.subplots(3, 3)
 
         for i in range(3):
             ax[0, i].set_title('Accel%d X' % (i))
@@ -1816,13 +1816,22 @@ class logPlot:
                 ax[d,i].set_ylabel("m/s^2")
 
         for d in self.active_devs:
+            sampleCount = self.getData(d, DID_SCOMP, 'sampleCount')
             imu = self.getData(d, DID_SCOMP, 'acc')
             reference = self.getData(d, DID_SCOMP, 'reference')
-# Below this is broken
-            for i in range(3): 
-                ax[0,i].plot(imu[:,0], reference[:])
-                ax[1,i].plot(imu[:,1], reference[:])
-                ax[2,i].plot(imu[:,2], reference[:])
+
+            for i in range(3): # range through axes
+                data0 = imu[sampleCount > 10000,0]['lpfLsb'][:,i]
+                data1 = imu[sampleCount > 10000,1]['lpfLsb'][:,i]
+                data2 = imu[sampleCount > 10000,2]['lpfLsb'][:,i]
+
+                refdata0 = reference['acc'][sampleCount > 10000,i]
+                refdata1 = reference['acc'][sampleCount > 10000,i]
+                refdata2 = reference['acc'][sampleCount > 10000,i]
+
+                ax[i,0].plot(data0, refdata0)
+                ax[i,1].plot(data1, refdata0)
+                ax[i,2].plot(data2, refdata0)
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
@@ -1832,11 +1841,11 @@ class logPlot:
         for a in ax:
             for b in a:
                 b.grid(True)
-                lim = b.get_ylim()
-                mid = 0.5 * (lim[0] + lim[1])
-                span = lim[1] - lim[0]
-                span = max(span, yspan)
-                b.set_ylim([mid-span/2, mid+span/2])
+                # lim = b.get_ylim()
+                # mid = 0.5 * (lim[0] + lim[1])
+                # span = lim[1] - lim[0]
+                # span = max(span, yspan)
+                # b.set_ylim([mid-span/2, mid+span/2])
 
     def showFigs(self):
         if self.show:
