@@ -1818,6 +1818,7 @@ class logPlot:
 
         for d in self.active_devs:
             sampleCount = self.getData(d, DID_SCOMP, 'sampleCount')
+            # imu = self.getData(d, DID_SCOMP, 'pqr')
             imu = self.getData(d, DID_SCOMP, 'acc')
             reference = self.getData(d, DID_SCOMP, 'reference')
 
@@ -1826,21 +1827,30 @@ class logPlot:
                 data1 = imu[sampleCount > 10000,1]['lpfLsb'][:,i]
                 data2 = imu[sampleCount > 10000,2]['lpfLsb'][:,i]
 
-                refdata0 = reference['acc'][sampleCount > 10000,i]
-                refdata1 = reference['acc'][sampleCount > 10000,i]
-                refdata2 = reference['acc'][sampleCount > 10000,i]
+                refdata = reference['acc'][sampleCount > 10000,i]
 
-                # ax[i,0].plot(data0, refdata0)
-                # ax[i,1].plot(data1, refdata0)
-                # ax[i,2].plot(data2, refdata0)
+                # refdata0 = reference['pqr'][sampleCount > 10000,i]
+                # refdata1 = reference['pqr'][sampleCount > 10000,i]
+                # refdata2 = reference['pqr'][sampleCount > 10000,i]
 
-                residual0 = [a - b for a, b in zip(refdata0, data0)]
-                residual1 = [a - b for a, b in zip(refdata0, data0)]
-                residual2 = [a - b for a, b in zip(refdata0, data0)]
+                # ax[i,0].plot(refdata0, data0)
+                # ax[i,1].plot(refdata0, data1)
+                # ax[i,2].plot(refdata0, data2)
 
-                ax[i,0].plot(range(0,np.size(residual0)), residual0)
-                ax[i,1].plot(range(0,np.size(residual1)), residual1)
-                ax[i,2].plot(range(0,np.size(residual2)), residual2)
+                residual0 = [a - b for a, b in zip(refdata, data0)]
+                residual1 = [a - b for a, b in zip(refdata, data1)]
+                residual2 = [a - b for a, b in zip(refdata, data2)]
+
+                # ax[i,0].plot(range(0,np.size(residual0)), residual0)
+                # ax[i,1].plot(range(0,np.size(residual1)), residual1)
+                # ax[i,2].plot(range(0,np.size(residual2)), residual2)
+
+                if i == 0:
+                    ax[i,0].plot(refdata, residual0, label=self.log.serials[d])
+                else:
+                    ax[i,0].plot(refdata, residual0)
+                ax[i,1].plot(refdata, residual1)
+                ax[i,2].plot(refdata, residual2)
 
 
         # Show serial numbers
