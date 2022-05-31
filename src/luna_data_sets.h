@@ -81,6 +81,7 @@ typedef struct
 
     /** Turn rate feedforward (rad/s) */
     float                 	w_FF_c0;
+    float                 	w_FF_c1;
 
     /** Turn rate feedforward deadband (rad/s) */
     float                 	w_FF_deadband;
