@@ -59,12 +59,12 @@ typedef struct
 	/** Forward velocity (m/s) */
 	float					u_min;
 	float					u_cruise;
-	float					u_max_manual;
+	float					u_max;
 	float					u_slewLimit;
 
 	/** Turn rate velocity (rad/s) */
 	float					w_max_autonomous;
-	float					w_max_manual;
+	float					w_max;
 	float					w_slewLimit;
 
 	/** Test sweep rate (m/s/s) */
@@ -273,6 +273,9 @@ typedef enum
 
 	/** Bump sensor not communicating */
 	EVB_LUNA_STATUS_FAULT_BUMP_SENSOR_COM               = 0x00002000,
+
+	/** Etop button (or interlock) was pressed in the past 10 seconds */
+	EVB_LUNA_STATUS_FAULT_ESTOP_RECENT                  = 0x00004000,
 
 	/** Mower blade on */
 	EVB_LUNA_STATUS_MOWER_BLADE_ON						= 0x00010000,
