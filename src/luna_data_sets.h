@@ -81,6 +81,7 @@ typedef struct
 
     /** Turn rate feedforward (rad/s) */
     float                 	w_FF_c0;
+    float                 	w_FF_c1;
 
     /** Turn rate feedforward deadband (rad/s) */
     float                 	w_FF_deadband;
@@ -122,6 +123,11 @@ typedef struct
 
 	/** Feedback derivative gain */
 	float					FB_Kd;
+
+	/** Feedback deadband - Feedback gains will be linearly reduced down to FB_gain_deadband_reduction at zero. (rad/s) */
+	float					FB_gain_deadband;
+	/** Feedback deadband - Reduce gains by this amount near zero and transition to full gain at and above deadband. */
+	float					FB_gain_deadband_reduction;
 
     /** EVB2 velocity Linearization Coefficients */
     float                   InversePlant_l[NUM_AL_COEFS];
