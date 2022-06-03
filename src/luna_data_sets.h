@@ -59,12 +59,12 @@ typedef struct
 	/** Forward velocity (m/s) */
 	float					u_min;
 	float					u_cruise;
-	float					u_max_manual;
+	float					u_max;
 	float					u_slewLimit;
 
 	/** Turn rate velocity (rad/s) */
 	float					w_max_autonomous;
-	float					w_max_manual;
+	float					w_max;
 	float					w_slewLimit;
 
 	/** Test sweep rate (m/s/s) */
@@ -81,6 +81,7 @@ typedef struct
 
     /** Turn rate feedforward (rad/s) */
     float                 	w_FF_c0;
+    float                 	w_FF_c1;
 
     /** Turn rate feedforward deadband (rad/s) */
     float                 	w_FF_deadband;
@@ -122,6 +123,11 @@ typedef struct
 
 	/** Feedback derivative gain */
 	float					FB_Kd;
+
+	/** Feedback deadband - Feedback gains will be linearly reduced down to FB_gain_deadband_reduction at zero. (rad/s) */
+	float					FB_gain_deadband;
+	/** Feedback deadband - Reduce gains by this amount near zero and transition to full gain at and above deadband. */
+	float					FB_gain_deadband_reduction;
 
     /** EVB2 velocity Linearization Coefficients */
     float                   InversePlant_l[NUM_AL_COEFS];
@@ -273,6 +279,9 @@ typedef enum
 
 	/** Bump sensor not communicating */
 	EVB_LUNA_STATUS_FAULT_BUMP_SENSOR_COM               = 0x00002000,
+
+	/** Etop button (or interlock) was pressed in the past 10 seconds */
+	EVB_LUNA_STATUS_FAULT_ESTOP_RECENT                  = 0x00004000,
 
 	/** Mower blade on */
 	EVB_LUNA_STATUS_MOWER_BLADE_ON						= 0x00010000,
