@@ -126,7 +126,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
-#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
+#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
+#define DID_PREINTEGRATED_REFERENCE_IMU (eDataIDs)96 /** (preintegrated_imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -138,7 +139,7 @@ typedef uint32_t eDataIDs;
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
 #define DID_COUNT		(eDataIDs)120	// Used in SDK
-#define DID_COUNT_UINS	(eDataIDs)96	// Used in uINS
+#define DID_COUNT_UINS	(eDataIDs)97	// Used in uINS
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -622,7 +623,7 @@ typedef struct PACKED
 } imus_t;
 
 
-/** (DID_IMU, DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
+/** (DID_IMU) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -682,7 +683,7 @@ typedef struct PACKED
 } barometer_t;
 
 
-/** (DID_PREINTEGRATED_IMU) Coning and sculling integral in body/IMU frame. */
+/** (DID_PREINTEGRATED_IMU, DID_REFERENCE_IMU) Coning and sculling integral in body/IMU frame. */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1461,7 +1462,7 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
-#define RMC_BITS_REFERENCE_IMU			0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+#define RMC_BITS_PREINTEGRATED_REFERENCE_IMU	0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs (4ms(uINS-3)/20ms(uINS-5) default)
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
