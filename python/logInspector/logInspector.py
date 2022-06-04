@@ -219,6 +219,10 @@ class LogInspectorWindow(QMainWindow):
         self.initMatPlotLib()
         self.configFilePath = configFilePath
 
+        folder = os.path.dirname(self.configFilePath)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
         if os.path.exists(self.configFilePath):
             # config.yaml found.  Read from file.
             file = open(self.configFilePath, 'r')
