@@ -607,6 +607,9 @@ class LogInspectorWindow(QMainWindow):
         print("done plotting")
 
 if __name__ == '__main__':
+    if sys.version[0] != '3':
+        raise Exception("You must use Python 3. The current version is " + sys.version)
+
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
 
