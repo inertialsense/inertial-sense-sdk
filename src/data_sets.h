@@ -1129,8 +1129,11 @@ typedef struct PACKED
 	/** Actual sample period relative to GPS PPS */
 	double					sensorTruePeriod;
 
+	/** Reference IMU data rate period in milliseconds. Zero defaults to navPeriodMs. */
+	uint32_t				refImuPeriodMs;
+
 	/** Reserved */
-	float					reserved2[2];
+	float					reserved;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
