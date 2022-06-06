@@ -289,6 +289,7 @@ bool InertialSense::SetLoggerEnabled(
     const string& path, 
     cISLogger::eLogType logType, 
     uint64_t rmcPreset, 
+    uint32_t rmcOptions,
     float maxDiskSpacePercent, 
     uint32_t maxFileSize, 
     const string& subFolder)
@@ -303,7 +304,7 @@ bool InertialSense::SetLoggerEnabled(
 
 		if(rmcPreset)
 		{ 
-			BroadcastBinaryDataRmcPreset(rmcPreset);
+			BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions);
 		}
 		return EnableLogging(path, logType, maxDiskSpacePercent, maxFileSize, subFolder);
 	}
