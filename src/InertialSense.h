@@ -169,7 +169,8 @@ public:
         bool enable, 
         const string& path = cISLogger::g_emptyString, 
         cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT, 
-        uint64_t rmcPreset = RMC_PRESET_PPD_BITS, 
+        uint64_t rmcPreset = RMC_PRESET_PPD_BITS,
+        uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
         float maxDiskSpacePercent = 0.5f, 
         uint32_t maxFileSize = 1024 * 1024 * 5, 
         const string& subFolder = cISLogger::g_emptyString);
