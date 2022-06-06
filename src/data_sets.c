@@ -307,7 +307,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 44: DID_CAL_SC2
 		offsetsOnlyTimeFirst,	// 45: DID_SYS_SENSORS_SIGMA
 		offsetsOnlyTimeFirst,	// 46: DID_SENSORS_ADC_SIGMA
-		0,                      // 47: DID_REFERENCE_MAGNETOMETER
+		offsetsOnlyTimeFirst,   // 47: DID_REFERENCE_MAGNETOMETER
 		offsetsInl2States,      // 48: DID_INL2_STATES
 		0,                      // 49: DID_INL2_COVARIANCE_LD
 		0,                      // 50: DID_INL2_MISC
@@ -322,7 +322,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
         0,                      // 61: DID_GPS_RTK_OPT
-        0,                      // 62: DID_NVR_USERPAGE_INTERNAL
+        0,                      // 62: DID_REFERENCE_PIMU
 		0,						// 63: DID_MANUFACTURING_INFO
 		0,                      // 64: DID_BIT
 		offsetsIns3,			// 65: DID_INS_3
@@ -347,15 +347,15 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsImuMag,          // 84: DID_IMU3_RAW_MAG
         offsetsImuMag,          // 85: DID_IMU_MAG
         offsetsPreImuMag,		// 86: DID_PREINTEGRATED_IMU_MAG
-		0,                      // 87: 
-		0,                      // 88: 
-		0,                      // 89: 
-		0,                      // 90: 
+		0,                      // 87: DID_GROUND_VEHICLE
+		offsetsOnlyTimeFirst,   // 88: DID_POSITION_MEASUREMENT
+		0,                      // 89: DID_RTK_DEBUG_2
+		0,                      // 90: DID_CAN_CONFIG
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		offsetsRtkNav,          // 92: DID_GPS2_RTK_CMP_MISC
 		0,                      // 93: DID_EVB_DEV_INFO
-		0,                      // 94: 
-		0,                      // 95:
+		0,                      // 94: DID_INFIELD_CAL
+		offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
 		0,                      // 96:
 		0,                      // 97:
 		0,                      // 98:
@@ -500,7 +500,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
         0,                      // 61: DID_GPS_RTK_OPT
-        0,                      // 62: DID_NVR_USERPAGE_INTERNAL
+        0,                      // 62: DID_REFERENCE_PIMU
 		manufInfoOffsets,		// 63: DID_MANUFACTURING_INFO
 		0,                      // 64: DID_BIT
 		0,                      // 65: DID_INS_3
@@ -532,8 +532,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
 		0,                      // 92: DID_GPS2_RTK_CMP_MISC
 		0,                      // 93: DID_EVB_DEV_INFO
-		0,                      // 94: 
-		0,                      // 95:
+		0,                      // 94: DID_INFIELD_CAL
+		0,                      // 95: DID_REFERENCE_IMU
 		0,                      // 96:
 		0,                      // 97:
 		0,                      // 98:

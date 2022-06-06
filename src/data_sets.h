@@ -93,7 +93,7 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GPS_RTK_OPT                 (eDataIDs)61 /** (gps_rtk_opt_t) RTK options - requires little endian CPU. */
-#define DID_NVR_USERPAGE_INTERNAL       (eDataIDs)62 /** (internal) Internal user page data */
+#define DID_REFERENCE_PIMU              (eDataIDs)62 /** (preintegrated_imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 #define DID_MANUFACTURING_INFO          (eDataIDs)63 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
 #define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
@@ -127,7 +127,6 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
-#define DID_PREINTEGRATED_REFERENCE_IMU (eDataIDs)96 /** (preintegrated_imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -139,7 +138,7 @@ typedef uint32_t eDataIDs;
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
 #define DID_COUNT		(eDataIDs)120	// Used in SDK
-#define DID_COUNT_UINS	(eDataIDs)97	// Used in uINS
+#define DID_COUNT_UINS	(eDataIDs)96	// Used in uINS
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -1462,7 +1461,7 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
-#define RMC_BITS_PREINTEGRATED_REFERENCE_IMU	0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs (4ms(uINS-3)/20ms(uINS-5) default)
+#define RMC_BITS_REFERENCE_PIMU         0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs (4ms(uINS-3)/20ms(uINS-5) default)
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -1487,7 +1486,8 @@ typedef struct PACKED
 										| RMC_BITS_INTERNAL_PPD \
 										| RMC_BITS_DIAGNOSTIC_MESSAGE)
 #define RMC_PRESET_PPD_BITS				(RMC_PRESET_PPD_BITS_NO_IMU \
-										| RMC_BITS_PREINTEGRATED_IMU)
+										| RMC_BITS_PREINTEGRATED_IMU \
+										| RMC_BITS_REFERENCE_PIMU)
 #define RMC_PRESET_INS_BITS				(RMC_BITS_INS2 \
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_PRESET)

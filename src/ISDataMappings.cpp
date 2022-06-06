@@ -2387,7 +2387,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
 	"DID_GPS_RTK_OPT",                  // 61
-	"DID_NVR_USERPAGE_INTERNAL",        // 62
+	"DID_REFERENCE_PIMU",               // 62
 	"DID_MANUFACTURING_INFO",           // 63
 	"DID_BIT",                          // 64
 	"DID_INS_3",                        // 65

@@ -65,7 +65,7 @@ DID_IMU                         = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
 DID_GPS_RTK_OPT                 = 61
-DID_NVR_USERPAGE_INTERNAL       = 62
+DID_REFERENCE_PIMU              = 62
 DID_MANUFACTURING_INFO          = 63
 DID_BIT                         = 64
 DID_INS_3                       = 65
@@ -168,7 +168,6 @@ did_name_lookup = {
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
  DID_GPS_RTK_OPT : "gpsRtkOpt",
- DID_NVR_USERPAGE_INTERNAL : "nvrUserpageInternal",
  DID_MANUFACTURING_INFO : "manufacturingInfo",
  DID_BIT : "bit",
  DID_INS_3 : "ins3",
@@ -195,6 +194,7 @@ did_name_lookup = {
  DID_CAN_CONFIG : "canconfig",
  DID_EVB_DEV_INFO : "evbDevInfo",
  DID_REFERENCE_IMU : "referenceImu",
+ DID_REFERENCE_PIMU : "referencePImu",
  DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
  DID_EVB_LUNA_VELOCITY_CONTROL : "evbVelocityControl",
 }
