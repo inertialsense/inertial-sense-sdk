@@ -617,6 +617,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_IMU3_RAW:				return RMC_BITS_DID_IMU3;
 		case DID_IMU:					return RMC_BITS_IMU;
 		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
+		case DID_REFERENCE_IMU:		    return RMC_BITS_REFERENCE_IMU;
 		case DID_REFERENCE_PIMU:		return RMC_BITS_REFERENCE_PIMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
 		case DID_MAGNETOMETER:			return RMC_BITS_MAGNETOMETER;
