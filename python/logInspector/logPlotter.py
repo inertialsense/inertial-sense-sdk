@@ -1827,7 +1827,7 @@ class logPlot:
                 data1 = imu[sampleCount > 10000,1]['lpfLsb'][:,i]
                 data2 = imu[sampleCount > 10000,2]['lpfLsb'][:,i]
 
-                refdata = reference['acc'][sampleCount > 10000,i]
+                refdata = reference[sampleCount > 10000]['acc'][:,i]
 
                 # refdata0 = reference['pqr'][sampleCount > 10000,i]
                 # refdata1 = reference['pqr'][sampleCount > 10000,i]
