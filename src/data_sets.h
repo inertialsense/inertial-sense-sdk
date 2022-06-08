@@ -2196,6 +2196,11 @@ enum eIoConfig
 	/** GPS 2 type OFFSET */
 	IO_CONFIG_GPS2_TYPE_OFFSET					= (int)25,
 
+	/** GPS 1 skip initialization */
+	IO_CONFIG_GPS1_NO_INIT 						= (int)0x01000000,		// bit 24 of 0-31
+	/** GPS 2 skip initialization */
+	IO_CONFIG_GPS2_NO_INIT 						= (int)0x08000000,		// bit 27 of 0-31
+
 	/** GPS source MASK */
 	IO_CONFIG_GPS_SOURCE_MASK					= (int)0x00000007,
 	/** GPS source - Disable */
@@ -2214,17 +2219,15 @@ enum eIoConfig
 	IO_CONFIG_GPS_SOURCE_LAST					= IO_CONFIG_GPS_SOURCE_SER2,	// set to last source
 
 	/** GPS type MASK */
-	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000007,
+	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000003,
 	/** GPS type - ublox M8 */
 	IO_CONFIG_GPS_TYPE_UBX_M8					= (int)0,
 	/** GPS type - ublox ZED-F9P w/ RTK */
 	IO_CONFIG_GPS_TYPE_UBX_F9P					= (int)1,
 	/** GPS type - NMEA */
 	IO_CONFIG_GPS_TYPE_NMEA						= (int)2,
-	/** GPS type - external ublox source (no config by uINS) */
-	IO_CONFIG_GPS_TYPE_UBX_NO_INIT				= (int)3,
 	/** GPS type - last type */
-	IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_UBX_NO_INIT,		// Set to last type
+    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
