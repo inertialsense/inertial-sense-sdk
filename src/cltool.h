@@ -51,37 +51,37 @@ typedef struct
 
 typedef struct
 {
-	std::string comPort; 						// -c com_port
-	std::string updateAppFirmwareFilename; 		// -uf file_name
-    std::string updateBootloaderFilename; 		// -ub file_name
+	std::string comPort; 					// -c com_port
+	std::string updateAppFirmwareFilename; 	// -uf file_name
+	std::string updateBootloaderFilename; 	// -ub file_name
 	bool forceBootloaderUpdate;				// -fb
-    bool bootloaderVerify; 					// -bv
-    bool replayDataLog;
-    bool softwareResetUins;
-    bool softwareResetEvb;
-    bool magRecal;
-    uint32_t magRecalMode;
-    survey_in_t surveyIn;
-    std::string asciiMessages;
+	bool bootloaderVerify; 					// -bv
+	bool replayDataLog;
+	bool softwareResetUins;
+	bool softwareResetEvb;
+	bool magRecal;
+	uint32_t magRecalMode;
+	survey_in_t surveyIn;
+	std::string asciiMessages;
 	double replaySpeed;
 	int displayMode;
 
 	uint64_t rmcPreset;
     bool persistentMessages;
 	stream_did_t datasetEdit;				// -edit DID#=periodMultiple
-	std::vector<stream_did_t> datasets;			// -did DID#=periodMultiple
+	std::vector<stream_did_t> datasets;		// -did DID#=periodMultiple
 
 	bool enableLogging;
-	std::string logType; 						// -lt=dat
-	std::string logPath; 						// -lp path
+	std::string logType; 					// -lt=dat
+	std::string logPath; 					// -lp path
 	float maxLogSpacePercent; 				// -lms=max_space_mb
 	uint32_t maxLogFileSize; 				// -lmf=max_file_size
-	std::string logSubFolder; 					// -lts=1
+	std::string logSubFolder; 				// -lts=1
 	int baudRate; 							// -baud=3000000
 	bool disableBroadcastsOnClose;
 
-	std::string roverConnection; 				// -rover=type:IP/URL:port:mountpoint:user:password   (server)
-	std::string baseConnection; 					// -base=IP:port    (client)
+	std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
+	std::string baseConnection; 			// -base=IP:port    (client)
 
 	std::string flashCfg;
 	std::string evbFlashCfg;

@@ -66,7 +66,7 @@ protected:
 	std::string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
     void OnReadData(p_data_t* data);
 
-	std::vector<std::string>          m_fileNames;
+	std::vector<std::string> m_fileNames;
 	cISLogFileBase*         m_pFile;
 	std::string             m_directory;
 	std::string             m_timeStamp;
