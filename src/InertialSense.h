@@ -58,7 +58,6 @@ class InertialSense;
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
 
-using namespace std;
 
 /**
 * Inertial Sense C++ interface
@@ -83,7 +82,8 @@ public:
 
 		// common vars
 		pfnHandleBinaryData binaryCallbackGlobal;
-		pfnHandleBinaryData binaryCallback[256];
+#define SIZE_BINARY_CALLBACK	256
+		pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK];
 		pfnStepLogFunction stepLogFunction;
 		InertialSense* inertialSenseInterface;
 		char* clientBuffer;
