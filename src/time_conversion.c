@@ -46,7 +46,9 @@ SUCH DAMAGE.
 */
 
 #include <sys/timeb.h>
+#ifndef WIN32
 #include <sys/time.h>
+#endif
 #include <time.h>
 #include <math.h> // for fmod()
 #include "time_conversion.h"
