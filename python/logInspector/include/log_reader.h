@@ -14,7 +14,6 @@
 #endif
 
 namespace py = pybind11;
-using namespace std;
 
 typedef struct
 {

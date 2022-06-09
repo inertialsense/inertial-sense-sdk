@@ -24,8 +24,6 @@ extern "C"
 	#include "com_manager.h"
 }
 
-using namespace std;
-
 // never change these!
 #define IS_LOG_FILE_PREFIX "LOG_SN"
 #define IS_LOG_FILE_PREFIX_LENGTH 6
@@ -37,7 +35,7 @@ class cDeviceLog
 public:
     cDeviceLog();
     virtual ~cDeviceLog();
-	virtual void InitDeviceForWriting(int pHandle, string timestamp, string directory, uint64_t maxDiskSpace, uint32_t maxFileSize);
+	virtual void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize);
 	virtual void InitDeviceForReading();
     virtual bool CloseAllFiles();
 	virtual bool FlushToFile() { return true; };
@@ -45,9 +43,9 @@ public:
     virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf);
     virtual p_data_t* ReadData() = 0;
 	virtual void SetSerialNumber(uint32_t serialNumber) = 0;
-	virtual string LogFileExtention() = 0;
+	virtual std::string LogFileExtention() = 0;
 	virtual void Flush() {}
-    bool SetupReadInfo(const string& directory, const string& deviceName, const string& timeStamp);
+    bool SetupReadInfo(const std::string& directory, const std::string& deviceName, const std::string& timeStamp);
     void SetDeviceInfo(const dev_info_t *info);
     const dev_info_t* GetDeviceInfo() { return &m_devInfo; }
 	uint64_t FileSize() { return m_fileSize; }
@@ -65,14 +63,14 @@ public:
 protected:
 	bool OpenNewSaveFile();
 	bool OpenNextReadFile();
-	string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
+	std::string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
     void OnReadData(p_data_t* data);
 
-	vector<string>          m_fileNames;
+	std::vector<std::string>          m_fileNames;
 	cISLogFileBase*         m_pFile;
-	string                  m_directory;
-	string                  m_timeStamp;
-	string                  m_fileName;
+	std::string             m_directory;
+	std::string             m_timeStamp;
+	std::string             m_fileName;
 	bool                    m_writeMode;	// Logger initialized for writting
 	dev_info_t              m_devInfo;
 	int                     m_pHandle;

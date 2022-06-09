@@ -6,8 +6,6 @@
 #include "com_manager.h"
 #include "ISUtilities.h"
 
-using namespace std;
-
 class cComDataBuffer
 {
 public:

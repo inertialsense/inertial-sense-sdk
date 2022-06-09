@@ -14,6 +14,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include "ISDataMappings.h"
 
+using namespace std;
+
+
 cmd_options_t g_commandLineOptions;
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;

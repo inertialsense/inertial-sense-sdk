@@ -15,15 +15,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <string>
 
-using namespace std;
-
 
 typedef struct
 {
     int count;
     int timeMs;
     int prevTimeMs;
-    string description;
+    std::string description;
 } msg_stats_t;
 
 typedef struct
@@ -38,10 +36,10 @@ typedef struct
 
 
 unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len);
-string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID);
-string messageDescriptionRtcm3(int id);
-void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int timeMs);
-string messageStatsSummary(mul_msg_stats_t &msgStats);
+std::string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID);
+std::string messageDescriptionRtcm3(int id);
+void messageStatsAppend(std::string message, mul_msg_stats_t &msgStats, unsigned int ptype, int id, int timeMs);
+std::string messageStatsSummary(mul_msg_stats_t &msgStats);
 
 
 #endif // __GPS_STATS_H__

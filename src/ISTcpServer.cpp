@@ -28,6 +28,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISTcpServer.h"
 #include "ISUtilities.h"
 
+using namespace std;
+
+
 cISTcpServer::cISTcpServer(iISTcpServerDelegate* delegate)
 {
 	ISSocketFrameworkInitialize();

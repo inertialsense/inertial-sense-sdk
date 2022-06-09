@@ -78,7 +78,7 @@ public:
 	struct com_manager_cpp_state_t
 	{
 		// per device vars
-		vector<is_device_t> devices;
+		std::vector<is_device_t> devices;
 
 		// common vars
 		pfnHandleBinaryData binaryCallbackGlobal;
@@ -93,8 +93,8 @@ public:
 
 	typedef struct
 	{
-		string port;
-		string error;
+		std::string port;
+		std::string error;
 	} bootload_result_t;
 
 	/**
@@ -125,7 +125,7 @@ public:
 	/**
 	* Get all open serial port names
 	*/
-	vector<string> GetPorts();
+	std::vector<std::string> GetPorts();
 
 	/**
 	* Check if the connection is open
@@ -167,13 +167,13 @@ public:
 	*/
 	bool SetLoggerEnabled(
         bool enable, 
-        const string& path = cISLogger::g_emptyString, 
+        const std::string& path = cISLogger::g_emptyString, 
         cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT, 
         uint64_t rmcPreset = RMC_PRESET_PPD_BITS,
         uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
         float maxDiskSpacePercent = 0.5f, 
         uint32_t maxFileSize = 1024 * 1024 * 5, 
-        const string& subFolder = cISLogger::g_emptyString);
+        const std::string& subFolder = cISLogger::g_emptyString);
 
 	/**
 	* Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
@@ -192,14 +192,14 @@ public:
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure
 	*/
-	bool OpenConnectionToServer(const string& connectionString);
+	bool OpenConnectionToServer(const std::string& connectionString);
 
 	/**
 	* Create a server that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
 	* @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
 	* @return true if success, false if error
 	*/
-	bool CreateHost(const string& connectionString);
+	bool CreateHost(const std::string& connectionString);
 
 	/**
 	* Close any open connection to a server
@@ -328,13 +328,13 @@ public:
 	* Get TCP server IP address and port (i.e. "127.0.0.1:7777")
 	* @return string IP address and port
 	*/
-	string GetTcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + to_string(m_tcpServer.Port()); }
+	std::string GetTcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
 
 	/**
 	* Get Client connection info string (i.e. "127.0.0.1:7777")
 	* @return string IP address and port
 	*/
-	string GetClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
+	std::string GetClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
 
 	/**
 	* Get access to the underlying serial port
@@ -374,18 +374,18 @@ public:
 	* @param forceBootloaderUpdate optional force bootloader firmware to be updated
 	* @return ports and errors, error will be empty if success
 	*/
-	static vector<bootload_result_t> BootloadFile(
-		const string& comPort, 
-		const string& fileName, 
+	static std::vector<bootload_result_t> BootloadFile(
+		const std::string& comPort, 
+		const std::string& fileName, 
 		int baudRate = IS_BAUD_RATE_BOOTLOADER, 
 		pfnBootloadProgress uploadProgress = NULLPTR, 
 		pfnBootloadProgress verifyProgress = NULLPTR, 
 		pfnBootloadStatus infoProgress = NULLPTR, 
-		const string& bootloaderFileName = "",
+		const std::string& bootloaderFileName = "",
 		bool forceBootloaderUpdate = false);
 
-	string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
-	string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
+	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
+	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
 protected:
 	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
@@ -399,7 +399,7 @@ private:
 	cISLogger m_logger;
 	void* m_logThread;
 	cMutex m_logMutex;
-	map<int, vector<p_data_t>> m_logPackets;
+	std::map<int, std::vector<p_data_t>> m_logPackets;
 	time_t m_lastLogReInit;
 
 	char m_clientBuffer[512];
@@ -424,7 +424,7 @@ private:
 	// returns false if logger failed to open
 	bool UpdateServer();
 	bool UpdateClient();
-	bool EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder);
+	bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const std::string& subFolder);
 	void DisableLogging();
 	bool HasReceivedResponseFromDevice(size_t index);
 	bool HasReceivedResponseFromAllDevices();

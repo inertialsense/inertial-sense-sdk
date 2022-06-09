@@ -21,7 +21,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DeviceLog.h"
 #include "DataChunkSorted.h"
 
-using namespace std;
 
 class cDeviceLogSorted : public cDeviceLog
 {
@@ -36,7 +35,7 @@ public:
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-	string LogFileExtention() OVERRIDE { return string(".sdat"); }
+	std::string LogFileExtention() OVERRIDE { return std::string(".sdat"); }
 
     cSortedDataChunk *m_chunks[DID_COUNT];
 	bool m_chunksAvailable[DID_COUNT];
@@ -51,7 +50,7 @@ public:
 	p_data_t m_data;
 	cSortedDataChunk m_readChunk;
 
-	vector<cISLogFileBase*> m_pFiles;
+	std::vector<cISLogFileBase*> m_pFiles;
 
 };
 

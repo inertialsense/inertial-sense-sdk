@@ -36,6 +36,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
+using namespace std;
+
 #define PRINTV3_P1		"%8.1f,%8.1f,%8.1f\n"
 #define PRINTV3_P2		" %8.2f,%8.2f,%8.2f\n"
 #define PRINTV3_P3		"  %8.3f,%8.3f,%8.3f\n"
