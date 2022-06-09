@@ -219,6 +219,10 @@ class LogInspectorWindow(QMainWindow):
         self.initMatPlotLib()
         self.configFilePath = configFilePath
 
+        folder = os.path.dirname(self.configFilePath)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
         if os.path.exists(self.configFilePath):
             # config.yaml found.  Read from file.
             file = open(self.configFilePath, 'r')
@@ -607,6 +611,9 @@ class LogInspectorWindow(QMainWindow):
         print("done plotting")
 
 if __name__ == '__main__':
+    if sys.version[0] != '3':
+        raise Exception("You must use Python 3. The current version is " + sys.version)
+
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
 
