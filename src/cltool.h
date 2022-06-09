@@ -64,13 +64,13 @@ typedef struct
 	survey_in_t surveyIn;
 	std::string asciiMessages;
 	double replaySpeed;
-	int displayMode;
-
+	int displayMode;	
+	
 	uint64_t rmcPreset;
-    bool persistentMessages;
+	bool persistentMessages;
 	stream_did_t datasetEdit;				// -edit DID#=periodMultiple
-	std::vector<stream_did_t> datasets;		// -did DID#=periodMultiple
-
+	std::vector<stream_did_t> datasets;		// -did DID#=periodMultiple	
+	
 	bool enableLogging;
 	std::string logType; 					// -lt=dat
 	std::string logPath; 					// -lp path
@@ -78,17 +78,16 @@ typedef struct
 	uint32_t maxLogFileSize; 				// -lmf=max_file_size
 	std::string logSubFolder; 				// -lts=1
 	int baudRate; 							// -baud=3000000
-	bool disableBroadcastsOnClose;
-
+	bool disableBroadcastsOnClose;	
+	
 	std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
-	std::string baseConnection; 			// -base=IP:port    (client)
-
+	std::string baseConnection; 			// -base=IP:port    (client)	
+	
 	std::string flashCfg;
-	std::string evbFlashCfg;
-
+	std::string evbFlashCfg;	
 	uint32_t timeoutFlushLoggerSeconds;
-	uint32_t outputOnceDid;
-
+	uint32_t outputOnceDid;	
+	
 	bool factoryResetUins;
 	bool chipEraseUins;
 	bool chipEraseEvb2;
