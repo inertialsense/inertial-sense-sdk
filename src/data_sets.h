@@ -2119,6 +2119,10 @@ enum eSensorConfig
 	SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS	= (int)2,
 	SENSOR_CFG_IMU_FAULT_DETECT_BIAS_JUMPS	= (int)3,
 	SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
+
+	/** If 1, if reference IMU present, it is used in EKF instead of onboard IMUs */
+	SENSOR_CFG_IMU_USE_REFERENCE_MASK		= (int)0x00000001,
+	SENSOR_CFG_IMU_USE_REFERENCE_OFFSET		= (int)28,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
