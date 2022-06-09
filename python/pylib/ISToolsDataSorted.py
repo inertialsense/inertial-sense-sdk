@@ -71,7 +71,11 @@ def getTimeFromTowMs(ms):
 
 def getTimeFromTow(s):
     global WEEK_TIME
-    return [WEEK_TIME + datetime.timedelta(seconds=float(i)) for i in s]
+    if "WEEK_TIME" in locals():
+        # GPS time available
+        return [WEEK_TIME + datetime.timedelta(seconds=float(i)) for i in s]
+    else:   
+        return s
 
 def getTimeFromGTime(gtime):
     GPS_start_Time = datetime.datetime.strptime('1/Jan/1970', "%d/%b/%Y")
