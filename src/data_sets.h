@@ -1129,11 +1129,9 @@ typedef struct PACKED
 	/** Actual sample period relative to GPS PPS */
 	double					sensorTruePeriod;
 
-	/** Reference IMU data rate period in milliseconds. Zero defaults to navPeriodMs. */
-	uint32_t				refImuPeriodMs;
-
 	/** Reserved */
-	float					reserved;
+	float					reserved2;
+	float					reserved3;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
@@ -1464,7 +1462,7 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
-#define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_SYS_PARAMS.refImuPeriodMs
+#define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -1867,6 +1865,10 @@ enum eSysConfigBits
 	SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
+
+	/** Use reference IMU in EKF instead of onboard IMU */
+	SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+
 };
 
 /** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
@@ -2119,10 +2121,6 @@ enum eSensorConfig
 	SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS	= (int)2,
 	SENSOR_CFG_IMU_FAULT_DETECT_BIAS_JUMPS	= (int)3,
 	SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
-
-	/** If 1, if reference IMU present, it is used in EKF instead of onboard IMUs */
-	SENSOR_CFG_IMU_USE_REFERENCE_MASK		= (int)0x00000001,
-	SENSOR_CFG_IMU_USE_REFERENCE_OFFSET		= (int)28,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
