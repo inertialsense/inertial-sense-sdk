@@ -319,7 +319,9 @@ enum eHdwStatusFlags
 	/** System Reset is Required for proper function */
 	HDW_STATUS_SYSTEM_RESET_REQUIRED			= (int)0x00001000,
 
-	HDW_STATUS_UNUSED_3				            = (int)0x00002000,
+	/** Reference IMU used in EKF */
+	HDW_STATUS_EKF_USING_REFERENCE_IMU		    = (int)0x00002000,
+
 	HDW_STATUS_UNUSED_4				            = (int)0x00004000,
 	HDW_STATUS_UNUSED_5				            = (int)0x00008000,
 
