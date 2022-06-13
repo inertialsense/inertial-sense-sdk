@@ -1,3 +1,4 @@
+from ctypes import sizeof
 import math
 from typing import List, Any, Union
 
@@ -449,6 +450,11 @@ class logPlot:
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Saturation Baro')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00002000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'EKF using ref. IMU')
                 cnt += 1
                 cnt += 1
 
@@ -1802,6 +1808,69 @@ class logPlot:
                 span = lim[1] - lim[0]
                 span = max(span, yspan)
                 b.set_ylim([mid-span/2, mid+span/2])
+
+    def linearityAcc(self, fig=None):
+        fig.suptitle('Accelerometer Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, 3)
+
+        for i in range(3):
+            ax[0, i].set_title('Accel%d X' % (i))
+            ax[1, i].set_title('Accel%d Y' % (i))
+            ax[2, i].set_title('Accel%d Z ' % (i))
+            for d in range(3):
+                ax[d,i].set_xlabel("m/s^2")
+                ax[d,i].set_ylabel("m/s^2")
+
+        for d in self.active_devs:
+            sampleCount = self.getData(d, DID_SCOMP, 'sampleCount')
+            # imu = self.getData(d, DID_SCOMP, 'pqr')
+            imu = self.getData(d, DID_SCOMP, 'acc')
+            reference = self.getData(d, DID_SCOMP, 'reference')
+
+            for i in range(3): # range through axes
+                data0 = imu[sampleCount > 10000,0]['lpfLsb'][:,i]
+                data1 = imu[sampleCount > 10000,1]['lpfLsb'][:,i]
+                data2 = imu[sampleCount > 10000,2]['lpfLsb'][:,i]
+
+                refdata = reference[sampleCount > 10000]['acc'][:,i]
+
+                # refdata0 = reference['pqr'][sampleCount > 10000,i]
+                # refdata1 = reference['pqr'][sampleCount > 10000,i]
+                # refdata2 = reference['pqr'][sampleCount > 10000,i]
+
+                # ax[i,0].plot(refdata0, data0)
+                # ax[i,1].plot(refdata0, data1)
+                # ax[i,2].plot(refdata0, data2)
+
+                residual0 = [a - b for a, b in zip(refdata, data0)]
+                residual1 = [a - b for a, b in zip(refdata, data1)]
+                residual2 = [a - b for a, b in zip(refdata, data2)]
+
+                # ax[i,0].plot(range(0,np.size(residual0)), residual0)
+                # ax[i,1].plot(range(0,np.size(residual1)), residual1)
+                # ax[i,2].plot(range(0,np.size(residual2)), residual2)
+
+                if i == 0:
+                    ax[i,0].plot(refdata, residual0, label=self.log.serials[d])
+                else:
+                    ax[i,0].plot(refdata, residual0)
+                ax[i,1].plot(refdata, residual1)
+                ax[i,2].plot(refdata, residual2)
+
+
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
+        yspan = 0.5 # m/s^2 
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+                # lim = b.get_ylim()
+                # mid = 0.5 * (lim[0] + lim[1])
+                # span = lim[1] - lim[0]
+                # span = max(span, yspan)
+                # b.set_ylim([mid-span/2, mid+span/2])
 
     def showFigs(self):
         if self.show:

@@ -361,8 +361,8 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "reserved3", reserved3, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
@@ -1684,7 +1684,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "pqr0.lpfLsb[0]", pqr[0].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr0.lpfLsb[1]", pqr[0].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr0.lpfLsb[2]", pqr[0].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr0.lpfTemp", pqr[0].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr0.lpfTemp", pqr[0].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "pqr0.k[0]", pqr[0].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr0.k[1]", pqr[0].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr0.k[2]", pqr[0].k[2], 0, DataTypeFloat, float&, 0);
@@ -1697,7 +1697,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "pqr1.lpfLsb[0]", pqr[1].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr1.lpfLsb[1]", pqr[1].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr1.lpfLsb[2]", pqr[1].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr1.lpfTemp", pqr[1].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr1.lpfTemp", pqr[1].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "pqr1.k[0]", pqr[1].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr1.k[1]", pqr[1].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr1.k[2]", pqr[1].k[2], 0, DataTypeFloat, float&, 0);
@@ -1710,7 +1710,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "pqr2.lpfLsb[0]", pqr[2].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr2.lpfLsb[1]", pqr[2].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr2.lpfLsb[2]", pqr[2].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2.lpfTemp", pqr[2].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr2.lpfTemp", pqr[2].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "pqr2.k[0]", pqr[2].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr2.k[1]", pqr[2].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr2.k[2]", pqr[2].k[2], 0, DataTypeFloat, float&, 0);
@@ -1724,7 +1724,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "acc0.lpfLsb[0]", acc[0].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc0.lpfLsb[1]", acc[0].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc0.lpfLsb[2]", acc[0].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc0.lpfTemp", acc[0].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc0.lpfTemp", acc[0].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "acc0.k[0]", acc[0].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc0.k[1]", acc[0].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc0.k[2]", acc[0].k[2], 0, DataTypeFloat, float&, 0);
@@ -1737,7 +1737,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "acc1.lpfLsb[0]", acc[1].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc1.lpfLsb[1]", acc[1].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc1.lpfLsb[2]", acc[1].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1.lpfTemp", acc[1].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc1.lpfTemp", acc[1].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "acc1.k[0]", acc[1].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc1.k[1]", acc[1].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc1.k[2]", acc[1].k[2], 0, DataTypeFloat, float&, 0);
@@ -1750,7 +1750,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "acc2.lpfLsb[0]", acc[2].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc2.lpfLsb[1]", acc[2].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc2.lpfLsb[2]", acc[2].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2.lpfTemp", acc[2].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc2.lpfTemp", acc[2].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "acc2.k[0]", acc[2].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc2.k[1]", acc[2].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "acc2.k[2]", acc[2].k[2], 0, DataTypeFloat, float&, 0);
@@ -1764,7 +1764,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "mag0.lpfLsb[0]", mag[0].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag0.lpfLsb[1]", mag[0].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag0.lpfLsb[2]", mag[0].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag0.lpfTemp", mag[0].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "mag0.lpfTemp", mag[0].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "mag0.k[0]", mag[0].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag0.k[1]", mag[0].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag0.k[2]", mag[0].k[2], 0, DataTypeFloat, float&, 0);
@@ -1777,7 +1777,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "mag1.lpfLsb[0]", mag[1].lpfLsb[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag1.lpfLsb[1]", mag[1].lpfLsb[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag1.lpfLsb[2]", mag[1].lpfLsb[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1.lpfTemp", mag[1].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "mag1.lpfTemp", mag[1].lpfTemp, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "mag1.k[0]", mag[1].k[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag1.k[1]", mag[1].k[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag1.k[2]", mag[1].k[2], 0, DataTypeFloat, float&, 0);
@@ -1786,6 +1786,14 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "mag1.tci", mag[1].tci, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "mag1.numTcPts", mag[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "mag1.dtTemp", mag[1].dtTemp, 0, DataTypeFloat, float, 0);
+
+	// Reference IMU
+	ADD_MAP(m, totalSize, "reference.pqr[0]", reference.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.pqr[1]", reference.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.pqr[2]", reference.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.acc[0]", reference.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.acc[1]", reference.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.acc[2]", reference.acc[2], 0, DataTypeFloat, float&, 0);
 
 	// Other
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
@@ -2379,7 +2387,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
 	"DID_GPS_RTK_OPT",                  // 61
-	"DID_NVR_USERPAGE_INTERNAL",        // 62
+	"DID_REFERENCE_PIMU",               // 62
 	"DID_MANUFACTURING_INFO",           // 63
 	"DID_BIT",                          // 64
 	"DID_INS_3",                        // 65
