@@ -453,6 +453,11 @@ class logPlot:
                 cnt += 1
                 cnt += 1
 
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00002000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'EKF using ref. IMU')
+                cnt += 1
+                cnt += 1
+
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00010000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
                 cnt += 1
