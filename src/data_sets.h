@@ -93,7 +93,7 @@ typedef uint32_t eDataIDs;
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GPS_RTK_OPT                 (eDataIDs)61 /** (gps_rtk_opt_t) RTK options - requires little endian CPU. */
-#define DID_NVR_USERPAGE_INTERNAL       (eDataIDs)62 /** (internal) Internal user page data */
+#define DID_REFERENCE_PIMU              (eDataIDs)62 /** (preintegrated_imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 #define DID_MANUFACTURING_INFO          (eDataIDs)63 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
 #define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
@@ -126,7 +126,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
-#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
+#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -318,7 +318,9 @@ enum eHdwStatusFlags
 	/** System Reset is Required for proper function */
 	HDW_STATUS_SYSTEM_RESET_REQUIRED			= (int)0x00001000,
 
-	HDW_STATUS_UNUSED_3				            = (int)0x00002000,
+	/** Reference IMU used in EKF */
+	HDW_STATUS_EKF_USING_REFERENCE_IMU		    = (int)0x00002000,
+
 	HDW_STATUS_UNUSED_4				            = (int)0x00004000,
 	HDW_STATUS_UNUSED_5				            = (int)0x00008000,
 
@@ -484,13 +486,13 @@ typedef struct PACKED
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
 {
-	/** Serial number */
+	/** Inertial Sense serial number */
 	uint32_t		serialNumber;
 
-	/** Lot number */
+	/** Inertial Sense lot number */
 	uint32_t		lotNumber;
 
-	/** Manufacturing date (YYYYMMDDHHMMSS) */
+	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
 	/** Key */
@@ -625,6 +627,9 @@ typedef struct PACKED
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
 
+	/** IMU Status (eImuStatus) */
+	uint32_t                status;
+
 	/** Inertial Measurement Unit (IMU) */
 	imus_t					I;
 } imu_t;
@@ -688,7 +693,7 @@ typedef struct PACKED
 } barometer_t;
 
 
-/** (DID_PREINTEGRATED_IMU) Coning and sculling integral in body/IMU frame. */
+/** (DID_PREINTEGRATED_IMU, DID_REFERENCE_PIMU) Coning and sculling integral in body/IMU frame. */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -949,6 +954,7 @@ typedef struct PACKED
 
 } ros_covariance_pose_twist_t;
 
+// (DID_INL2_STATUS)
 typedef struct PACKED
 {
 	int						ahrs;
@@ -1104,7 +1110,8 @@ typedef struct PACKED
 	double					sensorTruePeriod;
 
 	/** Reserved */
-	float					reserved2[2];
+	float					reserved2;
+	float					reserved3;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
@@ -1368,8 +1375,8 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-//                                      0x0000000000000100      //
-//                                      0x0000000000000200      //
+//                                      0x0000000000000100      // 
+//                                      0x0000000000000200      // 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1397,6 +1404,8 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
+#define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
+#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -1405,7 +1414,7 @@ typedef struct PACKED
 #define RMC_PRESET_INS_NAV_PERIOD_MULT	1   // fastest rate (nav filter update rate)
 
 // Preset: Post Processing Data
-#define RMC_PRESET_PPD_BITS_NO_IMU      (RMC_BITS_PRESET \
+#define RMC_PRESET_PPD_BITS_NO_IMU		(RMC_BITS_PRESET \
 										| RMC_BITS_INS2 \
 										| RMC_BITS_BAROMETER \
 										| RMC_BITS_MAGNETOMETER \
@@ -1420,20 +1429,23 @@ typedef struct PACKED
 										| RMC_BITS_GPS1_RTK_HDG_REL \
 										| RMC_BITS_INTERNAL_PPD \
 										| RMC_BITS_DIAGNOSTIC_MESSAGE)
-#define RMC_PRESET_PPD_BITS             (RMC_PRESET_PPD_BITS_NO_IMU \
-										| RMC_BITS_PREINTEGRATED_IMU)
-#define RMC_PRESET_INS_BITS             (RMC_BITS_INS2 \
+#define RMC_PRESET_PPD_BITS				(RMC_PRESET_PPD_BITS_NO_IMU \
+										| RMC_BITS_PREINTEGRATED_IMU \
+										| RMC_BITS_REFERENCE_PIMU)
+#define RMC_PRESET_INS_BITS				(RMC_BITS_INS2 \
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_PRESET)
-#define RMC_PRESET_PPD_BITS_RAW_IMU     (RMC_PRESET_PPD_BITS_NO_IMU \
+#define RMC_PRESET_PPD_BITS_RAW_IMU		(RMC_PRESET_PPD_BITS_NO_IMU \
 										| RMC_BITS_DUAL_IMU_RAW)
-#define RMC_PRESET_PPD_BITS_RTK_DBG     (RMC_PRESET_PPD_BITS \
+#define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_RTK_STATE \
 										| RMC_BITS_RTK_CODE_RESIDUAL \
 										| RMC_BITS_RTK_PHASE_RESIDUAL)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_WHEEL_ENCODER \
 										| RMC_BITS_GROUND_VEHICLE)
+#define RMC_PRESET_ALLAN_VARIANCE		(RMC_BITS_PRESET \
+										| RMC_BITS_DUAL_IMU)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -1479,6 +1491,7 @@ typedef struct PACKED
 	float					declination;
 } mag_cal_t;
 
+// (DID_INL2_MAG_OBS_INFO)
 typedef struct PACKED
 {											// INL2 - Magnetometer observer info 
 	/** Timestamp in milliseconds */
@@ -1794,9 +1807,13 @@ enum eSysConfigBits
 	SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
+
+	/** Use reference IMU in EKF instead of onboard IMU */
+	SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+
 };
 
-/** GNSS satellite system signal constellation (used with DID_FLASH_CONFIG.gnssSatSigConst) */
+/** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
 	/*! GPS  */
@@ -1822,7 +1839,7 @@ enum eGnssSatSigConst
 		GNSS_SAT_SIG_CONST_BDS
 };
 
-/** RTK Configuration */
+/** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
 enum eRTKConfigBits
 {
 	/** Enable onboard RTK GNSS precision positioning (GPS1) */
@@ -1967,8 +1984,7 @@ enum eRTKConfigBits
 	RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),	
 };
 
-
-/** Sensor Configuration */
+/** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
 	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */	
@@ -2041,7 +2057,7 @@ enum eSensorConfig
 };
 
 
-/** IO configuration (used with DID_FLASH_CONFIG.ioConfig) */
+/** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
 enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */

@@ -509,7 +509,8 @@ void errorCheckDualImu(dual_imu_ok_t *di);
 void dualToSingleImu(imu_t *result, const dual_imu_ok_t *di);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
-int preintegratedImuToIMU(dual_imu_t *imu, const preintegrated_imu_t *imuInt);
+int preintegratedImuToDualIMU(dual_imu_t *imu, const preintegrated_imu_t *imuInt);
+int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *pImu);
 int imuToPreintegratedImu(preintegrated_imu_t *pImu, const dual_imu_t *imu, float dt);
 
 

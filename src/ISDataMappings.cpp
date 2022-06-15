@@ -338,8 +338,8 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "reserved3", reserved3, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
@@ -2238,7 +2238,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
 	"DID_GPS_RTK_OPT",                  // 61
-	"DID_NVR_USERPAGE_INTERNAL",        // 62
+	"DID_REFERENCE_PIMU",               // 62
 	"DID_MANUFACTURING_INFO",           // 63
 	"DID_BIT",                          // 64
 	"DID_INS_3",                        // 65
