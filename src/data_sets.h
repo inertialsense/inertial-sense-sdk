@@ -624,7 +624,7 @@ typedef struct PACKED
 } imus_t;
 
 
-/** (DID_IMU) Inertial Measurement Unit (IMU) data */
+/** (DID_IMU, DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -684,7 +684,7 @@ typedef struct PACKED
 } barometer_t;
 
 
-/** (DID_PREINTEGRATED_IMU, DID_REFERENCE_IMU) Coning and sculling integral in body/IMU frame. */
+/** (DID_PREINTEGRATED_IMU, DID_REFERENCE_PIMU) Coning and sculling integral in body/IMU frame. */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
