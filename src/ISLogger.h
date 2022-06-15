@@ -40,7 +40,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "ISLogStats.h"
 
-using namespace std;
 
 // default logging path if none specified
 #define DEFAULT_LOGS_DIRECTORY "IS_logs"
@@ -58,17 +57,17 @@ public:
 		LOGTYPE_JSON
 	};
 
-	static const string g_emptyString;
+	static const std::string g_emptyString;
 
 	cISLogger();
 	virtual ~cISLogger();
 
 	// Setup logger to read from file.
-	bool LoadFromDirectory(const string& directory, eLogType logType = LOGTYPE_DAT, vector<string> serials = {});
+	bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_DAT, std::vector<std::string> serials = {});
 
 	// Setup logger for writing to file.
-	bool InitSave(eLogType logType = LOGTYPE_DAT, const string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
-	bool InitSaveTimestamp(const string& timeStamp, const string& directory = g_emptyString, const string& subDirectory = g_emptyString, int numDevices = 1, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool InitSave(eLogType logType = LOGTYPE_DAT, const std::string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, int numDevices = 1, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
 	// update internal state, handle timeouts, etc.
 	void Update();
@@ -80,8 +79,8 @@ public:
 	void CloseAllFiles();
 	void FlushToFile();
 	void OpenWithSystemApp();
-	string TimeStamp() { return m_timeStamp; }
-	string LogDirectory() { return m_directory; }
+	std::string TimeStamp() { return m_timeStamp; }
+	std::string LogDirectory() { return m_directory; }
 	uint64_t LogSizeAll();
 	uint64_t LogSize(unsigned int device = 0);
 	float LogSizeAllMB();
@@ -93,8 +92,8 @@ public:
 	const dev_info_t* GetDeviceInfo(unsigned int device = 0);
 	bool CopyLog(
 		cISLogger& log, 
-		const string& timestamp = g_emptyString, 
-		const string& outputDir = g_emptyString, 
+		const std::string& timestamp = g_emptyString, 
+		const std::string& outputDir = g_emptyString, 
 		eLogType logType = LOGTYPE_DAT, 
 		float maxDiskSpacePercent = 0.5f, 
 		uint32_t maxFileSize = 1024 * 1024 * 5, 
@@ -119,14 +118,14 @@ public:
     static bool LogHeaderIsCorrupt(const p_data_hdr_t* hdr);
 
 	// create a timestamp
-	static string CreateCurrentTimestamp();
+	static std::string CreateCurrentTimestamp();
 
     // check if a data packet is corrupt, NULL data is OK
     static bool LogDataIsCorrupt(const p_data_t* data);
 
     // read all log data into memory - if the log is over 1.5 GB this will fail on 32 bit processes
     // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
-    static bool ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, vector<vector<uint8_t>>>& data);
+    static bool ReadAllLogDataIntoMemory(const std::string& directory, std::map<uint32_t, std::vector<std::vector<uint8_t>>>& data);
 
 	void SetKmlConfig(bool showPath = true, bool showSample = false, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
 	{
@@ -142,7 +141,7 @@ public:
 		}
 	}
 
-	static eLogType ParseLogType(const string& logTypeString)
+	static eLogType ParseLogType(const std::string& logTypeString)
 	{
 		if (logTypeString == "csv")
 		{
@@ -170,7 +169,7 @@ private:
 	cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-	bool InitSaveCommon(eLogType logType, const string& directory, const string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
+	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
 	bool InitDevicesForWriting(int numDevices = 1);
 	void Cleanup();
 
@@ -185,9 +184,9 @@ private:
 
 	eLogType				m_logType;
 	bool					m_enabled;
-	string					m_directory;
-	string					m_timeStamp;
-	vector<shared_ptr<cDeviceLog>>	m_devices;
+	std::string				m_directory;
+	std::string				m_timeStamp;
+	std::vector<std::shared_ptr<cDeviceLog>> m_devices;
 
 	uint64_t				m_maxDiskSpace;
 	uint32_t				m_maxFileSize;

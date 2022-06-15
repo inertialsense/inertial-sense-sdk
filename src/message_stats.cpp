@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "message_stats.h"
 
+using namespace std;
 
 
 string messageDescriptionUblox(uint8_t msgClass, uint8_t msgID)

@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <sstream>
 
+using namespace std;
+
 #define MAX_ITEM_HISTORY 2048
 
 cComDataBuffer g_comDataBuffer;

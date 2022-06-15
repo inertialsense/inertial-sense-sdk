@@ -49,8 +49,8 @@ public:
     cSortedDataChunk(const char* name = "EMPT");
 	void Clear() OVERRIDE;
 
-	int32_t ReadFromFiles(vector<cISLogFileBase*> &pFiles, uint32_t id, uint32_t dataSerNum);
-	cISLogFileBase* TrimFile(unsigned int i, vector<cISLogFileBase*>& pFiles, long int& restorePos);
+	int32_t ReadFromFiles(std::vector<cISLogFileBase*> &pFiles, uint32_t id, uint32_t dataSerNum);
+	cISLogFileBase* TrimFile(unsigned int i, std::vector<cISLogFileBase*>& pFiles, long int& restorePos);
 
 	int32_t WriteAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;
 	int32_t ReadAdditionalChunkHeader(cISLogFileBase* pFile) OVERRIDE;

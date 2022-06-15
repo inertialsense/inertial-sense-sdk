@@ -20,7 +20,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define IS_SOCKET_DEFAULT_TIMEOUT_MS 5000
 
-using namespace std;
 
 class cISTcpClient : public cISStream
 {
@@ -42,7 +41,7 @@ public:
     * @param timeoutMilliseconds the max milliseconds to wait for a successful connection before aborting
 	* @return 0 if success, otherwise an error code
 	*/
-    int Open(const string& host, int port, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
+    int Open(const std::string& host, int port, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
 	/**
 	* Close the client
@@ -73,7 +72,7 @@ public:
 	* @param userName optional user name (basic authentication)
 	* @param password optional password (basic authentication)
 	*/
-	void HttpGet(const string& subUrl, const string& userAgent, const string& userName, const string& password);
+	void HttpGet(const std::string& subUrl, const std::string& userAgent, const std::string& userName, const std::string& password);
 
 	/**
 	* Get whether the connection is open
@@ -103,7 +102,7 @@ private:
 	cISTcpClient(const cISTcpClient& copy); // Disable copy constructor
 
 	socket_t m_socket;
-	string m_host;
+	std::string m_host;
 	int m_port;
 	bool m_blocking;
 };

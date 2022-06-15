@@ -19,8 +19,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "com_manager.h"
 
-using namespace std;
-
 #define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
 
 typedef enum
@@ -56,14 +54,14 @@ typedef struct
 	uint32_t dataSize;
 	eDataType dataType;
 	eDataFlags dataFlags;
-	string name;
+	std::string name;
 } data_info_t;
 
 class cDataCSV
 {
 public:
 	int WriteHeaderToFile(FILE* pFile, uint32_t id);
-	int ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& columnHeaders);
+	int ReadHeaderFromFile(FILE* pFile, uint32_t id, std::vector<data_info_t>& columnHeaders);
     int WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf);
 
 	/**
@@ -74,7 +72,7 @@ public:
 	* order id contains the value for ordering data
 	* returns true if success, false if no map found
 	*/
-	bool StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const vector<data_info_t>& columnHeaders);
+	bool StringCSVToData(std::string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize, const std::vector<data_info_t>& columnHeaders);
 
 	/**
 	* Convert data to a csv string
@@ -82,7 +80,7 @@ public:
 	* csv filled with csv data
 	* return true if success, false if no map found
 	*/
-    bool DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, string& csv);
+    bool DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, std::string& csv);
 };
 
 #endif // DATA_CVS_H
