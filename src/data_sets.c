@@ -322,7 +322,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
         0,                      // 61: DID_GPS_RTK_OPT
-        0,                      // 62: DID_REFERENCE_PIMU
+        offsetsOnlyTimeFirst,   // 62: DID_REFERENCE_PIMU
 		0,						// 63: DID_MANUFACTURING_INFO
 		0,                      // 64: DID_BIT
 		offsetsIns3,			// 65: DID_INS_3
