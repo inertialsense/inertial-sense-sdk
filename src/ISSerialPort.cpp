@@ -14,6 +14,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISFileManager.h"
 
+using namespace std;
+
+
 cISSerialPort::cISSerialPort(serial_port_t* serial) : cISStream()
 {
 	if (serial != NULLPTR)

@@ -23,8 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define CHAR_BIT 8
 #endif
 
-using namespace std;
-
 #if defined(INCLUDE_LUNA_DATA_SETS)
 #include "luna_data_sets.h"
 #endif
@@ -136,7 +134,7 @@ struct equal_to<std::string> : public unary_function<std::string, bool>
 */
 
 // map of field name to data info
-typedef map<string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
+typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
 class cISDataMappings
@@ -159,7 +157,7 @@ public:
 	* @param dataId the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static uint32_t GetDataSetId(string name);
+	static uint32_t GetDataSetId(std::string name);
 
 	/**
 	* Get the info for a data id
