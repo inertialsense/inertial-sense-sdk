@@ -7,30 +7,30 @@
 \date    2007-11-29
 \since   2005-07-30
 
-\b REFERENCES \n
+\b REFERENCES
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
-- http://aa.usno.navy.mil/data/docs/JulianDate.html - Julian Date Converter \n
-- http://aa.usno.navy.mil/faq/docs/UT.html \n
-- http://wwwmacho.mcmaster.ca/JAVA/JD.html \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42
+- http://aa.usno.navy.mil/data/docs/JulianDate.html - Julian Date Converter
+- http://aa.usno.navy.mil/faq/docs/UT.html
+- http://wwwmacho.mcmaster.ca/JAVA/JD.html
 - Raquet, J. F. (2002), GPS Receiver Design Lecture Notes. Geomatics Engineering, 
-  University of Calgary Graduate Course. \n
+  University of Calgary Graduate Course.
 
-\b "LICENSE INFORMATION" \n
-Copyright (c) 2007, refer to 'author' doxygen tags \n
-All rights reserved. \n
+\b "LICENSE INFORMATION"
+Copyright (c) 2007, refer to 'author' doxygen tags
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided the following conditions are met: \n
+modification, are permitted provided the following conditions are met:
 
 - Redistributions of source code must retain te above copyright
-  notice, this list of conditions and the following disclaimer. \n
+  notice, this list of conditions and the following disclaimer.
 - Redistributions in binary form must reproduce the above copyright
   notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution. \n
+  documentation and/or other materials provided with the distribution.
 - The name(s) of the contributor(s) may not be used to endorse or promote 
   products derived from this software without specific prior written 
-  permission. \n
+  permission.
 
 THIS SOFTWARE IS PROVIDED BY THE CONTRIBUTORS ``AS IS'' AND ANY EXPRESS 
 OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 

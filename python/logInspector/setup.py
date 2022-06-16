@@ -22,8 +22,7 @@ class get_pybind_include(object):
 
 
 ext_modules = [
-    Extension(
-        'log_reader',
+    Extension('log_reader',
         ['src/log_reader.cpp',
          '../../src/cltool.cpp',
          '../../src/cltool_main.cpp',
@@ -153,7 +152,8 @@ setup(
         'pyserial', 
         'scipy', 
         'tqdm',
-        'simplekml'],
+        'simplekml',
+        'allantools'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )
