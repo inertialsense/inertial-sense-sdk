@@ -46,7 +46,7 @@ SUCH DAMAGE.
 */
 
 #include <sys/timeb.h>
-#ifndef WIN32
+#if !defined(_WIN32) && !defined(_MSC_VER) 
 #include <sys/time.h>
 #endif
 #include <time.h>
