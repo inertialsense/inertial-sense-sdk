@@ -46,7 +46,7 @@ SUCH DAMAGE.
 */
 
 #include <sys/timeb.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <sys/time.h>
 #endif
 #include <time.h>
@@ -146,7 +146,7 @@ int TIMECONV_GetSystemTime(
   double timebuffer_time_in_seconds;
   //char *timeline; // for debugging
 
-#ifdef WIN32
+#ifdef _WIN32
 
   struct _timeb timebuffer; // found in <sys/timeb.h>   
   _ftime( &timebuffer );
@@ -206,7 +206,7 @@ int TIMECONV_GetSystemTime(
 }
 
 
-#ifdef WIN32
+#ifdef _WIN32
 int TIMECONV_SetSystemTime(
   const unsigned short  utc_year,     //!< Universal Time Coordinated    [year]
   const unsigned char   utc_month,    //!< Universal Time Coordinated    [1-12 months] 
