@@ -1667,7 +1667,7 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH               = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
     
     /** Status: (read only) */
-    INFIELD_CAL_STATE_INITIALIZED_READY_FOR_SAMPLING    = 50,   // Initialized and waiting for user to intiate.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_READY_FOR_SAMPLING                = 50,   // System has been initialized and is waiting for user to intiate sampling.  User must send a command to exit this state.
     INFIELD_CAL_STATE_SAMPLING                          = 51,   // System is averaging the IMU data.  Minimize all motion and vibration.
     INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 52,   // Follow up calibration zero with BIT and copy out IMU biases.
     INFIELD_CAL_STATE_SAVED_AND_FINISHED                = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases.  Updates are saved to flash. 
