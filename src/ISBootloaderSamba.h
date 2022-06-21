@@ -3,15 +3,12 @@
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense routines for updating SAM-BA capable devices
  * 
- * @note This is a compatibility layer that calls inertialSenseBootLoader 
- *  routines for consistency with the new bootloader stuff (ISBootloaderCommon)
- * 
  */
 
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -31,7 +28,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <limits.h>
 #include <stdbool.h>
 
-#include "ihex.h"
 #include "ISBootloaderTypes.h"
 #include "ISBootloaderCommon.h"
 
@@ -39,15 +35,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-typedef enum
-{
-    SAMBA_DESCRIPTOR_VENDOR_ID = 0x03eb,
-    SAMBA_DESCRIPTOR_PRODUCT_ID = 0x6124
-} samba_descriptor;
-
-
-is_device_context* is_init_samba_context(is_device_context* ctx);
-is_operation_result is_samba_flash(is_device_context* ctx);
 
 #ifdef __cplusplus
 }

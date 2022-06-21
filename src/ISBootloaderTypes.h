@@ -8,7 +8,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -46,15 +46,14 @@ typedef struct
 } is_device_vid_pid;
 
 typedef enum {
-    IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000000,  // default
-    IS_DEVICE_INTERFACE_FLAG_DFU        = 0b00000001,
-    IS_DEVICE_INTERFACE_FLAG_STM32UART  = 0b00000010,
+    IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000001,
+    IS_DEVICE_INTERFACE_FLAG_DFU        = 0b00000010,
+    IS_DEVICE_INTERFACE_FLAG_STM32UART  = 0b00000100,
 
-    IS_DEVICE_INTERFACE_FLAG_RSVD1      = 0b00000100,
-    IS_DEVICE_INTERFACE_FLAG_RSVD2      = 0b00001000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD3      = 0b00010000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD4      = 0b00100000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD5      = 0b01000000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD1      = 0b00001000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD2      = 0b00010000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD3      = 0b00100000,
+    IS_DEVICE_INTERFACE_FLAG_RSVD4      = 0b01000000,
 
     IS_DEVICE_INTERFACE_FLAG_DEBUG      = 0b10000000,
 } is_device_interface_flags;
@@ -118,6 +117,8 @@ typedef enum {
 typedef int(*pfnBootloadProgress)(void* obj, float percent);
 /** Bootloader information string function prototype. */
 typedef void(*pfnBootloadStatus)(void* obj, const char* infoString);
+/** Callback to update the bootloader using the built-in ROM bootloader */
+typedef void(*pfnBootloaderUpdate)(void* obj);
 
 typedef enum {
     IS_HANDLE_TYPE_LIBUSB,
@@ -132,13 +133,13 @@ typedef struct
     libusb_device_handle* libusb;   // DFU only. Invalid until DFU mode reached.
 } is_device_handle;
 
+#define FIRMWARE_PATH_LENGTH    256
+
 typedef struct 
 {
-    char firmware_path[256];
-
-    // Bootloader (uINS-3/4, EVB-2)
-    char samba_bootloader_path[256];
-    bool samba_force_update;
+    char firmware_path[FIRMWARE_PATH_LENGTH];
+    char bootloader_path[FIRMWARE_PATH_LENGTH];
+    bool bootloader_force_update;
 } is_firmware_settings;
 
 typedef struct
@@ -170,6 +171,20 @@ typedef struct
     char infoString[256];
     bool infoString_new;
 } is_device_context;
+
+typedef struct 
+{
+    char sn[IS_SN_MAX_SIZE];
+    is_device_vid_pid usb;
+} is_device_id;
+
+#define IS_DEVICE_LIST_LEN     256
+
+typedef struct 
+{
+    is_device_id id[IS_DEVICE_LIST_LEN];
+    size_t present;
+} is_device_list;
 
 #ifdef __cplusplus
 }

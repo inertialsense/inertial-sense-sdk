@@ -33,14 +33,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define SUPPORT_BOOTLOADER_V5A      // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 
-#define X_SOH 0x01
-#define X_EOT 0x04
-#define X_ACK 0x06
-#define X_NAK 0x15
-#define X_CAN 0x18
-#define CRC_POLY 0x1021
-#define XMODEM_PAYLOAD_SIZE 128
-
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
 #define FLASH_PAGE_SIZE 65536
 
@@ -53,19 +45,6 @@ typedef struct
     int verifyChunkSize;
     bootload_params_t* param;
 } bootloader_state_t;
-
-PUSH_PACK_1
-
-typedef struct
-{
-    uint8_t start;
-    uint8_t block;
-    uint8_t block_neg;
-    uint8_t payload[XMODEM_PAYLOAD_SIZE];
-    uint16_t crc;
-} xmodem_chunk_t;
-
-POP_PACK
 
 #if PLATFORM_IS_WINDOWS
 
@@ -90,123 +69,6 @@ static const unsigned char hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', 
 
 // Fastest to slowest
 static const int s_baudRateList[] = { IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_LEGACY, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
-
-static uint16_t crc_update(uint16_t crc_in, int incr)
-{
-    uint16_t crc = crc_in >> 15;
-    uint16_t out = crc_in << 1;
-
-    if (incr)
-    {
-        out++;
-    }
-
-    if (crc)
-    {
-        out ^= CRC_POLY;
-    }
-
-    return out;
-}
-
-
-static uint16_t crc16(uint8_t* data, uint16_t size)
-{
-    uint16_t crc, i;
-
-    for (crc = 0; size > 0; size--, data++)
-    {
-        for (i = 0x80; i; i >>= 1)
-        {
-            crc = crc_update(crc, *data & i);
-        }
-    }
-
-    for (i = 0; i < 16; i++)
-    {
-        crc = crc_update(crc, 0);
-    }
-
-    return crc;
-}
-
-static int xModemSend(serial_port_t* s, uint8_t* buf, size_t len)
-{
-    int ret;
-    uint8_t eot = X_EOT;
-    uint8_t answer;
-    xmodem_chunk_t chunk;
-
-    chunk.block = 1;
-    chunk.start = X_SOH;
-
-    // wait for receiver ping
-    do
-    {
-        if (serialPortRead(s, &answer, sizeof(uint8_t)) != sizeof(uint8_t))
-        {
-            return -1;
-        }
-    } while (answer != 'C');
-
-    // write up to one sector
-    while (len)
-    {
-        size_t z = 0;
-        int next = 0;
-//         char status;
-
-        z = _MIN(len, sizeof(chunk.payload));
-        memcpy(chunk.payload, buf, z);
-        memset(chunk.payload + z, 0xff, sizeof(chunk.payload) - z);
-
-        chunk.crc = SWAP16(crc16(chunk.payload, sizeof(chunk.payload)));
-        chunk.block_neg = 0xff - chunk.block;
-
-        ret = serialPortWrite(s, (const uint8_t*)&chunk, sizeof(xmodem_chunk_t));
-        if (ret != sizeof(xmodem_chunk_t))
-        {
-            return -1;
-        }
-
-        ret = serialPortReadTimeout(s, &answer, sizeof(uint8_t), BOOTLOADER_TIMEOUT_DEFAULT);
-        if (ret != sizeof(uint8_t))
-        {
-            return -1;
-        }
-
-        switch (answer)
-        {
-        case X_NAK:
-//             status = 'N';
-            break;
-        case X_ACK:
-//             status = '.';
-            next = 1;
-            break;
-        case X_CAN:
-            return -1;
-        default:
-//             status = '?';
-            break;
-        }
-
-        if (next)
-        {
-            chunk.block++;
-            len -= z;
-            buf += z;
-        }
-    }
-
-    ret = serialPortWrite(s, &eot, sizeof(uint8_t));
-    if (ret != sizeof(uint8_t))
-    {
-        return -1;
-    }
-    serialPortReadChar(s, &eot);
-    return 0;
-}
 
 int bootloaderCycleBaudRate(int baudRate)
 {
@@ -258,17 +120,11 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
         state->version = 1;
         state->firstPageSkipBytes = 8192;
     }
-    else if (v >= '2' && v <= '5')
+    else if (v >= '2' && v <= '6')
     {
-        // version 2, 3 (which sent v2), 4
+        // version 2, 3 (which sent v2), 4, 5, 6
         state->version = v-'0';
-        state->firstPageSkipBytes = 16384;
-    }
-    else if (v == '6')
-    {
-        // version 6 (uINS-5)
-        state->version = v-'0';
-        state->firstPageSkipBytes = 24576;
+        state->firstPageSkipBytes = 16384;  // v6 may be bigger, set after version info is read in
     }
     else
     {
@@ -1188,7 +1044,7 @@ static int bootloaderHandshake(bootload_params_t* p)
     return 0;
 }
 
-static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* sambaAvaliable)
+static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* romAvaliable, int* skipBytes)
 {
 	//purge buffer
 #define BUF_SIZE    100
@@ -1205,13 +1061,15 @@ static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* s
     {
         *major = 0;
         *minor = 0;
-        *sambaAvaliable = 1;
+        *romAvaliable = 1;
+        *skipBytes = 16384;
         return;
     }
 
     *major = buf[2];
     *minor = buf[3];
-    *sambaAvaliable = buf[4] == 0x1;
+    *romAvaliable = buf[4];
+    *skipBytes = buf[5] * 1024;
 }
 
 static int bootloadFileInternal(FILE* file, bootload_params_t* p)
@@ -1279,13 +1137,13 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 			return -1;
 		}
 
-        int blVerMajor, sambaSupport;
+        int blVerMajor, romSupport;
         char blVerMinor;
-        bootloadGetVersion(p->port, &blVerMajor, &blVerMinor, &sambaSupport);
+        bootloadGetVersion(p->port, &blVerMajor, &blVerMinor, &romSupport, &state.firstPageSkipBytes);
         if (blVerMajor > 0 && p->statusText)
         {
             char str[100];
-            bootloader_snprintf(str, 100, "Bootloader version %d%c found. SAM-BA is %s on port.", blVerMajor, blVerMinor, sambaSupport == 1 ? "supported" : "NOT supported");
+            bootloader_snprintf(str, 100, "Bootloader version %d%c found. ROM bootloader is %s on port.", blVerMajor, blVerMinor, romSupport == 1 ? "supported" : "NOT supported");
                 p->statusText(p->obj, str);
         }
 
@@ -1304,7 +1162,7 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                     (blVerMajor == fileVerMajor && blVerMinor < fileVerMinor) || 
                     p->forceBootloaderUpdate > 0)
                 {
-                    if (sambaSupport)
+                    if (romSupport == 0x1)
                     {
                         if (p->statusText)
                         {
@@ -1338,6 +1196,10 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                         //Bootloader updated successfully.  Return 1 to indicate firmware update is now needed.
                         return 1;
                     }
+                    else if (romSupport == 0x2)
+                    {
+                        // Update bootloader using ROM bootloader on STM32
+                    }
                     else
                     {   //Bootloader is out of date but SAM-BA is not supported on port
                         if (p->statusText)
@@ -1362,146 +1224,6 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 
         return bootloaderProcessHexFile(file, &state);
     }
-}
-
-static int samBaWriteWord(serial_port_t* port, uint32_t address, uint32_t value)
-{
-    unsigned char buf[32];
-    int count = SNPRINTF((char*)buf, sizeof(buf), "W%08x,%08x#", address, value);
-    return (serialPortWrite(port, buf, count) == count);
-}
-
-static uint32_t samBaReadWord(serial_port_t* port, uint32_t address)
-{
-    unsigned char buf[16];
-    int count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
-    if (serialPortWrite(port, buf, count) == count &&
-        (serialPortReadTimeout(port, buf, sizeof(uint32_t), BOOTLOADER_TIMEOUT_DEFAULT)) == sizeof(uint32_t))
-    {
-        uint32_t val = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
-        return val;
-    }
-    return 0;
-}
-
-static uint32_t samBaFlashWaitForReady(serial_port_t* port)
-{
-    uint32_t status = 0;
-    for (int i = 0; i < 10; i++)
-    {
-        status = samBaReadWord(port, 0x400e0c08);
-        if (status & 1)
-        {
-            break;
-        }
-        serialPortSleep(port, 20);
-    }
-    return status;
-}
-
-static int samBaSetBootFromFlash(serial_port_t* port)
-{
-    // EEFC_FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
-    if (samBaWriteWord(port, 0x400e0c04, 0x5a000000 | 0x00000100 | 0x0000000b))
-    {
-        return (int)samBaFlashWaitForReady(port);
-    }
-    return 0;
-}
-
-static int samBaFlashEraseWritePage(serial_port_t* port, size_t offset,
-                                    unsigned char buf[SAM_BA_FLASH_PAGE_SIZE], int isUSB)
-{
-    uint16_t page = (uint16_t)(offset / SAM_BA_FLASH_PAGE_SIZE);
-    unsigned char _buf[32];
-    int count;
-
-    // start lots of data
-    if (isUSB)
-    {
-        count = SNPRINTF((char*)_buf, sizeof(_buf), "S%08x,%08x#",
-                         (unsigned int)(SAM_BA_FLASH_START_ADDRESS + offset),
-                         (unsigned int)SAM_BA_FLASH_PAGE_SIZE);
-        serialPortWrite(port, _buf, count);
-        serialPortWrite(port, buf, SAM_BA_FLASH_PAGE_SIZE);
-    }
-    else
-    {
-        count = SNPRINTF((char*)_buf, sizeof(_buf), "S%08x,#", (unsigned int)(SAM_BA_FLASH_START_ADDRESS + offset));
-        serialPortWrite(port, _buf, count);
-
-        // send page data
-        if (xModemSend(port, buf, SAM_BA_FLASH_PAGE_SIZE))
-        {
-            return 0;
-        }
-    }
-
-    // EEFC FCR: finish write page
-    count = SNPRINTF((char*)_buf, sizeof(_buf), "W%08x,5a%04x03#", 0x400e0c04, page);
-    serialPortWrite(port, _buf, count);
-    return samBaFlashWaitForReady(port);
-}
-
-static int samBaVerify(serial_port_t* port, uint32_t checksum, void* obj, pfnBootloadProgress verifyProgress)
-{
-    uint32_t checksum2 = 0;
-    uint32_t nextAddress;
-    unsigned char buf[512];
-    int count;
-
-    for (uint32_t address = SAM_BA_FLASH_START_ADDRESS; address < (SAM_BA_FLASH_START_ADDRESS + SAM_BA_BOOTLOADER_SIZE); )
-    {
-        nextAddress = address + SAM_BA_FLASH_PAGE_SIZE;
-        while (address < nextAddress)
-        {
-            count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
-            serialPortWrite(port, buf, count);
-            address += sizeof(uint32_t);
-            serialPortSleep(port, 2); // give device time to process command
-        }
-        count = serialPortReadTimeout(port, buf, SAM_BA_FLASH_PAGE_SIZE, BOOTLOADER_TIMEOUT_DEFAULT);
-        if (count == SAM_BA_FLASH_PAGE_SIZE)
-        {
-            for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
-            {
-                checksum2 ^= *ptr;
-            }
-        }
-        else
-        {
-            return -1;
-        }
-        if (verifyProgress != 0)
-        {
-            verifyProgress(obj, (float)(address - SAM_BA_FLASH_START_ADDRESS) / (float)SAM_BA_BOOTLOADER_SIZE);
-        }
-    }
-    if (checksum != checksum2)
-    {
-        return -2;
-    }
-    return 0;
-}
-
-static int samBaSoftReset(serial_port_t* port)
-{
-    // RSTC_CR, RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST
-    uint32_t status;
-    if (!samBaWriteWord(port, 0x400e1800, 0xa5000000 | 0x00000001))
-    {
-        return 0;
-    }
-    for (int i = 0; i < 100; i++)
-    {
-        status = samBaReadWord(port, 0x400e1804); // RSTC_SR
-        if (!(status & 0x00020000)) // RSTC_SR_SRCMP
-        {
-            return 1;
-        }
-        serialPortSleep(port, 20);
-    }
-    return 0;
 }
 
 int bootloadFile(serial_port_t* port, const char* fileName, const char * bootName,
