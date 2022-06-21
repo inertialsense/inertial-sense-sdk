@@ -232,7 +232,7 @@ enum eInsStatusFlags
     INS_STATUS_RTK_COMPASSING_BASELINE_BAD      = (int)0x00200000,
     INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
     
-	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. */
+	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
 	INS_STATUS_MAG_RECALIBRATING				= (int)0x00400000,
 	/** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
 	INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL		= (int)0x00800000,
@@ -319,7 +319,10 @@ enum eHdwStatusFlags
 	HDW_STATUS_SYSTEM_RESET_REQUIRED			= (int)0x00001000,
 
 	HDW_STATUS_UNUSED_3				            = (int)0x00002000,
-	HDW_STATUS_UNUSED_4				            = (int)0x00004000,
+
+	/** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
+	HDW_STATUS_MAG_RECAL_COMPLETE	            = (int)0x00004000,
+
 	HDW_STATUS_UNUSED_5				            = (int)0x00008000,
 
 	/** Communications Tx buffer limited */
