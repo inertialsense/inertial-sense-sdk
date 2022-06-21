@@ -318,7 +318,9 @@ enum eHdwStatusFlags
 	/** System Reset is Required for proper function */
 	HDW_STATUS_SYSTEM_RESET_REQUIRED			= (int)0x00001000,
 
-	HDW_STATUS_UNUSED_3				            = (int)0x00002000,
+	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+	HDW_STATUS_FLASH_WRITE_IN_PROGRESS          = (int)0x00002000,
+
 	HDW_STATUS_UNUSED_4				            = (int)0x00004000,
 	HDW_STATUS_UNUSED_5				            = (int)0x00008000,
 
@@ -3364,6 +3366,9 @@ typedef enum
 
     /** XBee: failed to configure */
     EVB_STATUS_XBEE_CONFIG_FAILURE          = 0x00800000,
+
+	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+    EVB_STATUS_FLASH_WRITE_IN_PROGRESS      = 0x01000000,
 
 } eEvbStatus;
 
