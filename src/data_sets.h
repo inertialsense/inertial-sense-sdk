@@ -1461,19 +1461,31 @@ typedef struct PACKED
 	uint32_t				gpioStatus;
 } io_t;
 
-enum eMagRecalMode
+enum eMagCalState
 {
 	MAG_RECAL_CMD_DO_NOTHING		= (int)0, 
-	MAG_RECAL_CMD_MULTI_AXIS		= (int)1,		// Recalibrate magnetometers using multiple axis
-	MAG_RECAL_CMD_SINGLE_AXIS		= (int)2,		// Recalibrate magnetometers using only one axis
-	MAG_RECAL_CMD_ABORT				= (int)101,		// Stop mag recalibration
+
+	/** COMMAND: Recalibrate magnetometers using multiple axis */
+	MAG_RECAL_CMD_MULTI_AXIS		= (int)1,
+
+	/** COMMAND: Recalibrate magnetometers using only one axis */
+	MAG_RECAL_CMD_SINGLE_AXIS		= (int)2,
+
+	/** COMMAND: Stop mag recalibration and do not save results */
+	MAG_RECAL_CMD_ABORT				= (int)101,
+
+	/** STATUS: Mag recalibration is in progress */
+	MAG_RECAL_CMD_RECAL_IN_PROGRESS	= (int)200,
+
+	/** STATUS: Mag recalibration has completed */
+	MAG_RECAL_CMD_RECAL_COMPLETE	= (int)201,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
 typedef struct PACKED
 {
-	/** Set mode and start recalibration. 1 = multi-axis, 2 = single-axis, 101 = abort. (see eMagRecalMode) */
-	uint32_t                recalCmd;
+	/** Mag recalibration state.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState) */
+	uint32_t                state;
 	
 	/** Mag recalibration progress indicator: 0-100 % */
 	float					progress;
@@ -1770,7 +1782,7 @@ enum eSysConfigBits
 	/*! Disable LEDs */
 	SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
 
-	/** Magnetometer recalibration.  (see eMagRecalMode) 1 = multi-axis, 2 = single-axis */
+	/** Magnetometer recalibration.  (see eMagCalState) 1 = multi-axis, 2 = single-axis */
 	SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
 	SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)

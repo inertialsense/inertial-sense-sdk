@@ -1105,12 +1105,12 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 	char* ptrEnd = buf + BUF_SIZE;
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
 
-	switch (mag.recalCmd)
+	switch (mag.state)
 	{
-	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d,               ", mag.recalCmd);	break;
-	case MAG_RECAL_CMD_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (MULTI-AXIS ), ", mag.recalCmd);	break;
-	case MAG_RECAL_CMD_SINGLE_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (SINGLE-AXIS), ", mag.recalCmd);	break;
-	case MAG_RECAL_CMD_ABORT:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (ABORT      ), ", mag.recalCmd);	break;
+	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d,               ", mag.state);	break;
+	case MAG_RECAL_CMD_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (MULTI-AXIS ), ", mag.state);	break;
+	case MAG_RECAL_CMD_SINGLE_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (SINGLE-AXIS), ", mag.state);	break;
+	case MAG_RECAL_CMD_ABORT:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (ABORT      ), ", mag.state);	break;
 	}
 
 	{	// Single line format
