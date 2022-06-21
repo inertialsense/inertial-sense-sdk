@@ -1108,9 +1108,11 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 	switch (mag.state)
 	{
 	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d,               ", mag.state);	break;
-	case MAG_RECAL_CMD_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (MULTI-AXIS ), ", mag.state);	break;
-	case MAG_RECAL_CMD_SINGLE_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (SINGLE-AXIS), ", mag.state);	break;
-	case MAG_RECAL_CMD_ABORT:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (ABORT      ), ", mag.state);	break;
+	case MAG_CAL_STATE_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (MULTI-AXIS ), ", mag.state);	break;
+	case MAG_CAL_STATE_SINGLE_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (SINGLE-AXIS), ", mag.state);	break;
+	case MAG_CAL_STATE_ABORT:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (ABORT      ), ", mag.state);	break;
+	case MAG_CAL_STATE_RECAL_RUNNING:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (Recal-ing  ), ", mag.state);	break;
+	case MAG_CAL_STATE_RECAL_COMPLETE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (Recal done ), ", mag.state);	break;
 	}
 
 	{	// Single line format

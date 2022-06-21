@@ -1463,22 +1463,22 @@ typedef struct PACKED
 
 enum eMagCalState
 {
-	MAG_RECAL_CMD_DO_NOTHING		= (int)0, 
+	MAG_CAL_STATE_DO_NOTHING		= (int)0, 
 
 	/** COMMAND: Recalibrate magnetometers using multiple axis */
-	MAG_RECAL_CMD_MULTI_AXIS		= (int)1,
+	MAG_CAL_STATE_MULTI_AXIS		= (int)1,
 
 	/** COMMAND: Recalibrate magnetometers using only one axis */
-	MAG_RECAL_CMD_SINGLE_AXIS		= (int)2,
+	MAG_CAL_STATE_SINGLE_AXIS		= (int)2,
 
 	/** COMMAND: Stop mag recalibration and do not save results */
-	MAG_RECAL_CMD_ABORT				= (int)101,
+	MAG_CAL_STATE_ABORT				= (int)101,
 
 	/** STATUS: Mag recalibration is in progress */
-	MAG_RECAL_CMD_RECAL_IN_PROGRESS	= (int)200,
+	MAG_CAL_STATE_RECAL_RUNNING	= (int)200,
 
 	/** STATUS: Mag recalibration has completed */
-	MAG_RECAL_CMD_RECAL_COMPLETE	= (int)201,
+	MAG_CAL_STATE_RECAL_COMPLETE	= (int)201,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
