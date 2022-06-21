@@ -35,6 +35,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #	include "../../cpp/libs/IS_internal.h"
 #endif
 
+using namespace std;
+
 
 int cDataCSV::WriteHeaderToFile(FILE* pFile, uint32_t id)
 {

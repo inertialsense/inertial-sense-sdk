@@ -1668,7 +1668,7 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_INITIALIZED_READY_FOR_SAMPLING    = 50,   // Initialized and waiting for user to intiate.  User must send a command to exit this state.
     INFIELD_CAL_STATE_SAMPLING                          = 51,   // System is averaging the IMU data.  Minimize all motion and vibration.
     INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 52,   // Follow up calibration zero with BIT and copy out IMU biases.
-    INFIELD_CAL_STATE_FINISHED                          = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
+    INFIELD_CAL_STATE_SAVED_AND_FINISHED                = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases.  Updates are saved to flash. 
 
     /** Error Status: (read only) */
     INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED             = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set. 
@@ -2291,15 +2291,15 @@ typedef struct PACKED
 
 typedef enum
 {
-    DYN_PORTABLE = 0,
-    DYN_STATIONARY = 2,
-    DYN_PEDESTRIAN = 3,
-    DYN_GROUND_VEHICLE = 4,
-    DYN_MARINE = 5,
-    DYN_AIRBORNE_1G = 6,
-    DYN_AIRBORNE_2G = 7,
-    DYN_AIRBORNE_4G = 8,
-    DYN_WRIST = 9
+    INS_DYN_MODEL_PORTABLE       	= 0,
+    INS_DYN_MODEL_STATIONARY        = 2,
+    INS_DYN_MODEL_PEDESTRIAN        = 3,
+    INS_DYN_MODEL_GROUND_VEHICLE    = 4,
+    INS_DYN_MODEL_MARINE            = 5,
+    INS_DYN_MODEL_AIRBORNE_1G       = 6,
+    INS_DYN_MODEL_AIRBORNE_2G       = 7,
+    INS_DYN_MODEL_AIRBORNE_4G       = 8,
+    INS_DYN_MODEL_WRIST             = 9
 } eInsDynModel;
 
 /** (DID_FLASH_CONFIG) Configuration data

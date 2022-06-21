@@ -35,6 +35,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
+using namespace std;
+
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
 {

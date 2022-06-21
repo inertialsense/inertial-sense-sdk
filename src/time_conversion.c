@@ -46,6 +46,9 @@ SUCH DAMAGE.
 */
 
 #include <sys/timeb.h>
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
 #include <time.h>
 #include <math.h> // for fmod()
 #include "time_conversion.h"
@@ -139,26 +142,24 @@ int TIMECONV_GetSystemTime(
   )
 {
   int result;
-
-#ifdef WIN32
-  struct _timeb timebuffer; // found in <sys/timeb.h>   
-#else
-  struct timeb timebuffer;
-#endif
   double timebuffer_time_in_days;
   double timebuffer_time_in_seconds;
   //char *timeline; // for debugging
 
-#ifdef WIN32
+#ifdef _WIN32
+
+  struct _timeb timebuffer; // found in <sys/timeb.h>   
   _ftime( &timebuffer );
+  timebuffer_time_in_seconds = timebuffer.time + timebuffer.millitm * 1.0e-3; // [s] with ms resolution
+
 #else
-  ftime( &timebuffer );
+
+  struct timeval current_time;
+  gettimeofday(&current_time, NULL);
+  timebuffer_time_in_seconds = current_time.tv_sec + current_time.tv_usec * 1.0e-6; // [s] with us resolution
+
 #endif 
 
-  //timeline = ctime( & ( timebuffer.time ) ); // for debugging
-  //printf( "%s\n", timeline ); // for debugging
-
-  timebuffer_time_in_seconds = timebuffer.time + timebuffer.millitm / 1000.0; // [s] with ms resolution
 
   // timebuffer_time_in_seconds is the time in seconds since midnight (00:00:00), January 1, 1970, 
   // coordinated universal time (UTC). Julian date for (00:00:00), January 1, 1970 is: 2440587.5 [days]
@@ -205,7 +206,7 @@ int TIMECONV_GetSystemTime(
 }
 
 
-#ifdef WIN32
+#ifdef _WIN32
 int TIMECONV_SetSystemTime(
   const unsigned short  utc_year,     //!< Universal Time Coordinated    [year]
   const unsigned char   utc_month,    //!< Universal Time Coordinated    [1-12 months] 

@@ -1516,11 +1516,11 @@ int bootloadFileEx(bootload_params_t* params)
 {
 	if (strstr(params->fileName, "EVB") != NULL)
 	{   // Enable EVB bootloader
-		strncpy(params->bootloadEnableCmd, "EBLE", 4);
+		memcpy(params->bootloadEnableCmd, "EBLE", 4);
 	}
 	else
 	{	// Enable uINS bootloader
-		strncpy(params->bootloadEnableCmd, "BLEN", 4);
+		memcpy(params->bootloadEnableCmd, "BLEN", 4);
 	}
 
 	int result = -1;    // 0 = success

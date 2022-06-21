@@ -20,7 +20,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISStream.h"
 #include "serialPortPlatform.h"
 
-using namespace std;
 
 class cISSerialPort : public cISStream
 {
@@ -85,7 +84,7 @@ public:
 	* Gets a list of com names of all connected usb ports
 	* @param ports cleared and then receives the name of each connected usb port
 	*/
-	static void GetComPorts(vector<string>& ports);
+	static void GetComPorts(std::vector<std::string>& ports);
 
 	/**
 	* Gets information about the current connection (i.e. TCP ip address and port number or serial port name)

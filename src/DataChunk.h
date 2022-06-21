@@ -27,8 +27,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "ISLogFileBase.h"
 
-using namespace std;
-
 void logStats(const char *format, ...);
 
 //!< Chunk Header

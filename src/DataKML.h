@@ -24,7 +24,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #	include "../../cpp/libs/IS_internal.h"
 #endif
 
-using namespace std;
 
 struct sKmlLogData
 {
@@ -101,8 +100,8 @@ public:
 	}
 	
 	cDataKML();
-	string GetDatasetName(int kid);
-    int WriteDataToFile(vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
+	std::string GetDatasetName(int kid);
+    int WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
 };
 
 #endif // DATA_KML_H
