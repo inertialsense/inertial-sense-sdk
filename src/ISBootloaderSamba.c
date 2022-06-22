@@ -63,7 +63,6 @@ static uint16_t crc_update(uint16_t crc_in, int incr);
 static uint16_t crc16(uint8_t* data, uint16_t size);
 
 PUSH_PACK_1
-
 typedef struct
 {
     uint8_t start;
@@ -72,29 +71,124 @@ typedef struct
     uint8_t payload[UART_X_PAYLOAD_SIZE];
     uint16_t crc;
 } xmodem_chunk_t;
-
 POP_PACK
 
-is_operation_result is_init_samba_context(is_device_context* ctx)
+/**
+ * @brief Flash the bootloader image onto the chip 
+ * 
+ * @param ctx a filled device context with bootloader firmware image
+ * @return is_operation_result 
+ */
+is_operation_result is_samba_flash(is_device_context* ctx)
 {
-    ctx->scheme = IS_SCHEME_SAMBA;
-    ctx->match_props.match = 
-        IS_DEVICE_MATCH_FLAG_VID | 
-        IS_DEVICE_MATCH_FLAG_PID | 
-        IS_DEVICE_MATCH_FLAG_TYPE | 
-        IS_DEVICE_MATCH_FLAG_MAJOR;
+    serial_port_t* port = &ctx->handle.port;
+    ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
+    size_t image_sections;
 
-    strncpy(ctx->bl_enable_command, "BLEN", 5);
+    SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to init SAM-BA device");
 
-    if(strlen(ctx->match_props.serial_number) != 0)
+    // Load the firmware image
+    image_sections = ihex_load_sections(ctx->firmware.bootloader_path, image, MAX_NUM_IHEX_SECTIONS);
+    if(image_sections <= 0) return IS_OP_ERROR;
+
+    // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
+    // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
+    uint8_t buf[SAMBA_PAGE_SIZE];
+    uint32_t checksum = 0;
+
+    // try non-USB and then USB mode (0 and 1)
+    for(int isUSB = 0; isUSB < 2; isUSB++)
     {
-        ctx->match_props.match |= IS_DEVICE_MATCH_FLAG_SN;
+        serialPortSleep(port, 250);
+        serialPortClose(port);
+        if(!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
+        {
+            serialPortClose(port);
+            return IS_OP_ERROR;
+        }
+
+        // flush
+        serialPortWrite(port, (const uint8_t*)"#", 2);
+        int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
+
+       FILE* file;
+
+#ifdef _MSC_VER
+
+        fopen_s(&file, ctx->firmware.bootloader_path, "rb");
+
+#else
+
+        file = fopen(ctx->firmware.bootloader_path, "rb");
+
+#endif
+
+        if (file == 0)
+        {
+            SAMBA_STATUS("Unable to load bootloader file");
+            serialPortClose(port);
+            return 0;
+        }
+
+        fseek(file, 0, SEEK_END);
+        int size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+        checksum = 0;
+
+        if (size != SAMBA_BOOTLOADER_SIZE)
+        {
+            SAMBA_STATUS("Invalid bootloader file");
+            serialPortClose(port);
+            return 0;
+        }
+
+        SAMBA_STATUS("Writing bootloader...");
+
+        uint32_t offset = 0;
+        while (fread(buf, 1, SAMBA_PAGE_SIZE, file) == SAMBA_PAGE_SIZE)
+        {
+            if (is_samba_flash_erase_write_page(ctx, offset, buf, isUSB) != IS_OP_OK)
+            {
+                if (!isUSB) { offset = 0; break; } // try USB mode
+                SAMBA_STATUS("Failed to upload page");
+                serialPortClose(port);
+                return 0;
+            }
+            for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
+            {
+                checksum ^= *ptr;
+            }
+            offset += SAMBA_PAGE_SIZE;
+            if (ctx->update_progress_callback != 0)
+            {
+                ctx->update_progress_callback(ctx->user_data, (float)offset / (float)SAMBA_BOOTLOADER_SIZE);
+            }
+        }
+        fclose(file);
+        if (offset != 0) break; // success!
     }
+
+    if (ctx->verify_progress_callback != 0)
+    {
+        SAMBA_STATUS("Verifying bootloader...");
+        SAMBA_ERROR_CHECK(is_samba_verify(ctx, checksum), "Verification error!");
+    }
+    
+    SAMBA_ERROR_CHECK(is_samba_boot_from_flash(ctx), "Failed to set boot from flash GPNVM bit!");
+    SAMBA_ERROR_CHECK(is_samba_reset(ctx), "Failed to reset device!");
+
+    serialPortClose(port);
 
     return IS_OP_OK;
 }
 
-is_operation_result is_samba_init(is_device_context* ctx)
+/**
+ * @brief Initialize the registers of the SAM-BA device
+ * 
+ * @param ctx a filled device context
+ * @return is_operation_result 
+ */
+static is_operation_result is_samba_init(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
     uint8_t buf[SAMBA_PAGE_SIZE];
@@ -151,157 +245,6 @@ is_operation_result is_samba_init(is_device_context* ctx)
 
     return IS_OP_OK;
 }
-
-is_operation_result is_samba_flash_bootloader(is_device_context* ctx)
-{
-    serial_port_t* port = &ctx->handle.port;
-    ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
-    size_t image_sections;
-
-    // Load the firmware image
-    image_sections = ihex_load_sections(ctx->firmware.firmware_path, image, MAX_NUM_IHEX_SECTIONS);
-    if(image_sections <= 0) return IS_OP_ERROR;
-
-    // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
-    // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
-    uint8_t buf[SAMBA_PAGE_SIZE];
-    uint32_t checksum = 0;
-
-    // try non-USB and then USB mode (0 and 1)
-    for(int isUSB = 0; isUSB < 2; isUSB++)
-    {
-        serialPortSleep(port, 250);
-        serialPortClose(port);
-        if(!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
-        {
-            serialPortClose(port);
-            return IS_OP_ERROR;
-        }
-
-        // flush
-        serialPortWrite(port, (const uint8_t*)"#", 2);
-        int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
-
-        size_t image_total_len = 0;
-        for(size_t i = 0; i < image_sections; i++)
-        {
-            image_total_len += image[i].len;
-        }
-
-        if(image_total_len > SAMBA_BOOTLOADER_SIZE)
-        {
-            if(ctx->info_callback) ctx->info_callback(ctx->user_data, "Bootloader image too long!");
-            serialPortClose(port);
-            return IS_OP_ERROR;
-        }
-
-        SAMBA_STATUS("Writing bootloader...");
-
-        uint32_t offset = 0;
-        bool bytesRemaining = true;
-        size_t imageSectionPos = 0;
-        size_t imageSectionNum = 0;
-        size_t pageNum = 0;
-        while(pageNum < SAMBA_BOOTLOADER_SIZE / SAMBA_PAGE_SIZE)
-        {
-            size_t pagePos = 0;
-            
-            memset(buf, 0xff, SAMBA_PAGE_SIZE);
-
-            while(pagePos < SAMBA_PAGE_SIZE)
-            {   // Fill a full page
-                if(imageSectionNum < image_sections)
-                {   // Stop at the end of the image
-                    if(imageSectionPos < image[imageSectionNum].len)
-                    {   // Stop at the end of the section
-                        size_t copy_len = MIN(image[imageSectionNum].len-imageSectionPos, SAMBA_PAGE_SIZE-pagePos);
-                        memcpy(buf+pagePos, image[imageSectionNum].image+imageSectionPos, copy_len);
-
-                        imageSectionPos += copy_len;
-                        pagePos += copy_len;
-                    }
-                    else
-                    {
-                        imageSectionNum++;
-                        imageSectionPos = 0;
-                    } 
-                }
-                else break;
-            }
-
-            if(is_samba_flash_erase_write_page(ctx, offset, buf, isUSB) == IS_OP_ERROR)
-            {
-                if (!isUSB)
-                {
-                    offset = 0;
-                    break; // try USB mode
-                }
-                if(ctx->info_callback) ctx->info_callback(ctx->user_data, "Failed to upload page");
-                serialPortClose(port);
-                return 0;
-            }
-            for(uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++) checksum ^= *ptr;
-            offset += SAMBA_PAGE_SIZE;
-            if(ctx->update_progress_callback) ctx->update_progress_callback(ctx->user_data, (float)offset / (float)SAMBA_BOOTLOADER_SIZE);
-        }
-        if (offset != 0)
-        {
-            break; // success!
-        }
-    }
-
-    if (ctx->verify_progress_callback != 0)
-    {
-        SAMBA_STATUS("Verifying bootloader...");
-        SAMBA_ERROR_CHECK(is_samba_verify(ctx, checksum), "Verification error!");
-    }
-    
-    SAMBA_ERROR_CHECK(is_samba_boot_from_flash(ctx), "Failed to set boot from flash GPNVM bit!");
-    SAMBA_ERROR_CHECK(is_samba_reset(ctx), "Failed to reset device!");
-
-    serialPortClose(port);
-
-    return IS_OP_OK;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**
  * @brief Write a single (32-bit) word to the device. Can read from any peripheral or memory

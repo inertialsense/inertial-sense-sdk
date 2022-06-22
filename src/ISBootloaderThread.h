@@ -1,5 +1,5 @@
 /**
- * @file ISBootloader.h
+ * @file ISBootloaderThread.h
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense routines for updating embedded systems
  * 

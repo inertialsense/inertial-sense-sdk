@@ -177,7 +177,7 @@
     <ClCompile Include="..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSorted.cpp" />
     <ClCompile Include="..\..\src\ihex.c" />
-    <ClCompile Include="..\..\src\ISBootloader.cpp" />
+    <ClCompile Include="..\..\src\ISBootloaderThread.cpp" />
     <ClCompile Include="..\..\src\ISBootloaderCommon.c" />
     <ClCompile Include="..\..\src\ISBootloaderDfu.c" />
     <ClCompile Include="..\..\src\ISBootloaderSamba.c" />

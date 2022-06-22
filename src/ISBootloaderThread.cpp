@@ -1,5 +1,5 @@
 /**
- * @file ISBootloader.cpp
+ * @file ISBootloaderThread.cpp
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense routines for updating embedded systems
  * 
@@ -74,7 +74,7 @@ is_operation_result ISBootloader::update(
     size_t idx = 0; // Tracks the instances so callbacks can match with a list
 
     for(i = 0; i < dfu_list.present; i++)
-    {	// Create contexts for devices already in DFU mode
+    {	// Create contexts for devices in DFU mode
         is_device_handle handle;
         memset(&handle, 0, sizeof(is_device_handle));
         handle.status = IS_HANDLE_TYPE_LIBUSB;

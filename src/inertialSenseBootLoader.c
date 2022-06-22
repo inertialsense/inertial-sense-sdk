@@ -1,7 +1,6 @@
 /**
  * @file inertialSenseBootLoader.c
- * @brief Routines for updating Inertial Sense products with the SAM-BA 
- *  bootloader (uINS-3, uINS-4, EVB-2)
+ * @brief Routines for updating Inertial Sense products
  * 
  */
 
@@ -22,14 +21,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "inertialSenseBootLoader.h"
 #include "ISUtilities.h"
+#include "ISBootloaderSamba.h"
 
 #define MAX_SEND_COUNT 510
 #define MAX_VERIFY_CHUNK_SIZE 1024
 #define BOOTLOADER_TIMEOUT_DEFAULT 1000
-#define SAM_BA_BAUDRATE 115200
-#define SAM_BA_FLASH_PAGE_SIZE 512
-#define SAM_BA_FLASH_START_ADDRESS 0x00400000
-#define SAM_BA_BOOTLOADER_SIZE 16384
 
 #define SUPPORT_BOOTLOADER_V5A      // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 
@@ -61,9 +57,6 @@ typedef struct
     { \
         bootloader_snprintf((s)->error + strlen((s)->error), BOOTLOADER_ERROR_LENGTH - strlen((s)->error), __VA_ARGS__); \
     }
-
-#define bootloader_min(a, b) (a < b ? a : b)
-#define bootloader_max(a, b) (a > b ? a : b)
 
 static const unsigned char hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
@@ -1090,20 +1083,13 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
             if (p->statusText)
                 p->statusText(p->obj, "Attempting to reload bootloader...");
 
-            //Send file
-            bootload_params_t params;
-            memset(&params, 0, sizeof(params));
-            params.fileName = p->bootName;
-            params.port = p->port;
-            memset(params.error, 0, sizeof(BOOTLOADER_ERROR_LENGTH));
-            params.obj = p->obj;
-            params.uploadProgress = p->uploadProgress;
-            params.verifyProgress = p->verifyProgress;
-            params.statusText = p->statusText;
-            params.flags.bitFields.enableVerify = 1;
-
-            if (!bootloadUpdateBootloaderSendFile(&params))
+            // Reload the bootloader
+            if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK;
+            else 
+            {
+                bootloader_snprintf(p->error, BOOTLOADER_ERROR_LENGTH, "No callback registered for bootloader update!");
                 return -1;
+            }
 
             SLEEP_MS(1000);
             //Bootloader updated successfully.  Return 1 to indicate firmware update is now needed.
@@ -1177,28 +1163,16 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                         //Start SAM-BA
                         bootloaderRestartAssist(p->port);
 
-                        //Send file
-                        bootload_params_t params;
-                        memset(&params, 0, sizeof(params));
-                        params.fileName = p->bootName;
-                        params.port = p->port;
-                        memset(params.error, 0, sizeof(BOOTLOADER_ERROR_LENGTH));
-                        params.obj = p->obj;
-                        params.uploadProgress = p->uploadProgress;
-                        params.verifyProgress = p->verifyProgress;
-                        params.statusText = p->statusText;
-                        params.flags.bitFields.enableVerify = 1;
-
-                        if (!bootloadUpdateBootloaderSendFile(&params))
+                        if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK;
+                        else 
+                        {
+                            bootloader_snprintf(p->error, BOOTLOADER_ERROR_LENGTH, "No callback registered for bootloader update!");
                             return -1;
+                        }
 
                         SLEEP_MS(1000);
                         //Bootloader updated successfully.  Return 1 to indicate firmware update is now needed.
                         return 1;
-                    }
-                    else if (romSupport == 0x2)
-                    {
-                        // Update bootloader using ROM bootloader on STM32
                     }
                     else
                     {   //Bootloader is out of date but SAM-BA is not supported on port
@@ -1369,145 +1343,6 @@ int bootloadGetBootloaderVersionFromFile(const char* bootName, int* verMajor, ch
 
     //No version found
     return -1;
-}
-
-static int bootloadUpdateBootloaderSendFile(bootload_params_t* p)
-{
-    //Setup serial port for correct baud rate
-    serialPortClose(p->port);
-    if (!serialPortOpenRetry(p->port, p->port->port, BAUDRATE_115200, 1))
-    {
-        bootloader_perror(p, "Failed to open port.\n");
-        serialPortClose(p->port);
-        return 0;
-    }
-
-    // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
-    // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
-    unsigned char buf[SAM_BA_FLASH_PAGE_SIZE];
-    uint32_t checksum = 0;
-
-    // try non-USB and then USB mode (0 and 1)
-    for (int isUSB = 0; isUSB < 2; isUSB++)
-    {
-        serialPortSleep(p->port, 250);
-        serialPortClose(p->port);
-        if (!serialPortOpenRetry(p->port, p->port->port, SAM_BA_BAUDRATE, 1))
-        {
-            bootloader_perror(p, "Failed to open port.\n");
-            serialPortClose(p->port);
-            return 0;
-        }
-
-        // flush
-        serialPortWrite(p->port, (void*)"#", 2);
-        int count = serialPortReadTimeout(p->port, buf, sizeof(buf), 100);
-
-        // non-interactive mode
-        count = serialPortWriteAndWaitFor(p->port, (void*)"N#", 2, (void*)"\n\r", 2);
-        if (!count)
-        {
-            bootloader_perror(p, "Failed to handshake with SAM-BA\n");
-            serialPortClose(p->port);
-            return 0;
-        }
-
-        // set flash mode register
-        serialPortWrite(p->port, (const unsigned char*)"W400e0c00,04000600#", 19);
-
-        FILE* file;
-
-#ifdef _MSC_VER
-
-        fopen_s(&file, p->fileName, "rb");
-
-#else
-
-        file = fopen(p->fileName, "rb");
-
-#endif
-
-        if (file == 0)
-        {
-            bootloader_perror(p, "Unable to load bootloader file\n");
-            serialPortClose(p->port);
-            return 0;
-        }
-
-        fseek(file, 0, SEEK_END);
-        int size = ftell(file);
-        fseek(file, 0, SEEK_SET);
-        checksum = 0;
-
-        if (size != SAM_BA_BOOTLOADER_SIZE)
-        {
-            bootloader_perror(p, "Invalid bootloader file\n");
-            serialPortClose(p->port);
-            return 0;
-        }
-
-        if (p->statusText)
-            p->statusText(p->obj, "Writing bootloader...");
-
-        uint32_t offset = 0;
-        while (fread(buf, 1, SAM_BA_FLASH_PAGE_SIZE, file) == SAM_BA_FLASH_PAGE_SIZE)
-        {
-            if (!samBaFlashEraseWritePage(p->port, offset, buf, isUSB))
-            {
-                if (!isUSB)
-                {
-                    offset = 0;
-                    break; // try USB mode
-                }
-                bootloader_perror(p, "Failed to upload page at offset %d\n", (int)offset);
-                serialPortClose(p->port);
-                return 0;
-            }
-            for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
-            {
-                checksum ^= *ptr;
-            }
-            offset += SAM_BA_FLASH_PAGE_SIZE;
-            if (p->uploadProgress != 0)
-            {
-                p->uploadProgress(p->obj, (float)offset / (float)SAM_BA_BOOTLOADER_SIZE);
-            }
-        }
-        fclose(file);
-        if (offset != 0)
-        {
-            break; // success!
-        }
-    }
-
-    if (p->verifyProgress != 0)
-    {
-        if (p->statusText)
-            p->statusText(p->obj, "Verifying bootloader...");
-
-        switch (samBaVerify(p->port, checksum, p->obj, p->verifyProgress))
-        {
-        case -1: bootloader_perror(p, "Flash read error\n"); return 0;
-        case -2: bootloader_perror(p, "Flash checksum error\n"); return 0;
-        }
-    }
-
-    if (!samBaSetBootFromFlash(p->port))
-    {
-        bootloader_perror(p, "Failed to set boot from flash GPNVM bit\n");
-        serialPortClose(p->port);
-        return 0;
-    }
-
-    if (!samBaSoftReset(p->port))
-    {
-        bootloader_perror(p, "Failed to reset device\n");
-        serialPortClose(p->port);
-        return 0;
-    }
-
-    serialPortClose(p->port);
-    return 1;
 }
 
 int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLength, const char* bootloadEnableCmd)

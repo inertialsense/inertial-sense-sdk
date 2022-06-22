@@ -118,7 +118,7 @@ typedef int(*pfnBootloadProgress)(void* obj, float percent);
 /** Bootloader information string function prototype. */
 typedef void(*pfnBootloadStatus)(void* obj, const char* infoString);
 /** Callback to update the bootloader using the built-in ROM bootloader */
-typedef void(*pfnBootloaderUpdate)(void* obj);
+typedef is_operation_result(*pfnBootloaderUpdate)(void* obj);
 
 typedef enum {
     IS_HANDLE_TYPE_LIBUSB,

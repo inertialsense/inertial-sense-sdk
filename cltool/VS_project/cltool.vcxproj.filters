@@ -140,7 +140,7 @@
     <ClCompile Include="..\..\src\ISLogStats.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ISBootloader.cpp">
+    <ClCompile Include="..\..\src\ISBootloaderThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ISBootloaderCommon.c">

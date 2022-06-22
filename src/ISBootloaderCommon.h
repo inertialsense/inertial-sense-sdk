@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderTypes.h"
 #include "ISBootloaderDfu.h"
+#include "ISBootloaderSamba.h"
 #include "inertialSenseBootLoader.h"
 
 #ifdef __cplusplus

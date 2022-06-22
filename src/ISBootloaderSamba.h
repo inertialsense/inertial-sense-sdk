@@ -35,6 +35,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+/**
+ * @brief Flash the bootloader to the device via SAM-BA
+ * 
+ * @param ctx a fully populated device context
+ * @return is_operation_result 
+ */
+is_operation_result is_samba_flash(is_device_context* ctx);
 
 #ifdef __cplusplus
 }
