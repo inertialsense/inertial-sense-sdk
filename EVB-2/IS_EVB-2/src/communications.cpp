@@ -361,7 +361,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		if(dataHdr.size+dataHdr.offset > sizeof(preintegrated_imu_t)){ /* Invalid */ return; }
 		g_uins.pImu = d.pImu;
 		dual_imu_ok_t dimu;
-		preintegratedImuToIMU(&(dimu.imu), &(g_uins.pImu));
+		preintegratedImuToDualIMU(&(dimu.imu), &(g_uins.pImu));
 		dimu.imu1ok = dimu.imu2ok = 1;
 		dualToSingleImu(&g_imu, &dimu);
 		sub_Vec3_Vec3(g_imu.I.pqr, g_imu.I.pqr, g_uins.inl2States.biasPqr);	// Subtract EKF bias estimates
@@ -602,7 +602,8 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     
 	// Enable flash write
 	g_nvr_manage_config.flash_write_needed = true;
-	g_nvr_manage_config.flash_write_enable = true;
+	g_nvr_manage_config.flash_write_enable_timeMs = time_msec();
+	g_status.evbStatus |= EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
 }
 
 

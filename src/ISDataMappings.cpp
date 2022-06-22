@@ -340,8 +340,8 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "reserved3", reserved3, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
@@ -662,10 +662,10 @@ static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t did)
 {
 	typedef preintegrated_imu_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU];
+	map_name_to_info_t& m = mappings[did];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "theta1[0]", theta1[0], 0, DataTypeFloat, float&, 0);
@@ -825,6 +825,7 @@ static void PopulateReferenceIMUMappings(map_name_to_info_t mappings[DID_COUNT])
 	map_name_to_info_t& m = mappings[DID_REFERENCE_IMU];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "pqr[0]", I.pqr[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr[1]", I.pqr[1], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "pqr[2]", I.pqr[2], 0, DataTypeFloat, float&, 0);
@@ -912,7 +913,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gps1AntOffset[1]", gps1AntOffset[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "gps1AntOffset[2]", gps1AntOffset[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "insDynModel", insDynModel, 0, DataTypeUInt8, uint8_t, 0);
-	ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t, 0);
+	ADD_MAP(m, totalSize, "debug", debug, 0, DataTypeUInt8, uint8_t, 0);
 	ADD_MAP(m, totalSize, "gnssSatSigConst", gnssSatSigConst, 0, DataTypeUInt16, uint16_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "sysCfgBits", sysCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "refLla[0]", refLla[0], 0, DataTypeDouble, double&, 0);
@@ -2240,7 +2241,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
 	"DID_GPS_RTK_OPT",                  // 61
-	"DID_NVR_USERPAGE_INTERNAL",        // 62
+	"DID_REFERENCE_PIMU",               // 62
 	"DID_MANUFACTURING_INFO",           // 63
 	"DID_BIT",                          // 64
 	"DID_INS_3",                        // 65
@@ -2334,7 +2335,7 @@ cISDataMappings::cISDataMappings()
 	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
 	PopulateMagnetometerMappings(m_lookupInfo, DID_REFERENCE_MAGNETOMETER);
     PopulateBarometerMappings(m_lookupInfo);
-    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
+    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PREINTEGRATED_IMU);
     PopulateWheelEncoderMappings(m_lookupInfo);
     PopulateGroundVehicleMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
@@ -2346,6 +2347,7 @@ cISDataMappings::cISDataMappings()
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
 	PopulateIOMappings(m_lookupInfo);
 	PopulateReferenceIMUMappings(m_lookupInfo);
+	PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_REFERENCE_PIMU);
 	PopulateInfieldCalMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)

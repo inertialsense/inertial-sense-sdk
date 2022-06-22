@@ -247,9 +247,9 @@ void sqrt_Vec4( ixVector4 result, const ixVector4 v );
 /* Absolute Value
  * result(n) = .abs(v(n))
  */
-void abs_Vec2(ixVector2 result, const ixVector2 v );
+void abs_Vec2(ixVector2 result, const ixVector2 v);
 void abs_Vec3(ixVector3 result, const ixVector3 v);
-void abs_Vec4(ixVector4 result, const ixVector4 v );
+void abs_Vec4(ixVector4 result, const ixVector4 v);
 
 void abs_Vec2d(ixVector2d result, const ixVector2d v);
 void abs_Vec3d(ixVector3d result, const ixVector3d v);
@@ -353,7 +353,7 @@ void mean_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d 
 
 
 /* Min of vector elements
- * = min( v[0], v[1], v[2] }
+ * = min( v[0], v[1], v[2] )
  */
 static __inline f_t min_Vec3_X(const ixVector3 v )
 {
@@ -369,7 +369,7 @@ static __inline f_t min_Vec3_X(const ixVector3 v )
 }
 
 /* Max of vector elements
- * = max( v[0], v[1], v[2] }
+ * = max( v[0], v[1], v[2] )
  */
 static __inline f_t max_Vec3_X(const ixVector3 v )
 {
@@ -379,6 +379,22 @@ static __inline f_t max_Vec3_X(const ixVector3 v )
 		val = v[1];
 
     if( val < v[2] )
+		val = v[2];
+		
+	return val;
+}
+
+/* Max of vector elements
+ * = max( fabsf(v[0]), fabsf(v[1]), fabsf(v[2]) )
+ */
+static __inline f_t abs_Vec3_X(const ixVector3 v )
+{
+	f_t val = fabsf(v[0]);
+	
+    if( val < fabsf(v[1]) )
+		val = v[1];
+
+    if( val < fabsf(v[2]) )
 		val = v[2];
 		
 	return val;

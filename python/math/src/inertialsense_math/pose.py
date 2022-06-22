@@ -1252,7 +1252,7 @@ def meanOfQuat(q):
         iter += 1
         prev_mu = mu
         mu = qboxplus(mu, np.sum(qboxminus(q, mu), axis=0)[None, :]/n)
-    assert np.abs(1.0 - norm(mu)) <= 1e3
+    assert np.abs(1.0 - norm(mu)) <= 1e-3
     return mu
 
 
