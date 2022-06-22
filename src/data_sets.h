@@ -1111,6 +1111,7 @@ typedef struct PACKED
 
 	/** Reserved */
 	float					reserved2;
+	/** Reserved */
 	float					reserved3;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
