@@ -232,7 +232,7 @@ enum eInsStatusFlags
     INS_STATUS_RTK_COMPASSING_BASELINE_BAD      = (int)0x00200000,
     INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
     
-	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. */
+	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
 	INS_STATUS_MAG_RECALIBRATING				= (int)0x00400000,
 	/** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
 	INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL		= (int)0x00800000,
@@ -317,11 +317,11 @@ enum eHdwStatusFlags
 
 	/** System Reset is Required for proper function */
 	HDW_STATUS_SYSTEM_RESET_REQUIRED			= (int)0x00001000,
-
 	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
 	HDW_STATUS_FLASH_WRITE_IN_PROGRESS          = (int)0x00002000,
+	/** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
+	HDW_STATUS_MAG_RECAL_COMPLETE	            = (int)0x00004000,
 
-	HDW_STATUS_UNUSED_4				            = (int)0x00004000,
 	HDW_STATUS_UNUSED_5				            = (int)0x00008000,
 
 	/** Communications Tx buffer limited */
@@ -1460,19 +1460,31 @@ typedef struct PACKED
 	uint32_t				gpioStatus;
 } io_t;
 
-enum eMagRecalMode
+enum eMagCalState
 {
-	MAG_RECAL_CMD_DO_NOTHING		= (int)0, 
-	MAG_RECAL_CMD_MULTI_AXIS		= (int)1,		// Recalibrate magnetometers using multiple axis
-	MAG_RECAL_CMD_SINGLE_AXIS		= (int)2,		// Recalibrate magnetometers using only one axis
-	MAG_RECAL_CMD_ABORT				= (int)101,		// Stop mag recalibration
+	MAG_CAL_STATE_DO_NOTHING		= (int)0, 
+
+	/** COMMAND: Recalibrate magnetometers using multiple axis */
+	MAG_CAL_STATE_MULTI_AXIS		= (int)1,
+
+	/** COMMAND: Recalibrate magnetometers using only one axis */
+	MAG_CAL_STATE_SINGLE_AXIS		= (int)2,
+
+	/** COMMAND: Stop mag recalibration and do not save results */
+	MAG_CAL_STATE_ABORT				= (int)101,
+
+	/** STATUS: Mag recalibration is in progress */
+	MAG_CAL_STATE_RECAL_RUNNING	= (int)200,
+
+	/** STATUS: Mag recalibration has completed */
+	MAG_CAL_STATE_RECAL_COMPLETE	= (int)201,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
 typedef struct PACKED
 {
-	/** Set mode and start recalibration. 1 = multi-axis, 2 = single-axis, 101 = abort. (see eMagRecalMode) */
-	uint32_t                recalCmd;
+	/** Mag recalibration state.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState) */
+	uint32_t                state;
 	
 	/** Mag recalibration progress indicator: 0-100 % */
 	float					progress;
@@ -1769,7 +1781,7 @@ enum eSysConfigBits
 	/*! Disable LEDs */
 	SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
 
-	/** Magnetometer recalibration.  (see eMagRecalMode) 1 = multi-axis, 2 = single-axis */
+	/** Magnetometer recalibration.  (see eMagCalState) 1 = multi-axis, 2 = single-axis */
 	SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
 	SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
