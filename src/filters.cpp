@@ -195,7 +195,7 @@ void dualToSingleImu(imu_t *result, const dual_imu_ok_t *di)
 }
 
 
-int preintegratedImuToIMU(dual_imu_t *imu, const preintegrated_imu_t *pImu)
+int preintegratedImuToDualIMU(dual_imu_t *imu, const preintegrated_imu_t *pImu)
 {
     if (pImu->dt == 0.0f)
     {
@@ -208,6 +208,22 @@ int preintegratedImuToIMU(dual_imu_t *imu, const preintegrated_imu_t *pImu)
 	mul_Vec3_X(imu->I[1].pqr, pImu->theta2, divDt);
 	mul_Vec3_X(imu->I[0].acc, pImu->vel1, divDt);
 	mul_Vec3_X(imu->I[1].acc, pImu->vel2, divDt);
+    return 1;
+}
+
+
+int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *pImu)
+{
+    if (pImu->dt == 0.0f)
+    {
+        return 0;
+    }
+
+	imu->time = pImu->time;
+	imu->status = pImu->status;
+    float divDt = 1.0f / pImu->dt;
+	mul_Vec3_X(imu->I.pqr, pImu->theta1, divDt);
+	mul_Vec3_X(imu->I.acc, pImu->vel1, divDt);
     return 1;
 }
 

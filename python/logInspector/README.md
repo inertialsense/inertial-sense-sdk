@@ -4,7 +4,7 @@ logInspector is an open source python utility for viewing and scrubbing Inertial
 
 ## Building
 
-**Note** - logInspector requrires Python 3.
+**Note** - logInspector requires Python 3.
 
 ### Navigate to SDK directory
 
@@ -22,7 +22,7 @@ python3 logInspector.py
 ```
 
 ### Windows build run batch file:
-A Windows batch file is provided as a conenience to build and run the LogInspector in one command.  
+A Windows batch file is provided as a convenience to build and run the LogInspector in one command.  
 ``` bash
 SDK\python\logInspector\_build_run_log_inspector.bat
 ```

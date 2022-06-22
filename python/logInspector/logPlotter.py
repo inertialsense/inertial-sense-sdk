@@ -1,5 +1,9 @@
+from ctypes import sizeof
 import math
 from typing import List, Any, Union
+
+# If allantools are not installed, run "pip install allantools" first
+import allantools
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,6 +24,7 @@ RESET = r"\u001b[0m"
 
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
+RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -208,9 +213,9 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3,1, sharex=True)
-        self.configureSubplot(ax[0], 'North', 'm/s')
-        self.configureSubplot(ax[1], 'East', 'm/s')
-        self.configureSubplot(ax[2], 'Down', 'm/s')
+        self.configureSubplot(ax[0], 'Vel North', 'm/s')
+        self.configureSubplot(ax[1], 'Vel East', 'm/s')
+        self.configureSubplot(ax[2], 'Vel Down', 'm/s')
         fig.suptitle('NED Vel - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
@@ -240,9 +245,9 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3,1, sharex=True)
-        self.configureSubplot(ax[0], 'Vel-X', 'm/s')
-        self.configureSubplot(ax[1], 'Vel-Y', 'm/s')
-        self.configureSubplot(ax[2], 'Vel-Z', 'm/s')
+        self.configureSubplot(ax[0], 'Vel U', 'm/s')
+        self.configureSubplot(ax[1], 'Vel V', 'm/s')
+        self.configureSubplot(ax[2], 'Vel W', 'm/s')
         fig.suptitle('INS uvw - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
@@ -445,6 +450,11 @@ class logPlot:
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Saturation Baro')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00002000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'EKF using ref. IMU')
                 cnt += 1
                 cnt += 1
 
@@ -808,6 +818,86 @@ class logPlot:
             for j in range(2):
                 ax[i,j].grid(True)
         self.saveFig(fig, 'accIMU')
+
+    def allanVariancePQR(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+        ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
+        fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+
+            for i in range(3):
+                axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
+                for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                    if pqr != [] and n<pqrCount:
+                        if pqr.any(None):
+                            # Averaging window tau values from dt to Nsamples/10
+                            t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(pqr[:,i])), 200)
+                            # Compute the overlapping ADEV
+                            (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                            # Compute random walk and bias instability
+                            t_bi_max = 1000
+                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                            bi = np.amin(ad[0:idx_max])
+                            rw_idx = (np.abs(t2 - 0.4)).argmin()
+                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                            alable = 'Gyro'
+                            if pqrCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/\sqrt{hr}$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
+                            ax[i, n].loglog(t2, ad * RAD2DEG*3600, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600))
+
+        for i in range(pqrCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
+        self.saveFig(fig, 'pqrIMU')
+
+    def allanVarianceAcc(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+        ax = fig.subplots(3, accCount, sharex=True, squeeze=False)
+        fig.suptitle('Allan Variance: Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+
+            for i in range(3):
+                axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
+                for n, acc in enumerate([ acc0, acc1, acc2 ]):
+                    if acc != [] and n<accCount:
+                        if acc.any(None):
+                            # Averaging window tau values from dt to Nsamples/10
+                            t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(acc[:,i])), 200)
+                            # Compute the overlapping ADEV
+                            (t2, ad, ade, adn) = allantools.oadev(acc[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                            # Compute random walk and bias instability
+                            t_bi_max = 1000
+                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                            bi = np.amin(ad[0:idx_max])
+                            rw_idx = (np.abs(t2 - 0.4)).argmin()
+                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                            alable = 'Accel'
+                            if accCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.4g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (rw * 3600/RTHR2RTS, bi), 'sec')
+                            ax[i, n].loglog(t2, ad, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * 3600/RTHR2RTS, bi))
+
+        for i in range(accCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
+        self.saveFig(fig, 'accIMU')        
 
     def accelPSD(self, fig=None):
         if fig is None:
@@ -1634,8 +1724,10 @@ class logPlot:
 
                 if name=='pqr':
                     scalar = RAD2DEG
-                else:
+                    yspan = 2.5 # deg/s
+                else:   # 'acc'
                     scalar = 1.0
+                    yspan = 0.5 # m/s^2 
 
                 if useTime:
                     temp = time
