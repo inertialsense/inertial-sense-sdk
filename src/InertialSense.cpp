@@ -106,7 +106,10 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	m_clientBufferBytesToSend = 0;
 	m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;
-	memset(m_comManagerState.binaryCallback, 0, sizeof(m_comManagerState.binaryCallback));
+	for(int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
+	{
+		m_comManagerState.binaryCallback[i] = {};
+	}
 	m_comManagerState.binaryCallbackGlobal = callback;
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
 	m_comManagerState.inertialSenseInterface = this;

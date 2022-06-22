@@ -7,30 +7,30 @@
 \date    2007-11-29
 \since   2005-07-30
 
-\b REFERENCES \n
+\b REFERENCES
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
-- http://aa.usno.navy.mil/data/docs/JulianDate.html - Julian Date Converter \n
-- http://aa.usno.navy.mil/faq/docs/UT.html \n
-- http://wwwmacho.mcmaster.ca/JAVA/JD.html \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42
+- http://aa.usno.navy.mil/data/docs/JulianDate.html - Julian Date Converter
+- http://aa.usno.navy.mil/faq/docs/UT.html
+- http://wwwmacho.mcmaster.ca/JAVA/JD.html
 - Raquet, J. F. (2002), GPS Receiver Design Lecture Notes. Geomatics Engineering, 
-  University of Calgary Graduate Course. \n
+  University of Calgary Graduate Course.
 
-\b "LICENSE INFORMATION" \n
-Copyright (c) 2007, refer to 'author' doxygen tags \n
-All rights reserved. \n
+\b "LICENSE INFORMATION"
+Copyright (c) 2007, refer to 'author' doxygen tags
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided the following conditions are met: \n
+modification, are permitted provided the following conditions are met:
 
 - Redistributions of source code must retain te above copyright
-  notice, this list of conditions and the following disclaimer. \n
+  notice, this list of conditions and the following disclaimer.
 - Redistributions in binary form must reproduce the above copyright
   notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution. \n
+  documentation and/or other materials provided with the distribution.
 - The name(s) of the contributor(s) may not be used to endorse or promote 
   products derived from this software without specific prior written 
-  permission. \n
+  permission.
 
 THIS SOFTWARE IS PROVIDED BY THE CONTRIBUTORS ``AS IS'' AND ANY EXPRESS 
 OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
@@ -46,6 +46,9 @@ SUCH DAMAGE.
 */
 
 #include <sys/timeb.h>
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
 #include <time.h>
 #include <math.h> // for fmod()
 #include "time_conversion.h"
@@ -139,26 +142,24 @@ int TIMECONV_GetSystemTime(
   )
 {
   int result;
-
-#ifdef WIN32
-  struct _timeb timebuffer; // found in <sys/timeb.h>   
-#else
-  struct timeb timebuffer;
-#endif
   double timebuffer_time_in_days;
   double timebuffer_time_in_seconds;
   //char *timeline; // for debugging
 
-#ifdef WIN32
+#ifdef _WIN32
+
+  struct _timeb timebuffer; // found in <sys/timeb.h>   
   _ftime( &timebuffer );
+  timebuffer_time_in_seconds = timebuffer.time + timebuffer.millitm * 1.0e-3; // [s] with ms resolution
+
 #else
-  ftime( &timebuffer );
+
+  struct timeval current_time;
+  gettimeofday(&current_time, NULL);
+  timebuffer_time_in_seconds = current_time.tv_sec + current_time.tv_usec * 1.0e-6; // [s] with us resolution
+
 #endif 
 
-  //timeline = ctime( & ( timebuffer.time ) ); // for debugging
-  //printf( "%s\n", timeline ); // for debugging
-
-  timebuffer_time_in_seconds = timebuffer.time + timebuffer.millitm / 1000.0; // [s] with ms resolution
 
   // timebuffer_time_in_seconds is the time in seconds since midnight (00:00:00), January 1, 1970, 
   // coordinated universal time (UTC). Julian date for (00:00:00), January 1, 1970 is: 2440587.5 [days]
@@ -205,7 +206,7 @@ int TIMECONV_GetSystemTime(
 }
 
 
-#ifdef WIN32
+#ifdef _WIN32
 int TIMECONV_SetSystemTime(
   const unsigned short  utc_year,     //!< Universal Time Coordinated    [year]
   const unsigned char   utc_month,    //!< Universal Time Coordinated    [1-12 months] 

@@ -529,10 +529,12 @@ class LogInspectorWindow(QMainWindow):
         selected_directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
         menu = QMenu(self)
         copyAction = menu.addAction("Copy path")
-        nppActionHot = menu.addAction("Run NPP - Start Hot")
-        nppActionCold = menu.addAction("Run NPP - Start Cold")
-        nppActionFactory = menu.addAction("Run NPP - Start Factory")
-        setDataInfoDirAction = menu.addAction("Set as dataInfo.json directory")
+        nppActionHot        = menu.addAction("Run NPP, HOT start")
+        nppActionCold       = menu.addAction("Run NPP, COLD start")
+        nppActionFactory    = menu.addAction("Run NPP, FACTORY start")
+        setDataInfoDirHotAction     = menu.addAction("Set dataInfo.json directory, HOT start")
+        setDataInfoDirColdAction    = menu.addAction("Set dataInfo.json directory, COLD start")
+        setDataInfoDirFactoryAction = menu.addAction("Set dataInfo.json directory, FACTORY start")
         exploreAction = menu.addAction("Explore folder")
         cleanFolderAction = menu.addAction("Clean folder")
         deleteFolderAction = menu.addAction("Delete folder")
@@ -562,8 +564,12 @@ class LogInspectorWindow(QMainWindow):
             from supernpp.supernpp import SuperNPP
             spp = SuperNPP(selected_directory, self.config['serials'], startMode=START_MODE_FACTORY)
             spp.run()
-        if action == setDataInfoDirAction:
-            setDataInformationDirectory(selected_directory)
+        if action == setDataInfoDirHotAction:
+            setDataInformationDirectory(selected_directory, startMode=START_MODE_HOT)
+        if action == setDataInfoDirColdAction:
+            setDataInformationDirectory(selected_directory, startMode=START_MODE_COLD)
+        if action == setDataInfoDirFactoryAction:
+            setDataInformationDirectory(selected_directory, startMode=START_MODE_FACTORY)
         if action == exploreAction:
             openFolderWithFileBrowser(selected_directory)
         if action == cleanFolderAction:

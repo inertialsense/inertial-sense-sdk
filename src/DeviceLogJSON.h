@@ -35,7 +35,7 @@ private:
 	bool GetNextItemForFile();
 
 	p_data_t* ReadDataFromFile();
-	string m_jsonString;
+	std::string m_jsonString;
 	cDataJSON m_json;
 	p_data_t m_dataBuffer;
 };

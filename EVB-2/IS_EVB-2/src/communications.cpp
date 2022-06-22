@@ -599,7 +599,8 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     
 	// Enable flash write
 	g_nvr_manage_config.flash_write_needed = true;
-	g_nvr_manage_config.flash_write_enable = true;
+	g_nvr_manage_config.flash_write_enable_timeMs = time_msec();
+	g_status.evbStatus |= EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
 }
 
 

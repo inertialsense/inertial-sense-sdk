@@ -33,8 +33,8 @@ public:
 	uint32_t dataId;
 	uint32_t dataSize;
 	uint64_t orderId;
-	string nextLine;
-	vector<data_info_t> columnHeaders;
+	std::string nextLine;
+	std::vector<data_info_t> columnHeaders;
 };
 
 
@@ -54,10 +54,10 @@ private:
 	bool GetNextLineForFile(cCsvLog& log);
 
 	p_data_t* ReadDataFromFile(cCsvLog& log);
-	map<uint32_t, cCsvLog> m_logs;
+	std::map<uint32_t, cCsvLog> m_logs;
 	cDataCSV m_csv;
-	map<uint32_t, vector<string> > m_currentFiles; // all files for each data set
-	map<uint32_t, uint32_t> m_currentFileIndex; // contains the current csv file index for each data set
+	std::map<uint32_t, std::vector<std::string> > m_currentFiles; // all files for each data set
+	std::map<uint32_t, uint32_t> m_currentFileIndex; // contains the current csv file index for each data set
 	p_data_t m_dataBuffer;
 	uint64_t m_nextId; // for writing the log, column 0 of csv is an incrementing id. This lets us read the log back in order.
 };

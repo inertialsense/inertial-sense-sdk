@@ -63,9 +63,9 @@ typedef struct
 
 typedef struct PACKED      // Non-volatile memory state
 {
-    uint32_t                flash_write_needed;					// 0=No write; 1=config write needed; 2=config write needed without backup 0xFFFFFFFF=reset defaults
+    uint32_t                flash_write_needed;                 // 0=No write; 1=config write needed; 2=config write needed without backup 0xFFFFFFFF=reset defaults
     uint32_t                flash_write_count;                  // Number of times flash is written to since reset
-    uint32_t                flash_write_enable;				    // 1 = enables flash writes.  This is used to prevent stutters in RTOS caused by flash writes until controlled times.
+    uint32_t                flash_write_enable_timeMs;          // Local time when enabled.  Flash will happen 1-2 seconds after this enable time.  Reset to zero following flash write.
 } nvr_manage_t;
 
 typedef struct PACKED      // 
@@ -139,7 +139,7 @@ void concatStringWithSpace(char* buf, size_t bufLen, const char* concat);
 
 bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
 void nvr_init(void);
-void nvr_slow_maintenance(void);
+bool nvr_slow_maintenance(void);
 
 int error_check_config(evb_flash_cfg_t *cfg);
 

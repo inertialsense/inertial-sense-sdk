@@ -20,8 +20,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "ISLogFileBase.h"
 
-using namespace std;
-
 static inline bool IS_JSON_ESCAPE_CHAR(char c)
 {
 	switch (c)
@@ -59,7 +57,7 @@ public:
 	* order id contains the value for ordering data
 	* returns true if success, false if no map found
 	*/
-    bool StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize);
+    bool StringJSONToData(std::string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize);
 
 	/**
     * Convert data to a json string
@@ -67,7 +65,7 @@ public:
     * json filled with json data
 	* return true if success, false if no map found
 	*/
-    bool DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, string& json);
+    bool DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, std::string& json);
 };
 
 #endif // DATA_JSON_H

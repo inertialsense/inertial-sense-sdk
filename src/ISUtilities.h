@@ -24,7 +24,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <vector>
 
-using namespace std;
 
 /**
 * Encode data as base64
@@ -32,14 +31,14 @@ using namespace std;
 * @param in_len the number of bytes to encode
 * @param return the base64 encoded data
 */
-string base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len);
+std::string base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len);
 
 /**
 * Decode base64 data
 * @param encoded_string the base64 encoded data
 * @return the base64 decoded data - if error, this may be an incomplete set of data
 */
-string base64Decode(const string& encoded_string);
+std::string base64Decode(const std::string& encoded_string);
 
 /**
 * Split string by delimiter
@@ -48,7 +47,7 @@ string base64Decode(const string& encoded_string);
 * @param result cleared and then filled with split strings
 * @return the number of items in result
 */
-size_t splitString(const string& str, const char delimiter, vector<string>& result);
+size_t splitString(const std::string& str, const char delimiter, std::vector<std::string>& result);
 
 /**
 * Join vector of strings with character
@@ -57,7 +56,7 @@ size_t splitString(const string& str, const char delimiter, vector<string>& resu
 * @param result cleared and then filled with split strings
 * @return the number of items in result
 */
-void joinStrings(const vector<string>& v, const char c, string& result);
+void joinStrings(const std::vector<std::string>& v, const char c, std::string& result);
 
 /**
 * Wraps the mutex functions below
