@@ -1030,11 +1030,12 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        ax = fig.subplots(3, 1, sharex=True)
+        ax = fig.subplots(4, 1, sharex=True)
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS dt', 's')
-        self.configureSubplot(ax[2], 'IMU dt', 's')
+        self.configureSubplot(ax[2], 'IMU Integration Period', 's')
+        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's')
 
         for d in self.active_devs:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
@@ -1044,6 +1045,9 @@ class logPlot:
             dtGps = 0.001*(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:] - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
             dtGps = dtGps / self.d
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:])
+
+            dtPImu = self.getData(d, DID_PREINTEGRATED_IMU, 'dt')[1:]
+            dtPImu = dtPImu / self.d
 
             dtImu = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
             dtImu = dtImu / self.d
@@ -1057,7 +1061,8 @@ class logPlot:
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
-            ax[2].plot(timeImu, dtImu)
+            ax[2].plot(timeImu, dtPImu)
+            ax[3].plot(timeImu, dtImu)
 
         self.setPlotYSpanMin(ax[0], 0.01)
         self.setPlotYSpanMin(ax[1], 0.01)

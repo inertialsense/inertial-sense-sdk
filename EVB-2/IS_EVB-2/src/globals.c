@@ -342,7 +342,8 @@ bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
     {   // Reset to defaults
         *cfg = defaults;
         g_nvr_manage_config.flash_write_needed = true;
-		g_nvr_manage_config.flash_write_enable = true;
+		g_nvr_manage_config.flash_write_enable_timeMs = time_msec();
+        g_status.evbStatus |= EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
     }   
     
     // Disable cbPresets is necessary
@@ -369,7 +370,8 @@ void nvr_init(void)
     memcpy(&g_userPage, (void*)BOOTLOADER_FLASH_CONFIG_BASE_ADDRESS, sizeof(g_userPage));
 
     // Disable flash writes.  We require the user to initiate each write with this option.
-    g_nvr_manage_config.flash_write_enable = 0;
+    g_nvr_manage_config.flash_write_enable_timeMs = 0;
+    g_status.evbStatus &= ~EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
 
     // Reset to defaults if checksum or keys don't match
     nvr_validate_config_integrity(g_flashCfg);    
@@ -378,10 +380,16 @@ void nvr_init(void)
 
 void nvr_slow_maintenance(void)
 {
-    if(g_nvr_manage_config.flash_write_enable==0)
+    if (g_nvr_manage_config.flash_write_enable_timeMs==0)
     {
         return;
     }
+
+	uint32_t dtMs = time_msec() - g_nvr_manage_config.flash_write_enable_timeMs;
+	if (dtMs < 1000)
+	{	// Wait 1 second following flash_write_enable_timeMs
+		return;
+	}
     
     if (g_nvr_manage_config.flash_write_needed)
     {
@@ -455,7 +463,8 @@ void nvr_slow_maintenance(void)
 
         g_nvr_manage_config.flash_write_needed = 0;
         // Disable following each flash write.  We require users to re-enable for each write.
-        g_nvr_manage_config.flash_write_enable = 0;
+        g_nvr_manage_config.flash_write_enable_timeMs = 0;
+        g_status.evbStatus &= ~EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
     }    
 }
 
