@@ -754,8 +754,6 @@ class logPlot:
             fig = plt.figure()
 
         for d in self.active_devs:
-            (pqr0, pqr1, time, dt) = self.loadGyros(d)
-
             refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
             if len(refTime)!=0:
                 refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
@@ -765,6 +763,7 @@ class logPlot:
         ax = fig.subplots(3, 2, sharex=True)
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
+            (pqr0, pqr1, time, dt) = self.loadGyros(d)
             for i in range(3):
                 axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                 for n, pqr in enumerate([ pqr0, pqr1 ]):
