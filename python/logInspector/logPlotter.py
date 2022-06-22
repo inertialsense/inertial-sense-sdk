@@ -1035,7 +1035,7 @@ class logPlot:
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS dt', 's')
         self.configureSubplot(ax[2], 'IMU Integration Period', 's')
-        self.configureSubplot(ax[3], 'IMU Timestamp dt', 's')
+        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's')
 
         for d in self.active_devs:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
