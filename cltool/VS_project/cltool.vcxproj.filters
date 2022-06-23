@@ -300,7 +300,7 @@
     <ClInclude Include="..\..\src\ISLogStats.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ISBootloader.h">
+    <ClInclude Include="..\..\src\ISBootloaderThread.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ISBootloaderCommon.h">

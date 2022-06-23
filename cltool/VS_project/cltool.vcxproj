@@ -229,7 +229,7 @@
     <ClInclude Include="..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\src\DeviceLogSorted.h" />
     <ClInclude Include="..\..\src\ihex.h" />
-    <ClInclude Include="..\..\src\ISBootloader.h" />
+    <ClInclude Include="..\..\src\ISBootloaderThread.h" />
     <ClInclude Include="..\..\src\ISBootloaderCommon.h" />
     <ClInclude Include="..\..\src\ISBootloaderDfu.h" />
     <ClInclude Include="..\..\src\ISBootloaderSamba.h" />

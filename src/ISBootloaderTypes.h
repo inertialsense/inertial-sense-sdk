@@ -117,8 +117,6 @@ typedef enum {
 typedef int(*pfnBootloadProgress)(void* obj, float percent);
 /** Bootloader information string function prototype. */
 typedef void(*pfnBootloadStatus)(void* obj, const char* infoString);
-/** Callback to update the bootloader using the built-in ROM bootloader */
-typedef is_operation_result(*pfnBootloaderUpdate)(void* obj);
 
 typedef enum {
     IS_HANDLE_TYPE_LIBUSB,
@@ -185,6 +183,9 @@ typedef struct
     is_device_id id[IS_DEVICE_LIST_LEN];
     size_t present;
 } is_device_list;
+
+/** Callback to update the bootloader using the built-in ROM bootloader */
+typedef is_operation_result(*pfnBootloaderUpdate)(is_device_context* ctx);
 
 #ifdef __cplusplus
 }

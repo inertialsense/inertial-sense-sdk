@@ -113,11 +113,16 @@ static int bootloaderNegotiateVersion(bootloader_state_t* state)
         state->version = 1;
         state->firstPageSkipBytes = 8192;
     }
-    else if (v >= '2' && v <= '6')
+    else if (v >= '2' && v <= '5')
     {
         // version 2, 3 (which sent v2), 4, 5, 6
         state->version = v-'0';
         state->firstPageSkipBytes = 16384;  // v6 may be bigger, set after version info is read in
+    }
+    else if (v == '6')
+    {
+        state->version = v-'6';
+        state->firstPageSkipBytes = 24576;
     }
     else
     {
@@ -424,7 +429,7 @@ static int bootloaderDownloadData(serial_port_t* s, int startOffset, int endOffs
 static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* state)
 {
     int verifyChunkSize = state->verifyChunkSize;
-    int chunkSize = bootloader_min(FLASH_PAGE_SIZE, verifyChunkSize);
+    int chunkSize = _MIN(FLASH_PAGE_SIZE, verifyChunkSize);
     int realCheckSum = 5381;
     int totalCharCount = state->firstPageSkipBytes * 2;
     int grandTotalCharCount = (lastPage + 1) * FLASH_PAGE_SIZE * 2; // char count
@@ -460,7 +465,7 @@ static int bootloaderVerify(int lastPage, int checkSum, bootloader_state_t* stat
         pageOffset = (i == 0 ? state->firstPageSkipBytes : 0);
         while (pageOffset < FLASH_PAGE_SIZE)
         {
-            readCount = bootloader_min(chunkSize, FLASH_PAGE_SIZE - pageOffset);
+            readCount = _MIN(chunkSize, FLASH_PAGE_SIZE - pageOffset);
 
             // range is inclusive on the uINS, so subtract one
             if (bootloaderDownloadData(state->param->port, pageOffset, pageOffset + readCount - 1) == 0)
@@ -1037,7 +1042,7 @@ static int bootloaderHandshake(bootload_params_t* p)
     return 0;
 }
 
-static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* romAvaliable, int* skipBytes)
+static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* romAvailable)
 {
 	//purge buffer
 #define BUF_SIZE    100
@@ -1054,19 +1059,19 @@ static void bootloadGetVersion(serial_port_t* s, int* major, char* minor, int* r
     {
         *major = 0;
         *minor = 0;
-        *romAvaliable = 1;
-        *skipBytes = 16384;
+        *romAvailable = 1;
         return;
     }
 
     *major = buf[2];
     *minor = buf[3];
-    *romAvaliable = buf[4];
-    *skipBytes = buf[5] * 1024;
+    *romAvailable = buf[4];
 }
 
 static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 {
+    is_device_context* ctx = (is_device_context*)p->ctx;
+
     if (p->statusText)
         p->statusText(p->obj, "Starting bootloader...");
     if (enableBootloader(p->port, p->baudRate, p->error, BOOTLOADER_ERROR_LENGTH, p->bootloadEnableCmd))
@@ -1084,7 +1089,7 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                 p->statusText(p->obj, "Attempting to reload bootloader...");
 
             // Reload the bootloader
-            if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK;
+            if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK ? 1 : -1;
             else 
             {
                 bootloader_snprintf(p->error, BOOTLOADER_ERROR_LENGTH, "No callback registered for bootloader update!");
@@ -1097,6 +1102,13 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
         }
 
         return -1;
+    }
+    else if(ctx->scheme == IS_SCHEME_DFU)
+    {
+        // Load the bootloader with the DFU bootloader
+        if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK ? 1 : -1;
+
+        SLEEP_MS(1000);
     }
 
     // Sync with bootloader
@@ -1125,7 +1137,7 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 
         int blVerMajor, romSupport;
         char blVerMinor;
-        bootloadGetVersion(p->port, &blVerMajor, &blVerMinor, &romSupport, &state.firstPageSkipBytes);
+        bootloadGetVersion(p->port, &blVerMajor, &blVerMinor, &romSupport);
         if (blVerMajor > 0 && p->statusText)
         {
             char str[100];

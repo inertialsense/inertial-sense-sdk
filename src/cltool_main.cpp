@@ -410,12 +410,14 @@ static int inertialSenseMain()
             return -1;
         }
 
-		if (g_commandLineOptions.updateBootloaderFilename.length() != 0 &&
-			g_commandLineOptions.updateBootloaderFilename.substr(g_commandLineOptions.updateBootloaderFilename.length() - 4) != ".bin")
-		{
-			cout << "Incorrect bootloader file extension: " << g_commandLineOptions.updateBootloaderFilename << endl;
-			return -1;
-		}
+		// TODO: Fix file name extensions for firmware and bootloader.
+
+		// if (g_commandLineOptions.updateBootloaderFilename.length() != 0 &&
+		// 	g_commandLineOptions.updateBootloaderFilename.substr(g_commandLineOptions.updateBootloaderFilename.length() - 4) != ".bin")
+		// {
+		// 	cout << "Incorrect bootloader file extension: " << g_commandLineOptions.updateBootloaderFilename << endl;
+		// 	return -1;
+		// }
 
 		// [BOOTLOADER INSTRUCTION] 1.) Run bootloader
 		return cltool_updateFirmware();

@@ -50,6 +50,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         return IS_OP_ERROR; \
     }
 
+static is_operation_result is_samba_init(is_device_context* ctx);
 static is_operation_result is_samba_read_word(is_device_context* ctx, uint32_t address, uint32_t* word);
 static is_operation_result is_samba_write_word(is_device_context* ctx, uint32_t address, uint32_t word);
 static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool waitReady);
@@ -82,14 +83,8 @@ POP_PACK
 is_operation_result is_samba_flash(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
-    ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
-    size_t image_sections;
 
     SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to init SAM-BA device");
-
-    // Load the firmware image
-    image_sections = ihex_load_sections(ctx->firmware.bootloader_path, image, MAX_NUM_IHEX_SECTIONS);
-    if(image_sections <= 0) return IS_OP_ERROR;
 
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
@@ -109,9 +104,9 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 
         // flush
         serialPortWrite(port, (const uint8_t*)"#", 2);
-        int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
+        serialPortReadTimeout(port, buf, sizeof(buf), 100);
 
-       FILE* file;
+        FILE* file;
 
 #ifdef _MSC_VER
 
@@ -179,6 +174,8 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 
     serialPortClose(port);
 
+    SLEEP_MS(1000);
+
     return IS_OP_OK;
 }
 
@@ -192,7 +189,6 @@ static is_operation_result is_samba_init(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
     uint8_t buf[SAMBA_PAGE_SIZE];
-    uint32_t checksum = 0;
 
     serialPortSleep(port, 250);
     serialPortClose(port);
@@ -225,7 +221,7 @@ static is_operation_result is_samba_init(is_device_context* ctx)
     
     // Read out the unique identifier
     uint32_t uid[4];
-    for(int i = 0; i < 4; i++) SAMBA_ERROR_CHECK(is_samba_read_word(ctx, 0x00400000 + (i * 4), uid[i]), "Failed to read UID word");
+    for(int i = 0; i < 4; i++) SAMBA_ERROR_CHECK(is_samba_read_word(ctx, 0x00400000 + (i * 4), &uid[i]), "Failed to read UID word");
     
     // Set flash command to SPUI (stop read unique identifier)
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a00000f), "Failed to command stop UID readout");
@@ -257,7 +253,7 @@ static is_operation_result is_samba_init(is_device_context* ctx)
 static is_operation_result is_samba_read_word(is_device_context* ctx, uint32_t address, uint32_t* word)
 {
     uint8_t buf[16];
-    size_t count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
+    int count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
     if ((serialPortWrite(&ctx->handle.port, buf, count) == count) &&
         (serialPortReadTimeout(&ctx->handle.port, buf, sizeof(uint32_t), SAMBA_TIMEOUT_DEFAULT) == sizeof(uint32_t)))
     {
@@ -296,7 +292,7 @@ static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool
     for (int i = 0; i < 10; i++)
     {
         // EEFC.FSR.FRDY - Flash ready status
-        if(is_samba_read_word(&ctx->handle.port, 0x400e0c08, &status) == IS_OP_ERROR) continue; 
+        if(is_samba_read_word(ctx, 0x400e0c08, &status) == IS_OP_ERROR) continue; 
         if( waitReady &&  (status & 0x01)) return IS_OP_OK;   // status is ready and we are waiting for ready
         if(!waitReady && !(status & 0x01)) return IS_OP_OK;   // status is not ready and we are waiting for not ready
         serialPortSleep(&ctx->handle.port, 20);
@@ -433,7 +429,7 @@ static is_operation_result is_samba_flash_erase_write_page(is_device_context* ct
     count = SNPRINTF((char*)buf, sizeof(buf), "W%08x,5a%04x03#", 0x400e0c04, page);
     serialPortWrite(&ctx->handle.port, buf, count);
     
-    return is_samba_wait_eefc_ready(&ctx->handle.port, true);
+    return is_samba_wait_eefc_ready(ctx, true);
 }
 
 /**
@@ -488,13 +484,13 @@ static is_operation_result is_samba_reset(is_device_context* ctx)
 {
     // RSTC_CR, RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST
     uint32_t status;
-    if (!is_samba_write_word(ctx, 0x400e1800, 0xa5000001))
+    if (is_samba_write_word(ctx, 0x400e1800, 0xa5000001) != IS_OP_OK)
     {
         return IS_OP_ERROR;
     }
     for (int i = 0; i < 100; i++)
     {
-        is_samba_read_word(ctx, 0x400e1804, &status); // RSTC_SR
+        if(is_samba_read_word(ctx, 0x400e1804, &status) != IS_OP_OK) return IS_OP_ERROR; // RSTC_SR
         if (!(status & 0x00020000)) // RSTC_SR_SRCMP
         {
             return IS_OP_OK;
