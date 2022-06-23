@@ -386,7 +386,7 @@ static int bootloaderFillCurrentPage(serial_port_t* s, int* currentPage, int* cu
     if (*currentOffset < FLASH_PAGE_SIZE)
     {
         unsigned char hexData[256];
-        memset(hexData, 0xff, 256);
+        memset(hexData, 'F', 256);
 
         while (*currentOffset < FLASH_PAGE_SIZE)
         {
@@ -395,7 +395,7 @@ static int bootloaderFillCurrentPage(serial_port_t* s, int* currentPage, int* cu
             {
                 byteCount = 256;
             }
-            memset(hexData, 0xff, byteCount);
+            memset(hexData, 'F', byteCount);
 
             if (bootloaderUploadHexDataPage(s, hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) == 0)
             {
@@ -1078,8 +1078,8 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
     if (enableBootloader(p->port, p->baudRate, p->error, BOOTLOADER_ERROR_LENGTH, p->bootloadEnableCmd))
     {
         //If we have an error, exit
-        if (p->error[0] != 0)
-            return -1;
+        // if (p->error[0] != 0)
+            // return -1;
 
         if (p->statusText)
             p->statusText(p->obj, "Unable to find bootloader.");
@@ -1381,7 +1381,7 @@ int enableBootloader(serial_port_t* port, int baudRate, char* error, int errorLe
             if (serialPortOpenInternal(port, baudRates[i], error, errorLength) == 0)
             {
                 serialPortClose(port);
-                return 0;
+                return -1;
             }
             for (size_t loop = 0; loop < 10; loop++)
             {

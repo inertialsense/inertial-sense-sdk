@@ -276,7 +276,7 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     }
 
     libusb_free_device_list(device_list, 1);
-    if(!dev_found) { libusb_close(dev_handle); return IS_OP_ERROR; } 
+    if(!dev_found) { return IS_OP_ERROR; } 
 
     ret_libusb = libusb_claim_interface(ctx->handle.libusb, 0);
     if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(dev_handle); return IS_OP_ERROR; } 
