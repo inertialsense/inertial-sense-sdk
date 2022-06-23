@@ -220,7 +220,7 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     size_t image_sections;
     is_operation_result ret_is;
     libusb_device** device_list;
-    libusb_device_handle* dev_handle;
+    libusb_device_handle* dev_handle = NULL;
     struct libusb_device_descriptor desc;
     struct libusb_config_descriptor* cfg;
 
@@ -276,7 +276,7 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     }
 
     libusb_free_device_list(device_list, 1);
-    if(!dev_found) { return IS_OP_ERROR; } 
+    if(!dev_found || !dev_handle) { return IS_OP_ERROR; } 
 
     ret_libusb = libusb_claim_interface(ctx->handle.libusb, 0);
     if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(dev_handle); return IS_OP_ERROR; } 

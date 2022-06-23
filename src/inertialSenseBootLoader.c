@@ -1078,8 +1078,8 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
     if (enableBootloader(p->port, p->baudRate, p->error, BOOTLOADER_ERROR_LENGTH, p->bootloadEnableCmd))
     {
         //If we have an error, exit
-        // if (p->error[0] != 0)
-            // return -1;
+        /*if (p->error[0] != 0)
+            return -1;*/
 
         if (p->statusText)
             p->statusText(p->obj, "Unable to find bootloader.");
@@ -1171,13 +1171,17 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
 
                         //Start SAM-BA
                         bootloaderRestartAssist(p->port);
-
-                        if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK;
-                        else 
+                        
+                        // Reload the bootloader
+                        is_operation_result ret;
+                        if (p->bootloaderUpdateCb && p->ctx) ret = p->bootloaderUpdateCb(p->ctx);
+                        else
                         {
                             bootloader_snprintf(p->error, BOOTLOADER_ERROR_LENGTH, "No callback registered for bootloader update!");
                             return -1;
                         }
+
+                        if (ret != IS_OP_OK) return -1;
 
                         SLEEP_MS(1000);
                         //Bootloader updated successfully.  Return 1 to indicate firmware update is now needed.
