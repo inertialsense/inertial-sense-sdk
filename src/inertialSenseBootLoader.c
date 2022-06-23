@@ -386,7 +386,7 @@ static int bootloaderFillCurrentPage(serial_port_t* s, int* currentPage, int* cu
     if (*currentOffset < FLASH_PAGE_SIZE)
     {
         unsigned char hexData[256];
-        memset(hexData, 'F', 256);
+        memset(hexData, 0xff, 256);
 
         while (*currentOffset < FLASH_PAGE_SIZE)
         {
@@ -395,7 +395,7 @@ static int bootloaderFillCurrentPage(serial_port_t* s, int* currentPage, int* cu
             {
                 byteCount = 256;
             }
-            memset(hexData, 'F', byteCount);
+            memset(hexData, 0xff, byteCount);
 
             if (bootloaderUploadHexDataPage(s, hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) == 0)
             {
@@ -1015,6 +1015,7 @@ static int bootloaderHandshake(bootload_params_t* p)
 #endif // ENABLE_BOOTLOADER_BAUD_DETECTION
 
     {
+        serialPortClose(p->port);
         if (serialPortOpenInternal(p->port, p->baudRate, p->error, BOOTLOADER_ERROR_LENGTH) == 0)
         {
             // can't open the port, fail
@@ -1089,12 +1090,15 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
                 p->statusText(p->obj, "Attempting to reload bootloader...");
 
             // Reload the bootloader
-            if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK ? 1 : -1;
+            is_operation_result ret;
+            if(p->bootloaderUpdateCb && p->ctx) ret = p->bootloaderUpdateCb(p->ctx);
             else 
             {
                 bootloader_snprintf(p->error, BOOTLOADER_ERROR_LENGTH, "No callback registered for bootloader update!");
                 return -1;
             }
+
+            if(ret != IS_OP_OK) return -1;
 
             SLEEP_MS(1000);
             //Bootloader updated successfully.  Return 1 to indicate firmware update is now needed.
@@ -1102,13 +1106,6 @@ static int bootloadFileInternal(FILE* file, bootload_params_t* p)
         }
 
         return -1;
-    }
-    else if(ctx->scheme == IS_SCHEME_DFU)
-    {
-        // Load the bootloader with the DFU bootloader
-        if(p->bootloaderUpdateCb && p->ctx) return p->bootloaderUpdateCb(p->ctx) == IS_OP_OK ? 1 : -1;
-
-        SLEEP_MS(1000);
     }
 
     // Sync with bootloader
