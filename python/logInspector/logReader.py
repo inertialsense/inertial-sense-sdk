@@ -32,6 +32,11 @@ class Log:
         self.data = []
         self.serials = []
         self.passRMS = 0    # 1 = pass, -1 = fail, 0 = unknown
+        self.refSerials = []
+        self.refIdx = []
+        self.refData = []
+        self.truth = []
+        self.refINS = False
 
     def load(self, directory, serials=['ALL']):
         self.data = []
@@ -46,13 +51,14 @@ class Log:
             raise ValueError("No devices found in log")
         if len(self.data[0, DID_DEV_INFO]):
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
-        if 10101 in self.serials:
-            self.refINS = True
-            refIdx = self.serials.index(10101)
-            self.truth = self.data[refIdx].copy()
-        else:
-            self.refINS = False
-            self.refdata = []
+
+        for i in range(self.numDev):
+            if len(self.data[i, DID_REFERENCE_PIMU]) or len(self.data[i, DID_REFERENCE_IMU]):
+                self.refINS = True
+                self.refIdx.append(i)
+        if len(self.refIdx):
+            self.refData = self.data[self.refIdx].copy()
+
 
         self.compassing = None  
         self.rtk = None  
@@ -220,22 +226,20 @@ class Log:
             self.stateArray = data
 
     def getRMSTruth(self):
+        means = np.empty((len(self.stateArray[0]), 10))
         if not self.refINS:
-            # Find Mean Data
-            means = np.empty((len(self.stateArray[0]), 10))
-            means[:, :6] = np.mean(self.stateArray[:, :, 1:7], axis=0)  # calculate mean position and velocity across devices
-            means[:, 6:] = meanOfQuatArray(self.stateArray[:, :, 7:].transpose((1, 0, 2)))  # Calculate mean attitude of all devices at each timestep
-            self.truth = means
+            refData = self.stateArray
         else:
-            self.refIdx = self.serials.index(10101)
-            self.truth = self.stateArray[self.refIdx, :, 1:]
+            refData = self.stateArray[self.refIdx, :, :]
             self.stateArray = np.delete(self.stateArray, self.refIdx, 0)
-
+        # Find Mean Data
+        means[:, :6] = np.mean(refData[:, :, 1:7], axis=0)  # calculate mean position and velocity across devices
+        means[:, 6:] = meanOfQuatArray(refData[:, :, 7:].transpose((1, 0, 2)))  # Calculate mean attitude of all devices at each timestep
+        self.truth = means
 
     def calcAttitudeError(self):
         att_error = np.array([qboxminus(self.stateArray[dev, :, 7:], self.truth[:, 6:]) for dev in range(len(self.stateArray))])
         self.att_error = att_error
-
 
     def calculateRMS(self):
         self.data = np.array(self.data)
