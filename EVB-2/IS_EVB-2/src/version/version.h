@@ -3,7 +3,7 @@
 
 #include "repositoryInfo.h"
 #include "buildInfo.h"
-#include "user_board.h"
+#include "ISBoards.h"
 
 #define HARDWARE_VERSION_CHAR0  2
 #define HARDWARE_VERSION_CHAR1  0

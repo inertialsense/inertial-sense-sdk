@@ -14,8 +14,8 @@
  * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
  */
 
-#ifndef USER_BOARD_H
-#define USER_BOARD_H
+#ifndef __EVB_2_H
+#define __EVB_2_H
 
 #include <conf_board.h>
 #include "compiler.h"
@@ -23,6 +23,7 @@
 #include "board.h"
 //#include "conf_stdio.h" // enable/disabled printf
 
+#define USE_FREERTOS                    1
 
 /** Board oscillator settings */
 #define BOARD_FREQ_SLCK_XTAL            (32768U)
@@ -911,4 +912,4 @@ enum eEvbHdwDetectVersion
 // #define BOARD_AT30TSE_TWIHS       TWIHS0
 
 /*----------------------------------------------------------------------------*/
-#endif // USER_BOARD_H
+#endif // __EVB_2_H

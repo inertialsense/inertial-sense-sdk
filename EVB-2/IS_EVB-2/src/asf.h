@@ -95,7 +95,7 @@
 #include <gpio.h>
 
 // From module: Generic board support
-#include <board.h>
+#include <uINS.h>
 
 // From module: High Speed Multimedia Card Interface
 #include <hsmci.h>

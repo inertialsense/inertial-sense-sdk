@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "d_dma.h"
 #include "usart.h"
 #include "../../src/ISComm.h"
-#include "board_opt.h"
+#include "ISBoards.h"
 #include "globals.h"
 #include "FreeRTOSConfig.h"
 #include "FreeRTOS.h"
@@ -32,10 +32,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #ifdef TESTBED
 #define mbr_ta	mbr_da
-#endif
-
-#ifndef __INERTIAL_SENSE_EVB_2__
-#include "user_board.h"
 #endif
 
 //Structures for driver

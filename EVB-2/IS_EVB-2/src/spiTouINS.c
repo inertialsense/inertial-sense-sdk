@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <asf.h>
 #include "spiTouINS.h"
-#include "board_opt.h"
+#include "ISBoards.h"
 #include "drivers/d_dma.h"
 #include "../../../hw-libs/misc/rtos.h"
 

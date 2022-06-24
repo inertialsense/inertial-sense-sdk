@@ -13,11 +13,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include <stdlib.h>
 #include "globals.h"
-#include "../misc/bootloaderShared.h"
-#include "../misc/rtos.h"
-// #include "../misc/nvr.h"
+#include "bootloaderShared.h"
+#include "rtos.h"
 #include "d_flash.h"
-#include "user_board.h"
+#include "ISBoards.h"
 
 static int s_flashWriteInProgress;
 

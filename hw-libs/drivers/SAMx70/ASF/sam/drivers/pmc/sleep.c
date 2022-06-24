@@ -41,7 +41,7 @@
 #if (SAM3S || SAM3N || SAM3XA || SAM3U || SAM4S || SAM4E || SAM4N || SAM4C || \
 		SAM4CM || SAMG || SAM4CP || SAMV71 || SAMV70 || SAMS70 || SAME70)
 # include "pmc.h"
-# include "board.h"
+# include "ISBoards.h"
 
 /* Checking board configuration of main clock xtal statup time */
 #if !defined(BOARD_OSC_STARTUP_US)

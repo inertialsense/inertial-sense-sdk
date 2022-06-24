@@ -145,7 +145,6 @@ C_SRCS += \
 	$(ASF_DIR)/common/utils/interrupt/interrupt_sam_nvic.c                                         \
 	$(ASF_DIR)/common/utils/stdio/read.c                                                           \
 	$(ASF_DIR)/common/utils/stdio/write.c                                                          \
-	$(ASF_DIR)/sam/boards/user_board/init.c                                                        \
 	$(ASF_DIR)/sam/drivers/afec/afec.c                                                             \
 	$(ASF_DIR)/sam/drivers/efc/efc.c                                                               \
 	$(ASF_DIR)/sam/drivers/hsmci/hsmci.c                                                           \
@@ -228,7 +227,6 @@ INCLUDES += \
 
 INCLUDES += \
 	$(ASF_DIR)/common/boards                                                        \
-	$(ASF_DIR)/common/boards/user_board                                             \
 	$(ASF_DIR)/common/components/memory/sd_mmc                                      \
 	$(ASF_DIR)/common/components/wifi/winc3400/wifi_drv                             \
 	$(ASF_DIR)/common/services/clock                                                \
@@ -248,7 +246,6 @@ INCLUDES += \
 	$(ASF_DIR)/common/services/usb                                                  \
 	$(ASF_DIR)/common/utils/stdio/stdio_serial                                      \
 	$(ASF_DIR)/common/utils                                                         \
-	$(ASF_DIR)/sam/boards/user_board                                                \
 	$(ASF_DIR)/sam/boards                                                           \
 	$(ASF_DIR)/sam/drivers/efc                                                      \
 	$(ASF_DIR)/sam/drivers/hsmci                                                    \
@@ -306,7 +303,6 @@ TARGET_MAP=$(BIN_DIR)/$(IS_TARGET).map
 
 DEFS += \
 	-D__SAME70Q20B__ \
-	-DBOARD=USER_BOARD \
 	-DARM_MATH_CM7=true \
 	-D__FREERTOS__ \
 	-DUDD_ENABLE \

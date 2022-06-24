@@ -37,7 +37,7 @@
 #define CLK_PLL_H_INCLUDED
 
 #include "parts.h"
-#include "conf_clock.h"
+#include "ISBoards.h"
 
 #if SAM3S
 # include "sam3s/pll.h"

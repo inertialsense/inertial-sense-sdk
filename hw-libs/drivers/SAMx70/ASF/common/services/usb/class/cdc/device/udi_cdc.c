@@ -34,9 +34,13 @@
  * Support and FAQ: visit <a href="https://www.microchip.com/support/">Microchip Support</a>
  */
 
-#include <FreeRTOS.h>
+#if USE_FREERTOS
+#include "FreeRTOS.h"
 #include <task.h>
+#else
 
+#include "d_time.h"
+#endif
 #include "conf_usb.h"
 #include "usb_protocol.h"
 #include "usb_protocol_cdc.h"
@@ -1114,8 +1118,13 @@ udi_cdc_write_buf_loop_wait:
 		}
 		if(--timeout == 0)
 			return size;
+
+#if USE_FREERTOS
 		vTaskDelay(1);
-					
+#else
+		time_delay(1);
+#endif
+
 		goto udi_cdc_write_buf_loop_wait;
 	}
 

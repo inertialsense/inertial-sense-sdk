@@ -37,7 +37,7 @@
 #ifndef CHIP_OSC_H_INCLUDED
 #define CHIP_OSC_H_INCLUDED
 
-#include "board.h"
+#include "ISBoards.h"
 #include "pmc.h"
 
 /// @cond 0

@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+#include "ISBoards.h"
 
 // defines
 //#define ENABLE_TC_TIME
@@ -23,8 +24,6 @@ extern "C" {
 // includes
 #ifdef uINS_5
 #define BOARD_FREQ_SLCK_XTAL            (32768U)
-#else	// uINS-3 and uINS-4
-#include "user_board.h" // BOARD_FREQ_SLCK_XTAL
 #endif
 #ifdef ENABLE_TC_TIME
 #include "d_timer.h"
