@@ -12,14 +12,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <asf.h>
 #include "d_time.h"
-#include "misc/rtos.h"
-#include "globals.h"
+#include "conf_interrupts.h"
 
-#ifndef TESTBED
+#if USE_FREERTOS
+#include "misc/rtos.h"
+#endif
+
+#if USE_TIMER_DRIVER
 #include "d_timer.h"
 #endif
 
-#include "conf_interrupts.h"
 static volatile uint32_t g_rollover = 0;
 static volatile uint32_t g_timer = 0;
 
@@ -28,7 +30,9 @@ void RTT_Handler(void)
 	// alarm
 	if (RTT->RTT_SR & RTT_SR_ALMS)
 	{
+#if USE_FREERTOS
 		rtosResetTaskCounters();
+#endif
 		g_rollover++;
 	}
 }
@@ -37,7 +41,7 @@ void time_init(void)
 {
 	static int initialized = 0;	if (initialized) { return; } initialized = 1;
 
-#if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
+#if USE_TIMER_DRIVER
 	timer_time_init();
 #endif
 
@@ -101,13 +105,13 @@ void time_delay(uint32_t ms)
 
 inline uint32_t time_msec(void)
 {	
-	return (uint32_t)((uint64_t)((double)time_ticks() * TIME_MS_PER_TICK_LF) & 0x00000000FFFFFFFF);
+	return (uint32_t)((uint64_t)(time_ticks() * TIME_MS_PER_TICK_LF) & 0x00000000FFFFFFFF);
 }
 
 
 inline uint32_t time_usec(void)
 {
-	return (uint32_t)((uint64_t)((double)time_ticks() * TIME_US_PER_TICK_LF) & 0x00000000FFFFFFFF);
+	return (uint32_t)((uint64_t)(time_ticks() * TIME_US_PER_TICK_LF) & 0x00000000FFFFFFFF);
 }
 
 inline float time_secf(void)

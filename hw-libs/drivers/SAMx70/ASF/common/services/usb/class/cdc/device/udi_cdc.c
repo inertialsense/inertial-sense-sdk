@@ -34,11 +34,12 @@
  * Support and FAQ: visit <a href="https://www.microchip.com/support/">Microchip Support</a>
  */
 
+#include "ISBoards.h"
+
 #if USE_FREERTOS
 #include "FreeRTOS.h"
 #include <task.h>
 #else
-
 #include "d_time.h"
 #endif
 #include "conf_usb.h"

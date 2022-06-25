@@ -133,7 +133,7 @@ uint32_t pio_handler_set(Pio *p_pio, uint32_t ul_id, uint32_t ul_mask,
 		uint32_t ul_attr, void (*p_handler) (uint32_t, uint32_t))
 {
     uint8_t i;
-	struct s_interrupt_source *pSource;
+	struct s_interrupt_source *pSource = NULL;
 
 	if (gs_ul_nb_sources >= MAX_INTERRUPT_SOURCES)
 		return 1;
@@ -145,6 +145,9 @@ uint32_t pio_handler_set(Pio *p_pio, uint32_t ul_id, uint32_t ul_mask,
 			break;
 		}
 	}
+	
+	if(pSource == NULL)
+		return 1;
 
 	/* Define new source */
 	pSource->id = ul_id;

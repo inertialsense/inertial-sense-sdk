@@ -52,12 +52,12 @@ extern "C" {
 
 // total space allocated to bootloader in flash memory
 #ifndef BOOTLOADER_FLASH_BOOTLOADER_SIZE
-#define BOOTLOADER_FLASH_BOOTLOADER_SIZE ((uint32_t)16384) // 16K
+#define BOOTLOADER_FLASH_BOOTLOADER_SIZE ((uint32_t)24576) // 24K
 #endif
 
 // size of the user application in flash memory
 #ifndef BOOTLOADER_FLASH_USER_APPLICATION_SIZE
-#define BOOTLOADER_FLASH_USER_APPLICATION_SIZE ((uint32_t)966656) // 966656 = EC000, 1MB flash - 16K bootloader - 64K footer
+#define BOOTLOADER_FLASH_USER_APPLICATION_SIZE ((uint32_t)958464) // = 0xe4000, 1MB flash - 24K bootloader - 64K footer
 #endif
 
 // size of flash page
@@ -134,7 +134,7 @@ extern "C" {
 #define BOOTLOADER_SIGNATURE_SIZE ((uint32_t)16)
 
 // bootloader signature must be found within this number of bytes, or the bootload fails
-#define BOOTLOADER_SIGNATURE_REQUIRED_WITHIN_BYTE_COUNT ((uint32_t)16384)
+#define BOOTLOADER_SIGNATURE_REQUIRED_WITHIN_BYTE_COUNT ((uint32_t)24576)
 
 // signature found marker - this is the only valid value to indicate that the signature was found in the firmware
 #define BOOTLOADER_SIGNATURE_FOUND_MARKER ((uint32_t)1)

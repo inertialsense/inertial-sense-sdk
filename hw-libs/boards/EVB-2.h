@@ -24,6 +24,7 @@
 //#include "conf_stdio.h" // enable/disabled printf
 
 #define USE_FREERTOS                    1
+#define USE_TIMER_DRIVER				0
 
 /** Board oscillator settings */
 #define BOARD_FREQ_SLCK_XTAL            (32768U)
