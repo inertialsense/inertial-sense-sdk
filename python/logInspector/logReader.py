@@ -47,15 +47,23 @@ class Log:
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
         self.numDev = self.data.shape[0]
+        self.numRef = 0
         if self.numDev == 0:
             raise ValueError("No devices found in log")
         if len(self.data[0, DID_DEV_INFO]):
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
 
         for i in range(self.numDev):
-            if len(self.data[i, DID_REFERENCE_PIMU]) or len(self.data[i, DID_REFERENCE_IMU]):
+            if any(self.data[i,DID_FLASH_CONFIG]['sysCfgBits'] & eSysConfigBits.SYS_CFG_USE_REFERENCE_IMU_IN_EKF.value):
                 self.refINS = True
                 self.refIdx.append(i)
+                self.numRef = self.numRef + 1
+                if len(self.data[i, DID_DEV_INFO]):
+                    self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
+
+        if self.refINS:
+            self.serials = np.delete(self.serials, self.refIdx, 0)
+                
         if len(self.refIdx):
             self.refData = self.data[self.refIdx].copy()
 
@@ -294,7 +302,7 @@ class Log:
 
         self.specRatio = self.averageRMS / thresholds
 
-        uINS_device_idx = [n for n in range(self.numDev) if self.serials[n] != 10101]
+        uINS_device_idx = [n for n in range(self.numDev-self.numRef) if not(n in self.refIdx)]
 
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
@@ -303,7 +311,7 @@ class Log:
         mode = "AHRS"
         if self.navMode: mode = "NAV"
         if self.compassing: mode = "DUAL GNSS"
-        if self.refINS: mode += " With NovaTel Reference"
+        if self.refINS: mode += " With Reference IMU Data"
         f.write("\n")
 
         # Print Table of RMS accuracies
@@ -386,7 +394,7 @@ class Log:
 
         f.write("----------------- Average Attitude ---------------------\n")
         f.write("Dev:  \t[ Roll\t\tPitch\t\tYaw ]\n")
-        for i in range(self.numDev):
+        for i in range(self.numDev - self.numRef):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
             f.write("%d\t%f\t%f\t%f\n" % (self.serials[i], euler[0], euler[1], euler[2]))
