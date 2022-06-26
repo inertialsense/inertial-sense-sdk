@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderCommon.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
+#include "bootloaderShared.h"
 
 const char* is_uins_5_firmware_needle = "uINS-5";
 const char* is_uins_3_firmware_needle = "uINS-3";
@@ -57,6 +58,8 @@ is_device_context* is_create_context(
     ctx->user_data = user_data;
     ctx->update_in_progress = true;
     ctx->infoString_new = false;
+    ctx->was_in_app = false;
+    ctx->was_updated = false;
 
     return ctx;
 }
@@ -66,19 +69,100 @@ void is_destroy_context(is_device_context* ctx)
     free(ctx);
 }
 
-is_operation_result is_check_version(is_device_context* ctx)
+is_operation_result is_jump_to_bootloader_from_app(is_device_context* ctx)
 {
-    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) return IS_OP_OK;
+    // TODO: Implement
+}
 
-    serialPortPlatformInit(&ctx->handle.port);
-    serialPortSetPort(&ctx->handle.port, ctx->handle.port_name);
-    if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->baud_rate, 1) == 0)
+/**
+ * @brief Look for a signature in the first section of a hex file
+ * 
+ * @param firmware 
+ * @return is_device_type 
+ */
+is_device_type is_get_device_type_heximage(is_firmware_settings* firmware)
+{
+    ihex_image_section_t image;
+    int sections = ihex_load_sections(firmware->firmware_path, &image, 1);
+    size_t image_type;
+
+    if(sections == 1)   // Signature must be in the first section of the image
     {
-        serialPortClose(&ctx->handle.port);
-        return IS_OP_ERROR;
-    }
+        uint8_t *target_signature;
 
-    serialPortFlush(&ctx->handle.port);
+        for(image_type = 0; image_type < IS_DEVICE_TYPE_UNKNOWN; image_type++)
+        {
+            switch(image_type)
+            {
+            case IS_DEVICE_TYPE_UINS_3: target_signature = bootloaderRequiredSignature_uINS_3; break;
+            case IS_DEVICE_TYPE_UINS_5: target_signature = bootloaderRequiredSignature_uINS_5; break;
+            case IS_DEVICE_TYPE_EVB_2: target_signature = bootloaderRequiredSignature_EVB_2; break;
+            case IS_DEVICE_TYPE_STM32L4_BOOT: target_signature = bootloaderRequiredSignature_STM32L4_bootloader; break;
+            case IS_DEVICE_TYPE_SAMX70_BOOT: target_signature = bootloaderRequiredSignature_SAMx70_bootloader; break;
+            default: return IS_DEVICE_TYPE_UNKNOWN;
+            }
+
+            size_t k = 0;
+            for(size_t j = 0; j < image.len; j++)
+            {
+                if(image.image[j] == target_signature[k]) k++;  // Found the right char, continue
+                else k = 0; // Didn't find the right char, reset to beginning of search
+
+                if(k >= BOOTLOADER_SIGNATURE_SIZE) return image_type;   // Found all the chars required
+            }
+        }
+        
+    }
+    
+    return IS_DEVICE_TYPE_UNKNOWN;
+}
+
+is_device_type is_get_device_type_binimage(is_firmware_settings* firmware)
+{
+    // TODO: Implement
+
+    return IS_DEVICE_TYPE_UNKNOWN;
+}
+
+is_operation_result is_get_device_type_hdw(is_device_context* ctx)
+{
+    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) 
+    {
+        
+    }
+    else 
+    {
+        serialPortPlatformInit(&ctx->handle.port);
+        serialPortSetPort(&ctx->handle.port, ctx->handle.port_name);
+        if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->baud_rate, 1) == 0)
+        {
+            serialPortClose(&ctx->handle.port);
+            return IS_OP_ERROR;
+        }    
+        serialPortFlush(&ctx->handle.port);
+
+        if(is_samba_init(ctx) == IS_OP_OK)
+        {   // We have a SAM-BA device
+            
+        }
+        else 
+        {   // Assume we have an IS device or other device
+            is_jump_to_bootloader_from_app(ctx);
+            ctx->was_in_app = true;
+
+            // TODO: Read parameters from the bootloader 
+        }
+    }
+   
+
+
+
+
+    
+
+    
+
+    
 
     // Get DID_DEV_INFO from the uINS.
     is_comm_instance_t comm;
@@ -199,7 +283,7 @@ void is_update_flash(void* context)
 {
     is_device_context* ctx = (is_device_context*)context;
 
-	is_check_version(ctx);
+	is_check_device_version(ctx);
 
     strncpy(ctx->bl_enable_command, "BLEN", 5);
     

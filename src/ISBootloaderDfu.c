@@ -197,6 +197,95 @@ is_operation_result is_list_dfu(
     return IS_OP_OK;
 }
 
+typedef struct
+{
+	/** Inertial Sense serial number */
+	uint32_t		serialNumber;
+
+	/** Inertial Sense lot number */
+	uint32_t		lotNumber;
+
+	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
+    char			date[16];
+} is_dfu_otp_id_t;
+
+#define OTP_SECTION_SIZE	64		// 64 bytes. DO NOT CHANGE.
+#define OTP_NUM_SECTIONS    16      // 16 attempts. DO NOT CHANGE.
+#define OTP_KEY				0xBAADBEEFB0BABABE		// DO NOT CHANGE
+
+/**
+ * @brief Get the Inertial Sense serial number from flash (if not present, get DFU serial number)
+ * 
+ * @param ctx device context
+ * @return is_operation_result 
+ */
+is_operation_result is_dfu_get_serial(is_device_context* ctx)
+{
+    dfu_status status;
+    uint32_t waitTime = 0;
+    dfu_state state;
+    uint8_t stringIdx;
+
+    // Get the 1K OTP section from the chip
+    // 0x1FFF7000
+    
+    // Set the address pointer
+    uint8_t txBuf = { 0x21, 0x00, 0x70, 0xFF, 0x1F };
+    dfu_DNLOAD(&ctx->handle.libusb, 0, txBuf, sizeof(txBuf));
+    
+    // Address pointer takes effect after GETSTATUS command
+    dfu_GETSTATUS(&ctx->handle.libusb, &status, &waitTime, &state, &stringIdx);
+    if(status != DFU_STATUS_OK || state != DFU_STATE_DNBUSY) return IS_OP_ERROR;
+    dfu_GETSTATUS(&ctx->handle.libusb, &status, &waitTime, &state, &stringIdx);
+    if(status != DFU_STATUS_OK) return IS_OP_ERROR;
+
+    uint8_t rxBuf[1024] = {0};
+    dfu_UPLOAD(&ctx->handle.libusb, 2, rxBuf, 1024);
+
+    int index = 0;
+	uint8_t* otp_mem = (uint8_t*)rxBuf; 
+	
+    // Look for the first section of zeroes
+	uint8_t cmp[OTP_SECTION_SIZE];
+	memset(cmp, 0xFF, OTP_SECTION_SIZE);
+    bool foundSn = true;
+	while(memcmp(cmp, otp_mem, OTP_SECTION_SIZE) != 0)
+	{
+		otp_mem += OTP_SECTION_SIZE; index++;
+		if(index >= OTP_NUM_SECTIONS)
+		{
+            foundSn = false; break;	// No more room in OTP
+		}
+	}
+
+    // Go back one, to the last filled section
+	index--;
+    
+	is_dfu_otp_id_t* id = (is_dfu_otp_id_t*)((uint32_t)(index * OTP_SECTION_SIZE) + (uint32_t)&rxBuf);
+
+	uint64_t key = OTP_KEY;
+	if(memcmp(otp_mem - 8, &key, 8) != 0)
+	{
+		return IS_OP_ERROR;	// Bad last entry in OTP, needs recovery
+	}
+
+    if(foundSn) 
+    {
+        sprintf(ctx->match_props.serial_number, "%d", id->serialNumber);
+        return IS_OP_OK;
+    }
+    else
+    {
+        ret_libusb = libusb_get_string_descriptor_ascii(&ctx->handle.libusb, iSerialNumber, 
+            ctx->match_props.serial_number, sizeof(ctx->match_props.serial_number));
+        if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
+        
+        // Add to list
+        strncpy(list->id[list->present].sn, (char*)serial_number, IS_SN_MAX_SIZE);
+    }
+    PACKED
+}
+
 /**
  * @brief Leave DFU mode
  * @note Only works if the option bytes are set to *not* enter DFU mode after reset. 

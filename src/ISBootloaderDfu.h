@@ -51,7 +51,6 @@ typedef struct
     size_t present;
 } is_dfu_list;
 
-
 /**
  * @brief List the available DFU devices
  * 

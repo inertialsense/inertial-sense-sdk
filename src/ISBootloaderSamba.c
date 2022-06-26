@@ -185,7 +185,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
  * @param ctx a filled device context
  * @return is_operation_result 
  */
-static is_operation_result is_samba_init(is_device_context* ctx)
+is_operation_result is_samba_init(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
     uint8_t buf[SAMBA_PAGE_SIZE];

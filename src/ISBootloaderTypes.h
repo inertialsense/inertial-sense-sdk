@@ -77,6 +77,15 @@ typedef enum {
     IS_SCHEME_STM32UART
 } is_device_scheme;
 
+typedef enum {
+    IS_DEVICE_TYPE_UINS_3 = 0,
+    IS_DEVICE_TYPE_UINS_5,
+    IS_DEVICE_TYPE_EVB_2,
+    IS_DEVICE_TYPE_STM32L4_BOOT,
+    IS_DEVICE_TYPE_SAMX70_BOOT,
+    IS_DEVICE_TYPE_UNKNOWN,   // Unknown must be last
+} is_device_type;
+
 #define IS_SN_MAX_SIZE      20
 #define IS_COMPORT_MAX_SIZE 16
 
@@ -168,6 +177,8 @@ typedef struct
     bool update_in_progress;
     char infoString[256];
     bool infoString_new;
+    bool was_in_app;
+    bool was_updated;
 } is_device_context;
 
 typedef struct 
