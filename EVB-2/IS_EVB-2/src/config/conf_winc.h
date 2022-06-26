@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-#include "board.h"
+#include "ISBoards.h"
 
 /** Settings for EVB-2. */
 

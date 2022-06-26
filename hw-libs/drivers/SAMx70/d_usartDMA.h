@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-#include "../ASF/sam/drivers/usart/usart.h"
+#include <asf.h>
 #include "conf_d_usartDMA.h"
 
 // This is a mirror of port_monitor_helper_t in d_usart.h in the uINS-5 project

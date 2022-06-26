@@ -35,18 +35,19 @@
  */
 
 #include "compiler.h"
-#include "board.h"
+#include "ISBoards.h"
 #include "conf_board.h"
 #include "ioport.h"
 #include "pio.h"
-#include "../../../../../../../src/data_sets.h"
-#include "../../../../../../../hw-libs/drivers/d_usartDMA.h"
-#include "../../../../../../../hw-libs/drivers/CAN.h"
-#include "../../../../../../../hw-libs/drivers/d_time.h"
-#include "../../../../spiTouINS.h"
-#include "../../../../xbee.h"
-#include "../../../../wifi.h"
-#include "../../../../globals.h"
+#include "data_sets.h"
+#include "d_usartDMA.h"
+#include "CAN.h"
+#include "d_time.h"
+#include "spiTouINS.h"
+#include "xbee.h"
+#include "wifi.h"
+#include "globals.h"
+#include "init.h"
 #ifdef CONF_BOARD_CONFIG_MPU_AT_INIT
 #include "mpu.h"
 #endif

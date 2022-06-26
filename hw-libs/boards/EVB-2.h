@@ -1,30 +1,10 @@
-/**
- * \file
- *
- * \brief User board definition template
- *
- */
-
- /* This file is intended to contain definitions and configuration details for
- * features and devices that are available on the board, e.g., frequency and
- * startup time for an external crystal, external memory devices, LED and USART
- * pins.
- */
-/*
- * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
- */
-
 #ifndef __EVB_2_H
 #define __EVB_2_H
 
-#include <conf_board.h>
-#include "compiler.h"
-//#include "system_same70.h"
-#include "board.h"
-//#include "conf_stdio.h" // enable/disabled printf
-
 #define USE_FREERTOS                    1
 #define USE_TIMER_DRIVER				0
+
+#define CONF_BOARD_ENABLE_DCACHE        0
 
 /** Board oscillator settings */
 #define BOARD_FREQ_SLCK_XTAL            (32768U)

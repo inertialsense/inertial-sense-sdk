@@ -43,13 +43,9 @@
  *----------------------------------------------------------*/
 
 /* For definition of BOARD_MCK. */
-#ifndef __IAR_SYSTEMS_ASM__
-	/* Prevent chip.h being included when this file is included from the IAR
-	port layer assembly file. */
-	#include "board.h"
-#endif
+#include "ISBoards.h"
 #include "sysclk.h"
-#include "drivers/d_time.h"
+#include "d_time.h"
 #include "../../../../src/data_sets.h"
 
 #define configUSE_PREEMPTION					1
@@ -76,6 +72,7 @@
 #define configUSE_MALLOC_FAILED_HOOK			1
 #define configUSE_APPLICATION_TASK_TAG			0
 #define configUSE_COUNTING_SEMAPHORES			1
+#define configUSE_DAEMON_TASK_STARTUP_HOOK 		1
 
 /* The full demo always has tasks to run so the tick will never be turned off.
 The blinky demo will use the default tickless idle implementation to turn the
@@ -116,6 +113,7 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelay				1
 #define INCLUDE_eTaskGetState			1
 #define INCLUDE_xTimerPendFunctionCall	1
+#define INCLUDE_xTaskGetIdleTaskHandle 	1
 
 extern evb_rtos_info_t                  g_rtos;
 #define traceMALLOC(pvAddress, uiSize)  g_rtos.mallocSize += uiSize

@@ -79,7 +79,7 @@
 
 // From module: FreeRTOS mini Real-Time Kernel
 #include <FreeRTOS.h>
-#include <StackMacros.h>
+#include <stack_macros.h>
 #include <croutine.h>
 #include <list.h>
 #include <mpu_wrappers.h>
@@ -95,7 +95,7 @@
 #include <gpio.h>
 
 // From module: Generic board support
-#include <uINS.h>
+#include "ISBoards.h"
 
 // From module: High Speed Multimedia Card Interface
 #include <hsmci.h>

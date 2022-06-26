@@ -36,7 +36,7 @@
 
 #include <string.h>
 #include "conf_board.h"
-#include "board.h"
+#include "ISBoards.h"
 #include "conf_sd_mmc.h"
 #include "sd_mmc_protocol.h"
 #include "sd_mmc.h"

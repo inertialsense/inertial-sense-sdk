@@ -3,35 +3,45 @@
  *
  * \brief Serial Peripheral Interface (SPI) driver for SAM.
  *
- * Copyright (c) 2011-2018 Microchip Technology Inc. and its subsidiaries.
+ * Copyright (c) 2011-2016 Atmel Corporation. All rights reserved.
  *
  * \asf_license_start
  *
  * \page License
  *
- * Subject to your compliance with these terms, you may use Microchip
- * software and any derivatives exclusively with Microchip products.
- * It is your responsibility to comply with third party license terms applicable
- * to your use of third party software (including open source software) that
- * may accompany Microchip software.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- * THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES,
- * WHETHER EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE,
- * INCLUDING ANY IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY,
- * AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT WILL MICROCHIP BE
- * LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE, INCIDENTAL OR CONSEQUENTIAL
- * LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND WHATSOEVER RELATED TO THE
- * SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS BEEN ADVISED OF THE
- * POSSIBILITY OR THE DAMAGES ARE FORESEEABLE.  TO THE FULLEST EXTENT
- * ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN ANY WAY
- * RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
- * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. The name of Atmel may not be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * 4. This software may only be redistributed and used in connection with an
+ *    Atmel microcontroller product.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE
+ * EXPRESSLY AND SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *
  * \asf_license_stop
  *
  */
 /*
- * Support and FAQ: visit <a href="https://www.microchip.com/support/">Microchip Support</a>
+ * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
  */
 
 #ifndef SPI_H_INCLUDED
@@ -85,7 +95,7 @@ typedef enum spi_cs_behavior {
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_reset(Spi *p_spi)
+static void spi_reset(Spi *p_spi)
 {
 	p_spi->SPI_CR = SPI_CR_SWRST;
 }
@@ -95,7 +105,7 @@ static inline void spi_reset(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_enable(Spi *p_spi)
+static void spi_enable(Spi *p_spi)
 {
 	p_spi->SPI_CR = SPI_CR_SPIEN;
 }
@@ -108,7 +118,7 @@ static inline void spi_enable(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_disable(Spi *p_spi)
+static void spi_disable(Spi *p_spi)
 {
 	p_spi->SPI_CR = SPI_CR_SPIDIS;
 }
@@ -129,7 +139,7 @@ static inline void spi_set_lastxfer(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_set_master_mode(Spi *p_spi)
+static void spi_set_master_mode(Spi *p_spi)
 {
 	p_spi->SPI_MR |= SPI_MR_MSTR;
 }
@@ -166,7 +176,7 @@ static inline uint32_t spi_get_mode(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_set_variable_peripheral_select(Spi *p_spi)
+static void spi_set_variable_peripheral_select(Spi *p_spi)
 {
 	p_spi->SPI_MR |= SPI_MR_PS;
 }
@@ -203,7 +213,7 @@ static inline uint32_t spi_get_peripheral_select_mode(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_enable_peripheral_select_decode(Spi *p_spi)
+static void spi_enable_peripheral_select_decode(Spi *p_spi)
 {
 	p_spi->SPI_MR |= SPI_MR_PCSDEC;
 }
@@ -249,7 +259,7 @@ static inline void spi_enable_mode_fault_detect(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_disable_mode_fault_detect(Spi *p_spi)
+static void spi_disable_mode_fault_detect(Spi *p_spi)
 {
 	p_spi->SPI_MR |= SPI_MR_MODFDIS;
 }
@@ -275,7 +285,7 @@ static inline uint32_t spi_get_mode_fault_detect_setting(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_enable_tx_on_rx_empty(Spi *p_spi)
+static void spi_enable_tx_on_rx_empty(Spi *p_spi)
 {
 	p_spi->SPI_MR |= SPI_MR_WDRBT;
 }
@@ -285,7 +295,7 @@ static inline void spi_enable_tx_on_rx_empty(Spi *p_spi)
  *
  * \param p_spi Pointer to an SPI instance.
  */
-static inline void spi_disable_tx_on_rx_empty(Spi *p_spi)
+static void spi_disable_tx_on_rx_empty(Spi *p_spi)
 {
 	p_spi->SPI_MR &= (~SPI_MR_WDRBT);
 }
@@ -297,7 +307,7 @@ static inline void spi_disable_tx_on_rx_empty(Spi *p_spi)
  *
  * \return 1 for SPI waits, 0 for no wait.
  */
-static inline uint32_t spi_get_tx_on_rx_empty_setting(Spi *p_spi)
+static uint32_t spi_get_tx_on_rx_empty_setting(Spi *p_spi)
 {
 	if (p_spi->SPI_MR & SPI_MR_WDRBT) {
 		return 1;
@@ -353,7 +363,7 @@ static inline uint32_t spi_read_status(Spi *p_spi)
  *
  * \return 1 if the SPI is enabled, otherwise 0.
  */
-static inline uint32_t spi_is_enabled(Spi *p_spi)
+static uint32_t spi_is_enabled(Spi *p_spi)
 {
 	if (p_spi->SPI_SR & SPI_SR_SPIENS) {
 		return 1;
@@ -393,7 +403,7 @@ static inline uint16_t spi_get(Spi *p_spi)
  * \retval 1 if transmissions are complete.
  * \retval 0 if transmissions are not complete.
  */
-static inline uint32_t spi_is_tx_empty(Spi *p_spi)
+static uint32_t spi_is_tx_empty(Spi *p_spi)
 {
 	if (p_spi->SPI_SR & SPI_SR_TXEMPTY) {
 		return 1;
@@ -410,7 +420,7 @@ static inline uint32_t spi_is_tx_empty(Spi *p_spi)
  * \retval 1 if transmissions are complete.
  * \retval 0 if transmissions are not complete.
  */
-static inline uint32_t spi_is_tx_ready(Spi *p_spi)
+static uint32_t spi_is_tx_ready(Spi *p_spi)
 {
 	if (p_spi->SPI_SR & SPI_SR_TDRE) {
 		return 1;

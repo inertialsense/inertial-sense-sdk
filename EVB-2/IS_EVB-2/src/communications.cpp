@@ -11,10 +11,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <asf.h>
-#include "../../../hw-libs/communications/CAN_comm.h"
-#include "../../../hw-libs/drivers/CAN.h"
-#include "../../../hw-libs/drivers/d_flash.h"
-#include "../../../hw-libs/misc/bootloaderApp.h"
+#include "CAN_comm.h"
+#include "CAN.h"
+#include "d_flash.h"
+#include "bootloaderApp.h"
 #include "../../../src/convert_ins.h"
 #include "../../../src/filters.h"
 #include "../../../src/ISEarth.h"

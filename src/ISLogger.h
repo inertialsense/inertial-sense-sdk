@@ -31,7 +31,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #if PLATFORM_IS_EVB_2
-#include "drivers/d_time.h"
+#include "d_time.h"
 #include "ISLogFileFatFs.h"
 #else
 #include "ISLogFile.h"

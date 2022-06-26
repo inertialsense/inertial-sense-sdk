@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <flash_efc.h>
 #include "ASF/common/components/wifi/winc3400/wifi_drv/socket/include/socket.h"
-#include "../../../hw-libs/drivers/d_flash.h"
+#include "d_flash.h"
 #include "version/version.h"
 #include "version/repositoryInfo.h"
 #include "version/buildInfo.h"

@@ -11,8 +11,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "evb_tasks.h"
-#include "../../../hw-libs/drivers/d_i2c.h"
-
+#include "d_i2c.h"
+#include "init.h"
 
 is_comm_instance_t& evbTaskCommInit(void *pvParameters)
 {	
@@ -115,8 +115,9 @@ void evbTaskLogger(rtos_task_t &task, is_comm_instance_t &comm)
 void evbTaskMaintInit(void *pvParameters)
 {
 	UNUSED(pvParameters);
-}
 
+    g_rtos.task[TASK_IDLE].handle = (uint32_t)xTaskGetIdleTaskHandle();
+}
 
 int evbTaskMaint(rtos_task_t &task)
 {
@@ -249,7 +250,7 @@ int evbMain(void)
 {	
 	// Start the scheduler
 	printf("Starting FreeRTOS\n\r");
-	vTaskStartScheduler((TaskHandle_t*)&g_rtos.task[EVB_TASK_IDLE].handle, (TaskHandle_t*)&g_rtos.task[EVB_TASK_TIMER].handle);
+	vTaskStartScheduler();
 
 	// Will only get here if there was insufficient memory to create the idle task.
     return 0;

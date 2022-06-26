@@ -37,6 +37,8 @@
 #ifndef CHIP_SYSCLK_H_INCLUDED
 #define CHIP_SYSCLK_H_INCLUDED
 
+#include "conf_clock.h"
+
 #include <osc.h>
 #include <pll.h>
 

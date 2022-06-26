@@ -183,11 +183,7 @@ void prvGetRegistersFromStack(uint32_t *pulFaultStackAddress)
     soft_reset_no_backup_register();
 }
 
-#ifdef uINS_5
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char* pcTaskName)
-#else
-void vApplicationStackOverflowHook(xTaskHandle* pxTask, signed char* pcTaskName)
-#endif
 {
 #if defined(PLATFORM_IS_EVB_2) || defined(DEBUG)
 
@@ -245,6 +241,11 @@ void vApplicationMallocFailedHook(uint32_t size, uint32_t remaining, uint32_t pr
 	soft_reset_no_backup_register();
 
 #endif
+}
+
+void vApplicationDaemonTaskStartupHook(void)
+{
+	g_rtos.task[TASK_TIMER].handle = (uint32_t)xTaskGetCurrentTaskHandle();
 }
 
 #if 1
