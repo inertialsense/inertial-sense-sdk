@@ -24,9 +24,6 @@ extern "C" {
 //#define ENABLE_TC_TIME
 
 // includes
-#ifdef uINS_5
-#define BOARD_FREQ_SLCK_XTAL            (32768U)
-#endif
 #ifdef ENABLE_TC_TIME
 #include "d_timer.h"
 #endif // ENABLE_TC_TIME
