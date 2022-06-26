@@ -10,15 +10,15 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef _D_USARTDMA_H_
-#define _D_USARTDMA_H_
+#ifndef _D_SERIAL_H_
+#define _D_SERIAL_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <asf.h>
-#include "conf_d_usartDMA.h"
+#include "conf_comm.h"
 
 // This is a mirror of port_monitor_helper_t in d_usart.h in the uINS-5 project
 typedef struct
@@ -110,5 +110,5 @@ int serInit( int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_
 }
 #endif
 
-#endif  // _D_USARTDMA_H_
+#endif  // _D_SERIAL_H_
 

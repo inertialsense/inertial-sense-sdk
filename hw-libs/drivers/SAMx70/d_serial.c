@@ -15,7 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdio.h>
 
-#include "d_usartDMA.h"
+#include "d_serial.h"
 
 #ifdef CONF_BOARD_SPI_UINS
 	#include "spiTouINS.h"

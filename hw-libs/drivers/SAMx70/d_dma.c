@@ -16,7 +16,7 @@
 #endif
 
 #include "d_dma.h"
-#include "d_usartDMA.h"
+#include "d_serial.h"
 
 #ifndef TESTBED
 #include "d_i2c.h"

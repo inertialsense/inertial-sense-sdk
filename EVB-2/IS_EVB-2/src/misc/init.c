@@ -40,7 +40,7 @@
 #include "ioport.h"
 #include "pio.h"
 #include "data_sets.h"
-#include "d_usartDMA.h"
+#include "d_serial.h"
 #include "CAN.h"
 #include "d_time.h"
 #include "spiTouINS.h"
