@@ -39,7 +39,7 @@ add_executable(cltool
 	../src/ihex.c
 	../src/InertialSense.cpp
 	../src/inertialSenseBootLoader.c
-	../src/ISBootloader.cpp
+	../src/ISBootloaderThread.cpp
 	../src/ISBootloaderCommon.c
 	../src/ISBootloaderDfu.c
 	../src/ISBootloaderSamba.c

@@ -8,7 +8,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -37,24 +37,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-typedef enum
-{
-    STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
-    STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11
-} is_dfu_descriptor;
-
-static const is_device_vid_pid dfu_matches[] = { 
-    {STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID} 
-};
-
-typedef enum
-{
-    STM32_DFU_INTERFACE_FLASH    = 0, // @Internal Flash  /0x08000000/0256*0002Kg
-    STM32_DFU_INTERFACE_OPTIONS  = 1, // @Option Bytes  /0x1FFF7800/01*040 e
-    STM32_DFU_INTERFACE_OTP      = 2, // @OTP Memory /0x1FFF7000/01*0001Ke
-    STM32_DFU_INTERFACE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
-} is_stm32l4_dfu_interface_alternatives;
-
 typedef struct 
 {
     char sn[IS_SN_MAX_SIZE];
@@ -70,8 +52,12 @@ typedef struct
 } is_dfu_list;
 
 
-is_operation_result is_init_dfu_context(is_device_context* ctx);
-
+/**
+ * @brief List the available DFU devices
+ * 
+ * @param list strict to be filled with info about the devices
+ * @return is_operation_result 
+ */
 is_operation_result is_list_dfu(is_dfu_list* list);
 
 /**

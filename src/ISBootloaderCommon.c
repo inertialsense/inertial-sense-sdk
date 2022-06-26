@@ -8,7 +8,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -22,7 +22,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderCommon.h"
 #include "serialPort.h"
 #include "serialPortPlatform.h"
-#include "inertialSenseBootLoader.h"
 
 const char* is_uins_5_firmware_needle = "uINS-5";
 const char* is_uins_3_firmware_needle = "uINS-3";
@@ -145,7 +144,7 @@ is_operation_result is_check_version(is_device_context* ctx)
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_EVB_STATUS)
             {
                 evb_status = (evb_status_t*)comm.dataPtr;
-                if(evb_status->firmwareVer[0]) memcpy(ctx->hdw_info.evb_version, evb_version, 4);   // Only copy EVB status stuff if it is plugged through EVB port
+                if(evb_status->firmwareVer[0]) memcpy(ctx->hdw_info.evb_version, evb_version, 4);   // Only copy EVB status stuff if it is plugged into the EVB port
             }
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_MANUFACTURING_INFO)
             {
@@ -159,78 +158,40 @@ is_operation_result is_check_version(is_device_context* ctx)
     return IS_OP_OK;
 }
 
-is_operation_result is_jump_to_bootloader(is_device_context* ctx)
+/**
+ * @brief Compatibility layer with old bootloader code in "inertialSenseBootLoader.c"
+ * 
+ * @param ctx 
+ * @return is_operation_result 
+ */
+is_operation_result is_flash_compat(is_device_context* ctx)
 {
-    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
-    {
-        return IS_OP_OK;
-    }
+    bootload_params_t params;
 
-    int baudRates[] = { ctx->baud_rate, IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
+    params.uploadProgress = ctx->update_progress_callback;
+    params.verifyProgress = ctx->verify_progress_callback;
+    params.statusText = ctx->info_callback;
+    params.fileName = ctx->firmware.firmware_path;
+    params.forceBootloaderUpdate = ctx->firmware.bootloader_force_update;
+    params.port = &ctx->handle.port;
+    params.verifyFileName = NULL;   // TODO: Add verify
+    params.flags.bitFields.enableVerify = (ctx->verification_style == IS_VERIFY_ON);
+    params.baudRate = ctx->baud_rate;
+    params.obj = ctx;
+    params.bootName = (const char*)ctx->firmware.bootloader_path;
+    params.ctx = (void*)ctx;
 
-    is_dfu_list list;
-    is_list_dfu(&list);
+    if(ctx->hdw_info.evb_version[0] == 2) strncpy(params.bootloadEnableCmd, "EBLE", 5);
+    else strncpy(params.bootloadEnableCmd, "BLEN", 5);
 
-    size_t start_num = list.present;
+    if(ctx->scheme == IS_SCHEME_DFU) params.bootloaderUpdateCb = is_dfu_flash;
+    else if(ctx->scheme == IS_SCHEME_SAMBA) params.bootloaderUpdateCb = is_samba_flash;
+    else return IS_OP_ERROR;
 
-    if(ctx->info_callback) ctx->info_callback((void*)ctx, "Starting bootloader...");
+    bootloadFileEx(&params);
 
-    // in case we are in program mode, try and send the commands to go into bootloader mode
-    unsigned char c = 0;
-    for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
-    {
-        if (baudRates[i] == 0)
-            continue;
+    strncpy(ctx->error, params.error, BOOTLOADER_ERROR_LENGTH);
 
-        serialPortClose(&ctx->handle.port);
-        if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, baudRates[i], 1) == 0)
-        {
-            serialPortClose(&ctx->handle.port);
-            return IS_OP_ERROR;
-        }
-
-        for(size_t loop = 0; loop < 10; loop++)
-        {
-            serialPortWriteAscii(&ctx->handle.port, "STPB", 4);
-            serialPortWriteAscii(&ctx->handle.port, ctx->bl_enable_command, 4);
-            
-            if(1)
-            // if(ctx->hdw_info.uins_version[0] != 5 ) // || ctx->hdw_info.evb_version[0] == 2
-            {
-                c = 0;
-                if(serialPortReadCharTimeout(&ctx->handle.port, &c, 10) == 1)
-                {
-                    if(c == '$')
-                    {
-                        // done, we got into bootloader mode
-                        if(ctx->info_callback) ctx->info_callback((void*)ctx, "Successfully entered SAM-BA bootloader");
-                        i = 9999;
-                        break;
-                    }
-                }
-                else
-                {
-                    // Flush and close the port to prepare for DFU check
-                    serialPortFlush(&ctx->handle.port);
-                }
-            }
-            else if(ctx->hdw_info.uins_version[0] == 5)
-            {
-                // List DFU devices
-                is_list_dfu(&list);
-                if(list.present > start_num) 
-                {   // If a new DFU device has shown up, break
-                    if(ctx->info_callback) ctx->info_callback((void*)ctx, "Successfully entered DFU bootloader");
-                    ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
-                    i = 9999;
-                    break;
-                }
-            }
-        }
-    }
-
-    serialPortClose(&ctx->handle.port);
-    SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
     return IS_OP_OK;
 }
 
@@ -240,59 +201,43 @@ void is_update_flash(void* context)
 
 	is_check_version(ctx);
 
-	if((ctx->hdw_info.uins_version[0] == 5 || ctx->handle.status == IS_HANDLE_TYPE_LIBUSB) &&
-		strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
+    strncpy(ctx->bl_enable_command, "BLEN", 5);
+    
+	if((ctx->hdw_info.uins_version[0] == 5) && strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
 	{
-        is_init_samba_context(ctx);
-
-        ctx->match_props.match =  
-            IS_DEVICE_MATCH_FLAG_TYPE | 
-            IS_DEVICE_MATCH_FLAG_MAJOR;
-
-		// ctx->match_props.vid = STM32_DESCRIPTOR_VENDOR_ID;
-		// ctx->match_props.pid = STM32_DESCRIPTOR_PRODUCT_ID;
-
-		// is_init_dfu_context(ctx);
-		// is_jump_to_bootloader(ctx);
+        ctx->scheme = IS_SCHEME_DFU;
 	}
-	else if(ctx->hdw_info.uins_version[0] == 4 && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
+	else if((ctx->hdw_info.uins_version[0] == 4 || ctx->hdw_info.uins_version[0] == 3) && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 	{
-		is_init_samba_context(ctx);
-	}
-	else if(ctx->hdw_info.uins_version[0] == 3 && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
-	{
-		is_init_samba_context(ctx);
+		ctx->scheme = IS_SCHEME_SAMBA;
 	}
 	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
 	{
-		is_init_samba_context(ctx);
+		strncpy(ctx->bl_enable_command, "EBLE", 5);
+        ctx->scheme = IS_SCHEME_SAMBA;
 	}
 	else
-	{
-		is_init_samba_context(ctx);
-
-		// Assume that we have a SAM-BA bootloader, and bootload based on filename, with uINS-4, uINS-3, EVB-2 in that order
-        if(strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
+	{   // Bootload based on filename alone
+	    if(strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
 		{
+            ctx->scheme = IS_SCHEME_DFU;
+
 			ctx->hdw_info.uins_version[0] = 5;
 			ctx->hdw_info.evb_version[0] = 0;
-
-            ctx->match_props.match =  
-                IS_DEVICE_MATCH_FLAG_TYPE | 
-                IS_DEVICE_MATCH_FLAG_MAJOR;
 		}
         else if(strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
 		{
+            ctx->scheme = IS_SCHEME_SAMBA;
+
 			ctx->hdw_info.uins_version[0] = 4;
-			ctx->hdw_info.evb_version[0] = 0;
-		}
-		else if(strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
-		{
-			ctx->hdw_info.uins_version[0] = 3;
 			ctx->hdw_info.evb_version[0] = 0;
 		}
 		else if(strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
 		{
+            strncpy(ctx->bl_enable_command, "EBLE", 5);
+
+            ctx->scheme = IS_SCHEME_SAMBA;
+
 			ctx->hdw_info.uins_version[0] = 0;
 			ctx->hdw_info.evb_version[0] = 2;
 		}
@@ -302,25 +247,38 @@ void is_update_flash(void* context)
 			return;
 		}
 	}
-    
-    int ret = IS_OP_ERROR;
-    ctx->success = false;
 
-    if(ctx->scheme == IS_SCHEME_DFU)
+    if(ctx->scheme == IS_SCHEME_SAMBA)
     {
-        ret = is_dfu_flash(ctx);
+        ctx->match_props.match = 
+            IS_DEVICE_MATCH_FLAG_TYPE | 
+            IS_DEVICE_MATCH_FLAG_MAJOR;
     }
-    else if(ctx->scheme == IS_SCHEME_SAMBA)
+    else if(ctx->scheme == IS_SCHEME_DFU)
     {
-        ret = is_samba_flash(ctx);
+        ctx->match_props.match = 
+            IS_DEVICE_MATCH_FLAG_VID | 
+            IS_DEVICE_MATCH_FLAG_PID | 
+            IS_DEVICE_MATCH_FLAG_TYPE | 
+            IS_DEVICE_MATCH_FLAG_MAJOR |
+            IS_DEVICE_MATCH_FLAG_SN;
     }
     else
     {
-        strcpy(ctx->error, "Wrong bootloader scheme for device");
         ctx->update_in_progress = false;
+        strcpy(ctx->error, "Scheme is not supported");
         return;
     }
 
+    // Match serial number if present
+    // if(strlen(ctx->match_props.serial_number[0]) != 0) ctx->match_props.match |= IS_DEVICE_MATCH_FLAG_SN;
+    
+    int ret = IS_OP_ERROR;
+    ctx->success = false;
+    
+    // Start the bootloader and update flash
+    ret = is_flash_compat(ctx);
+    
     if(ret == IS_OP_OK) ctx->success = true;
     else strcpy(ctx->error, "Error in update flash");
 

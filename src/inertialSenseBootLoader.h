@@ -70,7 +70,8 @@ typedef struct
         } bitFields;
     } flags;
     char bootloadEnableCmd[16];
-
+    pfnBootloaderUpdate bootloaderUpdateCb; // Callback to update bootloader
+    void* ctx;  // Device context for bootloader update callback
 } bootload_params_t;
 
 /**

@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "protocol_nmea.h"
 #include "InertialSense.h"
 #ifndef EXCLUDE_BOOTLOADER
-#include "ISBootloader.h"
+#include "ISBootloaderThread.h"
 #endif
 
 using namespace std;
@@ -784,8 +784,8 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	// Copy the same path into all, the underlying code will pick which devices to update based on the file name.
 	is_firmware_settings firmware;
 	strncpy(firmware.firmware_path, fileName.c_str(), 256);
-	strncpy(firmware.samba_bootloader_path, bootloaderFileName.c_str(), 256);
-	firmware.samba_force_update = forceBootloaderUpdate;
+	strncpy(firmware.bootloader_path, bootloaderFileName.c_str(), 256);
+	firmware.bootloader_force_update = forceBootloaderUpdate;
 
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
