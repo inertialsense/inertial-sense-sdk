@@ -67,6 +67,8 @@ class Log:
         if len(self.refIdx):
             self.refData = self.data[self.refIdx].copy()
 
+        self.numIns = self.numDev - self.numRef
+
 
         self.compassing = None  
         self.rtk = None  
@@ -174,7 +176,7 @@ class Log:
 
     def getRMSArray(self):
         if self.numDev > 1 or self.refINS:
-            print("\nComputing RMS Accuracies: (%d devices)" % (self.numDev))
+            print("\nComputing RMS Accuracies: (%d devices)" % (self.numIns))
 
             # Build a 3D array of the data.  idx 0 = Device,    idx 1 = t,     idx 2 = [t, lla, uvw, log(q)]
             data = [np.hstack((self.data[i, DID_INS_2]['timeOfWeek'][:, None],
@@ -302,7 +304,7 @@ class Log:
 
         self.specRatio = self.averageRMS / thresholds
 
-        uINS_device_idx = [n for n in range(self.numDev-self.numRef) if not(n in self.refIdx)]
+        uINS_device_idx = [n for n in range(self.numDev) if not(n in self.refIdx)]
 
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
@@ -394,7 +396,7 @@ class Log:
 
         f.write("----------------- Average Attitude ---------------------\n")
         f.write("Dev:  \t[ Roll\t\tPitch\t\tYaw ]\n")
-        for i in range(self.numDev - self.numRef):
+        for i in range(self.numIns):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
             f.write("%d\t%f\t%f\t%f\n" % (self.serials[i], euler[0], euler[1], euler[2]))
