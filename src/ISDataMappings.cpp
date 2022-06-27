@@ -1650,6 +1650,15 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "tci2", mpu[1].tci, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "numTcPts2", mpu[1].numTcPts, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "dtTemp2", mpu[1].dtTemp, 0, DataTypeFloat, float, 0);
+
+	// Reference IMU
+	ADD_MAP(m, totalSize, "reference.pqr[0]", reference.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.pqr[1]", reference.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.pqr[2]", reference.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.acc[0]", reference.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.acc[1]", reference.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.acc[2]", reference.acc[2], 0, DataTypeFloat, float&, 0);
+
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
