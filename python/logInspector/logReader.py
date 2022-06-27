@@ -32,6 +32,11 @@ class Log:
         self.data = []
         self.serials = []
         self.passRMS = 0    # 1 = pass, -1 = fail, 0 = unknown
+        self.refSerials = []
+        self.refIdx = []
+        self.refData = []
+        self.truth = []
+        self.refINS = False
 
     def load(self, directory, serials=['ALL']):
         self.data = []
@@ -42,17 +47,28 @@ class Log:
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
         self.numDev = self.data.shape[0]
+        self.numRef = 0
         if self.numDev == 0:
             raise ValueError("No devices found in log")
         if len(self.data[0, DID_DEV_INFO]):
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
-        if 10101 in self.serials:
-            self.refINS = True
-            refIdx = self.serials.index(10101)
-            self.truth = self.data[refIdx].copy()
-        else:
-            self.refINS = False
-            self.refdata = []
+
+        for i in range(self.numDev):
+            if any(self.data[i,DID_FLASH_CONFIG]['sysCfgBits'] & eSysConfigBits.SYS_CFG_USE_REFERENCE_IMU_IN_EKF.value):
+                self.refINS = True
+                self.refIdx.append(i)
+                self.numRef = self.numRef + 1
+                if len(self.data[i, DID_DEV_INFO]):
+                    self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
+
+        if self.refINS:
+            self.serials = np.delete(self.serials, self.refIdx, 0)
+                
+        if len(self.refIdx):
+            self.refData = self.data[self.refIdx].copy()
+
+        self.numIns = self.numDev - self.numRef
+
 
         self.compassing = None  
         self.rtk = None  
@@ -160,7 +176,7 @@ class Log:
 
     def getRMSArray(self):
         if self.numDev > 1 or self.refINS:
-            print("\nComputing RMS Accuracies: (%d devices)" % (self.numDev))
+            print("\nComputing RMS Accuracies: (%d devices)" % (self.numIns))
 
             # Build a 3D array of the data.  idx 0 = Device,    idx 1 = t,     idx 2 = [t, lla, uvw, log(q)]
             data = [np.hstack((self.data[i, DID_INS_2]['timeOfWeek'][:, None],
@@ -220,22 +236,20 @@ class Log:
             self.stateArray = data
 
     def getRMSTruth(self):
+        means = np.empty((len(self.stateArray[0]), 10))
         if not self.refINS:
-            # Find Mean Data
-            means = np.empty((len(self.stateArray[0]), 10))
-            means[:, :6] = np.mean(self.stateArray[:, :, 1:7], axis=0)  # calculate mean position and velocity across devices
-            means[:, 6:] = meanOfQuatArray(self.stateArray[:, :, 7:].transpose((1, 0, 2)))  # Calculate mean attitude of all devices at each timestep
-            self.truth = means
+            refData = self.stateArray
         else:
-            self.refIdx = self.serials.index(10101)
-            self.truth = self.stateArray[self.refIdx, :, 1:]
+            refData = self.stateArray[self.refIdx, :, :]
             self.stateArray = np.delete(self.stateArray, self.refIdx, 0)
-
+        # Find Mean Data
+        means[:, :6] = np.mean(refData[:, :, 1:7], axis=0)  # calculate mean position and velocity across devices
+        means[:, 6:] = meanOfQuatArray(refData[:, :, 7:].transpose((1, 0, 2)))  # Calculate mean attitude of all devices at each timestep
+        self.truth = means
 
     def calcAttitudeError(self):
         att_error = np.array([qboxminus(self.stateArray[dev, :, 7:], self.truth[:, 6:]) for dev in range(len(self.stateArray))])
         self.att_error = att_error
-
 
     def calculateRMS(self):
         self.data = np.array(self.data)
@@ -290,7 +304,7 @@ class Log:
 
         self.specRatio = self.averageRMS / thresholds
 
-        uINS_device_idx = [n for n in range(self.numDev) if self.serials[n] != 10101]
+        uINS_device_idx = [n for n in range(self.numDev) if not(n in self.refIdx)]
 
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
@@ -299,7 +313,7 @@ class Log:
         mode = "AHRS"
         if self.navMode: mode = "NAV"
         if self.compassing: mode = "DUAL GNSS"
-        if self.refINS: mode += " With NovaTel Reference"
+        if self.refINS: mode += " With Reference IMU Data"
         f.write("\n")
 
         # Print Table of RMS accuracies
@@ -382,7 +396,7 @@ class Log:
 
         f.write("----------------- Average Attitude ---------------------\n")
         f.write("Dev:  \t[ Roll\t\tPitch\t\tYaw ]\n")
-        for i in range(self.numDev):
+        for i in range(self.numIns):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
             f.write("%d\t%f\t%f\t%f\n" % (self.serials[i], euler[0], euler[1], euler[2]))
