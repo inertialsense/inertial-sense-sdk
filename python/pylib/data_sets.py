@@ -295,3 +295,6 @@ class eConfigSystem(IntEnum):
     CFG_SYS_CMD_CLEAR_GPS_ASSIST_FROM_FLASH         = 97
     CFG_SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98
     CFG_SYS_CMD_SOFTWARE_RESET                      = 99
+
+class eSysConfigBits(Enum):
+	SYS_CFG_USE_REFERENCE_IMU_IN_EKF = 0x01000000
