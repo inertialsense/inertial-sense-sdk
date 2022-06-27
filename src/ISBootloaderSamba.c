@@ -213,27 +213,29 @@ is_operation_result is_samba_init(is_device_context* ctx)
     // Set flash mode register
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c00, 0x04000600), "Failed to set flash mode register");
 
-    // Set flash command to STUI (start read unique identifier)
-    SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a00000e), "Failed to command UID readout");
+    // Set flash command to STUS (start read unique signature)
+    SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a000014), "Failed to command signature readout");
     
     // Wait until EEFC.FSR.FRDY is cleared
     SAMBA_ERROR_CHECK(is_samba_wait_eefc_ready(ctx, false), "Failed to clear flash ready bit");
-    
+
     // Read out the unique identifier
-    uint32_t uid[4];
-    for(int i = 0; i < 4; i++) SAMBA_ERROR_CHECK(is_samba_read_word(ctx, 0x00400000 + (i * 4), &uid[i]), "Failed to read UID word");
+    uint32_t temp_sn = 0;
+    SAMBA_ERROR_CHECK(is_samba_read_word(ctx, 0x00400000 + offsetof(manufacturing_info_t, serialNumber), &temp_sn), "Failed to read UID word");
     
-    // Set flash command to SPUI (stop read unique identifier)
-    SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a00000f), "Failed to command stop UID readout");
+    // Set flash command to SPUS (stop read unique identifier)
+    SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a000015), "Failed to command stop signature readout");
     
     // Compare against the stored serial number for this device
-    if(strncmp(ctx->match_props.serial_number, (const char *)uid, sizeof(uid)) != 0 
-        && ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) 
+    if(ctx->match_props.sn != temp_sn && 
+        ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) 
     {   // Serial numbers do not match, and the requirement is set for them to match
         serialPortClose(port);
         SAMBA_STATUS("Unique chip identifier does not match");
         return IS_OP_ERROR;
     }
+
+    ctx->match_props.sn = temp_sn;
 
     SAMBA_STATUS("SAM-BA ROM bootloader initialized");
 

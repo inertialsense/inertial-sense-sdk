@@ -86,7 +86,7 @@ typedef enum {
     IS_DEVICE_TYPE_UNKNOWN,   // Unknown must be last
 } is_device_type;
 
-#define IS_SN_MAX_SIZE      20
+#define IS_UID_MAX_SIZE      20
 #define IS_COMPORT_MAX_SIZE 16
 
 typedef enum {
@@ -96,8 +96,8 @@ typedef enum {
     IS_DEVICE_MATCH_FLAG_TYPE       = 0b00001000,
     IS_DEVICE_MATCH_FLAG_MAJOR      = 0b00010000,
     IS_DEVICE_MATCH_FLAG_MINOR      = 0b00100000,
-    IS_DEVICE_MATCH_FLAG_RSVD1      = 0b01000000,
-    IS_DEVICE_MATCH_FLAG_RSVD2      = 0b10000000,
+    IS_DEVICE_MATCH_FLAG_UID        = 0b01000000,
+    IS_DEVICE_MATCH_FLAG_RSVD       = 0b10000000,
 } is_device_match_flags;
 
 typedef uint8_t match_flags;   // 1111 1111
@@ -107,7 +107,8 @@ typedef struct
     match_flags match;
     uint8_t major;
     uint8_t minor; 
-    char serial_number[IS_SN_MAX_SIZE];
+    uint32_t sn;                // Inertial Sense serial number, i.e. SN60000
+    char uid[IS_UID_MAX_SIZE];  // UID from chip, i.e. DFU descriptor
     uint16_t vid;
     uint16_t pid;
     size_t index;

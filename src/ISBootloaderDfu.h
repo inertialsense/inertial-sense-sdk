@@ -39,8 +39,9 @@ extern "C" {
 
 typedef struct 
 {
-    char sn[IS_SN_MAX_SIZE];
-    is_device_vid_pid usb;
+    char uid[IS_SN_MAX_SIZE];   // DFU device serial number, from descriptors
+    uint32_t sn;                // Inertial Sense serial number
+    is_device_vid_pid usb;      // VID/PID combo
 } is_dfu_id;
 
 #define IS_DFU_LIST_LEN     256

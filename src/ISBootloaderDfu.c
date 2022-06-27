@@ -96,6 +96,8 @@ static dfu_error dfu_CLRSTATUS(libusb_device_handle** dev_handle);
 static dfu_error dfu_GETSTATE(libusb_device_handle** dev_handle, uint8_t* buf);
 static dfu_error dfu_ABORT(libusb_device_handle** dev_handle);
 
+static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t* sn);
+
 typedef enum
 {
     STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
@@ -170,12 +172,13 @@ is_operation_result is_list_dfu(
         }
 
         // Get the string containing the serial number from the device
-        unsigned char serial_number[IS_SN_MAX_SIZE];
+        unsigned char serial_number[IS_UID_MAX_SIZE];
         ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
         if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
         
         // Add to list
-        strncpy(list->id[list->present].sn, (char*)serial_number, IS_SN_MAX_SIZE);
+        is_dfu_get_sn(&dev_handle, &list->id[list->present].sn);
+        strncpy(list->id[list->present].uid, (char*)serial_number, IS_UID_MAX_SIZE);
         list->id[list->present].usb.vid = desc.idVendor;
         list->id[list->present].usb.pid = desc.idProduct;
 
@@ -219,28 +222,36 @@ typedef struct
  * @param ctx device context
  * @return is_operation_result 
  */
-is_operation_result is_dfu_get_serial(is_device_context* ctx)
+static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t* sn)
 {
     dfu_status status;
     uint32_t waitTime = 0;
     dfu_state state;
     uint8_t stringIdx;
 
-    // Get the 1K OTP section from the chip
-    // 0x1FFF7000
-    
-    // Set the address pointer
-    uint8_t txBuf = { 0x21, 0x00, 0x70, 0xFF, 0x1F };
-    dfu_DNLOAD(&ctx->handle.libusb, 0, txBuf, sizeof(txBuf));
-    
-    // Address pointer takes effect after GETSTATUS command
-    dfu_GETSTATUS(&ctx->handle.libusb, &status, &waitTime, &state, &stringIdx);
-    if(status != DFU_STATUS_OK || state != DFU_STATE_DNBUSY) return IS_OP_ERROR;
-    dfu_GETSTATUS(&ctx->handle.libusb, &status, &waitTime, &state, &stringIdx);
-    if(status != DFU_STATUS_OK) return IS_OP_ERROR;
+    int ret_libusb;
+    dfu_error ret_dfu;
 
     uint8_t rxBuf[1024] = {0};
-    dfu_UPLOAD(&ctx->handle.libusb, 2, rxBuf, 1024);
+
+    // Get the 1K OTP section from the chip
+    // 0x1FFF7000 is the address. Little endian.
+    {
+        // Set the address pointer (command is 0x21)
+        uint8_t txBuf = { 0x21, 0x00, 0x70, 0xFF, 0x1F };
+        ret_libusb = dfu_DNLOAD(handle, 0, txBuf, sizeof(txBuf));
+        if(ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR;
+        
+        // Address pointer takes effect after GETSTATUS command
+        ret_libusb = dfu_GETSTATUS(handle, &status, &waitTime, &state, &stringIdx);
+        if(ret_libusb < LIBUSB_SUCCESS || status != DFU_STATUS_OK || state != DFU_STATE_DNBUSY) return IS_OP_ERROR;
+        ret_libusb = dfu_GETSTATUS(handle, &status, &waitTime, &state, &stringIdx);
+        if(ret_libusb < LIBUSB_SUCCESS || status != DFU_STATUS_OK) return IS_OP_ERROR;
+
+        // Read the full OTP page
+        ret_libusb = dfu_UPLOAD(handle, 2, rxBuf, 1024);
+        if(ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR;
+    }
 
     int index = 0;
 	uint8_t* otp_mem = (uint8_t*)rxBuf; 
@@ -260,30 +271,16 @@ is_operation_result is_dfu_get_serial(is_device_context* ctx)
 
     // Go back one, to the last filled section
 	index--;
-    
 	is_dfu_otp_id_t* id = (is_dfu_otp_id_t*)((uint32_t)(index * OTP_SECTION_SIZE) + (uint32_t)&rxBuf);
 
 	uint64_t key = OTP_KEY;
-	if(memcmp(otp_mem - 8, &key, 8) != 0)
+	if(memcmp(otp_mem - 8, &key, 8) == 0 && foundSn)
 	{
-		return IS_OP_ERROR;	// Bad last entry in OTP, needs recovery
-	}
-
-    if(foundSn) 
-    {
-        sprintf(ctx->match_props.serial_number, "%d", id->serialNumber);
+        *sn = id->serialNumber;
         return IS_OP_OK;
     }
-    else
-    {
-        ret_libusb = libusb_get_string_descriptor_ascii(&ctx->handle.libusb, iSerialNumber, 
-            ctx->match_props.serial_number, sizeof(ctx->match_props.serial_number));
-        if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
-        
-        // Add to list
-        strncpy(list->id[list->present].sn, (char*)serial_number, IS_SN_MAX_SIZE);
-    }
-    PACKED
+
+    return IS_OP_ERROR;
 }
 
 /**
@@ -347,7 +344,7 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
         }
 
         // Get the string containing the serial number from the device
-        unsigned char serial_number[IS_SN_MAX_SIZE];
+        unsigned char serial_number[IS_UID_MAX_SIZE];
         ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
         if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
 
