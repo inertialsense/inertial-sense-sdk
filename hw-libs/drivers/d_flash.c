@@ -12,7 +12,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <asf.h>
 #include <stdlib.h>
-#include "globals.h"
 #include "../misc/bootloaderShared.h"
 #include "../misc/rtos.h"
 #include "d_flash.h"
@@ -22,16 +21,6 @@ static int s_flashWriteInProgress;
 
 uint32_t flash_update_block(uint32_t address, const void* newData, int dataSize, int noPageErase)
 {
-	
-#if 0
-	// Debug: If flash write has already failed, do not try to write again, we want to
-	//  dump the flash memory to see what it looks like
-	if ((g_sysParams.genFaultCode & GFC_FLASH_WRITE_FAILURE))
-	{
-		return FLASH_RC_OK;
-	}
-#endif
-
 	uint32_t result;
 			
 	if (address < BOOTLOADER_FLASH_USER_DATA_START_ADDRESS || 
@@ -48,9 +37,6 @@ uint32_t flash_update_block(uint32_t address, const void* newData, int dataSize,
 	}
 	else // if contents are different, perform the flash write
 	{
-		// indicate attempted flash write
-		g_nvr_manage_config.flash_write_count++;
-		
 		// assume failure unless we succeed	
 		result = FLASH_RC_ERROR;
 		
@@ -92,14 +78,7 @@ uint32_t flash_update_block(uint32_t address, const void* newData, int dataSize,
 		
 		s_flashWriteInProgress = 0;
 	}
-	
-	if (result != FLASH_RC_OK)
-	{
-#if !defined(PLATFORM_IS_EVB_2)
-		g_sysParams.genFaultCode |= GFC_FLASH_WRITE_FAILURE;
-#endif
-	}
-	
+		
 	return result;
 }
 
