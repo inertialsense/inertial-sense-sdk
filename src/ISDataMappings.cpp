@@ -1652,12 +1652,16 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "dtTemp2", mpu[1].dtTemp, 0, DataTypeFloat, float, 0);
 
 	// Reference IMU
-	ADD_MAP(m, totalSize, "reference.pqr[0]", reference.pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.pqr[1]", reference.pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.pqr[2]", reference.pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.acc[0]", reference.acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.acc[1]", reference.acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.acc[2]", reference.acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "reference.imu.pqr[0]", reference.imu.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.imu.pqr[1]", reference.imu.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.imu.pqr[2]", reference.imu.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.imu.acc[0]", reference.imu.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.imu.acc[1]", reference.imu.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.imu.acc[2]", reference.imu.acc[2], 0, DataTypeFloat, float&, 0);
+	// Reference Mag
+    ADD_MAP(m, totalSize, "reference.mag[0]", reference.mag[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.mag[1]", reference.mag[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "reference.mag[2]", reference.mag[2], 0, DataTypeFloat, float&, 0);
 
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
