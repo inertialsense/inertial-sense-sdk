@@ -463,6 +463,7 @@ bool nvr_slow_maintenance(void)
 
 #endif
 
+		g_nvr_manage_config.flash_write_count++;
         g_nvr_manage_config.flash_write_needed = 0;
         // Disable following each flash write.  We require users to re-enable for each write.
         g_nvr_manage_config.flash_write_enable_timeMs = 0;
