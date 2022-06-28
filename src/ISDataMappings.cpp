@@ -1652,16 +1652,16 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "dtTemp2", mpu[1].dtTemp, 0, DataTypeFloat, float, 0);
 
 	// Reference IMU
-	ADD_MAP(m, totalSize, "reference.imu.pqr[0]", reference.imu.pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.imu.pqr[1]", reference.imu.pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.imu.pqr[2]", reference.imu.pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.imu.acc[0]", reference.imu.acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.imu.acc[1]", reference.imu.acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.imu.acc[2]", reference.imu.acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "referenceImu.pqr[0]", referenceImu.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.pqr[1]", referenceImu.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.pqr[2]", referenceImu.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.acc[0]", referenceImu.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.acc[1]", referenceImu.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.acc[2]", referenceImu.acc[2], 0, DataTypeFloat, float&, 0);
 	// Reference Mag
-    ADD_MAP(m, totalSize, "reference.mag[0]", reference.mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.mag[1]", reference.mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.mag[2]", reference.mag[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceMag[0]", referenceMag[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceMag[1]", referenceMag[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceMag[2]", referenceMag[2], 0, DataTypeFloat, float&, 0);
 
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);

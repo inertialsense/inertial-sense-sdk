@@ -1328,11 +1328,8 @@ typedef struct PACKED
 {                                       // Sensor temperature compensation
 	uint32_t                timeMs;         // (ms) Time since boot up.
 	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
-	struct
-	{	
-		imus_t 					imu;		// External reference IMU
-		float                   mag[3];		// External reference magnetometer (heading reference)
-	}						reference;
+	imus_t 					referenceImu;	// External reference IMU
+	float                   referenceMag[3];// External reference magnetometer (heading reference)
 	uint32_t                sampleCount;    // Number of samples collected
 	uint32_t                calState;       // State machine (see eScompCalState)
 	uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)

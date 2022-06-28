@@ -38,7 +38,7 @@ PYBIND11_NUMPY_DTYPE(io_t, timeOfWeekMs, gpioStatus);
 
 PYBIND11_NUMPY_DTYPE(sensors_t, mpu);
 PYBIND11_NUMPY_DTYPE(sensor_comp_unit_t, lpfLsb, temp, tempRampRate, tci, numTcPts, dtTemp);
-PYBIND11_NUMPY_DTYPE(sensor_compensation_t, timeMs, mpu, reference, sampleCount, calState, status, alignAccel);
+PYBIND11_NUMPY_DTYPE(sensor_compensation_t, timeMs, mpu, referenceImu, referenceMag, sampleCount, calState, status, alignAccel);
 PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, mpu);
 PYBIND11_NUMPY_DTYPE(imu_t, time, I);
 
