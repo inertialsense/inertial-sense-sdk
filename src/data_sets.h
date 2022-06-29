@@ -298,8 +298,8 @@ enum eHdwStatusFlags
 	HDW_STATUS_STROBE_IN_EVENT					= (int)0x00000020,
 	/** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
 	HDW_STATUS_GPS_TIME_OF_WEEK_VALID			= (int)0x00000040,
-
-	HDW_STATUS_UNUSED_1				            = (int)0x00000080,
+	/** Reference IMU data being received */
+	HDW_STATUS_REFERENCE_IMU_RX	                = (int)0x00000080,
 
 	/** Sensor saturation on gyro */
 	HDW_STATUS_SATURATION_GYR					= (int)0x00000100,
