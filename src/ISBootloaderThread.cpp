@@ -1,7 +1,7 @@
 /**
  * @file ISBootloaderThread.cpp
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating embedded systems
+ * @brief Inertial Sense routines for updating embedded systems in parallel
  * 
  */
 

@@ -1,7 +1,8 @@
 /**
- * @file ISBootloaderCommon.h
+ * @file ISBootloaderSAMBA.h
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating embedded systems
+ * @brief Inertial Sense routines for updating ISB (Inertial Sense Bootloader)
+ *  images using the SAM-BA protocol.
  * 
  */
 
@@ -17,48 +18,35 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __IS_BOOTLOADER_COMMON_H
-#define __IS_BOOTLOADER_COMMON_H
+#ifndef __IS_BOOTLOADER_SAMBA_H
+#define __IS_BOOTLOADER_SAMBA_H
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdbool.h>
 
 #include "ISBootloaderTypes.h"
-#include "ISBootloaderDfu.h"
-#include "ISBootloaderSamba.h"
-#include "inertialSenseBootLoader.h"
 
 #ifdef __cplusplus
 extern "C" {
-
-// TODO: namespace
-// TODO: api version constant
-// TODO: winapi macros
-
 #endif
 
-is_device_context* is_create_context(
-    is_device_handle* handle, 
-    is_device_match_properties* match_props,
-    is_firmware_settings* firmware,
-    int baud_rate,
-    is_verification_style verify,
-    pfnBootloadProgress upload_cb,
-    pfnBootloadProgress verify_cb,
-    pfnBootloadStatus info_cb,
-    void* user_data
-);
-void is_destroy_context(is_device_context* ctx);
-
-is_operation_result is_check_version(is_device_context* ctx);
-is_operation_result is_jump_to_bootloader(is_device_context* ctx);
-
 /**
- * @brief Write flash to device
+ * @brief Flash the bootloader to the device via SAM-BA
  * 
- * @param context setup struct of type is_device_context
+ * @param ctx a fully populated device context
+ * @return is_operation_result 
  */
-void is_update_flash(void* context);
+is_operation_result is_samba_flash(is_device_context* ctx);
+
+is_operation_result is_samba_init(is_device_context* ctx);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __IS_BOOTLOADER_COMMON_H
+#endif	// __IS_BOOTLOADER_SAMBA_H

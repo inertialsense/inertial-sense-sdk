@@ -1,7 +1,8 @@
 /**
- * @file ISBootloaderSamba.c
+ * @file ISBootloaderSAMBA.c
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating SAM-BA capable devices
+ * @brief Inertial Sense routines for updating ISB (Inertial Sense Bootloader)
+ *  images using the SAM-BA protocol.
  * 
  */
 
@@ -18,16 +19,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISUtilities.h"
-#include "ISBootloaderSamba.h"
-#include "inertialSenseBootLoader.h"
+#include "ISBootloaderSAMBA.h"
 #include "serialPortPlatform.h"
 #include "ihex.h"
 
 #include <time.h>
 #include <stddef.h>
 
-// https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
-// https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
+// Resources for SAM-BA protocol:
+//  - Datasheet ROM boot section
+//  - https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
+//  - https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
 
 #define UART_X_SOH 0x01
 #define UART_X_EOT 0x04

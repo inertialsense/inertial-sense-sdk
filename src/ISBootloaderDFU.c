@@ -1,7 +1,8 @@
 /**
- * @file ISBootloaderDfu.c
+ * @file ISBootloaderDFU.c
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating DFU capable devices (uINS-5)
+ * @brief Inertial Sense routines for updating ISB (Inertial Sense Bootloader)
+ *  images using the DFU protocol.
  * 
  */
 

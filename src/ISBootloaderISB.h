@@ -1,8 +1,9 @@
 /**
- * @file ISBootloaderSamba.h
+ * @file ISBootloaderISB.h
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating SAM-BA capable devices
- * 
+ * @brief Inertial Sense routines for updating application images 
+ *  using ISB (Inertial Sense Bootloader) protocol
+ *  
  */
 
 /*
@@ -17,36 +18,23 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __IS_BOOTLOADER_SAMBA_H
-#define __IS_BOOTLOADER_SAMBA_H
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <stdbool.h>
+#ifndef __IS_BOOTLOADER_H
+#define __IS_BOOTLOADER_H
 
 #include "ISBootloaderTypes.h"
-#include "ISBootloaderCompat.h"
+#include "ISBootloader.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * @brief Flash the bootloader to the device via SAM-BA
- * 
- * @param ctx a fully populated device context
- * @return is_operation_result 
- */
-is_operation_result is_samba_flash(is_device_context* ctx);
-
-is_operation_result is_samba_init(is_device_context* ctx);
+is_operation_result is_isb_flash(is_device_context* ctx);
+is_operation_result is_isb_get_version_from_file(const char* filename, uint8_t* major, char* minor);
+is_operation_result is_isb_reboot_to_app(serial_port_t* port);
+is_operation_result is_isb_get_version(is_device_context* ctx);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	// __IS_BOOTLOADER_SAMBA_H
+#endif // __IS_BOOTLOADER_H

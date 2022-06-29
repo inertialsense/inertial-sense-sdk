@@ -1,7 +1,8 @@
 /**
- * @file ISBootloaderDfu.h
+ * @file ISBootloaderDFU.h
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating DFU capable devices (uINS-5)
+ * @brief Inertial Sense routines for updating ISB (Inertial Sense Bootloader)
+ *  images using the DFU protocol.
  * 
  */
 
@@ -30,7 +31,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ihex.h"
 #include "ISBootloaderTypes.h"
-#include "ISBootloaderCompat.h"
 #include "libusb/libusb.h"
 
 #ifdef __cplusplus

@@ -1,8 +1,7 @@
 /**
  * @file ISBootloader.h
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense bootloader routines. Use ISBootloaderCompat if you need
- *  to use the ROM based bootloaders as well.
+ * @brief Inertial Sense routines for updating firmware and bootloaders
  * 
  */
 
@@ -18,23 +17,45 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __IS_BOOTLOADER_H
-#define __IS_BOOTLOADER_H
+#ifndef __IS_BOOTLOADER_COMMON_H
+#define __IS_BOOTLOADER_COMMON_H
 
 #include "ISBootloaderTypes.h"
-#include "ISBootloader.h"
 
 #ifdef __cplusplus
 extern "C" {
+
+// TODO: namespace
+// TODO: api version constant
+// TODO: winapi macros
+
 #endif
 
-is_operation_result is_isb_flash(is_device_context* ctx);
-is_operation_result is_isb_get_version_from_file(const char* filename, uint8_t* major, char* minor);
-is_operation_result is_isb_reboot_to_app(serial_port_t* port);
-is_operation_result is_isb_get_version(is_device_context* ctx);
+is_device_context* is_create_context(
+    is_device_handle* handle, 
+    is_device_match_properties* match_props,
+    is_firmware_settings* firmware,
+    int baud_rate,
+    is_verification_style verify,
+    pfnBootloadProgress upload_cb,
+    pfnBootloadProgress verify_cb,
+    pfnBootloadStatus info_cb,
+    void* user_data
+);
+void is_destroy_context(is_device_context* ctx);
+
+is_operation_result is_check_version(is_device_context* ctx);
+is_operation_result is_jump_to_bootloader(is_device_context* ctx);
+
+/**
+ * @brief Write flash to device
+ * 
+ * @param context setup struct of type is_device_context
+ */
+void is_update_flash(void* context);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __IS_BOOTLOADER_H
+#endif // __IS_BOOTLOADER_COMMON_H
