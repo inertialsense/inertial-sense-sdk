@@ -106,7 +106,7 @@ void led_maintenance(void)
 		switch(g_sc.calState)
 		{
 		default: 
-		case SC_ORTH_SAMPLE_INIT:
+		case SC_MCAL_SAMPLE_INIT:
 			LED_COLOR_RED();
 			break;
 		
@@ -121,8 +121,8 @@ void led_maintenance(void)
 			}
 			break;
 
-		case SC_ORTH_SAMPLE_MEAN_IS1:
-		case SC_ORTH_SAMPLE_MEAN_IS2:
+		case SC_MCAL_SAMPLE_MEAN_IS1:
+		case SC_MCAL_SAMPLE_MEAN_IS2:
 			LED_COLOR_CYAN();
 			break;
 			
