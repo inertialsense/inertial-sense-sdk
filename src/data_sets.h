@@ -154,7 +154,7 @@ typedef uint32_t eDataIDs;
 
 
 /** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
-// #define PROTOCOL_VERSION_CHAR0 1        // Major (in com_manager.h)
+// #define PROTOCOL_VERSION_CHAR0 1        // Major (in ISComm.h)
 // #define PROTOCOL_VERSION_CHAR1 0
 #define PROTOCOL_VERSION_CHAR2 (0x000000FF&DID_COUNT_UINS)
 #define PROTOCOL_VERSION_CHAR3 9         // Minor (in data_sets.h)
@@ -299,8 +299,8 @@ enum eHdwStatusFlags
 	HDW_STATUS_STROBE_IN_EVENT					= (int)0x00000020,
 	/** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
 	HDW_STATUS_GPS_TIME_OF_WEEK_VALID			= (int)0x00000040,
-
-	HDW_STATUS_UNUSED_1				            = (int)0x00000080,
+	/** Reference IMU data being received */
+	HDW_STATUS_REFERENCE_IMU_RX	                = (int)0x00000080,
 
 	/** Sensor saturation on gyro */
 	HDW_STATUS_SATURATION_GYR					= (int)0x00000100,
@@ -1386,7 +1386,8 @@ typedef struct PACKED
 	sensor_comp_unit_t		pqr[NUM_IMU_DEVICES];
 	sensor_comp_unit_t		acc[NUM_IMU_DEVICES];
 	sensor_comp_unit_t		mag[NUM_MAG_DEVICES];
-	imus_t 					reference;		// External reference IMU
+	imus_t 					referenceImu;	// External reference IMU
+	float                   referenceMag[3];// External reference magnetometer (heading reference)
 	uint32_t                sampleCount;    // Number of samples collected
 	uint32_t                calState;       // state machine (see eScompCalState)
 	uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
