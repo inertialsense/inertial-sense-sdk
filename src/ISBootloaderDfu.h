@@ -30,16 +30,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ihex.h"
 #include "ISBootloaderTypes.h"
-#include "ISBootloaderCommon.h"
+#include "ISBootloaderCompat.h"
 #include "libusb/libusb.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
+// Recipe for DFU serial number:
+// sprintf(ctx->match_props.uid, "%X%X", manufacturing_info->uid[0] + manufacturing_info->uid[2], (uint16_t)(manufacturing_info->uid[1] >> 16));
+
 typedef struct 
 {
-    char uid[IS_SN_MAX_SIZE];   // DFU device serial number, from descriptors
+    char uid[IS_UID_MAX_SIZE];   // DFU device serial number, from descriptors
     uint32_t sn;                // Inertial Sense serial number
     is_device_vid_pid usb;      // VID/PID combo
 } is_dfu_id;

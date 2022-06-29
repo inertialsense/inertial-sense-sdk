@@ -705,13 +705,17 @@ void InertialSense::BootloadStatusUpdate()
     {
         if(ISBootloader::ctx[i]->infoString_new)
         {
-            if(strlen(ISBootloader::ctx[i]->handle.port_name))
+			if(ISBootloader::ctx[i]->match_props.sn != 0)
+            {
+                printf("SN%d: %s\r\n", ISBootloader::ctx[i]->match_props.sn, ISBootloader::ctx[i]->infoString);
+            }
+			else if(strlen(ISBootloader::ctx[i]->match_props.uid))
+            {
+                printf("DFU %s: %s\r\n", ISBootloader::ctx[i]->match_props.uid, ISBootloader::ctx[i]->infoString);
+            }
+            else if(strlen(ISBootloader::ctx[i]->handle.port_name))
             {
                 printf("%s: %s\r\n", ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->infoString);
-            }
-            else if(strlen(ISBootloader::ctx[i]->match_props.serial_number))
-            {
-                printf("DFU %s: %s\r\n", ISBootloader::ctx[i]->match_props.serial_number, ISBootloader::ctx[i]->infoString);
             }
             else
             {

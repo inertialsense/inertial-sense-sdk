@@ -79,7 +79,7 @@ is_operation_result ISBootloader::update(
         memset(&handle, 0, sizeof(is_device_handle));
         handle.status = IS_HANDLE_TYPE_LIBUSB;
         is_device_match_properties match_props;
-        memcpy(&match_props.serial_number, &dfu_list.id[i].sn, IS_SN_MAX_SIZE);
+        memcpy(&match_props.uid, &dfu_list.id[i].sn, IS_UID_MAX_SIZE);
         match_props.vid = dfu_list.id[i].usb.vid;
         match_props.pid = dfu_list.id[i].usb.pid;
         match_props.index = idx++;

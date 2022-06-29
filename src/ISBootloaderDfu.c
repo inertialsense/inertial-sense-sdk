@@ -344,12 +344,12 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
         }
 
         // Get the string containing the serial number from the device
-        unsigned char serial_number[IS_UID_MAX_SIZE];
-        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
-        if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
+        unsigned char uid[IS_UID_MAX_SIZE];
+        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, uid, sizeof(uid));
+        if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
 
         // Check the serial number
-        if((ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) && (strcmp(ctx->match_props.serial_number, (char*)serial_number) != 0)) 
+        if((ctx->match_props.match & IS_DEVICE_MATCH_FLAG_UID) && (strcmp(ctx->match_props.uid, (char*)uid) != 0)) 
         {
             libusb_close(dev_handle);
             continue;

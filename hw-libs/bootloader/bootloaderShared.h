@@ -173,9 +173,12 @@ typedef union
 	uint8_t bytes[BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE]; // any additional bytes are reserved space
 } bootloader_header_t;
 
-extern uint8_t bootloaderRequiredSignature_EVB_2[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_uINS_3[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_SAMx70_bootloader[BOOTLOADER_SIGNATURE_SIZE];
+extern uint8_t bootloaderRequiredSignature_EVB_2_16K[BOOTLOADER_SIGNATURE_SIZE];
+extern uint8_t bootloaderRequiredSignature_uINS_3_16K[BOOTLOADER_SIGNATURE_SIZE];
+extern uint8_t bootloaderRequiredSignature_SAMx70_bootloader_16K[BOOTLOADER_SIGNATURE_SIZE];
+extern uint8_t bootloaderRequiredSignature_EVB_2_24K[BOOTLOADER_SIGNATURE_SIZE];
+extern uint8_t bootloaderRequiredSignature_uINS_3_24K[BOOTLOADER_SIGNATURE_SIZE];
+extern uint8_t bootloaderRequiredSignature_SAMx70_bootloader_24K[BOOTLOADER_SIGNATURE_SIZE];
 extern uint8_t bootloaderRequiredSignature_uINS_5[BOOTLOADER_SIGNATURE_SIZE];
 extern uint8_t bootloaderRequiredSignature_STM32L4_bootloader[BOOTLOADER_SIGNATURE_SIZE];
 

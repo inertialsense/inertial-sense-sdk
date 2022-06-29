@@ -24,6 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ihex.h"
 
 #include <time.h>
+#include <stddef.h>
 
 // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
 // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
@@ -50,7 +51,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         return IS_OP_ERROR; \
     }
 
-static is_operation_result is_samba_init(is_device_context* ctx);
+is_operation_result is_samba_init(is_device_context* ctx);
 static is_operation_result is_samba_read_word(is_device_context* ctx, uint32_t address, uint32_t* word);
 static is_operation_result is_samba_write_word(is_device_context* ctx, uint32_t address, uint32_t word);
 static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool waitReady);
@@ -84,7 +85,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
 
-    SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to init SAM-BA device");
+    // SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to init SAM-BA device");
 
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
