@@ -18,7 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISBootloaderThread.h"
-#include "ISBootloaderDfu.h"
+#include "ISBootloaderDFU.h"
 
 vector<is_device_context*> ISBootloader::ctx;
 
@@ -27,7 +27,7 @@ size_t ISBootloader::get_num_devices(vector<string>& comPorts)
     size_t ret = 0;
 
     is_dfu_list dfu_list;
-    is_list_dfu(&dfu_list);
+    is_dfu_list_devices(&dfu_list);
 
     ret += dfu_list.present;
     ret += comPorts.size();
@@ -50,8 +50,9 @@ static bool any_in_progress(vector<is_device_context*>& ctx)
 
 is_operation_result ISBootloader::update(
     vector<string>&             comPorts,
+    vector<uint32_t>&           serials,
     int                         baudRate,
-    is_firmware_settings*       firmware,
+    const char*                 firmware,
     pfnBootloadProgress         uploadProgress, 
     pfnBootloadProgress         verifyProgress, 
     pfnBootloadStatus           infoProgress,
@@ -69,7 +70,7 @@ is_operation_result ISBootloader::update(
     ctx.clear();
 
     if(libusb_init(NULL) < 0) return IS_OP_ERROR;
-    is_list_dfu(&dfu_list);
+    is_dfu_list_devices(&dfu_list);
 
     size_t idx = 0; // Tracks the instances so callbacks can match with a list
 
@@ -78,17 +79,13 @@ is_operation_result ISBootloader::update(
         is_device_handle handle;
         memset(&handle, 0, sizeof(is_device_handle));
         handle.status = IS_HANDLE_TYPE_LIBUSB;
-        is_device_match_properties match_props;
-        memcpy(&match_props.uid, &dfu_list.id[i].sn, IS_UID_MAX_SIZE);
-        match_props.vid = dfu_list.id[i].usb.vid;
-        match_props.pid = dfu_list.id[i].usb.pid;
-        match_props.index = idx++;
+        memcpy(&handle.dfu.uid, &dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE);
+        handle.dfu.vid = dfu_list.id[i].vid;
+        handle.dfu.pid = dfu_list.id[i].pid;
+        handle.dfu.sn = 0;
         ctx.push_back(is_create_context(
-            &handle, 
-            &match_props,
+            &handle,
             firmware, 
-            baudRate, 
-            verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
             uploadProgress, 
             verifyProgress, 
             infoProgress,
@@ -100,16 +97,11 @@ is_operation_result ISBootloader::update(
     {	// Create contexts for devices still in serial mode
         is_device_handle handle;
         memset(&handle, 0, sizeof(is_device_handle));
-        strncpy(handle.port_name, comPorts[i].c_str(), 256);
+        strncpy(handle.port_name, comPorts[i].c_str(), 100);
         handle.status = IS_HANDLE_TYPE_SERIAL;
-        is_device_match_properties match_props;
-        match_props.index = idx++;
         ctx.push_back(is_create_context(
-            &handle, 
-            &match_props,
+            &handle,
             firmware, 
-            baudRate, 
-            verifyProgress != NULL ? IS_VERIFY_ON : IS_VERIFY_OFF, 
             uploadProgress, 
             verifyProgress, 
             infoProgress,

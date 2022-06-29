@@ -117,6 +117,14 @@ private:
 extern "C" {
 #endif
 
+typedef enum {
+    IS_OP_OK            = 0,
+    IS_OP_ERROR         = -1,
+    IS_OP_CANCELLED     = -2,
+    IS_OP_INCOMPATIBLE  = -3,
+    IS_OP_RETRY         = -4,
+} is_operation_result;
+
 #if PLATFORM_IS_WINDOWS
 
 void usleep(__int64 usec);
@@ -160,9 +168,8 @@ uint64_t timerRawEnd(uint64_t start);
 
 uint64_t getTickCount(void);
 
-int bootloadUploadProgress(void* port, float percent);
-int bootloadVerifyProgress(void* port, float percent);
-void bootloadStatusInfo(void* port, const char* str);
+is_operation_result bootloadUploadProgress(void* port, float percent);
+is_operation_result bootloadVerifyProgress(void* port, float percent);
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec);
 
 FILE* openFile(const char* path, const char* mode);

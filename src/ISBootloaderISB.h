@@ -28,10 +28,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+void is_isb_restart_rom(serial_port_t* s);
+void is_isb_restart(serial_port_t* s);
 is_operation_result is_isb_flash(is_device_context* ctx);
 is_operation_result is_isb_get_version_from_file(const char* filename, uint8_t* major, char* minor);
 is_operation_result is_isb_reboot_to_app(serial_port_t* port);
 is_operation_result is_isb_get_version(is_device_context* ctx);
+is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd);
 
 #ifdef __cplusplus
 }

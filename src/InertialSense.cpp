@@ -697,33 +697,30 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-void InertialSense::BootloadStatusUpdate()
+void InertialSense::BootloadStatusUpdate(void* obj, const char* str)
 {
 #ifndef EXCLUDE_BOOTLOADER
 
     for(size_t i = 0; i < ISBootloader::ctx.size(); i++)
     {
-        if(ISBootloader::ctx[i]->infoString_new)
-        {
-			if(ISBootloader::ctx[i]->match_props.sn != 0)
-            {
-                printf("SN%d: %s\r\n", ISBootloader::ctx[i]->match_props.sn, ISBootloader::ctx[i]->infoString);
-            }
-			else if(strlen(ISBootloader::ctx[i]->match_props.uid))
-            {
-                printf("DFU %s: %s\r\n", ISBootloader::ctx[i]->match_props.uid, ISBootloader::ctx[i]->infoString);
-            }
-            else if(strlen(ISBootloader::ctx[i]->handle.port_name))
-            {
-                printf("%s: %s\r\n", ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->infoString);
-            }
-            else
-            {
-                printf("Unknown: %s\r\n", ISBootloader::ctx[i]->infoString);
-			}
+		is_device_context* ctx = ISBootloader::ctx[i];
 
-            ISBootloader::ctx[i]->infoString_new = false;
-        }
+		if(ctx->props.serial != 0)
+		{
+			printf("SN%d: %s\r\n", ctx->props.serial, str);
+		}
+		else if(ctx->handle.dfu.sn != 0)
+		{
+			printf("SN%d: %s\r\n", ctx->handle.dfu.sn, str);
+		}
+		else if(strlen(ctx->handle.port_name) != 0)
+		{
+			printf("%s: %s\r\n", ctx->handle.port_name, str);
+		}
+		else
+		{
+			printf("Unknown: %s\r\n", str);
+		}
     }
 
 	float progress = 0.0;
@@ -731,14 +728,14 @@ void InertialSense::BootloadStatusUpdate()
 
     for(size_t i = 0; i < num_devices; i++)
     {
-		if(ISBootloader::ctx[i]->verification_style == IS_VERIFY_OFF)
+		if(ISBootloader::ctx[i]->verify == IS_VERIFY_OFF)
 		{
-			progress += ISBootloader::ctx[i]->updateProgress;
+			progress += ISBootloader::ctx[i]->verify_progress;
 		}
 		else
 		{
-			progress += ISBootloader::ctx[i]->updateProgress * 0.5f;
-			progress += ISBootloader::ctx[i]->verifyProgress * 0.5f;
+			progress += ISBootloader::ctx[i]->update_progress * 0.5f;
+			progress += ISBootloader::ctx[i]->verify_progress * 0.5f;
 		}
     }
 
@@ -751,18 +748,18 @@ void InertialSense::BootloadStatusUpdate()
 
 vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	const string& comPort, 
+	const uint32_t serialNum,
 	const string& fileName, 
 	int baudRate, 
 	pfnBootloadProgress uploadProgress, 
 	pfnBootloadProgress verifyProgress, 
-	pfnBootloadStatus infoProgress, 
-	const string& bootloaderFileName, 
-	bool forceBootloaderUpdate
+	pfnBootloadStatus infoProgress
 )
 {
 #ifndef EXCLUDE_BOOTLOADER
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
+	vector<uint32_t> serials;
 
 	if (comPort == "*")
 	{
@@ -785,28 +782,21 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		return results;
 	}
 
-	// Copy the same path into all, the underlying code will pick which devices to update based on the file name.
-	is_firmware_settings firmware;
-	strncpy(firmware.firmware_path, fileName.c_str(), 256);
-	strncpy(firmware.bootloader_path, bootloaderFileName.c_str(), 256);
-	firmware.bootloader_force_update = forceBootloaderUpdate;
-
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
 	#endif
 	
-	ISBootloader::update(portStrings, baudRate, &firmware, uploadProgress, verifyProgress, infoProgress, NULL, BootloadStatusUpdate);
+	ISBootloader::update(portStrings, serials, baudRate, fileName.c_str(), uploadProgress, verifyProgress, BootloadStatusUpdate, NULLPTR, NULLPTR);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
 	#endif
 
-	// If any thread failed, we return failure
 	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
 	{
 		if(ISBootloader::ctx[i] != NULL)
 		{
-			results.push_back({ ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->error });
+			results.push_back({ "", "" });
 		}
 	}
 

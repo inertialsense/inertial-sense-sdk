@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __IS_BOOTLOADER_COMMON_H
 
 #include "ISBootloaderTypes.h"
+#include "ISUtilities.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,11 +33,8 @@ extern "C" {
 #endif
 
 is_device_context* is_create_context(
-    is_device_handle* handle, 
-    is_device_match_properties* match_props,
-    is_firmware_settings* firmware,
-    int baud_rate,
-    is_verification_style verify,
+    is_device_handle* handle,
+    const char* firmware,
     pfnBootloadProgress upload_cb,
     pfnBootloadProgress verify_cb,
     pfnBootloadStatus info_cb,

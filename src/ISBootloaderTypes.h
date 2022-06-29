@@ -31,6 +31,8 @@ extern "C" {
 
 #include "serialPort.h"
 
+#include "ISUtilities.h"
+
 #define IS_DEVICE_LIST_LEN          256
 #define IS_FIRMWARE_PATH_LENGTH     256
 
@@ -42,12 +44,6 @@ typedef enum {
     IS_VERIFY_ON  = 1,
     IS_VERIFY_OFF = 2
 } is_verification_style;
-
-typedef enum {
-    IS_OP_OK            = 0,
-    IS_OP_ERROR         = -1,
-    IS_OP_CANCELLED     = -2,
-} is_operation_result;
 
 typedef enum {
     IS_PROCESSOR_SAMx70 = 0,        // uINS-5
@@ -110,6 +106,32 @@ typedef enum {
     IS_HANDLE_TYPE_SERIAL
 } is_handle_type;
 
+#define IS_DFU_UID_MAX_SIZE     20
+#define IS_DFU_LIST_LEN         256
+
+typedef enum
+{
+    STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
+    STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11
+} is_dfu_descriptor;
+
+// Recipe for DFU serial number:
+// sprintf(ctx->match_props.uid, "%X%X", manufacturing_info->uid[0] + manufacturing_info->uid[2], (uint16_t)(manufacturing_info->uid[1] >> 16));
+
+typedef struct 
+{
+    char uid[IS_DFU_UID_MAX_SIZE];      // DFU device serial number, from descriptors
+    uint32_t sn;                        // Inertial Sense serial number
+    uint16_t vid;
+    uint16_t pid;
+} is_dfu_id;
+
+typedef struct 
+{
+    is_dfu_id id[IS_DFU_LIST_LEN];
+    size_t present;
+} is_dfu_list;
+
 typedef struct
 {
     is_handle_type status;     
@@ -117,6 +139,7 @@ typedef struct
     char port_name[100];
     int baud;
     libusb_device_handle* libusb;
+    is_dfu_id dfu;
 } is_device_handle;
 
 /** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
@@ -150,23 +173,6 @@ typedef struct
     float verify_progress;
     bool success;
 } is_device_context;
-
-typedef struct 
-{
-    uint16_t vid;
-    uint16_t pid;
-} is_device_vid_pid;
-
-typedef struct 
-{
-    is_device_vid_pid usb;
-} is_device_id;
-
-typedef struct 
-{
-    is_device_id id[IS_DEVICE_LIST_LEN];
-    size_t present;
-} is_device_list;
 
 #ifdef __cplusplus
 }

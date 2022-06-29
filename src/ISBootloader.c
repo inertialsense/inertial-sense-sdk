@@ -39,7 +39,7 @@ const char* is_stm32l4_bootloader_needle = "STM32L4";
 
 is_device_context* is_create_context(
     is_device_handle* handle,
-    const char* serial_port,
+    const char* firmware,
     pfnBootloadProgress upload_cb,
     pfnBootloadProgress verify_cb,
     pfnBootloadStatus info_cb,
@@ -61,12 +61,8 @@ is_device_context* is_create_context(
     ctx->verify_progress = 0.0;
     ctx->update_in_progress = false;
 
-    if(strlen(serial_port) != 0)
-    {
-        serialPortPlatformInit(&ctx->handle.port);
-        serialPortSetPort(&ctx->handle.port, serial_port);
-        strncpy(ctx->handle.port_name, serial_port, 100);
-    }
+    serialPortPlatformInit(&ctx->handle.port);
+    serialPortSetPort(&ctx->handle.port, handle->port_name);
 
     return ctx;
 }
@@ -226,19 +222,19 @@ static is_image_signature is_get_bin_image_signature(const char* firmware)
     return 0;
 }
 
-is_operation_result is_check_signature_compatibility(is_device_context* ctx, const char* firmware)
+is_operation_result is_check_signature_compatibility(is_device_context* ctx)
 {
-    const char * extension = get_file_ext(firmware);
+    const char * extension = get_file_ext(ctx->firmware_path);
     is_image_signature file_signature = 0;
     is_image_signature valid_signatures = 0;
 
     if(strcmp(extension, "bin") == 0)
     {
-        file_signature = is_get_bin_image_signature(firmware);
+        file_signature = is_get_bin_image_signature(ctx->firmware_path);
     }
     else if(strcmp(extension, "hex") == 0)
     {
-        file_signature = is_get_hex_image_signature(firmware);
+        file_signature = is_get_hex_image_signature(ctx->firmware_path);
     }
     else
     {
@@ -321,130 +317,106 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx, con
     return IS_OP_ERROR;
 }
 
-/**
- * @brief Compatibility layer with old bootloader code in "inertialSenseBootLoader.c"
- * 
- * @param ctx 
- * @return is_operation_result 
- */
-is_operation_result is_flash_compat(is_device_context* ctx)
-{
-    bootload_params_t params;
-
-    params.uploadProgress = ctx->update_progress_callback;
-    params.verifyProgress = ctx->verify_progress_callback;
-    params.statusText = ctx->info_callback;
-    params.fileName = ctx->firmware.firmware_path;
-    params.forceBootloaderUpdate = ctx->firmware.bootloader_force_update;
-    params.port = &ctx->handle.port;
-    params.verifyFileName = NULL;   // TODO: Add verify
-    params.flags.bitFields.enableVerify = (ctx->verification_style == IS_VERIFY_ON);
-    params.baudRate = ctx->baud_rate;
-    params.obj = ctx;
-    params.bootName = (const char*)ctx->firmware.bootloader_path;
-    params.ctx = (void*)ctx;
-
-    if(ctx->hdw_info.evb_version[0] == 2) strncpy(params.bootloadEnableCmd, "EBLE", 5);
-    else strncpy(params.bootloadEnableCmd, "BLEN", 5);
-
-    if(ctx->scheme == IS_SCHEME_DFU) params.bootloaderUpdateCb = is_dfu_flash;
-    else if(ctx->scheme == IS_SCHEME_SAMBA) params.bootloaderUpdateCb = is_samba_flash;
-    else return IS_OP_ERROR;
-
-    bootloadFileEx(&params);
-
-    strncpy(ctx->error, params.error, BOOTLOADER_ERROR_LENGTH);
-
-    return IS_OP_OK;
-}
-
 void is_update_flash(void* context)
 {
     is_device_context* ctx = (is_device_context*)context;
 
-	is_get_device_type_hdw(ctx);
-
-    strncpy(ctx->bl_enable_command, "BLEN", 5);
-    
-	if((ctx->hdw_info.uins_version[0] == 5) && strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
-	{
-        ctx->scheme = IS_SCHEME_DFU;
-	}
-	else if((ctx->hdw_info.uins_version[0] == 4 || ctx->hdw_info.uins_version[0] == 3) && strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
-	{
-		ctx->scheme = IS_SCHEME_SAMBA;
-	}
-	else if(ctx->hdw_info.evb_version[0] == 2 && strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
-	{
-		strncpy(ctx->bl_enable_command, "EBLE", 5);
-        ctx->scheme = IS_SCHEME_SAMBA;
-	}
-	else
-	{   // Bootload based on filename alone
-	    if(strstr(ctx->firmware.firmware_path, is_uins_5_firmware_needle))
-		{
-            ctx->scheme = IS_SCHEME_DFU;
-
-			ctx->hdw_info.uins_version[0] = 5;
-			ctx->hdw_info.evb_version[0] = 0;
-		}
-        else if(strstr(ctx->firmware.firmware_path, is_uins_3_firmware_needle))
-		{
-            ctx->scheme = IS_SCHEME_SAMBA;
-
-			ctx->hdw_info.uins_version[0] = 4;
-			ctx->hdw_info.evb_version[0] = 0;
-		}
-		else if(strstr(ctx->firmware.firmware_path, is_evb_2_firmware_needle))
-		{
-            strncpy(ctx->bl_enable_command, "EBLE", 5);
-
-            ctx->scheme = IS_SCHEME_SAMBA;
-
-			ctx->hdw_info.uins_version[0] = 0;
-			ctx->hdw_info.evb_version[0] = 2;
-		}
-		else
-		{
-            ctx->update_in_progress = false;
-			return;
-		}
-	}
-
-    if(ctx->scheme == IS_SCHEME_SAMBA)
+    if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
-        ctx->match_props.match = 
-            IS_DEVICE_MATCH_FLAG_TYPE | 
-            IS_DEVICE_MATCH_FLAG_MAJOR;
+        return IS_OP_INCOMPATIBLE;
     }
-    else if(ctx->scheme == IS_SCHEME_DFU)
+
+    const char * extension = get_file_ext(ctx->firmware_path);
+    is_image_signature file_signature = 0;
+
+    if(strcmp(extension, "bin") == 0)
     {
-        ctx->match_props.match = 
-            IS_DEVICE_MATCH_FLAG_VID | 
-            IS_DEVICE_MATCH_FLAG_PID | 
-            IS_DEVICE_MATCH_FLAG_TYPE | 
-            IS_DEVICE_MATCH_FLAG_MAJOR |
-            IS_DEVICE_MATCH_FLAG_SN;
+        file_signature = is_get_bin_image_signature(ctx->firmware_path);
+    }
+    else if(strcmp(extension, "hex") == 0)
+    {
+        file_signature = is_get_hex_image_signature(ctx->firmware_path);
     }
     else
     {
-        ctx->update_in_progress = false;
-        strcpy(ctx->error, "Scheme is not supported");
-        return;
+        ctx->info_callback(ctx, "Invalid firmware filename extension");
+        return IS_OP_ERROR;
     }
 
-    // Match serial number if present
-    // if(strlen(ctx->match_props.serial_number[0]) != 0) ctx->match_props.match |= IS_DEVICE_MATCH_FLAG_SN;
+    // In case we are updating using the inertial sense bootloader (ISB), set the entry command based on the signature
+    if(file_signature & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K))
+    {
+        strncpy(ctx->props.isb.enable_command, "EBLE", 5);
+    }
+    else
+    {
+        strncpy(ctx->props.isb.enable_command, "BLEN", 5);
+    }
     
-    int ret = IS_OP_ERROR;
-    ctx->success = false;
-    
-    // Start the bootloader and update flash
-    ret = is_flash_compat(ctx);
-    
-    if(ret == IS_OP_OK) ctx->success = true;
-    else strcpy(ctx->error, "Error in update flash");
+    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
+    {   /** DFU MODE */
+        is_dfu_flash(ctx);
+    }
+    else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    {
+        if(is_samba_init(ctx) == IS_OP_OK)
+        {   /** SAM-BA MODE */
+            is_samba_flash(ctx);
+        }
+        else 
+        {
+            serialPortClose(&ctx->handle.port);
+            serialPortOpenRetry(&ctx->handle.port, ctx->handle.port.port, IS_BAUDRATE_921600, 1);   // TODO make this work at other baudrates
 
-    ctx->update_in_progress = false;
-    return;
+            if(is_isb_get_version(ctx) == IS_OP_OK)
+            {
+                
+            }
+            else if(is_app_get_version(ctx) == IS_OP_OK)
+            {
+                is_isb_enable(ctx, ctx->props.isb.enable_command);   
+                SLEEP_MS(1000);
+                if(is_isb_get_version(ctx) != IS_OP_OK)
+                {
+                    return IS_OP_ERROR;
+                }
+            }
+            else
+            {
+                return IS_OP_ERROR;
+            }
+           
+            if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
+            {
+                if(file_signature & IS_IMAGE_SIGN_ISB_STM32L4) 
+                {
+                    ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
+                    ctx->handle.dfu.pid = STM32_DESCRIPTOR_PRODUCT_ID;
+                    ctx->handle.dfu.vid = STM32_DESCRIPTOR_VENDOR_ID;
+                    ctx->handle.dfu.sn = ctx->props.serial;
+                    ctx->handle.dfu.uid[0] = 0; // Don't match the UID
+                }
+
+                is_isb_restart_rom(&ctx->handle.port);
+                SLEEP_MS(1000);
+
+                if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
+                {   /** DFU MODE */
+                    is_dfu_flash(ctx);
+                }
+                else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL && is_samba_init(ctx) == IS_OP_OK)
+                {
+                    is_samba_flash(ctx);
+                }
+            }
+            else
+            {
+                is_isb_flash(ctx);
+            }
+        }
+    }
+    else
+    {   // Invalid handle status
+        return IS_OP_ERROR;
+    }
 }

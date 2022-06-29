@@ -33,6 +33,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISStream.h"
 #include "ISClient.h"
 #include "message_stats.h"
+#include "ISBootloaderThread.h"
 
 // use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
@@ -48,9 +49,7 @@ extern "C"
 	#include "com_manager.h"
 
 	#include "serialPortPlatform.h"
-	#include "inertialSenseBootLoader.h"
-
-	#include "ISBootloaderCommon.h"
+	#include "ISBootloader.h"
 }
 
 #include <functional>
@@ -367,24 +366,18 @@ public:
 	/**
 	* Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
 	* Please ensure that all other connections to the com port are closed before calling this function.
-	* @param the com port to bootload, can be comma separated for multiple
-	* @param fileName the path of the file to bootload
-	* @param baudRate the baud rate to bootload at
-	* @param uploadProgress optional callback for upload progress
-	* @param verifyProgress optional callback for verify progress
-	* @param bootloaderFileName optional bootloader firmware filename
-	* @param forceBootloaderUpdate optional force bootloader firmware to be updated
-	* @return ports and errors, error will be empty if success
+	*
+	TODO: Param documentation
 	*/
-	static vector<bootload_result_t> BootloadFile(
+	static vector<InertialSense::bootload_result_t> BootloadFile(
 		const string& comPort, 
+		const uint32_t serialNum,
 		const string& fileName, 
-		int baudRate = IS_BAUD_RATE_BOOTLOADER, 
+		int baudRate = IS_BAUDRATE_921600, 
 		pfnBootloadProgress uploadProgress = NULLPTR, 
 		pfnBootloadProgress verifyProgress = NULLPTR, 
-		pfnBootloadStatus infoProgress = NULLPTR, 
-		const string& bootloaderFileName = "",
-		bool forceBootloaderUpdate = false);
+		pfnBootloadStatus infoProgress = NULLPTR
+	);
 
 	string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
@@ -434,7 +427,7 @@ private:
 	bool OpenSerialPorts(const char* port, int baudRate);
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
-	static void BootloadStatusUpdate();
+	static void BootloadStatusUpdate(void* obj, const char* str);
 };
 
 #endif

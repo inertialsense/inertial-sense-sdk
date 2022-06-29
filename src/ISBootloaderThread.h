@@ -30,8 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 
 #include "ISUtilities.h"
-#include "ISBootloaderCommon.h"
-#include "ISBootloaderTypes.h"
+#include "ISBootloader.h"
 
 using namespace std;
 
@@ -48,20 +47,11 @@ public:
      */
     static size_t get_num_devices(vector<string>& comPorts);
 
-    /**
-     * @brief update
-     * @param comPorts
-     * @param baudRate
-     * @param firmware
-     * @param uploadProgress
-     * @param verifyProgress
-     * @param infoProgress
-     * @return
-     */
     static is_operation_result update(
         vector<string>&             comPorts,
+        vector<uint32_t>&           serials,
         int                         baudRate,
-        is_firmware_settings*       firmware,
+        const char*                 firmware,
         pfnBootloadProgress         uploadProgress, 
         pfnBootloadProgress         verifyProgress, 
         pfnBootloadStatus           infoProgress,

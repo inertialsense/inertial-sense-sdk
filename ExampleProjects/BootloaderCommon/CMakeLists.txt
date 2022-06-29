@@ -29,12 +29,13 @@ else()	# Build only this project
 	add_executable(ISBootloaderCommonExample
 		ISBootloaderCommonExample.c
 		
-		../../src/ISBootloaderCommon.c
-		../../src/ISBootloaderDfu.c
-		../../src/ISBootloaderSamba.c
+		../../src/ISBootloaderThread.cpp
+		../../src/ISBootloaderDFU.c
+		../../src/ISBootloaderSAMBA.c
+		../../src/ISBootloaderISB.c
+		../../src/ISBootloader.c
 		../../src/serialPort.c
 		../../src/serialPortPlatform.c
-		../../src/inertialSenseBootLoader.c
 
 		../../src/ihex.c
 

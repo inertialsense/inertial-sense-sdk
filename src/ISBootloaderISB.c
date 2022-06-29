@@ -96,7 +96,7 @@ static is_operation_result is_isb_negotiate_version(is_device_context* ctx)
     return IS_OP_OK;
 }
 
-static void is_isb_restart_rom(serial_port_t* s)
+void is_isb_restart_rom(serial_port_t* s)
 {
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interferece on its ports.
@@ -106,7 +106,7 @@ static void is_isb_restart_rom(serial_port_t* s)
     serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
 }
 
-static void is_isb_restart(serial_port_t* s)
+void is_isb_restart(serial_port_t* s)
 {
     // restart bootloader command
     serialPortWrite(s, (unsigned char*)":020000040500F5", 15);
@@ -209,7 +209,7 @@ static is_operation_result is_isb_handshake(is_device_context* ctx)
     return IS_OP_ERROR;
 }
 
-static is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd)
+is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd)
 {
     serial_port_t* port = &ctx->handle.port;
     uint32_t baudRates[] = { ctx->handle.baud, IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
@@ -293,7 +293,7 @@ static int is_isb_checksum(int checkSum, uint8_t* ptr, int start, int end, int c
     }
 
     if (finalCheckSum) checkSum = (uint8_t)(~checkSum + 1);
-    if (checkSumPosition != 0) snprintf((char*)(ptr + checkSumPosition), 3, "%.2X", checkSum);
+    if (checkSumPosition != 0) SNPRINTF((char*)(ptr + checkSumPosition), 3, "%.2X", checkSum);
 
     return checkSum;
 }
@@ -323,7 +323,7 @@ static is_operation_result is_isb_select_page(serial_port_t* s, int page)
     unsigned char changePage[24];
     
     // Change page
-    snprintf((char*)changePage, 24, ":040000060301%.4XCC", page);
+    SNPRINTF((char*)changePage, 24, ":040000060301%.4XCC", page);
     is_isb_checksum(0, changePage, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(s, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) return IS_OP_ERROR;
 
@@ -339,7 +339,7 @@ static is_operation_result is_isb_begin_program_for_current_page(serial_port_t* 
     unsigned char programPage[24];
     
     // Select offset
-    snprintf((char*)programPage, 24, ":0500000100%.4X%.4XCC", startOffset, endOffset);
+    SNPRINTF((char*)programPage, 24, ":0500000100%.4X%.4XCC", startOffset, endOffset);
     is_isb_checksum(0, programPage, 1, 19, 19, 1);
     if (serialPortWriteAndWaitForTimeout(s, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) return IS_OP_ERROR;
 
@@ -382,7 +382,7 @@ static is_operation_result is_isb_upload_hex_page(serial_port_t* s, unsigned cha
 
     // create a program request with just the hex characters that will fit on this page
     unsigned char programLine[12];
-    snprintf((char*)programLine, 12, ":%.2X%.4X00", byteCount, *currentOffset);
+    SNPRINTF((char*)programLine, 12, ":%.2X%.4X00", byteCount, *currentOffset);
     if (serialPortWrite(s, programLine, 9) != 9)
     {
         // bootloader_perror(s, "Failed to write start page at offset %d\n", *currentOffset);
@@ -408,7 +408,7 @@ static is_operation_result is_isb_upload_hex_page(serial_port_t* s, unsigned cha
 
     checkSum = is_isb_checksum(checkSum, hexData, 0, charsForThisPage, 0, 1);
     unsigned char checkSumHex[3];
-    snprintf((char*)checkSumHex, 3, "%.2X", checkSum);
+    SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
     if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
         // bootloader_perror(s, "Failed to write checksum %s at offset %d\n", checkSumHex, *currentOffset);
@@ -498,7 +498,7 @@ static is_operation_result is_isb_download_data(serial_port_t* s, int startOffse
     // Atmel download data command is 0x03, different from standard intel hex where command 0x03 is start segment address
     unsigned char programLine[24];
     int n;
-    n = snprintf((char*)programLine, 24, ":0500000300%.4X%.4XCC", startOffset, endOffset);
+    n = SNPRINTF((char*)programLine, 24, ":0500000300%.4X%.4XCC", startOffset, endOffset);
     programLine[n] = 0;
     is_isb_checksum(0, programLine, 1, 19, 19, 1);
     if (serialPortWrite(s, programLine, 21) != 21)

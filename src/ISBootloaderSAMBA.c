@@ -31,13 +31,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 //  - https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
 //  - https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
 
-#define UART_X_SOH 0x01
-#define UART_X_EOT 0x04
-#define UART_X_ACK 0x06
-#define UART_X_NAK 0x15
-#define UART_X_CAN 0x18
-#define UART_X_CRC_POLY 0x1021
-#define UART_X_PAYLOAD_SIZE 128
+#define UART_XMODEM_SOH 0x01
+#define UART_XMODEM_EOT 0x04
+#define UART_XMODEM_ACK 0x06
+#define UART_XMODEM_NAK 0x15
+#define UART_XMODEM_CAN 0x18
+#define UART_XMODEM_CRC_POLY 0x1021
+#define UART_XMODEM_PAYLOAD_SIZE 128
 
 #define SAMBA_PAGE_SIZE 512
 #define SAMBA_BAUDRATE 115200
@@ -53,7 +53,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         return IS_OP_ERROR; \
     }
 
-is_operation_result is_samba_init(is_device_context* ctx);
 static is_operation_result is_samba_read_word(is_device_context* ctx, uint32_t address, uint32_t* word);
 static is_operation_result is_samba_write_word(is_device_context* ctx, uint32_t address, uint32_t word);
 static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool waitReady);
@@ -72,7 +71,7 @@ typedef struct
     uint8_t start;
     uint8_t block;
     uint8_t block_neg;
-    uint8_t payload[UART_X_PAYLOAD_SIZE];
+    uint8_t payload[UART_XMODEM_PAYLOAD_SIZE];
     uint16_t crc;
 } xmodem_chunk_t;
 POP_PACK
@@ -110,15 +109,10 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         serialPortReadTimeout(port, buf, sizeof(buf), 100);
 
         FILE* file;
-
 #ifdef _MSC_VER
-
-        fopen_s(&file, ctx->firmware.bootloader_path, "rb");
-
+        fopen_s(&file, ctx->firmware_path, "rb");
 #else
-
-        file = fopen(ctx->firmware.bootloader_path, "rb");
-
+        file = fopen(ctx->firmware_path, "rb");
 #endif
 
         if (file == 0)
@@ -157,16 +151,18 @@ is_operation_result is_samba_flash(is_device_context* ctx)
                 checksum ^= *ptr;
             }
             offset += SAMBA_PAGE_SIZE;
-            if (ctx->update_progress_callback != 0)
+            
+            ctx->update_progress = (float)offset / (float)SAMBA_BOOTLOADER_SIZE;
+            if (ctx->update_callback != 0)
             {
-                ctx->update_progress_callback(ctx->user_data, (float)offset / (float)SAMBA_BOOTLOADER_SIZE);
+                ctx->update_callback(ctx->user_data, ctx->update_progress);
             }
         }
         fclose(file);
         if (offset != 0) break; // success!
     }
 
-    if (ctx->verify_progress_callback != 0)
+    if (ctx->verify_callback != 0)
     {
         SAMBA_STATUS("Verifying bootloader...");
         SAMBA_ERROR_CHECK(is_samba_verify(ctx, checksum), "Verification error!");
@@ -183,7 +179,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 }
 
 /**
- * @brief Initialize the registers of the SAM-BA device
+ * @brief Initialize the registers of the SAM-BA device and retrieves the serial number from FLASH user pages
  * 
  * @param ctx a filled device context
  * @return is_operation_result 
@@ -216,6 +212,23 @@ is_operation_result is_samba_init(is_device_context* ctx)
     // Set flash mode register
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c00, 0x04000600), "Failed to set flash mode register");
 
+    SAMBA_STATUS("SAM-BA ROM bootloader initialized");
+
+    serialPortClose(port);
+
+    return IS_OP_OK;
+}
+
+/**
+ * @brief Fills the 32-bit serial number into `ctx->props.serial`
+ * 
+ * @param ctx device context with open serial port connected to initialized SAM-BA device
+ * @return is_operation_result 
+ */
+is_operation_result is_samba_get_serial(is_device_context* ctx)
+{
+    serial_port_t* port = &ctx->handle.port;
+
     // Set flash command to STUS (start read unique signature)
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a000014), "Failed to command signature readout");
     
@@ -223,27 +236,11 @@ is_operation_result is_samba_init(is_device_context* ctx)
     SAMBA_ERROR_CHECK(is_samba_wait_eefc_ready(ctx, false), "Failed to clear flash ready bit");
 
     // Read out the unique identifier
-    uint32_t temp_sn = 0;
-    SAMBA_ERROR_CHECK(is_samba_read_word(ctx, 0x00400000 + offsetof(manufacturing_info_t, serialNumber), &temp_sn), "Failed to read UID word");
+    SAMBA_ERROR_CHECK(is_samba_read_word(ctx, 0x00400000 + offsetof(manufacturing_info_t, serialNumber), &ctx->props.serial), "Failed to read UID word");
     
     // Set flash command to SPUS (stop read unique identifier)
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a000015), "Failed to command stop signature readout");
     
-    // Compare against the stored serial number for this device
-    if(ctx->match_props.sn != temp_sn && 
-        ctx->match_props.match & IS_DEVICE_MATCH_FLAG_SN) 
-    {   // Serial numbers do not match, and the requirement is set for them to match
-        serialPortClose(port);
-        SAMBA_STATUS("Unique chip identifier does not match");
-        return IS_OP_ERROR;
-    }
-
-    ctx->match_props.sn = temp_sn;
-
-    SAMBA_STATUS("SAM-BA ROM bootloader initialized");
-
-    serialPortClose(port);
-
     return IS_OP_OK;
 }
 
@@ -333,9 +330,9 @@ static is_operation_result is_samba_boot_from_flash(is_device_context* ctx)
 static is_operation_result is_samba_write_uart_modem(is_device_context* ctx, uint8_t* buf, size_t len)
 {
     int ret;
-    uint8_t eot = UART_X_EOT;   // "X" comes from xModem, not sure where that came from
+    uint8_t eot = UART_XMODEM_EOT;   // "X" comes from xModem, not sure where that came from
     uint8_t answer;
-    xmodem_chunk_t chunk = { .block = 1, .start = UART_X_SOH };
+    xmodem_chunk_t chunk = { .block = 1, .start = UART_XMODEM_SOH };
 
     // wait for ping from bootloader
     do
@@ -372,15 +369,15 @@ static is_operation_result is_samba_write_uart_modem(is_device_context* ctx, uin
 
         switch (answer)
         {
-        case UART_X_ACK:
+        case UART_XMODEM_ACK:
             chunk.block++;
             len -= z;
             buf += z;
             break;
-        case UART_X_CAN:
+        case UART_XMODEM_CAN:
             return IS_OP_ERROR;
         default:
-        case UART_X_NAK:
+        case UART_XMODEM_NAK:
             break;
         }
     }
@@ -470,9 +467,11 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
             }
         }
         else return IS_OP_ERROR;
-        if (ctx->verify_progress_callback != 0)
+
+        ctx->verify_progress = (float)(address - SAMBA_PAGE_SIZE) / (float)SAMBA_BOOTLOADER_SIZE;
+        if (ctx->verify_callback != 0)
         {
-            ctx->verify_progress_callback(ctx->user_data, (float)(address - SAMBA_PAGE_SIZE) / (float)SAMBA_BOOTLOADER_SIZE);
+            ctx->verify_callback(ctx->user_data, ctx->verify_progress);
         }
     }
     if (checksum != checksum2) return IS_OP_ERROR;
@@ -518,7 +517,7 @@ static uint16_t crc_update(uint16_t crc_in, int incr)
     uint16_t out = crc_in << 1;
 
     if (incr) out++;
-    if (crc) out ^= UART_X_CRC_POLY;
+    if (crc) out ^= UART_XMODEM_CRC_POLY;
 
     return out;
 }

@@ -18,15 +18,15 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/*
-    https://www.usb.org/sites/default/files/DFU_1.1.pdf
-    https://www.st.com/resource/en/application_note/cd00264379-usb-dfu-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
-*/
+// Resources for DFU protocol:
+//  - https://www.usb.org/sites/default/files/DFU_1.1.pdf
+//  - https://www.st.com/resource/en/application_note/cd00264379-usb-dfu-protocol-used-in-the-stm32-bootloader-stmicroelectronics.pdf
+
 
 #include "ISUtilities.h"
-#include "ISBootloaderDfu.h"
-#include "inertialSenseBootLoader.h"
+#include "ISBootloaderDFU.h"
 #include "serialPortPlatform.h"
+#include "ISBootloaderTypes.h"
 
 #include <time.h>
 
@@ -101,25 +101,13 @@ static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t
 
 typedef enum
 {
-    STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
-    STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11
-} is_dfu_descriptor;
-
-static const is_device_vid_pid dfu_matches[] = { 
-    {STM32_DESCRIPTOR_VENDOR_ID, STM32_DESCRIPTOR_PRODUCT_ID} 
-};
-
-typedef enum
-{
     STM32_DFU_INTERFACE_FLASH    = 0, // @Internal Flash  /0x08000000/0256*0002Kg
     STM32_DFU_INTERFACE_OPTIONS  = 1, // @Option Bytes  /0x1FFF7800/01*040 e
     STM32_DFU_INTERFACE_OTP      = 2, // @OTP Memory /0x1FFF7000/01*0001Ke
     STM32_DFU_INTERFACE_FEATURES = 3  // @Device Feature/0xFFFF0000/01*004 e
 } is_stm32l4_dfu_interface_alternatives;
 
-is_operation_result is_list_dfu(
-    is_dfu_list* list
-)
+is_operation_result is_dfu_list_devices(is_dfu_list* list)
 {
     list->present = 0;
 
@@ -141,16 +129,9 @@ is_operation_result is_list_dfu(
         ret_libusb = libusb_get_device_descriptor(dev, &desc);
         if(ret_libusb < 0) continue;
 
-        // Check vendor and product IDs against list
-        size_t j;
-        size_t match_list_len = sizeof(dfu_matches)/sizeof(is_device_vid_pid);
-        for(j = 0; j < match_list_len; j++)
-        {
-            if (desc.idVendor != dfu_matches[j].vid) continue;      // must be some other usb device
-            if (desc.idProduct != dfu_matches[j].pid) continue;     // must be some other usb device
-            break;  // We found a device
-        }
-        if(j >= match_list_len) continue;    // We didn't find a match
+        // Check vendor and product ID
+        if (desc.idVendor != STM32_DESCRIPTOR_VENDOR_ID) continue;      // must be some other usb device
+        if (desc.idProduct != STM32_DESCRIPTOR_PRODUCT_ID) continue;     // must be some other usb device
 
         ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
 
@@ -173,15 +154,15 @@ is_operation_result is_list_dfu(
         }
 
         // Get the string containing the serial number from the device
-        unsigned char serial_number[IS_UID_MAX_SIZE];
-        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, serial_number, sizeof(serial_number));
-        if(ret_libusb < LIBUSB_SUCCESS) serial_number[0] = '\0'; // Set the serial number as none
+        unsigned char uid[IS_DFU_UID_MAX_SIZE];
+        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, uid, sizeof(uid));
+        if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
         
         // Add to list
         is_dfu_get_sn(&dev_handle, &list->id[list->present].sn);
-        strncpy(list->id[list->present].uid, (char*)serial_number, IS_UID_MAX_SIZE);
-        list->id[list->present].usb.vid = desc.idVendor;
-        list->id[list->present].usb.pid = desc.idProduct;
+        strncpy(list->id[list->present].uid, (char*)uid, IS_DFU_UID_MAX_SIZE);
+        list->id[list->present].vid = desc.idVendor;
+        list->id[list->present].pid = desc.idProduct;
 
         list->present++;
         if(list->present >= IS_DFU_LIST_LEN)
@@ -231,7 +212,6 @@ static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t
     uint8_t stringIdx;
 
     int ret_libusb;
-    dfu_error ret_dfu;
 
     uint8_t rxBuf[1024] = {0};
 
@@ -239,7 +219,7 @@ static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t
     // 0x1FFF7000 is the address. Little endian.
     {
         // Set the address pointer (command is 0x21)
-        uint8_t txBuf = { 0x21, 0x00, 0x70, 0xFF, 0x1F };
+        uint8_t txBuf[] = { 0x21, 0x00, 0x70, 0xFF, 0x1F };
         ret_libusb = dfu_DNLOAD(handle, 0, txBuf, sizeof(txBuf));
         if(ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR;
         
@@ -320,8 +300,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
         ret_libusb = libusb_get_device_descriptor(device_list[i], &desc);
         if (ret_libusb < 0) continue;
 
-        if(desc.idVendor != ctx->match_props.vid) continue;
-        if(desc.idProduct != ctx->match_props.pid) continue;
+        if(desc.idVendor != ctx->handle.dfu.vid) continue;
+        if(desc.idProduct != ctx->handle.dfu.pid) continue;
 
         ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
         if (ret_libusb < 0) continue;
@@ -344,13 +324,20 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
             continue; 
         }
 
-        // Get the string containing the serial number from the device
-        unsigned char uid[IS_UID_MAX_SIZE];
+        // Get the string containing the uid from the device
+        unsigned char uid[IS_DFU_UID_MAX_SIZE];
         ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, uid, sizeof(uid));
         if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
+        if(strcmp(ctx->handle.dfu.uid, (char*)uid) != 0 && strlen(ctx->handle.dfu.uid) != 0) 
+        {
+            libusb_close(dev_handle);
+            continue;
+        }
 
-        // Check the serial number
-        if((ctx->match_props.match & IS_DEVICE_MATCH_FLAG_UID) && (strcmp(ctx->match_props.uid, (char*)uid) != 0)) 
+        // Check the serial number 
+        uint32_t sn = 0;
+        is_dfu_get_sn(&dev_handle, &sn);
+        if(sn != ctx->handle.dfu.sn && ctx->handle.dfu.sn != 0)
         {
             libusb_close(dev_handle);
             continue;
@@ -377,7 +364,7 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     if (ret_dfu < DFU_ERROR_NONE) { libusb_close(dev_handle); return IS_OP_ERROR; } 
 
     // Load the firmware image
-    image_sections = ihex_load_sections(ctx->firmware.bootloader_path, image, MAX_NUM_IHEX_SECTIONS);
+    image_sections = ihex_load_sections(ctx->firmware_path, image, MAX_NUM_IHEX_SECTIONS);
     if(image_sections <= 0) { libusb_close(dev_handle); return IS_OP_ERROR; } 
 
     int image_total_len = 0;
@@ -436,7 +423,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
             byteInSection += STM32_PAGE_SIZE;
             bytes_written_total += STM32_PAGE_SIZE;
 
-            ctx->update_progress_callback(ctx, 0.25f * ((float)bytes_written_total / (float)image_total_len));
+            ctx->update_progress = 0.25f * ((float)bytes_written_total / (float)image_total_len);
+            ctx->update_callback(ctx, ctx->update_progress);
         } while(byteInSection < image[i].len - 1);
     }
 
@@ -489,7 +477,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
             byteInSection += payloadLen;
             bytes_written_total += payloadLen;
 
-            ctx->update_progress_callback(ctx, 0.25f + 0.75f * ((float)bytes_written_total / (float)image_total_len));
+            ctx->update_progress = 0.25f + 0.75f * ((float)bytes_written_total / (float)image_total_len);
+            ctx->update_callback(ctx, ctx->update_progress);
         } while (byteInSection < image[i].len - 1);
     }
 

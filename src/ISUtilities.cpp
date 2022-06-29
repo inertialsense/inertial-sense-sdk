@@ -391,33 +391,24 @@ uint64_t getTickCount(void)
 
 }
 
-int bootloadUploadProgress(void* obj, float percent)
+is_operation_result bootloadUploadProgress(void* obj, float percent)
 {
-	if(obj == NULL) return 1;
+	if(obj == NULL) return IS_OP_OK;
 
     is_device_context* ctx = (is_device_context*)obj;
-    ctx->updateProgress = percent;
+    ctx->update_progress = percent;
 
-    return ctx->update_in_progress;
+    return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
 }
 
-int bootloadVerifyProgress(void* obj, float percent)
+is_operation_result bootloadVerifyProgress(void* obj, float percent)
 {
-	if(obj == NULL) return 1;
+	if(obj == NULL) return IS_OP_OK;
 
     is_device_context* ctx = (is_device_context*)obj;
-    ctx->verifyProgress = percent;
+    ctx->verify_progress = percent;
 
-    return ctx->update_in_progress;
-}
-
-void bootloadStatusInfo(void* obj, const char* str)
-{
-    if(obj == NULL) return;
-
-    is_device_context* ctx = (is_device_context*)obj;
-    strncpy(ctx->infoString, str, 256);
-    ctx->infoString_new = true;
+    return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
 }
 
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec)

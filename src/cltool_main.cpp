@@ -315,15 +315,16 @@ static int cltool_updateFirmware()
 		cout << "Checking bootloader firmware: " << g_commandLineOptions.updateBootloaderFilename << endl;
 	}
 	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
-	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort,
-        g_commandLineOptions.updateAppFirmwareFilename, 
+	
+	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(
+		g_commandLineOptions.comPort,
+		0,
+        g_commandLineOptions.updateAppFirmwareFilename,
         g_commandLineOptions.baudRate, 
         bootloadUploadProgress,
-		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0),
-		bootloadStatusInfo,
-		g_commandLineOptions.updateBootloaderFilename,
-		g_commandLineOptions.forceBootloaderUpdate
-		);
+		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0)
+	);
+	
 	cout << endl << "Results:" << endl;
 	int errorCount = 0;
 	for (size_t i = 0; i < results.size(); i++)
