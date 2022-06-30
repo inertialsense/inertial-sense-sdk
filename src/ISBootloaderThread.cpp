@@ -31,7 +31,7 @@ size_t ISBootloader::get_num_devices(vector<string>& comPorts)
 
     ret += dfu_list.present;
     ret += comPorts.size();
-
+ 
     return ret;
 }
 

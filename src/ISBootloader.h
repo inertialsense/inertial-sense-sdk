@@ -20,8 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __IS_BOOTLOADER_COMMON_H
 #define __IS_BOOTLOADER_COMMON_H
 
-#include "ISBootloaderTypes.h"
-#include "ISUtilities.h"
+#include "ISBootloaderTypes.h" 
 
 #ifdef __cplusplus
 extern "C" {

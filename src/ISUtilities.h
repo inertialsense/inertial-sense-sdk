@@ -27,7 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 /**
-* Encode data as base64
+* Encode data as base64 
 * @param bytes_to_encode the data to encode
 * @param in_len the number of bytes to encode
 * @param return the base64 encoded data
@@ -116,14 +116,6 @@ private:
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef enum {
-    IS_OP_OK            = 0,
-    IS_OP_ERROR         = -1,
-    IS_OP_CANCELLED     = -2,
-    IS_OP_INCOMPATIBLE  = -3,
-    IS_OP_RETRY         = -4,
-} is_operation_result;
 
 #if PLATFORM_IS_WINDOWS
 

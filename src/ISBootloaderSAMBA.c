@@ -18,10 +18,10 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "ISUtilities.h"
 #include "ISBootloaderSAMBA.h"
-#include "serialPortPlatform.h"
 #include "ihex.h"
+#include "ISUtilities.h"
+#include "serialPortPlatform.h"
 
 #include <time.h>
 #include <stddef.h>
@@ -45,7 +45,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SAMBA_FLASH_START_ADDRESS 0x00400000
 #define SAMBA_BOOTLOADER_SIZE 16384
 
-#define SAMBA_STATUS(x) if (ctx->info_callback) ctx->info_callback(ctx->user_data, x)
+#define SAMBA_STATUS(x) if (ctx->info_callback) ctx->info_callback(ctx, x)
 #define SAMBA_ERROR_CHECK(x, error) if(x != IS_OP_OK) \
     { \
         serialPortClose(port); \
@@ -155,7 +155,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
             ctx->update_progress = (float)offset / (float)SAMBA_BOOTLOADER_SIZE;
             if (ctx->update_callback != 0)
             {
-                ctx->update_callback(ctx->user_data, ctx->update_progress);
+                ctx->update_callback(ctx, ctx->update_progress);
             }
         }
         fclose(file);
@@ -471,7 +471,7 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
         ctx->verify_progress = (float)(address - SAMBA_PAGE_SIZE) / (float)SAMBA_BOOTLOADER_SIZE;
         if (ctx->verify_callback != 0)
         {
-            ctx->verify_callback(ctx->user_data, ctx->verify_progress);
+            ctx->verify_callback(ctx, ctx->verify_progress);
         }
     }
     if (checksum != checksum2) return IS_OP_ERROR;

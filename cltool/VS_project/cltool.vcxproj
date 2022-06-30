@@ -160,6 +160,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\hw-libs\bootloader\bootloaderShared.c" />
     <ClCompile Include="..\..\src\cltool.cpp" />
     <ClCompile Include="..\..\src\cltool_main.cpp" />
     <ClCompile Include="..\..\src\com_manager.c" />
@@ -177,14 +178,14 @@
     <ClCompile Include="..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSorted.cpp" />
     <ClCompile Include="..\..\src\ihex.c" />
+    <ClCompile Include="..\..\src\ISBootloader.c" />
+    <ClCompile Include="..\..\src\ISBootloaderDFU.c" />
+    <ClCompile Include="..\..\src\ISBootloaderISB.c" />
+    <ClCompile Include="..\..\src\ISBootloaderSAMBA.c" />
     <ClCompile Include="..\..\src\ISBootloaderThread.cpp" />
-    <ClCompile Include="..\..\src\ISBootloaderCommon.c" />
-    <ClCompile Include="..\..\src\ISBootloaderDfu.c" />
-    <ClCompile Include="..\..\src\ISBootloaderSamba.c" />
     <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\src\InertialSense.cpp" />
-    <ClCompile Include="..\..\src\inertialSenseBootLoader.c" />
     <ClCompile Include="..\..\src\ISClient.cpp" />
     <ClCompile Include="..\..\src\ISComm.c" />
     <ClCompile Include="..\..\src\ISDataMappings.cpp" />
@@ -213,6 +214,7 @@
     <ClCompile Include="..\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\hw-libs\bootloader\bootloaderShared.h" />
     <ClInclude Include="..\..\src\cltool.h" />
     <ClInclude Include="..\..\src\com_manager.h" />
     <ClInclude Include="..\..\src\convert_ins.h" />
@@ -229,16 +231,16 @@
     <ClInclude Include="..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\src\DeviceLogSorted.h" />
     <ClInclude Include="..\..\src\ihex.h" />
+    <ClInclude Include="..\..\src\ISBootloader.h" />
+    <ClInclude Include="..\..\src\ISBootloaderDFU.h" />
+    <ClInclude Include="..\..\src\ISBootloaderISB.h" />
+    <ClInclude Include="..\..\src\ISBootloaderSAMBA.h" />
     <ClInclude Include="..\..\src\ISBootloaderThread.h" />
-    <ClInclude Include="..\..\src\ISBootloaderCommon.h" />
-    <ClInclude Include="..\..\src\ISBootloaderDfu.h" />
-    <ClInclude Include="..\..\src\ISBootloaderSamba.h" />
     <ClInclude Include="..\..\src\ISBootloaderTypes.h" />
     <ClInclude Include="..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\src\libusb\libusb.h" />
     <ClInclude Include="..\..\src\message_stats.h" />
     <ClInclude Include="..\..\src\InertialSense.h" />
-    <ClInclude Include="..\..\src\inertialSenseBootLoader.h" />
     <ClInclude Include="..\..\src\InertialSenseSDK.h" />
     <ClInclude Include="..\..\src\ISClient.h" />
     <ClInclude Include="..\..\src\ISComm.h" />

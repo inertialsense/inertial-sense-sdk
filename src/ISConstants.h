@@ -40,7 +40,7 @@ extern "C" {
 
 // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
 #define _WINSOCKAPI_
-#include <winsock2.h>
+#include <winsock2.h> 
 #include <WS2tcpip.h>
 #include <windows.h>
 #define socket_t SOCKET
@@ -796,6 +796,14 @@ typedef f_t         ixMatrix3[9];
 typedef f_t         ixMatrix4[16];
 typedef f_t         ixMatrix5[25];
 typedef double      ixMatrix3d[9];
+
+typedef enum {
+    IS_OP_OK = 0,
+    IS_OP_ERROR = -1,
+    IS_OP_CANCELLED = -2,
+    IS_OP_INCOMPATIBLE = -3,
+    IS_OP_RETRY = -4,
+} is_operation_result;
 
 #ifdef __cplusplus
 } // extern "C"

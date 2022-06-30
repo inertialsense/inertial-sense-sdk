@@ -22,7 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <memory>
 
 #include "DeviceLogSerial.h"
-
+ 
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
 #include "DeviceLogSorted.h"
 #include "DeviceLogCSV.h"

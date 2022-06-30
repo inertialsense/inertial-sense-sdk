@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C" { 
 #endif
 
 #define MAX_NUM_IHEX_SECTIONS 	1024		

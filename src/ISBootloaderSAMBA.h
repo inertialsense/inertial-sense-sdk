@@ -21,14 +21,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __IS_BOOTLOADER_SAMBA_H
 #define __IS_BOOTLOADER_SAMBA_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <stdbool.h>
-
 #include "ISBootloaderTypes.h"
 
 #ifdef __cplusplus
@@ -38,7 +30,7 @@ extern "C" {
 /**
  * @brief Flash the bootloader to the device via SAM-BA
  * 
- * @param ctx a fully populated device context
+ * @param ctx a fully populated device context  
  * @return is_operation_result 
  */
 is_operation_result is_samba_flash(is_device_context* ctx);

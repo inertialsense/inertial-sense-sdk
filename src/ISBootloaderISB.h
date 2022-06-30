@@ -26,7 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif 
 
 void is_isb_restart_rom(serial_port_t* s);
 void is_isb_restart(serial_port_t* s);

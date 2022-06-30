@@ -22,7 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 #include <vector>
 
-#include "ISConstants.h"
+#include "ISConstants.h" 
 #include "ISTcpClient.h"
 #include "ISTcpServer.h"
 #include "ISLogger.h"
@@ -370,13 +370,14 @@ public:
 	TODO: Param documentation
 	*/
 	static vector<InertialSense::bootload_result_t> BootloadFile(
-		const string& comPort, 
+		const string& comPort,
 		const uint32_t serialNum,
-		const string& fileName, 
-		int baudRate = IS_BAUDRATE_921600, 
-		pfnBootloadProgress uploadProgress = NULLPTR, 
-		pfnBootloadProgress verifyProgress = NULLPTR, 
-		pfnBootloadStatus infoProgress = NULLPTR
+		const string& fileName,
+		int baudRate = IS_BAUDRATE_921600,
+		pfnBootloadProgress uploadProgress = NULLPTR,
+		pfnBootloadProgress verifyProgress = NULLPTR,
+		pfnBootloadStatus infoProgress = NULLPTR,
+		void (*waitAction)() = NULLPTR
 	);
 
 	string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }

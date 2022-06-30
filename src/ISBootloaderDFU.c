@@ -176,7 +176,7 @@ is_operation_result is_dfu_list_devices(is_dfu_list* list)
         libusb_close(dev_handle);
     }
 
-    libusb_free_device_list(device_list, 1);
+    libusb_free_device_list(device_list, 1); 
     libusb_exit(NULL);
 
     return IS_OP_OK;
@@ -218,6 +218,10 @@ static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t
     // Get the 1K OTP section from the chip
     // 0x1FFF7000 is the address. Little endian.
     {
+        // Clear status back to good
+        dfu_CLRSTATUS(handle);
+        ret_libusb = dfu_GETSTATUS(handle, &status, &waitTime, &state, &stringIdx);
+
         // Set the address pointer (command is 0x21)
         uint8_t txBuf[] = { 0x21, 0x00, 0x70, 0xFF, 0x1F };
         ret_libusb = dfu_DNLOAD(handle, 0, txBuf, sizeof(txBuf));
@@ -228,6 +232,9 @@ static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t
         if(ret_libusb < LIBUSB_SUCCESS || status != DFU_STATUS_OK || state != DFU_STATE_DNBUSY) return IS_OP_ERROR;
         ret_libusb = dfu_GETSTATUS(handle, &status, &waitTime, &state, &stringIdx);
         if(ret_libusb < LIBUSB_SUCCESS || status != DFU_STATUS_OK) return IS_OP_ERROR;
+
+        // Get out of download mode
+        dfu_ABORT(handle);
 
         // Read the full OTP page
         ret_libusb = dfu_UPLOAD(handle, 2, rxBuf, 1024);

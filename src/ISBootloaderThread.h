@@ -32,7 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISBootloader.h"
 
-using namespace std;
+using namespace std; 
 
 class ISBootloader
 {

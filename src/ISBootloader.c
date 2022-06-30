@@ -17,17 +17,16 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "serialPort.h"
+#include "serialPortPlatform.h"
+
+#include "ISComm.h"
 
 #include "ISBootloader.h"
 #include "ISBootloaderDFU.h"
 #include "ISBootloaderISB.h"
 #include "ISBootloaderSAMBA.h"
-
 #include "ISUtilities.h"
-#include "ISComm.h"
-
-#include "serialPort.h"
-#include "serialPortPlatform.h"
 
 #include "../hw-libs/bootloader/bootloaderShared.h"
 
@@ -59,7 +58,7 @@ is_device_context* is_create_context(
     ctx->success = false;
     ctx->update_progress = 0.0;
     ctx->verify_progress = 0.0;
-    ctx->update_in_progress = false;
+    ctx->update_in_progress = true;
 
     serialPortPlatformInit(&ctx->handle.port);
     serialPortSetPort(&ctx->handle.port, handle->port_name);
@@ -325,6 +324,7 @@ void is_update_flash(void* context)
 
     if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
+        ctx->update_in_progress = false;
         return;
     }
 
@@ -342,17 +342,18 @@ void is_update_flash(void* context)
     else
     {
         ctx->info_callback(ctx, "Invalid firmware filename extension");
+        ctx->update_in_progress = false;
         return;
     }
 
     // In case we are updating using the inertial sense bootloader (ISB), set the entry command based on the signature
     if(file_signature & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K))
     {
-        strncpy(ctx->props.isb.enable_command, "EBLE", 5);
+        strncpy(ctx->props.isb.enable_command, "EBLE", 4);
     }
     else
     {
-        strncpy(ctx->props.isb.enable_command, "BLEN", 5);
+        strncpy(ctx->props.isb.enable_command, "BLEN", 4);
     }
     
     if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
@@ -378,13 +379,15 @@ void is_update_flash(void* context)
             {
                 is_isb_enable(ctx, ctx->props.isb.enable_command);   
                 SLEEP_MS(1000);
-                if(is_isb_get_version(ctx) != IS_OP_OK)
+                /*if(is_isb_get_version(ctx) != IS_OP_OK)
                 {
+                    ctx->update_in_progress = false;
                     return;
-                }
+                }*/
             }
             else
             {
+                ctx->update_in_progress = false;
                 return;
             }
            
@@ -419,6 +422,10 @@ void is_update_flash(void* context)
     }
     else
     {   // Invalid handle status
+        ctx->update_in_progress = false;
         return;
     }
+
+    ctx->update_in_progress = false;
+    return;
 }

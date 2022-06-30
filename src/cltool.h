@@ -112,6 +112,8 @@ void cltool_outputUsage();
 void cltool_outputHelp();
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfg); // true if should continue
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string evbFlashCfg); // true if should continue
+void cltool_firmwareUpdateWaiter();
+void cltool_bootloadUpdateInfo(void* obj, const char* str);
 
 #endif // __CLTOOL_H__
 

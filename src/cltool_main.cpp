@@ -34,7 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
-
+ 
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
 {
@@ -322,7 +322,9 @@ static int cltool_updateFirmware()
         g_commandLineOptions.updateAppFirmwareFilename,
         g_commandLineOptions.baudRate, 
         bootloadUploadProgress,
-		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0)
+		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0),
+		cltool_bootloadUpdateInfo,
+		cltool_firmwareUpdateWaiter
 	);
 	
 	cout << endl << "Results:" << endl;
@@ -337,6 +339,58 @@ static int cltool_updateFirmware()
 		cout << endl << errorCount << " ports failed." << endl;
 	}
 	return (errorCount == 0 ? 0 : -1);
+}
+
+void cltool_bootloadUpdateInfo(void* obj, const char* str)
+{
+	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
+	{
+		is_device_context* ctx = ISBootloader::ctx[i];
+
+		if(obj != ctx) continue;
+
+		if (ctx->props.serial != 0)
+		{
+			printf("SN%d: %s\r\n", ctx->props.serial, str);
+		}
+		else if (ctx->handle.dfu.sn != 0)
+		{
+			printf("SN%d: %s\r\n", ctx->handle.dfu.sn, str);
+		}
+		else if (strlen(ctx->handle.port_name) != 0)
+		{
+			printf("%s: %s\r\n", ctx->handle.port_name, str);
+		}
+		else
+		{
+			printf("Unknown: %s\r\n", str);
+		}
+	}
+}
+
+void cltool_firmwareUpdateWaiter()
+{
+	SLEEP_MS(10);
+
+	float progress = 0.0;
+	size_t num_devices = ISBootloader::ctx.size();
+
+	for (size_t i = 0; i < num_devices; i++)
+	{
+		if (ISBootloader::ctx[i]->verify == IS_VERIFY_OFF)
+		{
+			progress += ISBootloader::ctx[i]->update_progress;
+		}
+		else
+		{
+			progress += ISBootloader::ctx[i]->update_progress * 0.5f;
+			progress += ISBootloader::ctx[i]->verify_progress * 0.5f;
+		}
+	}
+
+	progress /= num_devices;
+	int percent = (int)(progress * 100.0f);
+	printf("\rProgress: %d%%\r", percent);
 }
 
 static int cltool_createHost()

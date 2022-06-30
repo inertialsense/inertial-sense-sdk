@@ -24,6 +24,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+#include "ISConstants.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -31,7 +33,6 @@ extern "C" {
 
 #include "serialPort.h"
 
-#include "ISUtilities.h"
 
 #define IS_DEVICE_LIST_LEN          256
 #define IS_FIRMWARE_PATH_LENGTH     256
@@ -53,14 +54,16 @@ typedef enum {
 } is_processor_type;
 
 typedef enum {
-    IS_IMAGE_SIGN_UINS_3_16K = 0x00000001,
-    IS_IMAGE_SIGN_UINS_3_24K = 0x00000002,
-    IS_IMAGE_SIGN_EVB_2_16K = 0x00000004,
-    IS_IMAGE_SIGN_EVB_2_24K = 0x00000008,
-    IS_IMAGE_SIGN_UINS_5 = 0x00000010,
-    IS_IMAGE_SIGN_ISB_STM32L4 = 0x00000020,
-    IS_IMAGE_SIGN_ISB_SAMx70_16K = 0x00000040,
-    IS_IMAGE_SIGN_ISB_SAMx70_24K = 0x00000080,
+    // BOOTLOADERS must be before APPS because bootloaders may contain app signatures
+    IS_IMAGE_SIGN_ISB_STM32L4 = 0x00000001,
+    IS_IMAGE_SIGN_ISB_SAMx70_16K = 0x00000002,
+    IS_IMAGE_SIGN_ISB_SAMx70_24K = 0x00000004,
+
+    IS_IMAGE_SIGN_UINS_3_16K = 0x00000008,
+    IS_IMAGE_SIGN_UINS_3_24K = 0x00000010,
+    IS_IMAGE_SIGN_EVB_2_16K = 0x00000020,
+    IS_IMAGE_SIGN_EVB_2_24K = 0x00000040,
+    IS_IMAGE_SIGN_UINS_5 = 0x00000080,
     
     IS_IMAGE_SIGN_NUM_BITS_USED = 8,
 } is_image_signature;
@@ -76,7 +79,7 @@ typedef struct
     uint32_t app_offset;            // Helps in loading bin files
     uint32_t verify_size;           // Chink size, limited on Windows
 
-    char enable_command[4];         // "EBLE" (EVB) or "BLEN" (uINS)
+    char enable_command[5];         // "EBLE" (EVB) or "BLEN" (uINS)
 } is_bootloader_properties;
 
 typedef struct

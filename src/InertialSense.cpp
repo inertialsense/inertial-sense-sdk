@@ -21,7 +21,7 @@ using namespace std;
 static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
 	// Suppress compiler warnings
-	(void)pHandle;
+	(void)pHandle; 
 	(void)cmHandle;
 
 	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
@@ -697,55 +697,6 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-void InertialSense::BootloadStatusUpdate(void* obj, const char* str)
-{
-#ifndef EXCLUDE_BOOTLOADER
-
-    for(size_t i = 0; i < ISBootloader::ctx.size(); i++)
-    {
-		is_device_context* ctx = ISBootloader::ctx[i];
-
-		if(ctx->props.serial != 0)
-		{
-			printf("SN%d: %s\r\n", ctx->props.serial, str);
-		}
-		else if(ctx->handle.dfu.sn != 0)
-		{
-			printf("SN%d: %s\r\n", ctx->handle.dfu.sn, str);
-		}
-		else if(strlen(ctx->handle.port_name) != 0)
-		{
-			printf("%s: %s\r\n", ctx->handle.port_name, str);
-		}
-		else
-		{
-			printf("Unknown: %s\r\n", str);
-		}
-    }
-
-	float progress = 0.0;
-    size_t num_devices = ISBootloader::ctx.size();
-
-    for(size_t i = 0; i < num_devices; i++)
-    {
-		if(ISBootloader::ctx[i]->verify == IS_VERIFY_OFF)
-		{
-			progress += ISBootloader::ctx[i]->verify_progress;
-		}
-		else
-		{
-			progress += ISBootloader::ctx[i]->update_progress * 0.5f;
-			progress += ISBootloader::ctx[i]->verify_progress * 0.5f;
-		}
-    }
-
-    progress /= num_devices;
-	int percent = (int)(progress * 100.0f);
-	printf("\rProgress: %d%%\r", percent);
-
-#endif // EXCLUDE_BOOTLOADER
-}
-
 vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	const string& comPort, 
 	const uint32_t serialNum,
@@ -753,7 +704,8 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	int baudRate, 
 	pfnBootloadProgress uploadProgress, 
 	pfnBootloadProgress verifyProgress, 
-	pfnBootloadStatus infoProgress
+	pfnBootloadStatus infoProgress,
+	void (*waitAction)()
 )
 {
 #ifndef EXCLUDE_BOOTLOADER
@@ -786,7 +738,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
 	#endif
 	
-	ISBootloader::update(portStrings, serials, baudRate, fileName.c_str(), uploadProgress, verifyProgress, BootloadStatusUpdate, NULLPTR, NULLPTR);
+	ISBootloader::update(portStrings, serials, baudRate, fileName.c_str(), uploadProgress, verifyProgress, infoProgress, NULLPTR, waitAction);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
@@ -796,7 +748,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	{
 		if(ISBootloader::ctx[i] != NULL)
 		{
-			results.push_back({ "", "" });
+			results.push_back({ "SN" , "Success" });
 		}
 	}
 

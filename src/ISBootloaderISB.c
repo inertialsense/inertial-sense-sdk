@@ -19,9 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISBootloader.h"
-#include "ISConstants.h"
-#include "ISUtilities.h"
 #include "ISBootloaderISB.h"
+#include "ISUtilities.h"
 
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 #define SUPPORT_BOOTLOADER_V5A
@@ -142,6 +141,13 @@ static is_operation_result is_isb_sync(serial_port_t* s)
     // Try to reboot the device in case it is stuck
     is_isb_restart(s);
 
+    serialPortClose(s);
+    if (serialPortOpenRetry(s, s->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
+    {
+        // can't open the port, fail
+        return IS_OP_ERROR;
+    }
+
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
@@ -173,34 +179,23 @@ is_operation_result is_isb_handshake(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
 
-    //Port should already be closed, but make sure
-    serialPortClose(port);
-
-	// Ensure we use closest baudrate supported by bootloader
-	ctx->handle.baud = is_isb_closest_baudrate(ctx->handle.baud);
-
-	// ensure that we start off with a valid baud rate
+	// ensure that we return a valid baud rate
 	ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
 
     // try handshaking at each baud rate
     for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList) + 1; i++)
     {
         serialPortClose(port);
-        if (serialPortOpenRetry(port, port->port, ctx->handle.baud, 1) == 0)
+        if (serialPortOpenRetry(port, port->port, s_baudRateList[i], 1) == 0)
         {
             // can't open the port, fail
             return IS_OP_ERROR;
         }
-        else if (is_isb_sync(port))
+        else if (is_isb_sync(port) == IS_OP_OK)
         {
-            // success, reset baud rate for next round of handshaking
+            ctx->handle.baud = s_baudRateList[i];
             return IS_OP_OK;
         }
-
-        // retry at a different baud rate
-        serialPortClose(port);
-        ctx->handle.baud = is_isb_cycle_baudrate(ctx->handle.baud);
-
     }
 
     // Failed to handshake
@@ -633,7 +628,7 @@ static is_operation_result is_isb_verify(int lastPage, int checkSum, is_device_c
                 if (ctx->verify_callback != 0)
                 {
                     ctx->verify_progress = (float)totalCharCount / (float)grandTotalCharCount;
-                    if (ctx->verify_callback(ctx->user_data, ctx->verify_progress) != IS_OP_OK)
+                    if (ctx->verify_callback(ctx, ctx->verify_progress) != IS_OP_OK)
                     {
                         // bootloader_perror(&ctx->handle.port, "Validate firmware cancelled\n");
                         return IS_OP_CANCELLED;
@@ -709,7 +704,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
                 if (outputPtr + pad >= outputPtrEnd)
                 {
                     // bootloader_perror(&ctx->handle.port, "FF padding overflowed output buffer\n");
-                    return -1;
+                    return IS_OP_ERROR;
                 }
 
                 while (pad-- != 0)
@@ -802,7 +797,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
         {
             ctx->update_progress = (float)ftell(file) / (float)fileSize;	// Dummy line to call ftell() once
             ctx->update_progress = (float)ftell(file) / (float)fileSize;
-            if (ctx->update_callback(ctx->user_data, ctx->update_progress) != IS_OP_OK)
+            if (ctx->update_callback(ctx, ctx->update_progress) != IS_OP_OK)
             {
                 // bootloader_perror(&ctx->handle.port, "Upload firmware cancelled\n");
                 return IS_OP_CANCELLED;
@@ -812,13 +807,13 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
 
     // upload any left over data
     outputSize = (int)(outputPtr - output);
-    if (is_isb_upload_hex(&ctx->handle.port, output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) == 0)
+    if (is_isb_upload_hex(&ctx->handle.port, output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
     {
         return IS_OP_ERROR;
     }
 
     // pad the remainder of the page with fill bytes
-    if (currentOffset != 0 && is_isb_fill_current_page(&ctx->handle.port, &currentPage, &currentOffset, &totalBytes, &verifyCheckSum) == 0)
+    if (currentOffset != 0 && is_isb_fill_current_page(&ctx->handle.port, &currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
     {
         return IS_OP_ERROR;
     }
@@ -826,12 +821,12 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
     if (ctx->update_callback != 0 && ctx->update_progress != 1.0f)
     {
         ctx->update_progress = 1.0f;
-        ctx->update_callback(ctx->user_data, ctx->update_progress);
+        ctx->update_callback(ctx, ctx->update_progress);
     }
 
     if (ctx->verify_callback != 0 && ctx->verify_progress != 0)
     {
-        if (ctx->info_callback != 0) ctx->info_callback(ctx->user_data, "Verifying flash...");
+        if (ctx->info_callback != 0) ctx->info_callback(ctx, "Verifying flash...");
 
         if (is_isb_verify(currentPage, verifyCheckSum, ctx) != IS_OP_OK)
         {
@@ -841,7 +836,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
 
     // send the "reboot to program mode" command and the device should start in program mode
     if(ctx->info_callback)
-        ctx->info_callback(ctx->user_data, "Rebooting unit...");
+        ctx->info_callback(ctx, "Rebooting unit...");
     serialPortWrite(&ctx->handle.port, (unsigned char*)":020000040300F7", 15);
     serialPortSleep(&ctx->handle.port, 250);
 
@@ -867,14 +862,14 @@ is_operation_result is_isb_flash(is_device_context* ctx)
         return IS_OP_ERROR;
 
     if(ctx->info_callback != 0)
-        ctx->info_callback(ctx->user_data, "Erasing flash...");
+        ctx->info_callback(ctx, "Erasing flash...");
     if(is_isb_erase_flash(&ctx->handle.port) != IS_OP_OK)
         return IS_OP_ERROR;
     if(is_isb_select_page(&ctx->handle.port, 0) != IS_OP_OK)
         return IS_OP_ERROR;
 
     if(ctx->info_callback != 0)
-        ctx->info_callback(ctx->user_data, "Programming flash...");
+        ctx->info_callback(ctx, "Programming flash...");
     if(is_isb_begin_program_for_current_page(&ctx->handle.port, ctx->props.isb.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
         return IS_OP_ERROR;
 
@@ -962,15 +957,15 @@ is_operation_result is_isb_reboot_to_app(serial_port_t* port)
 
 is_operation_result is_isb_get_version(is_device_context* ctx)
 {
-    // serialPortClose(&ctx->handle.port);
-    // serialPortOpenRetry(&ctx->handle.port, ctx->handle.port.port, IS_BAUD_RATE_BOOTLOADER, 1);   // TODO make this work at other baudrates
+    serialPortClose(&ctx->handle.port);
+    serialPortOpenRetry(&ctx->handle.port, ctx->handle.port.port, ctx->handle.baud, 1);
 	
-    // serialPortFlush(&ctx->handle.port);
+    serialPortFlush(&ctx->handle.port);
 
 	// Send command
 	serialPortWrite(&ctx->handle.port, (uint8_t*)":020000041000EA", 15);
 
-    uint8_t buf[8] = { 0 };
+    uint8_t buf[14] = { 0 };
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
 	int count = serialPortReadTimeout(&ctx->handle.port, buf, 14, 1000);
