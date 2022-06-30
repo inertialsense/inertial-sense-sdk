@@ -33,8 +33,13 @@
     <ClCompile Include="..\..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSorted.cpp" />
+    <ClCompile Include="..\..\..\src\ihex.c" />
     <ClCompile Include="..\..\..\src\InertialSense.cpp" />
     <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c" />
+    <ClCompile Include="..\..\..\src\ISBootloader.cpp" />
+    <ClCompile Include="..\..\..\src\ISBootloaderCommon.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderDfu.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderSamba.c" />
     <ClCompile Include="..\..\..\src\ISClient.cpp" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\ISDataMappings.cpp" />
@@ -76,8 +81,13 @@
     <ClInclude Include="..\..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSorted.h" />
+    <ClInclude Include="..\..\..\src\ihex.h" />
     <ClInclude Include="..\..\..\src\InertialSense.h" />
     <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h" />
+    <ClInclude Include="..\..\..\src\ISBootloader.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderCommon.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderDfu.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderSamba.h" />
     <ClInclude Include="..\..\..\src\ISClient.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
     <ClInclude Include="..\..\..\src\ISDataMappings.h" />
@@ -179,7 +189,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);..\..\..\src\libusb\msvc\libusb-1.0-32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -194,6 +204,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies);..\..\..\src\libusb\msvc\libusb-1.0-64.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -211,7 +222,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);..\..\..\src\libusb\msvc\libusb-1.0-32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -230,6 +241,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies);..\..\..\src\libusb\msvc\libusb-1.0-64.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
