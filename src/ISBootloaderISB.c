@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloader.h"
 #include "ISConstants.h"
 #include "ISUtilities.h"
+#include "ISBootloaderISB.h"
 
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 #define SUPPORT_BOOTLOADER_V5A
@@ -47,8 +48,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
 #define FLASH_PAGE_SIZE 65536
 
-static const unsigned char hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
 /**
  * @brief Negotiate the bootloader version, once a 'U' character has been read, 
  *  we read another character, timing out after 500 milliseconds if nothing 
@@ -58,7 +57,7 @@ static const unsigned char hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', 
  * @param ctx 
  * @return is_operation_result 
  */
-static is_operation_result is_isb_negotiate_version(is_device_context* ctx)
+is_operation_result is_isb_negotiate_version(is_device_context* ctx)
 {
     unsigned char v = 0;
 
@@ -170,7 +169,7 @@ static is_operation_result is_isb_sync(serial_port_t* s)
     return IS_OP_ERROR;
 }
 
-static is_operation_result is_isb_handshake(is_device_context* ctx)
+is_operation_result is_isb_handshake(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
 
@@ -181,7 +180,7 @@ static is_operation_result is_isb_handshake(is_device_context* ctx)
 	ctx->handle.baud = is_isb_closest_baudrate(ctx->handle.baud);
 
 	// ensure that we start off with a valid baud rate
-	if (ctx->handle.baud == 0) ctx->handle.baud = is_isb_cycle_baudrate(ctx->handle.baud);
+	ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
 
     // try handshaking at each baud rate
     for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList) + 1; i++)
@@ -195,7 +194,6 @@ static is_operation_result is_isb_handshake(is_device_context* ctx)
         else if (is_isb_sync(port))
         {
             // success, reset baud rate for next round of handshaking
-            ctx->handle.baud = 0;
             return IS_OP_OK;
         }
 
@@ -964,13 +962,15 @@ is_operation_result is_isb_reboot_to_app(serial_port_t* port)
 
 is_operation_result is_isb_get_version(is_device_context* ctx)
 {
-	serialPortFlush(&ctx->handle.port);
+    // serialPortClose(&ctx->handle.port);
+    // serialPortOpenRetry(&ctx->handle.port, ctx->handle.port.port, IS_BAUD_RATE_BOOTLOADER, 1);   // TODO make this work at other baudrates
+	
+    // serialPortFlush(&ctx->handle.port);
 
 	// Send command
 	serialPortWrite(&ctx->handle.port, (uint8_t*)":020000041000EA", 15);
 
     uint8_t buf[8] = { 0 };
-    uint8_t serialNum[4] = { 0 };
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
 	int count = serialPortReadTimeout(&ctx->handle.port, buf, 14, 1000);

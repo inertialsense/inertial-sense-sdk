@@ -72,8 +72,6 @@ is_operation_result ISBootloader::update(
     if(libusb_init(NULL) < 0) return IS_OP_ERROR;
     is_dfu_list_devices(&dfu_list);
 
-    size_t idx = 0; // Tracks the instances so callbacks can match with a list
-
     for(i = 0; i < dfu_list.present; i++)
     {	// Create contexts for devices in DFU mode
         is_device_handle handle;
@@ -116,6 +114,7 @@ is_operation_result ISBootloader::update(
 
     while (1)
     {	// Wait for threads to finish
+        if(ctx.size())
         for(i = 0; i < ctx.size(); i++)
         {
             if((ctx[i]->thread != NULL) && !ctx[i]->update_in_progress)
@@ -130,6 +129,7 @@ is_operation_result ISBootloader::update(
                 return IS_OP_OK;
             }
         }
+        else return IS_OP_OK;
 
         if(waitAction != NULL) waitAction();
     }

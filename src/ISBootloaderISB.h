@@ -35,6 +35,8 @@ is_operation_result is_isb_get_version_from_file(const char* filename, uint8_t* 
 is_operation_result is_isb_reboot_to_app(serial_port_t* port);
 is_operation_result is_isb_get_version(is_device_context* ctx);
 is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd);
+is_operation_result is_isb_negotiate_version(is_device_context* ctx);
+is_operation_result is_isb_handshake(is_device_context* ctx);
 
 #ifdef __cplusplus
 }

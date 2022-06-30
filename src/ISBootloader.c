@@ -64,6 +64,8 @@ is_device_context* is_create_context(
     serialPortPlatformInit(&ctx->handle.port);
     serialPortSetPort(&ctx->handle.port, handle->port_name);
 
+    strncpy(ctx->firmware_path, firmware, IS_FIRMWARE_PATH_LENGTH);
+
     return ctx;
 }
 
@@ -93,12 +95,12 @@ static const char * get_file_ext(const char *filename)
  */
 static is_operation_result is_app_get_version(is_device_context* ctx)
 {
-    serialPortClose(&ctx->handle.port);
-    if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->handle.baud, 1) == 0)
-    {
-        serialPortClose(&ctx->handle.port);
-        return IS_OP_ERROR;
-    }    
+    // serialPortClose(&ctx->handle.port);
+    // if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->handle.baud, 1) == 0)
+    // {
+    //     serialPortClose(&ctx->handle.port);
+    //     return IS_OP_ERROR;
+    // }    
     serialPortFlush(&ctx->handle.port);
 
     // Get DID_DEV_INFO from the uINS.
@@ -127,7 +129,7 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
         return IS_OP_ERROR;
     }
 
-    serialPortSleep(&comm, 10);
+    serialPortSleep(&ctx->handle.port, 10);
 
     protocol_type_t ptype;
     int n = is_comm_free(&comm);
@@ -254,7 +256,7 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
         {   /** SAM-BA MODE */
             valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
         }
-        else if(is_isb_get_version(ctx) == IS_OP_OK)
+        else if(is_isb_handshake(ctx) == IS_OP_OK && is_isb_negotiate_version(ctx) == IS_OP_OK && is_isb_get_version(ctx) == IS_OP_OK)
         {   /** IS BOOTLOADER MODE */
             if(ctx->props.isb.major >= 6)   
             {   // v6 and has EVB detection built-in
@@ -323,7 +325,7 @@ void is_update_flash(void* context)
 
     if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
-        return IS_OP_INCOMPATIBLE;
+        return;
     }
 
     const char * extension = get_file_ext(ctx->firmware_path);
@@ -340,7 +342,7 @@ void is_update_flash(void* context)
     else
     {
         ctx->info_callback(ctx, "Invalid firmware filename extension");
-        return IS_OP_ERROR;
+        return;
     }
 
     // In case we are updating using the inertial sense bootloader (ISB), set the entry command based on the signature
@@ -378,12 +380,12 @@ void is_update_flash(void* context)
                 SLEEP_MS(1000);
                 if(is_isb_get_version(ctx) != IS_OP_OK)
                 {
-                    return IS_OP_ERROR;
+                    return;
                 }
             }
             else
             {
-                return IS_OP_ERROR;
+                return;
             }
            
             if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
@@ -417,6 +419,6 @@ void is_update_flash(void* context)
     }
     else
     {   // Invalid handle status
-        return IS_OP_ERROR;
+        return;
     }
 }
