@@ -1649,6 +1649,21 @@ class logPlot:
             ax.plot(velLin, effEst, 'r')
 
             return c
+    def sensorCompGyrTemp(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'pqr', useTemp=True)
+
+    def sensorCompAccTemp(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'acc', useTemp=True)
+
+    def sensorCompMagTemp(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag', useTemp=True)
+
     def sensorCompGyr(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1664,25 +1679,11 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'mag')
 
-    def sensorCompGyrTime(self, fig=None):
-        if fig is None:
-            fig = plt.figure()
-
-        self.sensorCompGen(fig, 'pqr', useTime=True)
-
-    def sensorCompAccTime(self, fig=None):
-        if fig is None:
-            fig = plt.figure()
-        self.sensorCompGen(fig, 'acc', useTime=True)
-
-    def sensorCompMagTime(self, fig=None):
-        if fig is None:
-            fig = plt.figure()
-        self.sensorCompGen(fig, 'mag', useTime=True)
-
-    def sensorCompGen(self, fig, name, useTime=False):
+    def sensorCompGen(self, fig, name, useTemp=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(4, 2, sharex=True)
+
+        useSampleNumber = 1
 
         for i in range(2):
             ax[0, i].set_title('X %s %d' % (name, i))
@@ -1690,10 +1691,13 @@ class logPlot:
             ax[2, i].set_title('Z %s %d' % (name, i))
             ax[3, i].set_title('Magnitude %s %d' % (name, i))
             for d in range(3):
-                if useTime:
-                    ax[d,i].set_xlabel("Time (s)")
-                else:
+                if useTemp:
                     ax[d,i].set_xlabel("Temperature (C)")
+                else:
+                    if useSampleNumber:
+                        ax[d,i].set_xlabel("Sample")
+                    else:
+                        ax[d,i].set_xlabel("Time (s)")
                 if name=='pqr':
                     ax[d,i].set_ylabel("Gyro (deg/s)")
                 elif name=='acc':
@@ -1707,15 +1711,11 @@ class logPlot:
             status = self.getData(d, DID_SCOMP, 'status')
 
             if name=='mag':
-                refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
-                if len(refTime)!=0:
-                    refVal = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+                refVal = self.getData(d, DID_SCOMP, 'referenceMag')
             else:
-                refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
-                if len(refTime)!=0:
-                    refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
-                    refImu = refImu
-                    refVal = refImu[name]
+                refImu = self.getData(d, DID_SCOMP, 'referenceImu')
+                refImu = refImu
+                refVal = refImu[name]
 
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
@@ -1728,29 +1728,32 @@ class logPlot:
                     scalar = 1.0
                     yspan = 0.5 # m/s^2 
 
-                if useTime:
-                    temp = time
-
-                # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
-                ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
-                ax[1,i].plot(temp, sensor[:,1]*scalar)
-                ax[2,i].plot(temp, sensor[:,2]*scalar)
-                if name=='acc':
-                    ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
-
-                if useTime and 1:
-                    # Show sensor valid status bit
-                    if name=='acc':
-                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                if useTemp:
+                    x = temp
+                else:
+                    if useSampleNumber:
+                        x = np.arange(len(sensor[:,0]))
                     else:
-                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
-                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
-                    ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
-                    ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
+                        x = time
 
-                    if len(refTime) != 0:
-                        for j in range(3):
-                            ax[j, i].plot(refTime, refVal[:, j] * scalar, color='red', label="reference")
+                # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d] )
+                ax[1,i].plot(x, sensor[:,1]*scalar)
+                ax[2,i].plot(x, sensor[:,2]*scalar)
+                if name=='acc':
+                    ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
+
+                # Show sensor valid status bit
+                if name=='acc':
+                    valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                else:
+                    valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                ax[0,i].plot(x, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
+                ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
+                ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
+
+                for j in range(3):
+                    ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
