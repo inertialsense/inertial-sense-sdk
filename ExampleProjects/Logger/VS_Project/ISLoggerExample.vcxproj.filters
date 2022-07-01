@@ -136,6 +136,21 @@
     <ClCompile Include="..\..\..\src\ISLogStats.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\ihex.c">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderCommon.c">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderDfu.c">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderSamba.c">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloader.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h">
@@ -259,6 +274,21 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISLogStats.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ihex.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderCommon.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderDfu.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderSamba.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloader.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
   </ItemGroup>

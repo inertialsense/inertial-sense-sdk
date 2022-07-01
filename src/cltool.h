@@ -24,8 +24,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDisplay.h"
 #include "ISUtilities.h"
 
-using namespace std;
-
 #define APP_NAME                "cltool"
 #if PLATFORM_IS_WINDOWS
 #define APP_EXT                 ".exe"
@@ -53,44 +51,43 @@ typedef struct
 
 typedef struct
 {
-	string comPort; 						// -c com_port
-	string updateAppFirmwareFilename; 		// -uf file_name
-    string updateBootloaderFilename; 		// -ub file_name
+	std::string comPort; 					// -c com_port
+	std::string updateAppFirmwareFilename; 	// -uf file_name
+	std::string updateBootloaderFilename; 	// -ub file_name
 	bool forceBootloaderUpdate;				// -fb
-    bool bootloaderVerify; 					// -bv
-    bool replayDataLog;
-    bool softwareResetUins;
-    bool softwareResetEvb;
-    bool magRecal;
-    uint32_t magRecalMode;
-    survey_in_t surveyIn;
-    string asciiMessages;
+	bool bootloaderVerify; 					// -bv
+	bool replayDataLog;
+	bool softwareResetUins;
+	bool softwareResetEvb;
+	bool magRecal;
+	uint32_t magRecalMode;
+	survey_in_t surveyIn;
+	std::string asciiMessages;
 	double replaySpeed;
-	int displayMode;
-
+	int displayMode;	
+	
 	uint64_t rmcPreset;
-    bool persistentMessages;
+	bool persistentMessages;
 	stream_did_t datasetEdit;				// -edit DID#=periodMultiple
-	vector<stream_did_t> datasets;			// -did DID#=periodMultiple
-
+	std::vector<stream_did_t> datasets;		// -did DID#=periodMultiple	
+	
 	bool enableLogging;
-	string logType; 						// -lt=dat
-	string logPath; 						// -lp path
+	std::string logType; 					// -lt=dat
+	std::string logPath; 					// -lp path
 	float maxLogSpacePercent; 				// -lms=max_space_mb
 	uint32_t maxLogFileSize; 				// -lmf=max_file_size
-	string logSubFolder; 					// -lts=1
+	std::string logSubFolder; 				// -lts=1
 	int baudRate; 							// -baud=3000000
-	bool disableBroadcastsOnClose;
-
-	string roverConnection; 				// -rover=type:IP/URL:port:mountpoint:user:password   (server)
-	string baseConnection; 					// -base=IP:port    (client)
-
-	string flashCfg;
-	string evbFlashCfg;
-
+	bool disableBroadcastsOnClose;	
+	
+	std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
+	std::string baseConnection; 			// -base=IP:port    (client)	
+	
+	std::string flashCfg;
+	std::string evbFlashCfg;	
 	uint32_t timeoutFlushLoggerSeconds;
-	uint32_t outputOnceDid;
-
+	uint32_t outputOnceDid;	
+	
 	bool factoryResetUins;
 	bool chipEraseUins;
 	bool chipEraseEvb2;
@@ -110,10 +107,10 @@ bool cltool_parseCommandLine(int argc, char* argv[]);
 bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
-bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfg); // true if should continue
-bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string evbFlashCfg); // true if should continue
 void cltool_firmwareUpdateWaiter();
 void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level);
+bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
+bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, std::string evbFlashCfg); // true if should continue
 
 #endif // __CLTOOL_H__
 

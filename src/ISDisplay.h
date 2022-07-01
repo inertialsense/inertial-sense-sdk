@@ -29,7 +29,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-using namespace std;
 
 /**
 * Utility functions for displaying data
@@ -73,10 +72,10 @@ public:
 	void Home(void);
 	void GoToRow(int y);
 	void GoToColumnAndRow(int x, int y);
-	string Hello();
-	string Connected();
-	string Replay(double speed=1.0);
-	string Goodbye();
+	std::string Hello();
+	std::string Connected();
+	std::string Replay(double speed=1.0);
+	std::string Goodbye();
 
 	void SetKeyboardNonBlock();
 	void ResetTerminalMode();
@@ -90,32 +89,32 @@ public:
 	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
 	void DataToStats(const p_data_t* data);
 	void PrintStats();
-	string DataToString(const p_data_t* data);
+	std::string DataToString(const p_data_t* data);
 	char* StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus);
 	char* InsStatusToSolStatusString(char* ptr, char* ptrEnd, const uint32_t insStatus);
-	string DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr);
-	string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
- 	string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
-	string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
-	string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
-	string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
-	string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
-	string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
-	string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
-	string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const string didName);
-	string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr, const string didName);
-	string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr, const string didName);
-	string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
-    string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
-	string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
-	string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
-	string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
-	string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
-	string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
-	string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
-	string DataToStringGeneric(const p_data_t* data);
+	std::string DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr);
+	std::string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
+ 	std::string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
+	std::string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
+	std::string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
+	std::string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
+	std::string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
+	std::string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
+	std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
+	std::string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const std::string didName);
+	std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr, const std::string didName);
+	std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr, const std::string didName);
+	std::string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
+    std::string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
+	std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
+	std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
+	std::string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
+	std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
+	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
+	std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+	std::string DataToStringGeneric(const p_data_t* data);
 
-	string DatasetToString(const p_data_t* data);
+	std::string DatasetToString(const p_data_t* data);
 
 	void GetKeyboardInput();
 	void SelectEditDataset(int did);
@@ -127,11 +126,11 @@ public:
 	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
 
 private:
-	string VectortoString();
+	std::string VectortoString();
 	void DataToVector(const p_data_t* data);
 
 	bool m_nonblockingkeyboard;
-	vector<string> m_didMsgs;
+	std::vector<std::string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;
 
@@ -149,7 +148,7 @@ private:
 		int count;
 	};
 
-	vector<sDidStats> m_didStats;
+	std::vector<sDidStats> m_didStats;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -164,9 +163,9 @@ private:
 
 };
 
-ostream& boldOn(ostream& os);
-ostream& boldOff(ostream& os);
-ostream& endlbOn(ostream& os);  // Bold on with newline
-ostream& endlbOff(ostream& os); // Bold off with newline
+std::ostream& boldOn(std::ostream& os);
+std::ostream& boldOff(std::ostream& os);
+std::ostream& endlbOn(std::ostream& os);  // Bold on with newline
+std::ostream& endlbOff(std::ostream& os); // Bold off with newline
 
 #endif // IS_DISPLAY_H

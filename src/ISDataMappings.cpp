@@ -31,6 +31,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../cpp/libs/IS_internal.h"
 #endif
 
+using namespace std;
+
 #if PLATFORM_IS_EMBEDDED
 cISDataMappings* cISDataMappings::s_map;
 #else
@@ -683,10 +685,10 @@ static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DID_COUNT])
+static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t did)
 {
 	typedef preintegrated_imu_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU];
+	map_name_to_info_t& m = mappings[did];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "theta[0]", theta[0], 0, DataTypeFloat, float&, 0);
@@ -944,7 +946,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gps1AntOffset[1]", gps1AntOffset[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "gps1AntOffset[2]", gps1AntOffset[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "insDynModel", insDynModel, 0, DataTypeUInt8, uint8_t, 0);
-	ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t, 0);
+	ADD_MAP(m, totalSize, "debug", debug, 0, DataTypeUInt8, uint8_t, 0);
 	ADD_MAP(m, totalSize, "gnssSatSigConst", gnssSatSigConst, 0, DataTypeUInt16, uint16_t, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "sysCfgBits", sysCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "refLla[0]", refLla[0], 0, DataTypeDouble, double&, 0);
@@ -1788,14 +1790,17 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "mag1.dtTemp", mag[1].dtTemp, 0, DataTypeFloat, float, 0);
 
 	// Reference IMU
-	ADD_MAP(m, totalSize, "reference.pqr[0]", reference.pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.pqr[1]", reference.pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.pqr[2]", reference.pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.acc[0]", reference.acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.acc[1]", reference.acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "reference.acc[2]", reference.acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "referenceImu.pqr[0]", referenceImu.pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.pqr[1]", referenceImu.pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.pqr[2]", referenceImu.pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.acc[0]", referenceImu.acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.acc[1]", referenceImu.acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceImu.acc[2]", referenceImu.acc[2], 0, DataTypeFloat, float&, 0);
+	// Reference Mag
+    ADD_MAP(m, totalSize, "referenceMag[0]", referenceMag[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceMag[1]", referenceMag[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "referenceMag[2]", referenceMag[2], 0, DataTypeFloat, float&, 0);
 
-	// Other
     ADD_MAP(m, totalSize, "sampleCount", sampleCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calState", calState, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
@@ -2481,7 +2486,7 @@ cISDataMappings::cISDataMappings()
 	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
 	PopulateMagnetometerMappings(m_lookupInfo, DID_REFERENCE_MAGNETOMETER);
     PopulateBarometerMappings(m_lookupInfo);
-    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo);
+    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PREINTEGRATED_IMU);
     PopulateWheelEncoderMappings(m_lookupInfo);
     PopulateGroundVehicleMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
@@ -2493,6 +2498,7 @@ cISDataMappings::cISDataMappings()
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_EVB_DEV_INFO);
 	PopulateIOMappings(m_lookupInfo);
 	PopulateReferenceIMUMappings(m_lookupInfo);
+	PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_REFERENCE_PIMU);
 	PopulateInfieldCalMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)

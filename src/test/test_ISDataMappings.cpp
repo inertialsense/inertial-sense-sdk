@@ -2,6 +2,8 @@
 #include <deque>
 #include "../ISDataMappings.h"
 
+using namespace std;
+
 
 TEST(ISDataMappings, StringToDataToString)
 {

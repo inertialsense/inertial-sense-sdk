@@ -34,7 +34,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
- 
+
+using namespace std;
+
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
 {
@@ -207,10 +209,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
 	if (g_commandLineOptions.magRecal)
 	{	
-		// Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.recalCmd == 100).
+		// Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.state: 200=in progress, 201=done).
 		inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL, 100);
 		// Enable mag recal
-		inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, recalCmd));
+		inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, state));
 	}
     if (g_commandLineOptions.surveyIn.state)
     {   // Enable mult-axis 
