@@ -341,9 +341,8 @@ bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 	if (!valid)    
     {   // Reset to defaults
         *cfg = defaults;
-        g_nvr_manage_config.flash_write_needed = true;
-		g_nvr_manage_config.flash_write_enable_timeMs = time_msec();
-        g_status.evbStatus |= EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
+        nvr_flash_config_write_needed();
+        nvr_flash_config_write_enable();
     }   
     
     // Disable cbPresets is necessary
@@ -472,6 +471,21 @@ bool nvr_slow_maintenance(void)
     }    
 
     return flash_write;
+}
+
+
+void nvr_flash_config_write_needed(void)
+{
+	g_nvr_manage_config.flash_write_needed++;
+}
+
+
+// Used to enabled flash writes at controlled times.  The system may identify when a flash write is needed. 
+// However, this will not occur until flash is enabled (at time EKF can tolerate stutters in RTOS update).
+void nvr_flash_config_write_enable(void)
+{
+    g_nvr_manage_config.flash_write_enable_timeMs = time_msec();
+	g_status.evbStatus |= EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
 }
 
 
