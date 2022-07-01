@@ -30,11 +30,26 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "../hw-libs/bootloader/bootloaderShared.h"
 
-const char* is_uins_5_firmware_needle = "uINS-5";
-const char* is_uins_3_firmware_needle = "uINS-3";
-const char* is_evb_2_firmware_needle = "EVB-2";
-const char* is_samx70_bootloader_needle = "SAMx70";
-const char* is_stm32l4_bootloader_needle = "STM32L4";
+const char* is_samx70_bootloader_needle = "SAMx70-Bootloader";
+
+static is_operation_result dummy_update_callback(void* obj, float percent) 
+{
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->update_progress = percent;
+    return IS_OP_OK;
+}
+
+static is_operation_result dummy_verify_callback(void* obj, float percent) 
+{
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->verify_progress = percent;
+    return IS_OP_OK;
+}
+
+static void dummy_info_callback(void* obj, const char* infoString, is_log_level level)
+{
+
+}
 
 is_device_context* is_create_context(
     is_device_handle* handle,
@@ -65,6 +80,10 @@ is_device_context* is_create_context(
 
     strncpy(ctx->firmware_path, firmware, IS_FIRMWARE_PATH_LENGTH);
 
+    if(upload_cb == NULL) ctx->update_callback = dummy_update_callback;
+    if(verify_cb == NULL) ctx->verify_callback = dummy_verify_callback;
+    if(info_cb == NULL) ctx->info_callback = dummy_info_callback;
+
     return ctx;
 }
 
@@ -79,7 +98,7 @@ void is_destroy_context(is_device_context* ctx)
  * @param filename
  * @return const char* 
  */
-static const char * get_file_ext(const char *filename) 
+static const char* get_file_ext(const char *filename) 
 {
     const char *dot = strrchr(filename, '.');   // Find last '.' in file name
     if(!dot || dot == filename) return "";
@@ -148,6 +167,7 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
                 case DID_DEV_INFO:
                     dev_info = (dev_info_t*)comm.dataPtr;
                     memcpy(ctx->props.app.uins_version, dev_info->hardwareVer, 4);
+                    ctx->props.serial = dev_info->serialNumber;
                     break;    
                 case DID_EVB_DEV_INFO:
                     evb_dev_info = (dev_info_t*)comm.dataPtr;
@@ -156,6 +176,7 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
                 case DID_EVB_STATUS:
                     evb_status = (evb_status_t*)comm.dataPtr;
                     if(evb_status->firmwareVer[0]) memcpy(ctx->props.app.evb_version, evb_version, 4);
+                    else memset(ctx->props.app.evb_version, 0, 4);
                     break;
                 }
             }
@@ -175,10 +196,10 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
  * @param firmware 
  * @return is_device_type 
  */
-static is_image_signature is_get_hex_image_signature(const char* firmware)
+static is_image_signature is_get_hex_image_signature(is_device_context* ctx)
 {
     ihex_image_section_t image;
-    size_t sections = ihex_load_sections(firmware, &image, 1);
+    size_t sections = ihex_load_sections(ctx->firmware_path, &image, 1);
     size_t image_type;
 
     if(sections == 1)   // Signature must be in the first section of the image
@@ -195,9 +216,8 @@ static is_image_signature is_get_hex_image_signature(const char* firmware)
             case IS_IMAGE_SIGN_EVB_2_24K: target_signature = bootloaderRequiredSignature_EVB_2_24K; break;
             case IS_IMAGE_SIGN_UINS_5: target_signature = bootloaderRequiredSignature_uINS_5; break;
             case IS_IMAGE_SIGN_ISB_STM32L4: target_signature = bootloaderRequiredSignature_STM32L4_bootloader; break;
-            case IS_IMAGE_SIGN_ISB_SAMx70_16K: target_signature = bootloaderRequiredSignature_SAMx70_bootloader_16K; break;
             case IS_IMAGE_SIGN_ISB_SAMx70_24K: target_signature = bootloaderRequiredSignature_SAMx70_bootloader_24K; break;
-            default: return 0;
+            default: continue;
             }
 
             size_t k = 0;
@@ -212,14 +232,18 @@ static is_image_signature is_get_hex_image_signature(const char* firmware)
         
     }
     
+    // Backup for old (16K) bootloader image
+    if (strstr(ctx->firmware_path, is_samx70_bootloader_needle))
+    {
+        return IS_IMAGE_SIGN_ISB_SAMx70_16K;
+    }
+
     return 0;
 }
 
-static is_image_signature is_get_bin_image_signature(const char* firmware)
+static is_image_signature is_get_bin_image_signature(is_device_context* ctx)
 {
-    // TODO: Implement
-
-    return 0;
+    return IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
 }
 
 is_operation_result is_check_signature_compatibility(is_device_context* ctx)
@@ -230,15 +254,15 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
 
     if(strcmp(extension, "bin") == 0)
     {
-        file_signature = is_get_bin_image_signature(ctx->firmware_path);
+        file_signature = is_get_bin_image_signature(ctx);
     }
     else if(strcmp(extension, "hex") == 0)
     {
-        file_signature = is_get_hex_image_signature(ctx->firmware_path);
+        file_signature = is_get_hex_image_signature(ctx);
     }
     else
     {
-        ctx->info_callback(ctx, "Invalid firmware filename extension");
+        ctx->info_callback(ctx, "Invalid firmware filename extension", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
@@ -272,6 +296,7 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
             else
             {
                 valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
+                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
             }
         }
         else if(is_app_get_version(ctx) == IS_OP_OK)
@@ -332,15 +357,15 @@ void is_update_flash(void* context)
 
     if(strcmp(extension, "bin") == 0)
     {
-        file_signature = is_get_bin_image_signature(ctx->firmware_path);
+        file_signature = is_get_bin_image_signature(ctx);
     }
     else if(strcmp(extension, "hex") == 0)
     {
-        file_signature = is_get_hex_image_signature(ctx->firmware_path);
+        file_signature = is_get_hex_image_signature(ctx);
     }
     else
     {
-        ctx->info_callback(ctx, "Invalid firmware filename extension");
+        ctx->info_callback(ctx, "Invalid firmware filename extension", IS_LOG_LEVEL_ERROR);
         ctx->update_in_progress = false;
         return;
     }
@@ -372,10 +397,11 @@ void is_update_flash(void* context)
 
             if(is_isb_get_version(ctx) == IS_OP_OK)
             {
-                
+                ctx->info_callback(ctx, "Found device in bootloader mode", IS_LOG_LEVEL_INFO);
             }
             else if(is_app_get_version(ctx) == IS_OP_OK)
             {
+                ctx->info_callback(ctx, "Found device in application mode", IS_LOG_LEVEL_INFO);
                 is_isb_enable(ctx, ctx->props.isb.enable_command);   
                 SLEEP_MS(1000);
                 /*if(is_isb_get_version(ctx) != IS_OP_OK)
@@ -386,6 +412,7 @@ void is_update_flash(void* context)
             }
             else
             {
+                ctx->info_callback(ctx, "Invalid device", IS_LOG_LEVEL_INFO);
                 ctx->update_in_progress = false;
                 return;
             }
@@ -425,6 +452,7 @@ void is_update_flash(void* context)
         return;
     }
 
+    ctx->success = true;
     ctx->update_in_progress = false;
     return;
 }

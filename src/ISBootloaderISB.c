@@ -402,6 +402,21 @@ static is_operation_result is_isb_upload_hex_page(serial_port_t* s, unsigned cha
     checkSum = is_isb_checksum(checkSum, hexData, 0, charsForThisPage, 0, 1);
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
+
+    serialPortWrite(s, checkSumHex, 2);
+
+    unsigned char buf[128] = { 0 };
+    int count = serialPortReadTimeout(s, buf, 3, 1000);
+
+    for(int i = 0; i < 5; i++) if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
+    {
+        *totalBytes += byteCount;
+        *currentOffset += byteCount;
+
+        return IS_OP_OK;
+    }
+    return IS_OP_ERROR;
+
     if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
         // bootloader_perror(s, "Failed to write checksum %s at offset %d\n", checkSumHex, *currentOffset);
@@ -826,7 +841,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
 
     if (ctx->verify_callback != 0 && ctx->verify_progress != 0)
     {
-        if (ctx->info_callback != 0) ctx->info_callback(ctx, "Verifying flash...");
+        if (ctx->info_callback != 0) ctx->info_callback(ctx, "Verifying flash...", IS_LOG_LEVEL_INFO);
 
         if (is_isb_verify(currentPage, verifyCheckSum, ctx) != IS_OP_OK)
         {
@@ -836,7 +851,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
 
     // send the "reboot to program mode" command and the device should start in program mode
     if(ctx->info_callback)
-        ctx->info_callback(ctx, "Rebooting unit...");
+        ctx->info_callback(ctx, "Rebooting unit...", IS_LOG_LEVEL_INFO);
     serialPortWrite(&ctx->handle.port, (unsigned char*)":020000040300F7", 15);
     serialPortSleep(&ctx->handle.port, 250);
 
@@ -862,14 +877,14 @@ is_operation_result is_isb_flash(is_device_context* ctx)
         return IS_OP_ERROR;
 
     if(ctx->info_callback != 0)
-        ctx->info_callback(ctx, "Erasing flash...");
+        ctx->info_callback(ctx, "Erasing flash...", IS_LOG_LEVEL_INFO);
     if(is_isb_erase_flash(&ctx->handle.port) != IS_OP_OK)
         return IS_OP_ERROR;
     if(is_isb_select_page(&ctx->handle.port, 0) != IS_OP_OK)
         return IS_OP_ERROR;
 
     if(ctx->info_callback != 0)
-        ctx->info_callback(ctx, "Programming flash...");
+        ctx->info_callback(ctx, "Programming flash...", IS_LOG_LEVEL_INFO);
     if(is_isb_begin_program_for_current_page(&ctx->handle.port, ctx->props.isb.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
         return IS_OP_ERROR;
 

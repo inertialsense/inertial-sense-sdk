@@ -30,6 +30,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <time.h>
 
+#define DFU_STATUS(x, level) ctx->info_callback(ctx, x, level)
+
 #define STM32_PAGE_SIZE 0x800
 #define STM32_PAGE_ERROR_MASK 0x7FF
 
@@ -356,6 +358,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
         break;
     }
 
+    DFU_STATUS("Found DFU device, starting firmware update", IS_LOG_LEVEL_INFO);
+
     libusb_free_device_list(device_list, 1);
     if(!dev_found || !dev_handle) { return IS_OP_ERROR; } 
 
@@ -390,6 +394,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     }
 
     uint32_t bytes_written_total = 0;
+
+    DFU_STATUS("Erasing flash...", IS_LOG_LEVEL_INFO);
 
     // Erase memory (only erase pages where firmware lives)
     for(size_t i = 0; i < image_sections; i++)
@@ -436,6 +442,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     }
 
     bytes_written_total = 0;
+
+    DFU_STATUS("Programming flash...", IS_LOG_LEVEL_INFO);
 
     // Write memory
     for(size_t i = 0; i < image_sections; i++)
@@ -499,6 +507,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     // Reset status to good
     ret_dfu = dfu_wait_for_state(&ctx->handle.libusb, DFU_STATE_IDLE);
     if (ret_dfu < DFU_ERROR_NONE) { libusb_close(dev_handle); return IS_OP_ERROR; }
+
+    DFU_STATUS("Restarting device...", IS_LOG_LEVEL_INFO);
 
     // Option bytes
     // This hard-coded array sets mostly defaults, but without PH3 enabled and

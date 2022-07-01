@@ -44,12 +44,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SAMBA_TIMEOUT_DEFAULT 1000
 #define SAMBA_FLASH_START_ADDRESS 0x00400000
 #define SAMBA_BOOTLOADER_SIZE 16384
+#define SAMBA_BOOTLOADER_SIZE_24K 0x6000
 
-#define SAMBA_STATUS(x) if (ctx->info_callback) ctx->info_callback(ctx, x)
+#define SAMBA_STATUS(x, level) ctx->info_callback(ctx, x, level)
 #define SAMBA_ERROR_CHECK(x, error) if(x != IS_OP_OK) \
     { \
         serialPortClose(port); \
-        SAMBA_STATUS(error); \
+        SAMBA_STATUS(error, IS_LOG_LEVEL_ERROR); \
         return IS_OP_ERROR; \
     }
 
@@ -86,7 +87,9 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
 
-    // SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to init SAM-BA device");
+    is_samba_reset(ctx);
+
+    SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to re-init SAM-BA device");
 
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
@@ -117,7 +120,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 
         if (file == 0)
         {
-            SAMBA_STATUS("Unable to load bootloader file");
+            SAMBA_STATUS("Unable to load bootloader file", IS_LOG_LEVEL_ERROR);
             serialPortClose(port);
             return 0;
         }
@@ -127,14 +130,14 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         fseek(file, 0, SEEK_SET);
         checksum = 0;
 
-        if (size != SAMBA_BOOTLOADER_SIZE)
+        if (size != SAMBA_BOOTLOADER_SIZE_24K)
         {
-            SAMBA_STATUS("Invalid bootloader file");
+            SAMBA_STATUS("Invalid or old (v5 or earlier) bootloader file", IS_LOG_LEVEL_ERROR);
             serialPortClose(port);
             return 0;
         }
 
-        SAMBA_STATUS("Writing bootloader...");
+        SAMBA_STATUS("Writing bootloader...", IS_LOG_LEVEL_INFO);
 
         uint32_t offset = 0;
         while (fread(buf, 1, SAMBA_PAGE_SIZE, file) == SAMBA_PAGE_SIZE)
@@ -142,7 +145,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
             if (is_samba_flash_erase_write_page(ctx, offset, buf, isUSB) != IS_OP_OK)
             {
                 if (!isUSB) { offset = 0; break; } // try USB mode
-                SAMBA_STATUS("Failed to upload page");
+                SAMBA_STATUS("Failed to upload page", IS_LOG_LEVEL_ERROR);
                 serialPortClose(port);
                 return 0;
             }
@@ -152,7 +155,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
             }
             offset += SAMBA_PAGE_SIZE;
             
-            ctx->update_progress = (float)offset / (float)SAMBA_BOOTLOADER_SIZE;
+            ctx->update_progress = (float)offset / (float)SAMBA_BOOTLOADER_SIZE_24K;
             if (ctx->update_callback != 0)
             {
                 ctx->update_callback(ctx, ctx->update_progress);
@@ -164,12 +167,12 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 
     if (ctx->verify_callback != 0)
     {
-        SAMBA_STATUS("Verifying bootloader...");
+        SAMBA_STATUS("Verifying bootloader...", IS_LOG_LEVEL_INFO);
         SAMBA_ERROR_CHECK(is_samba_verify(ctx, checksum), "Verification error!");
     }
     
     SAMBA_ERROR_CHECK(is_samba_boot_from_flash(ctx), "Failed to set boot from flash GPNVM bit!");
-    SAMBA_ERROR_CHECK(is_samba_reset(ctx), "Failed to reset device!");
+    is_samba_reset(ctx);
 
     serialPortClose(port);
 
@@ -212,7 +215,7 @@ is_operation_result is_samba_init(is_device_context* ctx)
     // Set flash mode register
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c00, 0x04000600), "Failed to set flash mode register");
 
-    SAMBA_STATUS("SAM-BA ROM bootloader initialized");
+    SAMBA_STATUS("SAM-BA ROM bootloader initialized", IS_LOG_LEVEL_INFO);
 
     serialPortClose(port);
 
@@ -448,9 +451,10 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
     unsigned char buf[512];
     int count;
 
-    for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE); )
+    for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE_24K); )
     {
         nextAddress = address + SAMBA_PAGE_SIZE;
+        serialPortFlush(&ctx->handle.port);
         while (address < nextAddress)
         {
             count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
@@ -468,13 +472,13 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
         }
         else return IS_OP_ERROR;
 
-        ctx->verify_progress = (float)(address - SAMBA_PAGE_SIZE) / (float)SAMBA_BOOTLOADER_SIZE;
+        ctx->verify_progress = (float)(address - SAMBA_PAGE_SIZE) / (float)SAMBA_BOOTLOADER_SIZE_24K;
         if (ctx->verify_callback != 0)
         {
             ctx->verify_callback(ctx, ctx->verify_progress);
         }
     }
-    if (checksum != checksum2) return IS_OP_ERROR;
+    if (checksum != ~checksum2) return IS_OP_ERROR;
     return IS_OP_OK;
 }
 

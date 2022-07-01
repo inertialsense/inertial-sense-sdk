@@ -341,7 +341,7 @@ static int cltool_updateFirmware()
 	return (errorCount == 0 ? 0 : -1);
 }
 
-void cltool_bootloadUpdateInfo(void* obj, const char* str)
+void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level)
 {
 	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
 	{

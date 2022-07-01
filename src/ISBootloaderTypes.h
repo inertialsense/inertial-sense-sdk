@@ -151,7 +151,7 @@ typedef struct
 /** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
 typedef is_operation_result(*pfnBootloadProgress)(void* obj, float percent);
 /** Bootloader information string function prototype. */
-typedef void(*pfnBootloadStatus)(void* obj, const char* infoString);
+typedef void(*pfnBootloadStatus)(void* obj, const char* infoString, is_log_level level);
 
 typedef struct
 {

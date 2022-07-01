@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "InertialSense.h"
 #ifndef EXCLUDE_BOOTLOADER
 #include "ISBootloaderThread.h"
+#include "ISBootloaderDFU.h"
 #endif
 
 using namespace std;
@@ -711,7 +712,16 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 #ifndef EXCLUDE_BOOTLOADER
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<uint32_t> serials;
+	
+	// For now, we will use all present DFU devices. The bootloader code will only load them with images that have the right signature, so this is safe.
+	std::vector<std::string> uids;
+	is_dfu_list dfu_list;
+	is_dfu_list_devices(&dfu_list);
+
+	for (size_t i = 0; i < dfu_list.present; i++)
+	{
+		uids.push_back(std::string(dfu_list.id->uid));
+	}
 
 	if (comPort == "*")
 	{
@@ -738,7 +748,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
 	#endif
 	
-	ISBootloader::update(portStrings, serials, baudRate, fileName.c_str(), uploadProgress, verifyProgress, infoProgress, NULLPTR, waitAction);
+	ISBootloader::update(portStrings, uids, baudRate, fileName.c_str(), uploadProgress, verifyProgress, infoProgress, NULLPTR, waitAction);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
