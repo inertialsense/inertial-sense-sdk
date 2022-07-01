@@ -135,7 +135,6 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
     dev_info_t* dev_info = NULL;
     dev_info_t* evb_dev_info = NULL;
     evb_status_t* evb_status = NULL;
-    manufacturing_info_t* manufacturing_info = NULL;
     uint8_t evb_version[4];
     if ((n = serialPortReadTimeout(&ctx->handle.port, comm.buf.start, n, 200)))
     {
@@ -179,7 +178,7 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
 static is_image_signature is_get_hex_image_signature(const char* firmware)
 {
     ihex_image_section_t image;
-    int sections = ihex_load_sections(firmware, &image, 1);
+    size_t sections = ihex_load_sections(firmware, &image, 1);
     size_t image_type;
 
     if(sections == 1)   // Signature must be in the first section of the image

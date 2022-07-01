@@ -30,7 +30,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdbool.h> 
 
 #include "ihex.h"
+#pragma warning( push )
+#pragma warning( disable : 4200 )
 #include "libusb/libusb.h"
+#pragma warning( pop )
 #include "ISBootloaderTypes.h"
 
 #ifdef __cplusplus

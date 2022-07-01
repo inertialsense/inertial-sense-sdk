@@ -49,7 +49,7 @@ public:
 
     static is_operation_result update(
         vector<string>&             comPorts,
-        vector<uint32_t>&           serials,
+        vector<string>&             uids,
         int                         baudRate,
         const char*                 firmware,
         pfnBootloadProgress         uploadProgress, 

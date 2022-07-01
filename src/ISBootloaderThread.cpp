@@ -31,7 +31,7 @@ size_t ISBootloader::get_num_devices(vector<string>& comPorts)
 
     ret += dfu_list.present;
     ret += comPorts.size();
- 
+
     return ret;
 }
 
@@ -49,8 +49,8 @@ static bool any_in_progress(vector<is_device_context*>& ctx)
 }
 
 is_operation_result ISBootloader::update(
-    vector<string>&             comPorts,
-    vector<uint32_t>&           serials,
+    vector<string>&             comPorts,   // ISB and SAM-BA and APP
+    vector<string>&             uids,       // DFU only
     int                         baudRate,
     const char*                 firmware,
     pfnBootloadProgress         uploadProgress, 
@@ -61,7 +61,7 @@ is_operation_result ISBootloader::update(
 )
 {
     is_dfu_list dfu_list;
-    size_t i;
+    size_t i, j;
 
     for(i = 0; i < ctx.size(); i++)
     {
@@ -74,29 +74,36 @@ is_operation_result ISBootloader::update(
 
     for(i = 0; i < dfu_list.present; i++)
     {	// Create contexts for devices in DFU mode
-        is_device_handle handle;
-        memset(&handle, 0, sizeof(is_device_handle));
-        handle.status = IS_HANDLE_TYPE_LIBUSB;
-        memcpy(&handle.dfu.uid, &dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE);
-        handle.dfu.vid = dfu_list.id[i].vid;
-        handle.dfu.pid = dfu_list.id[i].pid;
-        handle.dfu.sn = 0;
-        ctx.push_back(is_create_context(
-            &handle,
-            firmware, 
-            uploadProgress, 
-            verifyProgress, 
-            infoProgress,
-            user_data
-        ));
+        for(j = 0; j < uids.size(); j++)
+        {
+            if(strncmp(dfu_list.id[i].uid, uids[j].c_str(), IS_DFU_UID_MAX_SIZE) == 0)
+            {
+                is_device_handle handle;
+                memset(&handle, 0, sizeof(is_device_handle));
+                handle.status = IS_HANDLE_TYPE_LIBUSB;
+                memcpy(&handle.dfu.uid, &dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE);
+                handle.dfu.vid = dfu_list.id[i].vid;
+                handle.dfu.pid = dfu_list.id[i].pid;
+                handle.dfu.sn = 0;
+                ctx.push_back(is_create_context(
+                    &handle,
+                    firmware, 
+                    uploadProgress, 
+                    verifyProgress, 
+                    infoProgress,
+                    user_data
+                ));
+            }
+        }
     }
 
     for(i = 0; i < comPorts.size(); i++)
-    {	// Create contexts for devices still in serial mode
+    {	// Create contexts for devices in serial mode (APP/ISB/SAMBA)
         is_device_handle handle;
         memset(&handle, 0, sizeof(is_device_handle));
         strncpy(handle.port_name, comPorts[i].c_str(), 100);
         handle.status = IS_HANDLE_TYPE_SERIAL;
+        handle.baud = baudRate;
         ctx.push_back(is_create_context(
             &handle,
             firmware, 
@@ -114,8 +121,7 @@ is_operation_result ISBootloader::update(
 
     while (1)
     {	// Wait for threads to finish
-        if(ctx.size())
-        for(i = 0; i < ctx.size(); i++)
+        if(ctx.size()) for(i = 0; i < ctx.size(); i++)
         {
             if((ctx[i]->thread != NULL) && !ctx[i]->update_in_progress)
             {
@@ -131,7 +137,7 @@ is_operation_result ISBootloader::update(
         }
         else return IS_OP_OK;
 
-        if(waitAction != NULL) waitAction();
+        if(waitAction != 0) waitAction();
     }
     
     libusb_exit(NULL);
