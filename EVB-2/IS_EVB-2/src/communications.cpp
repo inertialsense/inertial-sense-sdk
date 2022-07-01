@@ -602,7 +602,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     
 	// Enable flash write
 	nvr_flash_config_write_needed();
-	nvr_flash_config_write_enable();
+	nvr_flash_config_write_enable(true);
 }
 
 
