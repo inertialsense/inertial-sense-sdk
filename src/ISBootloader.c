@@ -251,6 +251,7 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
     const char * extension = get_file_ext(ctx->firmware_path);
     is_image_signature file_signature = 0;
     is_image_signature valid_signatures = 0;
+    bool old_bootloader_version = false;
 
     if(strcmp(extension, "bin") == 0)
     {
@@ -297,6 +298,7 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
             {
                 valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
                 valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+                old_bootloader_version = true;
             }
         }
         else if(is_app_get_version(ctx) == IS_OP_OK)
@@ -334,9 +336,13 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
 
     // Compare the bitfields
 
-    if(file_signature & valid_signatures)
+    if (file_signature & valid_signatures)
     {
         return IS_OP_OK;
+    }
+    else if (old_bootloader_version && file_signature & (IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_UINS_3_24K))
+    {
+        ctx->info_callback(ctx, "If operation fails, please update the bootloader image to continue", IS_LOG_LEVEL_INFO);
     }
 
     return IS_OP_ERROR;
@@ -404,6 +410,11 @@ void is_update_flash(void* context)
                 ctx->info_callback(ctx, "Found device in application mode", IS_LOG_LEVEL_INFO);
                 is_isb_enable(ctx, ctx->props.isb.enable_command);   
                 SLEEP_MS(1000);
+
+                if (is_check_signature_compatibility(ctx) != IS_OP_OK)
+                {
+                    ctx->info_callback(ctx, "Please update the bootloader image to continue", IS_LOG_LEVEL_INFO);
+                }
                 /*if(is_isb_get_version(ctx) != IS_OP_OK)
                 {
                     ctx->update_in_progress = false;
@@ -429,14 +440,15 @@ void is_update_flash(void* context)
                 }
 
                 is_isb_restart_rom(&ctx->handle.port);
-                SLEEP_MS(1000);
+                serialPortClose(&ctx->handle.port);
+                SLEEP_MS(3000);
 
                 if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
                 {   /** DFU MODE */
                     is_dfu_flash(ctx);
                 }
                 else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL && is_samba_init(ctx) == IS_OP_OK)
-                {
+                {   /** SAM-BA MODE */
                     is_samba_flash(ctx);
                 }
             }

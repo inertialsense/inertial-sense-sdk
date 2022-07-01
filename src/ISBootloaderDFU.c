@@ -261,7 +261,7 @@ static is_operation_result is_dfu_get_sn(libusb_device_handle** handle, uint32_t
 
     // Go back one, to the last filled section
 	index--;
-	is_dfu_otp_id_t* id = (is_dfu_otp_id_t*)((uint32_t)(index * OTP_SECTION_SIZE) + (uint32_t)&rxBuf);
+    is_dfu_otp_id_t* id = (is_dfu_otp_id_t*)((index * OTP_SECTION_SIZE) + rxBuf);
 
 	uint64_t key = OTP_KEY;
 	if(memcmp(otp_mem - 8, &key, 8) == 0 && foundSn)
@@ -358,10 +358,10 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
         break;
     }
 
-    DFU_STATUS("Found DFU device, starting firmware update", IS_LOG_LEVEL_INFO);
-
     libusb_free_device_list(device_list, 1);
     if(!dev_found || !dev_handle) { return IS_OP_ERROR; } 
+
+    DFU_STATUS("Found DFU device, starting firmware update", IS_LOG_LEVEL_INFO);
 
     ret_libusb = libusb_claim_interface(ctx->handle.libusb, 0);
     if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(dev_handle); return IS_OP_ERROR; } 

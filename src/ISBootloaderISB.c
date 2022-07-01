@@ -183,17 +183,17 @@ is_operation_result is_isb_handshake(is_device_context* ctx)
 	ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
 
     // try handshaking at each baud rate
-    for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList) + 1; i++)
+    // for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList) + 1; i++)
     {
         serialPortClose(port);
-        if (serialPortOpenRetry(port, port->port, s_baudRateList[i], 1) == 0)
+        if (serialPortOpenRetry(port, port->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
         {
             // can't open the port, fail
             return IS_OP_ERROR;
         }
         else if (is_isb_sync(port) == IS_OP_OK)
         {
-            ctx->handle.baud = s_baudRateList[i];
+            ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
             return IS_OP_OK;
         }
     }

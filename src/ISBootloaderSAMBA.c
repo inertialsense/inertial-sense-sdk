@@ -43,7 +43,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SAMBA_BAUDRATE 115200
 #define SAMBA_TIMEOUT_DEFAULT 1000
 #define SAMBA_FLASH_START_ADDRESS 0x00400000
-#define SAMBA_BOOTLOADER_SIZE 16384
 #define SAMBA_BOOTLOADER_SIZE_24K 0x6000
 
 #define SAMBA_STATUS(x, level) ctx->info_callback(ctx, x, level)
@@ -62,6 +61,7 @@ static is_operation_result is_samba_write_uart_modem(is_device_context* ctx, uin
 static is_operation_result is_samba_flash_erase_write_page(is_device_context* ctx, size_t offset, uint8_t data[SAMBA_PAGE_SIZE], bool isUSB);
 static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t checksum);
 static is_operation_result is_samba_reset(is_device_context* ctx);
+static is_operation_result is_samba_erase_flash(is_device_context * ctx);
 
 static uint16_t crc_update(uint16_t crc_in, int incr);
 static uint16_t crc16(uint8_t* data, uint16_t size);
@@ -95,6 +95,15 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
     uint8_t buf[SAMBA_PAGE_SIZE];
     uint32_t checksum = 0;
+
+    serialPortClose(port);
+    if (!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
+    {
+        serialPortClose(port);
+        return IS_OP_ERROR;
+    }
+
+    SAMBA_ERROR_CHECK(is_samba_erase_flash(ctx), "Failed to erase flash memory");
 
     // try non-USB and then USB mode (0 and 1)
     for(int isUSB = 0; isUSB < 2; isUSB++)
@@ -140,7 +149,8 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         SAMBA_STATUS("Writing bootloader...", IS_LOG_LEVEL_INFO);
 
         uint32_t offset = 0;
-        while (fread(buf, 1, SAMBA_PAGE_SIZE, file) == SAMBA_PAGE_SIZE)
+        size_t len;
+        while ((len = fread(buf, 1, SAMBA_PAGE_SIZE, file)) == SAMBA_PAGE_SIZE)
         {
             if (is_samba_flash_erase_write_page(ctx, offset, buf, isUSB) != IS_OP_OK)
             {
@@ -179,6 +189,15 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     SLEEP_MS(1000);
 
     return IS_OP_OK;
+}
+
+static is_operation_result is_samba_erase_flash(is_device_context* ctx)
+{
+    if (is_samba_write_word(ctx, 0x400e0c04, 0x5a000005) == IS_OP_OK)
+    {
+        return is_samba_wait_eefc_ready(ctx, true);
+    }
+    return IS_OP_ERROR;
 }
 
 /**
@@ -430,8 +449,8 @@ static is_operation_result is_samba_flash_erase_write_page(is_device_context* ct
         }
     }
 
-    // EEFC.FCR - EWP - erase page, then copy latch buffers into flash
-    count = SNPRINTF((char*)buf, sizeof(buf), "W%08x,5a%04x03#", 0x400e0c04, page);
+    // EEFC.FCR - WP - copy latch buffers into flash
+    count = SNPRINTF((char*)buf, sizeof(buf), "W%08x,5a%04x01#", 0x400e0c04, page);
     serialPortWrite(&ctx->handle.port, buf, count);
     
     return is_samba_wait_eefc_ready(ctx, true);
@@ -448,19 +467,27 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
 {
     uint32_t checksum2 = 0;
     uint32_t nextAddress;
-    unsigned char buf[512];
+    uint8_t buf[SAMBA_PAGE_SIZE];
     int count;
+
+    serialPortFlush(&ctx->handle.port);
 
     for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE_24K); )
     {
+        serialPortFlush(&ctx->handle.port);
         nextAddress = address + SAMBA_PAGE_SIZE;
         serialPortFlush(&ctx->handle.port);
         while (address < nextAddress)
         {
             count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
+            //count = SNPRINTF((char*)buf, sizeof(buf), "R%06x,%04x#", address, SAMBA_PAGE_SIZE);
             serialPortWrite(&ctx->handle.port, buf, count);
             address += sizeof(uint32_t);
-            serialPortSleep(&ctx->handle.port, 2); // give device time to process command
+            //address += SAMBA_PAGE_SIZE;
+
+            //serialPortWaitForTimeout(&ctx->handle.port, "\n\r", 2, 100);
+            
+            //serialPortSleep(&ctx->handle.port, 100); // give device time to process command
         }
         count = serialPortReadTimeout(&ctx->handle.port, buf, SAMBA_PAGE_SIZE, SAMBA_TIMEOUT_DEFAULT);
         if (count == SAMBA_PAGE_SIZE)
@@ -472,13 +499,13 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
         }
         else return IS_OP_ERROR;
 
-        ctx->verify_progress = (float)(address - SAMBA_PAGE_SIZE) / (float)SAMBA_BOOTLOADER_SIZE_24K;
+        ctx->verify_progress = (float)(address - SAMBA_FLASH_START_ADDRESS) / (float)SAMBA_BOOTLOADER_SIZE_24K;
         if (ctx->verify_callback != 0)
         {
             ctx->verify_callback(ctx, ctx->verify_progress);
         }
     }
-    if (checksum != ~checksum2) return IS_OP_ERROR;
+    if (checksum != checksum2) return IS_OP_ERROR;
     return IS_OP_OK;
 }
 
