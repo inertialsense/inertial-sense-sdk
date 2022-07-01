@@ -195,6 +195,7 @@ static is_operation_result is_samba_erase_flash(is_device_context* ctx)
 {
     if (is_samba_write_word(ctx, 0x400e0c04, 0x5a000005) == IS_OP_OK)
     {
+        SLEEP_MS(12000);    // From datasheet, max time it could take
         return is_samba_wait_eefc_ready(ctx, true);
     }
     return IS_OP_ERROR;
