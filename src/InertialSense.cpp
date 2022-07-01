@@ -756,9 +756,9 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 
 	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
 	{
-		if(ISBootloader::ctx[i] != NULL)
+		if(!ISBootloader::ctx[i]->success)
 		{
-			results.push_back({ "SN" , "Success" });
+			results.push_back({ std::to_string(ISBootloader::ctx[i]->props.serial), "failure "});
 		}
 	}
 

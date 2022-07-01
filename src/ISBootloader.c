@@ -113,12 +113,12 @@ static const char* get_file_ext(const char *filename)
  */
 static is_operation_result is_app_get_version(is_device_context* ctx)
 {
-    // serialPortClose(&ctx->handle.port);
-    // if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->handle.baud, 1) == 0)
-    // {
-    //     serialPortClose(&ctx->handle.port);
-    //     return IS_OP_ERROR;
-    // }    
+     serialPortClose(&ctx->handle.port);
+     if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->handle.baud, 1) == 0)
+     {
+         serialPortClose(&ctx->handle.port);
+         return IS_OP_ERROR;
+     }    
     serialPortFlush(&ctx->handle.port);
 
     // Get DID_DEV_INFO from the uINS.
@@ -279,6 +279,29 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
         {   /** SAM-BA MODE */
             valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
         }
+        else if (is_app_get_version(ctx) == IS_OP_OK)
+        {   /** APP MODE */
+            /* In App mode, we don't have a way to know whether we have a 16K or
+             * 24K bootloader. Accept all uINS and EVB images that match. Call
+             * this function again when you are in ISB mode.
+             */
+            if (ctx->props.app.uins_version[0] == 5)
+            {   /** uINS-5 */
+                valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+                valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+            }
+            else if (ctx->props.app.uins_version[0] == 3 || ctx->props.app.uins_version[0] == 4)
+            {   /** uINS-3/4 */
+                valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
+                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+            }
+
+            if (ctx->props.app.evb_version[0] == 2)
+            {   /** EVB-2 */
+                valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
+                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+            }
+        }
         else if(is_isb_handshake(ctx) == IS_OP_OK && is_isb_negotiate_version(ctx) == IS_OP_OK && is_isb_get_version(ctx) == IS_OP_OK)
         {   /** IS BOOTLOADER MODE */
             if(ctx->props.isb.major >= 6)   
@@ -299,29 +322,6 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
                 valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
                 valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
                 old_bootloader_version = true;
-            }
-        }
-        else if(is_app_get_version(ctx) == IS_OP_OK)
-        {   /** APP MODE */
-            /* In App mode, we don't have a way to know whether we have a 16K or
-             * 24K bootloader. Accept all uINS and EVB images that match. Call 
-             * this function again when you are in ISB mode.
-             */ 
-            if(ctx->props.app.uins_version[0] == 5)
-            {   /** uINS-5 */
-                valid_signatures |= IS_IMAGE_SIGN_UINS_5;
-                valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
-            }
-            else if(ctx->props.app.uins_version[0] == 3 || ctx->props.app.uins_version[0] == 4)
-            {   /** uINS-3/4 */
-                valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
-                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-            }
-            
-            if(ctx->props.app.evb_version[0] == 2)
-            {   /** EVB-2 */
-                valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
-                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
             }
         }
         else
@@ -345,6 +345,7 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
         ctx->info_callback(ctx, "If operation fails, please update the bootloader image to continue", IS_LOG_LEVEL_INFO);
     }
 
+    ctx->info_callback(ctx, "Invalid file signature found for device connected", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
