@@ -38,6 +38,7 @@ add_library(InertialSense
   src/ISBootloaderISB.c
 	src/ISBootloaderDFU.c
 	src/ISBootloaderSAMBA.c
+	hw-libs/bootloader/bootloaderShared.c
 	src/ISClient.cpp
   src/ISComm.c
   src/ISDataMappings.cpp
