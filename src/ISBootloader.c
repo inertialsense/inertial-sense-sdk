@@ -345,7 +345,6 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
         ctx->info_callback(ctx, "If operation fails, please update the bootloader image to continue", IS_LOG_LEVEL_INFO);
     }
 
-    ctx->info_callback(ctx, "Invalid file signature found for device connected", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
@@ -353,8 +352,10 @@ void is_update_flash(void* context)
 {
     is_device_context* ctx = (is_device_context*)context;
 
+    ctx->info_callback(ctx, "Checking compatibility of image with selected device", IS_LOG_LEVEL_INFO);
     if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
+        ctx->info_callback(ctx, "The image is incampatible with this device", IS_LOG_LEVEL_ERROR);
         ctx->update_in_progress = false;
         return;
     }
@@ -365,21 +366,26 @@ void is_update_flash(void* context)
     if(strcmp(extension, "bin") == 0)
     {
         file_signature = is_get_bin_image_signature(ctx);
+        if(!(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K)))
+        {
+            ctx->info_callback(ctx, "Image must be .hex", IS_LOG_LEVEL_ERROR);
+            return;
+        }
     }
     else if(strcmp(extension, "hex") == 0)
     {
         file_signature = is_get_hex_image_signature(ctx);
+        if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K))
+        {
+            ctx->info_callback(ctx, "SAMx70 bootloader files must be .bin", IS_LOG_LEVEL_ERROR);
+            return;
+        }
     }
     else
     {
         ctx->info_callback(ctx, "Invalid firmware filename extension", IS_LOG_LEVEL_ERROR);
         ctx->update_in_progress = false;
         return;
-    }
-
-    if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K) && strcmp(extension, "bin") != 0)
-    {
-        ctx->info_callback(ctx, "SAMx70 bootloader files must be .bin", IS_LOG_LEVEL_ERROR);
     }
 
     // In case we are updating using the inertial sense bootloader (ISB), set the entry command based on the signature
