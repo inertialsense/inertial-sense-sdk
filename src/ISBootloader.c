@@ -377,6 +377,11 @@ void is_update_flash(void* context)
         return;
     }
 
+    if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K) && strcmp(extension, "bin") != 0)
+    {
+        ctx->info_callback(ctx, "SAMx70 bootloader files must be .bin", IS_LOG_LEVEL_ERROR);
+    }
+
     // In case we are updating using the inertial sense bootloader (ISB), set the entry command based on the signature
     if(file_signature & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K))
     {

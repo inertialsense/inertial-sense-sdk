@@ -138,6 +138,8 @@ is_operation_result ISBootloader::update(
         else return IS_OP_OK;
 
         if(waitAction != 0) waitAction();
+
+        SLEEP_MS(10);
     }
     
     libusb_exit(NULL);
