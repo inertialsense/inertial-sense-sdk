@@ -140,6 +140,8 @@ void concatStringWithSpace(char* buf, size_t bufLen, const char* concat);
 bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
 void nvr_init(void);
 bool nvr_slow_maintenance(void);
+void nvr_flash_config_write_needed(void);
+void nvr_flash_config_write_enable(bool enable);
 
 int error_check_config(evb_flash_cfg_t *cfg);
 
