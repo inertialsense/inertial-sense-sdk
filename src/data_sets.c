@@ -645,6 +645,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
 		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
 		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
+		case DID_IMU_RAW:				return RMC_BITS_IMU_RAW;
 		case DID_IMU3_RAW_MAG:          return RMC_BITS_DID_IMU3_MAG;
 		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;
 		default:                        return defaultRmcBits;

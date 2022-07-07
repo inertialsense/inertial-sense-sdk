@@ -624,7 +624,7 @@ typedef struct PACKED
 } imus_t;
 
 
-/** (DID_IMU, DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
+/** (DID_IMU, DID_REFERENCE_IMU, DID_IMU_RAW) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
