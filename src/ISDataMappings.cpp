@@ -137,6 +137,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
 	sizeMap[DID_IMU] = sizeof(imu_t);
+	sizeMap[DID_IMU_RAW] = sizeof(imu_t);
     sizeMap[DID_IMU3_RAW] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
@@ -2375,7 +2376,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_CAL_SC",                       // 42
 	"DID_CAL_SC1",                      // 43
 	"DID_CAL_SC2",                      // 44
-	"DID_SYS_SENSORS_SIGMA",            // 45
+	"DID_IMU_RAW",            			// 45
 	"DID_SENSORS_ADC_SIGMA",            // 46
 	"DID_REFERENCE_MAGNETOMETER",       // 47
 	"DID_INL2_STATES",                  // 48
@@ -2460,6 +2461,7 @@ cISDataMappings::cISDataMappings()
 	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
+	PopulateIMUMappings(m_lookupInfo, DID_IMU_RAW);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);

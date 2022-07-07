@@ -76,7 +76,7 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
-#define DID_SYS_SENSORS_SIGMA           (eDataIDs)45 /** INTERNAL USE ONLY (sys_sensors_t) */
+#define DID_IMU_RAW           			(eDataIDs)45 /** (imu_t) used to be internal DID_SYS_SENSORS_SIGMA */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) */
@@ -646,6 +646,9 @@ typedef struct PACKED
 
 	/** IMU Status (eImuStatus) */
 	uint32_t                status;
+
+	/** Average of all three IMUs */
+	imus_t 					avg;
 
 	/** Inertial Measurement Units (IMUs) */
 	imus_t                  I[3];
