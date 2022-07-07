@@ -75,7 +75,6 @@ struct DeviceLog
     // std::vector<sensor_cal_v1p2_t> calSc;
     // std::vector<sensor_cal_mpu_t> calSc1;
     // std::vector<sensor_cal_mpu_t> calSc2;
-    std::vector<sys_sensors_t> sysSensorsSigma;
     std::vector<sys_sensors_adc_t> sensorsAdcSigma;
     std::vector<inl2_states_t> inl2States;
     std::vector<inl2_status_t> inl2Status;
@@ -85,6 +84,7 @@ struct DeviceLog
     std::vector<gps_pos_t> gps1RtkPos;
     std::vector<imu3_t> imu3;
     std::vector<imu_t> imu;
+    std::vector<imu_t> imuRaw;
     std::vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     std::vector<gps_raw_wrapper_t> gpsBaseRaw {1};
 //    std::vector<gps_rtk_opt_t> gpsRtkOpt;

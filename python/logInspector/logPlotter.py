@@ -877,14 +877,14 @@ class logPlot:
                                 t_bi_max = 1000
                                 idx_max = (np.abs(t2 - t_bi_max)).argmin()
                                 bi = np.amin(ad[0:idx_max])
-                                rw_idx = (np.abs(t2 - 0.4)).argmin()
+                                rw_idx = (np.abs(t2 - 10.0)).argmin()
                                 rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
                                 alable = 'Gyro'
                                 if pqrCount > 1:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/\sqrt{hr}$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
+                                self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
                                 ax[i, n].loglog(t2, ad * RAD2DEG*3600, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600))
 
         for i in range(pqrCount):

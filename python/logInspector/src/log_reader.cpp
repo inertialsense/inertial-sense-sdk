@@ -177,7 +177,7 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_CAL_SC, dev_log_->calSc );
         // HANDLE_MSG( DID_CAL_SC1, dev_log_->calSc1 );
         // HANDLE_MSG( DID_CAL_SC2, dev_log_->calSc2 );
-        HANDLE_MSG( DID_SYS_SENSORS_SIGMA, dev_log_->sysSensorsSigma );
+        HANDLE_MSG( DID_IMU_RAW, dev_log_->imuRaw );
         HANDLE_MSG( DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma );
         HANDLE_MSG( DID_INL2_STATES, dev_log_->inl2States );
         HANDLE_MSG( DID_INL2_STATUS, dev_log_->inl2Status );
@@ -268,7 +268,7 @@ void LogReader::forwardData(int id)
     // forward_message( DID_CAL_SC, dev_log_->calSc, id );
     // forward_message( DID_CAL_SC1, dev_log_->calSc1, id );
     // forward_message( DID_CAL_SC2, dev_log_->calSc2, id );
-    forward_message( DID_SYS_SENSORS_SIGMA, dev_log_->sysSensorsSigma, id );
+    forward_message( DID_IMU_RAW, dev_log_->imuRaw, id );
     forward_message( DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma, id );
     forward_message( DID_INL2_STATES, dev_log_->inl2States, id );
     forward_message( DID_INL2_STATUS, dev_log_->inl2Status, id );
