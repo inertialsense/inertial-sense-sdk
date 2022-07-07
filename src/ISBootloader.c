@@ -355,7 +355,7 @@ void is_update_flash(void* context)
     ctx->info_callback(ctx, "Checking compatibility of image with selected device", IS_LOG_LEVEL_INFO);
     if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
-        ctx->info_callback(ctx, "The image is incampatible with this device", IS_LOG_LEVEL_ERROR);
+        ctx->info_callback(ctx, "The image is incompatible with this device", IS_LOG_LEVEL_ERROR);
         ctx->update_in_progress = false;
         return;
     }
@@ -453,7 +453,7 @@ void is_update_flash(void* context)
 
                 is_isb_restart_rom(&ctx->handle.port);
                 serialPortClose(&ctx->handle.port);
-                SLEEP_MS(3000);
+                SLEEP_MS(5000);
 
                 if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
                 {   /** DFU MODE */
