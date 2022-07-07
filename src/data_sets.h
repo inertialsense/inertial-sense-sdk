@@ -647,9 +647,6 @@ typedef struct PACKED
 	/** IMU Status (eImuStatus) */
 	uint32_t                status;
 
-	/** Average of all three IMUs */
-	imus_t 					avg;
-
 	/** Inertial Measurement Units (IMUs) */
 	imus_t                  I[3];
 
