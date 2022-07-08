@@ -1143,16 +1143,16 @@ class logPlot:
             else:
                 towOffset = 0
 
+            deltaTimestamp = 0
+            timeImu = 0
             if len(self.getData(d, DID_PREINTEGRATED_IMU, 'time')):
                 deltaTimestamp = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)
-            
+                timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)            
             elif len(self.getData(d, DID_DUAL_IMU, 'time')):
-                dtImu = self.getData(d, DID_DUAL_IMU, 'time')[1:] - self.getData(d, DID_DUAL_IMU, 'time')[0:-1]
-                dtImu = dtImu / self.d
+                deltaTimestamp = self.getData(d, DID_DUAL_IMU, 'time')[1:] - self.getData(d, DID_DUAL_IMU, 'time')[0:-1]
+                deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromTow(self.getData(d, DID_DUAL_IMU, 'time')[1:] + towOffset)
-                ax[2].plot(timeImu, dtImu)
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
