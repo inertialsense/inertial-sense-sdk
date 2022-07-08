@@ -1508,7 +1508,7 @@ typedef struct PACKED
 										| RMC_BITS_WHEEL_ENCODER \
 										| RMC_BITS_GROUND_VEHICLE)
 #define RMC_PRESET_ALLAN_VARIANCE		(RMC_BITS_PRESET \
-										| RMC_BITS_IMU)
+										| RMC_BITS_IMU_RAW)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
