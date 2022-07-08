@@ -1468,6 +1468,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
+#define RMC_BITS_IMU_RAW				0x0000010000000000		// DID_FLASH_CONFIG.startupImuDtMs (1ms default)
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
