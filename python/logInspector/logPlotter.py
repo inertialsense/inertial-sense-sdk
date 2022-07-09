@@ -727,11 +727,11 @@ class logPlot:
                 imu1[:, i] /= dt
             imuCount = 1
 
-        else:   # DID_IMU
-            time = self.getData(device, DID_IMU, 'time')
+        else:
+            time = self.getData(device, DID_REFERENCE_IMU, 'time')
 
-            if len(time) != 0:
-                I = self.getData(device, DID_IMU, 'I')
+            if len(time) != 0: # DID_REFERENCE_IMU
+                I = self.getData(device, DID_REFERENCE_IMU, 'I')
                 dt = time[1:] - time[:-1]
                 dt = np.append(dt, dt[-1])
                 imu1 = []
@@ -740,43 +740,56 @@ class logPlot:
                 imu1 = np.array(imu1)
                 imuCount = 1
 
-            else:   
-                time = self.getData(device, DID_IMU3_RAW, 'time')
+            else:  
+                time = self.getData(device, DID_IMU, 'time')
 
-                if len(time) != 0: # DID_IMU3_RAW
-                    I = self.getData(device, DID_IMU3_RAW, 'I')
-                    imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
+                if len(time) != 0:  # DID_IMU
+                    I = self.getData(device, DID_IMU, 'I')
                     dt = time[1:] - time[:-1]
                     dt = np.append(dt, dt[-1])
                     imu1 = []
-                    imu2 = []
-                    imu3 = []
-                    if (imuStatus[0] & (0x00010000<<accelSensor)):     # Gyro or accel 1
-                        for sample in range(0, len(I)):
-                            imu1.append(I[sample][0][accelSensor])
-                    if (imuStatus[0] & (0x00040000<<accelSensor)):     # Gyro or accel 2
-                        for sample in range(0, len(I)):
-                            imu2.append(I[sample][1][accelSensor])
-                    if (imuStatus[0] & (0x00100000<<accelSensor)):     # Gyro or accel 3
-                        for sample in range(0, len(I)):
-                            imu3.append(I[sample][2][accelSensor])
+                    for sample in range(0, len(I)):
+                        imu1.append(I[sample][accelSensor])
                     imu1 = np.array(imu1)
-                    imu2 = np.array(imu2)
-                    imu3 = np.array(imu3)
-                    imuCount = 3
+                    imuCount = 1
 
-                else: # DID_IMU_RAW
-                    time = self.getData(device, DID_IMU_RAW, 'time')
+                else:   
+                    time = self.getData(device, DID_IMU3_RAW, 'time')
 
-                    if len(time) != 0:
-                        I = self.getData(device, DID_IMU_RAW, 'I')
+                    if len(time) != 0: # DID_IMU3_RAW 
+                        I = self.getData(device, DID_IMU3_RAW, 'I')
+                        imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
                         imu1 = []
-                        for sample in range(0, len(I)):
-                            imu1.append(I[sample][accelSensor])
+                        imu2 = []
+                        imu3 = []
+                        if (imuStatus[0] & (0x00010000<<(accelSensor*3))):     # Gyro or accel 1
+                            for sample in range(0, len(I)):
+                                imu1.append(I[sample][0][accelSensor])
+                        if (imuStatus[0] & (0x00020000<<(accelSensor*3))):     # Gyro or accel 2
+                            for sample in range(0, len(I)):
+                                imu2.append(I[sample][1][accelSensor])
+                        if (imuStatus[0] & (0x00040000<<(accelSensor*3))):     # Gyro or accel 3
+                            for sample in range(0, len(I)):
+                                imu3.append(I[sample][2][accelSensor])
                         imu1 = np.array(imu1)
-                        imuCount = 1
+                        imu2 = np.array(imu2)
+                        imu3 = np.array(imu3)
+                        imuCount = 3
+
+                    else: # DID_IMU_RAW
+                        time = self.getData(device, DID_IMU_RAW, 'time')
+
+                        if len(time) != 0:
+                            I = self.getData(device, DID_IMU_RAW, 'I')
+                            dt = time[1:] - time[:-1]
+                            dt = np.append(dt, dt[-1])
+                            imu1 = []
+                            for sample in range(0, len(I)):
+                                imu1.append(I[sample][accelSensor])
+                            imu1 = np.array(imu1)
+                            imuCount = 1
 
 
         return (time, dt, imu1, imu2, imu3, imuCount)
@@ -793,7 +806,7 @@ class logPlot:
                 refPqr = refImu['pqr']
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        (time, dt, acc0, acc1, acc2, pqrCount) = self.loadAccels(0)
+        (time, dt, acc0, acc1, acc2, pqrCount) = self.loadGyros(0)
         if pqrCount:
             ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
         for d in self.active_devs:
@@ -878,20 +891,21 @@ class logPlot:
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
 
             if pqrCount:
+                dtMean = np.mean(dt)
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                     for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
                         if pqr != [] and n<pqrCount:
                             if pqr.any(None):
-                                # Averaging window tau values from dt to Nsamples/10
-                                t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(pqr[:,i])), 200)
+                                # Averaging window tau values from dt to dt*Nsamples/10
+                                t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
                                 # Compute the overlapping ADEV
-                                (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                                (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
                                 # Compute random walk and bias instability
                                 t_bi_max = 1000
                                 idx_max = (np.abs(t2 - t_bi_max)).argmin()
                                 bi = np.amin(ad[0:idx_max])
-                                rw_idx = (np.abs(t2 - 10.0)).argmin()
+                                rw_idx = (np.abs(t2 - 1.0)).argmin()
                                 rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
                                 alable = 'Gyro'
                                 if pqrCount > 1:
@@ -900,6 +914,9 @@ class logPlot:
                                     alable += ' '
                                 self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
                                 ax[i, n].loglog(t2, ad * RAD2DEG*3600, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600))
+                                # Error bounds debug plots
+                                # ax[i, n].loglog(t2, (ad + ade) * RAD2DEG*3600, '--')
+                                # ax[i, n].loglog(t2, (ad - ade) * RAD2DEG*3600, '--')
 
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
@@ -918,20 +935,21 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
 
+            dtMean = np.mean(dt)
             for i in range(3):
                 axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                 for n, acc in enumerate([ acc0, acc1, acc2 ]):
                     if acc != [] and n<accCount:
                         if acc.any(None):
-                            # Averaging window tau values from dt to Nsamples/10
-                            t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(acc[:,i])), 200)
+                            # Averaging window tau values from dt to dt*Nsamples/10
+                            t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
                             # Compute the overlapping ADEV
-                            (t2, ad, ade, adn) = allantools.oadev(acc[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                            (t2, ad, ade, adn) = allantools.oadev(acc[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
                             # Compute random walk and bias instability
                             t_bi_max = 1000
                             idx_max = (np.abs(t2 - t_bi_max)).argmin()
                             bi = np.amin(ad[0:idx_max])
-                            rw_idx = (np.abs(t2 - 0.4)).argmin()
+                            rw_idx = (np.abs(t2 - 0.1)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
                             alable = 'Accel'
                             if accCount > 1:
