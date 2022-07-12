@@ -1860,21 +1860,84 @@ class logPlot:
             ax[1, i].set_title('Accel%d Y' % (i))
             ax[2, i].set_title('Accel%d Z ' % (i))
             for d in range(3):
-                ax[d,i].set_xlabel("m/s^2")
-                ax[d,i].set_ylabel("m/s^2")
+                ax[d,i].set_xlabel("ref m/s^2")
+                ax[d,i].set_ylabel("residual m/s^2")
 
         for d in self.active_devs:
             sampleCount = self.getData(d, DID_SCOMP, 'sampleCount')
             # imu = self.getData(d, DID_SCOMP, 'pqr')
             imu = self.getData(d, DID_SCOMP, 'acc')
-            reference = self.getData(d, DID_SCOMP, 'reference')
+            reference = self.getData(d, DID_SCOMP, 'referenceImu')
 
             for i in range(3): # range through axes
-                data0 = imu[sampleCount > 10000,0]['lpfLsb'][:,i]
-                data1 = imu[sampleCount > 10000,1]['lpfLsb'][:,i]
-                data2 = imu[sampleCount > 10000,2]['lpfLsb'][:,i]
+                data0 = imu[:,0]['lpfLsb'][:,i]
+                data1 = imu[:,1]['lpfLsb'][:,i]
+                data2 = imu[:,2]['lpfLsb'][:,i]
 
-                refdata = reference[sampleCount > 10000]['acc'][:,i]
+                refdata = reference['acc'][:,i]
+
+                # refdata0 = reference['pqr'][sampleCount > 10000,i]
+                # refdata1 = reference['pqr'][sampleCount > 10000,i]
+                # refdata2 = reference['pqr'][sampleCount > 10000,i]
+
+                # ax[i,0].plot(refdata0, data0)
+                # ax[i,1].plot(refdata0, data1)
+                # ax[i,2].plot(refdata0, data2)
+
+                residual0 = [a - b for a, b in zip(refdata, data0)]
+                residual1 = [a - b for a, b in zip(refdata, data1)]
+                residual2 = [a - b for a, b in zip(refdata, data2)]
+
+                # ax[i,0].plot(range(0,np.size(residual0)), residual0)
+                # ax[i,1].plot(range(0,np.size(residual1)), residual1)
+                # ax[i,2].plot(range(0,np.size(residual2)), residual2)
+
+                if i == 0:
+                    ax[i,0].plot(refdata, residual0, label=self.log.serials[d])
+                else:
+                    ax[i,0].plot(refdata, residual0)
+                ax[i,1].plot(refdata, residual1)
+                ax[i,2].plot(refdata, residual2)
+
+
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
+        yspan = 0.5 # m/s^2 
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+                # lim = b.get_ylim()
+                # mid = 0.5 * (lim[0] + lim[1])
+                # span = lim[1] - lim[0]
+                # span = max(span, yspan)
+                # b.set_ylim([mid-span/2, mid+span/2])
+
+    def linearityGyr(self, fig=None):
+        fig.suptitle('Gyro Linearity - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, 3)
+
+        for i in range(3):
+            ax[0, i].set_title('Gyro%d P' % (i))
+            ax[1, i].set_title('Gyro%d Q' % (i))
+            ax[2, i].set_title('Gyro%d R ' % (i))
+            for d in range(3):
+                ax[d,i].set_xlabel("ref rad/s")
+                ax[d,i].set_ylabel("residual rad/s")
+
+        for d in self.active_devs:
+            sampleCount = self.getData(d, DID_SCOMP, 'sampleCount')
+            imu = self.getData(d, DID_SCOMP, 'pqr')
+            # imu = self.getData(d, DID_SCOMP, 'acc')
+            reference = self.getData(d, DID_SCOMP, 'referenceImu')
+
+            for i in range(3): # range through axes
+                data0 = imu[:,0]['lpfLsb'][:,i]
+                data1 = imu[:,1]['lpfLsb'][:,i]
+                data2 = imu[:,2]['lpfLsb'][:,i]
+
+                refdata = reference['pqr'][:,i]
 
                 # refdata0 = reference['pqr'][sampleCount > 10000,i]
                 # refdata1 = reference['pqr'][sampleCount > 10000,i]
