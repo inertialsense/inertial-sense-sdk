@@ -31,11 +31,11 @@ add_executable(ISLoggerExample
 	../../src/DeviceLogSorted.cpp
 	../../src/ihex.c
 	../../src/InertialSense.cpp
-	../../src/inertialSenseBootLoader.c
 	../../src/ISBootloaderThread.cpp
-	../../src/ISBootloaderCommon.c
-	../../src/ISBootloaderDfu.c
-	../../src/ISBootloaderSamba.c
+	../../src/ISBootloaderDFU.c
+	../../src/ISBootloaderSAMBA.c
+	../../src/ISBootloaderISB.c
+	../../hw-libs/bootloader/bootloaderShared.c
 	../../src/ISClient.cpp
 	../../src/ISComm.c
 	../../src/ISDataMappings.cpp

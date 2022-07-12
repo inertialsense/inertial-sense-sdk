@@ -16,7 +16,12 @@ else()	# Build only this project
 add_executable(ISBootloaderExample
 	ISBootloaderExample.c
 	../../src/data_sets.c
-	../../src/inertialSenseBootLoader.c
+	../../src/ISBootloaderThread.cpp
+	../../src/ISBootloaderDFU.c
+	../../src/ISBootloaderSAMBA.c
+	../../src/ISBootloaderISB.c
+	../../hw-libs/bootloader/bootloaderShared.c
+	../../src/ihex.c
 	../../src/ISComm.c
 	../../src/serialPort.c
 	../../src/serialPortPlatform.c
