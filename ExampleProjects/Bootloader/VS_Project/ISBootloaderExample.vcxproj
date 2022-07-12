@@ -19,16 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c" />
     <ClCompile Include="..\..\..\src\data_sets.c" />
-    <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c" />
+    <ClCompile Include="..\..\..\src\ihex.c" />
+    <ClCompile Include="..\..\..\src\ISBootloader.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderDFU.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderISB.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.c" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
     <ClCompile Include="..\..\..\src\serialPortPlatform.c" />
     <ClCompile Include="..\ISBootloaderExample.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h" />
     <ClInclude Include="..\..\..\src\data_sets.h" />
-    <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h" />
+    <ClInclude Include="..\..\..\src\ihex.h" />
+    <ClInclude Include="..\..\..\src\ISBootloader.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderDFU.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderISB.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderTypes.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
     <ClInclude Include="..\..\..\src\serialPort.h" />
     <ClInclude Include="..\..\..\src\serialPortPlatform.h" />
@@ -119,10 +130,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4003;4100;4204;4505;4706</DisableSpecificWarnings>
+      <AdditionalOptions>/ignore:4099</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);..\..\..\src\libusb\msvc\libusb-1.0-64.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
