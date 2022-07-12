@@ -105,6 +105,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.addButton('SComp Gyr', lambda: self.plot('sensorCompGyr'))
         self.addButton('SComp Acc', lambda: self.plot('sensorCompAcc'))
         self.addButton('SComp Mag', lambda: self.plot('sensorCompMag'))
+        self.addButton('SComp Gyr Resid', lambda: self.plot('linearityGyr'))
+        self.addButton('SComp Acc Resid', lambda: self.plot('linearityAcc'))
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
     def createBottomToolbar(self):
