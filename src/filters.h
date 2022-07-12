@@ -533,9 +533,9 @@ void integrateImu( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imu
  * \param alpha         Filter alpha parameter (input gain)
  * \param beta          Filter beta parameter (memory gain)
  */
-static __inline void lpf_alpha_beta( float dt, float cornerFreq, float *alpha, float *beta )
+static __inline void lpf_alpha_beta( float dt, float cornerFreqHz, float *alpha, float *beta )
 {
-    float dc = dt * cornerFreq;
+    float dc = dt * cornerFreqHz;
     *alpha  = dc / (1.0f + dc);
     *beta   = 1.0f - *alpha;
 }
@@ -544,7 +544,7 @@ static __inline void lpf_alpha_beta( float dt, float cornerFreq, float *alpha, f
 // LPF zero order:											val = beta*lastVal + alpha*input
 #define O0_LP_FILTER(val,input,alph,beta)					(val = (((beta)*(val)) + ((alph)*(input))))
 
-// LPF first order model coefficient:						c = beta*c + alph*((input - val) / dt)			(dt long)
+// LPF first order model coefficient:						c = beta*c + alph*((input - val) / dt)		(dt long)
 // LPF input into state estimate:							val = beta*((val) + c*dt) + alph*input		(dt short)
 #define O1_LP_FILTER(val,input,alph,beta,c,dt)				{ c = beta*c + alph*((input-val)/dt);   val = beta*(val + c*dt) + alph*input; }
 
@@ -566,6 +566,13 @@ static __inline void lpf_alpha_beta( float dt, float cornerFreq, float *alpha, f
 #define O1X_LPF_VEC3(val,val2,input,alph,beta,c,dt2)	   {O1X_LP_FILTER(val[0],val2[0],input[0],alph,beta,c[0],dt2); \
 															O1X_LP_FILTER(val[1],val2[1],input[1],alph,beta,c[1],dt2); \
 															O1X_LP_FILTER(val[2],val2[2],input[2],alph,beta,c[2],dt2);}
+
+static __inline void lpf_filter(float *val, float input, float dt, float cornerFreqHz)
+{
+    float alph, beta;
+	lpf_alpha_beta(dt, cornerFreqHz, &alph, &beta);
+	O0_LP_FILTER(*val, input, alph, beta);
+}
 
 
 #if 0
