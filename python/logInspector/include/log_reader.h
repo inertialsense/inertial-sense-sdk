@@ -84,7 +84,6 @@ struct DeviceLog
     std::vector<gps_pos_t> gps1RtkPos;
     std::vector<imu3_t> imu3;
     std::vector<imu_t> imu;
-    std::vector<imu_t> imuRaw;
     std::vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     std::vector<gps_raw_wrapper_t> gpsBaseRaw {1};
 //    std::vector<gps_rtk_opt_t> gpsRtkOpt;

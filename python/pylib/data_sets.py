@@ -48,7 +48,6 @@ DID_DEBUG_ARRAY                 = 39
 DID_CAL_SC                      = 42
 DID_CAL_SC1                     = 43
 DID_CAL_SC2                     = 44
-DID_IMU_RAW                     = 45
 DID_SENSORS_ADC_SIGMA           = 46
 DID_REFERENCE_MAGNETOMETER      = 47
 DID_INL2_STATES                 = 48
@@ -153,7 +152,6 @@ did_name_lookup = {
  DID_CAL_SC : "calSc",
  DID_CAL_SC1 : "calSc1",
  DID_CAL_SC2 : "calSc2",
- DID_IMU_RAW : "imuRaw",
  DID_SENSORS_ADC_SIGMA : "sensorsAdcSigma",
  DID_INL2_STATES : "inl2States",
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",

@@ -778,19 +778,6 @@ class logPlot:
                         imu3 = np.array(imu3)
                         imuCount = 3
 
-                    else: # DID_IMU_RAW
-                        time = self.getData(device, DID_IMU_RAW, 'time')
-
-                        if len(time) != 0:
-                            I = self.getData(device, DID_IMU_RAW, 'I')
-                            dt = time[1:] - time[:-1]
-                            dt = np.append(dt, dt[-1])
-                            imu1 = []
-                            for sample in range(0, len(I)):
-                                imu1.append(I[sample][accelSensor])
-                            imu1 = np.array(imu1)
-                            imuCount = 1
-
 
         return (time, dt, imu1, imu2, imu3, imuCount)
 
