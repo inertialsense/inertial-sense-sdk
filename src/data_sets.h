@@ -76,7 +76,7 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
-#define DID_IMU_RAW           			(eDataIDs)45 /** (imu_t) used to be internal DID_SYS_SENSORS_SIGMA */
+#define DID_UNUSED_45           		(eDataIDs)45 /** used to be internal DID_SYS_SENSORS_SIGMA */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) */
@@ -624,7 +624,7 @@ typedef struct PACKED
 } imus_t;
 
 
-/** (DID_IMU, DID_REFERENCE_IMU, DID_IMU_RAW) Inertial Measurement Unit (IMU) data */
+/** (DID_IMU, DID_REFERENCE_IMU) Inertial Measurement Unit (IMU) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -1468,7 +1468,6 @@ typedef struct PACKED
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
-#define RMC_BITS_IMU_RAW				0x0000010000000000		// DID_FLASH_CONFIG.startupImuDtMs (1ms default)
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -1508,7 +1507,7 @@ typedef struct PACKED
 										| RMC_BITS_WHEEL_ENCODER \
 										| RMC_BITS_GROUND_VEHICLE)
 #define RMC_PRESET_ALLAN_VARIANCE		(RMC_BITS_PRESET \
-										| RMC_BITS_IMU_RAW)
+										| RMC_BITS_IMU)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
