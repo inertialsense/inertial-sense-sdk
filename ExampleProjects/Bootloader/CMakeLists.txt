@@ -29,6 +29,18 @@ add_executable(ISBootloaderExample
 )
 target_link_libraries(ISBootloaderExample m)
 
+find_library(LIBUSB_LIBRARY
+	NAMES usb-1.0
+	PATH_SUFFIXES "lib" "lib32" "lib64"
+)
+
+target_include_directories(ISBootloaderExample PUBLIC
+	../../src
+	../../src/libusb
+)
+
+target_link_libraries(ISBootloaderExample ${LIBUSB_LIBRARY})
+
 endif()
 
 
