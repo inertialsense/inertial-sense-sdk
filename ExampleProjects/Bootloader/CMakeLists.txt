@@ -20,6 +20,7 @@ add_executable(ISBootloaderExample
 	../../src/ISBootloaderDFU.c
 	../../src/ISBootloaderSAMBA.c
 	../../src/ISBootloaderISB.c
+	../../src/ISBootloader.c
 	../../hw-libs/bootloader/bootloaderShared.c
 	../../src/ihex.c
 	../../src/ISComm.c

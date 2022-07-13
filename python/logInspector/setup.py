@@ -44,6 +44,7 @@ ext_modules = [
          '../../src/ISBootloaderThread.cpp',
          '../../src/ISBootloaderDFU.c',
          '../../src/ISBootloaderSAMBA.c',
+         '../../src/ISBootloader.c',
          '../../src/ISBootloaderISB.c',
          '../../hw-libs/bootloader/bootloaderShared.c',
          '../../src/ihex.c',

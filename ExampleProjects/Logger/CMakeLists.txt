@@ -35,6 +35,7 @@ add_executable(ISLoggerExample
 	../../src/ISBootloaderDFU.c
 	../../src/ISBootloaderSAMBA.c
 	../../src/ISBootloaderISB.c
+	../../src/ISBootloader.c
 	../../hw-libs/bootloader/bootloaderShared.c
 	../../src/ISClient.cpp
 	../../src/ISComm.c
