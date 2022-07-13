@@ -83,7 +83,8 @@ ext_modules = [
             get_pybind_include(),
             get_pybind_include(user=True)
         ],
-        language='c++'
+        language='c++',
+        libraries=['usb-1.0']
     ),
 ]
 

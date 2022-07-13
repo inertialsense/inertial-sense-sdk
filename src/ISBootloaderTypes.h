@@ -29,10 +29,14 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#if PLATFORM_IS_WINDOWS
 #pragma warning( push )
 #pragma warning( disable : 4200 )
+#endif
 #include "libusb/libusb.h"
+#if PLATFORM_IS_WINDOWS
 #pragma warning( pop )
+#endif
 
 #include "serialPort.h"
 
