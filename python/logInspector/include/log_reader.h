@@ -75,7 +75,6 @@ struct DeviceLog
     // std::vector<sensor_cal_v1p2_t> calSc;
     // std::vector<sensor_cal_mpu_t> calSc1;
     // std::vector<sensor_cal_mpu_t> calSc2;
-    std::vector<sys_sensors_t> sysSensorsSigma;
     std::vector<sys_sensors_adc_t> sensorsAdcSigma;
     std::vector<inl2_states_t> inl2States;
     std::vector<inl2_status_t> inl2Status;
