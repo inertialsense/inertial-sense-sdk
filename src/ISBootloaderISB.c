@@ -419,11 +419,27 @@ static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsign
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
 
-    if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
+    if (serialPortWrite(s, checkSumHex, 2) != 2)
     {
         ctx->info_callback(ctx, "(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
+
+    unsigned char buf[128] = { 0 };
+    int count = serialPortReadTimeout(s, buf, 3, BOOTLOADER_TIMEOUT_DEFAULT);
+
+	if (count != 3 || memcmp(buf, ".\r\n", 3) != 0)
+	{
+        buf[count] = '\0'; 
+        ctx->info_callback(ctx, (const char*)buf, IS_LOG_LEVEL_ERROR);
+		return IS_OP_ERROR;
+	}
+
+    // if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
+    // {
+    //     ctx->info_callback(ctx, "(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
+    //     return IS_OP_ERROR;
+    // }
 
     *totalBytes += byteCount;
     *currentOffset += byteCount;

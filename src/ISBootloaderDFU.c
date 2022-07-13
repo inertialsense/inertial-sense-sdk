@@ -351,6 +351,8 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
             libusb_close(dev_handle);
             continue;
         }
+
+        ctx->handle.dfu.sn = sn;
         
         ctx->handle.libusb = dev_handle;
         ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;

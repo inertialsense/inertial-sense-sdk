@@ -442,6 +442,11 @@ void is_update_flash(void* context)
            
             if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
             {
+                if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
+                {   /** ALREADY IN DFU MODE */
+                    is_dfu_flash(ctx);
+                }
+
                 if(file_signature & IS_IMAGE_SIGN_ISB_STM32L4) 
                 {
                     ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
@@ -451,6 +456,7 @@ void is_update_flash(void* context)
                     ctx->handle.dfu.uid[0] = 0; // Don't match the UID
                 }
 
+                is_isb_handshake(ctx);
                 is_isb_restart_rom(&ctx->handle.port);
                 serialPortClose(&ctx->handle.port);
                 SLEEP_MS(5000);
