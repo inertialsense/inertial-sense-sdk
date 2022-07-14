@@ -906,9 +906,9 @@ class logPlot:
                                 # ax[i, n].loglog(t2, (ad - ade) * RAD2DEG*3600, '--')
 
         for i in range(pqrCount):
-            ax[0][i].legend(ncol=2)
             for d in range(3):
                 ax[d][i].grid(True)
+                ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'pqrIMU')
 
     def allanVarianceAcc(self, fig=None):
@@ -947,9 +947,9 @@ class logPlot:
                             ax[i, n].loglog(t2, ad, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * 3600/RTHR2RTS, bi))
 
         for i in range(accCount):
-            ax[0][i].legend(ncol=2)
             for d in range(3):
                 ax[d][i].grid(True)
+                ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'accIMU')        
 
     def accelPSD(self, fig=None):
@@ -1012,7 +1012,7 @@ class logPlot:
         fig.suptitle('Power Spectral Density - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
-            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
             refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
             if len(refTime)!=0:
                 refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
