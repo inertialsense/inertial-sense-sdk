@@ -16,33 +16,57 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
-#include "../../src/inertialSenseBootLoader.h"
+#include "../../src/ISBootloader.h"
+#include "../../src/ISBootloaderDFU.h"
 
 // print out upload progress
-static int bootloaderUploadProgress(const void* obj, float percent)
+static is_operation_result bootloaderUploadProgress(const void* obj, float percent)
 {
-	printf("Upload: %d percent...         \r", (int)(percent * 100.0f));
-	if (percent >= 1.0f)
-	{
-		printf("\n");
-	}
-	return 1; // return zero to abort
+	if (obj == NULL) return IS_OP_OK;
+
+	is_device_context* ctx = (is_device_context*)obj;
+	percent = (int)(percent * 100.0f);
+	printf("\rUpload Progress: %d%%\r", percent);
+	ctx->update_progress = percent;
+
+	return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
 }
 
 // print out verify progress
-static int bootloaderVerifyProgress(const void* obj, float percent)
+static is_operation_result bootloaderVerifyProgress(const void* obj, float percent)
 {
-	printf("Verify: %d percent...         \r", (int)(percent * 100.0f));
-	if (percent >= 1.0f)
-	{
-		printf("\n");
-	}
-	return 1; // return zero to abort
+	if (obj == NULL) return IS_OP_OK;
+
+	is_device_context* ctx = (is_device_context*)obj;
+	percent = (int)(percent * 100.0f);
+	printf("\rVerify Progress: %d%%\r", percent);
+	ctx->update_progress = percent;
+
+	return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
 }
 
 static void bootloaderStatusText(const void* obj, const char* info)
 {
-	printf("%s\n", info);
+	if (obj == NULL) return;
+
+	is_device_context* ctx = (is_device_context*)obj;
+
+	if (ctx->props.serial != 0)
+	{
+		printf("SN%d: %s\r\n", ctx->props.serial, info);
+	}
+	else if (ctx->handle.dfu.sn != 0)
+	{
+		printf("SN%d: %s\r\n", ctx->handle.dfu.sn, info);
+	}
+	else if (strlen(ctx->handle.port_name) != 0)
+	{
+		printf("%s: %s\r\n", ctx->handle.port_name, info);
+	}
+	else
+	{
+		printf("Unknown: %s\r\n", info);
+	}
 }
 
 int main(int argc, char* argv[])
@@ -55,62 +79,22 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	// STEP 2: Initialize and open serial port
+	is_device_handle handle;
+	memset(&handle, 0, sizeof(is_device_handle));
+	strncpy(handle.port_name, argv[1], 100);
+	handle.status = IS_HANDLE_TYPE_SERIAL;
+	handle.baud = atoi(argv[2]);
+	is_device_context* ctx = is_create_context(
+		&handle,
+		argv[3],
+		bootloaderUploadProgress,
+		bootloaderVerifyProgress,
+		bootloaderStatusText,
+		NULL
+	);
 
-	serial_port_t serialPort;
+	is_update_flash(ctx);
 
-	// initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
-	//  you will need to either bootload from Windows, MAC or Linux, or implement your own code that
-	//  implements all the function pointers on the serial_port_t struct.
-	serialPortPlatformInit(&serialPort);
-
-	// set the port - the bootloader uses this to open the port and enable bootload mode, etc.
-	serialPortSetPort(&serialPort, argv[1]);
-
-	// STEP 3: Set bootloader parameters
-
-	// bootloader parameters
-	bootload_params_t param;
-
-	// very important - initialize the bootloader params to zeros
-	memset(&param, 0, sizeof(param));
-
-	// the serial port
-	param.port = &serialPort;
-	param.baudRate = atoi(argv[2]);
-
-	// the file to bootload, *.hex
-	param.fileName = argv[3];
-
-	// optional - bootloader file, *.bin
-	param.forceBootloaderUpdate = 0;	//do not force update of bootloader
-	if (argc == 5)
-		param.bootName = argv[4];
-	else
-		param.bootName = 0;
-
-	// progress indicators
-	param.uploadProgress = bootloaderUploadProgress;
-	param.verifyProgress = bootloaderVerifyProgress;
-	param.statusText = bootloaderStatusText;
-
-	// enable verify to read back the firmware and ensure it is correct
-	param.flags.bitFields.enableVerify = 1;
-
-	// STEP 4: Run bootloader
-
-	if (bootloadFileEx(&param)==0)
-	{
-		printf("Bootloader success on port %s with file %s\n", serialPort.port, param.fileName);
-		return 0;
-	}
-	else
-	{
-		if(param.error[0] != 0)
-			printf("Bootloader failed! Error: %s\n", param.error);
-		else
-			printf("Bootloader failed!\n");
-		return -1;
-	}
+	is_destroy_context(ctx);
 }
 

@@ -13,7 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "protocol_nmea.h"
 #include "InertialSense.h"
 #ifndef EXCLUDE_BOOTLOADER
-#include "ISBootloader.h"
+#include "ISBootloaderThread.h"
+#include "ISBootloaderDFU.h"
 #endif
 
 using namespace std;
@@ -21,7 +22,7 @@ using namespace std;
 static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
 	// Suppress compiler warnings
-	(void)pHandle;
+	(void)pHandle; 
 	(void)cmHandle;
 
 	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
@@ -700,68 +701,30 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-void InertialSense::BootloadStatusUpdate()
-{
-#ifndef EXCLUDE_BOOTLOADER
-
-    for(size_t i = 0; i < ISBootloader::ctx.size(); i++)
-    {
-        if(ISBootloader::ctx[i]->infoString_new)
-        {
-            if(strlen(ISBootloader::ctx[i]->handle.port_name))
-            {
-                printf("%s: %s\r\n", ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->infoString);
-            }
-            else if(strlen(ISBootloader::ctx[i]->match_props.serial_number))
-            {
-                printf("DFU %s: %s\r\n", ISBootloader::ctx[i]->match_props.serial_number, ISBootloader::ctx[i]->infoString);
-            }
-            else
-            {
-                printf("Unknown: %s\r\n", ISBootloader::ctx[i]->infoString);
-			}
-
-            ISBootloader::ctx[i]->infoString_new = false;
-        }
-    }
-
-	float progress = 0.0;
-    size_t num_devices = ISBootloader::ctx.size();
-
-    for(size_t i = 0; i < num_devices; i++)
-    {
-		if(ISBootloader::ctx[i]->verification_style == IS_VERIFY_OFF)
-		{
-			progress += ISBootloader::ctx[i]->updateProgress;
-		}
-		else
-		{
-			progress += ISBootloader::ctx[i]->updateProgress * 0.5f;
-			progress += ISBootloader::ctx[i]->verifyProgress * 0.5f;
-		}
-    }
-
-    progress /= num_devices;
-	int percent = (int)(progress * 100.0f);
-	printf("\rProgress: %d%%\r", percent);
-
-#endif // EXCLUDE_BOOTLOADER
-}
-
 vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	const string& comPort, 
+	const uint32_t serialNum,
 	const string& fileName, 
 	int baudRate, 
 	pfnBootloadProgress uploadProgress, 
 	pfnBootloadProgress verifyProgress, 
-	pfnBootloadStatus infoProgress, 
-	const string& bootloaderFileName, 
-	bool forceBootloaderUpdate
+	pfnBootloadStatus infoProgress,
+	void (*waitAction)()
 )
 {
 #ifndef EXCLUDE_BOOTLOADER
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
+	
+	// For now, we will use all present DFU devices. The bootloader code will only load them with images that have the right signature, so this is safe.
+	std::vector<std::string> uids;
+	is_dfu_list dfu_list;
+	is_dfu_list_devices(&dfu_list);
+
+	for (size_t i = 0; i < dfu_list.present; i++)
+	{
+		uids.push_back(std::string(dfu_list.id->uid));
+	}
 
 	if (comPort == "*")
 	{
@@ -784,28 +747,21 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 		return results;
 	}
 
-	// Copy the same path into all, the underlying code will pick which devices to update based on the file name.
-	is_firmware_settings firmware;
-	strncpy(firmware.firmware_path, fileName.c_str(), 256);
-	strncpy(firmware.samba_bootloader_path, bootloaderFileName.c_str(), 256);
-	firmware.samba_force_update = forceBootloaderUpdate;
-
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
 	#endif
 	
-	ISBootloader::update(portStrings, baudRate, &firmware, uploadProgress, verifyProgress, infoProgress, NULL, BootloadStatusUpdate);
+	ISBootloader::update(portStrings, uids, baudRate, fileName.c_str(), uploadProgress, verifyProgress, infoProgress, NULLPTR, waitAction);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
 	#endif
 
-	// If any thread failed, we return failure
 	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
 	{
-		if(ISBootloader::ctx[i] != NULL)
+		if(!ISBootloader::ctx[i]->success)
 		{
-			results.push_back({ ISBootloader::ctx[i]->handle.port_name, ISBootloader::ctx[i]->error });
+			results.push_back({ std::to_string(ISBootloader::ctx[i]->props.serial), "failure "});
 		}
 	}
 

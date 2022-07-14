@@ -38,11 +38,12 @@ add_executable(cltool
 	../src/DeviceLogSorted.cpp
 	../src/ihex.c
 	../src/InertialSense.cpp
-	../src/inertialSenseBootLoader.c
-	../src/ISBootloader.cpp
-	../src/ISBootloaderCommon.c
-	../src/ISBootloaderDfu.c
-	../src/ISBootloaderSamba.c
+	../src/ISBootloaderThread.cpp
+	../src/ISBootloader.c
+    ../src/ISBootloaderISB.c
+	../src/ISBootloaderDFU.c
+	../src/ISBootloaderSAMBA.c
+	../hw-libs/bootloader/bootloaderShared.c
 	../src/ISClient.cpp
 	../src/ISComm.c
 	../src/ISDataMappings.cpp

@@ -8,7 +8,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2021 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -24,86 +24,83 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
+#include "ISConstants.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 
+#if PLATFORM_IS_WINDOWS
+#pragma warning( push )
+#pragma warning( disable : 4200 )
+#endif
 #include "libusb/libusb.h"
+#if PLATFORM_IS_WINDOWS
+#pragma warning( pop )
+#endif
 
 #include "serialPort.h"
 
-#ifndef BOOTLOADER_ERROR_LENGTH
-#define BOOTLOADER_ERROR_LENGTH	512		// Set to zero to disable
-#endif
+
+#define IS_DEVICE_LIST_LEN          256
+#define IS_FIRMWARE_PATH_LENGTH     256
 
 extern const char* is_uins_5_firmware_needle;
 extern const char* is_uins_3_firmware_needle;
 extern const char* is_evb_2_firmware_needle;
-
-typedef struct 
-{
-    uint16_t vid;
-    uint16_t pid;
-} is_device_vid_pid;
-
-typedef enum {
-    IS_DEVICE_INTERFACE_FLAG_SAMBA      = 0b00000000,  // default
-    IS_DEVICE_INTERFACE_FLAG_DFU        = 0b00000001,
-    IS_DEVICE_INTERFACE_FLAG_STM32UART  = 0b00000010,
-
-    IS_DEVICE_INTERFACE_FLAG_RSVD1      = 0b00000100,
-    IS_DEVICE_INTERFACE_FLAG_RSVD2      = 0b00001000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD3      = 0b00010000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD4      = 0b00100000,
-    IS_DEVICE_INTERFACE_FLAG_RSVD5      = 0b01000000,
-
-    IS_DEVICE_INTERFACE_FLAG_DEBUG      = 0b10000000,
-} is_device_interface_flags;
 
 typedef enum {
     IS_VERIFY_ON  = 1,
     IS_VERIFY_OFF = 2
 } is_verification_style;
 
-typedef uint8_t communications_flags;   // 1111 1111
+typedef enum {
+    IS_PROCESSOR_SAMx70 = 0,        // uINS-5
+    IS_PROCESSOR_STM32L4,           // uINS-3/4, EVB-2
+
+    IS_PROCESSOR_NUM,               // Must be last
+} is_processor_type;
 
 typedef enum {
-    IS_OP_ERROR     = 0,
-    IS_OP_OK        = 1
-} is_operation_result;
+    // BOOTLOADERS must be before APPS because bootloaders may contain app signatures
+    IS_IMAGE_SIGN_ISB_STM32L4 = 0x00000001,
+    IS_IMAGE_SIGN_ISB_SAMx70_16K = 0x00000002,
+    IS_IMAGE_SIGN_ISB_SAMx70_24K = 0x00000004,
 
-typedef enum {
-    IS_SCHEME_UNKNOWN = 0,
-    IS_SCHEME_SAMBA,
-    IS_SCHEME_DFU,
-    IS_SCHEME_STM32UART
-} is_device_scheme;
-
-#define IS_SN_MAX_SIZE      20
-#define IS_COMPORT_MAX_SIZE 16
-
-typedef enum {
-    IS_DEVICE_MATCH_FLAG_VID        = 0b00000001,
-    IS_DEVICE_MATCH_FLAG_PID        = 0b00000010,
-    IS_DEVICE_MATCH_FLAG_SN         = 0b00000100,
-    IS_DEVICE_MATCH_FLAG_TYPE       = 0b00001000,
-    IS_DEVICE_MATCH_FLAG_MAJOR      = 0b00010000,
-    IS_DEVICE_MATCH_FLAG_MINOR      = 0b00100000,
-    IS_DEVICE_MATCH_FLAG_RSVD1      = 0b01000000,
-    IS_DEVICE_MATCH_FLAG_RSVD2      = 0b10000000,
-} is_device_match_flags;
-
-typedef uint8_t match_flags;   // 1111 1111
+    IS_IMAGE_SIGN_UINS_3_16K = 0x00000008,
+    IS_IMAGE_SIGN_UINS_3_24K = 0x00000010,
+    IS_IMAGE_SIGN_EVB_2_16K = 0x00000020,
+    IS_IMAGE_SIGN_EVB_2_24K = 0x00000040,
+    IS_IMAGE_SIGN_UINS_5 = 0x00000080,
+    
+    IS_IMAGE_SIGN_NUM_BITS_USED = 8,
+} is_image_signature;
 
 typedef struct
 {
-    match_flags match;
-    uint8_t major;
-    uint8_t minor; 
-    char serial_number[IS_SN_MAX_SIZE];
-    uint16_t vid;
-    uint16_t pid;
-    size_t index;
-} is_device_match_properties;
+    uint8_t major;                  // Bootloader major revision, 1, 2, 3, etc. 
+    char minor;                     // Bootloader minor revision, a, b, c, etc.
+    bool is_evb;                    // Available on version 6+, otherwise false
+    is_processor_type processor;    // Differentiates between uINS-3 and uINS-5
+    bool rom_available;             // ROM bootloader is available on this port
+    
+    uint32_t app_offset;            // Helps in loading bin files
+    uint32_t verify_size;           // Chink size, limited on Windows
+
+    char enable_command[5];         // "EBLE" (EVB) or "BLEN" (uINS)
+} is_bootloader_properties;
+
+typedef struct
+{
+    uint8_t uins_version[4];        // Bootloader major revision, 1, 2, 3, etc. 
+    uint8_t evb_version[4];         // Bootloader minor revision, a, b, c, etc.
+} is_app_properties;
+
+typedef struct
+{
+    uint32_t serial;                // Inertial Sense serial number, i.e. SN60000
+    is_bootloader_properties isb;
+    is_app_properties app;
+} is_device_properties;
 
 typedef enum {
     IS_LOG_LEVEL_NONE  = 0,
@@ -112,63 +109,79 @@ typedef enum {
     IS_LOG_LEVEL_INFO  = 3,
     IS_LOG_LEVEL_DEBUG = 4,
     IS_LOG_LEVEL_SILLY = 5
-} is_device_interface_log_level;
-
-/** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
-typedef int(*pfnBootloadProgress)(void* obj, float percent);
-/** Bootloader information string function prototype. */
-typedef void(*pfnBootloadStatus)(void* obj, const char* infoString);
+} is_log_level;
 
 typedef enum {
     IS_HANDLE_TYPE_LIBUSB,
     IS_HANDLE_TYPE_SERIAL
 } is_handle_type;
 
-typedef struct
+#define IS_DFU_UID_MAX_SIZE     20
+#define IS_DFU_LIST_LEN         256
+
+typedef enum
 {
-    is_handle_type status;
-    char port_name[256];            // COM port name. Invalid in DFU mode.        
-    serial_port_t port;             // Invalid once device enters DFU mode
-    libusb_device_handle* libusb;   // DFU only. Invalid until DFU mode reached.
-} is_device_handle;
+    STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
+    STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11
+} is_dfu_descriptor;
+
+// Recipe for DFU serial number:
+// sprintf(ctx->match_props.uid, "%X%X", manufacturing_info->uid[0] + manufacturing_info->uid[2], (uint16_t)(manufacturing_info->uid[1] >> 16));
 
 typedef struct 
 {
-    char firmware_path[256];
+    char uid[IS_DFU_UID_MAX_SIZE];      // DFU device serial number, from descriptors
+    uint32_t sn;                        // Inertial Sense serial number
+    uint16_t vid;
+    uint16_t pid;
+} is_dfu_id;
 
-    // Bootloader (uINS-3/4, EVB-2)
-    char samba_bootloader_path[256];
-    bool samba_force_update;
-} is_firmware_settings;
+typedef struct 
+{
+    is_dfu_id id[IS_DFU_LIST_LEN];
+    size_t present;
+} is_dfu_list;
 
 typedef struct
 {
-    uint8_t uins_version[4];
-    uint8_t evb_version[4];     // Index [0] set to 0 if not present
-} is_hdw_info;
+    is_handle_type status;     
+    serial_port_t port;
+    char port_name[100];
+    int baud;
+    libusb_device_handle* libusb;
+    is_dfu_id dfu;
+} is_device_handle;
+
+/** Bootloader callback function prototype, return 1 to stay running, return 0 to cancel */
+typedef is_operation_result(*pfnBootloadProgress)(void* obj, float percent);
+/** Bootloader information string function prototype. */
+typedef void(*pfnBootloadStatus)(void* obj, const char* infoString, is_log_level level);
 
 typedef struct
 {
-    is_hdw_info hdw_info;
-    is_firmware_settings firmware;
-    is_device_match_properties match_props;
-    is_device_scheme scheme;
-    int baud_rate;                                  
-    is_verification_style verification_style;
-    pfnBootloadProgress update_progress_callback;
-    pfnBootloadProgress verify_progress_callback;
-    pfnBootloadStatus info_callback;
+    // Firmware
+    char firmware_path[IS_FIRMWARE_PATH_LENGTH];
+    char verify_path[IS_FIRMWARE_PATH_LENGTH];
+
+    // Device
+    is_device_properties props;                   
+    is_verification_style verify;
     is_device_handle handle;
-    void* thread;
-    bool success;
-    char bl_enable_command[5];
-    char error[BOOTLOADER_ERROR_LENGTH];
-    float updateProgress;
-    float verifyProgress;
+
+    // Thread and class info
     void* user_data;
+    void* thread;
+
+    // Callbacks
+    pfnBootloadProgress update_callback;
+    pfnBootloadProgress verify_callback;
+    pfnBootloadStatus info_callback;
+
+    // Status
     bool update_in_progress;
-    char infoString[256];
-    bool infoString_new;
+    float update_progress;
+    float verify_progress;
+    bool success;
 } is_device_context;
 
 #ifdef __cplusplus

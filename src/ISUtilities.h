@@ -26,7 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 /**
-* Encode data as base64
+* Encode data as base64 
 * @param bytes_to_encode the data to encode
 * @param in_len the number of bytes to encode
 * @param return the base64 encoded data
@@ -159,9 +159,8 @@ uint64_t timerRawEnd(uint64_t start);
 
 uint64_t getTickCount(void);
 
-int bootloadUploadProgress(void* port, float percent);
-int bootloadVerifyProgress(void* port, float percent);
-void bootloadStatusInfo(void* port, const char* str);
+is_operation_result bootloadUploadProgress(void* port, float percent);
+is_operation_result bootloadVerifyProgress(void* port, float percent);
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec);
 
 FILE* openFile(const char* path, const char* mode);

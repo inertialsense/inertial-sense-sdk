@@ -41,7 +41,13 @@ ext_modules = [
          '../../src/DeviceLogSerial.cpp',
          '../../src/DeviceLogSorted.cpp',
          '../../src/InertialSense.cpp',
-         '../../src/inertialSenseBootLoader.c',
+         '../../src/ISBootloaderThread.cpp',
+         '../../src/ISBootloaderDFU.c',
+         '../../src/ISBootloaderSAMBA.c',
+         '../../src/ISBootloader.c',
+         '../../src/ISBootloaderISB.c',
+         '../../hw-libs/bootloader/bootloaderShared.c',
+         '../../src/ihex.c',
          '../../src/ISClient.cpp',
          '../../src/ISComm.c',
          '../../src/ISDataMappings.cpp',
@@ -77,7 +83,8 @@ ext_modules = [
             get_pybind_include(),
             get_pybind_include(user=True)
         ],
-        language='c++'
+        language='c++',
+        libraries=['usb-1.0']
     ),
 ]
 

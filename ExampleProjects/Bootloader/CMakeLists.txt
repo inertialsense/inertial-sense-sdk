@@ -16,12 +16,29 @@ else()	# Build only this project
 add_executable(ISBootloaderExample
 	ISBootloaderExample.c
 	../../src/data_sets.c
-	../../src/inertialSenseBootLoader.c
+	../../src/ISBootloaderDFU.c
+	../../src/ISBootloaderSAMBA.c
+	../../src/ISBootloaderISB.c
+	../../src/ISBootloader.c
+	../../hw-libs/bootloader/bootloaderShared.c
+	../../src/ihex.c
 	../../src/ISComm.c
 	../../src/serialPort.c
 	../../src/serialPortPlatform.c
 )
 target_link_libraries(ISBootloaderExample m)
+
+find_library(LIBUSB_LIBRARY
+	NAMES usb-1.0
+	PATH_SUFFIXES "lib" "lib32" "lib64"
+)
+
+target_include_directories(ISBootloaderExample PUBLIC
+	../../src
+	../../src/libusb
+)
+
+target_link_libraries(ISBootloaderExample ${LIBUSB_LIBRARY})
 
 endif()
 

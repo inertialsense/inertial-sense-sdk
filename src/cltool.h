@@ -107,6 +107,8 @@ bool cltool_parseCommandLine(int argc, char* argv[]);
 bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
+void cltool_firmwareUpdateWaiter();
+void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, std::string evbFlashCfg); // true if should continue
 

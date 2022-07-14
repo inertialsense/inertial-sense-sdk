@@ -45,7 +45,7 @@
 #define _CONF_ACCESS_H_
 
 #include "compiler.h"
-#include "board.h"
+#include "ISBoards.h"
 
 
 /*! \name Activation of Logical Unit Numbers

@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c" />
     <ClCompile Include="..\..\..\src\com_manager.c" />
     <ClCompile Include="..\..\..\src\convert_ins.cpp" />
     <ClCompile Include="..\..\..\src\DataChunk.cpp" />
@@ -35,11 +36,11 @@
     <ClCompile Include="..\..\..\src\DeviceLogSorted.cpp" />
     <ClCompile Include="..\..\..\src\ihex.c" />
     <ClCompile Include="..\..\..\src\InertialSense.cpp" />
-    <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c" />
-    <ClCompile Include="..\..\..\src\ISBootloader.cpp" />
-    <ClCompile Include="..\..\..\src\ISBootloaderCommon.c" />
-    <ClCompile Include="..\..\..\src\ISBootloaderDfu.c" />
-    <ClCompile Include="..\..\..\src\ISBootloaderSamba.c" />
+    <ClCompile Include="..\..\..\src\ISBootloader.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderDFU.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderISB.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp" />
     <ClCompile Include="..\..\..\src\ISClient.cpp" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\ISDataMappings.cpp" />
@@ -67,6 +68,7 @@
     <ClCompile Include="..\ISLoggerExample.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h" />
     <ClInclude Include="..\..\..\src\com_manager.h" />
     <ClInclude Include="..\..\..\src\convert_ins.h" />
     <ClInclude Include="..\..\..\src\DataChunk.h" />
@@ -83,11 +85,11 @@
     <ClInclude Include="..\..\..\src\DeviceLogSorted.h" />
     <ClInclude Include="..\..\..\src\ihex.h" />
     <ClInclude Include="..\..\..\src\InertialSense.h" />
-    <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h" />
     <ClInclude Include="..\..\..\src\ISBootloader.h" />
-    <ClInclude Include="..\..\..\src\ISBootloaderCommon.h" />
-    <ClInclude Include="..\..\..\src\ISBootloaderDfu.h" />
-    <ClInclude Include="..\..\..\src\ISBootloaderSamba.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderDFU.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderISB.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderThread.h" />
     <ClInclude Include="..\..\..\src\ISClient.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
     <ClInclude Include="..\..\..\src\ISDataMappings.h" />

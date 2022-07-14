@@ -11,7 +11,7 @@
 #include "user_interface.h"
 #include "sd_card_logger.h"
 #include "wheel_encoder.h"
-#include "../hw-libs/drivers/CAN.h"
+#include "CAN.h"
 #include "drivers/d_adc.h"
 
 // RTOS Task Configuration
