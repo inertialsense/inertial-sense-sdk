@@ -16,7 +16,6 @@ else()	# Build only this project
 add_executable(ISBootloaderExample
 	ISBootloaderExample.c
 	../../src/data_sets.c
-	../../src/ISBootloaderThread.cpp
 	../../src/ISBootloaderDFU.c
 	../../src/ISBootloaderSAMBA.c
 	../../src/ISBootloaderISB.c
