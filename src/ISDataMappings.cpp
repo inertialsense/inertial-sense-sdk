@@ -147,6 +147,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_IO] = sizeof(io_t);
 	sizeMap[DID_INFIELD_CAL] = sizeof(infield_cal_t);
 	sizeMap[DID_REFERENCE_IMU] = sizeof(imu_t);
+	sizeMap[DID_REFERENCE_PIMU] = sizeof(preintegrated_imu_t);
 	sizeMap[DID_REFERENCE_MAGNETOMETER] = sizeof(magnetometer_t);
 
 	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
