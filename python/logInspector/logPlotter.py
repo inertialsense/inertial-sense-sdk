@@ -1304,7 +1304,8 @@ class logPlot:
 
         self.setPlotYSpanMin(ax[0], 0.01)
         self.setPlotYSpanMin(ax[1], 0.01)
-        self.setPlotYSpanMin(ax[2], 0.05)
+        self.setPlotYSpanMin(ax[2], 0.005)
+        self.setPlotYSpanMin(ax[3], 0.005)
 
         if len(refTime) > 0:
             self.configureSubplot(ax[4], 'Reference IMU Integration Period', 's')
