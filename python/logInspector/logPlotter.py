@@ -293,9 +293,9 @@ class logPlot:
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
-            if magTime:
+            if magTime.any():
                 ax[0].plot(magTime, magHdg * RAD2DEG)
-            if gpsTime:
+            if gpsTime.any():
                 ax[1].plot(gpsTime, gpsHdg*RAD2DEG)
             ax[2].plot(insTime, euler[:,2]*RAD2DEG, label=self.log.serials[d])
         ax[2].legend(ncol=2)
@@ -874,13 +874,23 @@ class logPlot:
         ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
         fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
+        sumARW = []
+        sumBI = []
+
+        # Set up the statistics lists
+        for i in range(3):
+            sumARW.append([])
+            sumBI.append([])
+            for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                sumARW[i].append([])
+                sumBI[i].append([])
+
         for d in self.active_devs:
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
 
             if pqrCount:
                 dtMean = np.mean(dt)
                 for i in range(3):
-                    axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                     for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
                         if pqr != [] and n<pqrCount:
                             if pqr.any(None):
@@ -894,16 +904,38 @@ class logPlot:
                                 bi = np.amin(ad[0:idx_max])
                                 rw_idx = (np.abs(t2 - 1.0)).argmin()
                                 rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
-                                alable = 'Gyro'
-                                if pqrCount > 1:
-                                    alable += '%d ' % n
-                                else:
-                                    alable += ' '
-                                self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
-                                ax[i, n].loglog(t2, ad * RAD2DEG*3600, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600))
+                                
+                                ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG * 3600/RTHR2RTS, bi * RAD2DEG * 3600))
+
+                                # (t2, ad, ade, adn) = allantools.ohdev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
+                                # # Compute random walk and bias instability
+                                # t_bi_max = 1000
+                                # idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                                # bi = np.amin(ad[0:idx_max])
+                                # rw_idx = (np.abs(t2 - 1.0)).argmin()
+                                # rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+
+                                # ax[i, n].loglog(t2, ad * RAD2DEG * 3600, '--', label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG * 3600/RTHR2RTS, bi * RAD2DEG * 3600))
+
+                                sumARW[i][n].append(rw * RAD2DEG * 3600/RTHR2RTS)
+                                sumBI[i][n].append(bi * RAD2DEG * 3600)
+
                                 # Error bounds debug plots
                                 # ax[i, n].loglog(t2, (ad + ade) * RAD2DEG*3600, '--')
                                 # ax[i, n].loglog(t2, (ad - ade) * RAD2DEG*3600, '--')
+
+        # Calculate the stats for ARW and bias instability over all units
+        # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
+        for i in range(3):
+            axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
+            for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                if pqr != [] and n<pqrCount:
+                    alable = 'Gyro'
+                    if pqrCount > 1:
+                        alable += '%d ' % n
+                    else:
+                        alable += ' '
+                    self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'sec')
 
         for i in range(pqrCount):
             for d in range(3):
@@ -919,12 +951,23 @@ class logPlot:
         ax = fig.subplots(3, accCount, sharex=True, squeeze=False)
         fig.suptitle('Allan Variance: Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
+        sumRW = []
+        sumBI = []
+
+        # Set up the statistics lists
+        for i in range(3):
+            sumRW.append([])
+            sumBI.append([])
+            for n, pqr in enumerate([ acc0, acc1, acc2 ]):
+                sumRW[i].append([])
+                sumBI[i].append([])
+
+
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
 
             dtMean = np.mean(dt)
             for i in range(3):
-                axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                 for n, acc in enumerate([ acc0, acc1, acc2 ]):
                     if acc != [] and n<accCount:
                         if acc.any(None):
@@ -938,13 +981,24 @@ class logPlot:
                             bi = np.amin(ad[0:idx_max])
                             rw_idx = (np.abs(t2 - 0.1)).argmin()
                             rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
-                            alable = 'Accel'
-                            if accCount > 1:
-                                alable += '%d ' % n
-                            else:
-                                alable += ' '
-                            self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.4g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (rw * 3600/RTHR2RTS, bi), 'sec')
-                            ax[i, n].loglog(t2, ad, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * 3600/RTHR2RTS, bi))
+
+                            ax[i, n].loglog(t2, ad, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RTHR2RTS, bi))
+
+                            sumRW[i][n].append(rw * RTHR2RTS) 
+                            sumBI[i][n].append(bi)
+
+        # Calculate the stats for ARW and bias instability over all units
+        # The plots show the mean + 1 std deviation in accordance with IEEE spec (Analog Devices website)
+        for i in range(3):
+            axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
+            for n, pqr in enumerate([ acc0, acc1, acc2 ]):
+                if pqr != [] and n<accCount:
+                    alable = 'Accel'
+                    if accCount > 1:
+                        alable += '%d ' % n
+                    else:
+                        alable += ' '
+                    self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.4g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$/hr' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'sec')
 
         for i in range(accCount):
             for d in range(3):
