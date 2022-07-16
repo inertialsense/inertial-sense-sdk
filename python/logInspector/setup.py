@@ -24,8 +24,8 @@ class get_pybind_include(object):
 ext_modules = [
     Extension('log_reader',
         ['src/log_reader.cpp',
-         '../../src/cltool.cpp',
-         '../../src/cltool_main.cpp',
+        #  '../../src/cltool.cpp',
+        #  '../../src/cltool_main.cpp',
          '../../src/convert_ins.cpp',
          '../../src/com_manager.c',
          '../../src/data_sets.c',
@@ -40,13 +40,6 @@ ext_modules = [
          '../../src/DeviceLogKML.cpp',
          '../../src/DeviceLogSerial.cpp',
          '../../src/DeviceLogSorted.cpp',
-         '../../src/InertialSense.cpp',
-         '../../src/ISBootloaderThread.cpp',
-         '../../src/ISBootloaderDFU.c',
-         '../../src/ISBootloaderSAMBA.c',
-         '../../src/ISBootloader.c',
-         '../../src/ISBootloaderISB.c',
-         '../../hw-libs/bootloader/bootloaderShared.c',
          '../../src/ihex.c',
          '../../src/ISClient.cpp',
          '../../src/ISComm.c',
@@ -84,7 +77,6 @@ ext_modules = [
             get_pybind_include(user=True)
         ],
         language='c++',
-        libraries=['usb-1.0']
     ),
 ]
 
