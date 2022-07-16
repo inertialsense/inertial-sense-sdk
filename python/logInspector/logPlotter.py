@@ -728,10 +728,10 @@ class logPlot:
             imuCount = 1
 
         else:
-            time = self.getData(device, DID_REFERENCE_IMU, 'time')
+            time = self.getData(device, DID_REFERENCE_PIMU, 'time')
 
-            if len(time) != 0: # DID_REFERENCE_IMU
-                I = self.getData(device, DID_REFERENCE_IMU, 'I')
+            if len(time) != 0: # DID_REFERENCE_PIMU
+                I = self.getData(device, DID_REFERENCE_PIMU, 'I')
                 dt = time[1:] - time[:-1]
                 dt = np.append(dt, dt[-1])
                 imu1 = []
@@ -786,11 +786,13 @@ class logPlot:
             fig = plt.figure()
 
         for d in self.active_devs:
-            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
-                refImu = refImu
-                refPqr = refImu['pqr']
+                refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
+                dt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                refTheta = refTheta
+                dt = dt
+                refPqr = refTheta / dt[:,None]
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         (time, dt, acc0, acc1, acc2, pqrCount) = self.loadGyros(0)
@@ -835,9 +837,9 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             if accCount:
-                refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+                refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
                 if len(refTime)!=0:
-                    refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                    refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
                     refImu = refImu
                     refAcc = refImu['acc']
 
@@ -1016,9 +1018,9 @@ class logPlot:
         
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
-            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
                 refImu = refImu
                 refAcc = refImu['acc']
 
@@ -1067,9 +1069,9 @@ class logPlot:
         
         for d in self.active_devs:
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
-            refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
+            refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
+                refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
                 refImu = refImu
                 refAcc = refImu['acc']
 

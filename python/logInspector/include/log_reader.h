@@ -59,6 +59,7 @@ struct DeviceLog
     // std::vector<sys_sensors_adc_t> sensorsAdc;
     std::vector<sensor_compensation_t> scomp;
     std::vector<imu_t> refImu;
+    std::vector<preintegrated_imu_t> refPImu;
     std::vector<magnetometer_t> refMag;
     std::vector<gps_vel_t> gps1Vel;
     std::vector<gps_vel_t> gps2Vel;

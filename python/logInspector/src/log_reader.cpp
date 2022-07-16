@@ -161,6 +161,7 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
         HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
         HANDLE_MSG( DID_REFERENCE_IMU, dev_log_->refImu );
+        HANDLE_MSG( DID_REFERENCE_PIMU, dev_log_->refPImu );
         HANDLE_MSG( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag );
         HANDLE_MSG( DID_GPS1_VEL, dev_log_->gps1Vel );
         HANDLE_MSG( DID_GPS2_VEL, dev_log_->gps2Vel );
@@ -251,6 +252,7 @@ void LogReader::forwardData(int id)
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, id );
     forward_message( DID_SCOMP, dev_log_->scomp, id );
     forward_message( DID_REFERENCE_IMU, dev_log_->refImu, id );
+    forward_message( DID_REFERENCE_PIMU, dev_log_->refPImu, id );
     forward_message( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag, id );
     forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, id );
     forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, id );
