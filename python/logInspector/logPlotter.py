@@ -791,18 +791,21 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
+        refTime = []
+        refPqr = []
         for d in self.active_devs:
-            refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime)!=0:
+            refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
+            if len(refTime_) > 0:
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
-                refPqr = refTheta / refDt[:,None]
+                refPqr.append(refTheta / refDt[:,None])
+                refTime.append(refTime_)
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         (time, dt, acc0, acc1, acc2, pqrCount) = self.loadGyros(0)
         if pqrCount:
             ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
-        for d in self.active_devs:
+        for dev_idx, d in enumerate(self.active_devs):
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
             if pqrCount:
                 for i in range(3):
@@ -820,9 +823,14 @@ class logPlot:
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                                 ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
-            if len(refTime)!=0 and d==0:    # Only plot reference IMU for first device
+        for dev_idx, d in enumerate(self.active_devs):
+            if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
                 for i in range(3):
-                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
+                    if dev_idx == 0:
+                        plabel = 'reference'
+                    else:
+                        plabel = ''
+                    ax[i, 0].plot(refTime[d], refPqr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
 
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
