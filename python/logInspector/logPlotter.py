@@ -731,12 +731,18 @@ class logPlot:
             time = self.getData(device, DID_REFERENCE_PIMU, 'time')
 
             if len(time) != 0: # DID_REFERENCE_PIMU
-                I = self.getData(device, DID_REFERENCE_PIMU, 'I')
-                dt = time[1:] - time[:-1]
-                dt = np.append(dt, dt[-1])
+                dt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                if accelSensor == 0:
+                    # Gyro
+                    refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
+                    ref = refTheta / dt[:,None]
+                else:
+                    # Accel
+                    refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
+                    ref = refVel / dt[:,None]
                 imu1 = []
                 for sample in range(0, len(I)):
-                    imu1.append(I[sample][accelSensor])
+                    imu1.append(ref)
                 imu1 = np.array(imu1)
                 imuCount = 1
 
@@ -837,9 +843,9 @@ class logPlot:
             if accCount:
                 refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
                 if len(refTime)!=0:
-                    refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
-                    refImu = refImu
-                    refAcc = refImu['acc']
+                    refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
+                    refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                    refAcc = refVel / refDt[:,None]
 
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
@@ -1018,9 +1024,9 @@ class logPlot:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if len(refTime)!=0:
-                refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
-                refImu = refImu
-                refAcc = refImu['acc']
+                refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
+                refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                refAcc = refVel / refDt[:,None]
 
             N = time.size
             psd = np.zeros((N//2, 3))
