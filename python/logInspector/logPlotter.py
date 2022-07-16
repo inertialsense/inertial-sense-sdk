@@ -1252,7 +1252,17 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        ax = fig.subplots(4, 1, sharex=True)
+        refTime = []
+        for d in self.active_devs:
+            refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
+            if len(refTime_) > 0:
+                refTime.append(refTime_)
+
+        N = 4
+        if len(refTime) > 0:
+            N = N + 2
+        ax = fig.subplots(N, 1, sharex=True)
+
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS dt', 's')
@@ -1295,6 +1305,23 @@ class logPlot:
         self.setPlotYSpanMin(ax[0], 0.01)
         self.setPlotYSpanMin(ax[1], 0.01)
         self.setPlotYSpanMin(ax[2], 0.05)
+
+        if len(refTime) > 0:
+            self.configureSubplot(ax[4], 'Reference IMU Integration Period', 's')
+            self.configureSubplot(ax[5], 'Reference IMU Delta Timestamp', 's')
+            for d in self.active_devs:
+                deltaTimestampRef = 0
+                timeImuRef = 0
+                integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt')[1:]
+                if len(refTime[d]) > 0:
+                    deltaTimestampRef = refTime[d][1:] - refTime[d][0:-1]
+                    deltaTimestampRef = deltaTimestampRef / self.d
+                    timeImuRef = getTimeFromTow(refTime[d][1:] + towOffset)            
+
+                    ax[4].plot(timeImuRef, integrationPeriodRef)
+                    ax[5].plot(timeImuRef, deltaTimestampRef)
+            self.setPlotYSpanMin(ax[4], 0.01)
+            self.setPlotYSpanMin(ax[5], 0.05)
 
         ax[0].legend(ncol=2)
         for a in ax:
