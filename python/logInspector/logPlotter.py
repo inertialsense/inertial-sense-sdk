@@ -789,10 +789,8 @@ class logPlot:
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
             if len(refTime)!=0:
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
-                dt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
-                refTheta = refTheta
-                dt = dt
-                refPqr = refTheta / dt[:,None]
+                refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                refPqr = refTheta / refDt[:,None]
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         (time, dt, acc0, acc1, acc2, pqrCount) = self.loadGyros(0)
