@@ -1472,8 +1472,8 @@ typedef struct PACKED
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
-#define RMC_PRESET_PPD_NAV_PERIOD_MULT	25
-#define RMC_PRESET_INS_NAV_PERIOD_MULT	1   // fastest rate (nav filter update rate)
+#define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS	100
+#define RMC_PRESET_INS_NAV_PERIOD_MULT_MS	4   // fastest rate (nav filter update rate)
 
 // Preset: Post Processing Data
 #define RMC_PRESET_PPD_BITS_NO_IMU		(RMC_BITS_PRESET \
