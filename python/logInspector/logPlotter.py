@@ -842,6 +842,16 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
+        refTime = []
+        refAcc = []
+        for d in self.active_devs:
+            refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
+            if len(refTime_) > 0:
+                refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
+                refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                refAcc.append(refVel / refDt[:,None])
+                refTime.append(refTime_)
+
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
         if accCount:
@@ -849,12 +859,6 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             if accCount:
-                refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-                if len(refTime)!=0:
-                    refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
-                    refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
-                    refAcc = refVel / refDt[:,None]
-
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                     for n, acc in enumerate([ acc0, acc1, acc2 ]):
@@ -870,9 +874,14 @@ class logPlot:
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                                 ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
-                if len(refTime)!=0 and d==0:    # Only plot reference IMU for first device
-                    for i in range(3):
-                        ax[i, 0].plot(refTime, refAcc[:, i], color='red', label="reference")
+        for dev_idx, d in enumerate(self.active_devs):
+            if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
+                for i in range(3):
+                    if dev_idx == 0:
+                        plabel = 'reference'
+                    else:
+                        plabel = ''
+                    ax[i, 0].plot(refTime[d], refAcc[d][:, i], color='black', linestyle = 'dashed', label = plabel)
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)
