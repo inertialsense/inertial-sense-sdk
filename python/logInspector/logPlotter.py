@@ -842,6 +842,16 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
+        refTime = []
+        refAcc = []
+        for d in self.active_devs:
+            refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
+            if np.any(refTime_):
+                refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
+                refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                refAcc.append(refVel / refDt[:,None])
+                refTime.append(refTime_)
+
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
         if accCount:
@@ -849,12 +859,6 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             if accCount:
-                refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-                if np.any(refTime):
-                    refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
-                    refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
-                    refAcc = refVel / refDt[:,None]
-
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                     for n, acc in enumerate([ acc0, acc1, acc2 ]):
@@ -870,9 +874,14 @@ class logPlot:
                                 self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                                 ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
-                if len(refTime)!=0 and d==0:    # Only plot reference IMU for first device
-                    for i in range(3):
-                        ax[i, 0].plot(refTime, refAcc[:, i], color='red', label="reference")
+        for dev_idx, d in enumerate(self.active_devs):
+            if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
+                for i in range(3):
+                    if dev_idx == 0:
+                        plabel = 'reference'
+                    else:
+                        plabel = ''
+                    ax[i, 0].plot(refTime[d], refAcc[d][:, i], color='black', linestyle = 'dashed', label = plabel)
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)
@@ -1252,14 +1261,14 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        refTime = []
+        refImuPresent = False
         for d in self.active_devs:
-            refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if np.any(refTime_):
-                refTime.append(refTime_)
+            timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time')
+            if np.any(timeRef):
+                refImuPresent = True
 
         N = 4
-        if np.any(refTime):
+        if refImuPresent:
             N = N + 2
         ax = fig.subplots(N, 1, sharex=True)
 
@@ -1307,18 +1316,18 @@ class logPlot:
         self.setPlotYSpanMin(ax[2], 0.005)
         self.setPlotYSpanMin(ax[3], 0.005)
 
-        if np.any(refTime):
+        if refImuPresent:
             self.configureSubplot(ax[4], 'Reference IMU Integration Period', 's')
             self.configureSubplot(ax[5], 'Reference IMU Delta Timestamp', 's')
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
-                integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt')[1:]
-                if len(refTime[d]) > 0:
-                    deltaTimestampRef = refTime[d][1:] - refTime[d][0:-1]
+                timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time')
+                if np.any(timeRef):
+                    integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt')[1:]
+                    deltaTimestampRef = timeRef[1:] - timeRef[0:-1]
                     deltaTimestampRef = deltaTimestampRef / self.d
-                    timeImuRef = getTimeFromTow(refTime[d][1:] + towOffset)            
-
+                    timeImuRef = getTimeFromTow(timeRef[1:] + towOffset)
                     ax[4].plot(timeImuRef, integrationPeriodRef)
                     ax[5].plot(timeImuRef, deltaTimestampRef)
             self.setPlotYSpanMin(ax[4], 0.005)
