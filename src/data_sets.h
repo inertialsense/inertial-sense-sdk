@@ -2074,7 +2074,7 @@ enum eSensorConfig
 	SENSOR_CFG_ACC_FS_4G				= (int)0x00000001,
 	SENSOR_CFG_ACC_FS_8G				= (int)0x00000002,
 	SENSOR_CFG_ACC_FS_16G				= (int)0x00000003,
-	SENSOR_CFG_ACC_FS_MASK				= (int)0x00000003,
+	SENSOR_CFG_ACC_FS_MASK				= (int)0x0000000C,
 	SENSOR_CFG_ACC_FS_OFFSET			= (int)2,
 	
 	/** Gyro digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The following 
@@ -2086,7 +2086,7 @@ enum eSensorConfig
 	SENSOR_CFG_GYR_DLPF_20HZ			= (int)0x00000004,
 	SENSOR_CFG_GYR_DLPF_10HZ			= (int)0x00000005,
 	SENSOR_CFG_GYR_DLPF_5HZ				= (int)0x00000006,
- 	SENSOR_CFG_GYR_DLPF_MASK			= (int)0x0000000F,
+ 	SENSOR_CFG_GYR_DLPF_MASK			= (int)0x00000F00,
 	SENSOR_CFG_GYR_DLPF_OFFSET			= (int)8,
 
 	/** Accelerometer digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The 
@@ -2098,11 +2098,11 @@ enum eSensorConfig
 	SENSOR_CFG_ACC_DLPF_21HZ			= (int)0x00000004,
 	SENSOR_CFG_ACC_DLPF_10HZ			= (int)0x00000005,
 	SENSOR_CFG_ACC_DLPF_5HZ				= (int)0x00000006,
-	SENSOR_CFG_ACC_DLPF_MASK			= (int)0x0000000F,
+	SENSOR_CFG_ACC_DLPF_MASK			= (int)0x0000F000,
 	SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
 
 	/** Euler rotation of IMU and magnetometer from sensor frame to output frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
-	SENSOR_CFG_SENSOR_ROTATION_MASK        = (int)0x000000FF,
+	SENSOR_CFG_SENSOR_ROTATION_MASK        = (int)0x00FF0000,
 	SENSOR_CFG_SENSOR_ROTATION_OFFSET      = (int)16,
 	SENSOR_CFG_SENSOR_ROTATION_0_0_0       = (int)0,	// roll, pitch, yaw rotation (deg).
 	SENSOR_CFG_SENSOR_ROTATION_0_0_90      = (int)1,
@@ -2130,17 +2130,13 @@ enum eSensorConfig
 	SENSOR_CFG_SENSOR_ROTATION_0_N90_N90   = (int)23,
 
 	/** Triple IMU fault detection level. Higher levels add new features to previous levels */
-	SENSOR_CFG_IMU_FAULT_DETECT_MASK	   	= (int)0x0000000F,
+	SENSOR_CFG_IMU_FAULT_DETECT_MASK	   	= (int)0x0F000000,
 	SENSOR_CFG_IMU_FAULT_DETECT_OFFSET		= (int)24,
 	SENSOR_CFG_IMU_FAULT_DETECT_NONE		= (int)0,	// Simple averaging
 	SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE		= (int)1,	// One or more IMUs is offline or stuck
 	SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS	= (int)2,
 	SENSOR_CFG_IMU_FAULT_DETECT_BIAS_JUMPS	= (int)3,
 	SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
-
-	/** If set, all accels and gyros are enable, including those off by default. This may degrade performance */
-	SENSOR_CFG_IMU_ENABLE_ALL_MASK			= (int)0x00000001,
-	SENSOR_CFG_IMU_ENABLE_ALL_OFFSET		= (int)28,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
