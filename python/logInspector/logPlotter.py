@@ -795,7 +795,7 @@ class logPlot:
         refPqr = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime_) > 0:
+            if np.any(refTime_):
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refPqr.append(refTheta / refDt[:,None])
@@ -846,7 +846,7 @@ class logPlot:
         refAcc = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime_) > 0:
+            if np.any(refTime_):
                 refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refAcc.append(refVel / refDt[:,None])
@@ -1040,7 +1040,7 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime)!=0:
+            if np.any(refTime):
                 refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refAcc = refVel / refDt[:,None]
@@ -1091,7 +1091,7 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime)!=0:
+            if np.any(refTime):
                 refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
                 refImu = refImu
                 refAcc = refImu['acc']
@@ -1261,14 +1261,14 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        refTime = []
+        refImuPresent = False
         for d in self.active_devs:
-            refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime_) > 0:
-                refTime.append(refTime_)
+            timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time')
+            if np.any(timeRef):
+                refImuPresent = True
 
         N = 4
-        if len(refTime) > 0:
+        if refImuPresent:
             N = N + 2
         ax = fig.subplots(N, 1, sharex=True)
 
@@ -1311,27 +1311,27 @@ class logPlot:
             ax[2].plot(timeImu, integrationPeriod)
             ax[3].plot(timeImu, deltaTimestamp)
 
-        self.setPlotYSpanMin(ax[0], 0.01)
-        self.setPlotYSpanMin(ax[1], 0.01)
+        self.setPlotYSpanMin(ax[0], 0.005)
+        self.setPlotYSpanMin(ax[1], 0.005)
         self.setPlotYSpanMin(ax[2], 0.005)
         self.setPlotYSpanMin(ax[3], 0.005)
 
-        if len(refTime) > 0:
+        if refImuPresent:
             self.configureSubplot(ax[4], 'Reference IMU Integration Period', 's')
             self.configureSubplot(ax[5], 'Reference IMU Delta Timestamp', 's')
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
-                integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt')[1:]
-                if len(refTime[d]) > 0:
-                    deltaTimestampRef = refTime[d][1:] - refTime[d][0:-1]
+                timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time')
+                if np.any(timeRef):
+                    integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt')[1:]
+                    deltaTimestampRef = timeRef[1:] - timeRef[0:-1]
                     deltaTimestampRef = deltaTimestampRef / self.d
-                    timeImuRef = getTimeFromTow(refTime[d][1:] + towOffset)            
-
+                    timeImuRef = getTimeFromTow(timeRef[1:] + towOffset)
                     ax[4].plot(timeImuRef, integrationPeriodRef)
                     ax[5].plot(timeImuRef, deltaTimestampRef)
-            self.setPlotYSpanMin(ax[4], 0.01)
-            self.setPlotYSpanMin(ax[5], 0.05)
+            self.setPlotYSpanMin(ax[4], 0.005)
+            self.setPlotYSpanMin(ax[5], 0.005)
 
         ax[0].legend(ncol=2)
         for a in ax:
