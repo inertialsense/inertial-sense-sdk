@@ -1259,7 +1259,7 @@ class logPlot:
                 refTime.append(refTime_)
 
         N = 4
-        if len(refTime) > 0:
+        if len(refTime) > 1:
             N = N + 2
         ax = fig.subplots(N, 1, sharex=True)
 
@@ -1302,12 +1302,12 @@ class logPlot:
             ax[2].plot(timeImu, integrationPeriod)
             ax[3].plot(timeImu, deltaTimestamp)
 
-        self.setPlotYSpanMin(ax[0], 0.01)
-        self.setPlotYSpanMin(ax[1], 0.01)
+        self.setPlotYSpanMin(ax[0], 0.005)
+        self.setPlotYSpanMin(ax[1], 0.005)
         self.setPlotYSpanMin(ax[2], 0.005)
         self.setPlotYSpanMin(ax[3], 0.005)
 
-        if len(refTime) > 0:
+        if len(refTime) > 1:
             self.configureSubplot(ax[4], 'Reference IMU Integration Period', 's')
             self.configureSubplot(ax[5], 'Reference IMU Delta Timestamp', 's')
             for d in self.active_devs:
@@ -1321,8 +1321,8 @@ class logPlot:
 
                     ax[4].plot(timeImuRef, integrationPeriodRef)
                     ax[5].plot(timeImuRef, deltaTimestampRef)
-            self.setPlotYSpanMin(ax[4], 0.01)
-            self.setPlotYSpanMin(ax[5], 0.05)
+            self.setPlotYSpanMin(ax[4], 0.005)
+            self.setPlotYSpanMin(ax[5], 0.005)
 
         ax[0].legend(ncol=2)
         for a in ax:
