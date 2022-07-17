@@ -795,7 +795,7 @@ class logPlot:
         refPqr = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime_) > 0:
+            if np.any(refTime_):
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refPqr.append(refTheta / refDt[:,None])
@@ -850,7 +850,7 @@ class logPlot:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             if accCount:
                 refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-                if len(refTime)!=0:
+                if np.any(refTime):
                     refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
                     refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                     refAcc = refVel / refDt[:,None]
@@ -1031,7 +1031,7 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime)!=0:
+            if np.any(refTime):
                 refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refAcc = refVel / refDt[:,None]
@@ -1082,7 +1082,7 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime)!=0:
+            if np.any(refTime):
                 refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
                 refImu = refImu
                 refAcc = refImu['acc']
@@ -1255,7 +1255,7 @@ class logPlot:
         refTime = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if len(refTime_) > 0:
+            if np.any(refTime_):
                 refTime.append(refTime_)
 
         N = 4
