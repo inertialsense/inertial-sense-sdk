@@ -417,7 +417,7 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 	div_Vec3_X(deltaA, deltaA, Nsteps);
 	cpy_Vec3_Vec3(wb, imuLast->pqr);
 	cpy_Vec3_Vec3(ab, imuLast->acc);
-	float dti = dt / Nsteps;
+	dti = dt / Nsteps;
 
 	Kw0 = 1.0f / 12.0f;
     for (int jj = 0; jj < Nsteps; jj++) 
