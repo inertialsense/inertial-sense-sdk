@@ -395,10 +395,10 @@ float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, imu_t *imu, im
 }
 
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti)
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dt)
 {
     ixVector3 wb, ab, deltaW, deltaA, tmp1, tmp2, tmp3, tmp4;
-    float Kw, mag_theta2, mag_theta4, Kw0;
+    float dti, Kw, mag_theta2, mag_theta4, Kw0;
 
     // for jj = 1: Nint
     //     wb = W0 + (jj - 1) / Nint * (W1 - W0);
@@ -413,17 +413,15 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 	
     sub_Vec3_Vec3(deltaW, imu->pqr, imuLast->pqr);
     sub_Vec3_Vec3(deltaA, imu->acc, imuLast->acc);
-    Kw0 = 1.0f / 12.0f;
+	div_Vec3_X(deltaW, deltaW, Nsteps);
+	div_Vec3_X(deltaA, deltaA, Nsteps);
+	cpy_Vec3_Vec3(wb, imuLast->pqr);
+	cpy_Vec3_Vec3(ab, imuLast->acc);
+	float dti = dt / Nsteps;
+
+	Kw0 = 1.0f / 12.0f;
     for (int jj = 0; jj < Nsteps; jj++) 
 	{
-		float jjDivNsteps = ((float)jj) / Nsteps;
-		
-	    // Current angular rate and acceleration vectors (linear interpolation)
-	    for (int i = 0; i < 3; i++) 
-		{
-		    wb[i] = imuLast->pqr[i] + deltaW[i] * jjDivNsteps;
-		    ab[i] = imuLast->acc[i] + deltaA[i] * jjDivNsteps;
-	    }
 	    // Coning and sculling integrals
 	    cross_Vec3(tmp1, theta, wb);
 	    cross_Vec3(tmp2, theta, tmp1);
@@ -435,8 +433,11 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
         for (int i = 0; i < 3; i++) {
 		    theta[i] += (wb[i] + 0.5f * tmp1[i] + Kw * tmp2[i]) * dti;
 		    vel[i] += (ab[i] + tmp3[i] + 0.5f * tmp4[i]) * dti;
-	    }
-    }	
+		}
+		// Advance wb, ab (minor step)
+		add_Vec3_Vec3(wb, wb, deltaW);
+		add_Vec3_Vec3(ab, ab, deltaA);
+	}
 }
 
 
@@ -444,10 +445,9 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 float deltaThetaDeltaVelBortz(preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps)
 {
 	float dt = (float)(imu->time - imuLast->time);
-	float dti = dt / (float)Nsteps;
 
 	// IMU
-	integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), (float)Nsteps, (float)dti);
+	integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), (float)Nsteps, dt);
 
 	// Update history
 	*imuLast = *imu;
