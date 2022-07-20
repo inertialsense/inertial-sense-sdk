@@ -607,6 +607,15 @@ void InertialSense::StopBroadcasts(bool allPorts)
 	}
 }
 
+void InertialSense::SavePersistent()
+{
+    // Save persistent messages to flash
+        system_command_t cfg;
+        cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+        cfg.invCommand = ~cfg.command;
+        SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+}
+
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)

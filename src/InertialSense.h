@@ -212,6 +212,11 @@ public:
 	*/
 	void StopBroadcasts(bool allPorts=true);
 
+    /**
+     * Current data streaming will continue streaming at boot. 
+     */
+    void SavePersistent();
+
 	/**
 	* Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
 	* @param dataId the data id of the data to send
