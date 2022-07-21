@@ -43,7 +43,8 @@ void evbTaskComm(rtos_task_t &task, is_comm_instance_t &comm)
 {
     vTaskDelay(task.periodMs);
 
-    g_comm_time_ms = time_msec();
+    g_comm_time = time_seclf();
+    g_comm_time_ms = (uint32_t)round(g_comm_time * 1000.0);
 
     if (g_statusToWlocal)
     {
@@ -206,9 +207,15 @@ void evbMainInitComm(void)
     communications_init();
 
 #ifdef CONF_BOARD_ADC
-	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC)
+	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC4)
 	{
-		adc_init();
+		afec0_init();
+		adc4_init();
+	}
+	if (g_flashCfg->bits&EVB_CFG_BITS_ENABLE_ADC10)
+	{
+		afec0_init();
+		adc1_init();
 	}
 #endif
 }

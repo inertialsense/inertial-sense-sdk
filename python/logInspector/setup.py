@@ -22,8 +22,7 @@ class get_pybind_include(object):
 
 
 ext_modules = [
-    Extension(
-        'log_reader',
+    Extension('log_reader',
         ['src/log_reader.cpp',
          '../../src/cltool.cpp',
          '../../src/cltool_main.cpp',
@@ -60,7 +59,7 @@ ext_modules = [
          '../../src/ISTcpServer.cpp',
          '../../src/ISUtilities.cpp',
          '../../src/linked_list.c',
-	     '../../src/message_stats.cpp',
+         '../../src/message_stats.cpp',
          '../../src/protocol_nmea.cpp',
          '../../src/serialPort.c',
          '../../src/serialPortPlatform.c',
@@ -144,7 +143,8 @@ setup(
     description='pybind interface to reading InertialSense Log files',
     long_description='',
     ext_modules=ext_modules,
-    install_requires=['pybind11>=2.2', 
+    install_requires=[
+        'pybind11>=2.2', 
         'pyqt5', 
         'numpy', 
         'matplotlib', 
@@ -152,7 +152,8 @@ setup(
         'pyserial', 
         'scipy', 
         'tqdm',
-        'simplekml'],
+        'simplekml',
+        'allantools'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )

@@ -32,17 +32,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "convert_ins.h"
 
-
 #if PLATFORM_IS_EVB_2
 #include "globals.h"
 #include "rtc.h"
 #endif
 
 #if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
-
 #include <sys/statvfs.h>
-
 #endif
+
+using namespace std;
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 #define LOG_DEBUG_PRINT_READ		0
@@ -219,7 +218,8 @@ bool cISLogger::InitSaveTimestamp(const string& timeStamp, const string& directo
 	else
 	{
 		// Only use first 15 characters for the timestamp
-		m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
+		// m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
+		m_timeStamp = timeStamp;
 	}
 
 	return InitSaveCommon(logType, directory, subDirectory, numDevices, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);

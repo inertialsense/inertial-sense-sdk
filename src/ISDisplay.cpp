@@ -36,6 +36,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
+using namespace std;
+
 #define PRINTV3_P1		"%8.1f,%8.1f,%8.1f\n"
 #define PRINTV3_P2		" %8.2f,%8.2f,%8.2f\n"
 #define PRINTV3_P3		"  %8.3f,%8.3f,%8.3f\n"
@@ -582,13 +584,13 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 void cInertialSenseDisplay::PrintStats()
 {
 	// Display stats
-	printf("                Name  DID    Count        dt\n");
+	printf("    Count      dt  DID  Name \n");
 	for (int i = 0; i < (int)m_didStats.size(); i++)
 	{
 		sDidStats& s = m_didStats[i];
 		if (s.count)
 		{
-			printf("%20s %4d %9d %9.3lf\n", cISDataMappings::GetDataSetName(i), i, s.count, s.dtMs*0.001);
+			printf("%9d %7.3lf %4d  %s\n", s.count, s.dtMs*0.001, i, cISDataMappings::GetDataSetName(i));
 		}
 	}
 }
@@ -1103,12 +1105,14 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 	char* ptrEnd = buf + BUF_SIZE;
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
 
-	switch (mag.recalCmd)
+	switch (mag.state)
 	{
-	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d,               ", mag.recalCmd);	break;
-	case MAG_RECAL_CMD_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (MULTI-AXIS ), ", mag.recalCmd);	break;
-	case MAG_RECAL_CMD_SINGLE_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (SINGLE-AXIS), ", mag.recalCmd);	break;
-	case MAG_RECAL_CMD_ABORT:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "  recalCmd %3d (ABORT      ), ", mag.recalCmd);	break;
+	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d,               ", mag.state);	break;
+	case MAG_CAL_STATE_MULTI_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (MULTI-AXIS ), ", mag.state);	break;
+	case MAG_CAL_STATE_SINGLE_AXIS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (SINGLE-AXIS), ", mag.state);	break;
+	case MAG_CAL_STATE_ABORT:			ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (ABORT      ), ", mag.state);	break;
+	case MAG_CAL_STATE_RECAL_RUNNING:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (Recal-ing  ), ", mag.state);	break;
+	case MAG_CAL_STATE_RECAL_COMPLETE:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "  state %3d (Recal done ), ", mag.state);	break;
 	}
 
 	{	// Single line format

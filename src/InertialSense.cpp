@@ -118,7 +118,10 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	m_clientBufferBytesToSend = 0;
 	m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;
-	memset(m_comManagerState.binaryCallback, 0, sizeof(m_comManagerState.binaryCallback));
+	for(int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
+	{
+		m_comManagerState.binaryCallback[i] = {};
+	}
 	m_comManagerState.binaryCallbackGlobal = callback;
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
 	m_comManagerState.inertialSenseInterface = this;
@@ -289,6 +292,7 @@ bool InertialSense::SetLoggerEnabled(
     const string& path, 
     cISLogger::eLogType logType, 
     uint64_t rmcPreset, 
+    uint32_t rmcOptions,
     float maxDiskSpacePercent, 
     uint32_t maxFileSize, 
     const string& subFolder)
@@ -303,7 +307,7 @@ bool InertialSense::SetLoggerEnabled(
 
 		if(rmcPreset)
 		{ 
-			BroadcastBinaryDataRmcPreset(rmcPreset);
+			BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions);
 		}
 		return EnableLogging(path, logType, maxDiskSpacePercent, maxFileSize, subFolder);
 	}
@@ -614,6 +618,15 @@ void InertialSense::StopBroadcasts(bool allPorts)
 	}
 }
 
+void InertialSense::SavePersistent()
+{
+    // Save persistent messages to flash
+        system_command_t cfg;
+        cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+        cfg.invCommand = ~cfg.command;
+        SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+}
+
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
@@ -758,11 +771,11 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
             state[i].param.baudRate = baudRate;			
 			if (strstr(state[i].param.fileName, "EVB") != NULL)
 			{   // Enable EVB bootloader
-				strncpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
+				memcpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
 			}
 			else
 			{	// Enable uINS bootloader
-				strncpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
+				memcpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
 			}
 
             // Update application and bootloader firmware

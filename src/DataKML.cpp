@@ -42,7 +42,7 @@ cDataKML::cDataKML()
 // 	def[5].init( "ins2", "Inertial navigation data with quaternion attitude" );
 }
 
-string cDataKML::GetDatasetName(int kid)
+std::string cDataKML::GetDatasetName(int kid)
 {
 	switch (kid)
 	{
@@ -62,7 +62,7 @@ string cDataKML::GetDatasetName(int kid)
 #include <stdio.h>
 #include <time.h>
 
-int cDataKML::WriteDataToFile(vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
+int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
 	uDatasets& d = (uDatasets&)(*dataBuf);
 	ixEuler theta;

@@ -1,5 +1,9 @@
+from ctypes import sizeof
 import math
 from typing import List, Any, Union
+
+# If allantools are not installed, run "pip install allantools" first
+import allantools
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,6 +24,7 @@ RESET = r"\u001b[0m"
 
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
+RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -208,9 +213,9 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3,1, sharex=True)
-        self.configureSubplot(ax[0], 'North', 'm/s')
-        self.configureSubplot(ax[1], 'East', 'm/s')
-        self.configureSubplot(ax[2], 'Down', 'm/s')
+        self.configureSubplot(ax[0], 'Vel North', 'm/s')
+        self.configureSubplot(ax[1], 'Vel East', 'm/s')
+        self.configureSubplot(ax[2], 'Vel Down', 'm/s')
         fig.suptitle('NED Vel - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
@@ -240,9 +245,9 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3,1, sharex=True)
-        self.configureSubplot(ax[0], 'Vel-X', 'm/s')
-        self.configureSubplot(ax[1], 'Vel-Y', 'm/s')
-        self.configureSubplot(ax[2], 'Vel-Z', 'm/s')
+        self.configureSubplot(ax[0], 'Vel U', 'm/s')
+        self.configureSubplot(ax[1], 'Vel V', 'm/s')
+        self.configureSubplot(ax[2], 'Vel W', 'm/s')
         fig.suptitle('INS uvw - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
@@ -445,6 +450,11 @@ class logPlot:
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Saturation Baro')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00002000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'EKF using ref. IMU')
                 cnt += 1
                 cnt += 1
 
@@ -697,6 +707,8 @@ class logPlot:
     def loadIMU(self, d, index):   # 0 = gyro, 1 = accelerometer
         imu0 = []
         imu1 = []
+        time = None
+        dt = None
 
         I1 = self.getData(d, DID_DUAL_IMU, 'I')[:, 0]
         I2 = self.getData(d, DID_DUAL_IMU, 'I')[:, 1]
@@ -741,10 +753,7 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-
         for d in self.active_devs:
-            (pqr0, pqr1, time, dt) = self.loadGyros(d)
-
             refTime = self.getData(d, DID_REFERENCE_IMU, 'time')
             if len(refTime)!=0:
                 refImu = self.getData(d, DID_REFERENCE_IMU, 'I')
@@ -754,18 +763,19 @@ class logPlot:
         ax = fig.subplots(3, 2, sharex=True)
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
+            (pqr0, pqr1, time, dt) = self.loadGyros(d)
             for i in range(3):
                 axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                 for n, pqr in enumerate([ pqr0, pqr1 ]):
-                    if pqr.any(None):
+                    if (pqr is not None) and pqr.any(None):
                         mean = np.mean(pqr[:, i])
                         std = np.std(pqr[:, i])
                         self.configureSubplot(ax[i, n], 'Gyro%d ' % n + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                         ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
 
                 if len(refTime) != 0:
-                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
-                    ax[i, 1].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red')
+                    ax[i, 0].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
+                    ax[i, 1].plot(refTime, refPqr[:, i] * 180.0/np.pi, color='red', label="reference")
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
@@ -792,21 +802,101 @@ class logPlot:
             for i in range(3):
                 axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                 for n, acc in enumerate([ acc0, acc1 ]):
-                    if acc.any(None):
+                    if (acc is not None) and acc.any(None):
                         mean = np.mean(acc[:, i])
                         std = np.std(acc[:, i])
                         self.configureSubplot(ax[i, n], 'Accel%d ' % n + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
                         ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
 
                 if len(refTime) != 0:
-                    ax[i, 0].plot(refTime, refAcc[:, i], color='red')
-                    ax[i, 1].plot(refTime, refAcc[:, i], color='red')
+                    ax[i, 0].plot(refTime, refAcc[:, i], color='red', label="reference")
+                    ax[i, 1].plot(refTime, refAcc[:, i], color='red', label="reference")
 
         ax[0,0].legend(ncol=2)
         for i in range(3):
             for j in range(2):
                 ax[i,j].grid(True)
         self.saveFig(fig, 'accIMU')
+
+    def allanVariancePQR(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(0)
+        ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
+        fig.suptitle('Allan Variance: PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+
+            for i in range(3):
+                axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
+                for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                    if pqr != [] and n<pqrCount:
+                        if pqr.any(None):
+                            # Averaging window tau values from dt to Nsamples/10
+                            t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(pqr[:,i])), 200)
+                            # Compute the overlapping ADEV
+                            (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                            # Compute random walk and bias instability
+                            t_bi_max = 1000
+                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                            bi = np.amin(ad[0:idx_max])
+                            rw_idx = (np.abs(t2 - 0.4)).argmin()
+                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                            alable = 'Gyro'
+                            if pqrCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/\sqrt{hr}$), ARW: %.4g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600), 'sec')
+                            ax[i, n].loglog(t2, ad * RAD2DEG*3600, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * RAD2DEG*3600/RTHR2RTS, bi * RAD2DEG*3600))
+
+        for i in range(pqrCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
+        self.saveFig(fig, 'pqrIMU')
+
+    def allanVarianceAcc(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+        ax = fig.subplots(3, accCount, sharex=True, squeeze=False)
+        fig.suptitle('Allan Variance: Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+
+            for i in range(3):
+                axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
+                for n, acc in enumerate([ acc0, acc1, acc2 ]):
+                    if acc != [] and n<accCount:
+                        if acc.any(None):
+                            # Averaging window tau values from dt to Nsamples/10
+                            t = np.logspace(np.log10(dt[0]), np.log10(0.1*np.size(acc[:,i])), 200)
+                            # Compute the overlapping ADEV
+                            (t2, ad, ade, adn) = allantools.oadev(acc[:,i], rate=1/dt[0], data_type="freq", taus=t)
+                            # Compute random walk and bias instability
+                            t_bi_max = 1000
+                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                            bi = np.amin(ad[0:idx_max])
+                            rw_idx = (np.abs(t2 - 0.4)).argmin()
+                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                            alable = 'Accel'
+                            if accCount > 1:
+                                alable += '%d ' % n
+                            else:
+                                alable += ' '
+                            self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.4g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (rw * 3600/RTHR2RTS, bi), 'sec')
+                            ax[i, n].loglog(t2, ad, label='%s: %.2f, %.3g' % (self.log.serials[d], rw * 3600/RTHR2RTS, bi))
+
+        for i in range(accCount):
+            ax[0][i].legend(ncol=2)
+            for d in range(3):
+                ax[d][i].grid(True)
+        self.saveFig(fig, 'accIMU')        
 
     def accelPSD(self, fig=None):
         if fig is None:
@@ -919,7 +1009,10 @@ class logPlot:
         self.configureSubplot(ax[5], 'Mag1 Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time0 = self.getData(d, DID_MAGNETOMETER, 'time') + self.getData(d, DID_GPS1_POS, 'towOffset')[-1]
+            time0 = self.getData(d, DID_MAGNETOMETER, 'time')
+            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+            if np.shape(towOffset)[0] != 0:
+                time0 = time0 + towOffset[-1]
             mag0 = self.getData(d, DID_MAGNETOMETER, 'mag')
             mag0x = mag0[:,0]
             mag0y = mag0[:,1]
@@ -927,6 +1020,13 @@ class logPlot:
             ax[0].plot(time0, mag0x, label=self.log.serials[d])
             ax[2].plot(time0, mag0y)
             ax[4].plot(time0, mag0z)
+
+            refTime = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'time')
+            if len(refTime)!=0:
+                refMag = self.getData(d, DID_REFERENCE_MAGNETOMETER, 'mag')
+                refMag = refMag
+                for i in range(3):
+                    ax[2*i].plot(refTime, refMag[:, i], color='red', label="reference")
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -1019,11 +1119,12 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        ax = fig.subplots(3, 1, sharex=True)
+        ax = fig.subplots(4, 1, sharex=True)
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS dt', 's')
-        self.configureSubplot(ax[2], 'IMU dt', 's')
+        self.configureSubplot(ax[2], 'IMU Integration Period', 's')
+        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's')
 
         for d in self.active_devs:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
@@ -1034,19 +1135,29 @@ class logPlot:
             dtGps = dtGps / self.d
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:])
 
-            dtImu = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
-            dtImu = dtImu / self.d
+            integrationPeriod = self.getData(d, DID_PREINTEGRATED_IMU, 'dt')[1:]
 
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if np.size(towOffset) > 0:
                 towOffset = towOffset[-1]
             else:
                 towOffset = 0
-            timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)
+
+            deltaTimestamp = 0
+            timeImu = 0
+            if len(self.getData(d, DID_PREINTEGRATED_IMU, 'time')):
+                deltaTimestamp = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
+                deltaTimestamp = deltaTimestamp / self.d
+                timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)            
+            elif len(self.getData(d, DID_DUAL_IMU, 'time')):
+                deltaTimestamp = self.getData(d, DID_DUAL_IMU, 'time')[1:] - self.getData(d, DID_DUAL_IMU, 'time')[0:-1]
+                deltaTimestamp = deltaTimestamp / self.d
+                timeImu = getTimeFromTow(self.getData(d, DID_DUAL_IMU, 'time')[1:] + towOffset)
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
-            ax[2].plot(timeImu, dtImu)
+            ax[2].plot(timeImu, integrationPeriod)
+            ax[3].plot(timeImu, deltaTimestamp)
 
         self.setPlotYSpanMin(ax[0], 0.01)
         self.setPlotYSpanMin(ax[1], 0.01)
@@ -1452,11 +1563,11 @@ class logPlot:
         ax[3].set_title('Wheel Velocity - Right')
 
         for d in self.active_devs:
-            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            effAct_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
-            effAct_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
-            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
-            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+            time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
+            effAct_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+            effAct_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
 
             ax[0].plot(time, effAct_l)
             ax[1].plot(time, vel_l)
@@ -1481,11 +1592,11 @@ class logPlot:
             a.set_ylabel('effOut')
 
         for d in self.active_devs:
-            time = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'timeMs') * 0.001
-            eff_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_l')
-            eff_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'effDuty_r')
-            vel_l = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_l')
-            vel_r = self.getData(d, DID_EVB_LUNA_WHEEL_CONTROLLER, 'vel_r')
+            time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
+            eff_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
 
             actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
             actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
@@ -1544,6 +1655,21 @@ class logPlot:
             ax.plot(velLin, effEst, 'r')
 
             return c
+    def sensorCompGyrTemp(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'pqr', useTemp=True)
+
+    def sensorCompAccTemp(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'acc', useTemp=True)
+
+    def sensorCompMagTemp(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        self.sensorCompGen(fig, 'mag', useTemp=True)
+
     def sensorCompGyr(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1554,20 +1680,16 @@ class logPlot:
             fig = plt.figure()
         self.sensorCompGen(fig, 'acc')
 
-    def sensorCompGyrTime(self, fig=None):
+    def sensorCompMag(self, fig=None):
         if fig is None:
             fig = plt.figure()
+        self.sensorCompGen(fig, 'mag')
 
-        self.sensorCompGen(fig, 'pqr', useTime=True)
-
-    def sensorCompAccTime(self, fig=None):
-        if fig is None:
-            fig = plt.figure()
-        self.sensorCompGen(fig, 'acc', useTime=True)
-
-    def sensorCompGen(self, fig, name, useTime=False):
+    def sensorCompGen(self, fig, name, useTemp=False):
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         ax = fig.subplots(4, 2, sharex=True)
+
+        useSampleNumber = 1
 
         for i in range(2):
             ax[0, i].set_title('X %s %d' % (name, i))
@@ -1575,51 +1697,69 @@ class logPlot:
             ax[2, i].set_title('Z %s %d' % (name, i))
             ax[3, i].set_title('Magnitude %s %d' % (name, i))
             for d in range(3):
-                if useTime:
-                    ax[d,i].set_xlabel("Time (s)")
-                else:
+                if useTemp:
                     ax[d,i].set_xlabel("Temperature (C)")
+                else:
+                    if useSampleNumber:
+                        ax[d,i].set_xlabel("Sample")
+                    else:
+                        ax[d,i].set_xlabel("Time (s)")
                 if name=='pqr':
                     ax[d,i].set_ylabel("Gyro (deg/s)")
-                else:
+                elif name=='acc':
                     ax[d,i].set_ylabel("Accel (m/s^2)")
+                elif name=='mag':
+                    ax[d,i].set_ylabel("Mag")
 
         for d in self.active_devs:
             time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
             mpu = self.getData(d, DID_SCOMP, 'mpu')
             status = self.getData(d, DID_SCOMP, 'status')
 
+            if name=='mag':
+                refVal = self.getData(d, DID_SCOMP, 'referenceMag')
+            else:
+                refImu = self.getData(d, DID_SCOMP, 'referenceImu')
+                refImu = refImu
+                refVal = refImu[name]
+
             for i in range(2):
                 temp = mpu[:,i]['lpfLsb']['temp']
                 sensor = mpu[:,i]['lpfLsb'][name]
 
-                if name=='acc' and sensor[:,2][0] > 4:
-                    sensor[:,2] -= 19.6
-
                 if name=='pqr':
                     scalar = RAD2DEG
-                else:
+                    yspan = 2.5 # deg/s
+                else:   # 'acc'
                     scalar = 1.0
+                    yspan = 0.5 # m/s^2 
 
-                if useTime:
-                    temp = time
-
-                # ax[0,i].plot(temp, sensor[:,0], label=self.log.serials[d] if i==0 else None )
-                ax[0,i].plot(temp, sensor[:,0]*scalar, label=self.log.serials[d] )
-                ax[1,i].plot(temp, sensor[:,1]*scalar)
-                ax[2,i].plot(temp, sensor[:,2]*scalar)
-                if name=='acc':
-                    ax[3,i].plot(temp, np.linalg.norm(sensor, axis=1)*scalar)
-
-                if useTime:
-                    # Show sensor valid status bit
-                    if name=='acc':
-                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                if useTemp:
+                    x = temp
+                else:
+                    if useSampleNumber:
+                        x = np.arange(len(sensor[:,0]))
                     else:
-                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
-                    ax[0,i].plot(time, valid * np.max(sensor[:,0]), color='y')
-                    ax[1,i].plot(time, valid * np.max(sensor[:,1]), color='y')
-                    ax[2,i].plot(time, valid * np.max(sensor[:,2]), color='y')
+                        x = time
+
+                # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d] )
+                ax[1,i].plot(x, sensor[:,1]*scalar)
+                ax[2,i].plot(x, sensor[:,2]*scalar)
+                if name=='acc':
+                    ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
+
+                # Show sensor valid status bit
+                if name=='acc':
+                    valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                else:
+                    valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                ax[0,i].plot(x, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
+                ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
+                ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
+
+                for j in range(3):
+                    ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)

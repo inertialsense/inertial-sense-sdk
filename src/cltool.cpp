@@ -14,6 +14,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include "ISDataMappings.h"
 
+using namespace std;
+
+
 cmd_options_t g_commandLineOptions;
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
@@ -34,6 +37,7 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 		g_commandLineOptions.logPath, // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
 		cISLogger::ParseLogType(g_commandLineOptions.logType), // log type
 		g_commandLineOptions.rmcPreset, // Stream rmc preset
+        RMC_OPTIONS_PRESERVE_CTRL,
 		g_commandLineOptions.maxLogSpacePercent, // max space in percentage of free space to use, 0 for unlimited
 		g_commandLineOptions.maxLogFileSize, // each log file will be no larger than this in bytes
 		g_commandLineOptions.logSubFolder // log sub folder name
@@ -228,6 +232,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.evbFlashCfg = ".";
 		}
+        else if (startsWith(a, "-evbReset"))
+        {
+            g_commandLineOptions.softwareResetEvb = true;
+        }
 		else if (startsWith(a, "-factoryReset"))
 		{
 			g_commandLineOptions.factoryResetUins = true;

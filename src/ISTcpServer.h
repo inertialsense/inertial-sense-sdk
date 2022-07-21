@@ -17,8 +17,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <inttypes.h>
 #include <vector>
 
-using namespace std;
-
 #include "ISTcpClient.h"
 
 class cISTcpServer;
@@ -103,7 +101,7 @@ public:
 	* @param port the port to bind to
 	* @return 0 if success, otherwise an error code
 	*/
-	int Open(const string& ipAddress, int port);
+	int Open(const std::string& ipAddress, int port);
 
 	/**
 	* Close the server
@@ -134,7 +132,7 @@ public:
 	* Get ip address string
 	* @return string of ip address
 	*/
-	string IpAddress() { return m_ipAddress; }
+	std::string IpAddress() { return m_ipAddress; }
 
 	/**
 	* Get port number
@@ -146,8 +144,8 @@ private:
 	cISTcpServer(const cISTcpServer& copy); // Disable copy constructor
 
 	socket_t m_socket;
-	vector<socket_t> m_clients;
-	string m_ipAddress;
+	std::vector<socket_t> m_clients;
+	std::string m_ipAddress;
 	int32_t m_port;
 	iISTcpServerDelegate* m_delegate;
 };

@@ -55,8 +55,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
-#define DID_SENSORS_IS1                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Cross-axis aligned w/ scale factor */
-#define DID_SENSORS_IS2                 (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated */
+#define DID_SENSORS_IS1                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output.  Common scale factor applied to ADC output. */
+#define DID_SENSORS_IS2                 (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
 #define DID_IO                          (eDataIDs)27 /** (io_t) I/O */
 #define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
@@ -71,14 +71,14 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
-#define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
-#define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) */
+#define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) Calibrated IMU1 output.  Temperature compensated and motion calibrated. */
+#define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) Calibrated IMU2 output.  Temperature compensated and motion calibrated. */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_mem_t) */
 #define DID_CAL_SC1                     (eDataIDs)43 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_CAL_SC2                     (eDataIDs)44 /** INTERNAL USE ONLY (sensor_cal_mpu_t) */
 #define DID_SYS_SENSORS_SIGMA           (eDataIDs)45 /** INTERNAL USE ONLY (sys_sensors_t) */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
-#define DID_INS_DEV_1                   (eDataIDs)47 /** INTERNAL USE ONLY (ins_dev_1_t) */
+#define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) */
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
@@ -87,14 +87,13 @@ typedef uint32_t eDataIDs;
 #define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
 #define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF covariances matrix lower diagonals */
-//#define DID_MAGNETOMETER_2              (eDataIDs)55 /** (magnetometer_t) 2nd magnetometer sensor data */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
 #define DID_DUAL_IMU_RAW                (eDataIDs)57 /** (dual_imu_t) Dual inertial measurement unit data directly from IMU.  We recommend use of DID_DUAL_IMU or DID_PREINTEGRATED_IMU.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_DUAL_IMU                    (eDataIDs)58 /** (dual_imu_t) Dual inertial measurement unit data down-sampled from 1KHz to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GPS_RTK_OPT                 (eDataIDs)61 /** (gps_rtk_opt_t) RTK options - requires little endian CPU. */
-#define DID_NVR_USERPAGE_INTERNAL       (eDataIDs)62 /** (internal) Internal user page data */
+#define DID_REFERENCE_PIMU              (eDataIDs)62 /** (preintegrated_imu_t) Reference or truth IMU used for manufacturing calibration and testing */
 #define DID_MANUFACTURING_INFO          (eDataIDs)63 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
 #define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
@@ -127,7 +126,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS2_RTK_CMP_MISC           (eDataIDs)92 /** (gps_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
-#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Reference or truth IMU used for manufacturing calibration and testing */
+#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -155,7 +154,7 @@ typedef uint32_t eDataIDs;
 
 
 /** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
-// #define PROTOCOL_VERSION_CHAR0 1        // Major (in com_manager.h)
+// #define PROTOCOL_VERSION_CHAR0 1        // Major (in ISComm.h)
 // #define PROTOCOL_VERSION_CHAR1 0
 #define PROTOCOL_VERSION_CHAR2 (0x000000FF&DID_COUNT_UINS)
 #define PROTOCOL_VERSION_CHAR3 9         // Minor (in data_sets.h)
@@ -233,7 +232,7 @@ enum eInsStatusFlags
     INS_STATUS_RTK_COMPASSING_BASELINE_BAD      = (int)0x00200000,
     INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
     
-	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. */
+	/** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
 	INS_STATUS_MAG_RECALIBRATING				= (int)0x00400000,
 	/** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
 	INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL		= (int)0x00800000,
@@ -299,8 +298,8 @@ enum eHdwStatusFlags
 	HDW_STATUS_STROBE_IN_EVENT					= (int)0x00000020,
 	/** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
 	HDW_STATUS_GPS_TIME_OF_WEEK_VALID			= (int)0x00000040,
-
-	HDW_STATUS_UNUSED_1				            = (int)0x00000080,
+	/** Reference IMU data being received */
+	HDW_STATUS_REFERENCE_IMU_RX	                = (int)0x00000080,
 
 	/** Sensor saturation on gyro */
 	HDW_STATUS_SATURATION_GYR					= (int)0x00000100,
@@ -318,10 +317,12 @@ enum eHdwStatusFlags
 
 	/** System Reset is Required for proper function */
 	HDW_STATUS_SYSTEM_RESET_REQUIRED			= (int)0x00001000,
-
-	HDW_STATUS_UNUSED_3				            = (int)0x00002000,
-	HDW_STATUS_UNUSED_4				            = (int)0x00004000,
-	HDW_STATUS_UNUSED_5				            = (int)0x00008000,
+	/** Reference IMU used in EKF */
+	HDW_STATUS_EKF_USING_REFERENCE_IMU		    = (int)0x00002000,
+	/** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
+	HDW_STATUS_MAG_RECAL_COMPLETE	            = (int)0x00004000,
+	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+	HDW_STATUS_FLASH_WRITE_IN_PROGRESS          = (int)0x00008000,
 
 	/** Communications Tx buffer limited */
 	HDW_STATUS_ERR_COM_TX_LIMITED				= (int)0x00010000,
@@ -485,13 +486,13 @@ typedef struct PACKED
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
 {
-	/** Serial number */
+	/** Inertial Sense serial number */
 	uint32_t		serialNumber;
 
-	/** Lot number */
+	/** Inertial Sense lot number */
 	uint32_t		lotNumber;
 
-	/** Manufacturing date (YYYYMMDDHHMMSS) */
+	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
 	/** Key */
@@ -626,6 +627,9 @@ typedef struct PACKED
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
 
+	/** IMU Status (eImuStatus) */
+	uint32_t                status;
+
 	/** Inertial Measurement Unit (IMU) */
 	imus_t					I;
 } imu_t;
@@ -689,7 +693,7 @@ typedef struct PACKED
 } barometer_t;
 
 
-/** (DID_PREINTEGRATED_IMU) Coning and sculling integral in body/IMU frame. */
+/** (DID_PREINTEGRATED_IMU, DID_REFERENCE_PIMU) Coning and sculling integral in body/IMU frame. */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -802,9 +806,15 @@ typedef struct PACKED
 	/** GPS leap second (GPS-UTC) offset. Receiver's best knowledge of the leap seconds offset from UTC to GPS time. Subtract from GPS time of week to get UTC time of week. (18 seconds as of December 31, 2016) */
 	uint8_t					leapS;
 
+	/** Number of satellites used */
+	uint8_t					satsUsed;
+
+	/** Standard deviation of cnoMean over past 5 seconds (dBHz x10) */
+	uint8_t					cnoMeanSigma;
+
 	/** Reserved for future use */
-	uint8_t					reserved[3];
-	
+	uint8_t					reserved;
+
 } gps_pos_t;
 
 
@@ -814,7 +824,7 @@ typedef struct PACKED
     /** GPS time of week (since Sunday morning) in milliseconds */
     uint32_t                timeOfWeekMs;
 
-	/** If status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0, Speed in ECEF {vx,vy,vz} (m/s).  If status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA = 1, Speed in NED {vN, vE, 0} (m/s) */
+	/** GPS Velocity.  Velocity is in ECEF {vx,vy,vz} (m/s) if status bit GPS_STATUS_FLAGS_GPS_NMEA_DATA (0x00008000) is NOT set.  Velocity is in local tangent plane with no vertical velocity {vNorth, vEast, 0} (m/s) if status bit GPS_STATUS_FLAGS_GPS_NMEA_DATA (0x00008000) is set. */
 	float					vel[3];	
 
 	/** Speed accuracy in meters / second */
@@ -944,6 +954,7 @@ typedef struct PACKED
 
 } ros_covariance_pose_twist_t;
 
+// (DID_INL2_STATUS)
 typedef struct PACKED
 {
 	int						ahrs;
@@ -1099,7 +1110,9 @@ typedef struct PACKED
 	double					sensorTruePeriod;
 
 	/** Reserved */
-	float					reserved2[2];
+	float					reserved2;
+	/** Reserved */
+	float					reserved3;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
@@ -1262,18 +1275,30 @@ typedef struct PACKED
 
 /* (DID_SENSORS_CAL1, DID_SENSORS_CAL2) */
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
-	f_t						pqr[3];         // (rad/s)	Angular rate
-	f_t						acc[3];         // (m/s^2)	Linear acceleration
-	f_t						mag[3];         // (uT)		Magnetometers
-	f_t						temp;			// (°C)		Temperature of MPU
+{
+	/** (rad/s) Angular rate.  Units only apply for calibrated data. */
+	f_t						pqr[3];
+
+	/** (m/s^2) Linear acceleration.  Units only apply for calibrated data. */
+	f_t						acc[3];
+
+	/** (uT) Magnetometers.  Units only apply for calibrated data. */
+	f_t						mag[3];
+
+	/** (°C) Temperature of MPU.  Units only apply for calibrated data. */
+	f_t						temp;
 } sensors_mpu_w_temp_t;
 
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
-	f_t						pqr[3];         // (rad/s)	Gyros
-	f_t						acc[3];         // (m/s^2)	Accelerometers
-	f_t						mag[3];         // (uT)		Magnetometers
+{
+	/** (rad/s) Gyros.  Units only apply for calibrated data. */
+	f_t						pqr[3];
+
+	/** (m/s^2) Accelerometers.  Units only apply for calibrated data. */
+	f_t						acc[3];
+
+	/** (uT) Magnetometers.  Units only apply for calibrated data. */
+	f_t						mag[3];
 } sensors_mpu_t;
 
 // (DID_SENSORS_TC_BIAS)
@@ -1284,7 +1309,8 @@ typedef struct PACKED
 
 // (DID_SENSORS_IS1, DID_SENSORS_IS2)
 typedef struct PACKED
-{                                       // Units only apply for calibrated data
+{                                       
+	/** Units only apply for calibrated data */
 	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
 } sensors_w_temp_t;
 
@@ -1302,6 +1328,8 @@ typedef struct PACKED
 {                                       // Sensor temperature compensation
 	uint32_t                timeMs;         // (ms) Time since boot up.
 	sensor_comp_unit_t		mpu[NUM_IMU_DEVICES];
+	imus_t 					referenceImu;	// External reference IMU
+	float                   referenceMag[3];// External reference magnetometer (heading reference)
 	uint32_t                sampleCount;    // Number of samples collected
 	uint32_t                calState;       // State machine (see eScompCalState)
 	uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
@@ -1350,8 +1378,8 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-//                                      0x0000000000000100      //
-//                                      0x0000000000000200      //
+//                                      0x0000000000000100      // 
+//                                      0x0000000000000200      // 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1379,6 +1407,8 @@ typedef struct PACKED
 #define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
+#define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
+#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -1387,7 +1417,7 @@ typedef struct PACKED
 #define RMC_PRESET_INS_NAV_PERIOD_MULT	1   // fastest rate (nav filter update rate)
 
 // Preset: Post Processing Data
-#define RMC_PRESET_PPD_BITS_NO_IMU      (RMC_BITS_PRESET \
+#define RMC_PRESET_PPD_BITS_NO_IMU		(RMC_BITS_PRESET \
 										| RMC_BITS_INS2 \
 										| RMC_BITS_BAROMETER \
 										| RMC_BITS_MAGNETOMETER \
@@ -1402,20 +1432,23 @@ typedef struct PACKED
 										| RMC_BITS_GPS1_RTK_HDG_REL \
 										| RMC_BITS_INTERNAL_PPD \
 										| RMC_BITS_DIAGNOSTIC_MESSAGE)
-#define RMC_PRESET_PPD_BITS             (RMC_PRESET_PPD_BITS_NO_IMU \
-										| RMC_BITS_PREINTEGRATED_IMU)
-#define RMC_PRESET_INS_BITS             (RMC_BITS_INS2 \
+#define RMC_PRESET_PPD_BITS				(RMC_PRESET_PPD_BITS_NO_IMU \
+										| RMC_BITS_PREINTEGRATED_IMU \
+										| RMC_BITS_REFERENCE_PIMU)
+#define RMC_PRESET_INS_BITS				(RMC_BITS_INS2 \
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_PRESET)
-#define RMC_PRESET_PPD_BITS_RAW_IMU     (RMC_PRESET_PPD_BITS_NO_IMU \
+#define RMC_PRESET_PPD_BITS_RAW_IMU		(RMC_PRESET_PPD_BITS_NO_IMU \
 										| RMC_BITS_DUAL_IMU_RAW)
-#define RMC_PRESET_PPD_BITS_RTK_DBG     (RMC_PRESET_PPD_BITS \
+#define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_RTK_STATE \
 										| RMC_BITS_RTK_CODE_RESIDUAL \
 										| RMC_BITS_RTK_PHASE_RESIDUAL)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_WHEEL_ENCODER \
 										| RMC_BITS_GROUND_VEHICLE)
+#define RMC_PRESET_ALLAN_VARIANCE		(RMC_BITS_PRESET \
+										| RMC_BITS_DUAL_IMU)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -1440,19 +1473,31 @@ typedef struct PACKED
 	uint32_t				gpioStatus;
 } io_t;
 
-enum eMagRecalMode
+enum eMagCalState
 {
-	MAG_RECAL_CMD_DO_NOTHING		= (int)0, 
-	MAG_RECAL_CMD_MULTI_AXIS		= (int)1,		// Recalibrate magnetometers using multiple axis
-	MAG_RECAL_CMD_SINGLE_AXIS		= (int)2,		// Recalibrate magnetometers using only one axis
-	MAG_RECAL_CMD_ABORT				= (int)101,		// Stop mag recalibration
+	MAG_CAL_STATE_DO_NOTHING		= (int)0, 
+
+	/** COMMAND: Recalibrate magnetometers using multiple axis */
+	MAG_CAL_STATE_MULTI_AXIS		= (int)1,
+
+	/** COMMAND: Recalibrate magnetometers using only one axis */
+	MAG_CAL_STATE_SINGLE_AXIS		= (int)2,
+
+	/** COMMAND: Stop mag recalibration and do not save results */
+	MAG_CAL_STATE_ABORT				= (int)101,
+
+	/** STATUS: Mag recalibration is in progress */
+	MAG_CAL_STATE_RECAL_RUNNING	= (int)200,
+
+	/** STATUS: Mag recalibration has completed */
+	MAG_CAL_STATE_RECAL_COMPLETE	= (int)201,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
 typedef struct PACKED
 {
-	/** Set mode and start recalibration. 1 = multi-axis, 2 = single-axis, 101 = abort. (see eMagRecalMode) */
-	uint32_t                recalCmd;
+	/** Mag recalibration state.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState) */
+	uint32_t                state;
 	
 	/** Mag recalibration progress indicator: 0-100 % */
 	float					progress;
@@ -1461,27 +1506,59 @@ typedef struct PACKED
 	float					declination;
 } mag_cal_t;
 
+// (DID_INL2_MAG_OBS_INFO)
 typedef struct PACKED
 {											// INL2 - Magnetometer observer info 
-	uint32_t				timeOfWeekMs;	// Timestamp in milliseconds
+	/** Timestamp in milliseconds */
+	uint32_t				timeOfWeekMs;	
+
+	/** Number of calibration samples */
 	uint32_t				Ncal_samples;
-	uint32_t				ready;			// Data ready to be processed
-	uint32_t				calibrated;		// Calibration data present.  Set to -1 to force mag recalibration.
-	uint32_t				auto_recal;		// Allow mag to auto-recalibrate
-	uint32_t				outlier;		// Bad sample data
-	float					magHdg;			// Heading from magnetometer
-	float					insHdg;			// Heading from INS
-	float					magInsHdgDelta;	// Difference between mag heading and (INS heading plus mag declination)
-	float					nis;			// Normalized innovation squared (likelihood metric)
-	float					nis_threshold;	// Threshold for maximum NIS
-	float					Wcal[9];		// Magnetometer calibration matrix. Must be initialized with a unit matrix, not zeros!
-	uint32_t				activeCalSet;	// active calibration set (0 or 1)
-	float					magHdgOffset;	// Offset between magnetometer heading and estimate heading
-    float                   Tcal;           // Scaled computed variance between calibrated magnetometer samples. 
-	float                   bias_cal[3];    // Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal)
+
+	/** Data ready to be processed */
+	uint32_t				ready;
+
+	/** Calibration data present.  Set to -1 to force mag recalibration. */	
+	uint32_t				calibrated;
+
+	/** Allow mag to auto-recalibrate */
+	uint32_t				auto_recal;
+
+	/** Bad sample data */		
+	uint32_t				outlier;
+
+	/** Heading from magnetometer */
+	float					magHdg;
+
+	/** Heading from INS */			
+	float					insHdg;
+
+	/** Difference between mag heading and (INS heading plus mag declination) */
+	float					magInsHdgDelta;
+
+	/** Normalized innovation squared (likelihood metric) */
+	float					nis;
+
+	/** Threshold for maximum NIS */
+	float					nis_threshold;
+
+	/** Magnetometer calibration matrix. Must be initialized with a unit matrix, not zeros! */
+	float					Wcal[9];
+
+	/** Active calibration set (0 or 1) */
+	uint32_t				activeCalSet;
+
+	/** Offset between magnetometer heading and estimate heading */
+	float					magHdgOffset;
+
+	/** Scaled computed variance between calibrated magnetometer samples.  */
+    float                   Tcal;
+
+	/** Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal) */
+	float                   bias_cal[3];
 } inl2_mag_obs_info_t;
 
-/** Built-in test state */
+/** Built-in Test: State */
 enum eBitState
 {
 	BIT_STATE_OFF					                    = (int)0,
@@ -1493,6 +1570,12 @@ enum eBitState
     BIT_STATE_RUNNING                                   = (int)6,   
     BIT_STATE_FINISHING                                 = (int)7,	// Computing results
     BIT_STATE_CMD_OFF                                   = (int)8,   // Stop built-in test
+};
+
+/** Built-in Test: Test Mode */
+enum eBitTestMode
+{
+    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100, // Simulate CNO noise
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -1582,7 +1665,10 @@ typedef struct PACKED
 
 	/** Acceleration standard deviation */
 	float                   accSigma;
-	
+
+	/** Self-test mode (see eBitTestMode) */
+	uint32_t                testMode;
+
 } bit_t;
 
 
@@ -1599,17 +1685,18 @@ enum eInfieldCalState
     INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_IMU            = 5,    // Zero gyro and accel biases.  Zero (level) INS attitude by adjusting INS rotation. 
     INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_GYRO           = 6,    // Zero only gyro  biases.  Zero (level) INS attitude by adjusting INS rotation. 
     INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_ACCEL          = 7,    // Zero only accel biases.  Zero (level) INS attitude by adjusting INS rotation.
-    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT     = 0x00010000,	// Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_REQUIRE_VERTIAL   = 0x00020000,	// Bitwise AND this with the above init commands to disable vertical alignment requirement for accelerometer bias calibration (allow for more tolerant sampling).
 
     /** Sample and End Commands: */
     INFIELD_CAL_STATE_CMD_START_SAMPLE                  = 8,	// Initiate 5 second sensor sampling and averaging.  Run for each orientation and 180 degree yaw rotation.
     INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH               = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
     
     /** Status: (read only) */
-    INFIELD_CAL_STATE_INITIALIZED_READY_FOR_SAMPLING    = 50,   // Initialized and waiting for user to intiate.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_READY_FOR_SAMPLING                = 50,   // System has been initialized and is waiting for user to intiate sampling.  User must send a command to exit this state.
     INFIELD_CAL_STATE_SAMPLING                          = 51,   // System is averaging the IMU data.  Minimize all motion and vibration.
     INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                = 52,   // Follow up calibration zero with BIT and copy out IMU biases.
-    INFIELD_CAL_STATE_FINISHED                          = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases. 
+    INFIELD_CAL_STATE_SAVED_AND_FINISHED                = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases.  Updates are saved to flash. 
 
     /** Error Status: (read only) */
     INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED             = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set. 
@@ -1648,6 +1735,7 @@ enum eInfieldCalStatus
 	INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT            = 0x00800000,	// Require no motion during sampling. 
 	INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK              = 0x00F00000,
 	INFIELD_CAL_STATUS_ENABLED_BIT                      = 0x01000000,	// Used for BIT 
+	INFIELD_CAL_STATUS_DISABLED_REQUIRE_VERTICAL        = 0x02000000,	// Do not require vertical alignment for accelerometer calibration. 
 
 	INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                = 0x10000000,	// Axis is not aligned vertically and cannot be used for zero accel sampling.  
 	INFIELD_CAL_STATUS_MOTION_DETECTED                  = 0x20000000,	// System is not stationary and cannot be used for infield calibration.
@@ -1707,7 +1795,7 @@ enum eSysConfigBits
 	/*! Disable LEDs */
 	SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
 
-	/** Magnetometer recalibration.  (see eMagRecalMode) 1 = multi-axis, 2 = single-axis */
+	/** Magnetometer recalibration.  (see eMagCalState) 1 = multi-axis, 2 = single-axis */
 	SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
 	SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
@@ -1734,9 +1822,13 @@ enum eSysConfigBits
 	SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
 	/** Disable packet encoding, binary data will have all bytes as is */
 	SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
+
+	/** Use reference IMU in EKF instead of onboard IMU */
+	SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+
 };
 
-/** GNSS satellite system signal constellation (used with DID_FLASH_CONFIG.gnssSatSigConst) */
+/** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
 	/*! GPS  */
@@ -1762,7 +1854,7 @@ enum eGnssSatSigConst
 		GNSS_SAT_SIG_CONST_BDS
 };
 
-/** RTK Configuration */
+/** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
 enum eRTKConfigBits
 {
 	/** Enable onboard RTK GNSS precision positioning (GPS1) */
@@ -1907,8 +1999,7 @@ enum eRTKConfigBits
 	RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),	
 };
 
-
-/** Sensor Configuration */
+/** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
 	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */	
@@ -1981,7 +2072,7 @@ enum eSensorConfig
 };
 
 
-/** IO configuration (used with DID_FLASH_CONFIG.ioConfig) */
+/** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
 enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */
@@ -2063,6 +2154,11 @@ enum eIoConfig
 	/** GPS 2 type OFFSET */
 	IO_CONFIG_GPS2_TYPE_OFFSET					= (int)25,
 
+	/** GPS 1 skip initialization */
+	IO_CONFIG_GPS1_NO_INIT 						= (int)0x01000000,		// bit 24 of 0-31
+	/** GPS 2 skip initialization */
+	IO_CONFIG_GPS2_NO_INIT 						= (int)0x08000000,		// bit 27 of 0-31
+
 	/** GPS source MASK */
 	IO_CONFIG_GPS_SOURCE_MASK					= (int)0x00000007,
 	/** GPS source - Disable */
@@ -2081,7 +2177,7 @@ enum eIoConfig
 	IO_CONFIG_GPS_SOURCE_LAST					= IO_CONFIG_GPS_SOURCE_SER2,	// set to last source
 
 	/** GPS type MASK */
-	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000007,
+	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000003,
 	/** GPS type - ublox M8 */
 	IO_CONFIG_GPS_TYPE_UBX_M8					= (int)0,
 	/** GPS type - ublox ZED-F9P w/ RTK */
@@ -2089,7 +2185,7 @@ enum eIoConfig
 	/** GPS type - NMEA */
 	IO_CONFIG_GPS_TYPE_NMEA						= (int)2,
 	/** GPS type - last type */
-	IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
+    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
@@ -2142,6 +2238,7 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,
+	WHEEL_CFG_BITS_ENCODER_SOURCE			= (int)0x00000400,	// 0 = uINS, 1 = EVB
 };
 
 typedef enum
@@ -2225,15 +2322,15 @@ typedef struct PACKED
 
 typedef enum
 {
-    DYN_PORTABLE = 0,
-    DYN_STATIONARY = 2,
-    DYN_PEDESTRIAN = 3,
-    DYN_GROUND_VEHICLE = 4,
-    DYN_MARINE = 5,
-    DYN_AIRBORNE_1G = 6,
-    DYN_AIRBORNE_2G = 7,
-    DYN_AIRBORNE_4G = 8,
-    DYN_WRIST = 9
+    INS_DYN_MODEL_PORTABLE       	= 0,
+    INS_DYN_MODEL_STATIONARY        = 2,
+    INS_DYN_MODEL_PEDESTRIAN        = 3,
+    INS_DYN_MODEL_GROUND_VEHICLE    = 4,
+    INS_DYN_MODEL_MARINE            = 5,
+    INS_DYN_MODEL_AIRBORNE_1G       = 6,
+    INS_DYN_MODEL_AIRBORNE_2G       = 7,
+    INS_DYN_MODEL_AIRBORNE_4G       = 8,
+    INS_DYN_MODEL_WRIST             = 9
 } eInsDynModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
@@ -2275,8 +2372,8 @@ typedef struct PACKED
     /** INS dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t					insDynModel;
 
-	/** Reserved */
-	uint8_t					reserved;
+	/** Debug */
+	uint8_t					debug;
 
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t				gnssSatSigConst;
@@ -3299,6 +3396,9 @@ typedef enum
     /** XBee: failed to configure */
     EVB_STATUS_XBEE_CONFIG_FAILURE          = 0x00800000,
 
+	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+    EVB_STATUS_FLASH_WRITE_IN_PROGRESS      = 0x01000000,
+
 } eEvbStatus;
 
 /** EVB-2 communications ports. */
@@ -3365,6 +3465,9 @@ typedef struct
     /** System command (see eSystemCommand).  99 = software reset */
     uint32_t                sysCommand;
 
+	/** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
+	double                  towOffset;
+
 } evb_status_t;
 
 #define WIFI_SSID_PSK_SIZE      40
@@ -3399,7 +3502,8 @@ typedef enum
     EVB_CFG_BITS_SERVER_SELECT_MASK             = 0x0000000C,
     EVB_CFG_BITS_SERVER_SELECT_OFFSET           = 2,
     EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,		// Don't enable PPD stream when log button is pressed
-    EVB_CFG_BITS_ENABLE_ADC                     = 0x00000200,
+    EVB_CFG_BITS_ENABLE_ADC4                    = 0x00000200,
+	EVB_CFG_BITS_ENABLE_ADC10					= 0x00000400,
 } eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3
@@ -3486,7 +3590,7 @@ typedef struct
 	uint32_t                wheelCfgBits;
 
 	/** Wheel update period.  Sets the wheel encoder and control update period. (ms) */
-	uint32_t				wheelStepPeriodMs;
+	uint32_t				velocityControlPeriodMs;
 
 } evb_flash_cfg_t;
 
@@ -3868,7 +3972,7 @@ typedef union PACKED
 	infield_cal_t			infieldCal;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
-	evb_luna_wheel_controller_t     wheelController;
+	evb_luna_velocity_control_t     wheelController;
 #endif
 } uDatasets;
 

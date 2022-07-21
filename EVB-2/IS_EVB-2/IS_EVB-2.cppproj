@@ -505,7 +505,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800082852</avrtoolserialnumber>
+    <avrtoolserialnumber>J42700051025</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020C01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -540,7 +540,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800082852</ToolNumber>
+      <ToolNumber>J42700051025</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <com_atmel_avrdbg_tool_samice>
@@ -872,6 +872,12 @@
     </PreBuildEvent>
     <OutputFileName>IS_EVB-2</OutputFileName>
     <OutputFileExtension>.elf</OutputFileExtension>
+    <UsesExternalMakeFile>True</UsesExternalMakeFile>
+    <OutputDirectory>$(MSBuildProjectDirectory)\..</OutputDirectory>
+    <BuildTarget>all -j8</BuildTarget>
+    <CleanTarget>clean</CleanTarget>
+    <ExternalMakeFilePath>..\Makefile</ExternalMakeFilePath>
+    <PostBuildEvent>echo f | xcopy .\Release\IS_EVB-2.elf .\IS_EVB-2.elf /y</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <ToolchainSettings>
@@ -1193,6 +1199,12 @@
     </ToolchainSettings>
     <PreBuildEvent>
     </PreBuildEvent>
+    <UsesExternalMakeFile>True</UsesExternalMakeFile>
+    <OutputDirectory>$(MSBuildProjectDirectory)\..</OutputDirectory>
+    <BuildTarget>all -j8 DEBUG=GDB</BuildTarget>
+    <CleanTarget>clean DEBUG=GDB</CleanTarget>
+    <ExternalMakeFilePath>..\Makefile</ExternalMakeFilePath>
+    <PostBuildEvent>echo f | xcopy .\Debug\IS_EVB-2.elf .\IS_EVB-2.elf /y</PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="src\" />
@@ -1443,6 +1455,10 @@
     <Compile Include="..\..\src\DataChunk.cpp">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\DataChunk.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\src\filters.cpp">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\filters.cpp</Link>
     </Compile>
     <Compile Include="..\..\src\ISDataMappings.h">
       <SubType>compile</SubType>

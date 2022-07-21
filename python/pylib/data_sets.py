@@ -50,7 +50,7 @@ DID_CAL_SC1                     = 43
 DID_CAL_SC2                     = 44
 DID_SYS_SENSORS_SIGMA           = 45
 DID_SENSORS_ADC_SIGMA           = 46
-DID_INS_DEV_1                   = 47
+DID_REFERENCE_MAGNETOMETER      = 47
 DID_INL2_STATES                 = 48
 DID_INL2_COVARIANCE_LD          = 49
 DID_INL2_STATUS                 = 50
@@ -65,7 +65,7 @@ DID_DUAL_IMU                    = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
 DID_GPS_RTK_OPT                 = 61
-DID_NVR_USERPAGE_INTERNAL       = 62
+DID_REFERENCE_PIMU              = 62
 DID_MANUFACTURING_INFO          = 63
 DID_BIT                         = 64
 DID_INS_3                       = 65
@@ -99,7 +99,7 @@ DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
 DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
-DID_EVB_LUNA_WHEEL_CONTROLLER   = 114
+DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
 NUM_DIDS                        = 120
 # NUM_DIDS                        = 96
@@ -155,7 +155,6 @@ did_name_lookup = {
  DID_CAL_SC2 : "calSc2",
  DID_SYS_SENSORS_SIGMA : "sysSensorsSigma",
  DID_SENSORS_ADC_SIGMA : "sensorsAdcSigma",
- DID_INS_DEV_1 : "insDev1",
  DID_INL2_STATES : "inl2States",
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",
  DID_INL2_STATUS : "inl2Status",
@@ -169,7 +168,6 @@ did_name_lookup = {
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
  DID_GPS_RTK_OPT : "gpsRtkOpt",
- DID_NVR_USERPAGE_INTERNAL : "nvrUserpageInternal",
  DID_MANUFACTURING_INFO : "manufacturingInfo",
  DID_BIT : "bit",
  DID_INS_3 : "ins3",
@@ -196,7 +194,9 @@ did_name_lookup = {
  DID_CAN_CONFIG : "canconfig",
  DID_EVB_DEV_INFO : "evbDevInfo",
  DID_REFERENCE_IMU : "referenceImu",
- DID_EVB_LUNA_WHEEL_CONTROLLER : "evbWheelController",
+ DID_REFERENCE_PIMU : "referencePImu",
+ DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
+ DID_EVB_LUNA_VELOCITY_CONTROL : "evbVelocityControl",
 }
 
 class eGpsNavFixStatus(Enum):
@@ -295,3 +295,6 @@ class eConfigSystem(IntEnum):
     CFG_SYS_CMD_CLEAR_GPS_ASSIST_FROM_FLASH         = 97
     CFG_SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98
     CFG_SYS_CMD_SOFTWARE_RESET                      = 99
+
+class eSysConfigBits(Enum):
+	SYS_CFG_USE_REFERENCE_IMU_IN_EKF = 0x01000000

@@ -27,7 +27,10 @@ bool                        g_statusToWlocal = true;
 evb_flash_cfg_t*            g_flashCfg;
 nvr_manage_t                g_nvr_manage_config;
 nvm_config_t                g_userPage = {0};
-evb_msg_t                   g_msg = {0};
+uins_msg_t                  g_uins = {0};
+imu_t                       g_imu = {0};
+uint32_t                    g_insUpdateTimeMs = 0;
+uint32_t                    g_imuUpdateTimeMs = 0;
 debug_array_t               g_debug = {0};
 evb_rtos_info_t             g_rtos = {0};
 date_time_t                 g_gps_date_time = {0};
@@ -35,6 +38,8 @@ date_time_t                 g_gps_date_time = {0};
 //uint32					g_can_receive_address = 0;
 bool                        g_gpsTimeSync = false;
 uint32_t                    g_comm_time_ms = 0;
+double                      g_comm_time = 0;
+double                      g_towOffset = 0;
 bool                        g_loggerEnabled = false;
 uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
@@ -336,8 +341,8 @@ bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 	if (!valid)    
     {   // Reset to defaults
         *cfg = defaults;
-        g_nvr_manage_config.flash_write_needed = true;
-		g_nvr_manage_config.flash_write_enable = true;
+        nvr_flash_config_write_needed();
+        nvr_flash_config_write_enable(true);
     }   
     
     // Disable cbPresets is necessary
@@ -364,20 +369,29 @@ void nvr_init(void)
     memcpy(&g_userPage, (void*)BOOTLOADER_FLASH_CONFIG_BASE_ADDRESS, sizeof(g_userPage));
 
     // Disable flash writes.  We require the user to initiate each write with this option.
-    g_nvr_manage_config.flash_write_enable = 0;
+    g_nvr_manage_config.flash_write_enable_timeMs = 0;
+    g_status.evbStatus &= ~EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
 
     // Reset to defaults if checksum or keys don't match
     nvr_validate_config_integrity(g_flashCfg);    
 }
 
 
-void nvr_slow_maintenance(void)
+bool nvr_slow_maintenance(void)
 {
-    if(g_nvr_manage_config.flash_write_enable==0)
+    if (g_nvr_manage_config.flash_write_enable_timeMs==0)
     {
-        return;
+        return false;
     }
+
+	uint32_t dtMs = time_msec() - g_nvr_manage_config.flash_write_enable_timeMs;
+	if (dtMs < 1000)
+	{	// Wait 1 second following flash_write_enable_timeMs
+		return false;
+	}
     
+    bool flash_write = false;
+
     if (g_nvr_manage_config.flash_write_needed)
     {
         // Ensure flash config isn't larger than block
@@ -448,10 +462,38 @@ void nvr_slow_maintenance(void)
 
 #endif
 
+		g_nvr_manage_config.flash_write_count++;
         g_nvr_manage_config.flash_write_needed = 0;
         // Disable following each flash write.  We require users to re-enable for each write.
-        g_nvr_manage_config.flash_write_enable = 0;
+        g_nvr_manage_config.flash_write_enable_timeMs = 0;
+        g_status.evbStatus &= ~EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
+    	flash_write = false;
     }    
+
+    return flash_write;
+}
+
+
+void nvr_flash_config_write_needed(void)
+{
+	g_nvr_manage_config.flash_write_needed++;
+}
+
+
+// Used to enabled flash writes at controlled times.  The system may identify when a flash write is needed. 
+// However, this will not occur until flash is enabled (at time EKF can tolerate stutters in RTOS update).
+void nvr_flash_config_write_enable(bool enable)
+{
+    if (enable)
+    {
+        g_nvr_manage_config.flash_write_enable_timeMs = time_msec();
+        g_status.evbStatus |= EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
+    }
+    else
+    {
+        g_nvr_manage_config.flash_write_enable_timeMs = 0;
+        g_status.evbStatus &= ~EVB_STATUS_FLASH_WRITE_IN_PROGRESS;
+    }
 }
 
 
@@ -516,7 +558,7 @@ void reset_config_defaults( evb_flash_cfg_t *cfg )
 	cfg->encoderTickToWheelRad = 0.108329996f;	// Husqvarna lawnmower
 	// cfg->encoderTickToWheelRad = 0.00523598775598298873f;	// = 2 Pi / (400 count encoder x 3 gear ratio), (ZT mower)
 	
-    cfg->wheelStepPeriodMs = 50;    // 20 Hz
+    cfg->velocityControlPeriodMs = 50;    // 20 Hz
 
 	com_bridge_apply_preset(cfg);
 	

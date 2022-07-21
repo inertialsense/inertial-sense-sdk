@@ -15,6 +15,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISClient.h"
 
+using namespace std;
+
 // connectionString usage:
 // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
 // [TCP]:[RTCM3]:[ip/url]:[port]:[mountpoint]:[username]:[password]

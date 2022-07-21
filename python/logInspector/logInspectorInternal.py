@@ -77,6 +77,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createButtonColumn(self):
         super(logInspectorInternal, self).createButtonColumn()
+        self.addButton('Allan Var. PQR', lambda: self.plot('allanVariancePQR'))
+        self.addButton('Allan Var. Accel', lambda: self.plot('allanVarianceAcc'))
         self.addButton('Debug Int', lambda: self.plot('debugiArr'))
         self.addButton('Debug Float', lambda: self.plot('debugfArr'))
         self.addButton('Debug Double', lambda: self.plot('debuglfArr'))
@@ -97,10 +99,12 @@ class logInspectorInternal(LogInspectorWindow):
         self.addButton('Whl Ctrl Time', lambda: self.plot('wheelControllerTime'))
         self.addButton('Whl Ctrl Vel', lambda: self.plot('wheelControllerVel'))
         self.addButton('GPS Raw Time', lambda: self.plot('gpsRawTime'))
-        self.addButton('Sensor Comp Gyr', lambda: self.plot('sensorCompGyr'))
-        self.addButton('Sensor Comp Acc', lambda: self.plot('sensorCompAcc'))
-        self.addButton('Snsr Comp Gyr Time', lambda: self.plot('sensorCompGyrTime'))
-        self.addButton('Snsr Comp Acc Time', lambda: self.plot('sensorCompAccTime'))
+        self.addButton('SComp Gyr Temp', lambda: self.plot('sensorCompGyrTemp'))
+        self.addButton('SComp Acc Temp', lambda: self.plot('sensorCompAccTemp'))
+        self.addButton('SComp Mag Temp', lambda: self.plot('sensorCompMagTemp'))
+        self.addButton('SComp Gyr', lambda: self.plot('sensorCompGyr'))
+        self.addButton('SComp Acc', lambda: self.plot('sensorCompAcc'))
+        self.addButton('SComp Mag', lambda: self.plot('sensorCompMag'))
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
     def createBottomToolbar(self):
@@ -143,6 +147,9 @@ class logInspectorInternal(LogInspectorWindow):
         self.controlLayout.addLayout(self.devicesLayout)
 
 if __name__ == '__main__':
+    if sys.version[0] != '3':
+        raise Exception("You must use Python 3. The current version is " + sys.version)
+
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
 

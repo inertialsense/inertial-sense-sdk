@@ -63,8 +63,8 @@ static void on_cfg_button_release()
 
     com_bridge_apply_preset(g_flashCfg);
     board_IO_config();
-    g_nvr_manage_config.flash_write_needed = true;
-	g_nvr_manage_config.flash_write_enable = true;
+    nvr_flash_config_write_needed();
+    nvr_flash_config_write_enable(true);
 	evbUiRefreshLedCfg();
 }
 

@@ -52,15 +52,20 @@ typedef struct
 
 typedef struct
 {
-    dev_info_t      uInsInfo;
-    ins_2_t         ins2;
-}evb_msg_t;
+    dev_info_t              uInsInfo;
+    ins_1_t                 ins1;
+    ins_2_t                 ins2;
+    inl2_states_t           inl2States;
+    preintegrated_imu_t     pImu;
+    nvm_flash_cfg_t         flashCfg;
+	bool					refLlaValid;
+} uins_msg_t;
 
 typedef struct PACKED      // Non-volatile memory state
 {
-    uint32_t                flash_write_needed;					// 0=No write; 1=config write needed; 2=config write needed without backup 0xFFFFFFFF=reset defaults
+    uint32_t                flash_write_needed;                 // 0=No write; 1=config write needed; 2=config write needed without backup 0xFFFFFFFF=reset defaults
     uint32_t                flash_write_count;                  // Number of times flash is written to since reset
-    uint32_t                flash_write_enable;				    // 1 = enables flash writes.  This is used to prevent stutters in RTOS caused by flash writes until controlled times.
+    uint32_t                flash_write_enable_timeMs;          // Local time when enabled.  Flash will happen 1-2 seconds after this enable time.  Reset to zero following flash write.
 } nvr_manage_t;
 
 typedef struct PACKED      // 
@@ -105,7 +110,10 @@ extern bool                         g_statusToWlocal;
 extern evb_flash_cfg_t*             g_flashCfg;
 extern nvr_manage_t                 g_nvr_manage_config;
 extern nvm_config_t                 g_userPage;
-extern evb_msg_t                    g_msg;
+extern uins_msg_t                   g_uins;
+extern imu_t                        g_imu;
+extern uint32_t                     g_insUpdateTimeMs;
+extern uint32_t                     g_imuUpdateTimeMs;
 extern debug_array_t                g_debug;
 extern evb_rtos_info_t              g_rtos;
 extern date_time_t                  g_gps_date_time;
@@ -113,6 +121,8 @@ extern date_time_t                  g_gps_date_time;
 //extern uint32_t					g_can_receive_address;
 extern bool                         g_gpsTimeSync;
 extern uint32_t                     g_comm_time_ms;
+extern double                       g_comm_time;
+extern double                       g_towOffset;
 extern bool                         g_loggerEnabled;
 extern uint32_t                     g_uInsBootloaderEnableTimeMs;
 extern bool                         g_enRtosStats;
@@ -129,7 +139,9 @@ void concatStringWithSpace(char* buf, size_t bufLen, const char* concat);
 
 bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg);
 void nvr_init(void);
-void nvr_slow_maintenance(void);
+bool nvr_slow_maintenance(void);
+void nvr_flash_config_write_needed(void);
+void nvr_flash_config_write_enable(bool enable);
 
 int error_check_config(evb_flash_cfg_t *cfg);
 
