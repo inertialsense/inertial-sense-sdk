@@ -73,9 +73,9 @@ is_device_context* is_create_context(
     ctx->success = false;
     ctx->update_progress = 0.0;
     ctx->verify_progress = 0.0;
+    ctx->use_progress = false;
     ctx->update_in_progress = true;
     ctx->retries_left = 3;
-    ctx->step_update_in_progress = false;
     ctx->device_type = IS_DEV_TYPE_NONE;
 
     serialPortPlatformInit(&ctx->handle.port);
@@ -365,7 +365,7 @@ void is_update_flash(void* context)
     if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
         ctx->info_callback(ctx, "The image is incompatible with this device", IS_LOG_LEVEL_ERROR);
-        ctx->step_update_in_progress = false;       // Allow retries with step_"
+        ctx->update_in_progress = false;      
         return;
     }
 
@@ -413,18 +413,18 @@ void is_update_flash(void* context)
     {
         if(ctx->device_type == IS_DEV_TYPE_DFU)
         {   /** DFU MODE */
+            ctx->use_progress = true;
             if(is_dfu_flash(ctx) == IS_OP_OK) ctx->update_in_progress = false;
-            else { ctx->step_update_in_progress = false; return; }
         }
     }
     else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
     {
         if(ctx->device_type == IS_DEV_TYPE_SAMBA)
         {   /** SAM-BA MODE */
-            if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
+            if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K))
             {
+                ctx->use_progress = true;
                 if(is_samba_flash(ctx) == IS_OP_OK) ctx->update_in_progress = false;
-                else { ctx->step_update_in_progress = false; return; }
             }
         }
         else if(ctx->device_type == IS_DEV_TYPE_ISB)
@@ -433,26 +433,27 @@ void is_update_flash(void* context)
             if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
             {
                 is_isb_restart_rom(&ctx->handle.port);
-                ctx->step_update_in_progress = false;
+                ctx->update_in_progress = false;
                 return;
             }
             else
             {
+                ctx->use_progress = true;
                 if(is_isb_flash(ctx) == IS_OP_OK) ctx->update_in_progress = false;
-                else { ctx->step_update_in_progress = false; return; }
+                else { ctx->update_in_progress = false; return; }
             }
         }
         else if(ctx->device_type == IS_DEV_TYPE_APP)
         {
             ctx->info_callback(ctx, "Found device in application mode", IS_LOG_LEVEL_INFO);
             is_isb_enable(ctx, ctx->props.isb.enable_command);
-            ctx->step_update_in_progress = false;
+            ctx->update_in_progress = false;
             return;
         }
         else
         {
             ctx->info_callback(ctx, "Invalid device", IS_LOG_LEVEL_INFO);
-            ctx->step_update_in_progress = false;
+            ctx->update_in_progress = false;
             return;
         }
     }
@@ -472,9 +473,9 @@ void is_update_finish(void* context)
     {
         if(ctx->device_type == IS_DEV_TYPE_DFU)
         {   /** DFU MODE */
-            is_dfu_write_option_bytes(ctx->handle.libusb);
-            libusb_release_interface(ctx->handle.libusb, 0);
-            libusb_close(ctx->handle.libusb);
+            is_dfu_write_option_bytes(ctx->handle.dfu.handle_libusb);
+            libusb_release_interface(ctx->handle.dfu.handle_libusb, 0);
+            libusb_close(ctx->handle.dfu.handle_libusb);
         }
     }
     else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)

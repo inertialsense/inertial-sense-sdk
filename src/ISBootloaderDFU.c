@@ -114,9 +114,6 @@ is_operation_result is_dfu_list_devices(is_dfu_list* list)
     struct libusb_config_descriptor* cfg;
     int ret_libusb;
 
-    ret_libusb = libusb_init(NULL);
-    if(ret_libusb < 0) return IS_OP_ERROR;
-
     size_t device_count = libusb_get_device_list(NULL, &device_list);
 
     for (size_t i = 0; i < device_count; ++i) {
@@ -159,21 +156,20 @@ is_operation_result is_dfu_list_devices(is_dfu_list* list)
         strncpy(list->id[list->present].uid, (char*)uid, IS_DFU_UID_MAX_SIZE);
         list->id[list->present].vid = desc.idVendor;
         list->id[list->present].pid = desc.idProduct;
+        list->id[list->present].handle_libusb = dev_handle;
 
         list->present++;
         if(list->present >= IS_DFU_LIST_LEN)
         {
             libusb_close(dev_handle);
             libusb_free_device_list(device_list, 1);
-            libusb_exit(NULL);
             return IS_OP_OK;
         }
 
-        libusb_close(dev_handle);
+        //libusb_close(dev_handle);
     }
 
-    libusb_free_device_list(device_list, 1); 
-    libusb_exit(NULL);
+    libusb_free_device_list(device_list, 1);
 
     return IS_OP_OK;
 }
@@ -289,89 +285,35 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
     size_t image_sections;
     libusb_device** device_list;
-    libusb_device_handle* dev_handle = NULL;
     struct libusb_device_descriptor desc;
     struct libusb_config_descriptor* cfg;
 
-    size_t device_count = libusb_get_device_list(NULL, &device_list);
-
-    // Obtain a device handle
-    bool dev_found = false;
-    for(size_t i = 0; i < device_count; ++i) 
+    // Reset the device
+    ret_libusb = libusb_reset_device(ctx->handle.dfu.handle_libusb);
+    if(ret_libusb < LIBUSB_SUCCESS) 
     {
-        ret_libusb = libusb_get_device_descriptor(device_list[i], &desc);
-        if (ret_libusb < 0) continue;
-
-        if(desc.idVendor != ctx->handle.dfu.vid) continue;
-        if(desc.idProduct != ctx->handle.dfu.pid) continue;
-
-        ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
-        if (ret_libusb < 0) continue;
-
-        // USB-IF DFU interface class numbers
-        if(cfg->interface->altsetting[0].bInterfaceClass != 0xFE || 
-            cfg->interface->altsetting[0].bInterfaceSubClass != 0x01 || 
-            cfg->interface->altsetting[0].bInterfaceProtocol != 0x02
-        ) continue;
-
-        // Open the device
-        ret_libusb = libusb_open(device_list[i], &dev_handle);
-        if (ret_libusb < 0) continue;
-
-        // Reset the device
-        ret_libusb = libusb_reset_device(dev_handle);
-        if(ret_libusb < LIBUSB_SUCCESS) 
-        {
-            libusb_close(dev_handle);
-            continue; 
-        }
-
-        // Get the string containing the uid from the device
-        unsigned char uid[IS_DFU_UID_MAX_SIZE];
-        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, uid, sizeof(uid));
-        if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
-        if(strcmp(ctx->handle.dfu.uid, (char*)uid) != 0 && strlen(ctx->handle.dfu.uid) != 0) 
-        {
-            libusb_close(dev_handle);
-            continue;
-        }
-
-        // Check the serial number 
-        uint32_t sn = 0;
-        is_dfu_get_sn(&dev_handle, &sn);
-        if(sn != ctx->handle.dfu.sn && ctx->handle.dfu.sn != 0)
-        {
-            libusb_close(dev_handle);
-            continue;
-        }
-
-        ctx->handle.dfu.sn = sn;
-        
-        ctx->handle.libusb = dev_handle;
-        ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
-        dev_found = true;
-        break;
+        libusb_close(ctx->handle.dfu.handle_libusb);
+        return IS_OP_ERROR;
     }
 
-    libusb_free_device_list(device_list, 1);
-    if(!dev_found || !dev_handle) { return IS_OP_ERROR; } 
+    ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
 
     DFU_STATUS("Found DFU device, starting firmware update", IS_LOG_LEVEL_INFO);
 
-    ret_libusb = libusb_claim_interface(ctx->handle.libusb, 0);
-    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(dev_handle); return IS_OP_ERROR; } 
+    ret_libusb = libusb_claim_interface(ctx->handle.dfu.handle_libusb, 0);
+    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(&ctx->handle.dfu.handle_libusb); return IS_OP_ERROR; }
 
     // Cancel any existing operations
-    ret_libusb = dfu_ABORT(&ctx->handle.libusb);
-    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(dev_handle); return IS_OP_ERROR; } 
+    ret_libusb = dfu_ABORT(&ctx->handle.dfu.handle_libusb);
+    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(&ctx->handle.dfu.handle_libusb); return IS_OP_ERROR; }
     
     // Reset status to good
-    ret_dfu = dfu_wait_for_state(&ctx->handle.libusb, DFU_STATE_IDLE);
-    if (ret_dfu < DFU_ERROR_NONE) { libusb_close(dev_handle); return IS_OP_ERROR; } 
+    ret_dfu = dfu_wait_for_state(&ctx->handle.dfu.handle_libusb, DFU_STATE_IDLE);
+    if (ret_dfu < DFU_ERROR_NONE) { libusb_close(&ctx->handle.dfu.handle_libusb); return IS_OP_ERROR; }
 
     // Load the firmware image
     image_sections = ihex_load_sections(ctx->firmware_path, image, MAX_NUM_IHEX_SECTIONS);
-    if(image_sections <= 0) { libusb_close(dev_handle); return IS_OP_ERROR; } 
+    if(image_sections <= 0) { libusb_close(&ctx->handle.dfu.handle_libusb); return IS_OP_ERROR; }
 
     int image_total_len = 0;
     for(size_t i = 0; i < image_sections; i++)
@@ -414,14 +356,14 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
             eraseCommand[0] = 0x41;
             memcpy(&eraseCommand[1], &pageAddress, 4);
 
-            ret_libusb = dfu_DNLOAD(&ctx->handle.libusb, 0, eraseCommand, 5);
+            ret_libusb = dfu_DNLOAD(&ctx->handle.dfu.handle_libusb, 0, eraseCommand, 5);
             // if (ret_libusb < LIBUSB_SUCCESS) 
             // {
             //     ihex_unload_sections(image, image_sections);
             //     return IS_OP_ERROR;  
             // }
 
-            ret_dfu = dfu_wait_for_state(&ctx->handle.libusb, DFU_STATE_DNLOAD_IDLE);
+            ret_dfu = dfu_wait_for_state(&ctx->handle.dfu.handle_libusb, DFU_STATE_DNLOAD_IDLE);
             // if (ret_dfu < DFU_ERROR_NONE) 
             // {
             //     ihex_unload_sections(image, image_sections);
@@ -443,11 +385,11 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     // Write memory
     for(size_t i = 0; i < image_sections; i++)
     {
-        ret_dfu = dfu_set_address_pointer(&ctx->handle.libusb, image[i].address);
+        ret_dfu = dfu_set_address_pointer(&ctx->handle.dfu.handle_libusb, image[i].address);
         if (ret_dfu < DFU_ERROR_NONE) 
         {
             ihex_unload_sections(image, image_sections);
-            libusb_close(dev_handle); 
+            libusb_close(&ctx->handle.dfu.handle_libusb);
             return IS_OP_ERROR;  
         }
 
@@ -468,19 +410,19 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
 
             uint8_t blockNum = byteInSection / STM32_PAGE_SIZE;
     
-            ret_libusb = dfu_DNLOAD(&ctx->handle.libusb, blockNum + 2, payload, STM32_PAGE_SIZE);
+            ret_libusb = dfu_DNLOAD(&ctx->handle.dfu.handle_libusb, blockNum + 2, payload, STM32_PAGE_SIZE);
             if (ret_libusb < LIBUSB_SUCCESS) 
             {
                 ihex_unload_sections(image, image_sections);
-                libusb_close(dev_handle); 
+                libusb_close(&ctx->handle.dfu.handle_libusb);
                 return IS_OP_ERROR;  
             }
 
-            ret_dfu = dfu_wait_for_state(&ctx->handle.libusb, DFU_STATE_DNLOAD_IDLE);
+            ret_dfu = dfu_wait_for_state(&ctx->handle.dfu.handle_libusb, DFU_STATE_DNLOAD_IDLE);
             if (ret_dfu < DFU_ERROR_NONE) 
             {
                 ihex_unload_sections(image, image_sections);
-                libusb_close(dev_handle); 
+                libusb_close(&ctx->handle.dfu.handle_libusb);
                 return IS_OP_ERROR;  
             }
 
@@ -496,12 +438,12 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     ihex_unload_sections(image, image_sections);
 
     // Cancel any existing operations
-    ret_libusb = dfu_ABORT(&ctx->handle.libusb);
-    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(dev_handle); return IS_OP_ERROR; }    
+    ret_libusb = dfu_ABORT(&ctx->handle.dfu.handle_libusb);
+    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(&ctx->handle.dfu.handle_libusb); return IS_OP_ERROR; }
     
     // Reset status to good
-    ret_dfu = dfu_wait_for_state(&ctx->handle.libusb, DFU_STATE_IDLE);
-    if (ret_dfu < DFU_ERROR_NONE) { libusb_close(dev_handle); return IS_OP_ERROR; }
+    ret_dfu = dfu_wait_for_state(&ctx->handle.dfu.handle_libusb, DFU_STATE_IDLE);
+    if (ret_dfu < DFU_ERROR_NONE) { libusb_close(&ctx->handle.dfu.handle_libusb); return IS_OP_ERROR; }
 
     return IS_OP_OK;
 }

@@ -134,6 +134,7 @@ typedef struct
     uint32_t sn;                        // Inertial Sense serial number
     uint16_t vid;
     uint16_t pid;
+    libusb_device_handle* handle_libusb;
 } is_dfu_id;
 
 typedef struct 
@@ -148,7 +149,6 @@ typedef struct
     serial_port_t port;
     char port_name[100];
     int baud;
-    libusb_device_handle* libusb;
     is_dfu_id dfu;
 } is_device_handle;
 
@@ -179,12 +179,12 @@ typedef struct
 
     // Status
     bool update_in_progress;
-    bool step_update_in_progress;
     int retries_left;
     float update_progress;
     float verify_progress;
     bool success;
     int device_type;
+    bool use_progress;  // Use percentages to compute total progress for all devices
 } is_device_context;
 
 typedef enum

@@ -374,21 +374,27 @@ void cltool_firmwareUpdateWaiter()
 {
 	float progress = 0.0;
 	size_t num_devices = ISBootloader::ctx.size();
+	int num_used_devices = 0;
 
 	for (size_t i = 0; i < num_devices; i++)
 	{
-		if (ISBootloader::ctx[i]->verify == IS_VERIFY_OFF)
+		if (ISBootloader::ctx[i]->use_progress)
 		{
-			progress += ISBootloader::ctx[i]->update_progress;
-		}
-		else
-		{
-			progress += ISBootloader::ctx[i]->update_progress * 0.5f;
-			progress += ISBootloader::ctx[i]->verify_progress * 0.5f;
+			num_used_devices++;
+
+			if (ISBootloader::ctx[i]->verify == IS_VERIFY_OFF)
+			{
+				progress += ISBootloader::ctx[i]->update_progress;
+			}
+			else
+			{
+				progress += ISBootloader::ctx[i]->update_progress * 0.5f;
+				progress += ISBootloader::ctx[i]->verify_progress * 0.5f;
+			}
 		}
 	}
 
-	progress /= num_devices;
+	if(num_used_devices) progress /= num_used_devices;
 	int percent = (int)(progress * 100.0f);
 	printf("Progress: %d%%\r", percent);
 	fflush(stdout);

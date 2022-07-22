@@ -132,7 +132,7 @@ is_operation_result ISBootloader::update(
                 for(size_t j = 0; j < ctx.size(); j++)
                 {
                     if(ctx[j]->handle.status != IS_HANDLE_TYPE_LIBUSB) continue;
-                    if(strncmp(ctx[j]->handle.dfu.uid, dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE) == 0) 
+                    if(ctx[j]->handle.dfu.handle_libusb == dfu_list.id[i].handle_libusb) 
                     {   // We found the device in the context list
                         found = true;
                         break;
@@ -147,7 +147,7 @@ is_operation_result ISBootloader::update(
                     strncpy(handle.dfu.uid, dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE);
                     handle.dfu.vid = dfu_list.id[i].vid;
                     handle.dfu.pid = dfu_list.id[i].pid;
-                    handle.dfu.sn = 0;
+                    handle.dfu.handle_libusb = dfu_list.id[i].handle_libusb;
                     ctx.push_back(is_create_context(
                         &handle,
                         m_firmware.c_str(), 
@@ -202,7 +202,7 @@ is_operation_result ISBootloader::update(
 
         for(size_t i = 0; i < ctx.size(); i++)
         {   // Join threads that have finished
-            if((ctx[i]->thread != NULL) && (!ctx[i]->update_in_progress || !ctx[i]->step_update_in_progress))
+            if((ctx[i]->thread != NULL) && (!ctx[i]->update_in_progress))
             {
                 threadJoinAndFree(ctx[i]->thread);
                 ctx[i]->thread = NULL;
@@ -215,7 +215,6 @@ is_operation_result ISBootloader::update(
         {   
             if(!ctx[i]->thread && ctx[i]->update_in_progress && ctx[i]->retries_left-- > 0)
             {
-                ctx[i]->step_update_in_progress = true;
                 ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
             }
             
@@ -241,6 +240,8 @@ is_operation_result ISBootloader::update(
         threadJoinAndFree(ctx[i]->thread);
         is_destroy_context(ctx[i]);
     }
+
+    libusb_exit(NULL);
 
     return IS_OP_OK;
 }
