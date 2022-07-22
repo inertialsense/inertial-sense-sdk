@@ -121,8 +121,8 @@ void led_maintenance(void)
 			}
 			break;
 
-		case SC_MCAL_SAMPLE_MEAN_IS1:
-		case SC_MCAL_SAMPLE_MEAN_IS2:
+		case SC_MCAL_SAMPLE_MEAN_RAW:
+		case SC_MCAL_SAMPLE_MEAN_TCAL:
 			LED_COLOR_CYAN();
 			break;
 			
