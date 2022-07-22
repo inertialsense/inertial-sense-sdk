@@ -2356,7 +2356,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS_MISC",            // 22
 	"DID_FEATURE_BITS",                 // 23
 	"DID_SENSORS_RAW",                  // 24
-	"DID_SENSORS_TCAL",                  // 25
+	"DID_SENSORS_TCAL",                 // 25
 	"DID_SENSORS_TC_BIAS",              // 26
 	"DID_IO",                           // 27
 	"DID_SENSORS_ADC",                  // 28
