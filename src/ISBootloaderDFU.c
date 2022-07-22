@@ -85,12 +85,6 @@ typedef enum	// From DFU manual, do not change
     DFU_STATE_NUM,
 } dfu_state;
 
-static is_operation_result is_dfu_write_option_bytes(
-    uint8_t* bytes,
-    int size, 
-    libusb_device_handle* dev_handle
-);
-
 static dfu_error dfu_DETACH(libusb_device_handle** dev_handle, uint8_t timeout);
 static dfu_error dfu_DNLOAD(libusb_device_handle** dev_handle, uint8_t wValue, uint8_t* buf, uint16_t len);
 static dfu_error dfu_UPLOAD(libusb_device_handle** dev_handle, uint8_t wValue, uint8_t* buf, uint16_t len);
@@ -294,7 +288,6 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     dfu_error ret_dfu;
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
     size_t image_sections;
-    is_operation_result ret_is;
     libusb_device** device_list;
     libusb_device_handle* dev_handle = NULL;
     struct libusb_device_descriptor desc;
@@ -510,35 +503,24 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     ret_dfu = dfu_wait_for_state(&ctx->handle.libusb, DFU_STATE_IDLE);
     if (ret_dfu < DFU_ERROR_NONE) { libusb_close(dev_handle); return IS_OP_ERROR; }
 
-    DFU_STATUS("Restarting device...", IS_LOG_LEVEL_INFO);
+    return IS_OP_OK;
+}
+
+is_operation_result is_dfu_write_option_bytes(libusb_device_handle* dev_handle)
+{
+    int ret_libusb;
+    dfu_error ret_dfu;
 
     // Option bytes
     // This hard-coded array sets mostly defaults, but without PH3 enabled and
     // with DFU mode disabled. Application will enable DFU mode if needed.
-    uint8_t options[] = {
+    uint8_t bytes[] = {
         0xaa,0xf8,0xff,0xfb, 0x55,0x07,0x00,0x04,
         0xff,0xff,0xff,0xff, 0x00,0x00,0x00,0x00,
         0x00,0x00,0xff,0xff, 0xff,0xff,0x00,0x00,
         0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00,
         0xff,0xff,0x00,0xff, 0x00,0x00,0xff,0x00
     };
-
-    ret_is = is_dfu_write_option_bytes(options, sizeof(options), ctx->handle.libusb);
-
-    libusb_release_interface(ctx->handle.libusb, 0);
-    libusb_close(dev_handle);
-
-    return ret_is;
-}
-
-static is_operation_result is_dfu_write_option_bytes(
-    uint8_t* bytes,
-    int size, 
-    libusb_device_handle* dev_handle
-)
-{
-    int ret_libusb;
-    dfu_error ret_dfu;
 
     // Cancel any existing operations
     ret_libusb = dfu_ABORT(&dev_handle);
@@ -555,7 +537,7 @@ static is_operation_result is_dfu_write_option_bytes(
     ret_dfu = dfu_set_address_pointer(&dev_handle, 0x1FFF7800);
     if (ret_dfu < DFU_ERROR_NONE) return IS_OP_ERROR;
 
-    ret_libusb = dfu_DNLOAD(&dev_handle, 2, bytes, size);
+    ret_libusb = dfu_DNLOAD(&dev_handle, 2, bytes, sizeof(bytes));
     dfu_wait_for_state(&dev_handle, DFU_STATE_DNLOAD_IDLE);	
 
     // ret_libusb = libusb_reset_device(dev_handle);

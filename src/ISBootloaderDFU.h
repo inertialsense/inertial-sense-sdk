@@ -54,6 +54,14 @@ is_operation_result is_dfu_list_devices(is_dfu_list* list);
  */
 is_operation_result is_dfu_flash(is_device_context* context);
 
+/**
+ * @brief Finishes the operation and reboots into application mode
+ * 
+ * @param dev_handle 
+ * @return is_operation_result 
+ */
+is_operation_result is_dfu_write_option_bytes(libusb_device_handle* dev_handle);
+
 #ifdef __cplusplus
 }
 #endif

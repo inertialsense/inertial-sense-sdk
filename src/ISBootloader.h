@@ -51,6 +51,8 @@ is_operation_result is_jump_to_bootloader(is_device_context* ctx);
  */
 void is_update_flash(void* context);
 
+void is_update_finish(void* context);
+
 #ifdef __cplusplus
 }
 #endif

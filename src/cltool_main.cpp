@@ -372,8 +372,6 @@ void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level)
 
 void cltool_firmwareUpdateWaiter()
 {
-	SLEEP_MS(10);
-
 	float progress = 0.0;
 	size_t num_devices = ISBootloader::ctx.size();
 
@@ -392,7 +390,8 @@ void cltool_firmwareUpdateWaiter()
 
 	progress /= num_devices;
 	int percent = (int)(progress * 100.0f);
-	printf("\rProgress: %d%%\r", percent);
+	printf("Progress: %d%%\r", percent);
+	fflush(stdout);
 }
 
 static int cltool_createHost()

@@ -21,6 +21,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderDFU.h"
 #include "ISSerialPort.h"
 
+#include <algorithm>
+
 using namespace std;
 
 vector<is_device_context*> ISBootloader::ctx;
@@ -38,6 +40,7 @@ void ISBootloader::update_thread(void* context)
 
     if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
     {
+        serialPortClose(&ctx->handle.port);
         if(!serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, m_baudRate, 1)) 
         {
             return;
@@ -45,6 +48,27 @@ void ISBootloader::update_thread(void* context)
     }
 
     is_update_flash(context);
+
+    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    {
+        serialPortClose(&ctx->handle.port);
+    }
+}
+
+void ISBootloader::update_finish(void* context)
+{
+    is_device_context* ctx = (is_device_context*)context;
+
+    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    {
+        serialPortClose(&ctx->handle.port);
+        if(!serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, m_baudRate, 1)) 
+        {
+            return;
+        }
+    }
+
+    is_update_finish(context);
 
     if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
     {
@@ -72,15 +96,28 @@ is_operation_result ISBootloader::update(
     m_baudRate = baudRate;
     m_waitAction = waitAction;
 
-    vector<string> ports;
-    is_dfu_list dfu_list;
-    int noChange = 0;
 
+    int noChange = 0;
+    
+    // DFU stuff
+    is_dfu_list dfu_list;
     bool use_dfu = libusb_init(NULL) >= 0;
+    
+    // Serial port stuff
+    vector<string> ports;
+    vector<string> ports_user_ignore;
+    vector<string> ports_active;
+    cISSerialPort::GetComPorts(ports);
+    sort(ports.begin(), ports.end());
+    sort(comPorts.begin(), comPorts.end());
+    set_symmetric_difference(   // Get the difference between the specified ports and the ports present TODO: make this not symmetric
+        ports.begin(), ports.end(), 
+        comPorts.begin(), comPorts.end(),
+        back_inserter(ports_user_ignore));
 
     while(1)
     {
-        SLEEP_MS(50);
+        SLEEP_MS(10);
 
         if(m_waitAction) m_waitAction();
 
@@ -123,24 +160,30 @@ is_operation_result ISBootloader::update(
             }
         }
 
+        
+        // Get a list of com ports that have threads associated
+        ports_active.clear();
+        for(size_t i = 0; i < ctx.size(); i++)
+        {
+            if(ctx[i]->thread && ctx[i]->handle.status == IS_HANDLE_TYPE_SERIAL)
+            {
+                ports_active.push_back(string(ctx[i]->handle.port_name));
+            }
+        }
+
+        // Get list of all com ports
         cISSerialPort::GetComPorts(ports);
 
         for(size_t i = 0; i < ports.size(); i++)
-        {	// Create contexts for devices in serial mode
-            bool newDevice = true;
-
-            for(size_t j = 0; j < ctx.size(); j++)
+        {	
+            if(find(ports_active.begin(), ports_active.end(), ports[i]) != ports_active.end() ||
+                find(ports_user_ignore.begin(), ports_user_ignore.end(), ports[i]) != ports_user_ignore.end())
             {
-                // If the serial port already has a thread associated
-                if(ports[i] == string(ctx[j]->handle.port_name))
-                {
-                    newDevice = false;
-                    break;
-                }
+                // Ignoring this device because it was not specified by user, 
+                //  or it already has a thread associated
             }
-
-            if(newDevice)
-            {
+            else
+            {   // Create context for device
                 is_device_handle handle;
                 memset(&handle, 0, sizeof(is_device_handle));
                 handle.status = IS_HANDLE_TYPE_SERIAL;
@@ -189,7 +232,13 @@ is_operation_result ISBootloader::update(
     }
 
     for(size_t i = 0; i < ctx.size(); i++)
+    {   
+        ctx[i]->thread = threadCreateAndStart(update_finish, (void*)ctx[i]);
+    }
+
+    for(size_t i = 0; i < ctx.size(); i++)
     {   // Free context memory
+        threadJoinAndFree(ctx[i]->thread);
         is_destroy_context(ctx[i]);
     }
 

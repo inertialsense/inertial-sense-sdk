@@ -402,11 +402,11 @@ void is_update_flash(void* context)
     // In case we are updating using the inertial sense bootloader (ISB), set the entry command based on the signature
     if(file_signature & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K))
     {
-        strncpy(ctx->props.isb.enable_command, "EBLE", 4);
+        strncpy(ctx->props.isb.enable_command, "EBLE", 5);
     }
     else
     {
-        strncpy(ctx->props.isb.enable_command, "BLEN", 4);
+        strncpy(ctx->props.isb.enable_command, "BLEN", 5);
     }
     
     if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
@@ -462,7 +462,33 @@ void is_update_flash(void* context)
         ctx->update_in_progress = false;
         return;
     }
+}
+
+void is_update_finish(void* context)
+{
+    is_device_context* ctx = (is_device_context*)context;
+
+    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
+    {
+        if(ctx->device_type == IS_DEV_TYPE_DFU)
+        {   /** DFU MODE */
+            is_dfu_write_option_bytes(ctx->handle.libusb);
+            libusb_release_interface(ctx->handle.libusb, 0);
+            libusb_close(ctx->handle.libusb);
+        }
+    }
+    else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    {
+        if(ctx->device_type == IS_DEV_TYPE_SAMBA)
+        {   /** SAM-BA MODE */
+            is_samba_boot_from_flash(ctx);
+            is_samba_reset(ctx);
+        }
+        else if(ctx->device_type == IS_DEV_TYPE_ISB)
+        {
+            is_isb_restart(&ctx->handle.port);
+        }
+    }
 
     ctx->success = true;
-    return;
 }

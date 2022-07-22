@@ -55,11 +55,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static is_operation_result is_samba_read_word(is_device_context* ctx, uint32_t address, uint32_t* word);
 static is_operation_result is_samba_write_word(is_device_context* ctx, uint32_t address, uint32_t word);
 static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool waitReady);
-static is_operation_result is_samba_boot_from_flash(is_device_context* ctx);
 static is_operation_result is_samba_write_uart_modem(is_device_context* ctx, uint8_t* buf, size_t len);
 static is_operation_result is_samba_flash_erase_write_page(is_device_context* ctx, size_t offset, uint8_t data[SAMBA_PAGE_SIZE], bool isUSB);
 static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t checksum);
-static is_operation_result is_samba_reset(is_device_context* ctx);
 static is_operation_result is_samba_erase_flash(is_device_context * ctx);
 
 static uint16_t crc_update(uint16_t crc_in, int incr);
@@ -181,8 +179,8 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         SAMBA_ERROR_CHECK(is_samba_verify(ctx, checksum), "Verification error!");
     }
     
-    SAMBA_ERROR_CHECK(is_samba_boot_from_flash(ctx), "Failed to set boot from flash GPNVM bit!");
-    is_samba_reset(ctx);
+    // SAMBA_ERROR_CHECK(is_samba_boot_from_flash(ctx), "Failed to set boot from flash GPNVM bit!");
+    // is_samba_reset(ctx);
 
     // serialPortClose(port);
 
@@ -250,8 +248,6 @@ is_operation_result is_samba_init(is_device_context* ctx)
  */
 is_operation_result is_samba_get_serial(is_device_context* ctx)
 {
-    serial_port_t* port = &ctx->handle.port;
-
     // Set flash command to STUS (start read unique signature)
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a000014), "Failed to command signature readout");
     
@@ -331,7 +327,7 @@ static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool
  * @param ctx device context with open serial port registered under `handler`
  * @return is_operation_result 
  */
-static is_operation_result is_samba_boot_from_flash(is_device_context* ctx)
+is_operation_result is_samba_boot_from_flash(is_device_context* ctx)
 {
     // EEFC.FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
     if (is_samba_write_word(ctx, 0x400e0c04, 0x5a00010b) == IS_OP_OK)
@@ -516,7 +512,7 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
  * @param ctx device context with open serial port registered under `handler`
  * @return is_operation_result 
  */
-static is_operation_result is_samba_reset(is_device_context* ctx)
+is_operation_result is_samba_reset(is_device_context* ctx)
 {
     // RSTC_CR, RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST
     uint32_t status;

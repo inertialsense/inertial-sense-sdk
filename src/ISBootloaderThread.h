@@ -61,7 +61,7 @@ public:
 
 private:
     static void update_thread(void* context);
-    static void watcher_thread(void* devices);
+    static void update_finish(void* context);
     static std::string m_firmware;
     static pfnBootloadProgress m_uploadProgress; 
     static pfnBootloadProgress m_verifyProgress;

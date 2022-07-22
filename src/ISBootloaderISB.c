@@ -450,8 +450,6 @@ static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsign
 
 static is_operation_result is_isb_upload_hex(is_device_context* ctx, unsigned char* hexData, int charCount, int* currentOffset, int* currentPage, int* totalBytes, int* verifyCheckSum)
 {
-    serial_port_t* s = &ctx->handle.port;
-
     if (charCount > MAX_SEND_COUNT)
     {
         ctx->info_callback(ctx, "(ISB) Unexpected char count", IS_LOG_LEVEL_ERROR);
@@ -497,8 +495,6 @@ static is_operation_result is_isb_upload_hex(is_device_context* ctx, unsigned ch
 
 static is_operation_result is_isb_fill_current_page(is_device_context* ctx, int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
-    serial_port_t* s = &ctx->handle.port;
-
     if (*currentOffset < FLASH_PAGE_SIZE)
     {
         unsigned char hexData[256];
@@ -914,8 +910,6 @@ is_operation_result is_isb_flash(is_device_context* ctx)
         return IS_OP_ERROR;
 
     is_isb_process_hex_file(firmware_file, ctx);
-
-    is_isb_restart(&ctx->handle.port);
 
     fclose(firmware_file);
     // serialPortClose(&ctx->handle.port);
