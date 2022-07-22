@@ -28,7 +28,7 @@ DID_GPS1_RTK_POS_REL            = 21
 DID_GPS1_RTK_POS_MISC           = 22
 DID_FEATURE_BITS                = 23
 DID_SENSORS_RAW                 = 24
-DID_SENSORS_TCAL                 = 25
+DID_SENSORS_TCAL                = 25
 DID_SENSORS_TC_BIAS             = 26
 DID_IO                          = 27
 DID_SENSORS_ADC                 = 28
@@ -131,8 +131,8 @@ did_name_lookup = {
  DID_GPS1_RTK_POS_MISC: "gps1RtkPosMisc",
  DID_GPS1_RTK_CMP_MISC: "gps1RtkCmpMisc",
  DID_FEATURE_BITS : "featureBits",
- DID_SENSORS_RAW : "sensorsIs1",
- DID_SENSORS_TCAL : "sensorsIs2",
+ DID_SENSORS_RAW : "sensorsRaw",
+ DID_SENSORS_TCAL : "sensorsTcal",
  DID_SENSORS_TC_BIAS : "sensorsTcBias",
  DID_IO : "io",
  DID_SENSORS_ADC : "sensorsAdc",
