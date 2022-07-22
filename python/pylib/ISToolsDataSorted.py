@@ -476,7 +476,7 @@ class cDevice:
             ('temp', f32),
         ])
 
-        self.di[24].set('sensorsIs1', np.dtype([
+        self.di[24].set('sensorsRaw', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('mpu', (dtypeSensorsMpuWTemp, 2)),
         ]))

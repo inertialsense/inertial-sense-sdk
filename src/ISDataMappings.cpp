@@ -158,8 +158,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 
 #ifdef USE_IS_INTERNAL
 
-	sizeMap[DID_SENSORS_IS1] = sizeof(sensors_w_temp_t);
-	sizeMap[DID_SENSORS_IS2] = sizeof(sensors_w_temp_t);
+	sizeMap[DID_SENSORS_RAW] = sizeof(sensors_w_temp_t);
+	sizeMap[DID_SENSORS_TCAL] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_TC_BIAS] = sizeof(sensors_t);
 	sizeMap[DID_SCOMP] = sizeof(sensor_compensation_t);
     sizeMap[DID_RTK_DEBUG] = sizeof(rtk_debug_t);
@@ -2355,8 +2355,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS_REL",             // 21
 	"DID_GPS1_RTK_POS_MISC",            // 22
 	"DID_FEATURE_BITS",                 // 23
-	"DID_SENSORS_IS1",                  // 24
-	"DID_SENSORS_IS2",                  // 25
+	"DID_SENSORS_RAW",                  // 24
+	"DID_SENSORS_TCAL",                 // 25
 	"DID_SENSORS_TC_BIAS",              // 26
 	"DID_IO",                           // 27
 	"DID_SENSORS_ADC",                  // 28
@@ -2519,8 +2519,8 @@ cISDataMappings::cISDataMappings()
 #ifdef USE_IS_INTERNAL
 
 	PopulateSensorsADCMappings(m_lookupInfo);
-	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_IS1);
-	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_IS2);
+	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_RAW);
+	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_TCAL);
 	PopulateSensorsTCMappings(m_lookupInfo);
 	PopulateSensorsCompMappings(m_lookupInfo);
 	PopulateUserPage0Mappings(m_lookupInfo);

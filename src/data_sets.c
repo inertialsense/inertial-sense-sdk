@@ -284,8 +284,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 21: DID_GPS1_RTK_POS_REL
         offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
 		0,						// 23: DID_FEATURE_BITS
-		0,						// 24: DID_SENSORS_IS1
-		0,						// 25: DID_SENSORS_IS2
+		0,						// 24: DID_SENSORS_RAW
+		0,						// 25: DID_SENSORS_TCAL
 		0,						// 26: DID_SENSORS_TC_BIAS
 		0,						// 27: DID_IO
 		offsetsOnlyTimeFirst,	// 28: DID_SENSORS_ADC
@@ -462,8 +462,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 21: DID_GPS1_RTK_POS_REL
         0,                      // 22: DID_GPS1_RTK_POS_MISC,
 		0,						// 23: DID_FEATURE_BITS
-		0,						// 24: DID_SENSORS_IS1
-		0,						// 25: DID_SENSORS_IS2
+		0,						// 24: DID_SENSORS_RAW
+		0,						// 25: DID_SENSORS_TCAL
 		0,						// 26: DID_SENSORS_TC_BIAS
 		0,						// 27: DID_IO
 		0,						// 28: DID_SENSORS_ADC
