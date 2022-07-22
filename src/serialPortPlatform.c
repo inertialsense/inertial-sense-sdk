@@ -24,6 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
+#include <sys/file.h>
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
@@ -337,6 +338,8 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     {
         return 0;
     }
+    ioctl(fd, TIOCEXCL);    // Put device into exclusive mode
+    flock(fd, LOCK_EX | LOCK_NB);   // Add advisory lock
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->fd = fd;
     handle->blocking = blocking;
