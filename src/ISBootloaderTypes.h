@@ -179,10 +179,22 @@ typedef struct
 
     // Status
     bool update_in_progress;
+    bool step_update_in_progress;
+    int retries_left;
     float update_progress;
     float verify_progress;
     bool success;
+    int device_type;
 } is_device_context;
+
+typedef enum
+{
+    IS_DEV_TYPE_NONE = 0,
+    IS_DEV_TYPE_SAMBA,
+    IS_DEV_TYPE_ISB,
+    IS_DEV_TYPE_APP,
+    IS_DEV_TYPE_DFU,
+} is_device_type;
 
 #ifdef __cplusplus
 }

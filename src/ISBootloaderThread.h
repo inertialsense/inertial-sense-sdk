@@ -32,8 +32,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISBootloader.h"
 
-using namespace std; 
-
 class ISBootloader
 {
 public:
@@ -45,11 +43,11 @@ public:
      * @param comPorts
      * @return
      */
-    static size_t get_num_devices(vector<string>& comPorts);
+    static size_t get_num_devices(std::vector<std::string>& comPorts);
 
     static is_operation_result update(
-        vector<string>&             comPorts,
-        vector<string>&             uids,
+        std::vector<std::string>&             comPorts,
+        std::vector<std::string>&             uids,
         int                         baudRate,
         const char*                 firmware,
         pfnBootloadProgress         uploadProgress, 
@@ -59,11 +57,18 @@ public:
         void						(*waitAction)()
     );
 
-    static vector<is_device_context*> ctx;
+    static std::vector<is_device_context*> ctx;
 
 private:
     static void update_thread(void* context);
-    
+    static void watcher_thread(void* devices);
+    static std::string m_firmware;
+    static pfnBootloadProgress m_uploadProgress; 
+    static pfnBootloadProgress m_verifyProgress;
+    static pfnBootloadStatus m_infoProgress;
+    static void* m_user_data;
+    static int m_baudRate;
+    static void (*m_waitAction)();
 };
 
 #endif // __IS_BOOTLOADER_H_

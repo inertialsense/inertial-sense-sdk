@@ -19,33 +19,37 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
+#include "ISSerialPort.h"
+
+using namespace std;
 
 vector<is_device_context*> ISBootloader::ctx;
+std::string ISBootloader::m_firmware;
+pfnBootloadProgress ISBootloader::m_uploadProgress; 
+pfnBootloadProgress ISBootloader::m_verifyProgress;
+pfnBootloadStatus ISBootloader::m_infoProgress;
+void* ISBootloader::m_user_data;
+int ISBootloader::m_baudRate;
+void (*ISBootloader::m_waitAction)();
 
-size_t ISBootloader::get_num_devices(vector<string>& comPorts)
+void ISBootloader::update_thread(void* context)
 {
-    size_t ret = 0;
+    is_device_context* ctx = (is_device_context*)context;
 
-    is_dfu_list dfu_list;
-    is_dfu_list_devices(&dfu_list);
-
-    ret += dfu_list.present;
-    ret += comPorts.size();
-
-    return ret;
-}
-
-static bool any_in_progress(vector<is_device_context*>& ctx)
-{
-    for(size_t i = 0; i < ctx.size(); i++)
+    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
     {
-        if(ctx[i]->thread != NULL)
+        if(!serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, m_baudRate, 1)) 
         {
-            return true;
+            return;
         }
     }
 
-    return false;
+    is_update_flash(context);
+
+    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    {
+        serialPortClose(&ctx->handle.port);
+    }
 }
 
 is_operation_result ISBootloader::update(
@@ -53,100 +57,141 @@ is_operation_result ISBootloader::update(
     vector<string>&             uids,       // DFU only
     int                         baudRate,
     const char*                 firmware,
-    pfnBootloadProgress         uploadProgress, 
-    pfnBootloadProgress         verifyProgress, 
+    pfnBootloadProgress         uploadProgress,
+    pfnBootloadProgress         verifyProgress,
     pfnBootloadStatus           infoProgress,
     void*                       user_data,
     void						(*waitAction)()
 )
 {
+    m_firmware = firmware;
+    m_uploadProgress = uploadProgress;
+    m_verifyProgress = verifyProgress;
+    m_infoProgress = infoProgress;
+    m_user_data = user_data;
+    m_baudRate = baudRate;
+    m_waitAction = waitAction;
+
+    vector<string> ports;
     is_dfu_list dfu_list;
-    size_t i, j;
+    int noChange = 0;
 
-    for(i = 0; i < ctx.size(); i++)
+    bool use_dfu = libusb_init(NULL) >= 0;
+
+    while(1)
     {
-        is_destroy_context(ctx[i]);
-    }
-    ctx.clear();
+        SLEEP_MS(50);
 
-    if(libusb_init(NULL) < 0) return IS_OP_ERROR;
-    is_dfu_list_devices(&dfu_list);
+        if(m_waitAction) m_waitAction();
 
-    for(i = 0; i < dfu_list.present; i++)
-    {	// Create contexts for devices in DFU mode
-        for(j = 0; j < uids.size(); j++)
+        if(use_dfu)
         {
-            if(strncmp(dfu_list.id[i].uid, uids[j].c_str(), IS_DFU_UID_MAX_SIZE) == 0)
+            is_dfu_list_devices(&dfu_list);
+
+            for(size_t i = 0; i < dfu_list.present; i++)
+            {	// Create contexts for devices in DFU mode
+                bool found = false;
+
+                for(size_t j = 0; j < ctx.size(); j++)
+                {
+                    if(ctx[j]->handle.status != IS_HANDLE_TYPE_LIBUSB) continue;
+                    if(strncmp(ctx[j]->handle.dfu.uid, dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE) == 0) 
+                    {   // We found the device in the context list
+                        found = true;
+                        break;
+                    }
+                }
+
+                if(!found)
+                {   // If we didn't find the device
+                    is_device_handle handle;
+                    memset(&handle, 0, sizeof(is_device_handle));
+                    handle.status = IS_HANDLE_TYPE_LIBUSB;
+                    strncpy(handle.dfu.uid, dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE);
+                    handle.dfu.vid = dfu_list.id[i].vid;
+                    handle.dfu.pid = dfu_list.id[i].pid;
+                    handle.dfu.sn = 0;
+                    ctx.push_back(is_create_context(
+                        &handle,
+                        m_firmware.c_str(), 
+                        m_uploadProgress, 
+                        m_verifyProgress, 
+                        m_infoProgress,
+                        m_user_data
+                    ));
+                }
+            }
+        }
+
+        cISSerialPort::GetComPorts(ports);
+
+        for(size_t i = 0; i < ports.size(); i++)
+        {	// Create contexts for devices in serial mode
+            bool newDevice = true;
+
+            for(size_t j = 0; j < ctx.size(); j++)
+            {
+                // If the serial port already has a thread associated
+                if(ports[i] == string(ctx[j]->handle.port_name))
+                {
+                    newDevice = false;
+                    break;
+                }
+            }
+
+            if(newDevice)
             {
                 is_device_handle handle;
                 memset(&handle, 0, sizeof(is_device_handle));
-                handle.status = IS_HANDLE_TYPE_LIBUSB;
-                memcpy(&handle.dfu.uid, &dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE);
-                handle.dfu.vid = dfu_list.id[i].vid;
-                handle.dfu.pid = dfu_list.id[i].pid;
-                handle.dfu.sn = 0;
+                handle.status = IS_HANDLE_TYPE_SERIAL;
+                handle.baud = m_baudRate;
+                strncpy(handle.port_name, ports[i].c_str(), 100);
                 ctx.push_back(is_create_context(
                     &handle,
-                    firmware, 
-                    uploadProgress, 
-                    verifyProgress, 
-                    infoProgress,
-                    user_data
+                    m_firmware.c_str(), 
+                    m_uploadProgress, 
+                    m_verifyProgress, 
+                    m_infoProgress,
+                    m_user_data
                 ));
             }
         }
-    }
 
-    for(i = 0; i < comPorts.size(); i++)
-    {	// Create contexts for devices in serial mode (APP/ISB/SAMBA)
-        is_device_handle handle;
-        memset(&handle, 0, sizeof(is_device_handle));
-        strncpy(handle.port_name, comPorts[i].c_str(), 100);
-        handle.status = IS_HANDLE_TYPE_SERIAL;
-        handle.baud = baudRate;
-        ctx.push_back(is_create_context(
-            &handle,
-            firmware, 
-            uploadProgress, 
-            verifyProgress, 
-            infoProgress,
-            user_data
-        ));
-    }
-
-    for(i = 0; i < ctx.size(); i++)
-    {	// Start threads
-        ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
-    }
-
-    while (1)
-    {	// Wait for threads to finish
-        if(ctx.size()) for(i = 0; i < ctx.size(); i++)
-        {
-            if((ctx[i]->thread != NULL) && !ctx[i]->update_in_progress)
+        for(size_t i = 0; i < ctx.size(); i++)
+        {   // Join threads that have finished
+            if((ctx[i]->thread != NULL) && (!ctx[i]->update_in_progress || !ctx[i]->step_update_in_progress))
             {
                 threadJoinAndFree(ctx[i]->thread);
                 ctx[i]->thread = NULL;
             }
+        }
 
-            if(!any_in_progress(ctx))
+        noChange++;
+
+        for(size_t i = 0; i < ctx.size(); i++)
+        {   
+            if(!ctx[i]->thread && ctx[i]->update_in_progress && ctx[i]->retries_left-- > 0)
             {
-                libusb_exit(NULL);
-                return IS_OP_OK;
+                ctx[i]->step_update_in_progress = true;
+                ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
+            }
+            
+            if(ctx[i]->thread)
+            {
+                noChange = 0;
             }
         }
-        else return IS_OP_OK;
 
-        if(waitAction != 0) waitAction();
-
-        SLEEP_MS(10);
+        if(noChange > 50)
+        {
+            break;    // After 2.5 seconds of no changes and no threads running, quit
+        }
     }
-    
-    libusb_exit(NULL);
-    return IS_OP_OK;
-}
 
-void ISBootloader::update_thread(void* context)
-{
-    is_update_flash(context);
+    for(size_t i = 0; i < ctx.size(); i++)
+    {   // Free context memory
+        is_destroy_context(ctx[i]);
+    }
+
+    return IS_OP_OK;
 }
