@@ -870,12 +870,6 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
         }
     }
 
-    // send the "reboot to program mode" command and the device should start in program mode
-    if(ctx->info_callback)
-        ctx->info_callback(ctx, "Rebooting unit...", IS_LOG_LEVEL_INFO);
-    serialPortWrite(&ctx->handle.port, (unsigned char*)":020000040300F7", 15);
-    serialPortSleep(&ctx->handle.port, 250);
-
     return IS_OP_OK;
 }
 

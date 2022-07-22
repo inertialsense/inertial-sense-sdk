@@ -185,6 +185,8 @@ typedef struct
     bool success;
     int device_type;
     bool use_progress;  // Use percentages to compute total progress for all devices
+    int start_time_ms;
+    bool finished_flash;
 } is_device_context;
 
 typedef enum

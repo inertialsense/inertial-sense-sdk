@@ -77,6 +77,8 @@ is_device_context* is_create_context(
     ctx->update_in_progress = true;
     ctx->retries_left = 3;
     ctx->device_type = IS_DEV_TYPE_NONE;
+    ctx->start_time_ms = 0;
+    ctx->finished_flash = false;
 
     serialPortPlatformInit(&ctx->handle.port);
     serialPortSetPort(&ctx->handle.port, handle->port_name);
@@ -414,7 +416,7 @@ void is_update_flash(void* context)
         if(ctx->device_type == IS_DEV_TYPE_DFU)
         {   /** DFU MODE */
             ctx->use_progress = true;
-            if(is_dfu_flash(ctx) == IS_OP_OK) ctx->update_in_progress = false;
+            if(is_dfu_flash(ctx) == IS_OP_OK) { ctx->update_in_progress = false; ctx->finished_flash = true; }
         }
     }
     else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
@@ -424,7 +426,7 @@ void is_update_flash(void* context)
             if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K))
             {
                 ctx->use_progress = true;
-                if(is_samba_flash(ctx) == IS_OP_OK) ctx->update_in_progress = false;
+                if(is_samba_flash(ctx) == IS_OP_OK) { ctx->update_in_progress = false; ctx->finished_flash = true; }
             }
         }
         else if(ctx->device_type == IS_DEV_TYPE_ISB)
@@ -439,8 +441,7 @@ void is_update_flash(void* context)
             else
             {
                 ctx->use_progress = true;
-                if(is_isb_flash(ctx) == IS_OP_OK) ctx->update_in_progress = false;
-                else { ctx->update_in_progress = false; return; }
+                if(is_isb_flash(ctx) == IS_OP_OK) { ctx->update_in_progress = false; ctx->finished_flash = true; }
             }
         }
         else if(ctx->device_type == IS_DEV_TYPE_APP)
@@ -487,7 +488,11 @@ void is_update_finish(void* context)
         }
         else if(ctx->device_type == IS_DEV_TYPE_ISB)
         {
-            is_isb_restart(&ctx->handle.port);
+            // send the "reboot to program mode" command and the device should start in program mode
+            if(ctx->info_callback)
+                ctx->info_callback(ctx, "Rebooting unit...", IS_LOG_LEVEL_INFO);
+            serialPortWrite(&ctx->handle.port, (unsigned char*)":020000040300F7", 15);
+            serialPortSleep(&ctx->handle.port, 250);
         }
     }
 

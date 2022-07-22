@@ -98,6 +98,8 @@ is_operation_result ISBootloader::update(
 
 
     int noChange = 0;
+
+    ctx.clear();
     
     // DFU stuff
     is_dfu_list dfu_list;
@@ -165,7 +167,7 @@ is_operation_result ISBootloader::update(
         ports_active.clear();
         for(size_t i = 0; i < ctx.size(); i++)
         {
-            if(ctx[i]->thread && ctx[i]->handle.status == IS_HANDLE_TYPE_SERIAL)
+            if((ctx[i]->thread || ctx[i]->finished_flash) && ctx[i]->handle.status == IS_HANDLE_TYPE_SERIAL)
             {
                 ports_active.push_back(string(ctx[i]->handle.port_name));
             }
@@ -215,6 +217,7 @@ is_operation_result ISBootloader::update(
         {   
             if(!ctx[i]->thread && ctx[i]->update_in_progress && ctx[i]->retries_left-- > 0)
             {
+                ctx[i]->start_time_ms = current_timeMs();   // Unused so far
                 ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
             }
             
@@ -238,7 +241,7 @@ is_operation_result ISBootloader::update(
     for(size_t i = 0; i < ctx.size(); i++)
     {   // Free context memory
         threadJoinAndFree(ctx[i]->thread);
-        is_destroy_context(ctx[i]);
+        // is_destroy_context(ctx[i]);
     }
 
     libusb_exit(NULL);
