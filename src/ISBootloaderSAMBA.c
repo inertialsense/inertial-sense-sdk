@@ -233,8 +233,6 @@ is_operation_result is_samba_init(is_device_context* ctx)
     // Set flash mode register
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c00, 0x04000600), "Failed to set flash mode register");
 
-    SAMBA_STATUS("SAM-BA ROM bootloader initialized", IS_LOG_LEVEL_INFO);
-
     // serialPortClose(port);
 
     return IS_OP_OK;

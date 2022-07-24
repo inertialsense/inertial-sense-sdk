@@ -53,6 +53,10 @@ void is_update_flash(void* context);
 
 void is_update_finish(void* context);
 
+const char* get_file_ext(const char *filename);
+is_image_signature is_get_hex_image_signature(const char* img);
+is_image_signature is_get_bin_image_signature(const char* img);
+
 #ifdef __cplusplus
 }
 #endif

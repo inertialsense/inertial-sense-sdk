@@ -226,8 +226,8 @@ is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd
         // }
         for (size_t loop = 0; loop < 10; loop++)
         {
-            serialPortWriteAscii(port, "STPB", 4);
-            serialPortWriteAscii(port, enable_cmd, 4);
+            if(!serialPortWriteAscii(port, "STPB", 4)) return IS_OP_OK; 
+            if(!serialPortWriteAscii(port, enable_cmd, 4)) return IS_OP_OK;
             c = 0;
             if (serialPortReadCharTimeout(port, &c, 13) == 1)
             {

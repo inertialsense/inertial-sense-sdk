@@ -103,7 +103,7 @@ void is_destroy_context(is_device_context* ctx)
  * @param filename
  * @return const char* 
  */
-static const char* get_file_ext(const char *filename) 
+const char* get_file_ext(const char *filename) 
 {
     const char *dot = strrchr(filename, '.');   // Find last '.' in file name
     if(!dot || dot == filename) return "";
@@ -201,10 +201,10 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
  * @param firmware 
  * @return is_device_type 
  */
-static is_image_signature is_get_hex_image_signature(is_device_context* ctx)
+is_image_signature is_get_hex_image_signature(const char* img)
 {
     ihex_image_section_t image;
-    size_t sections = ihex_load_sections(ctx->firmware_path, &image, 1);
+    size_t sections = ihex_load_sections(img, &image, 1);
     size_t image_type;
 
     if(sections == 1)   // Signature must be in the first section of the image
@@ -238,7 +238,7 @@ static is_image_signature is_get_hex_image_signature(is_device_context* ctx)
     }
     
     // Backup for old (16K) bootloader image
-    if (strstr(ctx->firmware_path, is_samx70_bootloader_needle))
+    if (strstr(img, is_samx70_bootloader_needle))
     {
         return IS_IMAGE_SIGN_ISB_SAMx70_16K;
     }
@@ -246,7 +246,7 @@ static is_image_signature is_get_hex_image_signature(is_device_context* ctx)
     return 0;
 }
 
-static is_image_signature is_get_bin_image_signature(is_device_context* ctx)
+is_image_signature is_get_bin_image_signature(const char* ctx)
 {
     return IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
 }
@@ -260,11 +260,11 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
 
     if(strcmp(extension, "bin") == 0)
     {
-        file_signature = is_get_bin_image_signature(ctx);
+        file_signature = is_get_bin_image_signature(ctx->firmware_path);
     }
     else if(strcmp(extension, "hex") == 0)
     {
-        file_signature = is_get_hex_image_signature(ctx);
+        file_signature = is_get_hex_image_signature(ctx->firmware_path);
     }
     else
     {
@@ -377,7 +377,7 @@ void is_update_flash(void* context)
 
     if(strcmp(extension, "bin") == 0)
     {
-        file_signature = is_get_bin_image_signature(ctx);
+        file_signature = is_get_bin_image_signature(ctx->firmware_path);
         if(!(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K)))
         {
             ctx->info_callback(ctx, "Image must be .hex", IS_LOG_LEVEL_ERROR);
@@ -388,7 +388,7 @@ void is_update_flash(void* context)
     }
     else if(strcmp(extension, "hex") == 0)
     {
-        file_signature = is_get_hex_image_signature(ctx);
+        file_signature = is_get_hex_image_signature(ctx->firmware_path);
         if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K))
         {
             ctx->info_callback(ctx, "SAMx70 bootloader files must be .bin", IS_LOG_LEVEL_ERROR);
@@ -417,6 +417,7 @@ void is_update_flash(void* context)
     
     if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
     {
+        ctx->info_callback(ctx, "Found device in DFU mode", IS_LOG_LEVEL_INFO);
         if(ctx->device_type == IS_DEV_TYPE_DFU)
         {   /** DFU MODE */
             ctx->use_progress = true;
@@ -431,6 +432,7 @@ void is_update_flash(void* context)
     {
         if(ctx->device_type == IS_DEV_TYPE_SAMBA)
         {   /** SAM-BA MODE */
+            ctx->info_callback(ctx, "Found device in SAM-BA mode", IS_LOG_LEVEL_INFO);
             if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K))
             {
                 ctx->use_progress = true;
@@ -443,7 +445,7 @@ void is_update_flash(void* context)
         }
         else if(ctx->device_type == IS_DEV_TYPE_ISB)
         {
-            ctx->info_callback(ctx, "Found device in bootloader mode", IS_LOG_LEVEL_INFO);
+            ctx->info_callback(ctx, "Found device in ISB mode", IS_LOG_LEVEL_INFO);
             if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
             {
                 is_isb_restart_rom(&ctx->handle.port);

@@ -47,12 +47,16 @@ void ISBootloader::update_thread(void* context)
         }
     }
 
+    SLEEP_MS(100);
+
     is_update_flash(context);
 
     if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
     {
         serialPortClose(&ctx->handle.port);
     }
+
+    SLEEP_MS(1000);
 }
 
 void ISBootloader::update_finish(void* context)
@@ -103,7 +107,7 @@ is_operation_result ISBootloader::update(
     
     // DFU stuff
     is_dfu_list dfu_list;
-    bool use_dfu = libusb_init(NULL) >= 0;
+    bool use_dfu = false;
     
     // Serial port stuff
     vector<string> ports;
@@ -116,6 +120,18 @@ is_operation_result ISBootloader::update(
         ports.begin(), ports.end(), 
         comPorts.begin(), comPorts.end(),
         back_inserter(ports_user_ignore));
+
+    // Only turn on DFU updates if signature is for a STM32L4 bootloader
+    const char * extension = get_file_ext(firmware);
+    is_image_signature file_signature;  
+    if(strcmp(extension, "hex") == 0)
+    {
+        file_signature = is_get_hex_image_signature(firmware);
+    }
+    if(file_signature == IS_IMAGE_SIGN_ISB_STM32L4 && libusb_init(NULL) >= 0)
+    {
+        use_dfu = true;
+    }
 
     while(1)
     {
@@ -133,15 +149,20 @@ is_operation_result ISBootloader::update(
 
                 for(size_t j = 0; j < ctx.size(); j++)
                 {
-                    if(ctx[j]->handle.status != IS_HANDLE_TYPE_LIBUSB) continue;
-                    if(ctx[j]->handle.dfu.handle_libusb == dfu_list.id[i].handle_libusb) 
+                    if( ctx[j]->handle.status == IS_HANDLE_TYPE_LIBUSB && 
+                        (strncmp(ctx[j]->handle.dfu.uid, dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE) == 0)
+                    )
                     {   // We found the device in the context list
                         found = true;
                         break;
                     }
+                    else
+                    {
+                        found = false;
+                    }
                 }
 
-                if(!found)
+                if(!found && strlen(dfu_list.id[i].uid) != 0)
                 {   // If we didn't find the device
                     is_device_handle handle;
                     memset(&handle, 0, sizeof(is_device_handle));
@@ -227,9 +248,9 @@ is_operation_result ISBootloader::update(
             }
         }
 
-        if(noChange > 50)
+        if(noChange > 100)
         {
-            break;    // After 2.5 seconds of no changes and no threads running, quit
+            break;    // After 1 second of no changes and no threads running, quit
         }
     }
 
