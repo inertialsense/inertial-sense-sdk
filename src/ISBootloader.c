@@ -367,7 +367,8 @@ void is_update_flash(void* context)
     if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
         ctx->info_callback(ctx, "The image is incompatible with this device", IS_LOG_LEVEL_ERROR);
-        ctx->update_in_progress = false;      
+        ctx->update_in_progress = false;     
+        ctx->finished_flash = true;
         return;
     }
 
@@ -381,6 +382,7 @@ void is_update_flash(void* context)
         {
             ctx->info_callback(ctx, "Image must be .hex", IS_LOG_LEVEL_ERROR);
             ctx->update_in_progress = false;
+            ctx->finished_flash = true;
             return;
         }
     }
@@ -391,6 +393,7 @@ void is_update_flash(void* context)
         {
             ctx->info_callback(ctx, "SAMx70 bootloader files must be .bin", IS_LOG_LEVEL_ERROR);
             ctx->update_in_progress = false;
+            ctx->finished_flash = true;
             return;
         }
     }
@@ -398,6 +401,7 @@ void is_update_flash(void* context)
     {
         ctx->info_callback(ctx, "Invalid firmware filename extension", IS_LOG_LEVEL_ERROR);
         ctx->update_in_progress = false;
+        ctx->finished_flash = true;
         return;
     }
 
@@ -416,7 +420,11 @@ void is_update_flash(void* context)
         if(ctx->device_type == IS_DEV_TYPE_DFU)
         {   /** DFU MODE */
             ctx->use_progress = true;
-            if(is_dfu_flash(ctx) == IS_OP_OK) { ctx->update_in_progress = false; ctx->finished_flash = true; }
+            if(is_dfu_flash(ctx) == IS_OP_OK) 
+            {
+                ctx->update_in_progress = false;
+                ctx->finished_flash = true;
+            }
         }
     }
     else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
@@ -426,7 +434,11 @@ void is_update_flash(void* context)
             if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K))
             {
                 ctx->use_progress = true;
-                if(is_samba_flash(ctx) == IS_OP_OK) { ctx->update_in_progress = false; ctx->finished_flash = true; }
+                if(is_samba_flash(ctx) == IS_OP_OK) 
+                {
+                    ctx->update_in_progress = false;
+                    ctx->finished_flash = true;
+                }
             }
         }
         else if(ctx->device_type == IS_DEV_TYPE_ISB)
@@ -441,7 +453,11 @@ void is_update_flash(void* context)
             else
             {
                 ctx->use_progress = true;
-                if(is_isb_flash(ctx) == IS_OP_OK) { ctx->update_in_progress = false; ctx->finished_flash = true; }
+                if(is_isb_flash(ctx) == IS_OP_OK) 
+                { 
+                    ctx->update_in_progress = false; 
+                    ctx->finished_flash = true; 
+                }
             }
         }
         else if(ctx->device_type == IS_DEV_TYPE_APP)
