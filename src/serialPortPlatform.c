@@ -628,27 +628,17 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
 #else
 
-    return write(handle->fd, buffer, writeCount);
-
-    // if desired in the future, this will block until the data has been successfully written to the serial port
-    /*
     int count = write(handle->fd, buffer, writeCount);
-    int error = tcdrain(handle->fd);
+    int error = 0;
+    if(handle->blocking) error = tcdrain(handle->fd);
 
     if (error != 0)
     {
-    error_message("error %d from tcdrain", errno);
-    return 0;
+        error_message("error %d from tcdrain", errno);
+        return 0;
     }
 
     return count;
-    */
-
-	if (serialPort->pfnWrite)
-	{
-		return serialPort->pfnWrite(serialPort, buffer, writeCount);
-	}
-	return 0;
 
 #endif
 
