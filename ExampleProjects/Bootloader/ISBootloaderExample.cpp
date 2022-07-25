@@ -11,21 +11,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <stdio.h>
+#include <vector>
+#include <string>
 
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
-#include "../../src/ISBootloader.h"
-#include "../../src/ISBootloaderDFU.h"
+#include "../../src/ISBootloaderThread.h"
+#include "../../src/ISSerialPort.h"
 
 // print out upload progress
-static is_operation_result bootloaderUploadProgress(const void* obj, float percent)
+static is_operation_result bootloaderUploadProgress(void* obj, float pct)
 {
 	if (obj == NULL) return IS_OP_OK;
 
 	is_device_context* ctx = (is_device_context*)obj;
-	percent = (int)(percent * 100.0f);
+	int percent = (int)(pct * 100.0f);
 	printf("\rUpload Progress: %d%%\r", percent);
 	ctx->update_progress = percent;
 
@@ -33,19 +35,19 @@ static is_operation_result bootloaderUploadProgress(const void* obj, float perce
 }
 
 // print out verify progress
-static is_operation_result bootloaderVerifyProgress(const void* obj, float percent)
+static is_operation_result bootloaderVerifyProgress(void* obj, float pct)
 {
 	if (obj == NULL) return IS_OP_OK;
 
 	is_device_context* ctx = (is_device_context*)obj;
-	percent = (int)(percent * 100.0f);
+	int percent = (int)(pct * 100.0f);
 	printf("\rVerify Progress: %d%%\r", percent);
 	ctx->update_progress = percent;
 
 	return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
 }
 
-static void bootloaderStatusText(const void* obj, const char* info)
+static void bootloaderStatusText(void* obj, const char* info, is_log_level level)
 {
 	if (obj == NULL) return;
 
@@ -79,22 +81,23 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	is_device_handle handle;
-	memset(&handle, 0, sizeof(is_device_handle));
-	strncpy(handle.port_name, argv[1], 100);
-	handle.status = IS_HANDLE_TYPE_SERIAL;
-	handle.baud = atoi(argv[2]);
-	is_device_context* ctx = is_create_context(
-		&handle,
-		argv[3],
+	// For now, we will use all present devices.
+	std::vector<std::string> uids;
+	std::vector<std::string> portStrings;
+	cISSerialPort::GetComPorts(portStrings);
+
+	// update the firmware on any port that was open
+	ISBootloader::update(
+		portStrings,
+		uids,
+		atoi(argv[1]),
+		argv[2],
 		bootloaderUploadProgress,
 		bootloaderVerifyProgress,
 		bootloaderStatusText,
-		NULL
-	);
+		NULL,
+		NULL);
 
-	is_update_flash(ctx);
-
-	is_destroy_context(ctx);
+	return 0;
 }
 
