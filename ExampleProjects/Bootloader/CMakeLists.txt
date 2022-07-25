@@ -35,7 +35,8 @@ find_library(LIBUSB_LIBRARY
 
 target_include_directories(ISBootloaderExample PUBLIC
 	../../src
-	../../src/libusb
+	../../src/libusb/libusb
+	../../src/libusb/msvc
 )
 
 target_link_libraries(ISBootloaderExample ${LIBUSB_LIBRARY})

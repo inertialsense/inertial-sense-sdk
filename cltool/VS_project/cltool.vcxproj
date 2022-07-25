@@ -250,7 +250,6 @@
     <ClInclude Include="..\..\src\ISBootloaderThread.h" />
     <ClInclude Include="..\..\src\ISBootloaderTypes.h" />
     <ClInclude Include="..\..\src\ISLogStats.h" />
-    <ClInclude Include="..\..\src\libusb\libusb.h" />
     <ClInclude Include="..\..\src\libusb\libusb\libusb.h" />
     <ClInclude Include="..\..\src\libusb\libusb\libusbi.h" />
     <ClInclude Include="..\..\src\libusb\libusb\os\events_windows.h" />

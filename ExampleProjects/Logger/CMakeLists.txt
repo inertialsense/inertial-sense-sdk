@@ -72,7 +72,8 @@ find_library(LIBUSB_LIBRARY
 
 target_include_directories(ISLoggerExample PUBLIC
 	../../src
-	../../src/libusb
+	../../src/libusb/libusb
+	../../src/libusb/msvc
 )
 
 target_link_libraries(ISLoggerExample pthread ${LIBUSB_LIBRARY} m)

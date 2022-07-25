@@ -336,9 +336,6 @@
     <ClInclude Include="..\..\src\ihex.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\libusb\libusb.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ISBootloader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
