@@ -116,7 +116,7 @@ is_operation_result is_dfu_list_devices(is_dfu_list* list)
 
     size_t device_count = libusb_get_device_list(NULL, &device_list);
 
-    for (size_t i = 0; i < device_count; ++i) {
+    for (size_t i = 0; i < (device_count - 1); ++i) {
         dev = device_list[i];
 
         ret_libusb = libusb_get_device_descriptor(dev, &desc);
@@ -276,9 +276,6 @@ is_operation_result is_dfu_flash(is_device_context* ctx)
     dfu_error ret_dfu;
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
     size_t image_sections;
-    libusb_device** device_list;
-    struct libusb_device_descriptor desc;
-    struct libusb_config_descriptor* cfg;
 
     // Reset the device
     ret_libusb = libusb_reset_device(ctx->handle.dfu.handle_libusb);

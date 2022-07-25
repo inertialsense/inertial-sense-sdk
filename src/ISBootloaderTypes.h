@@ -33,7 +33,7 @@ extern "C" {
 #pragma warning( push )
 #pragma warning( disable : 4200 )
 #endif
-#include "libusb/libusb.h"
+#include "libusb.h"
 #if PLATFORM_IS_WINDOWS
 #pragma warning( pop )
 #endif
@@ -73,6 +73,8 @@ typedef enum {
     IS_IMAGE_SIGN_UINS_5 = 0x00000080,
     
     IS_IMAGE_SIGN_NUM_BITS_USED = 8,
+
+    IS_IMAGE_SIGN_NONE = 0,
 } is_image_signature;
 
 typedef struct

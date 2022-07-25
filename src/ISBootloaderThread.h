@@ -69,6 +69,7 @@ private:
     static void* m_user_data;
     static int m_baudRate;
     static void (*m_waitAction)();
+    static uint32_t m_timeStart;
 };
 
 #endif // __IS_BOOTLOADER_H_

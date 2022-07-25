@@ -33,6 +33,7 @@ pfnBootloadStatus ISBootloader::m_infoProgress;
 void* ISBootloader::m_user_data;
 int ISBootloader::m_baudRate;
 void (*ISBootloader::m_waitAction)();
+uint32_t ISBootloader::m_timeStart;
 
 void ISBootloader::update_thread(void* context)
 {
@@ -92,6 +93,8 @@ is_operation_result ISBootloader::update(
     void						(*waitAction)()
 )
 {
+    (void)uids;
+
     m_firmware = firmware;
     m_uploadProgress = uploadProgress;
     m_verifyProgress = verifyProgress;
@@ -99,7 +102,7 @@ is_operation_result ISBootloader::update(
     m_user_data = user_data;
     m_baudRate = baudRate;
     m_waitAction = waitAction;
-
+    m_timeStart = current_timeMs();
 
     int noChange = 0;
 
@@ -123,7 +126,7 @@ is_operation_result ISBootloader::update(
 
     // Only turn on DFU updates if signature is for a STM32L4 bootloader
     const char * extension = get_file_ext(firmware);
-    is_image_signature file_signature;  
+    is_image_signature file_signature = IS_IMAGE_SIGN_NONE;
     if(strcmp(extension, "hex") == 0)
     {
         file_signature = is_get_hex_image_signature(firmware);
@@ -135,9 +138,11 @@ is_operation_result ISBootloader::update(
 
     while(1)
     {
-        SLEEP_MS(10);
-
-        if(m_waitAction) m_waitAction();
+//        for(int i = 0; i < 10; i++)
+        {   // Sleep and update UI for 100ms before looping through device management again
+            SLEEP_MS(10);
+            if(m_waitAction) m_waitAction();
+        }
 
         if(use_dfu)
         {
@@ -229,10 +234,11 @@ is_operation_result ISBootloader::update(
             {
                 threadJoinAndFree(ctx[i]->thread);
                 ctx[i]->thread = NULL;
+                m_timeStart = current_timeMs();
             }
         }
 
-        noChange++;
+        noChange = 0;
 
         for(size_t i = 0; i < ctx.size(); i++)
         {   
@@ -242,15 +248,15 @@ is_operation_result ISBootloader::update(
                 ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
             }
             
-            if(ctx[i]->thread)
+            if(ctx[i]->thread || ctx[i]->update_in_progress)
             {
-                noChange = 0;
+                noChange = 1;
             }
         }
 
-        if(noChange > 100)
+        if(!noChange && (current_timeMs() - m_timeStart > 5000))
         {
-            break;    // After 1 second of no changes and no threads running, quit
+            break;    // After 5 seconds of no changes and no threads running, quit
         }
     }
 
@@ -265,7 +271,7 @@ is_operation_result ISBootloader::update(
         // is_destroy_context(ctx[i]);
     }
 
-    libusb_exit(NULL);
+    if(use_dfu) { libusb_exit(NULL); }
 
     return IS_OP_OK;
 }

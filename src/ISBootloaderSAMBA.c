@@ -84,7 +84,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
 
-    is_samba_reset(ctx);
+    // is_samba_reset(ctx);
 
     SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to re-init SAM-BA device");
 
