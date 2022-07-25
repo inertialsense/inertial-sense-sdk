@@ -91,6 +91,7 @@ is_operation_result is_isb_negotiate_version(is_device_context* ctx)
     ctx->props.isb.verify_size = MAX_VERIFY_CHUNK_SIZE;
 #endif
 
+    serialPortSleep(&ctx->handle.port, 100);
     return IS_OP_OK;
 }
 
@@ -195,6 +196,7 @@ is_operation_result is_isb_handshake(is_device_context* ctx)
         if (is_isb_sync(port) == IS_OP_OK)  //else
         {
             ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
+            serialPortSleep(port, 100);
             return IS_OP_OK;
         }
     }
@@ -985,9 +987,6 @@ is_operation_result is_isb_reboot_to_app(serial_port_t* port)
 
 is_operation_result is_isb_get_version(is_device_context* ctx)
 {
-    serialPortClose(&ctx->handle.port);
-    serialPortOpenRetry(&ctx->handle.port, ctx->handle.port.port, ctx->handle.baud, 1);
-	
     serialPortFlush(&ctx->handle.port);
 
 	// Send command
@@ -1024,6 +1023,7 @@ is_operation_result is_isb_get_version(is_device_context* ctx)
         ctx->props.serial = 0;
     }
 
+    serialPortSleep(&ctx->handle.port, 1000);
     return IS_OP_OK;
 }
 
