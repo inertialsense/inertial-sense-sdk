@@ -74,7 +74,7 @@ find_library(LIBUSB_LIBRARY
 	PATH_SUFFIXES "lib" "lib32" "lib64"
 )
 
-target_include_directories(InertialSense PUBLIC src external)
+target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb)
 target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} m)
 target_compile_options(InertialSense PUBLIC -fPIC)
 

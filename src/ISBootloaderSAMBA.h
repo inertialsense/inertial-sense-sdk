@@ -37,6 +37,9 @@ is_operation_result is_samba_flash(is_device_context* ctx);
 
 is_operation_result is_samba_init(is_device_context* ctx);
 
+is_operation_result is_samba_boot_from_flash(is_device_context* ctx);
+is_operation_result is_samba_reset(is_device_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

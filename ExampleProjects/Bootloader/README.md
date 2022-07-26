@@ -6,7 +6,7 @@ This [ISBootloaderExample](https://github.com/inertialsense/inertial-sense-sdk/t
 
 #### Project Files
 
-* [ISBootloaderExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Bootloader/ISBootloaderExample.c)
+* [ISBootloaderExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Bootloader/ISBootloaderExample.cpp)
 
 #### SDK Files
 

@@ -47,8 +47,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define SAMBA_STATUS(x, level) ctx->info_callback(ctx, x, level)
 #define SAMBA_ERROR_CHECK(x, error) if(x != IS_OP_OK) \
-    { \
-        serialPortClose(port); \
+    { /* serialPortClose(port); */ \
         SAMBA_STATUS(error, IS_LOG_LEVEL_ERROR); \
         return IS_OP_ERROR; \
     }
@@ -56,11 +55,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 static is_operation_result is_samba_read_word(is_device_context* ctx, uint32_t address, uint32_t* word);
 static is_operation_result is_samba_write_word(is_device_context* ctx, uint32_t address, uint32_t word);
 static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool waitReady);
-static is_operation_result is_samba_boot_from_flash(is_device_context* ctx);
 static is_operation_result is_samba_write_uart_modem(is_device_context* ctx, uint8_t* buf, size_t len);
 static is_operation_result is_samba_flash_erase_write_page(is_device_context* ctx, size_t offset, uint8_t data[SAMBA_PAGE_SIZE], bool isUSB);
 static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t checksum);
-static is_operation_result is_samba_reset(is_device_context* ctx);
 static is_operation_result is_samba_erase_flash(is_device_context * ctx);
 
 static uint16_t crc_update(uint16_t crc_in, int incr);
@@ -87,7 +84,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
 {
     serial_port_t* port = &ctx->handle.port;
 
-    is_samba_reset(ctx);
+    // is_samba_reset(ctx);
 
     SAMBA_ERROR_CHECK(is_samba_init(ctx), "Failed to re-init SAM-BA device");
 
@@ -96,12 +93,12 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     uint8_t buf[SAMBA_PAGE_SIZE];
     uint32_t checksum = 0;
 
-    serialPortClose(port);
-    if (!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
-    {
-        serialPortClose(port);
-        return IS_OP_ERROR;
-    }
+    // serialPortClose(port);
+    // if (!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
+    // {
+    //     serialPortClose(port);
+    //     return IS_OP_ERROR;
+    // }
 
     SAMBA_ERROR_CHECK(is_samba_erase_flash(ctx), "Failed to erase flash memory");
 
@@ -109,12 +106,13 @@ is_operation_result is_samba_flash(is_device_context* ctx)
     for(int isUSB = 0; isUSB < 2; isUSB++)
     {
         serialPortSleep(port, 250);
-        serialPortClose(port);
-        if(!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
-        {
-            serialPortClose(port);
-            return IS_OP_ERROR;
-        }
+        // serialPortClose(port);
+        // if(!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
+        // {
+        //     serialPortClose(port);
+        //     return IS_OP_ERROR;
+        // }
+        serialPortFlush(port);
 
         // flush
         serialPortWrite(port, (const uint8_t*)"#", 2);
@@ -130,7 +128,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         if (file == 0)
         {
             SAMBA_STATUS("Unable to load bootloader file", IS_LOG_LEVEL_ERROR);
-            serialPortClose(port);
+            // serialPortClose(port);
             return 0;
         }
 
@@ -142,7 +140,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         if (size != SAMBA_BOOTLOADER_SIZE_24K)
         {
             SAMBA_STATUS("Invalid or old (v5 or earlier) bootloader file", IS_LOG_LEVEL_ERROR);
-            serialPortClose(port);
+            // serialPortClose(port);
             return 0;
         }
 
@@ -156,7 +154,7 @@ is_operation_result is_samba_flash(is_device_context* ctx)
             {
                 if (!isUSB) { offset = 0; break; } // try USB mode
                 SAMBA_STATUS("Failed to upload page", IS_LOG_LEVEL_ERROR);
-                serialPortClose(port);
+                // serialPortClose(port);
                 return 0;
             }
             for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
@@ -181,10 +179,10 @@ is_operation_result is_samba_flash(is_device_context* ctx)
         SAMBA_ERROR_CHECK(is_samba_verify(ctx, checksum), "Verification error!");
     }
     
-    SAMBA_ERROR_CHECK(is_samba_boot_from_flash(ctx), "Failed to set boot from flash GPNVM bit!");
-    is_samba_reset(ctx);
+    // SAMBA_ERROR_CHECK(is_samba_boot_from_flash(ctx), "Failed to set boot from flash GPNVM bit!");
+    // is_samba_reset(ctx);
 
-    serialPortClose(port);
+    // serialPortClose(port);
 
     SLEEP_MS(1000);
 
@@ -213,13 +211,13 @@ is_operation_result is_samba_init(is_device_context* ctx)
     uint8_t buf[SAMBA_PAGE_SIZE];
 
     serialPortSleep(port, 250);
-    serialPortClose(port);
-    if (!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
-    {
-        serialPortClose(port);
-        return IS_OP_ERROR;
-    }
-
+    // serialPortClose(port);
+    // if (!serialPortOpenRetry(port, port->port, SAMBA_BAUDRATE, 1))
+    // {
+    //     serialPortClose(port);
+    //     return IS_OP_ERROR;
+    // }
+    
     // Flush the bootloader command buffer
     serialPortWrite(port, (const uint8_t*)"#", 2);
     int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
@@ -228,16 +226,14 @@ is_operation_result is_samba_init(is_device_context* ctx)
     count = serialPortWriteAndWaitFor(port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
     if (!count)
     {   // Failed to handshake with bootloader
-        serialPortClose(port);
+        // serialPortClose(port);
         return IS_OP_ERROR;
     }
 
     // Set flash mode register
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c00, 0x04000600), "Failed to set flash mode register");
 
-    SAMBA_STATUS("SAM-BA ROM bootloader initialized", IS_LOG_LEVEL_INFO);
-
-    serialPortClose(port);
+    // serialPortClose(port);
 
     return IS_OP_OK;
 }
@@ -250,8 +246,6 @@ is_operation_result is_samba_init(is_device_context* ctx)
  */
 is_operation_result is_samba_get_serial(is_device_context* ctx)
 {
-    serial_port_t* port = &ctx->handle.port;
-
     // Set flash command to STUS (start read unique signature)
     SAMBA_ERROR_CHECK(is_samba_write_word(ctx, 0x400e0c04, 0x5a000014), "Failed to command signature readout");
     
@@ -331,7 +325,7 @@ static is_operation_result is_samba_wait_eefc_ready(is_device_context* ctx, bool
  * @param ctx device context with open serial port registered under `handler`
  * @return is_operation_result 
  */
-static is_operation_result is_samba_boot_from_flash(is_device_context* ctx)
+is_operation_result is_samba_boot_from_flash(is_device_context* ctx)
 {
     // EEFC.FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
     if (is_samba_write_word(ctx, 0x400e0c04, 0x5a00010b) == IS_OP_OK)
@@ -516,7 +510,7 @@ static is_operation_result is_samba_verify(is_device_context* ctx, uint32_t chec
  * @param ctx device context with open serial port registered under `handler`
  * @return is_operation_result 
  */
-static is_operation_result is_samba_reset(is_device_context* ctx)
+is_operation_result is_samba_reset(is_device_context* ctx)
 {
     // RSTC_CR, RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST
     uint32_t status;

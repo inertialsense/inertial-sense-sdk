@@ -73,6 +73,7 @@ ext_modules = [
             'include',
             '../src',
             '../../src',
+            '../../src/libusb/libusb',
             get_pybind_include(),
             get_pybind_include(user=True)
         ],

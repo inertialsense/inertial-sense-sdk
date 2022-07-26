@@ -727,13 +727,13 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	
 	// For now, we will use all present DFU devices. The bootloader code will only load them with images that have the right signature, so this is safe.
 	std::vector<std::string> uids;
-	is_dfu_list dfu_list;
+	/*is_dfu_list dfu_list;
 	is_dfu_list_devices(&dfu_list);
 
 	for (size_t i = 0; i < dfu_list.present; i++)
 	{
 		uids.push_back(std::string(dfu_list.id->uid));
-	}
+	}*/
 
 	if (comPort == "*")
 	{
@@ -768,7 +768,7 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 
 	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
 	{
-		if(!ISBootloader::ctx[i]->success)
+		if(!ISBootloader::ctx[i]->finished_flash)
 		{
 			results.push_back({ std::to_string(ISBootloader::ctx[i]->props.serial), "failure "});
 		}

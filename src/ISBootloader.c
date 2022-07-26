@@ -32,6 +32,26 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 const char* is_samx70_bootloader_needle = "SAMx70-Bootloader";
 
+is_operation_result bootloadUploadProgress(void* obj, float percent)
+{
+	if(obj == NULL) return IS_OP_OK;
+
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->update_progress = percent;
+
+    return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
+}
+
+is_operation_result bootloadVerifyProgress(void* obj, float percent)
+{
+	if(obj == NULL) return IS_OP_OK;
+
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->verify_progress = percent;
+
+    return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
+}
+
 static is_operation_result dummy_update_callback(void* obj, float percent) 
 {
     is_device_context* ctx = (is_device_context*)obj;
@@ -73,7 +93,12 @@ is_device_context* is_create_context(
     ctx->success = false;
     ctx->update_progress = 0.0;
     ctx->verify_progress = 0.0;
+    ctx->use_progress = false;
     ctx->update_in_progress = true;
+    ctx->retries_left = 3;
+    ctx->device_type = IS_DEV_TYPE_NONE;
+    ctx->start_time_ms = 0;
+    ctx->finished_flash = false;
 
     serialPortPlatformInit(&ctx->handle.port);
     serialPortSetPort(&ctx->handle.port, handle->port_name);
@@ -98,7 +123,7 @@ void is_destroy_context(is_device_context* ctx)
  * @param filename
  * @return const char* 
  */
-static const char* get_file_ext(const char *filename) 
+const char* get_file_ext(const char *filename) 
 {
     const char *dot = strrchr(filename, '.');   // Find last '.' in file name
     if(!dot || dot == filename) return "";
@@ -113,12 +138,12 @@ static const char* get_file_ext(const char *filename)
  */
 static is_operation_result is_app_get_version(is_device_context* ctx)
 {
-     serialPortClose(&ctx->handle.port);
-     if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->handle.baud, 1) == 0)
-     {
-         serialPortClose(&ctx->handle.port);
-         return IS_OP_ERROR;
-     }    
+    // serialPortClose(&ctx->handle.port);
+    // if (serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, ctx->handle.baud, 1) == 0)
+    // {
+    //     serialPortClose(&ctx->handle.port);
+    //     return IS_OP_ERROR;
+    // }    
     serialPortFlush(&ctx->handle.port);
 
     // Get DID_DEV_INFO from the uINS.
@@ -131,19 +156,19 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
     {
-        serialPortClose(&ctx->handle.port);
+        // serialPortClose(&ctx->handle.port);
         return IS_OP_ERROR;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
     if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
     {
-        serialPortClose(&ctx->handle.port);
+        // serialPortClose(&ctx->handle.port);
         return IS_OP_ERROR;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_STATUS, 0, 0, 0);
     if (messageSize != serialPortWrite(&ctx->handle.port, comm.buf.start, messageSize))
     {
-        serialPortClose(&ctx->handle.port);
+        // serialPortClose(&ctx->handle.port);
         return IS_OP_ERROR;
     }
 
@@ -183,7 +208,7 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
         }
     }
     
-    serialPortClose(&ctx->handle.port);
+    // serialPortClose(&ctx->handle.port);
 
     if(ctx->props.app.uins_version[0] == 0 && ctx->props.app.evb_version[0] == 0) return IS_OP_ERROR;
 
@@ -196,10 +221,10 @@ static is_operation_result is_app_get_version(is_device_context* ctx)
  * @param firmware 
  * @return is_device_type 
  */
-static is_image_signature is_get_hex_image_signature(is_device_context* ctx)
+is_image_signature is_get_hex_image_signature(const char* img)
 {
     ihex_image_section_t image;
-    size_t sections = ihex_load_sections(ctx->firmware_path, &image, 1);
+    size_t sections = ihex_load_sections(img, &image, 1);
     size_t image_type;
 
     if(sections == 1)   // Signature must be in the first section of the image
@@ -233,7 +258,7 @@ static is_image_signature is_get_hex_image_signature(is_device_context* ctx)
     }
     
     // Backup for old (16K) bootloader image
-    if (strstr(ctx->firmware_path, is_samx70_bootloader_needle))
+    if (strstr(img, is_samx70_bootloader_needle))
     {
         return IS_IMAGE_SIGN_ISB_SAMx70_16K;
     }
@@ -241,7 +266,7 @@ static is_image_signature is_get_hex_image_signature(is_device_context* ctx)
     return 0;
 }
 
-static is_image_signature is_get_bin_image_signature(is_device_context* ctx)
+is_image_signature is_get_bin_image_signature(const char* ctx)
 {
     return IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
 }
@@ -255,11 +280,11 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
 
     if(strcmp(extension, "bin") == 0)
     {
-        file_signature = is_get_bin_image_signature(ctx);
+        file_signature = is_get_bin_image_signature(ctx->firmware_path);
     }
     else if(strcmp(extension, "hex") == 0)
     {
-        file_signature = is_get_hex_image_signature(ctx);
+        file_signature = is_get_hex_image_signature(ctx->firmware_path);
     }
     else
     {
@@ -272,12 +297,38 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
     if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
     {   /** DFU MODE */
         valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+        ctx->device_type = IS_DEV_TYPE_DFU;
     }
     else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
     {
         if(is_samba_init(ctx) == IS_OP_OK)
         {   /** SAM-BA MODE */
             valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+            ctx->device_type = IS_DEV_TYPE_SAMBA;
+        }
+        else if(is_isb_handshake(ctx) == IS_OP_OK && is_isb_negotiate_version(ctx) == IS_OP_OK && is_isb_get_version(ctx) == IS_OP_OK)
+        {   /** IS BOOTLOADER MODE */
+            if(ctx->props.isb.major >= 6)   
+            {   // v6 and has EVB detection built-in
+                if(ctx->props.isb.processor == IS_PROCESSOR_SAMx70)
+                {   
+                    valid_signatures |= ctx->props.isb.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
+                    valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+                }
+                else if(ctx->props.isb.processor == IS_PROCESSOR_STM32L4)
+                {
+                    valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+                    valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+                }
+            }
+            else
+            {
+                valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
+                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+                old_bootloader_version = true;
+            }
+
+            ctx->device_type = IS_DEV_TYPE_ISB;
         }
         else if (is_app_get_version(ctx) == IS_OP_OK)
         {   /** APP MODE */
@@ -301,28 +352,8 @@ is_operation_result is_check_signature_compatibility(is_device_context* ctx)
                 valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
                 valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
             }
-        }
-        else if(is_isb_handshake(ctx) == IS_OP_OK && is_isb_negotiate_version(ctx) == IS_OP_OK && is_isb_get_version(ctx) == IS_OP_OK)
-        {   /** IS BOOTLOADER MODE */
-            if(ctx->props.isb.major >= 6)   
-            {   // v6 and has EVB detection built-in
-                if(ctx->props.isb.processor == IS_PROCESSOR_SAMx70)
-                {   
-                    valid_signatures |= ctx->props.isb.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
-                    valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-                }
-                else if(ctx->props.isb.processor == IS_PROCESSOR_STM32L4)
-                {
-                    valid_signatures |= IS_IMAGE_SIGN_UINS_5;
-                    valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
-                }
-            }
-            else
-            {
-                valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
-                valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-                old_bootloader_version = true;
-            }
+
+            ctx->device_type = IS_DEV_TYPE_APP;
         }
         else
         {
@@ -356,7 +387,8 @@ void is_update_flash(void* context)
     if(is_check_signature_compatibility(ctx) != IS_OP_OK)
     {
         ctx->info_callback(ctx, "The image is incompatible with this device", IS_LOG_LEVEL_ERROR);
-        ctx->update_in_progress = false;
+        ctx->update_in_progress = false;     
+        ctx->finished_flash = true;
         return;
     }
 
@@ -365,19 +397,23 @@ void is_update_flash(void* context)
 
     if(strcmp(extension, "bin") == 0)
     {
-        file_signature = is_get_bin_image_signature(ctx);
+        file_signature = is_get_bin_image_signature(ctx->firmware_path);
         if(!(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K)))
         {
             ctx->info_callback(ctx, "Image must be .hex", IS_LOG_LEVEL_ERROR);
+            ctx->update_in_progress = false;
+            ctx->finished_flash = true;
             return;
         }
     }
     else if(strcmp(extension, "hex") == 0)
     {
-        file_signature = is_get_hex_image_signature(ctx);
+        file_signature = is_get_hex_image_signature(ctx->firmware_path);
         if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_SAMx70_16K))
         {
             ctx->info_callback(ctx, "SAMx70 bootloader files must be .bin", IS_LOG_LEVEL_ERROR);
+            ctx->update_in_progress = false;
+            ctx->finished_flash = true;
             return;
         }
     }
@@ -385,104 +421,118 @@ void is_update_flash(void* context)
     {
         ctx->info_callback(ctx, "Invalid firmware filename extension", IS_LOG_LEVEL_ERROR);
         ctx->update_in_progress = false;
+        ctx->finished_flash = true;
         return;
     }
 
     // In case we are updating using the inertial sense bootloader (ISB), set the entry command based on the signature
     if(file_signature & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K))
     {
-        strncpy(ctx->props.isb.enable_command, "EBLE", 4);
+        strncpy(ctx->props.isb.enable_command, "EBLE", 5);
     }
     else
     {
-        strncpy(ctx->props.isb.enable_command, "BLEN", 4);
+        strncpy(ctx->props.isb.enable_command, "BLEN", 5);
     }
     
     if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
-    {   /** DFU MODE */
-        is_dfu_flash(ctx);
+    {
+        ctx->info_callback(ctx, "Found device in DFU mode", IS_LOG_LEVEL_INFO);
+        if(ctx->device_type == IS_DEV_TYPE_DFU)
+        {   /** DFU MODE */
+            ctx->use_progress = true;
+            if(is_dfu_flash(ctx) == IS_OP_OK) 
+            {
+                ctx->update_in_progress = false;
+                ctx->finished_flash = true;
+            }
+        }
     }
     else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
     {
-        if(is_samba_init(ctx) == IS_OP_OK)
+        if(ctx->device_type == IS_DEV_TYPE_SAMBA)
         {   /** SAM-BA MODE */
-            is_samba_flash(ctx);
-        }
-        else 
-        {
-            serialPortClose(&ctx->handle.port);
-            serialPortOpenRetry(&ctx->handle.port, ctx->handle.port.port, IS_BAUDRATE_921600, 1);   // TODO make this work at other baudrates
-
-            if(is_isb_get_version(ctx) == IS_OP_OK)
+            ctx->info_callback(ctx, "Found device in SAM-BA mode", IS_LOG_LEVEL_INFO);
+            if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K))
             {
-                ctx->info_callback(ctx, "Found device in bootloader mode", IS_LOG_LEVEL_INFO);
-            }
-            else if(is_app_get_version(ctx) == IS_OP_OK)
-            {
-                ctx->info_callback(ctx, "Found device in application mode", IS_LOG_LEVEL_INFO);
-                is_isb_enable(ctx, ctx->props.isb.enable_command);   
-                SLEEP_MS(1000);
-
-                if (is_check_signature_compatibility(ctx) != IS_OP_OK)
-                {
-                    ctx->info_callback(ctx, "Please update the bootloader image to continue", IS_LOG_LEVEL_INFO);
-                }
-                /*if(is_isb_get_version(ctx) != IS_OP_OK)
+                ctx->use_progress = true;
+                if(is_samba_flash(ctx) == IS_OP_OK) 
                 {
                     ctx->update_in_progress = false;
-                    return;
-                }*/
+                    ctx->finished_flash = true;
+                }
             }
-            else
+        }
+        else if(ctx->device_type == IS_DEV_TYPE_ISB)
+        {
+            ctx->info_callback(ctx, "Found device in ISB mode", IS_LOG_LEVEL_INFO);
+            if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
             {
-                ctx->info_callback(ctx, "Invalid device", IS_LOG_LEVEL_INFO);
+                is_isb_restart_rom(&ctx->handle.port);
                 ctx->update_in_progress = false;
                 return;
             }
-           
-            if(file_signature & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4))
-            {
-                if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
-                {   /** ALREADY IN DFU MODE */
-                    is_dfu_flash(ctx);
-                }
-
-                if(file_signature & IS_IMAGE_SIGN_ISB_STM32L4) 
-                {
-                    ctx->handle.status = IS_HANDLE_TYPE_LIBUSB;
-                    ctx->handle.dfu.pid = STM32_DESCRIPTOR_PRODUCT_ID;
-                    ctx->handle.dfu.vid = STM32_DESCRIPTOR_VENDOR_ID;
-                    ctx->handle.dfu.sn = ctx->props.serial;
-                    ctx->handle.dfu.uid[0] = 0; // Don't match the UID
-                }
-
-                is_isb_handshake(ctx);
-                is_isb_restart_rom(&ctx->handle.port);
-                serialPortClose(&ctx->handle.port);
-                SLEEP_MS(5000);
-
-                if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
-                {   /** DFU MODE */
-                    is_dfu_flash(ctx);
-                }
-                else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL && is_samba_init(ctx) == IS_OP_OK)
-                {   /** SAM-BA MODE */
-                    is_samba_flash(ctx);
-                }
-            }
             else
             {
-                is_isb_flash(ctx);
+                ctx->use_progress = true;
+                if(is_isb_flash(ctx) == IS_OP_OK) 
+                { 
+                    ctx->update_in_progress = false; 
+                    ctx->finished_flash = true; 
+                }
             }
+        }
+        else if(ctx->device_type == IS_DEV_TYPE_APP)
+        {
+            ctx->info_callback(ctx, "Found device in application mode", IS_LOG_LEVEL_INFO);
+            is_isb_enable(ctx, ctx->props.isb.enable_command);
+            ctx->update_in_progress = false;
+            return;
+        }
+        else
+        {
+            ctx->info_callback(ctx, "Invalid device", IS_LOG_LEVEL_INFO);
+            ctx->update_in_progress = false;
+            return;
         }
     }
     else
     {   // Invalid handle status
+        ctx->info_callback(ctx, "Invalid device", IS_LOG_LEVEL_INFO);
         ctx->update_in_progress = false;
         return;
     }
+}
+
+void is_update_finish(void* context)
+{
+    is_device_context* ctx = (is_device_context*)context;
+
+    if(ctx->handle.status == IS_HANDLE_TYPE_LIBUSB)
+    {
+        if(ctx->device_type == IS_DEV_TYPE_DFU)
+        {   /** DFU MODE */
+            is_dfu_write_option_bytes(ctx->handle.dfu.handle_libusb);
+            libusb_release_interface(ctx->handle.dfu.handle_libusb, 0);
+            libusb_close(ctx->handle.dfu.handle_libusb);
+        }
+    }
+    else if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    {
+        if(ctx->device_type == IS_DEV_TYPE_SAMBA)
+        {   /** SAM-BA MODE */
+            is_samba_boot_from_flash(ctx);
+            is_samba_reset(ctx);
+        }
+        else if(ctx->device_type == IS_DEV_TYPE_ISB)
+        {
+            // send the "reboot to program mode" command and the device should start in program mode
+            if(ctx->info_callback)
+                ctx->info_callback(ctx, "Rebooting unit...", IS_LOG_LEVEL_INFO);
+            serialPortWrite(&ctx->handle.port, (unsigned char*)":020000040300F7", 15);
+            serialPortSleep(&ctx->handle.port, 250);
+        }
+    }
 
     ctx->success = true;
-    ctx->update_in_progress = false;
-    return;
 }

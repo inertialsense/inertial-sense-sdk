@@ -143,12 +143,12 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
 
         memcpy(section->image, &image_local[minaddr], section->len);
 
-        free(image_local);
+        if(image_local) free(image_local);
         
         return eof ? 1 : 0; // Return 1 if end of file reached
     }
 
-    free(image_local);
+    if(image_local) free(image_local);
     
     return -1;	// Malloc failed or nothing in sector
 }

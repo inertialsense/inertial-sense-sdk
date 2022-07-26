@@ -91,6 +91,7 @@ is_operation_result is_isb_negotiate_version(is_device_context* ctx)
     ctx->props.isb.verify_size = MAX_VERIFY_CHUNK_SIZE;
 #endif
 
+    serialPortSleep(&ctx->handle.port, 100);
     return IS_OP_OK;
 }
 
@@ -101,14 +102,15 @@ void is_isb_restart_rom(serial_port_t* s)
 
     // restart bootloader assist command
     serialPortWrite(s, (unsigned char*)":020000040700F3", 15);
-    serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
 }
 
 void is_isb_restart(serial_port_t* s)
 {
     // restart bootloader command
     serialPortWrite(s, (unsigned char*)":020000040500F5", 15);
+    serialPortClose(s);
     serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+    serialPortOpenRetry(s, s->port, IS_BAUD_RATE_BOOTLOADER, 1);
 }
 
 // Must be ordered fastest to slowest
@@ -141,12 +143,12 @@ static is_operation_result is_isb_sync(serial_port_t* s)
     // Try to reboot the device in case it is stuck
     is_isb_restart(s);
 
-    serialPortClose(s);
-    if (serialPortOpenRetry(s, s->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
-    {
-        // can't open the port, fail
-        return IS_OP_ERROR;
-    }
+    // serialPortClose(s);
+    // if (serialPortOpenRetry(s, s->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
+    // {
+    //     // can't open the port, fail
+    //     return IS_OP_ERROR;
+    // }
 
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
@@ -185,20 +187,21 @@ is_operation_result is_isb_handshake(is_device_context* ctx)
     // try handshaking at each baud rate
     // for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList) + 1; i++)
     {
-        serialPortClose(port);
-        if (serialPortOpenRetry(port, port->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
-        {
-            // can't open the port, fail
-            return IS_OP_ERROR;
-        }
-        else if (is_isb_sync(port) == IS_OP_OK)
+        // serialPortClose(port);
+        // if (serialPortOpenRetry(port, port->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
+        // {
+        //     // can't open the port, fail
+        //     return IS_OP_ERROR;
+        // }
+        if (is_isb_sync(port) == IS_OP_OK)  //else
         {
             ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
+            serialPortSleep(port, 100);
             return IS_OP_OK;
         }
     }
 
-    ctx->info_callback(ctx, "(ISB) Failed to handshake with bootloader", IS_LOG_LEVEL_ERROR);
+//    ctx->info_callback(ctx, "(ISB) Failed to handshake with bootloader", IS_LOG_LEVEL_ERROR);
 
     // Failed to handshake
     return IS_OP_ERROR;
@@ -216,17 +219,17 @@ is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd
         if (baudRates[i] == 0)
             continue;
 
-        serialPortClose(port);
-        if (serialPortOpenRetry(port, port->port, baudRates[i], 1) == 0)
-        {
-            ctx->info_callback(ctx, "(ISB) Failed to open serial port", IS_LOG_LEVEL_ERROR);
-            serialPortClose(port);
-            return IS_OP_ERROR;
-        }
+        // serialPortClose(port);
+        // if (serialPortOpenRetry(port, port->port, baudRates[i], 1) == 0)
+        // {
+        //     ctx->info_callback(ctx, "(ISB) Failed to open serial port", IS_LOG_LEVEL_ERROR);
+        //     serialPortClose(port);
+        //     return IS_OP_ERROR;
+        // }
         for (size_t loop = 0; loop < 10; loop++)
         {
-            serialPortWriteAscii(port, "STPB", 4);
-            serialPortWriteAscii(port, enable_cmd, 4);
+            if(!serialPortWriteAscii(port, "STPB", 4)) return IS_OP_OK; 
+            if(!serialPortWriteAscii(port, enable_cmd, 4)) return IS_OP_OK;
             c = 0;
             if (serialPortReadCharTimeout(port, &c, 13) == 1)
             {
@@ -241,22 +244,22 @@ is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd
         }
     }
 
-    serialPortClose(port);
-    SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
+    // serialPortClose(port);
+    // SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
 
-    // if we can't handshake at this point, bootloader enable has failed
-    if (is_isb_handshake(ctx) != IS_OP_OK)
-    {
-        // failure
-        serialPortClose(port);
-        return IS_OP_ERROR;
-    }
+    // // if we can't handshake at this point, bootloader enable has failed
+    // if (is_isb_handshake(ctx) != IS_OP_OK)
+    // {
+    //     // failure
+    //     serialPortClose(port);
+    //     return IS_OP_ERROR;
+    // }
 
-    // ensure bootloader restarts in fresh state
-    is_isb_restart(port);
+    // // ensure bootloader restarts in fresh state
+//    is_isb_restart(port);
 
-    // by this point the bootloader should be enabled
-    serialPortClose(port);
+    // // by this point the bootloader should be enabled
+    // serialPortClose(port);
     return IS_OP_OK;
 }
 
@@ -449,8 +452,6 @@ static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsign
 
 static is_operation_result is_isb_upload_hex(is_device_context* ctx, unsigned char* hexData, int charCount, int* currentOffset, int* currentPage, int* totalBytes, int* verifyCheckSum)
 {
-    serial_port_t* s = &ctx->handle.port;
-
     if (charCount > MAX_SEND_COUNT)
     {
         ctx->info_callback(ctx, "(ISB) Unexpected char count", IS_LOG_LEVEL_ERROR);
@@ -496,8 +497,6 @@ static is_operation_result is_isb_upload_hex(is_device_context* ctx, unsigned ch
 
 static is_operation_result is_isb_fill_current_page(is_device_context* ctx, int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
-    serial_port_t* s = &ctx->handle.port;
-
     if (*currentOffset < FLASH_PAGE_SIZE)
     {
         unsigned char hexData[256];
@@ -873,12 +872,6 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
         }
     }
 
-    // send the "reboot to program mode" command and the device should start in program mode
-    if(ctx->info_callback)
-        ctx->info_callback(ctx, "Rebooting unit...", IS_LOG_LEVEL_INFO);
-    serialPortWrite(&ctx->handle.port, (unsigned char*)":020000040300F7", 15);
-    serialPortSleep(&ctx->handle.port, 250);
-
     return IS_OP_OK;
 }
 
@@ -912,12 +905,11 @@ is_operation_result is_isb_flash(is_device_context* ctx)
     if(is_isb_begin_program_for_current_page(ctx, ctx->props.isb.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
         return IS_OP_ERROR;
 
-    is_isb_process_hex_file(firmware_file, ctx);
-
-    is_isb_restart(&ctx->handle.port);
+    if(is_isb_process_hex_file(firmware_file, ctx) != IS_OP_OK)
+        return IS_OP_ERROR;
 
     fclose(firmware_file);
-    serialPortClose(&ctx->handle.port);
+    // serialPortClose(&ctx->handle.port);
 
     return IS_OP_OK;
 }
@@ -978,27 +970,24 @@ is_operation_result is_isb_reboot_to_app(serial_port_t* port)
 
     for(uint32_t i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
     {
-        serialPortClose(port);
-        if (serialPortOpenRetry(port, port->port, s_baudRateList[i], 1) == 0)
-        {
-            ret = IS_OP_ERROR; continue;
-        }
+        // serialPortClose(port);
+        // if (serialPortOpenRetry(port, port->port, s_baudRateList[i], 1) == 0)
+        // {
+            // ret = IS_OP_ERROR; continue;
+        // }
         
         // send the "reboot to program mode" command and the device should start in program mode
         serialPortWrite(port, (unsigned char*)":020000040300F7", 15);
         serialPortSleep(port, 250);
     }
 
-    serialPortClose(port);
+    // serialPortClose(port);
 
     return ret;
 }
 
 is_operation_result is_isb_get_version(is_device_context* ctx)
 {
-    serialPortClose(&ctx->handle.port);
-    serialPortOpenRetry(&ctx->handle.port, ctx->handle.port.port, ctx->handle.baud, 1);
-	
     serialPortFlush(&ctx->handle.port);
 
 	// Send command
@@ -1035,6 +1024,7 @@ is_operation_result is_isb_get_version(is_device_context* ctx)
         ctx->props.serial = 0;
     }
 
+    serialPortSleep(&ctx->handle.port, 1000);
     return IS_OP_OK;
 }
 

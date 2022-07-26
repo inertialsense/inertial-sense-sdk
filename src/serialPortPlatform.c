@@ -24,6 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
+#include <sys/file.h>
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
@@ -337,6 +338,8 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     {
         return 0;
     }
+    ioctl(fd, TIOCEXCL);    // Put device into exclusive mode
+    flock(fd, LOCK_EX | LOCK_NB);   // Add advisory lock
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->fd = fd;
     handle->blocking = blocking;
@@ -473,14 +476,8 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
                 CancelIo(handle->platformHandle);
             }
         }
-// #if _DEBUG
-// 		else
-// 		{
-// 			DWORD dRes = GetLastError();
-// 			int a = 5; a++;
-// 		}
-// #endif
-        if (!handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
+
+        if (handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
         {
             Sleep(1);
         }
@@ -625,27 +622,17 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
 #else
 
-    return write(handle->fd, buffer, writeCount);
-
-    // if desired in the future, this will block until the data has been successfully written to the serial port
-    /*
     int count = write(handle->fd, buffer, writeCount);
-    int error = tcdrain(handle->fd);
+    int error = 0;
+    if(handle->blocking) error = tcdrain(handle->fd);
 
     if (error != 0)
     {
-    error_message("error %d from tcdrain", errno);
-    return 0;
+        error_message("error %d from tcdrain", errno);
+        return 0;
     }
 
     return count;
-    */
-
-	if (serialPort->pfnWrite)
-	{
-		return serialPort->pfnWrite(serialPort, buffer, writeCount);
-	}
-	return 0;
 
 #endif
 

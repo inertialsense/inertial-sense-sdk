@@ -33,7 +33,7 @@ extern "C" {
 #pragma warning( push )
 #pragma warning( disable : 4200 )
 #endif
-#include "libusb/libusb.h"
+#include "libusb.h"
 #if PLATFORM_IS_WINDOWS
 #pragma warning( pop )
 #endif
@@ -73,6 +73,8 @@ typedef enum {
     IS_IMAGE_SIGN_UINS_5 = 0x00000080,
     
     IS_IMAGE_SIGN_NUM_BITS_USED = 8,
+
+    IS_IMAGE_SIGN_NONE = 0,
 } is_image_signature;
 
 typedef struct
@@ -134,6 +136,7 @@ typedef struct
     uint32_t sn;                        // Inertial Sense serial number
     uint16_t vid;
     uint16_t pid;
+    libusb_device_handle* handle_libusb;
 } is_dfu_id;
 
 typedef struct 
@@ -148,7 +151,6 @@ typedef struct
     serial_port_t port;
     char port_name[100];
     int baud;
-    libusb_device_handle* libusb;
     is_dfu_id dfu;
 } is_device_handle;
 
@@ -179,10 +181,24 @@ typedef struct
 
     // Status
     bool update_in_progress;
+    int retries_left;
     float update_progress;
     float verify_progress;
     bool success;
+    int device_type;
+    bool use_progress;  // Use percentages to compute total progress for all devices
+    int start_time_ms;
+    bool finished_flash;
 } is_device_context;
+
+typedef enum
+{
+    IS_DEV_TYPE_NONE = 0,
+    IS_DEV_TYPE_SAMBA,
+    IS_DEV_TYPE_ISB,
+    IS_DEV_TYPE_APP,
+    IS_DEV_TYPE_DFU,
+} is_device_type;
 
 #ifdef __cplusplus
 }

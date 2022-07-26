@@ -374,10 +374,10 @@ public:
 	*
 	TODO: Param documentation
 	*/
-	static vector<InertialSense::bootload_result_t> BootloadFile(
-		const string& comPort,
+	static std::vector<InertialSense::bootload_result_t> BootloadFile(
+		const std::string& comPort,
 		const uint32_t serialNum,
-		const string& fileName,
+		const std::string& fileName,
 		int baudRate = IS_BAUDRATE_921600,
 		pfnBootloadProgress uploadProgress = NULLPTR,
 		pfnBootloadProgress verifyProgress = NULLPTR,
