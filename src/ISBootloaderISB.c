@@ -905,7 +905,8 @@ is_operation_result is_isb_flash(is_device_context* ctx)
     if(is_isb_begin_program_for_current_page(ctx, ctx->props.isb.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
         return IS_OP_ERROR;
 
-    is_isb_process_hex_file(firmware_file, ctx);
+    if(is_isb_process_hex_file(firmware_file, ctx) != IS_OP_OK)
+        return IS_OP_ERROR;
 
     fclose(firmware_file);
     // serialPortClose(&ctx->handle.port);

@@ -262,12 +262,18 @@ is_operation_result ISBootloader::update(
 
     for(size_t i = 0; i < ctx.size(); i++)
     {   
-        ctx[i]->thread = threadCreateAndStart(update_finish, (void*)ctx[i]);
+        if (ctx[i]->finished_flash)
+        {
+            ctx[i]->thread = threadCreateAndStart(update_finish, (void*)ctx[i]);
+        }
     }
 
     for(size_t i = 0; i < ctx.size(); i++)
     {   // Free context memory
-        threadJoinAndFree(ctx[i]->thread);
+        if (ctx[i]->thread)
+        {
+            threadJoinAndFree(ctx[i]->thread);
+        }
         // is_destroy_context(ctx[i]);
     }
 

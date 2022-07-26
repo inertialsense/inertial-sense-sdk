@@ -476,14 +476,8 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
                 CancelIo(handle->platformHandle);
             }
         }
-// #if _DEBUG
-// 		else
-// 		{
-// 			DWORD dRes = GetLastError();
-// 			int a = 5; a++;
-// 		}
-// #endif
-        if (!handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
+
+        if (handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
         {
             Sleep(1);
         }
