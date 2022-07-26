@@ -44,7 +44,7 @@ target_include_directories(ISBootloaderExample PUBLIC
 	../../src/libusb/msvc
 )
 
-target_link_libraries(ISBootloaderExample ${LIBUSB_LIBRARY})
+target_link_libraries(ISBootloaderExample pthread ${LIBUSB_LIBRARY})
 
 endif()
 
