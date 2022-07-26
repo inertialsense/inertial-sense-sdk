@@ -78,9 +78,10 @@ find_library(LIBUSB_LIBRARY
 )
 
 target_include_directories(cltool PUBLIC
-	../../src
-	../../src/libusb/libusb
-	../../src/libusb/msvc
+	../src
+	../src/libusb/libusb
+	../src/libusb/msvc
+	../src/libusb
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")

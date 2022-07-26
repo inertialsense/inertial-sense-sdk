@@ -8,13 +8,13 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
-add_executable(ISBootloaderExample ISBootloaderExample.c)
+add_executable(ISBootloaderExample ISBootloaderExample.cpp)
 target_link_libraries(ISBootloaderExample InertialSense)
 
 else()	# Build only this project
 
 add_executable(ISBootloaderExample
-	ISBootloaderExample.c
+	ISBootloaderExample.cpp
 	../../src/data_sets.c
 	../../src/ISBootloaderDFU.c
 	../../src/ISBootloaderSAMBA.c
@@ -25,6 +25,11 @@ add_executable(ISBootloaderExample
 	../../src/ISComm.c
 	../../src/serialPort.c
 	../../src/serialPortPlatform.c
+	../../src/ISSerialPort.cpp
+	../../src/ISBootloaderThread.cpp
+	../../src/ISUtilities.cpp
+	../../src/ISStream.cpp
+	../../src/ISFileManager.cpp
 )
 target_link_libraries(ISBootloaderExample m)
 

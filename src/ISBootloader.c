@@ -32,6 +32,26 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 const char* is_samx70_bootloader_needle = "SAMx70-Bootloader";
 
+is_operation_result bootloadUploadProgress(void* obj, float percent)
+{
+	if(obj == NULL) return IS_OP_OK;
+
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->update_progress = percent;
+
+    return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
+}
+
+is_operation_result bootloadVerifyProgress(void* obj, float percent)
+{
+	if(obj == NULL) return IS_OP_OK;
+
+    is_device_context* ctx = (is_device_context*)obj;
+    ctx->verify_progress = percent;
+
+    return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
+}
+
 static is_operation_result dummy_update_callback(void* obj, float percent) 
 {
     is_device_context* ctx = (is_device_context*)obj;
