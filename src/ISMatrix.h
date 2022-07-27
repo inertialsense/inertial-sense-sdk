@@ -100,9 +100,7 @@ static __inline char is_zero( const f_t * f )
 {
 	const unsigned int * x = (const unsigned int*) f;
 
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"	// Suppress warning 
 	if (*x == 0)
-#pragma GCC diagnostic pop
 		return 1;
 	return 0;
 }
