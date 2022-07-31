@@ -1103,7 +1103,7 @@ typedef struct PACKED
 	/** IMU sample period in milliseconds. Zero disables sampling. */
 	uint32_t				imuPeriodMs;
 
-	/** Nav filter update period in milliseconds. Zero disables nav filter. */
+	/** Preintegrated IMU integration period and Navigation filter update period (ms). */
 	uint32_t				navPeriodMs;
 	
 	/** Actual sample period relative to GPS PPS */
@@ -2351,7 +2351,7 @@ typedef struct PACKED
     /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
     uint32_t				startupImuDtMs;
 
-    /** Nav filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). Zero disables nav filter updates. */
+    /** Nav filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */
