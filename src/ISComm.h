@@ -684,6 +684,9 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 
 int validateBaudRate(unsigned int baudRate);
 
+/** Copies data structure into packet data.  Data copied is limited to the size and offset specified in p_data_t *data.  Returns 0 on success, -1 on failure. */
+char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize);
+
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
 
