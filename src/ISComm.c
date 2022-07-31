@@ -1016,7 +1016,7 @@ char copyStructPToDataP(const p_data_t *data, void *sptr, const unsigned int max
 {
     if ((data->hdr.size + data->hdr.offset) <= maxsize)
     {
-        memcpy(data->buf, (uint8_t*)sptr + data->hdr.offset, data->hdr.size);
+        memcpy((uint8_t*)(data->buf), (uint8_t*)sptr + data->hdr.offset, data->hdr.size);
         return 0;
     }
     else
