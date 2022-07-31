@@ -1012,6 +1012,19 @@ int is_decode_binary_packet(packet_t* pkt, unsigned char* pbuf, int pbufSize)
 	return 0;
 }
 
+char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
+{
+    if ((data->hdr.size + data->hdr.offset) <= maxsize)
+    {
+        memcpy((uint8_t*)(data->buf), (uint8_t*)sptr + data->hdr.offset, data->hdr.size);
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize)
 {
     if ((data->hdr.size + data->hdr.offset) <= maxsize)
