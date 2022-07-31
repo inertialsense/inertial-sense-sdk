@@ -30,9 +30,15 @@ add_library(InertialSense
   src/DeviceLogKML.cpp
   src/DeviceLogSerial.cpp
   src/DeviceLogSorted.cpp
-  src/InertialSense.cpp
   src/filters.cpp
-  src/inertialSenseBootLoader.c
+  src/ihex.c
+  src/InertialSense.cpp
+  src/ISBootloaderThread.cpp
+	src/ISBootloader.c
+  src/ISBootloaderISB.c
+	src/ISBootloaderDFU.c
+	src/ISBootloaderSAMBA.c
+	hw-libs/bootloader/bootloaderShared.c
 	src/ISClient.cpp
   src/ISComm.c
   src/ISDataMappings.cpp
@@ -62,8 +68,14 @@ add_library(InertialSense
   src/tinyxmlerror.cpp
   src/tinyxmlparser.cpp
   )
-target_include_directories(InertialSense PUBLIC src external)
-target_link_libraries(InertialSense pthread)
+
+find_library(LIBUSB_LIBRARY
+	NAMES usb-1.0
+	PATH_SUFFIXES "lib" "lib32" "lib64"
+)
+
+target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb)
+target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} m)
 target_compile_options(InertialSense PUBLIC -fPIC)
 
 add_library( InertialSense::libinertialsense ALIAS InertialSense )

@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef BOARD_OPT_H_
 #define BOARD_OPT_H_
 
-#define CONF_BOARD_ENABLE_DCACHE        0   // Set to 0 to disable DCache, TODO: Fix, this crashes the system currently in release and malloc failures in debug
+   // Set to 0 to disable DCache, TODO: Fix, this crashes the system currently in release and malloc failures in debug
 
 // #include "conf_board.h"
 // #include "core_cm7_4p30.h"

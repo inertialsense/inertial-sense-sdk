@@ -71,6 +71,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>cltool</TargetName>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\src\libusb\msvc;..\..\src\libusb\libusb;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -114,7 +116,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies);..\..\src\libusb\msvc\libusb-1.0-64.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -134,7 +136,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies);..\..\src\libusb\msvc\libusb-1.0-32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -155,10 +157,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies);..\..\src\libusb\msvc\libusb-1.0-64.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\hw-libs\bootloader\bootloaderShared.c" />
     <ClCompile Include="..\..\src\cltool.cpp" />
     <ClCompile Include="..\..\src\cltool_main.cpp" />
     <ClCompile Include="..\..\src\com_manager.c" />
@@ -175,9 +178,26 @@
     <ClCompile Include="..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSorted.cpp" />
+    <ClCompile Include="..\..\src\ihex.c" />
+    <ClCompile Include="..\..\src\ISBootloader.c" />
+    <ClCompile Include="..\..\src\ISBootloaderDFU.c" />
+    <ClCompile Include="..\..\src\ISBootloaderISB.c" />
+    <ClCompile Include="..\..\src\ISBootloaderSAMBA.c" />
+    <ClCompile Include="..\..\src\ISBootloaderThread.cpp" />
+    <ClCompile Include="..\..\src\ISLogStats.cpp" />
+    <ClCompile Include="..\..\src\libusb\libusb\core.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\descriptor.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\hotplug.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\io.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\os\events_windows.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\os\threads_windows.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\os\windows_common.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\os\windows_usbdk.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\os\windows_winusb.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\strerror.c" />
+    <ClCompile Include="..\..\src\libusb\libusb\sync.c" />
     <ClCompile Include="..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\src\InertialSense.cpp" />
-    <ClCompile Include="..\..\src\inertialSenseBootLoader.c" />
     <ClCompile Include="..\..\src\ISClient.cpp" />
     <ClCompile Include="..\..\src\ISComm.c" />
     <ClCompile Include="..\..\src\ISDataMappings.cpp" />
@@ -186,7 +206,6 @@
     <ClCompile Include="..\..\src\ISFileManager.cpp" />
     <ClCompile Include="..\..\src\ISLogFile.cpp" />
     <ClCompile Include="..\..\src\ISLogger.cpp" />
-    <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\ISMatrix.c" />
     <ClCompile Include="..\..\src\ISPose.c" />
     <ClCompile Include="..\..\src\ISSerialPort.cpp" />
@@ -207,6 +226,7 @@
     <ClCompile Include="..\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\hw-libs\bootloader\bootloaderShared.h" />
     <ClInclude Include="..\..\src\cltool.h" />
     <ClInclude Include="..\..\src\com_manager.h" />
     <ClInclude Include="..\..\src\convert_ins.h" />
@@ -222,9 +242,26 @@
     <ClInclude Include="..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\src\DeviceLogSorted.h" />
+    <ClInclude Include="..\..\src\ihex.h" />
+    <ClInclude Include="..\..\src\ISBootloader.h" />
+    <ClInclude Include="..\..\src\ISBootloaderDFU.h" />
+    <ClInclude Include="..\..\src\ISBootloaderISB.h" />
+    <ClInclude Include="..\..\src\ISBootloaderSAMBA.h" />
+    <ClInclude Include="..\..\src\ISBootloaderThread.h" />
+    <ClInclude Include="..\..\src\ISBootloaderTypes.h" />
+    <ClInclude Include="..\..\src\ISLogStats.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\libusb.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\libusbi.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\os\events_windows.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\os\threads_windows.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\os\windows_common.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\os\windows_usbdk.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\os\windows_winusb.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\version.h" />
+    <ClInclude Include="..\..\src\libusb\libusb\version_nano.h" />
+    <ClInclude Include="..\..\src\libusb\msvc\config.h" />
     <ClInclude Include="..\..\src\message_stats.h" />
     <ClInclude Include="..\..\src\InertialSense.h" />
-    <ClInclude Include="..\..\src\inertialSenseBootLoader.h" />
     <ClInclude Include="..\..\src\InertialSenseSDK.h" />
     <ClInclude Include="..\..\src\ISClient.h" />
     <ClInclude Include="..\..\src\ISComm.h" />

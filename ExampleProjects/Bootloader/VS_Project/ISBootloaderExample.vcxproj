@@ -19,17 +19,59 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c" />
     <ClCompile Include="..\..\..\src\data_sets.c" />
-    <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c" />
+    <ClCompile Include="..\..\..\src\ihex.c" />
+    <ClCompile Include="..\..\..\src\ISBootloader.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderDFU.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderISB.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
+    <ClCompile Include="..\..\..\src\ISSerialPort.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISStream.cpp" />
+    <ClCompile Include="..\..\..\src\ISUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\core.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\descriptor.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\hotplug.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\io.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\events_windows.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\threads_windows.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_common.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_usbdk.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_winusb.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\strerror.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\sync.c" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
     <ClCompile Include="..\..\..\src\serialPortPlatform.c" />
-    <ClCompile Include="..\ISBootloaderExample.c" />
+    <ClCompile Include="..\ISBootloaderExample.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h" />
     <ClInclude Include="..\..\..\src\data_sets.h" />
-    <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h" />
+    <ClInclude Include="..\..\..\src\ihex.h" />
+    <ClInclude Include="..\..\..\src\ISBootloader.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderDFU.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderISB.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderThread.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderTypes.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
+    <ClInclude Include="..\..\..\src\ISSerialPort.h" />
+    <ClInclude Include="..\..\..\src\ISStream.h" />
+    <ClInclude Include="..\..\..\src\ISUtilities.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\libusb.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\libusbi.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\events_windows.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\threads_windows.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\windows_common.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\windows_usbdk.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\windows_winusb.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\version.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\version_nano.h" />
+    <ClInclude Include="..\..\..\src\libusb\msvc\config.h" />
     <ClInclude Include="..\..\..\src\serialPort.h" />
     <ClInclude Include="..\..\..\src\serialPortPlatform.h" />
   </ItemGroup>
@@ -91,6 +133,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>..\..\..\src\libusb\libusb;..\..\..\src\libusb\msvc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -119,10 +162,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4003;4100;4204;4505;4706</DisableSpecificWarnings>
+      <AdditionalOptions>/ignore:4099</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

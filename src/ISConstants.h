@@ -28,6 +28,8 @@ extern "C" {
 #include <time.h>
 #include <limits.h>
 
+#define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
+
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
 #define PLATFORM_IS_WINDOWS 1
@@ -38,7 +40,7 @@ extern "C" {
 
 // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
 #define _WINSOCKAPI_
-#include <winsock2.h>
+#include <winsock2.h> 
 #include <WS2tcpip.h>
 #include <windows.h>
 #define socket_t SOCKET
@@ -142,7 +144,7 @@ extern void vPortFree(void* pv);
 #endif 
 
 #if PLATFORM_IS_EMBEDDED
-#include "../hw-libs/printf-master/printf.h"	// Use embedded-safe SNPRINTF
+#include "../hw-libs/printf/printf.h"	// Use embedded-safe SNPRINTF
 #define SNPRINTF snprintf_
 #else
 #define SNPRINTF snprintf
@@ -180,9 +182,6 @@ extern void vPortFree(void* pv);
 #endif
 
 #endif // defined(_MSC_VER)
-
-#define DBGPIO_START(pin)
-#define DBGPIO_END(pin)
 
 #if defined(PLATFORM_IS_EVB_2)
 #define _MKDIR(dir) f_mkdir(dir)
@@ -797,6 +796,14 @@ typedef f_t         ixMatrix3[9];
 typedef f_t         ixMatrix4[16];
 typedef f_t         ixMatrix5[25];
 typedef double      ixMatrix3d[9];
+
+typedef enum {
+    IS_OP_OK = 0,
+    IS_OP_ERROR = -1,
+    IS_OP_CANCELLED = -2,
+    IS_OP_INCOMPATIBLE = -3,
+    IS_OP_RETRY = -4,
+} is_operation_result;
 
 #ifdef __cplusplus
 } // extern "C"

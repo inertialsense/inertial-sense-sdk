@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <asf.h>
 #include <string>
 #include "conf_board.h"
-#include "drivers/d_usartDMA.h"
+#include "d_serial.h"
 #include "globals.h"
 #include "../../../src/ISComm.h"
 #include "xbee.h"

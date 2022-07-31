@@ -59,6 +59,7 @@ struct DeviceLog
     // std::vector<sys_sensors_adc_t> sensorsAdc;
     std::vector<sensor_compensation_t> scomp;
     std::vector<imu_t> refImu;
+    std::vector<preintegrated_imu_t> refPImu;
     std::vector<magnetometer_t> refMag;
     std::vector<gps_vel_t> gps1Vel;
     std::vector<gps_vel_t> gps2Vel;
@@ -72,10 +73,9 @@ struct DeviceLog
     std::vector<debug_array_t> debugArray;
     std::vector<sensors_mpu_w_temp_t> sensorsCal1;
     std::vector<sensors_mpu_w_temp_t> sensorsCal2;
-    // std::vector<sensor_cal_t> calSc;
+    // std::vector<sensor_cal_v1p2_t> calSc;
     // std::vector<sensor_cal_mpu_t> calSc1;
     // std::vector<sensor_cal_mpu_t> calSc2;
-    std::vector<sys_sensors_t> sysSensorsSigma;
     std::vector<sys_sensors_adc_t> sensorsAdcSigma;
     std::vector<inl2_states_t> inl2States;
     std::vector<inl2_status_t> inl2Status;
@@ -83,8 +83,8 @@ struct DeviceLog
     std::vector<magnetometer_t> magnetometer;
     std::vector<barometer_t> barometer;
     std::vector<gps_pos_t> gps1RtkPos;
-    std::vector<dual_imu_t> dualImuRaw;
-    std::vector<dual_imu_t> dualImu;
+    std::vector<imu3_t> imu3;
+    std::vector<imu_t> imu;
     std::vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     std::vector<gps_raw_wrapper_t> gpsBaseRaw {1};
 //    std::vector<gps_rtk_opt_t> gpsRtkOpt;

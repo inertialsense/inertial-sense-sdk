@@ -22,8 +22,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if PLATFORM_IS_EMBEDDED
 
-#include "drivers/d_time.h"
-
+#include "d_time.h"
+ 
 #elif CPP11_IS_ENABLED
 
 #include <thread>
@@ -388,42 +388,6 @@ uint64_t getTickCount(void)
 
 #endif
 
-}
-
-int bootloadUploadProgress(const void* port, float percent)
-{
-	// Suppress compiler warnings
-	(void)port;
-
-	printf("\rUpload: %d%%     \r", (int)(percent * 100.0f));
-	if (percent == 1.0f)
-	{
-		printf("\r\n");
-	}
-	fflush(stdout);	// stdout stream is buffered (in Linux) so output is only seen after a newline '\n' or fflush().  
-
-	return 1; // could return 0 to abort
-}
-
-int bootloadVerifyProgress(const void* port, float percent)
-{
-	// Suppress compiler warnings
-	(void)port;
-
-	printf("\rVerify: %d%%     \r", (int)(percent * 100.0f));
-	if (percent == 1.0f)
-	{
-		printf("\r\n");
-	}
-	fflush(stdout);	// stdout stream is buffered (in Linux) so output is only seen after a newline '\n' or fflush().  
-
-	return 1; // could return 0 to abort
-}
-
-void bootloadStatusInfo(const void* port, const char* str)
-{
-	(void)port;
-	cout << str << endl;
 }
 
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec)

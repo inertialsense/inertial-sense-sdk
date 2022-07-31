@@ -17,14 +17,14 @@
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
 void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti);
-float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast );
-float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast );
-float deltaThetaDeltaVelBortz( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2 );
+float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast );
+float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast );
+float deltaThetaDeltaVelBortz( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps );
 #if 0
 float integrateDeltaThetaVelRoscoe(
 	preintegrated_imu_t *output, 
-	dual_imu_t *imu, 
-	dual_imu_t *imuLast, 
+	imu_t *imu, 
+	imu_t *imuLast, 
 	ixVector3 alpha_last, 
 	ixVector3 veloc_last, 
 	ixVector3 delta_alpha_last, 
@@ -93,11 +93,6 @@ void iir_filter_s16(iif_filter_t *f, short input[], float output[])
 }
 
 
-
-
-
-
-
 /** 
  * \brief Running Average Filter
  *  A running average of the input array is collected in the mean array.  Filter
@@ -150,65 +145,153 @@ void running_mean_filter_f64( double mean[], float input[], int arraySize, int s
 }
 
 
-void errorCheckDualImu(dual_imu_ok_t *di)
+/**
+ * \brief Recursive Moving Average and Variance Filter
+ * Recursive computation of moving average and variance given their previous
+ * values, new element in the set, number of elements in the set (window size) and
+ * assuming that one of the elements in the set is removed when new one is
+ * added (i.e. fixed window size).
+ * Reference: http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation
+ *
+ * \param mean          Moving average of the set
+ * \param var           Moving variance of the set
+ * \param input         Floating point value added to the set
+ * \param sampleCount   Number of samples in the sliding window
+ */
+void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount)
+{
+    float dx, div;
+
+    if (sampleCount <= 0) return;
+
+    dx = input - *mean;
+
+    // Expected moving average
+    div = 1.0f / (float)sampleCount;
+    *mean += dx * div;
+
+    // Expected moving variance
+    *var = ((float)(sampleCount * sampleCount - sampleCount - 1) * (*var) + (float)(sampleCount - 1) * dx * dx) * div * div;
+}
+
+
+#define INVALID_ACCEL 1.0e-6f
+void errorCheckImu3(imu3_t *di)
 {
 	// Error Checking
-	if( di->imu.time != 0.0) 
+	if( di->time != 0.0) 
 	{
         // Compare to a small number much smaller than IMU noise sigma
-        if (fabs(di->imu.I[0].acc[0]) < 1.0e-6f && fabs(di->imu.I[0].acc[1]) < 1.0e-6f && fabs(di->imu.I[0].acc[2]) < 1.0e-6f)
-        {
-            di->imu1ok = false;
-        }
-        if (fabs(di->imu.I[1].acc[0]) < 1.0e-6f && fabs(di->imu.I[1].acc[1]) < 1.0e-6f && fabs(di->imu.I[1].acc[2]) < 1.0e-6f)
-		{
-			di->imu2ok = false;
-		}
-    }
-}
-
-
-void dualToSingleImu(imu_t *result, const dual_imu_ok_t *di)
-{
-	// Find best IMU value
-	if (di->imu1ok && di->imu2ok)
-	{
-		// Find average of two IMU samples
-		result->time = di->imu.time;
-
 		for (int i = 0; i < 3; i++)
 		{
-			result->I.pqr[i] = 0.5f * (di->imu.I[0].pqr[i] + di->imu.I[1].pqr[i]);
-			result->I.acc[i] = 0.5f * (di->imu.I[0].acc[i] + di->imu.I[1].acc[i]);
+			if (fabs(di->I[i].acc[0]) < INVALID_ACCEL && 
+				fabs(di->I[i].acc[1]) < INVALID_ACCEL && 
+				fabs(di->I[i].acc[2]) < INVALID_ACCEL)
+			{
+				di->status &= ~IMU_STATUS_IMU_OK_MASK;
+			}
 		}
-	}
-	else if (di->imu1ok)
-	{
-		result->time = di->imu.time;
-		result->I = di->imu.I[0];
-	}
-	else if (di->imu2ok)
-	{
-		result->time = di->imu.time;
-		result->I = di->imu.I[1];
-	}
+    }
 }
 
 
-int preintegratedImuToDualIMU(dual_imu_t *imu, const preintegrated_imu_t *pImu)
+int tripleToSingleImu(imu_t *result, const imu3_t *di)
 {
-    if (pImu->dt == 0.0f)
-    {
-        return 0;
-    }
+	imu_t imu = {};
+	imu.time = di->time;
+	imu.status = di->status;
 
-	imu->time = pImu->time;
-    float divDt = 1.0f / pImu->dt;
-	mul_Vec3_X(imu->I[0].pqr, pImu->theta1, divDt);
-	mul_Vec3_X(imu->I[1].pqr, pImu->theta2, divDt);
-	mul_Vec3_X(imu->I[0].acc, pImu->vel1, divDt);
-	mul_Vec3_X(imu->I[1].acc, pImu->vel2, divDt);
-    return 1;
+	int cnt = 0;
+
+	for (int d=0; d<3; d++)
+	{
+		uint32_t imuOkBitMask = IMU_STATUS_IMU1_OK<<d;
+		if ((di->status&imuOkBitMask)==imuOkBitMask)
+		{
+			add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[d].pqr);
+			add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[d].acc);
+			cnt++;
+		}
+	}
+
+	if (cnt)
+	{
+		float div = 1.0f/(float)cnt;
+		mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
+		mul_Vec3_X(imu.I.acc, imu.I.acc, div);
+	}
+
+	*result = imu;
+	return cnt;
+}
+
+
+int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
+{
+	imu_t imu = {};
+	imu.time = di->time;
+	imu.status = di->status;
+
+	int cnt = 0;
+
+	for (int idev = 0; idev < 3; idev++)
+	{
+		if (!exclude[idev])
+		{
+			add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
+			add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
+			cnt++;
+		}
+	}
+
+	if (cnt > 0)
+	{
+		float div = 1.0f / (float)cnt;
+		mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
+		mul_Vec3_X(imu.I.acc, imu.I.acc, div);
+	}
+
+	*result = imu;
+	return cnt;
+}
+
+void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)
+{
+	float w = 0.0f, a = 0.0f;
+	int cnt_gyro = 0, cnt_acc = 0;
+
+	for (int idev = 0; idev < 3; idev++)
+	{
+		if (!exclude_gyro[idev])
+		{
+			w += di->I[idev].pqr[iaxis];
+			cnt_gyro++;
+		}
+		if (!exclude_acc[idev])
+		{
+			a += di->I[idev].acc[iaxis];
+			cnt_acc++;
+		}
+	}
+	if (cnt_gyro > 0) w = w / (float)cnt_gyro;
+	if (cnt_acc > 0)  a = a / (float)cnt_acc;
+
+	result->I.pqr[iaxis] = w;
+	result->I.acc[iaxis] = a;
+	result->time = di->time;
+	result->status = di->status;
+}
+
+
+void singleToTripleImu(imu3_t *result, imu_t *imu)
+{
+	result->time = imu->time;
+	for (int i=0; i<3; i++)
+	{
+		cpy_Vec3_Vec3(result->I[i].pqr, imu->I.pqr);
+		cpy_Vec3_Vec3(result->I[i].acc, imu->I.acc);
+	}
+	result->status = imu->status | (IMU_STATUS_IMU1_OK | IMU_STATUS_IMU2_OK | IMU_STATUS_IMU3_OK);
 }
 
 
@@ -222,13 +305,13 @@ int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *pImu)
 	imu->time = pImu->time;
 	imu->status = pImu->status;
     float divDt = 1.0f / pImu->dt;
-	mul_Vec3_X(imu->I.pqr, pImu->theta1, divDt);
-	mul_Vec3_X(imu->I.acc, pImu->vel1, divDt);
+	mul_Vec3_X(imu->I.pqr, pImu->theta, divDt);
+	mul_Vec3_X(imu->I.acc, pImu->vel, divDt);
     return 1;
 }
 
 
-int imuToPreintegratedImu(preintegrated_imu_t *pImu, const dual_imu_t *imu, float dt)
+int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt)
 {
     if (dt == 0.0f)
     {
@@ -237,29 +320,26 @@ int imuToPreintegratedImu(preintegrated_imu_t *pImu, const dual_imu_t *imu, floa
 
     pImu->time = imu->time;
     pImu->dt = dt;
-    mul_Vec3_X(pImu->theta1, imu->I[0].pqr, dt);
-    mul_Vec3_X(pImu->theta2, imu->I[1].pqr, dt);
-    mul_Vec3_X(pImu->vel1, imu->I[0].acc, dt);
-    mul_Vec3_X(pImu->vel2, imu->I[1].acc, dt);
+	pImu->status = imu->status;
+    mul_Vec3_X(pImu->theta, imu->I.pqr, dt);
+    mul_Vec3_X(pImu->vel, imu->I.acc, dt);
     return 1;
 }
 
 
 #define CON_SCUL_INT_STEPS  4
 
-void integrateImu( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast, bool enableIMU1, bool enableIMU2 )
+void integrateImu( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	output->time = imu->time;
+	output->status = imu->status;
 
 	//	output->dt += deltaThetaDeltaVelRiemannSum(output, imu, imuLast);
 	// 	output->dt += deltaThetaDeltaVelTrapezoidal(output, imu, imuLast);
 
 	// Numerical integration of coning and sculling integrals using Bortz's rotation vector formula
-	output->dt += deltaThetaDeltaVelBortz(output, imu, imuLast, CON_SCUL_INT_STEPS, enableIMU1, enableIMU2);
-        
-	// Copy out status bits
-    output->status |= imu->status;
-	
+	output->dt += deltaThetaDeltaVelBortz(output, imu, imuLast, CON_SCUL_INT_STEPS);
+        	
 	//  // Roscoe integral
 	// 	static ixVector3 alpha_last = { 0 };
 	// 	static ixVector3 veloc_last = { 0 };
@@ -269,22 +349,20 @@ void integrateImu( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imu
 }
 
 
-float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast )
+float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
 	
 	// Use Riemann Sum integral
-	for( int i=0; i<2; i++)
-	{
-		// IMU 1 - Delta Theta
-		mul_Vec3_X( tmp3, imu->I[i].pqr, dt );
-		add_Vec3_Vec3( output->theta1, output->theta1, tmp3 );
 
-		// IMU 1 - Delta Velocity
-		mul_Vec3_X( tmp3, imu->I[i].acc, dt );
-		add_Vec3_Vec3( output->vel1, output->vel1, tmp3 );
-	}
+	// IMU - Delta Theta
+	mul_Vec3_X( tmp3, imu->I.pqr, dt );
+	add_Vec3_Vec3( output->theta, output->theta, tmp3 );
+
+	// IMU - Delta Velocity
+	mul_Vec3_X( tmp3, imu->I.acc, dt );
+	add_Vec3_Vec3( output->vel, output->vel, tmp3 );
 
 	// Update history
 	*imuLast = *imu;
@@ -293,24 +371,22 @@ float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, dual_imu_t *imu
 }
 
 
-float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast )
+float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
 	
 	// Use Trapezoidal integral
-	for( int i=0; i<2; i++)
-	{
-		// Delta Theta
-		add_Vec3_Vec3( tmp3, imu->I[i].pqr, imuLast->I[i].pqr );
-		mul_Vec3_X( tmp3, tmp3, dt*0.5f );
-		add_Vec3_Vec3( output->theta1, output->theta1, tmp3 );
 
-		// Delta Velocity
-		add_Vec3_Vec3( tmp3, imu->I[i].acc, imuLast->I[i].acc );
-		mul_Vec3_X( tmp3, tmp3, dt*0.5f );
-		add_Vec3_Vec3( output->vel1, output->vel1, tmp3 );
-	}
+	// Delta Theta
+	add_Vec3_Vec3( tmp3, imu->I.pqr, imuLast->I.pqr );
+	mul_Vec3_X( tmp3, tmp3, dt*0.5f );
+	add_Vec3_Vec3( output->theta, output->theta, tmp3 );
+
+	// Delta Velocity
+	add_Vec3_Vec3( tmp3, imu->I.acc, imuLast->I.acc );
+	mul_Vec3_X( tmp3, tmp3, dt*0.5f );
+	add_Vec3_Vec3( output->vel, output->vel, tmp3 );
 
 	// Update history
 	*imuLast = *imu;
@@ -319,10 +395,10 @@ float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, dual_imu_t *im
 }
 
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti)
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dt)
 {
     ixVector3 wb, ab, deltaW, deltaA, tmp1, tmp2, tmp3, tmp4;
-    float Kw, mag_theta2, mag_theta4, Kw0;
+    float dti, Kw, mag_theta2, mag_theta4, Kw0;
 
     // for jj = 1: Nint
     //     wb = W0 + (jj - 1) / Nint * (W1 - W0);
@@ -337,17 +413,15 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 	
     sub_Vec3_Vec3(deltaW, imu->pqr, imuLast->pqr);
     sub_Vec3_Vec3(deltaA, imu->acc, imuLast->acc);
-    Kw0 = 1.0f / 12.0f;
+	div_Vec3_X(deltaW, deltaW, Nsteps);
+	div_Vec3_X(deltaA, deltaA, Nsteps);
+	cpy_Vec3_Vec3(wb, imuLast->pqr);
+	cpy_Vec3_Vec3(ab, imuLast->acc);
+	dti = dt / Nsteps;
+
+	Kw0 = 1.0f / 12.0f;
     for (int jj = 0; jj < Nsteps; jj++) 
 	{
-		float jjDivNsteps = ((float)jj) / Nsteps;
-		
-	    // Current angular rate and acceleration vectors (linear interpolation)
-	    for (int i = 0; i < 3; i++) 
-		{
-		    wb[i] = imuLast->pqr[i] + deltaW[i] * jjDivNsteps;
-		    ab[i] = imuLast->acc[i] + deltaA[i] * jjDivNsteps;
-	    }
 	    // Coning and sculling integrals
 	    cross_Vec3(tmp1, theta, wb);
 	    cross_Vec3(tmp2, theta, tmp1);
@@ -359,26 +433,21 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
         for (int i = 0; i < 3; i++) {
 		    theta[i] += (wb[i] + 0.5f * tmp1[i] + Kw * tmp2[i]) * dti;
 		    vel[i] += (ab[i] + tmp3[i] + 0.5f * tmp4[i]) * dti;
-	    }
-    }	
+		}
+		// Advance wb, ab (minor step)
+		add_Vec3_Vec3(wb, wb, deltaW);
+		add_Vec3_Vec3(ab, ab, deltaA);
+	}
 }
 
 
 /* Direct numerical integration of coning and sculling integrals using Bortz's formula */
-float deltaThetaDeltaVelBortz(preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2)
+float deltaThetaDeltaVelBortz(preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps)
 {
 	float dt = (float)(imu->time - imuLast->time);
-	float dti = dt / (float)Nsteps;
 
-	if (enableIMU1) 
-	{	// IMU 1
-		integrateDeltaThetaVelBortz(output->theta1, output->vel1, &(imu->I[0]), &(imuLast->I[0]), (float)Nsteps, (float)dti);
-	}
-
-	if (enableIMU2)
-	{	// IMU 2
-		integrateDeltaThetaVelBortz(output->theta2, output->vel2, &(imu->I[1]), &(imuLast->I[1]), (float)Nsteps, (float)dti);
-	}
+	// IMU
+	integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), (float)Nsteps, dt);
 
 	// Update history
 	*imuLast = *imu;

@@ -144,8 +144,8 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 				handleGpsMessage((gps_nav_t*)buffer);
 				break;
 
-			case _DID_IMU_DUAL:
-				handleImuMessage((dual_imu_t*)buffer);
+			case _DID_IMU:
+				handleImuMessage((imu_t*)buffer);
 				break;
 
 				// TODO: add other cases for other data ids that you care about

@@ -22,7 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <memory>
 
 #include "DeviceLogSerial.h"
-
+ 
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
 #include "DeviceLogSorted.h"
 #include "DeviceLogCSV.h"
@@ -31,7 +31,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #if PLATFORM_IS_EVB_2
-#include "drivers/d_time.h"
+#include "d_time.h"
 #include "ISLogFileFatFs.h"
 #else
 #include "ISLogFile.h"

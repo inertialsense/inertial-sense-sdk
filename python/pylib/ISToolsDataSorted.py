@@ -62,11 +62,20 @@ def setGpsWeek(week):
 
 def getTimeFromTowMs(ms):
     global WEEK_TIME
-    return [WEEK_TIME + datetime.timedelta(milliseconds=int(i)) for i in ms]
+    if "WEEK_TIME" in locals():
+        # GPS time available
+        return [WEEK_TIME + datetime.timedelta(milliseconds=int(i)) for i in ms]
+    else:   
+        # GPS time is NOT available
+        return ms * 0.001
 
 def getTimeFromTow(s):
     global WEEK_TIME
-    return [WEEK_TIME + datetime.timedelta(seconds=float(i)) for i in s]
+    if "WEEK_TIME" in locals():
+        # GPS time available
+        return [WEEK_TIME + datetime.timedelta(seconds=float(i)) for i in s]
+    else:   
+        return s
 
 def getTimeFromGTime(gtime):
     GPS_start_Time = datetime.datetime.strptime('1/Jan/1970', "%d/%b/%Y")
@@ -541,7 +550,7 @@ class cDevice:
         # 50 'EKF Innovations'
         # 51 'EKF Innovations Var'
 
-        self.di[52].set('magnetometer1', np.dtype([
+        self.di[52].set('magnetometer', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('time', f64),
             ('mag', (f32, 3)),
@@ -578,7 +587,7 @@ class cDevice:
 
         # 57 'Communications Loopback'
 
-        self.di[58].set('dualImu', np.dtype([
+        self.di[58].set('imu', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('time', f64),
             ('I', (dtypeImu, 2)),

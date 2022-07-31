@@ -12,28 +12,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "protocol_nmea.h"
 #include "InertialSense.h"
+#ifndef EXCLUDE_BOOTLOADER
+#include "ISBootloaderThread.h"
+#include "ISBootloaderDFU.h"
+#endif
 
 using namespace std;
-
-typedef struct
-{
-	bootload_params_t param;
-	bool success;
-	serial_port_t serial;
-	void* thread;
-} bootload_state_t;
-
-static void bootloaderUpdateBootloaderThread(void* state)
-{
-    bootload_state_t* s = (bootload_state_t*)state;
-    s->success = (bootloadFileEx(&s->param) == 0);
-    serialPortClose(&s->serial);
-}
 
 static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
 	// Suppress compiler warnings
-	(void)pHandle;
+	(void)pHandle; 
 	(void)cmHandle;
 
 	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
@@ -721,11 +710,30 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, const string& bootloaderFileName, bool forceBootloaderUpdate)
+vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
+	const string& comPort, 
+	const uint32_t serialNum,
+	const string& fileName, 
+	int baudRate, 
+	pfnBootloadProgress uploadProgress, 
+	pfnBootloadProgress verifyProgress, 
+	pfnBootloadStatus infoProgress,
+	void (*waitAction)()
+)
 {
+#ifndef EXCLUDE_BOOTLOADER
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	vector<bootload_state_t> state;
+	
+	// For now, we will use all present DFU devices. The bootloader code will only load them with images that have the right signature, so this is safe.
+	std::vector<std::string> uids;
+	/*is_dfu_list dfu_list;
+	is_dfu_list_devices(&dfu_list);
+
+	for (size_t i = 0; i < dfu_list.present; i++)
+	{
+		uids.push_back(std::string(dfu_list.id->uid));
+	}*/
 
 	if (comPort == "*")
 	{
@@ -736,66 +744,38 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const strin
 		splitString(comPort, ',', portStrings);
 	}
 	sort(portStrings.begin(), portStrings.end());
-	state.resize(portStrings.size());
 
 	// file exists?
+	ifstream tmpStream(fileName);
+	if (!tmpStream.good())
 	{
-		ifstream tmpStream(fileName);
-		if (!tmpStream.good())
+		for (size_t i = 0; i < portStrings.size(); i++)
 		{
-			for (size_t i = 0; i < state.size(); i++)
-			{
-				results.push_back({ state[i].serial.port, "File does not exist" });
-			}
+			results.push_back({ portStrings[i], "File does not exist" });
 		}
+		return results;
 	}
 
-	if (results.size() == 0)
+	#if !PLATFORM_IS_WINDOWS
+	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+	#endif
+	
+	ISBootloader::update(portStrings, uids, baudRate, fileName.c_str(), uploadProgress, verifyProgress, infoProgress, NULLPTR, waitAction);
+	
+	#if !PLATFORM_IS_WINDOWS
+	fputs("\e[?25h", stdout);	// Turn cursor back on
+	#endif
+
+	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
 	{
-		// for each port requested, setup a thread to do the bootloader for that port
-		for (size_t i = 0; i < state.size(); i++)
+		if(!ISBootloader::ctx[i]->finished_flash)
 		{
-            memset(state[i].param.error, 0, BOOTLOADER_ERROR_LENGTH);
-			serialPortPlatformInit(&state[i].serial);
-			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
-			state[i].param.uploadProgress = uploadProgress;
-			state[i].param.verifyProgress = verifyProgress;
-			state[i].param.statusText = infoProgress;
-			state[i].param.fileName = fileName.c_str();
-			state[i].param.bootName = bootloaderFileName.c_str();
-			state[i].param.forceBootloaderUpdate = forceBootloaderUpdate;
-			state[i].param.port = &state[i].serial;
-			state[i].param.verifyFileName = NULLPTR;
-			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
-            state[i].param.numberOfDevices = (int)state.size();
-            state[i].param.baudRate = baudRate;			
-			if (strstr(state[i].param.fileName, "EVB") != NULL)
-			{   // Enable EVB bootloader
-				memcpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
-			}
-			else
-			{	// Enable uINS bootloader
-				memcpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
-			}
-
-            // Update application and bootloader firmware
-            state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
-		}
-
-		// wait for all threads to finish
-		for (size_t i = 0; i < state.size(); i++)
-		{
-			threadJoinAndFree(state[i].thread);
-		}
-
-		// if any thread failed, we return failure
-		for (size_t i = 0; i < state.size(); i++)
-		{
-			results.push_back({ state[i].serial.port, state[i].param.error });
+			results.push_back({ std::to_string(ISBootloader::ctx[i]->props.serial), "failure "});
 		}
 	}
 
 	return results;
+#endif // EXCLUDE_BOOTLOADER
 }
 
 bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)

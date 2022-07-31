@@ -161,6 +161,7 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
         HANDLE_MSG( DID_SCOMP, dev_log_->scomp );
         HANDLE_MSG( DID_REFERENCE_IMU, dev_log_->refImu );
+        HANDLE_MSG( DID_REFERENCE_PIMU, dev_log_->refPImu );
         HANDLE_MSG( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag );
         HANDLE_MSG( DID_GPS1_VEL, dev_log_->gps1Vel );
         HANDLE_MSG( DID_GPS2_VEL, dev_log_->gps2Vel );
@@ -172,12 +173,11 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_RTOS_INFO, dev_log_->rtosInfo );
         HANDLE_MSG( DID_DEBUG_STRING, dev_log_->debugString );
         HANDLE_MSG( DID_DEBUG_ARRAY, dev_log_->debugArray );
-        HANDLE_MSG( DID_SENSORS_CAL1, dev_log_->sensorsCal1 );
-        HANDLE_MSG( DID_SENSORS_CAL2, dev_log_->sensorsCal2 );
+        // HANDLE_MSG( DID_SENSORS_CAL1, dev_log_->sensorsCal1 );
+        // HANDLE_MSG( DID_SENSORS_CAL2, dev_log_->sensorsCal2 );
         // HANDLE_MSG( DID_CAL_SC, dev_log_->calSc );
         // HANDLE_MSG( DID_CAL_SC1, dev_log_->calSc1 );
         // HANDLE_MSG( DID_CAL_SC2, dev_log_->calSc2 );
-        HANDLE_MSG( DID_SYS_SENSORS_SIGMA, dev_log_->sysSensorsSigma );
         HANDLE_MSG( DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma );
         HANDLE_MSG( DID_INL2_STATES, dev_log_->inl2States );
         HANDLE_MSG( DID_INL2_STATUS, dev_log_->inl2Status );
@@ -185,8 +185,8 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_MAGNETOMETER, dev_log_->magnetometer );
         HANDLE_MSG( DID_BAROMETER, dev_log_->barometer );
         HANDLE_MSG( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos );
-        HANDLE_MSG( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw );
-        HANDLE_MSG( DID_DUAL_IMU, dev_log_->dualImu );
+        HANDLE_MSG( DID_IMU3_RAW, dev_log_->imu3 );
+        HANDLE_MSG( DID_IMU, dev_log_->imu );
         HANDLE_MSG( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo );
         HANDLE_MSG( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw );
         // HANDLE_MSG( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt );
@@ -252,6 +252,7 @@ void LogReader::forwardData(int id)
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, id );
     forward_message( DID_SCOMP, dev_log_->scomp, id );
     forward_message( DID_REFERENCE_IMU, dev_log_->refImu, id );
+    forward_message( DID_REFERENCE_PIMU, dev_log_->refPImu, id );
     forward_message( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag, id );
     forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, id );
     forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, id );
@@ -263,12 +264,11 @@ void LogReader::forwardData(int id)
     // forward_message( DID_RTOS_INFO, dev_log_->rtosInfo, id );
     forward_message( DID_DEBUG_STRING, dev_log_->debugString, id );
     forward_message( DID_DEBUG_ARRAY, dev_log_->debugArray, id );
-    forward_message( DID_SENSORS_CAL1, dev_log_->sensorsCal1, id );
-    forward_message( DID_SENSORS_CAL2, dev_log_->sensorsCal2, id );
+    // forward_message( DID_SENSORS_CAL1, dev_log_->sensorsCal1, id );
+    // forward_message( DID_SENSORS_CAL2, dev_log_->sensorsCal2, id );
     // forward_message( DID_CAL_SC, dev_log_->calSc, id );
     // forward_message( DID_CAL_SC1, dev_log_->calSc1, id );
     // forward_message( DID_CAL_SC2, dev_log_->calSc2, id );
-    forward_message( DID_SYS_SENSORS_SIGMA, dev_log_->sysSensorsSigma, id );
     forward_message( DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma, id );
     forward_message( DID_INL2_STATES, dev_log_->inl2States, id );
     forward_message( DID_INL2_STATUS, dev_log_->inl2Status, id );
@@ -276,8 +276,8 @@ void LogReader::forwardData(int id)
     forward_message( DID_MAGNETOMETER, dev_log_->magnetometer, id );
     forward_message( DID_BAROMETER, dev_log_->barometer, id );
     forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, id );
-    forward_message( DID_DUAL_IMU_RAW, dev_log_->dualImuRaw, id );
-    forward_message( DID_DUAL_IMU, dev_log_->dualImu, id );
+    forward_message( DID_IMU3_RAW, dev_log_->imu3, id );
+    forward_message( DID_IMU, dev_log_->imu, id );
     forward_message( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, id );
     forward_message( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, id );
     // forward_message( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt, id );

@@ -97,7 +97,7 @@ void disableBroadcasts(CMHANDLE cmHandle, int pHandle)
 {
 }
 
-int prepDevInfo(CMHANDLE cmHandle, int pHandle)
+int prepDevInfo(CMHANDLE cmHandle, int pHandle, p_data_hdr_t* dataHdr)
 {
 	return 1;
 }

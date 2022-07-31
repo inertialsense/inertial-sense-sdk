@@ -18,13 +18,13 @@ extern "C" {
 #endif
 
 #include <asf.h>
-#include "../../../src/ISComm.h"
-#include "../../../src/data_sets.h"
-#include "../../../src/ISConstants.h"
-#include "../../../hw-libs/misc/bootloaderShared.h"
-#include "../../../hw-libs/misc/rtos.h"
-#include "../../../hw-libs/drivers/d_usartDMA.h"
-#include "drivers/d_time.h"
+#include "ISComm.h"
+#include "data_sets.h"
+#include "ISConstants.h"
+#include "bootloaderShared.h"
+#include "rtos.h"
+#include "d_serial.h"
+#include "d_time.h"
 #include "conf_board.h"
 
 #define USE_RTC_DATE_TIME       1   // Use RTC for system data and time

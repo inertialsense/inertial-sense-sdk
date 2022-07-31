@@ -29,8 +29,14 @@ add_executable(ISLogReaderExample
 	../../src/DeviceLogKML.cpp
 	../../src/DeviceLogSerial.cpp
 	../../src/DeviceLogSorted.cpp
+	../../src/ihex.c
 	../../src/InertialSense.cpp
-	../../src/inertialSenseBootLoader.c
+	../../src/ISBootloaderThread.cpp
+	../../src/ISBootloaderDFU.c
+	../../src/ISBootloaderSAMBA.c
+	../../src/ISBootloaderISB.c
+	../../src/ISBootloader.c
+	../../hw-libs/bootloader/bootloaderShared.c
 	../../src/ISClient.cpp
 	../../src/ISComm.c
 	../../src/ISDataMappings.cpp
@@ -58,6 +64,18 @@ add_executable(ISLogReaderExample
 	../../src/tinyxmlerror.cpp
 	../../src/tinyxmlparser.cpp    
 )
-target_link_libraries(ISLogReaderExample pthread)
+
+find_library(LIBUSB_LIBRARY
+	NAMES usb-1.0
+	PATH_SUFFIXES "lib" "lib32" "lib64"
+)
+
+target_include_directories(ISLogReaderExample PUBLIC
+	../../src
+	../../src/libusb/libusb
+	../../src/libusb/msvc
+)
+
+target_link_libraries(ISLogReaderExample pthread ${LIBUSB_LIBRARY} m)
 
 endif()

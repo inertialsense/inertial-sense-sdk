@@ -34,6 +34,7 @@ class Log:
         self.passRMS = 0    # 1 = pass, -1 = fail, 0 = unknown
         self.refSerials = []
         self.refIdx = []
+        self.devIdx = []
         self.refData = []
         self.truth = []
         self.refINS = False
@@ -60,14 +61,21 @@ class Log:
                 self.numRef = self.numRef + 1
                 if len(self.data[i, DID_DEV_INFO]):
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
+            else:
+                self.devIdx.append(i)
 
-        if self.refINS:
+        if len(self.serials) == len(self.refSerials):
+            self.devIdx = self.refIdx
+
+        if self.refINS and len(self.serials) > len(self.refSerials):
             self.serials = np.delete(self.serials, self.refIdx, 0)
-                
+
         if len(self.refIdx):
             self.refData = self.data[self.refIdx].copy()
 
-        self.numIns = self.numDev - self.numRef
+        self.numIns = self.numDev 
+        if(len(self.serials) > len(self.refSerials)):
+            self.numIns = self.numIns - self.numRef
 
 
         self.compassing = None  
@@ -202,9 +210,9 @@ class Log:
                 # print time_of_fix_ms
                 self.min_time = max(time_of_fix_ms)
 
-            # Use middle third of data
-            self.min_time = self.max_time - 2.0*(self.max_time - self.min_time)/3.0
-            self.max_time = self.max_time - (self.max_time - self.min_time)/3.0
+            # Use only partial data for RMS calculations
+            self.min_time = self.max_time - 2.0*(self.max_time - self.min_time)/3.0  # do not use the first 1/3 (alignment)
+            # self.max_time = self.max_time - (self.max_time - self.min_time)/3.0    # do not use the last 1/3
 
             # Resample at a steady 100 Hz
             dt = 0.01
@@ -241,7 +249,8 @@ class Log:
             refData = self.stateArray
         else:
             refData = self.stateArray[self.refIdx, :, :]
-            self.stateArray = np.delete(self.stateArray, self.refIdx, 0)
+            if len(self.serials) > len(self.refSerials):
+                self.stateArray = np.delete(self.stateArray, self.refIdx, 0)
         # Find Mean Data
         means[:, :6] = np.mean(refData[:, :, 1:7], axis=0)  # calculate mean position and velocity across devices
         means[:, 6:] = meanOfQuatArray(refData[:, :, 7:].transpose((1, 0, 2)))  # Calculate mean attitude of all devices at each timestep
@@ -304,7 +313,7 @@ class Log:
 
         self.specRatio = self.averageRMS / thresholds
 
-        uINS_device_idx = [n for n in range(self.numDev) if not(n in self.refIdx)]
+        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx]
 
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))

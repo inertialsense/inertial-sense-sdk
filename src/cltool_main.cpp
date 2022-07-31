@@ -143,8 +143,8 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 		d.ins1.theta;		// euler attitude
 		d.ins1.lla;			// latitude, longitude, altitude
 		break;
-	case DID_DUAL_IMU:				
-		d.dualImu;      
+	case DID_IMU:				
+		d.imu3;      
 		break;
 	case DID_PREINTEGRATED_IMU:		
 		d.pImu;    
@@ -317,15 +317,18 @@ static int cltool_updateFirmware()
 		cout << "Checking bootloader firmware: " << g_commandLineOptions.updateBootloaderFilename << endl;
 	}
 	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
-	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort,
-        g_commandLineOptions.updateAppFirmwareFilename, 
+	
+	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(
+		g_commandLineOptions.comPort,
+		0,
+        g_commandLineOptions.updateAppFirmwareFilename,
         g_commandLineOptions.baudRate, 
         bootloadUploadProgress,
 		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0),
-		bootloadStatusInfo,
-		g_commandLineOptions.updateBootloaderFilename,
-		g_commandLineOptions.forceBootloaderUpdate
-		);
+		cltool_bootloadUpdateInfo,
+		cltool_firmwareUpdateWaiter
+	);
+	
 	cout << endl << "Results:" << endl;
 	int errorCount = 0;
 	for (size_t i = 0; i < results.size(); i++)
@@ -338,6 +341,63 @@ static int cltool_updateFirmware()
 		cout << endl << errorCount << " ports failed." << endl;
 	}
 	return (errorCount == 0 ? 0 : -1);
+}
+
+void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level)
+{
+	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
+	{
+		is_device_context* ctx = ISBootloader::ctx[i];
+
+		if(obj != ctx) continue;
+
+		if (ctx->props.serial != 0)
+		{
+			printf("SN%d: %s\r\n", ctx->props.serial, str);
+		}
+		else if (ctx->handle.dfu.sn != 0)
+		{
+			printf("SN%d: %s\r\n", ctx->handle.dfu.sn, str);
+		}
+		else if (strlen(ctx->handle.port_name) != 0)
+		{
+			printf("%s: %s\r\n", ctx->handle.port_name, str);
+		}
+		else
+		{
+			printf("Unknown: %s\r\n", str);
+		}
+	}
+}
+
+void cltool_firmwareUpdateWaiter()
+{
+	float progress = 0.0;
+	size_t num_devices = ISBootloader::ctx.size();
+	int num_used_devices = 0;
+
+	for (size_t i = 0; i < num_devices; i++)
+	{
+		if (ISBootloader::ctx[i]->use_progress)
+		{
+			num_used_devices++;
+
+			if (ISBootloader::ctx[i]->verify == IS_VERIFY_OFF)
+			{
+				progress += ISBootloader::ctx[i]->update_progress;
+			}
+			else
+			{
+				progress += ISBootloader::ctx[i]->update_progress * 0.5f;
+				progress += ISBootloader::ctx[i]->verify_progress * 0.5f;
+			}
+		}
+	}
+
+	if(num_used_devices) progress /= num_used_devices;
+	int percent = (int)(progress * 100.0f);
+	printf("Progress: %d%%\r", percent);
+	fflush(stdout);
 }
 
 static int cltool_createHost()
@@ -406,20 +466,6 @@ static int inertialSenseMain()
 	// if app firmware was specified on the command line, do that now and return
 	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
 	{
-        if (g_commandLineOptions.updateAppFirmwareFilename.substr(g_commandLineOptions.updateAppFirmwareFilename.length() - 4) != ".hex")
-        {
-            cout << "Incorrect firmware file extension: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
-            return -1;
-        }
-
-		if (g_commandLineOptions.updateBootloaderFilename.length() != 0 &&
-			g_commandLineOptions.updateBootloaderFilename.substr(g_commandLineOptions.updateBootloaderFilename.length() - 4) != ".bin")
-		{
-			cout << "Incorrect bootloader file extension: " << g_commandLineOptions.updateBootloaderFilename << endl;
-			return -1;
-		}
-
-		// [BOOTLOADER INSTRUCTION] 1.) Run bootloader
 		return cltool_updateFirmware();
 	}
 	else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)
