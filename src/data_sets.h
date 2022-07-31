@@ -34,7 +34,7 @@ typedef uint32_t eDataIDs;
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
-#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we use the name "Preintegrated IMU" through the User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs, default 4ms) and cannot be output at any other rate. If a different output data rate is desired, DID_IMU which is derived from DID_PREINTEGRATED_IMU can be used instead. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GPS1_UBX_POS                (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from ublox receiver. */
@@ -1125,7 +1125,7 @@ typedef struct PACKED
 	/** IMU sample period in milliseconds. Zero disables sampling. */
 	uint32_t				imuPeriodMs;
 
-	/** Preintegrated IMU integration period and Navigation filter update period (ms). */
+	/** Preintegrated IMU (PIMU) integration period and navigation filter update period (ms). */
 	uint32_t				navPeriodMs;
 	
 	/** Actual sample period relative to GPS PPS */
