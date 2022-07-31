@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "InertialSense.h" // best to include this file first
 #include "ISDisplay.h"
 #include "ISUtilities.h"
+#include "ISBootloaderBase.h"
 
 #define APP_NAME                "cltool"
 #if PLATFORM_IS_WINDOWS
@@ -108,7 +109,7 @@ bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level);
+void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, std::string evbFlashCfg); // true if should continue
 

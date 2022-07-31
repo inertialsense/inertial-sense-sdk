@@ -24,98 +24,205 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 
 using namespace std;
+using namespace ISBootloader;
 
-vector<is_device_context*> ISBootloader::ctx;
-std::string ISBootloader::m_firmware;
-pfnBootloadProgress ISBootloader::m_uploadProgress; 
-pfnBootloadProgress ISBootloader::m_verifyProgress;
-pfnBootloadStatus ISBootloader::m_infoProgress;
-void* ISBootloader::m_user_data;
-int ISBootloader::m_baudRate;
-void (*ISBootloader::m_waitAction)();
-uint32_t ISBootloader::m_timeStart;
+vector<cISBootloaderBase*> cISBootloaderThread::ctx;
+std::string cISBootloaderThread::m_firmware;
+pfnBootloadProgress cISBootloaderThread::m_uploadProgress; 
+pfnBootloadProgress cISBootloaderThread::m_verifyProgress;
+pfnBootloadStatus cISBootloaderThread::m_infoProgress;
+int cISBootloaderThread::m_baudRate;
+void (*cISBootloaderThread::m_waitAction)();
+uint32_t cISBootloaderThread::m_timeStart;
+std::vector<std::string> cISBootloaderThread::ports_user_ignore;
+std::vector<std::string> cISBootloaderThread::ports_active;
 
-void ISBootloader::update_thread(void* context)
+void cISBootloaderThread::update_thread(void* context)
 {
-    is_device_context* ctx = (is_device_context*)context;
+    cISBootloaderBase* ctx = (cISBootloaderBase*)context;
 
-    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    ctx->get_device_info();
+    ctx->download_image(m_firmware);
+
+    ctx->m_update_in_progress = false;
+}
+
+void cISBootloaderThread::update_finish(void* context)
+{
+    cISBootloaderBase* ctx = (cISBootloaderBase*)context;
+
+    ctx->get_device_info();
+    ctx->reboot_up();
+
+    ctx->m_update_in_progress = false;
+}
+
+void cISBootloaderThread::put_device_in_mode(void* context)
+{
+    cISBootloaderBase* ctx = (cISBootloaderBase*)context;
+
+    ctx->get_device_info();
+    ctx->reboot_to_update_level(m_firmware);
+
+    ctx->m_update_in_progress = false;
+}
+
+is_operation_result cISBootloaderThread::manage_devices(bool use_dfu, eBootloaderRunmode mode)
+{
+    is_dfu_list dfu_list;
+    vector<string> ports;
+
+    if(use_dfu)
     {
-        serialPortClose(&ctx->handle.port);
-        if(!serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, m_baudRate, 1)) 
-        {
-            return;
+        cISBootloaderDFU::list_devices(&dfu_list);
+
+        for(size_t i = 0; i < dfu_list.present; i++)
+        {	// Create contexts for devices in DFU mode
+            bool found = false;
+
+            for(size_t j = 0; j < ctx.size(); j++)
+            {
+                if(ctx[j]->match_test((void*)dfu_list.id[i].uid))
+                {   // We found the device in the context list
+                    found = true;
+                    break;
+                }
+            }
+
+            if(!found && strlen(dfu_list.id[i].uid) != 0)
+            {   // If we didn't find the device
+                cISBootloaderBase* ctx_new;
+                if (cISBootloaderBase::add_device_to_list(m_firmware, dfu_list.id[i].handle_libusb, dfu_list.id[i].uid, &ctx_new, m_infoProgress) == IS_OP_OK)
+                {
+                    ctx.push_back(ctx_new);
+                }
+            }
         }
     }
 
-    SLEEP_MS(100);
-
-    is_update_flash(context);
-
-    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
+    // Get a list of com ports that have threads of completed devices associated
+    ports_active.clear();
+    for(size_t i = 0; i < ctx.size(); i++)
     {
-        serialPortClose(&ctx->handle.port);
-    }
-
-    SLEEP_MS(1000);
-}
-
-void ISBootloader::update_finish(void* context)
-{
-    is_device_context* ctx = (is_device_context*)context;
-
-    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
-    {
-        serialPortClose(&ctx->handle.port);
-        if(!serialPortOpenRetry(&ctx->handle.port, ctx->handle.port_name, m_baudRate, 1)) 
+        if((ctx[i]->m_thread || ctx[i]->m_finished_flash) && ctx[i]->is_serial_device())
         {
-            return;
+            ports_active.push_back(string(ctx[i]->m_port.port));
         }
     }
 
-    is_update_finish(context);
+    // Get list of all com ports
+    cISSerialPort::GetComPorts(ports);
 
-    if(ctx->handle.status == IS_HANDLE_TYPE_SERIAL)
-    {
-        serialPortClose(&ctx->handle.port);
+    for(size_t i = 0; i < ports.size(); i++)
+    {	
+        if(find(ports_active.begin(), ports_active.end(), ports[i]) != ports_active.end() ||
+            find(ports_user_ignore.begin(), ports_user_ignore.end(), ports[i]) != ports_user_ignore.end())
+        {
+            // Ignoring this device because it was not specified by user, 
+            //  or it already has a thread associated
+        }
+        else
+        {   // Create context for device
+            cISBootloaderBase* ctx_new;
+            if (cISBootloaderBase::add_device_to_list(m_firmware, ports[i].c_str(), &ctx_new, m_infoProgress) == IS_OP_OK)
+            {
+                ctx.push_back(ctx_new);
+            }
+        }
     }
+    
+    int devicesRunning = 0;
+
+    for(size_t i = 0; i < ctx.size(); i++)
+    {   
+        if(!ctx[i]->m_thread && ctx[i]->m_update_in_progress && ctx[i]->m_retries_left-- > 0)
+        {
+            switch(mode)
+            {
+            case IS_BOOTLOADER_RUNMODE_REBOOT_DOWN:
+                ctx[i]->m_thread = threadCreateAndStart(put_device_in_mode, (void*)ctx[i]);  
+                break;
+            case IS_BOOTLOADER_RUNMODE_FLASH:
+                ctx[i]->m_thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
+                break;
+            case IS_BOOTLOADER_RUNMODE_REBOOT_UP:
+                ctx[i]->m_thread = threadCreateAndStart(update_finish, (void*)ctx[i]);
+                break;
+            }
+        }
+        
+        if(ctx[i]->m_thread || ctx[i]->m_update_in_progress)
+        {
+            devicesRunning++;
+        }
+    }
+
+    if(devicesRunning == 0 && (current_timeMs() - m_timeStart > 5000))
+    {
+        return IS_OP_CANCELLED;    // After 5 seconds of no changes and no threads running, quit
+    }
+
+    bool join_and_free = true;
+    for(size_t i = 0; i < ctx.size(); i++)
+    {   // Check that all threads have finished updating
+        if(ctx[i]->m_update_in_progress)
+        {
+            join_and_free = false;
+        }
+    }
+
+    if(join_and_free)
+    {
+        for(size_t i = 0; i < ctx.size(); i++)
+        {   // Join threads if all have finished
+            if(ctx[i]->m_thread)
+            {
+                threadJoinAndFree(ctx[i]->m_thread);
+                ctx[i]->m_thread = NULL;
+            }
+        }
+
+        return IS_OP_CANCELLED;
+    }
+
+    return IS_OP_OK;
 }
 
-is_operation_result ISBootloader::update(
+is_operation_result cISBootloaderThread::update(
     vector<string>&             comPorts,   // ISB and SAM-BA and APP
-    vector<string>&             uids,       // DFU only
     int                         baudRate,
-    const char*                 firmware,
+    std::string                 firmware,
     pfnBootloadProgress         uploadProgress,
     pfnBootloadProgress         verifyProgress,
     pfnBootloadStatus           infoProgress,
-    void*                       user_data,
     void						(*waitAction)()
 )
 {
-    (void)uids;
-
     m_firmware = firmware;
     m_uploadProgress = uploadProgress;
     m_verifyProgress = verifyProgress;
     m_infoProgress = infoProgress;
-    m_user_data = user_data;
     m_baudRate = baudRate;
     m_waitAction = waitAction;
     m_timeStart = current_timeMs();
 
-    int noChange = 0;
+    int devicesRunning = 0;
 
+    for(size_t i = 0; i < ctx.size(); i++)
+    {
+        if(ctx[i] != nullptr) 
+        {
+            delete ctx[i]; 
+            ctx[i] = nullptr;
+        }
+    }
     ctx.clear();
     
     // DFU stuff
-    is_dfu_list dfu_list;
     bool use_dfu = false;
+    vector<string> ports;
     
     // Serial port stuff
-    vector<string> ports;
-    vector<string> ports_user_ignore;
-    vector<string> ports_active;
     cISSerialPort::GetComPorts(ports);
     sort(ports.begin(), ports.end());
     sort(comPorts.begin(), comPorts.end());
@@ -124,157 +231,33 @@ is_operation_result ISBootloader::update(
         comPorts.begin(), comPorts.end(),
         back_inserter(ports_user_ignore));
 
-    // Only turn on DFU updates if signature is for a STM32L4 bootloader
-    const char * extension = get_file_ext(firmware);
-    is_image_signature file_signature = IS_IMAGE_SIGN_NONE;
-    if(strcmp(extension, "hex") == 0)
-    {
-        file_signature = is_get_hex_image_signature(firmware);
-    }
-    if(file_signature == IS_IMAGE_SIGN_ISB_STM32L4 && libusb_init(NULL) >= 0)
+    if(libusb_init(NULL) >= 0)
     {
         use_dfu = true;
     }
 
     while(1)
     {
-//        for(int i = 0; i < 10; i++)
-        {   // Sleep and update UI for 100ms before looping through device management again
-            SLEEP_MS(10);
-            if(m_waitAction) m_waitAction();
-        }
+        SLEEP_MS(10);
+        if(m_waitAction) m_waitAction();
 
-        if(use_dfu)
-        {
-            is_dfu_list_devices(&dfu_list);
-
-            for(size_t i = 0; i < dfu_list.present; i++)
-            {	// Create contexts for devices in DFU mode
-                bool found = false;
-
-                for(size_t j = 0; j < ctx.size(); j++)
-                {
-                    if( ctx[j]->handle.status == IS_HANDLE_TYPE_LIBUSB && 
-                        (strncmp(ctx[j]->handle.dfu.uid, dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE) == 0)
-                    )
-                    {   // We found the device in the context list
-                        found = true;
-                        break;
-                    }
-                    else
-                    {
-                        found = false;
-                    }
-                }
-
-                if(!found && strlen(dfu_list.id[i].uid) != 0)
-                {   // If we didn't find the device
-                    is_device_handle handle;
-                    memset(&handle, 0, sizeof(is_device_handle));
-                    handle.status = IS_HANDLE_TYPE_LIBUSB;
-                    strncpy(handle.dfu.uid, dfu_list.id[i].uid, IS_DFU_UID_MAX_SIZE);
-                    handle.dfu.vid = dfu_list.id[i].vid;
-                    handle.dfu.pid = dfu_list.id[i].pid;
-                    handle.dfu.handle_libusb = dfu_list.id[i].handle_libusb;
-                    ctx.push_back(is_create_context(
-                        &handle,
-                        m_firmware.c_str(), 
-                        m_uploadProgress, 
-                        m_verifyProgress, 
-                        m_infoProgress,
-                        m_user_data
-                    ));
-                }
-            }
-        }
-
-        
-        // Get a list of com ports that have threads associated
-        ports_active.clear();
-        for(size_t i = 0; i < ctx.size(); i++)
-        {
-            if((ctx[i]->thread || ctx[i]->finished_flash) && ctx[i]->handle.status == IS_HANDLE_TYPE_SERIAL)
-            {
-                ports_active.push_back(string(ctx[i]->handle.port_name));
-            }
-        }
-
-        // Get list of all com ports
-        cISSerialPort::GetComPorts(ports);
-
-        for(size_t i = 0; i < ports.size(); i++)
-        {	
-            if(find(ports_active.begin(), ports_active.end(), ports[i]) != ports_active.end() ||
-                find(ports_user_ignore.begin(), ports_user_ignore.end(), ports[i]) != ports_user_ignore.end())
-            {
-                // Ignoring this device because it was not specified by user, 
-                //  or it already has a thread associated
-            }
-            else
-            {   // Create context for device
-                is_device_handle handle;
-                memset(&handle, 0, sizeof(is_device_handle));
-                handle.status = IS_HANDLE_TYPE_SERIAL;
-                handle.baud = m_baudRate;
-                strncpy(handle.port_name, ports[i].c_str(), 100);
-                ctx.push_back(is_create_context(
-                    &handle,
-                    m_firmware.c_str(), 
-                    m_uploadProgress, 
-                    m_verifyProgress, 
-                    m_infoProgress,
-                    m_user_data
-                ));
-            }
-        }
-
-        for(size_t i = 0; i < ctx.size(); i++)
-        {   // Join threads that have finished
-            if((ctx[i]->thread != NULL) && (!ctx[i]->update_in_progress))
-            {
-                threadJoinAndFree(ctx[i]->thread);
-                ctx[i]->thread = NULL;
-                m_timeStart = current_timeMs();
-            }
-        }
-
-        noChange = 0;
-
-        for(size_t i = 0; i < ctx.size(); i++)
-        {   
-            if(!ctx[i]->thread && ctx[i]->update_in_progress && ctx[i]->retries_left-- > 0)
-            {
-                ctx[i]->start_time_ms = current_timeMs();   // Unused so far
-                ctx[i]->thread = threadCreateAndStart(update_thread, (void*)ctx[i]);
-            }
-            
-            if(ctx[i]->thread || ctx[i]->update_in_progress)
-            {
-                noChange = 1;
-            }
-        }
-
-        if(!noChange && (current_timeMs() - m_timeStart > 5000))
-        {
-            break;    // After 5 seconds of no changes and no threads running, quit
-        }
+        if(manage_devices(use_dfu, IS_BOOTLOADER_RUNMODE_REBOOT_DOWN) == IS_OP_CANCELLED) break;
     }
 
-    for(size_t i = 0; i < ctx.size(); i++)
-    {   
-        if (ctx[i]->finished_flash)
-        {
-            ctx[i]->thread = threadCreateAndStart(update_finish, (void*)ctx[i]);
-        }
+    while(1)
+    {
+        SLEEP_MS(10);
+        if(m_waitAction) m_waitAction();
+
+        if(manage_devices(use_dfu, IS_BOOTLOADER_RUNMODE_FLASH) == IS_OP_CANCELLED) break;
     }
 
-    for(size_t i = 0; i < ctx.size(); i++)
-    {   // Free context memory
-        if (ctx[i]->thread)
-        {
-            threadJoinAndFree(ctx[i]->thread);
-        }
-        // is_destroy_context(ctx[i]);
+    while(1)
+    {
+        SLEEP_MS(10);
+        if(m_waitAction) m_waitAction();
+
+        if(manage_devices(use_dfu, IS_BOOTLOADER_RUNMODE_REBOOT_UP) == IS_OP_CANCELLED) break;
     }
 
     if(use_dfu) { libusb_exit(NULL); }

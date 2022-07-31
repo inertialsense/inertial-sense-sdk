@@ -49,7 +49,6 @@ extern "C"
 	#include "com_manager.h"
 
 	#include "serialPortPlatform.h"
-	#include "ISBootloader.h"
 }
 
 #include <functional>
@@ -379,9 +378,9 @@ public:
 		const uint32_t serialNum,
 		const std::string& fileName,
 		int baudRate = IS_BAUDRATE_921600,
-		pfnBootloadProgress uploadProgress = NULLPTR,
-		pfnBootloadProgress verifyProgress = NULLPTR,
-		pfnBootloadStatus infoProgress = NULLPTR,
+		ISBootloader::pfnBootloadProgress uploadProgress = NULLPTR,
+		ISBootloader::pfnBootloadProgress verifyProgress = NULLPTR,
+		ISBootloader::pfnBootloadStatus infoProgress = NULLPTR,
 		void (*waitAction)() = NULLPTR
 	);
 

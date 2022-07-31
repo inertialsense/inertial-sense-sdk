@@ -1,5 +1,5 @@
 /**
- * @file ISBootloaderISB.c
+ * @file ISBootloaderISB.cpp
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief Inertial Sense routines for updating application images 
  *  using ISB (Inertial Sense Bootloader) protocol
@@ -18,24 +18,16 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "ISBootloader.h"
 #include "ISBootloaderISB.h"
 #include "ISUtilities.h"
+
+using namespace ISBootloader;
 
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 #define SUPPORT_BOOTLOADER_V5A
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
-
-/** uINS rs232 bootloader baud rate */
-#define IS_BAUD_RATE_BOOTLOADER_RS232 230400
-
-/** uINS slow bootloader baud rate */
-#define IS_BAUD_RATE_BOOTLOADER_SLOW 115200
-
-/** uINS bootloader baud rate - legacy */
-#define IS_BAUD_RATE_BOOTLOADER_LEGACY 2000000
 
 #define BOOTLOADER_RETRIES          30
 #define BOOTLOADER_RESPONSE_DELAY   10
@@ -47,108 +39,180 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
 #define FLASH_PAGE_SIZE 65536
 
-/**
- * @brief Negotiate the bootloader version, once a 'U' character has been read, 
- *  we read another character, timing out after 500 milliseconds if nothing 
- *  comes back, we are using version 1, otherwise the version is the number sent 
- *  back
- * 
- * @param ctx 
- * @return is_operation_result 
- */
-is_operation_result is_isb_negotiate_version(is_device_context* ctx)
+is_operation_result cISBootloaderISB::match_test(void* param)
 {
-    unsigned char v = 0;
+    const char* serial_name = (const char*)param;
 
-    do {
-        if (serialPortReadCharTimeout(&ctx->handle.port, &v, 500) == 0) v = '1';
-    } while (v == 'U');
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port.port, 100) == 0)
+    {
+        return IS_OP_OK;
+    }
 
-    if (v == '1')
-    {   // version 1
-        ctx->props.isb.major = 1;
-        ctx->props.isb.app_offset = 8192;
-    }
-    else if (v >= '2' && v <= '5')
-    {   // version 2, 3 (which sent v2), 4, 5
-        ctx->props.isb.major = v-'0';
-        ctx->props.isb.app_offset = 16384;
-    }
-    else if (v == '6')
-    {   // version 6
-        ctx->props.isb.major = v-'6';
-        ctx->props.isb.app_offset = 24576;
-    }
-    else
+    return IS_OP_ERROR;
+}
+
+is_operation_result cISBootloaderISB::check_is_compatible(const char* handle, eImageSignature file)
+{
+    serial_port_t port;
+
+    serialPortPlatformInit(&port);
+    serialPortSetPort(&port, handle);
+    serialPortOpen(&port, handle, 921600, 100);
+
+    if(sync(&port) != IS_OP_OK)
     {
         return IS_OP_ERROR;
     }
 
-#if PLATFORM_IS_WINDOWS
-    // EvalTool and multiple bootloads under Windows 10 have issues with dropped data if verify runs too fast
-    ctx->props.isb.verify_size = 125;
-#else
-    ctx->props.isb.verify_size = MAX_VERIFY_CHUNK_SIZE;
-#endif
+    uint8_t v = 0;
 
-    serialPortSleep(&ctx->handle.port, 100);
+    do {
+        if (serialPortReadCharTimeout(&port, &v, 500) == 0) v = '1';
+    } while (v == 'U');
+
+    serialPortFlush(&port);
+
+	// Send command
+	serialPortWrite(&port, (uint8_t*)":020000041000EA", 15);
+
+    uint8_t buf[14] = { 0 };
+
+    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
+	int count = serialPortReadTimeout(&port, buf, 14, 1000);
+
+    uint32_t valid_signatures = 0;
+
+    if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
+    {   // Bad read
+        return IS_OP_ERROR;
+    }
+
+    uint8_t major = buf[2];
+    char minor = buf[3];
+    bool rom_available = buf[4];
+    uint8_t processor = -1;
+    bool is_evb = false;
+
+    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+    {
+        processor = (eProcessorType)buf[5];
+        is_evb = buf[6];
+        // memcpy(&m_sn, &buf[7], sizeof(uint32_t));
+    }
+
+    if(major >= 6)   
+    {   // v6 and has EVB detection built-in
+        if(processor == IS_PROCESSOR_SAMx70)
+        {   
+            valid_signatures |= is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
+            valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+        }
+        else if(processor == IS_PROCESSOR_STM32L4)
+        {
+            valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+            valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+        }
+    }
+    else
+    {
+        valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
+        valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+    }
+
+    if(valid_signatures & file) return IS_OP_OK;
+    
+    return IS_OP_ERROR;
+}
+
+is_operation_result cISBootloaderISB::reboot_up()
+{
+    // send the "reboot to program mode" command and the device should start in program mode
+    if(!serialPortWrite(&m_port, (unsigned char*)":020000040300F7", 15))
+    {
+        serialPortClose(&m_port);
+        return IS_OP_ERROR;
+    }
+
+    serialPortClose(&m_port);
     return IS_OP_OK;
 }
 
-void is_isb_restart_rom(serial_port_t* s)
+is_operation_result cISBootloaderISB::reboot_down()
 {
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interferece on its ports.
 
     // restart bootloader assist command
-    serialPortWrite(s, (unsigned char*)":020000040700F3", 15);
+    if(!serialPortWrite(&m_port, (unsigned char*)":020000040700F3", 15))
+    {
+        serialPortClose(&m_port);
+        return IS_OP_ERROR;
+    }
+
+    serialPortClose(&m_port);
+    return IS_OP_OK;
 }
 
-void is_isb_restart(serial_port_t* s)
+is_operation_result cISBootloaderISB::reboot()
 {
     // restart bootloader command
-    serialPortWrite(s, (unsigned char*)":020000040500F5", 15);
-    serialPortClose(s);
-    serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
-    serialPortOpenRetry(s, s->port, IS_BAUD_RATE_BOOTLOADER, 1);
+    if(!serialPortWrite(&m_port, (unsigned char*)":020000040500F5", 15))
+    {
+        serialPortClose(&m_port);
+        return IS_OP_ERROR;
+    }
+
+    serialPortClose(&m_port);
+    return IS_OP_OK;
 }
 
-// Must be ordered fastest to slowest
-static const uint32_t s_baudRateList[] = { IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_LEGACY, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
-
-static uint32_t is_isb_cycle_baudrate(uint32_t baudRate)
+uint32_t cISBootloaderISB::get_device_info()
 {
-	for (uint32_t i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
-		if (baudRate == s_baudRateList[i])  // Find current baudrate
-			if (i + 1 < _ARRAY_ELEMENT_COUNT(s_baudRateList))   // Get next baudrate
-                return s_baudRateList[i + 1];
+    sync(&m_port);
+    negotiate_version();
 
-	return s_baudRateList[0];
+    serialPortFlush(&m_port);
+
+	// Send command
+	serialPortWrite(&m_port, (uint8_t*)":020000041000EA", 15);
+
+    uint8_t buf[14] = { 0 };
+
+    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
+	int count = serialPortReadTimeout(&m_port, buf, 14, 1000);
+
+    if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
+    {   // Bad read
+        m_isb_props.major = 0;
+        m_isb_props.minor = 0;
+        m_isb_props.rom_available = 1;
+        m_isb_props.processor = IS_PROCESSOR_SAMx70;
+        m_isb_props.is_evb = false;
+        m_sn = 0;
+        return IS_OP_ERROR;
+    }
+
+    m_isb_props.major = buf[2];
+    m_isb_props.minor = buf[3];
+    m_isb_props.rom_available = buf[4];
+
+    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+    {
+        m_isb_props.processor = (eProcessorType)buf[5];
+        m_isb_props.is_evb = buf[6];
+        memcpy(&m_sn, &buf[7], sizeof(uint32_t));
+    }
+    else
+    {
+        m_sn = 0;
+    }
+
+    return IS_OP_OK;
 }
 
-// Finds the closest bootloader supported baudrate 
-static uint32_t is_isb_closest_baudrate(uint32_t baudRate)
-{
-	for (uint32_t i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
-		if (baudRate >= s_baudRateList[i]) 
-            return s_baudRateList[i];
-
-	return IS_BAUD_RATE_BOOTLOADER_SLOW;
-}
-
-static is_operation_result is_isb_sync(serial_port_t* s)
+is_operation_result cISBootloaderISB::sync(serial_port_t* s)
 {
     static const uint8_t handshakerChar = 'U';
-
-    // Try to reboot the device in case it is stuck
-    is_isb_restart(s);
-
-    // serialPortClose(s);
-    // if (serialPortOpenRetry(s, s->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
-    // {
-    //     // can't open the port, fail
-    //     return IS_OP_ERROR;
-    // }
 
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
@@ -177,104 +241,46 @@ static is_operation_result is_isb_sync(serial_port_t* s)
     return IS_OP_ERROR;
 }
 
-is_operation_result is_isb_handshake(is_device_context* ctx)
+is_operation_result cISBootloaderISB::negotiate_version()
 {
-    serial_port_t* port = &ctx->handle.port;
+    unsigned char v = 0;
 
-	// ensure that we return a valid baud rate
-	ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
+    do {
+        if (serialPortReadCharTimeout(&m_port, &v, 500) == 0) v = '1';
+    } while (v == 'U');
 
-    // try handshaking at each baud rate
-    // for (unsigned int i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList) + 1; i++)
+    if (v == '1')
+    {   // version 1
+        m_isb_props.major = 1;
+        m_isb_props.app_offset = 8192;
+    }
+    else if (v >= '2' && v <= '5')
+    {   // version 2, 3 (which sent v2), 4, 5
+        m_isb_props.major = v-'0';
+        m_isb_props.app_offset = 16384;
+    }
+    else if (v == '6')
+    {   // version 6
+        m_isb_props.major = v-'6';
+        m_isb_props.app_offset = 24576;
+    }
+    else
     {
-        // serialPortClose(port);
-        // if (serialPortOpenRetry(port, port->port, IS_BAUD_RATE_BOOTLOADER, 1) == 0)
-        // {
-        //     // can't open the port, fail
-        //     return IS_OP_ERROR;
-        // }
-        if (is_isb_sync(port) == IS_OP_OK)  //else
-        {
-            ctx->handle.baud = IS_BAUD_RATE_BOOTLOADER;
-            serialPortSleep(port, 100);
-            return IS_OP_OK;
-        }
+        return IS_OP_ERROR;
     }
 
-//    ctx->info_callback(ctx, "(ISB) Failed to handshake with bootloader", IS_LOG_LEVEL_ERROR);
+#if PLATFORM_IS_WINDOWS
+    // EvalTool and multiple bootloads under Windows 10 have issues with dropped data if verify runs too fast
+    m_isb_props.verify_size = 125;
+#else
+    m_isb_props.verify_size = MAX_VERIFY_CHUNK_SIZE;
+#endif
 
-    // Failed to handshake
-    return IS_OP_ERROR;
-}
-
-is_operation_result is_isb_enable(is_device_context* ctx, const char* enable_cmd)
-{
-    serial_port_t* port = &ctx->handle.port;
-    uint32_t baudRates[] = { ctx->handle.baud, IS_BAUD_RATE_BOOTLOADER, IS_BAUD_RATE_BOOTLOADER_RS232, IS_BAUD_RATE_BOOTLOADER_SLOW };
-
-    // In case we are in program mode, try and send the commands to go into bootloader mode
-    uint8_t c = 0;
-    for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(baudRates); i++)
-    {
-        if (baudRates[i] == 0)
-            continue;
-
-        // serialPortClose(port);
-        // if (serialPortOpenRetry(port, port->port, baudRates[i], 1) == 0)
-        // {
-        //     ctx->info_callback(ctx, "(ISB) Failed to open serial port", IS_LOG_LEVEL_ERROR);
-        //     serialPortClose(port);
-        //     return IS_OP_ERROR;
-        // }
-        for (size_t loop = 0; loop < 10; loop++)
-        {
-            if(!serialPortWriteAscii(port, "STPB", 4)) return IS_OP_OK; 
-            if(!serialPortWriteAscii(port, enable_cmd, 4)) return IS_OP_OK;
-            c = 0;
-            if (serialPortReadCharTimeout(port, &c, 13) == 1)
-            {
-                if (c == '$')
-                {
-                    // done, we got into bootloader mode
-                    i = 9999;
-                    break;
-                }
-            }
-            else serialPortFlush(port);
-        }
-    }
-
-    // serialPortClose(port);
-    // SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
-
-    // // if we can't handshake at this point, bootloader enable has failed
-    // if (is_isb_handshake(ctx) != IS_OP_OK)
-    // {
-    //     // failure
-    //     serialPortClose(port);
-    //     return IS_OP_ERROR;
-    // }
-
-    // // ensure bootloader restarts in fresh state
-//    is_isb_restart(port);
-
-    // // by this point the bootloader should be enabled
-    // serialPortClose(port);
+    serialPortSleep(&m_port, 100);
     return IS_OP_OK;
 }
 
-/**
- * @brief Calculate checksum for Inertial Sense Bootloader
- * 
- * @param checkSum 
- * @param ptr 
- * @param start INCLUSIVE
- * @param end EXCLUSIVE
- * @param checkSumPosition if not 0, the checkSum is written to ptr + checkSumPosition
- * @param finalCheckSum 
- * @return int 
- */
-static int is_isb_checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum)
+int cISBootloaderISB::checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum)
 {
     uint8_t c1, c2;
     uint8_t* currentPtr = (uint8_t*)(ptr + start);
@@ -297,47 +303,49 @@ static int is_isb_checksum(int checkSum, uint8_t* ptr, int start, int end, int c
     return checkSum;
 }
 
-static is_operation_result is_isb_erase_flash(serial_port_t* s)
+is_operation_result cISBootloaderISB::erase_flash()
 {
     // give the device 60 seconds to erase flash before giving up
     static const int eraseFlashTimeoutMilliseconds = 60000;
     unsigned char selectFlash[24];
 
+    serial_port_t* s = &m_port;
+
     // Write location to erase at
     memcpy(selectFlash, ":03000006030000F4CC\0\0\0\0\0", 24);
-    is_isb_checksum(0, selectFlash, 1, 17, 17, 1);
+    checksum(0, selectFlash, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(s, selectFlash, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) return IS_OP_ERROR;
 
     // Erase
     memcpy(selectFlash, ":0200000400FFFBCC\0", 18);
-    is_isb_checksum(0, selectFlash, 1, 15, 15, 1);
+    checksum(0, selectFlash, 1, 15, 15, 1);
     if (serialPortWriteAndWaitForTimeout(s, selectFlash, 17, (unsigned char*)".\r\n", 3, eraseFlashTimeoutMilliseconds) == 0) return IS_OP_ERROR;
 
     return IS_OP_OK;
 }
 
-static is_operation_result is_isb_select_page(is_device_context* ctx, int page)
+is_operation_result cISBootloaderISB::select_page(int page)
 {
-    serial_port_t* s = &ctx->handle.port;
+    serial_port_t* s = &m_port;
 
     // Atmel select page command (0x06) is 4 bytes and the data is always 0301xxxx where xxxx is a 16 bit page number in hex
     unsigned char changePage[24];
     
     // Change page
     SNPRINTF((char*)changePage, 24, ":040000060301%.4XCC", page);
-    is_isb_checksum(0, changePage, 1, 17, 17, 1);
+    checksum(0, changePage, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(s, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) 
     {
-        ctx->info_callback(ctx, "(ISB) Failed to select page in ISB bootloader", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to select page", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
     return IS_OP_OK;
 }
 
-static is_operation_result is_isb_begin_program_for_current_page(is_device_context* ctx, int startOffset, int endOffset)
+is_operation_result cISBootloaderISB::begin_program_for_current_page(int startOffset, int endOffset)
 {
-    serial_port_t* s = &ctx->handle.port;
+    serial_port_t* s = &m_port;
 
     // Atmel begin program command is 0x01, different from standard intel hex where command 0x01 is end of file
     // After the 0x01 is a 00 which means begin writing program
@@ -347,17 +355,17 @@ static is_operation_result is_isb_begin_program_for_current_page(is_device_conte
     
     // Select offset
     SNPRINTF((char*)programPage, 24, ":0500000100%.4X%.4XCC", startOffset, endOffset);
-    is_isb_checksum(0, programPage, 1, 19, 19, 1);
+    checksum(0, programPage, 1, 19, 19, 1);
     if (serialPortWriteAndWaitForTimeout(s, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
-        ctx->info_callback(ctx, "(ISB) Failed to start programming page ISB bootloader", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to start programming page", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
     return IS_OP_OK;
 }
 
-static int is_isb_read_line(FILE* file, char line[1024])
+int cISBootloaderISB::is_isb_read_line(FILE* file, char line[1024])
 {
     char c;
     char* currentPtr = line;
@@ -382,9 +390,9 @@ static int is_isb_read_line(FILE* file, char line[1024])
     return (int)(currentPtr - line);
 }
 
-static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsigned char* hexData, int byteCount, int* currentOffset, int* totalBytes, int* verifyCheckSum)
+is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, int byteCount, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
-    serial_port_t* s = &ctx->handle.port;
+    serial_port_t* s = &m_port;
     int i;
 
     if (byteCount == 0)
@@ -397,18 +405,18 @@ static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsign
     SNPRINTF((char*)programLine, 12, ":%.2X%.4X00", byteCount, *currentOffset);
     if (serialPortWrite(s, programLine, 9) != 9)
     {
-        ctx->info_callback(ctx, "(ISB) Failed to write start page", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to write start page", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
     // add the previously written chars to the checksum
-    int checkSum = is_isb_checksum(0, programLine, 1, 9, 0, 0);
+    int checkSum = checksum(0, programLine, 1, 9, 0, 0);
 
     // write all of the hex chars
     int charsForThisPage = byteCount * 2;
     if (serialPortWrite(s, hexData, charsForThisPage) != charsForThisPage)
     {
-        ctx->info_callback(ctx, "(ISB) Failed to write data to device", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to write data to device", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
@@ -418,13 +426,13 @@ static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsign
         *verifyCheckSum = ((*verifyCheckSum << 5) + *verifyCheckSum) + hexData[i];
     }
 
-    checkSum = is_isb_checksum(checkSum, hexData, 0, charsForThisPage, 0, 1);
+    checkSum = checksum(checkSum, hexData, 0, charsForThisPage, 0, 1);
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
 
     if (serialPortWrite(s, checkSumHex, 2) != 2)
     {
-        ctx->info_callback(ctx, "(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
@@ -434,13 +442,13 @@ static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsign
 	if (count != 3 || memcmp(buf, ".\r\n", 3) != 0)
 	{
         buf[count] = '\0'; 
-        ctx->info_callback(ctx, (const char*)buf, IS_LOG_LEVEL_ERROR);
+        status_update((const char*)buf, IS_LOG_LEVEL_ERROR);
 		return IS_OP_ERROR;
 	}
 
     // if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     // {
-    //     ctx->info_callback(ctx, "(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
+    //     status_update(m_ctx, "(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
     //     return IS_OP_ERROR;
     // }
 
@@ -450,11 +458,11 @@ static is_operation_result is_isb_upload_hex_page(is_device_context* ctx, unsign
     return IS_OP_OK;
 }
 
-static is_operation_result is_isb_upload_hex(is_device_context* ctx, unsigned char* hexData, int charCount, int* currentOffset, int* currentPage, int* totalBytes, int* verifyCheckSum)
+is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int charCount, int* currentOffset, int* currentPage, int* totalBytes, int* verifyCheckSum)
 {
     if (charCount > MAX_SEND_COUNT)
     {
-        ctx->info_callback(ctx, "(ISB) Unexpected char count", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Unexpected char count", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
     else if (charCount == 0)
@@ -468,9 +476,9 @@ static is_operation_result is_isb_upload_hex(is_device_context* ctx, unsigned ch
     if (*currentOffset + byteCount > FLASH_PAGE_SIZE)
     {
         int pageByteCount = FLASH_PAGE_SIZE - *currentOffset;
-        if (is_isb_upload_hex_page(ctx, hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
+        if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
         {
-            ctx->info_callback(ctx, "(ISB) Failed to upload bytes (1)", IS_LOG_LEVEL_ERROR);
+            status_update("(ISB) Failed to upload bytes (1)", IS_LOG_LEVEL_ERROR);
             return IS_OP_ERROR;
         }
         hexData += (pageByteCount * 2);
@@ -479,23 +487,23 @@ static is_operation_result is_isb_upload_hex(is_device_context* ctx, unsigned ch
         // change to the next page
         *currentOffset = 0;
         (*currentPage)++;
-        if (is_isb_select_page(ctx, *currentPage) != IS_OP_OK || is_isb_begin_program_for_current_page(ctx, 0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
+        if (select_page(*currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
         {
-            ctx->info_callback(ctx, "(ISB) Failed to issue select page or to start programming", IS_LOG_LEVEL_ERROR);
+            status_update("(ISB) Failed to issue select page or to start programming", IS_LOG_LEVEL_ERROR);
             return IS_OP_ERROR;
         }
     }
 
-    if (charCount != 0 && is_isb_upload_hex_page(ctx, hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
+    if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
     {
-        ctx->info_callback(ctx, "(ISB) Failed to upload bytes (2)", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to upload bytes (2)", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
     return IS_OP_OK;
 }
 
-static is_operation_result is_isb_fill_current_page(is_device_context* ctx, int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum)
+is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
     if (*currentOffset < FLASH_PAGE_SIZE)
     {
@@ -511,9 +519,9 @@ static is_operation_result is_isb_fill_current_page(is_device_context* ctx, int*
             }
             memset(hexData, 'F', byteCount);
 
-            if (is_isb_upload_hex_page(ctx, hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
+            if (upload_hex_page(hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
             {
-                ctx->info_callback(ctx, "(ISB) Failed to fill page with bytes", IS_LOG_LEVEL_ERROR);
+                status_update("(ISB) Failed to fill page with bytes", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
         }
@@ -522,97 +530,94 @@ static is_operation_result is_isb_fill_current_page(is_device_context* ctx, int*
     return IS_OP_OK;
 }
 
-static is_operation_result is_isb_download_data(is_device_context* ctx, int startOffset, int endOffset)
+is_operation_result cISBootloaderISB::download_data(int startOffset, int endOffset)
 {
-    serial_port_t* s = &ctx->handle.port;
+    serial_port_t* s = &m_port;
 
     // Atmel download data command is 0x03, different from standard intel hex where command 0x03 is start segment address
     unsigned char programLine[24];
     int n;
     n = SNPRINTF((char*)programLine, 24, ":0500000300%.4X%.4XCC", startOffset, endOffset);
     programLine[n] = 0;
-    is_isb_checksum(0, programLine, 1, 19, 19, 1);
+    checksum(0, programLine, 1, 19, 19, 1);
     if (serialPortWrite(s, programLine, 21) != 21)
     {
-        ctx->info_callback(ctx, "(ISB) Failed to attempt download", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to attempt download", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
     return IS_OP_OK;
 }
 
-static is_operation_result is_isb_verify(int lastPage, int checkSum, is_device_context* ctx)
+is_operation_result cISBootloaderISB::verify_image(std::string filename)
 {
-    int verifyChunkSize = ctx->props.isb.verify_size;
+    int verifyChunkSize = m_isb_props.verify_size;
     int chunkSize = _MIN(FLASH_PAGE_SIZE, verifyChunkSize);
     int realCheckSum = 5381;
-    int totalCharCount = ctx->props.isb.app_offset * 2;
-    int grandTotalCharCount = (lastPage + 1) * FLASH_PAGE_SIZE * 2; // char count
+    int totalCharCount = m_isb_props.app_offset * 2;
+    int grandTotalCharCount = (m_currentPage + 1) * FLASH_PAGE_SIZE * 2; // char count
     int i, pageOffset, readCount, actualPageOffset, pageChars, chunkIndex, lines;
     int verifyByte = -1;
     unsigned char chunkBuffer[(MAX_VERIFY_CHUNK_SIZE * 2) + 64]; // extra space for overhead
-    ctx->update_progress = 0.0f;
     unsigned char c=0;
     FILE* verifyFile = 0;
 
-    if (ctx->verify_path != 0)
-    {
-#ifdef _MSC_VER
-        fopen_s(&verifyFile, ctx->verify_path, "wb");
-#else
-        verifyFile = fopen(ctx->verify_path, "wb");
-#endif
-    }
+    m_verify_progress = 0.0f;
 
-    for (i = 0; i <= lastPage; i++)
+#ifdef _MSC_VER
+    fopen_s(&verifyFile, filename.c_str(), "wb");
+#else
+    verifyFile = fopen(filename.c_str(), "wb");
+#endif
+
+    for (i = 0; i <= m_currentPage; i++)
     {
-        if (is_isb_select_page(ctx, i) != IS_OP_OK)
+        if (select_page(i) != IS_OP_OK)
         {
-            ctx->info_callback(ctx, "(ISB) Failure issuing select page command for verify", IS_LOG_LEVEL_ERROR);
+            status_update("(ISB) Failure issuing select page command for verify", IS_LOG_LEVEL_ERROR);
             return IS_OP_ERROR;
         }
-        pageOffset = (i == 0 ? ctx->props.isb.app_offset : 0);
+        pageOffset = (i == 0 ? m_isb_props.app_offset : 0);
         while (pageOffset < FLASH_PAGE_SIZE)
         {
             readCount = _MIN(chunkSize, FLASH_PAGE_SIZE - pageOffset);
 
             // range is inclusive on the uINS, so subtract one
-            if (is_isb_download_data(ctx, pageOffset, pageOffset + readCount - 1) == 0)
+            if (download_data(pageOffset, pageOffset + readCount - 1) == 0)
             {
-                ctx->info_callback(ctx, "(ISB) Failure issuing download data command", IS_LOG_LEVEL_ERROR);
+                status_update("(ISB) Failure issuing download data command", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
             // each line has 7 overhead bytes, plus two bytes (hex) for each byte on the page and max 255 bytes per line
             lines = (int)ceilf((float)readCount / 255.0f);
-            readCount = serialPortReadTimeout(&ctx->handle.port, chunkBuffer, (7 * lines) + (readCount * 2), BOOTLOADER_TIMEOUT_DEFAULT);
+            readCount = serialPortReadTimeout(&m_port, chunkBuffer, (7 * lines) + (readCount * 2), BOOTLOADER_TIMEOUT_DEFAULT);
             chunkIndex = 0;
 
             while (chunkIndex < readCount)
             {
                 if (chunkIndex > readCount - 5)
                 {
-                    ctx->info_callback(ctx, "(ISB) Unexpected start line during verify (1)", IS_LOG_LEVEL_ERROR);
+                    status_update("(ISB) Unexpected start line during verify (1)", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
-
                 // skip the first 5 chars, they are simply ####=
                 if (chunkBuffer[chunkIndex] == 'X')
                 {
-                    ctx->info_callback(ctx, "(ISB) Invalid checksum during verify", IS_LOG_LEVEL_ERROR);
+                    status_update("(ISB) Invalid checksum during verify", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
                 else if (chunkBuffer[chunkIndex += 4] != '=')
                 {
-                    ctx->info_callback(ctx, "(ISB) Unexpected start line during verify (2)", IS_LOG_LEVEL_ERROR);
+                    status_update("(ISB) Unexpected start line during verify (2)", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
                 chunkBuffer[chunkIndex] = '\0';
                 actualPageOffset = strtol((char*)(chunkBuffer + chunkIndex - 4), 0, 16);
                 if (actualPageOffset != pageOffset)
                 {
-                    ctx->info_callback(ctx, "(ISB) Unexpected offset during verify", IS_LOG_LEVEL_ERROR);
-                    return 0;
+                    status_update("(ISB) Unexpected offset during verify", IS_LOG_LEVEL_ERROR);
+                    return IS_OP_ERROR;
                 }
                 pageChars = 0;
                 chunkIndex++;
@@ -649,26 +654,26 @@ static is_operation_result is_isb_verify(int lastPage, int checkSum, is_device_c
                     }
                     else
                     {
-                        ctx->info_callback(ctx, "(ISB) Unexpected hex data during verify", IS_LOG_LEVEL_ERROR);
+                        status_update("(ISB) Unexpected hex data during verify", IS_LOG_LEVEL_ERROR);
                         return IS_OP_ERROR;
                     }
                 }
 
                 if (c != '\n')
                 {
-                    ctx->info_callback(ctx, "(ISB) Unexpected end of lin char during verify", IS_LOG_LEVEL_ERROR);
+                    status_update("(ISB) Unexpected end of lin char during verify", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
 
                 // increment page offset
                 pageOffset += (pageChars / 2);
 
-                if (ctx->verify_callback != 0)
+                if (m_verify_callback != 0)
                 {
-                    ctx->verify_progress = (float)totalCharCount / (float)grandTotalCharCount;
-                    if (ctx->verify_callback(ctx, ctx->verify_progress) != IS_OP_OK)
+                    m_verify_progress = (float)totalCharCount / (float)grandTotalCharCount;
+                    if (m_verify_callback(this, m_verify_progress) != IS_OP_OK)
                     {
-                        ctx->info_callback(ctx, "(ISB) Firmware validate cancelled", IS_LOG_LEVEL_ERROR);
+                        status_update("(ISB) Firmware validate cancelled", IS_LOG_LEVEL_ERROR);
                         return IS_OP_CANCELLED;
                     }
                 }
@@ -681,9 +686,9 @@ static is_operation_result is_isb_verify(int lastPage, int checkSum, is_device_c
         fclose(verifyFile);
     }
 
-    if (realCheckSum != checkSum)
+    if (realCheckSum != m_verifyCheckSum)
     {
-        ctx->info_callback(ctx, "(ISB) Checksum mismatch during verify", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Checksum mismatch during verify", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
@@ -692,17 +697,17 @@ static is_operation_result is_isb_verify(int lastPage, int checkSum, is_device_c
 
 #define HEX_BUFFER_SIZE 1024
 
-static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context* ctx)
+is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
 {
     int currentPage = 0;
-    int currentOffset = ctx->props.isb.app_offset;
+    int currentOffset = m_isb_props.app_offset;
     int lastSubOffset = currentOffset;
     int subOffset;
-    int totalBytes = ctx->props.isb.app_offset;
+    int totalBytes = m_isb_props.app_offset;
 
     int verifyCheckSum = 5381;
     int lineLength;
-    ctx->update_progress = 0.0f;
+    m_update_progress = 0.0f;
     char line[HEX_BUFFER_SIZE];
     unsigned char output[HEX_BUFFER_SIZE * 2]; // big enough to store an entire extra line of buffer if needed
     unsigned char* outputPtr = output;
@@ -724,7 +729,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
         {
             if (lineLength > HEX_BUFFER_SIZE * 4)
             {
-                ctx->info_callback(ctx, "(ISB) hex file line length too long", IS_LOG_LEVEL_ERROR);
+                status_update("(ISB) hex file line length too long", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
@@ -741,7 +746,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
                 pad = (subOffset - lastSubOffset);
                 if (outputPtr + pad >= outputPtrEnd)
                 {
-                    ctx->info_callback(ctx, "(ISB) FF padding overflowed buffer", IS_LOG_LEVEL_ERROR);
+                    status_update("(ISB) FF padding overflowed buffer", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
 
@@ -757,7 +762,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
             pad = lineLength - 11;
             if (outputPtr + pad >= outputPtrEnd)
             {
-                ctx->info_callback(ctx, "(ISB) Line data overflowed output buffer", IS_LOG_LEVEL_ERROR);
+                status_update("(ISB) Line data overflowed output buffer", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
@@ -777,7 +782,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
                 continue;
             }
             // upload this chunk
-            else if (is_isb_upload_hex(ctx, output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            else if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
                 return IS_OP_ERROR;
             }
@@ -786,7 +791,7 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
 
             if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
             {
-                ctx->info_callback(ctx, "(ISB) Output size was too large (1)", IS_LOG_LEVEL_ERROR);
+                status_update("(ISB) Output size was too large (1)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
             else if (outputSize > 0)
@@ -812,16 +817,16 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
 
                 if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
                 {
-                    ctx->info_callback(ctx, "(ISB) Output size was too large (2)", IS_LOG_LEVEL_ERROR);
+                    status_update("(ISB) Output size was too large (2)", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
                 // flush the remainder of data to the page
-                else if (is_isb_upload_hex(ctx, output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+                else if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
                 {
                     return IS_OP_ERROR;
                 }
                 // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
-                else if (is_isb_fill_current_page(ctx, &currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+                else if (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
                 {
                     return IS_OP_ERROR;
                 }
@@ -831,13 +836,13 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
             }
         }
 
-        if (ctx->update_callback != 0)
+        if (m_update_callback != 0)
         {
-            ctx->update_progress = (float)ftell(file) / (float)fileSize;	// Dummy line to call ftell() once
-            ctx->update_progress = (float)ftell(file) / (float)fileSize;
-            if (ctx->update_callback(ctx, ctx->update_progress) != IS_OP_OK)
+            m_update_progress = (float)ftell(file) / (float)fileSize;	// Dummy line to call ftell() once
+            m_update_progress = (float)ftell(file) / (float)fileSize;
+            if (m_update_callback(this, m_update_progress) != IS_OP_OK)
             {
-                ctx->info_callback(ctx, "(ISB) Firmware update cancelled", IS_LOG_LEVEL_ERROR);
+                status_update("(ISB) Firmware update cancelled", IS_LOG_LEVEL_ERROR);
                 return IS_OP_CANCELLED;
             }
         }
@@ -845,86 +850,56 @@ static is_operation_result is_isb_process_hex_file(FILE* file, is_device_context
 
     // upload any left over data
     outputSize = (int)(outputPtr - output);
-    if (is_isb_upload_hex(ctx, output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+    if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
     {
         return IS_OP_ERROR;
     }
 
     // pad the remainder of the page with fill bytes
-    if (currentOffset != 0 && is_isb_fill_current_page(ctx, &currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+    if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
     {
         return IS_OP_ERROR;
     }
 
-    if (ctx->update_callback != 0 && ctx->update_progress != 1.0f)
+    if (m_update_callback != 0 && m_update_progress != 1.0f)
     {
-        ctx->update_progress = 1.0f;
-        ctx->update_callback(ctx, ctx->update_progress);
+        m_update_progress = 1.0f;
+        m_update_callback(this, m_update_progress);
     }
 
-    if (ctx->verify_callback != 0 && ctx->verify_progress != 0)
-    {
-        if (ctx->info_callback != 0) ctx->info_callback(ctx, "Verifying flash...", IS_LOG_LEVEL_INFO);
-
-        if (is_isb_verify(currentPage, verifyCheckSum, ctx) != IS_OP_OK)
-        {
-            return IS_OP_ERROR;
-        }
-    }
+    // Set the verify function up
+    m_currentPage = currentPage;
+    m_verifyCheckSum = verifyCheckSum;
 
     return IS_OP_OK;
 }
 
-is_operation_result is_isb_flash(is_device_context* ctx)
+is_operation_result cISBootloaderISB::download_image(std::string filename)
 {
     FILE* firmware_file = 0;
 
 #ifdef _MSC_VER
-    fopen_s(&firmware_file, ctx->firmware_path, "rb");
+    fopen_s(&firmware_file, filename.c_str(), "rb");
 #else
-    firmware_file = fopen(ctx->firmware_path, "rb");
+    firmware_file = fopen(filename.c_str(), "rb");
 #endif
 
-    // Sync with bootloader
-    if(is_isb_handshake(ctx) != IS_OP_OK)
-        return IS_OP_ERROR;
-    if(is_isb_negotiate_version(ctx) != IS_OP_OK) // negotiate version
-        return IS_OP_ERROR;
-    if(is_isb_get_version(ctx) != IS_OP_OK)
-        return IS_OP_ERROR;
+    status_update("Erasing flash...", IS_LOG_LEVEL_INFO);
 
-    if(ctx->info_callback != 0)
-        ctx->info_callback(ctx, "Erasing flash...", IS_LOG_LEVEL_INFO);
-    if(is_isb_erase_flash(&ctx->handle.port) != IS_OP_OK)
-        return IS_OP_ERROR;
-    if(is_isb_select_page(ctx, 0) != IS_OP_OK)
-        return IS_OP_ERROR;
+    if(erase_flash() != IS_OP_OK) return IS_OP_ERROR;
+    if(select_page(0) != IS_OP_OK) return IS_OP_ERROR;
 
-    if(ctx->info_callback != 0)
-        ctx->info_callback(ctx, "Programming flash...", IS_LOG_LEVEL_INFO);
-    if(is_isb_begin_program_for_current_page(ctx, ctx->props.isb.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
-        return IS_OP_ERROR;
-
-    if(is_isb_process_hex_file(firmware_file, ctx) != IS_OP_OK)
-        return IS_OP_ERROR;
+    status_update("Programming flash...", IS_LOG_LEVEL_INFO);
+    
+    if(begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK) return IS_OP_ERROR;
+    if(process_hex_file(firmware_file) != IS_OP_OK) return IS_OP_ERROR;
 
     fclose(firmware_file);
-    // serialPortClose(&ctx->handle.port);
 
     return IS_OP_OK;
 }
 
-/**
- * @brief Gets the version (e.g. 6a) from the bootloader file. Should be used in 
- *  conjunction with the function that gets the signature from the firmware 
- *  image.
- * 
- * @param filename file name of the bootloader
- * @param major filled with major version
- * @param minor filled with minor version
- * @return is_operation_result 
- */
-is_operation_result is_isb_get_version_from_file(const char* filename, uint8_t* major, char* minor)
+is_operation_result cISBootloaderISB::get_version_from_file(const char* filename, uint8_t* major, char* minor)
 {
     FILE* blfile = 0;
 
@@ -957,74 +932,7 @@ is_operation_result is_isb_get_version_from_file(const char* filename, uint8_t* 
     return IS_OP_ERROR;
 }
 
-/**
- * @brief Cycles through all valid baud rates and commands the bootloader back
- *  into application mode
- * 
- * @param port 
- * @return is_operation_result 
- */
-is_operation_result is_isb_reboot_to_app(serial_port_t* port)
-{
-    is_operation_result ret = IS_OP_OK;
 
-    for(uint32_t i = 0; i < _ARRAY_ELEMENT_COUNT(s_baudRateList); i++)
-    {
-        // serialPortClose(port);
-        // if (serialPortOpenRetry(port, port->port, s_baudRateList[i], 1) == 0)
-        // {
-            // ret = IS_OP_ERROR; continue;
-        // }
-        
-        // send the "reboot to program mode" command and the device should start in program mode
-        serialPortWrite(port, (unsigned char*)":020000040300F7", 15);
-        serialPortSleep(port, 250);
-    }
 
-    // serialPortClose(port);
 
-    return ret;
-}
-
-is_operation_result is_isb_get_version(is_device_context* ctx)
-{
-    serialPortFlush(&ctx->handle.port);
-
-	// Send command
-	serialPortWrite(&ctx->handle.port, (uint8_t*)":020000041000EA", 15);
-
-    uint8_t buf[14] = { 0 };
-
-    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-	int count = serialPortReadTimeout(&ctx->handle.port, buf, 14, 1000);
-
-    if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
-    {   // Bad read
-        ctx->props.isb.major = 0;
-        ctx->props.isb.minor = 0;
-        ctx->props.isb.rom_available = 1;
-        ctx->props.isb.processor = IS_PROCESSOR_SAMx70;
-        ctx->props.isb.is_evb = false;
-        ctx->props.serial = 0;
-        return IS_OP_ERROR;
-    }
-
-    ctx->props.isb.major = buf[2];
-    ctx->props.isb.minor = buf[3];
-    ctx->props.isb.rom_available = buf[4];
-
-    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-    {
-        ctx->props.isb.processor = buf[5];
-        ctx->props.isb.is_evb = buf[6];
-        memcpy(&ctx->props.serial, &buf[7], sizeof(uint32_t));
-    }
-    else
-    {
-        ctx->props.serial = 0;
-    }
-
-    serialPortSleep(&ctx->handle.port, 1000);
-    return IS_OP_OK;
-}
 

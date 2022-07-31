@@ -323,8 +323,8 @@ static int cltool_updateFirmware()
 		0,
         g_commandLineOptions.updateAppFirmwareFilename,
         g_commandLineOptions.baudRate, 
-        bootloadUploadProgress,
-		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0),
+		ISBootloader::dummy_update_callback,
+		(g_commandLineOptions.bootloaderVerify ? ISBootloader::dummy_verify_callback : 0),
 		cltool_bootloadUpdateInfo,
 		cltool_firmwareUpdateWaiter
 	);
@@ -343,25 +343,21 @@ static int cltool_updateFirmware()
 	return (errorCount == 0 ? 0 : -1);
 }
 
-void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level)
+void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level)
 {
-	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
+	for (size_t i = 0; i < cISBootloaderThread::ctx.size(); i++)
 	{
-		is_device_context* ctx = ISBootloader::ctx[i];
+		ISBootloader::cISBootloaderBase* ctx = cISBootloaderThread::ctx[i];
 
 		if(obj != ctx) continue;
 
-		if (ctx->props.serial != 0)
+		if (ctx->m_sn != 0)
 		{
-			printf("SN%d: %s\r\n", ctx->props.serial, str);
+			printf("SN%d: %s\r\n", ctx->m_sn, str);
 		}
-		else if (ctx->handle.dfu.sn != 0)
+		else if (strlen(ctx->m_port.port) != 0)
 		{
-			printf("SN%d: %s\r\n", ctx->handle.dfu.sn, str);
-		}
-		else if (strlen(ctx->handle.port_name) != 0)
-		{
-			printf("%s: %s\r\n", ctx->handle.port_name, str);
+			printf("%s: %s\r\n", ctx->m_port.port, str);
 		}
 		else
 		{
@@ -373,23 +369,23 @@ void cltool_bootloadUpdateInfo(void* obj, const char* str, is_log_level level)
 void cltool_firmwareUpdateWaiter()
 {
 	float progress = 0.0;
-	size_t num_devices = ISBootloader::ctx.size();
+	size_t num_devices = cISBootloaderThread::ctx.size();
 	int num_used_devices = 0;
 
 	for (size_t i = 0; i < num_devices; i++)
 	{
-		if (ISBootloader::ctx[i]->use_progress)
+		if (cISBootloaderThread::ctx[i]->m_use_progress)
 		{
 			num_used_devices++;
 
-			if (ISBootloader::ctx[i]->verify == IS_VERIFY_OFF)
+			if (cISBootloaderThread::ctx[i]->m_verify_callback == NULLPTR)
 			{
-				progress += ISBootloader::ctx[i]->update_progress;
+				progress += cISBootloaderThread::ctx[i]->m_update_progress;
 			}
 			else
 			{
-				progress += ISBootloader::ctx[i]->update_progress * 0.5f;
-				progress += ISBootloader::ctx[i]->verify_progress * 0.5f;
+				progress += cISBootloaderThread::ctx[i]->m_update_progress * 0.5f;
+				progress += cISBootloaderThread::ctx[i]->m_verify_progress * 0.5f;
 			}
 		}
 	}

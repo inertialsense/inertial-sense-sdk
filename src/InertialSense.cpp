@@ -715,25 +715,15 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	const uint32_t serialNum,
 	const string& fileName, 
 	int baudRate, 
-	pfnBootloadProgress uploadProgress, 
-	pfnBootloadProgress verifyProgress, 
-	pfnBootloadStatus infoProgress,
+	ISBootloader::pfnBootloadProgress uploadProgress, 
+	ISBootloader::pfnBootloadProgress verifyProgress, 
+	ISBootloader::pfnBootloadStatus infoProgress,
 	void (*waitAction)()
 )
 {
 #ifndef EXCLUDE_BOOTLOADER
 	vector<bootload_result_t> results;
 	vector<string> portStrings;
-	
-	// For now, we will use all present DFU devices. The bootloader code will only load them with images that have the right signature, so this is safe.
-	std::vector<std::string> uids;
-	/*is_dfu_list dfu_list;
-	is_dfu_list_devices(&dfu_list);
-
-	for (size_t i = 0; i < dfu_list.present; i++)
-	{
-		uids.push_back(std::string(dfu_list.id->uid));
-	}*/
 
 	if (comPort == "*")
 	{
@@ -760,17 +750,17 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
 	#endif
 	
-	ISBootloader::update(portStrings, uids, baudRate, fileName.c_str(), uploadProgress, verifyProgress, infoProgress, NULLPTR, waitAction);
+	cISBootloaderThread::update(portStrings, baudRate, fileName, uploadProgress, verifyProgress, infoProgress, waitAction);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
 	#endif
 
-	for (size_t i = 0; i < ISBootloader::ctx.size(); i++)
+	for (size_t i = 0; i < cISBootloaderThread::ctx.size(); i++)
 	{
-		if(!ISBootloader::ctx[i]->finished_flash)
+		if(!cISBootloaderThread::ctx[i]->m_finished_flash)
 		{
-			results.push_back({ std::to_string(ISBootloader::ctx[i]->props.serial), "failure "});
+			results.push_back({ std::to_string(cISBootloaderThread::ctx[i]->m_sn), "failure "});
 		}
 	}
 
