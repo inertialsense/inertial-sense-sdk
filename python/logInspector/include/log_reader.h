@@ -52,8 +52,8 @@ struct DeviceLog
     std::vector<gps_rtk_misc_t> gps1RtkPosMisc;
     std::vector<gps_rtk_misc_t> gps1RtkCmpMisc;
     // std::vector<feature_bits_t> featureBits;
-    std::vector<sensors_w_temp_t> sensorsIs1;
-    std::vector<sensors_w_temp_t> sensorsIs2;
+    std::vector<sensors_w_temp_t> sensorsRaw;
+    std::vector<sensors_w_temp_t> sensorsTcal;
     std::vector<sensors_t> sensorsTcBias;
     std::vector<io_t> io;
     // std::vector<sys_sensors_adc_t> sensorsAdc;
