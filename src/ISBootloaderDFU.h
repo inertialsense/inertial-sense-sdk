@@ -59,12 +59,10 @@ public:
         pfnBootloadProgress upload_cb,
         pfnBootloadProgress verify_cb,
         pfnBootloadStatus info_cb,
-        libusb_device_handle* handle,
-        const char * uid
+        libusb_device_handle* handle
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_dfu.handle_libusb = handle;
-        strncpy(m_dfu.uid, uid, IS_DFU_UID_MAX_SIZE); 
         m_device_type = IS_DEV_TYPE_DFU;
     }
 
@@ -81,7 +79,7 @@ public:
 
     uint32_t get_device_info();
 
-    static is_operation_result check_is_compatible(libusb_device_handle* handle, eImageSignature file);
+    ISBootloader::eImageSignature check_is_compatible();
     
     is_operation_result download_image(std::string image);
     is_operation_result upload_image(std::string image) { return IS_OP_OK; }
@@ -158,7 +156,7 @@ private:
     static int dfu_GETSTATE(libusb_device_handle** handle, uint8_t* buf);
     static int dfu_ABORT(libusb_device_handle** handle);
     
-    static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint32_t* sn); 
+    static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uid); 
 
     static dfu_error dfu_set_address_pointer(libusb_device_handle** dev_handle, uint32_t address);
     static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state);

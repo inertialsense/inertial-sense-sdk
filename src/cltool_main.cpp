@@ -309,6 +309,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	return true;
 }
 
+std::vector<ISBootloader::cISBootloaderBase*> firmwareProgressContexts;
+
+is_operation_result bootloadUpdateCallback(void* obj, float percent);
+is_operation_result bootloadVerifyCallback(void* obj, float percent);
+
 static int cltool_updateFirmware()
 {
 	// [BOOTLOADER INSTRUCTION] Update firmware
@@ -318,13 +323,15 @@ static int cltool_updateFirmware()
 	}
 	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 	
+	firmwareProgressContexts.clear();
+
 	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(
 		g_commandLineOptions.comPort,
 		0,
         g_commandLineOptions.updateAppFirmwareFilename,
         g_commandLineOptions.baudRate, 
-		ISBootloader::dummy_update_callback,
-		(g_commandLineOptions.bootloaderVerify ? ISBootloader::dummy_verify_callback : 0),
+		bootloadUpdateCallback,
+		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
 		cltool_bootloadUpdateInfo,
 		cltool_firmwareUpdateWaiter
 	);
@@ -343,57 +350,99 @@ static int cltool_updateFirmware()
 	return (errorCount == 0 ? 0 : -1);
 }
 
-void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level)
+std::mutex print_mutex;
+
+void printProgress(void* obj, float percent)
 {
-	for (size_t i = 0; i < cISBootloaderThread::ctx.size(); i++)
+	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
+
+	print_mutex.lock();
+
+	if (std::find(firmwareProgressContexts.begin(), firmwareProgressContexts.end(), ctx) == firmwareProgressContexts.end())
 	{
-		ISBootloader::cISBootloaderBase* ctx = cISBootloaderThread::ctx[i];
+		firmwareProgressContexts.push_back(ctx);
+	}
 
-		if(obj != ctx) continue;
+	int divisor = 0;
+	float total = 0.0f;
 
-		if (ctx->m_sn != 0)
+	for (size_t i = 0; i < firmwareProgressContexts.size(); i++)
+	{
+		if (firmwareProgressContexts[i]->m_use_progress)
 		{
-			printf("SN%d: %s\r\n", ctx->m_sn, str);
-		}
-		else if (strlen(ctx->m_port.port) != 0)
-		{
-			printf("%s: %s\r\n", ctx->m_port.port, str);
-		}
-		else
-		{
-			printf("Unknown: %s\r\n", str);
+			divisor++;
+
+			if (firmwareProgressContexts[i]->m_verify_callback != bootloadVerifyCallback)
+			{
+				total += firmwareProgressContexts[i]->m_update_progress;
+			}
+			else
+			{
+				total += firmwareProgressContexts[i]->m_update_progress * 0.5f;
+				total += firmwareProgressContexts[i]->m_verify_progress * 0.5f;
+			}
 		}
 	}
+
+	if (divisor) {
+		total /= divisor;
+		int display = (int)(total * 100);
+		printf("Progress: %d%%\r", display);
+		fflush(stdout);
+	}
+
+	print_mutex.unlock();
+}
+
+is_operation_result bootloadUpdateCallback(void* obj, float percent)
+{
+	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
+	ctx->m_update_progress = percent;
+
+	printProgress(obj, percent);
+
+	return IS_OP_OK;
+}
+
+is_operation_result bootloadVerifyCallback(void* obj, float percent)
+{
+	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
+	ctx->m_verify_progress = percent;
+
+	printProgress(obj, percent);
+
+	return IS_OP_OK;
+}
+
+void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level)
+{
+	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase *)obj;
+
+	print_mutex.lock();
+	if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
+	{
+		printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
+	}
+	else if(ctx->m_sn != 0)
+	{
+		printf("(SN%d):\r", ctx->m_sn);
+	}
+	else if (ctx->m_port_name.size() != 0)
+	{
+		printf("%s:\r", ctx->m_port_name.c_str());
+	}
+	else
+	{
+		printf("SN?:\r");
+	}
+	
+	printf("\t\t\t%s\r\n", str);
+	print_mutex.unlock();
 }
 
 void cltool_firmwareUpdateWaiter()
 {
-	float progress = 0.0;
-	size_t num_devices = cISBootloaderThread::ctx.size();
-	int num_used_devices = 0;
-
-	for (size_t i = 0; i < num_devices; i++)
-	{
-		if (cISBootloaderThread::ctx[i]->m_use_progress)
-		{
-			num_used_devices++;
-
-			if (cISBootloaderThread::ctx[i]->m_verify_callback == NULLPTR)
-			{
-				progress += cISBootloaderThread::ctx[i]->m_update_progress;
-			}
-			else
-			{
-				progress += cISBootloaderThread::ctx[i]->m_update_progress * 0.5f;
-				progress += cISBootloaderThread::ctx[i]->m_verify_progress * 0.5f;
-			}
-		}
-	}
-
-	if(num_used_devices) progress /= num_used_devices;
-	int percent = (int)(progress * 100.0f);
-	printf("Progress: %d%%\r", percent);
-	fflush(stdout);
+	
 }
 
 static int cltool_createHost()

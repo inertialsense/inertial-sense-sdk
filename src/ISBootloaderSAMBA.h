@@ -25,22 +25,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cISBootloaderSAMBA : public ISBootloader::cISBootloaderBase
 {
 public:
-    cISBootloaderSAMBA(
+    cISBootloaderSAMBA( 
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
-        const char* port_name
+        serial_port_t* port
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
-        serialPortPlatformInit(&m_port);
-        serialPortSetPort(&m_port, port_name);
-        serialPortOpen(&m_port, port_name, 921600, 100);
+        m_port = port;
         m_device_type = ISBootloader::IS_DEV_TYPE_SAMBA;
     }
     
     ~cISBootloaderSAMBA() 
     {
-        serialPortClose(&m_port);
+        
     }
 
     is_operation_result match_test(void* param);
@@ -59,7 +57,7 @@ public:
      * @brief Check if the referenced device is a SAM-BA device, and that the image matches
      *
      */
-    static is_operation_result check_is_compatible(const char* handle, ISBootloader::eImageSignature file);
+    ISBootloader::eImageSignature check_is_compatible();
 
 private:
 

@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderDFU.h"
 #include "ihex.h"
 #include "ISUtilities.h"
+#include "libusbi.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -98,15 +99,11 @@ is_operation_result cISBootloaderDFU::list_devices(is_dfu_list* list)
         // Open the device
         ret_libusb = libusb_open(dev, &dev_handle);
         if (ret_libusb < LIBUSB_SUCCESS) continue;
-
-        // Get the string containing the serial number from the device
-        unsigned char uid[IS_DFU_UID_MAX_SIZE];
-        ret_libusb = libusb_get_string_descriptor_ascii(dev_handle, desc.iSerialNumber, uid, sizeof(uid));
-        if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
         
         // Add to list
-        get_serial_number_libusb(&dev_handle, &list->id[list->present].sn);
-        strncpy(list->id[list->present].uid, (char*)uid, IS_DFU_UID_MAX_SIZE);
+        std::string uidstr;
+        get_serial_number_libusb(&dev_handle, list->id[list->present].sn, uidstr);
+        strncpy(list->id[list->present].uid, (char*)uidstr.c_str(), IS_DFU_UID_MAX_SIZE);
         list->id[list->present].vid = desc.idVendor;
         list->id[list->present].pid = desc.idProduct;
         list->id[list->present].handle_libusb = dev_handle;
@@ -127,29 +124,52 @@ is_operation_result cISBootloaderDFU::list_devices(is_dfu_list* list)
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderDFU::check_is_compatible(libusb_device_handle* handle, eImageSignature file)
+eImageSignature cISBootloaderDFU::check_is_compatible()
 {
-    return IS_OP_OK;
+    return IS_IMAGE_SIGN_DFU;
 }
 
-is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_handle** handle, uint32_t* sn)
+is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uidstr)
 {
     dfu_status status;
     uint32_t waitTime = 0;
     dfu_state state;
     uint8_t stringIdx;
+    dfu_error ret_dfu;
 
     int ret_libusb;
 
     uint8_t rxBuf[1024] = {0};
 
+    // Reset the device
+    ret_libusb = libusb_reset_device(*handle);
+    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(*handle); return IS_OP_ERROR; }
+
+    ret_libusb = libusb_claim_interface(*handle, 0);
+    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(*handle); return IS_OP_ERROR; }
+
+    // Cancel any existing operations
+    ret_libusb = dfu_ABORT(handle);
+    if (ret_libusb < LIBUSB_SUCCESS) { libusb_close(*handle); return IS_OP_ERROR; }
+
+    // Reset status to good
+    ret_dfu = dfu_wait_for_state(handle, DFU_STATE_IDLE);
+    if (ret_dfu < DFU_ERROR_NONE) { libusb_close(*handle); return IS_OP_ERROR; }
+
+    struct libusb_device_descriptor desc;
+    ret_libusb = libusb_get_device_descriptor((*handle)->dev, &desc);
+    if(ret_libusb < 0) { libusb_close(*handle); return IS_OP_ERROR; }
+
+    // Get the string containing the serial number from the device
+    unsigned char uid[IS_DFU_UID_MAX_SIZE];
+    ret_libusb = libusb_get_string_descriptor_ascii(*handle, desc.iSerialNumber, uid, sizeof(uid));
+    if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
+
+    uidstr = std::string((const char*)uid);
+
     // Get the 1K OTP section from the chip
     // 0x1FFF7000 is the address. Little endian.
     {
-        // Clear status back to good
-        dfu_CLRSTATUS(handle);
-        ret_libusb = dfu_GETSTATUS(handle, &status, &waitTime, &state, &stringIdx);
-
         // Set the address pointer (command is 0x21)
         uint8_t txBuf[] = { 0x21, 0x00, 0x70, 0xFF, 0x1F };
         ret_libusb = dfu_DNLOAD(handle, 0, txBuf, sizeof(txBuf));
@@ -192,7 +212,7 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
 	uint64_t key = OTP_KEY;
 	if(memcmp(otp_mem - 8, &key, 8) == 0 && foundSn)
 	{
-        *sn = id->serialNumber;
+        sn = id->serialNumber;
         return IS_OP_OK;
     }
 
@@ -201,11 +221,9 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
 
 uint32_t cISBootloaderDFU::get_device_info()
 {
-    uint32_t sn;
+    get_serial_number_libusb(&m_dfu.handle_libusb, m_sn, m_port_name);
 
-    get_serial_number_libusb(&m_dfu.handle_libusb, &sn);
-
-    return sn;
+    return m_sn;
 }
 
 
@@ -256,7 +274,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
 
     uint32_t bytes_written_total = 0;
 
-    status_update("Erasing flash...", IS_LOG_LEVEL_INFO);
+    status_update("(DFU) Erasing flash...", IS_LOG_LEVEL_INFO);
 
     // Erase memory (only erase pages where firmware lives)
     for(size_t i = 0; i < image_sections; i++)
@@ -304,7 +322,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
 
     bytes_written_total = 0;
 
-    status_update("Programming flash...", IS_LOG_LEVEL_INFO);
+    status_update("(DFU) Programming flash...", IS_LOG_LEVEL_INFO);
 
     // Write memory
     for(size_t i = 0; i < image_sections; i++)
@@ -376,6 +394,8 @@ is_operation_result cISBootloaderDFU::reboot_up()
 {
     int ret_libusb;
     dfu_error ret_dfu;
+
+    m_info_callback(this, "(DFU) Rebooting up into ISB mode...", IS_LOG_LEVEL_INFO);
 
     // Option bytes
     // This hard-coded array sets mostly defaults, but without PH3 enabled and

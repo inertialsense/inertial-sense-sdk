@@ -23,13 +23,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace ISBootloader;
 
+std::vector<uint32_t> cISBootloaderISB::serial_list;
+std::mutex cISBootloaderISB::serial_list_mutex;
+
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 #define SUPPORT_BOOTLOADER_V5A
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
 
-#define BOOTLOADER_RETRIES          30
+#define BOOTLOADER_RETRIES          10
 #define BOOTLOADER_RESPONSE_DELAY   10
 #define BOOTLOADER_REFRESH_DELAY    500
 #define MAX_VERIFY_CHUNK_SIZE       1024
@@ -43,7 +46,7 @@ is_operation_result cISBootloaderISB::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port.port, 100) == 0)
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -51,40 +54,26 @@ is_operation_result cISBootloaderISB::match_test(void* param)
     return IS_OP_ERROR;
 }
 
-is_operation_result cISBootloaderISB::check_is_compatible(const char* handle, eImageSignature file)
+eImageSignature cISBootloaderISB::check_is_compatible()
 {
-    serial_port_t port;
+    sync(m_port);
 
-    serialPortPlatformInit(&port);
-    serialPortSetPort(&port, handle);
-    serialPortOpen(&port, handle, 921600, 100);
-
-    if(sync(&port) != IS_OP_OK)
-    {
-        return IS_OP_ERROR;
-    }
-
-    uint8_t v = 0;
-
-    do {
-        if (serialPortReadCharTimeout(&port, &v, 500) == 0) v = '1';
-    } while (v == 'U');
-
-    serialPortFlush(&port);
+    SLEEP_MS(1000);
 
 	// Send command
-	serialPortWrite(&port, (uint8_t*)":020000041000EA", 15);
+    serialPortFlush(m_port);
+	serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
 
     uint8_t buf[14] = { 0 };
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-	int count = serialPortReadTimeout(&port, buf, 14, 1000);
+	int count = serialPortReadTimeout(m_port, buf, 14, 100);
 
     uint32_t valid_signatures = 0;
 
     if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
     {   // Bad read
-        return IS_OP_ERROR;
+        return IS_IMAGE_SIGN_NONE;
     }
 
     uint8_t major = buf[2];
@@ -97,11 +86,11 @@ is_operation_result cISBootloaderISB::check_is_compatible(const char* handle, eI
     {
         processor = (eProcessorType)buf[5];
         is_evb = buf[6];
-        // memcpy(&m_sn, &buf[7], sizeof(uint32_t));
+        memcpy(&m_sn, &buf[7], sizeof(uint32_t));
     }
 
     if(major >= 6)   
-    {   // v6 and has EVB detection built-in
+    {   // v6 and up has EVB detection built-in
         if(processor == IS_PROCESSOR_SAMx70)
         {   
             valid_signatures |= is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
@@ -119,67 +108,83 @@ is_operation_result cISBootloaderISB::check_is_compatible(const char* handle, eI
         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
     }
 
-    if(valid_signatures & file) return IS_OP_OK;
-    
-    return IS_OP_ERROR;
+    return (eImageSignature)valid_signatures;
 }
 
 is_operation_result cISBootloaderISB::reboot_up()
 {
+    m_info_callback(this, "(ISB) Rebooting up into APP mode...", IS_LOG_LEVEL_INFO);
+
     // send the "reboot to program mode" command and the device should start in program mode
-    if(!serialPortWrite(&m_port, (unsigned char*)":020000040300F7", 15))
+    if(!serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15))
     {
-        serialPortClose(&m_port);
+        serialPortClose(m_port);
         return IS_OP_ERROR;
     }
 
-    serialPortClose(&m_port);
+    serialPortClose(m_port);
     return IS_OP_OK;
 }
 
 is_operation_result cISBootloaderISB::reboot_down()
 {
+    serial_list_mutex.lock();
+    if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
+    {
+        m_info_callback(this, "(ISB) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
+        serial_list_mutex.unlock();
+        return IS_OP_ERROR;
+    }
+    if(m_sn == 0 || m_sn == -1)
+    {
+        m_info_callback(this, "(ISB) Not updating bootloader because serial number is not programmed", IS_LOG_LEVEL_ERROR);
+        serial_list_mutex.unlock();
+        return IS_OP_ERROR;
+    }
+
+    m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
+
+    serial_list.push_back(m_sn);
+    serial_list_mutex.unlock();
+
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interferece on its ports.
 
     // restart bootloader assist command
-    if(!serialPortWrite(&m_port, (unsigned char*)":020000040700F3", 15))
+    if(!serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15))
     {
-        serialPortClose(&m_port);
+        serialPortClose(m_port);
         return IS_OP_ERROR;
     }
 
-    serialPortClose(&m_port);
+    serialPortClose(m_port);
     return IS_OP_OK;
 }
 
 is_operation_result cISBootloaderISB::reboot()
 {
     // restart bootloader command
-    if(!serialPortWrite(&m_port, (unsigned char*)":020000040500F5", 15))
+    if(!serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15))
     {
-        serialPortClose(&m_port);
+        serialPortClose(m_port);
         return IS_OP_ERROR;
     }
 
-    serialPortClose(&m_port);
+    serialPortClose(m_port);
     return IS_OP_OK;
 }
 
 uint32_t cISBootloaderISB::get_device_info()
 {
-    sync(&m_port);
-    negotiate_version();
-
-    serialPortFlush(&m_port);
+    serialPortFlush(m_port);
 
 	// Send command
-	serialPortWrite(&m_port, (uint8_t*)":020000041000EA", 15);
+	serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
 
     uint8_t buf[14] = { 0 };
 
     // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-	int count = serialPortReadTimeout(&m_port, buf, 14, 1000);
+	int count = serialPortReadTimeout(m_port, buf, 14, 1000);
 
     if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
     {   // Bad read
@@ -206,6 +211,30 @@ uint32_t cISBootloaderISB::get_device_info()
     {
         m_sn = 0;
     }
+
+    if (m_isb_props.major == 1)
+    {   // version 1
+        m_isb_props.app_offset = 8192;
+    }
+    else if (m_isb_props.major >= 2 && m_isb_props.major <= 5)
+    {   // version 2, 3 (which sent v2), 4, 5
+        m_isb_props.app_offset = 16384;
+    }
+    else if (m_isb_props.major >= 6)
+    {   // version 6
+        m_isb_props.app_offset = 24576;
+    }
+    else
+    {
+        return IS_OP_ERROR;
+    }
+
+#if PLATFORM_IS_WINDOWS
+    // EvalTool and multiple bootloads under Windows 10 have issues with dropped data if verify runs too fast
+    m_isb_props.verify_size = 125;
+#else
+    m_isb_props.verify_size = MAX_VERIFY_CHUNK_SIZE;
+#endif
 
     return IS_OP_OK;
 }
@@ -241,45 +270,6 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
     return IS_OP_ERROR;
 }
 
-is_operation_result cISBootloaderISB::negotiate_version()
-{
-    unsigned char v = 0;
-
-    do {
-        if (serialPortReadCharTimeout(&m_port, &v, 500) == 0) v = '1';
-    } while (v == 'U');
-
-    if (v == '1')
-    {   // version 1
-        m_isb_props.major = 1;
-        m_isb_props.app_offset = 8192;
-    }
-    else if (v >= '2' && v <= '5')
-    {   // version 2, 3 (which sent v2), 4, 5
-        m_isb_props.major = v-'0';
-        m_isb_props.app_offset = 16384;
-    }
-    else if (v == '6')
-    {   // version 6
-        m_isb_props.major = v-'6';
-        m_isb_props.app_offset = 24576;
-    }
-    else
-    {
-        return IS_OP_ERROR;
-    }
-
-#if PLATFORM_IS_WINDOWS
-    // EvalTool and multiple bootloads under Windows 10 have issues with dropped data if verify runs too fast
-    m_isb_props.verify_size = 125;
-#else
-    m_isb_props.verify_size = MAX_VERIFY_CHUNK_SIZE;
-#endif
-
-    serialPortSleep(&m_port, 100);
-    return IS_OP_OK;
-}
-
 int cISBootloaderISB::checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum)
 {
     uint8_t c1, c2;
@@ -309,7 +299,7 @@ is_operation_result cISBootloaderISB::erase_flash()
     static const int eraseFlashTimeoutMilliseconds = 60000;
     unsigned char selectFlash[24];
 
-    serial_port_t* s = &m_port;
+    serial_port_t* s = m_port;
 
     // Write location to erase at
     memcpy(selectFlash, ":03000006030000F4CC\0\0\0\0\0", 24);
@@ -326,7 +316,7 @@ is_operation_result cISBootloaderISB::erase_flash()
 
 is_operation_result cISBootloaderISB::select_page(int page)
 {
-    serial_port_t* s = &m_port;
+    serial_port_t* s = m_port;
 
     // Atmel select page command (0x06) is 4 bytes and the data is always 0301xxxx where xxxx is a 16 bit page number in hex
     unsigned char changePage[24];
@@ -345,7 +335,7 @@ is_operation_result cISBootloaderISB::select_page(int page)
 
 is_operation_result cISBootloaderISB::begin_program_for_current_page(int startOffset, int endOffset)
 {
-    serial_port_t* s = &m_port;
+    serial_port_t* s = m_port;
 
     // Atmel begin program command is 0x01, different from standard intel hex where command 0x01 is end of file
     // After the 0x01 is a 00 which means begin writing program
@@ -392,7 +382,7 @@ int cISBootloaderISB::is_isb_read_line(FILE* file, char line[1024])
 
 is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, int byteCount, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
-    serial_port_t* s = &m_port;
+    serial_port_t* s = m_port;
     int i;
 
     if (byteCount == 0)
@@ -441,8 +431,8 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
 
 	if (count != 3 || memcmp(buf, ".\r\n", 3) != 0)
 	{
-        buf[count] = '\0'; 
-        status_update((const char*)buf, IS_LOG_LEVEL_ERROR);
+        //buf[count] = '\0'; 
+        //status_update((const char*)buf, IS_LOG_LEVEL_ERROR);
 		return IS_OP_ERROR;
 	}
 
@@ -532,7 +522,7 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
 
 is_operation_result cISBootloaderISB::download_data(int startOffset, int endOffset)
 {
-    serial_port_t* s = &m_port;
+    serial_port_t* s = m_port;
 
     // Atmel download data command is 0x03, different from standard intel hex where command 0x03 is start segment address
     unsigned char programLine[24];
@@ -583,7 +573,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
             readCount = _MIN(chunkSize, FLASH_PAGE_SIZE - pageOffset);
 
             // range is inclusive on the uINS, so subtract one
-            if (download_data(pageOffset, pageOffset + readCount - 1) == 0)
+            if (download_data(pageOffset, pageOffset + readCount - 1) != IS_OP_OK)
             {
                 status_update("(ISB) Failure issuing download data command", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
@@ -591,7 +581,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
 
             // each line has 7 overhead bytes, plus two bytes (hex) for each byte on the page and max 255 bytes per line
             lines = (int)ceilf((float)readCount / 255.0f);
-            readCount = serialPortReadTimeout(&m_port, chunkBuffer, (7 * lines) + (readCount * 2), BOOTLOADER_TIMEOUT_DEFAULT);
+            readCount = serialPortReadTimeout(m_port, chunkBuffer, (7 * lines) + (readCount * 2), BOOTLOADER_TIMEOUT_DEFAULT);
             chunkIndex = 0;
 
             while (chunkIndex < readCount)
@@ -661,7 +651,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
 
                 if (c != '\n')
                 {
-                    status_update("(ISB) Unexpected end of lin char during verify", IS_LOG_LEVEL_ERROR);
+                    status_update("(ISB) Unexpected end of line char during verify", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
 
@@ -884,12 +874,12 @@ is_operation_result cISBootloaderISB::download_image(std::string filename)
     firmware_file = fopen(filename.c_str(), "rb");
 #endif
 
-    status_update("Erasing flash...", IS_LOG_LEVEL_INFO);
+    status_update("(ISB) Erasing flash...", IS_LOG_LEVEL_INFO);
 
     if(erase_flash() != IS_OP_OK) return IS_OP_ERROR;
     if(select_page(0) != IS_OP_OK) return IS_OP_ERROR;
 
-    status_update("Programming flash...", IS_LOG_LEVEL_INFO);
+    status_update("(ISB) Programming flash...", IS_LOG_LEVEL_INFO);
     
     if(begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK) return IS_OP_ERROR;
     if(process_hex_file(firmware_file) != IS_OP_OK) return IS_OP_ERROR;

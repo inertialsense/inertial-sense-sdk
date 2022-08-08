@@ -23,6 +23,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderBase.h"
 
+#include <mutex>
+
 class cISBootloaderISB : public ISBootloader::cISBootloaderBase
 {
 public:
@@ -30,18 +32,16 @@ public:
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
-        const char* port_name
+        serial_port_t* port
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
-        serialPortPlatformInit(&m_port);
-        serialPortSetPort(&m_port, port_name);
-        serialPortOpen(&m_port, port_name, 921600, 100);
+        m_port = port;
         m_device_type = ISBootloader::IS_DEV_TYPE_ISB;
     }
     
     ~cISBootloaderISB() 
     {
-        serialPortClose(&m_port);
+        
     }
 
     is_operation_result match_test(void* param);
@@ -52,7 +52,7 @@ public:
 
     uint32_t get_device_info();
 
-    static is_operation_result check_is_compatible(const char* handle, ISBootloader::eImageSignature file);
+    ISBootloader::eImageSignature check_is_compatible();
     
     is_operation_result download_image(std::string image);
     is_operation_result upload_image(std::string image) { return IS_OP_OK; }
@@ -70,15 +70,11 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-private:
-    /**
-     * @brief Negotiate the bootloader version, once a 'U' character has been read, 
-     *  we read another character, timing out after 500 milliseconds if nothing 
-     *  comes back, we are using version 1, otherwise the version is the number sent 
-     *  back
-     */
-    is_operation_result negotiate_version();
     static is_operation_result sync(serial_port_t* s);
+
+    static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
+
+private:
     
     /**
      * @brief Calculate checksum for ISB
@@ -120,6 +116,9 @@ private:
         uint32_t app_offset;            // Helps in loading bin files
         uint32_t verify_size;           // Chunk size, limited on Windows
     } m_isb_props;
+
+    static std::vector<uint32_t> serial_list;
+    static std::mutex serial_list_mutex;
 };
 
 #endif	// __IS_BOOTLOADER_ISB_H

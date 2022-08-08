@@ -20,13 +20,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderAPP.h"
 #include "ISComm.h"
 
+#include <mutex>
+
 using namespace ISBootloader;
+
+std::vector<uint32_t> cISBootloaderAPP::serial_list;
+std::mutex cISBootloaderAPP::serial_list_mutex;
 
 is_operation_result cISBootloaderAPP::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port.port, 100) == 0)
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -34,15 +39,9 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
     return IS_OP_ERROR;
 }
 
-is_operation_result cISBootloaderAPP::check_is_compatible(const char* handle, eImageSignature file)
+eImageSignature cISBootloaderAPP::check_is_compatible()
 {
-    serial_port_t port;
-
-    serialPortPlatformInit(&port);
-    serialPortSetPort(&port, handle);
-    serialPortOpen(&port, handle, 921600, 100);
-
-    serialPortFlush(&port);
+    serialPortFlush(m_port);
 
     // Get DID_DEV_INFO from the uINS.
     is_comm_instance_t comm;
@@ -52,14 +51,16 @@ is_operation_result cISBootloaderAPP::check_is_compatible(const char* handle, eI
 
     messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (messageSize != serialPortWrite(&port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
-        return IS_OP_ERROR;
+        serialPortClose(m_port);
+        return IS_IMAGE_SIGN_NONE;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(&port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
-        return IS_OP_ERROR;
+        serialPortClose(m_port);
+        return IS_IMAGE_SIGN_NONE;
     }
 
     protocol_type_t ptype;
@@ -68,7 +69,7 @@ is_operation_result cISBootloaderAPP::check_is_compatible(const char* handle, eI
     dev_info_t* evb_dev_info = NULL;
     evb_status_t* evb_status = NULL;
     uint32_t valid_signatures = 0;
-    if ((n = serialPortReadTimeout(&port, comm.buf.start, n, 200)))
+    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
     {
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
@@ -79,6 +80,7 @@ is_operation_result cISBootloaderAPP::check_is_compatible(const char* handle, eI
                 {
                 case DID_DEV_INFO:
                     dev_info = (dev_info_t*)comm.dataPtr;
+                    m_sn = dev_info->serialNumber;
                     if(dev_info->hardwareVer[0] == 5)
                     {   /** uINS-5 */
                         valid_signatures |= IS_IMAGE_SIGN_UINS_5;
@@ -103,9 +105,7 @@ is_operation_result cISBootloaderAPP::check_is_compatible(const char* handle, eI
         }
     }
 
-    if(valid_signatures & file) return IS_OP_OK;
-
-    return IS_OP_ERROR;
+    return (eImageSignature)valid_signatures;
 }
 
 is_operation_result cISBootloaderAPP::reboot()
@@ -113,22 +113,41 @@ is_operation_result cISBootloaderAPP::reboot()
     // TODO: Implement
     // SYS_CMD_SOFTWARE_RESET
 
+    m_info_callback(this, "(APP) Rebooting...", IS_LOG_LEVEL_INFO);
+
     return IS_OP_OK;
 }
 
 is_operation_result cISBootloaderAPP::reboot_down()
 {
-    serial_port_t* port = &m_port;
+    m_info_callback(this, "(APP) Rebooting down into ISB mode...", IS_LOG_LEVEL_INFO);
+
+    serial_list_mutex.lock();
+    if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
+    {
+        m_info_callback(this, "(APP) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
+        serial_list_mutex.unlock();
+        return IS_OP_ERROR;
+    }
+    if(m_sn == 0 || m_sn == -1)
+    {
+        m_info_callback(this, "(APP) Not updating firmware because serial number is not programmed", IS_LOG_LEVEL_ERROR);
+        serial_list_mutex.unlock();
+        return IS_OP_ERROR;
+    }
+
+    serial_list.push_back(m_sn);
+    serial_list_mutex.unlock();
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
   
     for (size_t loop = 0; loop < 10; loop++)
     {
-        if(!serialPortWriteAscii(port, "STPB", 4)) return IS_OP_OK;     // If the write fails, assume the device is now in bootloader mode.
-        if(!serialPortWriteAscii(port, m_app.enable_command, 4)) return IS_OP_OK; 
+        if (!serialPortWriteAscii(m_port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
+        if (!serialPortWriteAscii(m_port, m_app.enable_command, 4)) break;
         c = 0;
-        if (serialPortReadCharTimeout(port, &c, 13) == 1)
+        if (serialPortReadCharTimeout(m_port, &c, 13) == 1)
         {
             if (c == '$')
             {
@@ -136,15 +155,16 @@ is_operation_result cISBootloaderAPP::reboot_down()
                 break;
             }
         }
-        else serialPortFlush(port);
+        else serialPortFlush(m_port);
     }
 
+    serialPortClose(m_port);
     return IS_OP_OK;
 }
 
 uint32_t cISBootloaderAPP::get_device_info()
 {
-    serialPortFlush(&m_port);
+    serialPortFlush(m_port);
 
     // Get DID_DEV_INFO from the uINS.
     is_comm_instance_t comm;
@@ -154,26 +174,26 @@ uint32_t cISBootloaderAPP::get_device_info()
     
     messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (messageSize != serialPortWrite(&m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return IS_OP_ERROR;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(&m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return IS_OP_ERROR;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_STATUS, 0, 0, 0);
-    if (messageSize != serialPortWrite(&m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return IS_OP_ERROR;
     }
 
     // Wait 10ms for messages to come back
-    serialPortSleep(&m_port, 10);
+    serialPortSleep(m_port, 10);
 
     protocol_type_t ptype;
     int n = is_comm_free(&comm);
@@ -181,7 +201,7 @@ uint32_t cISBootloaderAPP::get_device_info()
     dev_info_t* evb_dev_info = NULL;
     evb_status_t* evb_status = NULL;
     uint8_t evb_version[4];
-    if ((n = serialPortReadTimeout(&m_port, comm.buf.start, n, 200)))
+    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
     {
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)

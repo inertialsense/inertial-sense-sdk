@@ -28,6 +28,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <mutex>
 
 #include "ISUtilities.h"
 #include "ISBootloaderBase.h"
@@ -39,39 +40,44 @@ public:
     ~cISBootloaderThread() {};
 
     static is_operation_result update(
-        std::vector<std::string>&   comPorts,
-        int                         baudRate,
-        std::string                 firmware,
-        ISBootloader::pfnBootloadProgress         uploadProgress, 
-        ISBootloader::pfnBootloadProgress         verifyProgress,
-        ISBootloader::pfnBootloadStatus           infoProgress,
-        void						(*waitAction)()
+        std::vector<std::string>&               comPorts,
+        int                                     baudRate,
+        const ISBootloader::firmwares_t&        firmware,
+        ISBootloader::pfnBootloadProgress       uploadProgress, 
+        ISBootloader::pfnBootloadProgress       verifyProgress,
+        ISBootloader::pfnBootloadStatus         infoProgress,
+        void						            (*waitAction)()
     );
 
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
 
 private:
     typedef enum {
+        IS_BOOTLOADER_RUNMODE_REBOOT,
         IS_BOOTLOADER_RUNMODE_REBOOT_DOWN,
         IS_BOOTLOADER_RUNMODE_FLASH,
         IS_BOOTLOADER_RUNMODE_REBOOT_UP
     } eBootloaderRunmode;
    
     static is_operation_result manage_devices(bool use_dfu, eBootloaderRunmode mode);
-    static void update_thread(void* context);
-    static void update_finish(void* context);
-    static void put_device_in_mode(void* context);
-    static std::string m_firmware;
+
+    static void update_thread_serial(void* context);
+    static void update_thread_libusb(void* context);
+
+    static ISBootloader::firmwares_t m_firmware;
     static ISBootloader::pfnBootloadProgress m_uploadProgress; 
     static ISBootloader::pfnBootloadProgress m_verifyProgress;
     static ISBootloader::pfnBootloadStatus m_infoProgress;
     static int m_baudRate;
     static void (*m_waitAction)();
     static uint32_t m_timeStart;
-    static std::vector<std::string> ports_user_ignore;
-    static std::vector<std::string> ports_active;
+    static std::vector<void*> threads;
 
-    
+    static std::mutex ctx_mutex;
+    static std::mutex serial_thread_mutex;
+    static std::mutex libusb_thread_mutex;
+
+    static bool m_update_rom;
 };
 
 #endif // __IS_BOOTLOADER_H_

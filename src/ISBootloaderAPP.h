@@ -22,6 +22,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderBase.h"
 
+#include <mutex>
+
 class cISBootloaderAPP : public ISBootloader::cISBootloaderBase
 {
 public:
@@ -29,21 +31,19 @@ public:
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
-        const char* port_name
+        serial_port_t* port
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
-        serialPortPlatformInit(&m_port);
-        serialPortSetPort(&m_port, port_name);
-        serialPortOpen(&m_port, port_name, 921600, 100);
+        m_port = port;
         m_device_type = ISBootloader::IS_DEV_TYPE_APP;
     }
 
     ~cISBootloaderAPP() 
     {
-        serialPortClose(&m_port);
+        
     }
 
-    static is_operation_result check_is_compatible(const char* handle, ISBootloader::eImageSignature file);
+    ISBootloader::eImageSignature check_is_compatible();
 
     is_operation_result match_test(void* param);
 
@@ -57,14 +57,11 @@ public:
     is_operation_result upload_image(std::string image) { return IS_OP_OK; }
     is_operation_result verify_image(std::string image) { return IS_OP_OK; }
 
+    static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
+
 private:
-    struct
-    {
-        uint8_t uins_version[4]; 
-        uint8_t evb_version[4];        
-        
-        char enable_command[5];         // "EBLE" (EVB) or "BLEN" (uINS) 
-    } m_app;
+    static std::vector<uint32_t> serial_list;
+    static std::mutex serial_list_mutex;
 };
 
 #endif	// __IS_BOOTLOADER_APP_H

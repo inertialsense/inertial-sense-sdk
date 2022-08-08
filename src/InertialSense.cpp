@@ -750,7 +750,14 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
 	#endif
 	
-	cISBootloaderThread::update(portStrings, baudRate, fileName, uploadProgress, verifyProgress, infoProgress, waitAction);
+	ISBootloader::firmwares_t files;
+	files.fw_uINS_3.path = fileName;
+	files.fw_uINS_5.path = fileName;
+	files.fw_EVB_2.path = fileName;
+	files.bl_SAMx70.path = fileName;
+	files.bl_STM32L4.path = fileName;
+
+	cISBootloaderThread::update(portStrings, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on

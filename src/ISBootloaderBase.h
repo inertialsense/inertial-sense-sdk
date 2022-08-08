@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "ISSerialPort.h"
 #include "libusb.h"
+#include "ISUtilities.h"
 
 #include <string>
 
@@ -69,13 +70,29 @@ typedef enum {
     
     IS_IMAGE_SIGN_NUM_BITS_USED = 8,
 
-    IS_IMAGE_SIGN_APP = 0,
-    IS_IMAGE_SIGN_ISB = IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K | IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_UINS_5,
+    IS_IMAGE_SIGN_APP = IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K | IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_UINS_5 | IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4,
+    IS_IMAGE_SIGN_ISB = IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K | IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_UINS_5 | IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4,
     IS_IMAGE_SIGN_SAMBA = IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K,
     IS_IMAGE_SIGN_DFU = IS_IMAGE_SIGN_ISB_STM32L4,
 
+    IS_IMAGE_SIGN_EVB = IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K,
+
     IS_IMAGE_SIGN_NONE = 0,
 } eImageSignature;
+
+typedef struct 
+{
+    std::string path;
+} firmware_t;
+
+typedef struct 
+{
+    firmware_t fw_uINS_5;
+    firmware_t fw_uINS_3;
+    firmware_t bl_STM32L4;
+    firmware_t bl_SAMx70;
+    firmware_t fw_EVB_2;
+} firmwares_t;
 
 typedef is_operation_result (*pfnBootloadProgress)(void* obj, float percent);
 typedef void (*pfnBootloadStatus)(void* obj, const char* infoString, eLogLevel level);
@@ -110,12 +127,16 @@ public:
         if(m_info_callback == NULL) m_info_callback = dummy_info_callback;
     }
         
-    ~cISBootloaderBase() {}
+    ~cISBootloaderBase() 
+    {
 
-    static eImageSignature get_hex_image_signature(std::string image);
-    static eImageSignature get_bin_image_signature(std::string image);
+    }
+
+    static eImageSignature get_image_signature(std::string filename);
 
     virtual is_operation_result match_test(void* param) = 0;
+
+    virtual eImageSignature check_is_compatible() = 0;
 
     /**
      * @brief Reboots into the same mode, giving the bootloader a fresh start
@@ -185,20 +206,31 @@ public:
     bool m_use_progress;
     int m_start_time_ms;
 
-    serial_port_t m_port;
+    serial_port_t* m_port;
+    std::string m_port_name;
     int m_baud;
 
     uint32_t m_sn;                // Inertial Sense serial number, i.e. SN60000
 
-    /**
-     * @brief Get the file extension from a file name
-     */
-    static const char* get_file_ext(const char *filename);
+    static is_operation_result update_device(
+        firmwares_t filenames,
+        serial_port_t* handle,
+        cISBootloaderBase** obj,
+        pfnBootloadStatus statusfn,
+        pfnBootloadProgress updateprogress,
+        pfnBootloadProgress verifyProgress
+    );
+    static is_operation_result update_device(
+        firmwares_t filenames,
+        libusb_device_handle* handle,
+        cISBootloaderBase** obj,
+        pfnBootloadStatus statusfn,
+        pfnBootloadProgress updateprogress,
+        pfnBootloadProgress verifyProgress
+    );
 
-    static is_operation_result add_device_to_list(std::string filename, const char* handle, cISBootloaderBase** obj, pfnBootloadStatus statusfn);
-    static is_operation_result add_device_to_list(std::string filename, libusb_device_handle* handle, const char* uid, cISBootloaderBase** obj, pfnBootloadStatus statusfn);
-
-    is_operation_result reboot_to_update_level(std::string filename);
+    std::string m_filename;
+    bool m_isISB;
 
 protected:
     void status_update(const char* info, eLogLevel level) 
@@ -206,8 +238,21 @@ protected:
         if(m_info_callback) m_info_callback((void*)this, info, level); 
     }
 
-private:
-   
+    struct
+    {
+        uint8_t uins_version[4];
+        uint8_t evb_version[4];
+
+        char enable_command[5];         // "EBLE" (EVB) or "BLEN" (uINS) 
+    } m_app;
+
+    /**
+     * @brief Get the file extension from a file name
+     */
+    static const char* get_file_ext(const char* filename);
+    
+    static eImageSignature get_hex_image_signature(std::string image);
+    static eImageSignature get_bin_image_signature(std::string image);
 };
 
 }

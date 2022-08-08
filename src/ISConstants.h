@@ -803,6 +803,7 @@ typedef enum {
     IS_OP_CANCELLED = -2,
     IS_OP_INCOMPATIBLE = -3,
     IS_OP_RETRY = -4,
+    IS_OP_CLOSED = -5,
 } is_operation_result;
 
 #ifdef __cplusplus
