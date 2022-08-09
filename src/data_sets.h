@@ -527,7 +527,7 @@ typedef struct PACKED
 	/** WGS84 latitude, longitude, height above ellipsoid (degrees,degrees,meters) */
 	double					lla[3];
 
-	/** North, east and down offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
+	/** North, east and down (meters) offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
 	float					ned[3];
 } ins_1_t;
 
