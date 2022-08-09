@@ -24,7 +24,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace ISBootloader;
 
 std::vector<uint32_t> cISBootloaderISB::serial_list;
+std::vector<uint32_t> cISBootloaderISB::rst_serial_list;
 std::mutex cISBootloaderISB::serial_list_mutex;
+std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
 #define SUPPORT_BOOTLOADER_V5A
@@ -77,8 +79,8 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     }
 
     uint8_t major = buf[2];
-    char minor = buf[3];
-    bool rom_available = buf[4];
+//    char minor = buf[3];
+//    bool rom_available = buf[4];
     uint8_t processor = -1;
     bool is_evb = false;
 
@@ -116,12 +118,7 @@ is_operation_result cISBootloaderISB::reboot_up()
     m_info_callback(this, "(ISB) Rebooting up into APP mode...", IS_LOG_LEVEL_INFO);
 
     // send the "reboot to program mode" command and the device should start in program mode
-    if(!serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15))
-    {
-        serialPortClose(m_port);
-        return IS_OP_ERROR;
-    }
-
+    serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
     serialPortClose(m_port);
     return IS_OP_OK;
 }
@@ -129,15 +126,15 @@ is_operation_result cISBootloaderISB::reboot_up()
 is_operation_result cISBootloaderISB::reboot_down()
 {
     serial_list_mutex.lock();
-    if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
-    {
-        m_info_callback(this, "(ISB) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
-        serial_list_mutex.unlock();
-        return IS_OP_ERROR;
-    }
     if(m_sn == 0 || m_sn == -1)
     {
         m_info_callback(this, "(ISB) Not updating bootloader because serial number is not programmed", IS_LOG_LEVEL_ERROR);
+        serial_list_mutex.unlock();
+        return IS_OP_ERROR;
+    }
+    if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
+    {
+        m_info_callback(this, "(ISB) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
         serial_list_mutex.unlock();
         return IS_OP_ERROR;
     }
@@ -151,25 +148,34 @@ is_operation_result cISBootloaderISB::reboot_down()
     // In some cases, the device may become unrecoverable because of interferece on its ports.
 
     // restart bootloader assist command
-    if(!serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15))
-    {
-        serialPortClose(m_port);
-        return IS_OP_ERROR;
-    }
-
+    serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15);
     serialPortClose(m_port);
     return IS_OP_OK;
 }
 
 is_operation_result cISBootloaderISB::reboot()
 {
-    // restart bootloader command
-    if(!serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15))
+    rst_serial_list_mutex.lock();
+    if(m_sn == 0 || m_sn == -1)
     {
-        serialPortClose(m_port);
+        m_info_callback(this, "(ISB) Not rebooting before update because serial number is not programmed", IS_LOG_LEVEL_INFO);
+        rst_serial_list_mutex.unlock();
+        return IS_OP_ERROR;
+    }
+    if(find(rst_serial_list.begin(), rst_serial_list.end(), m_sn) != rst_serial_list.end())
+    {
+        m_info_callback(this, "(ISB) Serial number has already been reset", IS_LOG_LEVEL_DEBUG);
+        rst_serial_list_mutex.unlock();
         return IS_OP_ERROR;
     }
 
+    m_info_callback(this, "(ISB) Resetting before APP update...", IS_LOG_LEVEL_INFO);
+
+    rst_serial_list.push_back(m_sn);
+    rst_serial_list_mutex.unlock();
+
+    // restart bootloader command
+    serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15);
     serialPortClose(m_port);
     return IS_OP_OK;
 }
@@ -495,6 +501,8 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
 
 is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
+    (void)currentPage;
+
     if (*currentOffset < FLASH_PAGE_SIZE)
     {
         unsigned char hexData[256];

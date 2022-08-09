@@ -119,6 +119,9 @@ private:
 
     static std::vector<uint32_t> serial_list;
     static std::mutex serial_list_mutex;
+
+    static std::vector<uint32_t> rst_serial_list;
+    static std::mutex rst_serial_list_mutex;
 };
 
 #endif	// __IS_BOOTLOADER_ISB_H

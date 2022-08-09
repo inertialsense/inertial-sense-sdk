@@ -53,13 +53,13 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
-        serialPortClose(m_port);
+        //serialPortClose(m_port);
         return IS_IMAGE_SIGN_NONE;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
     if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
-        serialPortClose(m_port);
+        //serialPortClose(m_port);
         return IS_IMAGE_SIGN_NONE;
     }
 
@@ -67,7 +67,6 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     int n = is_comm_free(&comm);
     dev_info_t* dev_info = NULL;
     dev_info_t* evb_dev_info = NULL;
-    evb_status_t* evb_status = NULL;
     uint32_t valid_signatures = 0;
     if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
     {

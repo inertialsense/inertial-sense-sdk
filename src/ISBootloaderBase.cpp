@@ -128,18 +128,18 @@ is_operation_result cISBootloaderBase::update_device
     pfnBootloadProgress verifyProgress
 )
 {
-    eImageSignature device = IS_IMAGE_SIGN_NONE;
-    eImageSignature bl_STM32L4 = get_image_signature(filenames.bl_STM32L4.path);
+    uint32_t device = IS_IMAGE_SIGN_NONE;
+    uint32_t bl_uINS_5 = get_image_signature(filenames.bl_uINS_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
 
     *obj = new cISBootloaderDFU(updateProgress, verifyProgress, statusfn, handle);
     device = (*obj)->check_is_compatible();
-    if ((device & IS_IMAGE_SIGN_DFU) & bl_STM32L4)
+    if ((device & IS_IMAGE_SIGN_DFU) & bl_uINS_5)
     {
-        (*obj)->m_filename = filenames.bl_STM32L4.path;
+        (*obj)->m_filename = filenames.bl_uINS_5.path;
         
         (*obj)->get_device_info();
         (*obj)->m_use_progress = true;
-        if((*obj)->download_image(filenames.bl_STM32L4.path) != IS_OP_OK)
+        if((*obj)->download_image(filenames.bl_uINS_5.path) != IS_OP_OK)
         {
             (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
             (*obj)->m_use_progress = false;
@@ -169,34 +169,46 @@ is_operation_result cISBootloaderBase::update_device
 )
 {
     uint32_t device = IS_IMAGE_SIGN_NONE;
-    uint32_t bl_STM32L4 = get_image_signature(filenames.bl_STM32L4.path) & IS_IMAGE_SIGN_ISB_STM32L4;
-    uint32_t bl_SAMx70 = get_image_signature(filenames.bl_SAMx70.path) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
     uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
+    uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
     uint32_t fw_uINS_5 = get_image_signature(filenames.fw_uINS_5.path) & IS_IMAGE_SIGN_UINS_5;
-    uint32_t fw_EVB_2 = get_image_signature(filenames.fw_EVB_2.path) & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
+    uint32_t bl_uINS_5 = get_image_signature(filenames.bl_uINS_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
+    uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
+    uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
+
+    (void)bl_EVB_2;
+
+    // TODO: Catch EVB-2 firmware updates here
+
 
     *obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
     (*obj)->m_port_name = std::string(handle->port);
     device = (*obj)->check_is_compatible();
     if (device)
     {
-        if ((device & IS_IMAGE_SIGN_ISB) & bl_STM32L4)
+        if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_5)
         {
-            (*obj)->m_filename = filenames.bl_STM32L4.path;
+            (*obj)->m_filename = filenames.bl_uINS_5.path;
             if ((*obj)->reboot_down() == IS_OP_OK)
             {
                 delete* obj;
                 return IS_OP_CLOSED;
             }
+
+            delete* obj;
+            return IS_OP_CANCELLED;
         }
-        else if ((device & IS_IMAGE_SIGN_ISB) & bl_SAMx70)
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3)
         {
-            (*obj)->m_filename = filenames.bl_SAMx70.path;
+            (*obj)->m_filename = filenames.bl_uINS_3.path;
             if ((*obj)->reboot_down() == IS_OP_OK)
             {
                 delete* obj;
                 return IS_OP_CLOSED;
             }
+
+            delete* obj;
+            return IS_OP_CANCELLED;
         }
         else
         {
@@ -204,6 +216,14 @@ is_operation_result cISBootloaderBase::update_device
             if ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_5)
             {
                 (*obj)->m_filename = filenames.fw_uINS_5.path;
+
+                (*obj)->get_device_info();
+                if((*obj)->reboot() == IS_OP_OK)
+                {
+                    delete *obj;
+                    return IS_OP_CLOSED;
+                }
+                
                 (*obj)->get_device_info();
                 (*obj)->m_use_progress = true;
                 if((*obj)->download_image(filenames.fw_uINS_5.path) != IS_OP_OK)
@@ -218,6 +238,14 @@ is_operation_result cISBootloaderBase::update_device
             else if ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_3)
             {
                 (*obj)->m_filename = filenames.fw_uINS_3.path;
+
+                (*obj)->get_device_info();
+                if((*obj)->reboot() == IS_OP_OK)
+                {
+                    delete *obj;
+                    return IS_OP_CLOSED;
+                }
+
                 (*obj)->get_device_info();
                 (*obj)->m_use_progress = true;
                 if((*obj)->download_image(filenames.fw_uINS_3.path) != IS_OP_OK)
@@ -229,11 +257,9 @@ is_operation_result cISBootloaderBase::update_device
                 }
                 return IS_OP_OK;
             }
-            else
-            {
-                delete* obj;
-                return IS_OP_CANCELLED;
-            }
+               
+            delete* obj;
+            return IS_OP_CANCELLED;
         }
     }
     else
@@ -270,27 +296,25 @@ is_operation_result cISBootloaderBase::update_device
             delete* obj;
             return IS_OP_CLOSED;
         }
-        else if ((device & IS_IMAGE_SIGN_APP) & bl_SAMx70)
+        else if ((device & IS_IMAGE_SIGN_APP) & bl_uINS_3)
         {
-            (*obj)->m_filename = filenames.bl_SAMx70.path;
+            (*obj)->m_filename = filenames.bl_uINS_3.path;
             strncpy((*obj)->m_app.enable_command, "BLEN", 5);
             (*obj)->reboot_down();
             delete* obj;
             return IS_OP_CLOSED;
         }
-        else if ((device & IS_IMAGE_SIGN_APP) & bl_STM32L4)
+        else if ((device & IS_IMAGE_SIGN_APP) & bl_uINS_5)
         {
-            (*obj)->m_filename = filenames.bl_STM32L4.path;
+            (*obj)->m_filename = filenames.bl_uINS_5.path;
             strncpy((*obj)->m_app.enable_command, "BLEN", 5);
             (*obj)->reboot_down();
             delete* obj;
             return IS_OP_CLOSED;
         }
-        else
-        {
-            delete* obj;
-            return IS_OP_CANCELLED;
-        }
+
+        delete* obj;
+        return IS_OP_CANCELLED;
     }
     else
     {
@@ -302,12 +326,12 @@ is_operation_result cISBootloaderBase::update_device
     device = (*obj)->check_is_compatible();
     if (device)
     {
-        if((device & IS_IMAGE_SIGN_SAMBA) & bl_SAMx70)
+        if((device & IS_IMAGE_SIGN_SAMBA) & bl_uINS_3)
         {
-            (*obj)->m_filename = filenames.bl_SAMx70.path;
+            (*obj)->m_filename = filenames.bl_uINS_3.path;
             (*obj)->get_device_info();
             (*obj)->m_use_progress = true;
-            if((*obj)->download_image(filenames.bl_SAMx70.path) != IS_OP_OK)
+            if((*obj)->download_image(filenames.bl_uINS_3.path) != IS_OP_OK)
             {
                 (*obj)->m_use_progress = false;
                 //delete *obj;  // Don't delete, since we have probably called the update and verify callbacks

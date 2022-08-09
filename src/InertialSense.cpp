@@ -752,10 +752,11 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	
 	ISBootloader::firmwares_t files;
 	files.fw_uINS_3.path = fileName;
+	files.bl_uINS_3.path = fileName;
 	files.fw_uINS_5.path = fileName;
+	files.bl_uINS_5.path = fileName;
 	files.fw_EVB_2.path = fileName;
-	files.bl_SAMx70.path = fileName;
-	files.bl_STM32L4.path = fileName;
+	files.bl_EVB_2.path = fileName;
 
 	cISBootloaderThread::update(portStrings, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 	

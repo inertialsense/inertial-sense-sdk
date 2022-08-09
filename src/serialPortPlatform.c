@@ -315,7 +315,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         serialPortClose(serialPort);
         return 0;
     }
-    COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), 0, 0 };
+    COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 10 : 0) };
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
         serialPortClose(serialPort);
@@ -380,7 +380,15 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
 
 #if PLATFORM_IS_WINDOWS
 
+    DWORD dwRead = 0;
+    DWORD error = 0;
+
     CancelIo(handle->platformHandle);
+    GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
+    /*if ((error = GetLastError()) != ERROR_SUCCESS)
+    {
+        while (1) {}
+    }*/
     if (handle->blocking)
     {
         CloseHandle(handle->ovRead.hEvent);

@@ -51,6 +51,7 @@ public:
 
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
 
+    static bool m_update_in_progress;
 private:
     typedef enum {
         IS_BOOTLOADER_RUNMODE_REBOOT,

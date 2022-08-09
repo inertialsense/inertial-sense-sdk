@@ -19,6 +19,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
+#include "ISBootloaderAPP.h"
+#include "ISBootloaderISB.h"
+#include "ISBootloaderSAMBA.h"
 #include "ISSerialPort.h"
 
 #include <algorithm>
@@ -39,6 +42,7 @@ std::vector<void*> cISBootloaderThread::threads;
 bool cISBootloaderThread::m_update_rom = false;
 std::mutex cISBootloaderThread::serial_thread_mutex;
 std::mutex cISBootloaderThread::libusb_thread_mutex;
+bool cISBootloaderThread::m_update_in_progress = false;
 
 typedef struct 
 {
@@ -111,7 +115,6 @@ void cISBootloaderThread::update_thread_serial(void* context)
         // Device has already been updated
     }
     
-    serialPortFlush(&port);
     serialPortClose(&port);
 
     SLEEP_MS(1000);
@@ -170,6 +173,8 @@ is_operation_result cISBootloaderThread::update(
     void						(*waitAction)()
 )
 {
+    m_update_in_progress = true;
+
     m_firmware = firmware;
     m_uploadProgress = uploadProgress;
     m_verifyProgress = verifyProgress;
@@ -177,18 +182,6 @@ is_operation_result cISBootloaderThread::update(
     m_baudRate = baudRate;
     m_waitAction = waitAction;
     m_timeStart = current_timeMs();
-
-    int devicesRunning = 0;
-
-    for (size_t i = 0; i < ctx.size(); i++)
-    {
-        if (ctx[i] != nullptr)
-        {
-            delete ctx[i];
-            ctx[i] = nullptr;
-        }
-    }
-    ctx.clear();
 
     vector<string> ports;
     vector<thread_serial_t*> serial_threads;
@@ -207,9 +200,12 @@ is_operation_result cISBootloaderThread::update(
     int waiter = 100;
 
     bool use_dfu = false;
-    if (libusb_init(NULL) >= 0) use_dfu = true;
+    //if (libusb_init(NULL) >= 0) use_dfu = true;
 
     is_dfu_list dfu_list;
+
+    cISBootloaderISB::reset_serial_list();
+    cISBootloaderAPP::reset_serial_list();
 
     while (1)
     {
@@ -339,7 +335,6 @@ is_operation_result cISBootloaderThread::update(
         serialPortPlatformInit(&port);
         if (!serialPortOpenRetry(&port, ctx[i]->m_port_name.c_str(), 921600, 1))
         {
-            delete ctx[i];
             continue;
         }
 
@@ -353,9 +348,14 @@ is_operation_result cISBootloaderThread::update(
     for (size_t i = 0; i < ctx.size(); i++)
     {
         delete ctx[i];
+        ctx[i] = nullptr;
     }
 
+    ctx.clear();
+
     if(use_dfu) { libusb_exit(NULL); }
+
+    m_update_in_progress = false;
 
     return IS_OP_OK;
 }

@@ -88,10 +88,11 @@ typedef struct
 typedef struct 
 {
     firmware_t fw_uINS_5;
+    firmware_t bl_uINS_5;
     firmware_t fw_uINS_3;
-    firmware_t bl_STM32L4;
-    firmware_t bl_SAMx70;
+    firmware_t bl_uINS_3;
     firmware_t fw_EVB_2;
+    firmware_t bl_EVB_2;
 } firmwares_t;
 
 typedef is_operation_result (*pfnBootloadProgress)(void* obj, float percent);
@@ -99,7 +100,12 @@ typedef void (*pfnBootloadStatus)(void* obj, const char* infoString, eLogLevel l
 
 is_operation_result dummy_update_callback(void* obj, float percent);
 is_operation_result dummy_verify_callback(void* obj, float percent);
-static inline void dummy_info_callback(void* obj, const char* infoString, eLogLevel level) {}
+static inline void dummy_info_callback(void* obj, const char* infoString, eLogLevel level)
+{
+    (void)obj;
+    (void)infoString;
+    (void)level;
+}
 
 class cISBootloaderBase
 {
@@ -125,11 +131,6 @@ public:
         if(m_update_callback == NULL) m_update_callback = dummy_update_callback;
         if(m_verify_callback == NULL) m_verify_callback = dummy_verify_callback;
         if(m_info_callback == NULL) m_info_callback = dummy_info_callback;
-    }
-        
-    ~cISBootloaderBase() 
-    {
-
     }
 
     static eImageSignature get_image_signature(std::string filename);
