@@ -56,7 +56,7 @@ cISStream* cISClient::OpenConnectionToServer(const string& connectionString, boo
 		string username = (pieces.size() > 5 ? pieces[5] : "");
 		string password = (pieces.size() > 6 ? pieces[6] : "");
 
-		if (clientStream->Open(host, atoi(port.c_str()), 100) == -1)
+		if (clientStream->Open(host, atoi(port.c_str()), 100) != 0)
 		{
 			return NULLPTR;
 		}
