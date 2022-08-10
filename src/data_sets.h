@@ -34,7 +34,7 @@ typedef uint32_t eDataIDs;
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
-#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as Delta Theta Delta Velocity, or Integrated IMU. For clarification, we use the name "Preintegrated IMU" through the User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs, default 4ms) and cannot be output at any other rate. If a different output data rate is desired, DID_IMU which is derived from DID_PREINTEGRATED_IMU can be used instead. Preintegrated IMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GPS1_UBX_POS                (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from ublox receiver. */
@@ -527,7 +527,7 @@ typedef struct PACKED
 	/** WGS84 latitude, longitude, height above ellipsoid (degrees,degrees,meters) */
 	double					lla[3];
 
-	/** North, east and down offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
+	/** North, east and down (meters) offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
 	float					ned[3];
 } ins_1_t;
 
@@ -1125,7 +1125,7 @@ typedef struct PACKED
 	/** IMU sample period in milliseconds. Zero disables sampling. */
 	uint32_t				imuPeriodMs;
 
-	/** Nav filter update period in milliseconds. Zero disables nav filter. */
+	/** Preintegrated IMU (PIMU) integration period and navigation filter update period (ms). */
 	uint32_t				navPeriodMs;
 	
 	/** Actual sample period relative to GPS PPS */
@@ -1677,8 +1677,8 @@ enum eCalBitStatusFlags
     CAL_BIT_FAULT_TCAL_ACC_SLOPE    = (int)0x00010000,    // Temperature calibration accelerometer slope
     CAL_BIT_FAULT_TCAL_ACC_LIN      = (int)0x00020000,    // Temperature calibration accelerometer linearity
     CAL_BIT_FAULT_CAL_SERIAL_NUM    = (int)0x00040000,    // Calibration info: wrong device serial number
-    CAL_BIT_FAULT_ORTO_EMPTY        = (int)0x00100000,    // Cross-axis alignment is not calibrated
-    CAL_BIT_FAULT_ORTO_INVALID      = (int)0x00200000,    // Cross-axis alignment is poorly formed
+    CAL_BIT_FAULT_MCAL_EMPTY        = (int)0x00100000,    // Motion calibration Cross-axis alignment is not calibrated
+    CAL_BIT_FAULT_MCAL_INVALID      = (int)0x00200000,    // Motion calibration Cross-axis alignment is poorly formed
     CAL_BIT_FAULT_MOTION_PQR        = (int)0x00400000,    // Motion on gyros
     CAL_BIT_FAULT_MOTION_ACC        = (int)0x00800000,    // Motion on accelerometers
     CAL_BIT_NOTICE_IMU1_PQR_BIAS    = (int)0x01000000,    // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
@@ -2419,7 +2419,7 @@ typedef struct PACKED
     /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
     uint32_t				startupImuDtMs;
 
-    /** Nav filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). Zero disables nav filter updates. */
+    /** Nav filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */

@@ -5,7 +5,7 @@ from enum import Enum, IntEnum
 
 DID_NULL                        = 0
 DID_DEV_INFO                    = 1
-DID_SYS_FAULT                  = 2
+DID_SYS_FAULT                   = 2
 DID_PREINTEGRATED_IMU           = 3
 DID_INS_1                       = 4
 DID_INS_2                       = 5
@@ -283,7 +283,6 @@ class SysFaultStatus(Enum):
         return self.value & MASK_CRITICAL_ERROR
 
 
-
 class eConfigSystem(IntEnum):
     CFG_SYS_CMD_SAVE_PERSISTENT_MESSAGES            = 1
     CFG_SYS_CMD_ENABLE_BOOTLOADER_AND_RESET         = 2
@@ -294,5 +293,27 @@ class eConfigSystem(IntEnum):
     CFG_SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98
     CFG_SYS_CMD_SOFTWARE_RESET                      = 99
 
+
 class eSysConfigBits(Enum):
 	SYS_CFG_USE_REFERENCE_IMU_IN_EKF = 0x01000000
+
+
+class eScompCalState(IntEnum):
+	SC_RUNTIME                      = 0     # Calibration off
+	SC_TCAL_MONITOR_TEMP            = 1
+	SC_TCAL_INIT                    = 2
+	SC_TCAL_STARTUP_MEAN_LSB        = 3
+	SC_TCAL_STARTUP_DELAY           = 4
+	SC_TCAL_READY_TO_RUN            = 5
+	SC_TCAL_RUNNING                 = 6
+	SC_TCAL_STOP                    = 7
+	SC_TCAL_DONE                    = 8
+	SC_ACCEL_ALIGN_CHECK            = 9
+	SC_MCAL_SAMPLE_INIT             = 10
+	SC_MCAL_SAMPLE_MEAN_RAW         = 11    # Uncalibrated sensor
+	SC_MCAL_SAMPLE_MEAN_TCAL        = 12    # Temperature compensated sensor 
+	SC_MCAL_SAMPLE_STOP             = 13
+	SC_LPF_SAMPLE                   = 14
+	SC_LPF_SAMPLE_FAST              = 15
+	SC_DONE                         = 16
+	SC_LINEARITY_MEAN_TCAL          = 17    # Like SC_MCAL_SAMPLE_MEAN_TCAL, but goes back to SC_RUNTIME after some samples
