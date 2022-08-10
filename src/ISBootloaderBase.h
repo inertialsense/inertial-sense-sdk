@@ -87,8 +87,8 @@ typedef struct
 
 typedef struct 
 {
-    firmware_t fw_uINS_5;
-    firmware_t bl_uINS_5;
+    firmware_t fw_IMX_5;
+    firmware_t bl_IMX_5;
     firmware_t fw_uINS_3;
     firmware_t bl_uINS_3;
     firmware_t fw_EVB_2;

@@ -753,8 +753,8 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	ISBootloader::firmwares_t files;
 	files.fw_uINS_3.path = fileName;
 	files.bl_uINS_3.path = fileName;
-	files.fw_uINS_5.path = fileName;
-	files.bl_uINS_5.path = fileName;
+	files.fw_IMX_5.path = fileName;
+	files.bl_IMX_5.path = fileName;
 	files.fw_EVB_2.path = fileName;
 	files.bl_EVB_2.path = fileName;
 
