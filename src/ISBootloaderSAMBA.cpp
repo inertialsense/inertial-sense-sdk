@@ -25,6 +25,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <time.h>
 #include <stddef.h>
+#include <mutex>
 
 using namespace ISBootloader;
 

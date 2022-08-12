@@ -143,7 +143,7 @@ is_operation_result cISBootloaderISB::reboot_up()
 is_operation_result cISBootloaderISB::reboot_down()
 {
     serial_list_mutex.lock();
-    if(m_sn == 0 || m_sn == -1)
+    if((m_sn == 0 || m_sn == -1) && !m_isb_props.is_evb)
     {
         m_info_callback(this, "(ISB) Not updating bootloader because serial number is not programmed", IS_LOG_LEVEL_ERROR);
         serial_list_mutex.unlock();
