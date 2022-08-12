@@ -158,7 +158,6 @@ is_operation_result cISBootloaderAPP::reboot_down()
         else serialPortFlush(m_port);
     }
 
-    serialPortClose(m_port);
     return IS_OP_OK;
 }
 

@@ -118,9 +118,16 @@ void cISBootloaderThread::update_thread_serial(void* context)
     {
         // Device has already been updated
     }
+    else if (result == IS_OP_ERROR)
+    {
+        serial_thread_mutex.lock();
+        thread_info->reuse_port = true;
+        serial_thread_mutex.unlock();
+    }
 
     SLEEP_MS(1000);
 
+    serialPortFlush(&port);
     serialPortClose(&port);
 
     serial_thread_mutex.lock();

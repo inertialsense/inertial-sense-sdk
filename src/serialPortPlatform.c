@@ -384,7 +384,7 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
     DWORD error = 0;
 
     CancelIo(handle->platformHandle);
-    GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
+    //GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
     /*if ((error = GetLastError()) != ERROR_SUCCESS)
     {
         while (1) {}
