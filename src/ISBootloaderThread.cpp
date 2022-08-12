@@ -64,6 +64,8 @@ typedef struct
 
 void cISBootloaderThread::update_thread_serial(void* context)
 {
+    SLEEP_MS(1000);
+
     thread_serial_t* thread_info = (thread_serial_t*)context; 
 
     cISBootloaderBase* ctx_new;
@@ -86,6 +88,8 @@ void cISBootloaderThread::update_thread_serial(void* context)
         serial_thread_mutex.unlock();
         return;
     }
+
+    SLEEP_MS(1000);
 
     is_operation_result result = cISBootloaderBase::update_device(m_firmware, &port, &ctx_new, m_infoProgress, m_uploadProgress, m_verifyProgress);
 
@@ -114,10 +118,10 @@ void cISBootloaderThread::update_thread_serial(void* context)
     {
         // Device has already been updated
     }
-    
-    serialPortClose(&port);
 
     SLEEP_MS(1000);
+
+    serialPortClose(&port);
 
     serial_thread_mutex.lock();
     thread_info->done = true;
@@ -200,12 +204,14 @@ is_operation_result cISBootloaderThread::update(
     int waiter = 100;
 
     bool use_dfu = false;
-    //if (libusb_init(NULL) >= 0) use_dfu = true;
+    if (libusb_init(NULL) >= 0) use_dfu = true;
 
     is_dfu_list dfu_list;
 
     cISBootloaderISB::reset_serial_list();
     cISBootloaderAPP::reset_serial_list();
+
+    cISSerialPort::GetComPorts(ports);
 
     while (1)
     {
@@ -239,7 +245,7 @@ is_operation_result cISBootloaderThread::update(
             for (size_t j = 0; j < serial_threads.size(); j++)
             {
                 // Device is actively running or has finished in a state where we don't care to start a new thread for it
-                if (string(serial_threads[j]->serial_name) == ports[i] && (serial_threads[j]->ctx != NULL || serial_threads[j]->thread != NULL))
+                if (string(serial_threads[j]->serial_name) == ports[i] && (serial_threads[j]->ctx != NULL || serial_threads[j]->thread != NULL || !serial_threads[j]->done))
                 {
                     found = true;
                     break;

@@ -78,6 +78,7 @@ typedef enum {
     IS_IMAGE_SIGN_EVB = IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K,
 
     IS_IMAGE_SIGN_NONE = 0,
+    IS_IMAGE_SIGN_ERROR = 0x80000000,
 } eImageSignature;
 
 typedef struct 
@@ -133,6 +134,8 @@ public:
         if(m_info_callback == NULL) m_info_callback = dummy_info_callback;
     }
 
+    virtual ~cISBootloaderBase() {};
+
     static eImageSignature get_image_signature(std::string filename);
 
     virtual is_operation_result match_test(void* param) = 0;
@@ -143,6 +146,7 @@ public:
      * @brief Reboots into the same mode, giving the bootloader a fresh start
      */
     virtual is_operation_result reboot() = 0;
+    virtual is_operation_result reboot_force() { return IS_OP_OK; }
     
     /**
      * @brief Reboots into the level above, if available:

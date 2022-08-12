@@ -101,22 +101,7 @@ is_operation_result cISBootloaderSAMBA::reboot()
     SAMBA_STATUS("(SAMBA) Rebooting...", IS_LOG_LEVEL_INFO);
 
     // RSTC_CR, RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST
-    if (write_word(0x400e1800, 0xa5000001) != IS_OP_OK)
-    {
-        serialPortClose(m_port);
-        return IS_OP_ERROR;
-    }
-    //for (int i = 0; i < 100; i++)
-    //{
-    //    if(read_word(0x400e1804, &status) != IS_OP_OK) return IS_OP_ERROR; // RSTC_SR
-    //    if (!(status & 0x00020000)) // RSTC_SR_SRCMP
-    //    {
-    //        return IS_OP_OK;
-    //    }
-    //    serialPortSleep(m_port, 20);
-    //}
-    //return IS_OP_ERROR;
-
+    write_word(0x400e1800, 0xa5000001);
     serialPortClose(m_port);
     return IS_OP_OK;
 }

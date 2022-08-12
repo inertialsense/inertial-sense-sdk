@@ -20,7 +20,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderDFU.h"
 #include "ihex.h"
 #include "ISUtilities.h"
-#include "libusbi.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -102,11 +101,12 @@ is_operation_result cISBootloaderDFU::list_devices(is_dfu_list* list)
         
         // Add to list
         std::string uidstr;
-        get_serial_number_libusb(&dev_handle, list->id[list->present].sn, uidstr);
+        get_serial_number_libusb(&dev_handle, list->id[list->present].sn, uidstr, desc.iSerialNumber);
         strncpy(list->id[list->present].uid, (char*)uidstr.c_str(), IS_DFU_UID_MAX_SIZE);
         list->id[list->present].vid = desc.idVendor;
         list->id[list->present].pid = desc.idProduct;
         list->id[list->present].handle_libusb = dev_handle;
+        list->id[list->present].iSerialNumber = desc.iSerialNumber;
 
         list->present++;
         if(list->present >= IS_DFU_LIST_LEN)
@@ -129,7 +129,7 @@ eImageSignature cISBootloaderDFU::check_is_compatible()
     return IS_IMAGE_SIGN_DFU;
 }
 
-is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uidstr)
+is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uidstr, uint8_t sn_idx)
 {
     dfu_status status;
     uint32_t waitTime = 0;
@@ -156,13 +156,9 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
     ret_dfu = dfu_wait_for_state(handle, DFU_STATE_IDLE);
     if (ret_dfu < DFU_ERROR_NONE) { libusb_close(*handle); return IS_OP_ERROR; }
 
-    struct libusb_device_descriptor desc;
-    ret_libusb = libusb_get_device_descriptor((*handle)->dev, &desc);
-    if(ret_libusb < 0) { libusb_close(*handle); return IS_OP_ERROR; }
-
     // Get the string containing the serial number from the device
     unsigned char uid[IS_DFU_UID_MAX_SIZE];
-    ret_libusb = libusb_get_string_descriptor_ascii(*handle, desc.iSerialNumber, uid, sizeof(uid));
+    ret_libusb = libusb_get_string_descriptor_ascii(*handle, sn_idx, uid, sizeof(uid));
     if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
 
     uidstr = std::string((const char*)uid);
@@ -221,7 +217,7 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
 
 uint32_t cISBootloaderDFU::get_device_info()
 {
-    get_serial_number_libusb(&m_dfu.handle_libusb, m_sn, m_port_name);
+    get_serial_number_libusb(&m_dfu.handle_libusb, m_sn, m_port_name, m_dfu.iSerialNumber);
 
     return m_sn;
 }

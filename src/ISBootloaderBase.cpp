@@ -180,94 +180,6 @@ is_operation_result cISBootloaderBase::update_device
 
     // TODO: Catch EVB-2 firmware updates here
 
-
-    *obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
-    (*obj)->m_port_name = std::string(handle->port);
-    device = (*obj)->check_is_compatible();
-    if (device)
-    {
-        if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5)
-        {
-            (*obj)->m_filename = filenames.bl_IMX_5.path;
-            if ((*obj)->reboot_down() == IS_OP_OK)
-            {
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-
-            delete* obj;
-            return IS_OP_CANCELLED;
-        }
-        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3)
-        {
-            (*obj)->m_filename = filenames.bl_uINS_3.path;
-            if ((*obj)->reboot_down() == IS_OP_OK)
-            {
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-
-            delete* obj;
-            return IS_OP_CANCELLED;
-        }
-        else
-        {
-            // Bootloader was already updated or not specified
-            if ((device & IS_IMAGE_SIGN_ISB) & fw_IMX_5)
-            {
-                (*obj)->m_filename = filenames.fw_IMX_5.path;
-
-                (*obj)->get_device_info();
-                if((*obj)->reboot() == IS_OP_OK)
-                {
-                    delete *obj;
-                    return IS_OP_CLOSED;
-                }
-                
-                (*obj)->get_device_info();
-                (*obj)->m_use_progress = true;
-                if((*obj)->download_image(filenames.fw_IMX_5.path) != IS_OP_OK)
-                {
-                    (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-                    (*obj)->m_use_progress = false;
-                    //delete *obj;
-                    return IS_OP_CLOSED;
-                }
-                return IS_OP_OK;
-            }
-            else if ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_3)
-            {
-                (*obj)->m_filename = filenames.fw_uINS_3.path;
-
-                (*obj)->get_device_info();
-                if((*obj)->reboot() == IS_OP_OK)
-                {
-                    delete *obj;
-                    return IS_OP_CLOSED;
-                }
-
-                (*obj)->get_device_info();
-                (*obj)->m_use_progress = true;
-                if((*obj)->download_image(filenames.fw_uINS_3.path) != IS_OP_OK)
-                {
-                    (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-                    (*obj)->m_use_progress = false;
-                    //delete *obj;
-                    return IS_OP_CLOSED;
-                }
-                return IS_OP_OK;
-            }
-               
-            delete* obj;
-            return IS_OP_CANCELLED;
-        }
-    }
-    else
-    {
-        delete* obj;
-    }
-    
-
     *obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
     (*obj)->m_port_name = std::string(handle->port);
     device = (*obj)->check_is_compatible();
@@ -321,30 +233,185 @@ is_operation_result cISBootloaderBase::update_device
         delete* obj;
     }
 
-    *obj = new cISBootloaderSAMBA(updateProgress, verifyProgress, statusfn, handle);
-    (*obj)->m_port_name = std::string(handle->port);
-    device = (*obj)->check_is_compatible();
-    if (device)
+    if(bl_EVB_2 || bl_uINS_3)
     {
-        if((device & IS_IMAGE_SIGN_SAMBA) & bl_uINS_3)
+        *obj = new cISBootloaderSAMBA(updateProgress, verifyProgress, statusfn, handle);
+        (*obj)->m_port_name = std::string(handle->port);
+        device = (*obj)->check_is_compatible();
+        if (device)
         {
-            (*obj)->m_filename = filenames.bl_uINS_3.path;
-            (*obj)->get_device_info();
-            (*obj)->m_use_progress = true;
-            if((*obj)->download_image(filenames.bl_uINS_3.path) != IS_OP_OK)
+            if((device & IS_IMAGE_SIGN_SAMBA) & bl_uINS_3)
             {
-                (*obj)->m_use_progress = false;
-                //delete *obj;  // Don't delete, since we have probably called the update and verify callbacks
+                (*obj)->m_filename = filenames.bl_uINS_3.path;
+                (*obj)->get_device_info();
+                (*obj)->m_use_progress = true;
+                if((*obj)->download_image(filenames.bl_uINS_3.path) != IS_OP_OK)
+                {
+                    (*obj)->m_use_progress = false;
+                    //delete *obj;  // Don't delete, since we have probably called the update and verify callbacks
+                    return IS_OP_CLOSED;
+                }
+                (*obj)->reboot_up();    // Reboot up right away so an APP update can happen
+                //delete *obj;
                 return IS_OP_CLOSED;
+            } 
+            else
+            {
+                delete* obj;
+                return IS_OP_CANCELLED;
             }
-            (*obj)->reboot_up();    // Reboot up right away so an APP update can happen
-            //delete *obj;
-            return IS_OP_CLOSED;
-        } 
+        }
         else
         {
             delete* obj;
-            return IS_OP_CANCELLED;
+        }
+    }
+
+    *obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
+    (*obj)->m_port_name = std::string(handle->port);
+    device = (*obj)->check_is_compatible(); 
+    if(device == IS_IMAGE_SIGN_ERROR)
+    {
+        delete* obj;
+        return IS_OP_CLOSED;
+    }
+    else if(device)
+    {
+        if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5)
+        {
+            (*obj)->m_filename = filenames.bl_IMX_5.path;
+            if ((*obj)->reboot_down() == IS_OP_OK)
+            {
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+            else
+            {
+                (*obj)->reboot_force();
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+        }
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3)
+        {
+            (*obj)->m_filename = filenames.bl_uINS_3.path;
+            if ((*obj)->reboot_down() == IS_OP_OK)
+            {
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+            else
+            {
+                (*obj)->reboot_force();
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+        }
+        else
+        {
+            // Bootloader was already updated or not specified
+            if ((device & IS_IMAGE_SIGN_ISB) & fw_IMX_5)
+            {
+                (*obj)->m_filename = filenames.fw_IMX_5.path;
+
+                if((*obj)->get_device_info() != IS_OP_OK)
+                {
+                    delete *obj;
+                    return IS_OP_CLOSED;
+                }
+                if((*obj)->reboot() == IS_OP_OK)
+                {
+                    delete *obj;
+                    return IS_OP_CLOSED;
+                }
+                
+                (*obj)->m_use_progress = true;
+                if((*obj)->download_image(filenames.fw_IMX_5.path) != IS_OP_OK)
+                {
+                    (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                    (*obj)->m_use_progress = false;
+                    (*obj)->reboot_force();
+                    //delete *obj;
+                    return IS_OP_CLOSED;
+                }
+                return IS_OP_OK;
+            }
+            else if ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_3)
+            {
+                (*obj)->m_filename = filenames.fw_uINS_3.path;
+
+                if((*obj)->get_device_info() != IS_OP_OK)
+                {
+                    delete *obj;
+                    return IS_OP_CLOSED;
+                }
+                if((*obj)->reboot() == IS_OP_OK)
+                {
+                    delete *obj;
+                    return IS_OP_CLOSED;
+                }
+
+                (*obj)->m_use_progress = true;
+                if((*obj)->download_image(filenames.fw_uINS_3.path) != IS_OP_OK)
+                {
+                    (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                    (*obj)->m_use_progress = false;
+                    (*obj)->reboot_force();
+                    //delete *obj;  // TODO: Memory leak
+                    return IS_OP_CLOSED;
+                }
+                return IS_OP_OK;
+            }
+        }
+    }
+    else
+    {
+        delete* obj;
+    }
+
+    *obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
+    (*obj)->m_port_name = std::string(handle->port);
+    device = (*obj)->check_is_compatible();
+    if(device)
+    {
+        if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
+        {
+            (*obj)->m_filename = filenames.fw_IMX_5.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
+        {
+            (*obj)->m_filename = filenames.fw_uINS_3.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)
+        {
+            strncpy((*obj)->m_app.enable_command, "EBLE", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & bl_uINS_3)
+        {
+            (*obj)->m_filename = filenames.bl_uINS_3.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & bl_IMX_5)
+        {
+            (*obj)->m_filename = filenames.bl_IMX_5.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
         }
     }
     else

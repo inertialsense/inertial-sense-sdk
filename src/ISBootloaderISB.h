@@ -47,6 +47,7 @@ public:
     is_operation_result match_test(void* param);
     
     is_operation_result reboot();
+    is_operation_result reboot_force();
     is_operation_result reboot_up();
     is_operation_result reboot_down();
 

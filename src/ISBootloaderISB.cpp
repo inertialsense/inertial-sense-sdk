@@ -21,6 +21,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderISB.h"
 #include "ISUtilities.h"
 
+#include <algorithm>
+
 using namespace ISBootloader;
 
 std::vector<uint32_t> cISBootloaderISB::serial_list;
@@ -29,7 +31,7 @@ std::mutex cISBootloaderISB::serial_list_mutex;
 std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-#define SUPPORT_BOOTLOADER_V5A
+// #define SUPPORT_BOOTLOADER_V5A
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
@@ -58,9 +60,21 @@ is_operation_result cISBootloaderISB::match_test(void* param)
 
 eImageSignature cISBootloaderISB::check_is_compatible()
 {
-    sync(m_port);
+    serialPortFlush(m_port);
+    if(sync(m_port) != IS_OP_OK)
+    {
+        for(int i = 0; i < 10; i++)
+        {
+            if(serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) == 15)
+            {
+                break;
+            }
 
-    SLEEP_MS(1000);
+            SLEEP_MS(10);
+        }
+
+        return IS_IMAGE_SIGN_ERROR;
+    }
 
 	// Send command
     serialPortFlush(m_port);
@@ -141,27 +155,37 @@ is_operation_result cISBootloaderISB::reboot_down()
 
     m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
 
-    serial_list.push_back(m_sn);
-    serial_list_mutex.unlock();
+    
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interferece on its ports.
 
     // restart bootloader assist command
-    serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15);
-    serialPortClose(m_port);
+    if(serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15) == 15)
+    {
+        serial_list.push_back(m_sn);
+    }
+
+    serial_list_mutex.unlock();
+
+    // serialPortClose(m_port);
+    return IS_OP_OK;
+}
+
+is_operation_result cISBootloaderISB::reboot_force()
+{
+    // restart bootloader command
+    if(serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) != 15)
+    {
+        return IS_OP_ERROR;
+    }
+    // serialPortClose(m_port);
     return IS_OP_OK;
 }
 
 is_operation_result cISBootloaderISB::reboot()
 {
     rst_serial_list_mutex.lock();
-    if(m_sn == 0 || m_sn == -1)
-    {
-        m_info_callback(this, "(ISB) Not rebooting before update because serial number is not programmed", IS_LOG_LEVEL_INFO);
-        rst_serial_list_mutex.unlock();
-        return IS_OP_ERROR;
-    }
     if(find(rst_serial_list.begin(), rst_serial_list.end(), m_sn) != rst_serial_list.end())
     {
         m_info_callback(this, "(ISB) Serial number has already been reset", IS_LOG_LEVEL_DEBUG);
@@ -171,17 +195,20 @@ is_operation_result cISBootloaderISB::reboot()
 
     m_info_callback(this, "(ISB) Resetting before APP update...", IS_LOG_LEVEL_INFO);
 
-    rst_serial_list.push_back(m_sn);
+    // restart bootloader command
+    if(reboot_force() == IS_OP_OK)
+    {
+        rst_serial_list.push_back(m_sn);
+    }
+
     rst_serial_list_mutex.unlock();
 
-    // restart bootloader command
-    serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15);
-    serialPortClose(m_port);
     return IS_OP_OK;
 }
 
 uint32_t cISBootloaderISB::get_device_info()
 {
+    sync(m_port);
     serialPortFlush(m_port);
 
 	// Send command
@@ -252,9 +279,14 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
-        if (serialPortWriteAndWaitForTimeout(s, &handshakerChar, 1, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        if(serialPortWrite(s, &handshakerChar, 1) != 1)
+        {
+            return IS_OP_ERROR;
+        }
+
+        if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
-            serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
+            SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
             return IS_OP_OK;
         }
     }

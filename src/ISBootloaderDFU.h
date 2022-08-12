@@ -44,6 +44,7 @@ typedef struct
     uint16_t vid;
     uint16_t pid;
     libusb_device_handle* handle_libusb;
+    uint8_t iSerialNumber;
 } is_dfu_id;
 
 typedef struct 
@@ -156,7 +157,7 @@ private:
     static int dfu_GETSTATE(libusb_device_handle** handle, uint8_t* buf);
     static int dfu_ABORT(libusb_device_handle** handle);
     
-    static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uid); 
+    static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uid, uint8_t sn_idx); 
 
     static dfu_error dfu_set_address_pointer(libusb_device_handle** dev_handle, uint32_t address);
     static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state);

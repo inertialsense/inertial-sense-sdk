@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISComm.h"
 
 #include <mutex>
+#include <algorithm>
 
 using namespace ISBootloader;
 

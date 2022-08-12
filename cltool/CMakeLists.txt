@@ -39,10 +39,11 @@ add_executable(cltool
 	../src/ihex.c
 	../src/InertialSense.cpp
 	../src/ISBootloaderThread.cpp
-	../src/ISBootloader.c
-    ../src/ISBootloaderISB.c
-	../src/ISBootloaderDFU.c
-	../src/ISBootloaderSAMBA.c
+	../src/ISBootloaderBase.cpp
+    ../src/ISBootloaderISB.cpp
+	../src/ISBootloaderDFU.cpp
+	../src/ISBootloaderSAMBA.cpp
+	../src/ISBootloaderAPP.cpp
 	../hw-libs/bootloader/bootloaderShared.c
 	../src/ISClient.cpp
 	../src/ISComm.c
