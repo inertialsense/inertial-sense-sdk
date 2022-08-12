@@ -325,7 +325,7 @@ static int cltool_updateFirmware()
 	
 	firmwareProgressContexts.clear();
 
-	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(
+	if(InertialSense::BootloadFile(
 		g_commandLineOptions.comPort,
 		0,
         g_commandLineOptions.updateAppFirmwareFilename,
@@ -334,20 +334,9 @@ static int cltool_updateFirmware()
 		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
 		cltool_bootloadUpdateInfo,
 		cltool_firmwareUpdateWaiter
-	);
+	) == IS_OP_OK) return 0;
 	
-	cout << endl << "Results:" << endl;
-	int errorCount = 0;
-	for (size_t i = 0; i < results.size(); i++)
-	{
-		cout << results[i].port << ": " << (results[i].error.size() == 0 ? "Success\n" : results[i].error);
-		errorCount += (int)(results[i].error.size() != 0);
-	}
-	if (errorCount != 0)
-	{
-		cout << endl << errorCount << " ports failed." << endl;
-	}
-	return (errorCount == 0 ? 0 : -1);
+	return -1;
 }
 
 std::mutex print_mutex;

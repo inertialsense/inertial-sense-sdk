@@ -37,12 +37,15 @@ pfnBootloadStatus cISBootloaderThread::m_infoProgress;
 int cISBootloaderThread::m_baudRate;
 void (*cISBootloaderThread::m_waitAction)();
 uint32_t cISBootloaderThread::m_timeStart;
-std::mutex cISBootloaderThread::ctx_mutex;
-std::vector<void*> cISBootloaderThread::threads;
-bool cISBootloaderThread::m_update_rom = false;
-std::mutex cISBootloaderThread::serial_thread_mutex;
-std::mutex cISBootloaderThread::libusb_thread_mutex;
+std::mutex cISBootloaderThread::m_ctx_mutex;
+std::mutex cISBootloaderThread::m_serial_thread_mutex;
+std::mutex cISBootloaderThread::m_libusb_thread_mutex;
 bool cISBootloaderThread::m_update_in_progress = false;
+std::mutex cISBootloaderThread::m_update_mutex;
+bool cISBootloaderThread::m_use_dfu;
+uint32_t cISBootloaderThread::m_libusb_devicesActive;
+uint32_t cISBootloaderThread::m_serial_devicesActive;
+bool cISBootloaderThread::m_continue_update;
 
 typedef struct 
 {
@@ -62,30 +65,90 @@ typedef struct
     bool done;
 } thread_libusb_t;
 
+void cISBootloaderThread::mgmt_thread_libusb(void* context)
+{
+    // Initialize libusb
+    m_use_dfu = libusb_init(NULL) == LIBUSB_SUCCESS;
+
+    is_dfu_list dfu_list;                       // List of libusb devices connected
+    vector<thread_libusb_t*> libusb_threads;    // List of all libusb threads that have run or are running
+
+    while(m_continue_update)
+    {
+        cISBootloaderDFU::list_devices(&dfu_list);  // TODO: Put this in a separate thread since it takes a long time
+
+        m_libusb_thread_mutex.lock();
+
+        for (size_t l = 0; l < libusb_threads.size(); l++)
+        {
+            if (libusb_threads[l]->thread != NULL && libusb_threads[l]->done)
+            {
+                threadJoinAndFree(libusb_threads[l]->thread);
+                libusb_threads[l]->thread = NULL;
+            }
+
+            if (!libusb_threads[l]->done)
+            {
+                m_libusb_devicesActive++;
+            }
+        }
+
+        for (size_t i = 0; i < dfu_list.present; i++)
+        {	// Create contexts for devices in DFU mode
+            bool found = false;
+
+            for (size_t j = 0; j < ctx.size(); j++)
+            {
+                if (ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
+                {   // We found the device in the context list
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {   // If we didn't find the device
+                thread_libusb_t* new_thread = (thread_libusb_t*)malloc(sizeof(thread_libusb_t));
+                new_thread->ctx = NULL;
+                new_thread->done = false;
+                new_thread->handle = dfu_list.id[i].handle_libusb;
+                libusb_threads.push_back(new_thread);
+                libusb_threads[libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, libusb_threads[libusb_threads.size() - 1]);
+
+                m_libusb_devicesActive++;
+            }
+        }
+
+        m_libusb_thread_mutex.unlock();
+    }
+    
+    if(m_use_dfu) { libusb_exit(NULL); }
+}
+
 void cISBootloaderThread::update_thread_serial(void* context)
 {
     thread_serial_t* thread_info = (thread_serial_t*)context; 
 
-    SLEEP_MS(3000);
+    SLEEP_MS(1000);
 
     cISBootloaderBase* ctx_new;
     serial_port_t port;
     serialPortPlatformInit(&port);
-    serial_thread_mutex.lock();
+    m_serial_thread_mutex.lock();
     const char* serial_name = thread_info->serial_name;
-    serial_thread_mutex.unlock();
+    m_serial_thread_mutex.unlock();
 
-    serial_thread_mutex.lock();
+    m_serial_thread_mutex.lock();
     thread_info->reuse_port = false;
-    serial_thread_mutex.unlock();
+    m_serial_thread_mutex.unlock();
 
     serialPortSetPort(&port, serial_name);
-    if (!serialPortOpenRetry(&port, serial_name, 921600, 1))
+    if (!serialPortOpenRetry(&port, serial_name, m_baudRate, 1))
     {
         serialPortClose(&port);
-        serial_thread_mutex.lock();
+        m_serial_thread_mutex.lock();
         thread_info->done = true;
-        serial_thread_mutex.unlock();
+        m_serial_thread_mutex.unlock();
         return;
     }
 
@@ -94,29 +157,28 @@ void cISBootloaderThread::update_thread_serial(void* context)
     if (result == IS_OP_OK)
     {   
         // Device is updated, add it to the ctx list so we can reset it later
-        ctx_mutex.lock();
+        m_ctx_mutex.lock();
         ctx.push_back(ctx_new);
         ctx_new->m_port_name = string(thread_info->serial_name);
         ctx_new->m_finished_flash = true;
-        ctx_new->m_update_in_progress = false;
-        ctx_mutex.unlock();
+        m_ctx_mutex.unlock();
 
-        serial_thread_mutex.lock();
+        m_serial_thread_mutex.lock();
         thread_info->ctx = ctx_new;
-        serial_thread_mutex.unlock();
+        m_serial_thread_mutex.unlock();
     }
     else if(result == IS_OP_CLOSED)
     {
         // Device is resetting (may have updated if it was a SAMBA device)
-        serial_thread_mutex.lock();
+        m_serial_thread_mutex.lock();
         thread_info->reuse_port = true;
-        serial_thread_mutex.unlock();
+        m_serial_thread_mutex.unlock();
     }
     else if (result == IS_OP_CANCELLED)
     {
         // Device has already been updated
     }
-    else
+    else // (IS_OP_ERROR usually)
     {
         // Other device
     }
@@ -124,9 +186,9 @@ void cISBootloaderThread::update_thread_serial(void* context)
     serialPortFlush(&port);
     serialPortClose(&port);
 
-    serial_thread_mutex.lock();
+    m_serial_thread_mutex.lock();
     thread_info->done = true;
-    serial_thread_mutex.unlock();
+    m_serial_thread_mutex.unlock();
 }
 
 void cISBootloaderThread::update_thread_libusb(void* context)
@@ -140,15 +202,14 @@ void cISBootloaderThread::update_thread_libusb(void* context)
     if (result == IS_OP_OK)
     {   
         // Device is updated, add it to the ctx list so we can reset it later
-        ctx_mutex.lock();
+        m_ctx_mutex.lock();
         ctx.push_back(ctx_new);
         ctx_new->m_finished_flash = true;
-        ctx_new->m_update_in_progress = false;
-        ctx_mutex.unlock();
+        m_ctx_mutex.unlock();
 
-        libusb_thread_mutex.lock();
+        m_libusb_thread_mutex.lock();
         thread_info->ctx = ctx_new;
-        libusb_thread_mutex.unlock();
+        m_libusb_thread_mutex.unlock();
     }
     else if(result == IS_OP_CLOSED)
     {
@@ -163,9 +224,9 @@ void cISBootloaderThread::update_thread_libusb(void* context)
 
     }
 
-    libusb_thread_mutex.lock();
+    m_libusb_thread_mutex.lock();
     thread_info->done = true;
-    libusb_thread_mutex.unlock();
+    m_libusb_thread_mutex.unlock();
 }
 
     
@@ -180,50 +241,55 @@ is_operation_result cISBootloaderThread::update(
     void						(*waitAction)()
 )
 {
+    // Only allow one firmware update sequence to happen at a time
+    m_update_mutex.lock();
     m_update_in_progress = true;
-
+    
+    // Copy in the firmware update settings
     m_firmware = firmware;
     m_uploadProgress = uploadProgress;
     m_verifyProgress = verifyProgress;
     m_infoProgress = infoProgress;
     m_baudRate = baudRate;
     m_waitAction = waitAction;
+
+    // Note the time we started
     m_timeStart = current_timeMs();
 
-    vector<string> ports;
-    vector<thread_serial_t*> serial_threads;
-    vector<thread_libusb_t*> libusb_threads;
-    vector<string> ports_user_ignore;
+    vector<string> ports;                       // List of ports connected
+    vector<thread_serial_t*> serial_threads;    // List of all serial threads that have run or are running
+    vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
 
     cISSerialPort::GetComPorts(ports);
 
+    // Get the list of ports to ignore during the bootloading process
     sort(ports.begin(), ports.end());
     sort(comPorts.begin(), comPorts.end());
-    set_symmetric_difference(   // Get the difference between the specified ports and the ports present TODO: make this not symmetric
+    set_symmetric_difference(   
         ports.begin(), ports.end(),
         comPorts.begin(), comPorts.end(),
         back_inserter(ports_user_ignore));
 
-    bool use_dfu = false;
-    if (libusb_init(NULL) >= 0) use_dfu = true;
-
-    is_dfu_list dfu_list;
 
     cISBootloaderISB::reset_serial_list();
     cISBootloaderAPP::reset_serial_list();
 
-    cISSerialPort::GetComPorts(ports);
+    m_libusb_devicesActive = 0;
 
-    while (1)
+    void* libusb_thread = threadCreateAndStart(mgmt_thread_libusb, NULL);
+
+    m_continue_update = true;
+
+    while (m_continue_update)
     {
         if (m_waitAction) m_waitAction();
         SLEEP_MS(10);
 
+        m_serial_devicesActive = 0;
+
         cISSerialPort::GetComPorts(ports);
 
-        int devicesActive = 0;
-
-        serial_thread_mutex.lock();
+        m_serial_thread_mutex.lock();
 
         for (size_t l = 0; l < serial_threads.size(); l++)
         {
@@ -235,7 +301,7 @@ is_operation_result cISBootloaderThread::update(
 
             if (!serial_threads[l]->done)
             {
-                devicesActive++;
+                m_serial_devicesActive++;
             }
         }
 
@@ -245,17 +311,20 @@ is_operation_result cISBootloaderThread::update(
 
             for (size_t j = 0; j < serial_threads.size(); j++)
             {
-                // Device is actively running or has finished in a state where we don't care to start a new thread for it
-                if (string(serial_threads[j]->serial_name) == ports[i] && (serial_threads[j]->ctx != NULL || !serial_threads[j]->done))
+                if (string(serial_threads[j]->serial_name) == ports[i])
                 {
-                    found = true;
-                    break;
+                    if (!serial_threads[j]->done)    //(serial_threads[j]->ctx != NULL || 
+                    {   // Thread hasn't finished
+                        found = true;
+                        break;
+                    }
+                    if (serial_threads[j]->done && !serial_threads[j]->reuse_port)
+                    {   // Thread finished and the reuse flag isn't set
+                        found = true;
+                        break;
+                    }
                 }
-                if (string(serial_threads[j]->serial_name) == ports[i] && serial_threads[j]->done && !serial_threads[j]->reuse_port)
-                {
-                    found = true;
-                    break;
-                }
+               
             }
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)
@@ -276,66 +345,29 @@ is_operation_result cISBootloaderThread::update(
                 serial_threads.push_back(new_thread);
                 serial_threads[serial_threads.size() - 1]->thread = threadCreateAndStart(update_thread_serial, serial_threads[serial_threads.size() - 1]);
 
-                devicesActive++;
+                m_serial_devicesActive++;
             }
         }
 
-        serial_thread_mutex.unlock();
+        m_libusb_thread_mutex.lock();
 
-        if (use_dfu)
+        // Break after 3 seconds of no threads active
+        if (m_libusb_devicesActive != 0 || m_serial_devicesActive != 0) 
         {
-            cISBootloaderDFU::list_devices(&dfu_list);
-
-            libusb_thread_mutex.lock();
-
-            for (size_t l = 0; l < libusb_threads.size(); l++)
-            {
-                if (libusb_threads[l]->thread != NULL && libusb_threads[l]->done)
-                {
-                    threadJoinAndFree(libusb_threads[l]->thread);
-                    libusb_threads[l]->thread = NULL;
-                }
-
-                if (!libusb_threads[l]->done)
-                {
-                    devicesActive++;
-                }
-            }
-
-            for (size_t i = 0; i < dfu_list.present; i++)
-            {	// Create contexts for devices in DFU mode
-                bool found = false;
-
-                for (size_t j = 0; j < ctx.size(); j++)
-                {
-                    if (ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
-                    {   // We found the device in the context list
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                {   // If we didn't find the device
-                    thread_libusb_t* new_thread = (thread_libusb_t*)malloc(sizeof(thread_libusb_t));
-                    new_thread->ctx = NULL;
-                    new_thread->done = false;
-                    new_thread->handle = dfu_list.id[i].handle_libusb;
-                    libusb_threads.push_back(new_thread);
-                    libusb_threads[libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, libusb_threads[libusb_threads.size() - 1]);
-
-                    devicesActive++;
-                }
-            }
-
-            libusb_thread_mutex.unlock();
+            m_timeStart = current_timeMs();
+        }
+        else if (current_timeMs() - m_timeStart > 3000) 
+        {
+            m_continue_update = false;
         }
 
-        // Break after 10 iterations of no threads active
-        if (devicesActive != 0) m_timeStart = current_timeMs();
-        else if (current_timeMs() - m_timeStart > 1000) break;
+        m_libusb_thread_mutex.unlock();
+        m_serial_thread_mutex.unlock();
     }
 
+    threadJoinAndFree(libusb_thread);
+
+    // Reset all serial devices up a level into APP or ISB mode
     for (size_t i = 0; i < ctx.size(); i++)
     {
         serial_port_t port;
@@ -352,17 +384,17 @@ is_operation_result cISBootloaderThread::update(
         serialPortFlush(&port);
         serialPortClose(&port);
     }
+    
+    // Clear the ctx list
     for (size_t i = 0; i < ctx.size(); i++)
     {
         delete ctx[i];
         ctx[i] = nullptr;
     }
-
     ctx.clear();
 
-    if(use_dfu) { libusb_exit(NULL); }
-
     m_update_in_progress = false;
+    m_update_mutex.unlock();
 
     return IS_OP_OK;
 }

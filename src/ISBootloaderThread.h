@@ -52,33 +52,32 @@ public:
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
 
     static bool m_update_in_progress;
+    
 private:
-    typedef enum {
-        IS_BOOTLOADER_RUNMODE_REBOOT,
-        IS_BOOTLOADER_RUNMODE_REBOOT_DOWN,
-        IS_BOOTLOADER_RUNMODE_FLASH,
-        IS_BOOTLOADER_RUNMODE_REBOOT_UP
-    } eBootloaderRunmode;
-   
-    static is_operation_result manage_devices(bool use_dfu, eBootloaderRunmode mode);
-
     static void update_thread_serial(void* context);
     static void update_thread_libusb(void* context);
+    static void mgmt_thread_libusb(void* context);
 
     static ISBootloader::firmwares_t m_firmware;
+    
+    static int m_baudRate;
+
+    static std::mutex m_update_mutex;
+    static std::mutex m_ctx_mutex;
+    static std::mutex m_serial_thread_mutex;
+    static std::mutex m_libusb_thread_mutex;
+
     static ISBootloader::pfnBootloadProgress m_uploadProgress; 
     static ISBootloader::pfnBootloadProgress m_verifyProgress;
     static ISBootloader::pfnBootloadStatus m_infoProgress;
-    static int m_baudRate;
     static void (*m_waitAction)();
+
     static uint32_t m_timeStart;
-    static std::vector<void*> threads;
+    static bool m_use_dfu;
+    static uint32_t m_libusb_devicesActive;
+    static uint32_t m_serial_devicesActive;
 
-    static std::mutex ctx_mutex;
-    static std::mutex serial_thread_mutex;
-    static std::mutex libusb_thread_mutex;
-
-    static bool m_update_rom;
+    static bool m_continue_update;
 };
 
 #endif // __IS_BOOTLOADER_H_

@@ -710,7 +710,7 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
+is_operation_result InertialSense::BootloadFile(
 	const string& comPort, 
 	const uint32_t serialNum,
 	const string& fileName, 
@@ -722,7 +722,6 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 )
 {
 #ifndef EXCLUDE_BOOTLOADER
-	vector<bootload_result_t> results;
 	vector<string> portStrings;
 
 	if (comPort == "*")
@@ -739,11 +738,8 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	ifstream tmpStream(fileName);
 	if (!tmpStream.good())
 	{
-		for (size_t i = 0; i < portStrings.size(); i++)
-		{
-			results.push_back({ portStrings[i], "File does not exist" });
-		}
-		return results;
+		printf("File does not exist");
+		return IS_OP_ERROR;
 	}
 
 	#if !PLATFORM_IS_WINDOWS
@@ -764,16 +760,9 @@ vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(
 	fputs("\e[?25h", stdout);	// Turn cursor back on
 	#endif
 
-	for (size_t i = 0; i < cISBootloaderThread::ctx.size(); i++)
-	{
-		if(!cISBootloaderThread::ctx[i]->m_finished_flash)
-		{
-			results.push_back({ std::to_string(cISBootloaderThread::ctx[i]->m_sn), "failure "});
-		}
-	}
-
-	return results;
 #endif // EXCLUDE_BOOTLOADER
+	
+	return IS_OP_OK;
 }
 
 bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)

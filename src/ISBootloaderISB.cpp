@@ -515,7 +515,6 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
         {   
             if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
             {
-                status_update("(ISB) Failed to upload bytes, retrying (1)", IS_LOG_LEVEL_ERROR);
                 continue;
             }
 
@@ -524,7 +523,6 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
         }
         if(!okay) 
         {
-            status_update("(ISB) Failed to upload bytes, no retries left", IS_LOG_LEVEL_ERROR);
             return IS_OP_ERROR;
         }
 
@@ -546,7 +544,6 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
     { 
         if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
         {
-            status_update("(ISB) Failed to upload bytes, retrying (2)", IS_LOG_LEVEL_ERROR);
             continue;
         }
 
@@ -555,7 +552,6 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
     }
     if(!okay) 
     {
-        status_update("(ISB) Failed to upload bytes, no retries left", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 

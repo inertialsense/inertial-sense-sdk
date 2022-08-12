@@ -141,7 +141,7 @@ is_operation_result cISBootloaderBase::update_device
         (*obj)->m_use_progress = true;
         if((*obj)->download_image(filenames.bl_IMX_5.path) != IS_OP_OK)
         {
-            (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+            (*obj)->m_info_callback((*obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
             (*obj)->m_use_progress = false;
             libusb_close(handle);
             return IS_OP_CLOSED;
@@ -350,7 +350,7 @@ is_operation_result cISBootloaderBase::update_device
                 (*obj)->m_use_progress = true;
                 if((*obj)->download_image(filenames.fw_IMX_5.path) != IS_OP_OK)
                 {
-                    (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                    (*obj)->m_info_callback((*obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                     (*obj)->m_use_progress = false;
                     (*obj)->reboot_force();
                     //delete *obj;
@@ -387,7 +387,7 @@ is_operation_result cISBootloaderBase::update_device
                 (*obj)->m_use_progress = true;
                 if((*obj)->download_image(filenames.fw_uINS_3.path) != IS_OP_OK)
                 {
-                    (*obj)->m_info_callback((*obj), "Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                    (*obj)->m_info_callback((*obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                     (*obj)->m_use_progress = false;
                     (*obj)->reboot_force();
                     //delete *obj;  // TODO: Memory leak

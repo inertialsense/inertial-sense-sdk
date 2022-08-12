@@ -124,7 +124,6 @@ public:
         m_update_progress = 0.0;
         m_verify_progress = 0.0;
         m_use_progress = false;
-        m_update_in_progress = true;
         m_retries_left = 3;
         m_start_time_ms = 0;
         m_finished_flash = false;
@@ -194,7 +193,6 @@ public:
 
     virtual bool is_serial_device() { return true; }
     
-    bool m_update_in_progress;
     int m_retries_left;
     float m_update_progress;
     float m_verify_progress;

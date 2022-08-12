@@ -373,7 +373,7 @@ public:
 	*
 	TODO: Param documentation
 	*/
-	static std::vector<InertialSense::bootload_result_t> BootloadFile(
+	static is_operation_result BootloadFile(
 		const std::string& comPort,
 		const uint32_t serialNum,
 		const std::string& fileName,
