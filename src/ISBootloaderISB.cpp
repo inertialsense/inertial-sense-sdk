@@ -31,7 +31,7 @@ std::mutex cISBootloaderISB::serial_list_mutex;
 std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
 // Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-// #define SUPPORT_BOOTLOADER_V5A
+#define SUPPORT_BOOTLOADER_V5A
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
@@ -179,7 +179,7 @@ is_operation_result cISBootloaderISB::reboot_force()
     {
         return IS_OP_ERROR;
     }
-    // serialPortClose(m_port);
+   
     return IS_OP_OK;
 }
 
@@ -199,11 +199,14 @@ is_operation_result cISBootloaderISB::reboot()
     if(reboot_force() == IS_OP_OK)
     {
         rst_serial_list.push_back(m_sn);
+        rst_serial_list_mutex.unlock();
+
+        return IS_OP_OK;
     }
 
     rst_serial_list_mutex.unlock();
 
-    return IS_OP_OK;
+    return IS_OP_CLOSED;
 }
 
 uint32_t cISBootloaderISB::get_device_info()
@@ -286,7 +289,6 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
 
         if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
-            SLEEP_MS(BOOTLOADER_REFRESH_DELAY);
             return IS_OP_OK;
         }
     }
@@ -299,7 +301,6 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
     {
         if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
-            serialPortSleep(s, BOOTLOADER_REFRESH_DELAY);
             return IS_OP_OK;
         }
     }

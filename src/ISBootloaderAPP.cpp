@@ -123,15 +123,15 @@ is_operation_result cISBootloaderAPP::reboot_down()
     m_info_callback(this, "(APP) Rebooting down into ISB mode...", IS_LOG_LEVEL_INFO);
 
     serial_list_mutex.lock();
-    if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
-    {
-        m_info_callback(this, "(APP) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
-        serial_list_mutex.unlock();
-        return IS_OP_ERROR;
-    }
     if(m_sn == 0 || m_sn == -1)
     {
         m_info_callback(this, "(APP) Not updating firmware because serial number is not programmed", IS_LOG_LEVEL_ERROR);
+        serial_list_mutex.unlock();
+        return IS_OP_ERROR;
+    }
+    if (find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
+    {
+        m_info_callback(this, "(APP) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
         serial_list_mutex.unlock();
         return IS_OP_ERROR;
     }

@@ -146,7 +146,13 @@ __no_inline RAMFUNC void flash_erase_chip(void)
 
 uint32_t flash_get_user_signature(volatile void* ptr, uint32_t size)
 {
-	return flash_read_user_signature((uint32_t*)ptr, size / sizeof(uint32_t));
+	BEGIN_CRITICAL_SECTION
+	
+	uint32_t ret = flash_read_user_signature((uint32_t*)ptr, size / sizeof(uint32_t));
+
+	END_CRITICAL_SECTION
+
+	return;
 }
 
 uint32_t flash_set_user_signature(const volatile void *ptr, uint32_t size)

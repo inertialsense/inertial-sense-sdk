@@ -64,8 +64,6 @@ typedef struct
 
 void cISBootloaderThread::update_thread_serial(void* context)
 {
-    SLEEP_MS(1000);
-
     thread_serial_t* thread_info = (thread_serial_t*)context; 
 
     cISBootloaderBase* ctx_new;
@@ -88,8 +86,6 @@ void cISBootloaderThread::update_thread_serial(void* context)
         serial_thread_mutex.unlock();
         return;
     }
-
-    SLEEP_MS(1000);
 
     is_operation_result result = cISBootloaderBase::update_device(m_firmware, &port, &ctx_new, m_infoProgress, m_uploadProgress, m_verifyProgress);
 
@@ -118,14 +114,12 @@ void cISBootloaderThread::update_thread_serial(void* context)
     {
         // Device has already been updated
     }
-    else if (result == IS_OP_ERROR)
+    else
     {
         serial_thread_mutex.lock();
         thread_info->reuse_port = true;
         serial_thread_mutex.unlock();
     }
-
-    SLEEP_MS(1000);
 
     serialPortFlush(&port);
     serialPortClose(&port);
@@ -164,8 +158,6 @@ void cISBootloaderThread::update_thread_libusb(void* context)
     {
         // Device has already been updated
     }
-
-    SLEEP_MS(1000);
 
     libusb_thread_mutex.lock();
     thread_info->done = true;
@@ -208,7 +200,7 @@ is_operation_result cISBootloaderThread::update(
         comPorts.begin(), comPorts.end(),
         back_inserter(ports_user_ignore));
 
-    int waiter = 100;
+    int waiter = 10;
 
     bool use_dfu = false;
     if (libusb_init(NULL) >= 0) use_dfu = true;
@@ -337,9 +329,9 @@ is_operation_result cISBootloaderThread::update(
             libusb_thread_mutex.unlock();
         }
 
-        // Break after 1 second of no threads active
-        if (devicesActive != 0) waiter = 100;
-        else if (waiter-- < 0) break;
+        // Break after 10 iterations of no threads active
+        if (devicesActive != 0) m_timeStart = current_timeMs();
+        else if (current_timeMs() - m_timeStart > 1000) break;
     }
 
     for (size_t i = 0; i < ctx.size(); i++)
