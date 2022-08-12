@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <future>
 
 #include "ISConstants.h"
 #include "ISTcpClient.h"
@@ -190,9 +191,10 @@ public:
 	/**
 	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
+	* @param reconnectOnFailure whether the connection to the server should be automatically restored in case of failure
 	* @return true if connection opened, false if failure
 	*/
-	bool OpenConnectionToServer(const std::string& connectionString);
+	bool OpenConnectionToServer(const std::string& connectionString, bool reconnectOnFailure = true);
 
 	/**
 	* Create a server that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
@@ -413,7 +415,10 @@ private:
 
 	cISTcpServer m_tcpServer;
 	cISSerialPort m_serialServer;
+	std::string m_clientConnectionString;
+	bool m_clientReconnectOnFailure;
 	cISStream* m_clientStream;				// Our client connection to a server
+	std::future<cISStream*> m_clientStreamReconnector;
 	uint64_t m_clientServerByteCount;
 	int m_clientConnectionsCurrent = 0;
 	int m_clientConnectionsTotal = 0;

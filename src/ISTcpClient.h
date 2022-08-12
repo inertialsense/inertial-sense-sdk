@@ -41,7 +41,7 @@ public:
     * @param timeoutMilliseconds the max milliseconds to wait for a successful connection before aborting
 	* @return 0 if success, otherwise an error code
 	*/
-    int Open(const std::string& host, int port, int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
+    int Open(const std::string& host, int port, unsigned int timeoutMilliseconds = IS_SOCKET_DEFAULT_TIMEOUT_MS);
 
 	/**
 	* Close the client

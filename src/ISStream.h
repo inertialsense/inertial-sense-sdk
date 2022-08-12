@@ -64,6 +64,12 @@ public:
 	virtual int Close() { return -1; }
 
 	/**
+	* Checks if the stream is open
+	* @return true if open, false otherwise
+	*/
+	virtual bool IsOpen() = 0;
+
+	/**
 	* Gets the number of bytes available to read
 	* @return The number of bytes available to read or -1 if this feature is not supported
 	*/

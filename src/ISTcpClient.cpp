@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <unistd.h> /* Needed for close() */
 #include <fcntl.h>
 #include <errno.h>
+#include <netinet/tcp.h>
 
 #endif
 
@@ -114,7 +115,20 @@ int ISSocketWrite(socket_t socket, const uint8_t* data, int dataLength)
         writeCount = send(socket, (const char*)data, dataLength, flags);
         if (writeCount < 0)
         {
-            break;
+            // If the send buffer is full, give up. Report failure on other errors.
+#if PLATFORM_IS_WINDOWS
+            DWORD err = GetLastError();
+            if (err == WSAEWOULDBLOCK)
+            {
+                break;
+            }
+#else
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                break;
+            }
+#endif
+            return -1;
         }
         totalWriteCount += writeCount;
 	}
@@ -146,6 +160,8 @@ int ISSocketRead(socket_t socket, uint8_t* data, int dataLength)
 #endif
 
 	}
+	// If recv returns zero, the socket has been closed.
+	if (count == 0) return -1;
 	return count;
 }
 
@@ -235,7 +251,7 @@ cISTcpClient::~cISTcpClient()
 	ISSocketFrameworkShutdown();
 }
 
-int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
+int cISTcpClient::Open(const string& host, int port, unsigned int timeoutMilliseconds)
 {
 	Close();
 	int status;
@@ -270,6 +286,11 @@ int cISTcpClient::Open(const string& host, int port, int timeoutMilliseconds)
 
     // make non-blocking socket
     SetBlocking(false);
+
+#if PLATFORM_IS_LINUX
+    // set up TCP socket timeout
+    setsockopt(m_socket, SOL_SOCKET, TCP_USER_TIMEOUT, &timeoutMilliseconds, sizeof(timeoutMilliseconds));
+#endif
 
     // because non-blocking, connect returns immediately
     // status return value is unreliable
