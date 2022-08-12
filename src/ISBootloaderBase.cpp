@@ -280,31 +280,43 @@ is_operation_result cISBootloaderBase::update_device
         if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5)
         {
             (*obj)->m_filename = filenames.bl_IMX_5.path;
-            if ((*obj)->reboot_down() == IS_OP_OK)
+            is_operation_result op = (*obj)->reboot_down();
+            if (op == IS_OP_OK)
             {
                 delete* obj;
                 return IS_OP_CLOSED;
             }
-            else
+            else if (op == IS_OP_RETRY)
             {
                 (*obj)->reboot_force();
                 delete* obj;
                 return IS_OP_CLOSED;
+            }
+            else if (op == IS_OP_CLOSED)
+            {
+                delete* obj;
+                return IS_OP_CANCELLED;
             }
         }
         else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3)
         {
             (*obj)->m_filename = filenames.bl_uINS_3.path;
-            if ((*obj)->reboot_down() == IS_OP_OK)
+            is_operation_result op = (*obj)->reboot_down();
+            if (op == IS_OP_OK)
             {
                 delete* obj;
                 return IS_OP_CLOSED;
             }
-            else
+            else if (op == IS_OP_RETRY)
             {
                 (*obj)->reboot_force();
                 delete* obj;
                 return IS_OP_CLOSED;
+            }
+            else if(op == IS_OP_CLOSED)
+            {
+                delete* obj;
+                return IS_OP_CANCELLED;
             }
         }
         else
@@ -384,56 +396,6 @@ is_operation_result cISBootloaderBase::update_device
                 }
                 return IS_OP_OK;
             }
-        }
-    }
-    else
-    {
-        delete* obj;
-    }
-
-    *obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
-    (*obj)->m_port_name = std::string(handle->port);
-    device = (*obj)->check_is_compatible();
-    if(device)
-    {
-        if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
-        {
-            (*obj)->m_filename = filenames.fw_IMX_5.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
-        {
-            (*obj)->m_filename = filenames.fw_uINS_3.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)
-        {
-            strncpy((*obj)->m_app.enable_command, "EBLE", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & bl_uINS_3)
-        {
-            (*obj)->m_filename = filenames.bl_uINS_3.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & bl_IMX_5)
-        {
-            (*obj)->m_filename = filenames.bl_IMX_5.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
         }
     }
     else

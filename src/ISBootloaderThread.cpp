@@ -158,6 +158,10 @@ void cISBootloaderThread::update_thread_libusb(void* context)
     {
         // Device has already been updated
     }
+    else
+    {
+
+    }
 
     libusb_thread_mutex.lock();
     thread_info->done = true;
@@ -199,8 +203,6 @@ is_operation_result cISBootloaderThread::update(
         ports.begin(), ports.end(),
         comPorts.begin(), comPorts.end(),
         back_inserter(ports_user_ignore));
-
-    int waiter = 10;
 
     bool use_dfu = false;
     if (libusb_init(NULL) >= 0) use_dfu = true;

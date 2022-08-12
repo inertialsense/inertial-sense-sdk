@@ -144,13 +144,13 @@ is_operation_result cISBootloaderISB::reboot_down()
     {
         m_info_callback(this, "(ISB) Not updating bootloader because serial number is not programmed", IS_LOG_LEVEL_ERROR);
         serial_list_mutex.unlock();
-        return IS_OP_ERROR;
+        return IS_OP_RETRY;
     }
     if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
     {
         m_info_callback(this, "(ISB) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
         serial_list_mutex.unlock();
-        return IS_OP_ERROR;
+        return IS_OP_CLOSED;
     }
 
     m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
