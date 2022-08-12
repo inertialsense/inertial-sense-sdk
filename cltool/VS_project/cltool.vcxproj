@@ -260,7 +260,6 @@
     <ClInclude Include="..\..\src\libusb\libusb\os\windows_winusb.h" />
     <ClInclude Include="..\..\src\libusb\libusb\version.h" />
     <ClInclude Include="..\..\src\libusb\libusb\version_nano.h" />
-    <ClInclude Include="..\..\src\libusb\msvc\config.h" />
     <ClInclude Include="..\..\src\message_stats.h" />
     <ClInclude Include="..\..\src\InertialSense.h" />
     <ClInclude Include="..\..\src\InertialSenseSDK.h" />

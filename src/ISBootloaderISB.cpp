@@ -65,6 +65,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     {
         for(int i = 0; i < 10; i++)
         {
+            // Reset the device
             if(serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) == 15)
             {
                 break;
@@ -75,6 +76,8 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
         return IS_IMAGE_SIGN_ERROR;
     }
+
+    SLEEP_MS(100);
 
 	// Send command
     serialPortFlush(m_port);
@@ -148,7 +151,6 @@ is_operation_result cISBootloaderISB::reboot_down()
     }
     if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
     {
-        m_info_callback(this, "(ISB) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
         serial_list_mutex.unlock();
         return IS_OP_CLOSED;
     }
@@ -188,7 +190,6 @@ is_operation_result cISBootloaderISB::reboot()
     rst_serial_list_mutex.lock();
     if(find(rst_serial_list.begin(), rst_serial_list.end(), m_sn) != rst_serial_list.end())
     {
-        m_info_callback(this, "(ISB) Serial number has already been reset", IS_LOG_LEVEL_DEBUG);
         rst_serial_list_mutex.unlock();
         return IS_OP_ERROR;
     }
@@ -449,10 +450,12 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
         return IS_OP_ERROR;
     }
 
+    int newVerifyChecksum = *verifyCheckSum;
+
     // calculate verification checksum for this data
     for (i = 0; i < charsForThisPage; i++)
     {
-        *verifyCheckSum = ((*verifyCheckSum << 5) + *verifyCheckSum) + hexData[i];
+        newVerifyChecksum = ((newVerifyChecksum << 5) + newVerifyChecksum) + hexData[i];
     }
 
     checkSum = checksum(checkSum, hexData, 0, charsForThisPage, 0, 1);
@@ -483,6 +486,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
 
     *totalBytes += byteCount;
     *currentOffset += byteCount;
+    *verifyCheckSum = newVerifyChecksum;
 
     return IS_OP_OK;
 }
@@ -505,11 +509,25 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
     if (*currentOffset + byteCount > FLASH_PAGE_SIZE)
     {
         int pageByteCount = FLASH_PAGE_SIZE - *currentOffset;
-        if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
+        
+        bool okay = false;
+        for(int i = 0; i < 3; i++)  // 3 retries, this failed often in testing
+        {   
+            if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
+            {
+                status_update("(ISB) Failed to upload bytes, retrying (1)", IS_LOG_LEVEL_ERROR);
+                continue;
+            }
+
+            okay = true;
+            break;
+        }
+        if(!okay) 
         {
-            status_update("(ISB) Failed to upload bytes (1)", IS_LOG_LEVEL_ERROR);
+            status_update("(ISB) Failed to upload bytes, no retries left", IS_LOG_LEVEL_ERROR);
             return IS_OP_ERROR;
         }
+
         hexData += (pageByteCount * 2);
         charCount -= (pageByteCount * 2);
 
@@ -523,9 +541,21 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
         }
     }
 
-    if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
+    bool okay = false;
+    for(int i = 0; i < 3; i++)  // 3 retries, this failed often in testing
+    { 
+        if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
+        {
+            status_update("(ISB) Failed to upload bytes, retrying (2)", IS_LOG_LEVEL_ERROR);
+            continue;
+        }
+
+        okay = true;
+        break;
+    }
+    if(!okay) 
     {
-        status_update("(ISB) Failed to upload bytes (2)", IS_LOG_LEVEL_ERROR);
+        status_update("(ISB) Failed to upload bytes, no retries left", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 

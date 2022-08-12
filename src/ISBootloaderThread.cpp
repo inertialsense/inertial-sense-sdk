@@ -66,6 +66,8 @@ void cISBootloaderThread::update_thread_serial(void* context)
 {
     thread_serial_t* thread_info = (thread_serial_t*)context; 
 
+    SLEEP_MS(3000);
+
     cISBootloaderBase* ctx_new;
     serial_port_t port;
     serialPortPlatformInit(&port);
@@ -116,9 +118,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     }
     else
     {
-        serial_thread_mutex.lock();
-        thread_info->reuse_port = true;
-        serial_thread_mutex.unlock();
+        // Other device
     }
 
     serialPortFlush(&port);
@@ -246,12 +246,12 @@ is_operation_result cISBootloaderThread::update(
             for (size_t j = 0; j < serial_threads.size(); j++)
             {
                 // Device is actively running or has finished in a state where we don't care to start a new thread for it
-                if (string(serial_threads[j]->serial_name) == ports[i] && (serial_threads[j]->ctx != NULL || serial_threads[j]->thread != NULL || !serial_threads[j]->done))
+                if (string(serial_threads[j]->serial_name) == ports[i] && (serial_threads[j]->ctx != NULL || !serial_threads[j]->done))
                 {
                     found = true;
                     break;
                 }
-                if (string(serial_threads[j]->serial_name) == ports[i] && serial_threads[j]->ctx == NULL && serial_threads[j]->done && !serial_threads[j]->reuse_port)
+                if (string(serial_threads[j]->serial_name) == ports[i] && serial_threads[j]->done && !serial_threads[j]->reuse_port)
                 {
                     found = true;
                     break;

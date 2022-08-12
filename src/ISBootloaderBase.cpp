@@ -273,7 +273,6 @@ is_operation_result cISBootloaderBase::update_device
     if(device == IS_IMAGE_SIGN_ERROR)
     {
         delete* obj;
-        return IS_OP_CLOSED;
     }
     else if(device)
     {

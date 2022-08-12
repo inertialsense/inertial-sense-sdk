@@ -342,9 +342,6 @@
     <ClInclude Include="..\..\hw-libs\bootloader\bootloaderShared.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\libusb\msvc\config.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\libusb\libusb\libusb.h">
       <Filter>Source Files</Filter>
     </ClInclude>
