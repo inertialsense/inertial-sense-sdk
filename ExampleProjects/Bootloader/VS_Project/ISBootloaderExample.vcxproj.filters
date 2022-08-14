@@ -28,16 +28,19 @@
     <ClCompile Include="..\ISBootloaderExample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloader.c">
+    <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderDFU.c">
+    <ClCompile Include="..\..\..\src\ISBootloaderDFU.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderISB.c">
+    <ClCompile Include="..\..\..\src\ISBootloaderISB.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.c">
+    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderBase.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c">
@@ -105,7 +108,7 @@
     <ClInclude Include="..\..\..\src\serialPortPlatform.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloader.h">
+    <ClInclude Include="..\..\..\src\ISBootloaderAPP.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISBootloaderDFU.h">
@@ -117,7 +120,7 @@
     <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloaderTypes.h">
+    <ClInclude Include="..\..\..\src\ISBootloaderBase.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h">
