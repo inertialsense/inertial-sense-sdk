@@ -152,7 +152,7 @@ uint32_t flash_get_user_signature(volatile void* ptr, uint32_t size)
 
 	END_CRITICAL_SECTION
 
-	return;
+	return ret;
 }
 
 uint32_t flash_set_user_signature(const volatile void *ptr, uint32_t size)
