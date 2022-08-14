@@ -19,19 +19,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
 #include "../../src/ISBootloaderThread.h"
+#include "../../src/ISBootloaderBase.h"
 #include "../../src/ISSerialPort.h"
+
+using namespace ISBootloader;
 
 // print out upload progress
 static is_operation_result bootloaderUploadProgress(void* obj, float pct)
 {
 	if (obj == NULL) return IS_OP_OK;
 
-	is_device_context* ctx = (is_device_context*)obj;
+	cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
 	int percent = (int)(pct * 100.0f);
 	printf("\rUpload Progress: %d%%\r", percent);
-	ctx->update_progress = percent;
+	ctx->m_update_progress = percent;
 
-	return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
+	return IS_OP_OK;
 }
 
 // print out verify progress
@@ -39,36 +42,38 @@ static is_operation_result bootloaderVerifyProgress(void* obj, float pct)
 {
 	if (obj == NULL) return IS_OP_OK;
 
-	is_device_context* ctx = (is_device_context*)obj;
+	cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
 	int percent = (int)(pct * 100.0f);
 	printf("\rVerify Progress: %d%%\r", percent);
-	ctx->update_progress = percent;
+	ctx->m_verify_progress = percent;
 
-	return ctx->update_in_progress ? IS_OP_OK : IS_OP_CANCELLED;
+	return IS_OP_OK;
 }
 
-static void bootloaderStatusText(void* obj, const char* info, is_log_level level)
+static void bootloaderStatusText(void* obj, const char* info, eLogLevel level)
 {
 	if (obj == NULL) return;
 
-	is_device_context* ctx = (is_device_context*)obj;
+	cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
 
-	if (ctx->props.serial != 0)
+	if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
 	{
-		printf("SN%d: %s\r\n", ctx->props.serial, info);
+		printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
 	}
-	else if (ctx->handle.dfu.sn != 0)
+	else if(ctx->m_sn != 0)
 	{
-		printf("SN%d: %s\r\n", ctx->handle.dfu.sn, info);
+		printf("(SN%d):\r", ctx->m_sn);
 	}
-	else if (strlen(ctx->handle.port_name) != 0)
+	else if (ctx->m_port_name.size() != 0)
 	{
-		printf("%s: %s\r\n", ctx->handle.port_name, info);
+		printf("%s:\r", ctx->m_port_name.c_str());
 	}
 	else
 	{
-		printf("Unknown: %s\r\n", info);
+		printf("SN?:\r");
 	}
+
+	printf("\t\t\t%s\r\n", info);
 }
 
 int main(int argc, char* argv[])
@@ -82,20 +87,26 @@ int main(int argc, char* argv[])
 	}
 
 	// For now, we will use all present devices.
-	std::vector<std::string> uids;
 	std::vector<std::string> portStrings;
 	cISSerialPort::GetComPorts(portStrings);
 
+	// Set all files the same, the bootloader logic will identify the file and only put it onto the appropriate devices.
+	firmwares_t files;
+	files.fw_uINS_3.path = std::string(argv[2]);
+	files.bl_uINS_3.path = std::string(argv[2]);
+	files.fw_IMX_5.path = std::string(argv[2]);
+	files.bl_IMX_5.path = std::string(argv[2]);
+	files.fw_EVB_2.path = std::string(argv[2]);
+	files.bl_EVB_2.path = std::string(argv[2]);
+
 	// update the firmware on any port that was open
-	ISBootloader::update(
+	cISBootloaderThread::update(
 		portStrings,
-		uids,
 		atoi(argv[1]),
-		argv[2],
+		files,
 		bootloaderUploadProgress,
 		bootloaderVerifyProgress,
 		bootloaderStatusText,
-		NULL,
 		NULL);
 
 	return 0;
