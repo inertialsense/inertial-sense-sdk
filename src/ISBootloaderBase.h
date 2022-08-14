@@ -127,6 +127,7 @@ public:
         m_retries_left = 3;
         m_start_time_ms = 0;
         m_finished_flash = false;
+        m_verify = false;
 
         if(m_update_callback == NULL) m_update_callback = dummy_update_callback;
         if(m_verify_callback == NULL) m_verify_callback = dummy_verify_callback;
@@ -196,6 +197,7 @@ public:
     int m_retries_left;
     float m_update_progress;
     float m_verify_progress;
+    bool m_verify;
     bool m_success;
 
     // Callbacks

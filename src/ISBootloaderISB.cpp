@@ -157,8 +157,6 @@ is_operation_result cISBootloaderISB::reboot_down()
 
     m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
 
-    
-
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interferece on its ports.
 

@@ -67,6 +67,8 @@ typedef struct
 
 void cISBootloaderThread::mgmt_thread_libusb(void* context)
 {
+    (void)context;
+
     // Initialize libusb
     m_use_dfu = libusb_init(NULL) == LIBUSB_SUCCESS;
 
@@ -78,6 +80,8 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
         cISBootloaderDFU::list_devices(&dfu_list);  // TODO: Put this in a separate thread since it takes a long time
 
         m_libusb_thread_mutex.lock();
+
+        m_libusb_devicesActive = 0;
 
         for (size_t l = 0; l < libusb_threads.size(); l++)
         {
@@ -99,11 +103,13 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
             for (size_t j = 0; j < ctx.size(); j++)
             {
+                m_ctx_mutex.lock();
                 if (ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
                 {   // We found the device in the context list
                     found = true;
                     break;
                 }
+                m_ctx_mutex.unlock();
             }
 
             if (!found)
