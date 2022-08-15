@@ -96,12 +96,12 @@
     <ClInclude Include="..\..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSorted.h" />
     <ClInclude Include="..\..\..\src\ihex.h" />
-    <ClCompile Include="..\..\..\src\ISBootloaderThread.h" />
     <ClInclude Include="..\..\..\src\ISBootloaderAPP.h" />
     <ClInclude Include="..\..\..\src\ISBootloaderBase.h" />
     <ClInclude Include="..\..\..\src\ISBootloaderDFU.h" />
     <ClInclude Include="..\..\..\src\ISBootloaderISB.h" />
     <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderThread.h" />
     <ClInclude Include="..\..\..\src\ISClient.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
     <ClInclude Include="..\..\..\src\ISDataMappings.h" />

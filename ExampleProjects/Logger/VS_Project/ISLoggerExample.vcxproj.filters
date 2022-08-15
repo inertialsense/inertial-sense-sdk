@@ -142,12 +142,6 @@
     <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderAPP.h" />
-    <ClCompile Include="..\..\..\src\ISBootloaderDFU.h" />
-    <ClCompile Include="..\..\..\src\ISBootloaderISB.h" />
-    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.h" />
-    <ClCompile Include="..\..\..\src\ISBootloaderThread.h" />
-    <ClCompile Include="..\..\..\src\ISBootloaderBase.h" />
     <ClCompile Include="..\..\..\src\libusb\libusb\core.c">
       <Filter>Source Files\SDK\libusb</Filter>
     </ClCompile>
@@ -367,6 +361,9 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderThread.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
   </ItemGroup>
