@@ -28,21 +28,6 @@
     <ClCompile Include="..\ISBootloaderExample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderDFU.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderISB.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderBase.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
@@ -82,9 +67,6 @@
     <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_winusb.c">
       <Filter>Source Files\SDK\libusb</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\ISUtilities.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
@@ -93,6 +75,30 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\ISStream.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderAPP.h" />
+    <ClCompile Include="..\..\..\src\ISBootloaderDFU.h" />
+    <ClCompile Include="..\..\..\src\ISBootloaderISB.h" />
+    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.h" />
+    <ClCompile Include="..\..\..\src\ISBootloaderThread.h" />
+    <ClCompile Include="..\..\..\src\ISBootloaderBase.h" />
+    <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderBase.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderDFU.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderISB.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.cpp">
+      <Filter>Source Files\SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp">
+      <Filter>Source Files\SDK</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -106,21 +112,6 @@
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\serialPortPlatform.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloaderAPP.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloaderDFU.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloaderISB.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloaderBase.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h">
@@ -159,9 +150,6 @@
     <ClInclude Include="..\..\..\src\libusb\msvc\config.h">
       <Filter>Source Files\SDK\libusb</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\ISBootloaderThread.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\ISUtilities.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
@@ -170,6 +158,24 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\ISStream.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderAPP.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderBase.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderDFU.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderISB.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h">
+      <Filter>Source Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\ISBootloaderThread.h">
+      <Filter>Source Files\SDK</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

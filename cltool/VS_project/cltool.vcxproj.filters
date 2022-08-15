@@ -387,5 +387,8 @@
     <ClInclude Include="..\..\src\ISBootloaderThread.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\libusb\msvc\config.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
