@@ -122,23 +122,6 @@ is_operation_result cISBootloaderAPP::reboot_down()
 {
     m_info_callback(this, "(APP) Rebooting down into ISB mode...", IS_LOG_LEVEL_INFO);
 
-    serial_list_mutex.lock();
-    if(m_sn == 0 || m_sn == -1)
-    {
-        m_info_callback(this, "(APP) Not updating firmware because serial number is not programmed", IS_LOG_LEVEL_ERROR);
-        serial_list_mutex.unlock();
-        return IS_OP_ERROR;
-    }
-    if (find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
-    {
-        m_info_callback(this, "(APP) Serial number has already been updated", IS_LOG_LEVEL_DEBUG);
-        serial_list_mutex.unlock();
-        return IS_OP_ERROR;
-    }
-
-    serial_list.push_back(m_sn);
-    serial_list_mutex.unlock();
-
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
   
@@ -176,19 +159,19 @@ uint32_t cISBootloaderAPP::get_device_info()
     if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
-        return IS_OP_ERROR;
+        return 0;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
     if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
-        return IS_OP_ERROR;
+        return 0;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_STATUS, 0, 0, 0);
     if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
-        return IS_OP_ERROR;
+        return 0;
     }
 
     // Wait 10ms for messages to come back

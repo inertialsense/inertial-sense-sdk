@@ -131,6 +131,41 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
     if(m_use_dfu) { libusb_exit(NULL); }
 }
 
+void cISBootloaderThread::mode_thread_serial(void* context)
+{
+    thread_serial_t* thread_info = (thread_serial_t*)context;
+
+    SLEEP_MS(1000);
+
+    cISBootloaderBase* ctx_new;
+    serial_port_t port;
+    serialPortPlatformInit(&port);
+    m_serial_thread_mutex.lock();
+    const char* serial_name = thread_info->serial_name;
+    m_serial_thread_mutex.unlock();
+
+    serialPortSetPort(&port, serial_name);
+    if (!serialPortOpenRetry(&port, serial_name, m_baudRate, 1))
+    {
+        serialPortClose(&port);
+        m_serial_thread_mutex.lock();
+        thread_info->done = true;
+        thread_info->reuse_port = true;
+        m_serial_thread_mutex.unlock();
+        return;
+    }
+
+    cISBootloaderBase::mode_device(m_firmware, &port, &ctx_new, m_infoProgress, m_uploadProgress, m_verifyProgress);
+
+    serialPortFlush(&port);
+    serialPortClose(&port);
+
+    m_serial_thread_mutex.lock();
+    thread_info->reuse_port = true;
+    thread_info->done = true;
+    m_serial_thread_mutex.unlock();
+}
+
 void cISBootloaderThread::update_thread_serial(void* context)
 {
     thread_serial_t* thread_info = (thread_serial_t*)context; 
@@ -142,9 +177,6 @@ void cISBootloaderThread::update_thread_serial(void* context)
     serialPortPlatformInit(&port);
     m_serial_thread_mutex.lock();
     const char* serial_name = thread_info->serial_name;
-    m_serial_thread_mutex.unlock();
-
-    m_serial_thread_mutex.lock();
     thread_info->reuse_port = false;
     m_serial_thread_mutex.unlock();
 
@@ -259,9 +291,6 @@ is_operation_result cISBootloaderThread::update(
     m_baudRate = baudRate;
     m_waitAction = waitAction;
 
-    // Note the time we started
-    m_timeStart = current_timeMs();
-
     vector<string> ports;                       // List of ports connected
     vector<thread_serial_t*> serial_threads;    // List of all serial threads that have run or are running
     vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
@@ -277,8 +306,106 @@ is_operation_result cISBootloaderThread::update(
         back_inserter(ports_user_ignore));
 
 
-    cISBootloaderISB::reset_serial_list();
-    cISBootloaderAPP::reset_serial_list();
+    // cISBootloaderISB::reset_serial_list();
+    // cISBootloaderAPP::reset_serial_list();
+
+    m_continue_update = true;
+    m_timeStart = current_timeMs();
+
+    // Put all devices in the correct mode
+    while(m_continue_update)
+    {
+        if (m_waitAction) m_waitAction();
+        SLEEP_MS(10);
+
+        cISSerialPort::GetComPorts(ports);
+
+        m_serial_thread_mutex.lock();
+
+        for (size_t i = 0; i < ports.size(); i++)
+        {
+            bool found = false;
+
+            for (size_t j = 0; j < serial_threads.size(); j++)
+            {
+                if (string(serial_threads[j]->serial_name) == ports[i])
+                {
+                    if (!serial_threads[j]->done)    //(serial_threads[j]->ctx != NULL || 
+                    {   // Thread hasn't finished
+                        found = true;
+                        break;
+                    }
+                    if (serial_threads[j]->done && !serial_threads[j]->reuse_port)
+                    {   // Thread finished and the reuse flag isn't set
+                        found = true;
+                        break;
+                    }
+                }
+               
+            }
+
+            for (size_t k = 0; k < ports_user_ignore.size(); k++)
+            {
+                if (ports_user_ignore[k] == ports[i])
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                strncpy(new_thread->serial_name, ports[i].c_str(), 100);
+                new_thread->ctx = NULL;
+                new_thread->done = false;
+                serial_threads.push_back(new_thread);
+                serial_threads[serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial, serial_threads[serial_threads.size() - 1]);
+
+                m_serial_devicesActive++;
+            }
+        }
+
+        m_serial_thread_mutex.unlock();
+
+        // Break after 5 seconds
+        if (current_timeMs() - m_timeStart > 5000) 
+        {
+            m_continue_update = false;
+        }
+    }
+
+    m_continue_update = true;
+    m_timeStart = current_timeMs();
+    
+    // Join and free all mode threads
+    while (m_continue_update)
+    {
+        m_continue_update = false;
+
+        m_serial_thread_mutex.lock();
+
+        for (size_t l = 0; l < serial_threads.size(); l++)
+        {
+            if(!serial_threads[l]->done)
+            {
+                m_continue_update = true;
+            }
+            else if (serial_threads[l]->thread != NULL)
+            {
+                threadJoinAndFree(serial_threads[l]->thread);
+                serial_threads[l]->thread = NULL;
+            }
+        }
+
+        // Tiemout after 5 seconds
+        if (current_timeMs() - m_timeStart > 5000) 
+        {
+            m_continue_update = false;
+        }
+
+        m_serial_thread_mutex.unlock();
+    }
 
     m_libusb_devicesActive = 0;
 

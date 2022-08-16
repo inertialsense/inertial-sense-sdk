@@ -98,13 +98,14 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     uint8_t major = buf[2];
 //    char minor = buf[3];
 //    bool rom_available = buf[4];
-    uint8_t processor = -1;
-    bool is_evb = false;
+    uint8_t processor = 0xFF;
+    m_isb_props.is_evb = false;
+    m_sn = 0;
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
     {
         processor = (eProcessorType)buf[5];
-        is_evb = buf[6];
+        m_isb_props.is_evb = buf[6];
         memcpy(&m_sn, &buf[7], sizeof(uint32_t));
     }
 
@@ -112,7 +113,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     {   // v6 and up has EVB detection built-in
         if(processor == IS_PROCESSOR_SAMx70)
         {   
-            valid_signatures |= is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
+            valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
             valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
         }
         else if(processor == IS_PROCESSOR_STM32L4)
@@ -142,33 +143,14 @@ is_operation_result cISBootloaderISB::reboot_up()
 
 is_operation_result cISBootloaderISB::reboot_down()
 {
-    serial_list_mutex.lock();
-    if((m_sn == 0 || m_sn == -1) && !m_isb_props.is_evb)
-    {
-        m_info_callback(this, "(ISB) Not updating bootloader because serial number is not programmed", IS_LOG_LEVEL_ERROR);
-        serial_list_mutex.unlock();
-        return IS_OP_RETRY;
-    }
-    if(find(serial_list.begin(), serial_list.end(), m_sn) != serial_list.end())
-    {
-        serial_list_mutex.unlock();
-        return IS_OP_CLOSED;
-    }
-
     m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
-    // In some cases, the device may become unrecoverable because of interferece on its ports.
+    // In some cases, the device may become unrecoverable because of interference on its ports.
 
     // restart bootloader assist command
-    if(serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15) == 15)
-    {
-        serial_list.push_back(m_sn);
-    }
+    serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15);
 
-    serial_list_mutex.unlock();
-
-    // serialPortClose(m_port);
     return IS_OP_OK;
 }
 
@@ -229,7 +211,7 @@ uint32_t cISBootloaderISB::get_device_info()
         m_isb_props.processor = IS_PROCESSOR_SAMx70;
         m_isb_props.is_evb = false;
         m_sn = 0;
-        return IS_OP_ERROR;
+        return 0;
     }
 
     m_isb_props.major = buf[2];
@@ -261,7 +243,7 @@ uint32_t cISBootloaderISB::get_device_info()
     }
     else
     {
-        return IS_OP_ERROR;
+        return 0;
     }
 
 #if PLATFORM_IS_WINDOWS

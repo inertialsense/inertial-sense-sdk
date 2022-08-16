@@ -346,7 +346,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
             memset(payload, 0xFF, STM32_PAGE_SIZE);
             memcpy(payload, &image[i].image[byteInSection], payloadLen);
 
-            uint8_t blockNum = byteInSection / STM32_PAGE_SIZE;
+            uint8_t blockNum = (uint8_t)(byteInSection / STM32_PAGE_SIZE);
     
             ret_libusb = dfu_DNLOAD(&m_dfu.handle_libusb, blockNum + 2, payload, STM32_PAGE_SIZE);
             if (ret_libusb < LIBUSB_SUCCESS) 

@@ -217,6 +217,15 @@ public:
 
     uint32_t m_sn;                // Inertial Sense serial number, i.e. SN60000
 
+    static is_operation_result mode_device(
+        firmwares_t filenames,
+        serial_port_t* handle,
+        cISBootloaderBase** obj,
+        pfnBootloadStatus statusfn,
+        pfnBootloadProgress updateProgress,
+        pfnBootloadProgress verifyProgress
+    );
+
     static is_operation_result update_device(
         firmwares_t filenames,
         serial_port_t* handle,

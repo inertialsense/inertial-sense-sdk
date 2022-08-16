@@ -118,6 +118,177 @@ eImageSignature cISBootloaderBase::get_image_signature(std::string filename)
     return IS_IMAGE_SIGN_NONE;
 }
 
+is_operation_result cISBootloaderBase::mode_device
+(
+    firmwares_t filenames,
+    serial_port_t* handle,
+    cISBootloaderBase** obj,
+    pfnBootloadStatus statusfn,
+    pfnBootloadProgress updateProgress,
+    pfnBootloadProgress verifyProgress
+)
+{
+    uint32_t device = IS_IMAGE_SIGN_NONE;
+    uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
+    uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
+    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
+    uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
+    uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
+    uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
+
+    // if(bl_EVB_2 || bl_uINS_3)
+    // {
+    //     *obj = new cISBootloaderSAMBA(updateProgress, verifyProgress, statusfn, handle);
+    //     (*obj)->m_port_name = std::string(handle->port);
+    //     device = (*obj)->check_is_compatible();
+    //     if (device)
+    //     {
+    //         if((device & IS_IMAGE_SIGN_SAMBA) & bl_EVB_2)
+    //         {
+    //             delete *obj;
+    //             return IS_OP_CLOSED;
+    //         } 
+    //         else if((device & IS_IMAGE_SIGN_SAMBA) & bl_uINS_3)
+    //         {
+    //             delete *obj;
+    //             return IS_OP_CLOSED;
+    //         } 
+    //         else
+    //         {
+    //             delete* obj;
+    //             return IS_OP_CANCELLED;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         delete* obj;
+    //     }
+    // }
+
+    *obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
+    (*obj)->m_port_name = std::string(handle->port);
+    device = (*obj)->check_is_compatible(); 
+    if(device == IS_IMAGE_SIGN_ERROR)
+    {
+        delete* obj;
+    }
+    else if(device)
+    {
+        if ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2)
+        {
+            (*obj)->m_filename = filenames.bl_EVB_2.path;
+            is_operation_result op = (*obj)->reboot_down();
+            if (op == IS_OP_OK || op == IS_OP_CLOSED)
+            {
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+            else if (op == IS_OP_RETRY)
+            {
+                (*obj)->reboot_force();
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+        }
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5)
+        {
+            (*obj)->m_filename = filenames.bl_IMX_5.path;
+            is_operation_result op = (*obj)->reboot_down();
+            if (op == IS_OP_OK || op == IS_OP_CLOSED)
+            {
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+            else if (op == IS_OP_RETRY)
+            {
+                (*obj)->reboot_force();
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+        }
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3)
+        {
+            (*obj)->m_filename = filenames.bl_uINS_3.path;
+            is_operation_result op = (*obj)->reboot_down();
+            if (op == IS_OP_OK || op == IS_OP_CLOSED)
+            {
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+            else if (op == IS_OP_RETRY)
+            {
+                (*obj)->reboot_force();
+                delete* obj;
+                return IS_OP_CLOSED;
+            }
+        }
+        else
+        {
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+    }
+    else
+    {
+        delete* obj;
+    }
+
+    *obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
+    (*obj)->m_port_name = std::string(handle->port);
+    device = (*obj)->check_is_compatible();
+    if(device)
+    {
+        if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)    // Firmware for EVB-2 must be specified to update its bootloader
+        {
+            strncpy((*obj)->m_app.enable_command, "EBLE", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
+        {
+            (*obj)->m_filename = filenames.fw_IMX_5.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
+        {
+            (*obj)->m_filename = filenames.fw_uINS_3.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & bl_uINS_3)
+        {
+            (*obj)->m_filename = filenames.bl_uINS_3.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & bl_IMX_5)
+        {
+            (*obj)->m_filename = filenames.bl_IMX_5.path;
+            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
+            (*obj)->reboot_down();
+            delete* obj;
+            return IS_OP_CLOSED;
+        }
+        
+        delete* obj;
+        return IS_OP_CANCELLED;
+    }
+    else
+    {
+        delete* obj;
+    }
+
+    return IS_OP_OK;
+}
+
 is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
@@ -172,7 +343,6 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
     uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
     uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
-    uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
@@ -234,66 +404,6 @@ is_operation_result cISBootloaderBase::update_device
     }
     else if(device)
     {
-        if ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2)
-        {
-            (*obj)->m_filename = filenames.bl_EVB_2.path;
-            is_operation_result op = (*obj)->reboot_down();
-            if (op == IS_OP_OK)
-            {
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_RETRY)
-            {
-                (*obj)->reboot_force();
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_CLOSED)
-            {
-
-            }
-        }
-        else if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5)
-        {
-            (*obj)->m_filename = filenames.bl_IMX_5.path;
-            is_operation_result op = (*obj)->reboot_down();
-            if (op == IS_OP_OK)
-            {
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_RETRY)
-            {
-                (*obj)->reboot_force();
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_CLOSED)
-            {
-
-            }
-        }
-        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3)
-        {
-            (*obj)->m_filename = filenames.bl_uINS_3.path;
-            is_operation_result op = (*obj)->reboot_down();
-            if (op == IS_OP_OK)
-            {
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_RETRY)
-            {
-                (*obj)->reboot_force();
-                delete* obj;
-                return IS_OP_CLOSED;
-            }
-            else if(op == IS_OP_CLOSED)
-            {
-
-            }
-        }
         // Bootloader was already updated or not specified
         if ((device & IS_IMAGE_SIGN_ISB) & fw_EVB_2)
         {
@@ -410,66 +520,6 @@ is_operation_result cISBootloaderBase::update_device
         {
             delete* obj;
         }
-    }
-    else
-    {
-        delete* obj;
-    }
-
-    *obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
-    (*obj)->m_port_name = std::string(handle->port);
-    device = (*obj)->check_is_compatible();
-    if(device)
-    {
-        if ((device & IS_IMAGE_SIGN_APP) & bl_EVB_2)
-        {
-            strncpy((*obj)->m_app.enable_command, "EBLE", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)
-        {
-            strncpy((*obj)->m_app.enable_command, "EBLE", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
-        {
-            (*obj)->m_filename = filenames.fw_IMX_5.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
-        {
-            (*obj)->m_filename = filenames.fw_uINS_3.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & bl_uINS_3)
-        {
-            (*obj)->m_filename = filenames.bl_uINS_3.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & bl_IMX_5)
-        {
-            (*obj)->m_filename = filenames.bl_IMX_5.path;
-            strncpy((*obj)->m_app.enable_command, "BLEN", 5);
-            (*obj)->reboot_down();
-            delete* obj;
-            return IS_OP_CLOSED;
-        }
-        
-        delete* obj;
-        return IS_OP_CANCELLED;
     }
     else
     {

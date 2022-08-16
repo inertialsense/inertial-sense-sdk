@@ -54,6 +54,7 @@ public:
     static bool m_update_in_progress;
     
 private:
+    static void mode_thread_serial(void* context);
     static void update_thread_serial(void* context);
     static void update_thread_libusb(void* context);
     static void mgmt_thread_libusb(void* context);
