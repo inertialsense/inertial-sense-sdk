@@ -99,8 +99,6 @@ eImageSignature cISBootloaderSAMBA::check_is_compatible()
 
 is_operation_result cISBootloaderSAMBA::reboot()
 {
-    SAMBA_STATUS("(SAMBA) Rebooting...", IS_LOG_LEVEL_INFO);
-
     // RSTC_CR, RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST
     write_word(0x400e1800, 0xa5000001);
     serialPortClose(m_port);
@@ -110,7 +108,6 @@ is_operation_result cISBootloaderSAMBA::reboot()
 is_operation_result cISBootloaderSAMBA::reboot_up()
 {
     m_info_callback(this, "(SAMBA) Rebooting up into ISB mode...", IS_LOG_LEVEL_INFO);
-    SLEEP_MS(10);    // Sleep to get reset messages in right order on console
 
     // EEFC.FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
     if (write_word(0x400e0c04, 0x5a00010b) == IS_OP_OK)
@@ -205,12 +202,25 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
 
 is_operation_result cISBootloaderSAMBA::erase_flash()
 {
-    SAMBA_STATUS("(SAMBA) Erasing flash memory... (12s)", IS_LOG_LEVEL_INFO);
-    if (write_word(0x400e0c04, 0x5a000005) == IS_OP_OK)
+    SAMBA_STATUS("(SAMBA) Erasing flash memory...", IS_LOG_LEVEL_INFO);
+    
+    // Erase 3 sectors of 16 pares each (8K)
+    if (write_word(0x400e0c04, 0x5a000207) == IS_OP_OK)
     {
-        SLEEP_MS(12000);    // From datasheet, max time it could take
+        SLEEP_MS(200);    // From datasheet, max time it could take
         return wait_eefc_ready(true);
     }
+    if (write_word(0x400e0c04, 0x5a001207) == IS_OP_OK)
+    {
+        SLEEP_MS(200);    // From datasheet, max time it could take
+        return wait_eefc_ready(true);
+    }
+    if (write_word(0x400e0c04, 0x5a002207) == IS_OP_OK)
+    {
+        SLEEP_MS(200);    // From datasheet, max time it could take
+        return wait_eefc_ready(true);
+    }
+
     return IS_OP_ERROR;
 }
 

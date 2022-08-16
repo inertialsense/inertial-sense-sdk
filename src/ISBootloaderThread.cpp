@@ -368,8 +368,8 @@ is_operation_result cISBootloaderThread::update(
 
         m_serial_thread_mutex.unlock();
 
-        // Break after 5 seconds
-        if (current_timeMs() - m_timeStart > 5000) 
+        // Break after 8 seconds
+        if (current_timeMs() - m_timeStart > 8000) 
         {
             m_continue_update = false;
         }
