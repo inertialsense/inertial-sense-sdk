@@ -53,6 +53,8 @@ enum
 
 typedef struct
 {
+	uint8_t					tx_buf[I2C_BUF_SIZE_TX];	// MUST BE FIRST for cache stuff
+	uint8_t					rx_buf[I2C_BUF_SIZE_RX];	// MUST BE SECOND for cache stuff
 	Twihs 					*instance;
 	uint32_t				instance_id;
 	dma_channel_config_t 	rx_dma;
@@ -63,11 +65,10 @@ typedef struct
 	volatile uint8_t		rx_status;
 	uint8_t					*rx_buf_dest;	// Destination for data to be copied to after read
 	uint8_t					rx_len;
-	uint8_t					tx_buf[I2C_BUF_SIZE_TX] __attribute__((aligned(4)));
-	uint8_t					rx_buf[I2C_BUF_SIZE_RX] __attribute__((aligned(4)));
 } i2c_t;
 
-extern i2c_t sn_i2c;
+extern i2c_t __attribute__((aligned(4))) sn_i2c;
+extern i2c_t __attribute__((aligned(4))) ext_i2c_1;
 
 int i2c_master_get_defaults(i2c_t *init);
 int i2c_master_init(i2c_t *init);

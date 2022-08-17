@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 i2c_t sn_i2c = {.instance_id = ID_TWIHS0, .instance = TWIHS0};
 #else 
 i2c_t sn_i2c = {.instance_id = ID_TWIHS1, .instance = TWIHS1};
+i2c_t ext_i2c_1 = {.instance_id = ID_TWIHS1, .instance = TWIHS1 };
 #endif
 
 //Configuration for TWI instance
@@ -142,7 +143,7 @@ static void i2c_master_dma_stop_rx(i2c_t *i2c_init)
 {
 	xdmac_channel_disable(XDMAC, i2c_init->rx_dma.chan);
 	
-	SCB_InvalidateDCache_by_Addr((uint32_t *)i2c_init->rx_buf, (i2c_init->rx_len+(4-1))/4);	// Round up
+	SCB_InvalidateDCache_by_Addr((uint32_t *)i2c_init + (I2C_BUF_SIZE_TX / sizeof(uint32_t)), (i2c_init->rx_len));
 }
 
 static void i2c_master_dma_init_tx(i2c_t *i2c_init)
@@ -171,7 +172,7 @@ static void i2c_master_dma_config_tx(i2c_t *i2c_init, uint8_t *buf, uint32_t len
 
 static void i2c_master_dma_start_tx(i2c_t *i2c_init)
 {
-	SCB_CleanDCache_by_Addr((uint32_t *)i2c_init->tx_buf, I2C_BUF_SIZE_TX/4);
+	SCB_CleanDCache_by_Addr((uint32_t *)i2c_init, I2C_BUF_SIZE_TX);
 	xdmac_channel_enable_no_cache(XDMAC, i2c_init->tx_dma.chan);
 }
 
