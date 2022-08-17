@@ -317,7 +317,7 @@ is_operation_result cISBootloaderBase::update_device
             libusb_close(handle);
             return IS_OP_CLOSED;
         }
-        (*obj)->reboot_up();    // Reboot up right away so an APP update can happen
+        (*obj)->reboot_up();    // Reboot up right away so an App update can happen
         delete *obj;
         return IS_OP_CLOSED;
     }
@@ -370,7 +370,7 @@ is_operation_result cISBootloaderBase::update_device
                     //delete *obj;  // Don't delete, since we have probably called the update and verify callbacks
                     return IS_OP_CLOSED;
                 }
-                (*obj)->reboot_up();    // Reboot up right away so an APP update can happen
+                (*obj)->reboot_up();    // Reboot up right away so an App update can happen
                 //delete *obj;
                 return IS_OP_CLOSED;
             } 
@@ -391,7 +391,7 @@ is_operation_result cISBootloaderBase::update_device
                     //delete *obj;  // Don't delete, since we have probably called the update and verify callbacks
                     return IS_OP_CLOSED;
                 }
-                (*obj)->reboot_up();    // Reboot up right away so an APP update can happen
+                (*obj)->reboot_up();    // Reboot up right away so an App update can happen
                 //delete *obj;
                 return IS_OP_CLOSED;
             } 

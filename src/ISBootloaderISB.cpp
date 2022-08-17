@@ -174,7 +174,7 @@ is_operation_result cISBootloaderISB::reboot()
         return IS_OP_ERROR;
     }
 
-    m_info_callback(this, "(ISB) Resetting before APP update...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(ISB) Resetting before App update...", IS_LOG_LEVEL_INFO);
 
     // restart bootloader command
     if(reboot_force() == IS_OP_OK)
