@@ -68,6 +68,7 @@ typedef struct
 } i2c_t;
 
 extern i2c_t sn_i2c;
+extern i2c_t ext_i2c_1;
 
 int i2c_master_get_defaults(i2c_t *init);
 int i2c_master_init(i2c_t *init);

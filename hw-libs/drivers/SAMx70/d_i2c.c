@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 i2c_t sn_i2c = {.instance_id = ID_TWIHS0, .instance = TWIHS0};
 #else 
 i2c_t sn_i2c = {.instance_id = ID_TWIHS1, .instance = TWIHS1};
+i2c_t ext_i2c_1 = {.instance_id = ID_TWIHS1, .instance = TWIHS1 };
 #endif
 
 //Configuration for TWI instance
