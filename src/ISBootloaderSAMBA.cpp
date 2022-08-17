@@ -128,7 +128,6 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
     uint8_t buf[SAMBA_PAGE_SIZE];
-    uint32_t checksum = 0;
 
     SAMBA_ERROR_CHECK(erase_flash(), "(SAMBA) Failed to erase flash memory");
 
@@ -208,12 +207,12 @@ is_operation_result cISBootloaderSAMBA::erase_flash()
     if (write_word(0x400e0c04, 0x5a000207) == IS_OP_OK)
     {
         SLEEP_MS(200);    // From datasheet, max time it could take
-        return wait_eefc_ready(true);
+        wait_eefc_ready(true);
     }
     if (write_word(0x400e0c04, 0x5a001207) == IS_OP_OK)
     {
         SLEEP_MS(200);    // From datasheet, max time it could take
-        return wait_eefc_ready(true);
+        wait_eefc_ready(true);
     }
     if (write_word(0x400e0c04, 0x5a002207) == IS_OP_OK)
     {
