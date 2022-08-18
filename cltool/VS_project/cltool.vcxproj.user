@@ -5,12 +5,15 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>
-    </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-uf "C:\Users\david\src\inertialsense\imx\cpp\hdw-src\uINS-5\IS_uINS\Release\IS_uINS-5.hex"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-uf "C:\Users\david\src\inertialsense\imx\cpp\hdw-src\bootloader\bootloader-SAMx70\Release\IS_SAMx70-Bootloader.bin"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-uf "C:\Users\david\src\inertialsense\imx\cpp\hdw-src\uINS-5\IS_uINS\Release\IS_uINS-5.hex"</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommandArguments>-uf "C:\Users\david\src\inertialsense\imx\cpp\hdw-src\uINS-5\IS_uINS\Release\IS_uINS-5.hex"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

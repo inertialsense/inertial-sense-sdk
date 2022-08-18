@@ -341,37 +341,34 @@ static int cltool_updateFirmware()
 
 std::mutex print_mutex;
 
-void printProgress(void* obj, float percent)
+void printProgress()
 {
-	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
-
 	print_mutex.lock();
-
-	if (std::find(firmwareProgressContexts.begin(), firmwareProgressContexts.end(), ctx) == firmwareProgressContexts.end())
-	{
-		firmwareProgressContexts.push_back(ctx);
-	}
 
 	int divisor = 0;
 	float total = 0.0f;
 
-	for (size_t i = 0; i < firmwareProgressContexts.size(); i++)
+	cISBootloaderThread::m_ctx_mutex.lock();
+
+	for (size_t i = 0; i < cISBootloaderThread::ctx.size(); i++)
 	{
-		if (firmwareProgressContexts[i]->m_use_progress)
+		if (cISBootloaderThread::ctx[i] && cISBootloaderThread::ctx[i]->m_use_progress)
 		{
 			divisor++;
 
-			if (firmwareProgressContexts[i]->m_verify_callback != bootloadVerifyCallback)
+			if (!cISBootloaderThread::ctx[i]->m_verify)
 			{
-				total += firmwareProgressContexts[i]->m_update_progress;
+				total += cISBootloaderThread::ctx[i]->m_update_progress;
 			}
 			else
 			{
-				total += firmwareProgressContexts[i]->m_update_progress * 0.5f;
-				total += firmwareProgressContexts[i]->m_verify_progress * 0.5f;
+				total += cISBootloaderThread::ctx[i]->m_update_progress * 0.5f;
+				total += cISBootloaderThread::ctx[i]->m_verify_progress * 0.5f;
 			}
 		}
 	}
+
+	cISBootloaderThread::m_ctx_mutex.unlock();
 
 	if (divisor) {
 		total /= divisor;
@@ -388,8 +385,6 @@ is_operation_result bootloadUpdateCallback(void* obj, float percent)
 	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
 	ctx->m_update_progress = percent;
 
-	printProgress(obj, percent);
-
 	return IS_OP_OK;
 }
 
@@ -397,8 +392,6 @@ is_operation_result bootloadVerifyCallback(void* obj, float percent)
 {
 	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
 	ctx->m_verify_progress = percent;
-
-	printProgress(obj, percent);
 
 	return IS_OP_OK;
 }
@@ -431,7 +424,7 @@ void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLev
 
 void cltool_firmwareUpdateWaiter()
 {
-	
+	printProgress();
 }
 
 static int cltool_createHost()

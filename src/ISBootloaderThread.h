@@ -49,7 +49,26 @@ public:
         void						            (*waitAction)()
     );
 
+    typedef struct 
+    {
+        void* thread;
+        char serial_name[100];
+        ISBootloader::cISBootloaderBase* ctx;
+        bool done;
+        bool reuse_port;
+    } thread_serial_t;
+
+    typedef struct 
+    {
+        void* thread;
+        libusb_device_handle* handle;
+        char uid[100];
+        ISBootloader::cISBootloaderBase* ctx;
+        bool done;
+    } thread_libusb_t;
+
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
+    static std::mutex m_ctx_mutex;
 
     static bool m_update_in_progress;
     
@@ -64,10 +83,7 @@ private:
     static int m_baudRate;
 
     static std::mutex m_update_mutex;
-    static std::mutex m_ctx_mutex;
-    static std::mutex m_serial_thread_mutex;
-    static std::mutex m_libusb_thread_mutex;
-
+    
     static ISBootloader::pfnBootloadProgress m_uploadProgress; 
     static ISBootloader::pfnBootloadProgress m_verifyProgress;
     static ISBootloader::pfnBootloadStatus m_infoProgress;
@@ -79,6 +95,11 @@ private:
     static uint32_t m_serial_devicesActive;
 
     static bool m_continue_update;
+
+    static std::vector<thread_serial_t*> m_serial_threads;    // List of all serial threads that have run or are running
+    static std::vector<thread_libusb_t*> m_libusb_threads;    // List of all libusb threads that have run or are running
+    static std::mutex m_serial_thread_mutex;
+    static std::mutex m_libusb_thread_mutex;
 };
 
 #endif // __IS_BOOTLOADER_THREAD_H_

@@ -53,6 +53,11 @@ using namespace ISBootloader;
         SAMBA_STATUS(error, IS_LOG_LEVEL_ERROR); \
         return IS_OP_ERROR; \
     }
+#define SAMBA_ERROR_CHECK_SN(x, error) if(x != IS_OP_OK) \
+    { /* serialPortClose(port); */ \
+        SAMBA_STATUS(error, IS_LOG_LEVEL_ERROR); \
+        return 0; \
+    }
 
 PUSH_PACK_1
 typedef struct
@@ -237,23 +242,23 @@ uint32_t cISBootloaderSAMBA::get_device_info()
     if (!count)
     {   // Failed to handshake with bootloader
         // serialPortClose(port);
-        return IS_OP_ERROR;
+        return 0;
     }
 
     // Set flash mode register
-    SAMBA_ERROR_CHECK(write_word(0x400e0c00, 0x04000600), "Failed to set flash mode register");
+    SAMBA_ERROR_CHECK_SN(write_word(0x400e0c00, 0x04000600), "Failed to set flash mode register");
 
     // Set flash command to STUS (start read unique signature)
-    SAMBA_ERROR_CHECK(write_word(0x400e0c04, 0x5a000014), "Failed to command signature readout");
+    SAMBA_ERROR_CHECK_SN(write_word(0x400e0c04, 0x5a000014), "Failed to command signature readout");
     
     // Wait until EEFC.FSR.FRDY is cleared
-    SAMBA_ERROR_CHECK(wait_eefc_ready(false), "Failed to clear flash ready bit");
+    SAMBA_ERROR_CHECK_SN(wait_eefc_ready(false), "Failed to clear flash ready bit");
 
     // Read out the unique identifier
-    SAMBA_ERROR_CHECK(read_word(0x00400000 + offsetof(manufacturing_info_t, serialNumber), &m_sn), "Failed to read UID word");
+    SAMBA_ERROR_CHECK_SN(read_word(0x00400000 + offsetof(manufacturing_info_t, serialNumber), &m_sn), "Failed to read UID word");
     
     // Set flash command to SPUS (stop read unique identifier)
-    SAMBA_ERROR_CHECK(write_word(0x400e0c04, 0x5a000015), "Failed to command stop signature readout");
+    SAMBA_ERROR_CHECK_SN(write_word(0x400e0c04, 0x5a000015), "Failed to command stop signature readout");
     
     return m_sn;
 }

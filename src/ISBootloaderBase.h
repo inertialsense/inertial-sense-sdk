@@ -26,6 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 
 #include <string>
+#include <mutex>
 
 namespace ISBootloader {
 
@@ -220,27 +221,33 @@ public:
     static is_operation_result mode_device(
         firmwares_t filenames,
         serial_port_t* handle,
-        cISBootloaderBase** obj,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateProgress,
-        pfnBootloadProgress verifyProgress
+        pfnBootloadProgress verifyProgress,
+        std::vector<cISBootloaderBase*>& contexts,
+        std::mutex* addMutex,
+        cISBootloaderBase** new_context
     );
 
     static is_operation_result update_device(
         firmwares_t filenames,
         serial_port_t* handle,
-        cISBootloaderBase** obj,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateprogress,
-        pfnBootloadProgress verifyProgress
+        pfnBootloadProgress verifyProgress,
+        std::vector<cISBootloaderBase*>& contexts,
+        std::mutex* addMutex,
+        cISBootloaderBase** new_context
     );
     static is_operation_result update_device(
         firmwares_t filenames,
         libusb_device_handle* handle,
-        cISBootloaderBase** obj,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateprogress,
-        pfnBootloadProgress verifyProgress
+        pfnBootloadProgress verifyProgress,
+        std::vector<cISBootloaderBase*>& contexts,
+        std::mutex* addMutex,
+        cISBootloaderBase** new_context
     );
 
     std::string m_filename;
