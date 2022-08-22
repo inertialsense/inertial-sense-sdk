@@ -1023,7 +1023,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$/hr' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'sec')
+                    self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'sec')
 
         for i in range(accCount):
             for d in range(3):
