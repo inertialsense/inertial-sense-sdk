@@ -61,21 +61,23 @@ is_operation_result cISBootloaderISB::match_test(void* param)
 eImageSignature cISBootloaderISB::check_is_compatible()
 {
     serialPortFlush(m_port);
-    if(sync(m_port) != IS_OP_OK)
-    {
-        for(int i = 0; i < 10; i++)
-        {
-            // Reset the device
-            if(serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) == 15)
-            {
-                break;
-            }
+    // if(
+        sync(m_port); 
+        // != IS_OP_OK)
+    // {
+    //     for(int i = 0; i < 10; i++)
+    //     {
+    //         // Reset the device
+    //         if(serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) == 15)
+    //         {
+    //             break;
+    //         }
 
-            SLEEP_MS(10);
-        }
+    //         SLEEP_MS(10);
+    //     }
 
-        return IS_IMAGE_SIGN_ERROR;
-    }
+    //     return IS_IMAGE_SIGN_ERROR;
+    // }
 
     SLEEP_MS(100);
 
