@@ -29,6 +29,10 @@ extern "C" {
 #define EARTH_RADIUS_F			6366707.01949371f				// = earth_radius_in_meters
 #define INV_EARTH_RADIUS_F		1.5706706731410E-07f				// = 1 / earth_radius_in_meters
 
+#ifndef MAX
+#define MAX(a,b)    (((a) > (b)) ? (a) : (b))
+#endif
+
 #if 0
 typedef ixVector2     ixVector2;
 typedef ixVector3     ixVector3;
@@ -55,7 +59,7 @@ typedef ixMatrix4     ixMatrix4;
 /* 
  * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m)
  */
-void ecef2lla(const double *Pe, double *LLA, const int Niter);
+void ecef2lla(const double *Pe, double *LLA, const int method);
 
 /*
  * Coordinate transformation from latitude/longitude/altitude (rad,rad,m) to ECEF coordinates

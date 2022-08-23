@@ -28,6 +28,8 @@ extern "C" {
 #include <time.h>
 #include <limits.h>
 
+#define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
+
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
 #define PLATFORM_IS_WINDOWS 1
