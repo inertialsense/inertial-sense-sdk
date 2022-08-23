@@ -398,27 +398,35 @@ is_operation_result bootloadVerifyCallback(void* obj, float percent)
 
 void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level)
 {
+	print_mutex.lock();
+
+	if(obj == NULL)
+    {
+        printf(str);
+		print_mutex.unlock();
+        return;
+    }
+
 	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase *)obj;
 
-	print_mutex.lock();
 	if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
 	{
-		printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
+		printf("    | %s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
 	}
 	else if(ctx->m_sn != 0)
 	{
-		printf("(SN%d):\r", ctx->m_sn);
+		printf("    | (SN%d):\r", ctx->m_sn);
 	}
 	else if (ctx->m_port_name.size() != 0)
 	{
-		printf("%s:\r", ctx->m_port_name.c_str());
+		printf("    | %s:\r", ctx->m_port_name.c_str());
 	}
 	else
 	{
-		printf("SN?:\r");
+		printf("    | SN?:\r");
 	}
 	
-	printf("\t\t\t%s\r\n", str);
+	printf("\t\t\t\t%s\r\n", str);
 	print_mutex.unlock();
 }
 

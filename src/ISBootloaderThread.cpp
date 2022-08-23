@@ -291,6 +291,8 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
+    m_infoProgress(NULL, "Resetting all devices into correct mode... (5 seconds)", IS_LOG_LEVEL_INFO);
+
     // Put all devices in the correct mode
     while(m_continue_update)
     {
@@ -356,6 +358,8 @@ is_operation_result cISBootloaderThread::update(
 
     m_continue_update = true;
     m_timeStart = current_timeMs();
+
+    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_INFO);
     
     // Join and free all mode threads
     while (m_continue_update)
@@ -377,7 +381,9 @@ is_operation_result cISBootloaderThread::update(
             }
         }
 
-        // Tiemout after 5 seconds
+        SLEEP_MS(1000);
+
+        // Timeout after 5 seconds
         if (current_timeMs() - m_timeStart > 5000) 
         {
             m_continue_update = false;
@@ -391,6 +397,10 @@ is_operation_result cISBootloaderThread::update(
     void* libusb_thread = threadCreateAndStart(mgmt_thread_libusb, NULL);
 
     m_continue_update = true;
+    m_timeStart = current_timeMs();
+    uint32_t timeoutLong = current_timeMs();
+
+    m_infoProgress(NULL, "Updating devices... (90 seconds max.)", IS_LOG_LEVEL_INFO);
 
     while (m_continue_update)
     {
@@ -475,10 +485,18 @@ is_operation_result cISBootloaderThread::update(
 
         m_libusb_thread_mutex.unlock();
         m_serial_thread_mutex.unlock();
+
+        // Timeout after 5 seconds
+        if (current_timeMs() - timeoutLong > 90000) 
+        {
+            m_continue_update = false;
+        }
     }
 
     threadJoinAndFree(libusb_thread);
 
+    m_infoProgress(NULL, "Resetting devices into final mode...", IS_LOG_LEVEL_INFO);
+    
     // Reset all serial devices up a level into APP or ISB mode
     for (size_t i = 0; i < ctx.size(); i++)
     {
@@ -495,6 +513,8 @@ is_operation_result cISBootloaderThread::update(
 
         serialPortFlush(&port);
         serialPortClose(&port);
+
+        m_waitAction();
     }
     
     // Clear the ctx list
@@ -507,6 +527,10 @@ is_operation_result cISBootloaderThread::update(
 
     m_update_in_progress = false;
     m_update_mutex.unlock();
+
+    m_infoProgress(NULL, "Done!", IS_LOG_LEVEL_INFO);
+
+    m_waitAction();     // Final UI update
 
     return IS_OP_OK;
 }

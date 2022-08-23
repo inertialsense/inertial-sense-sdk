@@ -297,7 +297,7 @@ is_operation_result cISBootloaderBase::update_device
         addMutex->unlock();
         if((obj)->download_image(filenames.bl_IMX_5.path) != IS_OP_OK)
         {
-            (obj)->m_info_callback((obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+            (obj)->m_info_callback((obj), "    | (DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
             (obj)->m_use_progress = false;
             libusb_close(handle);
             return IS_OP_CLOSED;
@@ -310,6 +310,7 @@ is_operation_result cISBootloaderBase::update_device
         delete obj;
     }
 
+    statusfn(NULL, "    | (DFU) Firmware image incompatible with DFU device", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
@@ -392,6 +393,7 @@ is_operation_result cISBootloaderBase::update_device
             } 
             else
             {
+                statusfn(NULL, "    | (SAMBA) Firmware image incompatible with SAMBA device", IS_LOG_LEVEL_ERROR);
                 delete obj;
                 return IS_OP_CANCELLED;
             }
@@ -445,7 +447,7 @@ is_operation_result cISBootloaderBase::update_device
             addMutex->unlock();
             if((obj)->download_image(filenames.fw_EVB_2.path) != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_info_callback((obj), "    | (ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                 (obj)->m_use_progress = false;
                 (obj)->reboot_force();
                 return IS_OP_CLOSED;
@@ -485,7 +487,7 @@ is_operation_result cISBootloaderBase::update_device
             addMutex->unlock();
             if((obj)->download_image(filenames.fw_IMX_5.path) != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_info_callback((obj), "    | (ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                 (obj)->m_use_progress = false;
                 (obj)->reboot_force();
                 return IS_OP_CLOSED;
@@ -525,7 +527,7 @@ is_operation_result cISBootloaderBase::update_device
             addMutex->unlock();
             if((obj)->download_image(filenames.fw_uINS_3.path) != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_info_callback((obj), "    | (ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                 (obj)->m_use_progress = false;
                 (obj)->reboot_force();
                 return IS_OP_CLOSED;
@@ -534,7 +536,9 @@ is_operation_result cISBootloaderBase::update_device
         }
         else
         {
+            statusfn(NULL, "    | (ISB) Firmware image incompatible with ISB device", IS_LOG_LEVEL_ERROR);
             delete obj;
+            return IS_OP_CANCELLED;
         }
     }
     else
@@ -542,5 +546,8 @@ is_operation_result cISBootloaderBase::update_device
         delete obj;
     }
 
+    char msg[100] = {0};
+    SNPRINTF(msg, 100, "    | (%s) Incompatible device selected", handle->port);
+    statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
     return IS_OP_ERROR;
 }
