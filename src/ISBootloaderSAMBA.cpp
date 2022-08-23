@@ -420,6 +420,7 @@ is_operation_result cISBootloaderSAMBA::verify_image(std::string filename)
         {
             count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
             serialPortWrite(m_port, buf, count);
+            serialPortSleep(m_port, 1);
             address += sizeof(uint32_t);
         }
         count = serialPortReadTimeout(m_port, buf, SAMBA_PAGE_SIZE, SAMBA_TIMEOUT_DEFAULT);

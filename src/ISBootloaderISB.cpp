@@ -444,27 +444,33 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
 
-    if (serialPortWrite(s, checkSumHex, 2) != 2)
+    // For some reason, the checksum doesn't always make it through to the IMX-5. Re-send until we get a response or timeout.
+    for(int i = 0; i < 50; i++)
     {
-        status_update("(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
-        return IS_OP_ERROR;
+        if (serialPortWrite(s, checkSumHex, 2) != 2)
+        {
+            status_update("(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
+            return IS_OP_ERROR;
+        }
+
+        unsigned char buf[5] = { 0 };
+        int count = serialPortReadTimeout(s, buf, 3, 20);
+
+        if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
+        {
+            break;
+        }
     }
 
-    unsigned char buf[128] = { 0 };
-    int count = serialPortReadTimeout(s, buf, 3, BOOTLOADER_TIMEOUT_DEFAULT);
 
-	if (count != 3 || memcmp(buf, ".\r\n", 3) != 0)
-	{
-        //buf[count] = '\0'; 
-        //status_update((const char*)buf, IS_LOG_LEVEL_ERROR);
-		return IS_OP_ERROR;
-	}
 
-    // if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
-    // {
-    //     status_update(m_ctx, "(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
-    //     return IS_OP_ERROR;
-    // }
+
+
+//     if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
+//     {
+//         status_update("(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
+//         return IS_OP_ERROR;
+//     }
 
     *totalBytes += byteCount;
     *currentOffset += byteCount;
@@ -491,19 +497,8 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
     if (*currentOffset + byteCount > FLASH_PAGE_SIZE)
     {
         int pageByteCount = FLASH_PAGE_SIZE - *currentOffset;
-        
-        bool okay = false;
-        for(int i = 0; i < 3; i++)  // 3 retries, this failed often in testing
-        {   
-            if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
-            {
-                continue;
-            }
-
-            okay = true;
-            break;
-        }
-        if(!okay) 
+         
+        if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
         {
             return IS_OP_ERROR;
         }
@@ -511,28 +506,17 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
         hexData += (pageByteCount * 2);
         charCount -= (pageByteCount * 2);
 
-        // change to the next page
-        *currentOffset = 0;
-        (*currentPage)++;
-        if (select_page(*currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
-        {
-            status_update("(ISB) Failed to issue select page or to start programming", IS_LOG_LEVEL_ERROR);
-            return IS_OP_ERROR;
-        }
+        // // change to the next page
+        // *currentOffset = 0;
+        // (*currentPage)++;
+        // if (select_page(*currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
+        // {
+        //     status_update("(ISB) Failed to issue select page or to start programming", IS_LOG_LEVEL_ERROR);
+        //     return IS_OP_ERROR;
+        // }
     }
 
-    bool okay = false;
-    for(int i = 0; i < 3; i++)  // 3 retries, this failed often in testing
-    { 
-        if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
-        {
-            continue;
-        }
-
-        okay = true;
-        break;
-    }
-    if(!okay) 
+    if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
     {
         return IS_OP_ERROR;
     }
@@ -738,7 +722,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
 
 is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
 {
-    int currentPage = 0;
+    int currentPage = -1;
     int currentOffset = m_isb_props.app_offset;
     int lastSubOffset = currentOffset;
     int subOffset;
@@ -752,7 +736,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
     unsigned char* outputPtr = output;
     const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);
     int outputSize;
-    int page;
+    int page = 0;
     int pad;
     int fileSize;
     unsigned char tmp[5];
@@ -821,7 +805,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
                 continue;
             }
             // upload this chunk
-            else if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
                 return IS_OP_ERROR;
             }
@@ -833,7 +817,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
                 status_update("(ISB) Output size was too large (1)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
-            else if (outputSize > 0)
+            if (outputSize > 0)
             {
                 // move the left-over data to the beginning
                 memmove(output, output + MAX_SEND_COUNT, outputSize);
@@ -842,37 +826,67 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // reset output ptr back to the next chunk of data
             outputPtr = output + outputSize;
         }
-        else if (strncmp(line, ":020000048", 10) == 0 && strlen(line) >= 13)
+        else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13)
         {
-            memcpy(tmp, line + 10, 3);
-            tmp[3] = '\0';
-            page = strtol((char*)tmp, 0, 16);
+            memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
+            tmp[1] = '\0';
+            currentPage = strtol((char*)tmp, 0, 16);
 
-            if (page != 0)
+            if(currentPage == 0) 
             {
-                // we found a change page command beyond the first, let's finish up this page and fill it to the max
-                lastSubOffset = 0;
-                outputSize = (int)(outputPtr - output);
-
-                if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
-                {
-                    status_update("(ISB) Output size was too large (2)", IS_LOG_LEVEL_ERROR);
-                    return IS_OP_ERROR;
-                }
-                // flush the remainder of data to the page
-                else if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
-                {
-                    return IS_OP_ERROR;
-                }
-                // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
-                else if (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
-                {
-                    return IS_OP_ERROR;
-                }
-
-                // set the output ptr back to the beginning, no more data is in the queue
-                outputPtr = output;
+                lastSubOffset = currentOffset;
+                continue;
             }
+            else 
+            {
+                lastSubOffset = 0;
+            }
+            
+            outputSize = (int)(outputPtr - output);
+
+            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
+            {
+                status_update("(ISB) Output size was too large (2)", IS_LOG_LEVEL_ERROR);
+                return IS_OP_ERROR;
+            }
+            // flush the remainder of data to the page
+            if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                return IS_OP_ERROR;
+            }
+            // // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
+            if (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                return IS_OP_ERROR;
+            }
+
+            // change to the next page
+            currentOffset = 0;
+            if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
+            {
+                status_update("(ISB) Failed to issue select page or to start programming", IS_LOG_LEVEL_ERROR);
+                return IS_OP_ERROR;
+            }
+
+            // set the output ptr back to the beginning, no more data is in the queue
+            outputPtr = output;
+        }
+        else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
+        {   // End of last page (end of file marker)
+            outputSize = (int)(outputPtr - output);
+
+            // flush the remainder of data to the page
+            if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                return IS_OP_ERROR;
+            }
+            if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+            {
+                return IS_OP_ERROR;
+            }
+
+            outputPtr = output;
+            
         }
 
         if (m_update_callback != 0)
@@ -888,17 +902,17 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
     }
 
     // upload any left over data
-    outputSize = (int)(outputPtr - output);
-    if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
-    {
-        return IS_OP_ERROR;
-    }
+//    outputSize = (int)(outputPtr - output);
+//    if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+//    {
+//        return IS_OP_ERROR;
+//    }
 
     // pad the remainder of the page with fill bytes
-    if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
-    {
-        return IS_OP_ERROR;
-    }
+    // if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
+    // {
+    //     return IS_OP_ERROR;
+    // }
 
     if (m_update_callback != 0 && m_update_progress != 1.0f)
     {

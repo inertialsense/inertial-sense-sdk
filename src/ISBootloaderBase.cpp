@@ -299,7 +299,6 @@ is_operation_result cISBootloaderBase::update_device
         {
             (obj)->m_info_callback((obj), "    | (DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
             (obj)->m_use_progress = false;
-            libusb_close(handle);
             return IS_OP_CLOSED;
         }
         (obj)->reboot_up();    // Reboot up right away so an App update can happen

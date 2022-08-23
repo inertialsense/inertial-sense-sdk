@@ -62,25 +62,28 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
     while(m_continue_update)
     {
+        do {
+            m_libusb_devicesActive = 0;
+
+            for (size_t l = 0; l < m_libusb_threads.size(); l++)
+            {
+                if (m_libusb_threads[l]->thread != NULL && m_libusb_threads[l]->done)
+                {
+                    threadJoinAndFree(m_libusb_threads[l]->thread);
+                    m_libusb_threads[l]->thread = NULL;
+                    libusb_close(m_libusb_threads[l]->handle);
+                }
+
+                if (!m_libusb_threads[l]->done)
+                {
+                    m_libusb_devicesActive++;
+                }
+            }
+        } while(m_libusb_devicesActive);
+
         cISBootloaderDFU::list_devices(&dfu_list);  // TODO: Put this in a separate thread since it takes a long time
 
         m_libusb_thread_mutex.lock();
-
-        m_libusb_devicesActive = 0;
-
-        for (size_t l = 0; l < m_libusb_threads.size(); l++)
-        {
-            if (m_libusb_threads[l]->thread != NULL && m_libusb_threads[l]->done)
-            {
-                threadJoinAndFree(m_libusb_threads[l]->thread);
-                m_libusb_threads[l]->thread = NULL;
-            }
-
-            if (!m_libusb_threads[l]->done)
-            {
-                m_libusb_devicesActive++;
-            }
-        }
 
         for (size_t i = 0; i < dfu_list.present; i++)
         {	// Create contexts for devices in DFU mode
