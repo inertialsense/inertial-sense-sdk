@@ -757,6 +757,12 @@ void sub_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
 	result[2] = v1[2] - v2[2];
 }
 
+void sub_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2)
+{
+	result[0] = v1[0] - v2[0];
+	result[1] = v1[1] - v2[1];
+}
+
 void sub_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d v2 )
 {
     result[0] = v1[0] - v2[0];
