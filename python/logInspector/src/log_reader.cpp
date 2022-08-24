@@ -131,7 +131,7 @@ void LogReader::organizeData(int device_id)
 
         HANDLE_MSG( DID_DEV_INFO, dev_log_->devInfo );
         HANDLE_MSG( DID_SYS_FAULT, dev_log_->sysFault );
-        HANDLE_MSG( DID_PREINTEGRATED_IMU, dev_log_->preintegratedImu );
+        HANDLE_MSG( DID_PIMU, dev_log_->preintegratedImu );
         HANDLE_MSG( DID_INS_1, dev_log_->ins1 );
         HANDLE_MSG( DID_INS_2, dev_log_->ins2 );
         HANDLE_MSG( DID_GPS1_UBX_POS, dev_log_->gps1UbxPos );
@@ -222,7 +222,7 @@ void LogReader::forwardData(int id)
 {
     forward_message( DID_DEV_INFO, dev_log_->devInfo , id);
     forward_message( DID_SYS_FAULT, dev_log_->sysFault, id );
-    forward_message( DID_PREINTEGRATED_IMU, dev_log_->preintegratedImu, id );
+    forward_message( DID_PIMU, dev_log_->preintegratedImu, id );
     forward_message( DID_INS_1, dev_log_->ins1, id );
     forward_message( DID_INS_2, dev_log_->ins2, id );
     forward_message( DID_GPS1_UBX_POS, dev_log_->gps1UbxPos, id );

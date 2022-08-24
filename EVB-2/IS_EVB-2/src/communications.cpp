@@ -357,8 +357,8 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		g_uins.inl2States = d.inl2States;
 		break;
 
-	case DID_PREINTEGRATED_IMU:
-		if(dataHdr.size+dataHdr.offset > sizeof(preintegrated_imu_t)){ /* Invalid */ return; }
+	case DID_PIMU:
+		if(dataHdr.size+dataHdr.offset > sizeof(pimu_t)){ /* Invalid */ return; }
 		g_uins.pImu = d.pImu;
 		preintegratedImuToIMU(&(g_imu), &(g_uins.pImu));
 		sub_Vec3_Vec3(g_imu.I.pqr, g_imu.I.pqr, g_uins.inl2States.biasPqr);	// Subtract EKF bias estimates

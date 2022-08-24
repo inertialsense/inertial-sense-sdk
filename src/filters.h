@@ -529,8 +529,8 @@ void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3]
 void singleToTripleImu(imu3_t *result, imu_t *imu);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
-int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *imuInt);
-int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt);
+int preintegratedImuToIMU(imu_t *imu, const pimu_t *imuInt);
+int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
 
 
 /** 
@@ -540,7 +540,7 @@ int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt)
  * \param imu			Gyro and accelerometer sample.
  * \param imuLast		Previous gyro and accelerometer sample.
  */
-void integrateImu( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast );
+void integrateImu( pimu_t *output, imu_t *imu, imu_t *imuLast );
 
 
 /** 

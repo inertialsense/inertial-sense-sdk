@@ -17,12 +17,12 @@
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
 void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti);
-float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast );
-float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast );
-float deltaThetaDeltaVelBortz( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps );
+float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );
+float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast );
+float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps );
 #if 0
 float integrateDeltaThetaVelRoscoe(
-	preintegrated_imu_t *output, 
+	pimu_t *output, 
 	imu_t *imu, 
 	imu_t *imuLast, 
 	ixVector3 alpha_last, 
@@ -295,7 +295,7 @@ void singleToTripleImu(imu3_t *result, imu_t *imu)
 }
 
 
-int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *pImu)
+int preintegratedImuToIMU(imu_t *imu, const pimu_t *pImu)
 {
     if (pImu->dt == 0.0f)
     {
@@ -311,7 +311,7 @@ int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *pImu)
 }
 
 
-int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt)
+int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt)
 {
     if (dt == 0.0f)
     {
@@ -329,7 +329,7 @@ int imuToPreintegratedImu(preintegrated_imu_t *pImu, const imu_t *imu, float dt)
 
 #define CON_SCUL_INT_STEPS  4
 
-void integrateImu( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
+void integrateImu( pimu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	output->time = imu->time;
 	output->status = imu->status;
@@ -349,7 +349,7 @@ void integrateImu( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
 }
 
 
-float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
+float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
@@ -371,7 +371,7 @@ float deltaThetaDeltaVelRiemannSum( preintegrated_imu_t *output, imu_t *imu, imu
 }
 
 
-float deltaThetaDeltaVelTrapezoidal( preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast )
+float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast )
 {
 	ixVector3 tmp3;
 	float dt = (float)(imu->time - imuLast->time);
@@ -442,7 +442,7 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 
 
 /* Direct numerical integration of coning and sculling integrals using Bortz's formula */
-float deltaThetaDeltaVelBortz(preintegrated_imu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps)
+float deltaThetaDeltaVelBortz(pimu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps)
 {
 	float dt = (float)(imu->time - imuLast->time);
 
@@ -458,7 +458,7 @@ float deltaThetaDeltaVelBortz(preintegrated_imu_t *output, imu_t *imu, imu_t *im
 
 #if 0
 float integrateDeltaThetaVelRoscoe( 
-	preintegrated_imu_t *output, 
+	pimu_t *output, 
 	imu_t *imu, 
 	imu_t *imuLast, 	
 	ixVector3 alpha_last,

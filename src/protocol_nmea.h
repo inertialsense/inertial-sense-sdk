@@ -32,7 +32,7 @@ void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 int dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info);
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek);
 int imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu);
-int pimu_to_nmea_ppimu(char a[], const int aSize, preintegrated_imu_t &pimu);
+int pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu);
 int ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1);
 int ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2);
 int strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe);

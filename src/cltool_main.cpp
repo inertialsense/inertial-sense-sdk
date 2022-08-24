@@ -146,7 +146,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 	case DID_IMU:				
 		d.imu3;      
 		break;
-	case DID_PREINTEGRATED_IMU:		
+	case DID_PIMU:		
 		d.pImu;    
 		break;
 	case DID_GPS_NAV:				
