@@ -423,21 +423,21 @@ is_operation_result cISBootloaderBase::update_device
                 return IS_OP_CLOSED;
             }
 
-            is_operation_result reboot_status = (obj)->reboot();
-            if (reboot_status == IS_OP_OK)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-            else if (reboot_status == IS_OP_CLOSED)
-            {
-                delete obj;
-                return IS_OP_ERROR;
-            }
-            else
-            {
-                // usually IS_OP_ERROR, this indicates the serial number has already been reset. Continue to update
-            }
+            // is_operation_result reboot_status = (obj)->reboot();
+            // if (reboot_status == IS_OP_OK)
+            // {
+            //     delete obj;
+            //     return IS_OP_CLOSED;
+            // }
+            // else if (reboot_status == IS_OP_CLOSED)
+            // {
+            //     delete obj;
+            //     return IS_OP_ERROR;
+            // }
+            // else
+            // {
+            //     // usually IS_OP_ERROR, this indicates the serial number has already been reset. Continue to update
+            // }
 
             (obj)->m_use_progress = true;
             addMutex->lock();
@@ -463,21 +463,21 @@ is_operation_result cISBootloaderBase::update_device
                 return IS_OP_CLOSED;
             }
 
-            is_operation_result reboot_status = (obj)->reboot();
-            if (reboot_status == IS_OP_OK)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-            else if (reboot_status == IS_OP_CLOSED)
-            {
-                delete obj;
-                return IS_OP_ERROR;
-            }
-            else
-            {
-                // usually IS_OP_ERROR, this indicates the serial number has already been reset. Continue to update
-            }
+            // is_operation_result reboot_status = (obj)->reboot();
+            // if (reboot_status == IS_OP_OK)
+            // {
+            //     delete obj;
+            //     return IS_OP_CLOSED;
+            // }
+            // else if (reboot_status == IS_OP_CLOSED)
+            // {
+            //     delete obj;
+            //     return IS_OP_ERROR;
+            // }
+            // else
+            // {
+            //     // usually IS_OP_ERROR, this indicates the serial number has already been reset. Continue to update
+            // }
 
             (obj)->m_use_progress = true;
             addMutex->lock();
@@ -503,21 +503,21 @@ is_operation_result cISBootloaderBase::update_device
                 return IS_OP_CLOSED;
             }
 
-            is_operation_result reboot_status = (obj)->reboot();
-            if (reboot_status == IS_OP_OK)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-            else if (reboot_status == IS_OP_CLOSED)
-            {
-                delete obj;
-                return IS_OP_ERROR;
-            }
-            else
-            {
-                // usually IS_OP_ERROR, this indicates the serial number has already been reset. Continue to update
-            }
+            // is_operation_result reboot_status = (obj)->reboot();
+            // if (reboot_status == IS_OP_OK)
+            // {
+            //     delete obj;
+            //     return IS_OP_CLOSED;
+            // }
+            // else if (reboot_status == IS_OP_CLOSED)
+            // {
+            //     delete obj;
+            //     return IS_OP_ERROR;
+            // }
+            // else
+            // {
+            //     // usually IS_OP_ERROR, this indicates the serial number has already been reset. Continue to update
+            // }
 
             (obj)->m_use_progress = true;
             addMutex->lock();
