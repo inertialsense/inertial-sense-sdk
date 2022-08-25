@@ -1362,23 +1362,26 @@ typedef struct PACKED
 // (DID_SENSORS_RAW, DID_SENSORS_TCAL)
 typedef struct PACKED
 {
-#if 1
+#if 0
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
 	double                  time;
                                            
 	/** Units only apply for calibrated data */
 	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
+
 #else
+
 	imu3_t                  imu3;
 
+	/** (°C) Temperature of IMU.  Units only apply for calibrated data. */
+	f_t						temp[NUM_IMU_DEVICES];
+
+	/** (uT) Magnetometers.  Units only apply for calibrated data. */
 	struct
 	{
-		/** (uT) Magnetometers.  Units only apply for calibrated data. */
-		f_t						mag[3];
+		f_t					xyz[3];
+	}						mag[NUM_MAG_DEVICES];
 
-		/** (°C) Temperature of MPU.  Units only apply for calibrated data. */
-		f_t						temp;
-	} mpu[NUM_IMU_DEVICES];
 #endif
 } sensors_w_temp_t;
 
