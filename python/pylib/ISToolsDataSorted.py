@@ -281,7 +281,7 @@ class cDevice:
 
         # 2   'crashInfo'
 
-        self.di[3].set('preintegratedImu', np.dtype([
+        self.di[3].set('pimu', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('time', f64),
             ('theta1', (f32, 3)),

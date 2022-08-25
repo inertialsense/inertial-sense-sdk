@@ -179,7 +179,7 @@ int imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu)
 	return n;	
 }
 
-int pimu_to_nmea_ppimu(char a[], const int aSize, preintegrated_imu_t &pimu)
+int pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 {
 	int n = SNPRINTF(a, aSize, "$PPIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", pimu.time);		// 1

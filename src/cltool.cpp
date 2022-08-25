@@ -449,9 +449,9 @@ void cltool_outputUsage()
 	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PREINTEGRATED_IMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << boldOff << " # stream same as line above" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PREINTEGRATED_IMU at startupNavDtMs x 5" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOn;
@@ -488,7 +488,7 @@ void cltool_outputUsage()
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
 	cout << "          Message period = source period x PERIODMULT. PERIODMULT is 1 if not specified." << endlbOff;
-	cout << "          Common DIDs: DID_INS_1, DID_INS_2, DID_INS_4, DID_PREINTEGRATED_IMU, DID_IMU, DID_GPS1_POS," << endlbOff;
+	cout << "          Common DIDs: DID_INS_1, DID_INS_2, DID_INS_4, DID_PIMU, DID_IMU, DID_GPS1_POS," << endlbOff;
 	cout << "          DID_GPS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;

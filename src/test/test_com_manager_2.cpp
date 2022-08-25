@@ -158,7 +158,7 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC, 0, 0, &g_sensor_lsb, 0, sizeof(sys_sensors_adc_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC_SIGMA, 0, 0, &g_adcSigma, 0, sizeof(sys_sensors_adc_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_TC_BIAS, 0, 0, &g_tcBias, &g_tcBias, sizeof(sensors_t), 0);
-// 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_RAW, 0, 0, &g_sensor_is1, 0, sizeof(sensors_w_temp_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_UCAL, 0, 0, &g_sensor_is1, 0, sizeof(sensors_w_temp_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_TCAL, 0, 0, &g_sensor_is2, 0, sizeof(sensors_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_SCOMP, 0, 0, &g_sc, &g_sc, sizeof(sensor_compensation_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_HDW_PARAMS, 0, 0, &g_hdwParams, &g_hdwParams, sizeof(hdw_params_t), 0);

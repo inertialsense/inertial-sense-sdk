@@ -110,7 +110,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
 	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
-	sizeMap[DID_PREINTEGRATED_IMU] = sizeof(preintegrated_imu_t);
+	sizeMap[DID_PIMU] = sizeof(pimu_t);
 	sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
 	sizeMap[DID_GROUND_VEHICLE] = sizeof(ground_vehicle_t);
 	sizeMap[DID_SYS_CMD] = sizeof(system_command_t);
@@ -137,17 +137,16 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
 	sizeMap[DID_IMU] = sizeof(imu_t);
-    sizeMap[DID_IMU3_RAW] = sizeof(imu3_t);
+    sizeMap[DID_IMU3_UNCAL] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
-	sizeMap[DID_IMU3_RAW_MAG] = sizeof(imu3_mag_t);
 	sizeMap[DID_CAN_CONFIG] = sizeof(can_config_t);
 	sizeMap[DID_DEBUG_ARRAY] = sizeof(debug_array_t);
 	sizeMap[DID_IO] = sizeof(io_t);
 	sizeMap[DID_INFIELD_CAL] = sizeof(infield_cal_t);
 	sizeMap[DID_REFERENCE_IMU] = sizeof(imu_t);
-	sizeMap[DID_REFERENCE_PIMU] = sizeof(preintegrated_imu_t);
+	sizeMap[DID_REFERENCE_PIMU] = sizeof(pimu_t);
 	sizeMap[DID_REFERENCE_MAGNETOMETER] = sizeof(magnetometer_t);
 
 	sizeMap[DID_EVB_STATUS] = sizeof(evb_status_t);
@@ -158,7 +157,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 
 #ifdef USE_IS_INTERNAL
 
-	sizeMap[DID_SENSORS_RAW] = sizeof(sensors_w_temp_t);
+	sizeMap[DID_SENSORS_UCAL] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_TCAL] = sizeof(sensors_w_temp_t);
 	sizeMap[DID_SENSORS_TC_BIAS] = sizeof(sensors_t);
 	sizeMap[DID_SCOMP] = sizeof(sensor_compensation_t);
@@ -173,7 +172,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_INL2_MISC] = sizeof(inl2_misc_t);
 	sizeMap[DID_INL2_MAG_OBS_INFO] = sizeof(inl2_mag_obs_info_t);
 	sizeMap[DID_IMU_MAG] = sizeof(imu_mag_t);
-	sizeMap[DID_PREINTEGRATED_IMU_MAG] = sizeof(pimu_mag_t);
+	sizeMap[DID_PIMU_MAG] = sizeof(pimu_mag_t);
 	sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
 	sizeMap[DID_RTK_DEBUG_2] = sizeof(rtk_debug_2_t);
 
@@ -688,7 +687,7 @@ static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT])
 
 static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t did)
 {
-	typedef preintegrated_imu_t MAP_TYPE;
+	typedef pimu_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[did];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
@@ -707,7 +706,7 @@ static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DI
 static void PopulateIMUDeltaThetaVelocityMagMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef pimu_mag_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_PREINTEGRATED_IMU_MAG];
+	map_name_to_info_t& m = mappings[DID_PIMU_MAG];
 	uint32_t totalSize = 0;
 	ADD_MAP(m, totalSize, "imutime", pimu.time, 0, DataTypeDouble, double, 0);
 	ADD_MAP(m, totalSize, "theta[0]", pimu.theta[0], 0, DataTypeFloat, float&, 0);
@@ -718,39 +717,6 @@ static void PopulateIMUDeltaThetaVelocityMagMappings(map_name_to_info_t mappings
 	ADD_MAP(m, totalSize, "vel[2]", pimu.vel[2], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "dt", pimu.dt, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "imustatus", pimu.status, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "magtime", mag.time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "mag[0]", mag.mag[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag[1]", mag.mag[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&, 0);
-
-	ASSERT_SIZE(totalSize);
-}
-
-static void PopulateIMU3MagnetometerMappings(map_name_to_info_t mappings[DID_COUNT])
-{
-	typedef imu3_mag_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_IMU3_RAW_MAG];
-	uint32_t totalSize = 0;
-	ADD_MAP(m, totalSize, "time", imu.time, 0, DataTypeDouble, double, 0);
-	ADD_MAP(m, totalSize, "pqr1[0]", imu.I[0].pqr[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr1[1]", imu.I[0].pqr[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr1[2]", imu.I[0].pqr[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc1[0]", imu.I[0].acc[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc1[1]", imu.I[0].acc[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc1[2]", imu.I[0].acc[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr2[0]", imu.I[1].pqr[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr2[1]", imu.I[1].pqr[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr2[2]", imu.I[1].pqr[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc2[0]", imu.I[1].acc[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc2[1]", imu.I[1].acc[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc2[2]", imu.I[1].acc[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr3[0]", imu.I[2].pqr[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr3[1]", imu.I[2].pqr[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr3[2]", imu.I[2].pqr[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc3[0]", imu.I[2].acc[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc3[1]", imu.I[2].acc[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc3[2]", imu.I[2].acc[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "imustatus", imu.status, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "magtime", mag.time, 0, DataTypeDouble, double, 0);
 	ADD_MAP(m, totalSize, "mag[0]", mag.mag[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "mag[1]", mag.mag[1], 0, DataTypeFloat, float&, 0);
@@ -1485,31 +1451,31 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	typedef can_config_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[DID_CAN_CONFIG];
 	uint32_t totalSize = 0;
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_TIME]", can_period_mult[CID_INS_TIME], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_STATUS]", can_period_mult[CID_INS_STATUS], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_EULER]", can_period_mult[CID_INS_EULER], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_QUATN2B]", can_period_mult[CID_INS_QUATN2B], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_QUATE2B]", can_period_mult[CID_INS_QUATE2B], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_UVW]", can_period_mult[CID_INS_UVW], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_VE]", can_period_mult[CID_INS_VE], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_LAT]", can_period_mult[CID_INS_LAT], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_LON]", can_period_mult[CID_INS_LON], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ALT]", can_period_mult[CID_INS_ALT], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_NORTH_EAST]", can_period_mult[CID_INS_NORTH_EAST], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_DOWN]", can_period_mult[CID_INS_DOWN], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ECEF_X]", can_period_mult[CID_INS_ECEF_X], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ECEF_Y]", can_period_mult[CID_INS_ECEF_Y], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ECEF_Z]", can_period_mult[CID_INS_ECEF_Z], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_MSL]", can_period_mult[CID_INS_MSL], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_PREINT_PX]", can_period_mult[CID_PREINT_PX], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_PREINT_QY]", can_period_mult[CID_PREINT_QY], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_PREINT_RZ]", can_period_mult[CID_PREINT_RZ], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_PX]", can_period_mult[CID_DUAL_PX], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_QY]", can_period_mult[CID_DUAL_QY], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_RZ]", can_period_mult[CID_DUAL_RZ], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_POS]", can_period_mult[CID_GPS1_POS], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_ROLL_ROLLRATE]", can_period_mult[CID_ROLL_ROLLRATE], 0, DataTypeUInt32, uint32_t&, 0);
-	ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_RTK_REL]", can_period_mult[CID_GPS1_RTK_REL], 0, DataTypeUInt32, uint32_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_TIME]", can_period_mult[CID_INS_TIME], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_STATUS]", can_period_mult[CID_INS_STATUS], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_EULER]", can_period_mult[CID_INS_EULER], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_QUATN2B]", can_period_mult[CID_INS_QUATN2B], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_QUATE2B]", can_period_mult[CID_INS_QUATE2B], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_UVW]", can_period_mult[CID_INS_UVW], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_VE]", can_period_mult[CID_INS_VE], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_LAT]", can_period_mult[CID_INS_LAT], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_LON]", can_period_mult[CID_INS_LON], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ALT]", can_period_mult[CID_INS_ALT], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_NORTH_EAST]", can_period_mult[CID_INS_NORTH_EAST], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_DOWN]", can_period_mult[CID_INS_DOWN], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ECEF_X]", can_period_mult[CID_INS_ECEF_X], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ECEF_Y]", can_period_mult[CID_INS_ECEF_Y], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_ECEF_Z]", can_period_mult[CID_INS_ECEF_Z], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_INS_MSL]", can_period_mult[CID_INS_MSL], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_PREINT_PX]", can_period_mult[CID_PREINT_PX], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_PREINT_QY]", can_period_mult[CID_PREINT_QY], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_PREINT_RZ]", can_period_mult[CID_PREINT_RZ], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_PX]", can_period_mult[CID_DUAL_PX], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_QY]", can_period_mult[CID_DUAL_QY], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_RZ]", can_period_mult[CID_DUAL_RZ], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_POS]", can_period_mult[CID_GPS1_POS], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_ROLL_ROLLRATE]", can_period_mult[CID_ROLL_ROLLRATE], 0, DataTypeUInt16, uint16_t&, 0);
+	ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_RTK_REL]", can_period_mult[CID_GPS1_RTK_REL], 0, DataTypeUInt16, uint16_t&, 0);
 	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_TIME]", can_transmit_address[CID_INS_TIME], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_STATUS]", can_transmit_address[CID_INS_STATUS], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_EULER]", can_transmit_address[CID_INS_EULER], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
@@ -1535,7 +1501,7 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_POS]", can_transmit_address[CID_GPS1_POS], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_RTK_REL]", can_transmit_address[CID_GPS1_RTK_REL], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
 	ADD_MAP(m, totalSize, "can_transmit_address[CID_ROLL_ROLLRATE]", can_transmit_address[CID_ROLL_ROLLRATE], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
-	ADD_MAP(m, totalSize, "can_baudrate_kbps", can_baudrate_kbps, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "can_baudrate_kbps", can_baudrate_kbps, 0, DataTypeUInt16, uint16_t, 0);
 	ADD_MAP(m, totalSize, "can_receive_address", can_receive_address, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
 	ASSERT_SIZE(totalSize);
@@ -1604,37 +1570,37 @@ static void PopulateSensorsISMappings(map_name_to_info_t mappings[DID_COUNT], ui
 	typedef sensors_w_temp_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[id];
 	uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "pqr1[0]", mpu[0].pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr1[1]", mpu[0].pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr1[2]", mpu[0].pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[0]", mpu[0].acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[1]", mpu[0].acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[2]", mpu[0].acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[0]", mpu[0].mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[1]", mpu[0].mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag1[2]", mpu[0].mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp1", mpu[0].temp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "pqr2[0]", mpu[1].pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[1]", mpu[1].pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[2]", mpu[1].pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[0]", mpu[1].acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[1]", mpu[1].acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[2]", mpu[1].acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[0]", mpu[1].mag[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[1]", mpu[1].mag[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "mag2[2]", mpu[1].mag[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "temp2", mpu[1].temp, 0, DataTypeFloat, float, 0);
-	ADD_MAP(m, totalSize, "pqr3[0]", mpu[2].pqr[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr3[1]", mpu[2].pqr[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "pqr3[2]", mpu[2].pqr[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc3[0]", mpu[2].acc[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc3[1]", mpu[2].acc[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "acc3[2]", mpu[2].acc[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag3[0]", mpu[2].mag[0], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag3[1]", mpu[2].mag[1], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "mag3[2]", mpu[2].mag[2], 0, DataTypeFloat, float&, 0);
-	ADD_MAP(m, totalSize, "temp3", mpu[2].temp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "imu3.time", imu3.time, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "pqr1[0]", imu3.I[0].pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr1[1]", imu3.I[0].pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr1[2]", imu3.I[0].pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc1[0]", imu3.I[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc1[1]", imu3.I[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc1[2]", imu3.I[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag1[0]", mag[0].xyz[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag1[1]", mag[0].xyz[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag1[2]", mag[0].xyz[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "temp1", temp[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr2[0]", imu3.I[1].pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr2[1]", imu3.I[1].pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "pqr2[2]", imu3.I[1].pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc2[0]", imu3.I[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc2[1]", imu3.I[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "acc2[2]", imu3.I[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag2[0]", mag[1].xyz[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag2[1]", mag[1].xyz[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "mag2[2]", mag[1].xyz[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "temp2", temp[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[0]", imu3.I[2].pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[1]", imu3.I[2].pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr3[2]", imu3.I[2].pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[0]", imu3.I[2].acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[1]", imu3.I[2].acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc3[2]", imu3.I[2].acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag3[0]", mag[2].xyz[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag3[1]", mag[2].xyz[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag3[2]", mag[2].xyz[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "temp3", temp[2], 0, DataTypeFloat, float&, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2334,7 +2300,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_NULL",                         // 0
 	"DID_DEV_INFO",                     // 1
 	"DID_SYS_FAULT",                    // 2
-	"DID_PREINTEGRATED_IMU",            // 3
+	"DID_PIMU",                         // 3
 	"DID_INS_1",                        // 4
 	"DID_INS_2",                        // 5
 	"DID_GPS1_UBX_POS",                 // 6
@@ -2355,7 +2321,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS_REL",             // 21
 	"DID_GPS1_RTK_POS_MISC",            // 22
 	"DID_FEATURE_BITS",                 // 23
-	"DID_SENSORS_RAW",                  // 24
+	"DID_SENSORS_UCAL",                  // 24
 	"DID_SENSORS_TCAL",                 // 25
 	"DID_SENSORS_TC_BIAS",              // 26
 	"DID_IO",                           // 27
@@ -2388,7 +2354,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS",                 // 54
 	"DID_ROS_COVARIANCE_POSE_TWIST",    // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
-	"DID_IMU3_RAW",                     // 57
+	"DID_IMU3_UNCAL",               // 57
 	"DID_IMU",                          // 58
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
@@ -2415,9 +2381,9 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_FLASH_CFG",                // 81
 	"DID_EVB_DEBUG_ARRAY",              // 82
 	"DID_EVB_RTOS_INFO",                // 83
-	"DID_IMU3_RAW_MAG",                 // 84
+	"DID_UNUSED_84",                    // 84
 	"DID_IMU_MAG",                      // 85
-	"DID_PREINTEGRATED_IMU_MAG",        // 86
+	"DID_PIMU_MAG",                     // 86
 	"DID_GROUND_VEHICLE",               // 87
 	"DID_POSITION_MEASUREMENT",         // 88
 	"DID_RTK_DEBUG_2",                  // 89
@@ -2461,7 +2427,7 @@ cISDataMappings::cISDataMappings()
 	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
-    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
+    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_UNCAL);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateRMCMappings(m_lookupInfo);
@@ -2487,7 +2453,7 @@ cISDataMappings::cISDataMappings()
 	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
 	PopulateMagnetometerMappings(m_lookupInfo, DID_REFERENCE_MAGNETOMETER);
     PopulateBarometerMappings(m_lookupInfo);
-    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PREINTEGRATED_IMU);
+    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PIMU);
     PopulateWheelEncoderMappings(m_lookupInfo);
     PopulateGroundVehicleMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
@@ -2519,7 +2485,7 @@ cISDataMappings::cISDataMappings()
 #ifdef USE_IS_INTERNAL
 
 	PopulateSensorsADCMappings(m_lookupInfo);
-	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_RAW);
+	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_UCAL);
 	PopulateSensorsISMappings(m_lookupInfo, DID_SENSORS_TCAL);
 	PopulateSensorsTCMappings(m_lookupInfo);
 	PopulateSensorsCompMappings(m_lookupInfo);
@@ -2533,7 +2499,6 @@ cISDataMappings::cISDataMappings()
 	PopulateRtkDebugMappings(m_lookupInfo);
 	// PopulateRtkDebug2Mappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
-	PopulateIMU3MagnetometerMappings(m_lookupInfo);
 	// PopulateIMUMagnetometerMappings(m_lookupInfo, DID_IMU_MAG);
 
 #endif

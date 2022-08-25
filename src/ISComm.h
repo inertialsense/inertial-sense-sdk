@@ -50,7 +50,7 @@ extern "C" {
 
 /** IMU */
 #define _DID_IMU					DID_IMU					/** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_IMU_PREINTEGRATED_IMU	DID_PREINTEGRATED_IMU	/** (see preintegrated_imu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
+#define _DID_PIMU					DID_PIMU				/** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
 
 /** GPS */
 #define _DID_GPS1_POS				DID_GPS1_POS			/** (see gps_pos_t) GPS output */

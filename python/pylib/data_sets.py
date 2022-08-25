@@ -6,7 +6,7 @@ from enum import Enum, IntEnum
 DID_NULL                        = 0
 DID_DEV_INFO                    = 1
 DID_SYS_FAULT                   = 2
-DID_PREINTEGRATED_IMU           = 3
+DID_PIMU                        = 3
 DID_INS_1                       = 4
 DID_INS_2                       = 5
 DID_GPS1_UBX_POS                = 6
@@ -27,7 +27,7 @@ DID_INTERNAL_DIAGNOSTIC         = 20
 DID_GPS1_RTK_POS_REL            = 21
 DID_GPS1_RTK_POS_MISC           = 22
 DID_FEATURE_BITS                = 23
-DID_SENSORS_RAW                 = 24
+DID_SENSORS_UCAL                 = 24
 DID_SENSORS_TCAL                = 25
 DID_SENSORS_TC_BIAS             = 26
 DID_IO                          = 27
@@ -59,7 +59,7 @@ DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
 DID_COMMUNICATIONS_LOOPBACK     = 56
-DID_IMU3_RAW                    = 57
+DID_IMU3_UNCAL                  = 57
 DID_IMU                         = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
@@ -86,9 +86,9 @@ DID_EVB_STATUS                  = 80
 DID_EVB_CONFIG                  = 81
 DID_EVB_DEBUG_ARRAY             = 82
 DID_EVB_RTOS_INFO               = 83
-DID_IMU3_RAW_MAG                = 84
+# DID_UNUSED_84                 = 84
 DID_IMU_MAG                     = 85
-DID_PREINTEGRATED_IMU_MAG       = 86
+DID_PIMU_MAG                    = 86
 DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
@@ -98,6 +98,8 @@ DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
 DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
+DID_IMU3_RAW                    = 96
+DID_IMU_RAW                     = 97
 DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
 NUM_DIDS                        = 120
@@ -108,7 +110,6 @@ did_name_lookup = {
  DID_NULL : "null",
  DID_DEV_INFO : "devInfo",
  DID_SYS_FAULT : "sysFault",
- DID_PREINTEGRATED_IMU : "preintegratedImu",
  DID_INS_1 : "ins1",
  DID_INS_2 : "ins2",
  DID_GPS1_UBX_POS : "gps1UbxPos",
@@ -131,7 +132,7 @@ did_name_lookup = {
  DID_GPS1_RTK_POS_MISC: "gps1RtkPosMisc",
  DID_GPS1_RTK_CMP_MISC: "gps1RtkCmpMisc",
  DID_FEATURE_BITS : "featureBits",
- DID_SENSORS_RAW : "sensorsRaw",
+ DID_SENSORS_UCAL : "sensorsRaw",
  DID_SENSORS_TCAL : "sensorsTcal",
  DID_SENSORS_TC_BIAS : "sensorsTcBias",
  DID_IO : "io",
@@ -161,7 +162,10 @@ did_name_lookup = {
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
- DID_IMU3_RAW : "imu3",
+ DID_IMU3_UNCAL : "imu3Uncal",
+ DID_IMU3_RAW : "imu3Raw",
+ DID_IMU_RAW : "imuRaw",
+ DID_PIMU : "pimu",
  DID_IMU : "imu",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",

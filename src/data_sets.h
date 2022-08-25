@@ -34,7 +34,7 @@ typedef uint32_t eDataIDs;
 #define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
-#define DID_PREINTEGRATED_IMU           (eDataIDs)3  /** (preintegrated_imu_t) Coning and sculling integral in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GPS1_UBX_POS                (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from ublox receiver. */
@@ -55,7 +55,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
-#define DID_SENSORS_RAW                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
+#define DID_SENSORS_UCAL                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
 #define DID_IO                          (eDataIDs)27 /** (io_t) I/O */
@@ -88,12 +88,12 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_RTK_POS                (eDataIDs)54 /** (gps_pos_t) GPS RTK position data */
 #define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF covariances matrix lower diagonals */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
-#define DID_IMU3_RAW                    (eDataIDs)57 /** (imu3_t) Inertial measurement unit data directly from IMU.  We recommend use of DID_IMU or DID_PREINTEGRATED_IMU as they are oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_IMU3_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imu3_t) Uncalibrated triple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
 #define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GPS_BASE_RAW                (eDataIDs)60 /** (gps_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GPS_RTK_OPT                 (eDataIDs)61 /** (gps_rtk_opt_t) RTK options - requires little endian CPU. */
-#define DID_REFERENCE_PIMU              (eDataIDs)62 /** (preintegrated_imu_t) Reference or truth IMU used for manufacturing calibration and testing */
+#define DID_REFERENCE_PIMU              (eDataIDs)62 /** (pimu_t) Reference or truth IMU used for manufacturing calibration and testing */
 #define DID_MANUFACTURING_INFO          (eDataIDs)63 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
 #define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
@@ -115,11 +115,11 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_cfg_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-#define DID_IMU3_RAW_MAG                (eDataIDs)84 /** (imu3_mag_t) DID_IMU3_RAW + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. We recommend use of DID_IMU_MAG or DID_PREINTEGRATED_IMU_MAG as they are oversampled and contain less noise. */
-#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
-#define DID_PREINTEGRATED_IMU_MAG		(eDataIDs)86 /** (pimu_mag_t) DID_PREINTEGRATED_IMU + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PREINTEGRATED_IMU_MAG should be streamed simultaneously. */
+// #define DID_UNUSED_84                (eDataIDs)84 /** Unused */
+#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
+#define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_GROUND_VEHICLE				(eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
-#define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate*/
+#define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate */
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
 #define DID_CAN_CONFIG					(eDataIDs)90 /** (can_config_t) Addresses for CAN messages*/
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
@@ -127,6 +127,8 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
 #define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
+#define DID_IMU3_RAW                    (eDataIDs)96 /** (imu3_t) Triple IMU data calibrated from DID_IMU3_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
+#define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMU3_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -138,7 +140,7 @@ typedef uint32_t eDataIDs;
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
 #define DID_COUNT		(eDataIDs)120	// Used in SDK
-#define DID_COUNT_UINS	(eDataIDs)96	// Used in uINS
+#define DID_COUNT_UINS	(eDataIDs)100	// Used in uINS
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
@@ -435,14 +437,13 @@ typedef struct PACKED
 	double					ecef[3];
 	
 	/** Heading with respect to NED frame (rad)*/
-	float psi;
+	float 					psi;
 	
 	/** The Upper Diagonal of accuracy covariance matrix*/
 	float					accuracyCovUD[6]; // Matrix accuracyCovUD Described below
 	// 0 1 2
 	// _ 3 4
 	// _ _ 5
-
 
 }pos_measurement_t;
 
@@ -638,7 +639,7 @@ typedef struct PACKED
 } imu_t;
 
 
-/** (DID_IMU3_RAW) Dual Inertial Measurement Units (IMUs) data */
+/** (DID_IMU3_UNCAL) Dual Inertial Measurement Units (IMUs) data */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -684,7 +685,7 @@ typedef struct PACKED
 } barometer_t;
 
 
-/** (DID_PREINTEGRATED_IMU, DID_REFERENCE_PIMU) Coning and sculling integral in body/IMU frame. */
+/** (DID_PIMU, DID_REFERENCE_PIMU) Preintegraed IMU (a.k.a. Coning and Sculling integral) in body/IMU frame. */
 typedef struct PACKED
 {
 	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
@@ -702,7 +703,7 @@ typedef struct PACKED
 	/** IMU delta velocity (accelerometer {x,y,z} integral) in m/s in sensor frame */
 	float                   vel[3];
 
-} preintegrated_imu_t;
+} pimu_t;
 
 
 /** (DID_IMU_MAG) imu + mag */
@@ -716,22 +717,11 @@ typedef struct PACKED
 } imu_mag_t;
 
 
-/** (DID_IMU3_RAW_MAG) triple imu + mag */
-typedef struct PACKED
-{
-	/** Trimple imu */
-	imu3_t imu;
-	
-	/** mag */
-	magnetometer_t mag;
-} imu3_mag_t;
-
-
-/** (DID_PREINTEGRATED_IMU_MAG) preintegrated imu + mag */
+/** (DID_PIMU_MAG) preintegrated imu + mag */
 typedef struct PACKED
 {
 	/** Preintegrated IMU */
-	preintegrated_imu_t pimu;
+	pimu_t pimu;
 	
 	/** Magnetometer */
 	magnetometer_t mag;
@@ -1358,14 +1348,21 @@ typedef struct PACKED
 	sensors_mpu_t			mpu[NUM_IMU_DEVICES];
 } sensors_t;
 
-// (DID_SENSORS_RAW, DID_SENSORS_TCAL)
 typedef struct PACKED
 {
-    /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
-	double                  time;
-                                           
-	/** Units only apply for calibrated data */
-	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
+	f_t						xyz[3];
+} mag_xyz_t;
+
+// (DID_SENSORS_UCAL, DID_SENSORS_TCAL)
+typedef struct PACKED
+{
+	imu3_t					imu3;
+
+	/** (°C) Temperature of IMU.  Units only apply for calibrated data. */
+	f_t						temp[NUM_IMU_DEVICES];
+
+	/** (uT) Magnetometers.  Units only apply for calibrated data. */
+	mag_xyz_t				mag[NUM_MAG_DEVICES];
 } sensors_w_temp_t;
 
 typedef struct PACKED
@@ -1434,11 +1431,11 @@ typedef struct PACKED
 #define RMC_BITS_INS3                   0x0000000000000004      // "
 #define RMC_BITS_INS4                   0x0000000000000008      // "
 #define RMC_BITS_IMU                    0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-#define RMC_BITS_PREINTEGRATED_IMU      0x0000000000000020      // "
+#define RMC_BITS_PIMU                   0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-//                                      0x0000000000000100      // 
-//                                      0x0000000000000200      // 
+// #define RMC_BITS_UNUSED              0x0000000000000100
+// #define RMC_BITS_UNUSED              0x0000000000000200 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1448,7 +1445,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS_BASE_RAW           0x0000000000010000      // 
 #define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
-#define RMC_BITS_DID_IMU3               0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_IMU3_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
 #define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
 #define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
@@ -1461,13 +1458,16 @@ typedef struct PACKED
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
 #define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
-#define RMC_BITS_DID_IMU3_MAG           0x0000000200000000
-#define RMC_BITS_IMU_MAG				0x0000000400000000
-#define RMC_BITS_PREINTEGRATED_IMU_MAG	0x0000000800000000
+// #define RMC_BITS_UNUSED              0x0000000200000000
+#define RMC_BITS_IMU_MAG                0x0000000400000000
+#define RMC_BITS_PIMU_MAG               0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
+#define RMC_BITS_IMU3_RAW               0x0000010000000000
+#define RMC_BITS_IMU_RAW                0x0000020000000000
+
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -1491,13 +1491,13 @@ typedef struct PACKED
 										| RMC_BITS_INTERNAL_PPD \
 										| RMC_BITS_DIAGNOSTIC_MESSAGE)
 #define RMC_PRESET_PPD_BITS				(RMC_PRESET_PPD_BITS_NO_IMU \
-										| RMC_BITS_PREINTEGRATED_IMU \
+										| RMC_BITS_PIMU \
 										| RMC_BITS_REFERENCE_PIMU)
 #define RMC_PRESET_INS_BITS				(RMC_BITS_INS2 \
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_PRESET)
 #define RMC_PRESET_PPD_BITS_IMU3		(RMC_PRESET_PPD_BITS_NO_IMU \
-										| RMC_BITS_DID_IMU3)
+										| RMC_BITS_IMU3_UNCAL)
 #define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_RTK_STATE \
 										| RMC_BITS_RTK_CODE_RESIDUAL \
@@ -4005,13 +4005,13 @@ typedef enum
 typedef struct PACKED
 {
 	/** Broadcast period (ms) - CAN time message. 0 to disable. */
-	uint32_t				can_period_mult[NUM_CIDS];
+	uint16_t				can_period_mult[NUM_CIDS];
 	
 	/** Transmit address. */
 	uint32_t				can_transmit_address[NUM_CIDS];
 	
 	/** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
-	uint32_t				can_baudrate_kbps;
+	uint16_t				can_baudrate_kbps;
 
 	/** Receive address. */
 	uint32_t				can_receive_address;
@@ -4035,10 +4035,10 @@ typedef union PACKED
 	magnetometer_t			mag;
 	mag_cal_t				magCal;
 	barometer_t				baro;
-    wheel_encoder_t         wheelEncoder;
+    wheel_encoder_t			wheelEncoder;
 	ground_vehicle_t		groundVehicle;
 	pos_measurement_t		posMeasurement;
-	preintegrated_imu_t		pImu;
+	pimu_t					pImu;
 	gps_pos_t				gpsPos;
 	gps_vel_t				gpsVel;
 	gps_sat_t				gpsSat;

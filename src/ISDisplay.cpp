@@ -397,7 +397,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		case DID_MAGNETOMETER:
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
-		case DID_PREINTEGRATED_IMU:
+		case DID_PIMU:
 		case DID_IMU:
 		case DID_INL2_STATES:
 		case DID_GPS_BASE_RAW:
@@ -608,7 +608,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_EVB_DEV_INFO:
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
 	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
-	case DID_PREINTEGRATED_IMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
+	case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
 	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
@@ -965,7 +965,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 	return buf;
 }
 
-string cInertialSenseDisplay::DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
 	char buf[BUF_SIZE];

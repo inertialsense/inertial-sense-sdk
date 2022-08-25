@@ -715,13 +715,13 @@ class logPlot:
         dt = None
 
         if accelSensor==0:
-            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'theta'))
+            imu1 = np.copy(self.getData(device, DID_PIMU, 'theta'))
         else:
-            imu1 = np.copy(self.getData(device, DID_PREINTEGRATED_IMU, 'vel'))
+            imu1 = np.copy(self.getData(device, DID_PIMU, 'vel'))
 
-        if np.shape(imu1)[0] != 0:  # DID_PREINTEGRATED_IMU
-            time = self.getData(device, DID_PREINTEGRATED_IMU, 'time')
-            dt = self.getData(device, DID_PREINTEGRATED_IMU, 'dt') 
+        if np.shape(imu1)[0] != 0:  # DID_PIMU
+            time = self.getData(device, DID_PIMU, 'time')
+            dt = self.getData(device, DID_PIMU, 'dt') 
             # dt = time[1:] - time[:-1]
             # dt = np.append(dt, dt[-1])
             # Convert from preintegrated IMU to IMU.
@@ -1289,7 +1289,7 @@ class logPlot:
             dtGps = dtGps / self.d
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:])
 
-            integrationPeriod = self.getData(d, DID_PREINTEGRATED_IMU, 'dt')[1:]
+            integrationPeriod = self.getData(d, DID_PIMU, 'dt')[1:]
 
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if np.size(towOffset) > 0:
@@ -1299,10 +1299,10 @@ class logPlot:
 
             deltaTimestamp = 0
             timeImu = 0
-            if len(self.getData(d, DID_PREINTEGRATED_IMU, 'time')):
-                deltaTimestamp = self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] - self.getData(d, DID_PREINTEGRATED_IMU, 'time')[0:-1]
+            if len(self.getData(d, DID_PIMU, 'time')):
+                deltaTimestamp = self.getData(d, DID_PIMU, 'time')[1:] - self.getData(d, DID_PIMU, 'time')[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromTow(self.getData(d, DID_PREINTEGRATED_IMU, 'time')[1:] + towOffset)            
+                timeImu = getTimeFromTow(self.getData(d, DID_PIMU, 'time')[1:] + towOffset)            
             elif len(self.getData(d, DID_IMU3_RAW, 'time')):
                 deltaTimestamp = self.getData(d, DID_IMU3_RAW, 'time')[1:] - self.getData(d, DID_IMU3_RAW, 'time')[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
