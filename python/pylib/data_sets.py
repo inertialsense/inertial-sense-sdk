@@ -59,7 +59,7 @@ DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
 DID_COMMUNICATIONS_LOOPBACK     = 56
-DID_IMU3_RAW                    = 57
+DID_INT_IMU3_RAW                    = 57
 DID_IMU                         = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
@@ -88,7 +88,7 @@ DID_EVB_DEBUG_ARRAY             = 82
 DID_EVB_RTOS_INFO               = 83
 DID_IMU3_RAW_MAG                = 84
 DID_IMU_MAG                     = 85
-DID_PIMU_MAG       = 86
+DID_PIMU_MAG                    = 86
 DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
@@ -108,7 +108,7 @@ did_name_lookup = {
  DID_NULL : "null",
  DID_DEV_INFO : "devInfo",
  DID_SYS_FAULT : "sysFault",
- DID_PIMU : "preintegratedImu",
+ DID_PIMU : "pimu",
  DID_INS_1 : "ins1",
  DID_INS_2 : "ins2",
  DID_GPS1_UBX_POS : "gps1UbxPos",
@@ -161,7 +161,7 @@ did_name_lookup = {
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
- DID_IMU3_RAW : "imu3",
+ DID_INT_IMU3_RAW : "imu3",
  DID_IMU : "imu",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",

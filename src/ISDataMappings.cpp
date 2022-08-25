@@ -137,7 +137,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
 	sizeMap[DID_IMU] = sizeof(imu_t);
-    sizeMap[DID_IMU3_RAW] = sizeof(imu3_t);
+    sizeMap[DID_INT_IMU3_RAW] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
@@ -2388,7 +2388,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS",                 // 54
 	"DID_ROS_COVARIANCE_POSE_TWIST",    // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
-	"DID_IMU3_RAW",                     // 57
+	"DID_INT_IMU3_RAW",                     // 57
 	"DID_IMU",                          // 58
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
@@ -2461,7 +2461,7 @@ cISDataMappings::cISDataMappings()
 	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
     PopulateIMUMappings(m_lookupInfo, DID_IMU);
-    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
+    PopulateIMU3Mappings(m_lookupInfo, DID_INT_IMU3_RAW);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateRMCMappings(m_lookupInfo);

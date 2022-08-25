@@ -324,7 +324,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 54: DID_GPS1_RTK_POS
 		offsetsOnlyTimeFirst,	// 55: DID_ROS_COVARIANCE_POSE_TWIST
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
-		offsetsOnlyTimeFirst,	// 57: DID_IMU3_RAW
+		offsetsOnlyTimeFirst,	// 57: DID_INT_IMU3_RAW
 		offsetsOnlyTimeFirst,	// 58: DID_IMU
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
@@ -363,8 +363,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: DID_INFIELD_CAL
 		offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
-		0,                      // 96:
-		0,                      // 97:
+		offsetsOnlyTimeFirst,   // 96: DID_IMU3
+		offsetsOnlyTimeFirst,   // 97: DID_IMU_INT
 		0,                      // 98:
 		0,                      // 99:
 		0,                      // 100:
@@ -502,7 +502,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 54: DID_GPS1_RTK_POS
 		0,						// 55: DID_ROS_COVARIANCE_POSE_TWIST
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
-		0,						// 57: DID_IMU3_RAW
+		0,						// 57: DID_INT_IMU3_RAW
 		0,						// 58: DID_IMU
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
@@ -541,8 +541,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: DID_INFIELD_CAL
 		0,                      // 95: DID_REFERENCE_IMU
-		0,                      // 96:
-		0,                      // 97:
+		0,                      // 96: DID_IMU3
+		0,                      // 97: DID_IMU_INT
 		0,                      // 98:
 		0,                      // 99:
 		0,                      // 100:
@@ -621,9 +621,11 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_INS_2:					return RMC_BITS_INS2;
 		case DID_INS_3:					return RMC_BITS_INS3;
 		case DID_INS_4:					return RMC_BITS_INS4;
-		case DID_IMU3_RAW:				return RMC_BITS_DID_IMU3;
+		case DID_INT_IMU3_RAW:			return RMC_BITS_DID_INT_IMU3_RAW;
+		case DID_INT_IMU3:				return RMC_BITS_DID_INT_IMU3;
+		case DID_INT_IMU:				return RMC_BITS_DID_INT_IMU;
 		case DID_IMU:					return RMC_BITS_IMU;
-		case DID_PIMU:		return RMC_BITS_PIMU;
+		case DID_PIMU:					return RMC_BITS_PIMU;
 		case DID_REFERENCE_IMU:		    return RMC_BITS_REFERENCE_IMU;
 		case DID_REFERENCE_PIMU:		return RMC_BITS_REFERENCE_PIMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
@@ -653,7 +655,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
 		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
 		case DID_IMU3_RAW_MAG:          return RMC_BITS_DID_IMU3_MAG;
-		case DID_PIMU_MAG: return RMC_BITS_PIMU_MAG;
+		case DID_PIMU_MAG: 				return RMC_BITS_PIMU_MAG;
 		default:                        return defaultRmcBits;
 	}
 }
