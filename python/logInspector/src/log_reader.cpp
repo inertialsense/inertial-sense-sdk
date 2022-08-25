@@ -153,7 +153,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
         HANDLE_MSG( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc );
         // HANDLE_MSG( DID_FEATURE_BITS, dev_log_->featureBits );
-        HANDLE_MSG( DID_SENSORS_RAW, dev_log_->sensorsRaw );
+        HANDLE_MSG( DID_SENSORS_UCAL, dev_log_->sensorsRaw );
         HANDLE_MSG( DID_SENSORS_TCAL, dev_log_->sensorsTcal );
         HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
         HANDLE_MSG( DID_IO, dev_log_->io );
@@ -246,7 +246,7 @@ void LogReader::forwardData(int id)
     forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, id );
     forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, id );
     // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, id );
-    forward_message( DID_SENSORS_RAW, dev_log_->sensorsRaw, id );
+    forward_message( DID_SENSORS_UCAL, dev_log_->sensorsRaw, id );
     forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, id );
     forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, id );
     forward_message( DID_IO, dev_log_->io, id );

@@ -55,7 +55,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
-#define DID_SENSORS_RAW                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
+#define DID_SENSORS_UCAL                 (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
 #define DID_IO                          (eDataIDs)27 /** (io_t) I/O */
@@ -1353,7 +1353,7 @@ typedef struct PACKED
 	f_t						xyz[3];
 } mag_xyz_t;
 
-// (DID_SENSORS_RAW, DID_SENSORS_TCAL)
+// (DID_SENSORS_UCAL, DID_SENSORS_TCAL)
 typedef struct PACKED
 {
 	imu3_t					imu3;
