@@ -608,7 +608,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_EVB_DEV_INFO:
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
 	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
-	case DID_PIMU: str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
+	case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
 	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
 	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
 	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;

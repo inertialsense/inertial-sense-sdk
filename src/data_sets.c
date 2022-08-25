@@ -258,13 +258,6 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetof(survey_in_t, lla[2])
 	};
 
-
-
-
-
-
-
-
     static uint16_t* s_doubleOffsets[] =
 	{
 		0,						//  0: DID_NULL
@@ -351,7 +344,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         offsetsDebugArray,      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-        offsetsImuMag,          // 84: DID_IMU3_RAW_MAG
+        0,                      // 84: 
         offsetsImuMag,          // 85: DID_IMU_MAG
         offsetsPreImuMag,		// 86: DID_PIMU_MAG
 		0,                      // 87: DID_GROUND_VEHICLE
@@ -363,8 +356,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: DID_INFIELD_CAL
 		offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
-		offsetsOnlyTimeFirst,   // 96: DID_IMU3
-		offsetsOnlyTimeFirst,   // 97: DID_IMU_INT
+		offsetsOnlyTimeFirst,   // 96: DID_INT_IMU3
+		offsetsOnlyTimeFirst,   // 97: DID_INT_IMU
 		0,                      // 98:
 		0,                      // 99:
 		0,                      // 100:
@@ -386,7 +379,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 116:
 		0,                      // 117:
 		0,                      // 118:
-        0                       // 119:
+		0                       // 119:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -529,7 +522,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         0,                      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-		0,						// 84: DID_IMU3_RAW_MAG
+		0,						// 84: 
 		0,						// 85: DID_IMU_MAG
 		0,						// 86: DID_PIMU_MAG
 		0,						// 87: DID_GROUND_VEHICLE
@@ -541,8 +534,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: DID_INFIELD_CAL
 		0,                      // 95: DID_REFERENCE_IMU
-		0,                      // 96: DID_IMU3
-		0,                      // 97: DID_IMU_INT
+		0,                      // 96: DID_INT_IMU3
+		0,                      // 97: DID_INT_IMU
 		0,                      // 98:
 		0,                      // 99:
 		0,                      // 100:
@@ -621,9 +614,9 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_INS_2:					return RMC_BITS_INS2;
 		case DID_INS_3:					return RMC_BITS_INS3;
 		case DID_INS_4:					return RMC_BITS_INS4;
-		case DID_INT_IMU3_RAW:			return RMC_BITS_DID_INT_IMU3_RAW;
-		case DID_INT_IMU3:				return RMC_BITS_DID_INT_IMU3;
-		case DID_INT_IMU:				return RMC_BITS_DID_INT_IMU;
+		case DID_INT_IMU3_RAW:			return RMC_BITS_INT_IMU3_RAW;
+		case DID_INT_IMU3:				return RMC_BITS_INT_IMU3;
+		case DID_INT_IMU:				return RMC_BITS_INT_IMU;
 		case DID_IMU:					return RMC_BITS_IMU;
 		case DID_PIMU:					return RMC_BITS_PIMU;
 		case DID_REFERENCE_IMU:		    return RMC_BITS_REFERENCE_IMU;
@@ -654,7 +647,6 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
 		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
 		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
-		case DID_IMU3_RAW_MAG:          return RMC_BITS_DID_IMU3_MAG;
 		case DID_PIMU_MAG: 				return RMC_BITS_PIMU_MAG;
 		default:                        return defaultRmcBits;
 	}

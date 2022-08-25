@@ -115,9 +115,9 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_cfg_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-#define DID_IMU3_RAW_MAG                (eDataIDs)84 /** (imu3_mag_t) DID_INT_IMU3_RAW + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PIMU_MAG should be streamed simultaneously. We recommend use of DID_IMU_MAG or DID_PIMU_MAG as they are oversampled and contain less noise. */
-#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PIMU_MAG should be streamed simultaneously. */
-#define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU3_RAW_MAG, DID_IMU_MAG, or DID_PIMU_MAG should be streamed simultaneously. */
+// #define DID_UNUSED_84                (eDataIDs)84 /** Unused */
+#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
+#define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_GROUND_VEHICLE				(eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
 #define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate */
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
@@ -715,17 +715,6 @@ typedef struct PACKED
 	/** mag */
 	magnetometer_t mag;
 } imu_mag_t;
-
-
-/** (DID_IMU3_RAW_MAG) triple imu + mag */
-typedef struct PACKED
-{
-	/** Trimple imu */
-	imu3_t imu;
-	
-	/** mag */
-	magnetometer_t mag;
-} imu3_mag_t;
 
 
 /** (DID_PIMU_MAG) preintegrated imu + mag */
@@ -1362,15 +1351,6 @@ typedef struct PACKED
 // (DID_SENSORS_RAW, DID_SENSORS_TCAL)
 typedef struct PACKED
 {
-#if 0
-    /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
-	double                  time;
-                                           
-	/** Units only apply for calibrated data */
-	sensors_mpu_w_temp_t	mpu[NUM_IMU_DEVICES];
-
-#else
-
 	imu3_t                  imu3;
 
 	/** (°C) Temperature of IMU.  Units only apply for calibrated data. */
@@ -1381,8 +1361,6 @@ typedef struct PACKED
 	{
 		f_t					xyz[3];
 	}						mag[NUM_MAG_DEVICES];
-
-#endif
 } sensors_w_temp_t;
 
 typedef struct PACKED
@@ -1451,11 +1429,11 @@ typedef struct PACKED
 #define RMC_BITS_INS3                   0x0000000000000004      // "
 #define RMC_BITS_INS4                   0x0000000000000008      // "
 #define RMC_BITS_IMU                    0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-#define RMC_BITS_PIMU      				0x0000000000000020      // "
+#define RMC_BITS_PIMU                   0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-//                                      0x0000000000000100      // 
-//                                      0x0000000000000200      // 
+// #define RMC_BITS_UNUSED              0x0000000000000100
+// #define RMC_BITS_UNUSED              0x0000000000000200 
 #define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
@@ -1465,7 +1443,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS_BASE_RAW           0x0000000000010000      // 
 #define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
-#define RMC_BITS_DID_INT_IMU3_RAW       0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_INT_IMU3_RAW           0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
 #define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
 #define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
@@ -1478,15 +1456,15 @@ typedef struct PACKED
 #define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
 #define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
 #define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
-#define RMC_BITS_DID_IMU3_MAG           0x0000000200000000
-#define RMC_BITS_IMU_MAG				0x0000000400000000
-#define RMC_BITS_PIMU_MAG				0x0000000800000000
+// #define RMC_BITS_UNUSED              0x0000000200000000
+#define RMC_BITS_IMU_MAG                0x0000000400000000
+#define RMC_BITS_PIMU_MAG               0x0000000800000000
 #define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
 #define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
-#define RMC_BITS_DID_INT_IMU3           0x0000010000000000
-#define RMC_BITS_DID_INT_IMU            0x0000020000000000
+#define RMC_BITS_INT_IMU3               0x0000010000000000
+#define RMC_BITS_INT_IMU                0x0000020000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -1517,7 +1495,7 @@ typedef struct PACKED
 										| RMC_BITS_GPS1_POS \
 										| RMC_BITS_PRESET)
 #define RMC_PRESET_PPD_BITS_IMU3		(RMC_PRESET_PPD_BITS_NO_IMU \
-										| RMC_BITS_DID_INT_IMU3_RAW)
+										| RMC_BITS_INT_IMU3_RAW)
 #define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
 										| RMC_BITS_RTK_STATE \
 										| RMC_BITS_RTK_CODE_RESIDUAL \
