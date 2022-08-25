@@ -60,6 +60,8 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
     m_libusb_threads.clear();
 
+    cISBootloaderDFU::m_DFUmutex.lock();
+
     while(m_continue_update)
     {
         cISBootloaderDFU::list_devices(&dfu_list);  // TODO: Put this in a separate thread since it takes a long time
@@ -112,6 +114,8 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
         m_libusb_thread_mutex.unlock();
     }
+
+    cISBootloaderDFU::m_DFUmutex.unlock();
     
     if(m_use_dfu) { libusb_exit(NULL); }
 }
