@@ -403,7 +403,7 @@ is_operation_result cISBootloaderThread::update(
     m_timeStart = current_timeMs();
     uint32_t timeoutLong = current_timeMs();
 
-    m_infoProgress(NULL, "Updating devices... (90 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Updating devices... (60 seconds max.)", IS_LOG_LEVEL_INFO);
 
     while (m_continue_update)
     {
@@ -490,7 +490,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Timeout after 5 seconds
-        if (current_timeMs() - timeoutLong > 90000) 
+        if (current_timeMs() - timeoutLong > 60000) 
         {
             m_continue_update = false;
         }
