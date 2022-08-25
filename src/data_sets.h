@@ -348,8 +348,9 @@ enum eHdwStatusFlags
 
 	/** Temperature outside spec'd operating range */
 	HDW_STATUS_ERR_TEMPERATURE					= (int)0x04000000,
-
-	HDW_STATUS_UNSUED_6							= (int)0x08000000,
+	
+	/** IMX pins G5-G8 are configure for SPI use */
+	HDW_STATUS_SPI_INTERFACE_ENABLED			= (int)0x08000000,
 
 	/** Fault reset cause */
 	HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
