@@ -563,6 +563,12 @@ void board_IO_config(void)
 	}
 #endif
 
+	/////////////////////////////////////////////////////////////////////////
+	// Reset IMX for changes to take effect (SPI, etc.)
+	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_LOW); 
+	time_delay(100);
+	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_HIGH); 
+
 	if (s_pfnHandleBoardIoCfg)
 	{
 		s_pfnHandleBoardIoCfg();
