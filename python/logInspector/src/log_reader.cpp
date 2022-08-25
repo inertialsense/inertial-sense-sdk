@@ -184,9 +184,9 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_MAGNETOMETER, dev_log_->magnetometer );
         HANDLE_MSG( DID_BAROMETER, dev_log_->barometer );
         HANDLE_MSG( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos );
-        HANDLE_MSG( DID_INT_IMU3_RAW, dev_log_->intImu3raw );
-        HANDLE_MSG( DID_INT_IMU3, dev_log_->intIimu3 );
-        HANDLE_MSG( DID_INT_IMU, dev_log_->intImu );
+        HANDLE_MSG( DID_IMU3_UNCAL, dev_log_->imu3Uncal );
+        HANDLE_MSG( DID_IMU3_RAW, dev_log_->imu3Raw );
+        HANDLE_MSG( DID_IMU_RAW, dev_log_->imuRaw );
         HANDLE_MSG( DID_PIMU, dev_log_->pimu );
         HANDLE_MSG( DID_IMU, dev_log_->imu );
         HANDLE_MSG( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo );
@@ -277,9 +277,9 @@ void LogReader::forwardData(int id)
     forward_message( DID_MAGNETOMETER, dev_log_->magnetometer, id );
     forward_message( DID_BAROMETER, dev_log_->barometer, id );
     forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, id );
-    forward_message( DID_INT_IMU3_RAW, dev_log_->intImu3Raw, id );
-    forward_message( DID_INT_IMU3, dev_log_->intImu3, id );
-    forward_message( DID_INT_IMU, dev_log_->intImu, id );
+    forward_message( DID_IMU3_UNCAL, dev_log_->imu3Uncal, id );
+    forward_message( DID_IMU3_RAW, dev_log_->imu3Raw, id );
+    forward_message( DID_IMU_RAW, dev_log_->imuRaw, id );
     forward_message( DID_PIMU, dev_log_->pimu, id );
     forward_message( DID_IMU, dev_log_->imu, id );
     forward_message( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, id );

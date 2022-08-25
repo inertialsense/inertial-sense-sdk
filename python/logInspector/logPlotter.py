@@ -762,11 +762,11 @@ class logPlot:
                     imuCount = 1
 
                 else:   
-                    time = self.getData(device, DID_INT_IMU3, 'time')
+                    time = self.getData(device, DID_IMU3_RAW, 'time')
 
-                    if len(time) != 0: # DID_INT_IMU3 
-                        I = self.getData(device, DID_INT_IMU3, 'I')
-                        imuStatus = self.getData(device, DID_INT_IMU3, 'status')
+                    if len(time) != 0: # DID_IMU3_RAW 
+                        I = self.getData(device, DID_IMU3_RAW, 'I')
+                        imuStatus = self.getData(device, DID_IMU3_RAW, 'status')
                         dt = time[1:] - time[:-1]
                         dt = np.append(dt, dt[-1])
                         imu1 = []
@@ -1303,10 +1303,10 @@ class logPlot:
                 deltaTimestamp = self.getData(d, DID_PIMU, 'time')[1:] - self.getData(d, DID_PIMU, 'time')[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromTow(self.getData(d, DID_PIMU, 'time')[1:] + towOffset)            
-            elif len(self.getData(d, DID_INT_IMU3, 'time')):
-                deltaTimestamp = self.getData(d, DID_INT_IMU3, 'time')[1:] - self.getData(d, DID_INT_IMU3, 'time')[0:-1]
+            elif len(self.getData(d, DID_IMU3_RAW, 'time')):
+                deltaTimestamp = self.getData(d, DID_IMU3_RAW, 'time')[1:] - self.getData(d, DID_IMU3_RAW, 'time')[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromTow(self.getData(d, DID_INT_IMU3, 'time')[1:] + towOffset)
+                timeImu = getTimeFromTow(self.getData(d, DID_IMU3_RAW, 'time')[1:] + towOffset)
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
