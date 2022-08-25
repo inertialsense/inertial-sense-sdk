@@ -445,6 +445,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     SNPRINTF((char*)checkSumHex, 3, "%.2X", checkSum);
 
     // For some reason, the checksum doesn't always make it through to the IMX-5. Re-send until we get a response or timeout.
+    // Update 8/25/22: Increasing the serialPortReadTimeout from 10 to 100 seems to have fixed this. Still needs to be proven.
     for(int i = 0; i < 10; i++)
     {
         if (serialPortWrite(s, checkSumHex, 2) != 2)
@@ -454,11 +455,24 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
         }
 
         unsigned char buf[5] = { 0 };
-        int count = serialPortReadTimeout(s, buf, 3, 10);
+        int count = serialPortReadTimeout(s, buf, 3, 100);
 
         if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
         {
             break;
+        }
+        // Some debug code
+//        else if(count == 0)
+//        {
+//            continue;
+//        }
+//        else
+//        {
+//            continue;
+//        }
+        if (i == 9)
+        {
+            return IS_OP_ERROR;
         }
     }
 
