@@ -60,6 +60,8 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
     m_libusb_threads.clear();
 
+    cISBootloaderDFU::m_DFUmutex.lock();
+
     while(m_continue_update)
     {
         do {
@@ -115,6 +117,8 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
         m_libusb_thread_mutex.unlock();
     }
+
+    cISBootloaderDFU::m_DFUmutex.unlock();
     
     if(m_use_dfu) { libusb_exit(NULL); }
 }

@@ -30,6 +30,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace ISBootloader;
 
+std::mutex cISBootloaderDFU::m_DFUmutex;
+
 static constexpr uint32_t STM32_PAGE_SIZE = 0x800;
 static constexpr uint32_t STM32_PAGE_ERROR_MASK = 0x7FF;
 
@@ -62,6 +64,54 @@ is_operation_result cISBootloaderDFU::match_test(void* param)
     }
 
     return IS_OP_ERROR;
+}
+
+int cISBootloaderDFU::get_num_devices()
+{
+    int present = 0;
+
+    libusb_device** device_list;
+    libusb_device* dev;
+    libusb_device_handle* dev_handle;
+    struct libusb_device_descriptor desc;
+    struct libusb_config_descriptor* cfg;
+    int ret_libusb;
+
+    if(m_DFUmutex.try_lock())
+    {
+        libusb_init(NULL);
+
+        size_t device_count = libusb_get_device_list(NULL, &device_list);
+
+        for (size_t i = 0; i < (device_count - 1); ++i) {
+            dev = device_list[i];
+
+            ret_libusb = libusb_get_device_descriptor(dev, &desc);
+            if(ret_libusb < 0) continue;
+
+            // Check vendor and product ID
+            if (desc.idVendor != STM32_DESCRIPTOR_VENDOR_ID) continue;      // must be some other usb device
+            if (desc.idProduct != STM32_DESCRIPTOR_PRODUCT_ID) continue;     // must be some other usb device
+
+            ret_libusb = libusb_get_config_descriptor(device_list[i], 0, &cfg);
+
+            // USB-IF DFU interface class numbers
+            if(cfg->interface->altsetting[0].bInterfaceClass != 0xFE || 
+                cfg->interface->altsetting[0].bInterfaceSubClass != 0x01 || 
+                cfg->interface->altsetting[0].bInterfaceProtocol != 0x02
+            ) continue;
+
+            present++;
+        }
+
+        libusb_free_device_list(device_list, 1);
+
+        libusb_exit(NULL);
+
+        m_DFUmutex.unlock();
+    }
+
+    return present;
 }
 
 is_operation_result cISBootloaderDFU::list_devices(is_dfu_list* list)
