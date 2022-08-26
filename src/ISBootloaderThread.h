@@ -92,6 +92,7 @@ public:
     static bool m_update_in_progress;
     
 private:
+    static void get_device_isb_version_thread(void* context);
     static void mode_thread_serial_app(void* context);
     static void mode_thread_serial_isb(void* context);
     static void update_thread_serial(void* context);

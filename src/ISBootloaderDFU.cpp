@@ -58,7 +58,7 @@ is_operation_result cISBootloaderDFU::match_test(void* param)
 {
     const char* uid = (const char*)param;
 
-    if(strlen(uid) != 0 && strlen(m_dfu.uid) != 0 && strncmp(uid, m_dfu.uid, 100) == 0)
+    if(strnlen(uid, 20) != 0 && strnlen(m_dfu.uid, 20) != 0 && strncmp(uid, m_dfu.uid, 20) == 0)
     {
         return IS_OP_OK;
     }

@@ -153,7 +153,7 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
         {
             if(major < isb_major)
             {
-                SNPRINTF(message, 100, "(ISB) Not updating bootloader, file == (%c%c), device == (%c%c), major < major", major + '0', minor, isb_major + '0', isb_minor);
+                SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, isb_major + '0', isb_minor);
                 m_info_callback(this, message, IS_LOG_LEVEL_INFO);
                 return IS_OP_ERROR;
             }
@@ -161,13 +161,13 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
             {
                 if(minor < isb_minor)
                 {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader, file == (%c%c), device == (%c%c), minor < minor", major + '0', minor, isb_major + '0', isb_minor);
+                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, isb_major + '0', isb_minor);
                     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
                     return IS_OP_ERROR;
                 }
                 else if(minor == isb_minor)
                 {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader, file == (%c%c), device == (%c%c), minor == minor", major + '0', minor, isb_major + '0', isb_minor);
+                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, isb_major + '0', isb_minor);
                     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
                     return IS_OP_ERROR;
                 }
@@ -177,7 +177,7 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
     }
     else
     {
-        SNPRINTF(message, 100, "(ISB) Force updating bootloader, file == (%c%c), device == (%c%c)", major + '0', minor, isb_major + '0', isb_minor);
+        SNPRINTF(message, 100, "(ISB) Updating bootloader: file %c%c >> device %c%c", major + '0', minor, isb_major + '0', isb_minor);
         m_info_callback(this, message, IS_LOG_LEVEL_INFO);
     }
 
