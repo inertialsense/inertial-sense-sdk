@@ -49,7 +49,7 @@ public:
     is_operation_result reboot();
     is_operation_result reboot_force();
     is_operation_result reboot_up();
-    is_operation_result reboot_down();
+    is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false);
 
     uint32_t get_device_info();
 
@@ -108,8 +108,6 @@ private:
     is_operation_result process_hex_file(FILE* file);
 
     struct {
-        uint8_t major;                  // Bootloader major revision, 1, 2, 3, etc. 
-        char minor;                     // Bootloader minor revision, a, b, c, etc.
         bool is_evb;                    // Available on version 6+, otherwise false
         ISBootloader::eProcessorType processor;       // Differentiates between uINS-3 and uINS-5
         bool rom_available;             // ROM bootloader is available on this port

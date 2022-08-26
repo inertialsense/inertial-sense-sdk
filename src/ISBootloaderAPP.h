@@ -49,7 +49,7 @@ public:
 
     is_operation_result reboot();
     is_operation_result reboot_up() { return IS_OP_OK; }
-    is_operation_result reboot_down();
+    is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false);
 
     uint32_t get_device_info();
 

@@ -97,8 +97,8 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         return IS_IMAGE_SIGN_NONE;
     }
 
-    uint8_t major = buf[2];
-//    char minor = buf[3];
+    isb_major = buf[2];
+    isb_minor = (char)buf[3];
 //    bool rom_available = buf[4];
     uint8_t processor = 0xFF;
     m_isb_props.is_evb = false;
@@ -111,7 +111,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         memcpy(&m_sn, &buf[7], sizeof(uint32_t));
     }
 
-    if(major >= 6)   
+    if(isb_major >= 6)   
     {   // v6 and up has EVB detection built-in
         if(processor == IS_PROCESSOR_SAMx70)
         {   
@@ -143,8 +143,44 @@ is_operation_result cISBootloaderISB::reboot_up()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderISB::reboot_down()
+is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, bool force)
 {
+    char message[100] = {0};
+
+    if(!force)
+    {   
+        if(major != 0 && minor != 0)
+        {
+            if(major < isb_major)
+            {
+                SNPRINTF(message, 100, "(ISB) Not updating bootloader, file == (%c%c), device == (%c%c), major < major", major + '0', minor, isb_major + '0', isb_minor);
+                m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+                return IS_OP_ERROR;
+            }
+            else if(major == isb_major)
+            {
+                if(minor < isb_minor)
+                {
+                    SNPRINTF(message, 100, "(ISB) Not updating bootloader, file == (%c%c), device == (%c%c), minor < minor", major + '0', minor, isb_major + '0', isb_minor);
+                    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+                    return IS_OP_ERROR;
+                }
+                else if(minor == isb_minor)
+                {
+                    SNPRINTF(message, 100, "(ISB) Not updating bootloader, file == (%c%c), device == (%c%c), minor == minor", major + '0', minor, isb_major + '0', isb_minor);
+                    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+                    return IS_OP_ERROR;
+                }
+                
+            }
+        }
+    }
+    else
+    {
+        SNPRINTF(message, 100, "(ISB) Force updating bootloader, file == (%c%c), device == (%c%c)", major + '0', minor, isb_major + '0', isb_minor);
+        m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+    }
+
     m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
@@ -207,8 +243,8 @@ uint32_t cISBootloaderISB::get_device_info()
 
     if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
     {   // Bad read
-        m_isb_props.major = 0;
-        m_isb_props.minor = 0;
+        isb_major = 0;
+        isb_minor = 0;
         m_isb_props.rom_available = 1;
         m_isb_props.processor = IS_PROCESSOR_SAMx70;
         m_isb_props.is_evb = false;
@@ -216,8 +252,8 @@ uint32_t cISBootloaderISB::get_device_info()
         return 0;
     }
 
-    m_isb_props.major = buf[2];
-    m_isb_props.minor = buf[3];
+    isb_major = buf[2];
+    isb_minor = (char)buf[3];
     m_isb_props.rom_available = buf[4];
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
@@ -231,15 +267,15 @@ uint32_t cISBootloaderISB::get_device_info()
         m_sn = 0;
     }
 
-    if (m_isb_props.major == 1)
+    if (isb_major == 1)
     {   // version 1
         m_isb_props.app_offset = 8192;
     }
-    else if (m_isb_props.major >= 2 && m_isb_props.major <= 5)
+    else if (isb_major >= 2 && isb_major <= 5)
     {   // version 2, 3 (which sent v2), 4, 5
         m_isb_props.app_offset = 16384;
     }
-    else if (m_isb_props.major >= 6)
+    else if (isb_major >= 6)
     {   // version 6
         m_isb_props.app_offset = 24576;
     }

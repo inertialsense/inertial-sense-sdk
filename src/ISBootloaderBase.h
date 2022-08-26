@@ -137,7 +137,7 @@ public:
 
     virtual ~cISBootloaderBase() {};
 
-    static eImageSignature get_image_signature(std::string filename);
+    static eImageSignature get_image_signature(std::string filename, uint8_t* major = NULL, char* minor = NULL);
 
     virtual is_operation_result match_test(void* param) = 0;
 
@@ -165,7 +165,7 @@ public:
      *  - ISB to SAM-BA
      *  Make sure to call the destructor after a successful call to this function
      */
-    virtual is_operation_result reboot_down() = 0;
+    virtual is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false) = 0;
 
     /**
      * @brief Get the serial number from the device, and fill out m_ctx with other info
@@ -216,10 +216,36 @@ public:
     std::string m_port_name;
     int m_baud;
 
-    uint32_t m_sn;                // Inertial Sense serial number, i.e. SN60000
+    uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
+    uint8_t isb_major;                  // ISB Major revision on device
+    char isb_minor;                     // ISB Minor revision on device
+    bool isb_mightUpdate;               // true if device will be updated if bootloader continues
 
-    static is_operation_result mode_device(
+    static is_operation_result mode_device_app(
         firmwares_t filenames,
+        serial_port_t* handle,
+        pfnBootloadStatus statusfn,
+        pfnBootloadProgress updateProgress,
+        pfnBootloadProgress verifyProgress,
+        std::vector<cISBootloaderBase*>& contexts,
+        std::mutex* addMutex,
+        cISBootloaderBase** new_context
+    );
+
+    static is_operation_result get_device_isb_version(
+        firmwares_t filenames,
+        serial_port_t* handle,
+        pfnBootloadStatus statusfn,
+        pfnBootloadProgress updateProgress,
+        pfnBootloadProgress verifyProgress,
+        std::vector<cISBootloaderBase*>& contexts,
+        std::mutex* addMutex,
+        cISBootloaderBase** new_context
+    );
+
+    static is_operation_result mode_device_isb(
+        firmwares_t filenames,
+        bool force,
         serial_port_t* handle,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateProgress,
@@ -272,8 +298,8 @@ protected:
      */
     static const char* get_file_ext(const char* filename);
     
-    static eImageSignature get_hex_image_signature(std::string image);
-    static eImageSignature get_bin_image_signature(std::string image);
+    static eImageSignature get_hex_image_signature(std::string image, uint8_t* major = NULL, char* minor = NULL);
+    static eImageSignature get_bin_image_signature(std::string image, uint8_t* major = NULL, char* minor = NULL);
 };
 
 }
