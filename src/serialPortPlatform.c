@@ -380,8 +380,8 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
 
 #if PLATFORM_IS_WINDOWS
 
-    DWORD dwRead = 0;
-    DWORD error = 0;
+    //DWORD dwRead = 0;
+    //DWORD error = 0;
 
     CancelIo(handle->platformHandle);
     //GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);

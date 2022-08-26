@@ -405,7 +405,6 @@ int cISBootloaderISB::is_isb_read_line(FILE* file, char line[1024])
 is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, int byteCount, int* currentOffset, int* totalBytes, int* verifyCheckSum)
 {
     serial_port_t* s = m_port;
-    int i;
 
     if (byteCount == 0)
     {
@@ -435,7 +434,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
     int newVerifyChecksum = *verifyCheckSum;
 
     // calculate verification checksum for this data
-    for (i = 0; i < charsForThisPage; i++)
+    for (int i = 0; i < charsForThisPage; i++)
     {
         newVerifyChecksum = ((newVerifyChecksum << 5) + newVerifyChecksum) + hexData[i];
     }
@@ -750,7 +749,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
     unsigned char* outputPtr = output;
     const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);
     int outputSize;
-    int page = 0;
+    //int page = 0;
     int pad;
     int fileSize;
     unsigned char tmp[5];
