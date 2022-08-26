@@ -722,17 +722,31 @@ is_operation_result InertialSense::BootloadFile(
 )
 {
 #ifndef EXCLUDE_BOOTLOADER
-	vector<string> portStrings;
+	vector<string> comPorts;
 
 	if (comPort == "*")
 	{
-		cISSerialPort::GetComPorts(portStrings);
+		cISSerialPort::GetComPorts(comPorts);
 	}
 	else
 	{
-		splitString(comPort, ',', portStrings);
+		splitString(comPort, ',', comPorts);
 	}
-	sort(portStrings.begin(), portStrings.end());
+	sort(comPorts.begin(), comPorts.end());
+
+	vector<string> all_ports;                   // List of ports connected
+	vector<string> update_ports;
+	vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
+
+	cISSerialPort::GetComPorts(all_ports);
+
+	// Get the list of ports to ignore during the bootloading process
+	sort(all_ports.begin(), all_ports.end());
+	sort(comPorts.begin(), comPorts.end());
+	set_difference(
+		all_ports.begin(), all_ports.end(),
+		comPorts.begin(), comPorts.end(),
+		back_inserter(ports_user_ignore));
 
 	// file exists?
 	ifstream tmpStream(fileName);
@@ -754,7 +768,19 @@ is_operation_result InertialSense::BootloadFile(
 	files.fw_EVB_2.path = fileName;
 	files.bl_EVB_2.path = fileName;
 
-	cISBootloaderThread::update(portStrings, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+	cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+
+	cISSerialPort::GetComPorts(all_ports);
+
+	// Get the list of ports to ignore during the bootloading process
+	sort(all_ports.begin(), all_ports.end());
+	sort(ports_user_ignore.begin(), ports_user_ignore.end());
+	set_difference(
+		all_ports.begin(), all_ports.end(),
+		ports_user_ignore.begin(), ports_user_ignore.end(),
+		back_inserter(update_ports));
+
+	cISBootloaderThread::update(update_ports, true, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
