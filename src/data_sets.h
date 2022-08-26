@@ -332,11 +332,10 @@ enum eHdwStatusFlags
 	/** Communications Rx buffer overrun */
 	HDW_STATUS_ERR_COM_RX_OVERRUN				= (int)0x00020000,
 
-	/** GPS PPS timepulse signal have not being recieved */
-	HDW_STATUS_ERR_GPS_PPS_MISSING				= (int)0x00040000,
-
-	/** Reserved */
-	HDW_STATUS_ERR_RESERVED						= (int)0x00080000,
+	/** GPS PPS timepulse signal has not been received or is in error */
+	HDW_STATUS_ERR_GPS_PPS_ERROR				= (int)0x00040000,
+	/** Time synchronized by GPS PPS */
+	HDW_STATUS_GPS_PPS_TIMESYNC					= (int)0x00080000,
 
 	/** Communications parse error count */
 	HDW_STATUS_COM_PARSE_ERR_COUNT_MASK			= (int)0x00F00000,
@@ -434,7 +433,9 @@ enum eGpsStatus
                                                     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_BAD|
                                                     GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_UNSET),
 	GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message
-	GPS_STATUS_FLAGS_MASK                           = (int)0x0FFFE000,    
+	GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS. 
+
+	GPS_STATUS_FLAGS_MASK                           = (int)0xFFFFE000,    
 	GPS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
 	
 };
@@ -2215,8 +2216,8 @@ enum eIoConfig
 	IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_MASK				= (int)0x00000007,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_DISABLED			= (int)0,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_ONBOARD_1_PIN20	= (int)1,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_ONBOARD_2		= (int)2,
+	IO_CFG_GPS_TIMEPUSE_SOURCE_GPS1_PPS_PIN20	= (int)1,
+	IO_CFG_GPS_TIMEPUSE_SOURCE_GPS2_PPS			= (int)2,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G2_PIN6	= (int)3,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G5_PIN9	= (int)4,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12	= (int)5,

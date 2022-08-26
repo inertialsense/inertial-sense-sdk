@@ -275,8 +275,8 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "tcPqrLinearity", tcPqrLinearity, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "tcAccLinearity", tcAccLinearity, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "acc", pqr, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "pqr", acc, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "pqr", pqr, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "acc", acc, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
