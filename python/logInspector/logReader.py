@@ -38,6 +38,7 @@ class Log:
         self.refData = []
         self.truth = []
         self.refINS = False
+        self.hardware = []
 
     def load(self, directory, serials=['ALL']):
         self.data = []
@@ -49,12 +50,14 @@ class Log:
         self.directory = directory
         self.numDev = self.data.shape[0]
         self.numRef = 0
+
         if self.numDev == 0:
             raise ValueError("No devices found in log")
         if len(self.data[0, DID_DEV_INFO]):
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
 
         for i in range(self.numDev):
+            self.hardware.append(self.data[i, DID_DEV_INFO]['hardwareVer'][0][0])
             if any(self.data[i,DID_FLASH_CONFIG]['sysCfgBits'] & eSysConfigBits.SYS_CFG_USE_REFERENCE_IMU_IN_EKF.value):
                 self.refINS = True
                 self.refIdx.append(i)
@@ -294,11 +297,20 @@ class Log:
             return 'PASS'
 
     def printRMSReport(self):
+        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx]
         self.tmpPassRMS = 1
         filename = os.path.join(self.directory, 'RMS_report_new_logger.txt')
-        thresholds = np.array([0.35, 0.35, 0.8, # (m)   NED
-                               0.2, 0.2, 0.2,   # (m/s) UVW
-                               0.11, 0.11, 2.0])  # (deg) ATT (roll, pitch, yaw)
+        # Make sure all devices have the same hardware
+        hardware = self.hardware[self.devIdx[0]]
+        for dev in uINS_device_idx:
+            if self.hardware[dev] != hardware:
+                # Use default value if not all devices use the same hardware
+                hardware = 0
+
+        # Default thresholds
+        thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
+                               0.2, 0.2, 0.2,    # (m/s) UVW
+                               0.11, 0.11, 2.0]) # (deg) ATT (roll, pitch, yaw)
         if self.navMode or self.compassing:
             thresholds[8] = 0.3  # Higher heading accuracy
         else:
@@ -309,11 +321,38 @@ class Log:
             thresholds[1] = 1.0
             thresholds[2] = 1.0
 
+        # Thresholds for uINS-3
+        if hardware == 3:
+            thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
+                                   0.2, 0.2, 0.2,    # (m/s) UVW
+                                   0.11, 0.11, 2.0]) # (deg) ATT (roll, pitch, yaw)
+            if self.navMode or self.compassing:
+                thresholds[8] = 0.3  # Higher heading accuracy
+            else:
+                thresholds[:6] = np.inf
+
+            if self.compassing:
+                thresholds[0] = 1.0
+                thresholds[1] = 1.0
+                thresholds[2] = 1.0
+        # Thresholds for uINS-5
+        elif hardware == 5:
+            thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
+                                   0.2, 0.2, 0.2,    # (m/s) UVW
+                                   0.06, 0.06, 1.0]) # (deg) ATT (roll, pitch, yaw)
+            if self.navMode or self.compassing:
+                thresholds[8] = 0.2  # Higher heading accuracy
+            else:
+                thresholds[:6] = np.inf
+
+            if self.compassing:
+                thresholds[0] = 1.0
+                thresholds[1] = 1.0
+                thresholds[2] = 1.0
+
         thresholds[6:] *= DEG2RAD  # convert degrees threshold to radians
 
         self.specRatio = self.averageRMS / thresholds
-
-        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx]
 
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
