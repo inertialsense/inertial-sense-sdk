@@ -2391,8 +2391,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_DEV_INFO",                 // 93
 	"DID_INFIELD_CAL",                  // 94 
 	"DID_REFERENCE_IMU",                // 95 
-	"UNUSED_96",                        // 96 
-	"UNUSED_97",                        // 97 
+	"DID_IMU3_RAW",                     // 96 
+	"DID_IMU_RAW",                      // 97 
 	"UNUSED_98",                        // 98 
 	"UNUSED_99",                        // 99 
 	"UNUSED_100",                       // 100
