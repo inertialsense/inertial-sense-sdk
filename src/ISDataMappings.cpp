@@ -359,7 +359,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "imuTemp", imuTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "baroTemp", baroTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "mcuTemp", mcuTemp, 0, DataTypeFloat, float, 0);
-    ADD_MAP(m, totalSize, "reserved1", reserved1, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "sysStatus", sysStatus, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double, 0);

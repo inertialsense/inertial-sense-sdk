@@ -332,6 +332,12 @@ enum eHdwStatusFlags
 	/** Communications Rx buffer overrun */
 	HDW_STATUS_ERR_COM_RX_OVERRUN				= (int)0x00020000,
 
+	/** GPS PPS timepulse signal have not being recieved */
+	HDW_STATUS_ERR_GPS_PPS_MISSING				= (int)0x00040000,
+
+	/** Reserved */
+	HDW_STATUS_ERR_RESERVED						= (int)0x00080000,
+
 	/** Communications parse error count */
 	HDW_STATUS_COM_PARSE_ERR_COUNT_MASK			= (int)0x00F00000,
 	HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET		= 20,
@@ -365,6 +371,13 @@ enum eHdwStatusFlags
 
 	/** Critical System Fault - CPU error */
 	HDW_STATUS_FAULT_SYS_CRITICAL				= (int)0x80000000,
+};
+
+/** System status flags */
+enum eSysStatusFlags
+{
+	/**  */
+	SYS_STATUS_RESERVED							= (int)0x00000001,
 };
 
 // Used to validate GPS position (and velocity)
@@ -1095,10 +1108,10 @@ typedef struct PACKED
 	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t                timeOfWeekMs;
 
-	/** System status 1 flags (eInsStatusFlags) */
+	/** INS status flags (eInsStatusFlags) */
 	uint32_t                insStatus;
 
-	/** System status 2 flags (eHdwStatusFlags) */
+	/** Hardware status flags (eHdwStatusFlags) */
 	uint32_t                hdwStatus;
 
 	/** IMU temperature */
@@ -1110,8 +1123,8 @@ typedef struct PACKED
 	/** MCU temperature (not available yet) */
 	float					mcuTemp;
 
-	/** Reserved */
-	float					reserved1;
+	/** System status flags (eSysStatusFlags) */
+	uint32_t				sysStatus;
 
 	/** IMU sample period in milliseconds. Zero disables sampling. */
 	uint32_t				imuPeriodMs;
