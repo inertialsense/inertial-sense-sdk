@@ -112,6 +112,8 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
         }
 
         m_libusb_thread_mutex.unlock();
+
+        SLEEP_MS(100);
     }
 
     cISBootloaderDFU::m_DFUmutex.unlock();
