@@ -168,7 +168,7 @@ size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image
 {
     FILE* ihex_file;
     ihex_file = fopen(ihex_filename, "r");
-    if(ihex_file==NULL) return -1;
+    if(ihex_file==NULL) return 0;
 
     size_t iter = 0;
     size_t numSections = 0;
