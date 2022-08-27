@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
@@ -23,6 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISSerialPort.h"
 
 using namespace ISBootloader;
+using namespace std;
 
 // print out upload progress
 static is_operation_result bootloaderUploadProgress(void* obj, float pct)
@@ -99,15 +101,38 @@ int main(int argc, char* argv[])
 	files.fw_EVB_2.path = std::string(argv[2]);
 	files.bl_EVB_2.path = std::string(argv[2]);
 
-	// update the firmware on any port that was open
+	
+
+	vector<string> all_ports;                   // List of ports connected
+
+	// For now, we will use all present devices.
+    cISSerialPort::GetComPorts(all_ports);
+
+    // Update the firmware on any port that was open
+    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list = 
+        cISBootloaderThread::set_mode_and_check_devices(
+                all_ports,
+                atoi(argv[1]),
+                files,
+               	bootloaderUploadProgress,
+				bootloaderVerifyProgress,
+				bootloaderStatusText,
+				NULL);
+
+    cISSerialPort::GetComPorts(all_ports);
+
+    // Update the firmware on any port that wasn't initially deselected
+    // update the firmware on any port that was open
 	cISBootloaderThread::update(
 		portStrings,
+		true,
 		atoi(argv[1]),
 		files,
 		bootloaderUploadProgress,
 		bootloaderVerifyProgress,
 		bootloaderStatusText,
 		NULL);
+
 
 	return 0;
 }

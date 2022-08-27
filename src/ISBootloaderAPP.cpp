@@ -118,8 +118,12 @@ is_operation_result cISBootloaderAPP::reboot()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderAPP::reboot_down()
+is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, bool force)
 {
+    (void)force;
+    (void)minor;
+    (void)major;
+
     m_info_callback(this, "(APP) Rebooting down into ISB mode...", IS_LOG_LEVEL_INFO);
 
     // In case we are in program mode, try and send the commands to go into bootloader mode

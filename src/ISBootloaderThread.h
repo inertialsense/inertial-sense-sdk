@@ -39,8 +39,26 @@ public:
     cISBootloaderThread() {};
     ~cISBootloaderThread() {};
 
+    typedef struct 
+    {
+        uint32_t sn;
+        uint8_t major;
+        char minor;
+    } confirm_bootload_t;
+
+    static std::vector<confirm_bootload_t> set_mode_and_check_devices(
+        std::vector<std::string>&               comPorts,
+        int                                     baudRate,
+        const ISBootloader::firmwares_t&        firmware,
+        ISBootloader::pfnBootloadProgress       uploadProgress, 
+        ISBootloader::pfnBootloadProgress       verifyProgress,
+        ISBootloader::pfnBootloadStatus         infoProgress,
+        void						            (*waitAction)()
+    );
+
     static is_operation_result update(
         std::vector<std::string>&               comPorts,
+        bool                                    force_isb_update,
         int                                     baudRate,
         const ISBootloader::firmwares_t&        firmware,
         ISBootloader::pfnBootloadProgress       uploadProgress, 
@@ -56,6 +74,7 @@ public:
         ISBootloader::cISBootloaderBase* ctx;
         bool done;
         bool reuse_port;
+        bool force_isb;
     } thread_serial_t;
 
     typedef struct 
@@ -73,7 +92,9 @@ public:
     static bool m_update_in_progress;
     
 private:
-    static void mode_thread_serial(void* context);
+    static void get_device_isb_version_thread(void* context);
+    static void mode_thread_serial_app(void* context);
+    static void mode_thread_serial_isb(void* context);
     static void update_thread_serial(void* context);
     static void update_thread_libusb(void* context);
     static void mgmt_thread_libusb(void* context);

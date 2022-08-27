@@ -76,7 +76,7 @@ public:
     
     is_operation_result reboot();
     is_operation_result reboot_up();
-    is_operation_result reboot_down() { return IS_OP_OK; }
+    is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false) { (void)major; (void)minor; (void)force; return IS_OP_OK; }
 
     is_operation_result match_test(void* param);
 

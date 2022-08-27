@@ -402,7 +402,7 @@ void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLev
 
 	if(obj == NULL)
     {
-        printf(str);
+		cout << str << endl;
 		print_mutex.unlock();
         return;
     }
