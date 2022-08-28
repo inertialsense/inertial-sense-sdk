@@ -803,7 +803,7 @@ int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, do
 *   Number Satellites
 *   Altitude & Geoid separation
 */
-int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)
+int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -911,9 +911,9 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double sep = atof(ptr);
 		
 	//Store data		
-	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, GPS_STATUS_NUM_SATS_USED_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, GPS_STATUS_FLAGS_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), fixType, GPS_STATUS_FIX_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, (uint32_t)GPS_STATUS_NUM_SATS_USED_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, (uint32_t)GPS_STATUS_FLAGS_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), fixType, (uint32_t)GPS_STATUS_FIX_MASK);
 		
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];
@@ -945,7 +945,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 *   Number Satellites
 *   Altitude & Geoid separation
 */	
-int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)
+int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1050,9 +1050,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double sep = atof(ptr);
 			
 	//Store data
-	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, GPS_STATUS_NUM_SATS_USED_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, GPS_STATUS_FLAGS_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), fixType, GPS_STATUS_FIX_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, (uint32_t)GPS_STATUS_NUM_SATS_USED_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, (uint32_t)GPS_STATUS_FLAGS_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), fixType, (uint32_t)GPS_STATUS_FIX_MASK);
 			
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];
