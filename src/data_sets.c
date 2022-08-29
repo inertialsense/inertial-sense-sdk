@@ -606,7 +606,7 @@ uint32_t flashChecksum32(const void* data, int size)
 }
 
 // Convert DID to message out control mask
-uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
+uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
 {
 	switch (dataId)
 	{
@@ -648,6 +648,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
 		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
 		case DID_PIMU_MAG: 				return RMC_BITS_PIMU_MAG;
+		
+		case DID_DEV_INFO:				return devInfoRmcBits;		// This allows the dev info to respond instantly when first connected.
 		default:                        return defaultRmcBits;
 	}
 }

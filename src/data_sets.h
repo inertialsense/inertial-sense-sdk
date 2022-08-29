@@ -4205,7 +4205,7 @@ Gets the offsets and lengths of strings given a data id
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
 /** Convert DID to realtime message bits */
-uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits);
+uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits);
 
 //Time conversion constants
 #define SECONDS_PER_WEEK        604800
