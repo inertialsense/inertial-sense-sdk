@@ -147,6 +147,7 @@ int error_check_config(evb_flash_cfg_t *cfg);
 
 void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4]);
 
+#define FLASH_WRITE_IN_PROGRESS()   (g_nvr_manage_config.flash_write_enable_timeMs)
 
 #ifdef __cplusplus
 }

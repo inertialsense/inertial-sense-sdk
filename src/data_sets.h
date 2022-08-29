@@ -3934,6 +3934,10 @@ typedef struct PACKED
 
 	/** Handle */
 	uint32_t                handle;
+
+	/** Local time when task loop started (following delay) */
+	uint32_t                profileStartTimeUs;
+	
 } rtos_task_t;
 
 /** (DID_RTOS_INFO) */

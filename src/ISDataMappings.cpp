@@ -1374,6 +1374,10 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
 	map_name_to_info_t& m = mappings[DID_RTOS_INFO];
 	uint32_t totalSize = 0;
 
+    ADD_MAP(m, totalSize, "freeHeapSize", freeHeapSize, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "mallocSize", mallocSize, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "freeSize", freeSize, 0, DataTypeUInt32, uint32_t, 0);
+
     ADD_MAP(m, totalSize, "name[0]", task[0].name, MAX_TASK_NAME_LEN, DataTypeString, char[MAX_TASK_NAME_LEN], 0);
     ADD_MAP(m, totalSize, "priority[0]", task[0].priority, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "stackUnused[0]", task[0].stackUnused, 0, DataTypeUInt32, uint32_t, 0);
@@ -1384,6 +1388,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gapCount[0]", task[0].gapCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "cpuUsage[0]", task[0].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "handle[0]", task[0].handle, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "profileStartTimeUs[0]", task[0].profileStartTimeUs, 0, DataTypeUInt32, uint32_t, 0);
 
     ADD_MAP(m, totalSize, "name[1]", task[1].name, MAX_TASK_NAME_LEN, DataTypeString, char[MAX_TASK_NAME_LEN], 0);
     ADD_MAP(m, totalSize, "priority[1]", task[1].priority, 0, DataTypeUInt32, uint32_t, 0);
@@ -1395,6 +1400,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gapCount[1]", task[1].gapCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "cpuUsage[1]", task[1].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "handle[1]", task[1].handle, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "profileStartTimeUs[1]", task[1].profileStartTimeUs, 0, DataTypeUInt32, uint32_t, 0);
 
     ADD_MAP(m, totalSize, "name[2]", task[2].name, MAX_TASK_NAME_LEN, DataTypeString, char[MAX_TASK_NAME_LEN], 0);
     ADD_MAP(m, totalSize, "priority[2]", task[2].priority, 0, DataTypeUInt32, uint32_t, 0);
@@ -1406,6 +1412,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gapCount[2]", task[2].gapCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "cpuUsage[2]", task[2].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "handle[2]", task[2].handle, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "profileStartTimeUs[2]", task[2].profileStartTimeUs, 0, DataTypeUInt32, uint32_t, 0);
 
     ADD_MAP(m, totalSize, "name[3]", task[3].name, MAX_TASK_NAME_LEN, DataTypeString, char[MAX_TASK_NAME_LEN], 0);
     ADD_MAP(m, totalSize, "priority[3]", task[3].priority, 0, DataTypeUInt32, uint32_t, 0);
@@ -1417,6 +1424,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gapCount[3]", task[3].gapCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "cpuUsage[3]", task[3].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "handle[3]", task[3].handle, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "profileStartTimeUs[3]", task[3].profileStartTimeUs, 0, DataTypeUInt32, uint32_t, 0);
 
     ADD_MAP(m, totalSize, "name[4]", task[4].name, MAX_TASK_NAME_LEN, DataTypeString, char[MAX_TASK_NAME_LEN], 0);
     ADD_MAP(m, totalSize, "priority[4]", task[4].priority, 0, DataTypeUInt32, uint32_t, 0);
@@ -1428,6 +1436,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gapCount[4]", task[4].gapCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "cpuUsage[4]", task[4].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "handle[4]", task[4].handle, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "profileStartTimeUs[4]", task[4].profileStartTimeUs, 0, DataTypeUInt32, uint32_t, 0);
 
     ADD_MAP(m, totalSize, "name[5]", task[5].name, MAX_TASK_NAME_LEN, DataTypeString, char[MAX_TASK_NAME_LEN], 0);
     ADD_MAP(m, totalSize, "priority[5]", task[5].priority, 0, DataTypeUInt32, uint32_t, 0);
@@ -1439,10 +1448,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gapCount[5]", task[5].gapCount, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "cpuUsage[5]", task[5].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "handle[5]", task[5].handle, 0, DataTypeUInt32, uint32_t, 0);
-
-    ADD_MAP(m, totalSize, "freeHeapSize", freeHeapSize, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "mallocSize", mallocSize, 0, DataTypeUInt32, uint32_t, 0);
-	ADD_MAP(m, totalSize, "freeSize", freeSize, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "profileStartTimeUs[5]", task[5].profileStartTimeUs, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
