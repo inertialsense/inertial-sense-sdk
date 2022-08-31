@@ -20,7 +20,7 @@ extern "C" {
 #include <asf.h>
 #include "conf_comm.h"
 
-// This is a mirror of port_monitor_helper_t in d_usart.h in the uINS-5 project
+// This is a mirror of port_monitor_helper_t in d_usart.h in the IMX-5 project
 typedef struct
 {
 	uint32_t                timeMsLast;

@@ -128,7 +128,7 @@ void rtosResetTaskCounters(void)
 void vApplicationIdleHook(void)
 {
     // Sleep to reduce power consumption
-#ifndef uINS_5
+#ifndef IMX_5
 	PMC->PMC_FSMR &= (uint32_t) ~PMC_FSMR_LPM; // Enter Sleep mode
 #endif
     SCB->SCR &= (uint32_t) ~SCB_SCR_SLEEPDEEP_Msk;	// Common to both Cortex M4 and M7
@@ -136,7 +136,7 @@ void vApplicationIdleHook(void)
     __WFI();
 }
 
-#ifndef uINS_5
+#ifndef IMX_5
 void vApplicationTickHook(void)
 {
 #if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
@@ -153,7 +153,7 @@ static void setGpbrWithTaskInfo(void)
     if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_COMMUNICATIONS].handle){ task = TASK_COMMUNICATIONS; }
     if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_MAINTENANCE].handle){ task = TASK_MAINTENANCE; }
 
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_G1_TASK] = task;
     GPBR->SYS_GPBR[GPBR_IDX_G2_FILE_NUM] = g_faultFileNumber;
     GPBR->SYS_GPBR[GPBR_IDX_G3_LINE_NUM] = g_faultLineNumber;
@@ -170,7 +170,7 @@ void prvGetRegistersFromStack(uint32_t *pulFaultStackAddress);
 void prvGetRegistersFromStack(uint32_t *pulFaultStackAddress)
 {
     setGpbrWithTaskInfo();
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_G5_LR]  = pulFaultStackAddress[5]; // link reg
     GPBR->SYS_GPBR[GPBR_IDX_PC]  = pulFaultStackAddress[6]; // program counter
     GPBR->SYS_GPBR[GPBR_IDX_PSR] = pulFaultStackAddress[7]; // program status register
@@ -192,7 +192,7 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char* pcTaskName)
 
 #else   // uINS
 
-#ifndef uINS_5
+#ifndef IMX_5
 	GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_STACK_OVERFLOW;
 #else
 	RTC->BKP0R |= SYS_FAULT_STATUS_STACK_OVERFLOW;
@@ -222,7 +222,7 @@ void vApplicationMallocFailedHook(uint32_t size, uint32_t remaining, uint32_t pr
 
 #else   // uINS
 
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_MALLOC_FAILED;
     GPBR->SYS_GPBR[GPBR_IDX_G4_FLASH_MIG] = size;
     GPBR->SYS_GPBR[GPBR_IDX_G5_LR] = remaining;
@@ -257,7 +257,7 @@ void MemManage_Handler(void)
 
 #else   // uINS
 
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_MEM_MANGE;
 #else
     RTC->BKP0R |= SYS_FAULT_STATUS_MEM_MANGE;
@@ -277,7 +277,7 @@ void BusFault_Handler(void)
 
 #else   // uINS
 
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_BUS_FAULT;
 #else
     RTC->BKP0R |= SYS_FAULT_STATUS_BUS_FAULT;
@@ -297,7 +297,7 @@ void UsageFault_Handler(void)
 
 #else   // uINS
 
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_USAGE_FAULT;
 #else
     RTC->BKP0R |= SYS_FAULT_STATUS_USAGE_FAULT;
@@ -323,7 +323,7 @@ void HardFault_Handler(void)
 
 #else   // uINS
 
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_HARD_FAULT;
 #else
     RTC->BKP0R |= SYS_FAULT_STATUS_HARD_FAULT;
@@ -431,7 +431,7 @@ void HardFault_Handler(void)
 
 #pragma GCC pop_options
 
-#ifndef uINS_5
+#ifndef IMX_5
 static void HardFault_Test(void)
 {
 #if 0

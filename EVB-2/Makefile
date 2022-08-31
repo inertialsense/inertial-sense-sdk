@@ -50,7 +50,7 @@ rm = rm -f -r $(1)
 # Detect if a compiler exists.
 COMPILER_DIR := /opt/arm-none-eabi-uins3/bin
 ifeq ("$(wildcard $(COMPILER_DIR)/*)","")
-# Use the old arm-none-eabi from before we split arm-none-eabi-uins3/arm-none-eabi-uins5
+# Use the old arm-none-eabi from before we split arm-none-eabi-uins3/arm-none-eabi-imx5
 COMPILER_DIR = /opt/arm-none-eabi/bin
 endif
 ifeq ("$(wildcard $(COMPILER_DIR)/*)","")

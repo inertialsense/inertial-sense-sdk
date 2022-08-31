@@ -166,7 +166,7 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_EXTERNAL_BASE 2 // DO NOT CHANGE
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
-// Max number of devices across all hardware types: uINS-3, uINS-4, and uINS-5
+// Max number of devices across all hardware types: uINS-3, uINS-4, and IMX-5
 #define NUM_IMU_DEVICES     3		// g_numImuDevices defines the actual number of hardware specific devices
 #define NUM_MAG_DEVICES     2		// g_numMagDevices defines the actual number of hardware specific devices
 

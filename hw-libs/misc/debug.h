@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#if !defined(TESTBED) && !defined(uINS_5)
+#if !defined(TESTBED) && !defined(IMX_5)
 #include "gpio.h"
 #endif
 
