@@ -1165,6 +1165,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 			case GPS_STATUS_FLAGS_RTK_BASE_POSITION_INVALID:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");	break;
 			}
 		}
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
 	}
 
 	return buf;
