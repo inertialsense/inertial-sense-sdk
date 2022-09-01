@@ -109,7 +109,7 @@ private:
 
     struct {
         bool is_evb;                    // Available on version 6+, otherwise false
-        ISBootloader::eProcessorType processor;       // Differentiates between uINS-3 and uINS-5
+        ISBootloader::eProcessorType processor;       // Differentiates between uINS-3 and IMX-5
         bool rom_available;             // ROM bootloader is available on this port
         
         uint32_t app_offset;            // Helps in loading bin files

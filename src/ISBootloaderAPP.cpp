@@ -82,7 +82,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     dev_info = (dev_info_t*)comm.dataPtr;
                     m_sn = dev_info->serialNumber;
                     if(dev_info->hardwareVer[0] == 5)
-                    {   /** uINS-5 */
+                    {   /** IMX-5 */
                         valid_signatures |= IS_IMAGE_SIGN_UINS_5;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
                     }

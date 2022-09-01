@@ -10,7 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef uINS_5
+#ifndef IMX_5
 #include <asf.h>
 #else
 #include "stm32l4xx.h"
@@ -25,14 +25,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 void unlockUserFlash(void)
 {
-#ifndef uINS_5
+#ifndef IMX_5
     // unlock 64K of config data at end in event that downgrade of firmware is happening, old firmware did not attempt to unlock before flash writes
     for (uint32_t flashUnlockStart = BOOTLOADER_FLASH_USER_DATA_START_ADDRESS; flashUnlockStart < BOOTLOADER_FLASH_USER_DATA_END_ADDRESS; flashUnlockStart += BOOTLOADER_FLASH_BLOCK_SIZE)
     {
         flash_unlock(flashUnlockStart, flashUnlockStart + BOOTLOADER_FLASH_BLOCK_SIZE - 1, 0, 0); // unlock is inclusive
     }
 #else
-    // uINS-5 can currently only lock/unlock all of memory
+    // IMX-5 can currently only lock/unlock all of memory
     // TODO: Use write protect to protect user area and bootloader from erase.
 #endif
 }
@@ -45,7 +45,7 @@ static void soft_reset_internal(void)
 
 
 
-#ifndef uINS_5
+#ifndef IMX_5
 #if defined(PLATFORM_IS_EVB_2)
 #else
     usart_reset((Usart*)SERIAL0);
@@ -69,7 +69,7 @@ void soft_reset_no_backup_register(void)
 
 void soft_reset_backup_register(uint32_t sysFaultStatus)
 {
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= sysFaultStatus;    // Report cause of reset
 #else
     RTC->BKP0R |= sysFaultStatus;    // Report cause of reset
@@ -113,7 +113,7 @@ void enable_bootloader(int pHandle)
     strncpy(header.data.jumpSignature, BOOTLOADER_JUMP_SIGNATURE_STAY_IN_BOOTLOADER, sizeof(header.data.jumpSignature));
 
 
-#ifndef uINS_5
+#ifndef IMX_5
     // unlock bootloader header 
 	flash_unlock(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS + BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE - 1, 0, 0);
 
@@ -127,7 +127,7 @@ void enable_bootloader(int pHandle)
 #endif
     
 	// Let the bootloader know which port to use for the firmware update.  Set key and port number.
-#ifndef uINS_5
+#ifndef IMX_5
     GPBR->SYS_GPBR[3] = PORT_SEL_KEY_SYS_GPBR_3;
 	GPBR->SYS_GPBR[4] = PORT_SEL_KEY_SYS_GPBR_4;
 	GPBR->SYS_GPBR[5] = PORT_SEL_KEY_SYS_GPBR_5;
@@ -150,7 +150,7 @@ void enable_bootloader_assistant(void)
 {
     unlockUserFlash();
 
-#ifndef uINS_5
+#ifndef IMX_5
     //this enables SAM-BA
     flash_clear_gpnvm(1);
 #endif

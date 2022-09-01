@@ -335,7 +335,7 @@ class Log:
                 thresholds[0] = 1.0
                 thresholds[1] = 1.0
                 thresholds[2] = 1.0
-        # Thresholds for uINS-5
+        # Thresholds for IMX-5
         elif hardware == 5:
             thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
                                    0.2, 0.2, 0.2,    # (m/s) UVW

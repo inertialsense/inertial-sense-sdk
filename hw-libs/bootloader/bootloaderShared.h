@@ -6,7 +6,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#ifdef uINS_5
+#ifdef IMX_5
 #include "d_flash.h"	// Contains overrides for macros below
 #endif
 
