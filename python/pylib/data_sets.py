@@ -44,7 +44,6 @@ DID_DEBUG_STRING                = 37
 DID_RTOS_INFO                   = 38
 DID_DEBUG_ARRAY                 = 39
 DID_SENSORS_MCAL                = 40
-# DID_UNUSED_40                 = 40
 # DID_UNUSED_41                 = 41
 DID_CAL_SC                      = 42
 DID_CAL_SC1                     = 43
@@ -314,7 +313,7 @@ class eScompCalState(IntEnum):
 	SC_TCAL_DONE                    = 8
 	SC_ACCEL_ALIGN_CHECK            = 9
 	SC_MCAL_SAMPLE_INIT             = 10
-	SC_MCAL_SAMPLE_MEAN_RAW         = 11    # Uncalibrated sensor
+	SC_MCAL_SAMPLE_MEAN_UCAL         = 11    # Uncalibrated sensor
 	SC_MCAL_SAMPLE_MEAN_TCAL        = 12    # Temperature compensated sensor 
 	SC_MCAL_SAMPLE_STOP             = 13
 	SC_LPF_SAMPLE                   = 14
