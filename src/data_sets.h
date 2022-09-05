@@ -71,8 +71,8 @@ typedef uint32_t eDataIDs;
 #define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
-#define DID_SENSORS_CAL1                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) (not used) */
-#define DID_SENSORS_CAL2                (eDataIDs)41 /** INTERNAL USE ONLY (sensors_mpu_w_temp_t) (not used) */
+#define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
+#define DID_UNUSED_41                   (eDataIDs)41 /** Unused */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
@@ -1309,22 +1309,6 @@ typedef struct PACKED
 	
 } ascii_msgs_u32_t;
 
-/* (DID_SENSORS_CAL1, DID_SENSORS_CAL2) */
-typedef struct PACKED
-{
-	/** (rad/s) Angular rate.  Units only apply for calibrated data. */
-	f_t						pqr[3];
-
-	/** (m/s^2) Linear acceleration.  Units only apply for calibrated data. */
-	f_t						acc[3];
-
-	/** (uT) Magnetometers.  Units only apply for calibrated data. */
-	f_t						mag[3];
-
-	/** (°C) Temperature of MPU.  Units only apply for calibrated data. */
-	f_t						temp;
-} sensors_mpu_w_temp_t;
-
 typedef struct PACKED
 {
 	/** (rad/s) Gyros.  Units only apply for calibrated data. */
@@ -1368,7 +1352,7 @@ typedef struct PACKED
 	f_t						xyz[3];
 } mag_xyz_t;
 
-// (DID_SENSORS_UCAL, DID_SENSORS_TCAL)
+// (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
 typedef struct PACKED
 {
 	imu3_t					imu3;

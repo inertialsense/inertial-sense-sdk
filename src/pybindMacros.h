@@ -3,7 +3,6 @@
 
 // support types
 PYBIND11_NUMPY_DTYPE(gps_sat_sv_t, gnssId, svId, cno, elev, azim, prRes, flags); 
-PYBIND11_NUMPY_DTYPE(sensors_mpu_w_temp_t, pqr, acc, mag, temp);
 PYBIND11_NUMPY_DTYPE(sensors_imu_w_temp_t, pqr, acc, temp);
 PYBIND11_NUMPY_DTYPE(sensors_mag_t, mag);
 PYBIND11_NUMPY_DTYPE(rtos_task_t, name, priority, stackUnused, periodMs, runTimeUs, maxRunTimeUs, averageRunTimeUs, gapCount, cpuUsage, handle);
