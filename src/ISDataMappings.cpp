@@ -110,8 +110,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
 	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
-    sizeMap[DID_IMU3_UNCAL] = sizeof(imu3_t);
-    sizeMap[DID_IMU3_RAW] = sizeof(imu3_t);
+	sizeMap[DID_IMU3_UNCAL] = sizeof(imu3_t);
+	sizeMap[DID_IMU3_RAW] = sizeof(imu3_t);
 	sizeMap[DID_IMU_RAW] = sizeof(imu_t);
 	sizeMap[DID_IMU] = sizeof(imu_t);
 	sizeMap[DID_PIMU] = sizeof(pimu_t);
