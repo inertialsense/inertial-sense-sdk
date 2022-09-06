@@ -110,6 +110,10 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
 	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
 	sizeMap[DID_BAROMETER] = sizeof(barometer_t);
+    sizeMap[DID_IMU3_UNCAL] = sizeof(imu3_t);
+    sizeMap[DID_IMU3_RAW] = sizeof(imu3_t);
+	sizeMap[DID_IMU_RAW] = sizeof(imu_t);
+	sizeMap[DID_IMU] = sizeof(imu_t);
 	sizeMap[DID_PIMU] = sizeof(pimu_t);
 	sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
 	sizeMap[DID_GROUND_VEHICLE] = sizeof(ground_vehicle_t);
@@ -136,8 +140,6 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
 	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
-	sizeMap[DID_IMU] = sizeof(imu_t);
-    sizeMap[DID_IMU3_UNCAL] = sizeof(imu3_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
@@ -326,25 +328,25 @@ static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 	map_name_to_info_t& m = mappings[dataId];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "time", time, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "pqr1[0]", I[0].pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr1[1]", I[0].pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr1[2]", I[0].pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[0]", I[0].acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[1]", I[0].acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc1[2]", I[0].acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[0]", I[1].pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[1]", I[1].pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr2[2]", I[1].pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[0]", I[1].acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[1]", I[1].acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc2[2]", I[1].acc[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr3[0]", I[2].pqr[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr3[1]", I[2].pqr[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "pqr3[2]", I[2].pqr[2], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc3[0]", I[2].acc[0], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc3[1]", I[2].acc[1], 0, DataTypeFloat, float&, 0);
-    ADD_MAP(m, totalSize, "acc3[2]", I[2].acc[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "I0.pqr[0]", I[0].pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I0.pqr[1]", I[0].pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I0.pqr[2]", I[0].pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I0.acc[0]", I[0].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I0.acc[1]", I[0].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I0.acc[2]", I[0].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I1.pqr[0]", I[1].pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I1.pqr[1]", I[1].pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I1.pqr[2]", I[1].pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I1.acc[0]", I[1].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I1.acc[1]", I[1].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I1.acc[2]", I[1].acc[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I2.pqr[0]", I[2].pqr[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I2.pqr[1]", I[2].pqr[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I2.pqr[2]", I[2].pqr[2], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I2.acc[0]", I[2].acc[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I2.acc[1]", I[2].acc[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "I2.acc[2]", I[2].acc[2], 0, DataTypeFloat, float&, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2359,7 +2361,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_GPS1_RTK_POS",                 // 54
 	"DID_ROS_COVARIANCE_POSE_TWIST",    // 55
 	"DID_COMMUNICATIONS_LOOPBACK",      // 56
-	"DID_IMU3_UNCAL",               // 57
+	"DID_IMU3_UNCAL",                   // 57
 	"DID_IMU",                          // 58
 	"DID_INL2_MAG_OBS_INFO",            // 59
 	"DID_GPS_BASE_RAW",                 // 60
@@ -2431,8 +2433,15 @@ cISDataMappings::cISDataMappings()
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
 	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
-    PopulateIMUMappings(m_lookupInfo, DID_IMU);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_UNCAL);
+    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
+    PopulateIMUMappings(m_lookupInfo, DID_IMU_RAW);
+    PopulateIMUMappings(m_lookupInfo, DID_IMU);
+    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PIMU);
+	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
+	PopulateMagnetometerMappings(m_lookupInfo, DID_REFERENCE_MAGNETOMETER);
+    PopulateBarometerMappings(m_lookupInfo);
+    PopulateWheelEncoderMappings(m_lookupInfo);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateRMCMappings(m_lookupInfo);
@@ -2455,11 +2464,6 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS2_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
-	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
-	PopulateMagnetometerMappings(m_lookupInfo, DID_REFERENCE_MAGNETOMETER);
-    PopulateBarometerMappings(m_lookupInfo);
-    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PIMU);
-    PopulateWheelEncoderMappings(m_lookupInfo);
     PopulateGroundVehicleMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
