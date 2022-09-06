@@ -8,8 +8,6 @@ static ins_1_t g_ins1;
 static ins_2_t g_ins2;
 dev_info_t g_devInfo;
 static sys_sensors_t g_sensor_sys;
-static sensors_mpu_w_temp_t g_sensor_cal1;
-static sensors_mpu_w_temp_t g_sensor_cal2;
 static sys_sensors_adc_t g_sensor_adc;
 static sys_sensors_adc_t g_sensor_lsb;
 static sys_sensors_adc_t g_adcSigma;
@@ -153,8 +151,6 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 	comManagerRegisterInstance(&(cm2->cm), DID_IMU, 0, 0, 0, &g_imu, sizeof(imu_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_DEV_INFO, 0, 0, &g_devInfo, 0, sizeof(dev_info_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_SENSORS, 0, 0, &g_sensor_sys, 0, sizeof(sys_sensors_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_CAL1, 0, 0, &g_sensor_cal1, 0, sizeof(sensors_mpu_w_temp_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_CAL2, 0, 0, &g_sensor_cal2, 0, sizeof(sensors_mpu_w_temp_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC, 0, 0, &g_sensor_lsb, 0, sizeof(sys_sensors_adc_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC_SIGMA, 0, 0, &g_adcSigma, 0, sizeof(sys_sensors_adc_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_TC_BIAS, 0, 0, &g_tcBias, &g_tcBias, sizeof(sensors_t), 0);

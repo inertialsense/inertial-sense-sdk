@@ -153,8 +153,9 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
         HANDLE_MSG( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc );
         // HANDLE_MSG( DID_FEATURE_BITS, dev_log_->featureBits );
-        HANDLE_MSG( DID_SENSORS_UCAL, dev_log_->sensorsRaw );
+        HANDLE_MSG( DID_SENSORS_UCAL, dev_log_->sensorsUcal );
         HANDLE_MSG( DID_SENSORS_TCAL, dev_log_->sensorsTcal );
+        HANDLE_MSG( DID_SENSORS_MCAL, dev_log_->sensorsMcal );
         HANDLE_MSG( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias );
         HANDLE_MSG( DID_IO, dev_log_->io );
         // HANDLE_MSG( DID_SENSORS_ADC, dev_log_->sensorsAdc );
@@ -172,8 +173,6 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_RTOS_INFO, dev_log_->rtosInfo );
         HANDLE_MSG( DID_DEBUG_STRING, dev_log_->debugString );
         HANDLE_MSG( DID_DEBUG_ARRAY, dev_log_->debugArray );
-        // HANDLE_MSG( DID_SENSORS_CAL1, dev_log_->sensorsCal1 );
-        // HANDLE_MSG( DID_SENSORS_CAL2, dev_log_->sensorsCal2 );
         // HANDLE_MSG( DID_CAL_SC, dev_log_->calSc );
         // HANDLE_MSG( DID_CAL_SC1, dev_log_->calSc1 );
         // HANDLE_MSG( DID_CAL_SC2, dev_log_->calSc2 );
@@ -246,8 +245,9 @@ void LogReader::forwardData(int id)
     forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, id );
     forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, id );
     // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, id );
-    forward_message( DID_SENSORS_UCAL, dev_log_->sensorsRaw, id );
+    forward_message( DID_SENSORS_UCAL, dev_log_->sensorsUcal, id );
     forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, id );
+    forward_message( DID_SENSORS_MCAL, dev_log_->sensorsMcal, id );
     forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, id );
     forward_message( DID_IO, dev_log_->io, id );
     // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, id );
@@ -265,8 +265,6 @@ void LogReader::forwardData(int id)
     // forward_message( DID_RTOS_INFO, dev_log_->rtosInfo, id );
     forward_message( DID_DEBUG_STRING, dev_log_->debugString, id );
     forward_message( DID_DEBUG_ARRAY, dev_log_->debugArray, id );
-    // forward_message( DID_SENSORS_CAL1, dev_log_->sensorsCal1, id );
-    // forward_message( DID_SENSORS_CAL2, dev_log_->sensorsCal2, id );
     // forward_message( DID_CAL_SC, dev_log_->calSc, id );
     // forward_message( DID_CAL_SC1, dev_log_->calSc1, id );
     // forward_message( DID_CAL_SC2, dev_log_->calSc2, id );
