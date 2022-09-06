@@ -2433,15 +2433,15 @@ cISDataMappings::cISDataMappings()
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
 	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
-    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_UNCAL);
-    PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
-    PopulateIMUMappings(m_lookupInfo, DID_IMU_RAW);
-    PopulateIMUMappings(m_lookupInfo, DID_IMU);
-    PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PIMU);
+	PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_UNCAL);
+	PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
+	PopulateIMUMappings(m_lookupInfo, DID_IMU_RAW);
+	PopulateIMUMappings(m_lookupInfo, DID_IMU);
+	PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_PIMU);
 	PopulateMagnetometerMappings(m_lookupInfo, DID_MAGNETOMETER);
 	PopulateMagnetometerMappings(m_lookupInfo, DID_REFERENCE_MAGNETOMETER);
-    PopulateBarometerMappings(m_lookupInfo);
-    PopulateWheelEncoderMappings(m_lookupInfo);
+	PopulateBarometerMappings(m_lookupInfo);
+	PopulateWheelEncoderMappings(m_lookupInfo);
 	PopulateSysParamsMappings(m_lookupInfo);
 	PopulateSysSensorsMappings(m_lookupInfo);
 	PopulateRMCMappings(m_lookupInfo);
@@ -2464,8 +2464,8 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS1_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS2_RAW);
 	PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
-    PopulateGroundVehicleMappings(m_lookupInfo);
-    PopulateConfigMappings(m_lookupInfo);
+	PopulateGroundVehicleMappings(m_lookupInfo);
+	PopulateConfigMappings(m_lookupInfo);
 	PopulateFlashConfigMappings(m_lookupInfo);
 	PopulateDebugArrayMappings(m_lookupInfo, DID_DEBUG_ARRAY);
 	PopulateEvbStatusMappings(m_lookupInfo);
@@ -2478,17 +2478,17 @@ cISDataMappings::cISDataMappings()
 	PopulateInfieldCalMappings(m_lookupInfo);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
-    PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
-    PopulateCoyoteStatusMappings(m_lookupInfo);
-    PopulateEvbLunaSensorsMappings(m_lookupInfo);
+	PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
+	PopulateCoyoteStatusMappings(m_lookupInfo);
+	PopulateEvbLunaSensorsMappings(m_lookupInfo);
 	PopulateEvbLunaVelocityControlMappings(m_lookupInfo);
-    PopulateEvbLunaVelocityCommandMappings(m_lookupInfo);
-    PopulateEvbLunaAuxCmdMappings(m_lookupInfo);
+	PopulateEvbLunaVelocityCommandMappings(m_lookupInfo);
+	PopulateEvbLunaAuxCmdMappings(m_lookupInfo);
 #endif
 
 	PopulateStrobeInTimeMappings(m_lookupInfo);
 //	PopulateRtosInfoMappings(m_lookupInfo);
-    PopulateDiagMsgMappings(m_lookupInfo);
+	PopulateDiagMsgMappings(m_lookupInfo);
 	PopulateCanConfigMappings(m_lookupInfo);
 
 #ifdef USE_IS_INTERNAL
