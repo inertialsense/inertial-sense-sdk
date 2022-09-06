@@ -1895,6 +1895,7 @@ class logPlot:
                 refImu = refImu
                 refVal = refImu[name]
 
+            print("Serial#: SN" + str(self.log.serials[d]) + " " + name + ": ")
             for i in range(3):
                 temp = imu[:,i]['lpfTemp']
                 sensor = imu[:,i]['lpfLsb']
@@ -1920,6 +1921,21 @@ class logPlot:
                 ax[2,i].plot(x, sensor[:,2]*scalar)
                 if name=='acc':
                     ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
+
+                # Print mean and last value
+                xstr = "IMU" + str(i) + ", Mean: ["
+                for j in range(3):
+                    xstr += format(np.mean(sensor[:,j])*scalar, '10.6f')
+                    if j < 2:
+                        xstr += ","
+                xstr += "],  "
+                xstr += "Last: ["
+                for j in range(3):
+                    xstr += format(sensor[-1,j]*scalar, '10.6f')
+                    if j < 2:
+                        xstr += ","
+                xstr += "]"
+                print(xstr)
 
                 # Show sensor valid status bit
                 if name=='acc':
