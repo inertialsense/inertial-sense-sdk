@@ -98,7 +98,7 @@ typedef uint32_t eDataIDs;
 #define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
 #define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
 #define DID_INS_4                       (eDataIDs)66 /** (ins_4_t) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */
-#define DID_INL2_NED_SIGMA              (eDataIDs)67 /** (inl2_ned_sigma_t) INL2 standard deviation in the NED frame */
+#define DID_INL2_NED_SIGMA              (eDataIDs)67 /** (inl2_ned_sigma_t) INL2 standard deviation in the NED frame. */
 #define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
 #define DID_GPS1_RAW                    (eDataIDs)69 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GPS2_RAW                    (eDataIDs)70 /** (gps_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
@@ -2440,7 +2440,7 @@ typedef struct PACKED
 
 } nvm_flash_cfg_t;
 
-/** INL2 - Estimate error variances */
+/** INL2 - Estimated error variances */
 typedef struct PACKED
 {											
     /** Timestamp in milliseconds */
