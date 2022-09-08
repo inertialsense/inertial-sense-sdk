@@ -737,9 +737,9 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'Variance', sharex=True)
         pt.labels('INL2 Position Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['PxyxNED'][:,0] , 'INS Px N (NED)' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['PxyxNED'][:,1] , 'INS Py E (NED)' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['PxyxNED'][:,2] , 'INS Pz D (NED)' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,0] , 'INS Px N (NED)' )
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,1] , 'INS Py E (NED)' )
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdPosNed'][:,2] , 'INS Pz D (NED)' )
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'Vel Variance', sharex=True)
