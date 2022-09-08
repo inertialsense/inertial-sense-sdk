@@ -2446,19 +2446,19 @@ typedef struct PACKED
     /** Timestamp in milliseconds */
 	unsigned int			timeOfWeekMs;	
     /** NED position error sigma */
-	float					PxyzNED[3];		
+	float					StdPosNed[3];		
     /** NED velocity error sigma */
-	float					PvelNED[3];		
+	float					StdVelNed[3];		
     /** NED attitude error sigma */
-	float					PattNED[3];		
+	float					StdAttNed[3];		
     /** Acceleration bias error sigma */
-	float					PABias[3];		
+	float					StdAccBias[3];		
     /** Angular rate bias error sigma */
-	float					PWBias[3];		
+	float					StdGyrBias[3];		
     /** Barometric altitude bias error sigma */
-	float					PBaroBias;		
+	float					StdBarBias;		
     /** Mag declination error sigma */
-	float					PDeclination;	
+	float					StdMagDeclination;	
 } inl2_ned_sigma_t;
 
 /** (DID_STROBE_IN_TIME) Timestamp for input strobe. */

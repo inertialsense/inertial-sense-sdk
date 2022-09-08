@@ -744,40 +744,40 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'Vel Variance', sharex=True)
         pt.labels('INL2 Velocity Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['PvelNED'][:,0] , 'INS Pvx N (NED)' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['PvelNED'][:,1] , 'INS Pvy E (NED)' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['PvelNED'][:,2] , 'INS Pvz D (NED)' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,0] , 'INS Pvx N (NED)' )
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,1] , 'INS Pvy E (NED)' )
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdVelNed'][:,2] , 'INS Pvz D (NED)' )
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'Att Variance', sharex=True)
         pt.labels('INL2 Attitude Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['PattNED'][:,0] , 'INS Pwx (NED)' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['PattNED'][:,1] , 'INS Pwy (NED)' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['PattNED'][:,2] , 'INS Pwz (NED)' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,0] , 'INS Pwx (NED)' )
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,1] , 'INS Pwy (NED)' )
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdAttNed'][:,2] , 'INS Pwz (NED)' )
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'A Bias Variance', sharex=True)
         pt.labels('INL2 A Bias Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['PABias'][:,0] , 'INS PA Bias x' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['PABias'][:,1] , 'INS PA Bias y' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['PABias'][:,2] , 'INS PA Bias z' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,0] , 'INS PA Bias x' )
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,1] , 'INS PA Bias y' )
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdAccBias'][:,2] , 'INS PA Bias z' )
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,3, 'W Bias Variance', sharex=True)
         pt.labels('INL2 W Bias Variance')
-        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['PWBias'][:,0] , 'INS PW Bias x' )
-        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['PWBias'][:,1] , 'INS PW Bias y' )
-        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['PWBias'][:,2] , 'INS PW Bias z' )
+        pt.subplotSingle(ax[0],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,0] , 'INS PW Bias x' )
+        pt.subplotSingle(ax[1],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,1] , 'INS PW Bias y' )
+        pt.subplotSingle(ax[2],varInfo.v['towMs'], varInfo.v['StdGyrBias'][:,2] , 'INS PW Bias z' )
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,1, 'Baro Bias Variance', sharex=True)
         pt.labels('INL2 Baro Bias Variance')
-        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['PBaroBias'] , 'Baro Bias' )
+        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['StdBarBias'] , 'Baro Bias' )
 
         f += 1;    legend = []
         fig, ax = pt.subplots(f,1, 'Declination Variance', sharex=True)
         pt.labels('INL2 Declination Variance')
-        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['PDeclination'] , 'Declination' )
+        pt.subplotSingle(ax,varInfo.v['towMs'], varInfo.v['StdMagDeclination'] , 'Declination' )
 
 
         #############################################
