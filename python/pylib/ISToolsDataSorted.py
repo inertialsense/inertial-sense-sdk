@@ -615,7 +615,7 @@ class cDevice:
         self.di[67].set('inl2Variance', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('towMs', u32),
-            ('PxyxNED', (f32, 3)),
+            ('StdPosNed', (f32, 3)),
             ('StdVelNed', (f32, 3)),
             ('StdAttNed', (f32, 3)),
             ('StdAccBias', (f32, 3)),
