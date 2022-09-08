@@ -615,13 +615,13 @@ class cDevice:
         self.di[67].set('inl2Variance', np.dtype([
             ('dataSerNum', u32),  # Indicates serial order in time
             ('towMs', u32),
-            ('PxyxNED', (f32, 3)),
-            ('PvelNED', (f32, 3)),
-            ('PattNED', (f32, 3)),
-            ('PABias', (f32, 3)),
-            ('PWBias', (f32, 3)),
-            ('PBaroBias', f32),
-            ('PDeclination', f32),
+            ('StdPosNed', (f32, 3)),
+            ('StdVelNed', (f32, 3)),
+            ('StdAttNed', (f32, 3)),
+            ('StdAccBias', (f32, 3)),
+            ('StdGyrBias', (f32, 3)),
+            ('StdBarBias', f32),
+            ('StdMagDeclination', f32),
         ]))
 
         # 68 - Strobe input time
