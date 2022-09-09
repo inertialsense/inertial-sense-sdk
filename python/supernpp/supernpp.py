@@ -77,17 +77,16 @@ class SuperNPP():
 		if self.computeRMS:
 			for subdir in self.subdirs:
 				sdir = subdir + "/post_processed"
-				self.log.load(sdir)
-
-				# Compute and output RMS Report
-				self.log.calculateRMS()
-				passRMS = self.log.printRMSReport()
-				if passRMS == 1:
-					self.rmsPassResults.append(sdir)
-					print("RMS Test PASSED: " + sdir)
-				else:
-					self.rmsFailResults.append(sdir)
-					print("RMS Test FAILED: " + sdir)
+				if self.log.load(sdir):
+					# Compute and output RMS Report
+					self.log.calculateRMS()
+					passRMS = self.log.printRMSReport()
+					if passRMS == 1:
+						self.rmsPassResults.append(sdir)
+						print("RMS Test PASSED: " + sdir)
+					else:
+						self.rmsFailResults.append(sdir)
+						print("RMS Test FAILED: " + sdir)
 		### Compute RMS ##################################################
 
 	def run_log_folder(self, folder, config_serials):
