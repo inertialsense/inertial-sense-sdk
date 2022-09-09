@@ -49,7 +49,8 @@ class Log:
         self.numDev = self.data.shape[0]
         self.numRef = 0
         if self.numDev == 0:
-            raise ValueError("No devices found in log")
+            print("No devices found in log or no logs found!!!")
+            return False
         if len(self.data[0, DID_DEV_INFO]):
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
 
@@ -81,6 +82,7 @@ class Log:
             self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
         # except:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
+        return True
 
     def getSerialNumbers(self):
         return self.c_log.getSerialNumbers()
@@ -490,10 +492,9 @@ if __name__ == '__main__':
         serials = ["ALL"]
 
     log = Log()
-    log.load(directory)
-
-    # Compute and output RMS Report
-    log.calculateRMS()
-    # log.debugPlot()
-    log.printRMSReport()
-    log.openRMSReport()
+    if log.load(directory):
+        # Compute and output RMS Report
+        log.calculateRMS()
+        # log.debugPlot()
+        log.printRMSReport()
+        log.openRMSReport()
