@@ -276,7 +276,7 @@ class LogInspectorWindow(QMainWindow):
     def updateWindowTitle(self):
         if np.shape(self.log.data[0,DID_DEV_INFO])[0] != 0:
             info = self.log.data[0,DID_DEV_INFO][0]
-            infoStr = 'SN' + str(info[1]) + ', H:' + verArrayToString(info[2]) + ', F:' + verArrayToString(info[3]) + ' build ' + str(info[4]) + ', ' + dateTimeArrayToString(info[8], info[9]) + ', ' + info[10].decode('UTF-8')
+            infoStr = 'SN' + str(info[1]) + ', H:' + verArrayToString(info[2]) + ', F:' + verArrayToString(info[3]) + ' build ' + str(info[4]) + ', ' + dateTimeArrayToString(info[8], info[9])# + ', ' + info[10].decode('UTF-8')
             self.setWindowTitle("LogInspector  -  " + infoStr)
 
     def choose_directory(self):
