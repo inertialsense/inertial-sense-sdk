@@ -377,6 +377,8 @@ public:
 		const std::string& comPort,
 		const uint32_t serialNum,
 		const std::string& fileName,
+		const std::string& blFileName,
+		bool forceBootloaderUpdate,
 		int baudRate = IS_BAUDRATE_921600,
 		ISBootloader::pfnBootloadProgress uploadProgress = NULLPTR,
 		ISBootloader::pfnBootloadProgress verifyProgress = NULLPTR,

@@ -329,6 +329,8 @@ static int cltool_updateFirmware()
 		g_commandLineOptions.comPort,
 		0,
         g_commandLineOptions.updateAppFirmwareFilename,
+		g_commandLineOptions.updateBootloaderFilename,
+		g_commandLineOptions.forceBootloaderUpdate,
         g_commandLineOptions.baudRate, 
 		bootloadUpdateCallback,
 		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
