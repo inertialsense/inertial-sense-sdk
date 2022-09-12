@@ -217,8 +217,8 @@ public:
     int m_baud;
 
     uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
-    uint8_t isb_major;                  // ISB Major revision on device
-    char isb_minor;                     // ISB Minor revision on device
+    uint8_t m_isb_major;                  // ISB Major revision on device
+    char m_isb_minor;                     // ISB Minor revision on device
     bool isb_mightUpdate;               // true if device will be updated if bootloader continues
 
     static is_operation_result mode_device_app(

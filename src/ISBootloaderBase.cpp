@@ -309,17 +309,17 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
         {
             if(major != 0 && minor != 0)
             {
-                if(major < (obj)->isb_major)
+                if(major < (obj)->m_isb_major)
                 {
                     (obj)->isb_mightUpdate = false;
                 }
-                else if(major == (obj)->isb_major)
+                else if(major == (obj)->m_isb_major)
                 {
-                    if(minor < (obj)->isb_minor)
+                    if(minor < (obj)->m_isb_minor)
                     {
                         (obj)->isb_mightUpdate = false;
                     }
-                    else if(minor == (obj)->isb_minor)
+                    else if(minor == (obj)->m_isb_minor)
                     {
                         (obj)->isb_mightUpdate = false;
                     }
