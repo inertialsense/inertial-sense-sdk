@@ -128,6 +128,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 	g_commandLineOptions.timeoutFlushLoggerSeconds = 3;
 	g_commandLineOptions.asciiMessages = "";
 	g_commandLineOptions.updateBootloaderFilename = "";
+	g_commandLineOptions.forceBootloaderUpdate = false;
 
     g_commandLineOptions.surveyIn.state = 0;
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
