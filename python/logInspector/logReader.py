@@ -61,6 +61,8 @@ class Log:
                 self.numRef = self.numRef + 1
                 if len(self.data[i, DID_DEV_INFO]):
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
+            if self.serials[i] == 10101:
+                self.serials[i] = 'Reference INS'
 
         if self.refINS:
             self.serials = np.delete(self.serials, self.refIdx, 0)
