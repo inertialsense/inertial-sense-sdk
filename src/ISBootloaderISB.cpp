@@ -494,7 +494,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
         }
 
         unsigned char buf[5] = { 0 };
-        int count = serialPortReadTimeout(s, buf, 3, 100);
+        int count = serialPortReadTimeout(s, buf, 3, 1000);
 
         if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
         {
