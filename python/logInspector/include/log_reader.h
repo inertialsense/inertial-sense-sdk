@@ -133,10 +133,11 @@ public:
     bool load();
     pybind11::list getSerialNumbers();
     pybind11::list protocolVersion();
+    void ins1ToIns2(int device_id=0);
     void exitHack(int exit_code=0);
     
     template <typename T>
-    void forward_message(eDataIDs did, std::vector<T>& vec, int id);
+    void forward_message(eDataIDs did, std::vector<T>& vec, int device_id);
 
     template <typename T>
     void log_message(int did, uint8_t* msg, std::vector<T>& vec)
@@ -146,7 +147,7 @@ public:
 
 private:
     void organizeData(int device_id);
-    void forwardData(int id);
+    void forwardData(int device_id);
 
     cISLogger logger_;
     DeviceLog* dev_log_ = nullptr;

@@ -67,6 +67,10 @@ class Log:
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
             else:
                 self.devIdx.append(i)
+            if self.serials[i] == 10101:
+                self.serials[i] = 'NovAtel INS'
+            if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
+                self.ins1ToIns2(i)
 
         if len(self.serials) == len(self.refSerials):
             self.devIdx = self.refIdx
@@ -100,6 +104,9 @@ class Log:
 
     def protocolVersion(self):
         return self.c_log.protocolVersion()
+
+    def ins1ToIns2(self, device_id=0):
+        self.c_log.ins1ToIns2(device_id)
 
     def exitHack(self, exit_code=0):
         self.c_log.exitHack(exit_code)
