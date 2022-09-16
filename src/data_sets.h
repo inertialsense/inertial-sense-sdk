@@ -2271,13 +2271,16 @@ enum eIoConfig
 
 enum eCBrdConfig
 {
+	// IMX Carrier Board
 	CBRD_CFG_BOARD_MASK                     = (int)0x0000000F,
 	CBRD_CFG_BOARD_NONE                     = (int)0,
 	CBRD_CFG_BOARD_EVB2                     = (int)1,
 	CBRD_CFG_BOARD_RUG30_G0                 = (int)2,
 	CBRD_CFG_BOARD_RUG30_G1                 = (int)3,
 	CBRD_CFG_BOARD_RUG30_G2                 = (int)4,
-	CBRD_CFG_BOARD_COUNT                    = (int)5,
+	CBRD_CFG_BOARD_IG1_G1                   = (int)5,
+	CBRD_CFG_BOARD_IG1_G2                   = (int)6,
+	CBRD_CFG_BOARD_COUNT                    = (int)7,
 
 	CBRD_CFG_MODE_MASK                      = (int)0x000000F0,
 	CBRD_CFG_MODE_PRESET                    = (int)0x00000000,
