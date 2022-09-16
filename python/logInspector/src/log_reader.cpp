@@ -1,3 +1,4 @@
+#include "convert_ins.h"
 #include "log_reader.h"
 
 using namespace std;
@@ -53,23 +54,23 @@ void LogReader::log_message(int did, uint8_t* msg, std::vector<gps_raw_wrapper_t
 }
 
 template <typename T>
-void LogReader::forward_message(eDataIDs did, std::vector<T>& vec, int id)
+void LogReader::forward_message(eDataIDs did, std::vector<T>& vec, int device_id)
 {
-    g_python_parent.attr("did_callback")(did, py::array_t<T>(std::vector<ptrdiff_t>{(py::ssize_t)vec.size()}, vec.data()), id);
+    g_python_parent.attr("did_callback")(did, py::array_t<T>(std::vector<ptrdiff_t>{(py::ssize_t)vec.size()}, vec.data()), device_id);
 }
 
 template <>
-void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& vec, int id)
+void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& vec, int device_id)
 {
     for (int i = 0; i < (int)vec[0].obs.size(); i++)
     {
-        g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<obsd_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].obs[i].size()}, vec[0].obs[i].data()), id, (int)raw_data_type_observation);
+        g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<obsd_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].obs[i].size()}, vec[0].obs[i].data()), device_id, (int)raw_data_type_observation);
     }
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<eph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].eph.size()}, vec[0].eph.data()), id, (int)raw_data_type_ephemeris);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<geph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].gloEph.size()}, vec[0].gloEph.data()), id, (int)raw_data_type_glonass_ephemeris);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<sbsmsg_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sbas.size()}, vec[0].sbas.data()), id, (int)raw_data_type_sbas);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<ion_model_utc_alm_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].ion.size()}, vec[0].ion.data()), id, (int)raw_data_type_ionosphere_model_utc_alm);
-    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<sta_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sta.size()}, vec[0].sta.data()), id, (int)raw_data_type_base_station_antenna_position);
+    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<eph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].eph.size()}, vec[0].eph.data()), device_id, (int)raw_data_type_ephemeris);
+    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<geph_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].gloEph.size()}, vec[0].gloEph.data()), device_id, (int)raw_data_type_glonass_ephemeris);
+    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<sbsmsg_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sbas.size()}, vec[0].sbas.data()), device_id, (int)raw_data_type_sbas);
+    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<ion_model_utc_alm_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].ion.size()}, vec[0].ion.data()), device_id, (int)raw_data_type_ionosphere_model_utc_alm);
+    g_python_parent.attr("gps_raw_data_callback")(did, py::array_t<sta_t>(std::vector<ptrdiff_t>{(py::ssize_t)vec[0].sta.size()}, vec[0].sta.data()), device_id, (int)raw_data_type_base_station_antenna_position);
 }
 
 
@@ -219,91 +220,91 @@ void LogReader::organizeData(int device_id)
     }
 }
 
-void LogReader::forwardData(int id)
+void LogReader::forwardData(int device_id)
 {
-    forward_message( DID_DEV_INFO, dev_log_->devInfo , id);
-    forward_message( DID_SYS_FAULT, dev_log_->sysFault, id );
-    forward_message( DID_INS_1, dev_log_->ins1, id );
-    forward_message( DID_INS_2, dev_log_->ins2, id );
-    forward_message( DID_GPS1_UBX_POS, dev_log_->gps1UbxPos, id );
-    forward_message( DID_SYS_CMD, dev_log_->sysCmd, id );
-    // forward_message( DID_ASCII_BCAST_PERIOD, dev_log_->asciiBcastPeriod, id );
-    // forward_message( DID_RMC, dev_log_->rmc, id );
-    forward_message( DID_SYS_PARAMS, dev_log_->sysParams, id );
-    forward_message( DID_SYS_SENSORS, dev_log_->sysSensors, id );
-    forward_message( DID_FLASH_CONFIG, dev_log_->flashCfg, id );
-    forward_message( DID_GPS1_POS, dev_log_->gps1Pos, id );
-    forward_message( DID_GPS2_POS, dev_log_->gps2Pos, id );
-    forward_message( DID_GPS1_SAT, dev_log_->gps1Sat, id );
-    forward_message( DID_GPS2_SAT, dev_log_->gps2Sat, id );
-    forward_message( DID_GPS1_VERSION, dev_log_->gps1Version, id );
-    forward_message( DID_GPS2_VERSION, dev_log_->gps2Version, id );
-    forward_message( DID_MAG_CAL, dev_log_->magCal, id );
-    forward_message( DID_INTERNAL_DIAGNOSTIC, dev_log_->internalDiagnostic, id );
-    forward_message( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel, id );
-    forward_message( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc, id );
-    forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, id );
-    forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, id );
-    // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, id );
-    forward_message( DID_SENSORS_UCAL, dev_log_->sensorsUcal, id );
-    forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, id );
-    forward_message( DID_SENSORS_MCAL, dev_log_->sensorsMcal, id );
-    forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, id );
-    forward_message( DID_IO, dev_log_->io, id );
-    // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, id );
-    forward_message( DID_SCOMP, dev_log_->scomp, id );
-    forward_message( DID_REFERENCE_IMU, dev_log_->refImu, id );
-    forward_message( DID_REFERENCE_PIMU, dev_log_->refPImu, id );
-    forward_message( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag, id );
-    forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, id );
-    forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, id );
-    // forward_message( DID_HDW_PARAMS, dev_log_->hdwParams, id );
-    // forward_message( DID_NVR_MANAGE_USERPAGE, dev_log_->nvrManageUserpage, id );
-    // forward_message( DID_NVR_USERPAGE_SN, dev_log_->nvrUserpageSn, id );
-    // forward_message( DID_NVR_USERPAGE_G0, dev_log_->nvrUserpageG0, id );
-    // forward_message( DID_NVR_USERPAGE_G1, dev_log_->nvrUserpageG1, id );
-    // forward_message( DID_RTOS_INFO, dev_log_->rtosInfo, id );
-    forward_message( DID_DEBUG_STRING, dev_log_->debugString, id );
-    forward_message( DID_DEBUG_ARRAY, dev_log_->debugArray, id );
-    // forward_message( DID_CAL_SC, dev_log_->calSc, id );
-    // forward_message( DID_CAL_SC1, dev_log_->calSc1, id );
-    // forward_message( DID_CAL_SC2, dev_log_->calSc2, id );
-    forward_message( DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma, id );
-    forward_message( DID_INL2_STATES, dev_log_->inl2States, id );
-    forward_message( DID_INL2_STATUS, dev_log_->inl2Status, id );
-    // forward_message( DID_INL2_MISC, dev_log_->inl2Misc, id );
-    forward_message( DID_MAGNETOMETER, dev_log_->magnetometer, id );
-    forward_message( DID_BAROMETER, dev_log_->barometer, id );
-    forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, id );
-    forward_message( DID_IMU3_UNCAL, dev_log_->imu3Uncal, id );
-    forward_message( DID_IMU3_RAW, dev_log_->imu3Raw, id );
-    forward_message( DID_IMU_RAW, dev_log_->imuRaw, id );
-    forward_message( DID_PIMU, dev_log_->pimu, id );
-    forward_message( DID_IMU, dev_log_->imu, id );
-    forward_message( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, id );
-    forward_message( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, id );
-    // forward_message( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt, id );
-    forward_message( DID_MANUFACTURING_INFO, dev_log_->manufacturingInfo, id );
-    forward_message( DID_BIT, dev_log_->bit, id );
-    forward_message( DID_INS_3, dev_log_->ins3, id );
-    forward_message( DID_INS_4, dev_log_->ins4, id );
-    forward_message( DID_INL2_NED_SIGMA, dev_log_->inl2NedSigma, id );
-    forward_message( DID_STROBE_IN_TIME, dev_log_->strobeInTime, id );
-    forward_message( DID_GPS1_RAW, dev_log_->gps1Raw, id );
-    forward_message( DID_GPS2_RAW, dev_log_->gps2Raw, id );
-    forward_message( DID_WHEEL_ENCODER, dev_log_->wheelEncoder, id );
-    forward_message( DID_GROUND_VEHICLE, dev_log_->groundVehicle, id );
-    forward_message( DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl, id );
-    forward_message( DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage, id );
-    forward_message( DID_SURVEY_IN, dev_log_->surveyIn, id );
-    // forward_message( DID_EVB2, dev_log_->evb2, id );
-    // forward_message( DID_PORT_MONITOR, dev_log_->portMonitor, id );
+    forward_message( DID_DEV_INFO, dev_log_->devInfo , device_id);
+    forward_message( DID_SYS_FAULT, dev_log_->sysFault, device_id );
+    forward_message( DID_INS_1, dev_log_->ins1, device_id );
+    forward_message( DID_INS_2, dev_log_->ins2, device_id );
+    forward_message( DID_GPS1_UBX_POS, dev_log_->gps1UbxPos, device_id );
+    forward_message( DID_SYS_CMD, dev_log_->sysCmd, device_id );
+    // forward_message( DID_ASCII_BCAST_PERIOD, dev_log_->asciiBcastPeriod, device_id );
+    // forward_message( DID_RMC, dev_log_->rmc, device_id );
+    forward_message( DID_SYS_PARAMS, dev_log_->sysParams, device_id );
+    forward_message( DID_SYS_SENSORS, dev_log_->sysSensors, device_id );
+    forward_message( DID_FLASH_CONFIG, dev_log_->flashCfg, device_id );
+    forward_message( DID_GPS1_POS, dev_log_->gps1Pos, device_id );
+    forward_message( DID_GPS2_POS, dev_log_->gps2Pos, device_id );
+    forward_message( DID_GPS1_SAT, dev_log_->gps1Sat, device_id );
+    forward_message( DID_GPS2_SAT, dev_log_->gps2Sat, device_id );
+    forward_message( DID_GPS1_VERSION, dev_log_->gps1Version, device_id );
+    forward_message( DID_GPS2_VERSION, dev_log_->gps2Version, device_id );
+    forward_message( DID_MAG_CAL, dev_log_->magCal, device_id );
+    forward_message( DID_INTERNAL_DIAGNOSTIC, dev_log_->internalDiagnostic, device_id );
+    forward_message( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel, device_id );
+    forward_message( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc, device_id );
+    forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, device_id );
+    forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, device_id );
+    // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, device_id );
+    forward_message( DID_SENSORS_UCAL, dev_log_->sensorsUcal, device_id );
+    forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, device_id );
+    forward_message( DID_SENSORS_MCAL, dev_log_->sensorsMcal, device_id );
+    forward_message( DID_SENSORS_TC_BIAS, dev_log_->sensorsTcBias, device_id );
+    forward_message( DID_IO, dev_log_->io, device_id );
+    // forward_message( DID_SENSORS_ADC, dev_log_->sensorsAdc, device_id );
+    forward_message( DID_SCOMP, dev_log_->scomp, device_id );
+    forward_message( DID_REFERENCE_IMU, dev_log_->refImu, device_id );
+    forward_message( DID_REFERENCE_PIMU, dev_log_->refPImu, device_id );
+    forward_message( DID_REFERENCE_MAGNETOMETER, dev_log_->refMag, device_id );
+    forward_message( DID_GPS1_VEL, dev_log_->gps1Vel, device_id );
+    forward_message( DID_GPS2_VEL, dev_log_->gps2Vel, device_id );
+    // forward_message( DID_HDW_PARAMS, dev_log_->hdwParams, device_id );
+    // forward_message( DID_NVR_MANAGE_USERPAGE, dev_log_->nvrManageUserpage, device_id );
+    // forward_message( DID_NVR_USERPAGE_SN, dev_log_->nvrUserpageSn, device_id );
+    // forward_message( DID_NVR_USERPAGE_G0, dev_log_->nvrUserpageG0, device_id );
+    // forward_message( DID_NVR_USERPAGE_G1, dev_log_->nvrUserpageG1, device_id );
+    // forward_message( DID_RTOS_INFO, dev_log_->rtosInfo, device_id );
+    forward_message( DID_DEBUG_STRING, dev_log_->debugString, device_id );
+    forward_message( DID_DEBUG_ARRAY, dev_log_->debugArray, device_id );
+    // forward_message( DID_CAL_SC, dev_log_->calSc, device_id );
+    // forward_message( DID_CAL_SC1, dev_log_->calSc1, device_id );
+    // forward_message( DID_CAL_SC2, dev_log_->calSc2, device_id );
+    forward_message( DID_SENSORS_ADC_SIGMA, dev_log_->sensorsAdcSigma, device_id );
+    forward_message( DID_INL2_STATES, dev_log_->inl2States, device_id );
+    forward_message( DID_INL2_STATUS, dev_log_->inl2Status, device_id );
+    // forward_message( DID_INL2_MISC, dev_log_->inl2Misc, device_id );
+    forward_message( DID_MAGNETOMETER, dev_log_->magnetometer, device_id );
+    forward_message( DID_BAROMETER, dev_log_->barometer, device_id );
+    forward_message( DID_GPS1_RTK_POS, dev_log_->gps1RtkPos, device_id );
+    forward_message( DID_IMU3_UNCAL, dev_log_->imu3Uncal, device_id );
+    forward_message( DID_IMU3_RAW, dev_log_->imu3Raw, device_id );
+    forward_message( DID_IMU_RAW, dev_log_->imuRaw, device_id );
+    forward_message( DID_PIMU, dev_log_->pimu, device_id );
+    forward_message( DID_IMU, dev_log_->imu, device_id );
+    forward_message( DID_INL2_MAG_OBS_INFO, dev_log_->inl2MagObsInfo, device_id );
+    forward_message( DID_GPS_BASE_RAW, dev_log_->gpsBaseRaw, device_id );
+    // forward_message( DID_GPS_RTK_OPT, dev_log_->gpsRtkOpt, device_id );
+    forward_message( DID_MANUFACTURING_INFO, dev_log_->manufacturingInfo, device_id );
+    forward_message( DID_BIT, dev_log_->bit, device_id );
+    forward_message( DID_INS_3, dev_log_->ins3, device_id );
+    forward_message( DID_INS_4, dev_log_->ins4, device_id );
+    forward_message( DID_INL2_NED_SIGMA, dev_log_->inl2NedSigma, device_id );
+    forward_message( DID_STROBE_IN_TIME, dev_log_->strobeInTime, device_id );
+    forward_message( DID_GPS1_RAW, dev_log_->gps1Raw, device_id );
+    forward_message( DID_GPS2_RAW, dev_log_->gps2Raw, device_id );
+    forward_message( DID_WHEEL_ENCODER, dev_log_->wheelEncoder, device_id );
+    forward_message( DID_GROUND_VEHICLE, dev_log_->groundVehicle, device_id );
+    forward_message( DID_EVB_LUNA_VELOCITY_CONTROL, dev_log_->evbVelocityControl, device_id );
+    forward_message( DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage, device_id );
+    forward_message( DID_SURVEY_IN, dev_log_->surveyIn, device_id );
+    // forward_message( DID_EVB2, dev_log_->evb2, device_id );
+    // forward_message( DID_PORT_MONITOR, dev_log_->portMonitor, device_id );
 
-    // forward_message( DID_RTK_STATE, dev_log_->rtkState, id);
-    forward_message( DID_RTK_CODE_RESIDUAL, dev_log_->rtkCodeResidual, id);
-    forward_message( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, id);
-    forward_message( DID_RTK_DEBUG, dev_log_->rtkDebug, id);
-    // forward_message( DID_RTK_DEBUG_2, dev_log_->rtkDebug2, id);
+    // forward_message( DID_RTK_STATE, dev_log_->rtkState, device_id);
+    forward_message( DID_RTK_CODE_RESIDUAL, dev_log_->rtkCodeResidual, device_id);
+    forward_message( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, device_id);
+    forward_message( DID_RTK_DEBUG, dev_log_->rtkDebug, device_id);
+    // forward_message( DID_RTK_DEBUG_2, dev_log_->rtkDebug2, device_id);
 }
 
 bool LogReader::load()
@@ -338,6 +339,19 @@ pybind11::list LogReader::protocolVersion()
     return py::cast(version);
 }
 
+void LogReader::ins1ToIns2(int device_id)
+{
+    printf("LogReader::ins1ToIns2() converting ins1 to ins2 for device: %d\n", device_id);
+    ins_2_t ins2;
+    dev_log_->ins2.clear();
+    for (int i=0; i<dev_log_->ins1.size(); i++)
+    {
+        convertIns1ToIns2(&(dev_log_->ins1[i]), &ins2);
+        dev_log_->ins2.push_back(ins2);
+    }
+    forward_message( DID_INS_2, dev_log_->ins2, device_id );
+}
+
 void LogReader::exitHack(int exit_code)
 {
     // Nasty hack
@@ -360,6 +374,7 @@ PYBIND11_MODULE(log_reader, m) {
             .def("load", &LogReader::load)
             .def("getSerialNumbers", &LogReader::getSerialNumbers)
             .def("protocolVersion", &LogReader::protocolVersion)
+            .def("ins1ToIns2", &LogReader::ins1ToIns2)
             .def("exitHack", &LogReader::exitHack);
 
 #include "pybindMacros.h"

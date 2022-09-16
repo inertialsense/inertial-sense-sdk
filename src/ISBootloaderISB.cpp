@@ -97,8 +97,8 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         return IS_IMAGE_SIGN_NONE;
     }
 
-    isb_major = buf[2];
-    isb_minor = (char)buf[3];
+    m_isb_major = buf[2];
+    m_isb_minor = (char)buf[3];
 //    bool rom_available = buf[4];
     uint8_t processor = 0xFF;
     m_isb_props.is_evb = false;
@@ -111,7 +111,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         memcpy(&m_sn, &buf[7], sizeof(uint32_t));
     }
 
-    if(isb_major >= 6)   
+    if(m_isb_major >= 6)   
     {   // v6 and up has EVB detection built-in
         if(processor == IS_PROCESSOR_SAMx70)
         {   
@@ -151,33 +151,37 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
     {   
         if(major != 0 && minor != 0)
         {
-            if(major < isb_major)
+            if(major < m_isb_major)
             {
-                SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, isb_major + '0', isb_minor);
+                SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
                 m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-                return IS_OP_ERROR;
+                return IS_OP_OK;
             }
-            else if(major == isb_major)
+            else if(major == m_isb_major)
             {
-                if(minor < isb_minor)
+                if(minor < m_isb_minor)
                 {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, isb_major + '0', isb_minor);
+                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
                     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-                    return IS_OP_ERROR;
+                    return IS_OP_OK;
                 }
-                else if(minor == isb_minor)
+                else if(minor == m_isb_minor)
                 {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, isb_major + '0', isb_minor);
+                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
                     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-                    return IS_OP_ERROR;
+                    return IS_OP_OK;
                 }
                 
             }
         }
+        else
+        {
+            return IS_OP_ERROR;
+        }
     }
     else
     {
-        SNPRINTF(message, 100, "(ISB) Updating bootloader: file %c%c >> device %c%c", major + '0', minor, isb_major + '0', isb_minor);
+        SNPRINTF(message, 100, "(ISB) Updating bootloader: file %c%c >> device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
         m_info_callback(this, message, IS_LOG_LEVEL_INFO);
     }
 
@@ -243,8 +247,8 @@ uint32_t cISBootloaderISB::get_device_info()
 
     if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
     {   // Bad read
-        isb_major = 0;
-        isb_minor = 0;
+        m_isb_major = 0;
+        m_isb_minor = 0;
         m_isb_props.rom_available = 1;
         m_isb_props.processor = IS_PROCESSOR_SAMx70;
         m_isb_props.is_evb = false;
@@ -252,8 +256,8 @@ uint32_t cISBootloaderISB::get_device_info()
         return 0;
     }
 
-    isb_major = buf[2];
-    isb_minor = (char)buf[3];
+    m_isb_major = buf[2];
+    m_isb_minor = (char)buf[3];
     m_isb_props.rom_available = buf[4];
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
@@ -267,15 +271,15 @@ uint32_t cISBootloaderISB::get_device_info()
         m_sn = 0;
     }
 
-    if (isb_major == 1)
+    if (m_isb_major == 1)
     {   // version 1
         m_isb_props.app_offset = 8192;
     }
-    else if (isb_major >= 2 && isb_major <= 5)
+    else if (m_isb_major >= 2 && m_isb_major <= 5)
     {   // version 2, 3 (which sent v2), 4, 5
         m_isb_props.app_offset = 16384;
     }
-    else if (isb_major >= 6)
+    else if (m_isb_major >= 6)
     {   // version 6
         m_isb_props.app_offset = 24576;
     }
@@ -490,7 +494,7 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
         }
 
         unsigned char buf[5] = { 0 };
-        int count = serialPortReadTimeout(s, buf, 3, 100);
+        int count = serialPortReadTimeout(s, buf, 3, 1000);
 
         if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
         {

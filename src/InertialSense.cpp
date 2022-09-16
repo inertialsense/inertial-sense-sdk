@@ -714,6 +714,8 @@ is_operation_result InertialSense::BootloadFile(
 	const string& comPort, 
 	const uint32_t serialNum,
 	const string& fileName, 
+	const string& blFileName,
+	bool forceBootloaderUpdate,
 	int baudRate, 
 	ISBootloader::pfnBootloadProgress uploadProgress, 
 	ISBootloader::pfnBootloadProgress verifyProgress, 
@@ -762,11 +764,11 @@ is_operation_result InertialSense::BootloadFile(
 	
 	ISBootloader::firmwares_t files;
 	files.fw_uINS_3.path = fileName;
-	files.bl_uINS_3.path = fileName;
+	files.bl_uINS_3.path = blFileName;
 	files.fw_IMX_5.path = fileName;
-	files.bl_IMX_5.path = fileName;
+	files.bl_IMX_5.path = blFileName;
 	files.fw_EVB_2.path = fileName;
-	files.bl_EVB_2.path = fileName;
+	files.bl_EVB_2.path = blFileName;
 
 	cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
@@ -780,7 +782,7 @@ is_operation_result InertialSense::BootloadFile(
 		ports_user_ignore.begin(), ports_user_ignore.end(),
 		back_inserter(update_ports));
 
-	cISBootloaderThread::update(update_ports, true, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+	cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 	
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on

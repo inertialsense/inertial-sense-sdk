@@ -38,7 +38,7 @@ class SuperNPP():
 		return self.log.getSerialNumbers()
 
 	def protocolVersion(self):
-		return self.c_log.protocolVersion()
+		return self.log.protocolVersion()
 
 	def exitHack(self):
 		self.log.exitHack()
