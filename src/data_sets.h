@@ -2269,22 +2269,54 @@ enum eIoConfig
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
 
-enum eBrdConfig
+enum eCBrdConfig
 {
-	BRD_CONFIG_BITS_MASK						= (int)0x000000FF,
+	// IMX Carrier Board
+	CBRD_CFG_BOARD_MASK                     = (int)0x0000000F,
+	CBRD_CFG_BOARD_NONE                     = (int)0,
+	CBRD_CFG_BOARD_EVB2                     = (int)1,
+	CBRD_CFG_BOARD_RUG30_G0                 = (int)2,
+	CBRD_CFG_BOARD_RUG30_G1                 = (int)3,
+	CBRD_CFG_BOARD_RUG30_G2                 = (int)4,
+	CBRD_CFG_BOARD_IG1_G1                   = (int)5,
+	CBRD_CFG_BOARD_IG1_G2                   = (int)6,
+	CBRD_CFG_BOARD_COUNT                    = (int)7,
 
-	BRD_CONFIG_BITS_RUG_2_1_n232_485			= (int)0x00000001,
-	BRD_CONFIG_BITS_RUG_2_1_n232_TTL			= (int)0x00000002,
-	BRD_CONFIG_BITS_RUG_2_1_nRS_CAN				= (int)0x00000004,
-	BRD_CONFIG_BITS_RUG_2_1_nGPS2_RS			= (int)0x00000008,
-	BRD_CONFIG_BITS_RUG_2_1_nSPIEN				= (int)0x00000010,
-	BRD_CONFIG_BITS_RUG_2_1_nSPI_SER			= (int)0x00000020,
-	BRD_CONFIG_BITS_RUG_2_1_nGPSRST				= (int)0x00000040,
+	CBRD_CFG_MODE_MASK                      = (int)0x000000F0,
+	CBRD_CFG_MODE_PRESET                    = (int)0x00000000,
+	CBRD_CFG_MODE_DIRECT                    = (int)0x00000010,
 
-	BRD_CONFIG_TYPE_NONE						= (int)0x00000000,
-	BRD_CONFIG_TYPE_RUG_2_1 					= (int)0x00000100,
+	CBRD_CFG_VALUE_MASK                     = (int)0x0000FF00,
+	CBRD_CFG_VALUE_OFFSET                   = (int)8,
 
-	BRD_CONFIG_TYPE_MASK						= (int)0x0000FF00,
+	// RUG-3.0 - Direct
+	CBRD_CFG_RUG30_DIRECT_BIT_n232_485      = (uint8_t)0x01,
+	CBRD_CFG_RUG30_DIRECT_BIT_n232_TTL      = (uint8_t)0x02,
+	CBRD_CFG_RUG30_DIRECT_BIT_nRS_CAN       = (uint8_t)0x04,
+	CBRD_CFG_RUG30_DIRECT_BIT_nGPS2_RS      = (uint8_t)0x08,
+	CBRD_CFG_RUG30_DIRECT_BIT_nSPIEN        = (uint8_t)0x10,
+	CBRD_CFG_RUG30_DIRECT_BIT_nSPI_SER      = (uint8_t)0x20,
+	CBRD_CFG_RUG30_DIRECT_BIT_nGPSRST       = (uint8_t)0x40,
+
+	// RUG-3.0 - Preset
+	CBRD_CFG_RUG30_PRESET_P8P10_S1_RS232_P7P9_S0_RS232_P11P12_CAN           = 0,
+	CBRD_CFG_RUG30_PRESET_P8P10_S1_TTL_P7P9_G5G8_STROBE_P11P12_CAN_GPS2_S0  = 1,
+	CBRD_CFG_RUG30_PRESET_P7P8P9P10_RS485_GPS1_S1_GPS2_S0                   = 2,
+	CBRD_CFG_RUG30_PRESET_P8P10_S1_TTL_P7P9_S0_TTL_P11P12_CAN               = 3,
+	CBRD_CFG_RUG30_PRESET_P7P8P9P10_SPI_GPS1_S1_GPS2_S0                     = 4,
+	CBRD_CFG_RUG30_PRESET_P8P10_S2_RS232_GPS1_S1_GPS2_S0                    = 5,
+	CBRD_CFG_RUG30_PRESET_G0_COUNT                                          = 6,
+	CBRD_CFG_RUG30_PRESET_P8P10_S2_TTL_P7P9_G5G8_STROBE_GPS1_S1_GPS2_S0     = 6,
+	CBRD_CFG_RUG30_PRESET_P8P10_S2_RS232_P7P9_S0_RS232_GPS1_S1              = 7,
+	CBRD_CFG_RUG30_PRESET_P8P10_S2_TTL_P7P9_S0_TTL_GPS1_S1                  = 8,
+	CBRD_CFG_RUG30_PRESET_P7P9_G5G8_STROBE_P11P12_CAN_GPS1_S1_GPS2_S0       = 9,
+	CBRD_CFG_RUG30_PRESET_P7P9_S0_RS232_P11P12_CAN_GPS1_S1                  = 10,
+	CBRD_CFG_RUG30_PRESET_P7P9_S0_TTL_P11P12_CAN_GPS1_S1                    = 11,
+	CBRD_CFG_RUG30_PRESET_P8P10_S1_RS232_P11P12_CAN_GPS2_S0                 = 12,
+	CBRD_CFG_RUG30_PRESET_G2_COUNT                                          = 13,
+
+	CBRD_CFG_RUG30_PRESET_G0_DEFAULT                                    	= CBRD_CFG_RUG30_PRESET_P8P10_S1_RS232_P7P9_S0_RS232_P11P12_CAN,
+	CBRD_CFG_RUG30_PRESET_G2_DEFAULT                                    	= CBRD_CFG_RUG30_PRESET_P8P10_S2_RS232_GPS1_S1_GPS2_S0,
 };
 
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
@@ -2484,7 +2516,7 @@ typedef struct PACKED
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t				ioConfig;
 
-    /** Carrier board (i.e. eval board) configuration bits */
+    /** Carrier board (i.e. eval board) configuration bits (see eCBrdConfig) */
     uint32_t				cBrdConfig;
 
     /** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
