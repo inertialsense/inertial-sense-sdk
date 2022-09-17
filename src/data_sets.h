@@ -2530,7 +2530,7 @@ typedef struct PACKED
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t				ioConfig;
 
-    /** Hardware platform (IMX carrier board, i.e. RUG-3, EVB-3, IG-1) configuration bits (see ePlatformConfig) */
+    /** Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig) */
     uint32_t				platformConfig;
 
     /** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
