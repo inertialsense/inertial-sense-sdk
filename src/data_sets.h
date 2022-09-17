@@ -2269,54 +2269,68 @@ enum eIoConfig
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
 
-enum eCBrdConfig
+enum ePlatformConfig
 {
 	// IMX Carrier Board
-	CBRD_CFG_BOARD_MASK                     = (int)0x0000000F,
-	CBRD_CFG_BOARD_NONE                     = (int)0,
-	CBRD_CFG_BOARD_EVB2                     = (int)1,
-	CBRD_CFG_BOARD_RUG30_G0                 = (int)2,
-	CBRD_CFG_BOARD_RUG30_G1                 = (int)3,
-	CBRD_CFG_BOARD_RUG30_G2                 = (int)4,
-	CBRD_CFG_BOARD_IG1_G1                   = (int)5,
-	CBRD_CFG_BOARD_IG1_G2                   = (int)6,
-	CBRD_CFG_BOARD_COUNT                    = (int)7,
+	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000000F,
+	PLATFORM_CFG_TYPE_NONE                      = (int)0,
+	PLATFORM_CFG_TYPE_ONBOARD_G2                = (int)1,
+    PLATFORM_CFG_TYPE_RUG1                      = (int)2,
+    PLATFORM_CFG_TYPE_RUG2_G1                   = (int)3,
+    PLATFORM_CFG_TYPE_RUG2_G2                   = (int)4,
+	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)5,
+	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)6,
+	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)7,
+	PLATFORM_CFG_TYPE_EVB3                      = (int)8,
+	PLATFORM_CFG_TYPE_IG1_G1                    = (int)9,
+	PLATFORM_CFG_TYPE_IG1_G2                    = (int)10,
+    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)11,		// Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)12,		// Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_COUNT                     = (int)13,
 
-	CBRD_CFG_MODE_MASK                      = (int)0x000000F0,
-	CBRD_CFG_MODE_PRESET                    = (int)0x00000000,
-	CBRD_CFG_MODE_DIRECT                    = (int)0x00000010,
+	PLATFORM_CFG_MODE_MASK                      = (int)0x000000F0,
+	PLATFORM_CFG_MODE_PRESET                    = (int)0x00000000,
+	PLATFORM_CFG_MODE_DIRECT                    = (int)0x00000010,
 
-	CBRD_CFG_VALUE_MASK                     = (int)0x0000FF00,
-	CBRD_CFG_VALUE_OFFSET                   = (int)8,
+	PLATFORM_CFG_VALUE_MASK                     = (int)0x0000FF00,
+	PLATFORM_CFG_VALUE_OFFSET                   = (int)8,
 
 	// RUG-3.0 - Direct
-	CBRD_CFG_RUG30_DIRECT_BIT_n232_485      = (uint8_t)0x01,
-	CBRD_CFG_RUG30_DIRECT_BIT_n232_TTL      = (uint8_t)0x02,
-	CBRD_CFG_RUG30_DIRECT_BIT_nRS_CAN       = (uint8_t)0x04,
-	CBRD_CFG_RUG30_DIRECT_BIT_nGPS2_RS      = (uint8_t)0x08,
-	CBRD_CFG_RUG30_DIRECT_BIT_nSPIEN        = (uint8_t)0x10,
-	CBRD_CFG_RUG30_DIRECT_BIT_nSPI_SER      = (uint8_t)0x20,
-	CBRD_CFG_RUG30_DIRECT_BIT_nGPSRST       = (uint8_t)0x40,
+	PLATFORM_CFG_RUG30_DIRECT_BIT_n232_485      = (uint8_t)0x01,
+	PLATFORM_CFG_RUG30_DIRECT_BIT_n232_TTL      = (uint8_t)0x02,
+	PLATFORM_CFG_RUG30_DIRECT_BIT_nRS_CAN       = (uint8_t)0x04,
+	PLATFORM_CFG_RUG30_DIRECT_BIT_nGPS2_RS      = (uint8_t)0x08,
+	PLATFORM_CFG_RUG30_DIRECT_BIT_nSPIEN        = (uint8_t)0x10,
+	PLATFORM_CFG_RUG30_DIRECT_BIT_nSPI_SER      = (uint8_t)0x20,
+	PLATFORM_CFG_RUG30_DIRECT_BIT_nGPSRST       = (uint8_t)0x40,
+
+	PLATFORM_CFG_RUG30_DIRECT_OFFSET_n232_485   = (int)0,
+	PLATFORM_CFG_RUG30_DIRECT_OFFSET_n232_TTL   = (int)1,
+	PLATFORM_CFG_RUG30_DIRECT_OFFSET_nRS_CAN    = (int)2,
+	PLATFORM_CFG_RUG30_DIRECT_OFFSET_nGPS2_RS   = (int)3,
+	PLATFORM_CFG_RUG30_DIRECT_OFFSET_nSPIEN     = (int)4,
+	PLATFORM_CFG_RUG30_DIRECT_OFFSET_nSPI_SER   = (int)5,
+	PLATFORM_CFG_RUG30_DIRECT_OFFSET_nGPSRST    = (int)6,
 
 	// RUG-3.0 - Preset
-	CBRD_CFG_RUG30_PRESET_P8P10_S1_RS232_P7P9_S0_RS232_P11P12_CAN           = 0,
-	CBRD_CFG_RUG30_PRESET_P8P10_S1_TTL_P7P9_G5G8_STROBE_P11P12_CAN_GPS2_S0  = 1,
-	CBRD_CFG_RUG30_PRESET_P7P8P9P10_RS485_GPS1_S1_GPS2_S0                   = 2,
-	CBRD_CFG_RUG30_PRESET_P8P10_S1_TTL_P7P9_S0_TTL_P11P12_CAN               = 3,
-	CBRD_CFG_RUG30_PRESET_P7P8P9P10_SPI_GPS1_S1_GPS2_S0                     = 4,
-	CBRD_CFG_RUG30_PRESET_P8P10_S2_RS232_GPS1_S1_GPS2_S0                    = 5,
-	CBRD_CFG_RUG30_PRESET_G0_COUNT                                          = 6,
-	CBRD_CFG_RUG30_PRESET_P8P10_S2_TTL_P7P9_G5G8_STROBE_GPS1_S1_GPS2_S0     = 6,
-	CBRD_CFG_RUG30_PRESET_P8P10_S2_RS232_P7P9_S0_RS232_GPS1_S1              = 7,
-	CBRD_CFG_RUG30_PRESET_P8P10_S2_TTL_P7P9_S0_TTL_GPS1_S1                  = 8,
-	CBRD_CFG_RUG30_PRESET_P7P9_G5G8_STROBE_P11P12_CAN_GPS1_S1_GPS2_S0       = 9,
-	CBRD_CFG_RUG30_PRESET_P7P9_S0_RS232_P11P12_CAN_GPS1_S1                  = 10,
-	CBRD_CFG_RUG30_PRESET_P7P9_S0_TTL_P11P12_CAN_GPS1_S1                    = 11,
-	CBRD_CFG_RUG30_PRESET_P8P10_S1_RS232_P11P12_CAN_GPS2_S0                 = 12,
-	CBRD_CFG_RUG30_PRESET_G2_COUNT                                          = 13,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S1_RS232_P7P9_S0_RS232_P11P12_CAN           = 0,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S1_TTL_P7P9_G5G8_STROBE_P11P12_CAN_GPS2_S0  = 1,
+	PLATFORM_CFG_RUG30_PRESET_P7P8P9P10_RS485_GPS1_S1_GPS2_S0                   = 2,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S1_TTL_P7P9_S0_TTL_P11P12_CAN               = 3,
+	PLATFORM_CFG_RUG30_PRESET_P7P8P9P10_SPI_GPS1_S1_GPS2_S0                     = 4,
+	PLATFORM_CFG_RUG30_PRESET_G0_COUNT                                          = 5,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S2_RS232_GPS1_S1_GPS2_S0                    = 5,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S2_TTL_P7P9_G5G8_STROBE_GPS1_S1_GPS2_S0     = 6,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S2_RS232_P7P9_S0_RS232_GPS1_S1              = 7,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S2_TTL_P7P9_S0_TTL_GPS1_S1                  = 8,
+	PLATFORM_CFG_RUG30_PRESET_P7P9_G5G8_STROBE_P11P12_CAN_GPS1_S1_GPS2_S0       = 9,
+	PLATFORM_CFG_RUG30_PRESET_P7P9_S0_RS232_P11P12_CAN_GPS1_S1                  = 10,
+	PLATFORM_CFG_RUG30_PRESET_P7P9_S0_TTL_P11P12_CAN_GPS1_S1                    = 11,
+	PLATFORM_CFG_RUG30_PRESET_P8P10_S1_RS232_P11P12_CAN_GPS2_S0                 = 12,
+	PLATFORM_CFG_RUG30_PRESET_G2_COUNT                                          = 13,
 
-	CBRD_CFG_RUG30_PRESET_G0_DEFAULT                                    	= CBRD_CFG_RUG30_PRESET_P8P10_S1_RS232_P7P9_S0_RS232_P11P12_CAN,
-	CBRD_CFG_RUG30_PRESET_G2_DEFAULT                                    	= CBRD_CFG_RUG30_PRESET_P8P10_S2_RS232_GPS1_S1_GPS2_S0,
+	PLATFORM_CFG_RUG30_PRESET_G0_DEFAULT                                    	= PLATFORM_CFG_RUG30_PRESET_P8P10_S1_RS232_P7P9_S0_RS232_P11P12_CAN,
+	PLATFORM_CFG_RUG30_PRESET_G2_DEFAULT                                    	= PLATFORM_CFG_RUG30_PRESET_P8P10_S2_RS232_GPS1_S1_GPS2_S0,
 };
 
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
@@ -2516,8 +2530,8 @@ typedef struct PACKED
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t				ioConfig;
 
-    /** Carrier board (i.e. eval board) configuration bits (see eCBrdConfig) */
-    uint32_t				cBrdConfig;
+    /** Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig) */
+    uint32_t				platformConfig;
 
     /** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
     float					gps2AntOffset[3];
