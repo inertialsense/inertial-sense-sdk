@@ -391,7 +391,7 @@ class cDevice:
             ('lastLlaWeek', u32),
             ('lastLlaUpdateDistance', f32),
             ('ioConfig', u32),
-            ('cBrdConfig', u32),
+            ('platformConfig', u32),
             ('gps2AntOffset', (f32, 3)),
             ('zeroVelRotation', (f32, 3)),
             ('zeroVelOffset', (f32, 3)),
