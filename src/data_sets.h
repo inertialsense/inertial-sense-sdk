@@ -2273,8 +2273,8 @@ enum ePlatformConfig
 {
 	// IMX Carrier Board
 	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000000F,
-	PLATFORM_CFG_TYPE_NONE                      = (int)0,
-	PLATFORM_CFG_TYPE_ONBOARD_G2                = (int)1,
+	PLATFORM_CFG_TYPE_NONE_NO_GPS               = (int)0,
+	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
     PLATFORM_CFG_TYPE_RUG2_G1                   = (int)3,
     PLATFORM_CFG_TYPE_RUG2_G2                   = (int)4,
