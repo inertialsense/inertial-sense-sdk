@@ -2161,8 +2161,8 @@ enum eIoConfig
 	IO_CONFIG_G9_STROBE_INPUT                   = (int)0x00000010,
 	/** G9 - Enable Nav update strobe output pulse on G9 (uINS pin 10) indicating preintegrated IMU and navigation updates */
 	IO_CONFIG_G9_STROBE_OUTPUT_NAV              = (int)0x00000020,
-	/** G9 - Quadrature wheel encoder input (QDEC0-B). */
-	IO_CONFIG_G9_QDEC0_INPUT                    = (int)0x00000030,
+	/** G9 - SPI DRDY */
+	IO_CONFIG_G9_SPI_DRDY                    	= (int)0x00000030,
 	/** G9 - Bit mask */
 	IO_CONFIG_G9_MASK                           = (int)0x00000030,
 	/** G9 - Default */
@@ -2172,7 +2172,7 @@ enum eIoConfig
 	/** G6,G7 - General Communications on Ser1. Excludes GPS communications.  Overriden when SPI is enabled (G9 held low on bootup/config). */
 	IO_CONFIG_G6G7_COM1                         = (int)0x00000040,
 	/** G6,G7 - Quadrature wheel encoder input (G6 QDEC0-A).  Overriden when SPI is enabled (G9 held low on bootup/config). */
-	IO_CONFIG_G6G7_QDEC0_INPUT_G6               = (int)0x00000080,
+//  IO_CONFIG_G6G7_QDEC0_INPUT_G6               = (int)0x00000080,
 	/** G6,G7 - Bit mask */
 	IO_CONFIG_G6G7_MASK                         = (int)0x000000C0,
 	/** G6,G7 - Default */
