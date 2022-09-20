@@ -534,6 +534,8 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
 
 is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int charCount, int* currentOffset, int* currentPage, int* totalBytes, int* verifyCheckSum)
 {
+    (void)currentPage;
+
     if (charCount > MAX_SEND_COUNT)
     {
         status_update("(ISB) Unexpected char count", IS_LOG_LEVEL_ERROR);

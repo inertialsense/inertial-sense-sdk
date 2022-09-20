@@ -72,7 +72,7 @@ int cISBootloaderDFU::get_num_devices()
 
     libusb_device** device_list;
     libusb_device* dev;
-    libusb_device_handle* dev_handle;
+    //libusb_device_handle* dev_handle;
     struct libusb_device_descriptor desc;
     struct libusb_config_descriptor* cfg;
     int ret_libusb;

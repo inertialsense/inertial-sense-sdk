@@ -190,6 +190,9 @@ is_operation_result cISBootloaderBase::mode_device_app
     cISBootloaderBase** new_context
 )
 {
+    (void)contexts;
+    (void)addMutex;
+
     cISBootloaderBase* obj;
     *new_context = NULL;
 
@@ -349,6 +352,9 @@ is_operation_result cISBootloaderBase::mode_device_isb
     cISBootloaderBase** new_context
 )
 {
+    (void)contexts;
+    (void)addMutex;
+
     cISBootloaderBase* obj;
     *new_context = NULL;
 
