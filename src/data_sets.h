@@ -2185,8 +2185,10 @@ enum eIoConfig
 	IO_CONFIG_G5G8_STROBE_INPUT_G8              = (int)0x00000200,
 	/** G5,G8 - Strobe input on both G5 and G8 */
 	IO_CONFIG_G5G8_STROBE_INPUT_G5_G8           = (int)0x00000300,
+	/** G5,G8 - Strobe input on both G5 and G8 */
+	IO_CONFIG_G5G8_G6G7_SPI_ENABLE              = (int)0x00000400,
 	/** G5,G8 - Quadrature wheel encoder input (G5 QDEC1-B, G8 QDEC1-A) */
-	IO_CONFIG_G5G8_QDEC_INPUT                   = (int)0x00000400,
+	IO_CONFIG_G5G8_QDEC_INPUT                   = (int)0x00000500,
 	/** G5,G8 - Bit mask */
 	IO_CONFIG_G5G8_MASK                         = (int)0x00000700,
 	/** G5,G8 - Default */
