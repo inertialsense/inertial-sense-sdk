@@ -2330,7 +2330,7 @@ enum ePlatformConfig
 	PLATFORM_CFG_RUG30_PRESET__G2_DEFAULT								= PLATFORM_CFG_RUG30_PRESET__6__S1_RS232_8_10_________________S2_GPS1__S0_GPS2,
 };
 
-/** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS_INS */
+/** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
 typedef struct PACKED
 {
     /** Time of measurement wrt current week */
