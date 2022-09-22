@@ -333,7 +333,7 @@ enum eHdwStatusFlags
 	HDW_STATUS_ERR_COM_RX_OVERRUN				= (int)0x00020000,
 
 	/** GPS PPS timepulse signal has not been received or is in error */
-	HDW_STATUS_ERR_GPS_PPS_ERROR				= (int)0x00040000,
+	HDW_STATUS_ERR_NO_GPS_PPS					= (int)0x00040000,
 	/** Time synchronized by GPS PPS */
 	HDW_STATUS_GPS_PPS_TIMESYNC					= (int)0x00080000,
 
@@ -381,9 +381,9 @@ enum eSysStatusFlags
 
 // Used to validate GPS position (and velocity)
 #define GPS_THRESH_SATS_USED			5
-#define GPS_THRESH_DOP					5.0f
-#define GPS_THRESH_H_ACC				20.0f
-#define GPS_THRESH_V_ACC				40.0f
+#define GPS_THRESH_P_DOP				3.0f
+#define GPS_THRESH_H_ACC				10.0f
+#define GPS_THRESH_V_ACC				20.0f
 #define GPS_THRESH_S_ACC				2.0f
 
 /** GPS Status */

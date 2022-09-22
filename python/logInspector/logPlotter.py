@@ -226,7 +226,11 @@ class logPlot:
 
             if np.shape(self.active_devs)[0] == 1:  # Show GPS if #devs is 1
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
-                gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'velEcef')
+                status = self.getData(d, DID_GPS1_VEL, 'status')[0]
+                if (status & 0x00008000):
+                    gpsVelNed = self.getData(d, DID_GPS1_VEL, 'vel')    # NED velocity
+                else:
+                    gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'vel')   # ECEF velocity
                 qe2n = quat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
                 if len(gpsVelEcef) > 0:
                     gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
