@@ -2283,12 +2283,13 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)5,
 	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)6,
 	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)7,
-	PLATFORM_CFG_TYPE_EVB3                      = (int)8,
-	PLATFORM_CFG_TYPE_IG1_G1                    = (int)9,
-	PLATFORM_CFG_TYPE_IG1_G2                    = (int)10,
-    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)11,		// Enable UBX output on Lambda for testbed
-    PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)12,		// Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_COUNT                     = (int)13,
+	PLATFORM_CFG_TYPE_EVB2_G2                   = (int)8,
+	PLATFORM_CFG_TYPE_EVB3                      = (int)9,
+	PLATFORM_CFG_TYPE_IG1_G1                    = (int)10,
+	PLATFORM_CFG_TYPE_IG1_G2                    = (int)11,
+    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)12,		// Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)13,		// Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_COUNT                     = (int)14,
 
 	PLATFORM_CFG_MODE_MASK                      = (int)0x000000F0,
 	PLATFORM_CFG_MODE_PRESET                    = (int)0x00000000,
