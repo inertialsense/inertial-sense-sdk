@@ -309,7 +309,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 38: DID_RTOS_INFO
 		offsetsDebugArray,		// 39: DID_DEBUG_ARRAY
 		0,						// 40: DID_SENSORS_MCAL
-		offsetsGpsTimepulse,	// 41: DID_GPS1_TIMEPULSE_INFO
+		offsetsGpsTimepulse,	// 41: DID_GPS1_TIMEPULSE
 		0,						// 42: DID_CAL_SC
 		0,						// 43: DID_CAL_SC1
 		0,						// 44: DID_CAL_SC2
