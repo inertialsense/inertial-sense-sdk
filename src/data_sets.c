@@ -188,9 +188,9 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 	static uint16_t offsetsGpsTimepulse[] =
 	{
 		3,
-		offsetof(gps_timepulse_info_t, towOffset),
-		offsetof(gps_timepulse_info_t, towGps),
-		offsetof(gps_timepulse_info_t, timeMcu)
+		offsetof(gps_timepulse_t, towOffset),
+		offsetof(gps_timepulse_t, towGps),
+		offsetof(gps_timepulse_t, timeMcu)
 	};
 
 	static uint16_t offsetsSysParams[] =
