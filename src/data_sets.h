@@ -2296,7 +2296,7 @@ enum ePlatformConfig
 	PLATFORM_CFG_PRESET_OFFSET                  = (int)8,
 
 	// RUG-3 - Presets
-	PLATFORM_CFG_RUG3_PRESET__0__PRESETS_DISABLED								= 0,	// Don't use presets.  IOEXP_BITS can be set directly.
+	PLATFORM_CFG_RUG3_PRESET__0__NO_PRESETS										= 0,	// Don't use presets.  IOEXP_BITS can be set directly.
 	PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GPS1			= 1,
 	PLATFORM_CFG_RUG3_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GPS1			= 2,
 	PLATFORM_CFG_RUG3_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GPS1			= 3,
