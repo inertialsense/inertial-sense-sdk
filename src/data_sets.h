@@ -3459,7 +3459,7 @@ typedef struct
 	uint8_t		syncCount;			
 
 	/*! Counter for failed timesync events. */
-	uint8_t		failCount;			
+	uint8_t		badPulseAgeCount;			
 
 	/*! (ms) Local timestamp of last valid PPS sync. */
 	uint32_t	lastSyncTimeMs;		
