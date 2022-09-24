@@ -2277,9 +2277,9 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000000F,
 	PLATFORM_CFG_TYPE_NONE_NO_GPS               = (int)0,
 	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,
-    PLATFORM_CFG_TYPE_RUG1                      = (int)2,
-    PLATFORM_CFG_TYPE_RUG2_G1                   = (int)3,
-    PLATFORM_CFG_TYPE_RUG2_G2                   = (int)4,
+	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
+	PLATFORM_CFG_TYPE_RUG2_G1                   = (int)3,
+	PLATFORM_CFG_TYPE_RUG2_G2                   = (int)4,
 	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)5,
 	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)6,
 	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)7,
@@ -2287,9 +2287,9 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_EVB3                      = (int)9,
 	PLATFORM_CFG_TYPE_IG1_G1                    = (int)10,
 	PLATFORM_CFG_TYPE_IG1_G2                    = (int)11,
-    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)12,		// Enable UBX output on Lambda for testbed
-    PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)13,		// Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_COUNT                     = (int)14,
+	PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)12,		// Enable UBX output on Lambda for testbed
+	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)13,		// Enable UBX input from Lambda
+	PLATFORM_CFG_TYPE_COUNT                     = (int)14,
 
 	// Presets
 	PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
@@ -2314,14 +2314,6 @@ enum ePlatformConfig
 	// RUG-3 - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUG3_x.
 	PLATFORM_CFG_RUG3_IOEXP_BIT_MASK            = (int)0x00FF0000,
 	PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET          = (int)16,
-
-	PLATFORM_CFG_RUG3_DIRECT_BIT_n232_485       = (uint8_t)0x01,
-	PLATFORM_CFG_RUG3_DIRECT_BIT_n232_TTL       = (uint8_t)0x02,
-	PLATFORM_CFG_RUG3_DIRECT_BIT_nRS_CAN        = (uint8_t)0x04,
-	PLATFORM_CFG_RUG3_DIRECT_BIT_nGPS2_RS       = (uint8_t)0x08,
-	PLATFORM_CFG_RUG3_DIRECT_BIT_nSPIEN         = (uint8_t)0x10,
-	PLATFORM_CFG_RUG3_DIRECT_BIT_nSPI_SER       = (uint8_t)0x20,
-	PLATFORM_CFG_RUG3_DIRECT_BIT_nGPSRST        = (uint8_t)0x40,
 
 	RUG3_IOEXP_BIT_OFFSET_n232_485    			= (int)0,
 	RUG3_IOEXP_BIT_OFFSET_n232_TTL    			= (int)1,
