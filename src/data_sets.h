@@ -3442,17 +3442,17 @@ typedef struct
 	/*! (ms) Local timestamp of time sync pulse external interrupt used to validate timepulse. */
 	uint32_t	plsTimeMs;			
 
-	/*! Value in msgTimeMs is ready for the next timesync event. */
-	uint8_t		msgTimeMsReady;			
-
-	/*! Value in plsTimeMs is ready for the next timesync event. */
-	uint8_t		plsTimeMsReady;			
-
 	/*! Counter for successful timesync events. */
 	uint8_t		syncCount;			
 
 	/*! Counter for failed timesync events. */
 	uint8_t		badPulseAgeCount;			
+
+	/*! Counter for GPS PPS interrupt re-initalization. */
+	uint8_t		gpsPpsInterruptReinitCount;
+
+	/*! */
+	uint8_t		unused;			
 
 	/*! (ms) Local timestamp of last valid PPS sync. */
 	uint32_t	lastSyncTimeMs;		
