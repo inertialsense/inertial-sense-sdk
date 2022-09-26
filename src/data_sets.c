@@ -185,6 +185,14 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetof(ins_4_t, ecef[2])
 	};
 
+	static uint16_t offsetsGpsTimepulse[] =
+	{
+		3,
+		offsetof(gps_timepulse_t, towOffset),
+		offsetof(gps_timepulse_t, towGps),
+		offsetof(gps_timepulse_t, timeMcu)
+	};
+
 	static uint16_t offsetsSysParams[] =
 	{
 		1,
@@ -193,14 +201,14 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
     static uint16_t offsetsPreImuMag[] =
     {
-        3,
+        2,
         offsetof(pimu_mag_t, pimu.time),
         offsetof(pimu_mag_t, mag.time)
     };
 
     static uint16_t offsetsImuMag[] =
     {
-        3,
+        2,
         offsetof(imu_mag_t, imu.time),
         offsetof(imu_mag_t, mag.time)
     };
@@ -301,7 +309,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 38: DID_RTOS_INFO
 		offsetsDebugArray,		// 39: DID_DEBUG_ARRAY
 		0,						// 40: DID_SENSORS_MCAL
-		0,						// 41: 
+		offsetsGpsTimepulse,	// 41: DID_GPS1_TIMEPULSE
 		0,						// 42: DID_CAL_SC
 		0,						// 43: DID_CAL_SC1
 		0,						// 44: DID_CAL_SC2

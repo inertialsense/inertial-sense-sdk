@@ -72,7 +72,7 @@ typedef uint32_t eDataIDs;
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
-#define DID_UNUSED_41                   (eDataIDs)41 /** Unused */
+#define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** INTERNAL USE ONLY (gps_timepulse_t) */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
@@ -3423,6 +3423,44 @@ typedef struct PACKED
     /** Interpret based on dataType (see eRawDataType) */    
     uGpsRawData data;
 } gps_raw_t;
+
+// (DID_GPS1_TIMEPULSE)
+typedef struct
+{
+	/*! (s)	Week seconds offset from MCU to GPS time. */
+	double		towOffset;			
+
+	/*! (s)	Week seconds for next timepulse (from start of GPS week) */
+	double		towGps;				
+
+	/*! (s)	Local MCU week seconds */
+	double		timeMcu;			
+
+	/*! (ms) Local timestamp of TIM-TP message used to validate timepulse. */
+	uint32_t	msgTimeMs;			
+
+	/*! (ms) Local timestamp of time sync pulse external interrupt used to validate timepulse. */
+	uint32_t	plsTimeMs;			
+
+	/*! Counter for successful timesync events. */
+	uint8_t		syncCount;			
+
+	/*! Counter for failed timesync events. */
+	uint8_t		badPulseAgeCount;			
+
+	/*! Counter for GPS PPS interrupt re-initalization. */
+	uint8_t		ppsInterruptReinitCount;
+
+	/*! */
+	uint8_t		unused;			
+
+	/*! (ms) Local timestamp of last valid PPS sync. */
+	uint32_t	lastSyncTimeMs;		
+
+	/*! (ms) Time since last valid PPS sync. */
+	uint32_t 	sinceLastSyncTimeMs;
+
+} gps_timepulse_t;
 
 /**
 * Diagnostic message
