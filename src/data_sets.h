@@ -2099,7 +2099,7 @@ enum eSensorConfig
 	SENSOR_CFG_ACC_DLPF_MASK			= (int)0x0000F000,
 	SENSOR_CFG_ACC_DLPF_OFFSET			= (int)12,
 
-	/** Euler rotation of IMU and magnetometer from sensor frame to output frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
+	/** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
 	SENSOR_CFG_SENSOR_ROTATION_MASK        = (int)0x00FF0000,
 	SENSOR_CFG_SENSOR_ROTATION_OFFSET      = (int)16,
 	SENSOR_CFG_SENSOR_ROTATION_0_0_0       = (int)0,	// roll, pitch, yaw rotation (deg).
@@ -2482,13 +2482,13 @@ typedef struct PACKED
     /** Serial port 1 baud rate in bits per second */
     uint32_t				ser1BaudRate;
 
-    /** Rotation in radians about the X, Y, Z axes from INS Sensor Frame to Intermediate Output Frame.  Order applied: Z, Y, X. */
+    /** Rotation in radians about the X, Y, Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z, Y, X. */
     float					insRotation[3];
 
     /** X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame. */
     float					insOffset[3];
 
-    /** X,Y,Z offset in meters from Sensor Frame origin to GPS 1 antenna. */
+    /** X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna. */
     float					gps1AntOffset[3];
  
     /** INS dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
