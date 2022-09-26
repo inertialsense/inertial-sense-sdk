@@ -3449,7 +3449,7 @@ typedef struct
 	uint8_t		badPulseAgeCount;			
 
 	/*! Counter for GPS PPS interrupt re-initalization. */
-	uint8_t		gpsPpsInterruptReinitCount;
+	uint8_t		ppsInterruptReinitCount;
 
 	/*! */
 	uint8_t		unused;			
