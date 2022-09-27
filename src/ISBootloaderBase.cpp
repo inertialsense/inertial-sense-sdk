@@ -140,7 +140,6 @@ eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename,
 
         // Look in the old location for this info (v5 and earler)
         fseek(blfile, 0x3DFC, SEEK_SET);
-        unsigned char ver_info[4];
         fread(ver_info, 1, 4, blfile);
         fclose(blfile);
 
