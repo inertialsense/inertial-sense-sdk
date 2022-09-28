@@ -1941,17 +1941,19 @@ class logPlot:
                 xstr += "]"
                 print(xstr)
 
-                # Show sensor valid status bit
-                if name=='acc':
-                    valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
-                else:
-                    valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
-                ax[0,i].plot(x, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
-                ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
-                ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
+                if 1:
+                    # Show sensor valid status bit
+                    if name=='acc':
+                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                    else:
+                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                    ax[0,i].plot(x, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
+                    ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
+                    ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
 
-                for j in range(3):
-                    ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
+                if 1:
+                    for j in range(3):
+                        ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
