@@ -29,7 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace ISBootloader;
 
-const char* is_samx70_bootloader_needle = "SAMx70-Bootloader";
+// const char* is_samx70_bootloader_needle = "bootloader-SAMx70";
 
 is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent) 
 {
@@ -96,11 +96,11 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
         
     }
     
-    // Backup for old (16K) bootloader image
-    if (strstr(filename.c_str(), is_samx70_bootloader_needle))
-    {
-        return IS_IMAGE_SIGN_ISB_SAMx70_16K;
-    }
+    // // Backup for old (16K) bootloader image
+    // if (strstr(filename.c_str(), is_samx70_bootloader_needle))
+    // {
+    //     return IS_IMAGE_SIGN_ISB_SAMx70_16K;
+    // }
 
     return IS_IMAGE_SIGN_NONE;
 }
