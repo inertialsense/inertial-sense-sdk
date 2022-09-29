@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -110,10 +110,10 @@ Functions</h2></td></tr>
 <tr class="separator:a91dde95de4c0885e0616aa9b4adf58aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9df86212f241ec1551efef39f2fd89f3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a9df86212f241ec1551efef39f2fd89f3">tow_to_nmea_ptow</a> (char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek)</td></tr>
 <tr class="separator:a9df86212f241ec1551efef39f2fd89f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e4d2eef672f5a346292252e9bc82648"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a4e4d2eef672f5a346292252e9bc82648">dimu_to_nmea_pimu</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> &amp;dImu)</td></tr>
-<tr class="separator:a4e4d2eef672f5a346292252e9bc82648"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a245bd96e4a1487a245c95bc7614ac94b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a245bd96e4a1487a245c95bc7614ac94b">pimu_to_nmea_ppimu</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> &amp;pimu)</td></tr>
-<tr class="separator:a245bd96e4a1487a245c95bc7614ac94b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94a5bb97c7ed291dbbfa0e39a2e6ce56"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a94a5bb97c7ed291dbbfa0e39a2e6ce56">imu_to_nmea_pimu</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> &amp;imu)</td></tr>
+<tr class="separator:a94a5bb97c7ed291dbbfa0e39a2e6ce56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae14a03f97dcc66dd3c12c93c63817b69"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#ae14a03f97dcc66dd3c12c93c63817b69">pimu_to_nmea_ppimu</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> &amp;pimu)</td></tr>
+<tr class="separator:ae14a03f97dcc66dd3c12c93c63817b69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae99cf6dc816d018e884ecf37644931b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#aae99cf6dc816d018e884ecf37644931b">ins1_to_nmea_pins1</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#afcf8ee9e9a7672ae4ee29198e30e06a6">ins_1_t</a> &amp;ins1)</td></tr>
 <tr class="separator:aae99cf6dc816d018e884ecf37644931b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05e5bac73032583e19739cf1e7e7b1f0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a05e5bac73032583e19739cf1e7e7b1f0">ins2_to_nmea_pins2</a> (char a[], const int aSize, <a class="el" href="data__sets_8h.html#a1cf0848261e1a14902604422058d5535">ins_2_t</a> &amp;ins2)</td></tr>
@@ -138,10 +138,10 @@ Functions</h2></td></tr>
 <tr class="separator:a3dc83bf0733f15b5fabe06aa2c16aac2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a391eb2701ddba33ad53ff7d699d6aa98"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a391eb2701ddba33ad53ff7d699d6aa98">parse_nmea_zda</a> (const char msgBuf[], int msgSize, double &amp;day, double &amp;month, double &amp;year)</td></tr>
 <tr class="separator:a391eb2701ddba33ad53ff7d699d6aa98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6fdc83a119b617eaab680fe2c5aec08"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#ac6fdc83a119b617eaab680fe2c5aec08">parse_nmea_gns</a> (const char msgBuf[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags=0)</td></tr>
-<tr class="separator:ac6fdc83a119b617eaab680fe2c5aec08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a146d96555cc2834b424378bdc82c56d6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a146d96555cc2834b424378bdc82c56d6">parse_nmea_gga</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags=0)</td></tr>
-<tr class="separator:a146d96555cc2834b424378bdc82c56d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a4bfbde3878f3454718e791404aa894"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a6a4bfbde3878f3454718e791404aa894">parse_nmea_gns</a> (const char msgBuf[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0)</td></tr>
+<tr class="separator:a6a4bfbde3878f3454718e791404aa894"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb7193782c5a1c3f401e0d278a0877fa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#aeb7193782c5a1c3f401e0d278a0877fa">parse_nmea_gga</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0)</td></tr>
+<tr class="separator:aeb7193782c5a1c3f401e0d278a0877fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6483c992474e988bb253d2b70f6943d3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a6483c992474e988bb253d2b70f6943d3">parse_nmea_rmc</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#af2f8adebb330e887e22825a4535b2051">gps_vel_t</a> *gpsVel, double datetime[6], uint32_t statusFlags=0)</td></tr>
 <tr class="separator:a6483c992474e988bb253d2b70f6943d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b334fe89376ad58c3b051df267247c4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="protocol__nmea_8h.html#a6b334fe89376ad58c3b051df267247c4">parse_nmea_gsa</a> (const char msg[], int msgSize, <a class="el" href="data__sets_8h.html#a50a3201ad2a07dafcb9297f27dad6681">gps_pos_t</a> *gpsPos, int *navMode)</td></tr>
@@ -284,42 +284,6 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a4e4d2eef672f5a346292252e9bc82648" name="a4e4d2eef672f5a346292252e9bc82648"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e4d2eef672f5a346292252e9bc82648">&#9670;&nbsp;</a></span>dimu_to_nmea_pimu()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int dimu_to_nmea_pimu </td>
-          <td>(</td>
-          <td class="paramtype">char&#160;</td>
-          <td class="paramname"><em>a</em>[], </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const int&#160;</td>
-          <td class="paramname"><em>aSize</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> &amp;&#160;</td>
-          <td class="paramname"><em>dImu</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00164">164</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a74ca1b4fa09b89b0c7342d376991c163" name="a74ca1b4fa09b89b0c7342d376991c163"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a74ca1b4fa09b89b0c7342d376991c163">&#9670;&nbsp;</a></span>gps_to_nmea_gga()</h2>
 
@@ -352,7 +316,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00373">373</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00357">357</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -388,7 +352,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00453">453</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00437">437</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -430,7 +394,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00485">485</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00469">469</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -484,7 +448,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00669">669</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00653">653</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -526,7 +490,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00288">288</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00272">272</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -574,7 +538,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00573">573</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00557">557</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -610,7 +574,43 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00648">648</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00632">632</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a94a5bb97c7ed291dbbfa0e39a2e6ce56" name="a94a5bb97c7ed291dbbfa0e39a2e6ce56"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94a5bb97c7ed291dbbfa0e39a2e6ce56">&#9670;&nbsp;</a></span>imu_to_nmea_pimu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int imu_to_nmea_pimu </td>
+          <td>(</td>
+          <td class="paramtype">char&#160;</td>
+          <td class="paramname"><em>a</em>[], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int&#160;</td>
+          <td class="paramname"><em>aSize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>imu</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00164">164</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -646,7 +646,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00218">218</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00202">202</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -682,7 +682,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00248">248</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00232">232</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -732,8 +732,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a146d96555cc2834b424378bdc82c56d6" name="a146d96555cc2834b424378bdc82c56d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a146d96555cc2834b424378bdc82c56d6">&#9670;&nbsp;</a></span>parse_nmea_gga()</h2>
+<a id="aeb7193782c5a1c3f401e0d278a0877fa" name="aeb7193782c5a1c3f401e0d278a0877fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb7193782c5a1c3f401e0d278a0877fa">&#9670;&nbsp;</a></span>parse_nmea_gga()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -765,7 +765,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&#160;</td>
+          <td class="paramtype">uint32_t *&#160;</td>
           <td class="paramname"><em>satsUsed</em>, </td>
         </tr>
         <tr>
@@ -782,12 +782,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00964">964</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00948">948</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ac6fdc83a119b617eaab680fe2c5aec08" name="ac6fdc83a119b617eaab680fe2c5aec08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6fdc83a119b617eaab680fe2c5aec08">&#9670;&nbsp;</a></span>parse_nmea_gns()</h2>
+<a id="a6a4bfbde3878f3454718e791404aa894" name="a6a4bfbde3878f3454718e791404aa894"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a4bfbde3878f3454718e791404aa894">&#9670;&nbsp;</a></span>parse_nmea_gns()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -819,7 +819,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&#160;</td>
+          <td class="paramtype">uint32_t *&#160;</td>
           <td class="paramname"><em>satsUsed</em>, </td>
         </tr>
         <tr>
@@ -836,7 +836,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00822">822</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00806">806</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -878,7 +878,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01149">1149</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01133">1133</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -938,7 +938,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01177">1177</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01161">1161</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -986,7 +986,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01103">1103</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l01087">1087</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -1034,12 +1034,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00791">791</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00775">775</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a245bd96e4a1487a245c95bc7614ac94b" name="a245bd96e4a1487a245c95bc7614ac94b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a245bd96e4a1487a245c95bc7614ac94b">&#9670;&nbsp;</a></span>pimu_to_nmea_ppimu()</h2>
+<a id="ae14a03f97dcc66dd3c12c93c63817b69" name="ae14a03f97dcc66dd3c12c93c63817b69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae14a03f97dcc66dd3c12c93c63817b69">&#9670;&nbsp;</a></span>pimu_to_nmea_ppimu()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1059,7 +1059,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> &amp;&#160;</td>
           <td class="paramname"><em>pimu</em>&#160;</td>
         </tr>
         <tr>
@@ -1070,7 +1070,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00190">190</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00182">182</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>
@@ -1142,7 +1142,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00275">275</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="protocol__nmea_8cpp_source.html#l00259">259</a> of file <a class="el" href="protocol__nmea_8cpp_source.html">protocol_nmea.cpp</a>.</p>
 
 </div>
 </div>

@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -80,6 +80,8 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:a922b726305ade361af04964feb04390f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a922b726305ade361af04964feb04390f">INVALID_ACCEL</a>&#160;&#160;&#160;1.0e-6f</td></tr>
+<tr class="separator:a922b726305ade361af04964feb04390f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd42016a159df0449294e886e07d31c7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#abd42016a159df0449294e886e07d31c7">CON_SCUL_INT_STEPS</a>&#160;&#160;&#160;4</td></tr>
 <tr class="separator:abd42016a159df0449294e886e07d31c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -87,12 +89,12 @@ Macros</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a22e51a19cac74be68d668affec047f52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a22e51a19cac74be68d668affec047f52">integrateDeltaThetaVelBortz</a> (<a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> theta, <a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> vel, <a class="el" href="data__sets_8h.html#a0212ee773b57acfdd8f0be41e8d6f17e">imus_t</a> *imu, <a class="el" href="data__sets_8h.html#a0212ee773b57acfdd8f0be41e8d6f17e">imus_t</a> *imuLast, float Nsteps, float dti)</td></tr>
 <tr class="separator:a22e51a19cac74be68d668affec047f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab13724758ee12d29858dc1f2598bdc7e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ab13724758ee12d29858dc1f2598bdc7e">deltaThetaDeltaVelRiemannSum</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast)</td></tr>
-<tr class="separator:ab13724758ee12d29858dc1f2598bdc7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5755565ca8609700d7f522763ec442f3"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a5755565ca8609700d7f522763ec442f3">deltaThetaDeltaVelTrapezoidal</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast)</td></tr>
-<tr class="separator:a5755565ca8609700d7f522763ec442f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6475cec6db4235f4e2aa1ed29f356d3e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a6475cec6db4235f4e2aa1ed29f356d3e">deltaThetaDeltaVelBortz</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast, int Nsteps, bool enableIMU1, bool enableIMU2)</td></tr>
-<tr class="separator:a6475cec6db4235f4e2aa1ed29f356d3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa62471b89f954932dc61292ac36876bb"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#aa62471b89f954932dc61292ac36876bb">deltaThetaDeltaVelRiemannSum</a> (<a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *output, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imuLast)</td></tr>
+<tr class="separator:aa62471b89f954932dc61292ac36876bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33b0cbdab3c814294625e90e0b22aea6"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a33b0cbdab3c814294625e90e0b22aea6">deltaThetaDeltaVelTrapezoidal</a> (<a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *output, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imuLast)</td></tr>
+<tr class="separator:a33b0cbdab3c814294625e90e0b22aea6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a600f532eefe9ff2a948d374ad68b74d0"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a600f532eefe9ff2a948d374ad68b74d0">deltaThetaDeltaVelBortz</a> (<a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *output, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imuLast, int Nsteps)</td></tr>
+<tr class="separator:a600f532eefe9ff2a948d374ad68b74d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac25ba62221268fc54191b6aedcd2ae70"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ac25ba62221268fc54191b6aedcd2ae70">init_iir_filter</a> (<a class="el" href="structiif__filter__t.html">iif_filter_t</a> *f)</td></tr>
 <tr class="separator:ac25ba62221268fc54191b6aedcd2ae70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5a48dd96d248d4664e24fe1bc396e7f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ad5a48dd96d248d4664e24fe1bc396e7f">iir_filter_u16</a> (<a class="el" href="structiif__filter__t.html">iif_filter_t</a> *f, unsigned short input[], float output[])</td></tr>
@@ -105,19 +107,26 @@ Functions</h2></td></tr>
 <tr class="memitem:afdac5c1b040debe4d404b89018907874"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#afdac5c1b040debe4d404b89018907874">running_mean_filter_f64</a> (double <a class="el" href="statistics_8h.html#adfdf7b125223f7de9a42416956b12102">mean</a>[], float input[], int arraySize, int sampleCount)</td></tr>
 <tr class="memdesc:afdac5c1b040debe4d404b89018907874"><td class="mdescLeft">&#160;</td><td class="mdescRight">Running Average Filter (double) A running average of the input array is collected in the mean array. Filter is reset when sampleCount equals 0.  <a href="filters_8cpp.html#afdac5c1b040debe4d404b89018907874">More...</a><br /></td></tr>
 <tr class="separator:afdac5c1b040debe4d404b89018907874"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65a171873aeac1a687d6d398df5f0e56"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a65a171873aeac1a687d6d398df5f0e56">errorCheckDualImu</a> (<a class="el" href="data__sets_8h.html#abc4322af57ef2261080dc74b158daf19">dual_imu_ok_t</a> *di)</td></tr>
-<tr class="separator:a65a171873aeac1a687d6d398df5f0e56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50acb905fe429c4475f4a70871d282c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a50acb905fe429c4475f4a70871d282c4">dualToSingleImu</a> (<a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *result, const <a class="el" href="data__sets_8h.html#abc4322af57ef2261080dc74b158daf19">dual_imu_ok_t</a> *di)</td></tr>
-<tr class="separator:a50acb905fe429c4475f4a70871d282c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace40d550a5f59b1804129f5fbcebd1b1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ace40d550a5f59b1804129f5fbcebd1b1">preintegratedImuToDualIMU</a> (<a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *pImu)</td></tr>
-<tr class="separator:ace40d550a5f59b1804129f5fbcebd1b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae12ccd8ce9427e4147e6b4bbc1b5967c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ae12ccd8ce9427e4147e6b4bbc1b5967c">preintegratedImuToIMU</a> (<a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu, const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *pImu)</td></tr>
-<tr class="separator:ae12ccd8ce9427e4147e6b4bbc1b5967c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a261ddf2524d82442ff82e189899770eb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a261ddf2524d82442ff82e189899770eb">imuToPreintegratedImu</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *pImu, const <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, float dt)</td></tr>
-<tr class="separator:a261ddf2524d82442ff82e189899770eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b2c7f7c09972ad2a800b0c9eaa69be7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a3b2c7f7c09972ad2a800b0c9eaa69be7">integrateImu</a> (<a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *output, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *imuLast, bool enableIMU1, bool enableIMU2)</td></tr>
-<tr class="memdesc:a3b2c7f7c09972ad2a800b0c9eaa69be7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute coning and sculling integrals from gyro and accelerometer samples.  <a href="filters_8cpp.html#a3b2c7f7c09972ad2a800b0c9eaa69be7">More...</a><br /></td></tr>
-<tr class="separator:a3b2c7f7c09972ad2a800b0c9eaa69be7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18532879447744c812626c2ab4dcdd09"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a18532879447744c812626c2ab4dcdd09">recursive_moving_mean_var_filter</a> (float *<a class="el" href="statistics_8h.html#adfdf7b125223f7de9a42416956b12102">mean</a>, float *var, float input, int sampleCount)</td></tr>
+<tr class="memdesc:a18532879447744c812626c2ab4dcdd09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Recursive Moving Average and Variance Filter Recursive computation of moving average and variance given their previous values, new element in the set, number of elements in the set (window size) and assuming that one of the elements in the set is removed when new one is added (i.e. fixed window size). Reference: <a href="http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation">http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation</a>.  <a href="filters_8cpp.html#a18532879447744c812626c2ab4dcdd09">More...</a><br /></td></tr>
+<tr class="separator:a18532879447744c812626c2ab4dcdd09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4ccbbdad64c563c6650628938142597"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#aa4ccbbdad64c563c6650628938142597">errorCheckImu3</a> (<a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *di)</td></tr>
+<tr class="separator:aa4ccbbdad64c563c6650628938142597"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a016327457e4b3bc2a1e6127d91f86477"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a016327457e4b3bc2a1e6127d91f86477">tripleToSingleImu</a> (<a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *result, const <a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *di)</td></tr>
+<tr class="separator:a016327457e4b3bc2a1e6127d91f86477"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a764f9e99c451f7f72acb470cca99b131"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a764f9e99c451f7f72acb470cca99b131">tripleToSingleImuExc</a> (<a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *result, const <a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *di, bool *exclude)</td></tr>
+<tr class="separator:a764f9e99c451f7f72acb470cca99b131"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2716d587bc1172fbca5095e927b2187"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#ae2716d587bc1172fbca5095e927b2187">tripleToSingleImuAxis</a> (<a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *result, const <a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)</td></tr>
+<tr class="separator:ae2716d587bc1172fbca5095e927b2187"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d8a98b30d2ebe28e83923fd392f87f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a0d8a98b30d2ebe28e83923fd392f87f0">singleToTripleImu</a> (<a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *result, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu)</td></tr>
+<tr class="separator:a0d8a98b30d2ebe28e83923fd392f87f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57ac044a5d74f2ecac9221cd55369c07"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a57ac044a5d74f2ecac9221cd55369c07">preintegratedImuToIMU</a> (<a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu, const <a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *pImu)</td></tr>
+<tr class="separator:a57ac044a5d74f2ecac9221cd55369c07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea2a97778076fc811de58c9358a19763"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#aea2a97778076fc811de58c9358a19763">imuToPreintegratedImu</a> (<a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *pImu, const <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu, float dt)</td></tr>
+<tr class="separator:aea2a97778076fc811de58c9358a19763"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78a696d2899eed900ecc7ac0b6b55c7f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="filters_8cpp.html#a78a696d2899eed900ecc7ac0b6b55c7f">integrateImu</a> (<a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *output, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imu, <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *imuLast)</td></tr>
+<tr class="memdesc:a78a696d2899eed900ecc7ac0b6b55c7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute coning and sculling integrals from gyro and accelerometer samples.  <a href="filters_8cpp.html#a78a696d2899eed900ecc7ac0b6b55c7f">More...</a><br /></td></tr>
+<tr class="separator:a78a696d2899eed900ecc7ac0b6b55c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="abd42016a159df0449294e886e07d31c7" name="abd42016a159df0449294e886e07d31c7"></a>
@@ -132,13 +141,29 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00248">248</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00330">330</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a922b726305ade361af04964feb04390f" name="a922b726305ade361af04964feb04390f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a922b726305ade361af04964feb04390f">&#9670;&nbsp;</a></span>INVALID_ACCEL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define INVALID_ACCEL&#160;&#160;&#160;1.0e-6f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00178">178</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a6475cec6db4235f4e2aa1ed29f356d3e" name="a6475cec6db4235f4e2aa1ed29f356d3e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6475cec6db4235f4e2aa1ed29f356d3e">&#9670;&nbsp;</a></span>deltaThetaDeltaVelBortz()</h2>
+<a id="a600f532eefe9ff2a948d374ad68b74d0" name="a600f532eefe9ff2a948d374ad68b74d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a600f532eefe9ff2a948d374ad68b74d0">&#9670;&nbsp;</a></span>deltaThetaDeltaVelBortz()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -146,38 +171,26 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">float deltaThetaDeltaVelBortz </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imu</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imuLast</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>Nsteps</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>enableIMU1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>enableIMU2</em>&#160;</td>
+          <td class="paramname"><em>Nsteps</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -187,12 +200,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00368">368</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00445">445</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ab13724758ee12d29858dc1f2598bdc7e" name="ab13724758ee12d29858dc1f2598bdc7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab13724758ee12d29858dc1f2598bdc7e">&#9670;&nbsp;</a></span>deltaThetaDeltaVelRiemannSum()</h2>
+<a id="aa62471b89f954932dc61292ac36876bb" name="aa62471b89f954932dc61292ac36876bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa62471b89f954932dc61292ac36876bb">&#9670;&nbsp;</a></span>deltaThetaDeltaVelRiemannSum()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -200,19 +213,19 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">float deltaThetaDeltaVelRiemannSum </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imu</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imuLast</em>&#160;</td>
         </tr>
         <tr>
@@ -223,12 +236,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00272">272</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00352">352</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a5755565ca8609700d7f522763ec442f3" name="a5755565ca8609700d7f522763ec442f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5755565ca8609700d7f522763ec442f3">&#9670;&nbsp;</a></span>deltaThetaDeltaVelTrapezoidal()</h2>
+<a id="a33b0cbdab3c814294625e90e0b22aea6" name="a33b0cbdab3c814294625e90e0b22aea6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33b0cbdab3c814294625e90e0b22aea6">&#9670;&nbsp;</a></span>deltaThetaDeltaVelTrapezoidal()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -236,19 +249,19 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">float deltaThetaDeltaVelTrapezoidal </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imu</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imuLast</em>&#160;</td>
         </tr>
         <tr>
@@ -259,57 +272,27 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00296">296</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00374">374</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a50acb905fe429c4475f4a70871d282c4" name="a50acb905fe429c4475f4a70871d282c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a50acb905fe429c4475f4a70871d282c4">&#9670;&nbsp;</a></span>dualToSingleImu()</h2>
+<a id="aa4ccbbdad64c563c6650628938142597" name="aa4ccbbdad64c563c6650628938142597"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4ccbbdad64c563c6650628938142597">&#9670;&nbsp;</a></span>errorCheckImu3()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void dualToSingleImu </td>
+          <td class="memname">void errorCheckImu3 </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
-          <td class="paramname"><em>result</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="data__sets_8h.html#abc4322af57ef2261080dc74b158daf19">dual_imu_ok_t</a> *&#160;</td>
-          <td class="paramname"><em>di</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00171">171</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a65a171873aeac1a687d6d398df5f0e56" name="a65a171873aeac1a687d6d398df5f0e56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65a171873aeac1a687d6d398df5f0e56">&#9670;&nbsp;</a></span>errorCheckDualImu()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void errorCheckDualImu </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#abc4322af57ef2261080dc74b158daf19">dual_imu_ok_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *&#160;</td>
           <td class="paramname"><em>di</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00153">153</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00179">179</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
@@ -385,8 +368,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a261ddf2524d82442ff82e189899770eb" name="a261ddf2524d82442ff82e189899770eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a261ddf2524d82442ff82e189899770eb">&#9670;&nbsp;</a></span>imuToPreintegratedImu()</h2>
+<a id="aea2a97778076fc811de58c9358a19763" name="aea2a97778076fc811de58c9358a19763"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea2a97778076fc811de58c9358a19763">&#9670;&nbsp;</a></span>imuToPreintegratedImu()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -394,13 +377,13 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">int imuToPreintegratedImu </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *&#160;</td>
           <td class="paramname"><em>pImu</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imu</em>, </td>
         </tr>
         <tr>
@@ -417,7 +400,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00231">231</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00314">314</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
@@ -491,12 +474,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00322">322</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00398">398</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a3b2c7f7c09972ad2a800b0c9eaa69be7" name="a3b2c7f7c09972ad2a800b0c9eaa69be7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b2c7f7c09972ad2a800b0c9eaa69be7">&#9670;&nbsp;</a></span>integrateImu()</h2>
+<a id="a78a696d2899eed900ecc7ac0b6b55c7f" name="a78a696d2899eed900ecc7ac0b6b55c7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78a696d2899eed900ecc7ac0b6b55c7f">&#9670;&nbsp;</a></span>integrateImu()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -504,32 +487,20 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void integrateImu </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *&#160;</td>
           <td class="paramname"><em>output</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
           <td class="paramname"><em>imu</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
-          <td class="paramname"><em>imuLast</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>enableIMU1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>enableIMU2</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
+          <td class="paramname"><em>imuLast</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -549,42 +520,12 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00250">250</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00332">332</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ace40d550a5f59b1804129f5fbcebd1b1" name="ace40d550a5f59b1804129f5fbcebd1b1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace40d550a5f59b1804129f5fbcebd1b1">&#9670;&nbsp;</a></span>preintegratedImuToDualIMU()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int preintegratedImuToDualIMU </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="data__sets_8h.html#a931ac3890cee022aa74b07ccea7fc04b">dual_imu_t</a> *&#160;</td>
-          <td class="paramname"><em>imu</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
-          <td class="paramname"><em>pImu</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00198">198</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ae12ccd8ce9427e4147e6b4bbc1b5967c" name="ae12ccd8ce9427e4147e6b4bbc1b5967c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae12ccd8ce9427e4147e6b4bbc1b5967c">&#9670;&nbsp;</a></span>preintegratedImuToIMU()</h2>
+<a id="a57ac044a5d74f2ecac9221cd55369c07" name="a57ac044a5d74f2ecac9221cd55369c07"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57ac044a5d74f2ecac9221cd55369c07">&#9670;&nbsp;</a></span>preintegratedImuToIMU()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -598,7 +539,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="data__sets_8h.html#af1d1f0451041e4577dcca996d1bdace0">preintegrated_imu_t</a> *&#160;</td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a7b6bf15d6939e6a1316e00e63656a5ce">pimu_t</a> *&#160;</td>
           <td class="paramname"><em>pImu</em>&#160;</td>
         </tr>
         <tr>
@@ -609,7 +550,61 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00215">215</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00298">298</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a18532879447744c812626c2ab4dcdd09" name="a18532879447744c812626c2ab4dcdd09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18532879447744c812626c2ab4dcdd09">&#9670;&nbsp;</a></span>recursive_moving_mean_var_filter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void recursive_moving_mean_var_filter </td>
+          <td>(</td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>mean</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float *&#160;</td>
+          <td class="paramname"><em>var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>sampleCount</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Recursive Moving Average and Variance Filter Recursive computation of moving average and variance given their previous values, new element in the set, number of elements in the set (window size) and assuming that one of the elements in the set is removed when new one is added (i.e. fixed window size). Reference: <a href="http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation">http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation</a>. </p>
+<p >Recursive Moving Average and Variance Filter Recursive computation of expected moving average and variance given their previous values, new element in the set, number of elements in the set (window size) and assuming that one of the elements in the set is removed when new one is added (i.e. fixed window size). Reference: <a href="http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation">http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">mean</td><td>Moving average of the set </td></tr>
+    <tr><td class="paramname">var</td><td>Moving variance of the set </td></tr>
+    <tr><td class="paramname">input</td><td>Floating point value added to the set </td></tr>
+    <tr><td class="paramname">sampleCount</td><td>Number of samples in the sliding window </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00161">161</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
@@ -662,7 +657,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00111">111</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00106">106</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>
@@ -715,7 +710,151 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00137">137</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00132">132</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a0d8a98b30d2ebe28e83923fd392f87f0" name="a0d8a98b30d2ebe28e83923fd392f87f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d8a98b30d2ebe28e83923fd392f87f0">&#9670;&nbsp;</a></span>singleToTripleImu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void singleToTripleImu </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
+          <td class="paramname"><em>imu</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00286">286</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a016327457e4b3bc2a1e6127d91f86477" name="a016327457e4b3bc2a1e6127d91f86477"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a016327457e4b3bc2a1e6127d91f86477">&#9670;&nbsp;</a></span>tripleToSingleImu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int tripleToSingleImu </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *&#160;</td>
+          <td class="paramname"><em>di</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00198">198</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ae2716d587bc1172fbca5095e927b2187" name="ae2716d587bc1172fbca5095e927b2187"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2716d587bc1172fbca5095e927b2187">&#9670;&nbsp;</a></span>tripleToSingleImuAxis()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void tripleToSingleImuAxis </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *&#160;</td>
+          <td class="paramname"><em>di</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>exclude_gyro</em>[3], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>exclude_acc</em>[3], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>iaxis</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00258">258</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a764f9e99c451f7f72acb470cca99b131" name="a764f9e99c451f7f72acb470cca99b131"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a764f9e99c451f7f72acb470cca99b131">&#9670;&nbsp;</a></span>tripleToSingleImuExc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int tripleToSingleImuExc </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="data__sets_8h.html#a9d45fd6a3757a2f93a3b9aa17fd5d910">imu_t</a> *&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="data__sets_8h.html#a84bc1386a0fd2a98235b11a97efed186">imu3_t</a> *&#160;</td>
+          <td class="paramname"><em>di</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool *&#160;</td>
+          <td class="paramname"><em>exclude</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="filters_8cpp_source.html#l00229">229</a> of file <a class="el" href="filters_8cpp_source.html">filters.cpp</a>.</p>
 
 </div>
 </div>

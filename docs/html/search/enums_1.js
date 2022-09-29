@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['baud_5frate_5ft_0',['baud_rate_t',['../_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4a',1,'ISComm.h']]]
+  ['asciidatatype_0',['asciiDataType',['../_i_s_comm_8h.html#ae8a53e32ddcd42ac1df8e6bdf6a36eef',1,'ISComm.h']]]
 ];

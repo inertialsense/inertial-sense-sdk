@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -128,6 +128,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a73a675fd832f7579cd790de41f40f5fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5a61c3455a9847b7ba811ed9c1f7451"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#ac5a61c3455a9847b7ba811ed9c1f7451">StopBroadcasts</a> (bool allPorts=true)</td></tr>
 <tr class="separator:ac5a61c3455a9847b7ba811ed9c1f7451"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72c5de4fc755fe3506ded640113a18fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a72c5de4fc755fe3506ded640113a18fc">SavePersistent</a> ()</td></tr>
+<tr class="separator:a72c5de4fc755fe3506ded640113a18fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7416c1ee74da66cbcfb77629dac57c5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#af7416c1ee74da66cbcfb77629dac57c5">SendData</a> (<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a> dataId, uint8_t *data, uint32_t length, uint32_t offset)</td></tr>
 <tr class="separator:af7416c1ee74da66cbcfb77629dac57c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb6f052b9425dd24bd82224fe0e1cfa8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#abb6f052b9425dd24bd82224fe0e1cfa8">SendRawData</a> (<a class="el" href="data__sets_8h.html#a9fcc2d0ede852d5c2f024fbffd476c6e">eDataIDs</a> dataId, uint8_t *data, uint32_t length=0, uint32_t offset=0)</td></tr>
@@ -169,8 +171,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a54d3f554d06db892bfb15b62556977fb"><td class="memItemLeft" align="right" valign="top">static std::vector&lt; <a class="el" href="struct_inertial_sense_1_1bootload__result__t.html">bootload_result_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#a54d3f554d06db892bfb15b62556977fb">BootloadFile</a> (const std::string &amp;comPort, const std::string &amp;fileName, int baudRate=<a class="el" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> uploadProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a> verifyProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, <a class="el" href="inertial_sense_boot_loader_8h.html#a871ef77795d0f1bfb333352cb3bdfb8f">pfnBootloadStatus</a> infoProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, const std::string &amp;bootloaderFileName=&quot;&quot;, bool forceBootloaderUpdate=false)</td></tr>
-<tr class="separator:a54d3f554d06db892bfb15b62556977fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9d884f2c169a37d95916aa2f38bd1ad"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="_i_s_constants_8h.html#a38824fbad279e2ba24e488cdba084032">is_operation_result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_inertial_sense.html#af9d884f2c169a37d95916aa2f38bd1ad">BootloadFile</a> (const std::string &amp;comPort, const uint32_t serialNum, const std::string &amp;fileName, const std::string &amp;blFileName, bool forceBootloaderUpdate, int baudRate=<a class="el" href="_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4aa2b184eca8c73f16e5e1a34a6cbed0c50">IS_BAUDRATE_921600</a>, <a class="el" href="namespace_i_s_bootloader.html#af932492c7867cf89227da21e47e2f1de">ISBootloader::pfnBootloadProgress</a> uploadProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, <a class="el" href="namespace_i_s_bootloader.html#af932492c7867cf89227da21e47e2f1de">ISBootloader::pfnBootloadProgress</a> verifyProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, <a class="el" href="namespace_i_s_bootloader.html#adb310ce6102567764f33a89c2fb12cb4">ISBootloader::pfnBootloadStatus</a> infoProgress=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>, void(*waitAction)()=<a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a>)</td></tr>
+<tr class="separator:af9d884f2c169a37d95916aa2f38bd1ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -223,7 +225,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00113">113</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00102">102</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -251,13 +253,13 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Destructor </p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00137">137</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00126">126</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a54d3f554d06db892bfb15b62556977fb" name="a54d3f554d06db892bfb15b62556977fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54d3f554d06db892bfb15b62556977fb">&#9670;&nbsp;</a></span>BootloadFile()</h2>
+<a id="af9d884f2c169a37d95916aa2f38bd1ad" name="af9d884f2c169a37d95916aa2f38bd1ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9d884f2c169a37d95916aa2f38bd1ad">&#9670;&nbsp;</a></span>BootloadFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -266,10 +268,16 @@ Protected Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">vector&lt; <a class="el" href="struct_inertial_sense_1_1bootload__result__t.html">InertialSense::bootload_result_t</a> &gt; InertialSense::BootloadFile </td>
+          <td class="memname"><a class="el" href="_i_s_constants_8h.html#a38824fbad279e2ba24e488cdba084032">is_operation_result</a> InertialSense::BootloadFile </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>comPort</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint32_t&#160;</td>
+          <td class="paramname"><em>serialNum</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -280,38 +288,44 @@ Protected Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>baudRate</em> = <code><a class="el" href="inertial_sense_boot_loader_8h.html#a9be7e1b986a632f484f90d4a62b93489">IS_BAUD_RATE_BOOTLOADER</a></code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a>&#160;</td>
-          <td class="paramname"><em>uploadProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="inertial_sense_boot_loader_8h.html#af3960f600015ba067228d38c25f178f0">pfnBootloadProgress</a>&#160;</td>
-          <td class="paramname"><em>verifyProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="inertial_sense_boot_loader_8h.html#a871ef77795d0f1bfb333352cb3bdfb8f">pfnBootloadStatus</a>&#160;</td>
-          <td class="paramname"><em>infoProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>bootloaderFileName</em> = <code>&quot;&quot;</code>, </td>
+          <td class="paramname"><em>blFileName</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>forceBootloaderUpdate</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>forceBootloaderUpdate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>baudRate</em> = <code><a class="el" href="_i_s_comm_8h.html#aba14184fef722499ec8d81d880851c4aa2b184eca8c73f16e5e1a34a6cbed0c50">IS_BAUDRATE_921600</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespace_i_s_bootloader.html#af932492c7867cf89227da21e47e2f1de">ISBootloader::pfnBootloadProgress</a>&#160;</td>
+          <td class="paramname"><em>uploadProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespace_i_s_bootloader.html#af932492c7867cf89227da21e47e2f1de">ISBootloader::pfnBootloadProgress</a>&#160;</td>
+          <td class="paramname"><em>verifyProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespace_i_s_bootloader.html#adb310ce6102567764f33a89c2fb12cb4">ISBootloader::pfnBootloadStatus</a>&#160;</td>
+          <td class="paramname"><em>infoProgress</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void(*)()&#160;</td>
+          <td class="paramname"><em>waitAction</em> = <code><a class="el" href="_i_s_constants_8h.html#a3ef7eab8cd0e570b6586628cc9d5ccab">NULLPTR</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -325,21 +339,10 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device. Please ensure that all other connections to the com port are closed before calling this function. </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>com port to bootload, can be comma separated for multiple </td></tr>
-    <tr><td class="paramname">fileName</td><td>the path of the file to bootload </td></tr>
-    <tr><td class="paramname">baudRate</td><td>the baud rate to bootload at </td></tr>
-    <tr><td class="paramname">uploadProgress</td><td>optional callback for upload progress </td></tr>
-    <tr><td class="paramname">verifyProgress</td><td>optional callback for verify progress </td></tr>
-    <tr><td class="paramname">bootloaderFileName</td><td>optional bootloader firmware filename </td></tr>
-    <tr><td class="paramname">forceBootloaderUpdate</td><td>optional force bootloader firmware to be updated </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>ports and errors, error will be empty if success </dd></dl>
+<p >Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device. Please ensure that all other connections to the com port are closed before calling this function.</p>
+<p >TODO: Param documentation </p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00715">715</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00713">713</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -375,7 +378,7 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00676">676</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00674">674</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -411,7 +414,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00706">706</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00704">704</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -431,7 +434,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Close the connection, logger and free all resources </p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00583">583</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00572">572</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -451,7 +454,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Close any open connection to a server </p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00331">331</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00320">320</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -478,7 +481,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if success, false if error </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00344">344</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00333">333</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -506,7 +509,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get the current number of client connections </p><dl class="section return"><dt>Returns</dt><dd>int number of current client connected </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00319">319</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00324">324</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -534,7 +537,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get Client connection info string (i.e. "127.0.0.1:7777") </p><dl class="section return"><dt>Returns</dt><dd>string IP address and port </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00337">337</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00342">342</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -562,7 +565,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get the total number of client connections </p><dl class="section return"><dt>Returns</dt><dd>int number of total client that have connected </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00325">325</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00330">330</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -589,7 +592,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00388">388</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00390">390</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -617,7 +620,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get the number of bytes read or written to/from client or server connections </p><dl class="section return"><dt>Returns</dt><dd>byte count </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00313">313</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00318">318</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -637,7 +640,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get the number of open devices </p><dl class="section return"><dt>Returns</dt><dd>the number of open devices </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00380">380</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00369">369</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -672,7 +675,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the device info </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00237">237</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00242">242</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -707,7 +710,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the EVB flash config </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00286">286</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00291">291</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -742,7 +745,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the flash config </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00272">272</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00277">277</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -762,7 +765,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get all open serial port names </p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00599">599</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00588">588</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -797,7 +800,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the serial port </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00344">344</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00349">349</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -824,7 +827,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00387">387</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00389">389</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -859,7 +862,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>current device system command </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00251">251</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00256">256</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -887,7 +890,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get TCP server IP address and port (i.e. "127.0.0.1:7777") </p><dl class="section return"><dt>Returns</dt><dd>string IP address and port </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00331">331</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00336">336</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -915,7 +918,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Get the timeout flush logger parameter in seconds </p><dl class="section return"><dt>Returns</dt><dd>the timeout flush logger parameter in seconds </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00357">357</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00362">362</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -935,7 +938,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Check if the connection is open </p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00375">375</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00364">364</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1010,7 +1013,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#a3fa2dd49f1908319ac510dae47d04069">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00810">810</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00814">814</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1046,7 +1049,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#a067eae89a124bff9d8fa9217914f7b6e">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00817">817</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00821">821</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1085,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#aceb1a642bda5b29807e2b1fe41285730">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00804">804</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00808">808</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1129,7 +1132,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classi_i_s_tcp_server_delegate.html#a6afee213d15d230882e8057ffb15d93b">iISTcpServerDelegate</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00822">822</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00826">826</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1167,7 +1170,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00792">792</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00796">796</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1212,7 +1215,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if opened, false if failure (i.e. baud rate is bad or port fails to open) </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00273">273</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00262">262</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1239,7 +1242,27 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if connection opened, false if failure </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00321">321</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00310">310</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a72c5de4fc755fe3506ded640113a18fc" name="a72c5de4fc755fe3506ded640113a18fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72c5de4fc755fe3506ded640113a18fc">&#9670;&nbsp;</a></span>SavePersistent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void InertialSense::SavePersistent </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Current data streaming will continue streaming at boot. </p>
+
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00610">610</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1290,7 +1313,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00621">621</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00619">619</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1341,7 +1364,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00630">630</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00628">628</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1378,7 +1401,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00663">663</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00661">661</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1415,7 +1438,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00650">650</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00648">648</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1495,7 +1518,7 @@ Protected Member Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if success, false if failure </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00290">290</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00279">279</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1532,7 +1555,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00638">638</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00636">636</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1566,7 +1589,7 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00363">363</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8h_source.html#l00368">368</a> of file <a class="el" href="_inertial_sense_8h_source.html">InertialSense.h</a>.</p>
 
 </div>
 </div>
@@ -1587,7 +1610,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Turn off all messages. Current port only if allPorts = false. </p>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00609">609</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00598">598</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>
@@ -1607,7 +1630,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Call in a loop to send and receive data. Call at regular intervals as frequently as want to receive data. </p><dl class="section return"><dt>Returns</dt><dd>true if updating should continue, false if the process should be shutdown </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00385">385</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_inertial_sense_8cpp_source.html#l00374">374</a> of file <a class="el" href="_inertial_sense_8cpp_source.html">InertialSense.cpp</a>.</p>
 
 </div>
 </div>

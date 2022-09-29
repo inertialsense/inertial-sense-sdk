@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -99,6 +99,16 @@ Macros</h2></td></tr>
 <tr class="separator:a44ae40b6eb322894170552b5ffcf547e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c3947aefc5afc14e466d4c38e3ac735"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a4c3947aefc5afc14e466d4c38e3ac735">E_SQ</a>&#160;&#160;&#160;0.006694379990141</td></tr>
 <tr class="separator:a4c3947aefc5afc14e466d4c38e3ac735"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a967e2fc7180f536bb946cdf85c563cde"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a967e2fc7180f536bb946cdf85c563cde">E_PRIME_SQ</a>&#160;&#160;&#160;0.006739496742276</td></tr>
+<tr class="separator:a967e2fc7180f536bb946cdf85c563cde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2ea669b60d9b1d56ac876f5a04035ff"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#ae2ea669b60d9b1d56ac876f5a04035ff">E_POW4</a>&#160;&#160;&#160;4.481472345240464e-05</td></tr>
+<tr class="separator:ae2ea669b60d9b1d56ac876f5a04035ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e1c227d6ef5ac1189bbaf14339a06cb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a3e1c227d6ef5ac1189bbaf14339a06cb">ONE_MINUS_E_SQ</a>&#160;&#160;&#160;0.993305620009859</td></tr>
+<tr class="separator:a3e1c227d6ef5ac1189bbaf14339a06cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70d70368269af316d95d23efb51b5f9c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a70d70368269af316d95d23efb51b5f9c">ONE_DIV_ONE_MINUS_E_SQ</a>&#160;&#160;&#160;1.006739496742276</td></tr>
+<tr class="separator:a70d70368269af316d95d23efb51b5f9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afabd86b323377bdbc55223f5b6175efd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#afabd86b323377bdbc55223f5b6175efd">ONE_DIV_E_SQ</a>&#160;&#160;&#160;1.493790315865963e+02</td></tr>
+<tr class="separator:afabd86b323377bdbc55223f5b6175efd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae24ba935f9a0dfd36edd0603b66feed2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#ae24ba935f9a0dfd36edd0603b66feed2">REQ</a>&#160;&#160;&#160;6378137.0</td></tr>
 <tr class="separator:ae24ba935f9a0dfd36edd0603b66feed2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ef24a6546e5ef48f71d12b9011917e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a4ef24a6546e5ef48f71d12b9011917e5">REP</a>&#160;&#160;&#160;6356752.314245179</td></tr>
@@ -120,8 +130,8 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9618d0d931c90ae3727fd44a89ffa947"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a9618d0d931c90ae3727fd44a89ffa947">ecef2lla</a> (const double *Pe, double *LLA, const int Niter)</td></tr>
-<tr class="separator:a9618d0d931c90ae3727fd44a89ffa947"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44c154a9e5c2b3d60a369a9a40a0ef68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#a44c154a9e5c2b3d60a369a9a40a0ef68">ecef2lla</a> (const double *Pe, double *LLA, const int method)</td></tr>
+<tr class="separator:a44c154a9e5c2b3d60a369a9a40a0ef68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5394f71be54bdc7dee1b1d21ef13682"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#ae5394f71be54bdc7dee1b1d21ef13682">lla2ecef</a> (const double *LLA, double *Pe)</td></tr>
 <tr class="separator:ae5394f71be54bdc7dee1b1d21ef13682"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff82032b4f5040ab86ed76f57605caed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_earth_8c.html#aff82032b4f5040ab86ed76f57605caed">lla2ned</a> (<a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> llaRef, <a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> lla, <a class="el" href="_i_s_constants_8h.html#a5a07617a839867781fa69a8209bb895f">ixVector3</a> result)</td></tr>
@@ -233,7 +243,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00045">45</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00049">49</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -249,7 +259,39 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00046">46</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00050">50</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+
+</div>
+</div>
+<a id="ae2ea669b60d9b1d56ac876f5a04035ff" name="ae2ea669b60d9b1d56ac876f5a04035ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2ea669b60d9b1d56ac876f5a04035ff">&#9670;&nbsp;</a></span>E_POW4</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define E_POW4&#160;&#160;&#160;4.481472345240464e-05</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00043">43</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+
+</div>
+</div>
+<a id="a967e2fc7180f536bb946cdf85c563cde" name="a967e2fc7180f536bb946cdf85c563cde"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a967e2fc7180f536bb946cdf85c563cde">&#9670;&nbsp;</a></span>E_PRIME_SQ</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define E_PRIME_SQ&#160;&#160;&#160;0.006739496742276</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00042">42</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -265,7 +307,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00042">42</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00041">41</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -281,7 +323,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00047">47</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00051">51</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -297,7 +339,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00049">49</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00053">53</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -313,7 +355,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00050">50</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00054">54</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -329,7 +371,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00051">51</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00055">55</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -345,7 +387,55 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00048">48</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00052">52</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+
+</div>
+</div>
+<a id="afabd86b323377bdbc55223f5b6175efd" name="afabd86b323377bdbc55223f5b6175efd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afabd86b323377bdbc55223f5b6175efd">&#9670;&nbsp;</a></span>ONE_DIV_E_SQ</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ONE_DIV_E_SQ&#160;&#160;&#160;1.493790315865963e+02</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00046">46</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+
+</div>
+</div>
+<a id="a70d70368269af316d95d23efb51b5f9c" name="a70d70368269af316d95d23efb51b5f9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70d70368269af316d95d23efb51b5f9c">&#9670;&nbsp;</a></span>ONE_DIV_ONE_MINUS_E_SQ</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ONE_DIV_ONE_MINUS_E_SQ&#160;&#160;&#160;1.006739496742276</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00045">45</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+
+</div>
+</div>
+<a id="a3e1c227d6ef5ac1189bbaf14339a06cb" name="a3e1c227d6ef5ac1189bbaf14339a06cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e1c227d6ef5ac1189bbaf14339a06cb">&#9670;&nbsp;</a></span>ONE_MINUS_E_SQ</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ONE_MINUS_E_SQ&#160;&#160;&#160;0.993305620009859</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00044">44</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -361,7 +451,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00041">41</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00040">40</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -441,7 +531,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00044">44</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00048">48</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -457,7 +547,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00043">43</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00047">47</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -478,12 +568,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00251">251</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00371">371</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
-<a id="a9618d0d931c90ae3727fd44a89ffa947" name="a9618d0d931c90ae3727fd44a89ffa947"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9618d0d931c90ae3727fd44a89ffa947">&#9670;&nbsp;</a></span>ecef2lla()</h2>
+<a id="a44c154a9e5c2b3d60a369a9a40a0ef68" name="a44c154a9e5c2b3d60a369a9a40a0ef68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44c154a9e5c2b3d60a369a9a40a0ef68">&#9670;&nbsp;</a></span>ecef2lla()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -504,7 +594,7 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const int&#160;</td>
-          <td class="paramname"><em>Niter</em>&#160;</td>
+          <td class="paramname"><em>method</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -514,7 +604,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00054">54</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00058">58</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -544,7 +634,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00352">352</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00472">472</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -574,7 +664,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00091">91</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00211">211</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -610,7 +700,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00123">123</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00243">243</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -646,7 +736,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00147">147</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00267">267</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -676,7 +766,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00318">318</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00438">438</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -718,7 +808,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00325">325</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00445">445</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -748,7 +838,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00310">310</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00430">430</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -784,7 +874,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00170">170</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00290">290</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -814,7 +904,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00279">279</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00399">399</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -834,7 +924,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00337">337</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00457">457</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -864,7 +954,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00265">265</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00385">385</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -894,7 +984,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00439">439</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00559">559</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -930,7 +1020,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00288">288</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00408">408</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -966,7 +1056,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00295">295</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00415">415</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1002,7 +1092,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00302">302</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00422">422</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1038,7 +1128,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00194">194</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00314">314</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1074,7 +1164,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00213">213</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00333">333</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1110,7 +1200,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00232">232</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00352">352</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1140,7 +1230,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00427">427</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00547">547</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1266,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00412">412</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00532">532</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1212,7 +1302,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00398">398</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00518">518</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>
@@ -1260,7 +1350,7 @@ Functions</h2></td></tr>
 </dl>
 <p>Compute the range and bearing by principle of the osculating sphere: We define a sphere that is tangential to the WGS84 ellipsoid at latitude 1 (the latitude given in lla1). Then we perform the range and bearing computation on that sphere instead of on the ellipsoid itself (which requires more complex math). </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00458">458</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_earth_8c_source.html#l00578">578</a> of file <a class="el" href="_i_s_earth_8c_source.html">ISEarth.c</a>.</p>
 
 </div>
 </div>

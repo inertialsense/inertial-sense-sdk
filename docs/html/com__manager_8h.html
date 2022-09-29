@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -126,8 +126,8 @@ Typedefs</h2></td></tr>
 <tr class="separator:a018afe7c16e51b37e48d536d977fbc75"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6f59ccc6e623e7cea518e0924f4e417"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#aa6f59ccc6e623e7cea518e0924f4e417">pfnComManagerDisableBroadcasts</a>) (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle)</td></tr>
 <tr class="separator:aa6f59ccc6e623e7cea518e0924f4e417"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6661146dea16855b79b9c3d4fc2dc463"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a6661146dea16855b79b9c3d4fc2dc463">pfnComManagerPreSend</a>) (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle)</td></tr>
-<tr class="separator:a6661146dea16855b79b9c3d4fc2dc463"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83d611863a3505750036c090dc5f9fd4"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a83d611863a3505750036c090dc5f9fd4">pfnComManagerPreSend</a>) (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr)</td></tr>
+<tr class="separator:a83d611863a3505750036c090dc5f9fd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae409b4b86f12ecf125a9a9e4d1334062"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#ae409b4b86f12ecf125a9a9e4d1334062">pfnComManagerGenMsgHandler</a>) (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle, const unsigned char *msg, int msgSize)</td></tr>
 <tr class="separator:ae409b4b86f12ecf125a9a9e4d1334062"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70a8b02edd1174af2af3c4a79b465d72"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a>) (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle, <a class="el" href="structp__data__get__t.html">p_data_get_t</a> *req)</td></tr>
@@ -198,9 +198,9 @@ Functions</h2></td></tr>
 <tr class="separator:a69751e08cb2002d64b380e2ae90d160e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0f34f05ead3087428251de6db6bd48d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#af0f34f05ead3087428251de6db6bd48d">comManagerGetDataRequestInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, int pHandle, <a class="el" href="structp__data__get__t.html">p_data_get_t</a> *req)</td></tr>
 <tr class="separator:af0f34f05ead3087428251de6db6bd48d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9887c6cd8d50dbb31888d12f9b7efddc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a9887c6cd8d50dbb31888d12f9b7efddc">comManagerRegister</a> (uint32_t dataId, <a class="el" href="com__manager_8h.html#a6661146dea16855b79b9c3d4fc2dc463">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
+<tr class="memitem:a9887c6cd8d50dbb31888d12f9b7efddc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a9887c6cd8d50dbb31888d12f9b7efddc">comManagerRegister</a> (uint32_t dataId, <a class="el" href="com__manager_8h.html#a83d611863a3505750036c090dc5f9fd4">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
 <tr class="separator:a9887c6cd8d50dbb31888d12f9b7efddc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6cd5088737bfad7efabe238a163cd78e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a6cd5088737bfad7efabe238a163cd78e">comManagerRegisterInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, uint32_t dataId, <a class="el" href="com__manager_8h.html#a6661146dea16855b79b9c3d4fc2dc463">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
+<tr class="memitem:a6cd5088737bfad7efabe238a163cd78e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#a6cd5088737bfad7efabe238a163cd78e">comManagerRegisterInstance</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmInstance, uint32_t dataId, <a class="el" href="com__manager_8h.html#a83d611863a3505750036c090dc5f9fd4">pfnComManagerPreSend</a> txFnc, <a class="el" href="com__manager_8h.html#a4d1cf2c64ae86f8dfc4c0976651fba6a">pfnComManagerPostRead</a> pstRxFnc, const void *txDataPtr, void *rxDataPtr, int dataSize, uint8_t pktFlags)</td></tr>
 <tr class="separator:a6cd5088737bfad7efabe238a163cd78e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af19cb112d993c0f406b6c26c9c4198df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="com__manager_8h.html#af19cb112d993c0f406b6c26c9c4198df">comManagerSetCallbacks</a> (<a class="el" href="com__manager_8h.html#a70a8b02edd1174af2af3c4a79b465d72">pfnComManagerAsapMsg</a> rmcHandler, <a class="el" href="com__manager_8h.html#ae409b4b86f12ecf125a9a9e4d1334062">pfnComManagerGenMsgHandler</a> asciiHandler, <a class="el" href="com__manager_8h.html#ae409b4b86f12ecf125a9a9e4d1334062">pfnComManagerGenMsgHandler</a> ubloxHandler, <a class="el" href="com__manager_8h.html#ae409b4b86f12ecf125a9a9e4d1334062">pfnComManagerGenMsgHandler</a> rtcm3Handler)</td></tr>
 <tr class="separator:af19cb112d993c0f406b6c26c9c4198df"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -384,14 +384,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6661146dea16855b79b9c3d4fc2dc463" name="a6661146dea16855b79b9c3d4fc2dc463"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6661146dea16855b79b9c3d4fc2dc463">&#9670;&nbsp;</a></span>pfnComManagerPreSend</h2>
+<a id="a83d611863a3505750036c090dc5f9fd4" name="a83d611863a3505750036c090dc5f9fd4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83d611863a3505750036c090dc5f9fd4">&#9670;&nbsp;</a></span>pfnComManagerPreSend</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef int(* pfnComManagerPreSend) (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle)</td>
+          <td class="memname">typedef int(* pfnComManagerPreSend) (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -502,7 +502,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01057">1057</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01063">1063</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -532,7 +532,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01062">1062</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01068">1068</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>
@@ -673,7 +673,7 @@ Functions</h2></td></tr>
 <p>Example that makes a request to receive the device info just once: </p><div class="fragment"><div class="line"><a class="code hl_function" href="com__manager_8c.html#a2f5355ba3c4e3467fd3eba423904324b">comManagerGetData</a>(0, <a class="code hl_define" href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a>, 0, <span class="keyword">sizeof</span>(<a class="code hl_union" href="struct_p_a_c_k_e_d.html">dev_info_t</a>), 0);</div>
 <div class="ttc" id="acom__manager_8c_html_a2f5355ba3c4e3467fd3eba423904324b"><div class="ttname"><a href="com__manager_8c.html#a2f5355ba3c4e3467fd3eba423904324b">comManagerGetData</a></div><div class="ttdeci">void comManagerGetData(int pHandle, uint32_t dataId, int offset, int size, int periodMultiple)</div><div class="ttdoc">Request data This function requests the specified data w/ offset and length for partial reads.</div><div class="ttdef"><b>Definition:</b> <a href="com__manager_8c_source.html#l00516">com_manager.c:516</a></div></div>
 <div class="ttc" id="adata__sets_8h_html_a5ad06fc2f66d620d031065c8dc711904"><div class="ttname"><a href="data__sets_8h.html#a5ad06fc2f66d620d031065c8dc711904">DID_DEV_INFO</a></div><div class="ttdeci">#define DID_DEV_INFO</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l00035">data_sets.h:35</a></div></div>
-<div class="ttc" id="astruct_p_a_c_k_e_d_html"><div class="ttname"><a href="struct_p_a_c_k_e_d.html">PACKED</a></div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l00428">data_sets.h:429</a></div></div>
+<div class="ttc" id="astruct_p_a_c_k_e_d_html"><div class="ttname"><a href="struct_p_a_c_k_e_d.html">PACKED</a></div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l00446">data_sets.h:447</a></div></div>
 </div><!-- fragment --><p >Example that broadcasts INS data every 50 milliseconds: </p><div class="fragment"><div class="line"><a class="code hl_function" href="com__manager_8c.html#a2f5355ba3c4e3467fd3eba423904324b">comManagerGetData</a>(0, <a class="code hl_define" href="data__sets_8h.html#a51eb38624c99c9172d22efbaf713b863">DID_INS_1</a>, 0, <span class="keyword">sizeof</span>(<a class="code hl_union" href="struct_p_a_c_k_e_d.html">ins_1_t</a>), 50);</div>
 </div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -857,9 +857,9 @@ Functions</h2></td></tr>
 </dl>
 <p>Example that enables streaming of all data messages necessary for post processing: </p><div class="fragment"><div class="line"><a class="code hl_function" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code hl_define" href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">RMC_PRESET_PPD_BITS</a>, 0);</div>
 <div class="ttc" id="acom__manager_8c_html_aae55430658079aefb707533cd58c5f5a"><div class="ttname"><a href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a></div><div class="ttdeci">void comManagerGetDataRmc(int pHandle, uint64_t rmcBits, uint32_t rmcOptions)</div><div class="ttdef"><b>Definition:</b> <a href="com__manager_8c_source.html#l00539">com_manager.c:539</a></div></div>
-<div class="ttc" id="adata__sets_8h_html_af2dde43e94fcb8ec49be17e2578904c1"><div class="ttname"><a href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">RMC_PRESET_PPD_BITS</a></div><div class="ttdeci">#define RMC_PRESET_PPD_BITS</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01435">data_sets.h:1435</a></div></div>
+<div class="ttc" id="adata__sets_8h_html_af2dde43e94fcb8ec49be17e2578904c1"><div class="ttname"><a href="data__sets_8h.html#af2dde43e94fcb8ec49be17e2578904c1">RMC_PRESET_PPD_BITS</a></div><div class="ttdeci">#define RMC_PRESET_PPD_BITS</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01492">data_sets.h:1492</a></div></div>
 </div><!-- fragment --><p >Example that broadcasts INS and GPS data at full rate: </p><div class="fragment"><div class="line"><a class="code hl_function" href="com__manager_8c.html#aae55430658079aefb707533cd58c5f5a">comManagerGetDataRmc</a>(pHandle, <a class="code hl_define" href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a>, 0);</div>
-<div class="ttc" id="adata__sets_8h_html_a1fcda2c63895620d70c7c51501dd3227"><div class="ttname"><a href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a></div><div class="ttdeci">#define RMC_PRESET_INS_BITS</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01438">data_sets.h:1438</a></div></div>
+<div class="ttc" id="adata__sets_8h_html_a1fcda2c63895620d70c7c51501dd3227"><div class="ttname"><a href="data__sets_8h.html#a1fcda2c63895620d70c7c51501dd3227">RMC_PRESET_INS_BITS</a></div><div class="ttdeci">#define RMC_PRESET_INS_BITS</div><div class="ttdef"><b>Definition:</b> <a href="data__sets_8h_source.html#l01495">data_sets.h:1495</a></div></div>
 </div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l00539">539</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
@@ -1272,7 +1272,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="com__manager_8h.html#a6661146dea16855b79b9c3d4fc2dc463">pfnComManagerPreSend</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="com__manager_8h.html#a83d611863a3505750036c090dc5f9fd4">pfnComManagerPreSend</a>&#160;</td>
           <td class="paramname"><em>txFnc</em>, </td>
         </tr>
         <tr>
@@ -1352,7 +1352,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="com__manager_8h.html#a6661146dea16855b79b9c3d4fc2dc463">pfnComManagerPreSend</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="com__manager_8h.html#a83d611863a3505750036c090dc5f9fd4">pfnComManagerPreSend</a>&#160;</td>
           <td class="paramname"><em>txFnc</em>, </td>
         </tr>
         <tr>
@@ -2182,7 +2182,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if baud rate is valid, -1 if not </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01587">1587</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="com__manager_8c_source.html#l01598">1598</a> of file <a class="el" href="com__manager_8c_source.html">com_manager.c</a>.</p>
 
 </div>
 </div>

@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -69,7 +69,8 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">cltool_main.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -79,10 +80,142 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:abde3b33193aaee336de47f1e9ba4b432"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_i_s_constants_8h.html#a38824fbad279e2ba24e488cdba084032">is_operation_result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#abde3b33193aaee336de47f1e9ba4b432">bootloadUpdateCallback</a> (void *obj, float percent)</td></tr>
+<tr class="separator:abde3b33193aaee336de47f1e9ba4b432"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49256419d46ba63e25364bf298ab7afd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_i_s_constants_8h.html#a38824fbad279e2ba24e488cdba084032">is_operation_result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#a49256419d46ba63e25364bf298ab7afd">bootloadVerifyCallback</a> (void *obj, float percent)</td></tr>
+<tr class="separator:a49256419d46ba63e25364bf298ab7afd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f634f52a6333f1efffd6c070ad2374d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#a8f634f52a6333f1efffd6c070ad2374d">printProgress</a> ()</td></tr>
+<tr class="separator:a8f634f52a6333f1efffd6c070ad2374d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add7556c5116ddbc1ede57fdc170f0be1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#add7556c5116ddbc1ede57fdc170f0be1">cltool_bootloadUpdateInfo</a> (void *obj, const char *str, <a class="el" href="namespace_i_s_bootloader.html#a2bb0e8fcbcce3f4a7594efd70a9d436e">ISBootloader::eLogLevel</a> level)</td></tr>
+<tr class="separator:add7556c5116ddbc1ede57fdc170f0be1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a9570dc8923fdd7ee659ef679ef2b2b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#a6a9570dc8923fdd7ee659ef679ef2b2b">cltool_firmwareUpdateWaiter</a> ()</td></tr>
+<tr class="separator:a6a9570dc8923fdd7ee659ef679ef2b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22b9325aa4bb6032bd43862a8133f97b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#a22b9325aa4bb6032bd43862a8133f97b">cltool_main</a> (int argc, char *argv[])</td></tr>
 <tr class="separator:a22b9325aa4bb6032bd43862a8133f97b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a285c0d00aa00121c3c1b8b54b6367b8f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="class_i_s_bootloader_1_1c_i_s_bootloader_base.html">ISBootloader::cISBootloaderBase</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#a285c0d00aa00121c3c1b8b54b6367b8f">firmwareProgressContexts</a></td></tr>
+<tr class="separator:a285c0d00aa00121c3c1b8b54b6367b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a354ec46445b1c4e1f6288c38f20e71e4"><td class="memItemLeft" align="right" valign="top">std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cltool__main_8cpp.html#a354ec46445b1c4e1f6288c38f20e71e4">print_mutex</a></td></tr>
+<tr class="separator:a354ec46445b1c4e1f6288c38f20e71e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="abde3b33193aaee336de47f1e9ba4b432" name="abde3b33193aaee336de47f1e9ba4b432"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abde3b33193aaee336de47f1e9ba4b432">&#9670;&nbsp;</a></span>bootloadUpdateCallback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_i_s_constants_8h.html#a38824fbad279e2ba24e488cdba084032">is_operation_result</a> bootloadUpdateCallback </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>obj</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>percent</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00385">385</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a49256419d46ba63e25364bf298ab7afd" name="a49256419d46ba63e25364bf298ab7afd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49256419d46ba63e25364bf298ab7afd">&#9670;&nbsp;</a></span>bootloadVerifyCallback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_i_s_constants_8h.html#a38824fbad279e2ba24e488cdba084032">is_operation_result</a> bootloadVerifyCallback </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>obj</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>percent</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00393">393</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+
+</div>
+</div>
+<a id="add7556c5116ddbc1ede57fdc170f0be1" name="add7556c5116ddbc1ede57fdc170f0be1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add7556c5116ddbc1ede57fdc170f0be1">&#9670;&nbsp;</a></span>cltool_bootloadUpdateInfo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void cltool_bootloadUpdateInfo </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>obj</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>str</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespace_i_s_bootloader.html#a2bb0e8fcbcce3f4a7594efd70a9d436e">ISBootloader::eLogLevel</a>&#160;</td>
+          <td class="paramname"><em>level</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00401">401</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a6a9570dc8923fdd7ee659ef679ef2b2b" name="a6a9570dc8923fdd7ee659ef679ef2b2b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a9570dc8923fdd7ee659ef679ef2b2b">&#9670;&nbsp;</a></span>cltool_firmwareUpdateWaiter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void cltool_firmwareUpdateWaiter </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00435">435</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a22b9325aa4bb6032bd43862a8133f97b" name="a22b9325aa4bb6032bd43862a8133f97b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a22b9325aa4bb6032bd43862a8133f97b">&#9670;&nbsp;</a></span>cltool_main()</h2>
 
@@ -109,7 +242,59 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00521">521</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00604">604</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a8f634f52a6333f1efffd6c070ad2374d" name="a8f634f52a6333f1efffd6c070ad2374d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f634f52a6333f1efffd6c070ad2374d">&#9670;&nbsp;</a></span>printProgress()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void printProgress </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00346">346</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="a285c0d00aa00121c3c1b8b54b6367b8f" name="a285c0d00aa00121c3c1b8b54b6367b8f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a285c0d00aa00121c3c1b8b54b6367b8f">&#9670;&nbsp;</a></span>firmwareProgressContexts</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="class_i_s_bootloader_1_1c_i_s_bootloader_base.html">ISBootloader::cISBootloaderBase</a>*&gt; firmwareProgressContexts</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00312">312</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a354ec46445b1c4e1f6288c38f20e71e4" name="a354ec46445b1c4e1f6288c38f20e71e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a354ec46445b1c4e1f6288c38f20e71e4">&#9670;&nbsp;</a></span>print_mutex</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::mutex print_mutex</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cltool__main_8cpp_source.html#l00344">344</a> of file <a class="el" href="cltool__main_8cpp_source.html">cltool_main.cpp</a>.</p>
 
 </div>
 </div>

@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['registered_5fdata_5ft_0',['registered_data_t',['../structregistered__data__t.html',1,'']]],
-  ['ring_5fbuf_5ft_1',['ring_buf_t',['../structring__buf__t.html',1,'']]],
-  ['rmean_5ffilter_5ft_2',['rmean_filter_t',['../structrmean__filter__t.html',1,'']]]
+  ['nocase_5fcompare_0',['nocase_compare',['../structs_case_insensitive_compare_1_1nocase__compare.html',1,'sCaseInsensitiveCompare']]],
+  ['node_5fargs_1',['node_args',['../structnode__args.html',1,'']]]
 ];

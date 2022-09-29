@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -105,8 +105,8 @@ Functions</h2></td></tr>
 <tr class="separator:ab78ef4a124a2099a5c7b22798eb5a876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1d697adf4fcd3a4798840c93abf7bac"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ab1d697adf4fcd3a4798840c93abf7bac">flashChecksum32</a> (const void *data, int size)</td></tr>
 <tr class="separator:ab1d697adf4fcd3a4798840c93abf7bac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92f6edead84a44514c9c896af5f09fbe"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a92f6edead84a44514c9c896af5f09fbe">didToRmcBit</a> (uint32_t dataId, uint64_t defaultRmcBits)</td></tr>
-<tr class="separator:a92f6edead84a44514c9c896af5f09fbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7fdf55b5cece99a63756cdd6ec99991"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#ac7fdf55b5cece99a63756cdd6ec99991">didToRmcBit</a> (uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)</td></tr>
+<tr class="separator:ac7fdf55b5cece99a63756cdd6ec99991"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a749719b28f0ca0d469340af1fd120a28"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a749719b28f0ca0d469340af1fd120a28">julianToDate</a> (double julian, int32_t *year, int32_t *month, int32_t *day, int32_t *hour, int32_t *minute, int32_t *second, int32_t *millisecond)</td></tr>
 <tr class="separator:a749719b28f0ca0d469340af1fd120a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a39f7689edfe1d3467ddf13d633c9e6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="data__sets_8c.html#a4a39f7689edfe1d3467ddf13d633c9e6">gpsToUnix</a> (uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds)</td></tr>
@@ -156,12 +156,12 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the 32 bit checksum for data </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00579">579</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00585">585</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
-<a id="a92f6edead84a44514c9c896af5f09fbe" name="a92f6edead84a44514c9c896af5f09fbe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92f6edead84a44514c9c896af5f09fbe">&#9670;&nbsp;</a></span>didToRmcBit()</h2>
+<a id="ac7fdf55b5cece99a63756cdd6ec99991" name="ac7fdf55b5cece99a63756cdd6ec99991"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7fdf55b5cece99a63756cdd6ec99991">&#9670;&nbsp;</a></span>didToRmcBit()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -176,7 +176,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">uint64_t&#160;</td>
-          <td class="paramname"><em>defaultRmcBits</em>&#160;</td>
+          <td class="paramname"><em>defaultRmcBits</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>devInfoRmcBits</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -187,7 +193,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Convert DID to realtime message bits </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00611">611</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00617">617</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -217,7 +223,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00605">605</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00611">611</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -561,7 +567,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a list of offsets and lengths of strings for the data id or 0 if none </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00406">406</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00412">412</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -598,7 +604,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Convert GPS Week and Seconds to Julian Date. Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00757">757</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00766">766</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -635,7 +641,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Convert GPS Week and Ms and leapSeconds to Unix seconds </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00748">748</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00757">757</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -702,7 +708,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Convert Julian Date to calendar date. </p>
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00656">656</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00665">665</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -732,7 +738,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00814">814</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00823">823</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -762,7 +768,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00854">854</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00863">863</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -792,7 +798,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00599">599</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00605">605</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
@@ -812,7 +818,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00795">795</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="data__sets_8c_source.html#l00804">804</a> of file <a class="el" href="data__sets_8c_source.html">data_sets.c</a>.</p>
 
 </div>
 </div>
