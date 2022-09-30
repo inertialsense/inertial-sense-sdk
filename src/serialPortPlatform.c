@@ -24,6 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
+#include <sys/file.h>
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
@@ -314,7 +315,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         serialPortClose(serialPort);
         return 0;
     }
-    COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), 0, 0 };
+    COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 10 : 0) };
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
         serialPortClose(serialPort);
@@ -337,6 +338,8 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     {
         return 0;
     }
+    ioctl(fd, TIOCEXCL);    // Put device into exclusive mode
+    flock(fd, LOCK_EX | LOCK_NB);   // Add advisory lock
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->fd = fd;
     handle->blocking = blocking;
@@ -377,7 +380,15 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
 
 #if PLATFORM_IS_WINDOWS
 
+    //DWORD dwRead = 0;
+    //DWORD error = 0;
+
     CancelIo(handle->platformHandle);
+    //GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
+    /*if ((error = GetLastError()) != ERROR_SUCCESS)
+    {
+        while (1) {}
+    }*/
     if (handle->blocking)
     {
         CloseHandle(handle->ovRead.hEvent);
@@ -473,14 +484,8 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
                 CancelIo(handle->platformHandle);
             }
         }
-// #if _DEBUG
-// 		else
-// 		{
-// 			DWORD dRes = GetLastError();
-// 			int a = 5; a++;
-// 		}
-// #endif
-        if (!handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
+
+        if (handle->blocking && totalRead < readCount && timeoutMilliseconds > 0)
         {
             Sleep(1);
         }
@@ -625,27 +630,30 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
 #else
 
-    return write(handle->fd, buffer, writeCount);
-
-    // if desired in the future, this will block until the data has been successfully written to the serial port
-    /*
+    struct stat sb;
+    if(stat(serialPort->port, &sb) != 0)
+    {
+        error_message("error: serial port not open\r\n\r\n");
+        return 0;
+    }
+    
     int count = write(handle->fd, buffer, writeCount);
-    int error = tcdrain(handle->fd);
+    if(count != writeCount) 
+    {
+        error_message("write error %d\r\n\r\n", errno);
+        return 0;
+    }
+
+    int error = 0;
+    // if(handle->blocking) error = tcdrain(handle->fd);
 
     if (error != 0)
     {
-    error_message("error %d from tcdrain", errno);
-    return 0;
+        error_message("error %d from tcdrain\r\n\r\n", errno);
+        return 0;
     }
 
     return count;
-    */
-
-	if (serialPort->pfnWrite)
-	{
-		return serialPort->pfnWrite(serialPort, buffer, writeCount);
-	}
-	return 0;
 
 #endif
 

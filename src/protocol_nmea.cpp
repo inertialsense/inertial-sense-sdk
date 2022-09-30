@@ -161,54 +161,38 @@ int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, un
 	return n;	
 }
 
-int dimu_to_nmea_pimu(char a[], const int aSize, dual_imu_t &dimu)
+int imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu)
 {
 	int n = SNPRINTF(a, aSize, "$PIMU");
-	n += SNPRINTF(a+n, aSize-n, ",%.3lf", dimu.time);		// 1
+	n += SNPRINTF(a+n, aSize-n, ",%.3lf", imu.time);		// 1
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", dimu.I[0].pqr[0]);	// 2
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", dimu.I[0].pqr[1]);	// 3
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", dimu.I[0].pqr[2]);	// 4
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[0]);	// 2
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[1]);	// 3
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[2]);	// 4
 
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", dimu.I[0].acc[0]);	// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", dimu.I[0].acc[1]);	// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", dimu.I[0].acc[2]);	// 7
-
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", dimu.I[1].pqr[0]);	// 8
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", dimu.I[1].pqr[1]);	// 9
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", dimu.I[1].pqr[2]);	// 10
-
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", dimu.I[1].acc[0]);	// 11
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", dimu.I[1].acc[1]);	// 12
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", dimu.I[1].acc[2]);	// 13
+	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[0]);	// 5
+	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[1]);	// 6
+	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[2]);	// 7
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
 	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
 	return n;	
 }
 
-int pimu_to_nmea_ppimu(char a[], const int aSize, preintegrated_imu_t &pimu)
+int pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 {
 	int n = SNPRINTF(a, aSize, "$PPIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", pimu.time);		// 1
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta1[0]);	// 2
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta1[1]);	// 3
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta1[2]);	// 4
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[0]);	// 2
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[1]);	// 3
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[2]);	// 4
 
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta2[0]);	// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta2[1]);	// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta2[2]);	// 7
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[0]);		// 5
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[1]);		// 6
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[2]);		// 7
 
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel1[0]);		// 8
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel1[1]);		// 9
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel1[2]);		// 10
-
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel2[0]);		// 11
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel2[1]);		// 12
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel2[2]);		// 13
-
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", pimu.dt);			// 14
+	n += SNPRINTF(a+n, aSize-n, ",%.3f", pimu.dt);			// 8
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
 	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
@@ -819,7 +803,7 @@ int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, do
 *   Number Satellites
 *   Altitude & Geoid separation
 */
-int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)
+int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -927,9 +911,9 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double sep = atof(ptr);
 		
 	//Store data		
-	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, GPS_STATUS_NUM_SATS_USED_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, GPS_STATUS_FLAGS_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), fixType, GPS_STATUS_FIX_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, (uint32_t)GPS_STATUS_NUM_SATS_USED_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, (uint32_t)GPS_STATUS_FLAGS_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), fixType, (uint32_t)GPS_STATUS_FIX_MASK);
 		
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];
@@ -961,7 +945,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 *   Number Satellites
 *   Altitude & Geoid separation
 */	
-int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags)
+int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1066,9 +1050,9 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	double sep = atof(ptr);
 			
 	//Store data
-	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, GPS_STATUS_NUM_SATS_USED_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, GPS_STATUS_FLAGS_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), fixType, GPS_STATUS_FIX_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, (uint32_t)GPS_STATUS_NUM_SATS_USED_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, (uint32_t)GPS_STATUS_FLAGS_MASK);
+	set_gpsPos_status_mask(&(gpsPos->status), fixType, (uint32_t)GPS_STATUS_FIX_MASK);
 			
 	gpsPos->lla[0] = lla[0];
 	gpsPos->lla[1] = lla[1];

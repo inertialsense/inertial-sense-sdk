@@ -103,10 +103,9 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
     gps2Raw = log2Data( log, itd.cGPSRaw, 'GPS2Raw')
     gpsBaseRaw = log2Data( log, itd.cGPSRaw, 'GPSBaseRaw')
     imu1 = log2Data( log, itd.cIMU, 'imu1' )
-    dimu = log2Data( log, itd.cIMU, 'dualImu' )
-    dimu = log2Data( log, itd.cIMU, 'preintegratedImu' )
-    mag1 = log2Data( log, itd.cIMU, 'magnetometer1' )
-    mag2 = log2Data( log, itd.cIMU, 'magnetometer2' )
+    dimu = log2Data( log, itd.cIMU, 'imu' )
+    dimu = log2Data( log, itd.cIMU, 'pimu' )
+    mag1 = log2Data( log, itd.cIMU, 'magnetometer' )
     magInfo = log2Data( log, itd.cSIMPLE, 'inl2MagObs')
     varInfo = log2Data( log, itd.cSIMPLE, 'inl2Variance')
     baro = log2Data( log, itd.cIMU, 'barometer' )
@@ -184,8 +183,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
     #         print("Dual IMU keys:", dimu.v.dtype.names)
     #     if mag1:
     #         print("Mag keys:", mag1.v.dtype.names)
-    #     if mag2:
-    #         print("Mag keys:", mag2.v.dtype.names)
     #     if baro:
     #         print("Baro keys:", baro.v.dtype.names)
     #     if gps1Pos:
@@ -232,8 +229,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
         if mag1:
             mag1.time = mag1.time + meanTowOffset - startTow
-        if mag2:
-            mag2.time = mag2.time + meanTowOffset - startTow
         if baro:
             baro.time = baro.time + meanTowOffset - startTow
 
@@ -1297,14 +1292,11 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         pt.labels('Sensors: Mag','gauss')
         if pe['sensorMag'] > 1:
             mag_1 = ft.smooth(mag1.v['mag'][:,:], pe['sensorMag'])
-            mag_2 = ft.smooth(mag2.v['mag'][:,:], pe['sensorMag'])
         else:
             mag_1 = mag1.v['mag'][:,:]
-            mag_2 = mag2.v['mag'][:,:]
 
         pt.plot3Axes(f, mag1.v['time'], mag_1 )
-        pt.plot3Axes(f, mag2.v['time'], mag_2 )
-        legend += ['mag 1','mag 2']
+        legend += ['mag 1']
         plt.legend(legend)
 
         saveFigures('sensorMagnetometer.svg', f)
@@ -1319,8 +1311,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             pt.labels('Sensors: Mag','gauss')
         mag[0].time = mag1.time
         mag[0].mag  = mag1.v['mag'][:,:]
-        mag[1].time = mag2.time
-        mag[1].mag  = mag2.v['mag'][:,:]
 
         if pe['sensorMag'] != 1:
             freq = pe['sensorAcc']
@@ -1329,11 +1319,6 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
 
         pt.plot3Axes(f, mag[0].time, mag[0].mag, xlim=xlim )
         legend += ['mag1']
-        if peCheck('sensorSeparate'):
-            plt.legend(legend); f += 1; legend = []
-            pt.labels('Sensors: Mag2','gauss')
-        pt.plot3Axes(f, mag[1].time, mag[1].mag, xlim=xlim )
-        legend += ['mag2']
         plt.legend(legend)
 
         saveFigures('sensorMag.svg', f)
@@ -1367,8 +1352,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         mpu = []
         mpu.append(cObj())
         mpu.append(cObj())
-        mpu[0].temp = log.data['sensorsRaw']['mpu'][:,0]['temp']
-        mpu[1].temp = log.data['sensorsRaw']['mpu'][:,1]['temp']
+        mpu[0].temp = log.data['sensorsUcal']['mpu'][:,0]['temp']
+        mpu[1].temp = log.data['sensorsUcal']['mpu'][:,1]['temp']
         dt = 0.004
         mpuTime = np.arange(0.0, np.shape(mpu[0].temp)[0])*dt
 
@@ -1377,8 +1362,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         if peCheck('sensorIs1PqrVsTemp'):
             f += 1;    legend = []
             pt.labels('SensorsIS1: PQR vs Temperature','deg/s')
-            mpu[0].pqr  = log.data['sensorsRaw']['mpu'][:,0]['pqr']
-            mpu[1].pqr  = log.data['sensorsRaw']['mpu'][:,1]['pqr']
+            mpu[0].pqr  = log.data['sensorsUcal']['mpu'][:,0]['pqr']
+            mpu[1].pqr  = log.data['sensorsUcal']['mpu'][:,1]['pqr']
             if pe['sensorIs1PqrVsTemp'] != 1:
                 freq = pe['sensorIs1PqrVsTemp']
                 mpu[0].pqr = ft.lpfNoDelay(mpu[0].pqr, freq, dt=dt)
@@ -1389,8 +1374,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             plt.legend(legend)
 
         if peCheck('sensorIs1Pqr'):
-            mpu[0].pqr  = log.data['sensorsRaw']['mpu'][:,0]['pqr']
-            mpu[1].pqr  = log.data['sensorsRaw']['mpu'][:,1]['pqr']
+            mpu[0].pqr  = log.data['sensorsUcal']['mpu'][:,0]['pqr']
+            mpu[1].pqr  = log.data['sensorsUcal']['mpu'][:,1]['pqr']
             if pe['sensorIs1Pqr'] != 1:
                 freq = pe['sensorIs1Pqr']
                 mpu[0].pqr = ft.lpfNoDelay(mpu[0].pqr, freq, dt=dt)
@@ -1412,8 +1397,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
         if peCheck('sensorIs1AccVsTemp'):
             f += 1;    legend = []
             pt.labels('SensorsIS1: Accel vs Temperature','m/s^2')
-            mpu[0].acc  = log.data['sensorsRaw']['mpu'][:,0]['acc']
-            mpu[1].acc  = log.data['sensorsRaw']['mpu'][:,1]['acc']
+            mpu[0].acc  = log.data['sensorsUcal']['mpu'][:,0]['acc']
+            mpu[1].acc  = log.data['sensorsUcal']['mpu'][:,1]['acc']
             if pe['sensorIs1AccVsTemp'] != 1:
                 freq = pe['sensorIs1AccVsTemp']
                 mpu[0].acc = ft.lpfNoDelay(mpu[0].acc, freq, dt=dt)
@@ -1424,8 +1409,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             plt.legend(legend)
 
         if peCheck('sensorIs1Acc'):
-            mpu[0].acc  = log.data['sensorsRaw']['mpu'][:,0]['acc']
-            mpu[1].acc  = log.data['sensorsRaw']['mpu'][:,1]['acc']
+            mpu[0].acc  = log.data['sensorsUcal']['mpu'][:,0]['acc']
+            mpu[1].acc  = log.data['sensorsUcal']['mpu'][:,1]['acc']
             if pe['sensorIs1Acc'] != 1:
                 freq = pe['sensorIs1Acc']
                 mpu[0].acc = ft.lpfNoDelay(mpu[0].acc, freq, dt=dt)
@@ -1448,8 +1433,8 @@ def IsLoggerPlot( pe, log, tru=None, startFigure=None, referencePlot=False, save
             f += 1;    legend = []
             pt.labels('SensorsIS1: Mag vs Temperature','gauss')
             lgd = ['mpu1','mpu2']
-            mpu[0].mag  = log.data['sensorsRaw']['mpu'][:,0]['mag']
-            mpu[1].mag  = log.data['sensorsRaw']['mpu'][:,1]['mag']
+            mpu[0].mag  = log.data['sensorsUcal']['mpu'][:,0]['mag']
+            mpu[1].mag  = log.data['sensorsUcal']['mpu'][:,1]['mag']
             if pe['sensorIs1Mag'] != 1:
                 freq = pe['sensorMag']
                 mpu[0].mag = ft.smooth(mpu[0].mag, pe['sensorIs1Mag'])

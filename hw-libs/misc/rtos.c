@@ -17,8 +17,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
 #include "globals.h"
 #include "IS_internal.h"
-#include "misc/maintenance.h"
-#include "../../../hdw-src/uINS-3/IS_uINS/src/misc/debug_gpio.h"
 #endif
 
 #ifdef TESTBED
@@ -72,7 +70,6 @@ void rtos_monitor(int numRtosTasks)
 #if (configGENERATE_RUN_TIME_STATS == 1)
 	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();			// uint64_t gets truncated to uint32_t
 	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;				// Percentage, so divide by 100
-	bool resetStats = false;
 #endif // (configGENERATE_RUN_TIME_STATS == 1)
 
 	TaskStatus_t status;
@@ -128,21 +125,25 @@ void rtosResetTaskCounters(void)
 #endif // (configGENERATE_RUN_TIME_STATS == 1)
 }
 
-
 void vApplicationIdleHook(void)
 {
     // Sleep to reduce power consumption
-    pmc_enable_sleepmode(0);
+#ifndef IMX_5
+	PMC->PMC_FSMR &= (uint32_t) ~PMC_FSMR_LPM; // Enter Sleep mode
+#endif
+    SCB->SCR &= (uint32_t) ~SCB_SCR_SLEEPDEEP_Msk;	// Common to both Cortex M4 and M7
+    __DSB();
+    __WFI();
 }
 
-
+#ifndef IMX_5
 void vApplicationTickHook(void)
 {
 #if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
     DBGPIO_TOGGLE(DBG_RTOS_TICK_HOOK_PIN);  // Debug used to monitor RTOS tick execution
 #endif
 }
-
+#endif
 
 static void setGpbrWithTaskInfo(void)
 {
@@ -151,9 +152,16 @@ static void setGpbrWithTaskInfo(void)
     if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_NAV].handle){ task = TASK_NAV; }
     if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_COMMUNICATIONS].handle){ task = TASK_COMMUNICATIONS; }
     if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_MAINTENANCE].handle){ task = TASK_MAINTENANCE; }
+
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_G1_TASK] = task;
     GPBR->SYS_GPBR[GPBR_IDX_G2_FILE_NUM] = g_faultFileNumber;
     GPBR->SYS_GPBR[GPBR_IDX_G3_LINE_NUM] = g_faultLineNumber;
+#else
+    RTC->BKP1R = task;
+    RTC->BKP2R = g_faultFileNumber;
+    RTC->BKP3R = g_faultLineNumber;
+#endif
 }
 
 // implementation below acquired from
@@ -162,14 +170,20 @@ void prvGetRegistersFromStack(uint32_t *pulFaultStackAddress);
 void prvGetRegistersFromStack(uint32_t *pulFaultStackAddress)
 {
     setGpbrWithTaskInfo();
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_G5_LR]  = pulFaultStackAddress[5]; // link reg
     GPBR->SYS_GPBR[GPBR_IDX_PC]  = pulFaultStackAddress[6]; // program counter
     GPBR->SYS_GPBR[GPBR_IDX_PSR] = pulFaultStackAddress[7]; // program status register
+#else
+    RTC->BKP5R = pulFaultStackAddress[5]; // link reg
+    RTC->BKP6R = pulFaultStackAddress[6]; // program counter
+    RTC->BKP7R = pulFaultStackAddress[7]; // program status register
+#endif
+
     soft_reset_no_backup_register();
 }
 
-
-void vApplicationStackOverflowHook(xTaskHandle* pxTask, signed char* pcTaskName)
+void vApplicationStackOverflowHook(TaskHandle_t pxTask, char* pcTaskName)
 {
 #if defined(PLATFORM_IS_EVB_2) || defined(DEBUG)
 
@@ -178,8 +192,13 @@ void vApplicationStackOverflowHook(xTaskHandle* pxTask, signed char* pcTaskName)
 
 #else   // uINS
 
+#ifndef IMX_5
 	GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_STACK_OVERFLOW;
-    setGpbrWithTaskInfo();
+#else
+	RTC->BKP0R |= SYS_FAULT_STATUS_STACK_OVERFLOW;
+#endif
+
+	setGpbrWithTaskInfo();
 	soft_reset_no_backup_register();
 
 #endif    
@@ -203,16 +222,30 @@ void vApplicationMallocFailedHook(uint32_t size, uint32_t remaining, uint32_t pr
 
 #else   // uINS
 
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_MALLOC_FAILED;
     GPBR->SYS_GPBR[GPBR_IDX_G4_FLASH_MIG] = size;
     GPBR->SYS_GPBR[GPBR_IDX_G5_LR] = remaining;
 
 	// Capture call stack
     GPBR->SYS_GPBR[GPBR_IDX_PC]  = prevLR;		// program counter of call to malloc
+#else
+    RTC->BKP0R |= SYS_FAULT_STATUS_MALLOC_FAILED;
+    RTC->BKP4R = size;
+    RTC->BKP5R = remaining;
+
+	// Capture call stack
+    RTC->BKP6R = prevLR;		// program counter of call to malloc
+#endif
 
 	soft_reset_no_backup_register();
 
 #endif
+}
+
+void vApplicationDaemonTaskStartupHook(void)
+{
+	g_rtos.task[TASK_TIMER].handle = (uint32_t)xTaskGetCurrentTaskHandle();
 }
 
 #if 1
@@ -224,7 +257,12 @@ void MemManage_Handler(void)
 
 #else   // uINS
 
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_MEM_MANGE;
+#else
+    RTC->BKP0R |= SYS_FAULT_STATUS_MEM_MANGE;
+#endif
+
     setGpbrWithTaskInfo();
     soft_reset_no_backup_register();
 
@@ -239,7 +277,12 @@ void BusFault_Handler(void)
 
 #else   // uINS
 
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_BUS_FAULT;
+#else
+    RTC->BKP0R |= SYS_FAULT_STATUS_BUS_FAULT;
+#endif
+
     setGpbrWithTaskInfo();
     soft_reset_no_backup_register();
 
@@ -254,14 +297,18 @@ void UsageFault_Handler(void)
 
 #else   // uINS
 
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_USAGE_FAULT;
+#else
+    RTC->BKP0R |= SYS_FAULT_STATUS_USAGE_FAULT;
+#endif
+
     setGpbrWithTaskInfo();
     soft_reset_no_backup_register();
 
 #endif
 }
 #endif
-
 
 #if 1
 
@@ -276,7 +323,11 @@ void HardFault_Handler(void)
 
 #else   // uINS
 
+#ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_STATUS] |= SYS_FAULT_STATUS_HARD_FAULT;
+#else
+    RTC->BKP0R |= SYS_FAULT_STATUS_HARD_FAULT;
+#endif
     
 	__asm volatile
 	(
@@ -380,6 +431,7 @@ void HardFault_Handler(void)
 
 #pragma GCC pop_options
 
+#ifndef IMX_5
 static void HardFault_Test(void)
 {
 #if 0
@@ -404,7 +456,7 @@ static void HardFault_Test(void)
 	
 	for (;;) {}
 }
-
+#endif
 
 
 // enable to detect which handler was called as opposed to the default Dummy_Handler

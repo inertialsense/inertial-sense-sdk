@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['linked_5flist_5fnode_5ft_0',['linked_list_node_t',['../structlinked__list__node__t.html',1,'']]],
-  ['linked_5flist_5ft_1',['linked_list_t',['../structlinked__list__t.html',1,'']]]
+  ['handle_5fpriv_0',['handle_priv',['../structhandle__priv.html',1,'']]],
+  ['hid_5fdevice_5fpriv_1',['hid_device_priv',['../structhid__device__priv.html',1,'']]],
+  ['htab_5fentry_2',['htab_entry',['../structhtab__entry.html',1,'']]]
 ];

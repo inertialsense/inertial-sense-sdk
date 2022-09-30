@@ -34,9 +34,11 @@ class Log:
         self.passRMS = 0    # 1 = pass, -1 = fail, 0 = unknown
         self.refSerials = []
         self.refIdx = []
+        self.devIdx = []
         self.refData = []
         self.truth = []
         self.refINS = False
+        self.hardware = []
 
     def load(self, directory, serials=['ALL']):
         self.data = []
@@ -48,6 +50,7 @@ class Log:
         self.directory = directory
         self.numDev = self.data.shape[0]
         self.numRef = 0
+
         if self.numDev == 0:
             print("No devices found in log or no logs found!!!")
             return False
@@ -55,24 +58,32 @@ class Log:
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
 
         for i in range(self.numDev):
+            self.hardware.append(self.data[i, DID_DEV_INFO]['hardwareVer'][0][0])
             if any(self.data[i,DID_FLASH_CONFIG]['sysCfgBits'] & eSysConfigBits.SYS_CFG_USE_REFERENCE_IMU_IN_EKF.value):
                 self.refINS = True
                 self.refIdx.append(i)
                 self.numRef = self.numRef + 1
                 if len(self.data[i, DID_DEV_INFO]):
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
+            else:
+                self.devIdx.append(i)
             if self.serials[i] == 10101:
                 self.serials[i] = 'NovAtel INS'
             if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
                 self.ins1ToIns2(i)
 
-        if self.refINS:
+        if len(self.serials) == len(self.refSerials):
+            self.devIdx = self.refIdx
+
+        if self.refINS and len(self.serials) > len(self.refSerials):
             self.serials = np.delete(self.serials, self.refIdx, 0)
-                
+
         if len(self.refIdx):
             self.refData = self.data[self.refIdx].copy()
 
-        self.numIns = self.numDev - self.numRef
+        self.numIns = self.numDev 
+        if(len(self.serials) > len(self.refSerials)):
+            self.numIns = self.numIns - self.numRef
 
 
         self.compassing = None  
@@ -211,9 +222,9 @@ class Log:
                 # print time_of_fix_ms
                 self.min_time = max(time_of_fix_ms)
 
-            # Use middle third of data
-            self.min_time = self.max_time - 2.0*(self.max_time - self.min_time)/3.0
-            self.max_time = self.max_time - (self.max_time - self.min_time)/3.0
+            # Use only partial data for RMS calculations
+            self.min_time = self.max_time - 2.0*(self.max_time - self.min_time)/3.0  # do not use the first 1/3 (alignment)
+            # self.max_time = self.max_time - (self.max_time - self.min_time)/3.0    # do not use the last 1/3
 
             # Resample at a steady 100 Hz
             dt = 0.01
@@ -250,7 +261,8 @@ class Log:
             refData = self.stateArray
         else:
             refData = self.stateArray[self.refIdx, :, :]
-            self.stateArray = np.delete(self.stateArray, self.refIdx, 0)
+            if len(self.serials) > len(self.refSerials):
+                self.stateArray = np.delete(self.stateArray, self.refIdx, 0)
         # Find Mean Data
         means[:, :6] = np.mean(refData[:, :, 1:7], axis=0)  # calculate mean position and velocity across devices
         means[:, 6:] = meanOfQuatArray(refData[:, :, 7:].transpose((1, 0, 2)))  # Calculate mean attitude of all devices at each timestep
@@ -294,11 +306,20 @@ class Log:
             return 'PASS'
 
     def printRMSReport(self):
+        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx]
         self.tmpPassRMS = 1
         filename = os.path.join(self.directory, 'RMS_report_new_logger.txt')
-        thresholds = np.array([0.35, 0.35, 0.8, # (m)   NED
-                               0.2, 0.2, 0.2,   # (m/s) UVW
-                               0.11, 0.11, 2.0])  # (deg) ATT (roll, pitch, yaw)
+        # Make sure all devices have the same hardware
+        hardware = self.hardware[self.devIdx[0]]
+        for dev in uINS_device_idx:
+            if self.hardware[dev] != hardware:
+                # Use default value if not all devices use the same hardware
+                hardware = 0
+
+        # Default thresholds
+        thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
+                               0.2, 0.2, 0.2,    # (m/s) UVW
+                               0.11, 0.11, 2.0]) # (deg) ATT (roll, pitch, yaw)
         if self.navMode or self.compassing:
             thresholds[8] = 0.3  # Higher heading accuracy
         else:
@@ -309,11 +330,38 @@ class Log:
             thresholds[1] = 1.0
             thresholds[2] = 1.0
 
+        # Thresholds for uINS-3
+        if hardware == 3:
+            thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
+                                   0.2, 0.2, 0.2,    # (m/s) UVW
+                                   0.11, 0.11, 2.0]) # (deg) ATT (roll, pitch, yaw)
+            if self.navMode or self.compassing:
+                thresholds[8] = 0.3  # Higher heading accuracy
+            else:
+                thresholds[:6] = np.inf
+
+            if self.compassing:
+                thresholds[0] = 1.0
+                thresholds[1] = 1.0
+                thresholds[2] = 1.0
+        # Thresholds for IMX-5
+        elif hardware == 5:
+            thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
+                                   0.2, 0.2, 0.2,    # (m/s) UVW
+                                   0.06, 0.06, 1.0]) # (deg) ATT (roll, pitch, yaw)
+            if self.navMode or self.compassing:
+                thresholds[8] = 0.2  # Higher heading accuracy
+            else:
+                thresholds[:6] = np.inf
+
+            if self.compassing:
+                thresholds[0] = 1.0
+                thresholds[1] = 1.0
+                thresholds[2] = 1.0
+
         thresholds[6:] *= DEG2RAD  # convert degrees threshold to radians
 
         self.specRatio = self.averageRMS / thresholds
-
-        uINS_device_idx = [n for n in range(self.numDev) if not(n in self.refIdx)]
 
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))

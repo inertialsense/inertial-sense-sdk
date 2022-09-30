@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c" />
     <ClCompile Include="..\..\..\src\com_manager.c" />
     <ClCompile Include="..\..\..\src\convert_ins.cpp" />
     <ClCompile Include="..\..\..\src\DataChunk.cpp" />
@@ -33,8 +34,14 @@
     <ClCompile Include="..\..\..\src\DeviceLogKML.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\..\src\DeviceLogSorted.cpp" />
+    <ClCompile Include="..\..\..\src\ihex.c" />
     <ClCompile Include="..\..\..\src\InertialSense.cpp" />
-    <ClCompile Include="..\..\..\src\inertialSenseBootLoader.c" />
+    <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp" />
+    <ClCompile Include="..\..\..\src\ISBootloaderBase.cpp" />
+    <ClCompile Include="..\..\..\src\ISBootloaderDFU.cpp" />
+    <ClCompile Include="..\..\..\src\ISBootloaderISB.cpp" />
+    <ClCompile Include="..\..\..\src\ISBootloaderSAMBA.cpp" />
+    <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp" />
     <ClCompile Include="..\..\..\src\ISClient.cpp" />
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\ISDataMappings.cpp" />
@@ -51,6 +58,17 @@
     <ClCompile Include="..\..\..\src\ISTcpClient.cpp" />
     <ClCompile Include="..\..\..\src\ISTcpServer.cpp" />
     <ClCompile Include="..\..\..\src\ISUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\core.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\descriptor.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\hotplug.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\io.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\events_windows.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\threads_windows.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_common.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_usbdk.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_winusb.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\strerror.c" />
+    <ClCompile Include="..\..\..\src\libusb\libusb\sync.c" />
     <ClCompile Include="..\..\..\src\message_stats.cpp" />
     <ClCompile Include="..\..\..\src\protocol_nmea.cpp" />
     <ClCompile Include="..\..\..\src\serialPort.c" />
@@ -62,6 +80,7 @@
     <ClCompile Include="..\ISLoggerExample.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h" />
     <ClInclude Include="..\..\..\src\com_manager.h" />
     <ClInclude Include="..\..\..\src\convert_ins.h" />
     <ClInclude Include="..\..\..\src\DataChunk.h" />
@@ -76,8 +95,13 @@
     <ClInclude Include="..\..\..\src\DeviceLogKML.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSerial.h" />
     <ClInclude Include="..\..\..\src\DeviceLogSorted.h" />
-    <ClInclude Include="..\..\..\src\InertialSense.h" />
-    <ClInclude Include="..\..\..\src\inertialSenseBootLoader.h" />
+    <ClInclude Include="..\..\..\src\ihex.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderAPP.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderBase.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderDFU.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderISB.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderSAMBA.h" />
+    <ClInclude Include="..\..\..\src\ISBootloaderThread.h" />
     <ClInclude Include="..\..\..\src\ISClient.h" />
     <ClInclude Include="..\..\..\src\ISComm.h" />
     <ClInclude Include="..\..\..\src\ISDataMappings.h" />
@@ -96,6 +120,16 @@
     <ClInclude Include="..\..\..\src\ISTcpClient.h" />
     <ClInclude Include="..\..\..\src\ISTcpServer.h" />
     <ClInclude Include="..\..\..\src\ISUtilities.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\libusb.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\libusbi.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\events_windows.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\threads_windows.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\windows_common.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\windows_usbdk.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\os\windows_winusb.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\version.h" />
+    <ClInclude Include="..\..\..\src\libusb\libusb\version_nano.h" />
+    <ClInclude Include="..\..\..\src\libusb\msvc\config.h" />
     <ClInclude Include="..\..\..\src\message_stats.h" />
     <ClInclude Include="..\..\..\src\protocol_nmea.h" />
     <ClInclude Include="..\..\..\src\serialPort.h" />
@@ -158,15 +192,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>..\..\..\src\libusb\msvc;..\..\..\src\libusb\libusb;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>..\..\..\src\libusb\msvc;..\..\..\src\libusb\libusb;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>..\..\..\src\libusb\msvc;..\..\..\src\libusb\libusb;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>..\..\..\src\libusb\msvc;..\..\..\src\libusb\libusb;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -194,6 +232,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -230,6 +269,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

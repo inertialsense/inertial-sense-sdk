@@ -3,7 +3,7 @@ project(SDK_test)
 
 # Locate GTest
 find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+include_directories(${GTEST_INCLUDE_DIRS} ../libusb/libusb)
 
 add_library(SDK_test
 	test_com_manager.cpp

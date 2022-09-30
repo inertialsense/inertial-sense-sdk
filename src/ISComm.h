@@ -49,8 +49,8 @@ extern "C" {
 #define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
 
 /** IMU */
-#define _DID_IMU_DUAL				DID_DUAL_IMU			/** (see dual_imu_t) Dual IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_IMU_PREINTEGRATED_IMU	DID_PREINTEGRATED_IMU	/** (see preintegrated_imu_t) Dual IMU output: Conning and sculling integrated at IMU update rate. */	
+#define _DID_IMU					DID_IMU					/** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
+#define _DID_PIMU					DID_PIMU				/** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
 
 /** GPS */
 #define _DID_GPS1_POS				DID_GPS1_POS			/** (see gps_pos_t) GPS output */
@@ -121,7 +121,7 @@ typedef enum
 // version 1: initial release
 // version 2: 24 bit checksum support
 // version 3: ioConfig change
-#define PROTOCOL_VERSION_CHAR1			(3)
+#define PROTOCOL_VERSION_CHAR1			(4)
 
 // Minor (in data_sets.h)
 // #define PROTOCOL_VERSION_CHAR2		0
@@ -695,6 +695,9 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
 char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *com, const unsigned int maxsize);
+
+/** Returns -1 if the baudrate is not a standard baudrate. */
+int validateBaudRate(unsigned int baudRate);
 
 #ifdef __cplusplus
 }

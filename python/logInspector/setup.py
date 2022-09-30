@@ -24,8 +24,8 @@ class get_pybind_include(object):
 ext_modules = [
     Extension('log_reader',
         ['src/log_reader.cpp',
-         '../../src/cltool.cpp',
-         '../../src/cltool_main.cpp',
+        #  '../../src/cltool.cpp',
+        #  '../../src/cltool_main.cpp',
          '../../src/convert_ins.cpp',
          '../../src/com_manager.c',
          '../../src/data_sets.c',
@@ -40,8 +40,7 @@ ext_modules = [
          '../../src/DeviceLogKML.cpp',
          '../../src/DeviceLogSerial.cpp',
          '../../src/DeviceLogSorted.cpp',
-         '../../src/InertialSense.cpp',
-         '../../src/inertialSenseBootLoader.c',
+         '../../src/ihex.c',
          '../../src/ISClient.cpp',
          '../../src/ISComm.c',
          '../../src/ISDataMappings.cpp',
@@ -68,15 +67,17 @@ ext_modules = [
          '../../src/tinyxml.cpp',
          '../../src/tinyxmlerror.cpp',
          '../../src/tinyxmlparser.cpp'],
-        include_dirs=[
+        define_macros = [('EXCLUDE_BOOTLOADER', 1)],
+        include_dirs = [
             # Path to pybind11 headers
             'include',
             '../src',
             '../../src',
+            '../../src/libusb/libusb',
             get_pybind_include(),
             get_pybind_include(user=True)
         ],
-        language='c++'
+        language='c++',
     ),
 ]
 

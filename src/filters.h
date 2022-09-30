@@ -501,17 +501,36 @@ void running_mean_filter( float mean[], float input[], int arraySize, int sample
  */
 void running_mean_filter_f64( double mean[], float input[], int arraySize, int sampleCount );
 
+/**
+ * \brief Recursive Moving Average and Variance Filter
+ * Recursive computation of expected moving average and variance given their previous
+ * values, new element in the set, number of elements in the set (window size) and
+ * assuming that one of the elements in the set is removed when new one is
+ * added (i.e. fixed window size).
+ * Reference: http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation
+ *
+ * \param mean          Moving average of the set
+ * \param var           Moving variance of the set
+ * \param input         Floating point value added to the set
+  * \param sampleCount   Number of samples in the sliding window
+*/
+void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount);
+
 
 // Look for error in dual IMU data
-void errorCheckDualImu(dual_imu_ok_t *di);
+void errorCheckImu3(imu3_t *di);
 
-// Condenses dual IMUs down to one IMU
-void dualToSingleImu(imu_t *result, const dual_imu_ok_t *di);
+// Condense triple IMUs down to one IMU
+int tripleToSingleImu(imu_t *result, const imu3_t *di);
+int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude); // for individual IMU exclusion
+void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
+
+// Duplicate one IMU to triple IMUs
+void singleToTripleImu(imu3_t *result, imu_t *imu);
 
 // Convert integrated IMU to IMU. 0 on success, -1 on failure.
-int preintegratedImuToDualIMU(dual_imu_t *imu, const preintegrated_imu_t *imuInt);
-int preintegratedImuToIMU(imu_t *imu, const preintegrated_imu_t *pImu);
-int imuToPreintegratedImu(preintegrated_imu_t *pImu, const dual_imu_t *imu, float dt);
+int preintegratedImuToIMU(imu_t *imu, const pimu_t *imuInt);
+int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
 
 
 /** 
@@ -521,8 +540,7 @@ int imuToPreintegratedImu(preintegrated_imu_t *pImu, const dual_imu_t *imu, floa
  * \param imu			Gyro and accelerometer sample.
  * \param imuLast		Previous gyro and accelerometer sample.
  */
-void integrateImu( preintegrated_imu_t *output, dual_imu_t *imu, dual_imu_t *imuLast, bool enableIMU1, bool enableIMU2 );
-
+void integrateImu( pimu_t *output, imu_t *imu, imu_t *imuLast );
 
 
 /** 

@@ -36,8 +36,15 @@ add_executable(cltool
 	../src/DeviceLogKML.cpp
 	../src/DeviceLogSerial.cpp
 	../src/DeviceLogSorted.cpp
+	../src/ihex.c
 	../src/InertialSense.cpp
-	../src/inertialSenseBootLoader.c
+	../src/ISBootloaderThread.cpp
+	../src/ISBootloaderBase.cpp
+    ../src/ISBootloaderISB.cpp
+	../src/ISBootloaderDFU.cpp
+	../src/ISBootloaderSAMBA.cpp
+	../src/ISBootloaderAPP.cpp
+	../hw-libs/bootloader/bootloaderShared.c
 	../src/ISClient.cpp
 	../src/ISComm.c
 	../src/ISDataMappings.cpp
@@ -65,7 +72,22 @@ add_executable(cltool
 	../src/tinyxmlerror.cpp
 	../src/tinyxmlparser.cpp
 )
-target_link_libraries(cltool pthread)
+
+find_library(LIBUSB_LIBRARY
+	NAMES usb-1.0
+	PATH_SUFFIXES "lib" "lib32" "lib64"
+)
+
+target_include_directories(cltool PUBLIC
+	../src
+	../src/libusb/libusb
+	../src/libusb/msvc
+	../src/libusb
+)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+
+target_link_libraries(cltool pthread ${LIBUSB_LIBRARY} m)
 
 endif()
 

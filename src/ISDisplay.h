@@ -96,9 +96,8 @@ public:
 	std::string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
  	std::string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
 	std::string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
-	std::string DataToStringDualIMU(const dual_imu_t &imu, const p_data_hdr_t& hdr);
 	std::string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
-	std::string DataToStringPreintegratedImu(const preintegrated_imu_t &imu, const p_data_hdr_t& hdr);
+	std::string DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr);
 	std::string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
 	std::string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
 	std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);

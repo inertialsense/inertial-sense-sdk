@@ -6,7 +6,7 @@ from enum import Enum, IntEnum
 DID_NULL                        = 0
 DID_DEV_INFO                    = 1
 DID_SYS_FAULT                   = 2
-DID_PREINTEGRATED_IMU           = 3
+DID_PIMU                        = 3
 DID_INS_1                       = 4
 DID_INS_2                       = 5
 DID_GPS1_UBX_POS                = 6
@@ -27,7 +27,7 @@ DID_INTERNAL_DIAGNOSTIC         = 20
 DID_GPS1_RTK_POS_REL            = 21
 DID_GPS1_RTK_POS_MISC           = 22
 DID_FEATURE_BITS                = 23
-DID_SENSORS_RAW                 = 24
+DID_SENSORS_UCAL                = 24
 DID_SENSORS_TCAL                = 25
 DID_SENSORS_TC_BIAS             = 26
 DID_IO                          = 27
@@ -43,12 +43,11 @@ DID_NVR_USERPAGE_G1             = 36
 DID_DEBUG_STRING                = 37
 DID_RTOS_INFO                   = 38
 DID_DEBUG_ARRAY                 = 39
-DID_SENSORS_CAL1                = 40
-DID_SENSORS_CAL2                = 41
+DID_SENSORS_MCAL                = 40
+# DID_UNUSED_41                 = 41
 DID_CAL_SC                      = 42
 DID_CAL_SC1                     = 43
 DID_CAL_SC2                     = 44
-DID_SYS_SENSORS_SIGMA           = 45
 DID_SENSORS_ADC_SIGMA           = 46
 DID_REFERENCE_MAGNETOMETER      = 47
 DID_INL2_STATES                 = 48
@@ -60,8 +59,8 @@ DID_BAROMETER                   = 53
 DID_GPS1_RTK_POS                = 54
 DID_UNUSED_55                   = 55
 DID_COMMUNICATIONS_LOOPBACK     = 56
-DID_DUAL_IMU_RAW                = 57
-DID_DUAL_IMU                    = 58
+DID_IMU3_UNCAL                  = 57
+DID_IMU                         = 58
 DID_INL2_MAG_OBS_INFO           = 59
 DID_GPS_BASE_RAW                = 60
 DID_GPS_RTK_OPT                 = 61
@@ -87,9 +86,9 @@ DID_EVB_STATUS                  = 80
 DID_EVB_CONFIG                  = 81
 DID_EVB_DEBUG_ARRAY             = 82
 DID_EVB_RTOS_INFO               = 83
-DID_DUAL_IMU_RAW_MAG            = 84
-DID_DUAL_IMU_MAG                = 85
-DID_PREINTEGRATED_IMU_MAG       = 86
+# DID_UNUSED_84                 = 84
+DID_IMU_MAG                     = 85
+DID_PIMU_MAG                    = 86
 DID_GROUND_VEHICLE              = 87
 DID_POSITION_MEASUREMENT        = 88
 DID_RTK_DEBUG_2                 = 89
@@ -99,6 +98,8 @@ DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
 DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
+DID_IMU3_RAW                    = 96
+DID_IMU_RAW                     = 97
 DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
 NUM_DIDS                        = 120
@@ -109,7 +110,6 @@ did_name_lookup = {
  DID_NULL : "null",
  DID_DEV_INFO : "devInfo",
  DID_SYS_FAULT : "sysFault",
- DID_PREINTEGRATED_IMU : "preintegratedImu",
  DID_INS_1 : "ins1",
  DID_INS_2 : "ins2",
  DID_GPS1_UBX_POS : "gps1UbxPos",
@@ -132,8 +132,9 @@ did_name_lookup = {
  DID_GPS1_RTK_POS_MISC: "gps1RtkPosMisc",
  DID_GPS1_RTK_CMP_MISC: "gps1RtkCmpMisc",
  DID_FEATURE_BITS : "featureBits",
- DID_SENSORS_RAW : "sensorsRaw",
+ DID_SENSORS_UCAL : "sensorsUcal",
  DID_SENSORS_TCAL : "sensorsTcal",
+ DID_SENSORS_MCAL : "sensorsMcal",
  DID_SENSORS_TC_BIAS : "sensorsTcBias",
  DID_IO : "io",
  DID_SENSORS_ADC : "sensorsAdc",
@@ -148,23 +149,23 @@ did_name_lookup = {
  DID_DEBUG_STRING : "debugString",
  DID_RTOS_INFO : "rtosInfo",
  DID_DEBUG_ARRAY : "debugArray",
- DID_SENSORS_CAL1 : "sensorsCal1",
- DID_SENSORS_CAL2 : "sensorsCal2",
  DID_CAL_SC : "calSc",
  DID_CAL_SC1 : "calSc1",
  DID_CAL_SC2 : "calSc2",
- DID_SYS_SENSORS_SIGMA : "sysSensorsSigma",
  DID_SENSORS_ADC_SIGMA : "sensorsAdcSigma",
  DID_INL2_STATES : "inl2States",
  DID_INL2_COVARIANCE_LD : "inl2CovarianceLd",
  DID_INL2_STATUS : "inl2Status",
  DID_INL2_MISC : "inl2Misc",
- DID_MAGNETOMETER : "magnetometer1",
+ DID_MAGNETOMETER : "magnetometer",
  DID_BAROMETER : "barometer",
  DID_GPS1_RTK_POS : "gps1RtkPos",
  DID_COMMUNICATIONS_LOOPBACK : "communicationsLoopback",
- DID_DUAL_IMU_RAW : "dualImuRaw",
- DID_DUAL_IMU : "dualImu",
+ DID_IMU3_UNCAL : "imu3Uncal",
+ DID_IMU3_RAW : "imu3Raw",
+ DID_IMU_RAW : "imuRaw",
+ DID_PIMU : "pimu",
+ DID_IMU : "imu",
  DID_INL2_MAG_OBS_INFO : "inl2MagObsInfo",
  DID_GPS_BASE_RAW : "gpsBaseRaw",
  DID_GPS_RTK_OPT : "gpsRtkOpt",
@@ -312,7 +313,7 @@ class eScompCalState(IntEnum):
 	SC_TCAL_DONE                    = 8
 	SC_ACCEL_ALIGN_CHECK            = 9
 	SC_MCAL_SAMPLE_INIT             = 10
-	SC_MCAL_SAMPLE_MEAN_RAW         = 11    # Uncalibrated sensor
+	SC_MCAL_SAMPLE_MEAN_UCAL         = 11    # Uncalibrated sensor
 	SC_MCAL_SAMPLE_MEAN_TCAL        = 12    # Temperature compensated sensor 
 	SC_MCAL_SAMPLE_STOP             = 13
 	SC_LPF_SAMPLE                   = 14

@@ -12,28 +12,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "protocol_nmea.h"
 #include "InertialSense.h"
+#ifndef EXCLUDE_BOOTLOADER
+#include "ISBootloaderThread.h"
+#include "ISBootloaderDFU.h"
+#endif
 
 using namespace std;
-
-typedef struct
-{
-	bootload_params_t param;
-	bool success;
-	serial_port_t serial;
-	void* thread;
-} bootload_state_t;
-
-static void bootloaderUpdateBootloaderThread(void* state)
-{
-    bootload_state_t* s = (bootload_state_t*)state;
-    s->success = (bootloadFileEx(&s->param) == 0);
-    serialPortClose(&s->serial);
-}
 
 static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
 	// Suppress compiler warnings
-	(void)pHandle;
+	(void)pHandle; 
 	(void)cmHandle;
 
 	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
@@ -721,81 +710,87 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 	}
 }
 
-vector<InertialSense::bootload_result_t> InertialSense::BootloadFile(const string& comPort, const string& fileName, int baudRate, pfnBootloadProgress uploadProgress, pfnBootloadProgress verifyProgress, pfnBootloadStatus infoProgress, const string& bootloaderFileName, bool forceBootloaderUpdate)
+is_operation_result InertialSense::BootloadFile(
+	const string& comPort, 
+	const uint32_t serialNum,
+	const string& fileName, 
+	const string& blFileName,
+	bool forceBootloaderUpdate,
+	int baudRate, 
+	ISBootloader::pfnBootloadProgress uploadProgress, 
+	ISBootloader::pfnBootloadProgress verifyProgress, 
+	ISBootloader::pfnBootloadStatus infoProgress,
+	void (*waitAction)()
+)
 {
-	vector<bootload_result_t> results;
-	vector<string> portStrings;
-	vector<bootload_state_t> state;
+#ifndef EXCLUDE_BOOTLOADER
+	vector<string> comPorts;
 
 	if (comPort == "*")
 	{
-		cISSerialPort::GetComPorts(portStrings);
+		cISSerialPort::GetComPorts(comPorts);
 	}
 	else
 	{
-		splitString(comPort, ',', portStrings);
+		splitString(comPort, ',', comPorts);
 	}
-	sort(portStrings.begin(), portStrings.end());
-	state.resize(portStrings.size());
+	sort(comPorts.begin(), comPorts.end());
+
+	vector<string> all_ports;                   // List of ports connected
+	vector<string> update_ports;
+	vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
+
+	cISSerialPort::GetComPorts(all_ports);
+
+	// Get the list of ports to ignore during the bootloading process
+	sort(all_ports.begin(), all_ports.end());
+	sort(comPorts.begin(), comPorts.end());
+	set_difference(
+		all_ports.begin(), all_ports.end(),
+		comPorts.begin(), comPorts.end(),
+		back_inserter(ports_user_ignore));
 
 	// file exists?
+	ifstream tmpStream(fileName);
+	if (!tmpStream.good())
 	{
-		ifstream tmpStream(fileName);
-		if (!tmpStream.good())
-		{
-			for (size_t i = 0; i < state.size(); i++)
-			{
-				results.push_back({ state[i].serial.port, "File does not exist" });
-			}
-		}
+		printf("File does not exist");
+		return IS_OP_ERROR;
 	}
 
-	if (results.size() == 0)
-	{
-		// for each port requested, setup a thread to do the bootloader for that port
-		for (size_t i = 0; i < state.size(); i++)
-		{
-            memset(state[i].param.error, 0, BOOTLOADER_ERROR_LENGTH);
-			serialPortPlatformInit(&state[i].serial);
-			serialPortSetPort(&state[i].serial, portStrings[i].c_str());
-			state[i].param.uploadProgress = uploadProgress;
-			state[i].param.verifyProgress = verifyProgress;
-			state[i].param.statusText = infoProgress;
-			state[i].param.fileName = fileName.c_str();
-			state[i].param.bootName = bootloaderFileName.c_str();
-			state[i].param.forceBootloaderUpdate = forceBootloaderUpdate;
-			state[i].param.port = &state[i].serial;
-			state[i].param.verifyFileName = NULLPTR;
-			state[i].param.flags.bitFields.enableVerify = (verifyProgress != NULLPTR);
-            state[i].param.numberOfDevices = (int)state.size();
-            state[i].param.baudRate = baudRate;			
-			if (strstr(state[i].param.fileName, "EVB") != NULL)
-			{   // Enable EVB bootloader
-				memcpy(state[i].param.bootloadEnableCmd, "EBLE", 4);
-			}
-			else
-			{	// Enable uINS bootloader
-				memcpy(state[i].param.bootloadEnableCmd, "BLEN", 4);
-			}
+	#if !PLATFORM_IS_WINDOWS
+	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+	#endif
+	
+	ISBootloader::firmwares_t files;
+	files.fw_uINS_3.path = fileName;
+	files.bl_uINS_3.path = blFileName;
+	files.fw_IMX_5.path = fileName;
+	files.bl_IMX_5.path = blFileName;
+	files.fw_EVB_2.path = fileName;
+	files.bl_EVB_2.path = blFileName;
 
-            // Update application and bootloader firmware
-            state[i].thread = threadCreateAndStart(bootloaderUpdateBootloaderThread, &state[i]);
-		}
+	cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
-		// wait for all threads to finish
-		for (size_t i = 0; i < state.size(); i++)
-		{
-			threadJoinAndFree(state[i].thread);
-		}
+	cISSerialPort::GetComPorts(all_ports);
 
-		// if any thread failed, we return failure
-		for (size_t i = 0; i < state.size(); i++)
-		{
-			results.push_back({ state[i].serial.port, state[i].param.error });
-		}
-	}
+	// Get the list of ports to ignore during the bootloading process
+	sort(all_ports.begin(), all_ports.end());
+	sort(ports_user_ignore.begin(), ports_user_ignore.end());
+	set_difference(
+		all_ports.begin(), all_ports.end(),
+		ports_user_ignore.begin(), ports_user_ignore.end(),
+		back_inserter(update_ports));
 
-	return results;
+	cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+	
+	#if !PLATFORM_IS_WINDOWS
+	fputs("\e[?25h", stdout);	// Turn cursor back on
+	#endif
+
+#endif // EXCLUDE_BOOTLOADER
+	
+	return IS_OP_OK;
 }
 
 bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)

@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['sdk_0',['SDK',['../index.html',1,'']]]
+  ['caveats_0',['Caveats',['../libusb_caveats.html',1,'']]],
+  ['contexts_1',['Contexts',['../libusb_contexts.html',1,'']]]
 ];

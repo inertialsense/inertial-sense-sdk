@@ -8,8 +8,8 @@ var searchData=
   ['qr_5',['qr',['../struct_p_a_c_k_e_d.html#a368be6eb409b2390b87608b4f31936e2',1,'PACKED']]],
   ['quall_6',['qualL',['../struct_p_a_c_k_e_d.html#ab017065a1b20ffc99e97e57d8322c8f2',1,'PACKED']]],
   ['qualp_7',['qualP',['../struct_p_a_c_k_e_d.html#a3560a86e3f5370956dce72ad1b7f1678',1,'PACKED']]],
-  ['quat2euler_8',['quat2euler',['../_i_s_pose_8c.html#aea35cb0785bcc786588996248cd0618a',1,'quat2euler(const ixQuat q, ixEuler theta):&#160;ISPose.c'],['../_i_s_pose_8h.html#aea35cb0785bcc786588996248cd0618a',1,'quat2euler(const ixQuat q, ixEuler theta):&#160;ISPose.c']]],
-  ['quat2phitheta_9',['quat2phiTheta',['../_i_s_pose_8c.html#a29d905e78705e33b7c33deeab6043e2f',1,'quat2phiTheta(const ixQuat q, f_t *phi, f_t *theta):&#160;ISPose.c'],['../_i_s_pose_8h.html#a29d905e78705e33b7c33deeab6043e2f',1,'quat2phiTheta(const ixQuat q, f_t *phi, f_t *theta):&#160;ISPose.c']]],
+  ['quat2euler_8',['quat2euler',['../_i_s_pose_8h.html#aea35cb0785bcc786588996248cd0618a',1,'quat2euler(const ixQuat q, ixEuler theta):&#160;ISPose.c'],['../_i_s_pose_8c.html#aea35cb0785bcc786588996248cd0618a',1,'quat2euler(const ixQuat q, ixEuler theta):&#160;ISPose.c']]],
+  ['quat2phitheta_9',['quat2phiTheta',['../_i_s_pose_8h.html#a29d905e78705e33b7c33deeab6043e2f',1,'quat2phiTheta(const ixQuat q, f_t *phi, f_t *theta):&#160;ISPose.c'],['../_i_s_pose_8c.html#a29d905e78705e33b7c33deeab6043e2f',1,'quat2phiTheta(const ixQuat q, f_t *phi, f_t *theta):&#160;ISPose.c']]],
   ['quat2psi_10',['quat2psi',['../_i_s_pose_8h.html#ac7c332c4ed70799289f44978046e2166',1,'quat2psi(const ixQuat q, f_t *psi):&#160;ISPose.c'],['../_i_s_pose_8c.html#ac7c332c4ed70799289f44978046e2166',1,'quat2psi(const ixQuat q, f_t *psi):&#160;ISPose.c']]],
   ['quat_5fecef2ned_11',['quat_ecef2ned',['../_i_s_earth_8h.html#a03d55034b3b35dea8e12cd8e94fabdfa',1,'quat_ecef2ned(float lat, float lon, float *qe2n):&#160;ISEarth.c'],['../_i_s_earth_8c.html#a03d55034b3b35dea8e12cd8e94fabdfa',1,'quat_ecef2ned(float lat, float lon, float *qe2n):&#160;ISEarth.c']]],
   ['quat_5finit_12',['quat_init',['../_i_s_pose_8h.html#acf93db16607a635268f1f3ecbd3c06d0',1,'quat_init(ixQuat q):&#160;ISPose.c'],['../_i_s_pose_8c.html#acf93db16607a635268f1f3ecbd3c06d0',1,'quat_init(ixQuat q):&#160;ISPose.c']]],
@@ -27,7 +27,8 @@ var searchData=
   ['queryfloatattribute_24',['QueryFloatAttribute',['../class_ti_xml_element.html#a5591929834178699b4561ab6ab460068',1,'TiXmlElement']]],
   ['queryintattribute_25',['QueryIntAttribute',['../class_ti_xml_element.html#aa368685cfa6efae820b8e7ec18114865',1,'TiXmlElement::QueryIntAttribute(const std::string &amp;name, int *_value) const'],['../class_ti_xml_element.html#a5c0f739e0f6f5905a201364532e54a60',1,'TiXmlElement::QueryIntAttribute(const char *name, int *_value) const']]],
   ['queryintvalue_26',['QueryIntValue',['../class_ti_xml_attribute.html#a6caa8090d2fbb7966700a16e45ed33de',1,'TiXmlAttribute']]],
-  ['querystringattribute_27',['QueryStringAttribute',['../class_ti_xml_element.html#afa8f8a62753a440186b5cd28e252a4e4',1,'TiXmlElement']]],
-  ['queryunsignedattribute_28',['QueryUnsignedAttribute',['../class_ti_xml_element.html#ab75c83543d4ace62f4c40d7e8e392fc3',1,'TiXmlElement']]],
-  ['queryvalueattribute_29',['QueryValueAttribute',['../class_ti_xml_element.html#aad40c4f4f34f854862e6a719e83ad713',1,'TiXmlElement::QueryValueAttribute(const std::string &amp;name, std::string *outValue) const'],['../class_ti_xml_element.html#a7530db879b81ebaba61bf62a9770d204',1,'TiXmlElement::QueryValueAttribute(const std::string &amp;name, T *outValue) const']]]
+  ['querypipeex_27',['QueryPipeEx',['../structwinusb__interface.html#aa35b4819f086b752dc59ba860d5a16df',1,'winusb_interface']]],
+  ['querystringattribute_28',['QueryStringAttribute',['../class_ti_xml_element.html#afa8f8a62753a440186b5cd28e252a4e4',1,'TiXmlElement']]],
+  ['queryunsignedattribute_29',['QueryUnsignedAttribute',['../class_ti_xml_element.html#ab75c83543d4ace62f4c40d7e8e392fc3',1,'TiXmlElement']]],
+  ['queryvalueattribute_30',['QueryValueAttribute',['../class_ti_xml_element.html#aad40c4f4f34f854862e6a719e83ad713',1,'TiXmlElement::QueryValueAttribute(const std::string &amp;name, std::string *outValue) const'],['../class_ti_xml_element.html#a7530db879b81ebaba61bf62a9770d204',1,'TiXmlElement::QueryValueAttribute(const std::string &amp;name, T *outValue) const']]]
 ];

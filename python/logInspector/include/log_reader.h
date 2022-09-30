@@ -29,7 +29,7 @@ struct DeviceLog
 {
     std::vector<dev_info_t> devInfo;
     std::vector<system_fault_t> sysFault;
-    std::vector<preintegrated_imu_t> preintegratedImu;
+    std::vector<pimu_t> pimu;
     std::vector<ins_1_t> ins1;
     std::vector<ins_2_t> ins2;
     std::vector<gps_pos_t> gps1UbxPos;
@@ -52,13 +52,15 @@ struct DeviceLog
     std::vector<gps_rtk_misc_t> gps1RtkPosMisc;
     std::vector<gps_rtk_misc_t> gps1RtkCmpMisc;
     // std::vector<feature_bits_t> featureBits;
-    std::vector<sensors_w_temp_t> sensorsRaw;
+    std::vector<sensors_w_temp_t> sensorsUcal;
     std::vector<sensors_w_temp_t> sensorsTcal;
+    std::vector<sensors_w_temp_t> sensorsMcal;
     std::vector<sensors_t> sensorsTcBias;
     std::vector<io_t> io;
     // std::vector<sys_sensors_adc_t> sensorsAdc;
     std::vector<sensor_compensation_t> scomp;
     std::vector<imu_t> refImu;
+    std::vector<pimu_t> refPImu;
     std::vector<magnetometer_t> refMag;
     std::vector<gps_vel_t> gps1Vel;
     std::vector<gps_vel_t> gps2Vel;
@@ -70,12 +72,9 @@ struct DeviceLog
     // std::vector<rtos_info_t> rtosInfo;
     std::vector<debug_string_t> debugString;
     std::vector<debug_array_t> debugArray;
-    std::vector<sensors_mpu_w_temp_t> sensorsCal1;
-    std::vector<sensors_mpu_w_temp_t> sensorsCal2;
-    // std::vector<sensor_cal_t> calSc;
+    // std::vector<sensor_cal_v1p2_t> calSc;
     // std::vector<sensor_cal_mpu_t> calSc1;
     // std::vector<sensor_cal_mpu_t> calSc2;
-    std::vector<sys_sensors_t> sysSensorsSigma;
     std::vector<sys_sensors_adc_t> sensorsAdcSigma;
     std::vector<inl2_states_t> inl2States;
     std::vector<inl2_status_t> inl2Status;
@@ -83,8 +82,10 @@ struct DeviceLog
     std::vector<magnetometer_t> magnetometer;
     std::vector<barometer_t> barometer;
     std::vector<gps_pos_t> gps1RtkPos;
-    std::vector<dual_imu_t> dualImuRaw;
-    std::vector<dual_imu_t> dualImu;
+    std::vector<imu3_t> imu3Uncal;
+    std::vector<imu3_t> imu3Raw;
+    std::vector<imu_t> imuRaw;
+    std::vector<imu_t> imu;
     std::vector<inl2_mag_obs_info_t> inl2MagObsInfo;
     std::vector<gps_raw_wrapper_t> gpsBaseRaw {1};
 //    std::vector<gps_rtk_opt_t> gpsRtkOpt;
@@ -136,7 +137,7 @@ public:
     void exitHack(int exit_code=0);
     
     template <typename T>
-    void forward_message(eDataIDs did, std::vector<T>& vec, int id);
+    void forward_message(eDataIDs did, std::vector<T>& vec, int device_id);
 
     template <typename T>
     void log_message(int did, uint8_t* msg, std::vector<T>& vec)

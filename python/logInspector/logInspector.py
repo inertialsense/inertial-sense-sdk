@@ -197,7 +197,7 @@ class FlashConfigDialog(QDialog):
         self.table.setHorizontalHeaderLabels([str(ser) for ser in log.serials])
         self.table.setVerticalHeaderLabels(field_names)
 
-        hex_fields = ['ioConfig', 'cBrdConfig', 'RTKCfgBits', 'sysCfgBits']
+        hex_fields = ['ioConfig', 'platformConfig', 'RTKCfgBits', 'sysCfgBits']
         for d in range(log.numDev):
             for f, field in enumerate(field_names):
                 if field in hex_fields:
@@ -226,7 +226,7 @@ class LogInspectorWindow(QMainWindow):
         if os.path.exists(self.configFilePath):
             # config.yaml found.  Read from file.
             file = open(self.configFilePath, 'r')
-            self.config = yaml.safe_load(file)
+            self.config = yaml.load(file, Loader=yaml.FullLoader)
             file.close()
         else:
             # config.yaml not found.  Create new file.

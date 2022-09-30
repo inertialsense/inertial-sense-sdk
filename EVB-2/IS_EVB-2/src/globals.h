@@ -18,13 +18,13 @@ extern "C" {
 #endif
 
 #include <asf.h>
-#include "../../../src/ISComm.h"
-#include "../../../src/data_sets.h"
-#include "../../../src/ISConstants.h"
-#include "../../../hw-libs/misc/bootloaderShared.h"
-#include "../../../hw-libs/misc/rtos.h"
-#include "../../../hw-libs/drivers/d_usartDMA.h"
-#include "drivers/d_time.h"
+#include "ISComm.h"
+#include "data_sets.h"
+#include "ISConstants.h"
+#include "bootloaderShared.h"
+#include "rtos.h"
+#include "d_serial.h"
+#include "d_time.h"
 #include "conf_board.h"
 
 #define USE_RTC_DATE_TIME       1   // Use RTC for system data and time
@@ -56,7 +56,7 @@ typedef struct
     ins_1_t                 ins1;
     ins_2_t                 ins2;
     inl2_states_t           inl2States;
-    preintegrated_imu_t     pImu;
+    pimu_t     pImu;
     nvm_flash_cfg_t         flashCfg;
 	bool					refLlaValid;
 } uins_msg_t;
@@ -147,6 +147,7 @@ int error_check_config(evb_flash_cfg_t *cfg);
 
 void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4]);
 
+#define FLASH_WRITE_IN_PROGRESS()   (g_nvr_manage_config.flash_write_enable_timeMs)
 
 #ifdef __cplusplus
 }

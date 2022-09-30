@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -122,8 +122,8 @@ Functions</h2></td></tr>
 <tr class="separator:ae037fdf43960ed7936190b25b3f00499"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac6254bf0a6483f9a5651abf46d1779b5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__com__manager_8cpp.html#ac6254bf0a6483f9a5651abf46d1779b5">disableBroadcasts</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle)</td></tr>
 <tr class="separator:ac6254bf0a6483f9a5651abf46d1779b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34313cbba91ecb86310cd14dbf15e191"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__com__manager_8cpp.html#a34313cbba91ecb86310cd14dbf15e191">prepDevInfo</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle)</td></tr>
-<tr class="separator:a34313cbba91ecb86310cd14dbf15e191"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3aa5280213af28557e84fa7abe4f8abc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__com__manager_8cpp.html#a3aa5280213af28557e84fa7abe4f8abc">prepDevInfo</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle, <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr)</td></tr>
+<tr class="separator:a3aa5280213af28557e84fa7abe4f8abc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37f281c9e6e851cf12ed10f7c7ee94c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__com__manager_8cpp.html#a37f281c9e6e851cf12ed10f7c7ee94c8">writeNvrUserpageFlashCfg</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle, <a class="el" href="structp__data__t.html">p_data_t</a> *data)</td></tr>
 <tr class="separator:a37f281c9e6e851cf12ed10f7c7ee94c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a097082e60ffa4f9d629fe67dc3b6b1ab"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__com__manager_8cpp.html#a097082e60ffa4f9d629fe67dc3b6b1ab">msgHandlerAscii</a> (<a class="el" href="com__manager_8h.html#aa4c7b70d216e3ec5adc54f13afc5ffde">CMHANDLE</a> cmHandle, int pHandle, const uint8_t *msg, int msgSize)</td></tr>
@@ -706,8 +706,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a34313cbba91ecb86310cd14dbf15e191" name="a34313cbba91ecb86310cd14dbf15e191"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34313cbba91ecb86310cd14dbf15e191">&#9670;&nbsp;</a></span>prepDevInfo()</h2>
+<a id="a3aa5280213af28557e84fa7abe4f8abc" name="a3aa5280213af28557e84fa7abe4f8abc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3aa5280213af28557e84fa7abe4f8abc">&#9670;&nbsp;</a></span>prepDevInfo()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -722,7 +722,13 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>pHandle</em>&#160;</td>
+          <td class="paramname"><em>pHandle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *&#160;</td>
+          <td class="paramname"><em>dataHdr</em>&#160;</td>
         </tr>
         <tr>
           <td></td>

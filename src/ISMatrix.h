@@ -328,6 +328,11 @@ void sub_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 );
 void sub_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d v2 );
 
 /* Subtract
+ * result(2) = v1(2) - v2(2)
+ */
+void sub_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2);
+
+/* Subtract
  * result(4) = v1(4) +- v2(4)
  */
 void sub_Vec4_Vec4( ixVector4 result, const ixVector4 v1, const ixVector4 v2 );

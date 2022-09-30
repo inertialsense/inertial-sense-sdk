@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "InertialSense.h" // best to include this file first
 #include "ISDisplay.h"
 #include "ISUtilities.h"
+#include "ISBootloaderBase.h"
 
 #define APP_NAME                "cltool"
 #if PLATFORM_IS_WINDOWS
@@ -30,7 +31,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define EXAMPLE_PORT            "COM5"
 #define EXAMPLE_LOG_DIR         "c:\\logs\\20170117_222549       "
 #define EXAMPLE_FIRMWARE_FILE   "c:\\fw\\IS_uINS-3.hex"
-#define EXAMPLE_BOOTLOADER_FILE "c:\\fw\\SAMx70-Bootloader.bin"
+#define EXAMPLE_BOOTLOADER_FILE "c:\\fw\\bootloader-SAMx70.bin"
 #define EXAMPLE_SPACE_1         "    "
 #define EXAMPLE_SPACE_2         "   "
 #else
@@ -38,7 +39,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define EXAMPLE_PORT            "/dev/ttyS2"
 #define EXAMPLE_LOG_DIR         "logs/20170117_222549                "
 #define EXAMPLE_FIRMWARE_FILE   "fw/IS_uINS-3.hex"
-#define EXAMPLE_BOOTLOADER_FILE "fw/SAMx70-Bootloader.bin"
+#define EXAMPLE_BOOTLOADER_FILE "fw/bootloader-SAMx70.bin"
 #define EXAMPLE_SPACE_1         "    "
 #define EXAMPLE_SPACE_2			"         "
 #endif
@@ -107,6 +108,8 @@ bool cltool_parseCommandLine(int argc, char* argv[]);
 bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
+void cltool_firmwareUpdateWaiter();
+void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, std::string evbFlashCfg); // true if should continue
 

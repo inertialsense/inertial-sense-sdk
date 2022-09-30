@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['readme_2emd_0',['README.md',['../_r_e_a_d_m_e_8md.html',1,'']]],
-  ['ring_5fbuffer_2ec_1',['ring_buffer.c',['../ring__buffer_8c.html',1,'']]],
-  ['ring_5fbuffer_2eh_2',['ring_buffer.h',['../ring__buffer_8h.html',1,'']]]
+  ['message_5fstats_2ecpp_0',['message_stats.cpp',['../message__stats_8cpp.html',1,'']]],
+  ['message_5fstats_2eh_1',['message_stats.h',['../message__stats_8h.html',1,'']]]
 ];

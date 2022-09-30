@@ -19,10 +19,7 @@ extern "C" {
 #include "../../src/ISConstants.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "../drivers/d_time.h"
-#if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
-#include "../../../hdw-src/uINS-3/IS_uINS/src/misc/debug_gpio.h"
-#endif
+#include "d_time.h"
 
 #if defined(PLATFORM_IS_EVB_2) && PLATFORM_IS_EVB_2
 #define RTOS_NUM_TASKS	(EVB_RTOS_NUM_TASKS)
@@ -63,8 +60,9 @@ void rtosResetTaskCounters(void);
 
 void vApplicationIdleHook(void);
 void vApplicationTickHook(void);
-void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed char *pcTaskName);
+
 void vApplicationMallocFailedHook(uint32_t size, uint32_t remaining, uint32_t prevLR);
+void vApplicationDaemonTaskStartupHook(void);
 
 extern uint32_t g_faultLineNumber;
 extern uint32_t g_faultFileNumber;

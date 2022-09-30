@@ -143,10 +143,10 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 		d.ins1.theta;		// euler attitude
 		d.ins1.lla;			// latitude, longitude, altitude
 		break;
-	case DID_DUAL_IMU:				
-		d.dualImu;      
+	case DID_IMU:				
+		d.imu3;      
 		break;
-	case DID_PREINTEGRATED_IMU:		
+	case DID_PIMU:		
 		d.pImu;    
 		break;
 	case DID_GPS_NAV:				
@@ -309,6 +309,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	return true;
 }
 
+std::vector<ISBootloader::cISBootloaderBase*> firmwareProgressContexts;
+
+is_operation_result bootloadUpdateCallback(void* obj, float percent);
+is_operation_result bootloadVerifyCallback(void* obj, float percent);
+
 static int cltool_updateFirmware()
 {
 	// [BOOTLOADER INSTRUCTION] Update firmware
@@ -317,27 +322,119 @@ static int cltool_updateFirmware()
 		cout << "Checking bootloader firmware: " << g_commandLineOptions.updateBootloaderFilename << endl;
 	}
 	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
-	vector<InertialSense::bootload_result_t> results = InertialSense::BootloadFile(g_commandLineOptions.comPort,
-        g_commandLineOptions.updateAppFirmwareFilename, 
-        g_commandLineOptions.baudRate, 
-        bootloadUploadProgress,
-		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyProgress : 0),
-		bootloadStatusInfo,
+	
+	firmwareProgressContexts.clear();
+
+	if(InertialSense::BootloadFile(
+		g_commandLineOptions.comPort,
+		0,
+        g_commandLineOptions.updateAppFirmwareFilename,
 		g_commandLineOptions.updateBootloaderFilename,
-		g_commandLineOptions.forceBootloaderUpdate
-		);
-	cout << endl << "Results:" << endl;
-	int errorCount = 0;
-	for (size_t i = 0; i < results.size(); i++)
+		g_commandLineOptions.forceBootloaderUpdate,
+        g_commandLineOptions.baudRate, 
+		bootloadUpdateCallback,
+		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
+		cltool_bootloadUpdateInfo,
+		cltool_firmwareUpdateWaiter
+	) == IS_OP_OK) return 0;
+	
+	return -1;
+}
+
+std::mutex print_mutex;
+
+void printProgress()
+{
+	print_mutex.lock();
+
+	int divisor = 0;
+	float total = 0.0f;
+
+	cISBootloaderThread::m_ctx_mutex.lock();
+
+	for (size_t i = 0; i < cISBootloaderThread::ctx.size(); i++)
 	{
-		cout << results[i].port << ": " << (results[i].error.size() == 0 ? "Success\n" : results[i].error);
-		errorCount += (int)(results[i].error.size() != 0);
+		if (cISBootloaderThread::ctx[i] && cISBootloaderThread::ctx[i]->m_use_progress)
+		{
+			divisor++;
+
+			if (!cISBootloaderThread::ctx[i]->m_verify)
+			{
+				total += cISBootloaderThread::ctx[i]->m_update_progress;
+			}
+			else
+			{
+				total += cISBootloaderThread::ctx[i]->m_update_progress * 0.5f;
+				total += cISBootloaderThread::ctx[i]->m_verify_progress * 0.5f;
+			}
+		}
 	}
-	if (errorCount != 0)
+
+	cISBootloaderThread::m_ctx_mutex.unlock();
+
+	if (divisor) {
+		total /= divisor;
+		int display = (int)(total * 100);
+		printf("Progress: %d%%\r", display);
+		fflush(stdout);
+	}
+
+	print_mutex.unlock();
+}
+
+is_operation_result bootloadUpdateCallback(void* obj, float percent)
+{
+	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
+	ctx->m_update_progress = percent;
+
+	return IS_OP_OK;
+}
+
+is_operation_result bootloadVerifyCallback(void* obj, float percent)
+{
+	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
+	ctx->m_verify_progress = percent;
+
+	return IS_OP_OK;
+}
+
+void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level)
+{
+	print_mutex.lock();
+
+	if(obj == NULL)
+    {
+		cout << str << endl;
+		print_mutex.unlock();
+        return;
+    }
+
+	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase *)obj;
+
+	if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
 	{
-		cout << endl << errorCount << " ports failed." << endl;
+		printf("    | %s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
 	}
-	return (errorCount == 0 ? 0 : -1);
+	else if(ctx->m_sn != 0)
+	{
+		printf("    | (SN%d):\r", ctx->m_sn);
+	}
+	else if (ctx->m_port_name.size() != 0)
+	{
+		printf("    | %s:\r", ctx->m_port_name.c_str());
+	}
+	else
+	{
+		printf("    | SN?:\r");
+	}
+	
+	printf("\t\t\t\t%s\r\n", str);
+	print_mutex.unlock();
+}
+
+void cltool_firmwareUpdateWaiter()
+{
+	printProgress();
 }
 
 static int cltool_createHost()
@@ -406,20 +503,6 @@ static int inertialSenseMain()
 	// if app firmware was specified on the command line, do that now and return
 	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
 	{
-        if (g_commandLineOptions.updateAppFirmwareFilename.substr(g_commandLineOptions.updateAppFirmwareFilename.length() - 4) != ".hex")
-        {
-            cout << "Incorrect firmware file extension: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
-            return -1;
-        }
-
-		if (g_commandLineOptions.updateBootloaderFilename.length() != 0 &&
-			g_commandLineOptions.updateBootloaderFilename.substr(g_commandLineOptions.updateBootloaderFilename.length() - 4) != ".bin")
-		{
-			cout << "Incorrect bootloader file extension: " << g_commandLineOptions.updateBootloaderFilename << endl;
-			return -1;
-		}
-
-		// [BOOTLOADER INSTRUCTION] 1.) Run bootloader
 		return cltool_updateFirmware();
 	}
 	else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)

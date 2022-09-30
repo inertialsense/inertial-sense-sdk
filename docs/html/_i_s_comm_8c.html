@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -122,6 +122,8 @@ Functions</h2></td></tr>
 <tr class="separator:a5b68834d97874ca7fe0b54ad4943a733"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac31f64bb01078edee96ed0326fae3fe4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#ac31f64bb01078edee96ed0326fae3fe4">is_decode_binary_packet</a> (<a class="el" href="structpacket__t.html">packet_t</a> *pkt, unsigned char *pbuf, int pbufSize)</td></tr>
 <tr class="separator:ac31f64bb01078edee96ed0326fae3fe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ee8e4e22f8d817c551a8233670412ab"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#a9ee8e4e22f8d817c551a8233670412ab">copyStructPToDataP</a> (<a class="el" href="structp__data__t.html">p_data_t</a> *data, const void *sptr, const unsigned int maxsize)</td></tr>
+<tr class="separator:a9ee8e4e22f8d817c551a8233670412ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a404354ab6f34767f2e7b90f2a3590051"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#a404354ab6f34767f2e7b90f2a3590051">copyDataPToStructP</a> (void *sptr, const <a class="el" href="structp__data__t.html">p_data_t</a> *data, const unsigned int maxsize)</td></tr>
 <tr class="separator:a404354ab6f34767f2e7b90f2a3590051"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a417949645fb6514fe858da4ae5c52669"><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_comm_8c.html#a417949645fb6514fe858da4ae5c52669">copyDataPToStructP2</a> (void *sptr, const <a class="el" href="structp__data__hdr__t.html">p_data_hdr_t</a> *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize)</td></tr>
@@ -248,7 +250,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p >Copies packet data into a data structure. Returns 0 on success, -1 on failure. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01015">1015</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01028">1028</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -291,7 +293,44 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p >Copies packet data into a data structure. Returns 0 on success, -1 on failure. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01029">1029</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01042">1042</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+
+</div>
+</div>
+<a id="a9ee8e4e22f8d817c551a8233670412ab" name="a9ee8e4e22f8d817c551a8233670412ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ee8e4e22f8d817c551a8233670412ab">&#9670;&nbsp;</a></span>copyStructPToDataP()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">char copyStructPToDataP </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structp__data__t.html">p_data_t</a> *&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const void *&#160;</td>
+          <td class="paramname"><em>sptr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const unsigned int&#160;</td>
+          <td class="paramname"><em>maxsize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Copies data structure into packet data. Data copied is limited to the size and offset specified in <a class="el" href="structp__data__t.html">p_data_t</a> *data. Returns 0 on success, -1 on failure. </p>
+
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01015">1015</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -373,7 +412,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p >Copies packet data into a data structure. Returns 0 on success, -1 on failure. </p>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01048">1048</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01061">1061</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -916,7 +955,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01042">1042</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l01055">1055</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 
 </div>
 </div>
@@ -989,6 +1028,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p >Returns -1 if the baudrate is not a standard baudrate. </p>
 
 <p class="definition">Definition at line <a class="el" href="_i_s_comm_8c_source.html#l00102">102</a> of file <a class="el" href="_i_s_comm_8c_source.html">ISComm.c</a>.</p>
 

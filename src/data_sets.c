@@ -185,6 +185,14 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetof(ins_4_t, ecef[2])
 	};
 
+	static uint16_t offsetsGpsTimepulse[] =
+	{
+		3,
+		offsetof(gps_timepulse_t, towOffset),
+		offsetof(gps_timepulse_t, towGps),
+		offsetof(gps_timepulse_t, timeMcu)
+	};
+
 	static uint16_t offsetsSysParams[] =
 	{
 		1,
@@ -193,18 +201,16 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
     static uint16_t offsetsPreImuMag[] =
     {
-        3,
+        2,
         offsetof(pimu_mag_t, pimu.time),
-        offsetof(pimu_mag_t, mag1.time),
-        offsetof(pimu_mag_t, mag2.time)
+        offsetof(pimu_mag_t, mag.time)
     };
 
-    static uint16_t offsetsDualImuMag[] =
+    static uint16_t offsetsImuMag[] =
     {
-        3,
+        2,
         offsetof(imu_mag_t, imu.time),
-        offsetof(imu_mag_t, mag1.time),
-        offsetof(imu_mag_t, mag2.time)
+        offsetof(imu_mag_t, mag.time)
     };
 
 	static uint16_t offsetsGps[] =
@@ -265,7 +271,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  0: DID_NULL
 		0,						//  1: DID_DEV_INFO
         0,						//  2: DID_SYS_FAULT
-		offsetsOnlyTimeFirst,	//  3: DID_PREINTEGRATED_IMU
+		offsetsOnlyTimeFirst,	//  3: DID_PIMU
 		offsetsIns1,			//  4: DID_INS_1
 		offsetsIns2,			//  5: DID_INS_2
 		offsetsGps,				//  6: DID_GPS1_POS
@@ -286,7 +292,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 21: DID_GPS1_RTK_POS_REL
         offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
 		0,						// 23: DID_FEATURE_BITS
-		0,						// 24: DID_SENSORS_RAW
+		0,						// 24: DID_SENSORS_UCAL
 		0,						// 25: DID_SENSORS_TCAL
 		0,						// 26: DID_SENSORS_TC_BIAS
 		0,						// 27: DID_IO
@@ -302,12 +308,12 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 37: DID_NVR_MANAGE_PROTECTED
 		0,						// 38: DID_RTOS_INFO
 		offsetsDebugArray,		// 39: DID_DEBUG_ARRAY
-		0,						// 40: DID_SENSORS_CAL1
-		0,						// 41: DID_SENSORS_CAL2
+		0,						// 40: DID_SENSORS_MCAL
+		offsetsGpsTimepulse,	// 41: DID_GPS1_TIMEPULSE
 		0,						// 42: DID_CAL_SC
 		0,						// 43: DID_CAL_SC1
 		0,						// 44: DID_CAL_SC2
-		offsetsOnlyTimeFirst,	// 45: DID_SYS_SENSORS_SIGMA
+		0,						// 45: 
 		offsetsOnlyTimeFirst,	// 46: DID_SENSORS_ADC_SIGMA
 		offsetsOnlyTimeFirst,   // 47: DID_REFERENCE_MAGNETOMETER
 		offsetsInl2States,      // 48: DID_INL2_STATES
@@ -319,8 +325,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 54: DID_GPS1_RTK_POS
 		offsetsOnlyTimeFirst,	// 55: DID_ROS_COVARIANCE_POSE_TWIST
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
-		offsetsOnlyTimeFirst,	// 57: DID_DUAL_IMU_RAW
-		offsetsOnlyTimeFirst,	// 58: DID_DUAL_IMU
+		offsetsOnlyTimeFirst,	// 57: DID_IMU3_UNCAL
+		offsetsOnlyTimeFirst,	// 58: DID_IMU
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
         0,                      // 61: DID_GPS_RTK_OPT
@@ -346,9 +352,9 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         offsetsDebugArray,      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-        offsetsDualImuMag,		// 84: DID_DUAL_IMU_RAW_MAG
-        offsetsDualImuMag,		// 85: DID_DUAL_IMU_MAG
-        offsetsPreImuMag,		// 86: DID_PREINTEGRATED_IMU_MAG
+        0,                      // 84: 
+        offsetsImuMag,          // 85: DID_IMU_MAG
+        offsetsPreImuMag,		// 86: DID_PIMU_MAG
 		0,                      // 87: DID_GROUND_VEHICLE
 		offsetsOnlyTimeFirst,   // 88: DID_POSITION_MEASUREMENT
 		0,                      // 89: DID_RTK_DEBUG_2
@@ -358,8 +364,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: DID_INFIELD_CAL
 		offsetsOnlyTimeFirst,   // 95: DID_REFERENCE_IMU
-		0,                      // 96:
-		0,                      // 97:
+		offsetsOnlyTimeFirst,   // 96: DID_IMU3_RAW
+		offsetsOnlyTimeFirst,   // 97: DID_IMU_RAW
 		0,                      // 98:
 		0,                      // 99:
 		0,                      // 100:
@@ -377,11 +383,11 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 112:
 		0,                      // 113:
 		0,                      // 114:
+		0,                      // 115:
 		0,                      // 116:
 		0,                      // 117:
 		0,                      // 118:
-		0,                      // 119:
-        0                      // 120:
+		0                       // 119:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -443,7 +449,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  0: DID_NULL
         0,						//  1: DID_DEV_INFO
         0,						//  2: DID_SYS_FAULT
-		0,						//  3: DID_PREINTEGRATED_IMU
+		0,						//  3: DID_PIMU
 		0,						//  4: DID_INS_1
 		0,						//  5: DID_INS_2
 		0,						//  6: DID_GPS1_POS
@@ -464,7 +470,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 21: DID_GPS1_RTK_POS_REL
         0,                      // 22: DID_GPS1_RTK_POS_MISC,
 		0,						// 23: DID_FEATURE_BITS
-		0,						// 24: DID_SENSORS_RAW
+		0,						// 24: DID_SENSORS_UCAL
 		0,						// 25: DID_SENSORS_TCAL
 		0,						// 26: DID_SENSORS_TC_BIAS
 		0,						// 27: DID_IO
@@ -480,12 +486,12 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		debugStringOffsets,		// 37: DID_DEBUG_STRING
 		rtosTaskOffsets,		// 38: DID_RTOS_INFO
 		0,						// 39: DID_DEBUG_ARRAY
-		0,						// 40: DID_SENSORS_CAL1
-		0,						// 41: DID_SENSORS_CAL2
+		0,						// 40: DID_SENSORS_MCAL
+		0,						// 41: 
 		0,						// 42: DID_CAL_SC
 		0,						// 43: DID_CAL_SC1
 		0,						// 44: DID_CAL_SC2
-		0,						// 45: DID_SYS_SENSORS_SIGMA
+		0,						// 45:
 		0,						// 46: DID_SENSORS_ADC_SIGMA
 		0,                      // 47: DID_REFERENCE_MAGNETOMETER
 		0,                      // 48: DID_INL2_STATES
@@ -497,8 +503,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 54: DID_GPS1_RTK_POS
 		0,						// 55: DID_ROS_COVARIANCE_POSE_TWIST
 		0,						// 56: DID_COMMUNICATIONS_LOOPBACK
-		0,						// 57: DID_DUAL_IMU_RAW
-		0,						// 58: DID_DUAL_IMU
+		0,						// 57: DID_IMU3_UNCAL
+		0,						// 58: DID_IMU
 		0,						// 59: DID_INL2_MAG_OBS_INFO
         0,						// 60: DID_GPS_BASE_RAW
         0,                      // 61: DID_GPS_RTK_OPT
@@ -524,9 +530,9 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         0,                      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-		0,						// 84: DID_DUAL_IMU_RAW_MAG
-		0,						// 85: DID_DUAL_IMU_MAG
-		0,						// 86: DID_PREINTEGRATED_IMU_MAG
+		0,						// 84: 
+		0,						// 85: DID_IMU_MAG
+		0,						// 86: DID_PIMU_MAG
 		0,						// 87: DID_GROUND_VEHICLE
 		0,						// 88: DID_POSITION_MEASUREMENT
 		0,						// 89: DID_RTK_DEBUG_2
@@ -536,8 +542,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 93: DID_EVB_DEV_INFO
 		0,                      // 94: DID_INFIELD_CAL
 		0,                      // 95: DID_REFERENCE_IMU
-		0,                      // 96:
-		0,                      // 97:
+		0,                      // 96: DID_IMU3_RAW
+		0,                      // 97: DID_IMU_RAW
 		0,                      // 98:
 		0,                      // 99:
 		0,                      // 100:
@@ -559,7 +565,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 116:
 		0,                      // 117:
 		0,                      // 118:
-		0                      // 119:
+		0                       // 119:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
@@ -608,7 +614,7 @@ uint32_t flashChecksum32(const void* data, int size)
 }
 
 // Convert DID to message out control mask
-uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
+uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
 {
 	switch (dataId)
 	{
@@ -616,9 +622,11 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
 		case DID_INS_2:					return RMC_BITS_INS2;
 		case DID_INS_3:					return RMC_BITS_INS3;
 		case DID_INS_4:					return RMC_BITS_INS4;
-		case DID_DUAL_IMU_RAW:			return RMC_BITS_DUAL_IMU_RAW;
-		case DID_DUAL_IMU:				return RMC_BITS_DUAL_IMU;
-		case DID_PREINTEGRATED_IMU:		return RMC_BITS_PREINTEGRATED_IMU;
+		case DID_IMU3_UNCAL:			return RMC_BITS_IMU3_UNCAL;
+		case DID_IMU3_RAW:				return RMC_BITS_IMU3_RAW;
+		case DID_IMU_RAW:				return RMC_BITS_IMU_RAW;
+		case DID_IMU:					return RMC_BITS_IMU;
+		case DID_PIMU:					return RMC_BITS_PIMU;
 		case DID_REFERENCE_IMU:		    return RMC_BITS_REFERENCE_IMU;
 		case DID_REFERENCE_PIMU:		return RMC_BITS_REFERENCE_PIMU;
 		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
@@ -646,9 +654,10 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits)
         case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
 		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
 		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
-		case DID_DUAL_IMU_MAG:          return RMC_BITS_DUAL_IMU_MAG;
-		case DID_DUAL_IMU_RAW_MAG:      return RMC_BITS_DUAL_IMU_MAG_RAW;
-		case DID_PREINTEGRATED_IMU_MAG: return RMC_BITS_PREINTEGRATED_IMU_MAG;
+		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
+		case DID_PIMU_MAG: 				return RMC_BITS_PIMU_MAG;
+		
+		case DID_DEV_INFO:				return devInfoRmcBits;		// This allows the dev info to respond instantly when first connected.
 		default:                        return defaultRmcBits;
 	}
 }

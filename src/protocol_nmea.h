@@ -31,8 +31,8 @@ void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 //////////////////////////////////////////////////////////////////////////
 int dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info);
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek);
-int dimu_to_nmea_pimu(char a[], const int aSize, dual_imu_t &dImu);
-int pimu_to_nmea_ppimu(char a[], const int aSize, preintegrated_imu_t &pimu);
+int imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu);
+int pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu);
 int ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1);
 int ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2);
 int strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe);
@@ -49,8 +49,8 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 //////////////////////////////////////////////////////////////////////////
 uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[], uint32_t *asciiPeriodPPIMU);
 int parse_nmea_zda(const char msgBuf[], int msgSize, double &day, double &month, double &year);
-int parse_nmea_gns(const char msgBuf[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags=0);
-int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], int *satsUsed, uint32_t statusFlags=0);
+int parse_nmea_gns(const char msgBuf[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);
+int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);
 int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags=0);
 int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMode);
 int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSVmsg[2], int *satPointer, uint32_t *cnoSum, uint32_t *cnoCount);

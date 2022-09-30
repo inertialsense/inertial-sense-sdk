@@ -37,7 +37,7 @@
 #ifndef CONF_BOARD_H_INCLUDED
 #define CONF_BOARD_H_INCLUDED
 
-#include <board.h>
+#include "ISBoards.h"
 #include "board_opt.h"
 
 #define CONF_BOARD_CONFIG_MPU_AT_INIT

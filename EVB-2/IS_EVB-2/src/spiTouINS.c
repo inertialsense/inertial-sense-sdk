@@ -12,9 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <asf.h>
 #include "spiTouINS.h"
-#include "board_opt.h"
-#include "drivers/d_dma.h"
-#include "../../../hw-libs/misc/rtos.h"
+#include "ISBoards.h"
+#include "d_dma.h"
+#include "rtos.h"
 
 #define SPI_INS_BAUDRATE	10000000UL
 

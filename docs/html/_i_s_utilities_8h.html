@@ -22,7 +22,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="IS_LOGO_BLACK_F03_email_signature.png"/></td>
   <td id="projectalign">
-   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.8.7</span>
+   <div id="projectname">SDK<span id="projectnumber">&#160;Release 1.9.0</span>
    </div>
    <div id="projectbrief">Communications, logger, and bootloader libraries.</div>
   </td>
@@ -111,12 +111,6 @@ Functions</h2></td></tr>
 <tr class="separator:a87e9e7f441f8686aeff60d4458506c2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7753cfb1634d2212c80ada357fc7215b"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_utilities_8h.html#a7753cfb1634d2212c80ada357fc7215b">getTickCount</a> (void)</td></tr>
 <tr class="separator:a7753cfb1634d2212c80ada357fc7215b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa561c3f739a4d2d0ea04ed08c6deff2f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_utilities_8h.html#aa561c3f739a4d2d0ea04ed08c6deff2f">bootloadUploadProgress</a> (const void *port, float percent)</td></tr>
-<tr class="separator:aa561c3f739a4d2d0ea04ed08c6deff2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7aa795d133127e59cb01e65d76e47d01"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_utilities_8h.html#a7aa795d133127e59cb01e65d76e47d01">bootloadVerifyProgress</a> (const void *port, float percent)</td></tr>
-<tr class="separator:a7aa795d133127e59cb01e65d76e47d01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d946fa0cfe103ff48bd1091880c69c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_utilities_8h.html#a7d946fa0cfe103ff48bd1091880c69c9">bootloadStatusInfo</a> (const void *port, const char *str)</td></tr>
-<tr class="separator:a7d946fa0cfe103ff48bd1091880c69c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc9fdd403327533c10055d339b56f619"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_utilities_8h.html#afc9fdd403327533c10055d339b56f619">step_sinwave</a> (float *sig_gen, float freqHz, float amplitude, float periodSec)</td></tr>
 <tr class="separator:afc9fdd403327533c10055d339b56f619"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3a32d18d20b4374032293c6fb7658c4"><td class="memItemLeft" align="right" valign="top">FILE *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_i_s_utilities_8h.html#aa3a32d18d20b4374032293c6fb7658c4">openFile</a> (const char *path, const char *mode)</td></tr>
@@ -216,96 +210,6 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a7d946fa0cfe103ff48bd1091880c69c9" name="a7d946fa0cfe103ff48bd1091880c69c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7d946fa0cfe103ff48bd1091880c69c9">&#9670;&nbsp;</a></span>bootloadStatusInfo()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void bootloadStatusInfo </td>
-          <td>(</td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>str</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00423">423</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aa561c3f739a4d2d0ea04ed08c6deff2f" name="aa561c3f739a4d2d0ea04ed08c6deff2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa561c3f739a4d2d0ea04ed08c6deff2f">&#9670;&nbsp;</a></span>bootloadUploadProgress()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int bootloadUploadProgress </td>
-          <td>(</td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname"><em>percent</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00393">393</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a7aa795d133127e59cb01e65d76e47d01" name="a7aa795d133127e59cb01e65d76e47d01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7aa795d133127e59cb01e65d76e47d01">&#9670;&nbsp;</a></span>bootloadVerifyProgress()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int bootloadVerifyProgress </td>
-          <td>(</td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname"><em>percent</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00408">408</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a5a029bdcb7a28016f7a8ba5044f0b470" name="a5a029bdcb7a28016f7a8ba5044f0b470"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5a029bdcb7a28016f7a8ba5044f0b470">&#9670;&nbsp;</a></span>convertDateToMjd()</h2>
 
@@ -338,7 +242,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00647">647</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00611">611</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -380,7 +284,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00681">681</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00645">645</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -410,7 +314,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00659">659</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00623">623</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -452,7 +356,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00665">665</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00629">629</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -547,7 +451,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00692">692</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00656">656</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -577,7 +481,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00709">709</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00673">673</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -607,7 +511,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00717">717</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00681">681</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -637,7 +541,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00740">740</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00704">704</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -673,7 +577,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00727">727</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00691">691</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -693,7 +597,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <p >Return a pointer to 16 elements to map nibbles to for converting to hex </p><dl class="section return"><dt>Returns</dt><dd>pointer to 16 bytes for mapping nibbles to chars </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00480">480</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00444">444</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -720,7 +624,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the numberic value </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00486">486</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00450">450</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -760,7 +664,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00545">545</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00509">509</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -786,7 +690,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00618">618</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00582">582</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -812,7 +716,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00572">572</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00536">536</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -838,7 +742,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00595">595</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00559">559</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -868,7 +772,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00442">442</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00406">406</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -910,7 +814,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00429">429</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00393">393</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -929,7 +833,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00460">460</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00424">424</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -967,7 +871,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the thread handle </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00491">491</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00455">455</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>
@@ -993,7 +897,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00515">515</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_i_s_utilities_8cpp_source.html#l00479">479</a> of file <a class="el" href="_i_s_utilities_8cpp_source.html">ISUtilities.cpp</a>.</p>
 
 </div>
 </div>

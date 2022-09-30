@@ -13,11 +13,7 @@
 #endif // DEBUG
 
 #ifdef TIMER_IO_DEBUG
-#if (BOARD == SAME70_XPLAINED)
-#define TIMER_PIN  PIN_TC0_TIOA0
-#elif (BOARD == USER_BOARD)
 #define TIMER_PIN  GPIO_8_PIN
-#endif // BOARD
 #endif // TIMER_IO_DEBUG
 
 // source based on example acquired from:

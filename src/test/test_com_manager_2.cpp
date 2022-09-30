@@ -3,17 +3,14 @@
 #include "../com_manager.h"
 #include "../../../SDK/src/data_sets.h"
 
-static dual_imu_t g_dualImu;
+static imu_t g_imu;
 static ins_1_t g_ins1;
 static ins_2_t g_ins2;
 dev_info_t g_devInfo;
 static sys_sensors_t g_sensor_sys;
-static sensors_mpu_w_temp_t g_sensor_cal1;
-static sensors_mpu_w_temp_t g_sensor_cal2;
 static sys_sensors_adc_t g_sensor_adc;
 static sys_sensors_adc_t g_sensor_lsb;
 static sys_sensors_adc_t g_adcSigma;
-static sys_sensors_t g_sysSigma;
 static sys_params_t	g_sysParams;
 static nvm_flash_cfg_t g_nvmFlashCfg;
 static rtos_info_t g_rtos;
@@ -151,16 +148,13 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 	// cm2 will act as uINS
 	comManagerRegisterInstance(&(cm2->cm), DID_INS_1, 0, 0, &g_ins1, &g_ins1, sizeof(ins_1_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_INS_2, 0, 0, &g_ins2, &g_ins2, sizeof(ins_2_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_DUAL_IMU, 0, 0, 0, &g_dualImu, sizeof(dual_imu_t), 0);
+	comManagerRegisterInstance(&(cm2->cm), DID_IMU, 0, 0, 0, &g_imu, sizeof(imu_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_DEV_INFO, 0, 0, &g_devInfo, 0, sizeof(dev_info_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_SENSORS, 0, 0, &g_sensor_sys, 0, sizeof(sys_sensors_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_CAL1, 0, 0, &g_sensor_cal1, 0, sizeof(sensors_mpu_w_temp_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_CAL2, 0, 0, &g_sensor_cal2, 0, sizeof(sensors_mpu_w_temp_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC, 0, 0, &g_sensor_lsb, 0, sizeof(sys_sensors_adc_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_ADC_SIGMA, 0, 0, &g_adcSigma, 0, sizeof(sys_sensors_adc_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_SYS_SENSORS_SIGMA, 0, 0, &g_sysSigma, 0, sizeof(sys_sensors_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_TC_BIAS, 0, 0, &g_tcBias, &g_tcBias, sizeof(sensors_t), 0);
-// 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_RAW, 0, 0, &g_sensor_is1, 0, sizeof(sensors_w_temp_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_UCAL, 0, 0, &g_sensor_is1, 0, sizeof(sensors_w_temp_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_SENSORS_TCAL, 0, 0, &g_sensor_is2, 0, sizeof(sensors_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_SCOMP, 0, 0, &g_sc, &g_sc, sizeof(sensor_compensation_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_HDW_PARAMS, 0, 0, &g_hdwParams, &g_hdwParams, sizeof(hdw_params_t), 0);
@@ -254,16 +248,16 @@ TEST(ComManager2, Garbage_data_should_not_crash)
 	}
 
 	// try to send a real message now, it should get parsed and received properly
-	g_dualImu.I[0].acc[0] = 99.00f;
-	comManagerSendDataInstance(&(cm1.cm), 0, DID_DUAL_IMU, &g_dualImu, sizeof(g_dualImu), 0);
+	g_imu.I.acc[0] = 99.00f;
+	comManagerSendDataInstance(&(cm1.cm), 0, DID_IMU, &g_imu, sizeof(g_imu), 0);
 	comManagerStepInstance(&(cm1.cm));
 	comManagerStepInstance(&(cm1.cm));
-	g_dualImu.I[0].acc[0] = 0.0f;
+	g_imu.I.acc[0] = 0.0f;
 
 	for (int i = 0; i < 512; i++)
 	{
 		comManagerStepInstance(&(cm2.cm));
 	}
 
-	EXPECT_TRUE(g_dualImu.I[0].acc[0] == 99.0f);
+	EXPECT_TRUE(g_imu.I.acc[0] == 99.0f);
 }
