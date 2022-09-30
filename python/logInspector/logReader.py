@@ -60,7 +60,9 @@ class Log:
         for i in range(self.numDev):
             self.hardware.append(self.data[i, DID_DEV_INFO]['hardwareVer'][0][0])
             if any(self.data[i,DID_FLASH_CONFIG]['sysCfgBits'] & eSysConfigBits.SYS_CFG_USE_REFERENCE_IMU_IN_EKF.value):
+                # Use this INS as reference
                 self.refINS = True
+                self.serials[i] = 'Reference IMU'
                 self.refIdx.append(i)
                 self.numRef = self.numRef + 1
                 if len(self.data[i, DID_DEV_INFO]):
@@ -68,15 +70,23 @@ class Log:
             else:
                 self.devIdx.append(i)
             if self.serials[i] == 10101:
+                # Use Novatel INS as reference, discard previously found references
                 self.serials[i] = 'NovAtel INS'
+                self.refINS = True
+                self.refIdx.clear()
+                self.refIdx.append(i)
+                self.numRef = 1
+                if len(self.data[i, DID_DEV_INFO]):
+                    self.refSerials.clear()
+                    self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
             if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
                 self.ins1ToIns2(i)
 
         if len(self.serials) == len(self.refSerials):
             self.devIdx = self.refIdx
 
-        if self.refINS and len(self.serials) > len(self.refSerials):
-            self.serials = np.delete(self.serials, self.refIdx, 0)
+#        if self.refINS and len(self.serials) > len(self.refSerials):
+#            self.serials = np.delete(self.serials, self.refIdx, 0)
 
         if len(self.refIdx):
             self.refData = self.data[self.refIdx].copy()
@@ -93,8 +103,12 @@ class Log:
         if len(self.data[0, DID_DEV_INFO]):
             self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
             self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
-        if len(self.data[0, DID_INS_2]):
-            self.navMode = (self.data[0, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
+
+        # Reference INS like Novatel may not have all status fields. Find a first device that is not reference
+        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
+        idx = uINS_device_idx[0]
+        if len(self.data[idx, DID_INS_2]):
+            self.navMode = (self.data[idx, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
         # except:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
         return True
@@ -306,11 +320,11 @@ class Log:
             return 'PASS'
 
     def printRMSReport(self):
-        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx]
+        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.tmpPassRMS = 1
         filename = os.path.join(self.directory, 'RMS_report_new_logger.txt')
         # Make sure all devices have the same hardware
-        hardware = self.hardware[self.devIdx[0]]
+        hardware = self.hardware[uINS_device_idx[0]]
         for dev in uINS_device_idx:
             if self.hardware[dev] != hardware:
                 # Use default value if not all devices use the same hardware
@@ -456,7 +470,7 @@ class Log:
         for i in range(self.numIns):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
-            f.write("%d\t%f\t%f\t%f\n" % (self.serials[i], euler[0], euler[1], euler[2]))
+            f.write("%d\t%f\t%f\t%f\n" % (self.serials[uINS_device_idx[i]], euler[0], euler[1], euler[2]))
 
         # Print Device Version Information
         f.write(
