@@ -299,11 +299,16 @@ class Log:
             # no mounting bias in heading
             self.mount_bias[:, 2] = 0
         self.att_error = self.att_error - self.mount_bias[:,None,:]
+        self.mount_bias_quat = euler2quat(self.mount_bias)
+        self.uvw_error = np.empty_like(self.stateArray[:,:,4:7])
+        for dev in range(len(self.stateArray)):
+            self.uvw_error[dev,:,:] = quatRot(self.mount_bias_quat[dev,:], self.stateArray[dev, :, 4:7]) - self.truth[:,3:6]
 
         # RMS = sqrt ( 1/N sum(e^2) )
         self.RMS = np.empty((len(self.stateArray), 9))
-        self.RMS[:,:6] = np.sqrt(np.mean(np.square(self.stateArray[:, :, 1:7] - self.truth[:,0:6]), axis=1)) # [ pos, vel ]
-        self.RMS[:,6:] = np.sqrt(np.mean(np.square(self.att_error[:, :, :]), axis=1)) # [ att }
+        self.RMS[:,:3] = np.sqrt(np.mean(np.square(self.stateArray[:, :, 1:4] - self.truth[:,0:3]), axis=1)) # [ pos ]
+        self.RMS[:,3:6] = np.sqrt(np.mean(np.square(self.uvw_error), axis=1)) # [ vel }
+        self.RMS[:,6:] = np.sqrt(np.mean(np.square(self.att_error), axis=1)) # [ att }
         self.RMS_euler = self.RMS[:, 6:]  # quat2eulerArray(qexp(RMS[:,6:]))
 
         # Average RMS across devices
