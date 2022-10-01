@@ -293,12 +293,18 @@ class Log:
 
         # Calculate the Mounting Bias for all devices (assume the mounting bias is the mean of the attitude error)
         self.mount_bias = np.mean(self.att_error, axis=1)
-        if self.compassing:
+        self.mount_bias_quat = euler2quat(self.mount_bias)
+        data = {}
+        data['quat'] = self.mount_bias_quat.tolist()
+        with open(self.directory + '/attitude_offset.yaml', 'w') as f:
+            yaml.dump(data, f)
+
+
+        #if self.compassing:
             # When in compassing, assume all units are sharing the same GPS antennas and should therefore have
             # no mounting bias in heading
-            self.mount_bias[:, 2] = 0
+        #    self.mount_bias[:, 2] = 0
         self.att_error = self.att_error - self.mount_bias[:,None,:]
-        self.mount_bias_quat = euler2quat(self.mount_bias)
         self.uvw_error = np.empty_like(self.stateArray[:,:,4:7])
         for dev in range(len(self.stateArray)):
             self.uvw_error[dev,:,:] = quatRot(self.mount_bias_quat[dev,:], self.stateArray[dev, :, 4:7]) - self.truth[:,3:6]

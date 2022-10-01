@@ -11,6 +11,7 @@ import sys
 import yaml
 import os
 from os.path import expanduser
+from inertialsense_math.pose import *
 
 BLACK = r"\u001b[30m"
 RED = r"\u001b[31m"
@@ -45,6 +46,7 @@ class logPlot:
         self.log = log
         self.d = 1
         self.setActiveSerials(self.log.serials)
+        self.mount_bias_quat = np.repeat(np.array([1,0,0,0], dtype=float)[np.newaxis,:], len(self.active_devs), axis=0)
 
         if len(self.log.data[0, DID_INS_2]):
             setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
@@ -253,7 +255,7 @@ class logPlot:
         uvw = []
         for d in self.active_devs:
             uvw.append(self.getData(d, DID_INS_2, 'uvw'))
-        #   uvw[d] = quatRot(self.mount_bias_quat[d,:], uvw[d])
+            uvw[d] = quatRot(self.mount_bias_quat[d,:], uvw[d])
 
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Vel U', 'm/s')
@@ -279,7 +281,7 @@ class logPlot:
         quat = []
         for d in self.active_devs:
             quat.append(self.getData(d, DID_INS_2, 'qn2b'))
-        #    quat[d] = quatmult(quat, euler2quat(mount_bias[d,:]))
+            quat[d] = mul_Quat_Quat(self.mount_bias_quat[d,:], quat[d])
 
         fig.suptitle('INS Attitude - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'Roll', 'deg')
