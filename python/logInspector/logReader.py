@@ -266,7 +266,6 @@ class Log:
             refLla = data[0, int(round(len(t) / 2.0)), 1:4].copy()
             for i in range(self.numDev):
                 data[i, :, 1:4] = lla2ned(refLla, data[i, :, 1:4])
-
             self.stateArray = data
 
     def getRMSTruth(self):

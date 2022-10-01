@@ -248,6 +248,13 @@ class logPlot:
     def velUVW(self, fig=None):
         if fig is None:
             fig = plt.figure()
+
+        # Adjust data for attitude bias
+        uvw = []
+        for d in self.active_devs:
+            uvw.append(self.getData(d, DID_INS_2, 'uvw'))
+        #   uvw[d] = quatRot(self.mount_bias_quat[d,:], uvw[d])
+
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Vel U', 'm/s')
         self.configureSubplot(ax[1], 'Vel V', 'm/s')
@@ -255,9 +262,9 @@ class logPlot:
         fig.suptitle('INS uvw - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            ax[0].plot(time, self.getData(d, DID_INS_2, 'uvw')[:,0], label=self.log.serials[d])
-            ax[1].plot(time, self.getData(d, DID_INS_2, 'uvw')[:,1])
-            ax[2].plot(time, self.getData(d, DID_INS_2, 'uvw')[:,2])
+            ax[0].plot(time, uvw[d][:,0], label=self.log.serials[d])
+            ax[1].plot(time, uvw[d][:,1])
+            ax[2].plot(time, uvw[d][:,2])
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)
@@ -267,12 +274,19 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
         ax = fig.subplots(3, 1, sharex=True)
+
+        # Adjust data for attitude bias
+        quat = []
+        for d in self.active_devs:
+            quat.append(self.getData(d, DID_INS_2, 'qn2b'))
+        #    quat[d] = quatmult(quat, euler2quat(mount_bias[d,:]))
+
         fig.suptitle('INS Attitude - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'Roll', 'deg')
         self.configureSubplot(ax[1], 'Pitch', 'deg')
         self.configureSubplot(ax[2], 'Yaw', 'deg')
         for d in self.active_devs:
-            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(quat[d])
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1].plot(time, euler[:,1]*RAD2DEG)
