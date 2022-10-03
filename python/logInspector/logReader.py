@@ -82,6 +82,9 @@ class Log:
             if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
                 self.ins1ToIns2(i)
 
+        self.mount_bias_euler = np.zeros([self.numDev, 3], dtype=float)
+        self.mount_bias_quat = euler2quat(self.mount_bias_euler)
+
         if len(self.serials) == len(self.refSerials):
             self.devIdx = self.refIdx
 
@@ -292,22 +295,19 @@ class Log:
         self.calcAttitudeError()
 
         # Calculate the Mounting Bias for all devices (assume the mounting bias is the mean of the attitude error)
-        self.mount_bias = np.mean(self.att_error, axis=1)
-        self.mount_bias_quat = euler2quat(self.mount_bias)
-        data = {}
-        data['quat'] = self.mount_bias_quat.tolist()
-        with open(self.directory + '/attitude_offset.yaml', 'w') as f:
-            yaml.dump(data, f)
-
+        uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
+        self.uvw_error = np.empty_like(self.stateArray[:, :, 4:7])
+        for n, dev in enumerate(uINS_device_idx):
+            mount_bias = np.mean(self.att_error[n, :, :], axis=0)
+            self.mount_bias_euler[dev, :] = mount_bias  # quat2eulerArray(qexp(mount_bias))
+            self.mount_bias_quat[dev,:] = euler2quat(self.mount_bias_euler[dev, :])
+            self.att_error[n, :, :] = self.att_error[n, :, :] - mount_bias[None, :]
+            self.uvw_error[n, :, :] = quatRot(self.mount_bias_quat[dev,:], self.stateArray[n, :, 4:7]) - self.truth[:,3:6]
 
         #if self.compassing:
             # When in compassing, assume all units are sharing the same GPS antennas and should therefore have
             # no mounting bias in heading
-        #    self.mount_bias[:, 2] = 0
-        self.att_error = self.att_error - self.mount_bias[:,None,:]
-        self.uvw_error = np.empty_like(self.stateArray[:,:,4:7])
-        for dev in range(len(self.stateArray)):
-            self.uvw_error[dev,:,:] = quatRot(self.mount_bias_quat[dev,:], self.stateArray[dev, :, 4:7]) - self.truth[:,3:6]
+        #    self.mount_bias_euler[:, 2] = 0
 
         # RMS = sqrt ( 1/N sum(e^2) )
         self.RMS = np.empty((len(self.stateArray), 9))
@@ -319,7 +319,6 @@ class Log:
         # Average RMS across devices
         self.averageRMS = np.mean(self.RMS, axis=0)
         self.averageRMS_euler = self.averageRMS[6:]  # quat2eulerArray(qexp(averageRMS[None,6:]))[0]
-        self.mount_bias_euler = self.mount_bias  # quat2eulerArray(qexp(mount_bias))
 
     def pass_fail(self, ratio):
         if ratio > 1.0:
@@ -468,11 +467,11 @@ class Log:
         # Print Mounting Biases
         f.write('--------------- Angular Mounting Biases ----------------\n')
         f.write('Device       Euler Biases[   (deg)     (deg)     (deg) ]\n')
-        for n, dev in enumerate(uINS_device_idx):
+        for dev in uINS_device_idx:
             devInfo = self.data[dev, DID_DEV_INFO][0]
             f.write('%2d SN%d               [ %7.4f   %7.4f   %7.4f ]\n' % (
-                n, devInfo['serialNumber'], self.mount_bias_euler[n, 0] * RAD2DEG, self.mount_bias_euler[n, 1] * RAD2DEG,
-                self.mount_bias_euler[n, 2] * RAD2DEG))
+                n, devInfo['serialNumber'], self.mount_bias_euler[dev, 0] * RAD2DEG, self.mount_bias_euler[dev, 1] * RAD2DEG,
+                self.mount_bias_euler[dev, 2] * RAD2DEG))
         f.write('\n')
 
         f.write("----------------- Average Attitude ---------------------\n")
