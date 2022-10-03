@@ -984,7 +984,7 @@ class logPlot:
 
         for i in range(pqrCount):
             for d in range(3):
-                ax[d][i].grid(True)
+                ax[d][i].grid(True, which='both')
                 ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'pqrIMU')
 
@@ -1047,7 +1047,7 @@ class logPlot:
 
         for i in range(accCount):
             for d in range(3):
-                ax[d][i].grid(True)
+                ax[d][i].grid(True, which='both')
                 ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'accIMU')        
 
