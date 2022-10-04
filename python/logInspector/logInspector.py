@@ -388,7 +388,9 @@ class LogInspectorWindow(QMainWindow):
         self.buttonColumnLayout.addLayout(self.buttonLayoutMiddleCol)
         self.buttonColumnLayout.addLayout(self.buttonLayoutRightCol)
         self.controlLayout.addLayout(self.buttonColumnLayout)
-        self.checkboxResiduals = QCheckBox("Residuals")
+        self.checkboxResiduals = QCheckBox("Residuals", self)
+        self.checkboxResiduals.stateChanged.connect(lambda:self.changeResidualsCheckbox)
+
         self.controlLayout.addWidget(self.checkboxResiduals)
         self.controlDirLayout = QHBoxLayout();
         self.controlDirLayout.addWidget(self.dirLineEdit)
@@ -430,6 +432,9 @@ class LogInspectorWindow(QMainWindow):
 
         self.statusLabel = QLabel()
         self.toolLayout.addWidget(self.statusLabel)
+
+    def changeResidualsCheckbox(self, state):
+        self.plotter.enableResidualPlot(state)
 
     def changeDownSample(self, val):
         self.downsample = val

@@ -45,6 +45,7 @@ class logPlot:
         self.format = format
         self.log = log
         self.d = 1
+        self.residual = False
         self.setActiveSerials(self.log.serials)
 
         if len(self.log.data[0, DID_INS_2]):
@@ -52,6 +53,9 @@ class logPlot:
             
     def setDownSample(self, dwns):
         self.d = dwns
+
+    def enableResidualPlot(self, enable):
+        self.residual = enable
 
     def setActiveSerials(self, serials):
         self.active_devs = []
