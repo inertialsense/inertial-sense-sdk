@@ -4,7 +4,7 @@ import sys, os, shutil
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView, QFileSystemModel,\
     QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
-    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem
+    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox
 from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage
 from PyQt5.Qt import QApplication, QClipboard, QStyle
 import json
@@ -388,6 +388,8 @@ class LogInspectorWindow(QMainWindow):
         self.buttonColumnLayout.addLayout(self.buttonLayoutMiddleCol)
         self.buttonColumnLayout.addLayout(self.buttonLayoutRightCol)
         self.controlLayout.addLayout(self.buttonColumnLayout)
+        self.checkboxResiduals = QCheckBox("Residuals")
+        self.controlLayout.addWidget(self.checkboxResiduals)
         self.controlDirLayout = QHBoxLayout();
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
