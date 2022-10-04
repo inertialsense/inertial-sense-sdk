@@ -299,15 +299,15 @@ class Log:
         self.uvw_error = np.empty_like(self.stateArray[:, :, 4:7])
         for n, dev in enumerate(uINS_device_idx):
             mount_bias = np.mean(self.att_error[n, :, :], axis=0)
+            if self.compassing:
+                # When in compassing, assume all units are sharing the same GPS antennas and should therefore have
+                # no mounting bias in heading
+                mount_bias[2] = 0
             self.mount_bias_euler[dev, :] = mount_bias  # quat2eulerArray(qexp(mount_bias))
             self.mount_bias_quat[dev,:] = euler2quat(self.mount_bias_euler[dev, :])
             self.att_error[n, :, :] = self.att_error[n, :, :] - mount_bias[None, :]
             self.uvw_error[n, :, :] = quatRot(self.mount_bias_quat[dev,:], self.stateArray[n, :, 4:7]) - self.truth[:,3:6]
 
-        #if self.compassing:
-            # When in compassing, assume all units are sharing the same GPS antennas and should therefore have
-            # no mounting bias in heading
-        #    self.mount_bias_euler[:, 2] = 0
 
         # RMS = sqrt ( 1/N sum(e^2) )
         self.RMS = np.empty((len(self.stateArray), 9))
