@@ -328,7 +328,7 @@ class logPlot:
                     continue
                 intUvw = np.empty_like(refUvw)
                 for i in range(3):
-                    intUvw[:,i] = np.interp(refTime, time, uvw[:,i])
+                    intUvw[:,i] = np.interp(refTime, time, uvw[:,i], right=np.nan)
                 resUvw = intUvw - refUvw
                 ax[0,1].plot(refTime, resUvw[:,0], label=self.log.serials[d])
                 ax[1,1].plot(refTime, resUvw[:,1])
@@ -377,7 +377,7 @@ class logPlot:
                 unwrapEuler = self.vec3_unwrap(euler)
                 intEuler = np.empty_like(refEuler)
                 for i in range(3):
-                    intEuler[:,i] = np.interp(refTime, time, unwrapEuler[:,i])
+                    intEuler[:,i] = np.interp(refTime, time, unwrapEuler[:,i], right=np.nan)
                 resEuler = intEuler - unwrapRefEuler
                 ax[0,1].plot(refTime, resEuler[:,0]*RAD2DEG, label=self.log.serials[d])
                 ax[1,1].plot(refTime, resEuler[:,1]*RAD2DEG)
