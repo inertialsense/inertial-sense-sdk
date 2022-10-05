@@ -71,7 +71,7 @@ class Log:
                 self.devIdx.append(i)
             if self.serials[i] == 10101:
                 # Use Novatel INS as reference, discard previously found references
-                self.serials[i] = 'NovAtel INS'
+                self.serials[i] = 'Ref INS'
                 self.refINS = True
                 self.refIdx.clear()
                 self.refIdx.append(i)

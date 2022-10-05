@@ -283,7 +283,7 @@ class logPlot:
     def attitude(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
+        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
 
         # Adjust data for attitude bias
         quat = []
@@ -292,18 +292,40 @@ class logPlot:
             quat[d] = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], quat[d])
 
         fig.suptitle('INS Attitude - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'Roll', 'deg')
-        self.configureSubplot(ax[1], 'Pitch', 'deg')
-        self.configureSubplot(ax[2], 'Yaw', 'deg')
+        self.configureSubplot(ax[0, 0], 'Roll', 'deg')
+        self.configureSubplot(ax[1, 0], 'Pitch', 'deg')
+        self.configureSubplot(ax[2, 0], 'Yaw', 'deg')
+        if self.residual:
+            self.configureSubplot(ax[0, 1], 'Residual Roll', 'deg')
+            self.configureSubplot(ax[1, 1], 'Residual Pitch', 'deg')
+            self.configureSubplot(ax[2, 1], 'Residual Yaw', 'deg')
+
+        refTime = None
+        refEuler = None
         for d in self.active_devs:
             euler = quat2euler(quat[d])
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            ax[0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
-            ax[1].plot(time, euler[:,1]*RAD2DEG)
-            ax[2].plot(time, euler[:,2]*RAD2DEG)
-        ax[0].legend(ncol=2)
+
+            if self.residual: 
+                if self.log.serials[d] == 'Ref INS':
+                    refEuler = euler
+                    refTime = time
+                    continue
+                if refTime is None or refEuler is None:
+                    continue
+                intEuler = np.interp(refTime, time, euler)
+                resEuler = intEuler - refEuler
+                ax[0,1].plot(time, resEuler[:,0]*RAD2DEG, label=self.log.serials[d])
+                ax[1,1].plot(time, resEuler[:,1]*RAD2DEG)
+                ax[2,1].plot(time, resEuler[:,2]*RAD2DEG)
+
+            ax[0,0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
+            ax[1,0].plot(time, euler[:,1]*RAD2DEG)
+            ax[2,0].plot(time, euler[:,2]*RAD2DEG)
+        ax[0,0].legend(ncol=2)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'attINS')
 
     def heading(self, fig=None):
