@@ -2274,7 +2274,7 @@ enum eIoConfig
 enum ePlatformConfig
 {
 	// IMX Carrier Board
-	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000000F,
+	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
 	PLATFORM_CFG_TYPE_NONE_NO_GPS               = (int)0,
 	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,
 	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
@@ -2283,18 +2283,17 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
 	PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
 	PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
-	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS TIMESYNC PPS (pin 20)
+	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
 	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
 	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
 	PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
 	PLATFORM_CFG_TYPE_EVB3                      = (int)12,
-	PLATFORM_CFG_TYPE_IG1_0_G1                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
-	PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS TIMESYNC PPS (pin 20)
-	PLATFORM_CFG_TYPE_IG1_G1                    = (int)15,
-	PLATFORM_CFG_TYPE_IG1_G2                    = (int)16,
-	PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,		// Enable UBX output on Lambda for testbed
-	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)18,		// Enable UBX input from Lambda
-	PLATFORM_CFG_TYPE_COUNT                     = (int)19,
+	PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
+	PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+	PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
+	PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)16,		// Enable UBX output on Lambda for testbed
+	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)17,		// Enable UBX input from Lambda
+	PLATFORM_CFG_TYPE_COUNT                     = (int)18,
 
 	// Presets
 	PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
