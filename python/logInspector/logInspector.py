@@ -242,8 +242,7 @@ class LogInspectorWindow(QMainWindow):
         self.downsample = 5
         self.plotargs = None
         self.log = None
-        self.plotter = None
-
+        self.plotter = logPlot(False, False, 'svg', None)
 
     def initMatPlotLib(self):
         self.figure = plt.figure()
@@ -305,7 +304,7 @@ class LogInspectorWindow(QMainWindow):
         self.log = Log()
         self.log.load(directory)
         print("done loading")
-        self.plotter = logPlot(False, False, 'svg', self.log)
+        self.plotter.setLog(self.log)
         self.plotter.setDownSample(self.downsample)
         # str = ''
         # if self.log.navMode:
@@ -389,7 +388,7 @@ class LogInspectorWindow(QMainWindow):
         self.buttonColumnLayout.addLayout(self.buttonLayoutRightCol)
         self.controlLayout.addLayout(self.buttonColumnLayout)
         self.checkboxResiduals = QCheckBox("Residuals", self)
-        self.checkboxResiduals.stateChanged.connect(lambda:self.changeResidualsCheckbox)
+        self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
 
         self.controlLayout.addWidget(self.checkboxResiduals)
         self.controlDirLayout = QHBoxLayout();
@@ -434,7 +433,8 @@ class LogInspectorWindow(QMainWindow):
         self.toolLayout.addWidget(self.statusLabel)
 
     def changeResidualsCheckbox(self, state):
-        self.plotter.enableResidualPlot(state)
+        if self.plotter:
+            self.plotter.enableResidualPlot(state)
 
     def changeDownSample(self, val):
         self.downsample = val

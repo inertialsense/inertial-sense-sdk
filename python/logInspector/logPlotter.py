@@ -41,16 +41,21 @@ class logPlot:
     def __init__(self, show, save, format, log):
         self.show = show
         self.save = save
-        self.directory = log.directory
         self.format = format
-        self.log = log
         self.d = 1
         self.residual = False
-        self.setActiveSerials(self.log.serials)
+        if log:
+            self.setLog(log)
+        else:
+            self.log = None
 
+    def setLog(self, log):
+        self.log = log
+        self.directory = log.directory
+        self.setActiveSerials(self.log.serials)
         if len(self.log.data[0, DID_INS_2]):
             setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
-            
+
     def setDownSample(self, dwns):
         self.d = dwns
 
