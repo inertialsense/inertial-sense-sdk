@@ -435,6 +435,7 @@ class LogInspectorWindow(QMainWindow):
     def changeResidualsCheckbox(self, state):
         if self.plotter:
             self.plotter.enableResidualPlot(state)
+            self.updatePlot()
 
     def changeDownSample(self, val):
         self.downsample = val
