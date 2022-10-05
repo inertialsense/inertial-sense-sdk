@@ -25,6 +25,7 @@ RESET = r"\u001b[0m"
 
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
+
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
 file_path = os.path.dirname(os.path.realpath(__file__))
@@ -255,6 +256,29 @@ class logPlot:
             a.grid(True)
         self.saveFig(fig, 'velNED')
 
+    def unwrap(self, angle):
+        if angle > np.pi: 
+            angle -= 2*np.pi
+        elif angle < -np.pi: 
+            angle += 2*np.pi
+
+    def removewrap(self, angle):
+        unwrap = 0.0
+        angleNew = np.empty_like(angle)
+        anglePrev = angle[0]
+        for i in range(np.shape(angle)):
+            angleNew = angle[i] + unwrap
+
+            deltaAngle = angleNew-anglePrev
+            if deltaAngle > np.pi:                
+                unwrap -= 2*np.pi
+                angleNew = angle[i] + unwrap
+            elif deltaAngle < -np.pi: 
+                unwrap += 2*np.pi
+                angleNew = angle[i] + unwrap
+
+            anglePrev = angleNew
+
     def velUVW(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -296,9 +320,9 @@ class logPlot:
         self.configureSubplot(ax[1, 0], 'Pitch', 'deg')
         self.configureSubplot(ax[2, 0], 'Yaw', 'deg')
         if self.residual:
-            self.configureSubplot(ax[0, 1], 'Residual Roll', 'deg')
-            self.configureSubplot(ax[1, 1], 'Residual Pitch', 'deg')
-            self.configureSubplot(ax[2, 1], 'Residual Yaw', 'deg')
+            self.configureSubplot(ax[0, 1], 'Roll Residual', 'deg')
+            self.configureSubplot(ax[1, 1], 'Pitch Residual', 'deg')
+            self.configureSubplot(ax[2, 1], 'Yaw Residual', 'deg')
 
         refTime = None
         refEuler = None
@@ -311,13 +335,15 @@ class logPlot:
                     refEuler = euler
                     refTime = time
                     continue
-                if refTime is None or refEuler is None:
+                if refTime is None:
                     continue
-                intEuler = np.interp(refTime, time, euler)
+                intEuler = np.empty_like(refEuler)
+                for i in range(3):
+                    intEuler[:,i] = np.interp(refTime, time, euler[:,i])
                 resEuler = intEuler - refEuler
-                ax[0,1].plot(time, resEuler[:,0]*RAD2DEG, label=self.log.serials[d])
-                ax[1,1].plot(time, resEuler[:,1]*RAD2DEG)
-                ax[2,1].plot(time, resEuler[:,2]*RAD2DEG)
+                ax[0,1].plot(refTime, resEuler[:,0]*RAD2DEG, label=self.log.serials[d])
+                ax[1,1].plot(refTime, resEuler[:,1]*RAD2DEG)
+                ax[2,1].plot(refTime, resEuler[:,2]*RAD2DEG)
 
             ax[0,0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1,0].plot(time, euler[:,1]*RAD2DEG)
