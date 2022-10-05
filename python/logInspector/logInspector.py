@@ -4,7 +4,7 @@ import sys, os, shutil
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView, QFileSystemModel,\
     QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
-    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem
+    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox
 from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage
 from PyQt5.Qt import QApplication, QClipboard, QStyle
 import json
@@ -242,8 +242,7 @@ class LogInspectorWindow(QMainWindow):
         self.downsample = 5
         self.plotargs = None
         self.log = None
-        self.plotter = None
-
+        self.plotter = logPlot(False, False, 'svg', None)
 
     def initMatPlotLib(self):
         self.figure = plt.figure()
@@ -305,7 +304,7 @@ class LogInspectorWindow(QMainWindow):
         self.log = Log()
         self.log.load(directory)
         print("done loading")
-        self.plotter = logPlot(False, False, 'svg', self.log)
+        self.plotter.setLog(self.log)
         self.plotter.setDownSample(self.downsample)
         # str = ''
         # if self.log.navMode:
@@ -388,6 +387,10 @@ class LogInspectorWindow(QMainWindow):
         self.buttonColumnLayout.addLayout(self.buttonLayoutMiddleCol)
         self.buttonColumnLayout.addLayout(self.buttonLayoutRightCol)
         self.controlLayout.addLayout(self.buttonColumnLayout)
+        self.checkboxResiduals = QCheckBox("Residuals", self)
+        self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
+
+        self.controlLayout.addWidget(self.checkboxResiduals)
         self.controlDirLayout = QHBoxLayout();
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
@@ -428,6 +431,11 @@ class LogInspectorWindow(QMainWindow):
 
         self.statusLabel = QLabel()
         self.toolLayout.addWidget(self.statusLabel)
+
+    def changeResidualsCheckbox(self, state):
+        if self.plotter:
+            self.plotter.enableResidualPlot(state)
+            self.updatePlot()
 
     def changeDownSample(self, val):
         self.downsample = val

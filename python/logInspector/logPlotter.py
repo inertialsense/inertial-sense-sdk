@@ -25,6 +25,7 @@ RESET = r"\u001b[0m"
 
 RAD2DEG = 180.0 / 3.14159
 DEG2RAD = 3.14159 / 180.0
+
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
 file_path = os.path.dirname(os.path.realpath(__file__))
@@ -41,17 +42,26 @@ class logPlot:
     def __init__(self, show, save, format, log):
         self.show = show
         self.save = save
-        self.directory = log.directory
         self.format = format
-        self.log = log
         self.d = 1
-        self.setActiveSerials(self.log.serials)
+        self.residual = False
+        if log:
+            self.setLog(log)
+        else:
+            self.log = None
 
+    def setLog(self, log):
+        self.log = log
+        self.directory = log.directory
+        self.setActiveSerials(self.log.serials)
         if len(self.log.data[0, DID_INS_2]):
             setGpsWeek(self.log.data[0, DID_INS_2]['week'][-1])
-            
+
     def setDownSample(self, dwns):
         self.d = dwns
+
+    def enableResidualPlot(self, enable):
+        self.residual = enable
 
     def setActiveSerials(self, serials):
         self.active_devs = []
@@ -246,55 +256,137 @@ class logPlot:
             a.grid(True)
         self.saveFig(fig, 'velNED')
 
+    def angle_wrap(self, angle):
+        result = np.copy(angle)
+        for i in range(np.shape(result)[0]):
+            if result[i] > np.pi: 
+                result[i] -= 2*np.pi
+            elif result[i] < -np.pi: 
+                result[i] += 2*np.pi
+        return result
+
+    def angle_unwrap(self, angle):
+        unwrap = 0.0
+        result = np.empty_like(angle)
+        anglePrev = angle[0]
+        for i in range(np.shape(angle)[0]):
+            result[i] = angle[i] + unwrap
+
+            deltaAngle = result[i]-anglePrev
+            if deltaAngle > np.pi:                
+                unwrap -= 2*np.pi
+                result[i] = angle[i] + unwrap
+            elif deltaAngle < -np.pi: 
+                unwrap += 2*np.pi
+                result[i] = angle[i] + unwrap
+
+            anglePrev = result[i]
+        return result
+
+    def vec3_wrap(self, vec):
+        result = np.empty_like(vec)
+        for i in range(3):
+            result[:,i] = self.angle_wrap(vec[:,i])
+        return result
+
+    def vec3_unwrap(self, vec):
+        result = np.empty_like(vec)
+        for i in range(3):
+            result[:,i] = self.angle_unwrap(vec[:,i])
+        return result
+
     def velUVW(self, fig=None):
         if fig is None:
             fig = plt.figure()
 
-        # Adjust data for attitude bias
-        uvw = []
-        for d in self.active_devs:
-            uvw.append(self.getData(d, DID_INS_2, 'uvw'))
-            uvw[d] = quatRot(self.log.mount_bias_quat[d,:], uvw[d])
-
-        ax = fig.subplots(3,1, sharex=True)
-        self.configureSubplot(ax[0], 'Vel U', 'm/s')
-        self.configureSubplot(ax[1], 'Vel V', 'm/s')
-        self.configureSubplot(ax[2], 'Vel W', 'm/s')
+        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
         fig.suptitle('INS uvw - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        self.configureSubplot(ax[0,0], 'Vel U', 'm/s')
+        self.configureSubplot(ax[1,0], 'Vel V', 'm/s')
+        self.configureSubplot(ax[2,0], 'Vel W', 'm/s')
+
+        refTime = None
+        refUvw = None
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'Vel U Residual', 'm/s')
+            self.configureSubplot(ax[1,1], 'Vel V Residual', 'm/s')
+            self.configureSubplot(ax[2,1], 'Vel W Residual', 'm/s')
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            ax[0].plot(time, uvw[d][:,0], label=self.log.serials[d])
-            ax[1].plot(time, uvw[d][:,1])
-            ax[2].plot(time, uvw[d][:,2])
-        ax[0].legend(ncol=2)
+            # Adjust data for attitude bias
+            uvw = quatRot(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'uvw'))
+            ax[0,0].plot(time, uvw[:,0], label=self.log.serials[d])
+            ax[1,0].plot(time, uvw[:,1])
+            ax[2,0].plot(time, uvw[:,2])
+
+            if self.residual: 
+                if self.log.serials[d] == 'Ref INS':
+                    refUvw = uvw
+                    refTime = time
+                    continue
+                if refTime is None:
+                    continue
+                intUvw = np.empty_like(refUvw)
+                for i in range(3):
+                    intUvw[:,i] = np.interp(refTime, time, uvw[:,i], right=np.nan)
+                resUvw = intUvw - refUvw
+                ax[0,1].plot(refTime, resUvw[:,0], label=self.log.serials[d])
+                ax[1,1].plot(refTime, resUvw[:,1])
+                ax[2,1].plot(refTime, resUvw[:,2])
+
+        ax[0,0].legend(ncol=2)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'velUVW')
 
     def attitude(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
 
-        # Adjust data for attitude bias
-        quat = []
-        for d in self.active_devs:
-            quat.append(self.getData(d, DID_INS_2, 'qn2b'))
-            quat[d] = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], quat[d])
-
+        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
         fig.suptitle('INS Attitude - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'Roll', 'deg')
-        self.configureSubplot(ax[1], 'Pitch', 'deg')
-        self.configureSubplot(ax[2], 'Yaw', 'deg')
+        self.configureSubplot(ax[0,0], 'Roll', 'deg')
+        self.configureSubplot(ax[1,0], 'Pitch', 'deg')
+        self.configureSubplot(ax[2,0], 'Yaw', 'deg')
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'Roll Residual', 'deg')
+            self.configureSubplot(ax[1,1], 'Pitch Residual', 'deg')
+            self.configureSubplot(ax[2,1], 'Yaw Residual', 'deg')
+
+        refTime = None
+        refEuler = None
+        unwrapRefEuler = None
         for d in self.active_devs:
-            euler = quat2euler(quat[d])
+            # Adjust data for attitude bias
+            quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
+            euler = quat2euler(quat)
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            ax[0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
-            ax[1].plot(time, euler[:,1]*RAD2DEG)
-            ax[2].plot(time, euler[:,2]*RAD2DEG)
-        ax[0].legend(ncol=2)
+            ax[0,0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
+            ax[1,0].plot(time, euler[:,1]*RAD2DEG)
+            ax[2,0].plot(time, euler[:,2]*RAD2DEG)
+
+            if self.residual: 
+                if self.log.serials[d] == 'Ref INS':
+                    refEuler = euler
+                    unwrapRefEuler = self.vec3_unwrap(refEuler)
+                    refTime = time
+                    continue
+                if refTime is None:
+                    continue
+                unwrapEuler = self.vec3_unwrap(euler)
+                intEuler = np.empty_like(refEuler)
+                for i in range(3):
+                    intEuler[:,i] = np.interp(refTime, time, unwrapEuler[:,i], right=np.nan)
+                resEuler = intEuler - unwrapRefEuler
+                ax[0,1].plot(refTime, resEuler[:,0]*RAD2DEG, label=self.log.serials[d])
+                ax[1,1].plot(refTime, resEuler[:,1]*RAD2DEG)
+                ax[2,1].plot(refTime, resEuler[:,2]*RAD2DEG)
+
+        ax[0,0].legend(ncol=2)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'attINS')
 
     def heading(self, fig=None):
