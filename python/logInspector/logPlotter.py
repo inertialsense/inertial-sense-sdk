@@ -335,6 +335,8 @@ class logPlot:
                 ax[2,1].plot(refTime, resUvw[:,2])
 
         ax[0,0].legend(ncol=2)
+        if self.residual: 
+            ax[0,1].legend(ncol=2)
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -384,6 +386,8 @@ class logPlot:
                 ax[2,1].plot(refTime, resEuler[:,2]*RAD2DEG)
 
         ax[0,0].legend(ncol=2)
+        if self.residual: 
+            ax[0,1].legend(ncol=2)
         for a in ax:
             for b in a:
                 b.grid(True)

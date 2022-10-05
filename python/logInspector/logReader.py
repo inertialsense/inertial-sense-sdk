@@ -69,7 +69,7 @@ class Log:
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
             else:
                 self.devIdx.append(i)
-            if self.serials[i] == 10101:
+            if self.serials[i] == 10101 or self.serials[i] == 99999:
                 # Use Novatel INS as reference, discard previously found references
                 self.serials[i] = 'Ref INS'
                 self.refINS = True
