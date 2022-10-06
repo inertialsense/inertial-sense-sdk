@@ -325,7 +325,7 @@ enum eHdwStatusFlags
 	/** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
 	HDW_STATUS_MAG_RECAL_COMPLETE	            = (int)0x00004000,
 	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
-	HDW_STATUS_FLASH_WRITE_IN_PROGRESS          = (int)0x00008000,
+	HDW_STATUS_FLASH_WRITE_PENDING              = (int)0x00008000,
 
 	/** Communications Tx buffer limited */
 	HDW_STATUS_ERR_COM_TX_LIMITED				= (int)0x00010000,
