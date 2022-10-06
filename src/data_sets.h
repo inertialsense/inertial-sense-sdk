@@ -2292,8 +2292,10 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
 	PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
 	PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)16,		// Enable UBX output on Lambda for testbed
-	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)17,		// Enable UBX input from Lambda
-	PLATFORM_CFG_TYPE_COUNT                     = (int)18,
+	PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)17,		// "
+	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)18,		// Enable UBX input from Lambda
+	PLATFORM_CFG_TYPE_TESTBED_G2_W_LAMBDA       = (int)19,		// "
+	PLATFORM_CFG_TYPE_COUNT                     = (int)20,
 
 	// Presets
 	PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
