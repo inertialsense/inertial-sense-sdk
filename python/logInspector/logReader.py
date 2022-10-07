@@ -81,6 +81,9 @@ class Log:
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
             if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
                 self.ins1ToIns2(i)
+            #If you want to view data of log with only refIns:
+            if len(self.serials) == 1 and self.refINS == True:
+                return True
 
         self.mount_bias_euler = np.zeros([self.numDev, 3], dtype=float)
         self.mount_bias_quat = euler2quat(self.mount_bias_euler)
