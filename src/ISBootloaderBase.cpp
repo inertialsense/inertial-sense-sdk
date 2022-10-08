@@ -207,6 +207,7 @@ is_operation_result cISBootloaderBase::mode_device_app
     {   
         if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)   
         {
+            (obj)->m_filename = filenames.fw_EVB_2.path;
             strncpy((obj)->m_app.enable_command, "EBLE", 5);
             (obj)->reboot_down();
             delete obj;
@@ -223,6 +224,13 @@ is_operation_result cISBootloaderBase::mode_device_app
         else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
         {
             (obj)->m_filename = filenames.fw_uINS_3.path;
+            strncpy((obj)->m_app.enable_command, "BLEN", 5);
+            (obj)->reboot_down();
+            delete obj;
+            return IS_OP_CLOSED;
+        }
+        else
+        {
             strncpy((obj)->m_app.enable_command, "BLEN", 5);
             (obj)->reboot_down();
             delete obj;

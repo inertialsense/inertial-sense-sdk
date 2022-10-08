@@ -410,10 +410,10 @@ $(TARGET_ELF): $(OBJECTS)
 
 $(OBJECT_DIR)/$(TARGET)/%.o: %.cpp
 	@$(call mkdir,$(dir $@))
-	$(info Building $(notdir $<))
+	$(info $(notdir $<))
 	@$(CXX) $(FLAGS_CXX) -o $@ $<
 
 $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 	@$(call mkdir,$(dir $@))
-	$(info Building $(notdir $<))
+	$(info $(notdir $<))
 	@$(CC) $(FLAGS_C) -o $@ $<
