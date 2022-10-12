@@ -58,7 +58,10 @@ class Log:
             self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
 
         for i in range(self.numDev):
-            self.hardware.append(self.data[i, DID_DEV_INFO]['hardwareVer'][0][0])
+            try:
+                self.hardware.append(self.data[i, DID_DEV_INFO]['hardwareVer'][0][0])
+            except:
+                self.hardware.append(0)
             if any(self.data[i,DID_FLASH_CONFIG]['sysCfgBits'] & eSysConfigBits.SYS_CFG_USE_REFERENCE_IMU_IN_EKF.value):
                 # Use this INS as reference
                 self.refINS = True
