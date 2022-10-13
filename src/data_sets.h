@@ -2539,8 +2539,8 @@ typedef struct PACKED
     /** X,Y,Z offset in meters from Intermediate ZeroVelocity Frame to Zero Velocity Frame. */
     float					zeroVelOffset[3];
 
-    /** Earth magnetic field (magnetic north) inclination (negative pitch offset) in radians */
-    float                   magInclination;
+    /** (sec) User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.  */
+    float                   gpsTimeUserDelay;
 
     /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
     float                   magDeclination;
