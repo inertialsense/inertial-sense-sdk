@@ -396,7 +396,7 @@ class Log:
         mode = "AHRS"
         if self.navMode: mode = "NAV"
         if self.compassing: mode = "DUAL GNSS"
-        if self.refINS: mode += " w/ Ref. INS"
+        if self.refINS: mode += " using Ref INS"
         f.write("\n")
 
         # Print Table of RMS accuracies
