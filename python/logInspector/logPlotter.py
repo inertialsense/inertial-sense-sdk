@@ -304,13 +304,19 @@ class logPlot:
         self.configureSubplot(ax[0,0], 'Vel U', 'm/s')
         self.configureSubplot(ax[1,0], 'Vel V', 'm/s')
         self.configureSubplot(ax[2,0], 'Vel W', 'm/s')
-
         refTime = None
         refUvw = None
         if self.residual:
             self.configureSubplot(ax[0,1], 'Vel U Residual', 'm/s')
             self.configureSubplot(ax[1,1], 'Vel V Residual', 'm/s')
             self.configureSubplot(ax[2,1], 'Vel W Residual', 'm/s')
+            for d in self.active_devs:
+               if self.log.serials[d] == 'Ref INS':
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    # Adjust data for attitude bias
+                    refUvw = quatRot(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'uvw'))
+                    continue
+
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             # Adjust data for attitude bias
@@ -319,13 +325,7 @@ class logPlot:
             ax[1,0].plot(time, uvw[:,1])
             ax[2,0].plot(time, uvw[:,2])
 
-            if self.residual: 
-                if self.log.serials[d] == 'Ref INS':
-                    refUvw = uvw
-                    refTime = time
-                    continue
-                if refTime is None:
-                    continue
+            if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intUvw = np.empty_like(refUvw)
                 for i in range(3):
                     intUvw[:,i] = np.interp(refTime, time, uvw[:,i], right=np.nan)
@@ -351,14 +351,20 @@ class logPlot:
         self.configureSubplot(ax[0,0], 'Roll', 'deg')
         self.configureSubplot(ax[1,0], 'Pitch', 'deg')
         self.configureSubplot(ax[2,0], 'Yaw', 'deg')
+        refTime = None
+        refEuler = None
+        unwrapRefEuler = None
         if self.residual:
             self.configureSubplot(ax[0,1], 'Roll Residual', 'deg')
             self.configureSubplot(ax[1,1], 'Pitch Residual', 'deg')
             self.configureSubplot(ax[2,1], 'Yaw Residual', 'deg')
+            for d in self.active_devs:
+                if self.log.serials[d] == 'Ref INS':
+                    quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
+                    refEuler = quat2euler(quat)
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    unwrapRefEuler = self.vec3_unwrap(refEuler)
 
-        refTime = None
-        refEuler = None
-        unwrapRefEuler = None
         for d in self.active_devs:
             # Adjust data for attitude bias
             quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
@@ -368,14 +374,7 @@ class logPlot:
             ax[1,0].plot(time, euler[:,1]*RAD2DEG)
             ax[2,0].plot(time, euler[:,2]*RAD2DEG)
 
-            if self.residual: 
-                if self.log.serials[d] == 'Ref INS':
-                    refEuler = euler
-                    unwrapRefEuler = self.vec3_unwrap(refEuler)
-                    refTime = time
-                    continue
-                if refTime is None:
-                    continue
+            if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 unwrapEuler = self.vec3_unwrap(euler)
                 intEuler = np.empty_like(refEuler)
                 for i in range(3):
