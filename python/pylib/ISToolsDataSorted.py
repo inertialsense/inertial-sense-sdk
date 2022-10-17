@@ -395,7 +395,7 @@ class cDevice:
             ('gps2AntOffset', (f32, 3)),
             ('zeroVelRotation', (f32, 3)),
             ('zeroVelOffset', (f32, 3)),
-            ('magInclination', f32),
+            ('gpsTimeUserDelay', f32),
             ('magDeclination', f32),
             ('gpsTimeSyncPulsePeriodMs', u32),
             ('startupGPSDtMs', u32),
