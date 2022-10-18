@@ -69,8 +69,9 @@ class logPlot:
             if ser in serials:
                 self.active_devs.append(d)
 
-    def configureSubplot(self, ax, title, xlabel):
+    def configureSubplot(self, ax, title, ylabel='', xlabel=''):
         ax.set_title(title)
+        ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
 
     def saveFig(self, fig, name, sizeInches=[]):
@@ -313,8 +314,7 @@ class logPlot:
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
                     refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-                    # Adjust data for attitude bias
-                    refUvw = quatRot(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'uvw'))
+                    refUvw = self.getData(d, DID_INS_2, 'uvw')
                     continue
 
         for d in self.active_devs:
@@ -337,6 +337,8 @@ class logPlot:
         ax[0,0].legend(ncol=2)
         if self.residual: 
             ax[0,1].legend(ncol=2)
+            for i in range(3):
+                self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -360,7 +362,7 @@ class logPlot:
             self.configureSubplot(ax[2,1], 'Yaw Residual', 'deg')
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS':
-                    quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
+                    quat = self.getData(d, DID_INS_2, 'qn2b')
                     refEuler = quat2euler(quat)
                     refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
                     unwrapRefEuler = self.vec3_unwrap(refEuler)
@@ -387,6 +389,8 @@ class logPlot:
         ax[0,0].legend(ncol=2)
         if self.residual: 
             ax[0,1].legend(ncol=2)
+            for i in range(3):
+                self.setPlotYSpanMin(ax[i,1], 3.0)
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -900,6 +904,15 @@ class logPlot:
                         imu3 = np.array(imu3)
                         imuCount = 3
 
+        if self.log.serials[device] != 'Ref INS':
+            towOffset = self.getData(device, DID_GPS1_POS, 'towOffset')
+            time = time + np.mean(towOffset)
+        # else: # HACK: to correct for improper SPAN INS direction and gyro scalar
+        #     tmp = np.copy(imu1)   
+        #     tmp *= 125.0 
+        #     imu1[:,0] =  tmp[:,1]
+        #     imu1[:,1] =  tmp[:,0]
+        #     imu1[:,2] = -tmp[:,2]
 
         return (time, dt, imu1, imu2, imu3, imuCount)
 
@@ -919,8 +932,18 @@ class logPlot:
 
         fig.suptitle('PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
         (time, dt, acc0, acc1, acc2, pqrCount) = self.loadGyros(0)
+
+        plotResidual = pqrCount==1 and self.residual 
         if pqrCount:
-            ax = fig.subplots(3, pqrCount, sharex=True, squeeze=False)
+            ax = fig.subplots(3, (2 if plotResidual else pqrCount), sharex=True, squeeze=False)
+        if plotResidual:
+            for d in self.active_devs:
+                if self.log.serials[d] == 'Ref INS':
+                    (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
+                    refTime = time
+                    refPqr = pqr0
+                    continue
+
         for dev_idx, d in enumerate(self.active_devs):
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
             if pqrCount:
@@ -929,6 +952,7 @@ class logPlot:
                     for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
                         if pqr != [] and n<pqrCount:
                             if (pqr is not None) and pqr.any(None):
+                                pqr = quatRot(self.log.mount_bias_quat[d,:], pqr)
                                 mean = np.mean(pqr[:, i])
                                 std = np.std(pqr[:, i])
                                 alable = 'Gyro'
@@ -936,22 +960,34 @@ class logPlot:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'sec')
+                                self.configureSubplot(ax[i, n], alable + axislable + ' (deg/s), mean: %.4g, std: %.3g' % (mean, std), 'deg/s')
                                 ax[i, n].plot(time, pqr[:, i] * 180.0/np.pi, label=self.log.serials[d])
+                                if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+                                    self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
+                                    intPqr = np.empty_like(refPqr)
+                                    intPqr[:,i] = np.interp(refTime, time, pqr[:,i], right=np.nan)
+                                    resPqr = intPqr - refPqr
+                                    ax[i,1].plot(refTime, resPqr[:,i]*RAD2DEG, label=(self.log.serials[d] if dev_idx==0 else None))
 
-        for dev_idx, d in enumerate(self.active_devs):
-            if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
-                for i in range(3):
-                    if dev_idx == 0:
-                        plabel = 'reference'
-                    else:
-                        plabel = ''
-                    ax[i, 0].plot(refTime[d], refPqr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
+        if not plotResidual:
+            for dev_idx, d in enumerate(self.active_devs):
+                if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
+                    for i in range(3):
+                        if dev_idx == 0:
+                            plabel = 'reference'
+                        else:
+                            plabel = ''
+                        ax[i, 0].plot(refTime[d], refPqr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
 
         for i in range(pqrCount):
             ax[0][i].legend(ncol=2)
-            for d in range(3):
-                ax[d][i].grid(True)
+            if plotResidual: 
+                ax[0,1].legend(ncol=2)
+                for i in range(3):
+                    self.setPlotYSpanMin(ax[i,1], 1.0)
+        for a in ax:
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'pqrIMU')
 
     def imuAcc(self, fig=None):
@@ -970,9 +1006,19 @@ class logPlot:
 
         fig.suptitle('Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(0)
+
+        plotResidual = accCount==1 and self.residual 
         if accCount:
-            ax = fig.subplots(3, accCount, sharex=True, squeeze=False)
-        for d in self.active_devs:
+            ax = fig.subplots(3, (2 if plotResidual else accCount), sharex=True, squeeze=False)
+        if plotResidual:
+            for d in self.active_devs:
+                if self.log.serials[d] == 'Ref INS':
+                    (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
+                    refTime = time
+                    refAcc = acc0
+                    continue
+
+        for dev_idx, d in enumerate(self.active_devs):
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             if accCount:
                 for i in range(3):
@@ -987,22 +1033,34 @@ class logPlot:
                                     alable += '%d ' % n
                                 else:
                                     alable += ' '
-                                self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'sec')
+                                self.configureSubplot(ax[i, n], alable + axislable + ' (m/s^2), mean: %.4g, std: %.3g' % (mean, std), 'm/s^2')
                                 ax[i, n].plot(time, acc[:, i], label=self.log.serials[d])
+                                if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+                                    self.configureSubplot(ax[i,1], 'Residual', 'm/s^2')
+                                    intAcc = np.empty_like(refAcc)
+                                    intAcc[:,i] = np.interp(refTime, time, acc[:,i], right=np.nan)
+                                    resAcc = intAcc - refAcc
+                                    ax[i,1].plot(refTime, resAcc[:,i], label=(self.log.serials[d] if dev_idx==0 else None))
 
-        for dev_idx, d in enumerate(self.active_devs):
-            if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
-                for i in range(3):
-                    if dev_idx == 0:
-                        plabel = 'reference'
-                    else:
-                        plabel = ''
-                    ax[i, 0].plot(refTime[d], refAcc[d][:, i], color='black', linestyle = 'dashed', label = plabel)
+        if not plotResidual:
+            for dev_idx, d in enumerate(self.active_devs):
+                if len(refTime) > 0 and len(refTime[d]) > 0: # and dev_idx == 0:    # Only plot reference IMU for first device
+                    for i in range(3):
+                        if dev_idx == 0:
+                            plabel = 'reference'
+                        else:
+                            plabel = ''
+                        ax[i, 0].plot(refTime[d], refAcc[d][:, i], color='black', linestyle = 'dashed', label = plabel)
 
         for i in range(accCount):
             ax[0][i].legend(ncol=2)
-            for d in range(3):
-                ax[d][i].grid(True)
+            if plotResidual: 
+                ax[0,1].legend(ncol=2)
+                for i in range(3):
+                    self.setPlotYSpanMin(ax[i,1], 1.0)
+        for a in ax:
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'accIMU')
 
     def allanVariancePQR(self, fig=None):
@@ -1074,7 +1132,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'sec')
+                    self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
 
         for i in range(pqrCount):
             for d in range(3):
@@ -1137,7 +1195,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'sec')
+                    self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'm/s^2')
 
         for i in range(accCount):
             for d in range(3):
@@ -1290,9 +1348,9 @@ class logPlot:
             ax = fig.subplots(3, 1, sharex=True)
             fig.suptitle('Temperature - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-            self.configureSubplot(ax[0], 'IMU Temperature (C)', '')
-            self.configureSubplot(ax[1], 'Barometer Temperature (C)', '')
-            self.configureSubplot(ax[2], 'MCU Temperature (C)', '')
+            self.configureSubplot(ax[0], 'IMU Temperature (C)')
+            self.configureSubplot(ax[1], 'Barometer Temperature (C)')
+            self.configureSubplot(ax[2], 'MCU Temperature (C)')
 
             for d in self.active_devs:
                 time = getTimeFromTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'))
@@ -1658,7 +1716,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug2 - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
@@ -1688,7 +1746,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug2 - Sat# - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
@@ -1718,7 +1776,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug 2 - Sat Bias Std - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
@@ -1748,7 +1806,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug 2 - Lock Count - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
