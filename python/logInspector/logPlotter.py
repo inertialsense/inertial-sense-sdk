@@ -69,8 +69,9 @@ class logPlot:
             if ser in serials:
                 self.active_devs.append(d)
 
-    def configureSubplot(self, ax, title, xlabel):
+    def configureSubplot(self, ax, title, ylabel='', xlabel=''):
         ax.set_title(title)
+        ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
 
     def saveFig(self, fig, name, sizeInches=[]):
@@ -337,6 +338,8 @@ class logPlot:
         ax[0,0].legend(ncol=2)
         if self.residual: 
             ax[0,1].legend(ncol=2)
+            for i in range(3):
+                self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -387,6 +390,8 @@ class logPlot:
         ax[0,0].legend(ncol=2)
         if self.residual: 
             ax[0,1].legend(ncol=2)
+            for i in range(3):
+                self.setPlotYSpanMin(ax[i,1], 3.0)
         for a in ax:
             for b in a:
                 b.grid(True)
@@ -1290,9 +1295,9 @@ class logPlot:
             ax = fig.subplots(3, 1, sharex=True)
             fig.suptitle('Temperature - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-            self.configureSubplot(ax[0], 'IMU Temperature (C)', '')
-            self.configureSubplot(ax[1], 'Barometer Temperature (C)', '')
-            self.configureSubplot(ax[2], 'MCU Temperature (C)', '')
+            self.configureSubplot(ax[0], 'IMU Temperature (C)')
+            self.configureSubplot(ax[1], 'Barometer Temperature (C)')
+            self.configureSubplot(ax[2], 'MCU Temperature (C)')
 
             for d in self.active_devs:
                 time = getTimeFromTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'))
@@ -1658,7 +1663,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug2 - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
@@ -1688,7 +1693,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug2 - Sat# - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
@@ -1718,7 +1723,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug 2 - Sat Bias Std - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
@@ -1748,7 +1753,7 @@ class logPlot:
         max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
         for r in range(0,6):
             for c in range(0,4):
-                self.configureSubplot(ax[r,c], '', '')
+                self.configureSubplot(ax[r,c])
 
         fig.suptitle('RTK Debug 2 - Lock Count - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
