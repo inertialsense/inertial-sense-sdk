@@ -243,8 +243,8 @@ class Log:
                 self.min_time = max(time_of_fix_ms)
 
             # Use only partial data for RMS calculations
-            self.min_time = self.max_time - 2.0*(self.max_time - self.min_time)/3.0  # do not use the first 1/3 (alignment)
-            # self.max_time = self.max_time - (self.max_time - self.min_time)/3.0    # do not use the last 1/3
+            # self.min_time = self.max_time - (self.max_time - self.min_time)*(2.0/3.0)  # do not use the first 1/3 (alignment)
+            self.min_time = self.max_time - (self.max_time - self.min_time)*(1.0/2.0)  # do not use the first 1/2 (alignment)
 
             # Resample at a steady 100 Hz
             dt = 0.01
