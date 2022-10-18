@@ -907,9 +907,9 @@ class logPlot:
         if self.log.serials[device] != 'Ref INS':
             towOffset = self.getData(device, DID_GPS1_POS, 'towOffset')
             time = time + np.mean(towOffset)
-        # else:
-        #     tmp = np.copy(imu1)
-        #     tmp *= 62.5*2
+        # else: # HACK: to correct for improper SPAN INS direction and gyro scalar
+        #     tmp = np.copy(imu1)   
+        #     tmp *= 125.0 
         #     imu1[:,0] =  tmp[:,1]
         #     imu1[:,1] =  tmp[:,0]
         #     imu1[:,2] = -tmp[:,2]
