@@ -314,17 +314,15 @@ class Log:
             self.att_error[n, :, :] = self.att_error[n, :, :] - mount_bias[None, :]
             self.uvw_error[n, :, :] = quatRot(self.mount_bias_quat[dev,:], self.stateArray[n, :, 4:7]) - self.truth[:,3:6]
 
-
         # RMS = sqrt ( 1/N sum(e^2) )
-        self.RMS = np.empty((len(self.stateArray), 9))
-        self.RMS[:,:3] = np.sqrt(np.mean(np.square(self.stateArray[:, :, 1:4] - self.truth[:,0:3]), axis=1)) # [ pos ]
-        self.RMS[:,3:6] = np.sqrt(np.mean(np.square(self.uvw_error), axis=1)) # [ vel }
-        self.RMS[:,6:] = np.sqrt(np.mean(np.square(self.att_error), axis=1)) # [ att }
-        self.RMS_euler = self.RMS[:, 6:]  # quat2eulerArray(qexp(RMS[:,6:]))
+        self.RMSNED = np.sqrt(np.mean(np.square(self.stateArray[:, :, 1:4] - self.truth[:,0:3]), axis=1)) # [ pos ]
+        self.RMSUVW = np.sqrt(np.mean(np.square(self.uvw_error), axis=1)) # [ vel }
+        self.RMSAtt = np.sqrt(np.mean(np.square(self.att_error), axis=1)) # [ att }
 
         # Average RMS across devices
-        self.averageRMS = np.mean(self.RMS, axis=0)
-        self.averageRMS_euler = self.averageRMS[6:]  # quat2eulerArray(qexp(averageRMS[None,6:]))[0]
+        self.averageRMSNED = np.mean(self.RMSNED, axis=0)
+        self.averageRMSUVW = np.mean(self.RMSUVW, axis=0)
+        self.averageRMSAtt = np.mean(self.RMSAtt, axis=0)
 
     def pass_fail(self, ratio):
         if ratio > 1.0:
@@ -346,51 +344,43 @@ class Log:
                 hardware = 0
 
         # Default thresholds
-        thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
-                               0.2, 0.2, 0.2,    # (m/s) UVW
-                               0.11, 0.11, 2.0]) # (deg) ATT (roll, pitch, yaw)
+        thresholdNED = np.array([0.35, 0.35, 0.8])  # (m)   NED
+        thresholdUVW = np.array([0.2,  0.2,  0.2])  # (m/s) UVW
+        thresholdAtt = np.array([0.11, 0.11, 2.0])  # (deg) Att (roll, pitch, yaw)
         if self.navMode or self.compassing:
-            thresholds[8] = 0.3  # Higher heading accuracy
-        else:
-            thresholds[:6] = np.inf
-
-        if self.compassing:
-            thresholds[0] = 1.0
-            thresholds[1] = 1.0
-            thresholds[2] = 1.0
+            thresholdAtt[2] = 0.3  # Higher heading accuracy
 
         # Thresholds for uINS-3
         if hardware == 3:
-            thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
-                                   0.2, 0.2, 0.2,    # (m/s) UVW
-                                   0.11, 0.11, 2.0]) # (deg) ATT (roll, pitch, yaw)
+            thresholdNED = np.array([0.35, 0.35, 0.8])  # (m)   NED
+            thresholdUVW = np.array([0.2,  0.2,  0.2])  # (m/s) UVW
+            thresholdAtt = np.array([0.11, 0.11, 2.0])  # (deg) Att (roll, pitch, yaw)
             if self.navMode or self.compassing:
-                thresholds[8] = 0.3  # Higher heading accuracy
-            else:
-                thresholds[:6] = np.inf
+                thresholdAtt[2] = 0.3  # Higher heading accuracy
 
-            if self.compassing:
-                thresholds[0] = 1.0
-                thresholds[1] = 1.0
-                thresholds[2] = 1.0
         # Thresholds for IMX-5
         elif hardware == 5:
-            thresholds = np.array([0.35, 0.35, 0.8,  # (m)   NED
-                                   0.2, 0.2, 0.2,    # (m/s) UVW
-                                   0.06, 0.06, 1.0]) # (deg) ATT (roll, pitch, yaw)
+            thresholdNED = np.array([0.35, 0.35, 0.8])  # (m)   NED
+            thresholdUVW = np.array([0.2,  0.2,  0.2])  # (m/s) UVW
+            thresholdAtt = np.array([0.05, 0.05, 1.0])  # (deg) Att (roll, pitch, yaw)
             if self.navMode or self.compassing:
-                thresholds[8] = 0.2  # Higher heading accuracy
-            else:
-                thresholds[:6] = np.inf
+                thresholdAtt[2] = 0.17  # Higher heading accuracy
 
-            if self.compassing:
-                thresholds[0] = 1.0
-                thresholds[1] = 1.0
-                thresholds[2] = 1.0
+        if self.compassing:
+            thresholdNED[:] = 1.0
 
-        thresholds[6:] *= DEG2RAD  # convert degrees threshold to radians
+        if self.refINS:
+            thresholdNED[:] = 1.5
 
-        self.specRatio = self.averageRMS / thresholds
+        if not (self.navMode and self.compassing):
+            thresholdNED[:] = np.inf    # Disable NED
+            thresholdUVW[:] = np.inf    # Disable UVW
+
+        thresholdAtt[:] *= DEG2RAD  # convert degrees threshold to radians
+
+        self.specRatioNED = self.averageRMSNED / thresholdNED
+        self.specRatioUVW = self.averageRMSUVW / thresholdUVW
+        self.specRatioAtt = self.averageRMSAtt / thresholdAtt
 
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
@@ -399,7 +389,7 @@ class Log:
         mode = "AHRS"
         if self.navMode: mode = "NAV"
         if self.compassing: mode = "DUAL GNSS"
-        if self.refINS: mode += " using Ref INS"
+        if self.refINS: mode += ", Ref INS"
         f.write("\n")
 
         # Print Table of RMS accuracies
@@ -417,51 +407,51 @@ class Log:
             devInfo = self.data[dev,DID_DEV_INFO][0]
             line = '%2d SN%d      ' % (n, devInfo['serialNumber'])
             if self.navMode:
-                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (self.RMS[n, 3], self.RMS[n, 4], self.RMS[n, 5])
-                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (self.RMS[n, 0], self.RMS[n, 1], self.RMS[n, 2])
+                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (self.RMSUVW[n, 0], self.RMSUVW[n, 1], self.RMSUVW[n, 2])
+                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (self.RMSNED[n, 0], self.RMSNED[n, 1], self.RMSNED[n, 2])
             line = line + '[ %6.4f  %6.4f  %6.4f ]\n' % (
-            self.RMS_euler[n, 0] * RAD2DEG, self.RMS_euler[n, 1] * RAD2DEG, self.RMS_euler[n, 2] * RAD2DEG)
+            self.RMSAtt[n, 0] * RAD2DEG, self.RMSAtt[n, 1] * RAD2DEG, self.RMSAtt[n, 2] * RAD2DEG)
             f.write(line)
 
         line = 'AVERAGE:        '
         if self.navMode:
             f.write(
                 '------------------------------------------------------------------------------------------------------------\n')
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.averageRMS[3], self.averageRMS[4], self.averageRMS[5])
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.averageRMS[0], self.averageRMS[1], self.averageRMS[2])
+            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.averageRMSUVW[0], self.averageRMSUVW[1], self.averageRMSUVW[2])
+            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.averageRMSNED[0], self.averageRMSNED[1], self.averageRMSNED[2])
         else:  # AHRS mode
             f.write('------------------------------------------\n')
         line = line + '[%7.4f %7.4f %7.4f ]\n' % (
-        self.averageRMS_euler[0] * RAD2DEG, self.averageRMS_euler[1] * RAD2DEG, self.averageRMS_euler[2] * RAD2DEG)
+        self.averageRMSAtt[0] * RAD2DEG, self.averageRMSAtt[1] * RAD2DEG, self.averageRMSAtt[2] * RAD2DEG)
         f.write(line)
 
         line = 'THRESHOLD:      '
         if self.navMode:
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (thresholds[3], thresholds[4], thresholds[5])
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (thresholds[0], thresholds[1], thresholds[2])
+            line = line + '[%7.4f %7.4f %7.4f ],     ' % (thresholdUVW[0], thresholdUVW[1], thresholdUVW[2])
+            line = line + '[%7.4f %7.4f %7.4f ],     ' % (thresholdNED[0], thresholdNED[1], thresholdNED[2])
         line = line + '[%7.4f %7.4f %7.4f ]\n' % (
-        thresholds[6] * RAD2DEG, thresholds[7] * RAD2DEG, thresholds[8] * RAD2DEG)
+        thresholdAtt[0] * RAD2DEG, thresholdAtt[1] * RAD2DEG, thresholdAtt[2] * RAD2DEG)
         f.write(line)
 
         line = 'RATIO:          '
         if self.navMode:
             f.write(
                 '------------------------------------------------------------------------------------------------------------\n')
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.specRatio[3], self.specRatio[4], self.specRatio[5])
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.specRatio[0], self.specRatio[1], self.specRatio[2])
+            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.specRatioUVW[0], self.specRatioUVW[1], self.specRatioUVW[2])
+            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.specRatioNED[0], self.specRatioNED[1], self.specRatioNED[2])
         else:  # AHRS mode
             f.write('------------------------------------------\n')
-        line = line + '[%7.4f %7.4f %7.4f ]\n' % (self.specRatio[6], self.specRatio[7], self.specRatio[8])
+        line = line + '[%7.4f %7.4f %7.4f ]\n' % (self.specRatioAtt[0], self.specRatioAtt[1], self.specRatioAtt[2])
         f.write(line)
 
         line = 'PASS/FAIL:      '
         if self.navMode:
             line = line + '[   %s    %s    %s ],     ' % (
-            self.pass_fail(self.specRatio[3]), self.pass_fail(self.specRatio[4]), self.pass_fail(self.specRatio[5]))  # LLA
+            self.pass_fail(self.specRatioUVW[0]), self.pass_fail(self.specRatioUVW[1]), self.pass_fail(self.specRatioUVW[2]))  # UVW
             line = line + '[   %s    %s    %s ],     ' % (
-            self.pass_fail(self.specRatio[0]), self.pass_fail(self.specRatio[1]), self.pass_fail(self.specRatio[2]))  # UVW
+            self.pass_fail(self.specRatioNED[0]), self.pass_fail(self.specRatioNED[1]), self.pass_fail(self.specRatioNED[2]))  # NED
         line = line + '[   %s    %s    %s ]\n' % (
-        self.pass_fail(self.specRatio[6]), self.pass_fail(self.specRatio[7]), self.pass_fail(self.specRatio[8]))  # ATT
+        self.pass_fail(self.specRatioAtt[0]), self.pass_fail(self.specRatioAtt[1]), self.pass_fail(self.specRatioAtt[2]))  # ATT
         f.write(line)
 
         if self.navMode:
