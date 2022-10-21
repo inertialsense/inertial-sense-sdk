@@ -87,6 +87,7 @@ public:
 	float LogSizeMB(unsigned int device = 0);
 	float FileSizeMB(unsigned int device = 0);
 	uint32_t FileCount(unsigned int device = 0);
+	std::string GetNewFileName(unsigned int device, uint32_t serialNumber, uint32_t fileCount, const char* suffix);
 	uint32_t GetDeviceCount() { return (uint32_t)m_devices.size(); }
 	bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
 	const dev_info_t* GetDeviceInfo(unsigned int device = 0);

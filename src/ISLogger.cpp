@@ -543,6 +543,16 @@ uint32_t cISLogger::FileCount( unsigned int device )
 	return m_devices[device]->FileCount();
 }
 
+std::string cISLogger::GetNewFileName(unsigned int device, uint32_t serialNumber, uint32_t fileCount, const char* suffix)
+{
+	if (device < m_devices.size())
+	{
+		return m_devices[device]->GetNewFileName(serialNumber, fileCount, suffix);
+	}
+
+	return std::string("");
+}
+
 bool cISLogger::SetDeviceInfo(const dev_info_t *info, unsigned int device )
 {
 	if (device >= m_devices.size() || info == NULL)
