@@ -2479,7 +2479,7 @@ typedef struct PACKED
     /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
     uint32_t				startupImuDtMs;
 
-    /** Nav filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
+    /** Navigation filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */
