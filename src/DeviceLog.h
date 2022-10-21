@@ -51,6 +51,7 @@ public:
 	uint64_t FileSize() { return m_fileSize; }
 	uint64_t LogSize() { return m_logSize; }
 	uint32_t FileCount() { return m_fileCount; }
+	std::string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
 	void SetKmlConfig(bool showTracks =true, bool showPoints =true, bool showPointTimestamps =true, double pointUpdatePeriodSec=1.0, bool altClampToGround=true)
 	{ 
 		m_showTracks = showTracks;
@@ -63,7 +64,6 @@ public:
 protected:
 	bool OpenNewSaveFile();
 	bool OpenNextReadFile();
-	std::string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
     void OnReadData(p_data_t* data);
 
 	std::vector<std::string> m_fileNames;

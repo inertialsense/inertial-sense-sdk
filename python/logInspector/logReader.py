@@ -360,19 +360,20 @@ class Log:
 
         # Thresholds for IMX-5
         elif hardware == 5:
-            thresholdNED = np.array([0.35, 0.35, 0.8])  # (m)   NED
-            thresholdUVW = np.array([0.2,  0.2,  0.2])  # (m/s) UVW
-            thresholdAtt = np.array([0.05, 0.05, 1.0])  # (deg) Att (roll, pitch, yaw)
+            thresholdNED = np.array([0.35,  0.35,  0.8])  # (m)   NED
+            thresholdUVW = np.array([0.05,  0.05,  0.1])  # (m/s) UVW
+            thresholdAtt = np.array([0.045, 0.045, 1.0])  # (deg) Att (roll, pitch, yaw)
             if self.navMode or self.compassing:
-                thresholdAtt[2] = 0.17  # Higher heading accuracy
+                thresholdAtt[2] = 0.15  # Higher heading accuracy
 
         if self.compassing:
             thresholdNED[:] = 1.0
 
-        if self.refINS:
-            thresholdNED[:] = 1.5
+        if self.refINS:     # SPAN INS has position offset
+            thresholdNED[:2] = 1.7
+            thresholdNED[2] = 12.0
 
-        if not (self.navMode and self.compassing):
+        if not (self.navMode or self.compassing):
             thresholdNED[:] = np.inf    # Disable NED
             thresholdUVW[:] = np.inf    # Disable UVW
 
