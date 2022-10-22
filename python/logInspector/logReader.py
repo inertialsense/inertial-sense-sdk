@@ -7,7 +7,7 @@ import subprocess
 import yaml
 import datetime
 
-from os.path import expanduser
+from os.path import expanduser, exists
 from scipy.interpolate import interp1d
 
 file_path = os.path.dirname(os.path.realpath(__file__))
@@ -48,6 +48,8 @@ class Log:
         self.sanitize()
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
+        self.mount_bias_filepath = directory + '/angular_mount_bias.yml'
+        self.using_mounting_bias = False
         self.numDev = self.data.shape[0]
         self.numRef = 0
 
@@ -88,9 +90,6 @@ class Log:
             if len(self.serials) == 1 and self.refINS == True:
                 return True
 
-        self.mount_bias_euler = np.zeros([self.numDev, 3], dtype=float)
-        self.mount_bias_quat = euler2quat(self.mount_bias_euler)
-
         if len(self.serials) == len(self.refSerials):
             self.devIdx = self.refIdx
 
@@ -104,6 +103,15 @@ class Log:
         if(len(self.serials) > len(self.refSerials)):
             self.numIns = self.numIns - self.numRef
 
+        self.mount_bias_euler = np.zeros([self.numDev, 3], dtype=float)
+        if exists(self.mount_bias_filepath):
+            with open(self.mount_bias_filepath, 'r') as file:
+                mount_bias = yaml.safe_load(file)
+                for n, dev in enumerate(self.serials):
+                    if n < self.numIns:
+                        self.mount_bias_euler[n, :] = np.array(mount_bias[int(dev)])
+                        self.using_mounting_bias = True
+        self.mount_bias_quat = euler2quat(self.mount_bias_euler)
 
         self.compassing = None  
         self.rtk = None  
@@ -300,9 +308,11 @@ class Log:
         self.getRMSTruth()
         self.calcAttitudeError()
 
+
         # Calculate the Mounting Bias for all devices (assume the mounting bias is the mean of the attitude error)
         uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         self.uvw_error = np.empty_like(self.stateArray[:, :, 4:7])
+        mount_bias_output = dict()
         for n, dev in enumerate(uINS_device_idx):
             mount_bias = np.mean(self.att_error[n, :, :], axis=0)
             if self.compassing:
@@ -311,8 +321,14 @@ class Log:
                 mount_bias[2] = 0
             self.mount_bias_euler[dev, :] = mount_bias  # quat2eulerArray(qexp(mount_bias))
             self.mount_bias_quat[dev,:] = euler2quat(self.mount_bias_euler[dev, :])
+            self.using_mounting_bias = True
             self.att_error[n, :, :] = self.att_error[n, :, :] - mount_bias[None, :]
             self.uvw_error[n, :, :] = quatRot(self.mount_bias_quat[dev,:], self.stateArray[n, :, 4:7]) - self.truth[:,3:6]
+            mount_bias_output[int(self.serials[dev])] = mount_bias.tolist()
+
+        # Writing mounting bias to file 
+        with open(self.mount_bias_filepath, 'w') as file:
+            yaml.dump(mount_bias_output, file)
 
         # RMS = sqrt ( 1/N sum(e^2) )
         self.RMSNED = np.sqrt(np.mean(np.square(self.stateArray[:, :, 1:4] - self.truth[:,0:3]), axis=1)) # [ pos ]
@@ -448,11 +464,17 @@ class Log:
         line = 'PASS/FAIL:      '
         if self.navMode:
             line = line + '[   %s    %s    %s ],     ' % (
-            self.pass_fail(self.specRatioUVW[0]), self.pass_fail(self.specRatioUVW[1]), self.pass_fail(self.specRatioUVW[2]))  # UVW
+            self.pass_fail(self.specRatioUVW[0]), 
+            self.pass_fail(self.specRatioUVW[1]), 
+            self.pass_fail(self.specRatioUVW[2]))  # UVW
             line = line + '[   %s    %s    %s ],     ' % (
-            self.pass_fail(self.specRatioNED[0]), self.pass_fail(self.specRatioNED[1]), self.pass_fail(self.specRatioNED[2]))  # NED
+            self.pass_fail(self.specRatioNED[0]), 
+            self.pass_fail(self.specRatioNED[1]), 
+            self.pass_fail(self.specRatioNED[2]))  # NED
         line = line + '[   %s    %s    %s ]\n' % (
-        self.pass_fail(self.specRatioAtt[0]), self.pass_fail(self.specRatioAtt[1]), self.pass_fail(self.specRatioAtt[2]))  # ATT
+        self.pass_fail(self.specRatioAtt[0]), 
+        self.pass_fail(self.specRatioAtt[1]), 
+        self.pass_fail(self.specRatioAtt[2]))  # ATT
         f.write(line)
 
         if self.navMode:
@@ -467,7 +489,9 @@ class Log:
         for dev in uINS_device_idx:
             devInfo = self.data[dev, DID_DEV_INFO][0]
             f.write('%2d SN%d               [ %7.4f   %7.4f   %7.4f ]\n' % (
-                n, devInfo['serialNumber'], self.mount_bias_euler[dev, 0] * RAD2DEG, self.mount_bias_euler[dev, 1] * RAD2DEG,
+                n, devInfo['serialNumber'], 
+                self.mount_bias_euler[dev, 0] * RAD2DEG, 
+                self.mount_bias_euler[dev, 1] * RAD2DEG,
                 self.mount_bias_euler[dev, 2] * RAD2DEG))
         f.write('\n')
 

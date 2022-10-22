@@ -280,9 +280,9 @@ class LogInspectorWindow(QMainWindow):
                 if size == 1:
                     infoStr = 'SN' + str(info[1]) + ', H:' + verArrayToString(info[2]) + ', F:' + verArrayToString(info[3]) + ' build ' + str(info[4]) + ', ' + dateTimeArrayToString(info[8], info[9]) + ', ' + info[10].decode('UTF-8')
                 else:
-                    infoStr = 'Multiple units - '
-                    for i in range(size):
-                        infoStr = infoStr + str(self.log.serials[i]) + ' '
+                    infoStr = 'Devices: [' + " ".join([str(x) for x in self.log.serials]) + "]"
+                if self.log.using_mounting_bias:
+                    infoStr += ', Mounting Corrected'
                 self.setWindowTitle("LogInspector  -  " + infoStr)
         except:
             self.setWindowTitle("DID_DEV_INFO missing")
