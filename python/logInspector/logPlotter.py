@@ -1469,7 +1469,7 @@ class logPlot:
             if dtPimu.size:
                 integrationPeriod = dtPimu[1:]
             else:
-                integrationPeriod = None
+                integrationPeriod = np.empty_like(timeIns)
 
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if np.size(towOffset) > 0:
@@ -1497,7 +1497,7 @@ class logPlot:
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
-            if integrationPeriod:
+            if integrationPeriod.size:
                 ax[2].plot(timeImu, integrationPeriod)
             ax[3].plot(timeImu, deltaTimestamp)
 
