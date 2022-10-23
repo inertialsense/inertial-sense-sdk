@@ -909,7 +909,7 @@ class logPlot:
 
         if self.log.serials[device] != 'Ref INS':
             towOffset = self.getData(device, DID_GPS1_POS, 'towOffset')
-            if towOffset.size != 0:
+            if towOffset.size:
                 time = time + np.mean(towOffset)
         # else: # HACK: to correct for improper SPAN INS direction and gyro scalar
         #     tmp = np.copy(imu1)   
@@ -1465,7 +1465,11 @@ class logPlot:
             dtGps = dtGps / self.d
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:])
 
-            integrationPeriod = self.getData(d, DID_PIMU, 'dt')[1:]
+            dtPimu = self.getData(d, DID_PIMU, 'dt')
+            if dtPimu.size:
+                integrationPeriod = dtPimu[1:]
+            else:
+                integrationPeriod = None
 
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if np.size(towOffset) > 0:
@@ -1475,18 +1479,26 @@ class logPlot:
 
             deltaTimestamp = 0
             timeImu = 0
-            if len(self.getData(d, DID_PIMU, 'time')):
-                deltaTimestamp = self.getData(d, DID_PIMU, 'time')[1:] - self.getData(d, DID_PIMU, 'time')[0:-1]
+            timePimu = self.getData(d, DID_PIMU, 'time')
+            timeIMU = self.getData(d, DID_IMU, 'time')
+            timeImu3 = self.getData(d, DID_IMU3_RAW, 'time')
+            if timePimu.size:
+                deltaTimestamp = timePimu[1:] - timePimu[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromTow(self.getData(d, DID_PIMU, 'time')[1:] + towOffset)            
-            elif len(self.getData(d, DID_IMU3_RAW, 'time')):
-                deltaTimestamp = self.getData(d, DID_IMU3_RAW, 'time')[1:] - self.getData(d, DID_IMU3_RAW, 'time')[0:-1]
+                timeImu = getTimeFromTow(timePimu[1:] + towOffset)            
+            elif timeIMU.size:
+                deltaTimestamp = timeIMU[1:] - timeIMU[0:-1]
                 deltaTimestamp = deltaTimestamp / self.d
-                timeImu = getTimeFromTow(self.getData(d, DID_IMU3_RAW, 'time')[1:] + towOffset)
+                timeImu = getTimeFromTow(timeIMU[1:] + towOffset)
+            elif timeImu3.size:
+                deltaTimestamp = timeImu3[1:] - timeImu3[0:-1]
+                deltaTimestamp = deltaTimestamp / self.d
+                timeImu = getTimeFromTow(timeImu3[1:] + towOffset)
 
             ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
             ax[1].plot(timeGps, dtGps)
-            ax[2].plot(timeImu, integrationPeriod)
+            if integrationPeriod:
+                ax[2].plot(timeImu, integrationPeriod)
             ax[3].plot(timeImu, deltaTimestamp)
 
         self.setPlotYSpanMin(ax[0], 0.005)
