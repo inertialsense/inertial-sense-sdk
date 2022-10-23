@@ -65,9 +65,12 @@ class logPlot:
 
     def setActiveSerials(self, serials):
         self.active_devs = []
+        self.active_devs_no_ref = []
         for d, ser in enumerate(self.log.serials):
             if ser in serials:
                 self.active_devs.append(d)
+                if ser != 'Ref INS':
+                    self.active_devs_no_ref.append(d)
 
     def configureSubplot(self, ax, title, ylabel='', xlabel=''):
         ax.set_title(title)
@@ -906,7 +909,8 @@ class logPlot:
 
         if self.log.serials[device] != 'Ref INS':
             towOffset = self.getData(device, DID_GPS1_POS, 'towOffset')
-            time = time + np.mean(towOffset)
+            if towOffset.size != 0:
+                time = time + np.mean(towOffset)
         # else: # HACK: to correct for improper SPAN INS direction and gyro scalar
         #     tmp = np.copy(imu1)   
         #     tmp *= 125.0 
@@ -1452,7 +1456,7 @@ class logPlot:
         self.configureSubplot(ax[2], 'IMU Integration Period', 's')
         self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's')
 
-        for d in self.active_devs:
+        for d in self.active_devs_no_ref:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
             dtIns = dtIns / self.d
             timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek')[1:])
