@@ -853,15 +853,15 @@ class logPlot:
         else:
             time = self.getData(device, DID_REFERENCE_PIMU, 'time')
 
-            if len(time) != 0: # DID_REFERENCE_PIMU
-                dt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+            if time.size: # DID_REFERENCE_PIMU
+                dt = self.getData(device, DID_REFERENCE_PIMU, 'dt')
                 if accelSensor == 0:
                     # Gyro
-                    refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
+                    refTheta = self.getData(device, DID_REFERENCE_PIMU, 'theta')
                     ref = refTheta / dt[:,None]
                 else:
                     # Accel
-                    refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
+                    refVel = self.getData(device, DID_REFERENCE_PIMU, 'vel')
                     ref = refVel / dt[:,None]
                 imu1 = []
                 for sample in range(0, len(I)):
