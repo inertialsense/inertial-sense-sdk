@@ -271,6 +271,7 @@ class LogInspectorWindow(QMainWindow):
 
     def updatePlot(self):
         self.plot(self.currently_selected, self.plotargs)
+        self.updateWindowTitle()
 
     def updateWindowTitle(self):
         try:
