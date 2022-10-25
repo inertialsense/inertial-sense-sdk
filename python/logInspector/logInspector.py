@@ -319,7 +319,6 @@ class LogInspectorWindow(QMainWindow):
         #     str += 'Comp '
         # self.statusLabel.setText(str)
         self.updatePlot()
-        self.updateWindowTitle()
         self.stopLoadingIndicator()
 
     def setupUi(self):
