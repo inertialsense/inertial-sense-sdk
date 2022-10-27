@@ -258,7 +258,8 @@ class Log:
             # self.min_time = self.max_time - (self.max_time - self.min_time)*(1.0/2.0)  # do not use the first 1/2 (alignment)
 
             # Resample at a steady 100 Hz
-            dt = 0.01
+            # dt = np.average(data[0][1:,0] - data[0][:-1,0])
+            dt = 0.1
             t = np.arange(1.0, self.max_time - self.min_time - 1.0, dt)
             for i in range(self.numDev):
                 # Chop off extra data at beginning and end
@@ -269,7 +270,7 @@ class Log:
                 data[i][:, 0] -= self.min_time
 
                 # Interpolate data so that it has all the same timestamps
-                fi = interp1d(data[i][:, 0], data[i][:, 1:].T, kind='cubic', fill_value='extrapolate',
+                fi = interp1d(data[i][:, 0], data[i][:, 1:].T, kind='linear', fill_value='extrapolate',
                               bounds_error=False)
                 data[i] = np.hstack((t[:, None], fi(t).T))
 
