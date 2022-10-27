@@ -257,9 +257,9 @@ class Log:
             self.min_time = self.max_time - (self.max_time - self.min_time)*(2.0/3.0)  # do not use the first 1/3 (alignment)
             # self.min_time = self.max_time - (self.max_time - self.min_time)*(1.0/2.0)  # do not use the first 1/2 (alignment)
 
-            # Resample at a steady 100 Hz
-            # dt = np.average(data[0][1:,0] - data[0][:-1,0])
+            # Resample at a steady 10 Hz
             dt = 0.1
+            # dt = np.average(data[0][1:,0] - data[0][:-1,0])
             t = np.arange(1.0, self.max_time - self.min_time - 1.0, dt)
             for i in range(self.numDev):
                 # Chop off extra data at beginning and end
