@@ -112,7 +112,7 @@ class Log:
             with open(self.mount_bias_filepath, 'r') as file:
                 mount_bias = yaml.safe_load(file)
                 for n, dev in enumerate(self.serials):
-                    if n < self.numIns:
+                    if (n < self.numIns) and (int(dev) in mount_bias):
                         self.mount_bias_euler[n, :] = np.array(mount_bias[int(dev)])
                         self.using_mounting_bias = True
         self.mount_bias_quat = euler2quat(self.mount_bias_euler)
