@@ -33,6 +33,9 @@ GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED     = 0x00400000
 class Log:
     def __init__(self):
         self.c_log = LogReader()
+        self.init_vars()
+
+    def init_vars(self):
         self.data = []
         self.serials = []
         self.passRMS = 0    # 1 = pass, -1 = fail, 0 = unknown
@@ -43,9 +46,12 @@ class Log:
         self.truth = []
         self.refINS = False
         self.hardware = []
+        self.numRef = 0
+        self.refINS = False
+        self.using_mounting_bias = False
 
     def load(self, directory, serials=['ALL']):
-        self.data = []
+        self.init_vars()
         self.c_log.init(self, directory, serials)
         self.c_log.load()
         self.serials = self.c_log.getSerialNumbers()
@@ -53,9 +59,7 @@ class Log:
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
         self.mount_bias_filepath = directory + '/angular_mount_bias.yml'
-        self.using_mounting_bias = False
         self.numDev = self.data.shape[0]
-        self.numRef = 0
 
         if self.numDev == 0:
             print("No devices found in log or no logs found!!!")
@@ -368,7 +372,7 @@ class Log:
         # Thresholds for uINS-3
         # Nav
         thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
-        thresholdUVW = np.array([0.032, 0.032, 0.032])  # (m/s) UVW
+        thresholdUVW = np.array([0.032, 0.032, 0.07])  # (m/s) UVW
         thresholdAtt = np.array([0.11,  0.11,  0.3])    # (deg) Att (roll, pitch, yaw)
         if not self.navMode:
             # AHRS
@@ -378,7 +382,7 @@ class Log:
         if hardware == 5:
             # Nav 
             thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
-            thresholdUVW = np.array([0.032, 0.032, 0.032])  # (m/s) UVW
+            thresholdUVW = np.array([0.032, 0.032, 0.07])  # (m/s) UVW
             thresholdAtt = np.array([0.045, 0.045, 0.15])   # (deg) Att (roll, pitch, yaw)
             if not self.navMode: 
                 # AHRS
