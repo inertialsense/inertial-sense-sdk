@@ -371,9 +371,9 @@ class Log:
 
         # Thresholds for uINS-3
         # Nav
-        thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
-        thresholdUVW = np.array([0.032, 0.032, 0.07])  # (m/s) UVW
-        thresholdAtt = np.array([0.11,  0.11,  0.3])    # (deg) Att (roll, pitch, yaw)
+        thresholdNED = np.array([0.35,  0.35, 0.8])     # (m)   NED
+        thresholdUVW = np.array([0.04,  0.04, 0.07])    # (m/s) UVW
+        thresholdAtt = np.array([0.11,  0.11, 0.3])     # (deg) Att (roll, pitch, yaw)
         if not self.navMode:
             # AHRS
             thresholdAtt[2]  = 2.0  # (deg) Att (yaw)
@@ -382,8 +382,8 @@ class Log:
         if hardware == 5:
             # Nav 
             thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
-            thresholdUVW = np.array([0.032, 0.032, 0.07])  # (m/s) UVW
-            thresholdAtt = np.array([0.045, 0.045, 0.15])   # (deg) Att (roll, pitch, yaw)
+            thresholdUVW = np.array([0.035, 0.035, 0.07])   # (m/s) UVW
+            thresholdAtt = np.array([0.045, 0.045, 0.16])   # (deg) Att (roll, pitch, yaw)
             if not self.navMode: 
                 # AHRS
                 thresholdAtt[:2] = 0.28  # (deg) Att (roll, pitch)
@@ -393,8 +393,8 @@ class Log:
             thresholdNED[:2] = 0.5
 
         if self.refINS:     # SPAN INS has position offset
-            thresholdNED[:2] =  1.7
-            thresholdNED[2]  = 12.0
+            thresholdNED[:2] =  2.5
+            thresholdNED[2]  =  6.0
         elif self.rtk:      # RTK positioning w/o ref INS
             thresholdNED[:2] = 0.04
             thresholdNED[2]  = 0.05
