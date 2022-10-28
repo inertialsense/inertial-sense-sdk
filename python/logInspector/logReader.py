@@ -26,9 +26,16 @@ DEG2RAD = np.pi / 180.0
 RED = '\u001b[31m'
 RESET = '\u001b[0m'
 
+INS_STATUS_NAV_MODE                         = 0x00001000
+GPS_STATUS_FLAGS_RTK_POSITION_ENABLED       = 0x00100000
+GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED     = 0x00400000
+
 class Log:
     def __init__(self):
         self.c_log = LogReader()
+        self.init_vars()
+
+    def init_vars(self):
         self.data = []
         self.serials = []
         self.passRMS = 0    # 1 = pass, -1 = fail, 0 = unknown
@@ -39,9 +46,12 @@ class Log:
         self.truth = []
         self.refINS = False
         self.hardware = []
+        self.numRef = 0
+        self.refINS = False
+        self.using_mounting_bias = False
 
     def load(self, directory, serials=['ALL']):
-        self.data = []
+        self.init_vars()
         self.c_log.init(self, directory, serials)
         self.c_log.load()
         self.serials = self.c_log.getSerialNumbers()
@@ -49,9 +59,7 @@ class Log:
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
         self.mount_bias_filepath = directory + '/angular_mount_bias.yml'
-        self.using_mounting_bias = False
         self.numDev = self.data.shape[0]
-        self.numRef = 0
 
         if self.numDev == 0:
             print("No devices found in log or no logs found!!!")
@@ -108,7 +116,7 @@ class Log:
             with open(self.mount_bias_filepath, 'r') as file:
                 mount_bias = yaml.safe_load(file)
                 for n, dev in enumerate(self.serials):
-                    if n < self.numIns:
+                    if (n < self.numIns) and (int(dev) in mount_bias):
                         self.mount_bias_euler[n, :] = np.array(mount_bias[int(dev)])
                         self.using_mounting_bias = True
         self.mount_bias_quat = euler2quat(self.mount_bias_euler)
@@ -116,16 +124,17 @@ class Log:
         self.compassing = None  
         self.rtk = None  
         self.navMode = None  
-        
-        if len(self.data[0, DID_DEV_INFO]):
-            self.compassing = 'Cmp' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
-            self.rtk = 'Rov' in str(self.data[0, DID_DEV_INFO]['addInfo'][-1])
+        ins2 = self.data[0, DID_INS_2]
+        if len(ins2):
+            self.navMode    = (ins2['insStatus'][-1] & INS_STATUS_NAV_MODE) == INS_STATUS_NAV_MODE
+        gps1Pos = self.data[0, DID_GPS1_POS]
+        if len(gps1Pos):
+            self.rtk        = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_RTK_POSITION_ENABLED) == GPS_STATUS_FLAGS_RTK_POSITION_ENABLED
+            self.compassing = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED) == GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED
 
         # Reference INS like Novatel may not have all status fields. Find a first device that is not reference
         uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
         idx = uINS_device_idx[0]
-        if len(self.data[idx, DID_INS_2]):
-            self.navMode = (self.data[idx, DID_INS_2]['insStatus'][-1] & 0x1000) == 0x1000
         # except:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
         return True
@@ -257,8 +266,9 @@ class Log:
             self.min_time = self.max_time - (self.max_time - self.min_time)*(2.0/3.0)  # do not use the first 1/3 (alignment)
             # self.min_time = self.max_time - (self.max_time - self.min_time)*(1.0/2.0)  # do not use the first 1/2 (alignment)
 
-            # Resample at a steady 100 Hz
-            dt = 0.01
+            # Resample at a steady 10 Hz
+            dt = 0.1
+            # dt = np.average(data[0][1:,0] - data[0][:-1,0])
             t = np.arange(1.0, self.max_time - self.min_time - 1.0, dt)
             for i in range(self.numDev):
                 # Chop off extra data at beginning and end
@@ -269,7 +279,7 @@ class Log:
                 data[i][:, 0] -= self.min_time
 
                 # Interpolate data so that it has all the same timestamps
-                fi = interp1d(data[i][:, 0], data[i][:, 1:].T, kind='cubic', fill_value='extrapolate',
+                fi = interp1d(data[i][:, 0], data[i][:, 1:].T, kind='linear', fill_value='extrapolate',
                               bounds_error=False)
                 data[i] = np.hstack((t[:, None], fi(t).T))
 
@@ -359,35 +369,35 @@ class Log:
                 # Use default value if not all devices use the same hardware
                 hardware = 0
 
-        # Default thresholds
-        thresholdNED = np.array([0.35, 0.35, 0.8])  # (m)   NED
-        thresholdUVW = np.array([0.2,  0.2,  0.2])  # (m/s) UVW
-        thresholdAtt = np.array([0.11, 0.11, 2.0])  # (deg) Att (roll, pitch, yaw)
-        if self.navMode or self.compassing:
-            thresholdAtt[2] = 0.3  # Higher heading accuracy
-
         # Thresholds for uINS-3
-        if hardware == 3:
-            thresholdNED = np.array([0.35, 0.35, 0.8])  # (m)   NED
-            thresholdUVW = np.array([0.2,  0.2,  0.2])  # (m/s) UVW
-            thresholdAtt = np.array([0.11, 0.11, 2.0])  # (deg) Att (roll, pitch, yaw)
-            if self.navMode or self.compassing:
-                thresholdAtt[2] = 0.3  # Higher heading accuracy
+        # Nav
+        thresholdNED = np.array([0.35,  0.35, 0.8])     # (m)   NED
+        thresholdUVW = np.array([0.04,  0.04, 0.07])    # (m/s) UVW
+        thresholdAtt = np.array([0.11,  0.11, 0.3])     # (deg) Att (roll, pitch, yaw)
+        if not self.navMode:
+            # AHRS
+            thresholdAtt[2]  = 2.0  # (deg) Att (yaw)
 
         # Thresholds for IMX-5
-        elif hardware == 5:
-            thresholdNED = np.array([0.35,  0.35,  0.8])  # (m)   NED
-            thresholdUVW = np.array([0.05,  0.05,  0.1])  # (m/s) UVW
-            thresholdAtt = np.array([0.045, 0.045, 1.0])  # (deg) Att (roll, pitch, yaw)
-            if self.navMode or self.compassing:
-                thresholdAtt[2] = 0.15  # Higher heading accuracy
+        if hardware == 5:
+            # Nav 
+            thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
+            thresholdUVW = np.array([0.035, 0.035, 0.07])   # (m/s) UVW
+            thresholdAtt = np.array([0.045, 0.045, 0.16])   # (deg) Att (roll, pitch, yaw)
+            if not self.navMode: 
+                # AHRS
+                thresholdAtt[:2] = 0.28  # (deg) Att (roll, pitch)
+                thresholdAtt[2]  = 0.5   # (deg) Att (yaw)
 
         if self.compassing:
-            thresholdNED[:] = 1.0
+            thresholdNED[:2] = 0.5
 
         if self.refINS:     # SPAN INS has position offset
-            thresholdNED[:2] = 1.7
-            thresholdNED[2] = 12.0
+            thresholdNED[:2] =  2.5
+            thresholdNED[2]  =  6.0
+        elif self.rtk:      # RTK positioning w/o ref INS
+            thresholdNED[:2] = 0.04
+            thresholdNED[2]  = 0.05
 
         if not (self.navMode or self.compassing):
             thresholdNED[:] = np.inf    # Disable NED
@@ -402,86 +412,92 @@ class Log:
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
         f.write('\n')
-        f.write('Directory: %s\n' % (self.directory))
-        mode = "AHRS"
-        if self.navMode: mode = "NAV"
-        if self.compassing: mode = "DUAL GNSS"
-        if self.refINS: mode += ", Ref INS"
-        f.write("\n")
+        mode = ('IMX-5' if hardware == 5 else 'uINS-3' )
+        mode += (", NAV" if self.navMode else ", AHRS")
+        if self.rtk:        mode += ", RTK"
+        if self.compassing: mode += ", DUAL GNSS"
+        if self.refINS:     mode += ", Ref INS"
 
         # Print Table of RMS accuracies
-        line = 'Device       '
+        line = 'Device      '
         if self.navMode:
             f.write(
-                '--------------------------------------------------- RMS Accuracy -------------------------------------------\n')
-            line = line + 'UVW[  (m/s)   (m/s)   (m/s) ],  NED[    (m)     (m)     (m) ],'
+                '------------------------------------------------- RMS Accuracy -------------------------------------------\n')
         else:  # AHRS mode
-            f.write('-------------- RMS Accuracy --------------\n')
-        line = line + ' Att [  (deg)   (deg)   (deg) ]\n'
+            f.write(
+                '-------------- RMS Accuracy --------------\n')
+        line += ' Att[  (deg)   (deg)   (deg) ]'
+        if self.navMode:
+            line += ',  UVW[  (m/s)   (m/s)   (m/s) ],  NED[    (m)     (m)     (m) ]'
+        line += '\n'
         f.write(line)
 
         for n, dev in enumerate(uINS_device_idx):
             devInfo = self.data[dev,DID_DEV_INFO][0]
             line = '%2d SN%d      ' % (n, devInfo['serialNumber'])
-            if self.navMode:
-                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (self.RMSUVW[n, 0], self.RMSUVW[n, 1], self.RMSUVW[n, 2])
-                line = line + '[ %6.4f  %6.4f  %6.4f ],     ' % (self.RMSNED[n, 0], self.RMSNED[n, 1], self.RMSNED[n, 2])
-            line = line + '[ %6.4f  %6.4f  %6.4f ]\n' % (
+            line += '[ %6.4f  %6.4f  %6.4f ]' % (
             self.RMSAtt[n, 0] * RAD2DEG, self.RMSAtt[n, 1] * RAD2DEG, self.RMSAtt[n, 2] * RAD2DEG)
+            if self.navMode:
+                line += ',     [ %6.4f  %6.4f  %6.4f ]' % (self.RMSUVW[n, 0], self.RMSUVW[n, 1], self.RMSUVW[n, 2])
+                line += ',     [ %6.4f  %6.4f  %6.4f ]' % (self.RMSNED[n, 0], self.RMSNED[n, 1], self.RMSNED[n, 2])
+            line += '\n'
             f.write(line)
 
-        line = 'AVERAGE:        '
         if self.navMode:
             f.write(
-                '------------------------------------------------------------------------------------------------------------\n')
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.averageRMSUVW[0], self.averageRMSUVW[1], self.averageRMSUVW[2])
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.averageRMSNED[0], self.averageRMSNED[1], self.averageRMSNED[2])
+                '----------------------------------------------------------------------------------------------------------\n')
         else:  # AHRS mode
-            f.write('------------------------------------------\n')
-        line = line + '[%7.4f %7.4f %7.4f ]\n' % (
+            f.write(
+                '------------------------------------------\n')
+        line = 'AVERAGE:        '
+        line += '[%7.4f %7.4f %7.4f ]' % (
         self.averageRMSAtt[0] * RAD2DEG, self.averageRMSAtt[1] * RAD2DEG, self.averageRMSAtt[2] * RAD2DEG)
+        if self.navMode:
+            line += ',     [%7.4f %7.4f %7.4f ]' % (self.averageRMSUVW[0], self.averageRMSUVW[1], self.averageRMSUVW[2])
+            line += ',     [%7.4f %7.4f %7.4f ]' % (self.averageRMSNED[0], self.averageRMSNED[1], self.averageRMSNED[2])
+        line += '\n'
         f.write(line)
 
         line = 'THRESHOLD:      '
-        if self.navMode:
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (thresholdUVW[0], thresholdUVW[1], thresholdUVW[2])
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (thresholdNED[0], thresholdNED[1], thresholdNED[2])
-        line = line + '[%7.4f %7.4f %7.4f ]\n' % (
+        line += '[%7.4f %7.4f %7.4f ]' % (
         thresholdAtt[0] * RAD2DEG, thresholdAtt[1] * RAD2DEG, thresholdAtt[2] * RAD2DEG)
+        if self.navMode:
+            line += ',     [%7.4f %7.4f %7.4f ]' % (thresholdUVW[0], thresholdUVW[1], thresholdUVW[2])
+            line += ',     [%7.4f %7.4f %7.4f ]' % (thresholdNED[0], thresholdNED[1], thresholdNED[2])
+        line += '\n'
         f.write(line)
 
-        line = 'RATIO:          '
         if self.navMode:
             f.write(
-                '------------------------------------------------------------------------------------------------------------\n')
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.specRatioUVW[0], self.specRatioUVW[1], self.specRatioUVW[2])
-            line = line + '[%7.4f %7.4f %7.4f ],     ' % (self.specRatioNED[0], self.specRatioNED[1], self.specRatioNED[2])
+                '----------------------------------------------------------------------------------------------------------\n')
         else:  # AHRS mode
             f.write('------------------------------------------\n')
-        line = line + '[%7.4f %7.4f %7.4f ]\n' % (self.specRatioAtt[0], self.specRatioAtt[1], self.specRatioAtt[2])
+        line = 'RATIO:          '
+        line += '[%7.4f %7.4f %7.4f ]' % (self.specRatioAtt[0], self.specRatioAtt[1], self.specRatioAtt[2])
+        if self.navMode:
+            line += ',     [%7.4f %7.4f %7.4f ]' % (self.specRatioUVW[0], self.specRatioUVW[1], self.specRatioUVW[2])
+            line += ',     [%7.4f %7.4f %7.4f ]' % (self.specRatioNED[0], self.specRatioNED[1], self.specRatioNED[2])
+        line += '\n'
         f.write(line)
 
         line = 'PASS/FAIL:      '
-        if self.navMode:
-            line = line + '[   %s    %s    %s ],     ' % (
-            self.pass_fail(self.specRatioUVW[0]), 
-            self.pass_fail(self.specRatioUVW[1]), 
-            self.pass_fail(self.specRatioUVW[2]))  # UVW
-            line = line + '[   %s    %s    %s ],     ' % (
-            self.pass_fail(self.specRatioNED[0]), 
-            self.pass_fail(self.specRatioNED[1]), 
-            self.pass_fail(self.specRatioNED[2]))  # NED
-        line = line + '[   %s    %s    %s ]\n' % (
+        line += '[   %s    %s    %s ]' % (
         self.pass_fail(self.specRatioAtt[0]), 
         self.pass_fail(self.specRatioAtt[1]), 
         self.pass_fail(self.specRatioAtt[2]))  # ATT
+        if self.navMode:
+            line += ',     [   %s    %s    %s ]' % (
+            self.pass_fail(self.specRatioUVW[0]), 
+            self.pass_fail(self.specRatioUVW[1]), 
+            self.pass_fail(self.specRatioUVW[2]))  # UVW
+            line += ',     [   %s    %s    %s ]' % (
+            self.pass_fail(self.specRatioNED[0]), 
+            self.pass_fail(self.specRatioNED[1]), 
+            self.pass_fail(self.specRatioNED[2]))  # NED
+        line += '\n'
         f.write(line)
 
-        if self.navMode:
-            f.write('                                                                                         ')
-        else:  # AHRS mode
-            f.write('                  ')
-        f.write('(' + mode + ')\n\n')
+        f.write('MODE:            (' + mode + ')\n\n')
 
         # Print Mounting Biases
         f.write('--------------- Angular Mounting Biases ----------------\n')

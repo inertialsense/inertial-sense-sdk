@@ -319,6 +319,16 @@ class logPlot:
                     refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
                     refUvw = self.getData(d, DID_INS_2, 'uvw')
                     continue
+            # num_devs = len(self.active_devs)
+            # if refTime is None and num_devs:
+            #     refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            #     refUvw = np.zeros(np.shape(self.getData(d, DID_INS_2, 'uvw')))
+            #     for d in self.active_devs:
+            #         time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            #         uvw = self.getData(d, DID_INS_2, 'uvw')
+            #         for i in range(3):
+            #             refUvw[:,i] += np.interp(refTime, time, uvw[:,i], right=np.nan, left=np.nan)
+            #     refUvw *= (1.0/num_devs)
 
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
@@ -331,7 +341,7 @@ class logPlot:
             if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intUvw = np.empty_like(refUvw)
                 for i in range(3):
-                    intUvw[:,i] = np.interp(refTime, time, uvw[:,i], right=np.nan)
+                    intUvw[:,i] = np.interp(refTime, time, uvw[:,i], right=np.nan, left=np.nan)
                 resUvw = intUvw - refUvw
                 ax[0,1].plot(refTime, resUvw[:,0], label=self.log.serials[d])
                 ax[1,1].plot(refTime, resUvw[:,1])
@@ -383,7 +393,7 @@ class logPlot:
                 unwrapEuler = self.vec3_unwrap(euler)
                 intEuler = np.empty_like(refEuler)
                 for i in range(3):
-                    intEuler[:,i] = np.interp(refTime, time, unwrapEuler[:,i], right=np.nan)
+                    intEuler[:,i] = np.interp(refTime, time, unwrapEuler[:,i], right=np.nan, left=np.nan)
                 resEuler = intEuler - unwrapRefEuler
                 ax[0,1].plot(refTime, resEuler[:,0]*RAD2DEG, label=self.log.serials[d])
                 ax[1,1].plot(refTime, resEuler[:,1]*RAD2DEG)
@@ -969,7 +979,7 @@ class logPlot:
                                 if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
                                     intPqr = np.empty_like(refPqr)
-                                    intPqr[:,i] = np.interp(refTime, time, pqr[:,i], right=np.nan)
+                                    intPqr[:,i] = np.interp(refTime, time, pqr[:,i], right=np.nan, left=np.nan)
                                     resPqr = intPqr - refPqr
                                     ax[i,1].plot(refTime, resPqr[:,i]*RAD2DEG, label=(self.log.serials[d] if dev_idx==0 else None))
 
@@ -1042,7 +1052,7 @@ class logPlot:
                                 if plotResidual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
                                     self.configureSubplot(ax[i,1], 'Residual', 'm/s^2')
                                     intAcc = np.empty_like(refAcc)
-                                    intAcc[:,i] = np.interp(refTime, time, acc[:,i], right=np.nan)
+                                    intAcc[:,i] = np.interp(refTime, time, acc[:,i], right=np.nan, left=np.nan)
                                     resAcc = intAcc - refAcc
                                     ax[i,1].plot(refTime, resAcc[:,i], label=(self.log.serials[d] if dev_idx==0 else None))
 
