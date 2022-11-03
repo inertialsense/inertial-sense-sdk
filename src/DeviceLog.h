@@ -52,8 +52,9 @@ public:
 	uint64_t LogSize() { return m_logSize; }
 	uint32_t FileCount() { return m_fileCount; }
 	std::string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
-	void SetKmlConfig(bool showTracks =true, bool showPoints =true, bool showPointTimestamps =true, double pointUpdatePeriodSec=1.0, bool altClampToGround=true)
+	void SetKmlConfig(bool gpsData =true, bool showTracks =true, bool showPoints =true, bool showPointTimestamps =true, double pointUpdatePeriodSec=1.0, bool altClampToGround=true)
 	{ 
+		m_enableGpsLogging = gpsData;
 		m_showTracks = showTracks;
 		m_showPoints = showPoints;
 		m_showPointTimestamps = showPointTimestamps;
@@ -80,6 +81,7 @@ protected:
 	uint64_t                m_maxDiskSpace;
 	uint32_t                m_maxFileSize;
 	bool                    m_altClampToGround;
+	bool                    m_enableGpsLogging;
 	bool                    m_showTracks;
 	bool                    m_showPoints;
 	bool                    m_showPointTimestamps;

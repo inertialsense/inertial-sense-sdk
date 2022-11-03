@@ -74,9 +74,24 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	}
 
 	// Override KID as reference KID
-	if (kid==cDataKML::KID_INS && m_isRefIns) 
+	switch (kid)
 	{
-		kid = cDataKML::KID_REF;
+	case cDataKML::KID_INS:
+		if (m_isRefIns) 
+		{
+			kid = cDataKML::KID_REF;
+		}
+		break;
+
+	case cDataKML::KID_GPS:
+	case cDataKML::KID_GPS1:
+	case cDataKML::KID_GPS2:
+	case cDataKML::KID_RTK:
+		if (!m_enableGpsLogging)
+		{	
+			return false;
+		}
+		break;
 	}
 
 	_MKDIR(m_directory.c_str());
@@ -490,6 +505,19 @@ bool cDeviceLogKML::WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t* 
 	if (kid < 0)
 	{
 		return true;
+	}
+
+	switch (kid)
+	{
+	case cDataKML::KID_GPS:
+	case cDataKML::KID_GPS1:
+	case cDataKML::KID_GPS2:
+	case cDataKML::KID_RTK:
+		if (!m_enableGpsLogging)
+		{
+			return true;
+		}
+		break;
 	}
 
 	// Reference current log
