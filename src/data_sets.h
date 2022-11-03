@@ -1202,36 +1202,36 @@ typedef struct PACKED
 
 enum eSystemCommand 
 {
-    SYS_CMD_SAVE_PERSISTENT_MESSAGES            = 1,
-    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET         = 2,
-    SYS_CMD_ENABLE_SENSOR_STATS                 = 3,
-    SYS_CMD_ENABLE_RTOS_STATS                   = 4,
-    SYS_CMD_ZERO_MOTION                         = 5,
+    SYS_CMD_SAVE_PERSISTENT_MESSAGES                = 1,
+    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET             = 2,
+    SYS_CMD_ENABLE_SENSOR_STATS                     = 3,
+    SYS_CMD_ENABLE_RTOS_STATS                       = 4,
+    SYS_CMD_ZERO_MOTION                             = 5,
 
-    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
-    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS1    = 11,
-    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS2    = 12,
-    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_SER0    = 13,
-    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_SER1    = 14,
-    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_SER2    = 15,
+    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,
 
-    SYS_CMD_SAVE_FLASH                          = 97,
-    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
-    SYS_CMD_SOFTWARE_RESET                      = 99,
-    SYS_CMD_MANF_UNLOCK                         = 1122334455,
-    SYS_CMD_MANF_FACTORY_RESET                  = 1357924680,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                     = 1357924681,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_DOWNGRADE_CALIBRATION          = 1357924682,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_SAVE_FLASH                              = 97,
+    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,
+    SYS_CMD_SOFTWARE_RESET                          = 99,
+    SYS_CMD_MANF_UNLOCK                             = 1122334455,
+    SYS_CMD_MANF_FACTORY_RESET                      = 1357924680,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                         = 1357924681,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_DOWNGRADE_CALIBRATION              = 1357924682,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
 };
 
-enum eSerialBridge
+enum eSerialPortBridge
 {
-	SERIAL_BRIDGE_DISABLED              = 0,
-	SERIAL_BRIDGE_USB_TO_GPS1           = 1,
-	SERIAL_BRIDGE_USB_TO_GPS2           = 2,
-	SERIAL_BRIDGE_USB_TO_SER0           = 3,
-	SERIAL_BRIDGE_USB_TO_SER1           = 4,
-	SERIAL_BRIDGE_USB_TO_SER2           = 5,
+	SERIAL_PORT_BRIDGE_DISABLED         = 0,
+	SERIAL_PORT_BRIDGE_USB_TO_GPS1      = 1,
+	SERIAL_PORT_BRIDGE_USB_TO_GPS2      = 2,
+	SERIAL_PORT_BRIDGE_USB_TO_SER0      = 3,
+	SERIAL_PORT_BRIDGE_USB_TO_SER1      = 4,
+	SERIAL_PORT_BRIDGE_USB_TO_SER2      = 5,
 };
 
 /** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
