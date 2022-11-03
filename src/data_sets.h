@@ -2275,7 +2275,7 @@ enum ePlatformConfig
 {
 	// IMX Carrier Board
 	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
-	PLATFORM_CFG_TYPE_NONE_NO_GPS               = (int)0,		// IMX-5 default
+	PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
 	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
 	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
 	PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
@@ -2527,7 +2527,7 @@ typedef struct PACKED
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t				ioConfig;
 
-    /** Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig) */
+    /** Hardware platform specifying the IMX carrier board type (i.e. RUG, EVB, IG) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.  */
     uint32_t				platformConfig;
 
     /** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
