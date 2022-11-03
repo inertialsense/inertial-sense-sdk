@@ -67,6 +67,7 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
 	uDatasets& d = (uDatasets&)(*dataBuf);
 	ixEuler theta;
     sKmlLogData data;
+	bool deadreckoning = false;
 
 #ifdef USE_IS_INTERNAL
 // 	uInternalDatasets &i = (uInternalDatasets&)(*dataBuf);
@@ -79,15 +80,18 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
         return 0;
 
 	case DID_INS_1:
-        data = sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta, !(d.ins1.insStatus & INS_STATUS_GPS_AIDING_POS));
+		deadreckoning = !(d.ins1.insStatus & INS_STATUS_GPS_AIDING_POS);
+        data = sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta, deadreckoning);
 		break;
 	case DID_INS_2:
 		quat2euler(d.ins2.qn2b, theta);
-        data = sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta, !(d.ins2.insStatus & INS_STATUS_GPS_AIDING_POS));
+		deadreckoning = !(d.ins2.insStatus & INS_STATUS_GPS_AIDING_POS);
+        data = sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta, deadreckoning);
 		break;
 	case DID_INS_3:
 		quat2euler(d.ins3.qn2b, theta);
-        data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, !(d.ins3.insStatus & INS_STATUS_GPS_AIDING_POS));
+		deadreckoning = !(d.ins3.insStatus & INS_STATUS_GPS_AIDING_POS);
+        data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
 		break;
 	case DID_GPS1_POS:
 	case DID_GPS1_UBX_POS:

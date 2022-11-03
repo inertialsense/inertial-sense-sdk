@@ -128,8 +128,9 @@ public:
     // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
     static bool ReadAllLogDataIntoMemory(const std::string& directory, std::map<uint32_t, std::vector<std::vector<uint8_t>>>& data);
 
-	void SetKmlConfig(bool showPath = true, bool showSample = false, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
+	void SetKmlConfig(bool gpsData = true, bool showPath = true, bool showSample = false, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
 	{
+		m_gpsData = gpsData;
 		m_showPath = showPath;
 		m_showSample = showSample;
 		m_showTimeStamp = showTimeStamp;
@@ -199,6 +200,7 @@ private:
 #endif
 
 	bool					m_altClampToGround;
+	bool					m_gpsData;
 	bool					m_showSample;
 	bool					m_showPath;
 	bool					m_showTimeStamp;
