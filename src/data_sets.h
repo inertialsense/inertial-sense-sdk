@@ -1209,6 +1209,8 @@ enum eSystemCommand
     SYS_CMD_ZERO_MOTION                         = 5,
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
+    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS1    = 11,
+    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS2    = 12,
 
     SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
@@ -1219,7 +1221,15 @@ enum eSystemCommand
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION          = 1357924682,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
 };
 
-
+enum eSerialBridge
+{
+	SERIAL_BRIDGE_DISABLED            	= 0,
+	SERIAL_BRIDGE_USB_TO_GPS1           = 1,
+	SERIAL_BRIDGE_USB_TO_GPS2           = 2,
+	SERIAL_BRIDGE_USB_TO_SER0           = 3,
+	SERIAL_BRIDGE_USB_TO_SER1           = 4,
+	SERIAL_BRIDGE_USB_TO_SER2           = 5,
+};
 
 /** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
