@@ -1202,19 +1202,19 @@ typedef struct PACKED
 
 enum eSystemCommand 
 {
-    SYS_CMD_SAVE_PERSISTENT_MESSAGES            = 1,			// inv = 4294967294
+    SYS_CMD_SAVE_PERSISTENT_MESSAGES            = 1,
     SYS_CMD_ENABLE_BOOTLOADER_AND_RESET         = 2,
     SYS_CMD_ENABLE_SENSOR_STATS                 = 3,
     SYS_CMD_ENABLE_RTOS_STATS                   = 4,
-    SYS_CMD_ZERO_MOTION                         = 5,			// inv = 4294967290
+    SYS_CMD_ZERO_MOTION                         = 5,
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
-    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS1    = 11,			// inv = 4294967284
-    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS2    = 12,			// inv = 4294967283
+    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS1    = 11,
+    SYS_CMD_ENABLE_SERIAL_BRIDGE_USB_TO_GPS2    = 12,
 
-    SYS_CMD_SAVE_FLASH                          = 97,			// inv = 4294967198
+    SYS_CMD_SAVE_FLASH                          = 97,
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
-    SYS_CMD_SOFTWARE_RESET                      = 99,			// inv = 4294967196
+    SYS_CMD_SOFTWARE_RESET                      = 99,
     SYS_CMD_MANF_UNLOCK                         = 1122334455,
     SYS_CMD_MANF_FACTORY_RESET                  = 1357924680,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_CHIP_ERASE                     = 1357924681,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
