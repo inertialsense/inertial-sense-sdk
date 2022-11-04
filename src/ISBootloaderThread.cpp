@@ -62,6 +62,37 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
     cISBootloaderDFU::m_DFUmutex.lock();
 
+    m_libusb_thread_mutex.lock();
+    cISBootloaderDFU::list_devices(&dfu_list);
+    for (size_t i = 0; i < dfu_list.present; i++)
+    {	// Create contexts for devices in DFU mode
+        bool found = false;
+
+        for (size_t j = 0; j < ctx.size(); j++)
+        {
+            m_ctx_mutex.lock();
+            if (!(ctx[j]->is_serial_device()) && ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
+            {   // We found the device in the context list
+                found = true;
+                break;
+            }
+            m_ctx_mutex.unlock();
+        }
+
+        if (!found)
+        {   // If we didn't find the device
+            thread_libusb_t* new_thread = (thread_libusb_t*)malloc(sizeof(thread_libusb_t));
+            new_thread->ctx = NULL;
+            new_thread->done = false;
+            new_thread->handle = dfu_list.id[i].handle_libusb;
+            m_libusb_threads.push_back(new_thread);
+            m_libusb_threads[m_libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, m_libusb_threads[m_libusb_threads.size() - 1]);
+
+            m_libusb_devicesActive++;
+        }
+    }
+    m_libusb_thread_mutex.unlock();
+
     while(m_continue_update)
     {
         m_libusb_thread_mutex.lock();
@@ -79,36 +110,6 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
             if (!m_libusb_threads[l]->done)
             {
-                m_libusb_devicesActive++;
-            }
-        }
-
-        cISBootloaderDFU::list_devices(&dfu_list);  // TODO: Put this in a separate thread since it takes a long time
-
-        for (size_t i = 0; i < dfu_list.present; i++)
-        {	// Create contexts for devices in DFU mode
-            bool found = false;
-
-            for (size_t j = 0; j < ctx.size(); j++)
-            {
-                m_ctx_mutex.lock();
-                if (!(ctx[j]->is_serial_device()) && ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
-                {   // We found the device in the context list
-                    found = true;
-                    break;
-                }
-                m_ctx_mutex.unlock();
-            }
-
-            if (!found)
-            {   // If we didn't find the device
-                thread_libusb_t* new_thread = (thread_libusb_t*)malloc(sizeof(thread_libusb_t));
-                new_thread->ctx = NULL;
-                new_thread->done = false;
-                new_thread->handle = dfu_list.id[i].handle_libusb;
-                m_libusb_threads.push_back(new_thread);
-                m_libusb_threads[m_libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, m_libusb_threads[m_libusb_threads.size() - 1]);
-
                 m_libusb_devicesActive++;
             }
         }
