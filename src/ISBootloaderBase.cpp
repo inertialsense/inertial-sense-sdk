@@ -314,29 +314,6 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
             delete obj;
             return IS_OP_CLOSED;
         }
-
-        if((obj)->isb_mightUpdate)
-        {
-            if(major != 0 && minor != 0)
-            {
-                if(major < (obj)->m_isb_major)
-                {
-                    (obj)->isb_mightUpdate = false;
-                }
-                else if(major == (obj)->m_isb_major)
-                {
-                    if(minor < (obj)->m_isb_minor)
-                    {
-                        (obj)->isb_mightUpdate = false;
-                    }
-                    else if(minor == (obj)->m_isb_minor)
-                    {
-                        (obj)->isb_mightUpdate = false;
-                    }
-                    
-                }
-            }
-        }
     }
     else
     {
