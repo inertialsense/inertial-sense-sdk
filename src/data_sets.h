@@ -1186,6 +1186,8 @@ enum eGenFaultCodes
 	GFC_INIT_BAROMETER					= 0x00200000,
 	/*! Fault: I2C initialization */
 	GFC_INIT_I2C						= 0x00800000,
+	/*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
+	GFC_CHIP_ERASE_INVALID				= 0x01000000,
 };
 
 
