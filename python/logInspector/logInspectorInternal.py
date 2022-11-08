@@ -140,6 +140,7 @@ class logInspectorInternal(LogInspectorWindow):
             self.log.printRMSReport()
             self.log.openRMSReport()
         # self.stopLoadingIndicator()
+            self.updatePlot()
 
     def formatButtonColumn(self):
         super(logInspectorInternal, self).formatButtonColumn()

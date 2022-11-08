@@ -32,7 +32,7 @@ struct sKmlLogData
 	float                   theta[3];
 	bool                    deadReckoning;
     sKmlLogData() {}
-	sKmlLogData(double _time, double _lla[3], float _theta[3], bool _deadReckoning)
+	sKmlLogData(double _time, double _lla[3], float _theta[3], bool _deadReckoning=false)
 	{
 		time = _time;
         lla[0] = _lla[0];
@@ -51,7 +51,7 @@ struct sKmlLogData
         lla[1] = _lla[1];
         lla[2] = _lla[2];
         theta[0] = theta[1] = theta[2] = 0;
-		deadReckoning = 0;
+		deadReckoning = false;
 	}
 };
 
@@ -75,7 +75,8 @@ public:
 		switch (did)
 		{
 		default:					return -1; // Unused
-		case DID_INS_1:				return KID_INS;
+		case DID_INS_1:				
+		case DID_INS_2:				return KID_INS;
 		case DID_GPS1_POS:			return KID_GPS;
 		case DID_GPS1_UBX_POS:		return KID_GPS1;
 		case DID_GPS2_POS:			return KID_GPS2;
@@ -90,6 +91,7 @@ public:
         default:
             return -1; // Unused
         case KID_INS:
+        case KID_REF:
             return 130;
 		case KID_GPS:
 		case KID_GPS1:

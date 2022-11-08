@@ -779,6 +779,8 @@ extern void vPortFree(void* pv);
 
 #define FLOAT2DOUBLE (double) // Used to prevent warning when compiling with -Wdouble-promotion in Linux
 
+#define REF_INS_SERIAL_NUMBER			99999										// 10101 was prior value
+
 typedef float       f_t;
 typedef int			i_t;
 typedef double      ixVector2d[2];    	// V = | 0 1 |

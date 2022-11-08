@@ -58,6 +58,7 @@ private:
 
 	cDataKML                m_kml;
 	sKmlLog                 m_Log[cDataKML::MAX_NUM_KID];
+	bool                    m_isRefIns;
 };
 
 #endif // DEVICE_LOG_KML_H

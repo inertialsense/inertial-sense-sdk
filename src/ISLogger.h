@@ -87,6 +87,7 @@ public:
 	float LogSizeMB(unsigned int device = 0);
 	float FileSizeMB(unsigned int device = 0);
 	uint32_t FileCount(unsigned int device = 0);
+	std::string GetNewFileName(unsigned int device, uint32_t serialNumber, uint32_t fileCount, const char* suffix);
 	uint32_t GetDeviceCount() { return (uint32_t)m_devices.size(); }
 	bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
 	const dev_info_t* GetDeviceInfo(unsigned int device = 0);
@@ -127,8 +128,9 @@ public:
     // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
     static bool ReadAllLogDataIntoMemory(const std::string& directory, std::map<uint32_t, std::vector<std::vector<uint8_t>>>& data);
 
-	void SetKmlConfig(bool showPath = true, bool showSample = false, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
+	void SetKmlConfig(bool gpsData = true, bool showPath = true, bool showSample = false, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
 	{
+		m_gpsData = gpsData;
 		m_showPath = showPath;
 		m_showSample = showSample;
 		m_showTimeStamp = showTimeStamp;
@@ -198,6 +200,7 @@ private:
 #endif
 
 	bool					m_altClampToGround;
+	bool					m_gpsData;
 	bool					m_showSample;
 	bool					m_showPath;
 	bool					m_showTimeStamp;

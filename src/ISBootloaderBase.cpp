@@ -207,6 +207,7 @@ is_operation_result cISBootloaderBase::mode_device_app
     {   
         if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)   
         {
+            (obj)->m_filename = filenames.fw_EVB_2.path;
             strncpy((obj)->m_app.enable_command, "EBLE", 5);
             (obj)->reboot_down();
             delete obj;
@@ -223,6 +224,13 @@ is_operation_result cISBootloaderBase::mode_device_app
         else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
         {
             (obj)->m_filename = filenames.fw_uINS_3.path;
+            strncpy((obj)->m_app.enable_command, "BLEN", 5);
+            (obj)->reboot_down();
+            delete obj;
+            return IS_OP_CLOSED;
+        }
+        else
+        {
             strncpy((obj)->m_app.enable_command, "BLEN", 5);
             (obj)->reboot_down();
             delete obj;
@@ -305,29 +313,6 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
         {
             delete obj;
             return IS_OP_CLOSED;
-        }
-
-        if((obj)->isb_mightUpdate)
-        {
-            if(major != 0 && minor != 0)
-            {
-                if(major < (obj)->m_isb_major)
-                {
-                    (obj)->isb_mightUpdate = false;
-                }
-                else if(major == (obj)->m_isb_major)
-                {
-                    if(minor < (obj)->m_isb_minor)
-                    {
-                        (obj)->isb_mightUpdate = false;
-                    }
-                    else if(minor == (obj)->m_isb_minor)
-                    {
-                        (obj)->isb_mightUpdate = false;
-                    }
-                    
-                }
-            }
         }
     }
     else

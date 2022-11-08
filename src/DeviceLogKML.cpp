@@ -30,7 +30,15 @@ using namespace std;
 
 void cDeviceLogKML::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
-	memset(&m_Log, 0, sizeof(m_Log));
+	for (int kid=0; kid<cDataKML::MAX_NUM_KID; kid++ )
+	{
+		m_Log[kid].data.clear();
+		m_Log[kid].fileName.clear();
+		m_Log[kid].fileCount = 0;
+		m_Log[kid].fileDataSize = 0;
+		m_Log[kid].fileSize = 0;
+	}
+	m_isRefIns = false;
 
 	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
 }
@@ -63,6 +71,27 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	if (m_directory.empty())
 	{
 		return false;
+	}
+
+	// Override KID as reference KID
+	switch (kid)
+	{
+	case cDataKML::KID_INS:
+		if (m_isRefIns) 
+		{
+			kid = cDataKML::KID_REF;
+		}
+		break;
+
+	case cDataKML::KID_GPS:
+	case cDataKML::KID_GPS1:
+	case cDataKML::KID_GPS2:
+	case cDataKML::KID_RTK:
+		if (!m_enableGpsLogging)
+		{	
+			return false;
+		}
+		break;
 	}
 
 	_MKDIR(m_directory.c_str());
@@ -107,7 +136,8 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 	{
 	case cDataKML::KID_INS:
 		iconUrl = "http://earth.google.com/images/kml-icons/track-directional/track-0.png";
-		colorStr = "ff00ffff";  // yellow
+		colorStr = "ff00ffff";  	// yellow
+		colorDrStr = "ff00a5ff";	// orange
 		break;
 	case cDataKML::KID_GPS:
 		colorStr = "ff0000ff";  // red
@@ -120,7 +150,8 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
         break;
 	case cDataKML::KID_REF:
 		iconUrl = "http://earth.google.com/images/kml-icons/track-directional/track-0.png";
-		colorStr = "ffff00ff";  // magenta
+		colorStr = "ffff00ff";  	// magenta
+		colorDrStr = "ffcd00cd";	// tinted magenta
 		break;
 	}
 
@@ -434,6 +465,15 @@ bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
 	uDatasets& d = (uDatasets&)(*dataBuf);
 	switch (dataHdr->id)
 	{
+	case DID_DEV_INFO:
+		if (d.devInfo.serialNumber == 99999 ||
+			d.devInfo.serialNumber == 10101)
+		{
+			m_isRefIns = true;
+		}
+		break;
+
+#if 0	// This code is not needed as cDeviceLogKML::WriteDateToFile() saves both DID_INS_1 and DID_INS_2
 	case DID_INS_2:
 		ins_1_t ins1;
 		ins1.week = d.ins2.week;
@@ -450,6 +490,7 @@ bool cDeviceLogKML::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
             return false;
         }
 		break;
+#endif
 	}
 
 	return true;
@@ -464,6 +505,19 @@ bool cDeviceLogKML::WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t* 
 	if (kid < 0)
 	{
 		return true;
+	}
+
+	switch (kid)
+	{
+	case cDataKML::KID_GPS:
+	case cDataKML::KID_GPS1:
+	case cDataKML::KID_GPS2:
+	case cDataKML::KID_RTK:
+		if (!m_enableGpsLogging)
+		{
+			return true;
+		}
+		break;
 	}
 
 	// Reference current log
