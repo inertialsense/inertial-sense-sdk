@@ -449,7 +449,7 @@ typedef struct PACKED
 	double                  time;
 
 	/** Position in a fixed coordinate frame in meters. E.g. CAD frame, building frame, etc. */
-	double					pos[3];
+	float					pos[3];
 	
 	/** Heading with respect to NED frame (rad)*/
 	// float					psi;
