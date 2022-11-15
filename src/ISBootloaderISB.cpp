@@ -146,27 +146,26 @@ is_operation_result cISBootloaderISB::reboot_up()
 is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, bool force)
 {
     char message[100] = {0};
+    int n = SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c.  ", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
 
-    if (!force)
+    if(!force)
     {   
-        if (major == 0 || minor == 0)
+        if(major == 0 || minor == 0)
         {
             return IS_OP_ERROR;
         }
 
-        if (major < m_isb_major ||
-            (major == m_isb_major && minor <= m_isb_minor))
+        if(major < m_isb_major ||
+          (major == m_isb_major && minor <= m_isb_minor))
         {
-            SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c.  No update.", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
+            SNPRINTF(message+n, sizeof(message)-n, "  No update.");
             m_info_callback(this, message, IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
-    else
-    {
-        SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c.  Updating...", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
-        m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-    }
+
+    SNPRINTF(message+n, sizeof(message)-n, "Updating...");
+    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
 
     m_info_callback(this, "(ISB) Rebooting into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
 
