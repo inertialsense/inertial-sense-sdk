@@ -147,27 +147,28 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
 {
     char message[100] = {0};
 
+    SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
+    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+
     if(!force)
     {   
         if(major != 0 && minor != 0)
         {
             if(major < m_isb_major)
             {
-                SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
-                m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+                m_info_callback(this, "(ISB) Not updating bootloader.", IS_LOG_LEVEL_INFO);
                 return IS_OP_OK;
             }
             else if(major == m_isb_major)
             {
                 if(minor < m_isb_minor)
                 {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
-                    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+                    m_info_callback(this, "(ISB) Not updating bootloader.", IS_LOG_LEVEL_INFO);
                     return IS_OP_OK;
                 }
                 else if(minor == m_isb_minor)
                 {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
+                    m_info_callback(this, "(ISB) Not updating bootloader.", IS_LOG_LEVEL_INFO);
                     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
                     return IS_OP_OK;
                 }
@@ -181,7 +182,7 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
     }
     else
     {
-        SNPRINTF(message, 100, "(ISB) Updating bootloader: file %c%c >> device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
+        m_info_callback(this, "(ISB) Updating bootloader...", IS_LOG_LEVEL_INFO);
         m_info_callback(this, message, IS_LOG_LEVEL_INFO);
     }
 
