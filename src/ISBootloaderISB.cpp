@@ -147,41 +147,25 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
 {
     char message[100] = {0};
 
-    SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
-    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-
-    if(!force)
+    if (!force)
     {   
-        if(major != 0 && minor != 0)
-        {
-            if(major < m_isb_major)
-            {
-                m_info_callback(this, "(ISB) Not updating bootloader.", IS_LOG_LEVEL_INFO);
-                return IS_OP_OK;
-            }
-            else if(major == m_isb_major)
-            {
-                if(minor < m_isb_minor)
-                {
-                    m_info_callback(this, "(ISB) Not updating bootloader.", IS_LOG_LEVEL_INFO);
-                    return IS_OP_OK;
-                }
-                else if(minor == m_isb_minor)
-                {
-                    m_info_callback(this, "(ISB) Not updating bootloader.", IS_LOG_LEVEL_INFO);
-                    return IS_OP_OK;
-                }
-                
-            }
-        }
-        else
+        if (major == 0 || minor == 0)
         {
             return IS_OP_ERROR;
+        }
+
+        if (major < m_isb_major ||
+            (major == m_isb_major && minor <= m_isb_minor))
+        {
+            SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c.  No update.", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
+            m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+            return IS_OP_OK;
         }
     }
     else
     {
-        m_info_callback(this, "(ISB) Updating bootloader...", IS_LOG_LEVEL_INFO);
+        SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c.  Updating...", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
+        m_info_callback(this, message, IS_LOG_LEVEL_INFO);
     }
 
     m_info_callback(this, "(ISB) Rebooting into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
