@@ -169,7 +169,6 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
                 else if(minor == m_isb_minor)
                 {
                     m_info_callback(this, "(ISB) Not updating bootloader.", IS_LOG_LEVEL_INFO);
-                    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
                     return IS_OP_OK;
                 }
                 
@@ -183,10 +182,9 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
     else
     {
         m_info_callback(this, "(ISB) Updating bootloader...", IS_LOG_LEVEL_INFO);
-        m_info_callback(this, message, IS_LOG_LEVEL_INFO);
     }
 
-    m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(ISB) Rebooting into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interference on its ports.

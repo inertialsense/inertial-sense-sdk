@@ -442,7 +442,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // Join and free
     ////////////////////////////////////////////////////////////////////////////
 
-    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     // Join and free all mode threads
     while (m_continue_update)
@@ -557,7 +557,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // Join threads
     ////////////////////////////////////////////////////////////////////////////
 
-    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     // Join and free all mode threads
     while (m_continue_update)
@@ -723,7 +723,7 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     ////////////////////////////////////////////////////////////////////////////
     // Join and free 
