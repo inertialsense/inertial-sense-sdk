@@ -456,8 +456,21 @@ typedef struct PACKED
 	
 	/** Observation variance */
 	float					var[3];
+} pos_measurement_t;
 
-}pos_measurement_t;
+
+/** (DID_POSITION_MEASUREMENT) External velocity observation */
+typedef struct PACKED
+{
+	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
+	double                  time;
+
+	/** Velocity in a fixed coordinate frame in meters. E.g. CAD frame, building frame, etc. */
+	float					vel[3];
+
+	/** Observation variance */
+	float					var[3];
+} vel_measurement_t;
 
 
 /** (DID_DEV_INFO) Device information */
