@@ -119,7 +119,7 @@ typedef uint32_t eDataIDs;
 #define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_GROUND_VEHICLE				(eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
-#define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position estimate */
+#define DID_POSITION_MEASUREMENT		(eDataIDs)88 /** (pos_measurement_t) External position observation in some fixed coordinate frame */
 #define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
 #define DID_CAN_CONFIG					(eDataIDs)90 /** (can_config_t) Addresses for CAN messages*/
 #define DID_GPS2_RTK_CMP_REL            (eDataIDs)91 /** (gps_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
@@ -442,25 +442,35 @@ enum eGpsStatus
 
 PUSH_PACK_1
 
-/** (DID_POSITION_MEASUREMENT) External position estimate*/
+/** (DID_POSITION_MEASUREMENT) External position observation */
 typedef struct PACKED
 {
-	/** GPS time of week (since Sunday morning) in seconds */
-	double					timeOfWeek;
+	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
+	double                  time;
 
-	/** Position in ECEF (earth-centered earth-fixed) frame in meters */
-	double					ecef[3];
+	/** Position in a fixed coordinate frame in meters. E.g. CAD frame, building frame, etc. */
+	float					pos[3];
 	
 	/** Heading with respect to NED frame (rad)*/
-	float 					psi;
+	// float					psi;
 	
-	/** The Upper Diagonal of accuracy covariance matrix*/
-	float					accuracyCovUD[6]; // Matrix accuracyCovUD Described below
-	// 0 1 2
-	// _ 3 4
-	// _ _ 5
+	/** Observation variance */
+	float					var[3];
+} pos_measurement_t;
 
-}pos_measurement_t;
+
+/** (DID_POSITION_MEASUREMENT) External velocity observation */
+typedef struct PACKED
+{
+	/** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
+	double                  time;
+
+	/** Velocity in a fixed coordinate frame in meters. E.g. CAD frame, building frame, etc. */
+	float					vel[3];
+
+	/** Observation variance */
+	float					var[3];
+} vel_measurement_t;
 
 
 /** (DID_DEV_INFO) Device information */
