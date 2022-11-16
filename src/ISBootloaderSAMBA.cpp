@@ -112,7 +112,7 @@ is_operation_result cISBootloaderSAMBA::reboot()
 
 is_operation_result cISBootloaderSAMBA::reboot_up()
 {
-    m_info_callback(this, "(SAMBA) Rebooting up into ISB mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(SAMBA) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
 
     // EEFC.FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
     if (write_word(0x400e0c04, 0x5a00010b) == IS_OP_OK)
