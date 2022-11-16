@@ -135,7 +135,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
 is_operation_result cISBootloaderISB::reboot_up()
 {
-    m_info_callback(this, "(ISB) Rebooting up into APP mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(ISB) Rebooting to APP mode...", IS_LOG_LEVEL_INFO);
 
     // send the "reboot to program mode" command and the device should start in program mode
     serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
@@ -146,46 +146,27 @@ is_operation_result cISBootloaderISB::reboot_up()
 is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, bool force)
 {
     char message[100] = {0};
+    int n = SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c.  ", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
 
     if(!force)
     {   
-        if(major != 0 && minor != 0)
-        {
-            if(major < m_isb_major)
-            {
-                SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
-                m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-                return IS_OP_OK;
-            }
-            else if(major == m_isb_major)
-            {
-                if(minor < m_isb_minor)
-                {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
-                    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-                    return IS_OP_OK;
-                }
-                else if(minor == m_isb_minor)
-                {
-                    SNPRINTF(message, 100, "(ISB) Not updating bootloader: file %c%c, device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
-                    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-                    return IS_OP_OK;
-                }
-                
-            }
-        }
-        else
+        if(major == 0 || minor == 0)
         {
             return IS_OP_ERROR;
         }
-    }
-    else
-    {
-        SNPRINTF(message, 100, "(ISB) Updating bootloader: file %c%c >> device %c%c", major + '0', minor, m_isb_major + '0', m_isb_minor);
-        m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+
+        if(major < m_isb_major ||
+          (major == m_isb_major && minor <= m_isb_minor))
+        {
+            SNPRINTF(message+n, sizeof(message)-n, "  No update.");
+            m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+            return IS_OP_OK;
+        }
     }
 
-    m_info_callback(this, "(ISB) Rebooting down into DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
+    SNPRINTF(message+n, sizeof(message)-n, "Update needed...");
+    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(ISB) Rebooting to DFU/SAMBA mode...", IS_LOG_LEVEL_INFO);
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interference on its ports.
