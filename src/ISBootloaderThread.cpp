@@ -370,7 +370,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // Run `mode_thread_serial_app` to put all APP devices into ISB mode
     ////////////////////////////////////////////////////////////////////////////
 
-    m_infoProgress(NULL, "Resetting devices into ISB mode... (5 seconds)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Resetting to ISB mode... (5 seconds)", IS_LOG_LEVEL_INFO);
 
     // Put all devices in the correct mode
     while(m_continue_update)
@@ -442,7 +442,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // Join and free
     ////////////////////////////////////////////////////////////////////////////
 
-    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Waiting for re-enumeration... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     // Join and free all mode threads
     while (m_continue_update)
@@ -485,7 +485,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // Run `get_device_isb_version_thread` to get version from ISB bootloaders
     ////////////////////////////////////////////////////////////////////////////
 
-    m_infoProgress(NULL, "Finding devices in ISB mode... (3 seconds)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Finding in ISB mode... (3 seconds)", IS_LOG_LEVEL_INFO);
 
     // Put all devices in the correct mode
     while(m_continue_update)
@@ -557,7 +557,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // Join threads
     ////////////////////////////////////////////////////////////////////////////
 
-    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Waiting for re-enumeration... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     // Join and free all mode threads
     while (m_continue_update)
@@ -658,7 +658,7 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    m_infoProgress(NULL, "Resetting devices into ISB mode... (5 seconds)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Resetting to ISB mode... (5 seconds)", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAMBA mode
@@ -723,7 +723,7 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    m_infoProgress(NULL, "Waiting for devices to re-enumerate... (5 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Waiting for re-enumeration... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     ////////////////////////////////////////////////////////////////////////////
     // Join and free 
@@ -771,7 +771,7 @@ is_operation_result cISBootloaderThread::update(
     m_timeStart = current_timeMs();
     uint32_t timeoutLong = current_timeMs();
 
-    m_infoProgress(NULL, "Updating devices... (60 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Updating... (60 seconds max.)", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `update_thread_serial` to update devices
@@ -871,7 +871,7 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    m_infoProgress(NULL, "Resetting devices into final mode...", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Resetting to APP mode...", IS_LOG_LEVEL_INFO);
     
     // Reset all serial devices up a level into APP or ISB mode
     for (size_t i = 0; i < ctx.size(); i++)
