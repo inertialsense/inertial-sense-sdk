@@ -871,7 +871,7 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    m_infoProgress(NULL, "Resetting to app mode...", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Resetting to APP mode...", IS_LOG_LEVEL_INFO);
     
     // Reset all serial devices up a level into APP or ISB mode
     for (size_t i = 0; i < ctx.size(); i++)
