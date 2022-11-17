@@ -2,7 +2,7 @@
 // #include "IS_internal.h"
 
 // support types
-PYBIND11_NUMPY_DTYPE(gps_sat_sv_t, gnssId, svId, cno, elev, azim, prRes, flags); 
+PYBIND11_NUMPY_DTYPE(gps_sat_sv_t, gnssId, svId, cno, elev, azim, flags); 
 PYBIND11_NUMPY_DTYPE(sensors_imu_w_temp_t, pqr, acc, temp);
 PYBIND11_NUMPY_DTYPE(sensors_mag_t, mag);
 PYBIND11_NUMPY_DTYPE(rtos_task_t, name, priority, stackUnused, periodMs, runTimeUs, maxRunTimeUs, averageRunTimeUs, gapCount, cpuUsage, handle);
@@ -73,7 +73,6 @@ PYBIND11_NUMPY_DTYPE(debug_array_t, i, f, lf);
 PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 // PYBIND11_NUMPY_DTYPE(imu_mag_t, imu, mag);
 // PYBIND11_NUMPY_DTYPE(pimu_mag_t, pimu, mag);
-// PYBIND11_NUMPY_DTYPE(pos_measurement_t, timeOfWeek, ecef, psi, accuracyCovUD);
 // PYBIND11_NUMPY_DTYPE(can_config_t, can_period_mult, can_transmit_address, can_baudrate_kbps, can_receive_address);
 
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);

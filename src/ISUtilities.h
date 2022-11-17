@@ -221,11 +221,7 @@ int32_t convertGpsToMjd(int32_t gpsWeek, int32_t gpsSeconds);
 void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day);
 void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds);
 uint32_t dateToWeekDay(uint32_t ul_year, uint32_t ul_month, uint32_t ul_day);
-
-gen_1axis_sensor_t gen1AxisSensorData(double time, const float val);
-gen_3axis_sensor_t gen3AxisSensorData(double time, const float val[3]);
-gen_dual_3axis_sensor_t genDual3AxisSensorData(double time, const float val1[3], const float val2[3]);
-gen_3axis_sensord_t gen3AxisSensorDataD(double time, const double val[3]);
+=
 
 #ifdef __cplusplus
 } // extern C

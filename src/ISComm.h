@@ -60,7 +60,6 @@ extern "C" {
 #define _DID_MAGNETOMETER			DID_MAGNETOMETER		/** (see magnetometer_t) Magnetometer sensor output */
 #define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
 #define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */
-#define _DID_POS_MEASUREMENT		DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
 
 /** Utilities */
 #define _DID_DEV_INFO				DID_DEV_INFO			/** (see dev_info_t) Device information */
