@@ -2621,8 +2621,11 @@ typedef struct PACKED
 	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t				timeOfWeekMs;
 
-	/** Strobe input pin */
-	uint32_t				pin;
+	/** Strobe input pin (i.e. G1, G2, G5, or G9) */
+	uint16_t				pin;
+
+	/** Strobe input caused by rising edge */
+	uint16_t				rising;
 
 	/** Strobe serial index number */
 	uint32_t				count;
