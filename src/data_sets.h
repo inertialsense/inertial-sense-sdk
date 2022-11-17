@@ -1209,8 +1209,8 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SENSOR_STATS                     = 3,
     SYS_CMD_ENABLE_RTOS_STATS                       = 4,
     SYS_CMD_ZERO_MOTION                             = 5,
-	SYS_CMD_REF_POINT_STATIONARY                    = 6,
-	SYS_CMD_REF_POINT_MOVING                        = 7,
+    SYS_CMD_REF_POINT_STATIONARY                    = 6,
+    SYS_CMD_REF_POINT_MOVING                        = 7,
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,
@@ -2622,13 +2622,13 @@ typedef struct PACKED
 	uint32_t				timeOfWeekMs;
 
 	/** Strobe input pin (i.e. G1, G2, G5, or G9) */
-	uint16_t				pin;
+	uint8_t					pin;
 
 	/** Strobe input caused by rising edge */
-	uint16_t				rising;
+	uint8_t					rising;
 
 	/** Strobe serial index number */
-	uint32_t				count;
+	uint16_t				count;
 } strobe_in_time_t;
 
 #define DEBUG_I_ARRAY_SIZE		9
