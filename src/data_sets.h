@@ -2159,6 +2159,8 @@ enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */
 	IO_CONFIG_STROBE_TRIGGER_HIGH               = (int)0x00000001,
+	IO_CONFIG_STROBE_TRIGGER_HIGH_AND_LOW       = (int)0x00000800,
+
 	// G1,G2 - STROBE, CAN, Ser2, I2C (future)
 	/** G1,G2 - STROBE input on G2 */
 	IO_CONFIG_G1G2_STROBE_INPUT_G2              = (int)0x00000002,
@@ -2211,7 +2213,7 @@ enum eIoConfig
 	/** G5,G8 - Default */
 	IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
 
-	IO_CONFIG_STROBE_TRIGGER_HIGH_AND_LOW       = (int)0x00000800,
+	//IO_CONFIG_STROBE_TRIGGER_HIGH_AND_LOW     = (int)0x00000800, 	listed above
 
 	/** Unused bits */
 	// IO_CONFIG_                               = (int)0x00001000,
