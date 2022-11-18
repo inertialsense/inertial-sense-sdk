@@ -1899,6 +1899,8 @@ enum eSysConfigBits
 
 	/** Use reference IMU in EKF instead of onboard IMU */
 	SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+	/** Reference point stationary on strobe input */
+	SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT	= (int)0x02000000,
 
 };
 
