@@ -209,8 +209,8 @@ enum eInsStatusFlags
 	/** Nav mode (set) = estimating velocity and position. AHRS mode (cleared) = NOT estimating velocity and position */
 	INS_STATUS_NAV_MODE							= (int)0x00001000,
 
-	/** User should not move (keep system motionless) to assist on-board processing. */
-	INS_STATUS_DO_NOT_MOVE						= (int)0x00002000,	
+	/** INS in stationary mode.  If initiated by zero velocity command, user should not move (keep system motionless) to assist on-board processing. */
+	INS_STATUS_STATIONARY_MODE					= (int)0x00002000,	
 	/** Velocity aided by GPS velocity */
 	INS_STATUS_GPS_AIDING_VEL                   = (int)0x00004000,
 	/** Vehicle kinematic calibration is good */
@@ -1219,6 +1219,8 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SENSOR_STATS                     = 3,
     SYS_CMD_ENABLE_RTOS_STATS                       = 4,
     SYS_CMD_ZERO_MOTION                             = 5,
+    SYS_CMD_REF_POINT_STATIONARY                    = 6,
+    SYS_CMD_REF_POINT_MOVING                        = 7,
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,
@@ -2167,6 +2169,8 @@ enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */
 	IO_CONFIG_STROBE_TRIGGER_HIGH               = (int)0x00000001,
+	IO_CONFIG_STROBE_TRIGGER_HIGH_AND_LOW       = (int)0x00000800,
+
 	// G1,G2 - STROBE, CAN, Ser2, I2C (future)
 	/** G1,G2 - STROBE input on G2 */
 	IO_CONFIG_G1G2_STROBE_INPUT_G2              = (int)0x00000002,
@@ -2219,7 +2223,10 @@ enum eIoConfig
 	/** G5,G8 - Default */
 	IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
 
+	//IO_CONFIG_STROBE_TRIGGER_HIGH_AND_LOW     = (int)0x00000800, 	listed above
+
 	/** Unused bits */
+	// IO_CONFIG_                               = (int)0x00001000,
 
 	/** External GPS TIMEPULSE source */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,	
@@ -2292,6 +2299,7 @@ enum eIoConfig
 	IO_CONFIG_IMU_3_DISABLE						= (int)0x40000000,
 
 	/** Unused bits */
+	// IO_CONFIG_                               = (int)0x80000000,
 };
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
@@ -2623,11 +2631,14 @@ typedef struct PACKED
 	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t				timeOfWeekMs;
 
-	/** Strobe input pin */
-	uint32_t				pin;
+	/** Strobe input pin (i.e. G1, G2, G5, or G9) */
+	uint8_t					pin;
+
+	/** Strobe input caused by rising edge */
+	uint8_t					rising;
 
 	/** Strobe serial index number */
-	uint32_t				count;
+	uint16_t				count;
 } strobe_in_time_t;
 
 #define DEBUG_I_ARRAY_SIZE		9
