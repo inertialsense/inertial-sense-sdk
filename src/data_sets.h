@@ -1899,6 +1899,8 @@ enum eSysConfigBits
 
 	/** Use reference IMU in EKF instead of onboard IMU */
 	SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+	/** Reference point stationary on strobe input */
+	SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT	= (int)0x02000000,
 
 };
 
@@ -2159,7 +2161,6 @@ enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */
 	IO_CONFIG_STROBE_TRIGGER_HIGH               = (int)0x00000001,
-	IO_CONFIG_STROBE_TRIGGER_HIGH_AND_LOW       = (int)0x00000800,
 
 	// G1,G2 - STROBE, CAN, Ser2, I2C (future)
 	/** G1,G2 - STROBE input on G2 */
@@ -2213,9 +2214,8 @@ enum eIoConfig
 	/** G5,G8 - Default */
 	IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
 
-	//IO_CONFIG_STROBE_TRIGGER_HIGH_AND_LOW     = (int)0x00000800, 	listed above
-
-	/** Unused bits */
+	/** G15 (GPS PPS) - STROBE */
+	IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
 	// IO_CONFIG_                               = (int)0x00001000,
 
 	/** External GPS TIMEPULSE source */
@@ -2622,10 +2622,7 @@ typedef struct PACKED
 	uint32_t				timeOfWeekMs;
 
 	/** Strobe input pin (i.e. G1, G2, G5, or G9) */
-	uint8_t					pin;
-
-	/** Strobe input caused by rising edge */
-	uint8_t					rising;
+	uint16_t				pin;
 
 	/** Strobe serial index number */
 	uint16_t				count;
