@@ -158,7 +158,7 @@ Packet Overview
 
 Byte
 0			Packet start byte
-1			Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE)
+1			Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE0)
 2			Packet counter (for ACK and retry)
 3			Packet flags
 
