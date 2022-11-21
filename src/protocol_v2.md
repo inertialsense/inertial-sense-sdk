@@ -127,8 +127,8 @@ enum ePktHdrFlagsV2		// V1 flags are re-used for new functions
 
 ```C
 /**
- * Data         | Checksum (custom)	| Stop byte (0xFE)
- * n*8 bits     | 24 bits			| 8 bits
+ * DID		| Length	| Offset  	| Payload 	| Checksum (custom)	| Stop byte (0xFE)
+ * 32 bits	| 32 bits 	| 32 bits	| n*8 bits  | 24 bits			| 8 bits
  * 
  */
 
