@@ -382,9 +382,11 @@ class logPlot:
 
         for d in self.active_devs:
             # Adjust data for attitude bias
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            if np.shape(time)[0] == 0:
+                continue
             quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
             euler = quat2euler(quat)
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0,0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1,0].plot(time, euler[:,1]*RAD2DEG)
             ax[2,0].plot(time, euler[:,2]*RAD2DEG)
@@ -486,6 +488,9 @@ class logPlot:
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00001000) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Nav Mode')
+                cnt += 1
+                ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00002000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Stationary')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x000F0000) >> 16) / 4.0)
                 if r: ax.text(p1, -cnt * 1.5, 'Solution Status')
