@@ -1365,8 +1365,8 @@ static void PopulateStrobeInTimeMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "pin", pin, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "count", count, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pin", pin, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "count", count, 0, DataTypeUInt16, uint16_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
