@@ -112,7 +112,7 @@ is_operation_result cISBootloaderSAMBA::reboot()
 
 is_operation_result cISBootloaderSAMBA::reboot_up()
 {
-    m_info_callback(this, "(SAMBA) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(SAM-BA) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
 
     // EEFC.FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
     if (write_word(0x400e0c04, 0x5a00010b) == IS_OP_OK)
@@ -134,7 +134,7 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
     uint8_t buf[SAMBA_PAGE_SIZE];
 
-    SAMBA_ERROR_CHECK(erase_flash(), "(SAMBA) Failed to erase flash memory");
+    SAMBA_ERROR_CHECK(erase_flash(), "(SAM-BA) Failed to erase flash memory");
 
     // try non-USB and then USB mode (0 and 1)
     for(int isUSB = 0; isUSB < 2; isUSB++)
@@ -155,7 +155,7 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
 
         if (file == 0)
         {
-            SAMBA_STATUS("(SAMBA) Unable to load bootloader file", IS_LOG_LEVEL_ERROR);
+            SAMBA_STATUS("(SAM-BA) Unable to load bootloader file", IS_LOG_LEVEL_ERROR);
             // serialPortClose(port);
             return IS_OP_ERROR;
         }
@@ -167,12 +167,12 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
 
         if (size != SAMBA_BOOTLOADER_SIZE_24K)
         {
-            SAMBA_STATUS("(SAMBA) Invalid or old (v5 or earlier) bootloader file", IS_LOG_LEVEL_ERROR);
+            SAMBA_STATUS("(SAM-BA) Invalid or old (v5 or earlier) bootloader file", IS_LOG_LEVEL_ERROR);
             // serialPortClose(port);
             return IS_OP_ERROR;
         }
 
-        if(isUSB == 0) SAMBA_STATUS("(SAMBA) Writing ISB bootloader...", IS_LOG_LEVEL_INFO);
+        if(isUSB == 0) SAMBA_STATUS("(SAM-BA) Writing ISB bootloader...", IS_LOG_LEVEL_INFO);
 
         uint32_t offset = 0;
         size_t len;
@@ -206,7 +206,7 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
 
 is_operation_result cISBootloaderSAMBA::erase_flash()
 {
-    SAMBA_STATUS("(SAMBA) Erasing flash memory...", IS_LOG_LEVEL_INFO);
+    SAMBA_STATUS("(SAM-BA) Erasing flash memory...", IS_LOG_LEVEL_INFO);
     
     // Erase 3 sectors of 16 pares each (8K)
     if (write_word(0x400e0c04, 0x5a000207) == IS_OP_OK)
@@ -409,7 +409,7 @@ is_operation_result cISBootloaderSAMBA::verify_image(std::string filename)
 
     serialPortFlush(m_port);
 
-    SAMBA_STATUS("(SAMBA) Verifying ISB bootloader...", IS_LOG_LEVEL_INFO);
+    SAMBA_STATUS("(SAM-BA) Verifying ISB bootloader...", IS_LOG_LEVEL_INFO);
 
     for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE_24K); )
     {

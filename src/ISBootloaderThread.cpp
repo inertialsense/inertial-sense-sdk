@@ -268,7 +268,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     }
     else if(result == IS_OP_CLOSED)
     {
-        // Device is resetting (may have updated if it was a SAMBA device)
+        // Device is resetting (may have updated if it was a SAM-BA device)
         m_serial_thread_mutex.lock();
         thread_info->reuse_port = true;
         m_serial_thread_mutex.unlock();
@@ -661,7 +661,7 @@ is_operation_result cISBootloaderThread::update(
     m_infoProgress(NULL, "Resetting to ISB mode... (5 seconds)", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
-    // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAMBA mode
+    // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAM-BA mode
     // 
     // Only happens if 
     ////////////////////////////////////////////////////////////////////////////
