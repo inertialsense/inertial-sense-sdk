@@ -554,7 +554,7 @@ is_operation_result cISBootloaderBase::update_device
             } 
             else
             {
-                statusfn(NULL, "    | (SAMBA) Firmware image incompatible with SAMBA device", IS_LOG_LEVEL_ERROR);
+                statusfn(NULL, "    | (SAM-BA) Firmware image incompatible with SAM-BA device", IS_LOG_LEVEL_ERROR);
                 delete obj;
                 return IS_OP_CANCELLED;
             }
