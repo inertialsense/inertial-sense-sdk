@@ -211,6 +211,7 @@ is_operation_result cISBootloaderBase::mode_device_app
             strncpy((obj)->m_app.enable_command, "EBLE", 5);
             (obj)->reboot_down();
             delete obj;
+            SLEEP_MS(3000);     // Delay 3 seconds to avoid port being re-used
             return IS_OP_CLOSED;
         }
         else if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
@@ -219,6 +220,7 @@ is_operation_result cISBootloaderBase::mode_device_app
             strncpy((obj)->m_app.enable_command, "BLEN", 5);
             (obj)->reboot_down();
             delete obj;
+            SLEEP_MS(3000);
             return IS_OP_CLOSED;
         }
         else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
@@ -227,24 +229,13 @@ is_operation_result cISBootloaderBase::mode_device_app
             strncpy((obj)->m_app.enable_command, "BLEN", 5);
             (obj)->reboot_down();
             delete obj;
+            SLEEP_MS(3000);
             return IS_OP_CLOSED;
         }
-        else
-        {
-            strncpy((obj)->m_app.enable_command, "BLEN", 5);
-            (obj)->reboot_down();
-            delete obj;
-            return IS_OP_CLOSED;
-        }
+    }
         
-        delete obj;
-        return IS_OP_CANCELLED;
-    }
-    else
-    {
-        delete obj;
-    }
-
+    delete obj;
+    SLEEP_MS(3000);
     return IS_OP_OK;
 }
 
@@ -347,10 +338,10 @@ is_operation_result cISBootloaderBase::mode_device_isb
 
     uint32_t device = IS_IMAGE_SIGN_NONE;
     uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
-    //uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path, &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
+    uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path, &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
     uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
     uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path, &major, &minor) & IS_IMAGE_SIGN_ISB_STM32L4;
-    //uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
+    uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path, &major, &minor)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
@@ -362,7 +353,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
     }
     else if(device)
     {   // Firmware for a device must be specified to update its bootloader
-        if ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2)
+        if (((device & IS_IMAGE_SIGN_ISB) & fw_EVB_2) && (device & IS_IMAGE_SIGN_ISB) & bl_EVB_2)
         {
             (obj)->m_filename = filenames.bl_EVB_2.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);
@@ -394,7 +385,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
                 return IS_OP_CLOSED;
             }
         }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
+        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3 && ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_3))
         {
             (obj)->m_filename = filenames.bl_uINS_3.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);
@@ -481,7 +472,8 @@ is_operation_result cISBootloaderBase::update_device
     pfnBootloadProgress verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
-    cISBootloaderBase** new_context
+    cISBootloaderBase** new_context,
+    uint32_t baud
 )
 {
     cISBootloaderBase* obj;
@@ -498,7 +490,7 @@ is_operation_result cISBootloaderBase::update_device
     {
         obj = new cISBootloaderSAMBA(updateProgress, verifyProgress, statusfn, handle);
         obj->m_port_name = std::string(handle->port);
-        device = (obj)->check_is_compatible();
+        device = obj->check_is_compatible();
         if (device)
         {
             if((device & IS_IMAGE_SIGN_SAMBA) & bl_EVB_2)
@@ -560,6 +552,16 @@ is_operation_result cISBootloaderBase::update_device
         {
             delete obj;
         }
+    }
+
+    char* name = handle->port;
+    serialPortClose(handle);
+    if (!serialPortOpenRetry(handle, name, baud, 1))
+    {
+        char msg[100] = { 0 };
+        SNPRINTF(msg, 100, "    | (%s) Unable to open port at %d baud", handle->port, baud);
+        statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+        return IS_OP_ERROR;
     }
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);

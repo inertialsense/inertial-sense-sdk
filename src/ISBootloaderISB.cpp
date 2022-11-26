@@ -139,6 +139,7 @@ is_operation_result cISBootloaderISB::reboot_up()
 
     // send the "reboot to program mode" command and the device should start in program mode
     serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
+    SLEEP_MS(1000);
     serialPortClose(m_port);
     return IS_OP_OK;
 }
@@ -146,7 +147,7 @@ is_operation_result cISBootloaderISB::reboot_up()
 is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, bool force)
 {
     char message[100] = {0};
-    int n = SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c.  ", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
+    int n = SNPRINTF(message, 100, "(ISB) Bootloader version: file %c%c, device %c%c. ", major + '0', (minor ? minor : '0'), m_isb_major + '0', m_isb_minor);
 
     if(!force)
     {   
@@ -158,7 +159,7 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
         if(major < m_isb_major ||
           (major == m_isb_major && minor <= m_isb_minor))
         {
-            SNPRINTF(message+n, sizeof(message)-n, "  No update.");
+            SNPRINTF(message+n, sizeof(message)-n, "No update.");
             m_info_callback(this, message, IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }

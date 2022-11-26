@@ -95,7 +95,9 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                 case DID_EVB_DEV_INFO:
                     evb_dev_info = (dev_info_t*)comm.dataPtr;
                     if (evb_dev_info->hardwareVer[0] == 2)
-                    {   /** EVB-2 */
+                    {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
+                        valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+                        valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
                         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
                     }
