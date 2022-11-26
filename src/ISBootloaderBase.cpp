@@ -232,20 +232,9 @@ is_operation_result cISBootloaderBase::mode_device_app
             SLEEP_MS(3000);
             return IS_OP_CLOSED;
         }
-        else
-        {
-            strncpy((obj)->m_app.enable_command, "BLEN", 5);
-            (obj)->reboot_down();
-            delete obj;
-            SLEEP_MS(3000);
-            return IS_OP_CLOSED;
-        }
     }
-    else
-    {
-        delete obj;
-    }
-
+        
+    delete obj;
     SLEEP_MS(3000);
     return IS_OP_OK;
 }
