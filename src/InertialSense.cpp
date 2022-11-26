@@ -761,6 +761,8 @@ is_operation_result InertialSense::BootloadFile(
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
 	#endif
+
+	printf("\n\r");
 	
 	ISBootloader::firmwares_t files;
 	files.fw_uINS_3.path = fileName;
@@ -784,6 +786,8 @@ is_operation_result InertialSense::BootloadFile(
 
 	cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 	
+	printf("\n\r");
+
 	#if !PLATFORM_IS_WINDOWS
 	fputs("\e[?25h", stdout);	// Turn cursor back on
 	#endif

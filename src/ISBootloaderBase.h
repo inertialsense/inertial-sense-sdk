@@ -263,7 +263,8 @@ public:
         pfnBootloadProgress verifyProgress,
         std::vector<cISBootloaderBase*>& contexts,
         std::mutex* addMutex,
-        cISBootloaderBase** new_context
+        cISBootloaderBase** new_context,
+        uint32_t baud = BAUDRATE_921600
     );
     static is_operation_result update_device(
         firmwares_t filenames,
