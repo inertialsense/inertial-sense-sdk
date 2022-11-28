@@ -2907,6 +2907,8 @@ typedef struct
 } prcopt_t;
 typedef prcopt_t gps_rtk_opt_t;
 
+#ifndef GPX_1
+
 /** Raw satellite observation data */
 typedef struct PACKED
 {
@@ -3224,6 +3226,8 @@ typedef struct
 	alm_t alm;			/* almanac */
 } ion_model_utc_alm_t;
 
+#endif	// GPX-1
+
 /** RTK solution status */
 typedef enum
 {
@@ -3410,8 +3414,11 @@ typedef enum
 	raw_data_type_rtk_solution = 123
 } eRawDataType;
 
+
+
 typedef union PACKED
 {   
+#ifndef GPX_1
     /** Satellite observation data */
     obsd_t              obs[MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE];
     
@@ -3430,8 +3437,11 @@ typedef union PACKED
     /** Ionosphere model and UTC parameters */
     ion_model_utc_alm_t ion;
 
+
     /** Byte buffer */
     uint8_t             buf[GPS_RAW_MESSAGE_BUF_SIZE];
+
+#endif
 } uGpsRawData;
 
 /** Message wrapper for DID_GPS1_RAW, DID_GPS2_RAW, and DID_GPS_BASE_RAW.  The contents of data can vary for this message and are determined by `dataType` field. */
@@ -3956,8 +3966,21 @@ typedef enum
 	TASK_TIMER,
 
 	/** Number of RTOS tasks */
-	UINS_RTOS_NUM_TASKS                 // Keep last
+	UINS_RTOS_NUM_TASKS,                 // Keep last
 } eRtosTask;
+
+/** RTOS tasks */
+typedef enum
+{
+	/** Task 0: Sample	*/
+	GPX_TASK_COMM = 0,
+
+	/** Task 1: Nav */
+	GPX_TASK_NAV,
+
+	/** Number of RTOS tasks */
+	GPX_RTOS_NUM_TASKS,					// Keep last
+} eGpxRtosTask;
 
 /** EVB RTOS tasks */
 typedef enum
@@ -4025,7 +4048,6 @@ typedef struct PACKED
 
 	/** Local time when task loop started (following delay) */
 	uint32_t                profileStartTimeUs;
-	
 } rtos_task_t;
 
 /** (DID_RTOS_INFO) */
@@ -4313,6 +4335,8 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds);
 
 
+#ifndef GPX_1
+
 #ifndef RTKLIB_H
 #define SYS_NONE    0x00                /* navigation system: none */
 #define SYS_GPS     0x01                /* navigation system: GPS */
@@ -4498,6 +4522,9 @@ int ubxSys(int gnssID);
 #endif
 
 #endif
+
+#endif
+
 /*
 Convert satellite constelation and prn/slot number to satellite number
 

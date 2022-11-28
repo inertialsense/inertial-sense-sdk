@@ -20,7 +20,7 @@ extern "C" {
 #if defined(PLATFORM_IS_EVB_2) && PLATFORM_IS_EVB_2
 #define RTOS_NUM_TASKS	(EVB_RTOS_NUM_TASKS)
 #elif defined (GPX_1)
-#include "gpx_data_sets.h"
+//#include "gpx_data_sets.h"
 #define RTOS_NUM_TASKS	(GPX_RTOS_NUM_TASKS)
 #else
 #define RTOS_NUM_TASKS	(UINS_RTOS_NUM_TASKS)
