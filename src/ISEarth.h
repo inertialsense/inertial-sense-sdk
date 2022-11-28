@@ -196,6 +196,25 @@ double meridonalRadius(const double lat);
  */
 void rangeBearing_from_lla(const ixVector3d lla1, const ixVector3d lla2, ixVector2d rb);
 
+/**
+ * @brief Compute rotation matrix from NED to ECEF
+ *
+ * @param latlon                        latitute/longitude (rad) (2x1)
+ * @param R                             rotation matrix (3x3)
+ */
+void rotMat_ned2ecef(const double *latlon, float *R);
+
+/**
+ * @brief Convert ground speed and heading to ECEF velocity
+ *
+ * @param gndSpeed                      m/s
+ * @param hdg                           rad
+ * @param vertVel                       m/s
+ * @param lla                           rad (can just pass lat/lon, alt not required)
+ * @param velEcef                       m/s
+ */
+void gndSpeedToVelEcef(const float gndSpeed, const float hdg, const float vertVel, const ixVector3d lla, ixVector3 velEcef);
+
 #ifdef __cplusplus
 }
 #endif

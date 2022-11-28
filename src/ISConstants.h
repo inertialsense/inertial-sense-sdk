@@ -556,6 +556,9 @@ extern void vPortFree(void* pv);
 #define C_RAD2DEG       57.295779513082320876798154814105
 #define C_RAD2DEG_F     57.295779513082320876798154814105f
 
+#define C_KMPH2MPS      0.277777777777777777
+#define C_KMPH2MPS_F    0.277777777777777777f
+
 #define C_MM2M           0.001
 #define C_MM2M_F         0.001f
 #define C_M2MM        1000.0
