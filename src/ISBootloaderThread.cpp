@@ -752,7 +752,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
-    m_infoProgress(NULL, "Updating... (60 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Updating... (120 seconds max.)", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
@@ -856,7 +856,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Timeout after 60 seconds
-        if (current_timeMs() - timeoutLong > 60000) 
+        if (current_timeMs() - timeoutLong > 120000) 
         {
             m_continue_update = false;
         }
