@@ -353,7 +353,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
     }
     else if(device)
     {   // Firmware for a device must be specified to update its bootloader
-        if (((device & IS_IMAGE_SIGN_ISB) & fw_EVB_2) && (device & IS_IMAGE_SIGN_ISB) & bl_EVB_2)
+        if ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2) // & ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2))
         {
             (obj)->m_filename = filenames.bl_EVB_2.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);
@@ -369,7 +369,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
                 return IS_OP_CLOSED;
             }
         }
-        else if (((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) && ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5))
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) // && ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5))
         {
             (obj)->m_filename = filenames.bl_IMX_5.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);
@@ -385,7 +385,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
                 return IS_OP_CLOSED;
             }
         }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3 && ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_3))
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3) // && ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3))
         {
             (obj)->m_filename = filenames.bl_uINS_3.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);

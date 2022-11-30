@@ -175,6 +175,8 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
     // restart bootloader assist command
     serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15);
 
+    serialPortSleep(m_port, 500);
+
     return IS_OP_OK;
 }
 
