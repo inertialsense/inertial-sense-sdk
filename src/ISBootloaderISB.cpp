@@ -112,7 +112,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     
     m_isb_major = buf[2];
     m_isb_minor = (char)buf[3];
-//    bool rom_available = buf[4];
+    bool rom_available = buf[4];
     uint8_t processor = 0xFF;
     m_isb_props.is_evb = false;
     m_sn = 0;
@@ -129,18 +129,18 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         if(processor == IS_PROCESSOR_SAMx70)
         {   
             valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
-            valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
         }
         else if(processor == IS_PROCESSOR_STM32L4)
         {
             valid_signatures |= IS_IMAGE_SIGN_UINS_5;
-            valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
         }
     }
     else
     {
         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
-        valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+        if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
     }
 
     return (eImageSignature)valid_signatures;

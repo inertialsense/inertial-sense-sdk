@@ -405,6 +405,12 @@ is_operation_result cISBootloaderBase::mode_device_isb
                 return IS_OP_CLOSED;
             }
         }
+        else if (bl_uINS_3 | bl_IMX_5 | bl_EVB_2)
+        {
+            (obj)->m_info_callback(obj, "(ISB) Bootloader upgrade not supported on this port. Trying APP update...", IS_LOG_LEVEL_INFO);
+            delete obj;
+            return IS_OP_CLOSED;
+        }
         else
         {
             delete obj;
