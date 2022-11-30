@@ -119,7 +119,7 @@ is_operation_result cISBootloaderSAMBA::reboot_up()
         
         reboot();
 
-        serialPortSleep(m_port, 2000);
+        serialPortSleep(m_port, 500);
 
         return IS_OP_OK;
     }

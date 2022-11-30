@@ -233,7 +233,11 @@ is_operation_result cISBootloaderBase::mode_device_app
             return IS_OP_CLOSED;
         }
     }
-        
+
+    char msg[100] = { 0 };
+    SNPRINTF(msg, 100, "    | (%s) Incompatible device.", handle->port);
+    statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+
     delete obj;
     SLEEP_MS(3000);
     return IS_OP_OK;
@@ -567,7 +571,15 @@ is_operation_result cISBootloaderBase::update_device
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
     (obj)->m_port_name = std::string(handle->port);
     device = (obj)->check_is_compatible(); 
-    if(device == IS_IMAGE_SIGN_ERROR)
+    if (device == IS_IMAGE_SIGN_NONE)
+    {
+        delete obj;
+        char msg[100] = { 0 };
+        SNPRINTF(msg, 100, "    | (%s) Device response missing.", handle->port);
+        statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+        return IS_OP_ERROR;
+    }
+    else if(device == IS_IMAGE_SIGN_ERROR)
     {
         delete obj;
     }
