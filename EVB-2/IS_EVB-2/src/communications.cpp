@@ -599,7 +599,7 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
     
 	// Enable flash write
 	nvr_flash_config_write_needed();
-	nvr_flash_config_write_enable(true);
+	nvr_flash_config_write_enable();
 }
 
 
@@ -624,6 +624,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 			case SYS_CMD_MANF_UNLOCK:				// Unlock process for chip erase
 				manfUnlock = true;
+				g_status.evbStatus |= EVB_STATUS_MANF_UNLOCKED;
 				break;
 
 			case SYS_CMD_MANF_CHIP_ERASE:			// chip erase and reboot - do NOT reset calibration!
