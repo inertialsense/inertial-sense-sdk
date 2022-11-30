@@ -3588,6 +3588,9 @@ typedef enum
 	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
     EVB_STATUS_FLASH_WRITE_IN_PROGRESS      = 0x01000000,
 
+	/** Manufacturing unlocked */
+    EVB_STATUS_MANF_UNLOCKED                = 0x02000000,
+
 } eEvbStatus;
 
 /** EVB-2 communications ports. */
