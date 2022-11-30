@@ -373,15 +373,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    // No active ports
-    if (ports.size() <= ports_user_ignore.size())
-    {
-        m_update_mutex.unlock();
-        m_infoProgress(NULL, "No ports selected to update", IS_LOG_LEVEL_INFO);
-        if (m_waitAction) m_waitAction();     // Final UI update
-        return updatesPending;
-    }
-
     m_infoProgress(NULL, "Initializing devices for update...", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
@@ -655,22 +646,6 @@ is_operation_result cISBootloaderThread::update(
 
     cISSerialPort::GetComPorts(ports);
 
-    // On non-Windows systems, try to interpret each user-specified port as a symlink and find what it is pointing to
-#if !PLATFORM_IS_WINDOWS
-    for(int k = 0; k < comPorts.size(); k++)
-    {
-        char buf[PATH_MAX];
-        int newsize = readlink(comPorts[k].c_str(), buf, sizeof(buf)-1);
-        if(newsize < 0)
-        {
-            continue;
-        }
-
-        buf[newsize] = '\0';
-        comPorts[k] = string(buf);
-    }
-#endif
-
     // Get the list of ports to ignore during the bootloading process
     sort(ports.begin(), ports.end());
     sort(comPorts.begin(), comPorts.end());
@@ -681,15 +656,6 @@ is_operation_result cISBootloaderThread::update(
 
     m_continue_update = true;
     m_timeStart = current_timeMs();
-
-    // No active ports
-    if (ports.size() <= ports_user_ignore.size())
-    {
-        m_update_mutex.unlock();
-        m_infoProgress(NULL, "No ports selected to update", IS_LOG_LEVEL_INFO);
-        if (m_waitAction) m_waitAction();     // Final UI update
-        return IS_OP_OK;
-    }
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAM-BA mode
