@@ -122,9 +122,17 @@ class logPlot:
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS1_POS, 'lla'))
-                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS')
+                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS1')
                 ax[1].plot(timeGPS, nedGps[:, 1])
                 ax[2].plot(timeGPS, nedGps[:, 2])
+
+            if(np.shape(self.active_devs)[0]==1):
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS2_POS, 'lla'))
+                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS2')
+                ax[1].plot(timeGPS, nedGps[:, 1])
+                ax[2].plot(timeGPS, nedGps[:, 2])
+
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -166,8 +174,10 @@ class logPlot:
                 self.drawNEDMapArrow(ax, ned, euler[:, 2])
 
                 nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS1_POS, 'lla'))
-                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS')
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS1')
 
+                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS2_POS, 'lla'))
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS2')
 
         ax.set_aspect('equal', 'datalim')
         ax.legend(ncol=2)
@@ -189,9 +199,14 @@ class logPlot:
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-                ax[0].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS')
+                ax[0].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS1')
                 ax[1].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 1])
-                ax[2].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 2], label='GPS')
+                ax[2].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 2], label='GPS1')
+
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+                ax[0].plot(timeGPS, self.getData(d, DID_GPS2_POS, 'lla')[:, 0], label='GPS2')
+                ax[1].plot(timeGPS, self.getData(d, DID_GPS2_POS, 'lla')[:, 1])
+                ax[2].plot(timeGPS, self.getData(d, DID_GPS2_POS, 'lla')[:, 2], label='GPS2')
 
                 timeBaro = getTimeFromTow(self.getData(d, DID_BAROMETER, 'time')+ self.getData(d, DID_GPS1_POS, 'towOffset')[-1])
                 ax[2].plot(timeBaro, self.getData(d, DID_BAROMETER, 'mslBar'), label='Baro')
@@ -212,9 +227,15 @@ class logPlot:
         fig.suptitle('GPS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            ax[0].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,0], label=self.log.serials[d])
+            ax[0].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,0], label='GPS1')
             ax[1].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,1])
             ax[2].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,2])
+
+            time = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+            ax[0].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,0], label='GPS2')
+            ax[1].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,1])
+            ax[2].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,2])
+
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)
