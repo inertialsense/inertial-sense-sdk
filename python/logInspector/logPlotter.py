@@ -12,6 +12,7 @@ import yaml
 import os
 from os.path import expanduser
 from inertialsense_math.pose import *
+from datetime import date
 
 BLACK = r"\u001b[30m"
 RED = r"\u001b[31m"
@@ -1154,6 +1155,22 @@ class logPlot:
                 ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'pqrIMU')
 
+        with open(self.log.directory + '/allan_variance_pqr.csv', 'w') as f:
+            f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R,BI-X\n')
+            f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
+            today = date.today()
+            for d in self.active_devs:
+                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
+                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
+                for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                    if pqr != [] and n<pqrCount:
+                        if pqr.any(None):
+                            for i in range(3):
+                                f.write('%f,' % (sumBI[i][n][d]))
+                            for i in range(3):
+                                f.write('%f,' % (sumARW[i][n][d]))
+                f.write('\n')
+
     def allanVarianceAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1216,6 +1233,22 @@ class logPlot:
                 ax[d][i].grid(True, which='both')
                 ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'accIMU')        
+
+        with open(self.log.directory + '/allan_variance_acc.csv', 'w') as f:
+            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,ARW-X,ARW-Y,ARW-Z\n')
+            f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
+            today = date.today()
+            for d in self.active_devs:
+                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
+                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
+                for n, acc in enumerate([ acc0, acc1, acc2 ]):
+                    if acc != [] and n<accCount:
+                        if acc.any(None):
+                            for i in range(3):
+                                f.write('%f,' % (sumBI[i][n][d]))
+                            for i in range(3):
+                                f.write('%f,' % (sumRW[i][n][d]))
+                f.write('\n')
 
     def accelPSD(self, fig=None):
         if fig is None:
