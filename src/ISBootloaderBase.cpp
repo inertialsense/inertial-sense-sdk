@@ -233,7 +233,11 @@ is_operation_result cISBootloaderBase::mode_device_app
             return IS_OP_CLOSED;
         }
     }
-        
+
+    char msg[100] = { 0 };
+    SNPRINTF(msg, 100, "    | (%s) Incompatible device.", handle->port);
+    statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+
     delete obj;
     SLEEP_MS(3000);
     return IS_OP_OK;
@@ -353,7 +357,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
     }
     else if(device)
     {   // Firmware for a device must be specified to update its bootloader
-        if (((device & IS_IMAGE_SIGN_ISB) & fw_EVB_2) && (device & IS_IMAGE_SIGN_ISB) & bl_EVB_2)
+        if ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2) // & ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2))
         {
             (obj)->m_filename = filenames.bl_EVB_2.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);
@@ -369,7 +373,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
                 return IS_OP_CLOSED;
             }
         }
-        else if (((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) && ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5))
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) // && ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5))
         {
             (obj)->m_filename = filenames.bl_IMX_5.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);
@@ -385,7 +389,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
                 return IS_OP_CLOSED;
             }
         }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3 && ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_3))
+        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3) // && ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3))
         {
             (obj)->m_filename = filenames.bl_uINS_3.path;
             is_operation_result op = (obj)->reboot_down(major, minor, force);
@@ -400,6 +404,12 @@ is_operation_result cISBootloaderBase::mode_device_isb
                 delete obj;
                 return IS_OP_CLOSED;
             }
+        }
+        else if (bl_uINS_3 | bl_IMX_5 | bl_EVB_2)
+        {
+            (obj)->m_info_callback(obj, "(ISB) Bootloader upgrade not supported on this port. Trying APP update...", IS_LOG_LEVEL_INFO);
+            delete obj;
+            return IS_OP_CLOSED;
         }
         else
         {
@@ -567,7 +577,15 @@ is_operation_result cISBootloaderBase::update_device
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
     (obj)->m_port_name = std::string(handle->port);
     device = (obj)->check_is_compatible(); 
-    if(device == IS_IMAGE_SIGN_ERROR)
+    if (device == IS_IMAGE_SIGN_NONE)
+    {
+        delete obj;
+        char msg[100] = { 0 };
+        SNPRINTF(msg, 100, "    | (%s) Device response missing.", handle->port);
+        statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+        return IS_OP_ERROR;
+    }
+    else if(device == IS_IMAGE_SIGN_ERROR)
     {
         delete obj;
     }

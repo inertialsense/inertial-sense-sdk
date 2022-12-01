@@ -36,7 +36,7 @@ std::mutex cISBootloaderISB::rst_serial_list_mutex;
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
 
-#define BOOTLOADER_RETRIES          10
+#define BOOTLOADER_RETRIES          100
 #define BOOTLOADER_RESPONSE_DELAY   10
 #define BOOTLOADER_REFRESH_DELAY    500
 #define MAX_VERIFY_CHUNK_SIZE       1024
@@ -61,9 +61,12 @@ is_operation_result cISBootloaderISB::match_test(void* param)
 eImageSignature cISBootloaderISB::check_is_compatible()
 {
     serialPortFlush(m_port);
-    // if(
-        sync(m_port); 
-        // != IS_OP_OK)
+    //if (
+    sync(m_port);
+            //!= IS_OP_OK)
+    //{
+        //return IS_IMAGE_SIGN_ERROR;
+    //}
     // {
     //     for(int i = 0; i < 10; i++)
     //     {
@@ -81,25 +84,35 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     SLEEP_MS(100);
 
-	// Send command
-    serialPortFlush(m_port);
-	serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
-
     uint8_t buf[14] = { 0 };
+    int count = 0;
 
-    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-	int count = serialPortReadTimeout(m_port, buf, 14, 100);
+    for (int retry=0;; retry++)
+    {
+        // Send command
+        serialPortFlush(m_port);
+        serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
 
-    uint32_t valid_signatures = 0;
+        // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
+#define READ_DELAY_MS   500
+        count = serialPortReadTimeout(m_port, buf, 14, READ_DELAY_MS);
 
-    if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
-    {   // Bad read
-        return IS_IMAGE_SIGN_NONE;
+        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
+        {
+            break;
+        }
+
+        if (retry*READ_DELAY_MS > 4000)
+        {   // No response
+            return IS_IMAGE_SIGN_NONE;
+        }
     }
 
+    uint32_t valid_signatures = 0;
+    
     m_isb_major = buf[2];
     m_isb_minor = (char)buf[3];
-//    bool rom_available = buf[4];
+    bool rom_available = buf[4];
     uint8_t processor = 0xFF;
     m_isb_props.is_evb = false;
     m_sn = 0;
@@ -116,18 +129,18 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         if(processor == IS_PROCESSOR_SAMx70)
         {   
             valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
-            valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
         }
         else if(processor == IS_PROCESSOR_STM32L4)
         {
             valid_signatures |= IS_IMAGE_SIGN_UINS_5;
-            valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
         }
     }
     else
     {
         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
-        valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+        if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
     }
 
     return (eImageSignature)valid_signatures;
@@ -174,6 +187,8 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
 
     // restart bootloader assist command
     serialPortWrite(m_port, (unsigned char*)":020000040700F3", 15);
+
+    serialPortSleep(m_port, 500);
 
     return IS_OP_OK;
 }
@@ -284,6 +299,7 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
 {
     static const uint8_t handshakerChar = 'U';
 
+    // Bootloader sync requires at least 6 'U' characters to be sent every 10ms. 
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {

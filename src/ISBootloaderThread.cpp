@@ -26,6 +26,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <algorithm>
 
+#if !PLATFORM_IS_WINDOWS
+#include <unistd.h>
+#endif
+
 using namespace std;
 using namespace ISBootloader;
 
@@ -369,15 +373,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    // No active ports
-    if (ports.size() <= ports_user_ignore.size())
-    {
-        m_update_mutex.unlock();
-        m_infoProgress(NULL, "No ports selected to update", IS_LOG_LEVEL_INFO);
-        if (m_waitAction) m_waitAction();     // Final UI update
-        return updatesPending;
-    }
-
     m_infoProgress(NULL, "Initializing devices for update...", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
@@ -662,15 +657,6 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    // No active ports
-    if (ports.size() <= ports_user_ignore.size())
-    {
-        m_update_mutex.unlock();
-        m_infoProgress(NULL, "No ports selected to update", IS_LOG_LEVEL_INFO);
-        if (m_waitAction) m_waitAction();     // Final UI update
-        return IS_OP_OK;
-    }
-
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAM-BA mode
     ////////////////////////////////////////////////////////////////////////////
@@ -766,7 +752,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
-    m_infoProgress(NULL, "Updating... (60 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Updating... (120 seconds max.)", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
@@ -870,7 +856,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Timeout after 60 seconds
-        if (current_timeMs() - timeoutLong > 60000) 
+        if (current_timeMs() - timeoutLong > 120000) 
         {
             m_continue_update = false;
         }

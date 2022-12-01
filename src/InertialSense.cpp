@@ -742,6 +742,23 @@ is_operation_result InertialSense::BootloadFile(
 
 	cISSerialPort::GetComPorts(all_ports);
 
+	// On non-Windows systems, try to interpret each user-specified port as a symlink and find what it is pointing to
+    // TODO: This only works for "/dev/" ports
+#if !PLATFORM_IS_WINDOWS
+    for(int k = 0; k < comPorts.size(); k++)
+    {
+        char buf[PATH_MAX];
+        int newsize = readlink(comPorts[k].c_str(), buf, sizeof(buf)-1);
+        if(newsize < 0)
+        {
+            continue;
+        }
+
+        buf[newsize] = '\0';
+        comPorts[k] = "/dev/" + string(buf);
+    }
+#endif
+
 	// Get the list of ports to ignore during the bootloading process
 	sort(all_ports.begin(), all_ports.end());
 	sort(comPorts.begin(), comPorts.end());
