@@ -26,6 +26,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <algorithm>
 
+#if !PLATFORM_IS_WINDOWS
+#include <unistd.h>
+#endif
+
 using namespace std;
 using namespace ISBootloader;
 
@@ -62,6 +66,37 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
     cISBootloaderDFU::m_DFUmutex.lock();
 
+    m_libusb_thread_mutex.lock();
+    cISBootloaderDFU::list_devices(&dfu_list);
+    for (size_t i = 0; i < dfu_list.present; i++)
+    {	// Create contexts for devices in DFU mode
+        bool found = false;
+
+        for (size_t j = 0; j < ctx.size(); j++)
+        {
+            m_ctx_mutex.lock();
+            if (!(ctx[j]->is_serial_device()) && ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
+            {   // We found the device in the context list
+                found = true;
+                break;
+            }
+            m_ctx_mutex.unlock();
+        }
+
+        if (!found)
+        {   // If we didn't find the device
+            thread_libusb_t* new_thread = (thread_libusb_t*)malloc(sizeof(thread_libusb_t));
+            new_thread->ctx = NULL;
+            new_thread->done = false;
+            new_thread->handle = dfu_list.id[i].handle_libusb;
+            m_libusb_threads.push_back(new_thread);
+            m_libusb_threads[m_libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, m_libusb_threads[m_libusb_threads.size() - 1]);
+
+            m_libusb_devicesActive++;
+        }
+    }
+    m_libusb_thread_mutex.unlock();
+
     while(m_continue_update)
     {
         m_libusb_thread_mutex.lock();
@@ -79,36 +114,6 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
             if (!m_libusb_threads[l]->done)
             {
-                m_libusb_devicesActive++;
-            }
-        }
-
-        cISBootloaderDFU::list_devices(&dfu_list);  // TODO: Put this in a separate thread since it takes a long time
-
-        for (size_t i = 0; i < dfu_list.present; i++)
-        {	// Create contexts for devices in DFU mode
-            bool found = false;
-
-            for (size_t j = 0; j < ctx.size(); j++)
-            {
-                m_ctx_mutex.lock();
-                if (!(ctx[j]->is_serial_device()) && ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
-                {   // We found the device in the context list
-                    found = true;
-                    break;
-                }
-                m_ctx_mutex.unlock();
-            }
-
-            if (!found)
-            {   // If we didn't find the device
-                thread_libusb_t* new_thread = (thread_libusb_t*)malloc(sizeof(thread_libusb_t));
-                new_thread->ctx = NULL;
-                new_thread->done = false;
-                new_thread->handle = dfu_list.id[i].handle_libusb;
-                m_libusb_threads.push_back(new_thread);
-                m_libusb_threads[m_libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, m_libusb_threads[m_libusb_threads.size() - 1]);
-
                 m_libusb_devicesActive++;
             }
         }
@@ -153,7 +158,7 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
     serialPortClose(&port);
 
     m_serial_thread_mutex.lock();
-    thread_info->reuse_port = true;
+    thread_info->reuse_port = false;
     thread_info->done = true;
     m_serial_thread_mutex.unlock();
 }
@@ -242,8 +247,9 @@ void cISBootloaderThread::update_thread_serial(void* context)
     thread_info->reuse_port = false;
     m_serial_thread_mutex.unlock();
 
+    // Start at 115200 always, we will switch to user specified rate after we check for SAM-BA devices
     serialPortSetPort(&port, serial_name);
-    if (!serialPortOpenRetry(&port, serial_name, m_baudRate, 1))
+    if (!serialPortOpenRetry(&port, serial_name, BAUDRATE_115200, 1))
     {
         serialPortClose(&port);
         m_serial_thread_mutex.lock();
@@ -252,7 +258,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
         return;
     }
 
-    is_operation_result result = cISBootloaderBase::update_device(m_firmware, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    is_operation_result result = cISBootloaderBase::update_device(m_firmware, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context, m_baudRate);
 
     if (result == IS_OP_OK)
     {   
@@ -268,7 +274,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
     }
     else if(result == IS_OP_CLOSED)
     {
-        // Device is resetting (may have updated if it was a SAMBA device)
+        // Device is resetting (may have updated if it was a SAM-BA device)
         m_serial_thread_mutex.lock();
         thread_info->reuse_port = true;
         m_serial_thread_mutex.unlock();
@@ -348,8 +354,9 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_baudRate = baudRate;
     m_waitAction = waitAction;
 
-    vector<string> ports;                       // List of ports connected
+    vector<string> ports;                       // List of all ports connected, including ignored ports
     vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
+    vector<confirm_bootload_t> updatesPending;
 
     m_serial_threads.clear();
 
@@ -366,11 +373,11 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
+    m_infoProgress(NULL, "Initializing devices for update...", IS_LOG_LEVEL_INFO);
+
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_app` to put all APP devices into ISB mode
     ////////////////////////////////////////////////////////////////////////////
-
-    m_infoProgress(NULL, "Resetting to ISB mode... (5 seconds)", IS_LOG_LEVEL_INFO);
 
     // Put all devices in the correct mode
     while(m_continue_update)
@@ -426,13 +433,13 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             }
         }
 
-        m_serial_thread_mutex.unlock();
-
         // Break after 5 seconds
         if (current_timeMs() - m_timeStart > 5000) 
         {
             m_continue_update = false;
         }
+
+        m_serial_thread_mutex.unlock();
     }
 
     m_continue_update = true;
@@ -441,8 +448,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ////////////////////////////////////////////////////////////////////////////
     // Join and free
     ////////////////////////////////////////////////////////////////////////////
-
-    m_infoProgress(NULL, "Waiting for re-enumeration... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     // Join and free all mode threads
     while (m_continue_update)
@@ -484,8 +489,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ////////////////////////////////////////////////////////////////////////////
     // Run `get_device_isb_version_thread` to get version from ISB bootloaders
     ////////////////////////////////////////////////////////////////////////////
-
-    m_infoProgress(NULL, "Finding in ISB mode... (3 seconds)", IS_LOG_LEVEL_INFO);
 
     // Put all devices in the correct mode
     while(m_continue_update)
@@ -541,13 +544,13 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             }
         }
 
-        m_serial_thread_mutex.unlock();
-
-        // Break after 5 seconds
+        // Break after 3 seconds
         if (current_timeMs() - m_timeStart > 3000) 
         {
             m_continue_update = false;
         }
+
+        m_serial_thread_mutex.unlock();
     }
 
     m_continue_update = true;
@@ -556,8 +559,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ////////////////////////////////////////////////////////////////////////////
     // Join threads
     ////////////////////////////////////////////////////////////////////////////
-
-    m_infoProgress(NULL, "Waiting for re-enumeration... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     // Join and free all mode threads
     while (m_continue_update)
@@ -585,15 +586,13 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         SLEEP_MS(100);
 
         // Timeout after 5 seconds
-        if (current_timeMs() - m_timeStart > 5000) 
+        if (current_timeMs() - m_timeStart > 3000) 
         {
             m_continue_update = false;
         }
 
         m_serial_thread_mutex.unlock();
     }
-
-    vector<confirm_bootload_t> updatesPending;
 
     m_ctx_mutex.lock();
 
@@ -658,12 +657,8 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    m_infoProgress(NULL, "Resetting to ISB mode... (5 seconds)", IS_LOG_LEVEL_INFO);
-
     ////////////////////////////////////////////////////////////////////////////
-    // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAMBA mode
-    // 
-    // Only happens if 
+    // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAM-BA mode
     ////////////////////////////////////////////////////////////////////////////
 
     while(m_continue_update)
@@ -722,8 +717,6 @@ is_operation_result cISBootloaderThread::update(
 
     m_continue_update = true;
     m_timeStart = current_timeMs();
-
-    m_infoProgress(NULL, "Waiting for re-enumeration... (5 seconds max.)", IS_LOG_LEVEL_DEBUG);
     
     ////////////////////////////////////////////////////////////////////////////
     // Join and free 
@@ -759,6 +752,8 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
+    m_infoProgress(NULL, "Updating... (120 seconds max.)", IS_LOG_LEVEL_INFO);
+
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
     ////////////////////////////////////////////////////////////////////////////
@@ -770,8 +765,6 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
     uint32_t timeoutLong = current_timeMs();
-
-    m_infoProgress(NULL, "Updating... (60 seconds max.)", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `update_thread_serial` to update devices
@@ -863,15 +856,13 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Timeout after 60 seconds
-        if (current_timeMs() - timeoutLong > 60000) 
+        if (current_timeMs() - timeoutLong > 120000) 
         {
             m_continue_update = false;
         }
     }
 
     threadJoinAndFree(libusb_thread);
-
-    m_infoProgress(NULL, "Resetting to APP mode...", IS_LOG_LEVEL_INFO);
     
     // Reset all serial devices up a level into APP or ISB mode
     for (size_t i = 0; i < ctx.size(); i++)
@@ -893,7 +884,7 @@ is_operation_result cISBootloaderThread::update(
             serialPortClose(&port);
         }
 
-        m_waitAction();
+        if (m_waitAction) m_waitAction();
     }
     
     // Clear the ctx list
@@ -907,9 +898,7 @@ is_operation_result cISBootloaderThread::update(
     m_update_in_progress = false;
     m_update_mutex.unlock();
 
-    m_infoProgress(NULL, "Done!", IS_LOG_LEVEL_INFO);
-
-    m_waitAction();     // Final UI update
+    if(m_waitAction) m_waitAction();     // Final UI update
 
     return IS_OP_OK;
 }
