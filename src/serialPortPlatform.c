@@ -632,24 +632,21 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
     struct stat sb;
     if(stat(serialPort->port, &sb) != 0)
-    {
-        error_message("error: serial port not open\r\n\r\n");
+    {   // Serial port not open
         return 0;
     }
     
     int count = write(handle->fd, buffer, writeCount);
     if(count != writeCount) 
-    {
-        error_message("write error %d\r\n\r\n", errno);
+    {   // Write error
         return 0;
     }
 
     int error = 0;
-    // if(handle->blocking) error = tcdrain(handle->fd);
+    if(handle->blocking) error = tcdrain(handle->fd);
 
     if (error != 0)
-    {
-        error_message("error %d from tcdrain\r\n\r\n", errno);
+    {   // Drain error
         return 0;
     }
 

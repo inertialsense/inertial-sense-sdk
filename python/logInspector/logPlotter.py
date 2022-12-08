@@ -12,6 +12,7 @@ import yaml
 import os
 from os.path import expanduser
 from inertialsense_math.pose import *
+from datetime import date
 
 BLACK = r"\u001b[30m"
 RED = r"\u001b[31m"
@@ -126,9 +127,17 @@ class logPlot:
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS1_POS, 'lla'))
-                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS')
+                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS1')
                 ax[1].plot(timeGPS, nedGps[:, 1])
                 ax[2].plot(timeGPS, nedGps[:, 2])
+
+            if(np.shape(self.active_devs)[0]==1):
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS2_POS, 'lla'))
+                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS2')
+                ax[1].plot(timeGPS, nedGps[:, 1])
+                ax[2].plot(timeGPS, nedGps[:, 2])
+
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -170,8 +179,10 @@ class logPlot:
                 self.drawNEDMapArrow(ax, ned, euler[:, 2])
 
                 nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS1_POS, 'lla'))
-                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS')
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS1')
 
+                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS2_POS, 'lla'))
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS2')
 
         ax.set_aspect('equal', 'datalim')
         ax.legend(ncol=2)
@@ -193,9 +204,14 @@ class logPlot:
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-                ax[0].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS')
+                ax[0].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 0], label='GPS1')
                 ax[1].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 1])
-                ax[2].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 2], label='GPS')
+                ax[2].plot(timeGPS, self.getData(d, DID_GPS1_POS, 'lla')[:, 2], label='GPS1')
+
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+                ax[0].plot(timeGPS, self.getData(d, DID_GPS2_POS, 'lla')[:, 0], label='GPS2')
+                ax[1].plot(timeGPS, self.getData(d, DID_GPS2_POS, 'lla')[:, 1])
+                ax[2].plot(timeGPS, self.getData(d, DID_GPS2_POS, 'lla')[:, 2], label='GPS2')
 
                 timeBaro = getTimeFromTow(self.getData(d, DID_BAROMETER, 'time')+ self.getData(d, DID_GPS1_POS, 'towOffset')[-1])
                 ax[2].plot(timeBaro, self.getData(d, DID_BAROMETER, 'mslBar'), label='Baro')
@@ -216,9 +232,15 @@ class logPlot:
         fig.suptitle('GPS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            ax[0].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,0], label=self.log.serials[d])
+            ax[0].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,0], label='GPS1')
             ax[1].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,1])
             ax[2].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,2])
+
+            time = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+            ax[0].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,0], label='GPS2')
+            ax[1].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,1])
+            ax[2].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,2])
+
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)
@@ -1159,6 +1181,22 @@ class logPlot:
                 ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'pqrIMU')
 
+        with open(self.log.directory + '/allan_variance_pqr.csv', 'w') as f:
+            f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R,BI-X\n')
+            f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
+            today = date.today()
+            for d in self.active_devs:
+                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
+                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
+                for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
+                    if pqr != [] and n<pqrCount:
+                        if pqr.any(None):
+                            for i in range(3):
+                                f.write('%f,' % (sumBI[i][n][d]))
+                            for i in range(3):
+                                f.write('%f,' % (sumARW[i][n][d]))
+                f.write('\n')
+
     def allanVarianceAcc(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -1221,6 +1259,22 @@ class logPlot:
                 ax[d][i].grid(True, which='both')
                 ax[d][i].legend(ncol=2)
         self.saveFig(fig, 'accIMU')        
+
+        with open(self.log.directory + '/allan_variance_acc.csv', 'w') as f:
+            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,ARW-X,ARW-Y,ARW-Z\n')
+            f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
+            today = date.today()
+            for d in self.active_devs:
+                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
+                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
+                for n, acc in enumerate([ acc0, acc1, acc2 ]):
+                    if acc != [] and n<accCount:
+                        if acc.any(None):
+                            for i in range(3):
+                                f.write('%f,' % (sumBI[i][n][d]))
+                            for i in range(3):
+                                f.write('%f,' % (sumRW[i][n][d]))
+                f.write('\n')
 
     def accelPSD(self, fig=None):
         if fig is None:
