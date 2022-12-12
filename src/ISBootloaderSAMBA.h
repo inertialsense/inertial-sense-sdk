@@ -1,7 +1,7 @@
 /**
  * @file ISBootloaderSAMBA.h
  * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating ISB images using SAMBA protocol.
+ * @brief Inertial Sense routines for updating ISB images using SAM-BA protocol.
  * 
  */
 
