@@ -2481,7 +2481,8 @@ typedef enum
     INS_DYN_MODEL_AIRBORNE_1G       = 6,
     INS_DYN_MODEL_AIRBORNE_2G       = 7,
     INS_DYN_MODEL_AIRBORNE_4G       = 8,
-    INS_DYN_MODEL_WRIST             = 9
+    INS_DYN_MODEL_WRIST             = 9,
+    INS_DYN_MODEL_INDOOR            = 10
 } eInsDynModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
