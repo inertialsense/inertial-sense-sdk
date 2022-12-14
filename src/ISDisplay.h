@@ -113,6 +113,7 @@ public:
 	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
 	std::string DataToStringGeneric(const p_data_t* data);
+	void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
 
 	std::string DatasetToString(const p_data_t* data);
 
