@@ -172,7 +172,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
-	// inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
+	inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
 
 	if (g_commandLineOptions.asciiMessages.size() != 0)
 	{
