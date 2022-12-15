@@ -234,8 +234,8 @@ is_operation_result cISBootloaderBase::mode_device_app
         }
     }
 
-    char msg[100] = { 0 };
-    SNPRINTF(msg, 100, "    | (%s) Incompatible device.", handle->port);
+    char msg[120] = { 0 };
+    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device.", handle->port);
     statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
 
     delete obj;
@@ -568,8 +568,8 @@ is_operation_result cISBootloaderBase::update_device
     serialPortClose(handle);
     if (!serialPortOpenRetry(handle, name, baud, 1))
     {
-        char msg[100] = { 0 };
-        SNPRINTF(msg, 100, "    | (%s) Unable to open port at %d baud", handle->port, baud);
+        char msg[120] = { 0 };
+        SNPRINTF(msg, sizeof(msg), "    | (%s) Unable to open port at %d baud", handle->port, baud);
         statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
@@ -580,8 +580,8 @@ is_operation_result cISBootloaderBase::update_device
     if (device == IS_IMAGE_SIGN_NONE)
     {
         delete obj;
-        char msg[100] = { 0 };
-        SNPRINTF(msg, 100, "    | (%s) Device response missing.", handle->port);
+        char msg[120] = { 0 };
+        SNPRINTF(msg, sizeof(msg), "    | (%s) Device response missing.", handle->port);
         statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
@@ -676,8 +676,8 @@ is_operation_result cISBootloaderBase::update_device
         delete obj;
     }
 
-    char msg[100] = {0};
-    SNPRINTF(msg, 100, "    | (%s) Incompatible device selected", handle->port);
+    char msg[120] = {0};
+    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device selected", handle->port);
     statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
     return IS_OP_ERROR;
 }
