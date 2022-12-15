@@ -91,7 +91,7 @@ void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 			s_rx.gps.hAcc,
 			s_rx.rel.differentialAge,	// time since last base message
 			fix.c_str(),
-			(s_rx.gps.status&GPS_STATUS_FLAGS_RTK_BASE_DATA_MISSING ? "BASE: No data" : (string("BASE: ")+to_string(s_rx.baseCount)).c_str())
+			(s_rx.gps.status&GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING ? "BASE: No data" : (string("BASE: ")+to_string(s_rx.baseCount)).c_str())
 			 );
 
 		// Forward our position via GGA every 5 seconds to the RTK base.
