@@ -1151,18 +1151,21 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 			gps.lla[0],					// GPS Latitude
 			gps.lla[1],					// GPS Longitude
 			gps.lla[2]);				// GPS Ellipsoid altitude (meters)
-		if (gps.status&GPS_STATUS_FLAGS_RTK_POSITION_ENABLED)
+		if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED)
 		{
-			if (gps.status&GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED) 
-			{ 
-				ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing, "); 
-			}
-			if (gps.status&GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR)		{ ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error, "); }
+			if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR)		{ ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error, "); }
 			switch (gps.status&GPS_STATUS_FLAGS_ERROR_MASK)
 			{
-			case GPS_STATUS_FLAGS_RTK_BASE_DATA_MISSING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing, ");	break;
-			case GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, ");	break;
-			case GPS_STATUS_FLAGS_RTK_BASE_POSITION_INVALID:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");	break;
+			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing, ");	break;
+			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, ");	break;
+			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");	break;
+			}
+		}
+		if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED)
+		{
+			if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED) 
+			{ 
+				ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing, "); 
 			}
 		}
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
