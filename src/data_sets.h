@@ -209,8 +209,8 @@ enum eInsStatusFlags
 	/** Nav mode (set) = estimating velocity and position. AHRS mode (cleared) = NOT estimating velocity and position */
 	INS_STATUS_NAV_MODE							= (int)0x00001000,
 
-	/** User should not move (keep system motionless) to assist on-board processing. */
-	INS_STATUS_DO_NOT_MOVE						= (int)0x00002000,	
+	/** INS in stationary mode.  If initiated by zero velocity command, user should not move (keep system motionless) to assist on-board processing. */
+	INS_STATUS_STATIONARY_MODE					= (int)0x00002000,	
 	/** Velocity aided by GPS velocity */
 	INS_STATUS_GPS_AIDING_VEL                   = (int)0x00004000,
 	/** Vehicle kinematic calibration is good */
@@ -1186,6 +1186,8 @@ enum eGenFaultCodes
 	GFC_INIT_BAROMETER					= 0x00200000,
 	/*! Fault: I2C initialization */
 	GFC_INIT_I2C						= 0x00800000,
+	/*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
+	GFC_CHIP_ERASE_INVALID				= 0x01000000,
 };
 
 
@@ -1202,24 +1204,39 @@ typedef struct PACKED
 
 enum eSystemCommand 
 {
-    SYS_CMD_SAVE_PERSISTENT_MESSAGES            = 1,
-    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET         = 2,
-    SYS_CMD_ENABLE_SENSOR_STATS                 = 3,
-    SYS_CMD_ENABLE_RTOS_STATS                   = 4,
-    SYS_CMD_ZERO_MOTION                         = 5,
+    SYS_CMD_SAVE_PERSISTENT_MESSAGES                = 1,
+    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET             = 2,
+    SYS_CMD_ENABLE_SENSOR_STATS                     = 3,
+    SYS_CMD_ENABLE_RTOS_STATS                       = 4,
+    SYS_CMD_ZERO_MOTION                             = 5,
+    SYS_CMD_REF_POINT_STATIONARY                    = 6,
+    SYS_CMD_REF_POINT_MOVING                        = 7,
 
-    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG         = 10,
+    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,
 
-    SYS_CMD_SAVE_FLASH                          = 97,
-    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET      = 98,
-    SYS_CMD_SOFTWARE_RESET                      = 99,
-    SYS_CMD_MANF_UNLOCK                         = 1122334455,
-    SYS_CMD_MANF_FACTORY_RESET                  = 1357924680,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                     = 1357924681,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_DOWNGRADE_CALIBRATION          = 1357924682,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_SAVE_FLASH                              = 97,
+    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,
+    SYS_CMD_SOFTWARE_RESET                          = 99,
+    SYS_CMD_MANF_UNLOCK                             = 1122334455,
+    SYS_CMD_MANF_FACTORY_RESET                      = 1357924680,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                         = 1357924681,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_DOWNGRADE_CALIBRATION              = 1357924682,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
 };
 
-
+enum eSerialPortBridge
+{
+	SERIAL_PORT_BRIDGE_DISABLED         = 0,
+	SERIAL_PORT_BRIDGE_USB_TO_GPS1      = 1,
+	SERIAL_PORT_BRIDGE_USB_TO_GPS2      = 2,
+	SERIAL_PORT_BRIDGE_USB_TO_SER0      = 3,
+	SERIAL_PORT_BRIDGE_USB_TO_SER1      = 4,
+	SERIAL_PORT_BRIDGE_USB_TO_SER2      = 5,
+};
 
 /** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
@@ -1882,6 +1899,8 @@ enum eSysConfigBits
 
 	/** Use reference IMU in EKF instead of onboard IMU */
 	SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+	/** Reference point stationary on strobe input */
+	SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT	= (int)0x02000000,
 
 };
 
@@ -2142,6 +2161,7 @@ enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */
 	IO_CONFIG_STROBE_TRIGGER_HIGH               = (int)0x00000001,
+
 	// G1,G2 - STROBE, CAN, Ser2, I2C (future)
 	/** G1,G2 - STROBE input on G2 */
 	IO_CONFIG_G1G2_STROBE_INPUT_G2              = (int)0x00000002,
@@ -2194,7 +2214,9 @@ enum eIoConfig
 	/** G5,G8 - Default */
 	IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
 
-	/** Unused bits */
+	/** G15 (GPS PPS) - STROBE */
+	IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
+	// IO_CONFIG_                               = (int)0x00001000,
 
 	/** External GPS TIMEPULSE source */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,	
@@ -2267,6 +2289,7 @@ enum eIoConfig
 	IO_CONFIG_IMU_3_DISABLE						= (int)0x40000000,
 
 	/** Unused bits */
+	// IO_CONFIG_                               = (int)0x80000000,
 };
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
@@ -2275,8 +2298,8 @@ enum ePlatformConfig
 {
 	// IMX Carrier Board
 	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
-	PLATFORM_CFG_TYPE_NONE_NO_GPS               = (int)0,
-	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,
+	PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
+	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
 	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
 	PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
 	PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
@@ -2458,7 +2481,8 @@ typedef enum
     INS_DYN_MODEL_AIRBORNE_1G       = 6,
     INS_DYN_MODEL_AIRBORNE_2G       = 7,
     INS_DYN_MODEL_AIRBORNE_4G       = 8,
-    INS_DYN_MODEL_WRIST             = 9
+    INS_DYN_MODEL_WRIST             = 9,
+    INS_DYN_MODEL_INDOOR            = 10
 } eInsDynModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
@@ -2479,7 +2503,7 @@ typedef struct PACKED
     /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
     uint32_t				startupImuDtMs;
 
-    /** Nav filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
+    /** Navigation filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */
@@ -2527,7 +2551,7 @@ typedef struct PACKED
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t				ioConfig;
 
-    /** Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig) */
+    /** Hardware platform specifying the IMX carrier board type (i.e. RUG, EVB, IG) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.  */
     uint32_t				platformConfig;
 
     /** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
@@ -2539,8 +2563,8 @@ typedef struct PACKED
     /** X,Y,Z offset in meters from Intermediate ZeroVelocity Frame to Zero Velocity Frame. */
     float					zeroVelOffset[3];
 
-    /** Earth magnetic field (magnetic north) inclination (negative pitch offset) in radians */
-    float                   magInclination;
+    /** (sec) User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.  */
+    float                   gpsTimeUserDelay;
 
     /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
     float                   magDeclination;
@@ -2598,11 +2622,11 @@ typedef struct PACKED
 	/** GPS time of week (since Sunday morning) in milliseconds */
 	uint32_t				timeOfWeekMs;
 
-	/** Strobe input pin */
-	uint32_t				pin;
+	/** Strobe input pin (i.e. G1, G2, G5, or G9) */
+	uint16_t				pin;
 
 	/** Strobe serial index number */
-	uint32_t				count;
+	uint16_t				count;
 } strobe_in_time_t;
 
 #define DEBUG_I_ARRAY_SIZE		9
@@ -3564,6 +3588,9 @@ typedef enum
 
 	/** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
     EVB_STATUS_FLASH_WRITE_IN_PROGRESS      = 0x01000000,
+
+	/** Manufacturing unlocked */
+    EVB_STATUS_MANF_UNLOCKED                = 0x02000000,
 
 } eEvbStatus;
 

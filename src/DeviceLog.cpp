@@ -39,6 +39,7 @@ cDeviceLog::cDeviceLog()
     m_fileCount = 0;
     memset(&m_devInfo, 0, sizeof(dev_info_t));
 	m_altClampToGround = true;
+	m_enableGpsLogging = true;
 	m_showTracks = true;
 	m_showPointTimestamps = true;
 	m_pointUpdatePeriodSec = 1.0f;

@@ -38,14 +38,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#define PRINTV3_P1		"%8.1f,%8.1f,%8.1f\n"
-#define PRINTV3_P2		" %8.2f,%8.2f,%8.2f\n"
-#define PRINTV3_P3		"  %8.3f,%8.3f,%8.3f\n"
-#define PRINTV4_P1		"%8.1f,%8.1f,%8.1f,%8.1f\n"
-#define PRINTV4_P2		" %8.2f,%8.2f,%8.2f,%8.2f\n"
-#define PRINTV4_P3		"  %8.3f,%8.3f,%8.3f,%8.3f\n"
-#define PRINTV3_LLA		"%13.7f,%13.7f,%7.1f ellipsoid\n"
-#define PRINTV3_LLA_MSL	"%13.7f,%13.7f,%7.1f MSL\n"
+#define PRINTV3_P1		"%8.1f,%8.1f,%8.1f"
+#define PRINTV3_P2		" %8.2f,%8.2f,%8.2f"
+#define PRINTV3_P3		"  %8.3f,%8.3f,%8.3f"
+#define PRINTV4_P1		"%8.1f,%8.1f,%8.1f,%8.1f"
+#define PRINTV4_P2		" %8.2f,%8.2f,%8.2f,%8.2f"
+#define PRINTV4_P3		"  %8.3f,%8.3f,%8.3f,%8.3f"
+#define PRINTV3_LLA		"%13.7f,%13.7f,%7.1f ellipsoid"
+#define PRINTV3_LLA_MSL	"%13.7f,%13.7f,%7.1f MSL"
 #define BUF_SIZE 8192
 
 #define DATASET_VIEW_NUM_ROWS 25
@@ -733,17 +733,17 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tEuler\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2 "\n",
 			ins1.theta[0] * C_RAD2DEG_F,	// Roll
 			ins1.theta[1] * C_RAD2DEG_F,	// Pitch
 			ins1.theta[2] * C_RAD2DEG_F);	// Yaw
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins1.uvw[0],					// U body velocity
 			ins1.uvw[1],					// V body velocity
 			ins1.uvw[2]);					// W body velocity
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA "\n",
 			ins1.lla[0],					// INS Latitude
 			ins1.lla[1],					// INS Longitude
 			ins1.lla[2]);					// INS Ellipsoid altitude (meters)
@@ -781,7 +781,7 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tQn2b\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3,					// Quaternion attitude rotation
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3 "\n",					// Quaternion attitude rotation
 			ins2.qn2b[0],					// W
 			ins2.qn2b[1],					// X
 			ins2.qn2b[2],					// Y
@@ -789,17 +789,17 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 		float theta[3];
 		quat2euler(ins2.qn2b, theta);
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t(Euler)\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,					// Convert quaternion to euler rotation
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2 "\n",					// Convert quaternion to euler rotation
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins2.uvw[0],					// U body velocity
 			ins2.uvw[1],					// V body velocity
 			ins2.uvw[2]);					// W body velocity
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA "\n",
 			ins2.lla[0],					// INS Latitude
 			ins2.lla[1],					// INS Longitude
 			ins2.lla[2]);					// INS Ellipsoid altitude (meters)
@@ -837,7 +837,7 @@ string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tQn2b\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3,					// Quaternion attitude rotation
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3 "\n",					// Quaternion attitude rotation
 			ins3.qn2b[0],					// W
 			ins3.qn2b[1],					// X
 			ins3.qn2b[2],					// Y
@@ -845,17 +845,17 @@ string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data
 		float theta[3];
 		quat2euler(ins3.qn2b, theta);
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t(Euler)\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,					// Convert quaternion to euler rotation
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2 "\n",					// Convert quaternion to euler rotation
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins3.uvw[0],					// U body velocity
 			ins3.uvw[1],					// V body velocity
 			ins3.uvw[2]);					// W body velocity
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA_MSL,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA_MSL "\n",
 			ins3.lla[0],					// INS Latitude
 			ins3.lla[1],					// INS Longitude
 			ins3.lla[2]);					// INS Ellipsoid altitude (meters)
@@ -893,7 +893,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tQe2b\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3,					// Quaternion attitude rotation
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV4_P3 "\n",					// Quaternion attitude rotation
 			ins4.qe2b[0],					// W
 			ins4.qe2b[1],					// X
 			ins4.qe2b[2],					// Y
@@ -901,17 +901,17 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 		float theta[3];
 		qe2b2EulerNedEcef(theta, (float*)ins4.qe2b, (double*)ins4.ecef);
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t(Euler)\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,					// Convert quaternion to euler rotation
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2 "\n",					// Convert quaternion to euler rotation
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tVE\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
 			ins4.ve[0],						// X ECEF velocity
 			ins4.ve[1],						// Y ECEF velocity
 			ins4.ve[2]);					// Z ECEF velocity
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tECEF\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
 			ins4.ecef[0],					// X ECEF position
 			ins4.ecef[1],					// Y ECEF position
 			ins4.ecef[2]);					// Z ECEF position
@@ -951,12 +951,12 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tPQR\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			imu.I.pqr[0] * C_RAD2DEG_F,		// P angular rate
 			imu.I.pqr[1] * C_RAD2DEG_F,		// Q angular rate
 			imu.I.pqr[2] * C_RAD2DEG_F);		// R angular rate
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			imu.I.acc[0],					// X acceleration
 			imu.I.acc[1],					// Y acceleration
 			imu.I.acc[2]);					// Z acceleration
@@ -993,12 +993,12 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, co
 	else
 	{	// Spacious format
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
 			imu.theta[0] * C_RAD2DEG_F,		// IMU1 P angular rate
 			imu.theta[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
 			imu.theta[2] * C_RAD2DEG_F);		// IMU1 R angular rate
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel\t");
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
             imu.vel[0],						// IMU1 X acceleration
             imu.vel[1],						// IMU1 Y acceleration
             imu.vel[2]);						// IMU1 Z acceleration
@@ -1064,7 +1064,7 @@ string cInertialSenseDisplay::DataToStringMagnetometer(const magnetometer_t &mag
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tmag\t");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P2 "\n",
 			mag.mag[0],					// X magnetometer
 			mag.mag[1],					// Y magnetometer
 			mag.mag[2]);				// Z magnetometer
@@ -1145,29 +1145,28 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 		case GPS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
         case GPS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
         }
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "),\thAcc: %.3f m     cno: %3.1f dBHz\n", gps.hAcc, gps.cnoMean);	// Position accuracy
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ") \thAcc: %.3f m     cno: %3.1f dBHz\n", gps.hAcc, gps.cnoMean);	// Position accuracy
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA: ");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA "    ",
 			gps.lla[0],					// GPS Latitude
 			gps.lla[1],					// GPS Longitude
 			gps.lla[2]);				// GPS Ellipsoid altitude (meters)
+		bool comma = false;
 		if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED)
-		{
-			if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR)		{ ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error, "); }
+		{	
+			if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR)	{ AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error"); }
 			switch (gps.status&GPS_STATUS_FLAGS_ERROR_MASK)
 			{
-			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing, ");	break;
-			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING:		ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base, ");	break;
-			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID:	ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");	break;
+			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING:				{ AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing");	} break;
+			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING:			{ AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base");	} break;
+			case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID:			{ AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");	} break;
 			}
 		}
 		if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED)
 		{
-			if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED) 
-			{ 
-				ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing, "); 
-			}
+			if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED) 		{ AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing"); }
 		}
+
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
 	}
 
@@ -1201,7 +1200,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
 	else
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tbaseToRover: ");
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3,
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
 			rel.baseToRoverVector[0],				// Vector to base in ECEF
 			rel.baseToRoverVector[1],				// Vector to base in ECEF
 			rel.baseToRoverVector[2]);				// Vector to base in ECEF
@@ -1280,7 +1279,7 @@ string cInertialSenseDisplay::DataToStringSurveyIn(const survey_in_t &survey, co
     if (m_displayMode != DMODE_SCROLL)
     {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\thAcc: %4.3f\tlla:", survey.hAccuracy);
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA,
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA "\n",
             survey.lla[0],					// latitude
             survey.lla[1],					// longitude
             survey.lla[2]);					// altitude

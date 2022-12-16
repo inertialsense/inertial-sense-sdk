@@ -271,18 +271,22 @@ class LogInspectorWindow(QMainWindow):
 
     def updatePlot(self):
         self.plot(self.currently_selected, self.plotargs)
+        self.updateWindowTitle()
 
     def updateWindowTitle(self):
-        size = self.log.numDev
-        if  size != 0:
-            info = self.log.data[0,DID_DEV_INFO][0]
-            if size == 1:
-                infoStr = 'SN' + str(info[1]) + ', H:' + verArrayToString(info[2]) + ', F:' + verArrayToString(info[3]) + ' build ' + str(info[4]) + ', ' + dateTimeArrayToString(info[8], info[9]) + ', ' + info[10].decode('UTF-8')
-            else:
-                infoStr = 'Multiple units - '
-                for i in range(size):
-                    infoStr = infoStr + str(self.log.serials[i]) + ' '
-            self.setWindowTitle("LogInspector  -  " + infoStr)
+        try:
+            size = self.log.numDev
+            if  size != 0:
+                info = self.log.data[0,DID_DEV_INFO][0]
+                if size == 1:
+                    infoStr = 'SN' + str(info[1]) + ', H:' + verArrayToString(info[2]) + ', F:' + verArrayToString(info[3]) + ' build ' + str(info[4]) + ', ' + dateTimeArrayToString(info[8], info[9]) + ', ' + info[10].decode('UTF-8')
+                else:
+                    infoStr = 'Devices: [' + " ".join([str(x) for x in self.log.serials]) + "]"
+                if self.log.using_mounting_bias:
+                    infoStr += ', Mounting Corrected'
+                self.setWindowTitle("LogInspector  -  " + infoStr)
+        except:
+            self.setWindowTitle("DID_DEV_INFO missing")
 
     def choose_directory(self):
         log_dir = config['logs_directory']
@@ -315,7 +319,6 @@ class LogInspectorWindow(QMainWindow):
         #     str += 'Comp '
         # self.statusLabel.setText(str)
         self.updatePlot()
-        self.updateWindowTitle()
         self.stopLoadingIndicator()
 
     def setupUi(self):

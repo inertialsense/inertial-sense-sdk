@@ -930,7 +930,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "lastLlaUpdateDistance", lastLlaUpdateDistance, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "ioConfig", ioConfig, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "platformConfig", platformConfig, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
-    ADD_MAP(m, totalSize, "magInclination", magInclination, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "gpsTimeUserDelay", gpsTimeUserDelay, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "magDeclination", magDeclination, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "gps2AntOffset[0]", gps2AntOffset[0], 0, DataTypeFloat, float&, 0);
 	ADD_MAP(m, totalSize, "gps2AntOffset[1]", gps2AntOffset[1], 0, DataTypeFloat, float&, 0);
@@ -1365,8 +1365,8 @@ static void PopulateStrobeInTimeMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ADD_MAP(m, totalSize, "week", week, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "pin", pin, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "count", count, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "pin", pin, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "count", count, 0, DataTypeUInt16, uint16_t, 0);
 
     ASSERT_SIZE(totalSize);
 }

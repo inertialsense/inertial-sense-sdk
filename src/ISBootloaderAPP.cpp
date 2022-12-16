@@ -95,7 +95,9 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                 case DID_EVB_DEV_INFO:
                     evb_dev_info = (dev_info_t*)comm.dataPtr;
                     if (evb_dev_info->hardwareVer[0] == 2)
-                    {   /** EVB-2 */
+                    {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
+                        valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+                        valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
                         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
                     }
@@ -124,7 +126,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
     (void)minor;
     (void)major;
 
-    m_info_callback(this, "(APP) Rebooting down into ISB mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(APP) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;

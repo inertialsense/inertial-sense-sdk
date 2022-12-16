@@ -120,7 +120,7 @@ int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *c
 
 #if 0
 	// Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
-	n = is_comm_get_data(comm, _DID_IMU_DUAL, 0, 0, 100);
+	n = is_comm_get_data(comm, _DID_IMU, 0, 0, 100);
 	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get IMU message\r\n");

@@ -543,6 +543,16 @@ uint32_t cISLogger::FileCount( unsigned int device )
 	return m_devices[device]->FileCount();
 }
 
+std::string cISLogger::GetNewFileName(unsigned int device, uint32_t serialNumber, uint32_t fileCount, const char* suffix)
+{
+	if (device < m_devices.size())
+	{
+		return m_devices[device]->GetNewFileName(serialNumber, fileCount, suffix);
+	}
+
+	return std::string("");
+}
+
 bool cISLogger::SetDeviceInfo(const dev_info_t *info, unsigned int device )
 {
 	if (device >= m_devices.size() || info == NULL)
@@ -587,7 +597,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 #endif
 
 		// Set KML configuration
-		m_devices[dev]->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+		m_devices[dev]->SetKmlConfig(m_gpsData, m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 
 		// Copy data		
 		for (g_copyReadCount = 0; (data = log.ReadData(dev)); g_copyReadCount++)

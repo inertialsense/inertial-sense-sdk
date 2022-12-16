@@ -653,6 +653,7 @@ void board_init()
 
 	// Real-time timer
 	time_init();
+	time_delay(1);	// Delay to ensure time_msec() returns non-zero.	
 
 	/* Initialize IOPORTs */
 	ioport_init();
