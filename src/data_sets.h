@@ -2652,6 +2652,8 @@ POP_PACK
 
 PUSH_PACK_8
 
+#ifndef GPX_1
+
 /** time struct */
 typedef struct
 {
@@ -2753,9 +2755,13 @@ typedef struct PACKED
     uint8_t raw_dat_queue_overrun;
 } rtk_debug_t;
 
+#endif
+
 POP_PACK
 
 PUSH_PACK_1
+
+#ifndef GPX_1
 
 /** (DID_GPS_RTK_OPT) RTK processing options */
 typedef struct
@@ -2906,8 +2912,6 @@ typedef struct
 	int32_t outsingle;
 } prcopt_t;
 typedef prcopt_t gps_rtk_opt_t;
-
-#ifndef GPX_1
 
 /** Raw satellite observation data */
 typedef struct PACKED
