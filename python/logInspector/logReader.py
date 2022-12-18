@@ -27,8 +27,8 @@ RED = '\u001b[31m'
 RESET = '\u001b[0m'
 
 INS_STATUS_NAV_MODE                         = 0x00001000
-GPS_STATUS_FLAGS_RTK_POSITION_ENABLED       = 0x00100000
-GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED     = 0x00400000
+GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED  = 0x00100000
+GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED   = 0x00400000
 
 class Log:
     def __init__(self):
@@ -129,8 +129,8 @@ class Log:
             self.navMode    = (ins2['insStatus'][-1] & INS_STATUS_NAV_MODE) == INS_STATUS_NAV_MODE
         gps1Pos = self.data[0, DID_GPS1_POS]
         if len(gps1Pos):
-            self.rtk        = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_RTK_POSITION_ENABLED) == GPS_STATUS_FLAGS_RTK_POSITION_ENABLED
-            self.compassing = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED) == GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED
+            self.rtk        = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED) == GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED
+            self.compassing = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED) == GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED
 
         # Reference INS like Novatel may not have all status fields. Find a first device that is not reference
         uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]

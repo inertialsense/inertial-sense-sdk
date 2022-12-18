@@ -234,8 +234,8 @@ is_operation_result cISBootloaderBase::mode_device_app
         }
     }
 
-    char msg[100] = { 0 };
-    SNPRINTF(msg, 100, "    | (%s) Incompatible device.", handle->port);
+    char msg[120] = { 0 };
+    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device.", handle->port);
     statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
 
     delete obj;
@@ -341,11 +341,11 @@ is_operation_result cISBootloaderBase::mode_device_isb
     char minor;
 
     uint32_t device = IS_IMAGE_SIGN_NONE;
-    uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
+    //uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
     uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path, &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
+    //uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
     uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path, &major, &minor) & IS_IMAGE_SIGN_ISB_STM32L4;
-    uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
+    //uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path, &major, &minor)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
@@ -568,8 +568,8 @@ is_operation_result cISBootloaderBase::update_device
     serialPortClose(handle);
     if (!serialPortOpenRetry(handle, name, baud, 1))
     {
-        char msg[100] = { 0 };
-        SNPRINTF(msg, 100, "    | (%s) Unable to open port at %d baud", handle->port, baud);
+        char msg[120] = { 0 };
+        SNPRINTF(msg, sizeof(msg), "    | (%s) Unable to open port at %d baud", handle->port, baud);
         statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
@@ -580,8 +580,8 @@ is_operation_result cISBootloaderBase::update_device
     if (device == IS_IMAGE_SIGN_NONE)
     {
         delete obj;
-        char msg[100] = { 0 };
-        SNPRINTF(msg, 100, "    | (%s) Device response missing.", handle->port);
+        char msg[120] = { 0 };
+        SNPRINTF(msg, sizeof(msg), "    | (%s) Device response missing.", handle->port);
         statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
@@ -676,8 +676,8 @@ is_operation_result cISBootloaderBase::update_device
         delete obj;
     }
 
-    char msg[100] = {0};
-    SNPRINTF(msg, 100, "    | (%s) Incompatible device selected", handle->port);
+    char msg[120] = {0};
+    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device selected", handle->port);
     statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
     return IS_OP_ERROR;
 }

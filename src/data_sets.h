@@ -414,24 +414,24 @@ enum eGpsStatus
  	GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
-	GPS_STATUS_FLAGS_RTK_POSITION_ENABLED           = (int)0x00100000,      // RTK precision positioning mode enabled
+	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
 	GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
-	GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED         = (int)0x00400000,      // RTK moving base mode enabled
-    GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR         = (int)0x00800000,      // RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)
-    GPS_STATUS_FLAGS_RTK_BASE_DATA_MISSING          = (int)0x01000000,      // RTK error: Either base observations or antenna position have not been received.
-    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MOVING       = (int)0x02000000,      // RTK error: base position moved when it should be stationary
-    GPS_STATUS_FLAGS_RTK_BASE_POSITION_INVALID      = (int)0x03000000,      // RTK error: base position is invalid or not surveyed well
-    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK         = (int)0x03000000,      // RTK error: base position error bitmask
-    GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_RTK_RAW_GPS_DATA_ERROR|
-                                                    GPS_STATUS_FLAGS_RTK_BASE_POSITION_MASK),
-	GPS_STATUS_FLAGS_RTK_POSITION_VALID             = (int)0x04000000,      // GPS1 RTK precision position and carrier phase range solution with fixed ambiguities (i.e. < 6cm horizontal accuracy).  The carrier phase range solution with floating ambiguities occurs if GPS_STATUS_FIX_RTK_FIX is set and GPS_STATUS_FLAGS_RTK_POSITION_VALID is not set (i.e. > 6cm horizontal accuracy).
-	GPS_STATUS_FLAGS_RTK_COMPASSING_VALID           = (int)0x08000000,      // GPS2 RTK moving base heading.  Indicates RTK fix and hold with single band RTK compassing.
-    GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_BAD    = (int)0x00002000,
-    GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_UNSET  = (int)0x00004000,
-    GPS_STATUS_FLAGS_RTK_COMPASSING_MASK            = (GPS_STATUS_FLAGS_RTK_COMPASSING_ENABLED|
-                                                    GPS_STATUS_FLAGS_RTK_COMPASSING_VALID|
-                                                    GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_BAD|
-                                                    GPS_STATUS_FLAGS_RTK_COMPASSING_BASELINE_UNSET),
+	GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
+    GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR    = (int)0x00800000,      // GPS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)
+    GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING     = (int)0x01000000,      // GPS1 RTK error: Either base observations or antenna position have not been received.
+    GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING  = (int)0x02000000,      // GPS1 RTK error: base position moved when it should be stationary
+    GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID = (int)0x03000000,      // GPS1 RTK error: base position is invalid or not surveyed well
+    GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MASK    = (int)0x03000000,      // GPS1 RTK error: base position error bitmask
+    GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR|
+                                                       GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MASK),
+	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID        = (int)0x04000000,      // GPS1 RTK precision position and carrier phase range solution with fixed ambiguities (i.e. < 6cm horizontal accuracy).  The carrier phase range solution with floating ambiguities occurs if GPS_STATUS_FIX_RTK_FIX is set and GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID is not set (i.e. > 6cm horizontal accuracy).
+	GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID         = (int)0x08000000,      // GPS2 RTK moving base heading.  Indicates RTK fix and hold with single band RTK compassing.
+    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD  = (int)0x00002000,
+    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET= (int)0x00004000,
+    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_MASK          = (GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED|
+                                                       GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID|
+                                                       GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD|
+                                                       GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET),
 	GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message
 	GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS. 
 
@@ -2481,7 +2481,8 @@ typedef enum
     INS_DYN_MODEL_AIRBORNE_1G       = 6,
     INS_DYN_MODEL_AIRBORNE_2G       = 7,
     INS_DYN_MODEL_AIRBORNE_4G       = 8,
-    INS_DYN_MODEL_WRIST             = 9
+    INS_DYN_MODEL_WRIST             = 9,
+    INS_DYN_MODEL_INDOOR            = 10
 } eInsDynModel;
 
 /** (DID_FLASH_CONFIG) Configuration data

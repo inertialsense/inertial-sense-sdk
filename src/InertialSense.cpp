@@ -745,7 +745,7 @@ is_operation_result InertialSense::BootloadFile(
 	// On non-Windows systems, try to interpret each user-specified port as a symlink and find what it is pointing to
     // TODO: This only works for "/dev/" ports
 #if !PLATFORM_IS_WINDOWS
-    for(int k = 0; k < comPorts.size(); k++)
+    for(unsigned int k = 0; k < comPorts.size(); k++)
     {
         char buf[PATH_MAX];
         int newsize = readlink(comPorts[k].c_str(), buf, sizeof(buf)-1);

@@ -244,7 +244,7 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
 	while(memcmp(cmp, otp_mem, OTP_SECTION_SIZE) != 0)
 	{
 		otp_mem += OTP_SECTION_SIZE; index++;
-		if(index >= OTP_NUM_SECTIONS)
+		if(index >= (int)OTP_NUM_SECTIONS)
 		{
             foundSn = false; break;	// No more room in OTP
 		}
