@@ -221,7 +221,6 @@ int32_t convertGpsToMjd(int32_t gpsWeek, int32_t gpsSeconds);
 void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day);
 void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds);
 uint32_t dateToWeekDay(uint32_t ul_year, uint32_t ul_month, uint32_t ul_day);
-=
 
 #ifdef __cplusplus
 } // extern C
