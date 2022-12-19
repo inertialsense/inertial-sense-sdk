@@ -3984,7 +3984,7 @@ typedef enum
 	GPX_TASK_COMM = 0,
 
 	/** Task 1: Nav */
-	GPX_TASK_NAV,
+	GPX_TASK_RTK,
 
 	/** Number of RTOS tasks */
 	GPX_RTOS_NUM_TASKS,					// Keep last

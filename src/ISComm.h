@@ -81,6 +81,7 @@ typedef enum
 	_PTYPE_ASCII_NMEA           = 0xBFFFFFFF,				/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+	_PTYPE_SONYBIN				= 0x8FFFFFFF,				/** Protocol Type: Sony CXD5610 GNSS binary */
 } protocol_type_t;
 
 /** uINS default baud rate */
