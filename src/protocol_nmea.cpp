@@ -860,8 +860,8 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 		fixType = GPS_STATUS_FIX_RTK_FIX;
 		statusFlags |= 
 			GPS_STATUS_FLAGS_FIX_OK |
-			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
-			GPS_STATUS_FLAGS_RTK_POSITION_VALID |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID |
 			GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
 			GPS_STATUS_FLAGS_DGPS_USED;
 		gpsPos->hAcc = 0.05f;
@@ -871,7 +871,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 		fixType = GPS_STATUS_FIX_RTK_FLOAT;
 		statusFlags |=
 			GPS_STATUS_FLAGS_FIX_OK |
-			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
 			GPS_STATUS_FLAGS_DGPS_USED;
 		gpsPos->hAcc = 0.4f;
 	}
@@ -1000,7 +1000,7 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 		fixType = GPS_STATUS_FIX_RTK_FLOAT;
 		statusFlags |=
 			GPS_STATUS_FLAGS_FIX_OK |
-			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
 			GPS_STATUS_FLAGS_DGPS_USED;
 		gpsPos->hAcc = 0.4f;
 		break;
@@ -1009,8 +1009,8 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 		fixType = GPS_STATUS_FIX_RTK_FIX;
 		statusFlags |= 
 			GPS_STATUS_FLAGS_FIX_OK |
-			GPS_STATUS_FLAGS_RTK_POSITION_ENABLED |
-			GPS_STATUS_FLAGS_RTK_POSITION_VALID |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID |
 			GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
 			GPS_STATUS_FLAGS_DGPS_USED;
 		gpsPos->hAcc = 0.05f;
