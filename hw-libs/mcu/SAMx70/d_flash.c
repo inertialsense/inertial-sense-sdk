@@ -64,18 +64,19 @@ uint32_t flash_update_block(uint32_t address, const void* newData, int dataSize,
 			if (result == FLASH_RC_OK)
 			{
 				// write new flash
-				flash_write(address, newData, dataSize, 0);
+				result = flash_write(address, newData, dataSize, 0);
 				
-				if (memcmp((const void*)address, newData, dataSize) == 0)
+				if (result == FLASH_RC_OK && memcmp((const void*)address, newData, dataSize) == 0)
 				{
-					// lock the block
-					flash_lock(address, address + dataSize - 1, 0, 0);
 					result = FLASH_RC_OK;
 					break;
 				}
 			}
 			time_delay(2);
 		}
+					
+		// lock the block
+		flash_lock(address, address + dataSize - 1, 0, 0);
 		
 		s_flashWriteInProgress = 0;
 	}
