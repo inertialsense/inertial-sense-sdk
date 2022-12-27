@@ -29,6 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISDataMappings.h"
 #include "ISLogFileFactory.h"
+#include "ISUtilities.h"
 
 #include "convert_ins.h"
 
@@ -341,10 +342,10 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
                         }
                         m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
 
-#if LOG_DEBUG_GEN
-						printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
-#elif (LOG_DEBUG_GEN == 2)
+#if (LOG_DEBUG_GEN == 2)
 						advance_cursor();
+#elif LOG_DEBUG_GEN
+						printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
 #endif
 					}
                 }
@@ -691,11 +692,4 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
 }
 
 
-static void advance_cursor(void) 
-{
-	static int pos=0;
-	char cursor[4]={'/','-','\\','|'};
-	printf("%c\b", cursor[pos]);
-	fflush(stdout);
-	pos = (pos+1) % 4;
-}
+
