@@ -343,6 +343,8 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 
 #if LOG_DEBUG_GEN
 						printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
+#elif (LOG_DEBUG_GEN == 2)
+						advance_cursor();
 #endif
 					}
                 }
@@ -592,7 +594,9 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		const dev_info_t* devInfo = log.GetDeviceInfo(dev);
 		SetDeviceInfo(devInfo, dev);
 
-#if LOG_DEBUG_GEN || DEBUG_PRINT
+#if LOG_DEBUG_GEN == 2
+		// Don't print status here
+#elif LOG_DEBUG_GEN || DEBUG_PRINT
 		printf("cISLogger::CopyLog SN%d type %d, (%d of %d)\n", devInfo->serialNumber, logType, dev+1, log.GetDeviceCount());
 #endif
 
@@ -607,6 +611,10 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 			double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
 			printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
 			g_copyReadDid = data->hdr.id;
+#endif
+
+#if LOG_DEBUG_GEN == 2
+			advance_cursor();
 #endif
 
 			// CSV special cases 
@@ -682,3 +690,12 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
     return true;
 }
 
+
+static void advance_cursor(void) 
+{
+	static int pos=0;
+	char cursor[4]={'/','-','\\','|'};
+	printf("%c\b", cursor[pos]);
+	fflush(stdout);
+	pos = (pos+1) % 4;
+}
