@@ -10,7 +10,7 @@ To use this node, the unit should be updated with the latest firmware found on t
 ## Installation
 This ROS package, uses the inertial-sense-sdk as a submodule. Clone this package into the catkin workspace `src` folder, then pull the submodule.
 
-``` bash
+```bash
 mkdir -p catkin_ws/src
 cd catkin_ws/src
 catkin_init_workspace
@@ -22,6 +22,7 @@ catkin_make
 ## Running the Node
 
 ```bash
+source devel/setup.bash
 rosrun inertial_sense_ros inertial_sense_node
 ```
 
@@ -29,7 +30,7 @@ The user must be a member of the `dialout` group, or the user won't have access 
 
 For instructions on changing parameter values and topic remapping from the command line while using `rosrun` refer to the [Remapping Arguments](http://wiki.ros.org/Remapping%20Arguments) page. To set vector parameters, use the following syntax:
 
-``` bash
+```bash
 rosparam set /inertial_sense_node/GPS_ref_lla "[40.25, -111.67, 1556.59]"
 rosrun inertial_sense_ros inertial_sense_node
 ```
