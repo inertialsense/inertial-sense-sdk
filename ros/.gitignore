@@ -1,0 +1,6 @@
+*.autosave
+*.user
+*.gch
+build/
+
+.vscode

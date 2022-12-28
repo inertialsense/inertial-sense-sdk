@@ -1,0 +1,58 @@
+inertial_sense_ros:
+  port: "/dev/ttyACM0"
+  navigation_dt_ms: 4
+  baudrate: 921600
+  frame_id: "body"
+  stream_DID_INS_1: true
+  stream_DID_INS_2: false
+  stream_DID_INS_4: false
+  stream_odom_ins_ned: true
+  stream_odom_ins_enu: false
+  stream_odom_ins_ecef: false
+  stream_covariance_data: false
+  stream_INL2_states: false
+  stream_IMU: true
+  stream_GPS: true
+  stream_GPS_raw: false
+  stream_GPS_info: false
+  stream_NavSatFix: false
+  stream_mag: false
+  stream_baro: false
+  stream_preint_IMU: false
+  stream_diagnostics: false
+  publishTf: true
+  enable_log: false
+  ioConfig: 39624800  #F9P EVB2 RTK CMP: 0x025ca060
+  # ioConfig: 41056
+  #RTK_server_mount: ""
+  #RTK_server_username: ""
+  #RTK_server_password: ""
+  # every time we attempt to connect only try one time -->
+  RTK_connection_attempt_limit: 1
+  # default back off ignored because only connecting once -->
+  RTK_connection_attempt_backoff: 2
+  # watchdog timer enabled -->
+  RTK_connectivity_watchdog_enabled: true
+  # check every 1 second for traffic -->
+  RTK_connectivity_watchdog_timer_frequency: 1
+  # after 5 seconds of not having any data try to con0nect again -->
+  RTK_data_transmission_interruption_limit: 5
+  RTK_correction_protocol: "RTCM3"
+  # # TCP - Inertial Sense
+  # RTK_server_IP: "127.0.0.1"
+  # RTK_server_port: 7777
+  GPS1_type: "F9P"
+  RTK_rover: true
+  RTK_rover_radio_enable: false
+  RTK_base_USB: false
+  RTK_base_serial: false
+  RTK_base_TCP: false
+  GNSS_Compass: false
+  inclination: 0
+  declination: 0
+  dynamic_model: 8
+  INS_rpy_radians: [1.5708, 0, 0]
+  INS_xyz: [0, 0, 0]
+  GPS_ant1_xyz: [0, 0, 0]
+  GPS_ant2_xyz: [0, 0, 0]
+  GPS_ref_lla: [0, 0, 0]

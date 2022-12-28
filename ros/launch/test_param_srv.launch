@@ -1,0 +1,79 @@
+  <launch>
+    <rosparam subst_value="True">
+      inertial_sense_node: 
+      { 
+        port: "/dev/ttyACM0",
+        navigation_dt_ms: 16,
+        baudrate: 921600,
+        frame_id: "body",
+        stream_DID_INS_1: true,
+        stream_DID_INS_2: false,
+        stream_DID_INS_4: false,
+        stream_odom_ins_ned: true,
+        stream_odom_ins_enu: false,
+        stream_odom_ins_ecef: false,
+        stream_covariance_data: false,
+        stream_INL2_states: false,
+        stream_IMU: true,
+        stream_GPS: true,
+        stream_GPS_raw: false,
+        stream_GPS_info: false,
+        stream_NavSatFix: false,
+        stream_mag: false,
+        stream_baro: false,
+        stream_preint_IMU: false,
+        stream_diagnostics: false,
+        publishTf: true,
+        enable_log: false,
+        
+        <!-- F9P EVB2 RTK CMP ioConfig: 0x025ca000-->
+        ioConfig: 39624800,
+        <!-- F9P RTK CMP ioConfig: 0x025ca040 -->
+        <!-- ioConfig: 39624768, -->  
+        <!-- F9P RUG3 RTK CMP ioConfig: 0x025dc040-->
+        <!-- ioConfig: 39698496,   -->
+
+        <!-- Every time we attempt to connect only try one time -->
+        RTK_connection_attempt_limit: 1,
+        <!-- Default back off ignored because only connecting once -->
+        RTK_connection_attempt_backoff: 2,
+        <!-- watchdog timer enabled -->
+        RTK_connectivity_watchdog_enbled: true,
+        <!-- check every 1 second for traffic -->
+        RTK_connectivity_watchdog_timer_frequency: 1,
+        <!-- after 5 seconds of not having any data try to connect again -->
+        RTK_data_transmission_interruption_limit: 5,
+        RTK_correction_protocol: "RTCM3",
+
+        <!-- # NTRIP - Inertial Sense, -->
+        <!-- RTK_server_IP: "",
+        RTK_server_port: 2101,
+        RTK_server_mount: "",
+        RTK_server_username: "",
+        RTK_server_password: "", -->
+
+        <!-- # TCP - Inertial Sense, -->
+        RTK_server_IP: "127.0.0.1",
+        RTK_server_port: 7777,
+
+        <!-- # Every time we attempt to connect only try one time -->
+        <!-- RTK_connection_attempt_limit: 1, -->
+        GPS1_type: "F9P",
+        RTK_rover: true,
+        RTK_rover_radio_enable: false,
+        RTK_base_USB: false,
+        RTK_base_serial: false,
+        RTK_base_TCP: false,
+        GNSS_Compass: true,
+        inclination: 0,
+        declination: 0,
+        dynamic_model: 8,
+        INS_rpy_radians: [1.5708, 0, 0],
+        INS_xyz: [0, 0, 0],
+        GPS_ant1_xyz: [0, 0, 0],
+        GPS_ant2_xyz: [-1.0, 0, 0],
+        GPS_ref_lla: [40.25, -111.67, 1556.59]
+      }
+    </rosparam>
+	<node name="inertial_sense_node" pkg="inertial_sense_ros" type="inertial_sense_node" output="screen"/>
+</launch>
