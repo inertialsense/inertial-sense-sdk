@@ -158,25 +158,29 @@ __*Note: RTK positioning or RTK compassing mode must be enabled to stream any ra
 * `~preint_imu_period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
 * `~stream_GPS1`(bool, default: false)
-   - Flag to stream GPS
-* `~gps1_period_multiple` (int, default: 1)
-   - Configures period multiple of data set stream rate
+   - Flag to stream GPS1
 * `~stream_GPS2`(bool, default: false)
-   - Flag to stream GPS
+   - Flag to stream GPS2
+* `~gps1_period_multiple` (int, default: 1)
+   - Configures GPS1 period multiple of data set stream rate
 * `~gps2_period_multiple` (int, default: 1)
-   - Configures period multiple of data set stream rate
-* `~stream_GPS_info`(bool, default: false)
-   - Flag to stream GPS info messages
+   - Configures GPS2 period multiple of data set stream rate
+* `~stream_GPS1_info`(bool, default: false)
+   - Flag to stream GPS1 info messages
+* `~stream_GPS2_info`(bool, default: false)
+   - Flag to stream GPS2 info messages
 * `~gps_info_period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_GPS_raw` (bool, default: false)
-   - Flag to stream GPS raw messages
+- `~stream_GPS1_raw` (bool, default: false)
+   - Flag to stream GPS1 raw messages
+- `~stream_GPS2_raw` (bool, default: false)
+   - Flag to stream GPS2 raw messages
 * `~gps_raw_period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~stream_NavSatFix` (bool, default: false)
    - Flag to stream NavSatFix message
 * `~NavSatFix_period_multiple` (int, default: 1)
-   - Configures period multiple of data set stream rate
+   - Configures period multiple of data set stream rate.  Data is based on GPS2 if GPS1 is disabled.
 - `~publishTf`(bool, default: true)
    - Flag to publish Tf transformations 'ins' to 'body_link'
 * `~stream_diagnostics` (bool, default: true)

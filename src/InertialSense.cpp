@@ -530,7 +530,11 @@ bool InertialSense::UpdateClient()
 				break;
 
 			case _PTYPE_PARSE_ERROR:
-				printf("PARSE ERROR: %d\n", error++);
+				if (error)
+				{	// Don't print first error
+					printf("InertialSense::UpdateClient() PARSE ERROR count: %d\n", error);
+				}
+				error++;
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:

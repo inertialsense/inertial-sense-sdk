@@ -87,7 +87,7 @@ public:
     void connect_rtk_client(const std::string &RTK_correction_protocol, const std::string &RTK_server_IP, const int RTK_server_port);
     void start_rtk_server(const std::string &RTK_server_IP, const int RTK_server_port);
 
-    void configure_data_streams(bool startup);
+    void configure_data_streams(bool firstrun);
     void configure_data_streams(const ros::TimerEvent& event);
     void configure_ascii_output();
     void start_log();
