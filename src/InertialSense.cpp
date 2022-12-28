@@ -531,7 +531,7 @@ bool InertialSense::UpdateClient()
 
 			case _PTYPE_PARSE_ERROR:
 				if (error)
-				{	// Don't print first error
+				{	// Don't print first error.  Likely due to port having been closed.
 					printf("InertialSense::UpdateClient() PARSE ERROR count: %d\n", error);
 				}
 				error++;
