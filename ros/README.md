@@ -31,7 +31,7 @@ For instructions on changing parameter values and topic remapping from the comma
 
 ``` bash
 rosparam set /inertial_sense_node/GPS_ref_lla "[40.25, -111.67, 1556.59]"
-rosrun inertial_sense inertial_sense_node
+rosrun inertial_sense_ros inertial_sense_node
 ```
 
 To set parameters and topic remappings from a launch file, refer to the [Roslaunch for Larger Projects](http://wiki.ros.org/roslaunch/Tutorials/Roslaunch%20tips%20for%20larger%20projects) page, or use one of the the sample launch files in this repository:  `launch/test_param_srv.launch` or  `launch/test_YAML_params.launch`
