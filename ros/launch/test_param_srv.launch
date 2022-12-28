@@ -26,12 +26,12 @@
         publishTf: true,
         enable_log: false,
         
-        <!-- F9P EVB2 RTK CMP ioConfig: 0x025ca000-->
-        ioConfig: 39624800,
-        <!-- F9P RTK CMP ioConfig: 0x025ca040 -->
-        <!-- ioConfig: 39624768, -->  
-        <!-- F9P RUG3 RTK CMP ioConfig: 0x025dc040-->
-        <!-- ioConfig: 39698496,   -->
+        <!-- (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8 -->
+        ioConfig: 40673376,
+        <!-- (0x025CA060) EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8 -->
+        <!-- ioConfig: 39624800, -->
+        <!-- (0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8 -->
+        <!-- ioConfig: 38051936, -->
 
         <!-- Every time we attempt to connect only try one time -->
         RTK_connection_attempt_limit: 1,
@@ -45,19 +45,17 @@
         RTK_data_transmission_interruption_limit: 5,
         RTK_correction_protocol: "RTCM3",
 
-        <!-- # NTRIP - Inertial Sense, -->
+        <!-- # NTRIP -->
         <!-- RTK_server_IP: "",
         RTK_server_port: 2101,
         RTK_server_mount: "",
         RTK_server_username: "",
         RTK_server_password: "", -->
 
-        <!-- # TCP - Inertial Sense, -->
+        <!-- # TCP -->
         RTK_server_IP: "127.0.0.1",
         RTK_server_port: 7777,
 
-        <!-- # Every time we attempt to connect only try one time -->
-        <!-- RTK_connection_attempt_limit: 1, -->
         GPS1_type: "F9P",
         RTK_rover: true,
         RTK_rover_radio_enable: false,

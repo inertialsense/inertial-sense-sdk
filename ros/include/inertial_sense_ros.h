@@ -388,8 +388,7 @@ public:
     // Connection to the uINS
     InertialSense IS_;
 
-    //Flash parameters
-
+    // Flash parameters
     int navigation_dt_ms_ = 4;
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
@@ -400,7 +399,7 @@ public:
     float magDeclination_ = 0;
     int insDynModel_ = INS_DYN_MODEL_AIRBORNE_4G;
     bool refLLA_known = false;
-    int ioConfig_ = 39624800; //F9P RUG2 RTK CMP: 0x025ca060
+    int ioConfig_ = 38051936;   //(0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
     float gpsTimeUserDelay_ = 0;
 
 };
