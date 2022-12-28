@@ -1,11 +1,11 @@
 # Inertial Sense ROS
 
 
-A ROS wrapper for the Inertial Sense IMX product line.
+A ROS wrapper node implementation for the Inertial Sense IMX product line.
 
 ## NOTICE:
 
-To use this node, the unit should be updated with the latest firmware found on the Inertial Sense [release page](https://github.com/inertialsense/inertial-sense-sdk/releases). Download the appropriate `.hex` file and use the Inertial Sense EvalTool, CLTool, or SDK to upload the firmware.
+To use this node, the unit should be updated with the latest firmware found on the Inertial Sense [release page](https://github.com/inertialsense/inertial-sense-sdk/releases).  Download the appropriate `.hex` file and use the Inertial Sense EvalTool, CLTool, or SDK to upload the firmware.
 
 ## Installation
 This ROS package, uses the inertial-sense-sdk as a submodule. Clone this package into the catkin workspace `src` folder, then pull the submodule.
@@ -15,14 +15,14 @@ mkdir -p catkin_ws/src
 cd catkin_ws/src
 catkin_init_workspace
 git clone https://github.com/inertialsense/inertial-sense-sdk
-cd inertial-sense-sdk/ros
+cd ..
 catkin_make
 ```
 
 ## Running the Node
 
 ```bash
-rosrun inertial_sense inertial_sense_node
+rosrun inertial_sense_ros inertial_sense_node
 ```
 
 The user must be a member of the `dialout` group, or the user won't have access to the serial port.
@@ -35,8 +35,6 @@ rosrun inertial_sense inertial_sense_node
 ```
 
 To set parameters and topic remappings from a launch file, refer to the [Roslaunch for Larger Projects](http://wiki.ros.org/roslaunch/Tutorials/Roslaunch%20tips%20for%20larger%20projects) page, or use one of the the sample launch files in this repository:  `launch/test_param_srv.launch` or  `launch/test_YAML_params.launch`
-
-
 
 ## Time Stamps
 
@@ -73,9 +71,9 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
     - Raw barometer measurements in kPa
 - `preint_imu` (inertial_sense_ros/DThetaVel)
     - preintegrated coning and sculling integrals of IMU measurements
-- `RTK/info` (inertial_sense_ros/RTKInfo)
+- `RTK_pos/info` (inertial_sense_ros/RTKInfo)
     - information about RTK status
-- `RTK/rel` (inertial_sense_ros/RTKRel)
+- `RTK_pos/rel` (inertial_sense_ros/RTKRel)
     * Relative measurement between RTK base and rover
 - `inl2_states` (inertial_sense_ros/INL2States)
     * INS Extended Kalman Filter (EKF) states [DID_INL2_STATES](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_inl2_states) Definition
