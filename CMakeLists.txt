@@ -68,7 +68,7 @@ add_library(InertialSense
   src/tinyxml.cpp
   src/tinyxmlerror.cpp
   src/tinyxmlparser.cpp
-  )
+)
 
 find_library(LIBUSB_LIBRARY
 	NAMES usb-1.0
@@ -83,4 +83,3 @@ add_library( InertialSense::libinertialsense ALIAS InertialSense )
 
 add_subdirectory(cltool)
 add_subdirectory(ExampleProjects)
-
