@@ -29,7 +29,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     }
     connect();
 
-    //Check protocol and firmware version
+    // Check protocol and firmware version
     firmware_compatiblity_check();
 
     // Start Up ROS service servers
@@ -53,7 +53,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     IS_.SavePersistent();
 
     if (configFlashParameters)
-    {   // Set uINS flash parameters after everything thing else so uINS flash write processor stall doesn't interfere.
+    {   // Set IMX flash parameters (flash write) after everything else so processor stall doesn't interfere with communications.
         configure_flash_parameters();
     }
 
@@ -69,7 +69,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
 
 void InertialSenseROS::load_params_yaml(YAML::Node node)
 {
-    ROS_INFO("Load YAML server");
+    ROS_INFO("Load from YAML");
     get_node_param_yaml(node, "port", port_);
     get_node_param_yaml(node, "navigation_dt_ms", navigation_dt_ms_);
     get_node_param_yaml(node, "baudrate", baudrate_);
@@ -123,7 +123,6 @@ void InertialSenseROS::load_params_yaml(YAML::Node node)
     get_node_param_yaml(node, "RTK_server_password", RTK_server_password_);
     get_node_param_yaml(node, "RTK_connection_attempt_limit", RTK_connection_attempt_limit_);
     get_node_param_yaml(node, "RTK_connection_attempt_backoff", RTK_connection_attempt_backoff_);
-//     // default is false for legacy compatibility
     get_node_param_yaml(node, "RTK_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
     get_node_param_yaml(node, "RTK_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
     get_node_param_yaml(node, "RTK_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
@@ -141,8 +140,6 @@ void InertialSenseROS::load_params_yaml(YAML::Node node)
     get_node_param_yaml(node, "gpsTimeUserDelay", gpsTimeUserDelay_);
     get_node_param_yaml(node, "declination", magDeclination_);
     get_node_param_yaml(node, "dynamic_model", insDynModel_);
-
-    //Params with arrays
     get_node_vector_yaml(node, "INS_rpy_radians", 3, insRotation_);
     get_node_vector_yaml(node, "INS_xyz", 3, insOffset_);
     get_node_vector_yaml(node, "GPS_ant1_xyz", 3, gps1AntOffset_);
@@ -152,7 +149,7 @@ void InertialSenseROS::load_params_yaml(YAML::Node node)
 
 void InertialSenseROS::load_params_srv()
 {
-    ROS_INFO("Load Param Server");
+    ROS_INFO("Load from Param Server");
     getParam("/inertial_sense_ros/port", port_);
     getParam("/inertial_sense_ros/navigation_dt_ms", navigation_dt_ms_);
     getParam("/inertial_sense_ros/baudrate", baudrate_);
@@ -204,7 +201,6 @@ void InertialSenseROS::load_params_srv()
     getParam("/inertial_sense_ros/RTK_server_password", RTK_server_password_);
     getParam("/inertial_sense_ros/RTK_connection_attempt_limit", RTK_connection_attempt_limit_);
     getParam("/inertial_sense_ros/RTK_connection_attempt_backoff", RTK_connection_attempt_backoff_);
-    // default is false for legacy compatibility
     getParam("/inertial_sense_ros/RTK_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
     getParam("/inertial_sense_ros/RTK_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
     getParam("/inertial_sense_ros/RTK_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
@@ -224,13 +220,11 @@ void InertialSenseROS::load_params_srv()
     getParam("/inertial_sense_ros/gpsTimeUserDelay", gpsTimeUserDelay_);
     getParam("/inertial_sense_ros/declination", magDeclination_);
     getParam("/inertial_sense_ros/dynamic_model", insDynModel_);
-
-    //Params with arrays
-    getParamVector("INS_rpy_radians", 3, insRotation_);
-    getParamVector("INS_xyz", 3, insOffset_);
-    getParamVector("GPS_ant1_xyz", 3, gps1AntOffset_);
-    getParamVector("GPS_ant2_xyz", 3, gps2AntOffset_);
-    getParamVector("GPS_ref_lla", 3, refLla_);
+    getParamVector("/inertial_sense_ros/INS_rpy_radians", 3, insRotation_);
+    getParamVector("/inertial_sense_ros/INS_xyz", 3, insOffset_);
+    getParamVector("/inertial_sense_ros/GPS_ant1_xyz", 3, gps1AntOffset_);
+    getParamVector("/inertial_sense_ros/GPS_ant2_xyz", 3, gps2AntOffset_);
+    getParamVector("/inertial_sense_ros/GPS_ref_lla", 3, refLla_);
 }
 
 void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)

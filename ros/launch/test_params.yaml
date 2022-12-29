@@ -1,6 +1,7 @@
 inertial_sense_ros:
   port: "/dev/ttyACM0"
-  navigation_dt_ms: 16
+  navigation_dt_ms: 16    # IMX-5 default.  8 ms max.
+  # navigation_dt_ms: 4     # uINS-3 default. 1 ms max.
   baudrate: 921600
   frame_id: "body"
   stream_DID_INS_1: true
@@ -48,13 +49,6 @@ inertial_sense_ros:
   # RTK_server_mount: "GNSSVRSRTCM32"
   # RTK_server_username: ""
   # RTK_server_password: ""
-
-  ## NTRIP
-  RTK_server_IP: "168.179.231.9"
-  RTK_server_port: 2101
-  RTK_server_mount: "GNSSVRSRTCM32"
-  RTK_server_username: "inertialsense1"
-  RTK_server_password: "inertialsense1"
 
   ## TCP
   # RTK_server_IP: "127.0.0.1"
