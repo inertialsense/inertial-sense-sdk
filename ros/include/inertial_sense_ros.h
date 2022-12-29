@@ -73,8 +73,15 @@ public:
     void callback(p_data_t *data);
     void update();
 
-    void load_params_srv();
     void load_params_yaml(YAML::Node node);
+    void load_params_srv();
+    bool getParam(const std::string &key, std::string &s);
+    bool getParam(const std::string &key, double &d);
+    bool getParam(const std::string &key, float &f);    
+    bool getParam(const std::string &key, int &i);
+    bool getParam(const std::string &key, bool &b);
+    bool getParam(const std::string &key, XmlRpc::XmlRpcValue &v);
+
     template <typename Type>
     bool get_node_param_yaml(YAML::Node node, const std::string key, Type &val);
     template <typename Derived1>
@@ -93,8 +100,7 @@ public:
     void start_log();
 
     template <typename T>
-    void get_vector_flash_config(std::string param_name, uint32_t size, T &data);
-    //void set_vector_flash_config(std::string param_name, uint32_t size, uint32_t offset);
+    bool getParamVector(const std::string &key, uint32_t size, T &data);
     void get_flash_config();
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);

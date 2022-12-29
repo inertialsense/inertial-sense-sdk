@@ -1,81 +1,87 @@
-  <launch>
-    <rosparam subst_value="True">
-      inertial_sense_node: 
-      { 
-        port: "/dev/ttyACM0",
-        navigation_dt_ms: 16,
-        baudrate: 921600,
-        frame_id: "body",
-        stream_DID_INS_1: true,
-        stream_DID_INS_2: false,
-        stream_DID_INS_4: false,
-        stream_odom_ins_ned: true,
-        stream_odom_ins_enu: false,
-        stream_odom_ins_ecef: false,
-        stream_covariance_data: false,
-        stream_INL2_states: false,
-        stream_IMU: true,
-        stream_GPS1: true,
-        stream_GPS1_raw: false,
-        stream_GPS1_info: false,
-        stream_GPS2: false,
-        stream_GPS2_raw: false,
-        stream_GPS2_info: false,
-        stream_NavSatFix: false,
-        stream_mag: false,
-        stream_baro: false,
-        stream_preint_IMU: false,
-        stream_diagnostics: false,
-        publishTf: true,
-        enable_log: false,
-        
-        <!-- (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8 -->
-        ioConfig: 40673376,
-        <!-- (0x025CA060) EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8 -->
-        <!-- ioConfig: 39624800, -->
-        <!-- (0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8 -->
-        <!-- ioConfig: 38051936, -->
+<launch>
+	<!-- <rosparam file="/home/walt/catkin_ws/src/inertial-sense-sdk/ros/launch/test_params.yaml" /> -->
+  <rosparam subst_value="True">
+inertial_sense_ros: 
+  port: "/dev/ttyACM0"
+  navigation_dt_ms: 16
+  baudrate: 921600
+  frame_id: "body"
+  stream_DID_INS_1: true
+  stream_DID_INS_2: false
+  stream_DID_INS_4: false
+  stream_odom_ins_ned: true
+  stream_odom_ins_enu: false
+  stream_odom_ins_ecef: false
+  stream_covariance_data: false
+  stream_INL2_states: false
+  stream_IMU: true
+  stream_GPS1: true
+  stream_GPS1_raw: false
+  stream_GPS1_info: false
+  stream_GPS2: true
+  stream_GPS2_raw: false
+  stream_GPS2_info: false
+  stream_NavSatFix: false
+  stream_mag: false
+  stream_baro: false
+  stream_preint_IMU: false
+  stream_diagnostics: false
+  publishTf: true
+  enable_log: false
+    
+  <!-- (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8 -->
+  ioConfig: 40673376  
+  <!-- (0x025CA060) EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8 -->
+  <!-- ioConfig: 39624800, -->
+  <!-- (0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8 -->
+  <!-- ioConfig: 38051936, -->
 
-        <!-- Every time we attempt to connect only try one time -->
-        RTK_connection_attempt_limit: 1,
-        <!-- Default back off ignored because only connecting once -->
-        RTK_connection_attempt_backoff: 2,
-        <!-- watchdog timer enabled -->
-        RTK_connectivity_watchdog_enbled: true,
-        <!-- check every 1 second for traffic -->
-        RTK_connectivity_watchdog_timer_frequency: 1,
-        <!-- after 5 seconds of not having any data try to connect again -->
-        RTK_data_transmission_interruption_limit: 5,
-        RTK_correction_protocol: "RTCM3",
+  <!-- Every time we attempt to connect only try one time -->
+  RTK_connection_attempt_limit: 1
+  <!-- Default back off ignored because only connecting once -->
+  RTK_connection_attempt_backoff: 2
+  <!-- watchdog timer enabled -->
+  RTK_connectivity_watchdog_enbled: true
+  <!-- check every 1 second for traffic -->
+  RTK_connectivity_watchdog_timer_frequency: 1
+  <!-- after 5 seconds of not having any data try to connect again -->
+  RTK_data_transmission_interruption_limit: 5
+  RTK_correction_protocol: "RTCM3"
+  
+  <!-- # NTRIP -->
+  <!-- RTK_server_IP: ""
+  RTK_server_port: 2101
+  RTK_server_mount: ""
+  RTK_server_username: ""
+  RTK_server_password: "", -->
 
-        <!-- # NTRIP -->
-        <!-- RTK_server_IP: "",
-        RTK_server_port: 2101,
-        RTK_server_mount: "",
-        RTK_server_username: "",
-        RTK_server_password: "", -->
+  <!-- # NTRIP -->
+  RTK_server_IP: "168.179.231.9"
+  RTK_server_port: 2101
+  RTK_server_mount: "GNSSVRSRTCM32"
+  RTK_server_username: "inertialsense1"
+  RTK_server_password: "inertialsense1"
 
-        <!-- # TCP -->
-        RTK_server_IP: "127.0.0.1",
-        RTK_server_port: 7777,
+  <!-- # TCP -->
+  <!-- RTK_server_IP: "127.0.0.1"
+  RTK_server_port: 7777, -->
 
-        GPS1_type: "F9P",
-        GPS2_type: "F9P",
-        RTK_rover: true,
-        RTK_rover_radio_enable: false,
-        RTK_base_USB: false,
-        RTK_base_serial: false,
-        RTK_base_TCP: false,
-        GNSS_Compass: true,
-        inclination: 0,
-        declination: 0,
-        dynamic_model: 8,
-        INS_rpy_radians: [1.5708, 0, 0],
-        INS_xyz: [0, 0, 0],
-        GPS_ant1_xyz: [0, 0, 0],
-        GPS_ant2_xyz: [-1.0, 0, 0],
-        GPS_ref_lla: [40.25, -111.67, 1556.59]
-      }
-    </rosparam>
-	<node name="inertial_sense_node" pkg="inertial_sense_ros" type="inertial_sense_node" output="screen"/>
+  GPS1_type: "F9P"
+  GPS2_type: "F9P"
+  RTK_rover: true
+  RTK_rover_radio_enable: false
+  RTK_base_USB: false
+  RTK_base_serial: false
+  RTK_base_TCP: false
+  GNSS_Compass: true
+  inclination: 0
+  declination: 0
+  dynamic_model: 8
+  INS_rpy_radians: [1.5708, 0, 0]
+  INS_xyz: [0, 0, 0]
+  GPS_ant1_xyz: [0, 0, 0]
+  GPS_ant2_xyz: [-1.0, 0, 0]
+  GPS_ref_lla: [40.25, -111.67, 1556.59]
+  </rosparam>
+  <node name="inertial_sense_node" pkg="inertial_sense_ros" type="inertial_sense_node" output="screen"/>
 </launch>

@@ -1,6 +1,6 @@
 inertial_sense_ros:
   port: "/dev/ttyACM0"
-  navigation_dt_ms: 4
+  navigation_dt_ms: 16
   baudrate: 921600
   frame_id: "body"
   stream_DID_INS_1: true

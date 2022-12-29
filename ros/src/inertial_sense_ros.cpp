@@ -13,6 +13,10 @@
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters) : nh_(), nh_private_("~"), initialized_(false), rtk_connectivity_watchdog_timer_()
 {
+    // Should always be enabled
+    DID_INS_1_.enabled = true;
+    GPS1_.enabled = true;
+
     if (paramNode.IsDefined())
     {
         load_params_yaml(paramNode);
@@ -149,84 +153,84 @@ void InertialSenseROS::load_params_yaml(YAML::Node node)
 void InertialSenseROS::load_params_srv()
 {
     ROS_INFO("Load Param Server");
-    nh_private_.getParam("port", port_);
-    nh_private_.getParam("navigation_dt_ms", navigation_dt_ms_);
-    nh_private_.getParam("baudrate", baudrate_);
-    nh_private_.getParam("frame_id", frame_id_);
-    nh_private_.param("stream_DID_INS_1", DID_INS_1_.enabled, true);
-    nh_private_.getParam("ins1_period_multiple", DID_INS_1_.period_multiple);
-    nh_private_.getParam("stream_DID_INS_2", DID_INS_2_.enabled);
-    nh_private_.getParam("ins2_period_multiple", DID_INS_2_.period_multiple);
-    nh_private_.getParam("stream_DID_INS_4", DID_INS_4_.enabled);
-    nh_private_.getParam("ins4_period_multiple", DID_INS_4_.period_multiple);
-    nh_private_.getParam("stream_odom_ins_ned", odom_ins_ned_.enabled);
-    nh_private_.getParam("odom_ins_ned_period_multiple", odom_ins_ned_.period_multiple);
-    nh_private_.getParam("stream_odom_ins_enu", odom_ins_enu_.enabled);
-    nh_private_.getParam("odom_ins_enu_period_multiple", odom_ins_enu_.period_multiple);
-    nh_private_.getParam("stream_odom_ins_ecef", odom_ins_ecef_.enabled);
-    nh_private_.getParam("odom_ins_ecef_period_multiple", odom_ins_ecef_.period_multiple);
-    nh_private_.getParam("stream_covariance_data", covariance_enabled_);
-    nh_private_.getParam("stream_INL2_states", INL2_states_.enabled);
-    nh_private_.getParam("INL2_states_period_multiple", INL2_states_.period_multiple);
-    nh_private_.getParam("stream_IMU", IMU_.enabled);
-    nh_private_.getParam("imu_period_multiple", IMU_.period_multiple);
-    nh_private_.param("stream_GPS1", GPS1_.enabled, true);
-    nh_private_.param("stream_GPS2", GPS2_.enabled, true);
-    nh_private_.getParam("gps1_period_multiple", GPS1_.period_multiple);
-    nh_private_.getParam("gps2_period_multiple", GPS2_.period_multiple);
-    nh_private_.getParam("stream_GPS1_raw", GPS1_raw_.enabled);
-    nh_private_.getParam("stream_GPS2_raw", GPS2_raw_.enabled);
-    nh_private_.getParam("gps_raw_period_multiple", gps_raw_period_multiple);
-    nh_private_.getParam("stream_GPS1_info", GPS1_info_.enabled);
-    nh_private_.getParam("stream_GPS2_info", GPS2_info_.enabled);
-    nh_private_.getParam("gps_info_period_multiple", gps_info_period_multiple);
-    nh_private_.getParam("GPS1_topic", gps1_topic_);
-    nh_private_.getParam("GPS2_topic", gps2_topic_);
-    nh_private_.getParam("stream_NavSatFix", NavSatFix_.enabled);
-    nh_private_.getParam("NavSatFix_period_multiple", NavSatFix_.period_multiple);
-    nh_private_.getParam("stream_mag", mag_.enabled);
-    nh_private_.getParam("mag_period_multiple", mag_.period_multiple);
-    nh_private_.getParam("stream_baro", baro_.enabled);
-    nh_private_.getParam("baro_period_multiple", baro_.period_multiple);
-    nh_private_.getParam("stream_preint_IMU", preint_IMU_.enabled);
-    nh_private_.getParam("preint_imu_period_multiple", preint_IMU_.period_multiple);
-    nh_private_.getParam("stream_diagnostics", diagnostics_.enabled);
-    nh_private_.getParam("diagnostics_period_multiple", diagnostics_.period_multiple);
-    nh_private_.getParam("publishTf", publishTf_);
-    nh_private_.getParam("ioConfig", ioConfig_);
-    nh_private_.getParam("enable_log", log_enabled_);
-    nh_private_.getParam("RTK_server_mount", RTK_server_mount_);
-    nh_private_.getParam("RTK_server_username", RTK_server_username_);
-    nh_private_.getParam("RTK_server_password", RTK_server_password_);
-    nh_private_.getParam("RTK_connection_attempt_limit", RTK_connection_attempt_limit_);
-    nh_private_.getParam("RTK_connection_attempt_backoff", RTK_connection_attempt_backoff_);
+    getParam("/inertial_sense_ros/port", port_);
+    getParam("/inertial_sense_ros/navigation_dt_ms", navigation_dt_ms_);
+    getParam("/inertial_sense_ros/baudrate", baudrate_);
+    getParam("/inertial_sense_ros/frame_id", frame_id_);
+    getParam("/inertial_sense_ros/stream_DID_INS_1", DID_INS_1_.enabled);
+    getParam("/inertial_sense_ros/ins1_period_multiple", DID_INS_1_.period_multiple);
+    getParam("/inertial_sense_ros/stream_DID_INS_2", DID_INS_2_.enabled);
+    getParam("/inertial_sense_ros/ins2_period_multiple", DID_INS_2_.period_multiple);
+    getParam("/inertial_sense_ros/stream_DID_INS_4", DID_INS_4_.enabled);
+    getParam("/inertial_sense_ros/ins4_period_multiple", DID_INS_4_.period_multiple);
+    getParam("/inertial_sense_ros/stream_odom_ins_ned", odom_ins_ned_.enabled);
+    getParam("/inertial_sense_ros/odom_ins_ned_period_multiple", odom_ins_ned_.period_multiple);
+    getParam("/inertial_sense_ros/stream_odom_ins_enu", odom_ins_enu_.enabled);
+    getParam("/inertial_sense_ros/odom_ins_enu_period_multiple", odom_ins_enu_.period_multiple);
+    getParam("/inertial_sense_ros/stream_odom_ins_ecef", odom_ins_ecef_.enabled);
+    getParam("/inertial_sense_ros/odom_ins_ecef_period_multiple", odom_ins_ecef_.period_multiple);
+    getParam("/inertial_sense_ros/stream_covariance_data", covariance_enabled_);
+    getParam("/inertial_sense_ros/stream_INL2_states", INL2_states_.enabled);
+    getParam("/inertial_sense_ros/INL2_states_period_multiple", INL2_states_.period_multiple);
+    getParam("/inertial_sense_ros/stream_IMU", IMU_.enabled);
+    getParam("/inertial_sense_ros/imu_period_multiple", IMU_.period_multiple);
+    getParam("/inertial_sense_ros/stream_GPS1", GPS1_.enabled);
+    getParam("/inertial_sense_ros/stream_GPS2", GPS2_.enabled);
+    getParam("/inertial_sense_ros/gps1_period_multiple", GPS1_.period_multiple);
+    getParam("/inertial_sense_ros/gps2_period_multiple", GPS2_.period_multiple);
+    getParam("/inertial_sense_ros/stream_GPS1_raw", GPS1_raw_.enabled);
+    getParam("/inertial_sense_ros/stream_GPS2_raw", GPS2_raw_.enabled);
+    getParam("/inertial_sense_ros/gps_raw_period_multiple", gps_raw_period_multiple);
+    getParam("/inertial_sense_ros/stream_GPS1_info", GPS1_info_.enabled);
+    getParam("/inertial_sense_ros/stream_GPS2_info", GPS2_info_.enabled);
+    getParam("/inertial_sense_ros/gps_info_period_multiple", gps_info_period_multiple);
+    getParam("/inertial_sense_ros/GPS1_topic", gps1_topic_);
+    getParam("/inertial_sense_ros/GPS2_topic", gps2_topic_);
+    getParam("/inertial_sense_ros/stream_NavSatFix", NavSatFix_.enabled);
+    getParam("/inertial_sense_ros/NavSatFix_period_multiple", NavSatFix_.period_multiple);
+    getParam("/inertial_sense_ros/stream_mag", mag_.enabled);
+    getParam("/inertial_sense_ros/mag_period_multiple", mag_.period_multiple);
+    getParam("/inertial_sense_ros/stream_baro", baro_.enabled);
+    getParam("/inertial_sense_ros/baro_period_multiple", baro_.period_multiple);
+    getParam("/inertial_sense_ros/stream_preint_IMU", preint_IMU_.enabled);
+    getParam("/inertial_sense_ros/preint_imu_period_multiple", preint_IMU_.period_multiple);
+    getParam("/inertial_sense_ros/stream_diagnostics", diagnostics_.enabled);
+    getParam("/inertial_sense_ros/diagnostics_period_multiple", diagnostics_.period_multiple);
+    getParam("/inertial_sense_ros/publishTf", publishTf_);
+    getParam("/inertial_sense_ros/ioConfig", ioConfig_);
+    getParam("/inertial_sense_ros/enable_log", log_enabled_);
+    getParam("/inertial_sense_ros/RTK_server_mount", RTK_server_mount_);
+    getParam("/inertial_sense_ros/RTK_server_username", RTK_server_username_);
+    getParam("/inertial_sense_ros/RTK_server_password", RTK_server_password_);
+    getParam("/inertial_sense_ros/RTK_connection_attempt_limit", RTK_connection_attempt_limit_);
+    getParam("/inertial_sense_ros/RTK_connection_attempt_backoff", RTK_connection_attempt_backoff_);
     // default is false for legacy compatibility
-    nh_private_.getParam("RTK_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
-    nh_private_.getParam("RTK_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
-    nh_private_.getParam("RTK_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
-    nh_private_.getParam("RTK_correction_protocol", RTK_correction_protocol_);
-    nh_private_.getParam("RTK_server_IP", RTK_server_IP_);
-    nh_private_.getParam("RTK_server_port", RTK_server_port_);
-    nh_private_.getParam("GPS1_type", gps1_type_);
-    nh_private_.getParam("GPS2_type", gps2_type_);
-    nh_private_.getParam("RTK_rover", RTK_rover_);
-    nh_private_.getParam("RTK_pos_period_multiple", RTK_pos_.period_multiple);
-    nh_private_.getParam("RTK_rover_radio_enable", RTK_rover_radio_enable_);
-    nh_private_.getParam("RTK_base_USB", RTK_base_USB_);
-    nh_private_.getParam("RTK_base_serial", RTK_base_serial_);
-    nh_private_.getParam("RTK_base_TCP", RTK_base_TCP_);
-    nh_private_.getParam("GNSS_Compass", GNSS_Compass_);
-    nh_private_.getParam("RTK_cmp_period_multiple", RTK_cmp_.period_multiple);
-    nh_private_.getParam("gpsTimeUserDelay", gpsTimeUserDelay_);
-    nh_private_.getParam("declination", magDeclination_);
-    nh_private_.getParam("dynamic_model", insDynModel_);
+    getParam("/inertial_sense_ros/RTK_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
+    getParam("/inertial_sense_ros/RTK_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
+    getParam("/inertial_sense_ros/RTK_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
+    getParam("/inertial_sense_ros/RTK_correction_protocol", RTK_correction_protocol_);
+    getParam("/inertial_sense_ros/RTK_server_IP", RTK_server_IP_);
+    getParam("/inertial_sense_ros/RTK_server_port", RTK_server_port_);
+    getParam("/inertial_sense_ros/GPS1_type", gps1_type_);
+    getParam("/inertial_sense_ros/GPS2_type", gps2_type_);
+    getParam("/inertial_sense_ros/RTK_rover", RTK_rover_);
+    getParam("/inertial_sense_ros/RTK_pos_period_multiple", RTK_pos_.period_multiple);
+    getParam("/inertial_sense_ros/RTK_rover_radio_enable", RTK_rover_radio_enable_);
+    getParam("/inertial_sense_ros/RTK_base_USB", RTK_base_USB_);
+    getParam("/inertial_sense_ros/RTK_base_serial", RTK_base_serial_);
+    getParam("/inertial_sense_ros/RTK_base_TCP", RTK_base_TCP_);
+    getParam("/inertial_sense_ros/GNSS_Compass", GNSS_Compass_);
+    getParam("/inertial_sense_ros/RTK_cmp_period_multiple", RTK_cmp_.period_multiple);
+    getParam("/inertial_sense_ros/gpsTimeUserDelay", gpsTimeUserDelay_);
+    getParam("/inertial_sense_ros/declination", magDeclination_);
+    getParam("/inertial_sense_ros/dynamic_model", insDynModel_);
 
     //Params with arrays
-    get_vector_flash_config("INS_rpy_radians", 3, insRotation_);
-    get_vector_flash_config("INS_xyz", 3, insOffset_);
-    get_vector_flash_config("GPS_ant1_xyz", 3, gps1AntOffset_);
-    get_vector_flash_config("GPS_ant2_xyz", 3, gps2AntOffset_);
-    get_vector_flash_config("GPS_ref_lla", 3, refLla_);
+    getParamVector("INS_rpy_radians", 3, insRotation_);
+    getParamVector("INS_xyz", 3, insOffset_);
+    getParamVector("GPS_ant1_xyz", 3, gps1AntOffset_);
+    getParamVector("GPS_ant2_xyz", 3, gps2AntOffset_);
+    getParamVector("GPS_ref_lla", 3, refLla_);
 }
 
 void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
@@ -893,23 +897,6 @@ void InertialSenseROS::configure_rtk()
         IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&RTKCfgBits), sizeof(RTKCfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
     ROS_INFO("Setting RTKCfgBits: 0x%08x", RTKCfgBits);
-}
-
-template <typename T>
-void InertialSenseROS::get_vector_flash_config(std::string param_name, uint32_t size, T &data)
-{
-    std::vector<double> tmp(size, 0);
-    if (!nh_private_.hasParam(param_name))
-    {   // Parameter not provided.
-        return;
-    }
-
-    nh_private_.getParam(param_name, tmp);
-
-    for (int i = 0; i < size; i++)
-    {
-        data[i] = tmp[i];
-    }
 }
 
 void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg)
@@ -2534,3 +2521,134 @@ bool InertialSenseROS::get_node_vector_yaml(YAML::Node node, const std::string k
 
     return success;
 }
+
+bool InertialSenseROS::getParam(const std::string &key, std::string &s)
+{
+    bool success = nh_private_.getParam(key, s);
+
+    // Display parameter
+    if (success)
+    {
+        std::cout << PARAM_PRINT_USER;
+    }
+    else
+    {
+        std::cout << PARAM_PRINT_DEFAULT;
+    }
+    std::cout << key + ": " << s << "\n";
+    return  success;
+}
+
+bool InertialSenseROS::getParam(const std::string &key, double &d)
+{
+    bool success = nh_private_.getParam(key, d);
+
+    // Display parameter
+    if (success)
+    {
+        std::cout << PARAM_PRINT_USER;
+    }
+    else
+    {
+        std::cout << PARAM_PRINT_DEFAULT;
+    }
+    std::cout << key + ": " << d << "\n";
+    return success;
+}
+
+bool InertialSenseROS::getParam(const std::string &key, float &f)
+{
+    bool success = nh_private_.getParam(key, f);
+
+    // Display parameter
+    if (success)
+    {
+        std::cout << PARAM_PRINT_USER;
+    }
+    else
+    {
+        std::cout << PARAM_PRINT_DEFAULT;
+    }
+    std::cout << key + ": " << f << "\n";
+    return success;
+}
+
+bool InertialSenseROS::getParam(const std::string &key, int &i)
+{
+    bool success = nh_private_.getParam(key, i);
+
+    // Display parameter
+    if (success)
+    {
+        std::cout << PARAM_PRINT_USER;
+    }
+    else
+    {
+        std::cout << PARAM_PRINT_DEFAULT;
+    }
+    std::cout << key + ": " << i << "\n";
+    return success;
+}
+
+bool InertialSenseROS::getParam(const std::string &key, bool &b)
+{
+    bool success = nh_private_.getParam(key, b);
+
+    // Display parameter
+    if (success)
+    {
+        std::cout << PARAM_PRINT_USER;
+    }
+    else
+    {
+        std::cout << PARAM_PRINT_DEFAULT;
+    }
+    std::cout << key + ": " << b << "\n";
+    return success;
+}
+
+bool InertialSenseROS::getParam(const std::string &key, XmlRpc::XmlRpcValue &v)
+{
+    bool success = nh_private_.getParam(key, v);
+
+    // Display parameter
+    if (success)
+    {
+        std::cout << PARAM_PRINT_USER;
+    }
+    else
+    {
+        std::cout << PARAM_PRINT_DEFAULT;
+    }
+    std::cout << key + ": " << v << "\n";
+    return success;
+}
+
+template <typename T>
+bool InertialSenseROS::getParamVector(const std::string &key, uint32_t size, T &data)
+{
+    std::vector<double> vec(size, 0);
+    bool success = nh_private_.getParam(key, vec);
+
+    if (success)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            data[i] = vec[i];
+        }
+        std::cout << PARAM_PRINT_USER;
+    }
+    else
+    {
+        std::cout << PARAM_PRINT_DEFAULT;
+    }
+    std::cout << key + ": [";
+    for (int i = 0; i < size; i++)
+    {
+        std::cout << vec[i] << ((i<size-1) ? "," : "");
+    }
+    std::cout << "]\n";
+
+    return success;
+}
+
