@@ -1,13 +1,11 @@
 # Inertial Sense ROS
 
-
 A ROS wrapper node implementation for the Inertial Sense IMX product line.
 
-## NOTICE:
+!!! important
+    The IMX/uINS should be updated with the latest firmware found on the Inertial Sense [release page (https://github.com/inertialsense/inertial-sense-sdk/releases).  Download the appropriate `.hex` file and use the Inertial Sense EvalTool, CLTool, or SDK to upload the firmware.
 
-To use this node, the unit should be updated with the latest firmware found on the Inertial Sense [release page](https://github.com/inertialsense/inertial-sense-sdk/releases).  Download the appropriate `.hex` file and use the Inertial Sense EvalTool, CLTool, or SDK to upload the firmware.
-
-## Installation
+## Setup
 This ROS package, uses the inertial-sense-sdk as a submodule. Clone this package into the catkin workspace `src` folder, then pull the submodule.
 
 ```bash
@@ -19,7 +17,7 @@ cd ..
 catkin_make
 ```
 
-## Running the Node
+## Execution
 
 ```bash
 source devel/setup.bash
