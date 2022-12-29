@@ -59,7 +59,7 @@
 #define configMAX_PRIORITIES					( 10 )
 #define configMINIMAL_STACK_SIZE				( ( unsigned short ) 130 )
 
-#define configTOTAL_HEAP_SIZE					256000 
+#define configTOTAL_HEAP_SIZE					253000 
 
 #define configMAX_TASK_NAME_LEN					( 10 )
 #define configUSE_TRACE_FACILITY				1
@@ -73,6 +73,7 @@
 #define configUSE_APPLICATION_TASK_TAG			0
 #define configUSE_COUNTING_SEMAPHORES			1
 #define configUSE_DAEMON_TASK_STARTUP_HOOK 		1
+#define configSUPPORT_STATIC_ALLOCATION			1
 
 /* The full demo always has tasks to run so the tick will never be turned off.
 The blinky demo will use the default tickless idle implementation to turn the
