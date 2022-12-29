@@ -50,6 +50,12 @@ is_comm_instance_t 			g_commTx = {};
 StreamBufferHandle_t        g_xStreamBufferUINS;
 StreamBufferHandle_t        g_xStreamBufferWiFiRx;
 StreamBufferHandle_t        g_xStreamBufferWiFiTx;
+static uint8_t s_xStreamBufferUINS_buf[ STREAM_BUFFER_SIZE ] __attribute__((aligned(4)));
+static uint8_t s_xStreamBufferWiFiRx_buf[ STREAM_BUFFER_SIZE ] __attribute__((aligned(4)));
+static uint8_t s_xStreamBufferWiFiTx_buf[ STREAM_BUFFER_SIZE ] __attribute__((aligned(4)));
+static StaticStreamBuffer_t s_xStreamBufferUINS_struct;
+static StaticStreamBuffer_t s_xStreamBufferWiFiRx_struct;
+static StaticStreamBuffer_t s_xStreamBufferWiFiTx_struct;
 
 static pfnHandleUinsData s_pfnHandleUinsData = NULLPTR;
 static pfnHandleHostData s_pfnHandleHostData = NULLPTR;
@@ -1072,9 +1078,19 @@ void comunications_set_host_data_callback( pfnHandleHostData pfn )
 void communications_init(pfnHandleBroadcst pfnBroadcst, pfnHandleDid2Ermc pfnDid2Ermc)
 {
     const size_t xTriggerLevel = 1;
-    g_xStreamBufferUINS = xStreamBufferCreate( STREAM_BUFFER_SIZE, xTriggerLevel );
-    g_xStreamBufferWiFiRx = xStreamBufferCreate( STREAM_BUFFER_SIZE, xTriggerLevel );
-    g_xStreamBufferWiFiTx = xStreamBufferCreate( STREAM_BUFFER_SIZE, xTriggerLevel );
+
+	g_xStreamBufferUINS = xStreamBufferCreateStatic(STREAM_BUFFER_SIZE,
+													xTriggerLevel,
+													s_xStreamBufferUINS_buf,
+													&s_xStreamBufferUINS_struct);
+	g_xStreamBufferWiFiRx = xStreamBufferCreateStatic(STREAM_BUFFER_SIZE,
+													xTriggerLevel,
+													s_xStreamBufferWiFiRx_buf,
+													&s_xStreamBufferWiFiRx_struct);
+	g_xStreamBufferWiFiTx = xStreamBufferCreateStatic(STREAM_BUFFER_SIZE,
+													xTriggerLevel,
+													s_xStreamBufferWiFiTx_buf,
+													&s_xStreamBufferWiFiTx_struct);
 
 	for(int i=0; i<COM_RX_PORT_COUNT; i++)
 	{
