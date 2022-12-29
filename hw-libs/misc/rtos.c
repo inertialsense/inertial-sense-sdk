@@ -12,6 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "FreeRTOS.h"
 #include "task.h"
+#if ((configUSE_TIMERS == 1) && (configSUPPORT_STATIC_ALLOCATION == 1))
+#include "timers.h"
+#endif
 #include "rtos.h"
 
 #if !defined(PLATFORM_IS_EVB_2) && !defined(TESTBED)
