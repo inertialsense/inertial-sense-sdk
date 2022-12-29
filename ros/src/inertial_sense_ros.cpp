@@ -13,7 +13,7 @@
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters) : nh_(), nh_private_("~"), initialized_(false), rtk_connectivity_watchdog_timer_()
 {
-    ROS_INFO("Starting Inertial Sense ROS!");
+    ROS_INFO("==========  Starting Inertial Sense ROS  ==========");
 
     // Should always be enabled
     DID_INS_1_.enabled = true;
