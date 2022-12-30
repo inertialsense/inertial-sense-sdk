@@ -19,6 +19,8 @@ DEBUG ?=
 
 ifeq ($(OS),Windows_NT) # Windows (any, not just NT)
 
+SHELL = /c/WINDOWS/system32/cmd.exe
+
 # Windows mkdir isn't same as linux
 mkdir = mkdir $(subst /,\,$(1)) > nul 2>&1 || (exit 0)
 rm = rmdir /Q /S $(subst /,\,$(1)) > nul 2>&1 || (exit 0)
