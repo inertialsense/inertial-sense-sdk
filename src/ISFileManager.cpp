@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISFileManager.h"
+#include "ISUtilities.h"
 #include <regex>
 
 
@@ -369,7 +370,12 @@ uint64_t GetDirectorySpaceAvailable(const std::string& directory)
     {
         _RMDIR(directory.c_str());
     }
+
+#if (LOG_DEBUG_GEN == 2)
+    advance_cursor();
+#elif LOG_DEBUG_GEN
     printf("GetDirectorySpaceAvailable %s %d\n", directory.c_str(), created);
+#endif
     return (uint64_t)stat.f_bsize * (uint64_t)stat.f_bavail;
 
 #endif
