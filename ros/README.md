@@ -40,7 +40,7 @@ For instructions on changing parameter values and topic remapping from the comma
 rosparam set /inertial_sense_ros/navigation_dt_ms 16
 rosparam set /inertial_sense_ros/stream_DID_INS_2 true
 rosparam set /inertial_sense_ros/GPS_ref_lla "[40.25, -111.67, 1556.59]"
-rosparam set /inertial_sense_ros/GPS_ant1_xyz "[0.2, 0.0, 0.3]"
+rosparam set /inertial_sense_ros/GPS1_ant_xyz "[0.2, 0.0, 0.3]"
 rosrun inertial_sense_ros inertial_sense_node
 ```
 
@@ -269,9 +269,9 @@ __*Note: These values must be clear for TCP configuration to work__
    -  Which receiver type: "F9P" or "M8"
 - `~GPS2_topic` (string, default: "gps2")
    -  ROS topic name of GPS1 stream
-- `~GPS_ant1_xyz` (vector(3), default: {0, 0, 0})
+- `~GPS1_ant_xyz` (vector(3), default: {0, 0, 0})
    -  The NED translation vector between the INS frame and the GPS 1 antenna (wrt INS frame)
-- `~GPS_ant2_xyz` (vector(3), default: {0, 0, 0})
+- `~GPS2_ant_xyz` (vector(3), default: {0, 0, 0})
    -  The NED translation vector between the INS frame and the GPS 2 antenna (wrt INS frame)
 - `~GPS_ref_lla` (vector(3), default: {0, 0, 0})
    -  The Reference longitude, latitude and altitude for NED calculation in degrees, degrees and meters (use the `set_refLLA` service to update this automatically)
