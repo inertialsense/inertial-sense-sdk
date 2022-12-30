@@ -746,3 +746,15 @@ cMutexLocker::~cMutexLocker()
 {
 	m_mutex->Unlock();
 }
+
+void advance_cursor(void) 
+{
+	static unsigned int timeLast = current_timeMs();
+	if(current_timeMs() - timeLast < 50U) return; 
+	timeLast = current_timeMs();
+	static int pos=0;
+	char cursor[4]={'/','-','\\','|'};
+	printf("%c\b", cursor[pos]);
+	fflush(stdout);
+	pos = (pos+1) % 4;
+}

@@ -146,6 +146,15 @@ void usleep(__int64 usec);
 #define SLEEP_US(timeUs) usleep(timeUs);
 #endif
 
+// 0 for no output, 1 for verbose, 2 for spinning cursor
+#if PLATFORM_IS_EMBEDDED
+#define LOG_DEBUG_GEN			0
+#elif !defined(LOG_DEBUG_GEN)
+#define LOG_DEBUG_GEN			2
+#else
+
+#endif
+
 #endif
 
 unsigned int current_timeSec();
@@ -156,6 +165,8 @@ uint64_t timerUsStart();
 uint64_t timerUsEnd(uint64_t start);
 uint64_t timerRawStart();
 uint64_t timerRawEnd(uint64_t start);
+
+void advance_cursor(void);
 
 uint64_t getTickCount(void);
 
