@@ -1,6 +1,5 @@
 /**
  * @file rtos_static.c
- * @author Dave Cutting (davidcutting42@gmail.com)
  * @brief FreeRTOS helper functions using static allocation only
  * 
  * @copyright Copyright (c) 2022 Inertial Sense, Inc.
