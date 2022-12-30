@@ -8,6 +8,7 @@
  */
 
 #include "rtos_static.h"
+#include "debug_gpio.h"
 
 #include <stdint.h>
 
@@ -79,4 +80,27 @@ void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
     Note that, as the array is necessarily of type StackType_t,
     configMINIMAL_STACK_SIZE is specified in words, not bytes. */
     *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}
+
+void vApplicationIdleHook(void)
+{
+    // Sleep to reduce power consumption
+    SCB->SCR &= (uint32_t) ~SCB_SCR_SLEEPDEEP_Msk;	// TODO: Make sure this is right for CM33
+    __DSB();
+    __WFI();
+}
+
+void vApplicationTickHook(void)
+{
+    DBGPIO_TOGGLE(DBG_RTOS_TICK_HOOK_PIN);  // Debug used to monitor RTOS tick execution
+}
+
+void vApplicationMallocFailedHook( void )
+{
+	while(1);
+}
+
+void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
+{
+	while(1);
 }
