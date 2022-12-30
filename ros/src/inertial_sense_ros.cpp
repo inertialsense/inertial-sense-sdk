@@ -750,11 +750,9 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback(const ros::Timer
     {
         ++rtk_data_transmission_interruption_count_;
 
-
         if (rtk_data_transmission_interruption_count_ >= rtk_data_transmission_interruption_limit_)
         {
             ROS_WARN("RTK transmission interruption, reconnecting...");
-
 
             connect_rtk_client(RTK_correction_protocol_, RTK_server_IP_, RTK_server_port_);
         }
@@ -829,7 +827,6 @@ void InertialSenseROS::configure_rtk()
 
     else
     {
-
         ROS_ERROR_COND(RTK_rover_ && (RTK_base_serial_ || RTK_base_USB_ || RTK_base_TCP_), "unable to configure onboard receiver to be both RTK rover and base - default to rover");
         ROS_ERROR_COND(RTK_rover_ && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
@@ -916,7 +913,6 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         {
             DID_INS_1_.pub = nh_.advertise<inertial_sense_ros::DID_INS1>("DID_INS_1", 1);
         }
-
     }
 
     ins1Streaming_ = true;
@@ -949,12 +945,12 @@ void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
 {
     if (!ins2Streaming_)
     {
+        ins2Streaming_ = true;
         ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID));
         if (DID_INS_2_.enabled)
             DID_INS_2_.pub = nh_.advertise<inertial_sense_ros::DID_INS2>("DID_INS_2", 1);
     }
 
-    ins2Streaming_ = true;
     if (DID_INS_2_.enabled)
     {
         // Standard DID_INS_2 message
@@ -981,21 +977,19 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 {
     if (!ins4Streaming_)
     {
+        ins4Streaming_ = true;
         ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID));
+    
         if (DID_INS_4_.enabled)
             DID_INS_4_.pub = nh_.advertise<inertial_sense_ros::DID_INS4>("DID_INS_4", 1);
-
         if (odom_ins_ned_.enabled)
             odom_ins_ned_.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ned", 1);
-
         if (odom_ins_enu_.enabled)
             odom_ins_enu_.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_enu", 1);
-
         if ( odom_ins_ecef_.enabled)
             odom_ins_ecef_.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ecef", 1);
     }
 
-    ins4Streaming_ = true;
     if (!refLLA_known)
     {
         ROS_INFO("REFERENCE LLA MUST BE RECEIVED");
@@ -1064,20 +1058,17 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             ecef_odom_msg.header.frame_id = frame_id_;
 
             // Position
-
             ecef_odom_msg.pose.pose.position.x = msg->ecef[0];
             ecef_odom_msg.pose.pose.position.y = msg->ecef[1];
             ecef_odom_msg.pose.pose.position.z = -msg->ecef[2];
 
             // Attitude
-
             ecef_odom_msg.pose.pose.orientation.w = msg->qe2b[0];
             ecef_odom_msg.pose.pose.orientation.x = msg->qe2b[1];
             ecef_odom_msg.pose.pose.orientation.y = msg->qe2b[2];
             ecef_odom_msg.pose.pose.orientation.z = msg->qe2b[3];
 
             // Linear Velocity
-
             ecef_odom_msg.twist.twist.linear.x = msg->ve[0];
             ecef_odom_msg.twist.twist.linear.y = msg->ve[1];
             ecef_odom_msg.twist.twist.linear.z = msg->ve[2];
@@ -1154,7 +1145,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             ned_odom_msg.pose.pose.position.z = ned[2];
 
             // Attitude
-
             ned_odom_msg.pose.pose.orientation.w = qn2b[0]; // w
             ned_odom_msg.pose.pose.orientation.x = qn2b[1]; // x
             ned_odom_msg.pose.pose.orientation.y = qn2b[2]; // y
@@ -1170,7 +1160,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             ned_odom_msg.twist.twist.linear.z = result[2];
 
             // Angular Velocity
-
             // Transform from body frame to NED
             ixVector3 angVelImu = {(f_t)imu_msg.angular_velocity.x, (f_t)imu_msg.angular_velocity.y, (f_t)imu_msg.angular_velocity.z};
             quatRot(result, qn2b, angVelImu);
@@ -1247,7 +1236,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             enu_odom_msg.pose.pose.position.z = -ned[2];
 
             // Attitude
-
             enu_odom_msg.pose.pose.orientation.w = qenu2b[0];
             enu_odom_msg.pose.pose.orientation.x = qenu2b[1];
             enu_odom_msg.pose.pose.orientation.y = qenu2b[2];
@@ -1263,7 +1251,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             enu_odom_msg.twist.twist.linear.z = -result[2];
 
             // Angular Velocity
-
             // Transform from body frame to ENU
             ixVector3 angVelImu = {(f_t)imu_msg.angular_velocity.x, (f_t)imu_msg.angular_velocity.y, (f_t)imu_msg.angular_velocity.z};
             quatRot(result, qenu2b, angVelImu);
@@ -1291,11 +1278,11 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
 {
     if (!inl2StatesStreaming_)
     {
+        inl2StatesStreaming_ = true;
         ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID));
         if (INL2_states_.enabled)
             INL2_states_.pub = nh_.advertise<inertial_sense_ros::INL2States>("inl2_states", 1);
     }
-    inl2StatesStreaming_ = true;
     inl2_states_msg.header.stamp = ros_time_from_tow(msg->timeOfWeek);
     inl2_states_msg.header.frame_id = frame_id_;
 
@@ -1334,9 +1321,11 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
 void InertialSenseROS::INS_covariance_callback(eDataIDs DID, const ros_covariance_pose_twist_t *const msg)
 {
     if (!insCovarianceStreaming_)
+    {
+        insCovarianceStreaming_ = true;
         ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID));
-
-    insCovarianceStreaming_ = true;
+    }
+    
     float poseCovIn[36];
     int ind1, ind2;
 
