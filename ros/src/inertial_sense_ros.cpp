@@ -878,7 +878,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             }
             // Twist
             // Transform angular_rate from body to ECEF
-            transform_6x6_covariance(Pout, twistCov, I, Rb2e);
+            transform_6x6_covariance(Pout, twistCov_, I, Rb2e);
             for (int i = 0; i < 36; i++)
             {
                 msg_odom_ecef.twist.covariance[i] = Pout[i];
@@ -949,7 +949,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             }
             // Twist
             // Transform velocity from ECEF to NED and angular rate from body to NED
-            transform_6x6_covariance(Pout, twistCov, Re2n, Rb2n);
+            transform_6x6_covariance(Pout, twistCov_, Re2n, Rb2n);
             for (int i = 0; i < 36; i++)
             {
                 msg_odom_ned.twist.covariance[i] = Pout[i];
@@ -1038,7 +1038,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             }
             // Twist
             // Transform velocity from ECEF to ENU and angular rate from body to ENU
-            transform_6x6_covariance(Pout, twistCov, Re2enu, Rb2enu);
+            transform_6x6_covariance(Pout, twistCov_, Re2enu, Rb2enu);
             for (int i = 0; i < 36; i++)
             {
                 msg_odom_enu.twist.covariance[i] = Pout[i];
@@ -1151,7 +1151,7 @@ void InertialSenseROS::INS_covariance_callback(eDataIDs DID, const ros_covarianc
 
     // Pose and twist covariances unwrapped from LD
     LD2Cov(msg->covPoseLD, poseCovIn, 6);
-    LD2Cov(msg->covTwistLD, twistCov, 6);
+    LD2Cov(msg->covTwistLD, twistCov_, 6);
 
     // Need to change order of variables.
     // Incoming order for msg->covPoseLD is [attitude, position]. Outgoing should be [position, attitude] => need to swap
