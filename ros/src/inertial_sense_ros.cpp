@@ -43,8 +43,8 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     strobe_pub_ = nh_.advertise<std_msgs::Header>("strobe_time", 1);
 
     if (rs_.ins1.enabled)           { rs_.ins1.pub = nh_.advertise<inertial_sense_ros::DID_INS1>("did_ins1", 1); }
-    if (rs_.ins2.enabled)           { rs_.ins2.pub = nh_.advertise<inertial_sense_ros::DID_INS1>("did_ins2", 1); }
-    if (rs_.ins4.enabled)           { rs_.ins4.pub = nh_.advertise<inertial_sense_ros::DID_INS1>("did_ins4", 1); }
+    if (rs_.ins2.enabled)           { rs_.ins2.pub = nh_.advertise<inertial_sense_ros::DID_INS2>("did_ins2", 1); }
+    if (rs_.ins4.enabled)           { rs_.ins4.pub = nh_.advertise<inertial_sense_ros::DID_INS4>("did_ins4", 1); }
     if (rs_.odom_ins_ned.enabled)   { rs_.odom_ins_ned.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ned", 1); }
     if (rs_.odom_ins_enu.enabled)   { rs_.odom_ins_enu.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_enu", 1); }
     if (rs_.odom_ins_ecef.enabled)  { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ecef", 1); }
@@ -393,20 +393,17 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         CONFIG_STREAM(rs_.gps1_raw, DID_GPS1_RAW, gps_raw_t, GPS_raw_callback);
         CONFIG_STREAM(rs_.gps1_info, DID_GPS1_SAT, gps_sat_t, GPS_info_callback);
     }
-
     if (rs_.gps2.enabled)
     {
         CONFIG_STREAM_GPS(rs_.gps2, DID_GPS2_POS, GPS_pos_callback, DID_GPS2_VEL, GPS_vel_callback);
         CONFIG_STREAM(rs_.gps2_raw, DID_GPS2_RAW, gps_raw_t, GPS_raw_callback);
         CONFIG_STREAM(rs_.gps2_info, DID_GPS2_SAT, gps_sat_t, GPS_info_callback);
     }
-
     CONFIG_STREAM(rs_.gpsbase_raw, DID_GPS_BASE_RAW, gps_raw_t, GPS_raw_callback);
 
     CONFIG_STREAM(rs_.mag, DID_MAGNETOMETER, magnetometer_t, mag_callback);
     CONFIG_STREAM(rs_.baro, DID_BAROMETER, barometer_t, baro_callback);
     CONFIG_STREAM(rs_.pimu, DID_PIMU, pimu_t, preint_IMU_callback);
-    CONFIG_STREAM(rs_.imu, DID_PIMU, pimu_t, preint_IMU_callback);  // We read PIMU and convert to IMU 
 
     if (!firstrun)
     {
@@ -1446,13 +1443,17 @@ void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg
         STREAMING_CHECK(rs_.imu.streaming, DID);
         msg_imu.header.stamp = ros_time_from_start_time(msg->time);
         msg_imu.header.frame_id = frame_id_;
-        msg_imu.angular_velocity.x = msg->theta[0] /msg->dt;
-        msg_imu.angular_velocity.y = msg->theta[1] /msg->dt;
-        msg_imu.angular_velocity.z = msg->theta[2] /msg->dt;
-        msg_imu.linear_acceleration.x = msg->vel[0]/msg->dt;
-        msg_imu.linear_acceleration.y = msg->vel[1]/msg->dt;
-        msg_imu.linear_acceleration.z = msg->vel[2]/msg->dt;
-        rs_.imu.pub.publish(msg_imu);
+        if (msg->dt != 0.0f)
+        {
+            float div = 1.0f/msg->dt;
+            msg_imu.angular_velocity.x = msg->theta[0]  * div;
+            msg_imu.angular_velocity.y = msg->theta[1]  * div;
+            msg_imu.angular_velocity.z = msg->theta[2]  * div;
+            msg_imu.linear_acceleration.x = msg->vel[0] * div;
+            msg_imu.linear_acceleration.y = msg->vel[1] * div;
+            msg_imu.linear_acceleration.z = msg->vel[2] * div;
+            rs_.imu.pub.publish(msg_imu);
+        }
     }
 }
 
