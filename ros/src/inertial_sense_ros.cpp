@@ -21,14 +21,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     rs_.ins1.enabled = true;
     rs_.gps1.enabled = true;
 
-    if (paramNode.IsDefined())
-    {
-        load_params_yaml(paramNode);
-    }
-    else
-    {
-        load_params_srv();
-    }
+    load_params(paramNode);
 
     connect();
 
@@ -123,24 +116,38 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     initialized_ = true;
 }
 
-void InertialSenseROS::load_params_yaml(YAML::Node node)
+void InertialSenseROS::load_params(YAML::Node &node)
 {
-    ROS_INFO("Load from YAML");
-    get_node_param_yaml(node, "port", port_);
-    get_node_param_yaml(node, "navigation_dt_ms", navigation_dt_ms_);
-    get_node_param_yaml(node, "baudrate", baudrate_);
-    get_node_param_yaml(node, "frame_id", frame_id_);
+    bool useYamlNode = node.IsDefined();
 
-#define RS_GET_NODE_PARAMS_YAML(name) \
-    get_node_param_yaml(node, "msg/"#name"/enable", rs_.name.enabled); \
-    get_node_param_yaml(node, "msg/"#name"/period_multiple", rs_.name.period_multiple);
+    ROS_INFO( (useYamlNode ? "Load from YAML node" : "Load from Param Server") );
 
-    RS_GET_NODE_PARAMS_YAML(ins1);
-    RS_GET_NODE_PARAMS_YAML(ins2);
-    RS_GET_NODE_PARAMS_YAML(ins4);
-    RS_GET_NODE_PARAMS_YAML(odom_ins_ned);
-    RS_GET_NODE_PARAMS_YAML(odom_ins_enu);
-    RS_GET_NODE_PARAMS_YAML(odom_ins_ecef);
+#define GET_PARAM(name, var) \
+    if (useYamlNode){ \
+        get_node_param_yaml(node, #name, var); \
+    } else { \
+        getParam(#name, var); \
+    }
+
+#define GET_PARAMS_RS(name) \
+    if (useYamlNode){ \
+        get_node_param_yaml(node, "msg/"#name"/enable", rs_.name.enabled); \
+        get_node_param_yaml(node, "msg/"#name"/period_multiple", rs_.name.period_multiple); \
+    } else { \
+        getParam("/msg/"#name"/enable", rs_.name.enabled); \
+        getParam("/msg/"#name"/period_multiple", rs_.name.period_multiple); \
+    }
+
+    GET_PARAM(port, port_);
+    GET_PARAM(navigation_dt_ms, navigation_dt_ms_);
+    GET_PARAM(baudrate, baudrate_);
+    GET_PARAM(frame_id, frame_id_);
+    GET_PARAMS_RS(ins1);
+    GET_PARAMS_RS(ins2);
+    GET_PARAMS_RS(ins4);
+    GET_PARAMS_RS(odom_ins_ned);
+    GET_PARAMS_RS(odom_ins_enu);
+    GET_PARAMS_RS(odom_ins_ecef);
 
     get_node_param_yaml(node, "odom_ins_enu_period_multiple", rs_.odom_ins_enu.period_multiple);
     get_node_param_yaml(node, "msg/odom_ins_ecef/enable", rs_.odom_ins_ecef.enabled);
@@ -217,18 +224,15 @@ void InertialSenseROS::load_params_srv()
     getParam("/baudrate", baudrate_);
     getParam("/frame_id", frame_id_);
 
-#define RS_GET_PARAMS(name) \
-    getParam("/msg/"#name"/enable", rs_.name.enabled); \
-    getParam("/msg/"#name"/period_multiple", rs_.name.period_multiple);
+// #define RS_GET_PARAMS(name) \
+//     getParam("/msg/"#name"/enable", rs_.name.enabled); \
+//     getParam("/msg/"#name"/period_multiple", rs_.name.period_multiple);
 
-    RS_GET_PARAMS(ins1);
+//     GET_PARAMS_RS(ins1);
+//     GET_PARAMS_RS(ins2);
+//     GET_PARAMS_RS(ins4);
+//     GET_PARAMS_RS(ins4);
 
-    // getParam("msg/ins1/enable", rs_.ins1.enabled);
-    // getParam("msg/ins1/period_multiple", rs_.ins1.period_multiple);
-    getParam("/msg/ins2/enable", rs_.ins2.enabled);
-    getParam("/msg/ins2/period_multiple", rs_.ins2.period_multiple);
-    getParam("/msg/ins4/enable", rs_.ins4.enabled);
-    getParam("/msg/ins4/period_multiple", rs_.ins4.period_multiple);
     getParam("/msg/odom_ins_ned/enable", rs_.odom_ins_ned.enabled);
     getParam("/msg/odom_ins_ned/period_multiple", rs_.odom_ins_ned.period_multiple);
     getParam("/msg/odom_ins_enu/enable", rs_.odom_ins_enu.enabled);

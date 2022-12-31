@@ -73,7 +73,7 @@ public:
     void callback(p_data_t *data);
     void update();
 
-    void load_params_yaml(YAML::Node node);
+    void load_params(YAML::Node &node);
     void load_params_srv();
     bool getParam(const std::string &key, std::string &s);
     bool getParam(const std::string &key, double &d);
