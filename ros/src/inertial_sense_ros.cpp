@@ -130,18 +130,25 @@ void InertialSenseROS::load_params_yaml(YAML::Node node)
     get_node_param_yaml(node, "navigation_dt_ms", navigation_dt_ms_);
     get_node_param_yaml(node, "baudrate", baudrate_);
     get_node_param_yaml(node, "frame_id", frame_id_);
-    get_node_param_yaml(node, "stream_DID_INS_1", rs_.ins1.enabled);
-    get_node_param_yaml(node, "ins1_period_multiple", rs_.ins1.period_multiple);
-    get_node_param_yaml(node, "stream_DID_INS_2", rs_.ins2.enabled);
-    get_node_param_yaml(node, "ins2_period_multiple", rs_.ins2.period_multiple);
-    get_node_param_yaml(node, "stream_DID_INS_4", rs_.ins4.enabled);
-    get_node_param_yaml(node, "ins4_period_multiple", rs_.ins4.period_multiple);
-    get_node_param_yaml(node, "stream_odom_ins_ned", rs_.odom_ins_ned.enabled);
-    get_node_param_yaml(node, "odom_ins_ned_period_multiple", rs_.odom_ins_ned.period_multiple);
-    get_node_param_yaml(node, "stream_odom_ins_enu", rs_.odom_ins_enu.enabled);
+
+#define RS_GET_NODE_PARAMS_YAML(name) \
+    get_node_param_yaml(node, "msg/"#name"/enable", rs_.name.enabled); \
+    get_node_param_yaml(node, "msg/"#name"/period_multiple", rs_.name.period_multiple);
+
+    RS_GET_NODE_PARAMS_YAML(ins1);
+
+    // get_node_param_yaml(node, "msg/ins1/enable", rs_.ins1.enabled);
+    // get_node_param_yaml(node, "msg/ins1/period_multiple", rs_.ins1.period_multiple);
+    get_node_param_yaml(node, "msg/ins2/enable", rs_.ins2.enabled);
+    get_node_param_yaml(node, "msg/ins2/period_multiple", rs_.ins2.period_multiple);
+    get_node_param_yaml(node, "msg/ins4/enable", rs_.ins4.enabled);
+    get_node_param_yaml(node, "msg/ins4/period_multiple", rs_.ins4.period_multiple);
+    get_node_param_yaml(node, "msg/odom_ins_ned/enable", rs_.odom_ins_ned.enabled);
+    get_node_param_yaml(node, "msg/odom_ins_ned/period_multiple", rs_.odom_ins_ned.period_multiple);
+    get_node_param_yaml(node, "msg/odom_ins_enu/enable", rs_.odom_ins_enu.enabled);
     get_node_param_yaml(node, "odom_ins_enu_period_multiple", rs_.odom_ins_enu.period_multiple);
-    get_node_param_yaml(node, "stream_odom_ins_ecef", rs_.odom_ins_ecef.enabled);
-    get_node_param_yaml(node, "odom_ins_ecef_period_multiple", rs_.odom_ins_ecef.period_multiple);
+    get_node_param_yaml(node, "msg/odom_ins_ecef/enable", rs_.odom_ins_ecef.enabled);
+    get_node_param_yaml(node, "msg/odom_ins_ecef/period_multiple", rs_.odom_ins_ecef.period_multiple);
     get_node_param_yaml(node, "stream_covariance_data", covariance_enabled_);
     get_node_param_yaml(node, "stream_INL2_states", rs_.inl2_states.enabled);
     get_node_param_yaml(node, "INL2_states_period_multiple", rs_.inl2_states.period_multiple);
@@ -213,18 +220,18 @@ void InertialSenseROS::load_params_srv()
     getParam("navigation_dt_ms", navigation_dt_ms_);
     getParam("baudrate", baudrate_);
     getParam("frame_id", frame_id_);
-    getParam("stream_DID_INS_1", rs_.ins1.enabled);
-    getParam("ins1_period_multiple", rs_.ins1.period_multiple);
-    getParam("stream_DID_INS_2", rs_.ins2.enabled);
-    getParam("ins2_period_multiple", rs_.ins2.period_multiple);
-    getParam("stream_DID_INS_4", rs_.ins4.enabled);
-    getParam("ins4_period_multiple", rs_.ins4.period_multiple);
-    getParam("stream_odom_ins_ned", rs_.odom_ins_ned.enabled);
-    getParam("odom_ins_ned_period_multiple", rs_.odom_ins_ned.period_multiple);
-    getParam("stream_odom_ins_enu", rs_.odom_ins_enu.enabled);
+    getParam("msg/ins1/enable", rs_.ins1.enabled);
+    getParam("msg/ins1/period_multiple", rs_.ins1.period_multiple);
+    getParam("msg/ins2/enable", rs_.ins2.enabled);
+    getParam("msg/ins2/period_multiple", rs_.ins2.period_multiple);
+    getParam("msg/ins4/enable", rs_.ins4.enabled);
+    getParam("msg/ins4/period_multiple", rs_.ins4.period_multiple);
+    getParam("msg/odom_ins_ned/enable", rs_.odom_ins_ned.enabled);
+    getParam("msg/odom_ins_ned/period_multiple", rs_.odom_ins_ned.period_multiple);
+    getParam("msg/odom_ins_enu/enable", rs_.odom_ins_enu.enabled);
     getParam("odom_ins_enu_period_multiple", rs_.odom_ins_enu.period_multiple);
-    getParam("stream_odom_ins_ecef", rs_.odom_ins_ecef.enabled);
-    getParam("odom_ins_ecef_period_multiple", rs_.odom_ins_ecef.period_multiple);
+    getParam("msg/odom_ins_ecef/enable", rs_.odom_ins_ecef.enabled);
+    getParam("msg/odom_ins_ecef/period_multiple", rs_.odom_ins_ecef.period_multiple);
     getParam("stream_covariance_data", covariance_enabled_);
     getParam("stream_INL2_states", rs_.inl2_states.enabled);
     getParam("INL2_states_period_multiple", rs_.inl2_states.period_multiple);

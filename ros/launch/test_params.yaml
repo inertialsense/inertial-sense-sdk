@@ -3,12 +3,12 @@ navigation_dt_ms: 16    # IMX-5 default.  8 ms max.
 # navigation_dt_ms: 4     # uINS-3 default. 1 ms max.
 baudrate: 921600
 frame_id: "body"
-stream_DID_INS_1: true
-stream_DID_INS_2: false
-stream_DID_INS_4: false
-stream_odom_ins_ned: true
-stream_odom_ins_enu: false
-stream_odom_ins_ecef: false
+msg/ins1/enable: true
+msg/ins2/enable: false
+msg/ins4/enable: false
+msg/odom_ins_ned/enable: true
+msg/odom_ins_enu/enable: false
+msg/odom_ins_ecef/enable: false
 stream_covariance_data: false
 stream_INL2_states: false
 stream_IMU: true

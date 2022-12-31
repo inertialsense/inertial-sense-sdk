@@ -38,7 +38,7 @@ For instructions on changing parameter values and topic remapping from the comma
 
 ```bash
 rosparam set /inertial_sense_ros/navigation_dt_ms 16
-rosparam set /inertial_sense_ros/stream_DID_INS_2 true
+rosparam set /inertial_sense_ros/msg/ins2/enable true
 rosparam set /inertial_sense_ros/GPS_ref_lla "[40.25, -111.67, 1556.59]"
 rosparam set /inertial_sense_ros/GPS1_ant_xyz "[0.2, 0.0, 0.3]"
 rosrun inertial_sense_ros inertial_sense_node
@@ -129,29 +129,29 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
 
 **Topic Configuration**
 
-- `~stream_DID_INS_1` (bool, default: false)
+- `~msg/ins1/enable` (bool, default: false)
    - Flag to stream DID_INS_1 message
-- `~ins1_period_multiple` (int, default: 1)
+- `~msg/ins1/period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_DID_INS_2` (bool, default: false)
+- `~msg/ins2/enable` (bool, default: false)
    - Flag to stream DID_INS_2 message
-- `~ins2_period_multiple` (int, default: 1)
+- `~msg/ins2/period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_DID_INS_4` (bool, default: false)
+- `~msg/ins4/enable` (bool, default: false)
    - Flag to stream DID_INS_4 message
-- `~ins4_period_multiple` (int, default: 1)
+- `~msg/ins4/period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_odom_ins_ned` (bool, default: true)
+- `~msg/odom_ins_ned/enable` (bool, default: true)
    - Flag to stream navigation solution in NED
-- `~odom_ins_ned_period_multiple` (int, default: 1)
+- `~msg/odom_ins_ned/period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_odom_ins_enu` (bool, default: false)
+- `~msg/odom_ins_enu/enable` (bool, default: false)
    - Flag to stream navigation solution in ENU
 - `~odom_ins_enu_period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_odom_ins_ecef` (bool, default: false)
+- `~msg/odom_ins_ecef/enable` (bool, default: false)
    - Flag to stream navigation solution in ECEF
-- `~odom_ins_ecef_period_multiple` (int, default: 1)
+- `~msg/odom_ins_ecef/period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~stream_covariance_data` (bool, default: false)
    - Flag to stream navigation covariance data in odometry messages
