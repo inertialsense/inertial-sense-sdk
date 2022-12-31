@@ -70,11 +70,11 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
    -  full 12-DOF measurements from onboard estimator in ENU frame.
 - `odom_ins_ecef`(nav_msgs/Odometry)
    -  full 12-DOF measurements from onboard estimator in ECEF frame.
-- `DID_INS_1`(inertial_sense_ros/DID_INS_1)
+- `did_ins1` (inertial_sense_ros/did_ins1)
    -  Standard Inertial Sense [DID_INS_1](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_1) Definition
-- `DID_INS_2`(inertial_sense_ros/DID_INS_2)
+- `did_ins2` (inertial_sense_ros/DID_INS_2)
    -  Standard Inertial Sense [DID_INS_2](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_2) Definition
-- `DID_INS_4`(inertial_sense_ros/DID_INS_4)
+- `did_ins4` (inertial_sense_ros/did_ins4)
    -  Standard Inertial Sense [DID_INS_4](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_4) Definition
 - `imu`(sensor_msgs/Imu)
    -  Raw Imu measurements from IMU1 (NED frame)
@@ -88,7 +88,7 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
    -  Raw magnetic field measurement from magnetometer 1
 - `baro` (sensor_msgs/FluidPressure)
    -  Raw barometer measurements in kPa
-- `preint_imu` (inertial_sense_ros/DThetaVel)
+- `pimu` (inertial_sense_ros/PIMU)
    -  preintegrated coning and sculling integrals of IMU measurements
 - `RTK_pos/info` (inertial_sense_ros/RTKInfo)
    -  information about RTK status
@@ -130,15 +130,15 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
 **Topic Configuration**
 
 - `~msg/ins1/enable` (bool, default: false)
-   - Flag to stream DID_INS_1 message
+   - Flag to stream did_ins1 message
 - `~msg/ins1/period` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~msg/ins2/enable` (bool, default: false)
-   - Flag to stream DID_INS_2 message
+   - Flag to stream did_ins2 message
 - `~msg/ins2/period` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~msg/ins4/enable` (bool, default: false)
-   - Flag to stream DID_INS_4 message
+   - Flag to stream did_ins4 message
 - `~msg/ins4/period` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~msg/odom_ins_ned/enable` (bool, default: true)
@@ -159,55 +159,77 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
      __*Note__ - Data set is 176 bytes. Care should be taken to ensure sufficient bandwidth
 - `~msg/inl2_states/enable` (bool, default: false)    
    -  Flag to stream INS2 state data
-- `~INL2_states_period_multiple` (int, default: 1)
+- `~msg/inls2_states/period` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~msg/imu/enable` (bool, default: false)
    - Flag to stream IMU measurements or not
-- `~imu_period_multiple` (int, default: 1)
+- `~msg/imu/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
 - `~msg/baro/enable` (bool, default: false)
+   
    - Flag to stream baro or not
-- `~baro_period_multiple` (int, default: 1)
+- `~msg/baro/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
-- `~stream_mag` (bool, default: false)
+- `~msg/mag/enable` (bool, default: false)
+   
    - Flag to stream magnetometer or not
-- `~mag_period_multiple` (int, default: 1)
+- `~msg/mag/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
 - `~msg/pimu/enable` (bool, default: false)
+   
    - Flag to stream preintegrated IMU or not
-- `~preint_imu_period_multiple` (int, default: 1)
+- `~msg/pimu/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
-- `~msg/gps1/enable`(bool, default: false)
+- `~msg/gps1/enable`(bool, default: true)
+   
    - Flag to stream GPS1
-- `~stream_GPS2`(bool, default: false)
+- `~msg/gps2/enable`(bool, default: false)
+   
    - Flag to stream GPS2
-- `~gps1_period_multiple` (int, default: 1)
+- `~msg/gps1/period` (int, default: 1)
+   
    - Configures GPS1 period multiple of data set stream rate
-- `~gps2_period_multiple` (int, default: 1)
+- `~msg/gps2/period` (int, default: 1)
+   
    - Configures GPS2 period multiple of data set stream rate
-- `~stream_GPS1_info`(bool, default: false)
+- `~msg/gps1_info/enable`(bool, default: false)
+   
    - Flag to stream GPS1 info messages
-- `~stream_GPS2_info`(bool, default: false)
+- `~msg/gps2_info/enable`(bool, default: false)
+   
    - Flag to stream GPS2 info messages
-- `~gps_info_period_multiple` (int, default: 1)
+- `~msg/gps1_info/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
-- `~stream_GPS1_raw` (bool, default: false)
+- `~msg/gps1_raw/enable` (bool, default: false)
+   
    - Flag to stream GPS1 raw messages
-- `~stream_GPS2_raw` (bool, default: false)
+- `~msg/gps2_raw/enable` (bool, default: false)
+   
    - Flag to stream GPS2 raw messages
-- `~gps_raw_period_multiple` (int, default: 1)
+- `~msg/gps1_raw/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
-- `~stream_NavSatFix` (bool, default: false)
+- `~msg/navsatfix/enable` (bool, default: false)
+   
    - Flag to stream NavSatFix message
-- `~NavSatFix_period_multiple` (int, default: 1)
+- `~msg/navsatfix/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate.  Data is based on GPS2 if GPS1 is disabled.
 - `~publishTf`(bool, default: true)
    - Flag to publish Tf transformations 'ins' to 'body_link'
-- `~diagnostics` (bool, default: true)
+- `~msg/diagnostics/enable` (bool, default: true)
+   
    - Flag to stream diagnostics data
-- `~diagnostics_period_multiple` (int, default: 1)
+- `~msg/diagnostics/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
 - `~msg/rtk_pos/period` (int, default: 1)
+   
    - Configures period multiple of data set stream rate
 - `~msg/rtk_cmp/period` (int, default: 1)
    - Configures period multiple of data set stream rate
@@ -263,10 +285,10 @@ __*Note: These values must be clear for TCP configuration to work__
    -  The NED translation vector between the INS frame and the output frame (wrt output frame)
 - `~gps1_type` (string, default: "F9P")
    -  Which receiver type: "F9P" or "M8"
-- `~msg/gps1/topic` (string, default: "gps1")
-   -  ROS topic name of GPS1 stream
 - `gps2_type` (string, default: "F9P")
    -  Which receiver type: "F9P" or "M8"
+- `~msg/gps1/topic` (string, default: "gps1")
+   -  ROS topic name of GPS1 stream
 - `~msg/gps2/topic` (string, default: "gps2")
    -  ROS topic name of GPS1 stream
 - `~gps1_ant_xyz` (vector(3), default: {0, 0, 0})

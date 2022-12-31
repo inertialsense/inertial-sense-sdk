@@ -18,7 +18,7 @@
 #include "inertial_sense_ros/GPS.h"
 #include "data_sets.h"
 #include "inertial_sense_ros/GPSInfo.h"
-#include "inertial_sense_ros/PreIntIMU.h"
+#include "inertial_sense_ros/PIMU.h"
 #include "inertial_sense_ros/FirmwareUpdate.h"
 #include "inertial_sense_ros/refLLAUpdate.h"
 #include "inertial_sense_ros/RTKRel.h"
@@ -382,24 +382,26 @@ public:
     // Data to hold on to in between callbacks
     double lla_[3];
     double ecef_[3];
-    sensor_msgs::Imu imu_msg;
-    nav_msgs::Odometry ned_odom_msg;
-    nav_msgs::Odometry ecef_odom_msg;
-    nav_msgs::Odometry enu_odom_msg;
-    sensor_msgs::NavSatFix NavSatFix_msg;
-    inertial_sense_ros::GPS gps1_msg;
+    inertial_sense_ros::DID_INS1 msg_did_ins1;
+    inertial_sense_ros::DID_INS2 msg_did_ins2;
+    inertial_sense_ros::DID_INS4 msg_did_ins4;
+    nav_msgs::Odometry msg_odom_ned;
+    nav_msgs::Odometry msg_odom_ecef;
+    nav_msgs::Odometry msg_odom_enu;
+    inertial_sense_ros::INL2States msg_inl2_states;
+    sensor_msgs::Imu msg_imu;
+    inertial_sense_ros::PIMU msg_pimu;
+    inertial_sense_ros::GPS msg_gps1;
+    inertial_sense_ros::GPS msg_gps2;
+    sensor_msgs::NavSatFix msg_NavSatFix;
+    gps_pos_t gps1_pos;
+    gps_pos_t gps2_pos;
+    gps_vel_t gps1_vel;
+    gps_vel_t gps2_vel;
     geometry_msgs::Vector3Stamped gps1_velEcef;
-    float gps1_sAcc;
-    float gps2_sAcc;
-    inertial_sense_ros::GPSInfo gps_info_msg;
-    inertial_sense_ros::GPS gps2_msg;
     geometry_msgs::Vector3Stamped gps2_velEcef;
-    inertial_sense_ros::GPSInfo gps2_info_msg;
-    inertial_sense_ros::INL2States inl2_states_msg;
-    inertial_sense_ros::DID_INS1 did_ins_1_msg;
-    inertial_sense_ros::DID_INS2 did_ins_2_msg;
-    inertial_sense_ros::DID_INS4 did_ins_4_msg;
-    inertial_sense_ros::PreIntIMU preintIMU_msg;
+    inertial_sense_ros::GPSInfo msg_gps1_info;
+    inertial_sense_ros::GPSInfo msg_gps2_info;
 
     float poseCov_[36], twistCov[36];
 
