@@ -124,9 +124,16 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
 #define GET_PARAM(name, var) \
     if (useYamlNode){ \
-        get_node_param_yaml(node, #name, var); \
+        get_node_param_yaml(node, name, var); \
     } else { \
-        getParam(#name, var); \
+        getParam(name, var); \
+    }
+
+#define GET_PARAM_VEC(name, size, vec) \
+    if (useYamlNode){ \
+        get_node_vector_yaml(node, name, size, vec); \
+    } else { \
+        getParamVector(name, size, vec); \
     }
 
 #define GET_PARAMS_RS(name) \
@@ -138,10 +145,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         getParam("/msg/"#name"/period_multiple", rs_.name.period_multiple); \
     }
 
-    GET_PARAM(port, port_);
-    GET_PARAM(navigation_dt_ms, navigation_dt_ms_);
-    GET_PARAM(baudrate, baudrate_);
-    GET_PARAM(frame_id, frame_id_);
+
     GET_PARAMS_RS(ins1);
     GET_PARAMS_RS(ins2);
     GET_PARAMS_RS(ins4);
@@ -149,159 +153,74 @@ void InertialSenseROS::load_params(YAML::Node &node)
     GET_PARAMS_RS(odom_ins_enu);
     GET_PARAMS_RS(odom_ins_ecef);
 
-    get_node_param_yaml(node, "odom_ins_enu_period_multiple", rs_.odom_ins_enu.period_multiple);
-    get_node_param_yaml(node, "msg/odom_ins_ecef/enable", rs_.odom_ins_ecef.enabled);
-    get_node_param_yaml(node, "msg/odom_ins_ecef/period_multiple", rs_.odom_ins_ecef.period_multiple);
-    get_node_param_yaml(node, "stream_covariance_data", covariance_enabled_);
-    get_node_param_yaml(node, "stream_INL2_states", rs_.inl2_states.enabled);
-    get_node_param_yaml(node, "INL2_states_period_multiple", rs_.inl2_states.period_multiple);
-    get_node_param_yaml(node, "stream_IMU", rs_.imu.enabled);
-    get_node_param_yaml(node, "imu_period_multiple", rs_.imu.period_multiple);
-    get_node_param_yaml(node, "stream_GPS1", rs_.gps1.enabled);
-    get_node_param_yaml(node, "stream_GPS2", rs_.gps2.enabled);
-    get_node_param_yaml(node, "gps1_period_multiple", rs_.gps1.period_multiple);
-    get_node_param_yaml(node, "gps2_period_multiple", rs_.gps2.period_multiple);
-    get_node_param_yaml(node, "stream_GPS1_raw", rs_.gps1_raw.enabled);
-    get_node_param_yaml(node, "stream_GPS2_raw", rs_.gps2_raw.enabled);
-    get_node_param_yaml(node, "gps1_raw_period_multiple", rs_.gps1_raw.period_multiple);
-    get_node_param_yaml(node, "gps2_raw_period_multiple", rs_.gps2_raw.period_multiple);
-    get_node_param_yaml(node, "gps_base_raw_period_multiple", rs_.gps_base_raw.period_multiple);
-    get_node_param_yaml(node, "stream_GPS1_info", rs_.gps1_info.enabled);
-    get_node_param_yaml(node, "stream_GPS2_info", rs_.gps2_info.enabled);
-    get_node_param_yaml(node, "gps1_info_period_multiple", rs_.gps1_info.period_multiple);
-    get_node_param_yaml(node, "gps2_info_period_multiple", rs_.gps2_info.period_multiple);
-    get_node_param_yaml(node, "GPS1_type", gps1_type_);
-    get_node_param_yaml(node, "GPS1_topic", gps1_topic_);
-    get_node_param_yaml(node, "GPS2_type", gps2_type_);
-    get_node_param_yaml(node, "GPS2_topic", gps2_topic_);
-    get_node_param_yaml(node, "stream_NavSatFix", rs_.navsatfix.enabled);
-    get_node_param_yaml(node, "NavSatFix_period_multiple", rs_.navsatfix.period_multiple);
-    get_node_param_yaml(node, "stream_mag", rs_.mag.enabled);
-    get_node_param_yaml(node, "mag_period_multiple", rs_.mag.period_multiple);
-    get_node_param_yaml(node, "stream_baro", rs_.baro.enabled);
-    get_node_param_yaml(node, "baro_period_multiple", rs_.baro.period_multiple);
-    get_node_param_yaml(node, "stream_preint_IMU", rs_.pimu.enabled);
-    get_node_param_yaml(node, "preint_imu_period_multiple", rs_.pimu.period_multiple);
-    get_node_param_yaml(node, "stream_diagnostics", rs_.diagnostics.enabled);
-    get_node_param_yaml(node, "diagnostics_period_multiple", rs_.diagnostics.period_multiple);
-    get_node_param_yaml(node, "publishTf", publishTf_);
-    get_node_param_yaml(node, "enable_log", log_enabled_);
-    get_node_param_yaml(node, "ioConfig", ioConfig_);
-    get_node_param_yaml(node, "RTK_server_mount", RTK_server_mount_);
-    get_node_param_yaml(node, "RTK_server_username", RTK_server_username_);
-    get_node_param_yaml(node, "RTK_server_password", RTK_server_password_);
-    get_node_param_yaml(node, "RTK_connection_attempt_limit", RTK_connection_attempt_limit_);
-    get_node_param_yaml(node, "RTK_connection_attempt_backoff", RTK_connection_attempt_backoff_);
-    get_node_param_yaml(node, "RTK_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
-    get_node_param_yaml(node, "RTK_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
-    get_node_param_yaml(node, "RTK_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
-    get_node_param_yaml(node, "RTK_correction_protocol", RTK_correction_protocol_);
-    get_node_param_yaml(node, "RTK_server_IP", RTK_server_IP_);
-    get_node_param_yaml(node, "RTK_server_port", RTK_server_port_);
-    get_node_param_yaml(node, "RTK_rover", RTK_rover_);
-    get_node_param_yaml(node, "RTK_pos_period_multiple", rs_.rtk_pos.period_multiple);
-    get_node_param_yaml(node, "RTK_rover_radio_enable", RTK_rover_radio_enable_);
-    get_node_param_yaml(node, "RTK_base_USB", RTK_base_USB_);
-    get_node_param_yaml(node, "RTK_base_serial", RTK_base_serial_);
-    get_node_param_yaml(node, "RTK_base_TCP", RTK_base_TCP_);
-    get_node_param_yaml(node, "GNSS_Compass", GNSS_Compass_);
-    get_node_param_yaml(node, "RTK_cmp_period_multiple", rs_.rtk_cmp.period_multiple);
-    get_node_param_yaml(node, "gpsTimeUserDelay", gpsTimeUserDelay_);
-    get_node_param_yaml(node, "declination", magDeclination_);
-    get_node_param_yaml(node, "dynamic_model", insDynModel_);
-    get_node_vector_yaml(node, "INS_rpy_radians", 3, insRotation_);
-    get_node_vector_yaml(node, "INS_xyz", 3, insOffset_);
-    get_node_vector_yaml(node, "GPS1_ant_xyz", 3, gps1AntOffset_);
-    get_node_vector_yaml(node, "GPS2_ant_xyz", 3, gps2AntOffset_);
-    // get_node_vector_yaml(node, "GPS_ref_lla", 3, refLla_);
+    GET_PARAM("port", port_);
+    GET_PARAM("navigation_dt_ms", navigation_dt_ms_);
+    GET_PARAM("baudrate", baudrate_);
+    GET_PARAM("frame_id", frame_id_);
+    GET_PARAM("stream_covariance_data", covariance_enabled_);
+    GET_PARAM("stream_INL2_states", rs_.inl2_states.enabled);
+    GET_PARAM("INL2_states_period_multiple", rs_.inl2_states.period_multiple);
+    GET_PARAM("stream_IMU", rs_.imu.enabled);
+    GET_PARAM("imu_period_multiple", rs_.imu.period_multiple);
+    GET_PARAM("stream_GPS1", rs_.gps1.enabled);
+    GET_PARAM("stream_GPS2", rs_.gps2.enabled);
+    GET_PARAM("gps1_period_multiple", rs_.gps1.period_multiple);
+    GET_PARAM("gps2_period_multiple", rs_.gps2.period_multiple);
+    GET_PARAM("stream_GPS1_raw", rs_.gps1_raw.enabled);
+    GET_PARAM("stream_GPS2_raw", rs_.gps2_raw.enabled);
+    GET_PARAM("gps1_raw_period_multiple", rs_.gps1_raw.period_multiple);
+    GET_PARAM("gps2_raw_period_multiple", rs_.gps2_raw.period_multiple);
+    GET_PARAM("gps_base_raw_period_multiple", rs_.gps_base_raw.period_multiple);
+    GET_PARAM("stream_GPS1_info", rs_.gps1_info.enabled);
+    GET_PARAM("stream_GPS2_info", rs_.gps2_info.enabled);
+    GET_PARAM("gps1_info_period_multiple", rs_.gps1_info.period_multiple);
+    GET_PARAM("gps2_info_period_multiple", rs_.gps2_info.period_multiple);
+    GET_PARAM("GPS1_type", gps1_type_);
+    GET_PARAM("GPS1_topic", gps1_topic_);
+    GET_PARAM("GPS2_type", gps2_type_);
+    GET_PARAM("GPS2_topic", gps2_topic_);
+    GET_PARAM("stream_NavSatFix", rs_.navsatfix.enabled);
+    GET_PARAM("NavSatFix_period_multiple", rs_.navsatfix.period_multiple);
+    GET_PARAM("stream_mag", rs_.mag.enabled);
+    GET_PARAM("mag_period_multiple", rs_.mag.period_multiple);
+    GET_PARAM("stream_baro", rs_.baro.enabled);
+    GET_PARAM("baro_period_multiple", rs_.baro.period_multiple);
+    GET_PARAM("stream_preint_IMU", rs_.pimu.enabled);
+    GET_PARAM("preint_imu_period_multiple", rs_.pimu.period_multiple);
+    GET_PARAM("stream_diagnostics", rs_.diagnostics.enabled);
+    GET_PARAM("diagnostics_period_multiple", rs_.diagnostics.period_multiple);
+    GET_PARAM("publishTf", publishTf_);
+    GET_PARAM("enable_log", log_enabled_);
+    GET_PARAM("ioConfig", ioConfig_);
+    GET_PARAM("RTK_server_mount", RTK_server_mount_);
+    GET_PARAM("RTK_server_username", RTK_server_username_);
+    GET_PARAM("RTK_server_password", RTK_server_password_);
+    GET_PARAM("RTK_connection_attempt_limit", RTK_connection_attempt_limit_);
+    GET_PARAM("RTK_connection_attempt_backoff", RTK_connection_attempt_backoff_);
+    GET_PARAM("RTK_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
+    GET_PARAM("RTK_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
+    GET_PARAM("RTK_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
+    GET_PARAM("RTK_correction_protocol", RTK_correction_protocol_);
+    GET_PARAM("RTK_server_IP", RTK_server_IP_);
+    GET_PARAM("RTK_server_port", RTK_server_port_);
+    GET_PARAM("RTK_rover", RTK_rover_);
+    GET_PARAM("RTK_pos_period_multiple", rs_.rtk_pos.period_multiple);
+    GET_PARAM("RTK_rover_radio_enable", RTK_rover_radio_enable_);
+    GET_PARAM("RTK_base_USB", RTK_base_USB_);
+    GET_PARAM("RTK_base_serial", RTK_base_serial_);
+    GET_PARAM("RTK_base_TCP", RTK_base_TCP_);
+    GET_PARAM("GNSS_Compass", GNSS_Compass_);
+    GET_PARAM("RTK_cmp_period_multiple", rs_.rtk_cmp.period_multiple);
+    GET_PARAM("gpsTimeUserDelay", gpsTimeUserDelay_);
+    GET_PARAM("declination", magDeclination_);
+    GET_PARAM("dynamic_model", insDynModel_);
+    GET_PARAM_VEC("INS_rpy_radians", 3, insRotation_);
+    GET_PARAM_VEC("INS_xyz", 3, insOffset_);
+    GET_PARAM_VEC("GPS1_ant_xyz", 3, gps1AntOffset_);
+    GET_PARAM_VEC("GPS2_ant_xyz", 3, gps2AntOffset_);
+    GET_PARAM_VEC("GPS_ref_lla", 3, refLla_);
 }
 
-void InertialSenseROS::load_params_srv()
-{
-    ROS_INFO("Load from Param Server");
-    getParam("/port", port_);
-    getParam("/navigation_dt_ms", navigation_dt_ms_);
-    getParam("/baudrate", baudrate_);
-    getParam("/frame_id", frame_id_);
-
-// #define RS_GET_PARAMS(name) \
-//     getParam("/msg/"#name"/enable", rs_.name.enabled); \
-//     getParam("/msg/"#name"/period_multiple", rs_.name.period_multiple);
-
-//     GET_PARAMS_RS(ins1);
-//     GET_PARAMS_RS(ins2);
-//     GET_PARAMS_RS(ins4);
-//     GET_PARAMS_RS(ins4);
-
-    getParam("/msg/odom_ins_ned/enable", rs_.odom_ins_ned.enabled);
-    getParam("/msg/odom_ins_ned/period_multiple", rs_.odom_ins_ned.period_multiple);
-    getParam("/msg/odom_ins_enu/enable", rs_.odom_ins_enu.enabled);
-    getParam("/odom_ins_enu_period_multiple", rs_.odom_ins_enu.period_multiple);
-    getParam("/msg/odom_ins_ecef/enable", rs_.odom_ins_ecef.enabled);
-    getParam("/msg/odom_ins_ecef/period_multiple", rs_.odom_ins_ecef.period_multiple);
-    getParam("/stream_covariance_data", covariance_enabled_);
-    getParam("/stream_INL2_states", rs_.inl2_states.enabled);
-    getParam("/INL2_states_period_multiple", rs_.inl2_states.period_multiple);
-    getParam("/stream_IMU", rs_.imu.enabled);
-    getParam("/imu_period_multiple", rs_.imu.period_multiple);
-    getParam("/stream_GPS1", rs_.gps1.enabled);
-    getParam("/stream_GPS2", rs_.gps2.enabled);
-    getParam("/gps1_period_multiple", rs_.gps1.period_multiple);
-    getParam("/gps2_period_multiple", rs_.gps2.period_multiple);
-    getParam("/stream_GPS1_raw", rs_.gps1_raw.enabled);
-    getParam("/stream_GPS2_raw", rs_.gps2_raw.enabled);
-    getParam("/gps1_raw_period_multiple", rs_.gps1_raw.period_multiple);
-    getParam("/gps2_raw_period_multiple", rs_.gps1_raw.period_multiple);
-    getParam("/gps_base_raw_period_multiple", rs_.gps_base_raw.period_multiple);
-    getParam("/stream_GPS1_info", rs_.gps1_info.enabled);
-    getParam("/stream_GPS2_info", rs_.gps2_info.enabled);
-    getParam("/gps1_info_period_multiple", rs_.gps1_info.period_multiple);
-    getParam("/gps2_info_period_multiple", rs_.gps2_info.period_multiple);
-    getParam("/GPS1_topic", gps1_topic_);
-    getParam("/GPS2_topic", gps2_topic_);
-    getParam("/stream_NavSatFix", rs_.navsatfix.enabled);
-    getParam("/NavSatFix_period_multiple", rs_.navsatfix.period_multiple);
-    getParam("/stream_mag", rs_.mag.enabled);
-    getParam("/mag_period_multiple", rs_.mag.period_multiple);
-    getParam("/stream_baro", rs_.baro.enabled);
-    getParam("/baro_period_multiple", rs_.baro.period_multiple);
-    getParam("/stream_preint_IMU", rs_.pimu.enabled);
-    getParam("/preint_imu_period_multiple", rs_.pimu.period_multiple);
-    getParam("/stream_diagnostics", rs_.diagnostics.enabled);
-    getParam("/diagnostics_period_multiple", rs_.diagnostics.period_multiple);
-    getParam("/publishTf", publishTf_);
-    getParam("/ioConfig", ioConfig_);
-    getParam("/enable_log", log_enabled_);
-    getParam("/RTK_server_mount", RTK_server_mount_);
-    getParam("/RTK_server_username", RTK_server_username_);
-    getParam("/RTK_server_password", RTK_server_password_);
-    getParam("/RTK_connection_attempt_limit", RTK_connection_attempt_limit_);
-    getParam("/RTK_connection_attempt_backoff", RTK_connection_attempt_backoff_);
-    getParam("/RTK_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
-    getParam("/RTK_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
-    getParam("/RTK_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
-    getParam("/RTK_correction_protocol", RTK_correction_protocol_);
-    getParam("/RTK_server_IP", RTK_server_IP_);
-    getParam("/RTK_server_port", RTK_server_port_);
-    getParam("/GPS1_type", gps1_type_);
-    getParam("/GPS2_type", gps2_type_);
-    getParam("/RTK_rover", RTK_rover_);
-    getParam("/RTK_pos_period_multiple", rs_.rtk_pos.period_multiple);
-    getParam("/RTK_rover_radio_enable", RTK_rover_radio_enable_);
-    getParam("/RTK_base_USB", RTK_base_USB_);
-    getParam("/RTK_base_serial", RTK_base_serial_);
-    getParam("/RTK_base_TCP", RTK_base_TCP_);
-    getParam("/GNSS_Compass", GNSS_Compass_);
-    getParam("/RTK_cmp_period_multiple", rs_.rtk_cmp.period_multiple);
-    getParam("/gpsTimeUserDelay", gpsTimeUserDelay_);
-    getParam("/declination", magDeclination_);
-    getParam("/dynamic_model", insDynModel_);
-    getParamVector("/INS_rpy_radians", 3, insRotation_);
-    getParamVector("/INS_xyz", 3, insOffset_);
-    getParamVector("/GPS1_ant_xyz", 3, gps1AntOffset_);
-    getParamVector("/GPS2_ant_xyz", 3, gps2AntOffset_);
-    getParamVector("/GPS_ref_lla", 3, refLla_);
-}
 
 void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 {

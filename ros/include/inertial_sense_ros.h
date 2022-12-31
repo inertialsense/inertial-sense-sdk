@@ -74,7 +74,6 @@ public:
     void update();
 
     void load_params(YAML::Node &node);
-    void load_params_srv();
     bool getParam(const std::string &key, std::string &s);
     bool getParam(const std::string &key, double &d);
     bool getParam(const std::string &key, float &f);    

@@ -147,7 +147,7 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
    - Configures period multiple of data set stream rate
 - `~msg/odom_ins_enu/enable` (bool, default: false)
    - Flag to stream navigation solution in ENU
-- `~odom_ins_enu_period_multiple` (int, default: 1)
+- `~msg/odom_ins_enu/period_multiple` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~msg/odom_ins_ecef/enable` (bool, default: false)
    - Flag to stream navigation solution in ECEF
