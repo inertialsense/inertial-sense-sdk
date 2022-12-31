@@ -72,34 +72,45 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
    -  full 12-DOF measurements from onboard estimator in ECEF frame.
 - `did_ins1` (inertial_sense_ros/did_ins1)
    -  Standard Inertial Sense [DID_INS_1](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_1) Definition
-- `did_ins2` (inertial_sense_ros/DID_INS_2)
+- `did_ins2` (inertial_sense_ros/did_ins2)
    -  Standard Inertial Sense [DID_INS_2](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_2) Definition
 - `did_ins4` (inertial_sense_ros/did_ins4)
    -  Standard Inertial Sense [DID_INS_4](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_4) Definition
+- `inl2_states` (inertial_sense_ros/INL2States)
+   -  INS Extended Kalman Filter (EKF) states [DID_INL2_STATES](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_inl2_states) Definition
+
 - `imu`(sensor_msgs/Imu)
    -  Raw Imu measurements from IMU1 (NED frame)
-- `gps`(inertial_sense_ros/GPS)
-   -  unfiltered GPS measurements from onboard GPS unit
-- `gps/info`(inertial_sense_ros/GPSInfo)
-   -  satelite information and carrier noise ratio array for each sattelite
-- `NavSatFix`(sensor_msgs/NavSatFix)
-   -  Standard ROS sensor_msgs/NavSatFix data
+- `pimu` (inertial_sense_ros/pimu)
+   -  preintegrated coning and sculling integrals of IMU measurements
 - `mag` (sensor_msgs/MagneticField)
    -  Raw magnetic field measurement from magnetometer 1
 - `baro` (sensor_msgs/FluidPressure)
    -  Raw barometer measurements in kPa
-- `pimu` (inertial_sense_ros/PIMU)
-   -  preintegrated coning and sculling integrals of IMU measurements
+
+- `NavSatFix`(sensor_msgs/NavSatFix)
+   -  Standard ROS sensor_msgs/NavSatFix data
+- `gps1`(inertial_sense_ros/gps1)
+   -  GPS measurements from GPS1 receiver
+- `gps2`(inertial_sense_ros/gps2)
+   -  GPS measurements from GPS2 receiver
+- `gps1/info`(inertial_sense_ros/gps1/info)
+   -  satelite information and carrier noise ratio array for each satelite
+- `gps2/info`(inertial_sense_ros/gps2/info)
+   -  satelite information and carrier noise ratio array for each satelite
 - `RTK_pos/info` (inertial_sense_ros/RTKInfo)
-   -  information about RTK status
+   -  information about RTK positioning status
 - `RTK_pos/rel` (inertial_sense_ros/RTKRel)
-   -  Relative measurement between RTK base and rover
-- `inl2_states` (inertial_sense_ros/INL2States)
-   -  INS Extended Kalman Filter (EKF) states [DID_INL2_STATES](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_inl2_states) Definition
-- `diagnostics` (diagnostic_msgs/DiagnosticArray)
-   -  Diagnostic message of RTK status.
+   -  Relative measurement between RTK positioning base and rover
+- `RTK_cmp/info` (inertial_sense_ros/RTKInfo)
+   -  information about RTK compassing status
+- `RTK_cmp/rel` (inertial_sense_ros/RTKRel)
+   -  Relative measurement between RTK compassing moving base and rover
+
 - `strobe_time` (std_msgs/Header)
    -  Timestamp of strobe in message header
+- `diagnostics` (diagnostic_msgs/DiagnosticArray)
+   -  Diagnostic message of RTK status.
 
 
 __*Note: RTK positioning or RTK compassing mode must be enabled to stream any raw GPS data. Raw data can only be streamed from the onboard m8 receiver. To enable the onboard receiver change `gps1_type` to m8.__
@@ -155,7 +166,6 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
    - Configures period multiple of data set stream rate
 - `~stream_ins_covariance` (bool, default: false)
    - Flag to stream navigation covariance data in odometry messages
-
      __*Note__ - Data set is 176 bytes. Care should be taken to ensure sufficient bandwidth
 - `~msg/inl2_states/enable` (bool, default: false)    
    -  Flag to stream INS2 state data
@@ -163,73 +173,51 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
    - Configures period multiple of data set stream rate
 - `~msg/imu/enable` (bool, default: false)
    - Flag to stream IMU measurements or not
-- `~msg/imu/period` (int, default: 1)
-   
+- `~msg/imu/period` (int, default: 1)   
    - Configures period multiple of data set stream rate
-- `~msg/baro/enable` (bool, default: false)
-   
+- `~msg/baro/enable` (bool, default: false)   
    - Flag to stream baro or not
 - `~msg/baro/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate
 - `~msg/mag/enable` (bool, default: false)
-   
    - Flag to stream magnetometer or not
 - `~msg/mag/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate
 - `~msg/pimu/enable` (bool, default: false)
-   
    - Flag to stream preintegrated IMU or not
 - `~msg/pimu/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate
 - `~msg/gps1/enable`(bool, default: true)
-   
    - Flag to stream GPS1
 - `~msg/gps2/enable`(bool, default: false)
-   
    - Flag to stream GPS2
 - `~msg/gps1/period` (int, default: 1)
-   
    - Configures GPS1 period multiple of data set stream rate
 - `~msg/gps2/period` (int, default: 1)
-   
    - Configures GPS2 period multiple of data set stream rate
 - `~msg/gps1_info/enable`(bool, default: false)
-   
    - Flag to stream GPS1 info messages
 - `~msg/gps2_info/enable`(bool, default: false)
-   
    - Flag to stream GPS2 info messages
 - `~msg/gps1_info/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate
 - `~msg/gps1_raw/enable` (bool, default: false)
-   
    - Flag to stream GPS1 raw messages
 - `~msg/gps2_raw/enable` (bool, default: false)
-   
    - Flag to stream GPS2 raw messages
 - `~msg/gps1_raw/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate
 - `~msg/navsatfix/enable` (bool, default: false)
-   
    - Flag to stream NavSatFix message
 - `~msg/navsatfix/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate.  Data is based on GPS2 if GPS1 is disabled.
 - `~publishTf`(bool, default: true)
    - Flag to publish Tf transformations 'ins' to 'body_link'
 - `~msg/diagnostics/enable` (bool, default: true)
-   
    - Flag to stream diagnostics data
 - `~msg/diagnostics/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate
 - `~msg/rtk_pos/period` (int, default: 1)
-   
    - Configures period multiple of data set stream rate
 - `~msg/rtk_cmp/period` (int, default: 1)
    - Configures period multiple of data set stream rate
