@@ -1,9 +1,10 @@
-port: "/dev/ttyACM0"
+port: "/dev/ttyACM1"
 navigation_dt_ms: 16    # IMX-5 default.  8 ms max.
 # navigation_dt_ms: 4     # uINS-3 default. 1 ms max.
 baudrate: 921600
 frame_id: "body"
 msg/ins1/enable: true
+msg/ins1/period_multiple: 10
 msg/ins2/enable: false
 msg/ins4/enable: false
 msg/odom_ins_ned/enable: true
@@ -45,7 +46,7 @@ RTK_correction_protocol: "RTCM3"
 ## NTRIP
 # RTK_server_IP: "127.0.0.1"
 # RTK_server_port: 7777
-# RTK_server_mount: "GNSSVRSRTCM32"
+# RTK_server_mount: ""
 # RTK_server_username: ""
 # RTK_server_password: ""
 
