@@ -1483,14 +1483,17 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        ax = fig.subplots(1, 1, sharex=True)
+        ax = fig.subplots(2, 1, sharex=True)
         fig.suptitle('Magnetometer Declination - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'Declination', 'deg')
+        self.configureSubplot(ax[1], 'Inclination', 'deg')
 
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'))
             mag_declination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magDec')
+            mag_inclination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magInc')
             ax[0].plot(time, mag_declination, label=self.log.serials[d])
+            ax[1].plot(time, mag_inclination)
         ax[0].legend(ncol=2)
         self.saveFig(fig, 'magDec')
         for a in ax:
