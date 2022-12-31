@@ -118,12 +118,38 @@ public:
     typedef struct
     {
         bool enabled = false;
-        ros::Publisher pub;
-        ros::Publisher pub2;
-        ros::Publisher pub3;
+        bool streaming = false;
         int period_multiple = 1;
+        ros::Publisher pub;
     } ros_stream_t;
 
+    typedef struct
+    {
+        bool enabled = false;
+        bool streaming_pos = false;
+        bool streaming_vel = false;
+        int period_multiple = 1;
+        ros::Publisher pub;
+    } ros_stream_gps_t;
+
+    typedef struct
+    {
+        bool enabled = false;
+        bool streaming = false;
+        int period_multiple = 1;
+        ros::Publisher pubInfo;
+        ros::Publisher pubRel;
+    } ros_stream_gps_rkt_t;
+
+    typedef struct
+    {
+        bool enabled = false;
+        bool streaming = false;
+        int period_multiple = 1;
+        ros::Publisher pubObs;
+        ros::Publisher pubEph;
+        ros::Publisher pubGEp;
+    } ros_stream_gps_raw_t;
 
     tf::TransformBroadcaster br;
     bool publishTf_ = true;
@@ -210,52 +236,39 @@ public:
     float diagnostic_ar_ratio_, diagnostic_differential_age_, diagnostic_heading_base_to_rover_;
     uint diagnostic_fix_type_;
 
-    ros_stream_t DID_INS_1_;
-    ros_stream_t DID_INS_2_;
-    ros_stream_t DID_INS_4_;
-    ros_stream_t INL2_states_;
-    ros_stream_t odom_ins_ned_;
-    ros_stream_t odom_ins_ecef_;
-    ros_stream_t odom_ins_enu_;
-    ros_stream_t IMU_;
-    ros_stream_t mag_;
-    ros_stream_t baro_;
-    ros_stream_t preint_IMU_;
-    ros_stream_t diagnostics_;
-    ros_stream_t GPS1_;
-    ros_stream_t GPS1_info_;
-    ros_stream_t GPS1_raw_;
-    ros_stream_t GPS2_;
-    ros_stream_t GPS2_info_;
-    ros_stream_t GPS2_raw_;
-    ros_stream_t GPS_base_raw_;
-    ros_stream_t RTK_pos_;
-    ros_stream_t RTK_cmp_;
-    ros_stream_t NavSatFix_;
-    bool NavSatFixConfigured = false;
-    int gps_raw_period_multiple = 1;
-    int gps_info_period_multiple = 1;
+    struct
+    {
+        ros_stream_t ins1;
+        ros_stream_t ins2;
+        ros_stream_t ins4;
+        ros_stream_t inl2_states;
+        ros_stream_t odom_ins_ned;
+        ros_stream_t odom_ins_ecef;
+        ros_stream_t odom_ins_enu;
+        ros_stream_t imu;
+        ros_stream_t mag;
+        ros_stream_t baro;
+        ros_stream_t pimu;
+        ros_stream_t diagnostics;
+        ros_stream_gps_t gps1;
+        ros_stream_gps_t gps2;
+        ros_stream_t gps1_info;
+        ros_stream_t gps2_info;
+        ros_stream_gps_raw_t gps1_raw;
+        ros_stream_gps_raw_t gps2_raw;
+        ros_stream_gps_raw_t gps_base_raw;
+        ros_stream_gps_rkt_t rtk_pos;
+        ros_stream_gps_rkt_t rtk_cmp;
+        ros_stream_t navsatfix;
+    } rs_;
 
-    bool ins1Streaming_ = false;
-    bool ins2Streaming_ = false;
-    bool ins4Streaming_ = false;
-    bool inl2StatesStreaming_ = false;
+    bool NavSatFixConfigured = false;
+
     bool insCovarianceStreaming_ = false;
-    bool magStreaming_ = false;
-    bool baroStreaming_ = false;
-    bool preintImuStreaming_ = false;
     bool imuStreaming_ = false;
     bool strobeInStreaming_ = false;
     bool diagnosticsStreaming_ = false;
     // NOTE: that GPS streaming flags are applicable for all GPS devices/receivers
-    bool gps1PosStreaming_ = false;
-    bool gps1VelStreaming_ = false;
-    bool gps2PosStreaming_ = false;
-    bool gps2VelStreaming_ = false;
-    bool gps1RawStreaming_ = false;
-    bool gps2RawStreaming_ = false;
-    bool gps1InfoStreaming_ = false;
-    bool gps2InfoStreaming_ = false;
     bool rtkPosMiscStreaming_ = false;
     bool rtkPosRelStreaming_ = false;
     bool rtkCmpMiscStreaming_ = false;
