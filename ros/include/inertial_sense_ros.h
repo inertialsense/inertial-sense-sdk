@@ -196,7 +196,7 @@ public:
     bool RTK_base_USB_ = false;
     bool RTK_base_serial_ = false;
     bool RTK_base_TCP_ = false;
-    bool gnss_compass_ = false;
+    bool GNSS_Compass_ = false;
 
     std::string gps1_type_ = "F9P";
     std::string gps1_topic_ = "gps1";

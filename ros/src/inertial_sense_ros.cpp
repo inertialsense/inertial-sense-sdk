@@ -66,7 +66,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
         rs_.rtk_pos.pubInfo = nh_.advertise<inertial_sense_ros::RTKInfo>("RTK_pos/info", 10);
         rs_.rtk_pos.pubRel = nh_.advertise<inertial_sense_ros::RTKRel>("RTK_pos/rel", 10);
     }
-    if (gnss_compass_)
+    if (GNSS_Compass_)
     {
         rs_.rtk_cmp.pubInfo = nh_.advertise<inertial_sense_ros::RTKInfo>("RTK_cmp/info", 10);
         rs_.rtk_cmp.pubRel = nh_.advertise<inertial_sense_ros::RTKRel>("RTK_cmp/rel", 10);
@@ -196,7 +196,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     GET_PARAM("rtk_correction_protocol", RTK_correction_protocol_);
     GET_PARAM("rtk_server_IP", RTK_server_IP_);
     GET_PARAM("rtk_server_port", RTK_server_port_);
-    GET_PARAM("gnss_compass", gnss_compass_);
+    GET_PARAM("gnss_compass", GNSS_Compass_);
     GET_PARAM("rtk_compass", RTK_rover_);
     GET_PARAM("rtk_rover_radio_enable", RTK_rover_radio_enable_);
     GET_PARAM("rtk_base_USB", RTK_base_USB_);
@@ -660,7 +660,7 @@ void InertialSenseROS::configure_rtk()
 
             start_rtk_connectivity_watchdog_timer();
         }
-        if (gnss_compass_)
+        if (GNSS_Compass_)
         {
             ROS_INFO("InertialSense: Dual GNSS (compassing) configured");
             rs_.rtk_cmp.enabled = true;
@@ -699,10 +699,10 @@ void InertialSenseROS::configure_rtk()
     else
     {
         ROS_ERROR_COND(RTK_rover_ && (RTK_base_serial_ || RTK_base_USB_ || RTK_base_TCP_), "unable to configure onboard receiver to be both RTK rover and base - default to rover");
-        ROS_ERROR_COND(RTK_rover_ && gnss_compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
+        ROS_ERROR_COND(RTK_rover_ && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
         uint32_t RTKCfgBits = 0;
-        if (gnss_compass_)
+        if (GNSS_Compass_)
         {
             ROS_INFO("InertialSense: Configured as dual GNSS (compassing)");
             RTK_rover_ = false;
