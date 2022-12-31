@@ -50,6 +50,13 @@ RTK_correction_protocol: "RTCM3"
 # RTK_server_username: ""
 # RTK_server_password: ""
 
+## NTRIP
+RTK_server_IP: "168.179.231.9"
+RTK_server_port: 2101
+RTK_server_mount: "GNSSVRSRTCM32"
+RTK_server_username: "inertialsense1"
+RTK_server_password: "inertialsense1"
+
 ## TCP
 # RTK_server_IP: "127.0.0.1"
 # RTK_server_port: 7777
