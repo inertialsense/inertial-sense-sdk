@@ -49,7 +49,7 @@
 #define FIRMWARE_VERSION_CHAR2 0
 
 #define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                          \
-    IS_.BroadcastBinaryData(DID, __periodmultiple,                                     \
+    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                     \
                             [this](InertialSense *i, p_data_t *data, int pHandle)      \
                             {                                                          \
                                 /* ROS_INFO("Got message %d", DID);*/                  \
@@ -135,6 +135,8 @@ public:
     {
         bool enabled = false;
         bool streaming = false;
+        bool streamingMisc = false;
+        bool streamingRel = false;
         int period = 1;             // Period multiple (data rate divisor)
         ros::Publisher pubInfo;
         ros::Publisher pubRel;
@@ -271,10 +273,6 @@ public:
     bool strobeInStreaming_ = false;
     bool diagnosticsStreaming_ = false;
     // NOTE: that GPS streaming flags are applicable for all GPS devices/receivers
-    bool rtkPosMiscStreaming_ = false;
-    bool rtkPosRelStreaming_ = false;
-    bool rtkCmpMiscStreaming_ = false;
-    bool rtkCmpRelStreaming_ = false;
     bool data_streams_enabled_ = false;
 
     // Services

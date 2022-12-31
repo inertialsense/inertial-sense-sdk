@@ -260,15 +260,11 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;
     }
 
-    bool covarianceConfiged = (covariance_enabled_ && insCovarianceStreaming_) || !covariance_enabled_;
-
-    if (rs_.odom_ins_ned.enabled && !(rs_.ins4.streaming && imuStreaming_ && covarianceConfiged))
+    if (rs_.odom_ins_ned.enabled && !(rs_.ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS NED data stream.");
 
         SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.ins4.period);                                                   // Need NED
-        if (covariance_enabled_)
-            SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200); // Need Covariance data
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -293,12 +289,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;;
     }
 
-    if (rs_.odom_ins_ecef.enabled && !(rs_.ins4.streaming && imuStreaming_ && covarianceConfiged))
+    if (rs_.odom_ins_ecef.enabled && !(rs_.ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ECEF data stream.");
         SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.ins4.period);                                                   // Need quaternion and ecef
-        if (covariance_enabled_)
-            SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200); // Need Covariance data
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -323,12 +317,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;
     }
 
-    if (rs_.odom_ins_enu.enabled  && !(rs_.ins4.streaming && imuStreaming_ && covarianceConfiged))
+    if (rs_.odom_ins_enu.enabled  && !(rs_.ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ENU data stream.");
         SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.ins4.period);                                                   // Need ENU
-        if (covariance_enabled_)
-            SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200); // Need Covariance data
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -351,6 +343,12 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         }
         if (!firstrun)
             return;
+    }
+
+    if (covariance_enabled_ && !insCovarianceStreaming_)
+    {
+        ROS_INFO("Attempting to enable %s data stream.", cISDataMappings::GetDataSetName(DID_ROS_COVARIANCE_POSE_TWIST));
+        SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200);
     }
 
     CONFIG_STREAM(rs_.ins1, DID_INS_1, ins_1_t, INS1_callback);
@@ -1423,6 +1421,8 @@ void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
 
 void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg)
 {
+    imuStreaming_ = true;
+
     if (rs_.pimu.enabled)
     {
         STREAMING_CHECK(rs_.pimu.streaming, DID);
@@ -1478,12 +1478,12 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *con
     switch (DID)
     {
     case DID_GPS1_RTK_POS_MISC:
-        STREAMING_CHECK(rtkPosMiscStreaming_, DID);
+        STREAMING_CHECK(rs_.rtk_pos.streamingMisc, DID);
         rs_.rtk_pos.pubInfo.publish(rtk_info);
         break;
 
     case DID_GPS2_RTK_CMP_MISC:
-        STREAMING_CHECK(rtkCmpMiscStreaming_, DID);
+        STREAMING_CHECK(rs_.rtk_cmp.streamingMisc, DID);
         rs_.rtk_cmp.pubInfo.publish(rtk_info);
         break;
     }
@@ -1529,12 +1529,12 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
     switch (DID)
     {
     case DID_GPS1_RTK_POS_REL:
-        STREAMING_CHECK(rtkPosRelStreaming_, DID);
+        STREAMING_CHECK(rs_.rtk_pos.streamingRel, DID);
         rs_.rtk_pos.pubRel.publish(rtk_rel);
         break;
 
     case DID_GPS2_RTK_CMP_REL:
-        STREAMING_CHECK(rtkCmpRelStreaming_, DID);
+        STREAMING_CHECK(rs_.rtk_cmp.streamingRel, DID);
         rs_.rtk_cmp.pubRel.publish(rtk_rel);
         break;
     }
@@ -1761,8 +1761,10 @@ void InertialSenseROS::GPS_geph_callback(eDataIDs DID, const geph_t *const msg)
 void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
 {
     if (!diagnosticsStreaming_)
+    {
+        diagnosticsStreaming_ = true;
         ROS_INFO("Diagnostics response received");
-    diagnosticsStreaming_ = true;
+    }
     // Create diagnostic objects
     diagnostic_msgs::DiagnosticArray diag_array;
     diag_array.header.stamp = ros::Time::now();
