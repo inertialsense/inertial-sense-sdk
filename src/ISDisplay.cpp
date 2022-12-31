@@ -1092,9 +1092,9 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 	}
 
 	{	// Single line format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "   progress: %3.0f %%,   declination: %4.1f",
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "   progress: %3.0f %%,   mag_declination: %4.1f",
 			mag.progress,
-			mag.declination * C_RAD2DEG_F);
+			mag.mag_declination * C_RAD2DEG_F);
 	}
 
 	if (m_displayMode == DMODE_PRETTY)

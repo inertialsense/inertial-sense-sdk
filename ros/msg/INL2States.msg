@@ -5,5 +5,5 @@ geometry_msgs/Vector3 posEcef       # (m) Position in ECEF frame
 geometry_msgs/Vector3 gyroBias      # (rad/s) Gyro bias
 geometry_msgs/Vector3 accelBias     # (m/s^2) Accelerometer bias
 float32 baroBias                    # (m) Barometer bias
-float32 magDec                      # (rad) Magnetic declination
-float32 magInc                      # (rad) Magnetic inclination
+float32 magDec                      # (rad) Magnetic mag_declination
+float32 magInc                      # (rad) Magnetic mag_inclination

@@ -90,8 +90,8 @@ public:
     void set_navigation_dt_ms();
     void configure_flash_parameters();
     void configure_rtk();
-    void connect_rtk_client(const std::string &RTK_correction_protocol, const std::string &RTK_server_IP, const int RTK_server_port);
-    void start_rtk_server(const std::string &RTK_server_IP, const int RTK_server_port);
+    void connect_rtk_client(const std::string &rtk_correction_protocol, const std::string &rtk_server_IP, const int rtk_server_port);
+    void start_rtk_server(const std::string &rtk_server_IP, const int rtk_server_port);
 
     void configure_data_streams(bool firstrun);
     void configure_data_streams(const ros::TimerEvent& event);
@@ -118,7 +118,7 @@ public:
     {
         bool enabled = false;
         bool streaming = false;
-        int period_multiple = 1;
+        int period = 1;             // Period multiple (data rate divisor)
         ros::Publisher pub;
     } ros_stream_t;
 
@@ -127,7 +127,7 @@ public:
         bool enabled = false;
         bool streaming_pos = false;
         bool streaming_vel = false;
-        int period_multiple = 1;
+        int period = 1;             // Period multiple (data rate divisor)
         ros::Publisher pub;
     } ros_stream_gps_t;
 
@@ -135,7 +135,7 @@ public:
     {
         bool enabled = false;
         bool streaming = false;
-        int period_multiple = 1;
+        int period = 1;             // Period multiple (data rate divisor)
         ros::Publisher pubInfo;
         ros::Publisher pubRel;
     } ros_stream_gps_rkt_t;
@@ -144,7 +144,7 @@ public:
     {
         bool enabled = false;
         bool streaming = false;
-        int period_multiple = 1;
+        int period = 1;             // Period multiple (data rate divisor)
         ros::Publisher pubObs;
         ros::Publisher pubEph;
         ros::Publisher pubGEp;
@@ -196,7 +196,7 @@ public:
     bool RTK_base_USB_ = false;
     bool RTK_base_serial_ = false;
     bool RTK_base_TCP_ = false;
-    bool GNSS_Compass_ = false;
+    bool gnss_compass_ = false;
 
     std::string gps1_type_ = "F9P";
     std::string gps1_topic_ = "gps1";
@@ -240,25 +240,28 @@ public:
         ros_stream_t ins1;
         ros_stream_t ins2;
         ros_stream_t ins4;
-        ros_stream_t inl2_states;
         ros_stream_t odom_ins_ned;
         ros_stream_t odom_ins_ecef;
         ros_stream_t odom_ins_enu;
+        ros_stream_t inl2_states;
+
         ros_stream_t imu;
+        ros_stream_t pimu;
         ros_stream_t mag;
         ros_stream_t baro;
-        ros_stream_t pimu;
-        ros_stream_t diagnostics;
+
         ros_stream_gps_t gps1;
         ros_stream_gps_t gps2;
+        ros_stream_t navsatfix;
         ros_stream_t gps1_info;
         ros_stream_t gps2_info;
         ros_stream_gps_raw_t gps1_raw;
         ros_stream_gps_raw_t gps2_raw;
-        ros_stream_gps_raw_t gps_base_raw;
+        ros_stream_gps_raw_t gpsbase_raw;
         ros_stream_gps_rkt_t rtk_pos;
         ros_stream_gps_rkt_t rtk_cmp;
-        ros_stream_t navsatfix;
+
+        ros_stream_t diagnostics;
     } rs_;
 
     bool NavSatFixConfigured = false;
@@ -398,7 +401,7 @@ public:
     inertial_sense_ros::DID_INS4 did_ins_4_msg;
     inertial_sense_ros::PreIntIMU preintIMU_msg;
 
-    float poseCov[36], twistCov[36];
+    float poseCov_[36], twistCov[36];
 
     ros::NodeHandle nh_;
     ros::NodeHandle nh_private_;
@@ -407,13 +410,15 @@ public:
     InertialSense IS_;
 
     // Flash parameters
+    // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
+    // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
     int navigation_dt_ms_ = 4;
+
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
     float gps1AntOffset_[3] = {0, 0, 0};
     float gps2AntOffset_[3] = {0, 0, 0};
     double refLla_[3] = {0, 0, 0};
-    float magInclination_ = 0;
     float magDeclination_ = 0;
     int insDynModel_ = INS_DYN_MODEL_AIRBORNE_4G;
     bool refLLA_known = false;

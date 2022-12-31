@@ -1,79 +1,84 @@
 port: "/dev/ttyACM1"
-navigation_dt_ms: 16    # IMX-5 default.  8 ms max.
-# navigation_dt_ms: 4     # uINS-3 default. 1 ms max.
 baudrate: 921600
 frame_id: "body"
+
+msg/ins1/period: 10
 msg/ins1/enable: true
-msg/ins1/period_multiple: 10
 msg/ins2/enable: false
 msg/ins4/enable: false
-msg/odom_ins_ned/enable: true
-msg/odom_ins_enu/enable: false
-msg/odom_ins_ecef/enable: false
-stream_covariance_data: false
-stream_INL2_states: false
-stream_IMU: true
-stream_GPS1: true
-stream_GPS1_raw: false
-stream_GPS1_info: false
-stream_GPS2: true
-stream_GPS2_raw: false
-stream_GPS2_info: false
-stream_NavSatFix: false
-stream_mag: false
-stream_baro: false
-stream_preint_IMU: false
-stream_diagnostics: false
+msg/odom_ins_ned/enable: true     # Period controlled using msg/ins4/period 
+msg/odom_ins_enu/enable: false    # "
+msg/odom_ins_ecef/enable: false   # "
+msg/inl2_states/enable: false
+stream_ins_covariance: false      # Include covariance in odom_ins_... messages
+
+msg/imu/enable: true
+msg/pimu/enable: false
+msg/mag/enable: false
+msg/baro/enable: false
+
+msg/gps1/enable: true
+msg/gps2/enable: true
+msg/gps1/topic: "gps1"            # Topic name gps is published on
+msg/gps2/topic: "gps2"
+msg/navsatfix/enable: false
+msg/gps1_raw/enable: false
+msg/gps2_raw/enable: false
+msg/gps1_info/enable: false
+msg/gps2_info/enable: false
+
+msg/diagnostics/enable: false
+
 publishTf: true
 enable_log: false
 
-ioConfig: 40673376  # (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
-#ioConfig: 39624800  # (0x025CA060) EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8
-#ioConfig: 38051936  # (0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
-
 # every time we attempt to connect only try one time -->
-RTK_connection_attempt_limit: 1
+rtk_connection_attempt_limit: 1
 # default back off ignored because only connecting once -->
-RTK_connection_attempt_backoff: 2
+rtk_connection_attempt_backoff: 2
 # watchdog timer enabled -->
-RTK_connectivity_watchdog_enabled: true
+rtk_connectivity_watchdog_enabled: true
 # check every 1 second for traffic -->
-RTK_connectivity_watchdog_timer_frequency: 1
+rtk_connectivity_watchdog_timer_frequency: 1
 # after 5 seconds of not having any data try to con0nect again -->
-RTK_data_transmission_interruption_limit: 5
-RTK_correction_protocol: "RTCM3"
+rtk_data_transmission_interruption_limit: 5
+rtk_correction_protocol: "RTCM3"
 
 ## NTRIP
-# RTK_server_IP: "127.0.0.1"
-# RTK_server_port: 7777
-# RTK_server_mount: ""
-# RTK_server_username: ""
-# RTK_server_password: ""
+# rtk_server_IP: "127.0.0.1"
+# rtk_server_port: 7777
+# rtk_server_mount: ""
+# rtk_server_username: ""
+# rtk_server_password: ""
 
 ## NTRIP
-RTK_server_IP: "168.179.231.9"
-RTK_server_port: 2101
-RTK_server_mount: "GNSSVRSRTCM32"
-RTK_server_username: "inertialsense1"
-RTK_server_password: "inertialsense1"
+rtk_server_IP: "168.179.231.9"
+rtk_server_port: 2101
+rtk_server_mount: "GNSSVRSRTCM32"
+rtk_server_username: "inertialsense1"
+rtk_server_password: "inertialsense1"
 
 ## TCP
-# RTK_server_IP: "127.0.0.1"
-# RTK_server_port: 7777
+# rtk_server_IP: "127.0.0.1"
+# rtk_server_port: 7777
 
-GPS1_type: "F9P"
-GPS2_type: "F9P"
-RTK_rover: true
-RTK_rover_radio_enable: false
-RTK_base_USB: false
-RTK_base_serial: false
-RTK_base_TCP: false
-GNSS_Compass: false
-inclination: 0
-declination: 0
+# navigation_dt_ms: 16    # EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
+navigation_dt_ms: 4     # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
+ioConfig: 40673376    # (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
+# ioConfig: 39624800    # (0x025CA060) EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8
+# ioConfig: 38051936    # (0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+gps1_type: "F9P"
+gps2_type: "F9P"
+gnss_compass: false
+rtk_compass: true
+rtk_rover_radio_enable: false
+rtk_base_USB: false
+rtk_base_serial: false
+rtk_base_TCP: false
+mag_declination: 0
 dynamic_model: 8
-INS_rpy_radians: [1.5708, 0, 0]
-INS_xyz: [0, 0, 0]
-GPS1_ant_xyz: [0, 0, 0]
-GPS2_ant_xyz: [0, 0, 0]
-GPS_ref_lla: [0, 0, 0]
+ins_rotation: [1.5708, 0, 0]
+ins_offset: [0, 0, 0]
+gps1_ant_xyz: [0, 0, 0]
+gps2_ant_xyz: [0, 0, 0]
+ref_lla: [0, 0, 0]
