@@ -121,27 +121,27 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     initialized_ = true;
 }
 
-#define GET_PARAM(name, var) \
+#define GET_PARAM(key, var) \
     if (useYamlNode){ \
-        get_node_param_yaml(node, name, var); \
+        get_node_param_yaml(node, key, var); \
     } else { \
-        getParam(name, var); \
+        getParam(key, var); \
     }
 
-#define GET_PARAM_VEC(name, size, vec) \
+#define GET_PARAM_VEC(key, size, vec) \
     if (useYamlNode){ \
-        get_node_vector_yaml(node, name, size, vec); \
+        get_node_vector_yaml(node, key, size, vec); \
     } else { \
-        getParamVector(name, size, vec); \
+        getParamVector(key, size, vec); \
     }
 
-#define GET_PARAMS_RS(name) \
+#define GET_PARAMS_RS(key) \
     if (useYamlNode){ \
-        get_node_param_yaml(node, "msg/"#name"/enable", rs_.name.enabled); \
-        get_node_param_yaml(node, "msg/"#name"/period", rs_.name.period); \
+        get_node_param_yaml(node, "msg/"#key"/enable", rs_.key.enabled); \
+        get_node_param_yaml(node, "msg/"#key"/period", rs_.key.period); \
     } else { \
-        getParam("/msg/"#name"/enable", rs_.name.enabled); \
-        getParam("/msg/"#name"/period", rs_.name.period); \
+        getParam("msg/"#key"/enable", rs_.key.enabled); \
+        getParam("msg/"#key"/period", rs_.key.period); \
     }
 
 void InertialSenseROS::load_params(YAML::Node &node)
@@ -2241,7 +2241,7 @@ bool InertialSenseROS::get_node_vector_yaml(YAML::Node node, const std::string k
 
 bool InertialSenseROS::getParam(const std::string &key, std::string &s)
 {
-    bool success = nh_private_.getParam(key, s);
+    bool success = nh_private_.getParam("/" + key, s);
 
     // Display parameter
     if (success)
@@ -2258,7 +2258,7 @@ bool InertialSenseROS::getParam(const std::string &key, std::string &s)
 
 bool InertialSenseROS::getParam(const std::string &key, double &d)
 {
-    bool success = nh_private_.getParam(key, d);
+    bool success = nh_private_.getParam("/" + key, d);
 
     // Display parameter
     if (success)
@@ -2275,7 +2275,7 @@ bool InertialSenseROS::getParam(const std::string &key, double &d)
 
 bool InertialSenseROS::getParam(const std::string &key, float &f)
 {
-    bool success = nh_private_.getParam(key, f);
+    bool success = nh_private_.getParam("/" + key, f);
 
     // Display parameter
     if (success)
@@ -2292,7 +2292,7 @@ bool InertialSenseROS::getParam(const std::string &key, float &f)
 
 bool InertialSenseROS::getParam(const std::string &key, int &i)
 {
-    bool success = nh_private_.getParam(key, i);
+    bool success = nh_private_.getParam("/" + key, i);
 
     // Display parameter
     if (success)
@@ -2309,7 +2309,7 @@ bool InertialSenseROS::getParam(const std::string &key, int &i)
 
 bool InertialSenseROS::getParam(const std::string &key, bool &b)
 {
-    bool success = nh_private_.getParam(key, b);
+    bool success = nh_private_.getParam("/" + key, b);
 
     // Display parameter
     if (success)
@@ -2326,7 +2326,7 @@ bool InertialSenseROS::getParam(const std::string &key, bool &b)
 
 bool InertialSenseROS::getParam(const std::string &key, XmlRpc::XmlRpcValue &v)
 {
-    bool success = nh_private_.getParam(key, v);
+    bool success = nh_private_.getParam("/" + key, v);
 
     // Display parameter
     if (success)
@@ -2345,7 +2345,7 @@ template <typename T>
 bool InertialSenseROS::getParamVector(const std::string &key, uint32_t size, T &data)
 {
     std::vector<double> vec(size, 0);
-    bool success = nh_private_.getParam(key, vec);
+    bool success = nh_private_.getParam("/" + key, vec);
 
     if (success)
     {

@@ -1,12 +1,12 @@
-port: "/dev/ttyACM1"
+port: "/dev/ttyACM0"
 baudrate: 921600
 frame_id: "body"
 
-msg/ins1/period: 10
+msg/ins1/period: 1                # Output period multiple (rate divisor).  Increase to divide output data rate. 
 msg/ins1/enable: true
 msg/ins2/enable: false
 msg/ins4/enable: false
-msg/odom_ins_ned/enable: true     # Period controlled using msg/ins4/period 
+msg/odom_ins_ned/enable: true     # Use msg/ins4/period to set data rate for these messages  
 msg/odom_ins_enu/enable: false    # "
 msg/odom_ins_ecef/enable: false   # "
 msg/inl2_states/enable: false
@@ -50,13 +50,6 @@ rtk_correction_protocol: "RTCM3"
 # rtk_server_mount: ""
 # rtk_server_username: ""
 # rtk_server_password: ""
-
-## NTRIP
-rtk_server_IP: "168.179.231.9"
-rtk_server_port: 2101
-rtk_server_mount: "GNSSVRSRTCM32"
-rtk_server_username: "inertialsense1"
-rtk_server_password: "inertialsense1"
 
 ## TCP
 # rtk_server_IP: "127.0.0.1"
