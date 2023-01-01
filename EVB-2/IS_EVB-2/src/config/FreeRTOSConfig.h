@@ -85,7 +85,7 @@ tick off. */
 /* Run time stats gathering definitions. */
 #define configGENERATE_RUN_TIME_STATS	            1           /* http://www.freertos.org/rtos-run-time-stats.html */
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()    time_init()
-#define portGET_RUN_TIME_COUNTER_VALUE()            ((uint32_t)time_ticks())
+#define portGET_RUN_TIME_COUNTER_VALUE()            ((uint32_t)time_ticks_u64())
 #define INCLUDE_uxTaskGetStackHighWaterMark	        1
 
 

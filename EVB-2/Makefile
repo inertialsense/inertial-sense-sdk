@@ -173,6 +173,7 @@ C_SRCS += \
 	$(HW_LIBS_DIR)/drivers/SAMx70/d_i2c.c                                                                 \
 	$(HW_LIBS_DIR)/drivers/SAMx70/d_serial.c                                                            \
 	$(HW_LIBS_DIR)/drivers/SAMx70/d_time.c                                                                \
+	$(HW_LIBS_DIR)/drivers/common/d_time.c \
 	$(HW_LIBS_DIR)/bootloader/bootloaderApp.c                                                            \
 	$(HW_LIBS_DIR)/misc/rtos.c                                                                     \
 	$(HW_LIBS_DIR)/printf/printf.c                                                          \
@@ -217,7 +218,8 @@ INCLUDES += \
 	$(HW_LIBS_DIR)/boards 			\
 	$(HW_LIBS_DIR)/bootloader 		\
 	$(HW_LIBS_DIR)/communications 	\
-	$(HW_LIBS_DIR)/drivers/SAMx70        	\
+	$(HW_LIBS_DIR)/drivers/SAMx70 \
+	$(HW_LIBS_DIR)/drivers/common \
 	$(HW_LIBS_DIR)/printf  \
 	$(HW_LIBS_DIR)/misc  
 

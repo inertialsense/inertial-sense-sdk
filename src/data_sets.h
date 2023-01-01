@@ -4016,7 +4016,7 @@ typedef struct PACKED
 	uint32_t                maxRunTimeUs;
 	
 	/** Rolling average over last 1000 executions */
-	uint32_t				averageRunTimeUs;
+	float					averageRunTimeUs;
 	
 	/** Counter of times task took too long to run */
 	uint32_t				gapCount;
