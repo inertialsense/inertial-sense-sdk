@@ -72,7 +72,7 @@ uint32_t flash_update_block(uint32_t address, const void* newData, int dataSize,
 					break;
 				}
 			}
-			time_delay(2);
+			time_delay_msec(2);
 		}
 					
 		// lock the block

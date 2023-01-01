@@ -12,11 +12,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBoards.h"
 #include "d_time.h"
+#include "ISConstants.h"
 
 inline uint32_t time_ticks_to_usec(uint32_t ticks)
 {
-#if TIME_TICKS_PER_US == 0	// Granularity isn't better than 1us (SAMx70)
-	return (ticks / TIME_TICKS_PER_MS) * 1000;
+#if TIME_TICKS_PER_US < 5U	// Granularity isn't better than 5 ticks per us (SAMx70)
+	return (ticks / TIME_TICKS_PER_MS) * 1000U;
 #else
 	return (ticks / TIME_TICKS_PER_US);
 #endif
@@ -37,12 +38,26 @@ inline float time_usecf_to_ticksf(float usec)
 	return (usec / TIME_US_PER_TICK_F);
 }
 
-void time_delay(uint32_t ms)
+void time_delay_msec(uint32_t ms)
 {
 	if (ms != 0)
 	{
 		uint32_t start = time_ticks_u32();	// Rollover is automatically handled even without 64 bit rollover value
 		uint32_t ticktarget = ms * TIME_TICKS_PER_MS;
+		while (time_ticks_u32() - start < ticktarget);
+	}
+}
+
+void time_delay_usec(uint32_t us)
+{
+	if (us != 0)
+	{
+		uint32_t start = time_ticks_u32();	// Rollover is automatically handled even without 64 bit rollover value
+#if TIME_TICKS_PER_US < 5U	// Granularity isn't better than 5 ticks per us (SAMx70)
+		uint32_t ticktarget = _MAX((us * TIME_TICKS_PER_MS) / 1000, 1U);	// Delay for at least 1us
+#else
+		uint32_t ticktarget = us * TIME_TICKS_PER_US;
+#endif
 		while (time_ticks_u32() - start < ticktarget);
 	}
 }
@@ -54,7 +69,7 @@ inline uint32_t time_msec(void)
 
 inline uint32_t time_usec(void)
 {
-#if TIME_TICKS_PER_US == 0	// Granularity isn't better than 1us (SAMx70)
+#if TIME_TICKS_PER_US < 5U	// Granularity isn't better than 5 ticks per us (SAMx70)
 	return (uint32_t)(time_ticks_u64() / TIME_TICKS_PER_MS) * 1000;
 #else
 	return (uint32_t)(time_ticks_u64() / TIME_TICKS_PER_US);			

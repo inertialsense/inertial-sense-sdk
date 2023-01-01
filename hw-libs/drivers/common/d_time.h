@@ -97,7 +97,14 @@ float time_usecf_to_ticksf(float usec);
  * 
  * @param ms number of milliseconds to delay for
  */
-void time_delay(uint32_t ms);
+void time_delay_msec(uint32_t ms);
+
+/**
+ * @brief Delay for a number of microseconds
+ * 
+ * @param us number of microseconds to delay for
+ */
+void time_delay_usec(uint32_t us);
 
 /**
  * @brief Get current number of seconds since init as a float
