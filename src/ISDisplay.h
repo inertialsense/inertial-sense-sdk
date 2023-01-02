@@ -61,7 +61,7 @@ public:
 		DMODE_QUIET,
 	};
 
-	cInertialSenseDisplay();
+	cInertialSenseDisplay(eDisplayMode displayMode = DMODE_PRETTY);
 	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
@@ -77,7 +77,7 @@ public:
 	std::string Replay(double speed=1.0);
 	std::string Goodbye();
 
-	void SetKeyboardNonBlock();
+	void SetKeyboardNonBlocking();
 	void ResetTerminalMode();
 	int KeyboardHit();
 	int GetChar();
@@ -130,7 +130,7 @@ private:
 	std::string VectortoString();
 	void DataToVector(const p_data_t* data);
 
-	bool m_nonblockingkeyboard;
+	bool m_nonblockingkeyboard = false;
 	std::vector<std::string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_PRETTY;
 	uint16_t m_rxCount = 0;

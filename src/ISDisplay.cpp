@@ -85,8 +85,9 @@ static void signalFunction(int sig)
 #endif
 
 
-cInertialSenseDisplay::cInertialSenseDisplay()
+cInertialSenseDisplay::cInertialSenseDisplay(eDisplayMode displayMode)
 {
+	m_displayMode = displayMode;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -248,7 +249,7 @@ string cInertialSenseDisplay::Goodbye()
 
 
 
-void cInertialSenseDisplay::SetKeyboardNonBlock()
+void cInertialSenseDisplay::SetKeyboardNonBlocking()
 {
 	m_nonblockingkeyboard = true;
 
