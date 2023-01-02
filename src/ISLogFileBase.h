@@ -18,7 +18,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <cstdarg>
 #include <string>
 
-#define LOG_DEBUG_GEN			(PLATFORM_IS_EMBEDDED==0)		
 #define LOG_DEBUG_FILE_WRITE	0		// Enable file debug printout
 #define LOG_DEBUG_FILE_READ		0		// 
 #define LOG_DEBUG_CHUNK_WRITE	0		// Enable chunk debug printout

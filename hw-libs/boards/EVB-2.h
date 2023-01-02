@@ -1,6 +1,10 @@
 #ifndef __EVB_2_H
 #define __EVB_2_H
 
+#ifdef LUNA_VEHICLE
+#include "config/conf_luna.h"
+#endif
+
 #define USE_FREERTOS                    1
 #define USE_TIMER_DRIVER				0
 

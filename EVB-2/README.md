@@ -44,12 +44,9 @@ Download the installer and take all of the default options during installation.
 
 ###### **Install toolchain**
 
-In order to build you need to install the gcc-arm embedded toolchain. Run these commands to install it:
+In order to build you need to install the gcc-arm embedded toolchain. You can install it with Microchip Studio, or the following commands:
 
 ```bash
-# Install 32-bit dependencies
-sudo apt install -y lib32ncurses5 
-
 # Download toolchain version 6.3.1 6-2017-q2
 wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/6-2017q2/gcc-arm-none-eabi-6-2017-q2-update-linux.tar.bz2
 
