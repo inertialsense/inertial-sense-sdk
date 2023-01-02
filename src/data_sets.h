@@ -1577,7 +1577,7 @@ typedef struct PACKED
 	float					progress;
 
 	/** Magnetic mag_declination estimate */
-	float					mag_declination;
+	float					declination;
 } mag_cal_t;
 
 // (DID_INL2_MAG_OBS_INFO)
