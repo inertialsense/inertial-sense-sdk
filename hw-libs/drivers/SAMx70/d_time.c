@@ -75,7 +75,7 @@ inline volatile uint64_t time_ticks_u64(void)
 		g_ticks.tim = RTT->RTT_VR;
 	} while (g_ticks.tim != RTT->RTT_VR);
 	
-	return g_ticks.u64;
+	return g_ticks.u64;	// Return uint64_t value; g_ticks.rollcnt is updated in interrupt
 }
 
 inline volatile uint32_t time_ticks_u32(void)
@@ -86,4 +86,90 @@ inline volatile uint32_t time_ticks_u32(void)
 	} while (g_ticks.tim != RTT->RTT_VR);
 	
 	return g_ticks.tim;
+}
+
+inline uint32_t time_ticks_to_usec(uint32_t ticks)
+{
+	return ((ticks / TIME_TICKS_PER_MS) * 1000U);	// Tick rate is slower on this processor than 1us
+}
+
+inline uint32_t time_usec_to_ticks(uint32_t usec)
+{
+	return ((usec * TIME_TICKS_PER_MS) / 1000U);	// Tick rate is slower on this processor than 1us
+}
+
+inline float time_ticksf_to_usecf(float ticks)
+{
+	return (ticks * TIME_US_PER_TICK_F);
+}
+
+inline float time_usecf_to_ticksf(float usec)
+{
+	return (usec / TIME_US_PER_TICK_F);
+}
+
+void time_delay_msec(uint32_t ms)
+{
+	if (ms != 0)
+	{
+		uint32_t start = time_ticks_u32();	// Rollover is automatically handled even without 64 bit rollover value
+		uint32_t ticktarget = ms * TIME_TICKS_PER_MS;
+		while (time_ticks_u32() - start < ticktarget);
+	}
+}
+
+void time_delay_usec(uint32_t us)
+{
+	if (us != 0)
+	{
+		uint32_t start = time_ticks_u32();	// Rollover is automatically handled even without 64 bit rollover value
+		uint32_t ticktarget = us * TIME_TICKS_PER_MS / 1000U;	// Tick rate is slower on this processor than 1us
+		while (time_ticks_u32() - start < ticktarget);
+	}
+}
+
+inline uint32_t time_msec(void)
+{	
+	return (uint32_t)((uint64_t)(time_ticks_u64() * TIME_MS_PER_TICK_LF) & 0x00000000FFFFFFFF);
+}
+
+inline uint32_t time_usec(void)
+{
+	return (uint32_t)((uint64_t)(time_ticks_u64() * TIME_US_PER_TICK_LF) & 0x00000000FFFFFFFF);
+}
+
+inline float time_secf(void)
+{
+	uint64_t ticks = time_ticks_u64();
+	return TIME_SECS_PER_TICK_F * (float)ticks;
+}
+
+inline float time_msecf(void)
+{
+	uint64_t ticks = time_ticks_u64();
+	return TIME_MS_PER_TICK_F * (float)ticks;
+}
+
+inline float time_usecf(void)
+{
+	uint64_t ticks = time_ticks_u64();
+	return TIME_US_PER_TICK_F * (float)ticks;
+}
+
+double time_seclf(void)
+{
+	uint64_t ticks = time_ticks_u64();
+	return TIME_SECS_PER_TICK_LF * (double)ticks;
+}
+
+inline double time_mseclf(void)
+{
+	uint64_t ticks = time_ticks_u64();
+	return TIME_MS_PER_TICK_LF * (double)ticks;
+}
+
+inline double time_useclf(void)
+{
+	uint64_t ticks = time_ticks_u64();
+	return TIME_US_PER_TICK_LF * (double)ticks;
 }

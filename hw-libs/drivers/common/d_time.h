@@ -164,5 +164,6 @@ double time_useclf(void);
 
 #ifdef __cplusplus
 }
-#endif
+#endif  // __cplusplus 
+
 #endif 	// D_TIME_H
