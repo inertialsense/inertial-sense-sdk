@@ -156,7 +156,7 @@ inline float time_usecf(void)
 	return TIME_US_PER_TICK_F * (float)ticks;
 }
 
-double time_seclf(void)
+inline double time_seclf(void)
 {
 	uint64_t ticks = time_ticks_u64();
 	return TIME_SECS_PER_TICK_LF * (double)ticks;
