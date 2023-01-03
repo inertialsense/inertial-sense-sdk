@@ -4058,6 +4058,28 @@ typedef struct PACKED
 	uint32_t                profileStartTimeUs;
 } rtos_task_t;
 
+/** Internal RTOS task profiling info (processor ticks instead of usec) */
+typedef struct PACKED
+{
+	/** Last run time microseconds */
+	uint32_t                runTimeTicks;
+
+	/** Max run time microseconds */
+	uint32_t                maxRunTimeTicks;
+	
+	/** Rolling average over last 1000 executions */
+	float					averageRunTimeTicks;
+
+	/** Local time when task loop started (following delay) */
+	uint32_t                profileStartTimeTicks;
+
+	/** Counter of times task took too long to run */
+	uint32_t				gapCount;
+
+	uint32_t 				periodTicks;
+	
+} rtos_profile_t;
+
 /** (DID_RTOS_INFO) */
 typedef struct PACKED
 {

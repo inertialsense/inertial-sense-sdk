@@ -375,7 +375,7 @@ uint64_t getTickCount(void)
 
 #elif PLATFORM_IS_EVB_2
 
-    return time_ticks();
+    return time_ticks_u64();
 
 #else
 
