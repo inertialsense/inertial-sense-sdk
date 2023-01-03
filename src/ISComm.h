@@ -60,7 +60,6 @@ extern "C" {
 #define _DID_MAGNETOMETER			DID_MAGNETOMETER		/** (see magnetometer_t) Magnetometer sensor output */
 #define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
 #define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */
-#define _DID_POS_MEASUREMENT		DID_POSITION_MEASUREMENT/** (see pos_measurement_t) Position Measurement data*/
 
 /** Utilities */
 #define _DID_DEV_INFO				DID_DEV_INFO			/** (see dev_info_t) Device information */
@@ -82,6 +81,7 @@ typedef enum
 	_PTYPE_ASCII_NMEA           = 0xBFFFFFFF,				/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+	_PTYPE_SONYBIN				= 0x8FFFFFFF,				/** Protocol Type: Sony CXD5610 GNSS binary */
 } protocol_type_t;
 
 /** uINS default baud rate */
@@ -159,7 +159,7 @@ Packet Overview
 
 Byte
 0			Packet start byte
-1			Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE)
+1			Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE0)
 2			Packet counter (for ACK and retry)
 3			Packet flags
 

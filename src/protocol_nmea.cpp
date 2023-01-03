@@ -1258,7 +1258,6 @@ int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSV
 				svDest.cno = cno;
 				svDest.elev = elv;
 				svDest.azim = az;
-				svDest.prRes = 0;
 				svDest.flags = 0;
 			}
 			

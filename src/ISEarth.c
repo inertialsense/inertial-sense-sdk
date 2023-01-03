@@ -617,3 +617,41 @@ void rangeBearing_from_lla(const ixVector3d lla1, const ixVector3d lla2, ixVecto
     rb[0] =  angular_range * Rprime;
     rb[1] = atan2(y,x);
 }
+
+/* Coordinate transformation matrix from NED to ECEF frame */
+
+void rotMat_ned2ecef(const double *latlon, float *R)
+{
+	double Smu, Cmu, Sl, Cl;
+
+    Smu = sin(latlon[0]);
+    Cmu = cos(latlon[0]);
+    Sl  = sin(latlon[1]);
+    Cl  = cos(latlon[1]);
+
+    R[0] = -(float)(Smu * Cl);
+    R[1] = -(float)Sl;
+    R[2] = -(float)(Cmu * Cl);
+    R[3] = -(float)(Smu * Sl);
+    R[4] =  (float)Cl;
+    R[5] = -(float)(Cmu * Sl);
+    R[6] =  (float)Cmu;
+    R[7] =  0.0f;
+    R[8] = -(float)Smu;
+
+}
+
+// vertVel is positive in the up direction
+void gndSpeedToVelEcef(const float gndSpeed, const float hdg, const float vertVel, const ixVector3d lla, ixVector3 velEcef)
+{
+    ixVector3 velNed;
+    ixMatrix3 Rn2e;
+
+    velNed[0] = cos(hdg) * gndSpeed;
+    velNed[1] = sin(hdg) * gndSpeed;
+    velNed[2] = -vertVel;
+
+    rotMat_ned2ecef(lla, Rn2e);
+
+    mul_Mat3x3_Trans_Vec3x1(velEcef, Rn2e, velNed);
+}
