@@ -79,7 +79,8 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
         line[0] = '\0';
 
         last_line = ftell(*ihex_file);
-        fgets(line, 512, *ihex_file);
+        char* result = fgets(line, 512, *ihex_file);
+        (void*)result;
 
         // Turn end of line characters into cstring terminators
         if (line[strlen(line) - 1] == '\n') line[strlen(line) - 1] = '\0';

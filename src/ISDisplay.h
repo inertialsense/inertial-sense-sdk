@@ -101,19 +101,21 @@ public:
 	std::string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
 	std::string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
 	std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
-	std::string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr, const std::string didName);
-	std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr, const std::string didName);
-	std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr, const std::string didName);
+	std::string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr);
+	static std::string DataToStringGpsPos(const gps_pos_t &gps, bool full=false);
+	std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
+	std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
 	std::string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
     std::string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
 	std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
 	std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);
 	std::string DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr);
 	std::string DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr);
+	static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
 	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
 	std::string DataToStringGeneric(const p_data_t* data);
-	void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
+	static void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
 
 	std::string DatasetToString(const p_data_t* data);
 
