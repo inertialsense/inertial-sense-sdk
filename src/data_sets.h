@@ -4049,6 +4049,8 @@ typedef struct PACKED
 
 	/** Counter of times task took too long to run */
 	uint32_t				gapCount;
+
+	uint32_t 				periodTicks;
 	
 } rtos_profile_t;
 
