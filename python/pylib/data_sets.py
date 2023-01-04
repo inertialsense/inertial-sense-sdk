@@ -15,7 +15,7 @@ DID_ASCII_BCAST_PERIOD          = 8
 DID_RMC                         = 9
 DID_SYS_PARAMS                  = 10
 DID_SYS_SENSORS                 = 11
-DID_FLASH_CONFIG                = 12
+DID_FLASH_CONFIG_IMX                = 12
 DID_GPS1_POS                    = 13
 DID_GPS2_POS                    = 14
 DID_GPS1_SAT                    = 15
@@ -26,7 +26,7 @@ DID_MAG_CAL                     = 19
 DID_INTERNAL_DIAGNOSTIC         = 20
 DID_GPS1_RTK_POS_REL            = 21
 DID_GPS1_RTK_POS_MISC           = 22
-DID_FEATURE_BITS                = 23
+# DID_UNUSED_23                 = 23
 DID_SENSORS_UCAL                = 24
 DID_SENSORS_TCAL                = 25
 DID_SENSORS_TC_BIAS             = 26
@@ -90,13 +90,13 @@ DID_EVB_RTOS_INFO               = 83
 DID_IMU_MAG                     = 85
 DID_PIMU_MAG                    = 86
 DID_GROUND_VEHICLE              = 87
-DID_POSITION_MEASUREMENT        = 88
+# DID_UNUSED_88                 = 88
 DID_RTK_DEBUG_2                 = 89
 DID_CAN_CONFIG                  = 90
 DID_GPS1_RTK_CMP_REL            = 91
 DID_GPS1_RTK_CMP_MISC           = 92
 DID_EVB_DEV_INFO                = 93
-DID_UNUSED_94                   = 94
+# DID_UNUSED_94                   = 94
 DID_REFERENCE_IMU               = 95
 DID_IMU3_RAW                    = 96
 DID_IMU_RAW                     = 97
@@ -118,7 +118,7 @@ did_name_lookup = {
  DID_RMC : "rmc",
  DID_SYS_PARAMS : "sysParams",
  DID_SYS_SENSORS : "sysSensors",
- DID_FLASH_CONFIG : "flashCfg",
+ DID_FLASH_CONFIG_IMX : "flashCfg",
  DID_GPS1_POS : "gps1Pos",
  DID_GPS2_POS : "gps2Pos",
  DID_GPS1_SAT : "gps1Sat",
@@ -131,7 +131,6 @@ did_name_lookup = {
  DID_GPS1_RTK_CMP_REL : "gps1RtkCmpRel",
  DID_GPS1_RTK_POS_MISC: "gps1RtkPosMisc",
  DID_GPS1_RTK_CMP_MISC: "gps1RtkCmpMisc",
- DID_FEATURE_BITS : "featureBits",
  DID_SENSORS_UCAL : "sensorsUcal",
  DID_SENSORS_TCAL : "sensorsTcal",
  DID_SENSORS_MCAL : "sensorsMcal",
@@ -219,7 +218,7 @@ class eGpsNavFixStatus(Enum):
         return self.name
 
 
-class eRtosTask(Enum):
+class eSnRtosTask(Enum):
     """
      RTOS task types
     """

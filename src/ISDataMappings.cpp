@@ -139,7 +139,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS2_RTK_CMP_MISC] = sizeof(gps_rtk_misc_t);
 	sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
 	sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
-	sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
+	sizeMap[DID_FLASH_CONFIG_IMX] = sizeof(nvm_cfg_imx_t);
 	sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
 	sizeMap[DID_STROBE_IN_TIME] = sizeof(strobe_in_time_t);
 	sizeMap[DID_RTOS_INFO] = sizeof(rtos_info_t);
@@ -896,8 +896,8 @@ static void PopulateConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 
 static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 {
-	typedef nvm_flash_cfg_t MAP_TYPE;
-	map_name_to_info_t& m = mappings[DID_FLASH_CONFIG];
+	typedef nvm_cfg_imx_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_FLASH_CONFIG_IMX];
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "size", size, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "checksum", checksum, 0, DataTypeUInt32, uint32_t, 0);
@@ -2316,7 +2316,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_RMC",                          // 9
 	"DID_SYS_PARAMS",                   // 10
 	"DID_SYS_SENSORS",                  // 11
-	"DID_FLASH_CONFIG",                 // 12
+	"DID_FLASH_CONFIG_IMX",                 // 12
 	"DID_GPS1_POS",                     // 13
 	"DID_GPS2_POS",                     // 14
 	"DID_GPS1_SAT",                     // 15
@@ -2327,7 +2327,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INTERNAL_DIAGNOSTIC",          // 20
 	"DID_GPS1_RTK_POS_REL",             // 21
 	"DID_GPS1_RTK_POS_MISC",            // 22
-	"DID_FEATURE_BITS",                 // 23
+	"DID_ARCHIVE_23",                   // 23
 	"DID_SENSORS_UCAL",                 // 24
 	"DID_SENSORS_TCAL",                 // 25
 	"DID_SENSORS_TC_BIAS",              // 26
@@ -2345,11 +2345,11 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_RTOS_INFO",                    // 38
 	"DID_DEBUG_ARRAY",                  // 39
 	"DID_SENSORS_MCAL",                 // 40
-	"Unused_41",                        // 41
+	"DID_ARCHIVE_41",                   // 41
 	"DID_CAL_SC",                       // 42
 	"DID_CAL_SC1",                      // 43
 	"DID_CAL_SC2",                      // 44
-	"UNUSED_45",            			// 45
+	"DID_ARCHIVE_45",            		// 45
 	"DID_SENSORS_ADC_SIGMA",            // 46
 	"DID_REFERENCE_MAGNETOMETER",       // 47
 	"DID_INL2_STATES",                  // 48
@@ -2388,11 +2388,11 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_FLASH_CFG",                // 81
 	"DID_EVB_DEBUG_ARRAY",              // 82
 	"DID_EVB_RTOS_INFO",                // 83
-	"DID_UNUSED_84",                    // 84
+	"DID_ARCHIVE_84",                   // 84
 	"DID_IMU_MAG",                      // 85
 	"DID_PIMU_MAG",                     // 86
 	"DID_GROUND_VEHICLE",               // 87
-	"DID_POSITION_MEASUREMENT",         // 88
+	"DID_ARCHIVE_88",         			// 88
 	"DID_RTK_DEBUG_2",                  // 89
 	"DID_CAN_CONFIG",                   // 90
 	"DID_GPS2_RTK_CMP_REL",             // 91
@@ -2402,18 +2402,18 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_REFERENCE_IMU",                // 95 
 	"DID_IMU3_RAW",                     // 96 
 	"DID_IMU_RAW",                      // 97 
-	"UNUSED_98",                        // 98 
-	"UNUSED_99",                        // 99 
-	"UNUSED_100",                       // 100
-	"UNUSED_101",                       // 101
-	"UNUSED_102",                       // 102
-	"UNUSED_103",                       // 103
-	"UNUSED_104",                       // 104
-	"UNUSED_105",                       // 105
-	"UNUSED_106",                       // 106
-	"UNUSED_107",                       // 107
-	"UNUSED_108",                       // 108
-	"UNUSED_109",                       // 109
+	"DID_ARCHIVE_98",                  	// 98 
+	"DID_ARCHIVE_99",                  	// 99 
+	"DID_ARCHIVE_100",                 	// 100
+	"DID_ARCHIVE_101",                 	// 101
+	"DID_ARCHIVE_102",                 	// 102
+	"DID_ARCHIVE_103",                 	// 103
+	"DID_ARCHIVE_104",                 	// 104
+	"DID_ARCHIVE_105",                 	// 105
+	"DID_ARCHIVE_106",                 	// 106
+	"DID_ARCHIVE_107",                 	// 107
+	"DID_ARCHIVE_108",                 	// 108
+	"DID_ARCHIVE_109",                 	// 109
 	"DID_EVB_LUNA_FLASH_CFG",           // 110
 	"DID_EVB_LUNA_STATUS",              // 111
 	"DID_EVB_LUNA_SENSORS",             // 112

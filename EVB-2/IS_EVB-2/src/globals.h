@@ -57,7 +57,7 @@ typedef struct
     ins_2_t                 ins2;
     inl2_states_t           inl2States;
     pimu_t     pImu;
-    nvm_flash_cfg_t         flashCfg;
+    nvm_cfg_imx_t         flashCfg;
 	bool					refLlaValid;
 } uins_msg_t;
 

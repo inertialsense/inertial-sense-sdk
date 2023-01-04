@@ -140,7 +140,7 @@ void LogReader::organizeData(int device_id)
         // HANDLE_MSG( DID_RMC, dev_log_->rmc );
         HANDLE_MSG( DID_SYS_PARAMS, dev_log_->sysParams );
         HANDLE_MSG( DID_SYS_SENSORS, dev_log_->sysSensors );
-        HANDLE_MSG( DID_FLASH_CONFIG, dev_log_->flashCfg );
+        HANDLE_MSG( DID_FLASH_CONFIG_IMX, dev_log_->flashCfg );
         HANDLE_MSG( DID_GPS1_POS, dev_log_->gps1Pos );
         HANDLE_MSG( DID_GPS2_POS, dev_log_->gps2Pos );
         HANDLE_MSG( DID_GPS1_SAT, dev_log_->gps1Sat );
@@ -153,7 +153,6 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc );
         HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
         HANDLE_MSG( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc );
-        // HANDLE_MSG( DID_FEATURE_BITS, dev_log_->featureBits );
         HANDLE_MSG( DID_SENSORS_UCAL, dev_log_->sensorsUcal );
         HANDLE_MSG( DID_SENSORS_TCAL, dev_log_->sensorsTcal );
         HANDLE_MSG( DID_SENSORS_MCAL, dev_log_->sensorsMcal );
@@ -232,7 +231,7 @@ void LogReader::forwardData(int device_id)
     // forward_message( DID_RMC, dev_log_->rmc, device_id );
     forward_message( DID_SYS_PARAMS, dev_log_->sysParams, device_id );
     forward_message( DID_SYS_SENSORS, dev_log_->sysSensors, device_id );
-    forward_message( DID_FLASH_CONFIG, dev_log_->flashCfg, device_id );
+    forward_message( DID_FLASH_CONFIG_IMX, dev_log_->flashCfg, device_id );
     forward_message( DID_GPS1_POS, dev_log_->gps1Pos, device_id );
     forward_message( DID_GPS2_POS, dev_log_->gps2Pos, device_id );
     forward_message( DID_GPS1_SAT, dev_log_->gps1Sat, device_id );
@@ -245,7 +244,6 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc, device_id );
     forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, device_id );
     forward_message( DID_GPS2_RTK_CMP_MISC, dev_log_->gps1RtkCmpMisc, device_id );
-    // forward_message( DID_FEATURE_BITS, dev_log_->featureBits, device_id );
     forward_message( DID_SENSORS_UCAL, dev_log_->sensorsUcal, device_id );
     forward_message( DID_SENSORS_TCAL, dev_log_->sensorsTcal, device_id );
     forward_message( DID_SENSORS_MCAL, dev_log_->sensorsMcal, device_id );

@@ -165,8 +165,8 @@ class FlashConfigDialog(QDialog):
         super(FlashConfigDialog, self).__init__(parent)
         self.setWindowTitle("Flash Config")
 
-        if np.shape(log.data[0,DID_FLASH_CONFIG])[0] == 0:
-            self.label = QLabel('No DID_FLASH_CONFIG data available.')
+        if np.shape(log.data[0,DID_FLASH_CONFIG_IMX])[0] == 0:
+            self.label = QLabel('No DID_FLASH_CONFIG_IMX data available.')
             self.mainlayout = QVBoxLayout()
             self.mainlayout.addWidget(self.label)
             self.setLayout(self.mainlayout)
@@ -174,22 +174,22 @@ class FlashConfigDialog(QDialog):
             return
 
         self.table = QTableWidget()
-        nfields = len(log.data[0, DID_FLASH_CONFIG].dtype.names)
+        nfields = len(log.data[0, DID_FLASH_CONFIG_IMX].dtype.names)
         field_names = []
         vals = []
 
         for d, dev in enumerate(log.data):
             vals.append([])
-            for f, field in enumerate(dev[DID_FLASH_CONFIG].dtype.names):
-                if isinstance(dev[DID_FLASH_CONFIG][field][0], np.ndarray):
-                    length = len(dev[DID_FLASH_CONFIG][field][0])
+            for f, field in enumerate(dev[DID_FLASH_CONFIG_IMX].dtype.names):
+                if isinstance(dev[DID_FLASH_CONFIG_IMX][field][0], np.ndarray):
+                    length = len(dev[DID_FLASH_CONFIG_IMX][field][0])
                     if d == 0: nfields +=  length-1 # add extra rows for arrays in flash config
                     for i in range(length):
                         if d == 0: field_names.append(field + "[" + str(i) + "]")
-                        vals[d].append(dev[DID_FLASH_CONFIG][field][0][i])
+                        vals[d].append(dev[DID_FLASH_CONFIG_IMX][field][0][i])
                 else:
                     if d == 0: field_names.append(field)
-                    vals[d].append(dev[DID_FLASH_CONFIG][field][0])
+                    vals[d].append(dev[DID_FLASH_CONFIG_IMX][field][0])
 
         self.table.setRowCount(nfields)
         self.table.setColumnCount(log.numDev)

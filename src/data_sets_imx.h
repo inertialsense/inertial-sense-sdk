@@ -31,7 +31,7 @@ typedef uint32_t eDataIDs;
 #define IMX_DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
 #define IMX_DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
 #define IMX_DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information */
-#define IMX_DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
+#define IMX_DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG_IMX.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define IMX_DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define IMX_DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define IMX_DID_GNSS1_UBX_POS               (eDataIDs)6  /** (gnss_pos_t) GNSS 1 position data from ublox receiver. */
@@ -40,7 +40,7 @@ typedef uint32_t eDataIDs;
 #define IMX_DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The RMC provides updates from various data sources (i.e. sensors) as soon as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. All RMC messages can be enabled using the standard Get Data packet format. */
 #define IMX_DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
 #define IMX_DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
-#define IMX_DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
+#define IMX_DID_FLASH_CONFIG_IMX                (eDataIDs)12 /** (nvm_cfg_imx_t) Flash memory configuration */
 #define IMX_DID_GNSS1_POS                   (eDataIDs)13 /** (gnss_pos_t) GNSS 1 position data.  This comes from IMX_DID_GNSS1_UBX_POS or IMX_DID_GNSS1_RTK_POS, depending on whichever is more accurate. */
 #define IMX_DID_GNSS2_POS                   (eDataIDs)14 /** (gnss_pos_t) GNSS 2 position data */
 #define IMX_DID_GNSS1_SAT                   (eDataIDs)15 /** (gnss_sat_t) GNSS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
@@ -85,8 +85,8 @@ typedef uint32_t eDataIDs;
 #define IMX_DID_GNSS1_RTK_POS               (eDataIDs)54 /** (gnss_pos_t) GNSS RTK position data */
 #define IMX_DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF covariances matrix lower diagonals */
 #define IMX_DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
-#define IMX_DID_IMU3_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imu3_t) Uncalibrated triple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
-#define IMX_DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
+#define IMX_DID_IMU3_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imu3_t) Uncalibrated triple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG_IMX.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define IMX_DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG_IMX.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG_IMX.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG_IMX.startupNavDtMs (1KHz max).  */
 #define IMX_DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define IMX_DID_GNSS_BASE_RAW               (eDataIDs)60 /** (gnss_raw_t) GNSS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define IMX_DID_GNSS_RTK_OPT                (eDataIDs)61 /** (gnss_rtk_opt_t) RTK options - requires little endian CPU. */
@@ -125,7 +125,7 @@ typedef uint32_t eDataIDs;
 #define IMX_DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
 #define IMX_DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
 #define IMX_DID_IMU3_RAW                    (eDataIDs)96 /** (imu3_t) Triple IMU data calibrated from DID_IMU3_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
-#define IMX_DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMU3_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
+#define IMX_DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMU3_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG_IMX.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -169,13 +169,13 @@ typedef uint32_t eDataIDs;
 #define RMC_BITS_INS2                   0x0000000000000002      // "
 #define RMC_BITS_INS3                   0x0000000000000004      // "
 #define RMC_BITS_INS4                   0x0000000000000008      // "
-#define RMC_BITS_IMU                    0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+#define RMC_BITS_IMU                    0x0000000000000010      // DID_FLASH_CONFIG_IMX.startupNavDtMs (4ms default)
 #define RMC_BITS_PIMU                   0x0000000000000020      // "
 #define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
 // #define RMC_BITS_UNUSED              0x0000000000000100
 // #define RMC_BITS_UNUSED              0x0000000000000200 
-#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_POS               0x0000000000000400      // DID_FLASH_CONFIG_IMX.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_POS               0x0000000000000800      // "
 #define RMC_BITS_GPS1_RAW               0x0000000000001000      // "
 #define RMC_BITS_GPS2_RAW               0x0000000000002000      // "
@@ -184,8 +184,8 @@ typedef uint32_t eDataIDs;
 #define RMC_BITS_GPS_BASE_RAW           0x0000000000010000      // 
 #define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
-#define RMC_BITS_IMU3_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
-#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_IMU3_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG_IMX.startupImuDtMs (1ms default)
+#define RMC_BITS_GPS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG_IMX.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS2_VEL               0x0000000000200000      // "
 #define RMC_BITS_GPS1_UBX_POS           0x0000000000400000      // "
 #define RMC_BITS_GPS1_RTK_POS           0x0000000000800000      // "
@@ -200,9 +200,9 @@ typedef uint32_t eDataIDs;
 // #define RMC_BITS_UNUSED              0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
-#define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGpsDtMs (200ms default)
+#define RMC_BITS_GPS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG_IMX.startupGpsDtMs (200ms default)
 #define RMC_BITS_GPS1_RTK_HDG_MISC      0x0000002000000000      // "
-#define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG.startupNavDtMs
+#define RMC_BITS_REFERENCE_IMU          0x0000004000000000		// DID_FLASH_CONFIG_IMX.startupNavDtMs
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
 #define RMC_BITS_IMU3_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
@@ -247,7 +247,7 @@ typedef uint32_t eDataIDs;
 #define RMC_PRESET_ALLAN_VARIANCE		(RMC_BITS_PRESET \
 										| RMC_BITS_IMU)
 
-/** (DID_FLASH_CONFIG) Configuration data
+/** (DID_FLASH_CONFIG_IMX) Configuration data
  * IMPORTANT! These fields should not be deleted, they can be deprecated and marked as reserved,
  * or new fields added to the end.
 */
@@ -352,7 +352,7 @@ typedef struct PACKED
 	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
     wheel_config_t          wheelConfig;
 
-} nvm_flash_cfg_t;
+} nvm_cfg_imx_t;
 
 PUSH_PACK_8
 
@@ -930,7 +930,7 @@ typedef struct
 
 POP_PACK
 
-/** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
+/** GNSS satellite system signal constellation (used with nvm_cfg_imx_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
 	/*! GPS  */
@@ -956,7 +956,7 @@ enum eGnssSatSigConst
 		GNSS_SAT_SIG_CONST_BDS
 };
 
-/** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
+/** System Configuration (used with DID_FLASH_CONFIG_IMX.sysCfgBits) */
 enum eSysConfigBits
 {
 	/*! Enable automatic mag recalibration */
@@ -1000,7 +1000,7 @@ enum eSysConfigBits
 
 };
 
-/** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
+/** RTK Configuration (used with nvm_cfg_imx_t.RTKCfgBits) */
 enum eRTKConfigBits
 {
 	/** Enable onboard RTK GNSS precision positioning (GPS1) */
@@ -1145,7 +1145,7 @@ enum eRTKConfigBits
 	RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),	
 };
 
-/** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
+/** Sensor Configuration (used with nvm_cfg_imx_t.sensorConfig) */
 enum eSensorConfig
 {
 	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */	
@@ -1226,7 +1226,7 @@ enum eSensorConfig
 	SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE = (int)4,
 };
 
-/** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
+/** IO configuration (used with nvm_cfg_imx_t.ioConfig) */
 enum eIoConfig
 {
 	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */

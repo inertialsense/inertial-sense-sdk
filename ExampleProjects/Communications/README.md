@@ -76,7 +76,7 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 ```C++
 	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
 	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	int messageSize = is_comm_set_data(comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
+	int messageSize = is_comm_set_data(comm, _DID_FLASH_CONFIG_IMX, offsetof(nvm_cfg_imx_t, insRotation), sizeof(float) * 3, rotation);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write set INS rotation\r\n");

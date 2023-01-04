@@ -71,7 +71,7 @@ public:
 		serial_port_t serialPort;
 		dev_info_t devInfo;
 		system_command_t sysCmd;
-		nvm_flash_cfg_t flashCfg;
+		nvm_cfg_imx_t flashCfg;
 		evb_flash_cfg_t evbFlashCfg;
 	};
 
@@ -274,7 +274,7 @@ public:
 	* @param pHandle the pHandle to get flash config for
 	* @return the flash config
 	*/
-	nvm_flash_cfg_t GetFlashConfig(int pHandle = 0) 
+	nvm_cfg_imx_t GetFlashConfig(int pHandle = 0) 
 	{
 		if ((size_t)pHandle >= m_comManagerState.devices.size())
 		{
@@ -302,7 +302,7 @@ public:
 	* @param flashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
 	*/
-	void SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle = 0);
+	void SetFlashConfig(const nvm_cfg_imx_t& flashCfg, int pHandle = 0);
 
 	/**
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory

@@ -372,8 +372,8 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 		g_imuUpdateTimeMs = g_comm_time_ms;
 		break;
 
-	case DID_FLASH_CONFIG:	// uINS
-		if(dataHdr.size+dataHdr.offset > sizeof(nvm_flash_cfg_t)){ /* Invalid */ return; }
+	case DID_FLASH_CONFIG_IMX:	// uINS
+		if(dataHdr.size+dataHdr.offset > sizeof(nvm_cfg_imx_t)){ /* Invalid */ return; }
 		g_uins.flashCfg = d.flashCfg;
 		g_uins.refLlaValid = (bool)llaDegValid(g_uins.flashCfg.refLla);
 		break;
