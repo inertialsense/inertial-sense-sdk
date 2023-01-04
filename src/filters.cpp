@@ -511,11 +511,11 @@ float integrateDeltaThetaVelRoscoe(
 }
 #endif
 
-void zeroPimu(pimu_t &pimu)
+void zeroPimu(pimu_t *pimu)
 {
-	pimu.time = 0.0;
-	pimu.dt = 0.0f;
-	pimu.status = 0;
-	pimu.theta[2] = pimu.theta[1] = pimu.theta[0] = 0.0f;
-	pimu.vel[2]   = pimu.vel[1]   = pimu.vel[0]   = 0.0f;
+	pimu->time = 0.0;
+	pimu->dt = 0.0f;
+	pimu->status = 0;
+	pimu->theta[2] = pimu->theta[1] = pimu->theta[0] = 0.0f;
+	pimu->vel[2]   = pimu->vel[1]   = pimu->vel[0]   = 0.0f;
 }

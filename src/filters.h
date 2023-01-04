@@ -543,7 +543,7 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
 void integratePimu( pimu_t *output, imu_t *imu, imu_t *imuLast );
 
 // Set integral, time, and status to zero
-void zeroPimu( pimu_t &pimu );
+void zeroPimu( pimu_t *pimu );
 
 /** 
  * \brief Find alpha and beta parameters for single pole Low-Pass filter
