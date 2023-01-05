@@ -108,14 +108,19 @@ public:
 	*/
 	virtual ~InertialSense();
 
-	/*
-	* Broadcast binary data
-	* @param dataId the data id (DID_* - see data_sets.h) to broadcast
-	* @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
-	* @param callback optional callback for this dataId
-	* @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
-	*/ 
-	bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
+	/**
+	* Closes any open connection and then opens the device
+	* @param port the port to open
+	* @param baudRate the baud rate to connect with - supported rates are 115200, 230400, 460800, 921600, 2000000, 3000000
+	* @param disableBroadcastsOnClose whether to send a stop broadcasts command to all units on Close
+	* @return true if opened, false if failure (i.e. baud rate is bad or port fails to open)
+	*/
+	bool Open(const char* port, int baudRate = IS_COM_BAUDRATE_DEFAULT, bool disableBroadcastsOnClose = false);
+
+	/**
+	* Check if the connection is open
+	*/
+	bool IsOpen();
 
 	/**
 	* Close the connection, logger and free all resources
@@ -126,20 +131,6 @@ public:
 	* Get all open serial port names
 	*/
 	std::vector<std::string> GetPorts();
-
-	/**
-	* Check if the connection is open
-	*/
-	bool IsOpen();
-
-	/**
-	* Closes any open connection and then opens the device
-	* @param port the port to open
-	* @param baudRate the baud rate to connect with - supported rates are 115200, 230400, 460800, 921600, 2000000, 3000000
-	* @param disableBroadcastsOnClose whether to send a stop broadcasts command to all units on Close
-	* @return true if opened, false if failure (i.e. baud rate is bad or port fails to open)
-	*/
-	bool Open(const char* port, int baudRate = IS_COM_BAUDRATE_DEFAULT, bool disableBroadcastsOnClose = false);
 
 	/**
 	* Get the number of open devices
@@ -174,12 +165,6 @@ public:
         float maxDiskSpacePercent = 0.5f, 
         uint32_t maxFileSize = 1024 * 1024 * 5, 
         const std::string& subFolder = cISLogger::g_emptyString);
-
-	/**
-	* Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
-	* @param rmcPreset realtimeMessageController preset
-	*/
-	void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS, uint32_t rmcOptions=0);
 
 	/**
 	* Gets whether logging is enabled
@@ -312,6 +297,21 @@ public:
 	void SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pHandle = 0);
 
 	/**
+	* Broadcast binary data
+	* @param dataId the data id (DID_* - see data_sets.h) to broadcast
+	* @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+	* @param callback optional callback for this dataId
+	* @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
+	*/ 
+	bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
+
+	/**
+	* Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
+	* @param rmcPreset realtimeMessageController preset
+	*/
+	void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS, uint32_t rmcOptions=0);
+
+	/**
 	* Get the number of bytes read or written to/from client or server connections
 	* @return byte count
 	*/
@@ -432,6 +432,7 @@ private:
 	bool HasReceivedResponseFromAllDevices();
 	void RemoveDevice(size_t index);
 	bool OpenSerialPorts(const char* port, int baudRate);
+	void CloseSerialPorts();
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
 	static void BootloadStatusUpdate(void* obj, const char* str);
