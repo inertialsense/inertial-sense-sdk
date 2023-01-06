@@ -19,6 +19,7 @@ extern "C"
 #define TEST_PROTO_ASCII	1
 #define TEST_PROTO_UBLOX	1
 #define TEST_PROTO_RTCM3	1
+#define TEST_PROTO_SPARTN	1
 
 #define TASK_PERIOD_MS		1				// 1 KHz
 #if 0
@@ -269,10 +270,11 @@ bool initComManager(test_data_t &t)
 	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerAscii, msgHandlerUblox, msgHandlerRtcm3);
 
 	// Enable/disable protocols
-	s_cmPort.comm.config.enableISB = TEST_PROTO_IS;
-	s_cmPort.comm.config.enableASCII = TEST_PROTO_ASCII;
-	s_cmPort.comm.config.enableUblox = TEST_PROTO_UBLOX;
-	s_cmPort.comm.config.enableRTCM3 = TEST_PROTO_RTCM3;
+	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_IS);
+	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ASCII * TEST_PROTO_ASCII);
+	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
+	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
+	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
 
 	return true;
 }

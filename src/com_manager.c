@@ -356,24 +356,29 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 				case _PTYPE_UBLOX:
 					if (cmInstance->cmMsgHandlerUblox)
 					{
-						error = (uint8_t)cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize);
+						error = (uint8_t)cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize, comm->config.fwdNoChecksMask & ENABLE_PROTOCOL_UBLOX);
 					}
 					break;
 
 				case _PTYPE_RTCM3:
 					if (cmInstance->cmMsgHandlerRtcm3)
 					{
-						error = (uint8_t)cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize);
+						error = (uint8_t)cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize, comm->config.fwdNoChecksMask & ENABLE_PROTOCOL_RTCM3);
 					}
 					break;
 
 				case _PTYPE_ASCII_NMEA:
 					if (cmInstance->cmMsgHandlerAscii)
 					{
-						error = (uint8_t)cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);
+						error = (uint8_t)cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize, 0);
 					}
 					break;
-					
+				case _PTYPE_SPARTN:
+					if (cmInstance->cmMsgHandlerSpartn)
+					{
+						error = (uint8_t)cmInstance->cmMsgHandlerSpartn(cmInstance, pHandle, dataPtr, dataSize, comm->config.fwdNoChecksMask & ENABLE_PROTOCOL_SPARTN);
+					}
+					break;
 				default:
 					break;
 				}
@@ -454,16 +459,18 @@ void comManagerSetCallbacks(
 	pfnComManagerAsapMsg handlerRmc,
 	pfnComManagerGenMsgHandler handlerAscii,
 	pfnComManagerGenMsgHandler handlerUblox, 
-	pfnComManagerGenMsgHandler handlerRtcm3)
+	pfnComManagerGenMsgHandler handlerRtcm3,
+	pfnComManagerGenMsgHandler handlerSpartn)
 {
-	comManagerSetCallbacksInstance(&g_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
+	comManagerSetCallbacksInstance(&g_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
 	pfnComManagerAsapMsg handlerRmc,
 	pfnComManagerGenMsgHandler handlerAscii,
 	pfnComManagerGenMsgHandler handlerUblox,
-	pfnComManagerGenMsgHandler handlerRtcm3)
+	pfnComManagerGenMsgHandler handlerRtcm3,
+	pfnComManagerGenMsgHandler handlerSpartn)
 {
 	if (cmInstance != 0)
 	{
@@ -471,6 +478,7 @@ void comManagerSetCallbacksInstance(CMHANDLE cmInstance,
 		((com_manager_t*)cmInstance)->cmMsgHandlerAscii = handlerAscii;
 		((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
 		((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
+		((com_manager_t*)cmInstance)->cmMsgHandlerSpartn = handlerSpartn;
 	}
 }
 

@@ -81,7 +81,8 @@ typedef enum
 	_PTYPE_INERTIAL_SENSE_ACK   = 0xCFFFFFFF,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
 	_PTYPE_ASCII_NMEA           = 0xBFFFFFFF,				/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
-	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary */
+	_PTYPE_SPARTN               = 0x8FFFFFFF,				/** Protocol Type: SPARTN binary */
 } protocol_type_t;
 
 /** uINS default baud rate */
@@ -294,7 +295,10 @@ enum ePktSpecialChars
 	UBLOX_START_BYTE2 = 0x62,
 
 	/** Rtcm3 start byte (211) */
-	RTCM3_START_BYTE = 0xD3
+	RTCM3_START_BYTE = 0xD3,
+
+	/** SPARTN start byte */
+	SPARTN_START_BYTE = 0x73,
 };
 
 /** Represents an ASCII message and how it is mapped to a structure in memory */
@@ -467,19 +471,22 @@ typedef struct
 
 } is_comm_buffer_t;
 
+typedef enum
+{
+	ENABLE_PROTOCOL_ISB = 0x00000001,
+	ENABLE_PROTOCOL_ASCII = 0x00000002,
+	ENABLE_PROTOCOL_UBLOX = 0x00000004,
+	ENABLE_PROTOCOL_RTCM3 = 0x00000008,
+	ENABLE_PROTOCOL_SPARTN = 0x00000010,
+} eProtocolMask;
+
 typedef struct  
 {
-	/** Enable protocol parsing: Inertial Sense binary */
-	uint8_t enableISB;
+	/** See eProtocolMask */
+	uint32_t enabledMask;
 
-	/** Enable protocol parsing: ASCII NMEA */
-	uint8_t enableASCII;
-
-	/** Enable protocol parsing: ublox */
-	uint8_t enableUblox;
-
-	/** Enable protocol parsing: RTCM3 */
-	uint8_t enableRTCM3;
+	/** Forward all native GNSS protocols directly to GNSS receiver (see eProtocolMask) */
+	uint32_t fwdNoChecksMask;
 } is_comm_config_t;
 
 /** An instance of an is_comm interface.  Do not modify these values. */

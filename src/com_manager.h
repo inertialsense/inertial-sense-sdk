@@ -144,7 +144,7 @@ typedef int(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle, p_data_hdr_t 
 // typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
 
 // Generic message handler function, return 1 if message handled
-typedef int(*pfnComManagerGenMsgHandler)(CMHANDLE cmHandle, int pHandle, const unsigned char* msg, int msgSize);
+typedef int(*pfnComManagerGenMsgHandler)(CMHANDLE cmHandle, int pHandle, const unsigned char* msg, int msgSize, uint8_t fwd);
 
 // pass through handler
 // typedef int(*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_through_t passThroughType, int pHandle, const unsigned char* data, int dataLength);
@@ -247,6 +247,9 @@ typedef struct
 
 	// Message handler - RTCM3
 	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
+	
+	// Message handler - SPARTN
+	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
 
 } com_manager_t;
 
@@ -531,12 +534,14 @@ void comManagerSetCallbacks(
 	pfnComManagerAsapMsg rmcHandler,
 	pfnComManagerGenMsgHandler asciiHandler,
 	pfnComManagerGenMsgHandler ubloxHandler, 
-	pfnComManagerGenMsgHandler rtcm3Handler);
+	pfnComManagerGenMsgHandler rtcm3Handler,
+	pfnComManagerGenMsgHandler spartnHandler);
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
 	pfnComManagerAsapMsg rmcHandler,
 	pfnComManagerGenMsgHandler asciiHandler,
 	pfnComManagerGenMsgHandler ubloxHandler,
-	pfnComManagerGenMsgHandler rtcm3Handler);
+	pfnComManagerGenMsgHandler rtcm3Handler,
+	pfnComManagerGenMsgHandler spartnHandler);
 
 /**
 Attach user defined data to a com manager instance
