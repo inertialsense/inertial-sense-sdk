@@ -23,7 +23,7 @@ add_message_files(
   SatInfo.msg
   GPS.msg
   GPSInfo.msg
-  PreIntIMU.msg
+  PIMU.msg
   RTKInfo.msg
   RTKRel.msg
   GlonassEphemeris.msg

@@ -1490,10 +1490,10 @@ class logPlot:
 
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'))
-            declination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magDec')
-            inclination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magInc')
-            ax[0].plot(time, declination, label=self.log.serials[d])
-            ax[1].plot(time, inclination)
+            mag_declination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magDec')
+            mag_inclination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magInc')
+            ax[0].plot(time, mag_declination, label=self.log.serials[d])
+            ax[1].plot(time, mag_inclination)
         ax[0].legend(ncol=2)
         self.saveFig(fig, 'magDec')
         for a in ax:
