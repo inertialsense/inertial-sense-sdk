@@ -48,13 +48,68 @@
 #define FIRMWARE_VERSION_CHAR1 9
 #define FIRMWARE_VERSION_CHAR2 0
 
-#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                          \
-    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                     \
-                            [this](InertialSense *i, p_data_t *data, int pHandle)      \
-                            {                                                          \
-                                /* ROS_INFO("Got message %d", DID);*/                  \
+#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
+    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
+                            [this](InertialSense *i, p_data_t *data, int pHandle)           \
+                            {                                                               \
+                                /* ROS_INFO("Got message %d", DID);*/                       \
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
                             })
+
+class ParamHelper
+{
+public:
+    // ParamHelper(YAML::Node node, ros::NodeHandle nh_private){ node_ = node; nh_private_ = nh_private; }
+    bool enabled = false;
+    bool streaming = false;
+    int period = 1;             // Period multiple (data rate divisor)
+    ros::Publisher pub;
+
+    template <typename Type>
+    static bool getParam(YAML::Node node, ros::NodeHandle nh, std::string key, Type &var);
+    template <typename Derived1>
+    static bool getParamVec(YAML::Node node, ros::NodeHandle nh, std::string key, int size, Derived1 &vec);
+    bool getParamRs(YAML::Node node, ros::NodeHandle nh, std::string key);
+
+    template <typename Type>
+    static bool getYamlNodeParam(YAML::Node node, const std::string key, Type &val);
+    template <typename Derived1>
+    static bool getYamlNodeParamVector(YAML::Node node, const std::string key, int size, Derived1 &val);
+
+    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, std::string &s);
+    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, double &d);
+    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, float &f);    
+    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, int &i);
+    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, bool &b);
+    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, XmlRpc::XmlRpcValue &v);
+    template <typename T>
+    static bool getServerParamVector(const ros::NodeHandle &nh_, const std::string &key, int size, T &data);
+};
+
+class ParamHelperGps: public ParamHelper
+{
+public:
+    bool streaming_pos = false;
+    bool streaming_vel = false;
+};
+
+class ParamHelperGpsRtk: public ParamHelper
+{
+public:
+    bool streamingMisc = false;
+    bool streamingRel = false;
+    ros::Publisher pubInfo;
+    ros::Publisher pubRel;
+};
+
+class ParamHelperGpsRaw: public ParamHelper
+{
+public:
+    ros::Publisher pubObs;
+    ros::Publisher pubEph;
+    ros::Publisher pubGEp;
+};
+
 
 class InertialSenseROS //: SerialListener
 {
@@ -74,17 +129,6 @@ public:
     void update();
 
     void load_params(YAML::Node &node);
-    bool getParam(const std::string &key, std::string &s);
-    bool getParam(const std::string &key, double &d);
-    bool getParam(const std::string &key, float &f);    
-    bool getParam(const std::string &key, int &i);
-    bool getParam(const std::string &key, bool &b);
-    bool getParam(const std::string &key, XmlRpc::XmlRpcValue &v);
-
-    template <typename Type>
-    bool get_node_param_yaml(YAML::Node node, const std::string key, Type &val);
-    template <typename Derived1>
-    bool get_node_vector_yaml(YAML::Node node, const std::string key, int size, Derived1 &val);
     void connect();
     bool firmware_compatiblity_check();
     void set_navigation_dt_ms();
@@ -98,8 +142,6 @@ public:
     void configure_ascii_output();
     void start_log();
 
-    template <typename T>
-    bool getParamVector(const std::string &key, uint32_t size, T &data);
     void get_flash_config();
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
@@ -112,45 +154,6 @@ public:
     bool covariance_enabled_ = false;
 
     std::string frame_id_ = "body";
-
-    // ROS Stream handling
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pub;
-    } ros_stream_t;
-
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming_pos = false;
-        bool streaming_vel = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pub;
-    } ros_stream_gps_t;
-
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming = false;
-        bool streamingMisc = false;
-        bool streamingRel = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pubInfo;
-        ros::Publisher pubRel;
-    } ros_stream_gps_rkt_t;
-
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pubObs;
-        ros::Publisher pubEph;
-        ros::Publisher pubGEp;
-    } ros_stream_gps_raw_t;
 
     tf::TransformBroadcaster br;
     bool publishTf_ = true;
@@ -237,33 +240,36 @@ public:
     float diagnostic_ar_ratio_, diagnostic_differential_age_, diagnostic_heading_base_to_rover_;
     uint diagnostic_fix_type_;
 
+    ros::NodeHandle nh_;
+    ros::NodeHandle nh_private_;
+
     struct
     {
-        ros_stream_t ins1;
-        ros_stream_t ins2;
-        ros_stream_t ins4;
-        ros_stream_t odom_ins_ned;
-        ros_stream_t odom_ins_ecef;
-        ros_stream_t odom_ins_enu;
-        ros_stream_t inl2_states;
+        ParamHelper did_ins_eul_uvw_lla;
+        ParamHelper did_ins_quat_uvw_lla;
+        ParamHelper did_ins_quat_ve_ecef;
+        ParamHelper odom_ins_ned;
+        ParamHelper odom_ins_ecef;
+        ParamHelper odom_ins_enu;
+        ParamHelper inl2_states;
 
-        ros_stream_t imu;
-        ros_stream_t pimu;
-        ros_stream_t mag;
-        ros_stream_t baro;
+        ParamHelper imu;
+        ParamHelper pimu;
+        ParamHelper mag;
+        ParamHelper baro;
 
-        ros_stream_gps_t gps1;
-        ros_stream_gps_t gps2;
-        ros_stream_t navsatfix;
-        ros_stream_t gps1_info;
-        ros_stream_t gps2_info;
-        ros_stream_gps_raw_t gps1_raw;
-        ros_stream_gps_raw_t gps2_raw;
-        ros_stream_gps_raw_t gpsbase_raw;
-        ros_stream_gps_rkt_t rtk_pos;
-        ros_stream_gps_rkt_t rtk_cmp;
+        ParamHelperGps gps1;
+        ParamHelperGps gps2;
+        ParamHelper navsatfix;
+        ParamHelper gps1_info;
+        ParamHelper gps2_info;
+        ParamHelperGpsRaw gps1_raw;
+        ParamHelperGpsRaw gps2_raw;
+        ParamHelperGpsRaw gpsbase_raw;
+        ParamHelperGpsRtk rtk_pos;
+        ParamHelperGpsRtk rtk_cmp;
 
-        ros_stream_t diagnostics;
+        ParamHelper diagnostics;
     } rs_;
 
     bool NavSatFixConfigured = false;
@@ -403,9 +409,6 @@ public:
 
     float poseCov_[36], twistCov_[36];
 
-    ros::NodeHandle nh_;
-    ros::NodeHandle nh_private_;
-
     // Connection to the uINS
     InertialSense IS_;
 
@@ -426,3 +429,8 @@ public:
     float gpsTimeUserDelay_ = 0;
 
 };
+
+
+
+
+

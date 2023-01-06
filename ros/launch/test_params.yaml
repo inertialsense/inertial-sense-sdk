@@ -2,15 +2,15 @@ port: "/dev/ttyACM0"
 baudrate: 921600
 frame_id: "body"
 
-msg/ins1/period: 1                # Output period multiple (rate divisor).  Increase to divide output data rate. 
-msg/ins1/enable: true
-msg/ins2/enable: false
-msg/ins4/enable: false
-msg/odom_ins_ned/enable: true     # Use msg/ins4/period to set data rate for these messages  
-msg/odom_ins_enu/enable: false    # "
-msg/odom_ins_ecef/enable: false   # "
+msg/did_ins_eul_uvw_lla/period: 1         # Output period multiple (rate divisor).  Increase to divide output data rate. 
+msg/did_ins_eul_uvw_lla/enable: true
+msg/did_ins_quat_uvw_lla/enable: false
+msg/did_ins_quat_ve_ecef/enable: false
+msg/odom_ins_ned/enable: true             # Use msg/did_ins_quat_ve_ecef/period to set data rate for these messages  
+msg/odom_ins_enu/enable: false            # "
+msg/odom_ins_ecef/enable: false           # "
 msg/inl2_states/enable: false
-stream_ins_covariance: false      # Include covariance in odom_ins_... messages
+stream_ins_covariance: false              # Include covariance in odom_ins_... messages
 
 msg/imu/enable: true
 msg/pimu/enable: false
@@ -19,7 +19,7 @@ msg/baro/enable: false
 
 msg/gps1/enable: true
 msg/gps2/enable: true
-msg/gps1/topic: "gps1"            # Topic name gps is published on
+msg/gps1/topic: "gps1"                    # Topic name gps is published on
 msg/gps2/topic: "gps2"
 msg/navsatfix/enable: false
 msg/gps1_raw/enable: false
