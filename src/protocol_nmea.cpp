@@ -21,6 +21,56 @@ uint32_t ASCII_compute_checksum(uint8_t* str, int size)
 	return checksum;
 }
 
+char *ASCII_to_u32(uint32_t *val, char *ptr)
+{
+	val[0] = (uint32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_to_i32(int32_t *val, char *ptr)
+{
+	val[0] = (int32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_to_f32(float *vec, char *ptr)
+{
+	vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_to_f64(double *vec, char *ptr)
+{
+	vec[0] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_to_vec3f(float vec[], char *ptr)
+{
+	vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	vec[1] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	vec[2] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_to_vec4f(float vec[], char *ptr)
+{
+	vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	vec[1] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	vec[2] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	vec[3] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_to_vec3d(double vec[], char *ptr)
+{
+	vec[0] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+	vec[1] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+	vec[2] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+
 // All strings must be NULL terminated!
 char *ASCII_find_next_field(char *str)
 {
@@ -91,7 +141,7 @@ double timeToGpst(gtime_t t, int *week)
 // DID to NMEA
 //////////////////////////////////////////////////////////////////////////
 
-int dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
+int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 {
 //     unsigned int checkSum = 0;
 //     serWrite(portNum, (unsigned char*)"$", 1);
@@ -161,7 +211,7 @@ int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, un
 	return n;	
 }
 
-int imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu)
+int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu)
 {
 	int n = SNPRINTF(a, aSize, "$PIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", imu.time);		// 1
@@ -179,7 +229,7 @@ int imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu)
 	return n;	
 }
 
-int pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
+int did_pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 {
 	int n = SNPRINTF(a, aSize, "$PPIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", pimu.time);		// 1
@@ -199,7 +249,7 @@ int pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 	return n;	
 }
 
-int ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
+int did_ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
 {
 	int n = SNPRINTF(a, aSize, "$PINS1");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", ins1.timeOfWeek);	// 1
@@ -229,7 +279,7 @@ int ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
 	return n;	
 }
 
-int ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
+int did_ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
 {
 	int n = SNPRINTF(a, aSize, "$PINS2");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", ins2.timeOfWeek);				// 1
@@ -256,7 +306,7 @@ int ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
 	return n;	
 }
 
-int strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
+int did_strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
 {
 	int n = SNPRINTF(a, aSize, "$PSTRB");
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)strobe.week);			// 1
@@ -269,7 +319,7 @@ int strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
 	return n;
 }
 
-int gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
+int did_gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
 	int n = SNPRINTF(a, aSize, "$PGPSP");
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)(pos.timeOfWeekMs - pos.leapS * 1000));	// 1
@@ -354,7 +404,7 @@ static int asciiSnprintfGPSDateOfLastFixCSV(char* a, size_t aSize, gps_pos_t &po
 	return SNPRINTF(a, aSize, ",%02u,%02u,%04u", (unsigned int)day, (unsigned int)month, (unsigned int)year);
 }
 
-int gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
+int did_gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 {
 	int fixQuality;
 	switch((pos.status&GPS_STATUS_FIX_MASK))
@@ -434,7 +484,7 @@ int gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 	return n;
 }
 
-int gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
+int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 {
 	// NMEA GLL line - http://www.gpsinformation.org/dale/nmea.htm#GLL
 	/*
@@ -466,7 +516,7 @@ int gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	return n;	
 }
 
-int gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
+int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 {
 	int fixQuality;
 	switch((pos.status&GPS_STATUS_FIX_MASK))
@@ -554,7 +604,7 @@ int gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 	return n;
 }
 
-int gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
+int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
 {
 	ixQuat qe2n;
 	ixVector3 vel_ned_;
@@ -629,7 +679,7 @@ int gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, f
 	return n;
 }
 
-int gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
+int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 {
 	// NMEA ZDA line - http://www.gpsinformation.org/dale/nmea.htm#ZDA
 	/*
@@ -650,7 +700,7 @@ int gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 	return n;	
 }
 
-int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma)
+int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma)
 {
 	// NMEA PASHR - RT300 proprietary roll and pitch sentence
 	/*
@@ -698,7 +748,93 @@ int gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, 
 	return n;
 }
 
+
+
+//////////////////////////////////////////////////////////////////////////
+// NMEA to DID
+//////////////////////////////////////////////////////////////////////////
+
+int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $PINS1
 	
+	// Time since system powerup 
+	ASCII_to_f64(&(imu.time), ptr);
+
+	// PQR angular rate
+	ptr = ASCII_to_vec3f(imu.I.pqr, ptr);
+	// XYZ linear acceleration
+	ptr = ASCII_to_vec3f(imu.I.acc, ptr);
+
+	return 0;
+}
+
+int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $PINS1
+	
+	// Time since system powerup 
+	ASCII_to_f64(&(pimu.time), ptr);
+
+	// PQR angular rate
+	ptr = ASCII_to_vec3f(pimu.theta, ptr);
+	// XYZ linear acceleration
+	ptr = ASCII_to_vec3f(pimu.vel, ptr);
+
+	return 0;
+}
+
+int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $PINS1
+	
+	// GPS timeOfWeek, week 
+	ASCII_to_f64(&(ins.timeOfWeek), ptr);
+	ASCII_to_u32(&(ins.week), ptr);
+
+	// insStatus, hdwStatus
+	ASCII_to_u32(&(ins.insStatus), ptr);
+	ASCII_to_u32(&(ins.hdwStatus), ptr);
+
+	// Roll, Pitch, Yaw
+	ptr = ASCII_to_vec3f(ins.theta, ptr);
+	// UVW
+	ptr = ASCII_to_vec3f(ins.uvw, ptr);
+	// LLA
+	ptr = ASCII_to_vec3d(ins.lla, ptr);
+	// NED
+	ptr = ASCII_to_vec3f(ins.ned, ptr);
+
+	return 0;
+}
+
+int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $PINS1
+	
+	// GPS timeOfWeek, week 
+	ASCII_to_f64(&(ins.timeOfWeek), ptr);
+	ASCII_to_u32(&(ins.week), ptr);
+
+	// insStatus, hdwStatus
+	ASCII_to_u32(&(ins.insStatus), ptr);
+	ASCII_to_u32(&(ins.hdwStatus), ptr);
+
+	// Quaternion
+	ptr = ASCII_to_vec4f(ins.qn2b, ptr);
+	// UVW
+	ptr = ASCII_to_vec3f(ins.uvw, ptr);
+	// LLA
+	ptr = ASCII_to_vec3d(ins.lla, ptr);
+
+	return 0;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // Parse NMEA Functions
 //////////////////////////////////////////////////////////////////////////

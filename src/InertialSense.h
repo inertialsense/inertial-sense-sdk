@@ -109,6 +109,15 @@ public:
 	virtual ~InertialSense();
 
 	/**
+	* Set functions pointers called when various message types are received.
+	*/
+	void SetCallbacks(
+		pfnComManagerAsapMsg handlerRmc=NULLPTR,
+		pfnComManagerGenMsgHandler handlerAscii=NULLPTR,
+		pfnComManagerGenMsgHandler handlerUblox=NULLPTR, 
+		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR);
+
+	/**
 	* Closes any open connection and then opens the device
 	* @param port the port to open
 	* @param baudRate the baud rate to connect with - supported rates are 115200, 230400, 460800, 921600, 2000000, 3000000
