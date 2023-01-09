@@ -50,6 +50,9 @@ int createTask
 
 	// Task call period - used within task and for CPU usage
 	g_rtos.task[index].periodMs = xTimeIncrement;
+#ifndef __INERTIAL_SENSE_EVB_2__
+	g_rtos_pro[index].periodTicks = time_usec_to_ticks(xTimeIncrement * 1000U);
+#endif
 
 	// Task name
 	if (MAX_TASK_NAME_LEN > configMAX_TASK_NAME_LEN)

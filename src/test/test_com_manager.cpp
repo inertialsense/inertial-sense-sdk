@@ -111,7 +111,7 @@ int msgHandlerAscii(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgS
 {
 	int messageIdUInt = ASCII_MESSAGEID_TO_UINT(msg + 1);
 // 	comWrite(pHandle, line, lineLength); // echo back
-// 	time_delay(50); // give time for the echo to come back
+// 	time_delay_msec(50); // give time for the echo to come back
 
 	if (msgSize == 10)
 	{	// 4 character commands (i.e. "$STPB*14\r\n")
