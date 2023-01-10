@@ -46,7 +46,7 @@ cISStream* cISClient::OpenConnectionToServer(const string& connectionString, boo
 			return clientStream;
 		}
 	}
-	else if(type == "TCP")
+	else if(type == "TCP" || type == "NTRIP")
 	{
 		cISTcpClient *clientStream = new cISTcpClient();
 

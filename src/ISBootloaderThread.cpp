@@ -423,7 +423,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                strncpy(new_thread->serial_name, ports[i].c_str(), 100);
+                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 m_serial_threads.push_back(new_thread);
@@ -534,7 +534,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                strncpy(new_thread->serial_name, ports[i].c_str(), 100);
+                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(), 100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 m_serial_threads.push_back(new_thread);
@@ -695,7 +695,7 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                strncpy(new_thread->serial_name, ports[i].c_str(), 100);
+                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 new_thread->force_isb = force_isb_update;
@@ -829,7 +829,7 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                strncpy(new_thread->serial_name, ports[i].c_str(), 100);
+                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 new_thread->force_isb = force_isb_update;

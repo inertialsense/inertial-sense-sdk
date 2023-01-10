@@ -566,7 +566,7 @@ void board_IO_config(void)
 	/////////////////////////////////////////////////////////////////////////
 	// Reset IMX for changes to take effect (SPI, etc.)
 	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_LOW); 
-	time_delay(100);
+	time_delay_msec(100);
 	ioport_set_pin_output_mode(INS_RESET_PIN_PIN, IOPORT_PIN_LEVEL_HIGH); 
 
 	if (s_pfnHandleBoardIoCfg)
@@ -653,7 +653,7 @@ void board_init()
 
 	// Real-time timer
 	time_init();
-	time_delay(1);	// Delay to ensure time_msec() returns non-zero.	
+	time_delay_msec(1);	// Delay to ensure time_msec() returns non-zero.	
 
 	/* Initialize IOPORTs */
 	ioport_init();
