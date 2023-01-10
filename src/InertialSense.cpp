@@ -125,7 +125,6 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 
 InertialSense::~InertialSense()
 {
-	CloseServerConnection();
 	Close();
 }
 
@@ -259,23 +258,6 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHand
 	}
 }
 
-bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
-{
-	// null com port, just use other features of the interface like ntrip
-	if (port[0] == '0' && port[1] == '\0')
-	{
-		return true;
-	}
-
-	m_disableBroadcastsOnClose = false;
-	if (OpenSerialPorts(port, baudRate))
-	{
-		m_disableBroadcastsOnClose = disableBroadcastsOnClose;
-		return true;
-	}
-	return false;
-}
-
 bool InertialSense::SetLoggerEnabled(
     bool enable, 
     const string& path, 
@@ -361,11 +343,6 @@ bool InertialSense::CreateHost(const string& connectionString)
 	return (m_tcpServer.Open(host, atoi(port.c_str())) == 0);
 }
 
-bool InertialSense::IsOpen()
-{
-	return (m_comManagerState.devices.size() != 0 && serialPortIsOpen(&m_comManagerState.devices[0].serialPort));
-}
-
 size_t InertialSense::GetDeviceCount()
 {
 	return m_comManagerState.devices.size();
@@ -395,7 +372,7 @@ bool InertialSense::Update()
 	{
 		if (!serialPortIsOpen(&m_comManagerState.devices[i].serialPort))
 		{
-			Close();
+			CloseSerialPorts();
 			return false;
 		}
 	}
@@ -571,6 +548,28 @@ bool InertialSense::UpdateClient()
 
 
 	return true;
+}
+
+bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
+{
+	// null com port, just use other features of the interface like ntrip
+	if (port[0] == '0' && port[1] == '\0')
+	{
+		return true;
+	}
+
+	m_disableBroadcastsOnClose = false;
+	if (OpenSerialPorts(port, baudRate))
+	{
+		m_disableBroadcastsOnClose = disableBroadcastsOnClose;
+		return true;
+	}
+	return false;
+}
+
+bool InertialSense::IsOpen()
+{
+	return (m_comManagerState.devices.size() != 0 && serialPortIsOpen(&m_comManagerState.devices[0].serialPort));
 }
 
 void InertialSense::Close()
@@ -860,7 +859,7 @@ void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
 
 bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 {
-	Close();
+	CloseSerialPorts();
 
 	if (port == NULLPTR || comManagerValidateBaudRate(baudRate) != 0)
 	{
@@ -957,7 +956,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	// if no devices left, all failed, we return failure
 	if (m_comManagerState.devices.size() == 0)
 	{
-		Close();
+		CloseSerialPorts();
 		return false;
 	}
 
@@ -975,4 +974,13 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	}
 
     return m_comManagerState.devices.size() != 0;
+}
+
+void InertialSense::CloseSerialPorts()
+{
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		serialPortClose(&m_comManagerState.devices[i].serialPort);
+	}
+	m_comManagerState.devices.clear();
 }

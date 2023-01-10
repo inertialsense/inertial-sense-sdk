@@ -457,7 +457,7 @@ void mul_Mat4x4_Trans_Vec4x1( ixVector4 result, const ixMatrix4 m, const ixVecto
     result[3] =  m[3]*v[0] + m[7]*v[1] + m[11]*v[2] + m[15]*v[3];
 }
 
-void neg_Mat3x3(ixMatrix3 result, const ixMatrix3 m)
+void neg_Mat3x3( ixMatrix3 result, const ixMatrix3 m )
 {
     // Row 1
     result[0] = -m[0];
@@ -473,7 +473,7 @@ void neg_Mat3x3(ixMatrix3 result, const ixMatrix3 m)
     result[8] = -m[8];
 }
 
-void mul_Mat3x3_X(ixMatrix3 result, const ixMatrix3 m, const f_t x)
+void mul_Mat3x3_X( ixMatrix3 result, const ixMatrix3 m, const f_t x )
 {
 	// Row 1
 	result[0] = m[0] * x;
@@ -489,7 +489,7 @@ void mul_Mat3x3_X(ixMatrix3 result, const ixMatrix3 m, const f_t x)
 	result[8] = m[8] * x;
 }
 
-void div_Mat3x3_X(ixVector3 result, const ixMatrix3 m, const f_t x)
+void div_Mat3x3_X( ixMatrix3 result, const ixMatrix3 m, const f_t x )
 {
 	f_t d = (f_t)1.0 / x;
 	// Row 1
@@ -558,7 +558,7 @@ void abs_Vec2( ixVector2 result, const ixVector2 v )
 	result[1] = _FABS( v[1] );
 }
 
-void abs_Vec2d(ixVector2d result, const ixVector2d v)
+void abs_Vec2d( ixVector2d result, const ixVector2d v )
 {
 	result[0] = fabs(v[0]);
 	result[1] = fabs(v[1]);
@@ -571,7 +571,7 @@ void abs_Vec3( ixVector3 result, const ixVector3 v )
 	result[2] = _FABS( v[2] );	
 }
 
-void abs_Vec3d(ixVector3d result, const ixVector3d v)
+void abs_Vec3d( ixVector3d result, const ixVector3d v )
 {
 	result[0] = fabs(v[0]);
 	result[1] = fabs(v[1]);
@@ -586,7 +586,7 @@ void abs_Vec4( ixVector4 result, const ixVector4 v )
 	result[3] = _FABS( v[3] );
 }
 
-void abs_Vec4d(ixVector4d result, const ixVector4d v)
+void abs_Vec4d( ixVector4d result, const ixVector4d v )
 {
 	result[0] = fabs(v[0]);
 	result[1] = fabs(v[1]);
@@ -594,27 +594,27 @@ void abs_Vec4d(ixVector4d result, const ixVector4d v)
 	result[3] = fabs(v[3]);
 }
 
-f_t dot_Vec2_Vec2(const ixVector2 v1, const ixVector2 v2 )
+f_t dot_Vec2_Vec2( const ixVector2 v1, const ixVector2 v2 )
 {
 	return  v1[0] * v2[0] +
 			v1[1] * v2[1];
 }
 
-f_t dot_Vec3_Vec3(const ixVector3 v1, const ixVector3 v2 )
+f_t dot_Vec3_Vec3( const ixVector3 v1, const ixVector3 v2 )
 {
 	return  v1[0] * v2[0] +
 	        v1[1] * v2[1] +
 	        v1[2] * v2[2];
 }
 
-double dot_Vec3d_Vec3d(const ixVector3d v1, const ixVector3d v2)
+double dot_Vec3d_Vec3d( const ixVector3d v1, const ixVector3d v2 )
 {
     return  v1[0] * v2[0] +
             v1[1] * v2[1] +
             v1[2] * v2[2];
 }
 
-f_t dot_Vec4_Vec4(const ixVector4 v1, const ixVector4 v2 )
+f_t dot_Vec4_Vec4( const ixVector4 v1, const ixVector4 v2 )
 {
 	return  v1[0] * v2[0] +
 	        v1[1] * v2[1] +
