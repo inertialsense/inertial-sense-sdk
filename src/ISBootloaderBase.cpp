@@ -236,13 +236,9 @@ is_operation_result cISBootloaderBase::mode_device_app
         }
     }
 
-    char msg[120] = { 0 };
-    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device.", handle->port);
-    statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
-
     delete obj;
     SLEEP_MS(3000);
-    return IS_OP_OK;
+    return IS_OP_CLOSED;    // Assume we found something besides app mode
 }
 
 is_operation_result cISBootloaderBase::get_device_isb_version(

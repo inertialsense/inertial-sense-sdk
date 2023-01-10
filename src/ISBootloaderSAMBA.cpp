@@ -415,7 +415,7 @@ is_operation_result cISBootloaderSAMBA::verify_image(std::string filename)
 
     serialPortFlush(m_port);
 
-    SAMBA_STATUS("(SAM-BA) Verifying ISB bootloader...", IS_LOG_LEVEL_INFO);
+    SAMBA_STATUS("(SAM-BA) Verifying ISB bootloader (may take some time)...", IS_LOG_LEVEL_INFO);
 
     while (serialPortRead(m_port, buf, 1));
 
