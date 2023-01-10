@@ -82,7 +82,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 	{
 	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
 	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
-	case DID_FLASH_CONFIG_IMX:		s->devices[pHandle].flashCfg = *(nvm_cfg_imx_t*)data->buf;	break;
+	case DID_FLASH_CONFIG:		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;	break;
 	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
 		static time_t lastTime;
@@ -649,7 +649,7 @@ void InertialSense::SetSysCmd(const system_command_t& sysCmd, int pHandle)
 	comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(sysCmd), 0);
 }
 
-void InertialSense::SetFlashConfig(const nvm_cfg_imx_t& flashCfg, int pHandle)
+void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 {
 	if ((size_t)pHandle >= m_comManagerState.devices.size())
 	{
@@ -657,8 +657,8 @@ void InertialSense::SetFlashConfig(const nvm_cfg_imx_t& flashCfg, int pHandle)
 	}
 
 	m_comManagerState.devices[pHandle].flashCfg = flashCfg;
-	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG_IMX data set in the uINS.  
-	comManagerSendData(pHandle, DID_FLASH_CONFIG_IMX, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_cfg_imx_t), 0);
+	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
+	comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
 	Update();
 }
 
@@ -670,7 +670,7 @@ void InertialSense::SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pH
 	}
 
 	m_comManagerState.devices[pHandle].evbFlashCfg = evbFlashCfg;
-	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG_IMX data set in the uINS.  
+	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
 	comManagerSendData(pHandle, DID_EVB_FLASH_CFG, &m_comManagerState.devices[pHandle].evbFlashCfg, sizeof(evb_flash_cfg_t), 0);
 	Update();
 }
@@ -934,7 +934,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		{
 			comManagerGetData((int)i, DID_SYS_CMD, 0, 0, 0);
 			comManagerGetData((int)i, DID_DEV_INFO, 0, 0, 0);
-			comManagerGetData((int)i, DID_FLASH_CONFIG_IMX, 0, 0, 0);
+			comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
 			comManagerGetData((int)i, DID_EVB_FLASH_CFG, 0, 0, 0);
 		}
 

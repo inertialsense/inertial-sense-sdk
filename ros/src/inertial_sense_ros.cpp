@@ -243,7 +243,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (!flashConfigStreaming_)
     {
         ROS_INFO("Attempting to enable flash config data stream.");
-        SET_CALLBACK(DID_FLASH_CONFIG_IMX, nvm_cfg_imx_t, flash_config_callback, 0);
+        SET_CALLBACK(DID_FLASH_CONFIG, nvm_flash_cfg_t, flash_config_callback, 0);
         if (!firstrun)
             return;
     }
@@ -613,7 +613,7 @@ bool InertialSenseROS::firmware_compatiblity_check()
 void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
-    nvm_cfg_imx_t current_flash_cfg = IS_.GetFlashConfig();
+    nvm_flash_cfg_t current_flash_cfg = IS_.GetFlashConfig();
     //ROS_INFO("Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != navigation_dt_ms_)
@@ -647,7 +647,7 @@ void InertialSenseROS::configure_flash_parameters()
         current_flash_cfg.magDeclination = magDeclination_;
         current_flash_cfg.insDynModel = insDynModel_;
 
-        IS_.SendData(DID_FLASH_CONFIG_IMX, (uint8_t *)(&current_flash_cfg), sizeof (nvm_cfg_imx_t), 0);
+        IS_.SendData(DID_FLASH_CONFIG, (uint8_t *)(&current_flash_cfg), sizeof (nvm_flash_cfg_t), 0);
     }
 
     if  (reboot)
@@ -822,7 +822,7 @@ void InertialSenseROS::configure_rtk()
             start_rtk_server(RTK_server_IP_, RTK_server_port_);
         }
 
-        IS_.SendData(DID_FLASH_CONFIG_IMX, reinterpret_cast<uint8_t *>(&RTKCfgBits), sizeof(RTKCfgBits), offsetof(nvm_cfg_imx_t, RTKCfgBits));
+        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&RTKCfgBits), sizeof(RTKCfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
 
     else
@@ -886,12 +886,12 @@ void InertialSenseROS::configure_rtk()
             if (RTK_base_TCP_)
                 start_rtk_server(RTK_server_IP_, RTK_server_port_);
         }
-        IS_.SendData(DID_FLASH_CONFIG_IMX, reinterpret_cast<uint8_t *>(&RTKCfgBits), sizeof(RTKCfgBits), offsetof(nvm_cfg_imx_t, RTKCfgBits));
+        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&RTKCfgBits), sizeof(RTKCfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
     ROS_INFO("Setting RTKCfgBits: 0x%08x", RTKCfgBits);
 }
 
-void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_cfg_imx_t *const msg)
+void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg)
 {
     if (!flashConfigStreaming_)
         ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID));
@@ -2114,12 +2114,12 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
     current_lla_[1] = lla_[1];
     current_lla_[2] = lla_[2];
 
-    IS_.SendData(DID_FLASH_CONFIG_IMX, reinterpret_cast<uint8_t *>(&current_lla_), sizeof(current_lla_), offsetof(nvm_cfg_imx_t, refLla));
+    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&current_lla_), sizeof(current_lla_), offsetof(nvm_flash_cfg_t, refLla));
 
-    comManagerGetData(0, DID_FLASH_CONFIG_IMX, 0, 0, 1);
+    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
-    nvm_cfg_imx_t current_flash = IS_.GetFlashConfig();
+    nvm_flash_cfg_t current_flash = IS_.GetFlashConfig();
     while (current_flash.refLla[0] == IS_.GetFlashConfig().refLla[0] && current_flash.refLla[1] == IS_.GetFlashConfig().refLla[1] && current_flash.refLla[2] == IS_.GetFlashConfig().refLla[2])
     {
         comManagerStep();
@@ -2132,13 +2132,13 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
     if (current_lla_[0] == IS_.GetFlashConfig().refLla[0] && current_lla_[1] == IS_.GetFlashConfig().refLla[1] && current_lla_[2] == IS_.GetFlashConfig().refLla[2])
     {
-        comManagerGetData(0, DID_FLASH_CONFIG_IMX, 0, 0, 0);
+        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;
         res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(current_lla_[0]) + "  Lon: " + std::to_string(current_lla_[1]) + "  Alt: " + std::to_string(current_lla_[2]));
     }
     else
     {
-        comManagerGetData(0, DID_FLASH_CONFIG_IMX, 0, 0, 0);
+        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = false;
         res.message = "Unable to update refLLA. Please try again.";
     }
@@ -2148,12 +2148,12 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
 bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Request &req, inertial_sense_ros::refLLAUpdate::Response &res)
 {
-    IS_.SendData(DID_FLASH_CONFIG_IMX, reinterpret_cast<uint8_t *>(&req.lla), sizeof(req.lla), offsetof(nvm_cfg_imx_t, refLla));
+    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&req.lla), sizeof(req.lla), offsetof(nvm_flash_cfg_t, refLla));
 
-    comManagerGetData(0, DID_FLASH_CONFIG_IMX, 0, 0, 1);
+    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
-    nvm_cfg_imx_t current_flash = IS_.GetFlashConfig();
+    nvm_flash_cfg_t current_flash = IS_.GetFlashConfig();
     while (current_flash.refLla[0] == IS_.GetFlashConfig().refLla[0] && current_flash.refLla[1] == IS_.GetFlashConfig().refLla[1] && current_flash.refLla[2] == IS_.GetFlashConfig().refLla[2])
     {
         comManagerStep();
@@ -2166,13 +2166,13 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
 
     if (req.lla[0] == IS_.GetFlashConfig().refLla[0] && req.lla[1] == IS_.GetFlashConfig().refLla[1] && req.lla[2] == IS_.GetFlashConfig().refLla[2])
     {
-        comManagerGetData(0, DID_FLASH_CONFIG_IMX, 0, 0, 0);
+        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;
         res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(req.lla[0]) + "  Lon: " + std::to_string(req.lla[1]) + "  Alt: " + std::to_string(req.lla[2]));
     }
     else
     {
-        comManagerGetData(0, DID_FLASH_CONFIG_IMX, 0, 0, 0);
+        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = false;
         res.message = "Unable to update refLLA. Please try again.";
     }

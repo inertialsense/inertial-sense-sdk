@@ -37,7 +37,7 @@ typedef struct
 	struct  
 	{
 		dev_info_t			devInfo;
-		nvm_cfg_imx_t		nvmFlashCfg;
+		nvm_flash_cfg_t		nvmFlashCfg;
 		ascii_msgs_t		asciiMsgs;
 	}						msgs = { 0 };
 
@@ -264,7 +264,7 @@ bool initComManager(test_data_t &t)
 	}
 
 	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
-	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG_IMX, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_cfg_imx_t), 0);
+	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 
 	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerAscii, msgHandlerUblox, msgHandlerRtcm3);
 

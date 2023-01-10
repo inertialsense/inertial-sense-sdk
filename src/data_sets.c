@@ -248,12 +248,12 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 	static uint16_t offsetsFlashConfig[] =
 	{
 		6,
-		offsetof( nvm_cfg_imx_t, refLla[0] ),
-		offsetof( nvm_cfg_imx_t, refLla[1] ),
-		offsetof( nvm_cfg_imx_t, refLla[2] ),
-		offsetof( nvm_cfg_imx_t, lastLla[0] ),
-		offsetof( nvm_cfg_imx_t, lastLla[1] ),
-		offsetof( nvm_cfg_imx_t, lastLla[2] )
+		offsetof( nvm_flash_cfg_t, refLla[0] ),
+		offsetof( nvm_flash_cfg_t, refLla[1] ),
+		offsetof( nvm_flash_cfg_t, refLla[2] ),
+		offsetof( nvm_flash_cfg_t, lastLla[0] ),
+		offsetof( nvm_flash_cfg_t, lastLla[1] ),
+		offsetof( nvm_flash_cfg_t, lastLla[2] )
 	};
 
 	static uint16_t offsetsOnlyTimeFirst[] = { 1, 0 };
@@ -280,7 +280,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsRmc,				//  9: DID_RMC
 		offsetsSysParams,		// 10: DID_SYS_PARAMS
 		offsetsOnlyTimeFirst,	// 11: DID_SYS_SENSORS
-		offsetsFlashConfig,		// 12: DID_FLASH_CONFIG_IMX
+		offsetsFlashConfig,		// 12: DID_FLASH_CONFIG
 		offsetsGps,				// 13: DID_GPS1_UBX_POS
 		offsetsGps,				// 14: DID_GPS2_POS
 		0,						// 15: DID_GPS1_SAT
@@ -291,7 +291,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 20: DID_INTERNAL_DIAGNOSTIC
         0,                      // 21: DID_GPS1_RTK_POS_REL
         offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
-		0,						// 23: 
+		0,						// 23: DID_FEATURE_BITS
 		0,						// 24: DID_SENSORS_UCAL
 		0,						// 25: DID_SENSORS_TCAL
 		0,						// 26: DID_SENSORS_TC_BIAS
@@ -356,7 +356,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetsImuMag,          // 85: DID_IMU_MAG
         offsetsPreImuMag,		// 86: DID_PIMU_MAG
 		0,                      // 87: DID_GROUND_VEHICLE
-		0,   					// 88: 
+		offsetsOnlyTimeFirst,   // 88: DID_POSITION_MEASUREMENT
 		0,                      // 89: DID_RTK_DEBUG_2
 		0,                      // 90: DID_CAN_CONFIG
 		0,                      // 91: DID_GPS2_RTK_CMP_REL
@@ -458,7 +458,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  9: DID_RMC
 		0,						// 10: DID_SYS_PARAMS
 		0,						// 11: DID_SYS_SENSORS
-		0,						// 12: DID_FLASH_CONFIG_IMX
+		0,						// 12: DID_FLASH_CONFIG
 		0,						// 13: DID_GPS1_UBX_POS
 		0,						// 14: DID_GPS2_POS
 		0,						// 15: DID_GPS1_SAT
@@ -469,7 +469,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 20: DID_INTERNAL_DIAGNOSTIC
         0,                      // 21: DID_GPS1_RTK_POS_REL
         0,                      // 22: DID_GPS1_RTK_POS_MISC,
-		0,						// 23: 
+		0,						// 23: DID_FEATURE_BITS
 		0,						// 24: DID_SENSORS_UCAL
 		0,						// 25: DID_SENSORS_TCAL
 		0,						// 26: DID_SENSORS_TC_BIAS
@@ -534,7 +534,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 85: DID_IMU_MAG
 		0,						// 86: DID_PIMU_MAG
 		0,						// 87: DID_GROUND_VEHICLE
-		0,						// 88: 
+		0,						// 88: DID_POSITION_MEASUREMENT
 		0,						// 89: DID_RTK_DEBUG_2
 		0,						// 90: DID_CAN_CONFIG
 		0,                      // 91: DID_GPS2_RTK_CMP_REL

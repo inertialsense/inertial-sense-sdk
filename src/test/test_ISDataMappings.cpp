@@ -12,7 +12,7 @@ TEST(ISDataMappings, StringToDataToString)
 	uDatasets d = {};
 	int radix = 10;	// 10 for decimal and 16 for hex.
 
-	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG_IMX);
+	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	{	// Integer Test
 		const data_info_t& info = flashMap.at("ser0BaudRate");

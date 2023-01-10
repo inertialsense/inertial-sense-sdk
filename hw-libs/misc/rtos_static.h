@@ -22,7 +22,7 @@ extern "C" {
 //#include "gpx_data_sets.h"
 #define RTOS_NUM_TASKS	(GPX_RTOS_NUM_TASKS)
 #else
-#define RTOS_NUM_TASKS	(SN_RTOS_NUM_TASKS)
+#define RTOS_NUM_TASKS	(UINS_RTOS_NUM_TASKS)
 #endif
 
 int createTaskStatic

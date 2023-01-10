@@ -103,7 +103,7 @@ public:
     bool getParamVector(const std::string &key, uint32_t size, T &data);
     void get_flash_config();
     void reset_device();
-    void flash_config_callback(eDataIDs DID, const nvm_cfg_imx_t *const msg);
+    void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
     bool flashConfigStreaming_ = false;
     // Serial Port Configuration
     std::string port_ = "/dev/ttyACM0";

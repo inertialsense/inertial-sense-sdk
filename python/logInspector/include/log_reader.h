@@ -38,7 +38,7 @@ struct DeviceLog
 //    std::vector<rmc_t> rmc;
     std::vector<sys_params_t> sysParams;
     std::vector<sys_sensors_t> sysSensors;
-    std::vector<nvm_cfg_imx_t> flashCfg;
+    std::vector<nvm_flash_cfg_t> flashCfg;
     std::vector<gps_pos_t> gps1Pos;
     std::vector<gps_pos_t> gps2Pos;
     std::vector<gps_sat_t> gps1Sat;
@@ -51,6 +51,7 @@ struct DeviceLog
     std::vector<gps_rtk_rel_t> gps1RtkCmpRel;
     std::vector<gps_rtk_misc_t> gps1RtkPosMisc;
     std::vector<gps_rtk_misc_t> gps1RtkCmpMisc;
+    // std::vector<feature_bits_t> featureBits;
     std::vector<sensors_w_temp_t> sensorsUcal;
     std::vector<sensors_w_temp_t> sensorsTcal;
     std::vector<sensors_w_temp_t> sensorsMcal;

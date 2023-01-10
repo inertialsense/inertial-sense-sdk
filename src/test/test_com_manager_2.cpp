@@ -12,7 +12,7 @@ static sys_sensors_adc_t g_sensor_adc;
 static sys_sensors_adc_t g_sensor_lsb;
 static sys_sensors_adc_t g_adcSigma;
 static sys_params_t	g_sysParams;
-static nvm_cfg_imx_t g_nvmFlashCfg;
+static nvm_flash_cfg_t g_nvmFlashCfg;
 static rtos_info_t g_rtos;
 static ascii_msgs_t g_asciiPeriod[NUM_COM_PORTS];
 static system_command_t g_sysCmd;
@@ -163,11 +163,12 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 // 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_SN, 0, 0, g_serialNumber, 0, sizeof(nvm_group_sn_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_G0, 0, 0, g_nvmU0, 0, sizeof(nvm_group_0_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_G1, 0, 0, g_nvmU1, 0, sizeof(nvm_group_1_t), 0);
-	comManagerRegisterInstance(&(cm2->cm), DID_FLASH_CONFIG_IMX, 0, 0, &g_nvmFlashCfg, 0, sizeof(nvm_cfg_imx_t), 0);
+	comManagerRegisterInstance(&(cm2->cm), DID_FLASH_CONFIG, 0, 0, &g_nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_RTOS_INFO, 0, 0, &g_rtos, 0, sizeof(rtos_info_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_ASCII_BCAST_PERIOD, 0, 0, &g_asciiPeriod, &g_asciiPeriod, sizeof(ascii_msgs_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_CMD, 0, 0, &g_sysCmd, &g_sysCmd, sizeof(system_command_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_DEBUG_ARRAY, 0, 0, &g_debug, &g_debug, sizeof(debug_array_t), 0);
+// 	comManagerRegisterInstance(&(cm2->cm), DID_FEATURE_BITS, 0, 0, 0, 0, sizeof(feature_bits_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_IO, 0, 0, &g_IO, &g_IO, sizeof(io_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_MAG_CAL, 0, 0, &g_magCal, &g_magCal, sizeof(mag_cal_t), 0);
 }

@@ -67,7 +67,7 @@ extern "C" {
 #define _DID_STROBE_IN_TIME			DID_STROBE_IN_TIME		/** (see strobe_in_time_t) Timestamp for input strobe */
 
 /** Configuration */
-#define _DID_FLASH_CONFIG_IMX			DID_FLASH_CONFIG_IMX 		/** (see nvm_cfg_imx_t) Flash memory configuration */
+#define _DID_FLASH_CONFIG			DID_FLASH_CONFIG 		/** (see nvm_flash_cfg_t) Flash memory configuration */
 #define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
 
 /** Protocol Type */
