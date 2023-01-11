@@ -451,15 +451,23 @@ is_operation_result cISBootloaderBase::update_device
         (obj)->m_use_progress = true;
         addMutex->lock();
         contexts.push_back(obj);
-        *new_context = obj;
         addMutex->unlock();
-        if((obj)->download_image(filenames.bl_IMX_5.path) != IS_OP_OK)
+        for(size_t i = 0; i < 3; i++)
         {
-            (obj)->m_info_callback((obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-            (obj)->m_use_progress = false;
+            is_operation_result ret = (obj)->download_image(filenames.bl_IMX_5.path);
+            if(ret != IS_OP_OK)
+            {
+                (obj)->m_info_callback((obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_use_progress = false;
+                (obj)->reboot();
+                continue;
+            }
+            *new_context = obj;
+            (obj)->reboot_up();    // Reboot up right away so an App update can happen
             return IS_OP_CLOSED;
         }
-        (obj)->reboot_up();    // Reboot up right away so an App update can happen
+
+        (obj)->m_info_callback((obj), "(DFU) Update failed, too many retries", IS_LOG_LEVEL_ERROR);
         return IS_OP_CLOSED;
     }
     else
