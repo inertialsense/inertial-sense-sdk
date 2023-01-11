@@ -217,7 +217,8 @@ INCLUDES += \
 	$(HW_LIBS_DIR)/boards 			\
 	$(HW_LIBS_DIR)/bootloader 		\
 	$(HW_LIBS_DIR)/communications 	\
-	$(HW_LIBS_DIR)/drivers/SAMx70        	\
+	$(HW_LIBS_DIR)/drivers/SAMx70 \
+	$(HW_LIBS_DIR)/drivers/common \
 	$(HW_LIBS_DIR)/printf  \
 	$(HW_LIBS_DIR)/misc  
 

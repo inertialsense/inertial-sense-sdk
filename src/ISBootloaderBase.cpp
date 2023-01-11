@@ -124,7 +124,8 @@ eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename,
 
     fseek(blfile, 0x5FFC, SEEK_SET);
     unsigned char ver_info[4];
-	fread(ver_info, 1, 4, blfile);
+	size_t n = fread(ver_info, 1, 4, blfile);
+    (void)n;
     fclose(blfile);
 
     //Check for marker for valid version info
@@ -140,7 +141,8 @@ eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename,
 
         // Look in the old location for this info (v5 and earler)
         fseek(blfile, 0x3DFC, SEEK_SET);
-        fread(ver_info, 1, 4, blfile);
+        size_t n = fread(ver_info, 1, 4, blfile);
+        (void)n;
         fclose(blfile);
 
         //Check for marker for valid version info
@@ -234,13 +236,9 @@ is_operation_result cISBootloaderBase::mode_device_app
         }
     }
 
-    char msg[120] = { 0 };
-    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device.", handle->port);
-    statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
-
     delete obj;
     SLEEP_MS(3000);
-    return IS_OP_OK;
+    return IS_OP_CLOSED;    // Assume we found something besides app mode
 }
 
 is_operation_result cISBootloaderBase::get_device_isb_version(
@@ -453,15 +451,29 @@ is_operation_result cISBootloaderBase::update_device
         (obj)->m_use_progress = true;
         addMutex->lock();
         contexts.push_back(obj);
-        *new_context = obj;
         addMutex->unlock();
-        if((obj)->download_image(filenames.bl_IMX_5.path) != IS_OP_OK)
+
+        // Retry update up to 3 times, return if cancel flag gets set.
+        for(size_t i = 0; i < 3; i++)
         {
-            (obj)->m_info_callback((obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-            (obj)->m_use_progress = false;
+            is_operation_result result = (obj)->download_image(filenames.bl_IMX_5.path);
+            if(result == IS_OP_CANCELLED)
+            {
+                return IS_OP_CLOSED;
+            }
+            else if(result != IS_OP_OK)
+            {
+                (obj)->m_info_callback((obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_use_progress = false;
+                (obj)->reboot();
+                continue;
+            }
+            *new_context = obj;
+            (obj)->reboot_up();    // Reboot up right away so an App update can happen
             return IS_OP_CLOSED;
         }
-        (obj)->reboot_up();    // Reboot up right away so an App update can happen
+
+        (obj)->m_info_callback((obj), "(DFU) Update failed, too many retries", IS_LOG_LEVEL_ERROR);
         return IS_OP_CLOSED;
     }
     else
@@ -607,7 +619,12 @@ is_operation_result cISBootloaderBase::update_device
             contexts.push_back(obj);
             *new_context = obj;
             addMutex->unlock();
-            if((obj)->download_image(filenames.fw_EVB_2.path) != IS_OP_OK)
+            is_operation_result result = (obj)->download_image(filenames.fw_EVB_2.path);
+            if(result == IS_OP_CANCELLED)
+            {
+                return IS_OP_CLOSED;
+            }
+            else if(result != IS_OP_OK)
             {
                 (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                 (obj)->m_use_progress = false;
@@ -631,7 +648,12 @@ is_operation_result cISBootloaderBase::update_device
             contexts.push_back(obj);
             *new_context = obj;
             addMutex->unlock();
-            if((obj)->download_image(filenames.fw_IMX_5.path) != IS_OP_OK)
+            is_operation_result result = (obj)->download_image(filenames.fw_IMX_5.path);
+            if(result == IS_OP_CANCELLED)
+            {
+                return IS_OP_CLOSED;
+            }
+            else if(result != IS_OP_OK)
             {
                 (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                 (obj)->m_use_progress = false;
@@ -655,7 +677,12 @@ is_operation_result cISBootloaderBase::update_device
             contexts.push_back(obj);
             *new_context = obj;
             addMutex->unlock();
-            if((obj)->download_image(filenames.fw_uINS_3.path) != IS_OP_OK)
+            is_operation_result result = (obj)->download_image(filenames.fw_uINS_3.path);
+            if(result == IS_OP_CANCELLED)
+            {
+                return IS_OP_CLOSED;
+            }
+            else if(result != IS_OP_OK)
             {
                 (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                 (obj)->m_use_progress = false;

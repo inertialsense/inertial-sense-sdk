@@ -356,7 +356,6 @@ int cISBootloaderISB::checksum(int checkSum, uint8_t* ptr, int start, int end, i
 is_operation_result cISBootloaderISB::erase_flash()
 {
     // give the device 60 seconds to erase flash before giving up
-    static const int eraseFlashTimeoutMilliseconds = 60000;
     unsigned char selectFlash[24];
 
     serial_port_t* s = m_port;
@@ -369,9 +368,28 @@ is_operation_result cISBootloaderISB::erase_flash()
     // Erase
     memcpy(selectFlash, ":0200000400FFFBCC\0", 18);
     checksum(0, selectFlash, 1, 15, 15, 1);
-    if (serialPortWriteAndWaitForTimeout(s, selectFlash, 17, (unsigned char*)".\r\n", 3, eraseFlashTimeoutMilliseconds) == 0) return IS_OP_ERROR;
+    serialPortWrite(s, selectFlash, 17);
+    
+    // Check for response and allow quit (up to 60 seconds)
+    uint8_t buf[128];
+    uint8_t *bufPtr = buf;
+    int count = 0;
+    for(size_t i = 0; i < 600; i++)
+    {   
+        count += serialPortReadTimeout(s, bufPtr, 3, 100);
+        bufPtr = buf + count;
 
-    return IS_OP_OK;
+        if (m_update_callback(this, 0.0f) != IS_OP_OK)
+        {
+            return IS_OP_CANCELLED;
+        }
+        if (count == 3 && memcmp(buf, ".\r\n", 3) == 0)
+        {
+            return IS_OP_OK;
+        }
+    } 
+
+    return IS_OP_ERROR;
 }
 
 is_operation_result cISBootloaderISB::select_page(int page)
@@ -983,6 +1001,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
 is_operation_result cISBootloaderISB::download_image(std::string filename)
 {
     FILE* firmware_file = 0;
+    is_operation_result result;
 
 #ifdef _MSC_VER
     fopen_s(&firmware_file, filename.c_str(), "rb");
@@ -992,13 +1011,17 @@ is_operation_result cISBootloaderISB::download_image(std::string filename)
 
     status_update("(ISB) Erasing flash...", IS_LOG_LEVEL_INFO);
 
-    if(erase_flash() != IS_OP_OK) return IS_OP_ERROR;
-    if(select_page(0) != IS_OP_OK) return IS_OP_ERROR;
+    result = erase_flash();
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
+    result = select_page(0);
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
 
     status_update("(ISB) Programming flash...", IS_LOG_LEVEL_INFO);
     
-    if(begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1) != IS_OP_OK) return IS_OP_ERROR;
-    if(process_hex_file(firmware_file) != IS_OP_OK) return IS_OP_ERROR;
+    result = begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1);
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
+    result = process_hex_file(firmware_file);
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
 
     fclose(firmware_file);
 
