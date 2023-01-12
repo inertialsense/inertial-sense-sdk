@@ -332,9 +332,6 @@ void cISBootloaderThread::update_thread_libusb(void* context)
     m_libusb_thread_mutex.unlock();
 }
 
-#define RETURN_CHECK_IF_CANCELLED   if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) { m_continue_update = false; m_update_in_progress = false; m_update_mutex.unlock(); if(m_waitAction) m_waitAction(); return vector<confirm_bootload_t>(); }
-#define RETURN_IF_CANCELLED         if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) { m_continue_update = false; m_update_in_progress = false; m_update_mutex.unlock(); if(m_waitAction) m_waitAction(); return IS_OP_CANCELLED; }
-
 bool cISBootloaderThread::true_if_cancelled(void)
 {
     if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED)
@@ -502,7 +499,15 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_thread_mutex.unlock();
     }
 
-    RETURN_CHECK_IF_CANCELLED
+    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    { 
+        m_continue_update = false; 
+        m_update_in_progress = false; 
+        m_update_mutex.unlock(); 
+        if(m_waitAction) m_waitAction(); 
+        return vector<confirm_bootload_t>(); 
+    }
+
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
@@ -614,7 +619,14 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_thread_mutex.unlock();
     }
 
-    RETURN_CHECK_IF_CANCELLED
+    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    { 
+        m_continue_update = false; 
+        m_update_in_progress = false; 
+        m_update_mutex.unlock(); 
+        if(m_waitAction) m_waitAction(); 
+        return vector<confirm_bootload_t>(); 
+    }
     m_ctx_mutex.lock();
 
     for(size_t i = 0; i < ctx.size(); i++)
@@ -675,7 +687,14 @@ is_operation_result cISBootloaderThread::update(
         comPorts.begin(), comPorts.end(),
         back_inserter(ports_user_ignore));
 
-    RETURN_IF_CANCELLED
+    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    { 
+        m_continue_update = false; 
+        m_update_in_progress = false; 
+        m_update_mutex.unlock(); 
+        if(m_waitAction) m_waitAction(); 
+        return IS_OP_CANCELLED; 
+    }
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
@@ -774,7 +793,14 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
-    RETURN_IF_CANCELLED
+    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    { 
+        m_continue_update = false; 
+        m_update_in_progress = false; 
+        m_update_mutex.unlock(); 
+        if(m_waitAction) m_waitAction(); 
+        return IS_OP_CANCELLED; 
+    }
     m_infoProgress(NULL, "Updating... (120 seconds max.)", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
@@ -887,7 +913,14 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    RETURN_IF_CANCELLED
+    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    { 
+        m_continue_update = false; 
+        m_update_in_progress = false; 
+        m_update_mutex.unlock(); 
+        if(m_waitAction) m_waitAction(); 
+        return IS_OP_CANCELLED; 
+    }
     
     // Reset all serial devices up a level into APP or ISB mode
     for (size_t i = 0; i < ctx.size(); i++)

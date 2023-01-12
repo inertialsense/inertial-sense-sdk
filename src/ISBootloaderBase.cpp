@@ -452,6 +452,8 @@ is_operation_result cISBootloaderBase::update_device
         addMutex->lock();
         contexts.push_back(obj);
         addMutex->unlock();
+
+        // Retry update up to 3 times, return if cancel flag gets set.
         for(size_t i = 0; i < 3; i++)
         {
             is_operation_result result = (obj)->download_image(filenames.bl_IMX_5.path);

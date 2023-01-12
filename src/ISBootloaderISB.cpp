@@ -998,8 +998,6 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
     return IS_OP_OK;
 }
 
-#define CHECK_IS_OP_DWNLD()   if(result != IS_OP_OK) { fclose(firmware_file); return result; }
-
 is_operation_result cISBootloaderISB::download_image(std::string filename)
 {
     FILE* firmware_file = 0;
@@ -1014,16 +1012,16 @@ is_operation_result cISBootloaderISB::download_image(std::string filename)
     status_update("(ISB) Erasing flash...", IS_LOG_LEVEL_INFO);
 
     result = erase_flash();
-    CHECK_IS_OP_DWNLD()
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
     result = select_page(0);
-    CHECK_IS_OP_DWNLD()
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
 
     status_update("(ISB) Programming flash...", IS_LOG_LEVEL_INFO);
     
     result = begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1);
-    CHECK_IS_OP_DWNLD()
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
     result = process_hex_file(firmware_file);
-    CHECK_IS_OP_DWNLD()
+    if(result != IS_OP_OK) { fclose(firmware_file); return result; }
 
     fclose(firmware_file);
 
