@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.22.1)
 project(log_reader)
 
 if(NOT CMAKE_BUILD_TYPE)
