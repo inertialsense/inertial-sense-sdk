@@ -168,6 +168,14 @@ $ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManage
 $ ./cltool
 ```
 
+### Install udev rules for IMX-5 bootloader
+
+If you need to update the bootloader on the IMX-5 (contact Inertial Sense to get this file), you will need to run the cltool with elevated (sudo) permissions, or run the following commands prior to running the cltool to give permissions to all users. This is required because the first-stage bootloader of the IMX-5 is a DFU device, rather than a CDC (virtual COM port) device.
+```
+sudo cp ../../../90-inertialsense.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+```
+
 ## Compile & Run (Windows MS Visual Studio)
 1. [Install and Configure Visual Studio](../getting-started/#installing-and-configuring-visual-studio)
 2. Open Visual Studio solution file (inertial-sense-sdk/cltool/VS_project/cltool.sln)

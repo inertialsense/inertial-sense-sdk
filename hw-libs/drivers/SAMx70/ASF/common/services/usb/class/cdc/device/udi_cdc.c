@@ -1123,7 +1123,7 @@ udi_cdc_write_buf_loop_wait:
 #if USE_FREERTOS
 		vTaskDelay(1);
 #else
-		time_delay(1);
+		time_delay_msec(1);
 #endif
 
 		goto udi_cdc_write_buf_loop_wait;
