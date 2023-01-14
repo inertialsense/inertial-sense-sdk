@@ -839,8 +839,34 @@ int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
 // Parse NMEA Functions
 //////////////////////////////////////////////////////////////////////////
 
+void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
+{
+#define SET_ASCII_RMCI(did, ascii_rmc_bits, period) { \
+	rmci.periodMultiple[(did)] = (uint8_t)(period); \
+	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
+}
+
+#define SET_ASCII_RMCI_GPS(did, ascii_rmc_bits, period) { \
+	if (period){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], (uint8_t)(period)); } \
+	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
+}
+
+	SET_ASCII_RMCI(DID_IMU, ASCII_RMC_BITS_PIMU, tmp.pimu);
+	SET_ASCII_RMCI(DID_PIMU, ASCII_RMC_BITS_PPIMU, tmp.ppimu);
+	SET_ASCII_RMCI(DID_INS_1, ASCII_RMC_BITS_PINS1, tmp.pins1);
+	SET_ASCII_RMCI(DID_INS_2, ASCII_RMC_BITS_PINS2, tmp.pins2);
+
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PGPSP, tmp.pgpsp);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGGA, tmp.gpgga);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGLL, tmp.gpgll);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGSA, tmp.gpgsa);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPRMC, tmp.gprmc);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPZDA, tmp.gpzda);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
+}
+
 // Returns RMC options
-uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[NUM_COM_PORTS], uint32_t *asciiPeriodPPIMU)
+uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
 {
 	(void)msgSize;
 	if(pHandle >= NUM_COM_PORTS)
@@ -850,7 +876,7 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 	char *ptr = (char *)msg;
 	
 	// Default to current settings
-	ascii_msgs_t tmp = asciiPeriod[pHandle];
+	ascii_msgs_t tmp {};	// = asciiPeriod[pHandle];
 	uint32_t options = 0;
 	
 	ptr = ASCII_find_next_field(ptr);			// Options
@@ -859,9 +885,6 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 	if(*ptr!=','){ tmp.pimu = (uint16_t)atoi(ptr); }	
 	ptr = ASCII_find_next_field(ptr);			// PPIMU
 	if(*ptr!=','){ tmp.ppimu = (uint16_t)atoi(ptr); }
-
-	if (asciiPeriodPPIMU) { *asciiPeriodPPIMU = (uint32_t)_MAX(tmp.pimu, tmp.ppimu); }	// Global ascii IMU broadcast period
-
 	ptr = ASCII_find_next_field(ptr);			// PINS1
 	if(*ptr!=','){ tmp.pins1 = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PINS2
@@ -890,15 +913,16 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_
 	case 0xFF:	// All ports
 		for(int i=0; i<NUM_COM_PORTS; i++)
 		{
-			asciiPeriod[i] = tmp;
+			nmea_set_rmc_period_multiple(rmci[i], tmp);
 		}
 		break;
 		
 	default:	// Current port
-	case RMC_OPTIONS_PORT_CURRENT:	asciiPeriod[pHandle] = tmp;	break;
-	case RMC_OPTIONS_PORT_SER0:		asciiPeriod[0] = tmp;		break;
-	case RMC_OPTIONS_PORT_SER1:		asciiPeriod[1] = tmp;		break;
-	case RMC_OPTIONS_PORT_USB:		asciiPeriod[2] = tmp;		break;
+	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle], tmp);	break;
+	case RMC_OPTIONS_PORT_SER0:		nmea_set_rmc_period_multiple(rmci[0], tmp);			break;
+	case RMC_OPTIONS_PORT_SER1:		nmea_set_rmc_period_multiple(rmci[1], tmp);			break;
+	case RMC_OPTIONS_PORT_SER2:		nmea_set_rmc_period_multiple(rmci[2], tmp);			break;
+	case RMC_OPTIONS_PORT_USB:		nmea_set_rmc_period_multiple(rmci[3], tmp);			break;
 	}
 		
 	return options;

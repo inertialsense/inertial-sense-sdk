@@ -72,7 +72,7 @@ int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize);
 //////////////////////////////////////////////////////////////////////////
 // NMEA parse
 //////////////////////////////////////////////////////////////////////////
-uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, ascii_msgs_t asciiPeriod[], uint32_t *asciiPeriodPPIMU);
+uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
 int parse_nmea_zda(const char msgBuf[], int msgSize, double &day, double &month, double &year);
 int parse_nmea_gns(const char msgBuf[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);
 int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);
