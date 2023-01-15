@@ -29,7 +29,7 @@
 
 inertialsense-ros:
   topic: "inertialsense"
-  port: "/dev/Evb2"
+  port: "/dev/ttyACM0"
   baudrate: 921600
   enable_log: false
   frame_id: ""                                    # FIXME: What is this?  is it just the FrameID to use in the ROS messages?
@@ -53,60 +53,63 @@ inertialsense-ros:
   # Publish the firmware upgrade progress/status
   firmware_status:
     message:
-      enable: true
       topic: "firmware_status"
+      enable: true
 
   transform_frame:
     static_transform:
     message:
-      enable: true
       topic: ""
+      enable: true
 
-  # Publish diagnostics topics from the IMU
-  diagnostics:
-    message:
-      topic: "diagnostics"
-      stream: true
+  ins:
+    rotation: [0, 0, 0]                           # Rotation in radians about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X.
+    offset: [0, 0 ,0]                             # X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame.
+    enable_covariance: false                      # Include covariance data in odom_ins_... messages
+    messages:
+      odom_ins_enu:
+        topic: "odom_ins_enu"
+        enable: true
+      odom_ins_ned:
+        topic: "odom_ins_ned"
+        enable: true
+      odom_ins_ecef:
+        topic: "odom_ins_ecef"
+        enable: true
+      did_ins1:
+        topic: "ins_eul_uvw_ned"
+        enable: true
+      did_ins2:
+        topic: "ins_quat_uvw_lla"
+        enable: true
+      did_ins4:
+        topic: "ins_quat_ve_ecef"
+        enable: true
+      inl2_states:
+        topic: "inl2_states"
+        enable: true
 
-  # Publish the strobe input time
-  strobe_time:
-    message:
-      topic: "strobe_time"
-      stream: true
-
-  # Publish the INS Extended Kalman Filter (EKF) states
-  INL2_states:
-    message:
-      topic: "inl2_states"
-      stream: true
-
-  # FIXME:  Do we not have a temperature sensor?  for baro compensation, etc?
-
-  # Publish IMU angular rates and linear acceleration
-  imu:
-    messages: # FIXME: I don't like this imu/messages/imu thing, but I'm trying to be consistent... :|
-      imu:
+  sensors:
+    messages:  
+      imu:              # Publish IMU angular rates and linear acceleration
         topic: "imu"
-        stream: true
+        enable: true
         period: 1
-      preint_imu:
-        topic: "preint_imu"
-        stream: true
+      pimu:             # Publish preintegrated IMU delta theta and delta velocity
+        topic: "pimu"
+        enable: true
         period: 1
-
-  magnetometer:
-    message:
-      topic: "mag"
-      stream: true
-      period: 5
-      subsample_method: average                   # average the previous period intervals?  Or only publish the latest?
-
-  barometer:
-    message:
-      topic: "baro"
-      stream: true
-      period: 1
-      subsample_method: average
+      magnetometer:
+        topic: "mag"
+        enable: true
+        period: 1
+      barometer:
+        topic: "baro"
+        enable: true
+        period: 1
+      strobe_in:      # Publish the strobe input time
+        topic: "strobe_in"
+        enable: true
 
   gps1:
     source: "int1"                                # GPS source to use for GPS1 (none, internal1, internal2, serial0, serial1, serial2)
@@ -114,9 +117,26 @@ inertialsense-ros:
     antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
     topic: "gps1"
 
+    messages:
+      pos_vel:
+        topic: "pos_vel"
+        enable: true
+        period: 1
+      navsatfix:
+        topic: "/NavSatFix"                        # /navsatfix
+        enable: false
+      info:
+        topic: "info"                             # inertialsense/gps1/info
+        enable: true
+        period: 5
+      raw:
+        topic: "raw"
+        enable: true
+        period: 5
+
     rtk_rover:
-      mode: "off"                                 # Off, Position, or Compass (we can throw an error if the mode isn't supported, ie compass for gps1).
       topic: "rtk"
+      mode: "off"                                 # Off, Position, or Compass (we can throw an error if the mode isn't supported, ie compass for gps1).
 
       # FIXME: Are these still GPS specific?  or are they RTK specific?  rtk/base/* is specific to the correction service
       messages:
@@ -141,34 +161,6 @@ inertialsense-ros:
           info:
             topic: "info"
 
-    messages:
-      pos_vel:
-        enable: true
-        topic: "pos_vel"
-        period: 1
-      navsatfix:
-        enable: false
-        topic: "/NavSatFix"                        # /navsatfix
-      info:
-        stream: true
-        period: 5
-        topic: "info"                             # inertialsense/gps1/info
-      raw:
-        topic: "raw"
-        obs:
-          stream: true
-          period: 5
-          topic: "obs"                              # inertialsense/gps1/raw/obs
-        ephemeris:
-          topic: "eph"
-          gnss:
-            stream: true
-            period: 5
-            topic: "gnss"                           # inertialsense/gps1/raw/eph/gnss
-          glonass:
-            stream: true
-            period: 5
-            topic: "glonass"                        # inertialsense/gps1/raw/eph/glonass
 
   gps2:
     source: "int1"                                # GPS source to use for GPS1 (none, internal1, internal2, serial0, serial1, serial2)
@@ -212,49 +204,25 @@ inertialsense-ros:
         enable: false
         topic: "/NavSatFix"                        # /navsatfix
       info:
-        stream: true
+        enable: true
         period: 5
         topic: "info"                             # inertialsense/gps1/info
       raw:
         topic: "raw"
         obs:
-          stream: true
+          enable: true
           period: 5
           topic: "obs"                              # inertialsense/gps1/raw/obs
         ephemeris:
           topic: "eph"
           gnss:
-            stream: true
+            enable: true
             period: 5
             topic: "gnss"                           # inertialsense/gps1/raw/eph/gnss
           glonass:
-            stream: true
+            enable: true
             period: 5
             topic: "glonass"                        # inertialsense/gps1/raw/eph/glonass
-
-  ins:
-    rpy_radians: [0, 0, 0]
-    xyz: [0, 0 ,0]
-    topic: "ins"
-    messages:
-      odom_enu:
-        enable: true
-        topic: "odom_enu"                         # inertialsense/ins/odom_enu
-      odom_ned:
-        enable: true
-        topic: "odom_ned"                         # inertialsense/ins/odom_ned
-      odom_ecef:
-        enable: true
-        topic: "odom_ecef"                        # inertialsense/ins/odom_ecef
-      ins1:
-        enable: true
-        topic: "did_ins_1"                        # inertialsense/ins/did_ind_1
-      ins2:
-        enable: true
-        topic: "did_ins_2"                        # inertialsense/ins/did_ind_2
-      ins4:
-        enable: true
-        topic: "did_ins_4"                        # inertialsense/ins/did_ind_4
 
 
   evb:
@@ -282,13 +250,13 @@ inertialsense-ros:
       messages:
         raw:
           base_gnss_ephemeris:
-            stream: true
-            period: 5
             topic: "inertialsense/base/eph"
-          base_glonass_ephemeris:
-            stream: true
+            enable: true
             period: 5
+          base_glonass_ephemeris:
             topic: "inertialsense/gps2/base/geph"
+            enable: true
+            period: 5
 
     # Correction providers (input/output) are referenced as "pointers" from the "base" and "rover" sections above.
     # You can define multiple providers, however only those referenced by "base" and "rover" will be used.  All others
@@ -350,8 +318,8 @@ inertialsense-ros:
 
       # RTK corrections
       ros_provider:
-        type: "ros_topic"                         # to/from ROS topics - ROS topic ot subscribe to, received RTCM3 corrections are passed to the EVB
         topic: "/rtcm3_corrections"
+        type: "ros_topic"                         # to/from ROS topics - ROS topic ot subscribe to, received RTCM3 corrections are passed to the EVB
 
       # RTK corrections passed through the EVB - rover/inputs are always read from the EVB CB, base/outputs are always written to the EVB CB
       xbee_radio:

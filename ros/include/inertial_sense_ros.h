@@ -60,16 +60,18 @@ class ParamHelper
 {
 public:
     // ParamHelper(YAML::Node node, ros::NodeHandle nh_private){ node_ = node; nh_private_ = nh_private; }
+    std::string topic;
     bool enabled = false;
     bool streaming = false;
     int period = 1;             // Period multiple (data rate divisor)
     ros::Publisher pub;
 
     template <typename Type>
-    static bool getParam(YAML::Node node, ros::NodeHandle nh, std::string key, Type &var);
+    static bool getParam(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, Type &var);
     template <typename Derived1>
     static bool getParamVec(YAML::Node node, ros::NodeHandle nh, std::string key, int size, Derived1 &vec);
-    bool getParamRs(YAML::Node node, ros::NodeHandle nh, std::string key);
+    void initGmsgParams(YAML::Node &node, ros::NodeHandle nh, std::string group, std::string name, std::string topicDefault="", bool enableDefault=false, int periodDefault=1);
+    bool getMsgParams(YAML::Node node, ros::NodeHandle nh, std::string key, std::string msgKey="");
 
     template <typename Type>
     static bool getYamlNodeParam(YAML::Node node, const std::string key, Type &val);
@@ -245,9 +247,9 @@ public:
 
     struct
     {
-        ParamHelper did_ins_eul_uvw_lla;
-        ParamHelper did_ins_quat_uvw_lla;
-        ParamHelper did_ins_quat_ve_ecef;
+        ParamHelper did_ins1;
+        ParamHelper did_ins2;
+        ParamHelper did_ins4;
         ParamHelper odom_ins_ned;
         ParamHelper odom_ins_ecef;
         ParamHelper odom_ins_enu;
@@ -255,8 +257,9 @@ public:
 
         ParamHelper imu;
         ParamHelper pimu;
-        ParamHelper mag;
-        ParamHelper baro;
+        ParamHelper magnetometer;
+        ParamHelper barometer;
+        ParamHelper strobe_in;
 
         ParamHelperGps gps1;
         ParamHelperGps gps2;

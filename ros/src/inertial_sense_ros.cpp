@@ -18,7 +18,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     ROS_INFO("======  Starting Inertial Sense ROS  ======");
 
     // Should always be enabled by default
-    rs_.did_ins_eul_uvw_lla.enabled = true;
+    rs_.did_ins1.enabled = true;
     rs_.gps1.enabled = true;
 
     load_params(paramNode);
@@ -40,20 +40,20 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
 
     //////////////////////////////////////////////////////////
     // Publishers
-    strobe_pub_ = nh_.advertise<std_msgs::Header>("strobe_time", 1);
+    strobe_pub_ = nh_.advertise<std_msgs::Header>(rs_.strobe_in.topic, 1);
 
-    if (rs_.did_ins_eul_uvw_lla.enabled)    { rs_.did_ins_eul_uvw_lla.pub = nh_.advertise<inertial_sense_ros::DID_INS1>("did_ins_eul_uvw_lla", 1); }
-    if (rs_.did_ins_quat_uvw_lla.enabled)   { rs_.did_ins_quat_uvw_lla.pub = nh_.advertise<inertial_sense_ros::DID_INS2>("did_ins_quat_uvw_lla", 1); }
-    if (rs_.did_ins_quat_ve_ecef.enabled)   { rs_.did_ins_quat_ve_ecef.pub = nh_.advertise<inertial_sense_ros::DID_INS4>("did_ins_quat_ve_ecef", 1); }
-    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ned", 1); }
-    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_enu", 1); }
-    if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ecef", 1); }
-    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub = nh_.advertise<inertial_sense_ros::INL2States>("inl2_states", 1); }
+    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub = nh_.advertise<inertial_sense_ros::DID_INS1>(rs_.did_ins1.topic, 1); }
+    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub = nh_.advertise<inertial_sense_ros::DID_INS2>(rs_.did_ins2.topic, 1); }
+    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub = nh_.advertise<inertial_sense_ros::DID_INS4>(rs_.did_ins4.topic, 1); }
+    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ned.topic, 1); }
+    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_enu.topic, 1); }
+    if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ecef.topic, 1); }
+    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub = nh_.advertise<inertial_sense_ros::INL2States>(rs_.inl2_states.topic, 1); }
 
-    if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_.advertise<inertial_sense_ros::PIMU>("pimu", 1); }
-    if (rs_.imu.enabled)                    { rs_.imu.pub = nh_.advertise<sensor_msgs::Imu>("imu", 1); }
-    if (rs_.mag.enabled)                    { rs_.mag.pub = nh_.advertise<sensor_msgs::MagneticField>("mag", 1); }
-    if (rs_.baro.enabled)                   { rs_.baro.pub = nh_.advertise<sensor_msgs::FluidPressure>("baro", 1); }
+    if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_.advertise<inertial_sense_ros::PIMU>(rs_.pimu.topic, 1); }
+    if (rs_.imu.enabled)                    { rs_.imu.pub = nh_.advertise<sensor_msgs::Imu>(rs_.imu.topic, 1); }
+    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub = nh_.advertise<sensor_msgs::MagneticField>(rs_.magnetometer.topic, 1); }
+    if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_.advertise<sensor_msgs::FluidPressure>(rs_.barometer.topic, 1); }
 
     if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_.advertise<inertial_sense_ros::GPS>(gps1_topic_, 1); }
     if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_.advertise<inertial_sense_ros::GPS>(gps2_topic_, 1); }
@@ -121,49 +121,73 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     initialized_ = true;
 }
 
+void print_node_tree(YAML::Node node, std::string indent)
+{
+  for(YAML::const_iterator it=node.begin(); it != node.end(); ++it) 
+  {
+    std::string key = it->first.as<std::string>();       // <- key
+
+    if (it->second.IsMap())
+    { // Subnode
+      std::cout << indent << key << ":\n";
+      print_node_tree(node[key], indent+"  ");
+    }
+    else
+    {
+      std::cout << indent << key << ": " << it->second << "\n";
+    }    
+  }
+}
 
 void InertialSenseROS::load_params(YAML::Node &node)
 {
     bool useYamlNode = node.IsDefined();
 
+    printf("Node Tree:\n");
+    print_node_tree(node, "  ");
+
     ROS_INFO( (useYamlNode ? "Load from YAML node" : "Load from Param Server") );
 
-#define GET_PARAM(name, var)                ParamHelper::getParam(node, nh_private_, name, var)
+#define GET_PARAM(name, var)                ParamHelper::getParam(node, nh_private_, "", name, var)
+#define GET_GPARAM(group, name, var)        ParamHelper::getParam(node, nh_private_, #group, name, var)
 #define GET_PARAM_VEC(name, size, vec)      ParamHelper::getParamVec(node, nh_private_, name, size, vec)
-#define GET_PARAMS_RS(name)                 rs_.name.getParamRs(node, nh_private_, #name)
+#define GET_MSG_PARAMS(name)                rs_.name.getMsgParams(node, nh_private_, #name)
 
     GET_PARAM("port", port_);
     GET_PARAM("baudrate", baudrate_);
     GET_PARAM("frame_id", frame_id_);
 
-    GET_PARAMS_RS(did_ins_eul_uvw_lla);
-    GET_PARAMS_RS(did_ins_quat_uvw_lla);
-    GET_PARAMS_RS(did_ins_quat_ve_ecef);
-    GET_PARAMS_RS(odom_ins_ned);
-    GET_PARAMS_RS(odom_ins_enu);
-    GET_PARAMS_RS(odom_ins_ecef);
-    GET_PARAMS_RS(inl2_states);
-    GET_PARAM("stream_ins_covariance", covariance_enabled_);
+    std::cout << "Group: sensors\n";
+    rs_.imu.            initGmsgParams(node, nh_private_, "sensors", "imu");
+    rs_.pimu.           initGmsgParams(node, nh_private_, "sensors", "pimu");
+    rs_.magnetometer.   initGmsgParams(node, nh_private_, "sensors", "magnetometer", "mag");
+    rs_.barometer.      initGmsgParams(node, nh_private_, "sensors", "barometer", "baro");
+    rs_.strobe_in.      initGmsgParams(node, nh_private_, "sensors", "strobe_in");
 
-    GET_PARAMS_RS(imu);
-    GET_PARAMS_RS(pimu);
-    GET_PARAMS_RS(mag);
-    GET_PARAMS_RS(baro);
+    std::cout << "Group: ins\n";
+    rs_.odom_ins_enu.   initGmsgParams(node, nh_private_, "ins", "odom_ins_enu");
+    rs_.odom_ins_ned.   initGmsgParams(node, nh_private_, "ins", "odom_ins_ned");
+    rs_.odom_ins_ned.   initGmsgParams(node, nh_private_, "ins", "odom_ins_ned");
+    rs_.did_ins1.       initGmsgParams(node, nh_private_, "ins", "did_ins1", "ins_eul_uvw_ned");
+    rs_.did_ins2.       initGmsgParams(node, nh_private_, "ins", "did_ins2", "ins_quat_uvw_lla");
+    rs_.did_ins4.       initGmsgParams(node, nh_private_, "ins", "did_ins4", "ins_quat_ve_ecef");
+    rs_.inl2_states.    initGmsgParams(node, nh_private_, "ins", "inl2_states");
+    GET_GPARAM(ins, "enable_covariance", covariance_enabled_);
 
-    GET_PARAMS_RS(gps1);
-    GET_PARAMS_RS(gps2);
+    GET_MSG_PARAMS(gps1);
+    GET_MSG_PARAMS(gps2);
     GET_PARAM("msg/gps1/topic", gps1_topic_);
     GET_PARAM("msg/gps2/topic", gps2_topic_);
-    GET_PARAMS_RS(navsatfix);
-    GET_PARAMS_RS(gps1_raw);
-    GET_PARAMS_RS(gps2_raw);
-    GET_PARAMS_RS(gpsbase_raw);
-    GET_PARAMS_RS(gps1_info);
-    GET_PARAMS_RS(gps2_info);
-    GET_PARAMS_RS(rtk_pos);
-    GET_PARAMS_RS(rtk_cmp);
+    GET_MSG_PARAMS(navsatfix);
+    GET_MSG_PARAMS(gps1_raw);
+    GET_MSG_PARAMS(gps2_raw);
+    GET_MSG_PARAMS(gpsbase_raw);
+    GET_MSG_PARAMS(gps1_info);
+    GET_MSG_PARAMS(gps2_info);
+    GET_MSG_PARAMS(rtk_pos);
+    GET_MSG_PARAMS(rtk_cmp);
 
-    GET_PARAMS_RS(diagnostics);
+    GET_MSG_PARAMS(diagnostics);
 
     GET_PARAM("publishTf", publishTf_);
     GET_PARAM("enable_log", log_enabled_);
@@ -242,11 +266,11 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;
     }
 
-    if (rs_.odom_ins_ned.enabled && !(rs_.did_ins_quat_ve_ecef.streaming && imuStreaming_))
+    if (rs_.odom_ins_ned.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS NED data stream.");
 
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins_quat_ve_ecef.period);                                                   // Need NED
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need NED
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -271,10 +295,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;;
     }
 
-    if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins_quat_ve_ecef.streaming && imuStreaming_))
+    if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ECEF data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins_quat_ve_ecef.period);                                                   // Need quaternion and ecef
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need quaternion and ecef
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -299,10 +323,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;
     }
 
-    if (rs_.odom_ins_enu.enabled  && !(rs_.did_ins_quat_ve_ecef.streaming && imuStreaming_))
+    if (rs_.odom_ins_enu.enabled  && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ENU data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins_quat_ve_ecef.period);                                                   // Need ENU
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need ENU
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -333,9 +357,9 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200);
     }
 
-    CONFIG_STREAM(rs_.did_ins_eul_uvw_lla, DID_INS_1, ins_1_t, INS1_callback);
-    CONFIG_STREAM(rs_.did_ins_quat_uvw_lla, DID_INS_2, ins_2_t, INS2_callback);
-    CONFIG_STREAM(rs_.did_ins_quat_ve_ecef, DID_INS_4, ins_4_t, INS4_callback);
+    CONFIG_STREAM(rs_.did_ins1, DID_INS_1, ins_1_t, INS1_callback);
+    CONFIG_STREAM(rs_.did_ins2, DID_INS_2, ins_2_t, INS2_callback);
+    CONFIG_STREAM(rs_.did_ins4, DID_INS_4, ins_4_t, INS4_callback);
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
     if (rs_.navsatfix.enabled && !NavSatFixConfigured)
@@ -381,8 +405,8 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     }
     CONFIG_STREAM(rs_.gpsbase_raw, DID_GPS_BASE_RAW, gps_raw_t, GPS_raw_callback);
 
-    CONFIG_STREAM(rs_.mag, DID_MAGNETOMETER, magnetometer_t, mag_callback);
-    CONFIG_STREAM(rs_.baro, DID_BAROMETER, barometer_t, baro_callback);
+    CONFIG_STREAM(rs_.magnetometer, DID_MAGNETOMETER, magnetometer_t, mag_callback);
+    CONFIG_STREAM(rs_.barometer, DID_BAROMETER, barometer_t, baro_callback);
     CONFIG_STREAM(rs_.pimu, DID_PIMU, pimu_t, preint_IMU_callback);
 
     if (!firstrun)
@@ -739,10 +763,10 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
 
 void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
 {
-    STREAMING_CHECK(rs_.did_ins_eul_uvw_lla.streaming, DID);
+    STREAMING_CHECK(rs_.did_ins1.streaming, DID);
 
     // Standard DID_INS_1 message
-    if (rs_.did_ins_eul_uvw_lla.enabled)
+    if (rs_.did_ins1.enabled)
     {
         msg_did_ins1.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
         msg_did_ins1.header.frame_id = frame_id_;
@@ -762,15 +786,15 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.ned[0] = msg->ned[0];
         msg_did_ins1.ned[1] = msg->ned[1];
         msg_did_ins1.ned[2] = msg->ned[2];
-        rs_.did_ins_eul_uvw_lla.pub.publish(msg_did_ins1);
+        rs_.did_ins1.pub.publish(msg_did_ins1);
     }
 }
 
 void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
 {
-    STREAMING_CHECK(rs_.did_ins_quat_uvw_lla.streaming, DID);
+    STREAMING_CHECK(rs_.did_ins2.streaming, DID);
 
-    if (rs_.did_ins_quat_uvw_lla.enabled)
+    if (rs_.did_ins2.enabled)
     {
         // Standard DID_INS_2 message
         msg_did_ins2.header.frame_id = frame_id_;
@@ -788,20 +812,20 @@ void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
         msg_did_ins2.lla[0] = msg->lla[0];
         msg_did_ins2.lla[1] = msg->lla[1];
         msg_did_ins2.lla[2] = msg->lla[2];
-        rs_.did_ins_quat_uvw_lla.pub.publish(msg_did_ins2);
+        rs_.did_ins2.pub.publish(msg_did_ins2);
     }
 }
 
 void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 {
-    STREAMING_CHECK(rs_.did_ins_quat_ve_ecef.streaming, DID);
+    STREAMING_CHECK(rs_.did_ins4.streaming, DID);
 
     if (!refLLA_known)
     {
         ROS_INFO("REFERENCE LLA MUST BE RECEIVED");
         return;
     }
-    if (rs_.did_ins_quat_ve_ecef.enabled)
+    if (rs_.did_ins4.enabled)
     {
         // Standard DID_INS_2 message
         msg_did_ins4.header.frame_id = frame_id_;
@@ -819,7 +843,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         msg_did_ins4.ecef[0] = msg->ecef[0];
         msg_did_ins4.ecef[1] = msg->ecef[1];
         msg_did_ins4.ecef[2] = msg->ecef[2];
-        rs_.did_ins_quat_ve_ecef.pub.publish(msg_did_ins4);
+        rs_.did_ins4.pub.publish(msg_did_ins4);
     }
 
 
@@ -1375,14 +1399,14 @@ void InertialSenseROS::mag_callback(eDataIDs DID, const magnetometer_t *const ms
         return;
     }
 
-    STREAMING_CHECK(rs_.mag.streaming, DID);
+    STREAMING_CHECK(rs_.magnetometer.streaming, DID);
     sensor_msgs::MagneticField mag_msg;
     mag_msg.header.stamp = ros_time_from_start_time(msg->time);
     mag_msg.header.frame_id = frame_id_;
     mag_msg.magnetic_field.x = msg->mag[0];
     mag_msg.magnetic_field.y = msg->mag[1];
     mag_msg.magnetic_field.z = msg->mag[2];
-    rs_.mag.pub.publish(mag_msg);
+    rs_.magnetometer.pub.publish(mag_msg);
 }
 
 void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
@@ -1392,13 +1416,13 @@ void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
         return;
     }
 
-    STREAMING_CHECK(rs_.baro.streaming, DID);
+    STREAMING_CHECK(rs_.barometer.streaming, DID);
     sensor_msgs::FluidPressure baro_msg;
     baro_msg.header.stamp = ros_time_from_start_time(msg->time);
     baro_msg.header.frame_id = frame_id_;
     baro_msg.fluid_pressure = msg->bar;
     baro_msg.variance = msg->barTemp;
-    rs_.baro.pub.publish(baro_msg);
+    rs_.barometer.pub.publish(baro_msg);
 }
 
 void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg)
@@ -2138,15 +2162,38 @@ void InertialSenseROS::transform_6x6_covariance(float Pout[36], float Pin[36], i
 
 
 template <typename Type>
-bool ParamHelper::getParam(YAML::Node node, ros::NodeHandle nh, std::string key, Type &var)
+bool ParamHelper::getParam(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, Type &var)
 {
     if (node.IsDefined())
     {
-        getYamlNodeParam(node, key, var);
+        if (childKey.empty())
+        {   
+            return getYamlNodeParam(node, key, var);
+        }
+        else
+        {   
+            YAML::Node child;         
+            try
+            {
+                child = node[childKey];
+            }
+            catch (const YAML::KeyNotFound &knf)
+            {
+                return false;
+            }            
+            return getYamlNodeParam(child, key, var);
+        }
     }
     else
     {
-        getServerParam(nh, key, var);
+        if (childKey.empty())
+        {
+            return getServerParam(nh, key, var);
+        }
+        else
+        {
+            return getServerParam(nh, childKey + "/" + key, var);
+        }
     }
 }
 
@@ -2163,21 +2210,55 @@ bool ParamHelper::getParamVec(YAML::Node node, ros::NodeHandle nh, std::string k
     }
 }
 
-bool ParamHelper::getParamRs(YAML::Node node, ros::NodeHandle nh, std::string key)
+void ParamHelper::initGmsgParams(YAML::Node &node, ros::NodeHandle nh, std::string group, std::string name, std::string topicDefault, bool enableDefault, int periodDefault)
 {
-    bool success = true;
+    topic = (topicDefault.empty() ? name : topicDefault);
+    enabled = enableDefault;
+    period = periodDefault;
+    getMsgParams(node, nh, group, name);
+}
+
+bool ParamHelper::getMsgParams(YAML::Node node, ros::NodeHandle nh, std::string key, std::string msgKey)
+{
     if (node.IsDefined())
     {
-        success = success && getYamlNodeParam(node, std::string("msg/") + key + std::string("/enable"), enabled);
-        success = success && getYamlNodeParam(node, "msg/" + key + "/period", period);
+        YAML::Node msgNode;
+        try
+        {
+            if (msgKey.empty())
+            {
+                msgNode = node[key]["message"];
+            }
+            else
+            {
+                msgNode = node[key]["messages"][msgKey];
+            }
+        }
+        catch (const YAML::KeyNotFound &knf)
+        {
+            return false;
+        }
+        getYamlNodeParam(msgNode, "topic",  topic);
+        getYamlNodeParam(msgNode, "enable", enabled);
+        getYamlNodeParam(msgNode, "period", period);
     } 
     else 
     {
-        success = success && getServerParam(nh, "msg/" + key + "/enable", enabled);
-        success = success && getServerParam(nh, "msg/" + key + "/period", period);
+        if (msgKey.empty())
+        {
+            getServerParam(nh, key + "/message/topic",  topic);
+            getServerParam(nh, key + "/message/enable", enabled);
+            getServerParam(nh, key + "/message/period", period);
+        }
+        else
+        {
+            getServerParam(nh, key + "/messages/" + msgKey + "/topic",  topic);
+            getServerParam(nh, key + "/messages/" + msgKey + "/enable", enabled);
+            getServerParam(nh, key + "/messages/" + msgKey + "/period", period);
+        }
     }
 
-    return success;
+    return true;
 }
 
 
