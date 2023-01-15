@@ -226,7 +226,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 		ENABLE_PROTOCOL_UBLOX |
 		ENABLE_PROTOCOL_RTCM3 |
 		ENABLE_PROTOCOL_SPARTN;
-	instance->config.fwdNoChecksMask = 0U;
+	instance->config.fwdNoChecksMask = 0;
 	
 	instance->txPktCount = 0;
 	instance->rxErrorCount = 0;
@@ -534,6 +534,58 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 	return _PTYPE_NONE;
 }
 
+static uint8_t crc_reflect(uint8_t data, uint8_t data_len)
+{
+   	uint8_t i;
+   	uint8_t ret;
+
+    ret = data & 0x01;
+    for (i = 1; i < data_len; i++) {
+        data >>= 1;
+        ret = (ret << 1) | (data & 0x01);
+    }
+    return ret;
+}
+
+/** Polynomial 0x09, 2.5 bytes. Fills last byte with 0s */
+static uint8_t crc4_simple(uint8_t *buf) {
+
+	const uint8_t dbuf[3] = { buf[0], buf[1], buf[2] & 0xF0 };
+	const uint8_t *d = dbuf;
+	uint8_t i;
+	uint8_t bit;
+	uint8_t c;
+	uint8_t data_len = 3;
+	uint16_t crc = 0;
+
+	// Calculate
+	while (data_len--) {
+		c = crc_reflect(*d++, 8);
+		for (i = 0; i < 8; i++) {
+			bit = crc & 0x8;
+			crc = (crc << 1) | ((c >> (7 - i)) & 0x01);
+			if (bit) {
+				crc ^= 0x9;
+			}
+		}
+		crc &= 0xf;
+	}
+
+	// Finalize
+	for (i = 0; i < 4; i++) {
+		bit = crc & 0x8;
+		crc <<= 1;
+		if (bit) {
+			crc ^= 0x9;
+		}
+	}
+	crc = crc_reflect(crc, 4);
+
+	return crc & 0xf;
+}
+
+#include "stm32l4xx.h"
+
 static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 {
 	switch (instance->parseState)
@@ -541,26 +593,19 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 	case 0:
 	case 1:
 	case 2:
+	// case 3 is below this to catch bad lengths before any more is parsed. Can be adapted to filter messages later.
+//	case 4:
+//	case 5:
+//	case 6:
+	// cases 7:11 are for variable length stuff, and are below
 		instance->parseState++;
 		break;
 
-	case 3:
-	{
-        uint16_t msgLength = (((uint16_t)(instance->buf.head[0]) & 0x01) << 9) |
-							(((uint16_t)(instance->buf.head[1])) << 1) |
-							((instance->buf.head[2] & 0x80) >> 7);
-
-		// Variable length CRC
-		uint8_t crclen = ((instance->buf.head[2] >> 4) & 0x03) + 1;
-
-        instance->parseState = -((int32_t)msgLength + crclen);
-
-		if(instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_SPARTN)
-		{
-			return _PTYPE_SPARTN;
-		}
-		// if message is too small or too big for rtcm3 or too big for buffer, fail
-		else if (msgLength > 1023 || msgLength > instance->buf.size - 6)
+	case 3: {
+		uint16_t payloadLen = ((((uint16_t)(instance->buf.head[1]) & 0x01) << 9) |
+				(((uint16_t)(instance->buf.head[2])) << 1) |
+				((instance->buf.head[3] & 0x80) >> 7));
+        if(payloadLen > 1023)
 		{
 			// corrupt data
 			instance->rxErrorCount++;
@@ -568,23 +613,225 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 			return _PTYPE_PARSE_ERROR;
 		}
 
+        // Check that the type is valid
+		uint8_t type = ((instance->buf.head[1]) & 0xFE) >> 1;
+		switch(type)
+		{
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 120:
+			break;
+		default:
+			instance->rxErrorCount++;
+			reset_parser(instance);
+			return _PTYPE_PARSE_ERROR;
+		}
+
+        // Check length and header CRC4
+        uint8_t calc = crc4_simple(&instance->buf.head[1]);
+        if((instance->buf.head[3] & 0x0F) != calc)
+        {
+        	// corrupt data
+			instance->rxErrorCount++;
+			reset_parser(instance);
+			return _PTYPE_PARSE_ERROR;
+        }
+
+        instance->parseState = -(payloadLen + 5);
+        instance->parseState -= (((instance->buf.head[3] >> 4) & 0x03));
+
+//        instance->parseState++;
 	} break;
 
+//	case 7:			// byte 7 (8th byte) is minimum header, but depending on what bits are set...
+//	case 8:
+//	case 9:
+//	case 10:
+//	case 11: {		// we may need to parse up to byte 11 (12th byte) to get the timestamp and encryption length
+//		uint16_t payloadLen = (((uint16_t)(instance->buf.head[1]) & 0x01) << 9) |
+//							(((uint16_t)(instance->buf.head[2])) << 1) |
+//							((instance->buf.head[3] & 0x80) >> 7);
+//
+//		// Variable length CRC {0x0, 0x1, 0x2, 0x3} = {1, 2, 3, 4}bytes - appears at end of message
+//		payloadLen += (((instance->buf.head[3] >> 4) & 0x03) + 1);
+//
+//		// Check that the subtype is valid
+//		int8_t error = -1;
+//		uint8_t type = ((instance->buf.head[1]) & 0xFE) >> 1;
+//		uint8_t subtype = ((instance->buf.head[4]) & 0xF0) >> 4;
+//		switch(type)
+//		{
+//		case 0:
+//		case 1:
+//			if(subtype > 4)
+//			{
+//				error = type;
+//			}
+//			break;
+//		case 2:
+//		case 3:
+//			if(subtype > 0)
+//			{
+//				error = type;
+//			}
+//			break;
+//		case 4:
+//			if(subtype > 1)
+//			{
+//				error = type;
+//			}
+//			break;
+//		case 120:
+//			if(subtype > 2)
+//			{
+//				error = type;
+//			}
+//			break;
+//		default:
+//			error = type;
+//			break;
+//		}
+//
+//		if(error != -1)
+//		{
+//			instance->rxErrorCount++;
+//			reset_parser(instance);
+//			return _PTYPE_PARSE_ERROR;
+//		}
+//
+//		// Variable length time
+//		if((instance->buf.head[4] & 0x08) == 0)
+//		{
+//			// Timestamp is 16 bit (not 32bit), so if there are no encryption bytes we can continue
+//			if((instance->buf.head[3] & 0x40) == 0)
+//			{
+//				// Encryption is disabled, we are ready to go to payload bytes
+//				instance->parseState = -((int32_t)payloadLen);
+//				break;
+//			}
+//		}
+//
+//		if(instance->parseState == 7 || instance->parseState == 8)
+//		{
+//			instance->parseState++;
+//			break;	// Full header not present yet
+//		}
+//
+//		uint8_t extendedTs = instance->buf.head[4] & 0x08;
+//		uint8_t encrypt = instance->buf.head[3] & 0x40;
+//		uint8_t *encryptPtr = NULL;
+//
+//		if(extendedTs)
+//		{
+//			// Timestamp is 32 bit
+//
+//			if(!encrypt && instance->parseState == 9)
+//			{
+//				// Encryption is disabled, we are ready to go to payload bytes
+//				instance->parseState = -((int32_t)payloadLen);
+//				break;
+//			}
+//			else if(encrypt && instance->parseState == 11)
+//			{
+//				// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
+//				encryptPtr = &instance->buf.head[10];
+//				// Don't break yet; continue to calculate encryption
+//			}
+//			else
+//			{
+//				// Not ready yet
+//				instance->parseState++;
+//				break;
+//			}
+//		}
+//		else	// !extendedTs
+//		{
+//			// Timestamp is 16 bit
+//
+//			if(encrypt && instance->parseState == 9)
+//			{
+//				// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
+//				encryptPtr = &instance->buf.head[8];
+//				// Don't break yet; continue to calculate encryption
+//			}
+//			else
+//			{
+//				// Not ready yet
+//				instance->parseState++;
+//				break;
+//			}
+//		}
+//
+//		// Add encryption authentication bytes
+//		if(encryptPtr)
+//		{
+//			// If the message contains an embedded authentication sequence, add the length
+//			if(((encryptPtr[1] >> 3) & 0x07) > 1)
+//			{
+//				switch(encryptPtr[1] & 0x07)
+//				{
+//				case 0:
+//					payloadLen += 8;
+//					break;
+//				case 1:
+//					payloadLen += 12;
+//					break;
+//				case 2:
+//					payloadLen += 16;
+//					break;
+//				case 3:
+//					payloadLen += 32;
+//					break;
+//				case 4:
+//					payloadLen += 64;
+//					break;
+//				case 5:
+//					instance->rxErrorCount++;
+//					reset_parser(instance);
+//					return _PTYPE_PARSE_ERROR;
+//				}
+//			}
+//		}
+//		else
+//		{
+//			// corrupt data
+//			instance->rxErrorCount++;
+//			reset_parser(instance);
+//			return _PTYPE_PARSE_ERROR;
+//		}
+//
+//		instance->parseState = -((int32_t)payloadLen);
+//
+//	} break;
+
+
 	default:
-		if (++instance->parseState == 0)
+		if ((instance->parseState + 1) == 0)
 		{
-			if((instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_SPARTN))
-			{
-				reset_parser(instance);
-				return _PTYPE_SPARTN;
-			}
+			instance->dataPtr = instance->buf.head;
+			instance->dataHdr.id = 0;
+			instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
+			instance->dataHdr.offset = 0;
+			instance->pktPtr = instance->buf.head;
+			reset_parser(instance);
+			return _PTYPE_SPARTN;
 
 			// TODO: Implement CRC check for SPARTN (variable length based on header)
 		}
-		if((instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_SPARTN))
+		else if((instance->parseState + 1) > 0)
 		{
-			return _PTYPE_SPARTN;
+			// corrupt data or bad state
+			instance->rxErrorCount++;
+			reset_parser(instance);
+			return _PTYPE_PARSE_ERROR;
 		}
+
+		instance->parseState++;
+
+		break;
 	}
 
 	return _PTYPE_NONE;
@@ -713,12 +960,16 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			{
 				return ptype;
 			}
+			break;
 		case SPARTN_START_BYTE:
 			ptype = processSpartnByte(instance);
 			if (ptype != _PTYPE_NONE)
 			{
 				return ptype;
 			}
+			break;
+		default:
+			break;
 		}
 	}
 
