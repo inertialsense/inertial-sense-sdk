@@ -294,7 +294,13 @@ enum ePktSpecialChars
 	UBLOX_START_BYTE2 = 0x62,
 
 	/** Rtcm3 start byte (211) */
-	RTCM3_START_BYTE = 0xD3
+	RTCM3_START_BYTE = 0xD3,
+
+	/** SPARTN start byte */
+	SPARTN_START_BYTE = 0x73,
+
+	/** SONY Start Byte */
+	SONY_START_BYTE = 0x7F,
 };
 
 /** Represents an ASCII message and how it is mapped to a structure in memory */
@@ -467,20 +473,22 @@ typedef struct
 
 } is_comm_buffer_t;
 
+typedef enum
+{
+	ENABLE_PROTOCOL_ISB 	= 0x00000001,
+	ENABLE_PROTOCOL_ASCII 	= 0x00000002,
+	ENABLE_PROTOCOL_UBLOX 	= 0x00000004,
+	ENABLE_PROTOCOL_RTCM3 	= 0x00000008,
+	ENABLE_PROTOCOL_SPARTN 	= 0x00000010,
+	ENABLE_PROTOCOL_SONY 	= 0x00000020,
+} eProtocolMask;
+
 typedef struct  
 {
-	/** Enable protocol parsing: Inertial Sense binary */
-	uint8_t enableISB;
-
-	/** Enable protocol parsing: ASCII NMEA */
-	uint8_t enableASCII;
-
-	/** Enable protocol parsing: ublox */
-	uint8_t enableUblox;
-
-	/** Enable protocol parsing: RTCM3 */
-	uint8_t enableRTCM3;
+	/** See eProtocolMask */
+	uint32_t enabledMask;
 } is_comm_config_t;
+
 
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct

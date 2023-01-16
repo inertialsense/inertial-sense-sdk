@@ -220,10 +220,12 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	instance->buf.head = instance->buf.tail = instance->buf.scan = buffer;
 	
 	// Set parse enable flags
-	instance->config.enableISB = 1;
-	instance->config.enableASCII = 1;
-	instance->config.enableUblox = 1;
-	instance->config.enableRTCM3 = 1;
+	instance->config.enabledMask =
+			ENABLE_PROTOCOL_ISB |
+			ENABLE_PROTOCOL_ASCII |
+			ENABLE_PROTOCOL_UBLOX |
+			ENABLE_PROTOCOL_RTCM3 |
+			ENABLE_PROTOCOL_SONY;
 	
 	instance->txPktCount = 0;
 	instance->rxErrorCount = 0;
@@ -496,6 +498,74 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 	return _PTYPE_NONE;
 }
 
+static protocol_type_t processSonyByte(is_comm_instance_t* instance)
+{
+	switch (instance->parseState)
+	{
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		instance->parseState++;
+		break;
+
+	case 4:
+	{
+        uint16_t msgLength = *((uint16_t*)(&instance->buf.head[1]));
+
+    	uint8_t checksum = 0x00;
+		for (size_t i = 0; i < 4; i++)
+		{
+			checksum += instance->buf.head[i];
+		}
+
+		if(msgLength > 4090 || msgLength > instance->buf.size || checksum != instance->buf.head[4])
+		{
+			// corrupt data
+			instance->rxErrorCount++;
+			reset_parser(instance);
+			return _PTYPE_PARSE_ERROR;
+		}
+
+		// parse the message plus 1 check byte
+        instance->parseState = -((int32_t)msgLength + 1);
+	} break;
+
+	default:
+		if (++instance->parseState == 0)
+		{
+			uint16_t msgLength = *((uint16_t*)(&instance->buf.head[1]));
+
+			uint8_t checksum = 0x00;
+			for (size_t i = 0; i < msgLength; i++)
+			{
+				checksum += instance->buf.head[i + 5];
+			}
+
+			if(checksum != instance->buf.scan[-1])
+			{
+				// corrupt data
+				instance->rxErrorCount++;
+				reset_parser(instance);
+				return _PTYPE_PARSE_ERROR;
+			}
+			else
+			{	// Checksum passed - Valid packet
+				// Update data pointer and info
+				instance->dataPtr = instance->buf.head;
+				instance->dataHdr.id = 0;
+				instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
+				instance->dataHdr.offset = 0;
+				instance->pktPtr = instance->buf.head;
+				reset_parser(instance);
+				return _PTYPE_SONYBIN;
+			}
+		}
+	}
+
+	return _PTYPE_NONE;
+}
+
 int is_comm_free(is_comm_instance_t* instance)
 {
 // 	if (instance == 0 || instance->buf.start == 0)
@@ -561,10 +631,12 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		// Check for start byte if we haven't found it yet
 		if (instance->hasStartByte == 0)
 		{
-			if ((byte == PSC_START_BYTE			&& instance->config.enableISB) ||
-				(byte == PSC_ASCII_START_BYTE	&& instance->config.enableASCII) ||
-				(byte == UBLOX_START_BYTE1		&& instance->config.enableUblox) ||
-				(byte == RTCM3_START_BYTE		&& instance->config.enableRTCM3) )
+			if ((byte == PSC_START_BYTE			&& (instance->config.enabledMask & ENABLE_PROTOCOL_ISB)) ||
+				(byte == PSC_ASCII_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_ASCII)) ||
+				(byte == UBLOX_START_BYTE1		&& (instance->config.enabledMask & ENABLE_PROTOCOL_UBLOX)) ||
+				(byte == RTCM3_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_RTCM3)) ||
+				(byte == SPARTN_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_SPARTN)) ||
+				(byte == SONY_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_SONY)))
 			{	// Found start byte.  Initialize states (set flag and reset pos to beginning)
 				instance->hasStartByte = byte; 
 				instance->buf.head = instance->buf.scan-1;
@@ -618,6 +690,14 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			{
 				return ptype;
 			}
+			break;
+		case SONY_START_BYTE:
+			ptype = processSonyByte(instance);
+			if (ptype != _PTYPE_NONE)
+			{
+				return ptype;
+			}
+			break;
 		}
 	}
 

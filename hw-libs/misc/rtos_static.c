@@ -8,6 +8,7 @@
 
 #include "rtos_static.h"
 #include "debug_gpio.h"
+#include "globals.h"
 
 #include <stdint.h>
 
@@ -33,6 +34,8 @@ int createTaskStatic
 
 	// Task call period - used within task and for CPU usage
 	g_rtos.task[index].periodMs = xTimeIncrement;
+
+	g_rtos_pro[index].periodTicks = time_usec_to_ticks(xTimeIncrement * 1000U);
 
 	// Task name
 	if (MAX_TASK_NAME_LEN > configMAX_TASK_NAME_LEN)
