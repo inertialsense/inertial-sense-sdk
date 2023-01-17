@@ -69,7 +69,7 @@ public:
     template <typename Type>
     static bool getParam(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, Type &var);
     template <typename Derived1>
-    static bool getParamVec(YAML::Node node, ros::NodeHandle nh, std::string key, int size, Derived1 &vec);
+    static bool getParamVec(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, int size, Derived1 &vec);
     void initGmsgParams(YAML::Node &node, ros::NodeHandle nh, std::string group, std::string name, std::string topicDefault="", bool enableDefault=false, int periodDefault=1);
     bool getMsgParams(YAML::Node node, ros::NodeHandle nh, std::string key, std::string msgKey="");
 
@@ -93,6 +93,8 @@ class ParamHelperGps: public ParamHelper
 public:
     bool streaming_pos = false;
     bool streaming_vel = false;
+    std::string type = "F9P";
+    float antennaOffset[3] = {0, 0, 0};
 };
 
 class ParamHelperGpsRtk: public ParamHelper
@@ -107,9 +109,14 @@ public:
 class ParamHelperGpsRaw: public ParamHelper
 {
 public:
+    std::string topicObs;
+    std::string topicEph;
+    std::string topicGEp;
     ros::Publisher pubObs;
     ros::Publisher pubEph;
     ros::Publisher pubGEp;
+    ros::Timer obs_bundle_timer;
+    ros::Time last_obs_time;
 };
 
 
@@ -154,6 +161,7 @@ public:
     bool initialized_;
     bool log_enabled_ = false;
     bool covariance_enabled_ = false;
+    int platformConfig_ = 0;
 
     std::string frame_id_ = "body";
 
@@ -204,11 +212,6 @@ public:
     bool RTK_base_serial_ = false;
     bool RTK_base_TCP_ = false;
     bool GNSS_Compass_ = false;
-
-    std::string gps1_type_ = "F9P";
-    std::string gps1_topic_ = "gps1";
-    std::string gps2_type_ = "F9P";
-    std::string gps2_topic_ = "gps2";
 
     ros::Timer rtk_connectivity_watchdog_timer_;
     void start_rtk_connectivity_watchdog_timer();
@@ -418,12 +421,10 @@ public:
     // Flash parameters
     // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
     // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
-    int navigation_dt_ms_ = 4;
+    int ins_nav_dt_ms_ = 4;
 
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
-    float gps1AntOffset_[3] = {0, 0, 0};
-    float gps2AntOffset_[3] = {0, 0, 0};
     double refLla_[3] = {0, 0, 0};
     float magDeclination_ = 0;
     int insDynModel_ = INS_DYN_MODEL_AIRBORNE_4G;
