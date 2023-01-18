@@ -118,7 +118,7 @@ inertialsense-ros:
     topic: "gps1"
     gpsTimeUserDelay: 0.0
 
-    rtk_rover:
+    rtk_positioning:
       topic: "rtk"
       mode: "off"                                 # Off, Position, or Compass (we can throw an error if the mode isn't supported, ie compass for gps1).
 
@@ -161,66 +161,48 @@ inertialsense-ros:
 
   gps2:
     type: 'F9P'
-    source: "int1"                                # GPS source to use for GPS1 (none, internal1, internal2, serial0, serial1, serial2)
     antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
     topic: "gps1"
+    gpsTimeUserDelay: 0.0
 
-    rtk_rover:
-      mode: "off"                                 # Off, Position, or Compass (we can throw an error if the mode isn't supported, ie compass for gps1).
-      topic: "rtk"
-
-      # FIXME: Are these still GPS specific?  or are they RTK specific?  rtk/base/* is specific to the correction service
-      messages:
-        position:
-          topic: "position"
-          info:
-            enable: true
-            topic: "info"
-          rel:
-            enable: true
-            topic: "rel"
-        base:
-          topic: "base"
-          rel:
-            topic: "rel"
-          info:
-            topic: "info"
-        compass:
-          topic: "compass"
-          rel:
-            topic: "rel"
-          info:
-            topic: "info"
+    rtk_compassing:
+      enable: false
 
     messages:
       pos_vel:
+        topic: "gps1_pos_vel"
         enable: true
-        topic: "pos_vel"
         period: 1
       navsatfix:
-        enable: false
         topic: "/NavSatFix"                        # /navsatfix
+        enable: false
       info:
+        topic: "gps1_info"                        # inertialsense/gps1/info
         enable: true
-        period: 5
-        topic: "info"                             # inertialsense/gps1/info
+        period: 5                                 # Publish every 1 second (200ms x 5)
       raw:
-        topic: "raw"
-        obs:
-          enable: true
-          period: 5
-          topic: "obs"                              # inertialsense/gps1/raw/obs
-        ephemeris:
-          topic: "eph"
-          gnss:
-            enable: true
-            period: 5
-            topic: "gnss"                           # inertialsense/gps1/raw/eph/gnss
-          glonass:
-            enable: true
-            period: 5
-            topic: "glonass"                        # inertialsense/gps1/raw/eph/glonass
-
+        topic: "gps1"                             # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
+        enable: true
+        period: 5                                 # Publish every 1 second (200ms x 5)
+      rtk_pos_rel:
+        topic: "gps1_rtk_rel_pos"
+        enable: true
+        period: 1
+      rel:
+        enable: true
+        topic: "rel"
+      base:
+        topic: "base"
+        rel:
+          topic: "rel"
+        info:
+          topic: "info"
+      compass:
+        topic: "compass"
+        rel:
+          topic: "rel"
+        info:
+          topic: "info"
 
   evb:
     # http://docs.inertialsense.com/user-manual/hardware/EVB2/#configurations

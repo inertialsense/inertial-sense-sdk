@@ -198,10 +198,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ParamHelper::getParamVec(node, nh, "gps2", "antenna_offset", 3, rs_.gps2.antennaOffset);
     ParamHelper::getParam(node, nh, "gps1", "gpsTimeUserDelay", gpsTimeUserDelay_);
     rs_.navsatfix.      initGmsgParams(node, nh, "gps1", "navsatfix", "/NavSatFix");
-    rs_.gps1_info.      initGmsgParams(node, nh, "gps1", "gps1_info");
-    rs_.gps2_info.      initGmsgParams(node, nh, "gps2", "gps2_info");
-    rs_.gps1_raw.       initGmsgParams(node, nh, "gps1", "gps1_raw");
-    rs_.gps2_raw.       initGmsgParams(node, nh, "gps2", "gps2_raw");
+    rs_.gps1_info.      initGmsgParams(node, nh, "gps1", "info");
+    rs_.gps2_info.      initGmsgParams(node, nh, "gps2", "info");
+    rs_.gps1_raw.       initGmsgParams(node, nh, "gps1", "raw");
+    rs_.gps2_raw.       initGmsgParams(node, nh, "gps2", "raw");
 
     GET_MSG_PARAMS(gpsbase_raw);
     GET_MSG_PARAMS(rtk_pos);
