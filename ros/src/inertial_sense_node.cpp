@@ -11,7 +11,8 @@ int main(int argc, char**argv)
         YAML::Node node;
         try
         {
-            node = YAML::LoadFile(paramYamlPath);
+            YAML::Node fileNode = YAML::LoadFile(paramYamlPath);
+            node = fileNode["inertialsense-ros"];            
         }
         catch (const YAML::BadFile &bf)
         {

@@ -18,7 +18,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     ROS_INFO("======  Starting Inertial Sense ROS  ======");
 
     // Should always be enabled by default
-    rs_.did_ins_eul_uvw_lla.enabled = true;
+    rs_.did_ins1.enabled = true;
     rs_.gps1.enabled = true;
 
     load_params(paramNode);
@@ -40,26 +40,26 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
 
     //////////////////////////////////////////////////////////
     // Publishers
-    strobe_pub_ = nh_.advertise<std_msgs::Header>("strobe_time", 1);
+    strobe_pub_ = nh_.advertise<std_msgs::Header>(rs_.strobe_in.topic, 1);
 
-    if (rs_.did_ins_eul_uvw_lla.enabled)    { rs_.did_ins_eul_uvw_lla.pub = nh_.advertise<inertial_sense_ros::DID_INS1>("did_ins_eul_uvw_lla", 1); }
-    if (rs_.did_ins_quat_uvw_lla.enabled)   { rs_.did_ins_quat_uvw_lla.pub = nh_.advertise<inertial_sense_ros::DID_INS2>("did_ins_quat_uvw_lla", 1); }
-    if (rs_.did_ins_quat_ve_ecef.enabled)   { rs_.did_ins_quat_ve_ecef.pub = nh_.advertise<inertial_sense_ros::DID_INS4>("did_ins_quat_ve_ecef", 1); }
-    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ned", 1); }
-    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_enu", 1); }
-    if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::Odometry>("odom_ins_ecef", 1); }
-    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub = nh_.advertise<inertial_sense_ros::INL2States>("inl2_states", 1); }
+    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub = nh_.advertise<inertial_sense_ros::DID_INS1>(rs_.did_ins1.topic, 1); }
+    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub = nh_.advertise<inertial_sense_ros::DID_INS2>(rs_.did_ins2.topic, 1); }
+    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub = nh_.advertise<inertial_sense_ros::DID_INS4>(rs_.did_ins4.topic, 1); }
+    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ned.topic, 1); }
+    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_enu.topic, 1); }
+    if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ecef.topic, 1); }
+    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub = nh_.advertise<inertial_sense_ros::INL2States>(rs_.inl2_states.topic, 1); }
 
-    if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_.advertise<inertial_sense_ros::PIMU>("pimu", 1); }
-    if (rs_.imu.enabled)                    { rs_.imu.pub = nh_.advertise<sensor_msgs::Imu>("imu", 1); }
-    if (rs_.mag.enabled)                    { rs_.mag.pub = nh_.advertise<sensor_msgs::MagneticField>("mag", 1); }
-    if (rs_.baro.enabled)                   { rs_.baro.pub = nh_.advertise<sensor_msgs::FluidPressure>("baro", 1); }
+    if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_.advertise<inertial_sense_ros::PIMU>(rs_.pimu.topic, 1); }
+    if (rs_.imu.enabled)                    { rs_.imu.pub = nh_.advertise<sensor_msgs::Imu>(rs_.imu.topic, 1); }
+    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub = nh_.advertise<sensor_msgs::MagneticField>(rs_.magnetometer.topic, 1); }
+    if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_.advertise<sensor_msgs::FluidPressure>(rs_.barometer.topic, 1); }
 
-    if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_.advertise<inertial_sense_ros::GPS>(gps1_topic_, 1); }
-    if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_.advertise<inertial_sense_ros::GPS>(gps2_topic_, 1); }
-    if (rs_.navsatfix.enabled)              { rs_.navsatfix.pub = nh_.advertise<sensor_msgs::NavSatFix>("NavSatFix", 1); }
-    if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(gps1_topic_ + "/info", 1); }
-    if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(gps2_topic_ + "/info", 1); }
+    if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_.advertise<inertial_sense_ros::GPS>(rs_.gps1.topic, 1); }
+    if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_.advertise<inertial_sense_ros::GPS>(rs_.gps2.topic, 1); }
+    if (rs_.navsatfix.enabled)              { rs_.navsatfix.pub = nh_.advertise<sensor_msgs::NavSatFix>(rs_.navsatfix.topic, 1); }
+    if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps1_info.topic, 1); }
+    if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps2_info.topic, 1); }
 
     if (RTK_rover_ || RTK_rover_radio_enable_)
     {
@@ -74,23 +74,23 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
 
     if (rs_.gps1_raw.enabled)
     {
-        rs_.gps1_raw.pubObs = nh_.advertise<inertial_sense_ros::GNSSObsVec>(gps1_topic_ + "/obs", 50);
-        rs_.gps1_raw.pubEph = nh_.advertise<inertial_sense_ros::GNSSEphemeris>(gps1_topic_ + "/eph", 50);
-        rs_.gps1_raw.pubGEp = nh_.advertise<inertial_sense_ros::GlonassEphemeris>(gps1_topic_ + "/geph", 50);
+        rs_.gps1_raw.pubObs = nh_.advertise<inertial_sense_ros::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", 50);
+        rs_.gps1_raw.pubEph = nh_.advertise<inertial_sense_ros::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", 50);
+        rs_.gps1_raw.pubGEp = nh_.advertise<inertial_sense_ros::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", 50);
         obs_bundle_timer_ = nh_.createTimer(ros::Duration(0.001), InertialSenseROS::GPS_obs_bundle_timer_callback, this);
     }
     if (rs_.gps2_raw.enabled)
     {
-        rs_.gps2_raw.pubObs = nh_.advertise<inertial_sense_ros::GNSSObsVec>(gps2_topic_ + "/obs", 50);
-        rs_.gps2_raw.pubEph = nh_.advertise<inertial_sense_ros::GNSSEphemeris>(gps2_topic_ + "/eph", 50);
-        rs_.gps2_raw.pubGEp = nh_.advertise<inertial_sense_ros::GlonassEphemeris>(gps2_topic_ + "/geph", 50);
+        rs_.gps2_raw.pubObs = nh_.advertise<inertial_sense_ros::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", 50);
+        rs_.gps2_raw.pubEph = nh_.advertise<inertial_sense_ros::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", 50);
+        rs_.gps2_raw.pubGEp = nh_.advertise<inertial_sense_ros::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", 50);
         obs_bundle_timer_ = nh_.createTimer(ros::Duration(0.001), InertialSenseROS::GPS_obs_bundle_timer_callback, this);
     }
     if (rs_.gpsbase_raw.enabled)
     {
-        rs_.gpsbase_raw.pubObs = nh_.advertise<inertial_sense_ros::GlonassEphemeris>(gps1_topic_ + "/base_geph", 50);
-        rs_.gpsbase_raw.pubEph = nh_.advertise<inertial_sense_ros::GNSSEphemeris>(gps1_topic_ + "/base_eph", 50);
-        rs_.gpsbase_raw.pubGEp = nh_.advertise<inertial_sense_ros::GlonassEphemeris>(gps1_topic_ + "/base_geph", 50);
+        rs_.gpsbase_raw.pubObs = nh_.advertise<inertial_sense_ros::GlonassEphemeris>("gps/base_geph", 50);
+        rs_.gpsbase_raw.pubEph = nh_.advertise<inertial_sense_ros::GNSSEphemeris>("gps/base_eph", 50);
+        rs_.gpsbase_raw.pubGEp = nh_.advertise<inertial_sense_ros::GlonassEphemeris>("gps/base_geph", 50);
         obs_bundle_timer_ = nh_.createTimer(ros::Duration(0.001), InertialSenseROS::GPS_obs_bundle_timer_callback, this);
     }
     if (rs_.diagnostics.enabled)
@@ -121,52 +121,94 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     initialized_ = true;
 }
 
+void print_node_tree(YAML::Node node, std::string indent)
+{
+  for(YAML::const_iterator it=node.begin(); it != node.end(); ++it) 
+  {
+    std::string key = it->first.as<std::string>();       // <- key
+
+    if (it->second.IsMap())
+    { // Subnode
+      std::cout << indent << key << ":\n";
+      print_node_tree(node[key], indent+"  ");
+    }
+    else
+    {
+      std::cout << indent << key << ": " << it->second << "\n";
+    }    
+  }
+}
 
 void InertialSenseROS::load_params(YAML::Node &node)
 {
+    // Load parameters from yaml node if provided.  Otherwise load from ROS parameter server.
     bool useYamlNode = node.IsDefined();
+    ros::NodeHandle nh = nh_private_;
+
+    if (useYamlNode)
+    {
+        printf("Node Tree:\n");
+        print_node_tree(node, "  ");
+    }
 
     ROS_INFO( (useYamlNode ? "Load from YAML node" : "Load from Param Server") );
 
-#define GET_PARAM(name, var)                ParamHelper::getParam(node, nh_private_, name, var)
-#define GET_PARAM_VEC(name, size, vec)      ParamHelper::getParamVec(node, nh_private_, name, size, vec)
-#define GET_PARAMS_RS(name)                 rs_.name.getParamRs(node, nh_private_, #name)
+#define GET_PARAM(name, var)                ParamHelper::getParam(node, nh_private_, "", name, var)
+#define GET_GPARAM(group, name, var)        ParamHelper::getParam(node, nh_private_, #group, name, var)
+// #define GET_PARAM_VEC(name, size, vec)      ParamHelper::getParamVec(node, nh_private_, name, size, vec)
+#define GET_MSG_PARAMS(name)                rs_.name.getMsgParams(node, nh_private_, #name)
 
-    GET_PARAM("port", port_);
-    GET_PARAM("baudrate", baudrate_);
-    GET_PARAM("frame_id", frame_id_);
+    ParamHelper::getParam(node, nh, "", "port", port_);
+    ParamHelper::getParam(node, nh, "", "baudrate", baudrate_);
+    ParamHelper::getParam(node, nh, "", "frame_id", frame_id_);
+    ParamHelper::getParam(node, nh, "", "enable_log", log_enabled_);
+    ParamHelper::getParam(node, nh, "", "ioConfig", ioConfig_);
+    ParamHelper::getParam(node, nh, "", "mag_declination", magDeclination_);
+    ParamHelper::getParamVec(node, nh, "", "ref_lla", 3, refLla_);
+    ParamHelper::getParam(node, nh, "", "publishTf", publishTf_);
+    ParamHelper::getParam(node, nh, "", "platform", platformConfig_);
 
-    GET_PARAMS_RS(did_ins_eul_uvw_lla);
-    GET_PARAMS_RS(did_ins_quat_uvw_lla);
-    GET_PARAMS_RS(did_ins_quat_ve_ecef);
-    GET_PARAMS_RS(odom_ins_ned);
-    GET_PARAMS_RS(odom_ins_enu);
-    GET_PARAMS_RS(odom_ins_ecef);
-    GET_PARAMS_RS(inl2_states);
-    GET_PARAM("stream_ins_covariance", covariance_enabled_);
+    std::cout << "Group: sensors\n";
+    rs_.imu.            initGmsgParams(node, nh, "sensors", "imu");
+    rs_.pimu.           initGmsgParams(node, nh, "sensors", "pimu");
+    rs_.magnetometer.   initGmsgParams(node, nh, "sensors", "magnetometer", "mag");
+    rs_.barometer.      initGmsgParams(node, nh, "sensors", "barometer", "baro");
+    rs_.strobe_in.      initGmsgParams(node, nh, "sensors", "strobe_in");
 
-    GET_PARAMS_RS(imu);
-    GET_PARAMS_RS(pimu);
-    GET_PARAMS_RS(mag);
-    GET_PARAMS_RS(baro);
+    std::cout << "Group: ins\n";
+    rs_.odom_ins_enu.   initGmsgParams(node, nh, "ins", "odom_ins_enu");
+    rs_.odom_ins_ned.   initGmsgParams(node, nh, "ins", "odom_ins_ned");
+    rs_.odom_ins_ned.   initGmsgParams(node, nh, "ins", "odom_ins_ned");
+    rs_.did_ins1.       initGmsgParams(node, nh, "ins", "did_ins1", "ins_eul_uvw_ned");
+    rs_.did_ins2.       initGmsgParams(node, nh, "ins", "did_ins2", "ins_quat_uvw_lla");
+    rs_.did_ins4.       initGmsgParams(node, nh, "ins", "did_ins4", "ins_quat_ve_ecef");
+    rs_.inl2_states.    initGmsgParams(node, nh, "ins", "inl2_states");
+    ParamHelper::getParamVec(node, nh, "ins", "rotation", 3, insRotation_);
+    ParamHelper::getParamVec(node, nh, "ins", "offset", 3, insOffset_);
+    ParamHelper::getParam(node, nh, "ins", "navigation_dt_ms", ins_nav_dt_ms_);
+    ParamHelper::getParam(node, nh, "ins", "dynamic_model", insDynModel_);
+    ParamHelper::getParam(node, nh, "ins", "enable_covariance", covariance_enabled_);
 
-    GET_PARAMS_RS(gps1);
-    GET_PARAMS_RS(gps2);
-    GET_PARAM("msg/gps1/topic", gps1_topic_);
-    GET_PARAM("msg/gps2/topic", gps2_topic_);
-    GET_PARAMS_RS(navsatfix);
-    GET_PARAMS_RS(gps1_raw);
-    GET_PARAMS_RS(gps2_raw);
-    GET_PARAMS_RS(gpsbase_raw);
-    GET_PARAMS_RS(gps1_info);
-    GET_PARAMS_RS(gps2_info);
-    GET_PARAMS_RS(rtk_pos);
-    GET_PARAMS_RS(rtk_cmp);
+    std::cout << "Groups: gps1, gps2\n";
+    rs_.gps1.           initGmsgParams(node, nh, "gps1", "pos_vel", "gps1_pos_vel");
+    rs_.gps2.           initGmsgParams(node, nh, "gps2", "pos_vel", "gps2_pos_vel");
+    ParamHelper::getParam(node, nh, "gps1", "type", rs_.gps1.type);
+    ParamHelper::getParam(node, nh, "gps2", "type", rs_.gps2.type);
+    ParamHelper::getParamVec(node, nh, "gps1", "antenna_offset", 3, rs_.gps1.antennaOffset);
+    ParamHelper::getParamVec(node, nh, "gps2", "antenna_offset", 3, rs_.gps2.antennaOffset);
+    ParamHelper::getParam(node, nh, "gps1", "gpsTimeUserDelay", gpsTimeUserDelay_);
+    rs_.navsatfix.      initGmsgParams(node, nh, "gps1", "navsatfix", "/NavSatFix");
+    rs_.gps1_info.      initGmsgParams(node, nh, "gps1", "info");
+    rs_.gps2_info.      initGmsgParams(node, nh, "gps2", "info");
+    rs_.gps1_raw.       initGmsgParams(node, nh, "gps1", "raw");
+    rs_.gps2_raw.       initGmsgParams(node, nh, "gps2", "raw");
 
-    GET_PARAMS_RS(diagnostics);
+    GET_MSG_PARAMS(gpsbase_raw);
+    GET_MSG_PARAMS(rtk_pos);
+    GET_MSG_PARAMS(rtk_cmp);
 
-    GET_PARAM("publishTf", publishTf_);
-    GET_PARAM("enable_log", log_enabled_);
+    GET_MSG_PARAMS(diagnostics);
+
     GET_PARAM("rtk_server_mount", RTK_server_mount_);
     GET_PARAM("rtk_server_username", RTK_server_username_);
     GET_PARAM("rtk_server_password", RTK_server_password_);
@@ -184,19 +226,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
     GET_PARAM("rtk_base_USB", RTK_base_USB_);
     GET_PARAM("rtk_base_serial", RTK_base_serial_);
     GET_PARAM("rtk_base_TCP", RTK_base_TCP_);
-
-    GET_PARAM("navigation_dt_ms", navigation_dt_ms_);   // EKF update period
-    GET_PARAM("ioConfig", ioConfig_);
-    GET_PARAM("gps1_type", gps1_type_);
-    GET_PARAM("gps2_type", gps2_type_);
-    GET_PARAM("gpsTimeUserDelay", gpsTimeUserDelay_);
-    GET_PARAM("mag_declination", magDeclination_);
-    GET_PARAM("dynamic_model", insDynModel_);
-    GET_PARAM_VEC("ins_rotation", 3, insRotation_);
-    GET_PARAM_VEC("ins_offset", 3, insOffset_);
-    GET_PARAM_VEC("gps1_ant_xyz", 3, gps1AntOffset_);
-    GET_PARAM_VEC("gps2_ant_xyz", 3, gps2AntOffset_);
-    GET_PARAM_VEC("ref_lla", 3, refLla_);
 }
 
 
@@ -242,11 +271,11 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;
     }
 
-    if (rs_.odom_ins_ned.enabled && !(rs_.did_ins_quat_ve_ecef.streaming && imuStreaming_))
+    if (rs_.odom_ins_ned.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS NED data stream.");
 
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins_quat_ve_ecef.period);                                                   // Need NED
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need NED
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -271,10 +300,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;;
     }
 
-    if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins_quat_ve_ecef.streaming && imuStreaming_))
+    if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ECEF data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins_quat_ve_ecef.period);                                                   // Need quaternion and ecef
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need quaternion and ecef
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -299,10 +328,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             return;
     }
 
-    if (rs_.odom_ins_enu.enabled  && !(rs_.did_ins_quat_ve_ecef.streaming && imuStreaming_))
+    if (rs_.odom_ins_enu.enabled  && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ENU data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins_quat_ve_ecef.period);                                                   // Need ENU
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need ENU
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
         rs_.imu.enabled = true;
         // Create Identity Matrix
@@ -333,9 +362,9 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200);
     }
 
-    CONFIG_STREAM(rs_.did_ins_eul_uvw_lla, DID_INS_1, ins_1_t, INS1_callback);
-    CONFIG_STREAM(rs_.did_ins_quat_uvw_lla, DID_INS_2, ins_2_t, INS2_callback);
-    CONFIG_STREAM(rs_.did_ins_quat_ve_ecef, DID_INS_4, ins_4_t, INS4_callback);
+    CONFIG_STREAM(rs_.did_ins1, DID_INS_1, ins_1_t, INS1_callback);
+    CONFIG_STREAM(rs_.did_ins2, DID_INS_2, ins_2_t, INS2_callback);
+    CONFIG_STREAM(rs_.did_ins4, DID_INS_4, ins_4_t, INS4_callback);
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
     if (rs_.navsatfix.enabled && !NavSatFixConfigured)
@@ -381,8 +410,8 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     }
     CONFIG_STREAM(rs_.gpsbase_raw, DID_GPS_BASE_RAW, gps_raw_t, GPS_raw_callback);
 
-    CONFIG_STREAM(rs_.mag, DID_MAGNETOMETER, magnetometer_t, mag_callback);
-    CONFIG_STREAM(rs_.baro, DID_BAROMETER, barometer_t, baro_callback);
+    CONFIG_STREAM(rs_.magnetometer, DID_MAGNETOMETER, magnetometer_t, mag_callback);
+    CONFIG_STREAM(rs_.barometer, DID_BAROMETER, barometer_t, baro_callback);
     CONFIG_STREAM(rs_.pimu, DID_PIMU, pimu_t, preint_IMU_callback);
 
     if (!firstrun)
@@ -467,16 +496,40 @@ bool InertialSenseROS::firmware_compatiblity_check()
     }
 }
 
+bool vecF32Match(float v1[], float v2[], int size=3)
+{
+    for (int i=0; i<size; i++)
+    {
+        if (v1[i] != v2[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool vecF64Match(double v1[], double v2[], int size=3)
+{
+    for (int i=0; i<size; i++)
+    {
+        if (v1[i] != v2[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg = IS_.GetFlashConfig();
     //ROS_INFO("Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
-    if (current_flash_cfg.startupNavDtMs != navigation_dt_ms_)
+    if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
     {
         reboot = true;
-        ROS_INFO("navigation rate change from %dms to %dms, resetting uINS to make change", current_flash_cfg.startupNavDtMs, navigation_dt_ms_);
+        ROS_INFO("navigation rate change from %dms to %dms, resetting uINS to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
     }
     if (current_flash_cfg.ioConfig != ioConfig_)
     {
@@ -484,25 +537,33 @@ void InertialSenseROS::configure_flash_parameters()
         reboot = true;
     }
 
-    if (current_flash_cfg.startupNavDtMs != navigation_dt_ms_ ||\
-        current_flash_cfg.insRotation != insRotation_ ||\
-        current_flash_cfg.insOffset != insOffset_ ||\
-        current_flash_cfg.gps1AntOffset != gps1AntOffset_ ||\
-        current_flash_cfg.gps2AntOffset != gps2AntOffset_ ||\
-        current_flash_cfg.refLla != refLla_ ||\
-        current_flash_cfg.insDynModel != insDynModel_ ||\
-        current_flash_cfg.ioConfig != ioConfig_)
+    if (!vecF32Match(current_flash_cfg.insRotation, insRotation_) ||
+        !vecF32Match(current_flash_cfg.insOffset, insOffset_) ||
+        !vecF32Match(current_flash_cfg.gps1AntOffset, rs_.gps1.antennaOffset) ||
+        !vecF32Match(current_flash_cfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
+        !vecF64Match(current_flash_cfg.refLla, refLla_) ||
+        current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_ ||
+        current_flash_cfg.ioConfig != ioConfig_ ||
+        current_flash_cfg.gpsTimeUserDelay != gpsTimeUserDelay_ ||
+        // current_flash_cfg.magDeclination != magDeclination_ ||
+        current_flash_cfg.insDynModel != insDynModel_ ||
+        current_flash_cfg.platformConfig != platformConfig_
+        )
     {
-        current_flash_cfg.startupNavDtMs = navigation_dt_ms_;
-        memcpy(current_flash_cfg.insRotation, insRotation_, sizeof(insRotation_));
-        memcpy(current_flash_cfg.insOffset, insOffset_, sizeof(insOffset_));
-        memcpy(current_flash_cfg.gps1AntOffset, gps1AntOffset_, sizeof(gps1AntOffset_));
-        memcpy(current_flash_cfg.gps2AntOffset, gps2AntOffset_, sizeof(gps2AntOffset_));
-        memcpy(current_flash_cfg.refLla, refLla_, sizeof(refLla_));
+        for (int i=0; i<3; i++)
+        {
+            current_flash_cfg.insRotation[i] = insRotation_[i];
+            current_flash_cfg.insOffset[i] = insOffset_[i];
+            current_flash_cfg.gps1AntOffset[i] = rs_.gps1.antennaOffset[i];
+            current_flash_cfg.gps2AntOffset[i] = rs_.gps2.antennaOffset[i];
+            current_flash_cfg.refLla[i] = refLla_[i];
+        }
+        current_flash_cfg.startupNavDtMs = ins_nav_dt_ms_;
         current_flash_cfg.ioConfig = ioConfig_;
         current_flash_cfg.gpsTimeUserDelay = gpsTimeUserDelay_;
         current_flash_cfg.magDeclination = magDeclination_;
         current_flash_cfg.insDynModel = insDynModel_;
+        current_flash_cfg.platformConfig = platformConfig_;
 
         IS_.SendData(DID_FLASH_CONFIG, (uint8_t *)(&current_flash_cfg), sizeof (nvm_flash_cfg_t), 0);
     }
@@ -624,7 +685,7 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback(const ros::Timer
 void InertialSenseROS::configure_rtk()
 {
     uint32_t RTKCfgBits = 0;
-    if (gps1_type_ == "F9P")
+    if (rs_.gps1.type == "F9P")
     {
         if (RTK_rover_)
         {
@@ -694,7 +755,7 @@ void InertialSenseROS::configure_rtk()
             RTK_base_serial_ = false;
             RTK_base_USB_ = false;
             RTK_base_TCP_ = false;
-            RTKCfgBits |= (gps1_type_ == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
@@ -704,7 +765,7 @@ void InertialSenseROS::configure_rtk()
             RTK_base_serial_ = false;
             RTK_base_USB_ = false;
             RTK_base_TCP_ = false;
-            RTKCfgBits |= (gps1_type_ == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             connect_rtk_client(RTK_correction_protocol_, RTK_server_IP_, RTK_server_port_);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
@@ -739,10 +800,10 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
 
 void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
 {
-    STREAMING_CHECK(rs_.did_ins_eul_uvw_lla.streaming, DID);
+    STREAMING_CHECK(rs_.did_ins1.streaming, DID);
 
     // Standard DID_INS_1 message
-    if (rs_.did_ins_eul_uvw_lla.enabled)
+    if (rs_.did_ins1.enabled)
     {
         msg_did_ins1.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
         msg_did_ins1.header.frame_id = frame_id_;
@@ -762,15 +823,15 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.ned[0] = msg->ned[0];
         msg_did_ins1.ned[1] = msg->ned[1];
         msg_did_ins1.ned[2] = msg->ned[2];
-        rs_.did_ins_eul_uvw_lla.pub.publish(msg_did_ins1);
+        rs_.did_ins1.pub.publish(msg_did_ins1);
     }
 }
 
 void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
 {
-    STREAMING_CHECK(rs_.did_ins_quat_uvw_lla.streaming, DID);
+    STREAMING_CHECK(rs_.did_ins2.streaming, DID);
 
-    if (rs_.did_ins_quat_uvw_lla.enabled)
+    if (rs_.did_ins2.enabled)
     {
         // Standard DID_INS_2 message
         msg_did_ins2.header.frame_id = frame_id_;
@@ -788,20 +849,20 @@ void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
         msg_did_ins2.lla[0] = msg->lla[0];
         msg_did_ins2.lla[1] = msg->lla[1];
         msg_did_ins2.lla[2] = msg->lla[2];
-        rs_.did_ins_quat_uvw_lla.pub.publish(msg_did_ins2);
+        rs_.did_ins2.pub.publish(msg_did_ins2);
     }
 }
 
 void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 {
-    STREAMING_CHECK(rs_.did_ins_quat_ve_ecef.streaming, DID);
+    STREAMING_CHECK(rs_.did_ins4.streaming, DID);
 
     if (!refLLA_known)
     {
         ROS_INFO("REFERENCE LLA MUST BE RECEIVED");
         return;
     }
-    if (rs_.did_ins_quat_ve_ecef.enabled)
+    if (rs_.did_ins4.enabled)
     {
         // Standard DID_INS_2 message
         msg_did_ins4.header.frame_id = frame_id_;
@@ -819,7 +880,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         msg_did_ins4.ecef[0] = msg->ecef[0];
         msg_did_ins4.ecef[1] = msg->ecef[1];
         msg_did_ins4.ecef[2] = msg->ecef[2];
-        rs_.did_ins_quat_ve_ecef.pub.publish(msg_did_ins4);
+        rs_.did_ins4.pub.publish(msg_did_ins4);
     }
 
 
@@ -1375,14 +1436,14 @@ void InertialSenseROS::mag_callback(eDataIDs DID, const magnetometer_t *const ms
         return;
     }
 
-    STREAMING_CHECK(rs_.mag.streaming, DID);
+    STREAMING_CHECK(rs_.magnetometer.streaming, DID);
     sensor_msgs::MagneticField mag_msg;
     mag_msg.header.stamp = ros_time_from_start_time(msg->time);
     mag_msg.header.frame_id = frame_id_;
     mag_msg.magnetic_field.x = msg->mag[0];
     mag_msg.magnetic_field.y = msg->mag[1];
     mag_msg.magnetic_field.z = msg->mag[2];
-    rs_.mag.pub.publish(mag_msg);
+    rs_.magnetometer.pub.publish(mag_msg);
 }
 
 void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
@@ -1392,13 +1453,13 @@ void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
         return;
     }
 
-    STREAMING_CHECK(rs_.baro.streaming, DID);
+    STREAMING_CHECK(rs_.barometer.streaming, DID);
     sensor_msgs::FluidPressure baro_msg;
     baro_msg.header.stamp = ros_time_from_start_time(msg->time);
     baro_msg.header.frame_id = frame_id_;
     baro_msg.fluid_pressure = msg->bar;
     baro_msg.variance = msg->barTemp;
-    rs_.baro.pub.publish(baro_msg);
+    rs_.barometer.pub.publish(baro_msg);
 }
 
 void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg)
@@ -1534,7 +1595,7 @@ void InertialSenseROS::GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg
     {
     case DID_GPS1_RAW:        STREAMING_CHECK(rs_.gps1_raw.streaming, DID);     break;
     case DID_GPS2_RAW:        STREAMING_CHECK(rs_.gps2_raw.streaming, DID);     break;
-    case DID_GPS_BASE_RAW:    STREAMING_CHECK(rs_.gpsbase_raw.streaming, DID); break;
+    case DID_GPS_BASE_RAW:    STREAMING_CHECK(rs_.gpsbase_raw.streaming, DID);  break;
     }
 
     switch (msg->dataType)
@@ -2138,46 +2199,126 @@ void InertialSenseROS::transform_6x6_covariance(float Pout[36], float Pin[36], i
 
 
 template <typename Type>
-bool ParamHelper::getParam(YAML::Node node, ros::NodeHandle nh, std::string key, Type &var)
+bool ParamHelper::getParam(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, Type &var)
 {
     if (node.IsDefined())
     {
-        getYamlNodeParam(node, key, var);
+        if (childKey.empty())
+        {   
+            return getYamlNodeParam(node, key, var);
+        }
+        else
+        {   
+            YAML::Node childNode;         
+            try
+            {
+                childNode = node[childKey];
+            }
+            catch (const YAML::KeyNotFound &knf)
+            {
+                return false;
+            }            
+            return getYamlNodeParam(childNode, key, var);
+        }
     }
     else
     {
-        getServerParam(nh, key, var);
+        if (childKey.empty())
+        {
+            return getServerParam(nh, key, var);
+        }
+        else
+        {
+            return getServerParam(nh, childKey + "/" + key, var);
+        }
     }
 }
 
 template <typename Derived1>
-bool ParamHelper::getParamVec(YAML::Node node, ros::NodeHandle nh, std::string key, int size, Derived1 &vec)
+bool ParamHelper::getParamVec(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, int size, Derived1 &vec)
 {
     if (node.IsDefined())
     {
-        return getYamlNodeParamVector(node, key, size, vec);
+        if (childKey.empty())
+        {   
+            return getYamlNodeParamVector(node, key, size, vec);
+        }
+        else
+        {   
+            YAML::Node childNode;
+            try
+            {
+                childNode = node[childKey];
+            }
+            catch (const YAML::KeyNotFound &knf)
+            {
+                return false;
+            }            
+            return getYamlNodeParamVector(childNode, key, size, vec);
+        }
     } 
     else 
     {
-        return getServerParamVector(nh, key, size, vec);
+        if (childKey.empty())
+        {
+            return getServerParamVector(nh, key, size, vec);
+        }
+        else
+        {
+            return getServerParamVector(nh, childKey + "/" + key, size, vec);
+        }
     }
 }
 
-bool ParamHelper::getParamRs(YAML::Node node, ros::NodeHandle nh, std::string key)
+void ParamHelper::initGmsgParams(YAML::Node &node, ros::NodeHandle nh, std::string group, std::string name, std::string topicDefault, bool enableDefault, int periodDefault)
 {
-    bool success = true;
+    topic = (topicDefault.empty() ? name : topicDefault);
+    enabled = enableDefault;
+    period = periodDefault;
+    getMsgParams(node, nh, group, name);
+}
+
+bool ParamHelper::getMsgParams(YAML::Node node, ros::NodeHandle nh, std::string key, std::string msgKey)
+{
     if (node.IsDefined())
     {
-        success = success && getYamlNodeParam(node, std::string("msg/") + key + std::string("/enable"), enabled);
-        success = success && getYamlNodeParam(node, "msg/" + key + "/period", period);
+        YAML::Node msgNode;
+        try
+        {
+            if (msgKey.empty())
+            {
+                msgNode = node[key]["message"];
+            }
+            else
+            {
+                msgNode = node[key]["messages"][msgKey];
+            }
+        }
+        catch (const YAML::KeyNotFound &knf)
+        {
+            return false;
+        }
+        getYamlNodeParam(msgNode, "topic",  topic);
+        getYamlNodeParam(msgNode, "enable", enabled);
+        getYamlNodeParam(msgNode, "period", period);
     } 
     else 
     {
-        success = success && getServerParam(nh, "msg/" + key + "/enable", enabled);
-        success = success && getServerParam(nh, "msg/" + key + "/period", period);
+        if (msgKey.empty())
+        {
+            getServerParam(nh, key + "/message/topic",  topic);
+            getServerParam(nh, key + "/message/enable", enabled);
+            getServerParam(nh, key + "/message/period", period);
+        }
+        else
+        {
+            getServerParam(nh, key + "/messages/" + msgKey + "/topic",  topic);
+            getServerParam(nh, key + "/messages/" + msgKey + "/enable", enabled);
+            getServerParam(nh, key + "/messages/" + msgKey + "/period", period);
+        }
     }
 
-    return success;
+    return true;
 }
 
 
