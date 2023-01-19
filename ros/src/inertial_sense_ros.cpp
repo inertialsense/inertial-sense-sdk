@@ -143,7 +143,13 @@ void InertialSenseROS::load_params(YAML::Node &node)
 {
     // Load parameters from yaml node if provided.  Otherwise load from ROS parameter server.
     bool useYamlNode = node.IsDefined();
-    ros::NodeHandle nh = nh_private_;
+    ros::NodeHandle nh;
+
+    // Load yaml into param server
+    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) 
+    {
+       nh.setParam(it->first.as<std::string>(), it->second.as<double>());
+    }
 
     if (useYamlNode)
     {
@@ -158,7 +164,25 @@ void InertialSenseROS::load_params(YAML::Node &node)
 // #define GET_PARAM_VEC(name, size, vec)      ParamHelper::getParamVec(node, nh_private_, name, size, vec)
 #define GET_MSG_PARAMS(name)                rs_.name.getMsgParams(node, nh_private_, #name)
 
+
+#if 1
+    // std::cout << "DEBUG nh.getNamespace(): " << nh.getNamespace() << "\n";
+    // // ros::NodeHandle nh2("inertialsense_ros");
+
+    // ros::NodeHandle nh2("/rtk_rover");
+    // std::cout << "DEBUG nh2.getNamespace(): " << nh2.getNamespace() << "\n";
+    // int test1 = 0;
+
+    // // bool success = nh.getParam("/baudrate", test1);
+    // bool success = nh2.getParam("test1", test1);
+    // std::cout << "DEBUG rtk_rover/test1: " << success << " " << test1 << "\n";
+
+    // if (ParamHelper::getChild("ins"))
+    // {
+    // }
+
     ParamHelper::getParam(node, nh, "", "port", port_);
+
     ParamHelper::getParam(node, nh, "", "baudrate", baudrate_);
     ParamHelper::getParam(node, nh, "", "frame_id", frame_id_);
     ParamHelper::getParam(node, nh, "", "enable_log", log_enabled_);
@@ -168,7 +192,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ParamHelper::getParam(node, nh, "", "publishTf", publishTf_);
     ParamHelper::getParam(node, nh, "", "platform", platformConfig_);
 
+    // return;
+
     std::cout << "Group: sensors\n";
+    YAML::Node sensorsNode = node["sensors"];
     rs_.imu.            initGmsgParams(node, nh, "sensors", "imu");
     rs_.pimu.           initGmsgParams(node, nh, "sensors", "pimu");
     rs_.magnetometer.   initGmsgParams(node, nh, "sensors", "magnetometer", "mag");
@@ -176,6 +203,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     rs_.strobe_in.      initGmsgParams(node, nh, "sensors", "strobe_in");
 
     std::cout << "Group: ins\n";
+    YAML::Node insNode = node["ins"];
     rs_.odom_ins_enu.   initGmsgParams(node, nh, "ins", "odom_ins_enu");
     rs_.odom_ins_ned.   initGmsgParams(node, nh, "ins", "odom_ins_ned");
     rs_.odom_ins_ned.   initGmsgParams(node, nh, "ins", "odom_ins_ned");
@@ -203,11 +231,18 @@ void InertialSenseROS::load_params(YAML::Node &node)
     rs_.gps1_raw.       initGmsgParams(node, nh, "gps1", "raw");
     rs_.gps2_raw.       initGmsgParams(node, nh, "gps2", "raw");
 
+
+    YAML::Node nodeRtkRover = node["rtk_rover"];
+    // ParamHelper::getParam(node, nh, "", "port", port_);
+
+
     GET_MSG_PARAMS(gpsbase_raw);
     GET_MSG_PARAMS(rtk_pos);
     GET_MSG_PARAMS(rtk_cmp);
 
     GET_MSG_PARAMS(diagnostics);
+
+    ParamHelper::getParamVec(node, nh, "ins", "rotation", 3, insRotation_);
 
     GET_PARAM("rtk_server_mount", RTK_server_mount_);
     GET_PARAM("rtk_server_username", RTK_server_username_);
@@ -226,6 +261,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     GET_PARAM("rtk_base_USB", RTK_base_USB_);
     GET_PARAM("rtk_base_serial", RTK_base_serial_);
     GET_PARAM("rtk_base_TCP", RTK_base_TCP_);
+#endif
 }
 
 
@@ -2409,7 +2445,7 @@ bool ParamHelper::getYamlNodeParamVector(YAML::Node node, const std::string key,
 
 bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, std::string &s)
 {
-    bool success = nh_.getParam("/" + key, s);
+    bool success = nh_.getParam(key, s);
 
     // Display parameter
     if (success)
@@ -2426,7 +2462,7 @@ bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &
 
 bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, double &d)
 {
-    bool success = nh_.getParam("/" + key, d);
+    bool success = nh_.getParam(key, d);
 
     // Display parameter
     if (success)
@@ -2443,7 +2479,7 @@ bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &
 
 bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, float &f)
 {
-    bool success = nh_.getParam("/" + key, f);
+    bool success = nh_.getParam(key, f);
 
     // Display parameter
     if (success)
@@ -2460,7 +2496,7 @@ bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &
 
 bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, int &i)
 {
-    bool success = nh_.getParam("/" + key, i);
+    bool success = nh_.getParam(key, i);
 
     // Display parameter
     if (success)
@@ -2477,7 +2513,7 @@ bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &
 
 bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, bool &b)
 {
-    bool success = nh_.getParam("/" + key, b);
+    bool success = nh_.getParam(key, b);
 
     // Display parameter
     if (success)
@@ -2494,7 +2530,7 @@ bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &
 
 bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, XmlRpc::XmlRpcValue &v)
 {
-    bool success = nh_.getParam("/" + key, v);
+    bool success = nh_.getParam(key, v);
 
     // Display parameter
     if (success)
@@ -2513,7 +2549,7 @@ template <typename T>
 bool ParamHelper::getServerParamVector(const ros::NodeHandle &nh_, const std::string &key, int size, T &data)
 {
     std::vector<double> vec(size, 0);
-    bool success = nh_.getParam("/" + key, vec);
+    bool success = nh_.getParam(key, vec);
 
     if (success)
     {
