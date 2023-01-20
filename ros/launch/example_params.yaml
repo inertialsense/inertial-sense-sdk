@@ -28,13 +28,13 @@
 
 
 topic: "inertialsense"
-port: "/dev/ttyACM0"
-baudrate: 921600
+port: "/dev/ttyACM7"
+baudrate: 921601
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)
 frame_id: ""                                    # FIXME: What is this?  is it just the FrameID to use in the ROS messages?
 platform: 11                                    # Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
-mag_declination: 0
+mag_declination: 0.1
 
 # IMX ioConfig (see eIoConfig)
 ioConfig: 40673376      # (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8

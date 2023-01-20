@@ -66,26 +66,21 @@ public:
     int period = 1;             // Period multiple (data rate divisor)
     ros::Publisher pub;
 
-    template <typename Type>
-    static bool getParam(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, Type &var);
-    template <typename Derived1>
-    static bool getParamVec(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, int size, Derived1 &vec);
-    void initGmsgParams(YAML::Node &node, ros::NodeHandle nh, std::string group, std::string name, std::string topicDefault="", bool enableDefault=false, int periodDefault=1);
-    bool getMsgParams(YAML::Node node, ros::NodeHandle nh, std::string key, std::string msgKey="");
+    static bool paramServerToYamlNode(YAML::Node &node, std::string nhKey="", std::string indentStr="");
+
+    bool getMsgParams(YAML::Node node, std::string key, std::string topicDefault="", bool enabledDefault=false, int periodDefault=1);
 
     template <typename Type>
-    static bool getYamlNodeParam(YAML::Node node, const std::string key, Type &val);
+    static bool getParam(YAML::Node node, const std::string key, Type &val, Type &valDefault);
+    static bool getNodeParam(YAML::Node node, const std::string key, std::string &val, std::string valDefault=""){ return getParam(node, key, val, valDefault); }
+    static bool getNodeParam(YAML::Node node, const std::string key, double &val, double valDefault=0.0){ return getParam(node, key, val, valDefault); }
+    static bool getNodeParam(YAML::Node node, const std::string key, float &val, float valDefault=0.0f){ return getParam(node, key, val, valDefault); }
+    static bool getNodeParam(YAML::Node node, const std::string key, bool &val, bool valDefault=false){ return getParam(node, key, val, valDefault); }
+    static bool getNodeParam(YAML::Node node, const std::string key, int &val, int valDefault=0){ return getParam(node, key, val, valDefault); }
     template <typename Derived1>
-    static bool getYamlNodeParamVector(YAML::Node node, const std::string key, int size, Derived1 &val);
-
-    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, std::string &s);
-    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, double &d);
-    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, float &f);    
-    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, int &i);
-    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, bool &b);
-    static bool getServerParam(const ros::NodeHandle &nh_, const std::string &key, XmlRpc::XmlRpcValue &v);
-    template <typename T>
-    static bool getServerParamVector(const ros::NodeHandle &nh_, const std::string &key, int size, T &data);
+    static bool getParamVector(YAML::Node node, const std::string key, int size, Derived1 &val, Derived1 &valDefault);
+    static bool getNodeParamVec(YAML::Node node, const std::string key, int size, double val[], double valDefault[] = NULL){ return getParamVector(node, key, size, val, valDefault); }
+    static bool getNodeParamVec(YAML::Node node, const std::string key, int size, float val[], float valDefault[] = NULL){ return getParamVector(node, key, size, val, valDefault); }
 };
 
 class ParamHelperGps: public ParamHelper
@@ -156,14 +151,14 @@ public:
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
     bool flashConfigStreaming_ = false;
     // Serial Port Configuration
-    std::string port_ = "/dev/ttyACM0";
-    int baudrate_ = 921600;
+    std::string port_;
+    int baudrate_;
     bool initialized_;
-    bool log_enabled_ = false;
-    bool covariance_enabled_ = false;
+    bool log_enabled_;
+    bool covariance_enabled_;
     int platformConfig_ = 0;
 
-    std::string frame_id_ = "body";
+    std::string frame_id_;
 
     tf::TransformBroadcaster br;
     bool publishTf_ = true;
@@ -421,15 +416,15 @@ public:
     // Flash parameters
     // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
     // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
-    int ins_nav_dt_ms_ = 4;
+    int ins_nav_dt_ms_;
 
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
     double refLla_[3] = {0, 0, 0};
-    float magDeclination_ = 0;
-    int insDynModel_ = INS_DYN_MODEL_AIRBORNE_4G;
+    float magDeclination_;
+    int insDynModel_;
     bool refLLA_known = false;
-    int ioConfig_ = 38051936;   //(0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+    int ioConfig_;
     float gpsTimeUserDelay_ = 0;
 
 };

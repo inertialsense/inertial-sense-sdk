@@ -121,7 +121,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     initialized_ = true;
 }
 
-void print_node_tree(YAML::Node node, std::string indent)
+void print_node_tree(YAML::Node node, std::string indent="")
 {
   for(YAML::const_iterator it=node.begin(); it != node.end(); ++it) 
   {
@@ -142,126 +142,113 @@ void print_node_tree(YAML::Node node, std::string indent)
 void InertialSenseROS::load_params(YAML::Node &node)
 {
     // Load parameters from yaml node if provided.  Otherwise load from ROS parameter server.
-    bool useYamlNode = node.IsDefined();
+    bool useParamSvr = !node.IsDefined();
     ros::NodeHandle nh;
 
-    // Load yaml into param server
-    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) 
+
+    if (useParamSvr)
     {
-       nh.setParam(it->first.as<std::string>(), it->second.as<double>());
+        ROS_INFO( "Load from Param Server" );
+        ParamHelper::paramServerToYamlNode(node, "/");
+        // printf("Node Tree:\n");
+        // print_node_tree(node);
     }
-
-    if (useYamlNode)
+    else
     {
-        printf("Node Tree:\n");
-        print_node_tree(node, "  ");
+        ROS_INFO( "Load from YAML node" );
     }
-
-    ROS_INFO( (useYamlNode ? "Load from YAML node" : "Load from Param Server") );
-
-#define GET_PARAM(name, var)                ParamHelper::getParam(node, nh_private_, "", name, var)
-#define GET_GPARAM(group, name, var)        ParamHelper::getParam(node, nh_private_, #group, name, var)
-// #define GET_PARAM_VEC(name, size, vec)      ParamHelper::getParamVec(node, nh_private_, name, size, vec)
-#define GET_MSG_PARAMS(name)                rs_.name.getMsgParams(node, nh_private_, #name)
-
 
 #if 1
-    // std::cout << "DEBUG nh.getNamespace(): " << nh.getNamespace() << "\n";
-    // // ros::NodeHandle nh2("inertialsense_ros");
 
-    // ros::NodeHandle nh2("/rtk_rover");
-    // std::cout << "DEBUG nh2.getNamespace(): " << nh2.getNamespace() << "\n";
-    // int test1 = 0;
-
-    // // bool success = nh.getParam("/baudrate", test1);
-    // bool success = nh2.getParam("test1", test1);
-    // std::cout << "DEBUG rtk_rover/test1: " << success << " " << test1 << "\n";
-
-    // if (ParamHelper::getChild("ins"))
-    // {
-    // }
-
-    ParamHelper::getParam(node, nh, "", "port", port_);
-
-    ParamHelper::getParam(node, nh, "", "baudrate", baudrate_);
-    ParamHelper::getParam(node, nh, "", "frame_id", frame_id_);
-    ParamHelper::getParam(node, nh, "", "enable_log", log_enabled_);
-    ParamHelper::getParam(node, nh, "", "ioConfig", ioConfig_);
-    ParamHelper::getParam(node, nh, "", "mag_declination", magDeclination_);
-    ParamHelper::getParamVec(node, nh, "", "ref_lla", 3, refLla_);
-    ParamHelper::getParam(node, nh, "", "publishTf", publishTf_);
-    ParamHelper::getParam(node, nh, "", "platform", platformConfig_);
-
-    // return;
+    printf("=====================  DEBUG  =====================\n\n");
+    ParamHelper::getNodeParam(node, "port", port_, "/dev/ttyACM0");
+    ParamHelper::getNodeParam(node, "baudrate", baudrate_, 921600);
+    ParamHelper::getNodeParam(node, "frame_id", frame_id_, "body");
+    ParamHelper::getNodeParam(node, "enable_log", log_enabled_, false);
+    ParamHelper::getNodeParam(node, "ioConfig", ioConfig_, 0x0244a060);     // EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+    ParamHelper::getNodeParam(node, "mag_declination", magDeclination_);
+    ParamHelper::getNodeParamVec(node, "ref_lla", 3, refLla_);
+    ParamHelper::getNodeParam(node, "publishTf", publishTf_);
+    ParamHelper::getNodeParam(node, "platform", platformConfig_);
 
     std::cout << "Group: sensors\n";
-    YAML::Node sensorsNode = node["sensors"];
-    rs_.imu.            initGmsgParams(node, nh, "sensors", "imu");
-    rs_.pimu.           initGmsgParams(node, nh, "sensors", "pimu");
-    rs_.magnetometer.   initGmsgParams(node, nh, "sensors", "magnetometer", "mag");
-    rs_.barometer.      initGmsgParams(node, nh, "sensors", "barometer", "baro");
-    rs_.strobe_in.      initGmsgParams(node, nh, "sensors", "strobe_in");
+    YAML::Node sensorsMsgs = node["sensors"]["messages"];
+    rs_.imu.            getMsgParams(sensorsMsgs, "imu");
+    rs_.pimu.           getMsgParams(sensorsMsgs, "pimu");
+    rs_.magnetometer.   getMsgParams(sensorsMsgs, "magnetometer", "mag");
+    rs_.barometer.      getMsgParams(sensorsMsgs, "barometer", "baro");
+    rs_.strobe_in.      getMsgParams(sensorsMsgs, "strobe_in");
 
     std::cout << "Group: ins\n";
     YAML::Node insNode = node["ins"];
-    rs_.odom_ins_enu.   initGmsgParams(node, nh, "ins", "odom_ins_enu");
-    rs_.odom_ins_ned.   initGmsgParams(node, nh, "ins", "odom_ins_ned");
-    rs_.odom_ins_ned.   initGmsgParams(node, nh, "ins", "odom_ins_ned");
-    rs_.did_ins1.       initGmsgParams(node, nh, "ins", "did_ins1", "ins_eul_uvw_ned");
-    rs_.did_ins2.       initGmsgParams(node, nh, "ins", "did_ins2", "ins_quat_uvw_lla");
-    rs_.did_ins4.       initGmsgParams(node, nh, "ins", "did_ins4", "ins_quat_ve_ecef");
-    rs_.inl2_states.    initGmsgParams(node, nh, "ins", "inl2_states");
-    ParamHelper::getParamVec(node, nh, "ins", "rotation", 3, insRotation_);
-    ParamHelper::getParamVec(node, nh, "ins", "offset", 3, insOffset_);
-    ParamHelper::getParam(node, nh, "ins", "navigation_dt_ms", ins_nav_dt_ms_);
-    ParamHelper::getParam(node, nh, "ins", "dynamic_model", insDynModel_);
-    ParamHelper::getParam(node, nh, "ins", "enable_covariance", covariance_enabled_);
+    YAML::Node insMsgs = insNode["messages"];
+    rs_.odom_ins_enu.   getMsgParams(insMsgs, "odom_ins_enu");
+    rs_.odom_ins_ned.   getMsgParams(insMsgs, "odom_ins_ned");
+    rs_.odom_ins_ned.   getMsgParams(insMsgs, "odom_ins_ned");
+    rs_.did_ins1.       getMsgParams(insMsgs, "did_ins1", "ins_eul_uvw_ned");
+    rs_.did_ins2.       getMsgParams(insMsgs, "did_ins2", "ins_quat_uvw_lla");
+    rs_.did_ins4.       getMsgParams(insMsgs, "did_ins4", "ins_quat_ve_ecef");
+    rs_.inl2_states.    getMsgParams(insMsgs, "inl2_states");
+    ParamHelper::getNodeParamVec(insNode, "rotation", 3, insRotation_);
+    ParamHelper::getNodeParamVec(insNode, "offset", 3, insOffset_);
+    ParamHelper::getNodeParam(insNode, "navigation_dt_ms", ins_nav_dt_ms_, 4);
+    ParamHelper::getNodeParam(insNode, "dynamic_model", insDynModel_, INS_DYN_MODEL_AIRBORNE_4G);
+    ParamHelper::getNodeParam(insNode, "enable_covariance", covariance_enabled_, false);
 
-    std::cout << "Groups: gps1, gps2\n";
-    rs_.gps1.           initGmsgParams(node, nh, "gps1", "pos_vel", "gps1_pos_vel");
-    rs_.gps2.           initGmsgParams(node, nh, "gps2", "pos_vel", "gps2_pos_vel");
-    ParamHelper::getParam(node, nh, "gps1", "type", rs_.gps1.type);
-    ParamHelper::getParam(node, nh, "gps2", "type", rs_.gps2.type);
-    ParamHelper::getParamVec(node, nh, "gps1", "antenna_offset", 3, rs_.gps1.antennaOffset);
-    ParamHelper::getParamVec(node, nh, "gps2", "antenna_offset", 3, rs_.gps2.antennaOffset);
-    ParamHelper::getParam(node, nh, "gps1", "gpsTimeUserDelay", gpsTimeUserDelay_);
-    rs_.navsatfix.      initGmsgParams(node, nh, "gps1", "navsatfix", "/NavSatFix");
-    rs_.gps1_info.      initGmsgParams(node, nh, "gps1", "info");
-    rs_.gps2_info.      initGmsgParams(node, nh, "gps2", "info");
-    rs_.gps1_raw.       initGmsgParams(node, nh, "gps1", "raw");
-    rs_.gps2_raw.       initGmsgParams(node, nh, "gps2", "raw");
+    std::cout << "Group: gps1\n";
+    YAML::Node gps1Node = node["gps1"];
+    YAML::Node gps1Msgs = gps1Node["messages"];
+    rs_.gps1.           getMsgParams(gps1Msgs, "pos_vel", "gps1_pos_vel");
+    rs_.gps1_info.      getMsgParams(gps1Msgs, "info", "gps1_info");
+    rs_.gps1_raw.       getMsgParams(gps1Msgs, "raw", "gps1_raw");
+    rs_.navsatfix.      getMsgParams(gps1Msgs, "navsatfix", "/NavSatFix");
+    ParamHelper::getNodeParam(gps1Node, "type", rs_.gps1.type);
+    ParamHelper::getNodeParam(gps1Node, "gpsTimeUserDelay", gpsTimeUserDelay_);
+    ParamHelper::getNodeParamVec(gps1Node, "antenna_offset", 3, rs_.gps1.antennaOffset);
+
+    std::cout << "Group: gps2\n";
+    YAML::Node gps2Node = node["gps1"];
+    YAML::Node gps2Msgs = gps2Node["messages"];
+    rs_.gps2.           getMsgParams(gps2Msgs, "pos_vel", "gps2_pos_vel");
+    rs_.gps2_info.      getMsgParams(gps2Msgs, "info", "gps2_info");
+    rs_.gps2_raw.       getMsgParams(gps2Msgs, "raw", "gps2_raw");
+    ParamHelper::getNodeParam(gps2Node, "type", rs_.gps2.type);
+    ParamHelper::getNodeParamVec(gps2Node, "antenna_offset", 3, rs_.gps2.antennaOffset);
+
+    // YAML::Node nodeRtkRover = node["rtk_rover"];
+    // ParamHelper::getYamlNodeParam(node, "port", port_);
 
 
-    YAML::Node nodeRtkRover = node["rtk_rover"];
-    // ParamHelper::getParam(node, nh, "", "port", port_);
+    // GET_MSG_PARAMS(gpsbase_raw);
+    // GET_MSG_PARAMS(rtk_pos);
+    // GET_MSG_PARAMS(rtk_cmp);
 
+    // GET_MSG_PARAMS(diagnostics);
 
-    GET_MSG_PARAMS(gpsbase_raw);
-    GET_MSG_PARAMS(rtk_pos);
-    GET_MSG_PARAMS(rtk_cmp);
+    // ParamHelper::getParamVec(node, nh, "ins", "rotation", 3, insRotation_);
 
-    GET_MSG_PARAMS(diagnostics);
-
-    ParamHelper::getParamVec(node, nh, "ins", "rotation", 3, insRotation_);
-
-    GET_PARAM("rtk_server_mount", RTK_server_mount_);
-    GET_PARAM("rtk_server_username", RTK_server_username_);
-    GET_PARAM("rtk_server_password", RTK_server_password_);
-    GET_PARAM("rtk_connection_attempt_limit", RTK_connection_attempt_limit_);
-    GET_PARAM("rtk_connection_attempt_backoff", RTK_connection_attempt_backoff_);
-    GET_PARAM("rtk_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
-    GET_PARAM("rtk_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
-    GET_PARAM("rtk_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
-    GET_PARAM("rtk_correction_protocol", RTK_correction_protocol_);
-    GET_PARAM("rtk_server_IP", RTK_server_IP_);
-    GET_PARAM("rtk_server_port", RTK_server_port_);
-    GET_PARAM("gnss_compass", GNSS_Compass_);
-    GET_PARAM("rtk_compass", RTK_rover_);
-    GET_PARAM("rtk_rover_radio_enable", RTK_rover_radio_enable_);
-    GET_PARAM("rtk_base_USB", RTK_base_USB_);
-    GET_PARAM("rtk_base_serial", RTK_base_serial_);
-    GET_PARAM("rtk_base_TCP", RTK_base_TCP_);
+    // GET_PARAM("rtk_server_mount", RTK_server_mount_);
+    // GET_PARAM("rtk_server_username", RTK_server_username_);
+    // GET_PARAM("rtk_server_password", RTK_server_password_);
+    // GET_PARAM("rtk_connection_attempt_limit", RTK_connection_attempt_limit_);
+    // GET_PARAM("rtk_connection_attempt_backoff", RTK_connection_attempt_backoff_);
+    // GET_PARAM("rtk_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
+    // GET_PARAM("rtk_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
+    // GET_PARAM("rtk_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
+    // GET_PARAM("rtk_correction_protocol", RTK_correction_protocol_);
+    // GET_PARAM("rtk_server_IP", RTK_server_IP_);
+    // GET_PARAM("rtk_server_port", RTK_server_port_);
+    // GET_PARAM("gnss_compass", GNSS_Compass_);
+    // GET_PARAM("rtk_compass", RTK_rover_);
+    // GET_PARAM("rtk_rover_radio_enable", RTK_rover_radio_enable_);
+    // GET_PARAM("rtk_base_USB", RTK_base_USB_);
+    // GET_PARAM("rtk_base_serial", RTK_base_serial_);
+    // GET_PARAM("rtk_base_TCP", RTK_base_TCP_);
 #endif
+
+    printf("=====================  EXIT  =====================\n\n");
+
+    exit(1);
 }
 
 
@@ -2234,135 +2221,89 @@ void InertialSenseROS::transform_6x6_covariance(float Pout[36], float Pin[36], i
 }
 
 
-template <typename Type>
-bool ParamHelper::getParam(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, Type &var)
+bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std::string indentStr)
 {
-    if (node.IsDefined())
-    {
-        if (childKey.empty())
-        {   
-            return getYamlNodeParam(node, key, var);
-        }
-        else
-        {   
-            YAML::Node childNode;         
-            try
-            {
-                childNode = node[childKey];
-            }
-            catch (const YAML::KeyNotFound &knf)
-            {
-                return false;
-            }            
-            return getYamlNodeParam(childNode, key, var);
-        }
-    }
-    else
-    {
-        if (childKey.empty())
-        {
-            return getServerParam(nh, key, var);
-        }
-        else
-        {
-            return getServerParam(nh, childKey + "/" + key, var);
-        }
-    }
-}
+#define ENABLE_DEBUG_PRINT_TREE     1
+    ros::NodeHandle nh;
 
-template <typename Derived1>
-bool ParamHelper::getParamVec(YAML::Node node, ros::NodeHandle nh, std::string childKey, std::string key, int size, Derived1 &vec)
-{
-    if (node.IsDefined())
+    std::vector <std::string> nhKeyList;
+    nh.getParamNames(nhKeyList);
+    for (std::string key: nhKeyList)
     {
-        if (childKey.empty())
-        {   
-            return getYamlNodeParamVector(node, key, size, vec);
+        std::string::size_type pos = key.find(nhKey);
+        if (pos != 0)
+        {   // key path doesn't match
+            continue;
         }
-        else
-        {   
-            YAML::Node childNode;
-            try
-            {
-                childNode = node[childKey];
-            }
-            catch (const YAML::KeyNotFound &knf)
-            {
-                return false;
-            }            
-            return getYamlNodeParamVector(childNode, key, size, vec);
-        }
-    } 
-    else 
-    {
-        if (childKey.empty())
-        {
-            return getServerParamVector(nh, key, size, vec);
-        }
-        else
-        {
-            return getServerParamVector(nh, childKey + "/" + key, size, vec);
-        }
-    }
-}
 
-void ParamHelper::initGmsgParams(YAML::Node &node, ros::NodeHandle nh, std::string group, std::string name, std::string topicDefault, bool enableDefault, int periodDefault)
-{
-    topic = (topicDefault.empty() ? name : topicDefault);
-    enabled = enableDefault;
-    period = periodDefault;
-    getMsgParams(node, nh, group, name);
-}
+        // Get string following nkKey
+        std::string name = key.substr(pos+nhKey.size());
 
-bool ParamHelper::getMsgParams(YAML::Node node, ros::NodeHandle nh, std::string key, std::string msgKey)
-{
-    if (node.IsDefined())
-    {
-        YAML::Node msgNode;
-        try
-        {
-            if (msgKey.empty())
+        pos = name.find('/');
+        if (pos == std::string::npos)
+        {   // Param name            
+
+            XmlRpc::XmlRpcValue v;
+            if (nh.getParam(key, v))
             {
-                msgNode = node[key]["message"];
+#if ENABLE_DEBUG_PRINT_TREE
+                std::cout << indentStr << name << ": " << v << "\n";
+#endif
+                switch(v.getType())
+                {
+                case XmlRpc::XmlRpcValue::TypeString:   node[name] = static_cast<std::string>(v);    break;
+                case XmlRpc::XmlRpcValue::TypeBoolean:  node[name] = static_cast<bool>(v);           break;
+                case XmlRpc::XmlRpcValue::TypeDouble:   node[name] = static_cast<double>(v);         break;
+                case XmlRpc::XmlRpcValue::TypeInt:      node[name] = static_cast<int>(v);            break;
+                }
+                continue;
             }
-            else
-            {
-                msgNode = node[key]["messages"][msgKey];
-            }
-        }
-        catch (const YAML::KeyNotFound &knf)
-        {
-            return false;
-        }
-        getYamlNodeParam(msgNode, "topic",  topic);
-        getYamlNodeParam(msgNode, "enable", enabled);
-        getYamlNodeParam(msgNode, "period", period);
-    } 
-    else 
-    {
-        if (msgKey.empty())
-        {
-            getServerParam(nh, key + "/message/topic",  topic);
-            getServerParam(nh, key + "/message/enable", enabled);
-            getServerParam(nh, key + "/message/period", period);
         }
         else
-        {
-            getServerParam(nh, key + "/messages/" + msgKey + "/topic",  topic);
-            getServerParam(nh, key + "/messages/" + msgKey + "/enable", enabled);
-            getServerParam(nh, key + "/messages/" + msgKey + "/period", period);
+        {   // Node key
+            std::string nodeName = name.substr(0, pos);
+
+            if (!node[nodeName])
+            {   // Create new child node
+#if ENABLE_DEBUG_PRINT_TREE
+                std::cout << indentStr << nodeName << "\n";
+#endif
+                YAML::Node childNode;
+                ParamHelper::paramServerToYamlNode(childNode, nhKey + nodeName + "/", indentStr + "  ");
+                node[nodeName] = childNode;
+            }
         }
     }
 
     return true;
 }
 
-
+#define PARAM_PRINT_MSG     "       MSG: "
 #define PARAM_PRINT_USER    "            "
 #define PARAM_PRINT_DEFAULT "  (default) "
 
+bool ParamHelper::getMsgParams(YAML::Node node, std::string key, std::string topicDefault, bool enabledDefault, int periodDefault)
+{
+    std::cout << PARAM_PRINT_MSG << key << "\n";
+
+    YAML::Node msgNode;
+    try
+    {
+        msgNode = node[key];
+    }
+    catch (const YAML::KeyNotFound &knf)
+    {
+        return false;
+    }
+    getNodeParam(msgNode, "topic",  topic, (topicDefault.empty() ? key : topicDefault));
+    getNodeParam(msgNode, "enable", enabled, enabledDefault);
+    getNodeParam(msgNode, "period", period, periodDefault);
+
+    return true;
+}
+
 template <typename Type>
-bool ParamHelper::getYamlNodeParam(YAML::Node node, const std::string key, Type &val)
+bool ParamHelper::getParam(YAML::Node node, const std::string key, Type &val, Type &valDefault)
 {
     bool success = false;
 
@@ -2375,12 +2316,12 @@ bool ParamHelper::getYamlNodeParam(YAML::Node node, const std::string key, Type 
         }
         catch (const YAML::KeyNotFound &knf)
         {
-            // std::cout << "getYamlNodeParam(): Key \"" + key + "\" not found.  Using default value.\n";
+            // std::cout << "getParam(): Key \"" + key + "\" not found.  Using default value.\n";
         }
     }
     else
     {
-        // std::cout << "getYamlNodeParam(): Key \"" + key + "\" not in yaml node.  Using default value.\n";
+        // std::cout << "getParam(): Key \"" + key + "\" not in yaml node.  Using default value.\n";
     }
 
     // Display parameter
@@ -2391,6 +2332,7 @@ bool ParamHelper::getYamlNodeParam(YAML::Node node, const std::string key, Type 
     else
     {
         std::cout << PARAM_PRINT_DEFAULT;
+        val = valDefault;
     }
     std::cout << key + ": " << val << "\n";
 
@@ -2398,7 +2340,7 @@ bool ParamHelper::getYamlNodeParam(YAML::Node node, const std::string key, Type 
 }
 
 template <typename Derived1>
-bool ParamHelper::getYamlNodeParamVector(YAML::Node node, const std::string key, int size, Derived1 &val)
+bool ParamHelper::getParamVector(YAML::Node node, const std::string key, int size, Derived1 &val, Derived1 &valDefault)
 {
     bool success = false;
 
@@ -2432,6 +2374,10 @@ bool ParamHelper::getYamlNodeParamVector(YAML::Node node, const std::string key,
     else
     {
         std::cout << PARAM_PRINT_DEFAULT;
+        for (int i = 0; i < size; i++)
+        {
+            val[i] = (valDefault==NULL ? 0.0 : valDefault[i]);
+        }
     }
     std::cout << key + ": [";
     for (int i = 0; i < size; i++)
@@ -2442,135 +2388,4 @@ bool ParamHelper::getYamlNodeParamVector(YAML::Node node, const std::string key,
 
     return success;
 }
-
-bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, std::string &s)
-{
-    bool success = nh_.getParam(key, s);
-
-    // Display parameter
-    if (success)
-    {
-        std::cout << PARAM_PRINT_USER;
-    }
-    else
-    {
-        std::cout << PARAM_PRINT_DEFAULT;
-    }
-    std::cout << key + ": " << s << "\n";
-    return  success;
-}
-
-bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, double &d)
-{
-    bool success = nh_.getParam(key, d);
-
-    // Display parameter
-    if (success)
-    {
-        std::cout << PARAM_PRINT_USER;
-    }
-    else
-    {
-        std::cout << PARAM_PRINT_DEFAULT;
-    }
-    std::cout << key + ": " << d << "\n";
-    return success;
-}
-
-bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, float &f)
-{
-    bool success = nh_.getParam(key, f);
-
-    // Display parameter
-    if (success)
-    {
-        std::cout << PARAM_PRINT_USER;
-    }
-    else
-    {
-        std::cout << PARAM_PRINT_DEFAULT;
-    }
-    std::cout << key + ": " << f << "\n";
-    return success;
-}
-
-bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, int &i)
-{
-    bool success = nh_.getParam(key, i);
-
-    // Display parameter
-    if (success)
-    {
-        std::cout << PARAM_PRINT_USER;
-    }
-    else
-    {
-        std::cout << PARAM_PRINT_DEFAULT;
-    }
-    std::cout << key + ": " << i << "\n";
-    return success;
-}
-
-bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, bool &b)
-{
-    bool success = nh_.getParam(key, b);
-
-    // Display parameter
-    if (success)
-    {
-        std::cout << PARAM_PRINT_USER;
-    }
-    else
-    {
-        std::cout << PARAM_PRINT_DEFAULT;
-    }
-    std::cout << key + ": " << b << "\n";
-    return success;
-}
-
-bool ParamHelper::getServerParam(const ros::NodeHandle &nh_, const std::string &key, XmlRpc::XmlRpcValue &v)
-{
-    bool success = nh_.getParam(key, v);
-
-    // Display parameter
-    if (success)
-    {
-        std::cout << PARAM_PRINT_USER;
-    }
-    else
-    {
-        std::cout << PARAM_PRINT_DEFAULT;
-    }
-    std::cout << key + ": " << v << "\n";
-    return success;
-}
-
-template <typename T>
-bool ParamHelper::getServerParamVector(const ros::NodeHandle &nh_, const std::string &key, int size, T &data)
-{
-    std::vector<double> vec(size, 0);
-    bool success = nh_.getParam(key, vec);
-
-    if (success)
-    {
-        for (int i = 0; i < size; i++)
-        {
-            data[i] = vec[i];
-        }
-        std::cout << PARAM_PRINT_USER;
-    }
-    else
-    {
-        std::cout << PARAM_PRINT_DEFAULT;
-    }
-    std::cout << key + ": [";
-    for (int i = 0; i < size; i++)
-    {
-        std::cout << data[i] << ((i<size-1) ? "," : "");
-    }
-    std::cout << "]\n";
-
-    return success;
-}
-
 
