@@ -56,34 +56,52 @@
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
                             })
 
-class ParamHelper
+class TopicHelper
 {
 public:
-    // ParamHelper(YAML::Node node, ros::NodeHandle nh_private){ node_ = node; nh_private_ = nh_private; }
     std::string topic;
     bool enabled = false;
     bool streaming = false;
     int period = 1;             // Period multiple (data rate divisor)
     ros::Publisher pub;
+};
+class ParamHelper
+{
+public:
+    ParamHelper(YAML::Node &node){ setCurrentNode(node); }
 
     static bool paramServerToYamlNode(YAML::Node &node, std::string nhKey="", std::string indentStr="");
+    void print_indent(int indent);
 
-    bool getMsgParams(YAML::Node node, std::string key, std::string topicDefault="", bool enabledDefault=false, int periodDefault=1);
+    YAML::Node node(YAML::Node &node, std::string key, int indent=1);
+    void setCurrentNode(YAML::Node node);
+
+    bool msgParams(TopicHelper &th, std::string key, std::string topicDefault="", bool enabledDefault=false, int periodDefault=1);
 
     template <typename Type>
-    static bool getParam(YAML::Node node, const std::string key, Type &val, Type &valDefault);
-    static bool getNodeParam(YAML::Node node, const std::string key, std::string &val, std::string valDefault=""){ return getParam(node, key, val, valDefault); }
-    static bool getNodeParam(YAML::Node node, const std::string key, double &val, double valDefault=0.0){ return getParam(node, key, val, valDefault); }
-    static bool getNodeParam(YAML::Node node, const std::string key, float &val, float valDefault=0.0f){ return getParam(node, key, val, valDefault); }
-    static bool getNodeParam(YAML::Node node, const std::string key, bool &val, bool valDefault=false){ return getParam(node, key, val, valDefault); }
-    static bool getNodeParam(YAML::Node node, const std::string key, int &val, int valDefault=0){ return getParam(node, key, val, valDefault); }
+    bool param(YAML::Node &node, const std::string key, Type &val, Type &valDefault);
+    bool nodeParam(const std::string key, std::string &val, std::string valDefault=""){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, double &val, double valDefault=0.0){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, float &val, float valDefault=0.0f){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, bool &val, bool valDefault=false){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, int &val, int valDefault=0){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, std::string &val, std::string valDefault=""){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, double &val, double valDefault=0.0){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, float &val, float valDefault=0.0f){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, bool &val, bool valDefault=false){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, int &val, int valDefault=0){ return param(node, key, val, valDefault); }
     template <typename Derived1>
-    static bool getParamVector(YAML::Node node, const std::string key, int size, Derived1 &val, Derived1 &valDefault);
-    static bool getNodeParamVec(YAML::Node node, const std::string key, int size, double val[], double valDefault[] = NULL){ return getParamVector(node, key, size, val, valDefault); }
-    static bool getNodeParamVec(YAML::Node node, const std::string key, int size, float val[], float valDefault[] = NULL){ return getParamVector(node, key, size, val, valDefault); }
+    bool paramVec(YAML::Node &node, const std::string key, int size, Derived1 &val, Derived1 &valDefault);
+    bool nodeParamVec(const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(currentNode_, key, size, val, valDefault); }
+    bool nodeParamVec(const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(currentNode_, key, size, val, valDefault); }
+    bool nodeParamVec(YAML::Node &node, const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
+    bool nodeParamVec(YAML::Node &node, const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
+
+    YAML::Node currentNode_;
+    int indent_ = 1;
 };
 
-class ParamHelperGps: public ParamHelper
+class TopicHelperGps: public TopicHelper
 {
 public:
     bool streaming_pos = false;
@@ -92,7 +110,7 @@ public:
     float antennaOffset[3] = {0, 0, 0};
 };
 
-class ParamHelperGpsRtk: public ParamHelper
+class TopicHelperGpsRtk: public TopicHelper
 {
 public:
     bool streamingMisc = false;
@@ -101,7 +119,7 @@ public:
     ros::Publisher pubRel;
 };
 
-class ParamHelperGpsRaw: public ParamHelper
+class TopicHelperGpsRaw: public TopicHelper
 {
 public:
     std::string topicObs;
@@ -195,10 +213,11 @@ public:
     bool rtk_connectivity_watchdog_enabled_ = true;
     float rtk_connectivity_watchdog_timer_frequency_ = 1;
     int rtk_data_transmission_interruption_limit_ = 5;
-    std::string RTK_server_mount_ = "";
-    std::string RTK_server_username_ = "";
-    std::string RTK_server_password_ = "";
-    std::string RTK_correction_protocol_ = "RTCM3";
+    std::string RTK_correction_type_;
+    std::string RTK_server_mount_point_;
+    std::string RTK_server_username_;
+    std::string RTK_server_password_;
+    std::string RTK_correction_protocol_;
     std::string RTK_server_IP_ = "127.0.0.1";
     int RTK_server_port_ = 7777;
     bool RTK_rover_ = false;
@@ -245,32 +264,32 @@ public:
 
     struct
     {
-        ParamHelper did_ins1;
-        ParamHelper did_ins2;
-        ParamHelper did_ins4;
-        ParamHelper odom_ins_ned;
-        ParamHelper odom_ins_ecef;
-        ParamHelper odom_ins_enu;
-        ParamHelper inl2_states;
+        TopicHelper did_ins1;
+        TopicHelper did_ins2;
+        TopicHelper did_ins4;
+        TopicHelper odom_ins_ned;
+        TopicHelper odom_ins_ecef;
+        TopicHelper odom_ins_enu;
+        TopicHelper inl2_states;
 
-        ParamHelper imu;
-        ParamHelper pimu;
-        ParamHelper magnetometer;
-        ParamHelper barometer;
-        ParamHelper strobe_in;
+        TopicHelper imu;
+        TopicHelper pimu;
+        TopicHelper magnetometer;
+        TopicHelper barometer;
+        TopicHelper strobe_in;
 
-        ParamHelperGps gps1;
-        ParamHelperGps gps2;
-        ParamHelper navsatfix;
-        ParamHelper gps1_info;
-        ParamHelper gps2_info;
-        ParamHelperGpsRaw gps1_raw;
-        ParamHelperGpsRaw gps2_raw;
-        ParamHelperGpsRaw gpsbase_raw;
-        ParamHelperGpsRtk rtk_pos;
-        ParamHelperGpsRtk rtk_cmp;
+        TopicHelperGps gps1;
+        TopicHelperGps gps2;
+        TopicHelper navsatfix;
+        TopicHelper gps1_info;
+        TopicHelper gps2_info;
+        TopicHelperGpsRaw gps1_raw;
+        TopicHelperGpsRaw gps2_raw;
+        TopicHelperGpsRaw gpsbase_raw;
+        TopicHelperGpsRtk rtk_pos;
+        TopicHelperGpsRtk rtk_cmp;
 
-        ParamHelper diagnostics;
+        TopicHelper diagnostics;
     } rs_;
 
     bool NavSatFixConfigured = false;
@@ -417,16 +436,22 @@ public:
     // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
     // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
     int ins_nav_dt_ms_;
-
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
-    double refLla_[3] = {0, 0, 0};
+    double refLla_[3] = {0, 0, 0};      // Upload disabled if all zero
     float magDeclination_;
     int insDynModel_;
     bool refLLA_known = false;
     int ioConfig_;
     float gpsTimeUserDelay_ = 0;
 
+    // EVB Flash Parameters
+    struct evb_flash_parameters
+    {
+        int cb_preset;
+        int cb_options;
+    } evb_ = {};
+    
 };
 
 

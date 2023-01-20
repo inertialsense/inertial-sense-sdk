@@ -28,13 +28,18 @@
 
 
 topic: "inertialsense"
-port: "/dev/ttyACM7"
-baudrate: 921601
+port: "/dev/ttyACM0"
+baudrate: 921600
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)
 frame_id: ""                                    # FIXME: What is this?  is it just the FrameID to use in the ROS messages?
-platform: 11                                    # Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
-mag_declination: 0.1
+mag_declination: 0.0
+ref_lla: [0.0, 0.0, 0.0]
+
+# Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
+# platform: 10                                    # PLATFORM_CFG_TYPE_RUG3_G2
+platform: 11                                    # PLATFORM_CFG_TYPE_EVB2_G2
+# platform: 15                                    # PLATFORM_CFG_TYPE_IG1_G2
 
 # IMX ioConfig (see eIoConfig)
 ioConfig: 40673376      # (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
@@ -42,10 +47,10 @@ ioConfig: 40673376      # (0x026ca060) EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G
 # ioConfig: 38051936      # (0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
 
 # Service Points - should we allow these?  Or should they always be hardcoded?
-service_endpoints:
-  REF_LLA: "set_refLLA"                         # /value /current
-  MAG_CAL: "mag_cal"                            # /single /multi
-  FIRMWARE: "firmware"                          # /get /update
+# service_endpoints:
+  # REF_LLA: "set_refLLA"                         # /value /current
+  # MAG_CAL: "mag_cal"                            # /single /multi
+  # FIRMWARE: "firmware"                          # /get /update
 
 # Publish the firmware upgrade progress/status
 firmware_status:
@@ -202,20 +207,18 @@ evb:
     network_id: 41                              # radio network id (this must match on both Base and Rover)
 
 rtk_rover:
-  compassing:
-    enable: false                               # Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
-  positioning:
-    enable: false                               # Enable RTK precision positioning at GPS1
+  compassing_enable: false                      # Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
+  positioning_enable: false                     # Enable RTK precision positioning at GPS1
   correction_input: 
-    source: ntrip_example
-    format: RTCM3
+    select: ntrip_example                       # Select correction input settings
 
-    ntrip_1:
-      type: "ntrip"                             # configure NTRIP client provider (RTK Rover = TCP Client)
+    ntrip_example:                              # Rename as needed
+      type: NTRIP                               # configure NTRIP client provider (RTK Rover = TCP Client)
+      format: RTCM3
       ip_address: '66.219.246.93'               # NTRIP service address
       ip_port: 7777                             # NTRIP service port
       # these following parameters are only valid for "client" modes
-      mount: ''                                 # NTRIP service mount-point (if any)
+      mount_point: ''                           # NTRIP service mount-point (if any)
       username: ''                              # NTRIP service username (if any)
       password: ''                              # NTRIP service password (if any)
       connection_attempts:
@@ -226,17 +229,26 @@ rtk_rover:
         interval: 1                             # check every 1 second for traffic
         timeout: 5                              # number of seconds of inactivity before attempting to reconnect
 
+    ntrip_example2:                             # Rename as needed
+      type: NTRIP                               # configure NTRIP client provider (RTK Rover = TCP Client)
+      format: RTCM3
+      ip_address: '66.219.246.93'               # NTRIP service address
+      ip_port: 7777                             # NTRIP service port
+
     serial_example:
       type: serial                              # host/pc serial port, always 8N1 - IS-Ros will open and forward data from the EVB to this port
+      format: RTCM3
       port: /dev/ttyACM1                        # Serial port of local host where corrections can be read from (not the EVB/IMX port!)
       baud_rate: 115200                         # Serial baud rate
 
     ros_provider:
       topic: "/rtcm3_corrections"
+      format: RTCM3
       type: "ros_topic"                         # to/from ROS topics - ROS topic ot subscribe to, received RTCM3 corrections are passed to the EVB
 
     xbee_radio:
       type: "evb"
+      format: RTCM3
       port: "xbee"
 
   # Correction providers (input/output) are referenced as "pointers" from the "base" and "rover" sections above.
@@ -256,7 +268,7 @@ rtk_base:
     format: RTCM3
     # RTK corrections
     ntrip_1:
-      type: "ntrip"                             # configure NTRIP output provider (TCP Server)
+      type: "NTRIP"                             # configure NTRIP output provider (TCP Server)
       ip_address: '66.219.246.93'               # (required) NTRIP service address
       ip_port: 7777                             # NTRIP service port, default 7777
       # FIXME:  The following is fluff functionality that we probably shouldn't bother with, but someone might find it useful??
