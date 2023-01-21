@@ -937,7 +937,7 @@ is_operation_result cISBootloaderThread::update(
         {
             serial_port_t port;
             serialPortPlatformInit(&port);
-            if (!serialPortOpenRetry(&port, ctx[i]->m_port_name.c_str(), 921600, 1))
+            if (!serialPortOpenRetry(&port, ctx[i]->m_port_name.c_str(), m_baudRate, 1))
             {
                 continue;
             }
