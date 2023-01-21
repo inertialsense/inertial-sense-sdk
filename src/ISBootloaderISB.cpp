@@ -153,7 +153,7 @@ is_operation_result cISBootloaderISB::reboot_up()
     // send the "reboot to program mode" command and the device should start in program mode
     serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
     serialPortFlush(m_port);
-    SLEEP_MS(2000);
+    SLEEP_MS(1000);
     serialPortClose(m_port);
     return IS_OP_OK;
 }
