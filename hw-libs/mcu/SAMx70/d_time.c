@@ -128,6 +128,22 @@ void time_delay_usec(uint32_t us)
 	}
 }
 
+uint8_t time_delay_until(volatile uint32_t *reg, uint32_t mask, uint32_t value, uint8_t timeout_ms)
+{
+	uint32_t start = time_ticks_u32();
+	uint32_t ticktarget = timeout_ms * TIME_TICKS_PER_MS;
+
+    while (((*reg) & mask) != value)
+    {
+		if(time_ticks_u32() - start >= ticktarget)
+		{
+			return 0;
+		}
+    }
+    
+    return 1;
+}
+
 inline uint32_t time_msec(void)
 {	
 	return (uint32_t)((uint64_t)(time_ticks_u64() * TIME_MS_PER_TICK_LF) & 0x00000000FFFFFFFF);

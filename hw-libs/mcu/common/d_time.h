@@ -107,6 +107,17 @@ void time_delay_msec(uint32_t ms);
 void time_delay_usec(uint32_t us);
 
 /**
+ * @brief Delay for a number of milliseconds, return when a bitmask condition is met
+ * 
+ * @param reg Pointer to the memory to evaluate
+ * @param mask Bitmask applied to `reg`
+ * @param value Masked value must be equal to this value
+ * @param timeout_ms If the condition is not met, return after this many milliseconds
+ * @return int8_t -1 if failure, 0 if condition met
+ */
+uint8_t time_delay_until(volatile uint32_t *reg, uint32_t mask, uint32_t value, uint8_t timeout_ms)
+
+/**
  * @brief Get current number of seconds since init as a float
  * 
  * @return float number of seconds

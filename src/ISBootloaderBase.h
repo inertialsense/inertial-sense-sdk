@@ -48,6 +48,7 @@ typedef enum {
     IS_DEV_TYPE_ISB,
     IS_DEV_TYPE_APP,
     IS_DEV_TYPE_DFU,
+    IS_DEV_TYPE_SONY,
 } eDeviceType;
 
 typedef enum {
@@ -68,6 +69,7 @@ typedef enum {
     IS_IMAGE_SIGN_EVB_2_16K = 0x00000020,
     IS_IMAGE_SIGN_EVB_2_24K = 0x00000040,
     IS_IMAGE_SIGN_UINS_5 = 0x00000080,
+    IS_IMAGE_SIGN_SONY_CXD5610 = 0x00000100,
     
     IS_IMAGE_SIGN_NUM_BITS_USED = 8,
 
