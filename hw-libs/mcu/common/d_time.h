@@ -115,7 +115,7 @@ void time_delay_usec(uint32_t us);
  * @param timeout_ms If the condition is not met, return after this many milliseconds
  * @return int8_t -1 if failure, 0 if condition met
  */
-uint8_t time_delay_until(volatile uint32_t *reg, uint32_t mask, uint32_t value, uint8_t timeout_ms)
+uint8_t time_delay_until(volatile uint32_t *reg, uint32_t mask, uint32_t value, uint8_t timeout_ms);
 
 /**
  * @brief Get current number of seconds since init as a float
