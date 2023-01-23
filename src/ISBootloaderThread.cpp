@@ -288,6 +288,8 @@ void cISBootloaderThread::update_thread_serial(void* context)
         // Other device
     }
 
+    SLEEP_MS(1000);
+
     serialPortFlush(&port);
     serialPortClose(&port);
 
@@ -439,6 +441,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                memset(new_thread->serial_name, 0, 100);
                 strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -559,6 +562,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                memset(new_thread->serial_name, 0, 100);
                 strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(), 100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -736,6 +740,7 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                memset(new_thread->serial_name, 0, 100);
                 strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -801,7 +806,7 @@ is_operation_result cISBootloaderThread::update(
         if(m_waitAction) m_waitAction(); 
         return IS_OP_CANCELLED; 
     }
-    m_infoProgress(NULL, "Updating... (120 seconds max.)", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, "Updating...", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
@@ -878,6 +883,7 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                memset(new_thread->serial_name, 0, 100);
                 strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -905,9 +911,11 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Timeout after 60 seconds
-        if (current_timeMs() - timeoutLong > 120000) 
+        uint32_t timeout = (baudRate < 921600) ? 360000 : 120000;
+        if (current_timeMs() - timeoutLong > timeout)
         {
             m_continue_update = false;
+            m_infoProgress(NULL, "Update timeout", IS_LOG_LEVEL_ERROR);
         }
     }
 
@@ -929,7 +937,7 @@ is_operation_result cISBootloaderThread::update(
         {
             serial_port_t port;
             serialPortPlatformInit(&port);
-            if (!serialPortOpenRetry(&port, ctx[i]->m_port_name.c_str(), 921600, 1))
+            if (!serialPortOpenRetry(&port, ctx[i]->m_port_name.c_str(), m_baudRate, 1))
             {
                 continue;
             }
