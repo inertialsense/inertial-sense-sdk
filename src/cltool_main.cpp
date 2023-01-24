@@ -35,7 +35,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 
+#include <signal.h>
+
 using namespace std;
+
+static bool g_killThreadsNow = false;
 
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
@@ -384,18 +388,24 @@ void printProgress()
 
 is_operation_result bootloadUpdateCallback(void* obj, float percent)
 {
-	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
-	ctx->m_update_progress = percent;
+	if(obj)
+	{
+		ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
+		ctx->m_update_progress = percent;
+	}
 
-	return IS_OP_OK;
+	return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
 is_operation_result bootloadVerifyCallback(void* obj, float percent)
 {
-	ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
-	ctx->m_verify_progress = percent;
+	if(obj)
+	{
+		ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
+		ctx->m_verify_progress = percent;
+	}
 
-	return IS_OP_OK;
+	return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
 void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level)
@@ -487,6 +497,13 @@ static int cltool_createHost()
 	return 0;
 }
 
+static void sigint_cb(int sig)
+{
+	g_killThreadsNow = true;
+	cltool_bootloadUpdateInfo(NULL, "Update cancelled, killing threads and exiting...", ISBootloader::eLogLevel::IS_LOG_LEVEL_ERROR);
+	signal(SIGINT, SIG_DFL);
+}
+
 static int inertialSenseMain()
 {	
 	// clear display
@@ -503,6 +520,7 @@ static int inertialSenseMain()
 	// if app firmware was specified on the command line, do that now and return
 	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
 	{
+		signal(SIGINT, sigint_cb);
 		return cltool_updateFirmware();
 	}
 	else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)

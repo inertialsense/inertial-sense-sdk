@@ -17,6 +17,9 @@
 #define BOARD_FREQ_MAINCK_BYPASS        (12000000U)
 #define BOARD_FREQ_CPU					3000000		// CPU target frequency
 
+#define TIM_CLK_FREQ              		BOARD_FREQ_SLCK_XTAL
+#define TIM_PRESC	             		3 // finest allowed granularity
+
 /** Master clock frequency */
 #define BOARD_MCK                       CHIP_FREQ_CPU_MAX
 
