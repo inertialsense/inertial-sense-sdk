@@ -216,9 +216,9 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_);
     ph.nodeParamVec("antenna_offset", 3, rs_.gps1.antennaOffset);
     YAML::Node gps1Msgs = ph.node(gps1Node, "messages", 2);
-    ph.msgParams(rs_.gps1, "pos_vel", "gps1_pos_vel");
-    ph.msgParams(rs_.gps1_info, "info", "gps1_info");
-    ph.msgParams(rs_.gps1_raw, "raw", "gps1_raw");
+    ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel");
+    ph.msgParams(rs_.gps1_info, "info", "gps1/info");
+    ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw");
     ph.msgParams(rs_.navsatfix, "navsatfix", "/NavSatFix");
     gps1Node["messages"] = gps1Msgs;
     node["gps1"] = gps1Node;
@@ -227,9 +227,9 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("type", rs_.gps2.type);
     ph.nodeParamVec("antenna_offset", 3, rs_.gps2.antennaOffset);
     YAML::Node gps2Msgs = ph.node(gps2Node, "messages", 2);
-    ph.msgParams(rs_.gps2, "pos_vel", "gps2_pos_vel");
-    ph.msgParams(rs_.gps2_info, "info", "gps2_info");
-    ph.msgParams(rs_.gps2_raw, "raw", "gps2_raw");
+    ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel");
+    ph.msgParams(rs_.gps2_info, "info", "gps2/info");
+    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw");
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
 

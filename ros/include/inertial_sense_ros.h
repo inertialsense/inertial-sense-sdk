@@ -59,12 +59,55 @@
 class TopicHelper
 {
 public:
+
+    void streamingCheckCopyData(void *sptr, const p_data_t *data, const unsigned int maxsize)
+    {
+        if (!streaming)
+        { 
+            streaming = true; 
+            ROS_INFO("%s response received", cISDataMappings::GetDataSetName(data->hdr.id)); 
+        }
+	    copyDataPToStructP(sptr, data, maxsize);
+    }
+
     std::string topic;
     bool enabled = false;
     bool streaming = false;
     int period = 1;             // Period multiple (data rate divisor)
     ros::Publisher pub;
 };
+
+class TopicHelperGps: public TopicHelper
+{
+public:
+    bool streaming_pos = false;
+    bool streaming_vel = false;
+    std::string type = "F9P";
+    float antennaOffset[3] = {0, 0, 0};
+};
+
+class TopicHelperGpsRtk: public TopicHelper
+{
+public:
+    bool streamingMisc = false;
+    bool streamingRel = false;
+    ros::Publisher pubInfo;
+    ros::Publisher pubRel;
+};
+
+class TopicHelperGpsRaw: public TopicHelper
+{
+public:
+    std::string topicObs;
+    std::string topicEph;
+    std::string topicGEp;
+    ros::Publisher pubObs;
+    ros::Publisher pubEph;
+    ros::Publisher pubGEp;
+    ros::Timer obs_bundle_timer;
+    ros::Time last_obs_time;
+};
+
 class ParamHelper
 {
 public:
@@ -99,37 +142,6 @@ public:
 
     YAML::Node currentNode_;
     int indent_ = 1;
-};
-
-class TopicHelperGps: public TopicHelper
-{
-public:
-    bool streaming_pos = false;
-    bool streaming_vel = false;
-    std::string type = "F9P";
-    float antennaOffset[3] = {0, 0, 0};
-};
-
-class TopicHelperGpsRtk: public TopicHelper
-{
-public:
-    bool streamingMisc = false;
-    bool streamingRel = false;
-    ros::Publisher pubInfo;
-    ros::Publisher pubRel;
-};
-
-class TopicHelperGpsRaw: public TopicHelper
-{
-public:
-    std::string topicObs;
-    std::string topicEph;
-    std::string topicGEp;
-    ros::Publisher pubObs;
-    ros::Publisher pubEph;
-    ros::Publisher pubGEp;
-    ros::Timer obs_bundle_timer;
-    ros::Time last_obs_time;
 };
 
 
@@ -261,6 +273,11 @@ public:
 
     ros::NodeHandle nh_;
     ros::NodeHandle nh_private_;
+
+    struct
+    {
+    	ins_1_t ins1;
+    } did_;
 
     struct
     {

@@ -122,22 +122,22 @@ gps1:
   gpsTimeUserDelay: 0.0
   messages:
     pos_vel:
-      topic: "gps1_pos_vel"
+      topic: "gps1/pos_vel"
       enable: true
       period: 1
     navsatfix:
       topic: "/NavSatFix"                        # /navsatfix
       enable: false
     info:
-      topic: "gps1_info"                        # inertialsense/gps1/info
+      topic: "gps1/info"                        # inertialsense/gps1/info
       enable: true
       period: 5                                 # Publish every 1 second (200ms x 5)
     raw:
-      topic: "gps1"                             # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
+      topic: "gps1/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
       enable: true
       period: 5                                 # Publish every 1 second (200ms x 5)
     rtk_pos_rel:
-      topic: "gps1_pos_vel"
+      topic: "gps1/pos_vel"
       enable: true
       period: 1
     rel:
@@ -162,22 +162,22 @@ gps2:
   gpsTimeUserDelay: 0.0
   messages:
     pos_vel:
-      topic: "gps2_pos_vel"
+      topic: "gps2/pos_vel"
       enable: true
       period: 1
     navsatfix:
       topic: "/NavSatFix"                        # /navsatfix
       enable: false
     info:
-      topic: "gps2_info"                        # inertialsense/gps1/info
+      topic: "gps2/info"                        # inertialsense/gps1/info
       enable: true
       period: 5                                 # Publish every 1 second (200ms x 5)
     raw:
-      topic: "gps2"                             # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
+      topic: "gps2/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
       enable: true
       period: 5                                 # Publish every 1 second (200ms x 5)
     rtk_pos_rel:
-      topic: "gps2_rtk_rel_pos"
+      topic: "gps2/rtk_rel_pos"
       enable: true
       period: 1
     rel:
