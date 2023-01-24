@@ -60,14 +60,17 @@ class TopicHelper
 {
 public:
 
-    void streamingCheckCopyData(void *sptr, const p_data_t *data, const unsigned int maxsize)
+    void streamingCheck(eDataIDs did)
     {
-        if (!streaming)
+        streamingCheck(did, streaming);
+    }
+    void streamingCheck(eDataIDs did, bool &stream)
+    {
+        if (!stream)
         { 
-            streaming = true; 
-            ROS_INFO("%s response received", cISDataMappings::GetDataSetName(data->hdr.id)); 
+            stream = true; 
+            ROS_INFO("%s response received", cISDataMappings::GetDataSetName(did)); 
         }
-	    copyDataPToStructP(sptr, data, maxsize);
     }
 
     std::string topic;

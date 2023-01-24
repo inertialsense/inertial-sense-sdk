@@ -134,7 +134,7 @@ gps1:
       period: 5                                 # Publish every 1 second (200ms x 5)
     raw:
       topic: "gps1/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
-      enable: true
+      enable: false
       period: 5                                 # Publish every 1 second (200ms x 5)
     rtk_pos_rel:
       topic: "gps1/pos_vel"
@@ -174,7 +174,7 @@ gps2:
       period: 5                                 # Publish every 1 second (200ms x 5)
     raw:
       topic: "gps2/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
-      enable: true
+      enable: false
       period: 5                                 # Publish every 1 second (200ms x 5)
     rtk_pos_rel:
       topic: "gps2/rtk_rel_pos"
