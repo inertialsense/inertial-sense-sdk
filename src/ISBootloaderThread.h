@@ -98,6 +98,7 @@ private:
     static void update_thread_serial(void* context);
     static void update_thread_libusb(void* context);
     static void mgmt_thread_libusb(void* context);
+    static bool true_if_cancelled(void);
 
     static ISBootloader::firmwares_t m_firmware;
     

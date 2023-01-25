@@ -238,9 +238,6 @@ void sd_card_logger_init(void)
     /* Init real-time clock: RTC configuration, 24-hour mode */
     rtc_set_hour_mode(RTC, 0);
 
-    /* Init real-time timer */
-    time_init();    
-
 #if USE_RTC_DATE_TIME
 	/* Init real-time clock */    
 	if((RTC->RTC_CR & (RTC_CR_UPDTIM | RTC_CR_UPDCAL)) != 0)	//Make sure RTC is running
