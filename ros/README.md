@@ -38,7 +38,7 @@ For instructions on changing parameter values and topic remapping from the comma
 
 ```bash
 rosparam set /inertial_sense_ros/navigation_dt_ms 16
-rosparam set /inertial_sense_ros/msg/ins2/enable true
+rosparam set /inertial_sense_ros/msg/did_ins2/enable true
 rosparam set /inertial_sense_ros/ref_lla "[40.25, -111.67, 1556.59]"
 rosparam set /inertial_sense_ros/gps1_ant_xyz "[0.2, 0.0, 0.3]"
 rosrun inertial_sense_ros inertial_sense_node
@@ -71,9 +71,9 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
 - `odom_ins_ecef`(nav_msgs/Odometry)
    -  full 12-DOF measurements from onboard estimator in ECEF frame.
 - `did_ins1` (inertial_sense_ros/did_ins1)
-   -  Standard Inertial Sense [DID_INS_1](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_1) Definition
+   -  Standard Inertial Sense [DID_INS_1](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins1) Definition
 - `did_ins2` (inertial_sense_ros/did_ins2)
-   -  Standard Inertial Sense [DID_INS_2](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_2) Definition
+   -  Standard Inertial Sense [DID_INS_2](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins2) Definition
 - `did_ins4` (inertial_sense_ros/did_ins4)
    -  Standard Inertial Sense [DID_INS_4](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_4) Definition
 - `inl2_states` (inertial_sense_ros/INL2States)
@@ -107,7 +107,7 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
 - `RTK_cmp/rel` (inertial_sense_ros/RTKRel)
    -  Relative measurement between RTK compassing moving base and rover
 
-- `strobe_time` (std_msgs/Header)
+- `strobe_in` (std_msgs/Header)
    -  Timestamp of strobe in message header
 - `diagnostics` (diagnostic_msgs/DiagnosticArray)
    -  Diagnostic message of RTK status.
@@ -140,17 +140,17 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
 
 **Topic Configuration**
 
-- `~msg/ins1/enable` (bool, default: false)
+- `~msg/did_ins1/enable` (bool, default: false)
    - Flag to stream did_ins1 message
-- `~msg/ins1/period` (int, default: 1)
+- `~msg/did_ins1/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~msg/ins2/enable` (bool, default: false)
+- `~msg/did_ins2/enable` (bool, default: false)
    - Flag to stream did_ins2 message
-- `~msg/ins2/period` (int, default: 1)
+- `~msg/did_ins2/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~msg/ins4/enable` (bool, default: false)
+- `~msg/did_ins4/enable` (bool, default: false)
    - Flag to stream did_ins4 message
-- `~msg/ins4/period` (int, default: 1)
+- `~msg/did_ins4/period` (int, default: 1)
    - Configures period multiple of data set stream rate
 - `~msg/odom_ins_ned/enable` (bool, default: true)
    - Flag to stream navigation solution in NED

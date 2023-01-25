@@ -79,7 +79,7 @@ typedef uint32_t eDataIDs;
 #define DID_UNUSED_45           		(eDataIDs)45 /** used to be internal DID_SYS_SENSORS_SIGMA */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
-#define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) */
+#define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) INS Extended Kalman Filter (EKF) states */
 #define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
 #define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
 #define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
@@ -960,10 +960,10 @@ typedef struct PACKED
     /** (m)     Barometer bias */
     float					biasBaro;               
 	
-    /** (rad)   Magnetic declination */
+    /** (rad)   Magnetic mag_declination */
     float					magDec;                 
 	
-    /** (rad)   Magnetic inclination */
+    /** (rad)   Magnetic mag_inclination */
     float					magInc;                 
 } inl2_states_t;
 
@@ -1576,7 +1576,7 @@ typedef struct PACKED
 	/** Mag recalibration progress indicator: 0-100 % */
 	float					progress;
 
-	/** Magnetic declination estimate */
+	/** Magnetic mag_declination estimate */
 	float					declination;
 } mag_cal_t;
 
@@ -1607,7 +1607,7 @@ typedef struct PACKED
 	/** Heading from INS */			
 	float					insHdg;
 
-	/** Difference between mag heading and (INS heading plus mag declination) */
+	/** Difference between mag heading and (INS heading plus mag mag_declination) */
 	float					magInsHdgDelta;
 
 	/** Normalized innovation squared (likelihood metric) */
@@ -1863,7 +1863,7 @@ enum eSysConfigBits
 	UNUSED2                                             = (int)0x00000002,
 	/*! Enable automatic mag recalibration */
 	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
-	/*! Disable mag declination estimation */
+	/*! Disable mag mag_declination estimation */
 	SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION            = (int)0x00000008,
 
 	/*! Disable LEDs */
@@ -2512,7 +2512,7 @@ typedef struct PACKED
     /** Serial port 1 baud rate in bits per second */
     uint32_t				ser1BaudRate;
 
-    /** Rotation in radians about the X, Y, Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z, Y, X. */
+    /** Rotation in radians about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X. */
     float					insRotation[3];
 
     /** X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame. */
@@ -2566,7 +2566,7 @@ typedef struct PACKED
     /** (sec) User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.  */
     float                   gpsTimeUserDelay;
 
-    /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
+    /** Earth magnetic field (magnetic north) mag_declination (heading offset from true north) in radians */
     float                   magDeclination;
 
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
@@ -2609,7 +2609,7 @@ typedef struct PACKED
 	float					StdGyrBias[3];		
     /** Barometric altitude bias error sigma */
 	float					StdBarBias;		
-    /** Mag declination error sigma */
+    /** Mag mag_declination error sigma */
 	float					StdMagDeclination;	
 } inl2_ned_sigma_t;
 
@@ -3006,7 +3006,7 @@ typedef struct
 	/** Orbit eccentricity (non-dimensional)  */
 	double e;
 
-	/** Orbit inclination angle at reference time (rad) */
+	/** Orbit mag_inclination angle at reference time (rad) */
 	double i0;
 
 	/** Longitude of ascending node of orbit plane at weekly epoch (rad) */

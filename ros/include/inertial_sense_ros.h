@@ -48,13 +48,105 @@
 #define FIRMWARE_VERSION_CHAR1 9
 #define FIRMWARE_VERSION_CHAR2 0
 
-#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                          \
-    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                     \
-                            [this](InertialSense *i, p_data_t *data, int pHandle)      \
-                            {                                                          \
-                                /* ROS_INFO("Got message %d", DID);*/                  \
+#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
+    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
+                            [this](InertialSense *i, p_data_t *data, int pHandle)           \
+                            {                                                               \
+                                /* ROS_INFO("Got message %d", DID);*/                       \
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
                             })
+
+class TopicHelper
+{
+public:
+
+    void streamingCheck(eDataIDs did)
+    {
+        streamingCheck(did, streaming);
+    }
+    void streamingCheck(eDataIDs did, bool &stream)
+    {
+        if (!stream)
+        { 
+            stream = true; 
+            ROS_INFO("%s response received", cISDataMappings::GetDataSetName(did)); 
+        }
+    }
+
+    std::string topic;
+    bool enabled = false;
+    bool streaming = false;
+    int period = 1;             // Period multiple (data rate divisor)
+    ros::Publisher pub;
+};
+
+class TopicHelperGps: public TopicHelper
+{
+public:
+    bool streaming_pos = false;
+    bool streaming_vel = false;
+    std::string type = "F9P";
+    float antennaOffset[3] = {0, 0, 0};
+};
+
+class TopicHelperGpsRtk: public TopicHelper
+{
+public:
+    bool streamingMisc = false;
+    bool streamingRel = false;
+    ros::Publisher pubInfo;
+    ros::Publisher pubRel;
+};
+
+class TopicHelperGpsRaw: public TopicHelper
+{
+public:
+    std::string topicObs;
+    std::string topicEph;
+    std::string topicGEp;
+    ros::Publisher pubObs;
+    ros::Publisher pubEph;
+    ros::Publisher pubGEp;
+    ros::Timer obs_bundle_timer;
+    ros::Time last_obs_time;
+};
+
+class ParamHelper
+{
+public:
+    ParamHelper(YAML::Node &node){ setCurrentNode(node); }
+
+    static bool paramServerToYamlNode(YAML::Node &node, std::string nhKey="", std::string indentStr="");
+    void print_indent(int indent);
+
+    YAML::Node node(YAML::Node &node, std::string key, int indent=1);
+    void setCurrentNode(YAML::Node node);
+
+    bool msgParams(TopicHelper &th, std::string key, std::string topicDefault="", bool enabledDefault=false, int periodDefault=1);
+
+    template <typename Type>
+    bool param(YAML::Node &node, const std::string key, Type &val, Type &valDefault);
+    bool nodeParam(const std::string key, std::string &val, std::string valDefault=""){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, double &val, double valDefault=0.0){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, float &val, float valDefault=0.0f){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, bool &val, bool valDefault=false){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(const std::string key, int &val, int valDefault=0){ return param(currentNode_, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, std::string &val, std::string valDefault=""){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, double &val, double valDefault=0.0){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, float &val, float valDefault=0.0f){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, bool &val, bool valDefault=false){ return param(node, key, val, valDefault); }
+    bool nodeParam(YAML::Node &node, const std::string key, int &val, int valDefault=0){ return param(node, key, val, valDefault); }
+    template <typename Derived1>
+    bool paramVec(YAML::Node &node, const std::string key, int size, Derived1 &val, Derived1 &valDefault);
+    bool nodeParamVec(const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(currentNode_, key, size, val, valDefault); }
+    bool nodeParamVec(const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(currentNode_, key, size, val, valDefault); }
+    bool nodeParamVec(YAML::Node &node, const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
+    bool nodeParamVec(YAML::Node &node, const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
+
+    YAML::Node currentNode_;
+    int indent_ = 1;
+};
+
 
 class InertialSenseROS //: SerialListener
 {
@@ -74,17 +166,6 @@ public:
     void update();
 
     void load_params(YAML::Node &node);
-    bool getParam(const std::string &key, std::string &s);
-    bool getParam(const std::string &key, double &d);
-    bool getParam(const std::string &key, float &f);    
-    bool getParam(const std::string &key, int &i);
-    bool getParam(const std::string &key, bool &b);
-    bool getParam(const std::string &key, XmlRpc::XmlRpcValue &v);
-
-    template <typename Type>
-    bool get_node_param_yaml(YAML::Node node, const std::string key, Type &val);
-    template <typename Derived1>
-    bool get_node_vector_yaml(YAML::Node node, const std::string key, int size, Derived1 &val);
     void connect();
     bool firmware_compatiblity_check();
     void set_navigation_dt_ms();
@@ -98,59 +179,19 @@ public:
     void configure_ascii_output();
     void start_log();
 
-    template <typename T>
-    bool getParamVector(const std::string &key, uint32_t size, T &data);
     void get_flash_config();
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
     bool flashConfigStreaming_ = false;
     // Serial Port Configuration
-    std::string port_ = "/dev/ttyACM0";
-    int baudrate_ = 921600;
+    std::string port_;
+    int baudrate_;
     bool initialized_;
-    bool log_enabled_ = false;
-    bool covariance_enabled_ = false;
+    bool log_enabled_;
+    bool covariance_enabled_;
+    int platformConfig_ = 0;
 
-    std::string frame_id_ = "body";
-
-    // ROS Stream handling
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pub;
-    } ros_stream_t;
-
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming_pos = false;
-        bool streaming_vel = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pub;
-    } ros_stream_gps_t;
-
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming = false;
-        bool streamingMisc = false;
-        bool streamingRel = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pubInfo;
-        ros::Publisher pubRel;
-    } ros_stream_gps_rkt_t;
-
-    typedef struct
-    {
-        bool enabled = false;
-        bool streaming = false;
-        int period = 1;             // Period multiple (data rate divisor)
-        ros::Publisher pubObs;
-        ros::Publisher pubEph;
-        ros::Publisher pubGEp;
-    } ros_stream_gps_raw_t;
+    std::string frame_id_;
 
     tf::TransformBroadcaster br;
     bool publishTf_ = true;
@@ -187,10 +228,11 @@ public:
     bool rtk_connectivity_watchdog_enabled_ = true;
     float rtk_connectivity_watchdog_timer_frequency_ = 1;
     int rtk_data_transmission_interruption_limit_ = 5;
-    std::string RTK_server_mount_ = "";
-    std::string RTK_server_username_ = "";
-    std::string RTK_server_password_ = "";
-    std::string RTK_correction_protocol_ = "RTCM3";
+    std::string RTK_correction_type_;
+    std::string RTK_server_mount_point_;
+    std::string RTK_server_username_;
+    std::string RTK_server_password_;
+    std::string RTK_correction_protocol_;
     std::string RTK_server_IP_ = "127.0.0.1";
     int RTK_server_port_ = 7777;
     bool RTK_rover_ = false;
@@ -199,11 +241,6 @@ public:
     bool RTK_base_serial_ = false;
     bool RTK_base_TCP_ = false;
     bool GNSS_Compass_ = false;
-
-    std::string gps1_type_ = "F9P";
-    std::string gps1_topic_ = "gps1";
-    std::string gps2_type_ = "F9P";
-    std::string gps2_topic_ = "gps2";
 
     ros::Timer rtk_connectivity_watchdog_timer_;
     void start_rtk_connectivity_watchdog_timer();
@@ -237,33 +274,42 @@ public:
     float diagnostic_ar_ratio_, diagnostic_differential_age_, diagnostic_heading_base_to_rover_;
     uint diagnostic_fix_type_;
 
+    ros::NodeHandle nh_;
+    ros::NodeHandle nh_private_;
+
     struct
     {
-        ros_stream_t ins1;
-        ros_stream_t ins2;
-        ros_stream_t ins4;
-        ros_stream_t odom_ins_ned;
-        ros_stream_t odom_ins_ecef;
-        ros_stream_t odom_ins_enu;
-        ros_stream_t inl2_states;
+    	ins_1_t ins1;
+    } did_;
 
-        ros_stream_t imu;
-        ros_stream_t pimu;
-        ros_stream_t mag;
-        ros_stream_t baro;
+    struct
+    {
+        TopicHelper did_ins1;
+        TopicHelper did_ins2;
+        TopicHelper did_ins4;
+        TopicHelper odom_ins_ned;
+        TopicHelper odom_ins_ecef;
+        TopicHelper odom_ins_enu;
+        TopicHelper inl2_states;
 
-        ros_stream_gps_t gps1;
-        ros_stream_gps_t gps2;
-        ros_stream_t navsatfix;
-        ros_stream_t gps1_info;
-        ros_stream_t gps2_info;
-        ros_stream_gps_raw_t gps1_raw;
-        ros_stream_gps_raw_t gps2_raw;
-        ros_stream_gps_raw_t gpsbase_raw;
-        ros_stream_gps_rkt_t rtk_pos;
-        ros_stream_gps_rkt_t rtk_cmp;
+        TopicHelper imu;
+        TopicHelper pimu;
+        TopicHelper magnetometer;
+        TopicHelper barometer;
+        TopicHelper strobe_in;
 
-        ros_stream_t diagnostics;
+        TopicHelperGps gps1;
+        TopicHelperGps gps2;
+        TopicHelper navsatfix;
+        TopicHelper gps1_info;
+        TopicHelper gps2_info;
+        TopicHelperGpsRaw gps1_raw;
+        TopicHelperGpsRaw gps2_raw;
+        TopicHelperGpsRaw gpsbase_raw;
+        TopicHelperGpsRtk rtk_pos;
+        TopicHelperGpsRtk rtk_cmp;
+
+        TopicHelper diagnostics;
     } rs_;
 
     bool NavSatFixConfigured = false;
@@ -403,26 +449,32 @@ public:
 
     float poseCov_[36], twistCov_[36];
 
-    ros::NodeHandle nh_;
-    ros::NodeHandle nh_private_;
-
     // Connection to the uINS
     InertialSense IS_;
 
     // Flash parameters
     // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
     // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
-    int navigation_dt_ms_ = 4;
-
+    int ins_nav_dt_ms_;
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
-    float gps1AntOffset_[3] = {0, 0, 0};
-    float gps2AntOffset_[3] = {0, 0, 0};
-    double refLla_[3] = {0, 0, 0};
-    float magDeclination_ = 0;
-    int insDynModel_ = INS_DYN_MODEL_AIRBORNE_4G;
+    double refLla_[3] = {0, 0, 0};      // Upload disabled if all zero
+    float magDeclination_;
+    int insDynModel_;
     bool refLLA_known = false;
-    int ioConfig_ = 38051936;   //(0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+    int ioConfig_;
     float gpsTimeUserDelay_ = 0;
 
+    // EVB Flash Parameters
+    struct evb_flash_parameters
+    {
+        int cb_preset;
+        int cb_options;
+    } evb_ = {};
+    
 };
+
+
+
+
+
