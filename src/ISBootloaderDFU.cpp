@@ -8,7 +8,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2022 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2023 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -190,10 +190,6 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
 
     SLEEP_MS(100);
 
-    // Reset the device
-//    ret_libusb = libusb_reset_device(*handle);
-//    if (ret_libusb < LIBUSB_SUCCESS) { return IS_OP_ERROR; }
-
     ret_libusb = libusb_claim_interface(*handle, 0);
     if (ret_libusb < LIBUSB_SUCCESS) { libusb_release_interface(*handle, 0); return IS_OP_ERROR; }
 
@@ -281,13 +277,6 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
     dfu_error ret_dfu;
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
     size_t image_sections;
-
-    // Reset the device
-//    ret_libusb = libusb_reset_device(m_dfu.handle_libusb);
-//    if(ret_libusb < LIBUSB_SUCCESS)
-//    {
-//        return IS_OP_ERROR;
-//    }
 
     SLEEP_MS(100);
 
@@ -496,18 +485,6 @@ is_operation_result cISBootloaderDFU::reboot()
     ret_dfu = dfu_wait_for_state(&m_dfu.handle_libusb, DFU_STATE_IDLE);
     if (ret_dfu < DFU_ERROR_NONE) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
-    // Set address pointer to flash
-    ret_dfu = dfu_set_address_pointer(&m_dfu.handle_libusb, 0x08000000);
-    if (ret_dfu < DFU_ERROR_NONE) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
-
-    // Request DFU leave
-    ret_libusb = dfu_DNLOAD(&m_dfu.handle_libusb, 0, NULL, 0);
-    if (ret_libusb < LIBUSB_SUCCESS) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
-
-    // Execute DFU leave
-    ret_dfu = dfu_wait_for_state(&m_dfu.handle_libusb, DFU_STATE_MANIFEST);
-    if (ret_dfu < DFU_ERROR_NONE)  { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
-
     // Reset USB device
     ret_libusb = libusb_reset_device(m_dfu.handle_libusb);
     if (ret_libusb < LIBUSB_SUCCESS)  { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
@@ -577,39 +554,27 @@ cISBootloaderDFU::dfu_error cISBootloaderDFU::dfu_set_address_pointer(libusb_dev
 
 cISBootloaderDFU::dfu_error cISBootloaderDFU::dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state)
 {
-    int ret_libusb;
-
-    dfu_status status;
+    dfu_status status = DFU_STATUS_ERR_UNKNOWN;
     uint32_t waitTime = 0;
     dfu_state state;
     uint8_t stringIndex;
 
     uint8_t tryCounter = 0;
 
-    ret_libusb = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
-    if (ret_libusb < LIBUSB_SUCCESS) 
-    {
-        return DFU_ERROR_LIBUSB;
-    }
+    dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
 
     while (status != DFU_STATUS_OK || state != required_state)
     {
         if (status != DFU_STATUS_OK)
         { 
-            ret_libusb = dfu_CLRSTATUS(dev_handle);
-            if (ret_libusb < LIBUSB_SUCCESS) return DFU_ERROR_LIBUSB;
+            dfu_CLRSTATUS(dev_handle);
         }
 
         SLEEP_MS(_MAX(waitTime, 10));
 
-        ret_libusb = dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
-        if (ret_libusb < LIBUSB_SUCCESS) 
-        {
-            return DFU_ERROR_LIBUSB;
-        }
+        dfu_GETSTATUS(dev_handle, &status, &waitTime, &state, &stringIndex);
 
-        tryCounter++;
-        if (tryCounter > 4) return DFU_ERROR_TIMEOUT;
+        if (++tryCounter > 5) return DFU_ERROR_TIMEOUT;
     }
 
     return DFU_ERROR_NONE;
