@@ -174,6 +174,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     // Default values appear in the 3rd parameter
     // Order of function calls matters because ParamHelper::node() sets the current node accessed by param functions nodeParam(), nodeParamVec(), msgParams(). 
+
+    // General parameters
     ParamHelper ph(node);
     ph.nodeParam("port", port_, "/dev/ttyACM0");
     ph.nodeParam("baudrate", baudrate_, 921600);
@@ -185,6 +187,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("publishTf", publishTf_);
     ph.nodeParam("platform", platformConfig_);
 
+    // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
     YAML::Node sensorsMsgs = ph.node(sensorsNode, "messages", 2);
     ph.msgParams(rs_.imu, "imu");
@@ -194,6 +197,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.strobe_in, "strobe_in");
     node["sensors"]["messages"] = sensorsMsgs;
 
+    // INS
     YAML::Node insNode = ph.node(node, "ins");
     ph.nodeParamVec("rotation", 3, insRotation_);
     ph.nodeParamVec("offset", 3, insOffset_);
@@ -206,11 +210,12 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned");
     ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned");
     ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla");
-    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef");
+    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true);
     ph.msgParams(rs_.inl2_states, "inl2_states");
     insNode["messages"] = insMsgs;
     node["ins"] = insNode;
 
+    // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
     ph.nodeParam("type", rs_.gps1.type);
     ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_);
@@ -223,6 +228,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     gps1Node["messages"] = gps1Msgs;
     node["gps1"] = gps1Node;
 
+    // GPS 2
     YAML::Node gps2Node = ph.node(node, "gps2");
     ph.nodeParam("type", rs_.gps2.type);
     ph.nodeParamVec("antenna_offset", 3, rs_.gps2.antennaOffset);

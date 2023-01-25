@@ -76,3 +76,8 @@ target_link_libraries(inertial_sense_node inertial_sense_ros ${catkin_LIBRARIES}
 # catkin_add_gtest(test_client_reconnect test/test_client_reconnect.cpp)
 # target_link_libraries(test_client_reconnect ${PROJECT_NAME})
 
+catkin_add_gtest(test_inertial_sense_ros 
+  test/test_main.cpp
+  test/test_communications.cpp
+)
+target_link_libraries(test_inertial_sense_ros ${PROJECT_NAME})
