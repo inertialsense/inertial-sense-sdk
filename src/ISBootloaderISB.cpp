@@ -152,6 +152,7 @@ is_operation_result cISBootloaderISB::reboot_up()
 
     // send the "reboot to program mode" command and the device should start in program mode
     serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
+    serialPortFlush(m_port);
     SLEEP_MS(1000);
     serialPortClose(m_port);
     return IS_OP_OK;
@@ -198,6 +199,7 @@ is_operation_result cISBootloaderISB::reboot_force()
     // restart bootloader command
     if(serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) != 15)
     {
+        status_update("(ISB) Error in reboot force", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
    
@@ -209,6 +211,7 @@ is_operation_result cISBootloaderISB::reboot()
     rst_serial_list_mutex.lock();
     if(find(rst_serial_list.begin(), rst_serial_list.end(), m_sn) != rst_serial_list.end())
     {
+        status_update("(ISB) Could not find serial port", IS_LOG_LEVEL_ERROR);
         rst_serial_list_mutex.unlock();
         return IS_OP_ERROR;
     }
@@ -389,6 +392,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         }
     } 
 
+    status_update("(ISB) Error in erase flash", IS_LOG_LEVEL_ERROR);
     return IS_OP_ERROR;
 }
 
@@ -516,30 +520,12 @@ is_operation_result cISBootloaderISB::upload_hex_page(unsigned char* hexData, in
         {
             break;
         }
-        // Some debug code
-//        else if(count == 0)
-//        {
-//            continue;
-//        }
-//        else
-//        {
-//            continue;
-//        }
+
         if (i == 9)
         {
             return IS_OP_ERROR;
         }
     }
-
-
-
-
-
-//     if (serialPortWriteAndWaitForTimeout(s, checkSumHex, 2, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
-//     {
-//         status_update("(ISB) Failed to write checksum to device", IS_LOG_LEVEL_ERROR);
-//         return IS_OP_ERROR;
-//     }
 
     *totalBytes += byteCount;
     *currentOffset += byteCount;
@@ -576,15 +562,6 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
 
         hexData += (pageByteCount * 2);
         charCount -= (pageByteCount * 2);
-
-        // // change to the next page
-        // *currentOffset = 0;
-        // (*currentPage)++;
-        // if (select_page(*currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
-        // {
-        //     status_update("(ISB) Failed to issue select page or to start programming", IS_LOG_LEVEL_ERROR);
-        //     return IS_OP_ERROR;
-        // }
     }
 
     if (charCount != 0 && upload_hex_page(hexData, charCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
@@ -629,7 +606,7 @@ is_operation_result cISBootloaderISB::download_data(int startOffset, int endOffs
     serial_port_t* s = m_port;
 
     // Atmel download data command is 0x03, different from standard intel hex where command 0x03 is start segment address
-    unsigned char programLine[24];
+    unsigned char programLine[25];
     int n;
     n = SNPRINTF((char*)programLine, 24, ":0500000300%.4X%.4XCC", startOffset, endOffset);
     programLine[n] = 0;
@@ -878,6 +855,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // upload this chunk
             if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                status_update("(ISB) Error in upload chunk", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
@@ -923,11 +901,13 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // flush the remainder of data to the page
             if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                status_update("(ISB) Error in upload hex", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
             // // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
             if (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                status_update("(ISB) Error in fill page", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
@@ -949,10 +929,12 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // flush the remainder of data to the page
             if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                status_update("(ISB) Error in upload hex (last)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
             if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                status_update("(ISB) Error in fill page (last)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
@@ -971,19 +953,6 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             }
         }
     }
-
-    // upload any left over data
-//    outputSize = (int)(outputPtr - output);
-//    if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
-//    {
-//        return IS_OP_ERROR;
-//    }
-
-    // pad the remainder of the page with fill bytes
-    // if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
-    // {
-    //     return IS_OP_ERROR;
-    // }
 
     if (m_update_callback != 0 && m_update_progress != 1.0f)
     {
@@ -1009,6 +978,12 @@ is_operation_result cISBootloaderISB::download_image(std::string filename)
     firmware_file = fopen(filename.c_str(), "rb");
 #endif
 
+    if (!firmware_file)
+    {
+        status_update("(ISB) Error in opening file", IS_LOG_LEVEL_ERROR);
+        return IS_OP_INCOMPATIBLE;
+    }
+
     status_update("(ISB) Erasing flash...", IS_LOG_LEVEL_INFO);
 
     result = erase_flash();
@@ -1024,6 +999,8 @@ is_operation_result cISBootloaderISB::download_image(std::string filename)
     if(result != IS_OP_OK) { fclose(firmware_file); return result; }
 
     fclose(firmware_file);
+
+    SLEEP_MS(1000); // Allow some time for commands to be sent in UART mode
 
     return IS_OP_OK;
 }

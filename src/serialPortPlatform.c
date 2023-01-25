@@ -416,7 +416,7 @@ static int serialPortFlushPlatform(serial_port_t* serialPort)
 
 #if PLATFORM_IS_WINDOWS
 
-    if (!PurgeComm(handle->platformHandle, PURGE_RXABORT | PURGE_RXCLEAR | PURGE_TXABORT | PURGE_TXCLEAR))
+    if(!FlushFileBuffers(handle->platformHandle))
     {
         return 0;
     }
