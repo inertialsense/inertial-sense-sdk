@@ -12,6 +12,9 @@ TEST(test_main, basic)
 {
     printf("We are here!\n");
 
+    ROS_ERROR("============================== Start =================================\n");
+    ROS_INFO("============================== Start =================================\n");
+
 
 	bool success = false;
 	unsigned int startTimeMs = current_timeMs();
@@ -19,6 +22,9 @@ TEST(test_main, basic)
 	{
 		SLEEP_MS(200);
         printf("waiting...\n");
+        ROS_ERROR("time: %d\n", current_timeMs());
+
+        ROS_ERROR("============================== inside loop =================================\n");
 
         if (testNode.did_rx_pimu_)
         {
@@ -27,6 +33,8 @@ TEST(test_main, basic)
             break;
         }
     }
+
+    ROS_ERROR("============================== End =================================\n");
 
     ASSERT_TRUE( success );
 }
