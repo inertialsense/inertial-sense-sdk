@@ -18,11 +18,12 @@ public:
     void cbWheelEncoder(const sensor_msgs::JointState &msg);
     void cbPIMU(const inertial_sense_ros::PIMUPtr &pimu);
 
+    bool did_rx_pimu_ = false;
 
 private:
 
     ros::Subscriber sub_wheel_encoder_;    
-    ros::Subscriber sub_imu_;
+    ros::Subscriber sub_pimu_;
     
 
 };

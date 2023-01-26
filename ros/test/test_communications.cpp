@@ -4,7 +4,7 @@
 
 
 
-#if 0
+#if 1
 TEST(test_communications, basic)
 {
     printf("Test Communications\n");

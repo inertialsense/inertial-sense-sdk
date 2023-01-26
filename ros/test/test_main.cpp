@@ -19,17 +19,23 @@ TEST(test_main, basic)
 	{
 		SLEEP_MS(200);
         printf("waiting...\n");
+
+        if (testNode.did_rx_pimu_)
+        {
+            printf("Found message\n");
+            success = true;
+            break;
+        }
     }
 
-    ASSERT_TRUE( true );
-
+    ASSERT_TRUE( success );
 }
 
 void cTestNode::init()
 {
     ros::NodeHandle nh;
     sub_wheel_encoder_      = nh.subscribe("msg_wheel_encoder", 1, &cTestNode::cbWheelEncoder, this);
-    sub_imu_                = nh.subscribe("pimu", 1, &cTestNode::cbPIMU, this);
+    sub_pimu_               = nh.subscribe("pimu", 1, &cTestNode::cbPIMU, this);
 }
 
 bool cTestNode::step()
@@ -61,6 +67,7 @@ void cTestNode::cbWheelEncoder(const sensor_msgs::JointState &msg)
 
 void cTestNode::cbPIMU(const inertial_sense_ros::PIMUPtr &pimu)
 {
+    testNode.did_rx_pimu_ = true;
 
     printf("Rx PIMU\n");
 }
