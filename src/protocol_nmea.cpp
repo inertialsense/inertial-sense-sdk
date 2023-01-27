@@ -228,9 +228,9 @@ int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek)
 {
 	int n = SNPRINTF(a, aSize, "$PTOW");
-	n += SNPRINTF(a+n, aSize-n, ",%.6lf", imuTow);		// 1
-	n += SNPRINTF(a+n, aSize-n, ",%.6lf", insTow);		// 2
-	n += SNPRINTF(a+n, aSize-n, ",%u", gpsWeek);		// 3
+	n += SNPRINTF(a+n, aSize-n, ",%.6lf", imuTow);			// 1
+	n += SNPRINTF(a+n, aSize-n, ",%.6lf", insTow);			// 2
+	n += SNPRINTF(a+n, aSize-n, ",%u", gpsWeek);			// 3
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
 	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
@@ -242,13 +242,13 @@ int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu)
 	int n = SNPRINTF(a, aSize, "$PIMU");
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", imu.time);		// 1
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[0]);	// 2
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[1]);	// 3
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[2]);	// 4
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[0]);		// 2
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[1]);		// 3
+	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[2]);		// 4
 
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[0]);	// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[1]);	// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[2]);	// 7
+	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[0]);		// 5
+	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[1]);		// 6
+	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[2]);		// 7
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
 	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
@@ -783,7 +783,7 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
 {
 	(void)aSize;
-	char *ptr = (char *)&a[7];	// $PINS1
+	char *ptr = (char *)&a[6];	// $PIMU,
 	
 	// Time since system powerup 
 	ASCII_to_f64(&(imu.time), ptr);
@@ -799,7 +799,7 @@ int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
 int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
 {
 	(void)aSize;
-	char *ptr = (char *)&a[7];	// $PINS1
+	char *ptr = (char *)&a[7];	// $PPIMU,
 	
 	// Time since system powerup 
 	ASCII_to_f64(&(pimu.time), ptr);
