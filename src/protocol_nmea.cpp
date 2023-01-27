@@ -136,6 +136,32 @@ double timeToGpst(gtime_t t, int *week)
 	return (double)(sec-(double)w*86400*7)+t.sec;
 }
 
+void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
+{
+#define SET_ASCII_RMCI(did, ascii_rmc_bits, period) { \
+	rmci.periodMultiple[(did)] = (uint8_t)(period); \
+	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
+}
+
+#define SET_ASCII_RMCI_GPS(did, ascii_rmc_bits, period) { \
+	if (period){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], (uint8_t)(period)); } \
+	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
+}
+
+	SET_ASCII_RMCI(DID_IMU, ASCII_RMC_BITS_PIMU, tmp.pimu);
+	SET_ASCII_RMCI(DID_PIMU, ASCII_RMC_BITS_PPIMU, tmp.ppimu);
+	SET_ASCII_RMCI(DID_INS_1, ASCII_RMC_BITS_PINS1, tmp.pins1);
+	SET_ASCII_RMCI(DID_INS_2, ASCII_RMC_BITS_PINS2, tmp.pins2);
+
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PGPSP, tmp.pgpsp);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGGA, tmp.gpgga);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGLL, tmp.gpgll);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGSA, tmp.gpgsa);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPRMC, tmp.gprmc);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPZDA, tmp.gpzda);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // DID to NMEA
@@ -838,32 +864,6 @@ int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
 //////////////////////////////////////////////////////////////////////////
 // Parse NMEA Functions
 //////////////////////////////////////////////////////////////////////////
-
-void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
-{
-#define SET_ASCII_RMCI(did, ascii_rmc_bits, period) { \
-	rmci.periodMultiple[(did)] = (uint8_t)(period); \
-	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
-}
-
-#define SET_ASCII_RMCI_GPS(did, ascii_rmc_bits, period) { \
-	if (period){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], (uint8_t)(period)); } \
-	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
-}
-
-	SET_ASCII_RMCI(DID_IMU, ASCII_RMC_BITS_PIMU, tmp.pimu);
-	SET_ASCII_RMCI(DID_PIMU, ASCII_RMC_BITS_PPIMU, tmp.ppimu);
-	SET_ASCII_RMCI(DID_INS_1, ASCII_RMC_BITS_PINS1, tmp.pins1);
-	SET_ASCII_RMCI(DID_INS_2, ASCII_RMC_BITS_PINS2, tmp.pins2);
-
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PGPSP, tmp.pgpsp);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGGA, tmp.gpgga);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGLL, tmp.gpgll);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGSA, tmp.gpgsa);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPRMC, tmp.gprmc);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPZDA, tmp.gpzda);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
-}
 
 // Returns RMC options
 uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])

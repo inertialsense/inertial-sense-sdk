@@ -1593,7 +1593,7 @@ enum eMagCalState
 	MAG_CAL_STATE_ABORT				= (int)101,
 
 	/** STATUS: Mag recalibration is in progress */
-	MAG_CAL_STATE_RECAL_RUNNING	= (int)200,
+	MAG_CAL_STATE_RECAL_RUNNING		= (int)200,
 
 	/** STATUS: Mag recalibration has completed */
 	MAG_CAL_STATE_RECAL_COMPLETE	= (int)201,
