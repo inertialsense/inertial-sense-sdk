@@ -1563,7 +1563,7 @@ typedef struct PACKED
     /**  */
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
-    /** Data stream enable bits for the specified ports.  (see ASCII_RMC_BITS_...) */
+    /** ASCII NMEA data stream enable bits for the specified ports.  (see ASCII_RMC_BITS_...) */
     uint32_t                bitsAscii;
 
 } rmci_t;
