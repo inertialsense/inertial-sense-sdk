@@ -1282,50 +1282,6 @@ typedef struct PACKED
 	
 } ascii_msgs_t;
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
-typedef struct PACKED
-{
-	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
-	uint32_t				options;
-
-	/** Broadcast period multiple - ASCII dual IMU data. 0 to disable. */
-	uint32_t				pimu;
-
-	/** Broadcast period multiple - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
-	uint32_t				ppimu;
-	
-	/** Broadcast period multiple - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
-	uint32_t				pins1;
-
-	/** Broadcast period multiple - ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
-	uint32_t				pins2;
-	
-	/** Broadcast period multiple - ASCII GPS position data. 0 to disable. */
-	uint32_t				pgpsp;
-
-	/** Broadcast period multiple - Reserved.  Leave zero. */
-	uint32_t				reserved;
-
-	/** Broadcast period multiple - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
-	uint32_t				gpgga;
-
-	/** Broadcast period multiple - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
-	uint32_t				gpgll;
-
-	/** Broadcast period multiple - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
-	uint32_t				gpgsa;
-
-	/** Broadcast period multiple - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
-	uint32_t				gprmc;
-	
-	/** Broadcast period multiple - ASCII NMEA Data and Time. 0 to disable. */
-	uint32_t				gpzda;
-
-	/** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
-	uint32_t				pashr;
-	
-} ascii_msgs_u32_t;
-
 typedef struct PACKED
 {
 	/** (rad/s) Gyros.  Units only apply for calibrated data. */
