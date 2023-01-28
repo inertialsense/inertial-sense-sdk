@@ -591,44 +591,15 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 	case 0:
 	case 1:
 	case 2:
-	// case 3 is below this to catch bad lengths before any more is parsed. Can be adapted to filter messages later.
+	// case 3 is below this to catch bad CRCs before any more is parsed. Can be adapted to filter messages later.
 	case 4:
 	case 5:
 	case 6:
-	// cases 7:11 are for variable length stuff, and are below
 		instance->parseState++;
 		break;
 
 	case 3: {
-		uint16_t payloadLen = ((((uint16_t)(instance->buf.head[1]) & 0x01) << 9) |
-				(((uint16_t)(instance->buf.head[2])) << 1) |
-				((instance->buf.head[3] & 0x80) >> 7));
-        if(payloadLen > 1023)
-		{
-			// corrupt data
-			instance->rxErrorCount++;
-			reset_parser(instance);
-			return _PTYPE_PARSE_ERROR;
-		}
-
-        // Check that the type is valid
-		uint8_t type = ((instance->buf.head[1]) & 0xFE) >> 1;
-		switch(type)
-		{
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		case 120:
-			break;
-		default:
-			instance->rxErrorCount++;
-			reset_parser(instance);
-			return _PTYPE_PARSE_ERROR;
-		}
-
-        // Check length and header CRC4
+		// Check length and header CRC4
         uint8_t calc = crc4_simple(&instance->buf.head[1]);
         if((instance->buf.head[3] & 0x0F) != calc)
         {
@@ -638,9 +609,6 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 			return _PTYPE_PARSE_ERROR;
         }
 
-//        instance->parseState = -(payloadLen + 5);
-//        instance->parseState -= (((instance->buf.head[3] >> 4) & 0x03));
-
         instance->parseState++;
 	} break;
 
@@ -649,56 +617,12 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 	case 9:
 	case 10:
 	case 11: {		// we may need to parse up to byte 11 (12th byte) to get the timestamp and encryption length
-		uint16_t payloadLen = (((uint16_t)(instance->buf.head[1]) & 0x01) << 9) |
-							(((uint16_t)(instance->buf.head[2])) << 1) |
-							((instance->buf.head[3] & 0x80) >> 7);
+		uint16_t payloadLen = ((((uint16_t)(instance->buf.head[1]) & 0x01) << 9) |
+						(((uint16_t)(instance->buf.head[2])) << 1) |
+						((instance->buf.head[3] & 0x80) >> 7)) & 0x3FF;
 
 		// Variable length CRC {0x0, 0x1, 0x2, 0x3} = {1, 2, 3, 4}bytes - appears at end of message
 		payloadLen += (((instance->buf.head[3] >> 4) & 0x03) + 1);
-
-		// Check that the subtype is valid
-		int8_t error = -1;
-		uint8_t type = ((instance->buf.head[1]) & 0xFE) >> 1;
-		uint8_t subtype = ((instance->buf.head[4]) & 0xF0) >> 4;
-		switch(type)
-		{
-		case 0:
-		case 1:
-			if(subtype > 4)
-			{
-				error = type;
-			}
-			break;
-		case 2:
-		case 3:
-			if(subtype > 0)
-			{
-				error = type;
-			}
-			break;
-		case 4:
-			if(subtype > 1)
-			{
-				error = type;
-			}
-			break;
-		case 120:
-			if(subtype > 2)
-			{
-				error = type;
-			}
-			break;
-		default:
-			error = type;
-			break;
-		}
-
-		if(error != -1)
-		{
-			instance->rxErrorCount++;
-			reset_parser(instance);
-			return _PTYPE_PARSE_ERROR;
-		}
 
 		// Variable length time
 		if((instance->buf.head[4] & 0x08) == 0)
@@ -712,7 +636,7 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 			}
 		}
 
-		if(instance->parseState == 7 || instance->parseState == 8)
+		if(instance->parseState < 9 || instance->parseState == 10)
 		{
 			instance->parseState++;
 			break;	// Full header not present yet
@@ -807,7 +731,9 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 
 
 	default:
-		if ((instance->parseState + 1) == 0)
+		instance->parseState++;
+
+		if (instance->parseState == 0)
 		{
 			instance->dataPtr = instance->buf.head;
 			instance->dataHdr.id = 0;
@@ -815,19 +741,19 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 			instance->dataHdr.offset = 0;
 			instance->pktPtr = instance->buf.head;
 			reset_parser(instance);
-			return _PTYPE_SPARTN;
+
+			serWrite(1, instance->dataPtr, instance->dataHdr.size);
+			return _PTYPE_NONE;
 
 			// TODO: Implement CRC check for SPARTN (variable length based on header)
 		}
-		else if((instance->parseState + 1) > 0)
+		else if(instance->parseState > 0)
 		{
 			// corrupt data or bad state
 			instance->rxErrorCount++;
 			reset_parser(instance);
 			return _PTYPE_PARSE_ERROR;
 		}
-
-		instance->parseState++;
 
 		break;
 	}
