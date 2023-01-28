@@ -786,7 +786,7 @@ int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
 	char *ptr = (char *)&a[6];	// $PIMU,
 	
 	// Time since system powerup 
-	ASCII_to_f64(&(imu.time), ptr);
+	ptr = ASCII_to_f64(&(imu.time), ptr);
 
 	// PQR angular rate
 	ptr = ASCII_to_vec3f(imu.I.pqr, ptr);
@@ -802,7 +802,7 @@ int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
 	char *ptr = (char *)&a[7];	// $PPIMU,
 	
 	// Time since system powerup 
-	ASCII_to_f64(&(pimu.time), ptr);
+	ptr = ASCII_to_f64(&(pimu.time), ptr);
 
 	// PQR angular rate
 	ptr = ASCII_to_vec3f(pimu.theta, ptr);
@@ -815,7 +815,7 @@ int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
 int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
 {
 	(void)aSize;
-	char *ptr = (char *)&a[7];	// $PINS1
+	char *ptr = (char *)&a[7];	// $PINS1,
 	
 	// GPS timeOfWeek, week 
 	ASCII_to_f64(&(ins.timeOfWeek), ptr);
@@ -840,7 +840,7 @@ int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
 int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
 {
 	(void)aSize;
-	char *ptr = (char *)&a[7];	// $PINS1
+	char *ptr = (char *)&a[7];	// $PINS2,
 	
 	// GPS timeOfWeek, week 
 	ASCII_to_f64(&(ins.timeOfWeek), ptr);
