@@ -393,7 +393,11 @@ is_operation_result bootloadUpdateCallback(void* obj, float percent)
 		ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
 		ctx->m_update_progress = percent;
 	}
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> origin/release_1.9.0.d
 	return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
