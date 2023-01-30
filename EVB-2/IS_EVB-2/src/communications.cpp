@@ -462,7 +462,7 @@ void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm)
 		{	
 			switch (stm.ptype)
 			{
-			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_IS_V1_DATA:
 				if (xStreamBufferReceive(g_xStreamBufferUINS, (void*)&dataHdr, sizeof(p_data_hdr_t), 0) == sizeof(p_data_hdr_t))
 				{
 					if (dataHdr.id < DID_COUNT && dataHdr.size < MAX_DATASET_SIZE)
@@ -616,7 +616,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 	switch(ptype)
 	{
-	case _PTYPE_INERTIAL_SENSE_DATA:
+	case _PTYPE_IS_V1_DATA:
 		switch(comm->dataHdr.id)
 		{	// From host to EVB
 		case DID_EVB_STATUS:
@@ -663,7 +663,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		g_uInsBootloaderEnableTimeMs = 0;
 		break;
 
-	case _PTYPE_INERTIAL_SENSE_CMD:
+	case _PTYPE_IS_V1_CMD:
 		switch(comm->pkt.hdr.pid)
 		{
 		case PID_GET_DATA:
@@ -883,7 +883,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 					stm.ptype = ptype;
 					switch (ptype)
 					{
-					case _PTYPE_INERTIAL_SENSE_DATA:
+					case _PTYPE_IS_V1_DATA:
 						if (comm.dataHdr.size > 0)
 						{
 							handle_data_from_uINS(comm.dataHdr, comm.dataPtr);

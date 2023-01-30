@@ -337,7 +337,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			{	// Binary
 #if TEST_PROTO_IS
 				td.did = DID_INS_1;
-				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
+				td.ptype = _PTYPE_IS_V1_DATA;
 				td.data.set.ins1 = ins1;
 				td.size = sizeof(ins_1_t);
 #endif
@@ -373,7 +373,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			{	// Binary
 #if TEST_PROTO_IS
 				td.did = DID_GPS1_POS;
-				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
+				td.ptype = _PTYPE_IS_V1_DATA;
 				td.data.set.gpsPos = gps;
 				td.size = sizeof(gps_pos_t);
 #endif
@@ -530,7 +530,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		// Add packetized data to ring buffer
 		switch (td.ptype)
 		{
-		case _PTYPE_INERTIAL_SENSE_DATA:
+		case _PTYPE_IS_V1_DATA:
 			// Packetize data 
 			n = is_comm_set_data(&comm, td.did, 0, td.size, (void*)&(td.data));
 			td.pktSize = n;
@@ -571,7 +571,7 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 
 			switch (ptype)
 			{
-			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_IS_V1_DATA:
 				// Found data
 				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
 
@@ -814,7 +814,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 
 				switch (ptype)
 				{
-				case _PTYPE_INERTIAL_SENSE_DATA:
+				case _PTYPE_IS_V1_DATA:
 					// Found data
 					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
 
@@ -910,7 +910,7 @@ TEST(ComManager, Evb2DataForwardTest)
 
 				switch (ptype)
 				{
-				case _PTYPE_INERTIAL_SENSE_DATA:
+				case _PTYPE_IS_V1_DATA:
 				case _PTYPE_ASCII_NMEA:
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
@@ -967,7 +967,7 @@ TEST(ComManager, Evb2DataForwardTest)
 
 				switch (ptype)
 				{
-				case _PTYPE_INERTIAL_SENSE_DATA:
+				case _PTYPE_IS_V1_DATA:
 					// Found data
 					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
 

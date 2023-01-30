@@ -112,8 +112,8 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 {
 	switch (ptype)
 	{
-	case _PTYPE_INERTIAL_SENSE_CMD:
-	case _PTYPE_INERTIAL_SENSE_DATA:
+	case _PTYPE_IS_V1_CMD:
+	case _PTYPE_IS_V1_DATA:
 		if (msgStats.isb.find(id) == msgStats.isb.end())
 		{	// Create new 
 			msgStats.isb[id] = createNewMsgStats(timeMs, cISDataMappings::GetDataSetName(id));
@@ -165,7 +165,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 		}
 		break;
 
-	case _PTYPE_INERTIAL_SENSE_ACK:
+	case _PTYPE_IS_V1_ACK:
 		{
 			updateTimeMs(msgStats.ack, timeMs);
 		}

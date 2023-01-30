@@ -348,8 +348,8 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 					error = 1;
 					break;
 
-				case _PTYPE_INERTIAL_SENSE_DATA:
-				case _PTYPE_INERTIAL_SENSE_CMD:
+				case _PTYPE_IS_V1_DATA:
+				case _PTYPE_IS_V1_CMD:
 					error = (uint8_t)processBinaryRxPacket(cmInstance, pHandle, &(comm->pkt));
 					break;
 

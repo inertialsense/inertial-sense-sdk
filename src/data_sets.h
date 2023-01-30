@@ -155,11 +155,12 @@ typedef uint32_t eDataIDs;
 #define DEVINFO_ADDINFO_STRLEN 24
 
 
-/** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
-// #define PROTOCOL_VERSION_CHAR0 1        // Major (in ISComm.h)
-// #define PROTOCOL_VERSION_CHAR1 0
-#define PROTOCOL_VERSION_CHAR2 (0x000000FF&DID_COUNT_UINS)
-#define PROTOCOL_VERSION_CHAR3 9         // Minor (in data_sets.h)
+/** Defines the 4 parts to the communications version. See release notes. */
+// TODO: Update release notes for v2
+// #define PROTOCOL_VERSION_CHAR0       // Major (in ISComm.h)
+// #define PROTOCOL_VERSION_CHAR1
+#define PROTOCOL_VERSION_CHAR2 0
+#define PROTOCOL_VERSION_CHAR3 0
 
 /** Rtk rover receiver index */
 #define RECEIVER_INDEX_GPS1 1 // DO NOT CHANGE

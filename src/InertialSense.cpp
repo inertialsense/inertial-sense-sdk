@@ -429,8 +429,8 @@ bool InertialSense::UpdateServer()
 			case _PTYPE_PARSE_ERROR:
 				break;
 
-			case _PTYPE_INERTIAL_SENSE_DATA:
-			case _PTYPE_INERTIAL_SENSE_CMD:
+			case _PTYPE_IS_V1_DATA:
+			case _PTYPE_IS_V1_CMD:
 				id = comm->dataHdr.id;
 				break;
 
@@ -514,8 +514,8 @@ bool InertialSense::UpdateClient()
 				error++;
 				break;
 
-			case _PTYPE_INERTIAL_SENSE_DATA:
-			case _PTYPE_INERTIAL_SENSE_CMD:
+			case _PTYPE_IS_V1_DATA:
+			case _PTYPE_IS_V1_CMD:
 				id = comm->dataHdr.id;
 				break;
 
