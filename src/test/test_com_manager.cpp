@@ -532,7 +532,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		{
 		case _PTYPE_INERTIAL_SENSE_DATA:
 			// Packetize data 
-			n = is_comm_data(&comm, td.did, 0, td.size, (void*)&(td.data));
+			n = is_comm_set_data(&comm, td.did, 0, td.size, (void*)&(td.data));
 			td.pktSize = n;
 			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
 			break;

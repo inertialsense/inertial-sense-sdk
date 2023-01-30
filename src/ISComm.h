@@ -21,8 +21,12 @@ extern "C" {
 #endif
 
 /**
- *	DEFINITIONS AND CONVENTIONS
+ * Inertial Sense simple communications interface (ISComm)
  *	
+ * The simple comm interface does not require any of the com manager APIs and is 
+ * designed for simple or lightweight scenarios, tiny embedded platforms, etc.
+ *
+ * DEFINITIONS
  *	INS		= inertial navigation system
  *	AHRS	= attitude heading reference system
  *	IMU		= inertial measurement unit: gyros (rad/s), accelerometers (m/s^2)
@@ -33,42 +37,6 @@ extern "C" {
  *	QN2B	= quaternion rotation from NED frame to local frame.
  *	UVW		= velocities in local frame.
 */
-
-// -------------------------------------------------------------------------------------------------------------------------------
-// Inertial Sense simple communications interface --------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------------------------------------------
-// The simple comm interface does not require any of the com manager APIs and is designed for simple or lightweight scenarios, tiny embedded platforms, etc.
-// *****************************************************************************
-// ****** Binary messages                                                 ******
-// *****************************************************************************
-
-/** INS/AHRS */
-#define _DID_INS_LLA_EULER_NED		DID_INS_1				/** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
-#define _DID_INS_LLA_QN2B			DID_INS_2				/** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
-#define _DID_INS_LLA_QN2B_MSL		DID_INS_3				/** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
-#define _DID_INS_ECEF_QE2B			DID_INS_4				/** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
-
-/** IMU */
-#define _DID_IMU					DID_IMU					/** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_PIMU					DID_PIMU				/** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */	
-
-/** GPS */
-#define _DID_GPS1_POS				DID_GPS1_POS			/** (see gps_pos_t) GPS output */
-
-/** Magnetometer, Barometer, and other Sensor */
-#define _DID_MAG_CAL				DID_MAG_CAL				/** (see mag_cal_t) Magnetometer calibration */
-#define _DID_MAGNETOMETER			DID_MAGNETOMETER		/** (see magnetometer_t) Magnetometer sensor output */
-#define _DID_BAROMETER				DID_BAROMETER			/** (see barometer_t) Barometric pressure sensor data */
-#define _DID_WHEEL_ENCODER			DID_WHEEL_ENCODER		/** (see wheel_encoder_t) Wheel encoder sensor data */
-
-/** Utilities */
-#define _DID_DEV_INFO				DID_DEV_INFO			/** (see dev_info_t) Device information */
-#define _DID_BIT					DID_BIT					/** (see bit_t) System built-in self-test */
-#define _DID_STROBE_IN_TIME			DID_STROBE_IN_TIME		/** (see strobe_in_time_t) Timestamp for input strobe */
-
-/** Configuration */
-#define _DID_FLASH_CONFIG			DID_FLASH_CONFIG 		/** (see nvm_flash_cfg_t) Flash memory configuration */
-#define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
 
 /** Protocol Type */
 typedef enum
@@ -148,34 +116,12 @@ typedef enum
 	IS_BAUDRATE_9375000     = 9375000,		// 9375000
 	IS_BAUDRATE_18750000    = 18750000,		// 18750000 (uINS ser1 only)
 
-	IS_BAUDRATE_COUNT = 12
+	// Keep at end and increment/decrement with number of list items
+	IS_BAUDRATE_COUNT 		= 11
 } baud_rate_t;
 
 /** List of valid baud rates */
-extern const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT];
-
-/*
-Packet Overview
-
-Byte
-0			Packet start byte
-1			Packet indo: ID (mask 0x1F) | reserved bits (mask 0xE0)
-2			Packet counter (for ACK and retry)
-3			Packet flags
-
-// packet body, may or may not exist depending on packet id - packet body is made up of 4 byte or 8 byte values.
-4-7			Data identifier
-8-11		Data length
-12-15		Data offset
-16-19		Data start
-(n-8)-(n-5)	Last piece of data
-// end data
-
-n-4			Reserved
-n-3			Checksum high byte
-n-2			Checksum low byte
-n-1			Packet end byte
-*/
+extern const uint32_t g_validBaudRates[IS_BAUDRATE_COUNT];
 
 // Packet IDs	
 typedef uint32_t ePacketIDs;
@@ -185,7 +131,7 @@ typedef uint32_t ePacketIDs;
 #define PID_NACK                            (ePacketIDs)2   /** (NACK) received invalid packet */
 #define PID_GET_DATA                        (ePacketIDs)3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
 #define PID_DATA                            (ePacketIDs)4   /** Data sent in response to PID_GET_DATA (no PID_ACK is sent) */
-#define PID_SET_DATA                        (ePacketIDs)5   /** Data sent, such as configuration options.  PID_ACK is sent in response. */
+#define PID_SET_DATA                        (ePacketIDs)5   /** Data sent, such as configuration options. PID_ACK is sent in response. */
 #define PID_STOP_BROADCASTS_ALL_PORTS       (ePacketIDs)6   /** Stop all data broadcasts on all ports. Responds with an ACK */
 #define PID_STOP_DID_BROADCAST              (ePacketIDs)7   /** Stop a specific broadcast */
 #define PID_STOP_BROADCASTS_CURRENT_PORT    (ePacketIDs)8   /** Stop all data broadcasts on current port. Responds with an ACK */
@@ -263,14 +209,7 @@ enum ePktHdrFlags
 	CM_PKT_FLAGS_CHECKSUM_24_BIT = 0x10
 };
 
-/**
-Built in special bytes that will need to be encoded in the binary packet format. This is not an exhaustive list, as other bytes such as ublox and rtcm preambles
-will be encoded as well, but these messages are not parsed and handled in the com manager, rather they are forwarded via the pass through handler.
-A byte is encoded by writing a 0xFD byte (encoded byte marker), followed by the encoded byte, which is created by inverting all the bits of the original byte.
-These bytes are not encoded when written in the proper spot in the packet (i.e. when writing the first byte for a binary packet, the 0xFF byte, no encoding
-is performed).
-*/
-enum ePktSpecialChars
+enum ePktStartChars
 {
 	/** Dollar sign ($), used by ASCII protocol to signify start of message (36) */
 	PSC_ASCII_START_BYTE = 0x24,
@@ -278,29 +217,29 @@ enum ePktSpecialChars
 	/** New line (\n), used by ASCII protocol to signify end of message (10) */
 	PSC_ASCII_END_BYTE = 0x0A,
 
-	/** Binary packet start byte, must only exist at the very start of a binary packet and no where else (255) */
-	PSC_START_BYTE = 0xFF,
+	/** Inertial Sense binary preamble byte */
+	PSC_IS_PREAMBLE = 0xEF,
 
-	/** Binary packet end byte, must only exist at the end of a binary packet and no where else (254) */
-	PSC_END_BYTE = 0xFE,
+	/** Ublox start byte 1 */
+	PSC_UBLOX_START_BYTE1 = 0xB5,
 
-	/** Encoded byte marker, must only be used to prefix encoded bytes (253) */
-	PSC_RESERVED_KEY = 0xFD,
+	/** Ublox start byte 2 */
+	PSC_UBLOX_START_BYTE2 = 0x62,
 
-	/** Ublox start byte 1 (181) */
-	UBLOX_START_BYTE1 = 0xB5,
-
-	/** Ublox start byte 2 (98) */
-	UBLOX_START_BYTE2 = 0x62,
-
-	/** Rtcm3 start byte (211) */
-	RTCM3_START_BYTE = 0xD3,
+	/** RTCM3 start byte */
+	PSC_RTCM3_START_BYTE = 0xD3,
 
 	/** SPARTN start byte */
-	SPARTN_START_BYTE = 0x73,
+	PSC_SPARTN_START_BYTE = 0x73,
 
-	/** SONY Start Byte */
-	SONY_START_BYTE = 0x7F,
+	/** SONY binary Start Byte */
+	PSC_SONY_START_BYTE = 0x7F,
+
+	/** Binary packet start byte, used in Inertial Sense protocols prior to release v2.0.0 */
+	PSC_START_BYTE_V1 = 0xFF,
+
+	/** Binary packet end byte, used in Inertial Sense protocols prior to release v2.0.0 */
+	PSC_END_BYTE_V1 = 0xFE,
 };
 
 /** Represents an ASCII message and how it is mapped to a structure in memory */
@@ -473,14 +412,16 @@ typedef struct
 
 } is_comm_buffer_t;
 
+/** Bitfield definition for enabling/disabling protocols on specific parser instances */
 typedef enum
 {
-	ENABLE_PROTOCOL_ISB 	= 0x00000001,
+	ENABLE_PROTOCOL_ISB_V1 	= 0x00000001,	// LEGACY V1 protocol
 	ENABLE_PROTOCOL_ASCII 	= 0x00000002,
 	ENABLE_PROTOCOL_UBLOX 	= 0x00000004,
 	ENABLE_PROTOCOL_RTCM3 	= 0x00000008,
 	ENABLE_PROTOCOL_SPARTN 	= 0x00000010,
 	ENABLE_PROTOCOL_SONY 	= 0x00000020,
+	ENABLE_PROTOCOL_ISB_V2 	= 0x00000040,	// Current
 } eProtocolMask;
 
 typedef struct  
@@ -489,14 +430,11 @@ typedef struct
 	uint32_t enabledMask;
 } is_comm_config_t;
 
-
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
 {
-	/**
-	The buffer to use for communications send and receive - this buffer should be large enough to handle the largest data structure you expect * 2 + 32 for worst case packet encoding
-	A minimum of 128 is recommended. Set once before calling init.
-	*/		
+	/** The buffer to use for communications send and receive - this buffer should be large enough to handle the largest data structure you expect * 2 + 32 for worst case packet encoding
+		A minimum of 128 is recommended. Set once before calling `is_comm_init` */		
 	is_comm_buffer_t buf;
 	
 	/** Enable/disable protocol parsing */
@@ -523,11 +461,8 @@ typedef struct
 	/** Packet pointer to start of valid packet */
 	uint8_t* pktPtr;
 	
-	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occurr at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
+	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occour at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
 	uint8_t* altDecodeBuf;
-
-	/** Acknowledge packet needed in response to the last packet received */
-	uint32_t ackNeeded;
 
 	/** IS binary packet */
 	packet_t pkt;
@@ -538,174 +473,141 @@ typedef struct
 POP_PACK
 
 /**
-* Init simple communications interface - call this before doing anything else
-* @param instance communications instance, please ensure that you have set the buffer and bufferSize
-*/
-void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize);
+ * @brief Init simple communications interface
+ * @note Call this before doing anything else
+ * 
+ * @param instance pointer to ISComm instance
+ * @param buffer pointer to start of buffer
+ * @param bufferSize number of bytes in buffer
+ */
+void is_comm_init(is_comm_instance_t *instance, uint8_t *buffer, uint16_t bufferSize);
 
 /**
-* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
-* @param instance the comm instance passed to is_comm_init
-* @param byte the byte to decode
-* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
-* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
-  For example usage, see comManagerStepRxInstance() in com_manager.c.
-
-	// Read one byte (simple method)
-	uint8_t c;
-	protocol_type_t ptype;
-	// Read from serial buffer until empty
-	while (mySerialPortRead(&c, 1))
-	{
-		if ((ptype = is_comm_parse_byte(comm, c)) != _PTYPE_NONE)
-		{
-			switch (ptype)
-			{
-			case _PTYPE_INERTIAL_SENSE_DATA:
-			case _PTYPE_INERTIAL_SENSE_CMD:
-			case _PTYPE_INERTIAL_SENSE_ACK:
-				break;
-			case _PTYPE_UBLOX:
-				break;
-			case _PTYPE_RTCM3:
-				break;
-			case _PTYPE_ASCII_NMEA:
-				break;
-			}
-		}
-	}
-*/
-protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
+ * @brief Decode packet data
+ * @details When data is available, the comm instance dataPtr will point to the 
+ * 	start of the valid data. For Inertial Sense binary protocol, comm instance 
+ * 	dataHdr contains the data ID (DID), size, and offset.
+ * 
+ * @param instance pointer to ISComm instance
+ * @param byte value of the byte to parse
+ * @return protocol_type_t returns NONE or ERROR unless a packet is finished 
+ *	parsing
+ */
+protocol_type_t is_comm_parse_byte(is_comm_instance_t *instance, uint8_t byte);
 
 /**
-* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
-* @param instance the comm instance passed to is_comm_init
-* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
-* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
-  For example usage, see comManagerStepRxInstance() in com_manager.c.
-
-	// Read a set of bytes (fast method)
-	protocol_type_t ptype;
-
-	// Get available size of comm buffer
-	int n = is_comm_free(comm);
-
-	// Read data directly into comm buffer
-	if ((n = mySerialPortRead(comm->buf.tail, n)))
-	{
-		// Update comm buffer tail pointer
-		comm->buf.tail += n;
-
-		// Search comm buffer for valid packets
-		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-		{
-			switch (ptype)
-			{
-			case _PTYPE_INERTIAL_SENSE_DATA:
-			case _PTYPE_INERTIAL_SENSE_CMD:
-			case _PTYPE_INERTIAL_SENSE_ACK:
-				break;
-			case _PTYPE_UBLOX:
-				break;
-			case _PTYPE_RTCM3:
-				break;
-			case _PTYPE_ASCII_NMEA:
-				break;
-			}
-		}
-	}
-*/
-protocol_type_t is_comm_parse(is_comm_instance_t* instance);
+ * @brief Decode packet data
+ * @details When data is available, the comm instance dataPtr will point to the 
+ * 	start of the valid data. For Inertial Sense binary protocol, comm instance 
+ * 	dataHdr contains the data ID (DID), size, and offset.
+ * 
+ * @param instance pointer to ISComm instance
+ * @return protocol_type_t returns NONE or ERROR unless a packet is finished 
+ *	parsing
+ */
+protocol_type_t is_comm_parse(is_comm_instance_t *instance);
 
 /**
-* Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.
-* @param instance the comm instance passed to is_comm_init
-* @return the number of bytes available in the comm buffer 
-*/
-int is_comm_free(is_comm_instance_t* instance);
+ * @brief Removes old data and shift unparsed data to the the buffer start
+ * 
+ * @param instance pointer to ISComm instance
+ * @return number of bytes available in the comm buffer 
+ */
+int is_comm_free(is_comm_instance_t *instance);
 
 /**
-* Encode a binary packet to get data from the device - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
-* @param dataId the data id to request (see DID_* at top of this file)
-* @param offset the offset into data to request. Set offset and length to 0 for entire data structure.
-* @param length the length into data from offset to request. Set offset and length to 0 for entire data structure.
-* @param periodMultiple how often you want the data to stream out, 0 for a one time message and turn off.
-* @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
-* @remarks pass an offset and length of 0 to request the entire data structure
-*/
-int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMultiple);
+ * @brief Encode a Inertial Sense binary packet to get data from the device.
+ * 	Puts the data ready to send into the buffer passed into is_comm_init.
+ * 	Pass an offset and length of 0 to request the entire data structure.
+ * 
+ * @param instance pointer to ISComm instance
+ * @param dataId the data id to request (see DID_* at top of this file)
+ * @param offset the offset into data to request. 0 has special behavior
+ * @param length the length into data from offset to request. 0 has special behavior
+ * @param periodMultiple sets period of message (base rate * periodMultiple), 0 for a one time message with subsequent shutoff
+ * @return the number of bytes written to the instance's buffer, will be less than 1 if error
+ */
+int is_comm_get_data(is_comm_instance_t *instance, uint16_t dataId, uint16_t offset, uint16_t size, uint16_t periodMultiple);
 
 /**
-* Encode a binary packet to get predefined list of data sets from the device - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
-* @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
-* @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
-* @remarks pass an offset and length of 0 to request the entire data structure
-*/
-int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
+ * @brief Encode a binary packet to get predefined list of data sets from the 
+ * 	Puts the data ready to send into the buffer passed into is_comm_init.
+ * 
+ * @param instance pointer to ISComm instance
+ * @param rmcBits data messages to stream. See presets in data_sets.h (RMC_PRESET_...)
+ * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
+ */
+int is_comm_get_data_rmc(is_comm_instance_t *instance, uint64_t rmcBits);
 
 /**
-* Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
-* @param instance the comm instance passed to is_comm_init
-* @param dataId the data id to set on the device (see DID_* at top of this file)
-* @param offset the offset to start setting data at on the data structure on the device
-* @param size the number of bytes to set on the data structure on the device
-* @param data the actual data to change on the data structure on the device - this should have at least size bytes available
-* @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
-* @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
-*/
-int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
-
-/**
-* Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
-*/
-int is_comm_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
+ * @brief Encode a binary packet to set data on the device. 
+ * @note Use is_comm_set_data_ack if you need a ACK from the device, otherwise use is_comm_set_data and the device will not send an ACK
+ * 
+ * @param instance pointer to ISComm instance
+ * @param dataId the data id to set on the device (see DID_* at top of this file)
+ * @param offset the offset to start setting data at on the data structure on the device
+ * @param size the number of bytes to set on the data structure on the device
+ * @param data the actual data to change on the data structure on the device - this should have at least size bytes available
+ * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
+ */
+int is_comm_set_data_ack(is_comm_instance_t *instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
+int is_comm_set_data(is_comm_instance_t *instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
 
 /**
 * Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
+* @param instance pointer to ISComm instance
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance);
+int is_comm_stop_broadcasts_all_ports(is_comm_instance_t *instance);
 
 /**
 * Encode a binary packet to stop all messages being broadcast on the device on this port - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
+* @param instance pointer to ISComm instance
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance);
+int is_comm_stop_broadcasts_current_port(is_comm_instance_t *instance);
 
 
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
-// common encode / decode for com manager and simple interface
-int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength);
+int is_encode_binary_packet(void* srcBuffer, uint16_t srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength);
 int is_decode_binary_packet(packet_t *pkt, unsigned char* pbuf, int pbufSize);
 int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
 void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
 void is_enable_packet_encoding(int enabled); // default is enabled
 
-unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
-unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
+/**
+* Calculate 24 bit crc used in formats like RTCM3 - note that no bounds checking is done on buffer
+* @param buffer the buffer to calculate the CRC for
+* @param len the number of bytes to calculate the CRC for
+* @return the CRC value
+*/
+uint32_t calculate24BitCRCQ(unsigned char* buffer, uint16_t len);
 
-int validateBaudRate(unsigned int baudRate);
+/**
+* Retrieve the 32 bit unsigned integer value of the specified bits - note that no bounds checking is done on buffer
+* @param buffer the buffer containing the bits
+* @param pos the start bit position in buffer to read at
+* @param len the number of bits to read
+* @return the 32 bit unsigned integer value
+*/
+uint32_t getBitsAsUInt32(const uint8_t* buffer, uint16_t pos, uint16_t len);
 
 /** Copies data structure into packet data.  Data copied is limited to the size and offset specified in p_data_t *data.  Returns 0 on success, -1 on failure. */
-char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize);
+char copyStructPToDataP(p_data_t *data, const void *sptr, const uint16_t maxsize);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
-char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
+char copyDataPToStructP(void *sptr, const p_data_t *data, const uint16_t maxsize);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
-char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
+char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const uint16_t maxsize);
 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
-char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *com, const unsigned int maxsize);
+char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *com, const uint16_t maxsize);
 
 /** Returns -1 if the baudrate is not a standard baudrate. */
-int validateBaudRate(unsigned int baudRate);
+int validateBaudRate(uint32_t baudRate);
 
 #ifdef __cplusplus
 }

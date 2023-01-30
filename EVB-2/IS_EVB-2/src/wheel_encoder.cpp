@@ -104,7 +104,7 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 
 		if (g_ermc.bits & ERMC_BITS_WHEEL_ENCODER)
 		{
-			n = is_comm_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
+			n = is_comm_set_data(&comm, DID_WHEEL_ENCODER, 0, sizeof(wheel_encoder_t), (void*)&(g_wheelEncoder));
 
 #if 1		// Send to uINS
 			comWrite(EVB2_PORT_UINS0, comm.buf.start, n, LED_INS_TXD_PIN);
@@ -114,12 +114,12 @@ void step_wheel_encoder(is_comm_instance_t &comm)
 		}
 
 #if 0
-		n = is_comm_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));
+		n = is_comm_set_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));
 		comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
 #endif	
 
 #if 0
-		n = is_comm_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));
+		n = is_comm_set_data(&comm, DID_EVB_DEBUG_ARRAY, 0, sizeof(debug_array_t), (void*)&(g_debug));
 		comWrite(EVB2_PORT_USB, comm.buf.start, n, 0);
 #endif
 

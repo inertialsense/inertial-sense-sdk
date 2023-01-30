@@ -290,7 +290,7 @@ void uINS_stream_enable_PPD(void)
     rmc_t rmc;
     rmc.bits = RMC_PRESET_PPD_GROUND_VEHICLE;
     rmc.options = 0;
-    int len = is_comm_set_data(&g_commTx, DID_RMC, 0, sizeof(rmc_t), &rmc);
+    int len = is_comm_set_data_ack(&g_commTx, DID_RMC, 0, sizeof(rmc_t), &rmc);
     comWrite(g_flashCfg->uinsComPort, g_commTx.buf.start, len, LED_INS_TXD_PIN);
 
 //     len = is_comm_get_data(&comm, DID_INS_2, 0, 0, 1);       // 1 x 4ms = 4ms
@@ -417,7 +417,7 @@ void broadcastRmcMessage(is_comm_instance_t *comm, uint32_t did, uint32_t size, 
 		did == didSendNow)
 	{
 		time_ms = g_comm_time_ms;
-		int n = is_comm_data(comm, did, 0, size, data);
+		int n = is_comm_set_data(comm, did, 0, size, data);
 		serWrite(EVB2_PORT_USB, comm->buf.start, n);
 	}
 }

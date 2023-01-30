@@ -168,7 +168,7 @@ TEST(RingBuffer, PacketTest)
 		ins1.ned[1] = i * 2.345f;
 		ins1.ned[2] = i * 3.456f;
 
-		n = is_comm_data(&comm, DID_INS_1, 0, sizeof(ins_1_t), (void*)&(ins1));
+		n = is_comm_set_data(&comm, DID_INS_1, 0, sizeof(ins_1_t), (void*)&(ins1));
 
 		if (n > ringBufFree(&rb))
 		{	// Buffer is full
