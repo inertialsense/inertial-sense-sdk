@@ -162,6 +162,7 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 
 	SET_ASCII_RMCI(DID_IMU, ASCII_RMC_BITS_PIMU, tmp.pimu);
 	SET_ASCII_RMCI(DID_PIMU, ASCII_RMC_BITS_PPIMU, tmp.ppimu);
+	SET_ASCII_RMCI(DID_IMU_RAW, ASCII_RMC_BITS_PRIMU, tmp.primu);
 	SET_ASCII_RMCI(DID_INS_1, ASCII_RMC_BITS_PINS1, tmp.pins1);
 	SET_ASCII_RMCI(DID_INS_2, ASCII_RMC_BITS_PINS2, tmp.pins2);
 
