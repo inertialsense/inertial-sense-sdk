@@ -940,8 +940,8 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	if(*ptr!=','){ tmp.pins2 = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PGPSP
 	if(*ptr!=','){ tmp.pgpsp = (uint16_t)atoi(ptr);	}
-	ptr = ASCII_find_next_field(ptr);			// reserved
-	
+	ptr = ASCII_find_next_field(ptr);			// PRIMU
+	if(*ptr!=','){ tmp.primu = (uint16_t)atoi(ptr); }
 	ptr = ASCII_find_next_field(ptr);			// gpgga
 	if(*ptr!=','){ tmp.gpgga = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgll
