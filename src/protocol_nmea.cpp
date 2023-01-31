@@ -818,12 +818,12 @@ int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
 	char *ptr = (char *)&a[7];	// $PINS1,
 	
 	// GPS timeOfWeek, week 
-	ASCII_to_f64(&(ins.timeOfWeek), ptr);
-	ASCII_to_u32(&(ins.week), ptr);
+	ptr = ASCII_to_f64(&(ins.timeOfWeek), ptr);
+	ptr = ASCII_to_u32(&(ins.week), ptr);
 
 	// insStatus, hdwStatus
-	ASCII_to_u32(&(ins.insStatus), ptr);
-	ASCII_to_u32(&(ins.hdwStatus), ptr);
+	ptr = ASCII_to_u32(&(ins.insStatus), ptr);
+	ptr = ASCII_to_u32(&(ins.hdwStatus), ptr);
 
 	// Roll, Pitch, Yaw
 	ptr = ASCII_to_vec3f(ins.theta, ptr);
@@ -843,12 +843,12 @@ int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
 	char *ptr = (char *)&a[7];	// $PINS2,
 	
 	// GPS timeOfWeek, week 
-	ASCII_to_f64(&(ins.timeOfWeek), ptr);
-	ASCII_to_u32(&(ins.week), ptr);
+	ptr = ASCII_to_f64(&(ins.timeOfWeek), ptr);
+	ptr = ASCII_to_u32(&(ins.week), ptr);
 
 	// insStatus, hdwStatus
-	ASCII_to_u32(&(ins.insStatus), ptr);
-	ASCII_to_u32(&(ins.hdwStatus), ptr);
+	ptr = ASCII_to_u32(&(ins.insStatus), ptr);
+	ptr = ASCII_to_u32(&(ins.hdwStatus), ptr);
 
 	// Quaternion
 	ptr = ASCII_to_vec4f(ins.qn2b, ptr);
