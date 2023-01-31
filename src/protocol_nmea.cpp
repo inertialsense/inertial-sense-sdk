@@ -21,6 +21,18 @@ uint32_t ASCII_compute_checksum(uint8_t* str, int size)
 	return checksum;
 }
 
+char *ASCII_to_u8(uint8_t *val, char *ptr)
+{
+	val[0] = (uint8_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_to_u16(uint16_t *val, char *ptr)
+{
+	val[0] = (uint16_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
 char *ASCII_to_u32(uint32_t *val, char *ptr)
 {
 	val[0] = (uint32_t)atoi(ptr);	ptr = ASCII_find_next_field(ptr);
@@ -237,9 +249,9 @@ int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, un
 	return n;	
 }
 
-int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu)
+int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[])
 {
-	int n = SNPRINTF(a, aSize, "$PIMU");
+	int n = SNPRINTF(a, aSize, "%s", name);
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", imu.time);		// 1
 	
 	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[0]);		// 2
@@ -348,7 +360,7 @@ int did_strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe
 int did_gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
 	int n = SNPRINTF(a, aSize, "$PGPSP");
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)(pos.timeOfWeekMs - pos.leapS * 1000));	// 1
+	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.timeOfWeekMs);	// 1
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.week);			// 2
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.status);		// 3
 
@@ -667,7 +679,7 @@ int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &ve
 	// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
 
 	int n = SNPRINTF(a, aSize, "$GPRMC");
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);					// 1	// time of last fix
+	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - (pos.leapS*1000));		// 1	// UTC time of last fix
 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
 	{
 		n += SNPRINTF(a+n, aSize-n, ",A");												// 2	// A=active (good)
@@ -856,6 +868,42 @@ int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
 	ptr = ASCII_to_vec3f(ins.uvw, ptr);
 	// LLA
 	ptr = ASCII_to_vec3d(ins.lla, ptr);
+
+	return 0;
+}
+
+int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $PGPSP,
+	
+	// GPS timeOfWeekMs, week 
+	ptr = ASCII_to_u32(&(gpsPos.timeOfWeekMs), ptr);
+	ptr = ASCII_to_u32(&(gpsPos.week), ptr);
+	gpsVel.timeOfWeekMs = gpsPos.timeOfWeekMs;
+
+	// status
+	ptr = ASCII_to_u32(&(gpsPos.status), ptr);
+
+	// LLA, MSL altitude
+	ptr = ASCII_to_vec3d(gpsPos.lla, ptr);
+	ptr = ASCII_to_f32(&(gpsPos.hMSL), ptr);
+
+	// pDop, hAcc, vAcc
+	ptr = ASCII_to_f32(&(gpsPos.pDop), ptr);
+	ptr = ASCII_to_f32(&(gpsPos.hAcc), ptr);
+	ptr = ASCII_to_f32(&(gpsPos.vAcc), ptr);
+
+	// Velocity, sAcc
+	ptr = ASCII_to_vec3f(gpsVel.vel, ptr);
+	ptr = ASCII_to_f32(&(gpsVel.sAcc), ptr);
+
+	// cnoMean
+	ptr = ASCII_to_f32(&(gpsPos.cnoMean), ptr);
+
+	// Time of Week offset, leapS
+	ptr = ASCII_to_f64(&(gpsPos.towOffset), ptr);
+	ptr = ASCII_to_u8(&(gpsPos.leapS), ptr);
 
 	return 0;
 }

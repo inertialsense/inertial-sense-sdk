@@ -18,6 +18,7 @@ enum eNmeaMsgIdUint
 
 	ASCII_MSG_ID_PIMU = 0x50494d55,
 	ASCII_MSG_ID_PPIM = 0x5050494d,
+	ASCII_MSG_ID_PRIM = 0x5052494d,
 	ASCII_MSG_ID_PINS = 0x50494e53,
 	ASCII_MSG_ID_PGPS = 0x50475053,
 	ASCII_MSG_ID_GPGG = 0x47504747,
@@ -34,6 +35,8 @@ enum eNmeaMsgIdUint
 //////////////////////////////////////////////////////////////////////////
 uint32_t ASCII_compute_checksum(uint8_t* str, int size);
 char *ASCII_find_next_field(char *str);
+char *ASCII_to_u8(uint8_t *val, char *ptr);
+char *ASCII_to_u16(uint16_t *val, char *ptr);
 char *ASCII_to_u32(uint32_t *val, char *ptr);
 char *ASCII_to_i32(int32_t *val, char *ptr);
 char *ASCII_to_vec3f(float vec[], char *ptr);
@@ -48,7 +51,7 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp);
 //////////////////////////////////////////////////////////////////////////
 int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info);
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek);
-int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu);
+int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[]);
 int did_pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu);
 int did_ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1);
 int did_ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2);
@@ -68,7 +71,7 @@ int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize);
 int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize);
-
+int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
 
 //////////////////////////////////////////////////////////////////////////
 // NMEA parse

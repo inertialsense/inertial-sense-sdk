@@ -1244,10 +1244,10 @@ typedef struct PACKED
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB] (see RMC_OPTIONS_...) */
 	uint32_t				options;
 
-	/** Broadcast period multiple - ASCII dual IMU data. 0 to disable. */
+	/** Broadcast period multiple - ASCII IMU data. 0 to disable. */
 	uint16_t				pimu;
 
-	/** Broadcast period multiple - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
+	/** Broadcast period multiple - ASCII preintegrated IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
 	uint16_t				ppimu;
 	
 	/** Broadcast period multiple - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
@@ -1259,8 +1259,8 @@ typedef struct PACKED
 	/** Broadcast period multiple - ASCII GPS position data. 0 to disable. */
 	uint16_t				pgpsp;
 
-	/** Broadcast period multiple - Reserved.  Leave zero. */
-	uint16_t				reserved;
+	/** Broadcast period multiple - ASCII Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
+	uint16_t				primu;
 
 	/** Broadcast period multiple - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
 	uint16_t				gpgga;
