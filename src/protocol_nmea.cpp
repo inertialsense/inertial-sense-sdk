@@ -809,6 +809,22 @@ int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
 	return 0;
 }
 
+int nmea_pimu_to_did_rimu(imu_t &imu, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $PRIMU,
+	
+	// Time since system powerup 
+	ptr = ASCII_to_f64(&(imu.time), ptr);
+
+	// PQR angular rate
+	ptr = ASCII_to_vec3f(imu.I.pqr, ptr);
+	// XYZ linear acceleration
+	ptr = ASCII_to_vec3f(imu.I.acc, ptr);
+
+	return 0;
+}
+
 int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
 {
 	(void)aSize;

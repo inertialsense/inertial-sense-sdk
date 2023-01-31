@@ -68,6 +68,7 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 // NMEA to DID
 //////////////////////////////////////////////////////////////////////////
 int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize);
+int nmea_pimu_to_did_rimu(imu_t &imu, const char a[], const int aSize);
 int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize);
