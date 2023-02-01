@@ -21,6 +21,9 @@ extern "C" {
 #include "ISComm.h"
 #include "linked_list.h"
 
+// allow packet continuation or not. If enabled, an extra 1K buffer is allocated globally for each pHandle instance.
+#define ENABLE_PACKET_CONTINUATION 0
+
 /**
 Types of pass through data where the com manager will simply forward the data on to a pass through handler
 */
@@ -30,10 +33,10 @@ Types of pass through data where the com manager will simply forward the data on
 // 	COM_MANAGER_PASS_THROUGH_NONE = 0,
 // 
 // 	/** UBLOX pass through */
-// 	COM_MANAGER_PASS_THROUGH_UBLOX = PSC_UBLOX_START_BYTE1,
+// 	COM_MANAGER_PASS_THROUGH_UBLOX = UBLOX_START_BYTE1,
 // 
 // 	/** RTCM3 pass through */
-// 	COM_MANAGER_PASS_THROUGH_RTCM3 = PSC_RTCM3_START_BYTE
+// 	COM_MANAGER_PASS_THROUGH_RTCM3 = RTCM3_START_BYTE
 // } com_manager_pass_through_t;
 
 /* Contains data that determines what messages are being broadcast */
@@ -185,6 +188,13 @@ typedef struct
 
 	// Current status
 	com_manager_status_t status;
+
+#if ENABLE_PACKET_CONTINUATION
+
+	// Continuation data for packets
+	p_data_t con;
+
+#endif
 	
 } com_manager_port_t;
 	

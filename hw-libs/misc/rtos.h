@@ -10,8 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __RTOS_DYNAMIC_H_
-#define __RTOS_DYNAMIC_H_
+#ifndef __RTOS_STATIC_H_
+#define __RTOS_STATIC_H_
 
 #ifndef BOOTLOADER
 
@@ -19,15 +19,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-#include "../../src/ISConstants.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "d_time.h"
+#include "data_sets.h"
+#include "globals.h"
 
-#if defined(PLATFORM_IS_EVB_2) && PLATFORM_IS_EVB_2
+#if defined(__INERTIAL_SENSE_EVB_2__)
 #define RTOS_NUM_TASKS	(EVB_RTOS_NUM_TASKS)
+#elif defined(GPX_1)
+#define RTOS_NUM_TASKS	(GPX_RTOS_NUM_TASKS)
 #else
-#define RTOS_NUM_TASKS	(UINS_RTOS_NUM_TASKS)
+#define RTOS_NUM_TASKS	(IMX_RTOS_NUM_TASKS)
 #endif
 
 #if defined(DBGPIO_START) && defined(DBGPIO_END)
@@ -38,6 +40,36 @@ extern "C" {
 #define END_CRITICAL_SECTION	{taskEXIT_CRITICAL(); xTaskResumeAll();}
 #endif
 
+#if configSUPPORT_DYNAMIC_ALLOCATION
+int createTask(
+	int index,
+	pdTASK_CODE pxTaskCode,
+	const char * const pcName,
+	unsigned short usStackDepth,
+	void *pvParameters,
+	unsigned portBASE_TYPE uxPriority,
+	portTickType xTimeIncrement
+);
+#endif
+
+#if configSUPPORT_STATIC_ALLOCATION
+int createTaskStatic(
+	int index,
+	TaskFunction_t pxTaskCode,
+	const char * const pcName,
+	unsigned short usStackDepth,
+	void *pvParameters,
+	unsigned portBASE_TYPE uxPriority,
+	TickType_t xTimeIncrement,
+    StackType_t *const puxStackBuffer,
+    StaticTask_t *const pxTaskBuffer
+);
+#endif
+
+void rtos_monitor(int numRtosTasks);
+void rtosResetTaskCounters(void);
+void rtosResetStats(void);
+
 #define GPBR_IDX_STATUS             0
 #define GPBR_IDX_G1_TASK            1
 #define GPBR_IDX_G2_FILE_NUM        2
@@ -46,26 +78,6 @@ extern "C" {
 #define GPBR_IDX_G5_LR              5
 #define GPBR_IDX_PC                 6
 #define GPBR_IDX_PSR                7
-
-int createTask(
-	int index,
-	pdTASK_CODE pxTaskCode,
-	const char * const pcName,
-	unsigned short usStackDepth,
-	void *pvParameters,
-	unsigned portBASE_TYPE uxPriority,
-	portTickType xTimeIncrement);
-
-// Monitor state of RTOS (i.e. stack high water mark, unused words).
-void rtos_monitor(int numRtosTasks);
-void rtosResetStats(void);
-void rtosResetTaskCounters(void);
-
-void vApplicationIdleHook(void);
-void vApplicationTickHook(void);
-
-void vApplicationMallocFailedHook(uint32_t size, uint32_t remaining, uint32_t prevLR);
-void vApplicationDaemonTaskStartupHook(void);
 
 extern uint32_t g_faultLineNumber;
 extern uint32_t g_faultFileNumber;
@@ -76,4 +88,4 @@ extern uint32_t g_faultFileNumber;
 
 #endif 	// BOOTLOADER
 
-#endif 	// __RTOS_H_
+#endif 	// __RTOS_STATIC_H_

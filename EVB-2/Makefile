@@ -176,7 +176,7 @@ C_SRCS += \
 	$(HW_LIBS_DIR)/drivers/SAMx70/d_serial.c                                                       \
 	$(HW_LIBS_DIR)/drivers/SAMx70/d_time.c                                                         \
 	$(HW_LIBS_DIR)/bootloader/bootloaderApp.c                                                      \
-	$(HW_LIBS_DIR)/misc/rtos_dynamic.c                                                                     \
+	$(HW_LIBS_DIR)/misc/rtos.c                                                                     \
 	$(HW_LIBS_DIR)/printf/printf.c                                                                 \
 	$(HW_LIBS_DIR)/freertos/croutine.c                                                             \
 	$(HW_LIBS_DIR)/freertos/event_groups.c                                                         \

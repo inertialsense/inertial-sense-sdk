@@ -1,6 +1,5 @@
 #include <new>
 #include <cstdlib>
-#include <compiler.h>
 
 extern "C"	void *	pvPortMalloc(size_t xWantedSize);
 extern "C"	void 	vPortFree(void * pv);
