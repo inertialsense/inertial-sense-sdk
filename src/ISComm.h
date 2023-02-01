@@ -484,9 +484,6 @@ typedef struct
 {
 	/** See eProtocolMask */
 	uint32_t enabledMask;
-
-	/** Forward all native GNSS protocols directly to GNSS receiver (see eProtocolMask) */
-	uint32_t fwdNoChecksMask;
 } is_comm_config_t;
 
 /** An instance of an is_comm interface.  Do not modify these values. */

@@ -226,7 +226,6 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 		ENABLE_PROTOCOL_UBLOX |
 		ENABLE_PROTOCOL_RTCM3 |
 		ENABLE_PROTOCOL_SPARTN;
-	instance->config.fwdNoChecksMask = 0;
 	
 	instance->txPktCount = 0;
 	instance->rxErrorCount = 0;
@@ -238,11 +237,6 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	instance->pkt.body.ptr = instance->buf.start;
 	instance->pkt.body.size = 0;
 	instance->altDecodeBuf = NULL;
-}
-
-void is_comm_enable_gnss_forward(is_comm_instance_t* instance, uint32_t protocols)
-{
-	instance->config.fwdNoChecksMask = protocols;
 }
 
 static inline void reset_parser(is_comm_instance_t *instance)
@@ -397,31 +391,21 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 		{
 			uint32_t len = BE_SWAP16(*((uint16_t*)(void*)(instance->buf.scan - 2)));
 	
-			instance->parseState = -((int32_t)len + 2);
-
-			if(instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_UBLOX)
-			{
-				return _PTYPE_UBLOX;
-			}
 			// if length is greater than available buffer, we cannot parse this ublox packet - ublox header is 6 bytes
-			else if (len > instance->buf.size - 6)
+			if (len > instance->buf.size - 6)
 			{
 				instance->rxErrorCount++;
 				reset_parser(instance);
 				return _PTYPE_PARSE_ERROR;
 			}
+			
+			instance->parseState = -((int32_t)len + 2);
 		} 
 		break;
 
 	default:
 		if (++instance->parseState == 0)
 		{
-			if((instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_UBLOX))
-			{
-				reset_parser(instance);
-				return _PTYPE_UBLOX;
-			}
-
 			// end of ublox packet, if checksum passes, send the external id
 			instance->hasStartByte = 0;
 			uint8_t actualChecksum1 = *(instance->buf.scan - 2);
@@ -453,10 +437,6 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 				return _PTYPE_PARSE_ERROR;
 			}
 		}
-		if((instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_UBLOX))
-		{
-			return _PTYPE_UBLOX;
-		}
 	}
 
 	return _PTYPE_NONE;
@@ -475,33 +455,23 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 	{
         uint32_t msgLength = getBitsAsUInt32(instance->buf.head, 14, 10);
 
-		// parse the message plus 3 crc24 bytes
-        instance->parseState = -((int32_t)msgLength + 3);
-
-		if(instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_RTCM3)
-		{
-			return _PTYPE_RTCM3;
-		}
 		// if message is too small or too big for rtcm3 or too big for buffer, fail
-		else if (msgLength > 1023 || msgLength > instance->buf.size - 6)
+		if (msgLength > 1023 || msgLength > instance->buf.size - 6)
 		{
 			// corrupt data
 			instance->rxErrorCount++;
 			reset_parser(instance);
 			return _PTYPE_PARSE_ERROR;
 		}
+		
+		// parse the message plus 3 crc24 bytes
+        instance->parseState = -((int32_t)msgLength + 3);
 
 	} break;
 
 	default:
 		if (++instance->parseState == 0)
 		{
-			if((instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_RTCM3))
-			{
-				reset_parser(instance);
-				return _PTYPE_RTCM3;
-			}
-
 			// get len without 3 crc bytes
             int lenWithoutCrc = (int)((instance->buf.scan - instance->buf.head) - 3);
 			uint32_t actualCRC = calculate24BitCRCQ(instance->buf.head, lenWithoutCrc);
@@ -524,10 +494,6 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 				reset_parser(instance);
 				return _PTYPE_PARSE_ERROR;
 			}
-		}
-		if((instance->config.fwdNoChecksMask & ENABLE_PROTOCOL_RTCM3))
-		{
-			return _PTYPE_RTCM3;
 		}
 	}
 
