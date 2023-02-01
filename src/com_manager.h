@@ -21,9 +21,6 @@ extern "C" {
 #include "ISComm.h"
 #include "linked_list.h"
 
-// allow packet continuation or not. If enabled, an extra 1K buffer is allocated globally for each pHandle instance.
-#define ENABLE_PACKET_CONTINUATION 0
-
 /**
 Types of pass through data where the com manager will simply forward the data on to a pass through handler
 */
@@ -94,6 +91,10 @@ typedef struct
 	*/
 	uint8_t flags;
 
+	/** info needed to retry after a message send failure */
+	int16_t retryCount;
+	protocol_type_t ptype_retry;
+
 } com_manager_status_t;
 
 /** Buffers used in com manager */
@@ -106,6 +107,12 @@ typedef struct
 	uint32_t ensuredPacketsSize;		// cmInstance->maxEnsuredPackets * sizeof(ensured_pkt_t)
 
 } com_manager_init_t;
+
+enum eComManagerErrorType
+{
+	CM_ERROR_FORWARD_OVERRUN = -1, 
+	CM_ERROR_RX_PARSE = -2,
+};
 
 /** Maximum number of messages that may be broadcast simultaneously, per port.
 Since most messages use the RMC (real-time message controller) now, this can be fairly low */
@@ -178,13 +185,6 @@ typedef struct
 
 	// Current status
 	com_manager_status_t status;
-
-#if ENABLE_PACKET_CONTINUATION
-
-	// Continuation data for packets
-	p_data_t con;
-
-#endif
 	
 } com_manager_port_t;
 	
@@ -247,6 +247,9 @@ typedef struct
 
 	// Message handler - RTCM3
 	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
+	
+	// Message handler - SPARTN
+	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
 
 } com_manager_t;
 
@@ -531,12 +534,14 @@ void comManagerSetCallbacks(
 	pfnComManagerAsapMsg rmcHandler,
 	pfnComManagerGenMsgHandler asciiHandler,
 	pfnComManagerGenMsgHandler ubloxHandler, 
-	pfnComManagerGenMsgHandler rtcm3Handler);
+	pfnComManagerGenMsgHandler rtcm3Handler,
+	pfnComManagerGenMsgHandler spartnHandler);
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
 	pfnComManagerAsapMsg rmcHandler,
 	pfnComManagerGenMsgHandler asciiHandler,
 	pfnComManagerGenMsgHandler ubloxHandler,
-	pfnComManagerGenMsgHandler rtcm3Handler);
+	pfnComManagerGenMsgHandler rtcm3Handler,
+	pfnComManagerGenMsgHandler spartnHandler);
 
 /**
 Attach user defined data to a com manager instance

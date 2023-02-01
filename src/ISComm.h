@@ -50,6 +50,7 @@ typedef enum
 	_PTYPE_ASCII_NMEA,									/** Protocol Type: ASCII NMEA */
 	_PTYPE_UBLOX,										/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3,										/** Protocol Type: RTCM3 binary */
+	_PTYPE_SPARTN,										/** Protocol Type: Sony GNSS binary */
 	_PTYPE_SONYBIN,										/** Protocol Type: Sony GNSS binary */
 	_PTYPE_IS_V2_PKT,									/** Protocol Type: Inertial Sense binary V2 packet */
 } protocol_type_t;
@@ -341,6 +342,9 @@ typedef struct
 	
 	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occour at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
 	uint8_t *altDecodeBuf;
+
+	/** Retries left before moving to next packet */
+	uint8_t retries;
 
 } is_comm_instance_t;
 

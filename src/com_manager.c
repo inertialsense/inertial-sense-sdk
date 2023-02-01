@@ -14,13 +14,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 
-
-// enable filtering of duplicate packets
-#define ENABLE_FILTER_DUPLICATE_PACKETS 1
-
-// whether the first character or all characters are checked in duplicate packets
-#define ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS 0
-
 #define PARSE_DOUBLE(str) strtod(str, 0)
 #define PARSE_FLOAT(str) strtof(str, 0)
 
@@ -72,6 +65,8 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt);
 
 void stepComManagerSendMessages(void);
 void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
+
+static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype);
 
 CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
 
@@ -210,11 +205,6 @@ int initComManagerInstanceInternal
 		
 		// Port status
 		memset(&(port->status), 0, MEMBERSIZE(com_manager_port_t,status));	
-			
-#if ENABLE_PACKET_CONTINUATION			
-		// Packet data continuation
-		memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
-#endif
 	}
 
 	// Buffer: ensured packets
@@ -307,23 +297,20 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 		return;
 	}
 		
-		
 	for (pHandle = 0; pHandle < cmInstance->numHandles; pHandle++)
 	{
 		com_manager_port_t *port = &(cmInstance->ports[pHandle]);
 		is_comm_instance_t *comm = &(port->comm);
 		protocol_type_t ptype;
 
-#if 0	// Read one byte (simple method)
-		uint8_t c;
-
-		// Read from serial buffer until empty
-		while (cmInstance->readCallback(cmInstance, pHandle, &c, 1))
+		if(port->status.ptype_retry != _PTYPE_NONE)
 		{
-			if ((ptype = is_comm_parse_byte(comm, c)) != _PTYPE_NONE)
+			// Try to send out last packet again, break into next port if there is still a problem
+			if(comManagerStepRxInstanceHandler(cmInstance, port, comm, pHandle, port->status.ptype_retry) != 0)
 			{
-
-#else	// Read a set of bytes (fast method)
+				continue;
+			}
+		}
 
 		// Get available size of comm buffer
 		int n = is_comm_free(comm);
@@ -336,53 +323,11 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 
 			// Search comm buffer for valid packets
 			while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-			{
-#endif					
-				uint8_t error = 0;
-				uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
-				uint32_t dataSize = comm->dataHdr.size;
-
-				switch (ptype)
+			{	
+				int error = comManagerStepRxInstanceHandler(cmInstance, port, comm, pHandle, ptype);		
+				if(error == CM_ERROR_FORWARD_OVERRUN) 
 				{
-				case _PTYPE_PARSE_ERROR:
-					error = 1;
-					break;
-
-				case _PTYPE_IS_V1_DATA:
-				case _PTYPE_IS_V1_CMD:
-					error = (uint8_t)processBinaryRxPacket(cmInstance, pHandle, &(comm->pkt));
-					break;
-
-				case _PTYPE_UBLOX:
-					if (cmInstance->cmMsgHandlerUblox)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize);
-					}
-					break;
-
-				case _PTYPE_RTCM3:
-					if (cmInstance->cmMsgHandlerRtcm3)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize);
-					}
-					break;
-
-				case _PTYPE_ASCII_NMEA:
-					if (cmInstance->cmMsgHandlerAscii)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);
-					}
-					break;
-					
-				default:
-					break;
-				}
-
-				if (error)
-				{	// Error parsing packet
-					port->status.readCounter += 32;
-					port->status.rxError = (uint32_t)-1;
-					port->status.communicationErrorCount++;
+					break;	// Stop parsing and continue in outer loop
 				}
 			}
 		}
@@ -392,6 +337,97 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 			port->status.flags &= (~CM_PKT_FLAGS_RX_VALID_DATA);
 		}
 	}
+}
+
+static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype)
+{
+	int error = 0;
+	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
+	uint32_t dataSize = comm->dataHdr.size;
+
+	switch (ptype)
+	{
+	case _PTYPE_PARSE_ERROR:
+		error = 1;
+		break;
+
+	case _PTYPE_IS_V1_DATA:
+	case _PTYPE_IS_V1_CMD:
+		error = processBinaryRxPacket(cmInstance, pHandle, &(comm->pkt));
+		break;
+
+	case _PTYPE_UBLOX:
+		if (cmInstance->cmMsgHandlerUblox)
+		{
+			error = cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+
+	case _PTYPE_RTCM3:
+		if (cmInstance->cmMsgHandlerRtcm3)
+		{
+			error = cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+
+	case _PTYPE_ASCII_NMEA:
+		if (cmInstance->cmMsgHandlerAscii)
+		{
+			error = cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+
+	case _PTYPE_SPARTN:
+		if (cmInstance->cmMsgHandlerAscii)
+		{
+			error = cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+		
+	default:
+		break;
+	}
+
+	if (error)
+	{	// Error parsing packet
+		port->status.readCounter += 32;
+		port->status.rxError = (uint32_t)-1;
+		port->status.communicationErrorCount++;
+	}
+
+	if (error == CM_ERROR_FORWARD_OVERRUN)
+	{
+		if(port->status.retryCount == 0)
+		{
+			port->status.retryCount = 100;
+			port->status.ptype_retry = ptype;
+		}
+
+		if(port->status.retryCount-- <= 0)	// Give up after 0.1 second (assume 1ms comm task)
+		{
+			port->status.ptype_retry = _PTYPE_NONE;
+			port->status.retryCount = 0;
+			return 0;
+		}
+
+		return error;
+	}
+	else if (error)
+	{	
+		port->status.readCounter += 32;
+		port->status.rxError = (uint32_t)-1;
+		port->status.communicationErrorCount++;
+		port->status.ptype_retry = _PTYPE_NONE;
+		port->status.retryCount = 0;
+		return error;
+	}
+	else
+	{
+		port->status.ptype_retry = _PTYPE_NONE;
+		port->status.retryCount = 0;
+	}
+
+	return 0;
 }
 
 void comManagerStepTxInstance(CMHANDLE cmInstance_)
@@ -454,16 +490,18 @@ void comManagerSetCallbacks(
 	pfnComManagerAsapMsg handlerRmc,
 	pfnComManagerGenMsgHandler handlerAscii,
 	pfnComManagerGenMsgHandler handlerUblox, 
-	pfnComManagerGenMsgHandler handlerRtcm3)
+	pfnComManagerGenMsgHandler handlerRtcm3,
+	pfnComManagerGenMsgHandler handlerSpartn)
 {
-	comManagerSetCallbacksInstance(&g_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
+	comManagerSetCallbacksInstance(&g_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
 	pfnComManagerAsapMsg handlerRmc,
 	pfnComManagerGenMsgHandler handlerAscii,
 	pfnComManagerGenMsgHandler handlerUblox,
-	pfnComManagerGenMsgHandler handlerRtcm3)
+	pfnComManagerGenMsgHandler handlerRtcm3,
+	pfnComManagerGenMsgHandler handlerSpartn)
 {
 	if (cmInstance != 0)
 	{
@@ -471,6 +509,7 @@ void comManagerSetCallbacksInstance(CMHANDLE cmInstance,
 		((com_manager_t*)cmInstance)->cmMsgHandlerAscii = handlerAscii;
 		((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
 		((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
+		((com_manager_t*)cmInstance)->cmMsgHandlerSpartn = handlerSpartn;
 	}
 }
 
@@ -744,50 +783,6 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 			}
 		}
 
-#if ENABLE_PACKET_CONTINUATION
-
-		// Consolidate datasets that were broken-up across multiple packets
-		p_data_t* con = &cmInstance->ports[pHandle].con;
-		if (additionalDataAvailable || (con->hdr.size != 0 && con->hdr.id == dataHdr->id))
-		{
-			// New dataset
-			if (con->hdr.id == 0 || con->hdr.size == 0 || con->hdr.id != dataHdr->id || con->hdr.size > dataHdr->offset)
-			{
-				// Reset data consolidation
-				con->hdr.id = dataHdr->id;
-				con->hdr.offset = dataHdr->offset;
-				con->hdr.size = 0;
-			}
-
-			// Ensure data will fit in buffer
-			if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
-			{
-				// Add data to buffer
-				memcpy(con->buf + con->hdr.size, data->buf, dataHdr->size);
-				con->hdr.size += dataHdr->size;
-			}
-			else
-			{
-				// buffer overflow
-			}
-
-			// Wait for end of data
-			if (additionalDataAvailable)
-			{
-				return 0;
-			}
-
-			// Use consolidated data
-			data = con;
-		}
-		
-#else
-	
-// 		unsigned char additionalDataAvailable // function parameter removed 
-// 		(void)additionalDataAvailable;
-
-#endif
-
 		if (regd)
 		{
 			// Write to data structure if it was registered
@@ -811,13 +806,6 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 
 		// Remove retry from linked list if necessary
 		updatePacketRetryData(cmInstance, pkt);
-
-#if ENABLE_PACKET_CONTINUATION
-
-		// Clear dataset consolidation
-		con->hdr.id = con->hdr.size = con->hdr.offset = 0;
-
-#endif
 
 		// Reply w/ ACK for PID_SET_DATA
 		if (pid == PID_SET_DATA)
@@ -1141,8 +1129,7 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 	{
 		// Large data support - breaks data up into separate packets for Tx
 		case PID_DATA:
-		case PID_SET_DATA:
-		{
+		case PID_SET_DATA: {
 			if (msg->bodyHdr.size == 0)
 			{	// No data
 				return -1;
@@ -1156,59 +1143,37 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 			uint32_t offset = 0;
 			uint32_t id = hdr.id;
 			pkt.body.ptr = bufToEncode.buf;
-
-#if ENABLE_PACKET_CONTINUATION
-
-			while (size > 0)
-			{
 				
-#endif
-				
-				// Assign data header values
-				hdrToSend->size = _MIN(size, MAX_P_DATA_BODY_SIZE);
-				hdrToSend->offset = hdr.offset + offset;
-				hdrToSend->id = id;
+			// Assign data header values
+			hdrToSend->size = _MIN(size, MAX_P_DATA_BODY_SIZE);
+			hdrToSend->offset = hdr.offset + offset;
+			hdrToSend->id = id;
 
-				// copy the data to send to bufToEncode, skipping the data header - since we had to create that data header, we now have to append the actual data
-				memcpy(bufToEncode.buf + sizeof(p_data_hdr_t), msg->txData.ptr + offset, hdrToSend->size);
-				
-				// reduce size by the amount sent - if packet continuation is off, this must become 0 otherwise we fail
-				size -= hdrToSend->size;
-				
-#if ENABLE_PACKET_CONTINUATION
-
-				// increment offset for the next packet
-				offset += hdrToSend->size;
-				
-#else
-
-				if (size > 0)
-				{
-					// data was too large to fit in one packet, fail
-					return -1;
-				}
-				
-#endif
-
-				// Set data body size
-				pkt.body.size = sizeof(p_data_hdr_t) + hdrToSend->size;
-
-				// Encode the packet, handling special characters, etc.
-				if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size != 0)))
-				{
-					return -1;
-				}
-
-				// Send the packet using the specified callback
-				sendCallback(cmInstance, pHandle, bufToSend.buf, bufToSend.size);
-				
-#if ENABLE_PACKET_CONTINUATION
-
-			}
+			// copy the data to send to bufToEncode, skipping the data header - since we had to create that data header, we now have to append the actual data
+			memcpy(bufToEncode.buf + sizeof(p_data_hdr_t), msg->txData.ptr + offset, hdrToSend->size);
 			
-#endif
+			// reduce size by the amount sent - if packet continuation is off, this must become 0 otherwise we fail
+			size -= hdrToSend->size;
 
-		} break;
+			if (size > 0)
+			{
+				// data was too large to fit in one packet, fail
+				return -1;
+			}
+
+			// Set data body size
+			pkt.body.size = sizeof(p_data_hdr_t) + hdrToSend->size;
+
+			// Encode the packet, handling special characters, etc.
+			if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size != 0)))
+			{
+				return -1;
+			}
+
+			// Send the packet using the specified callback
+			sendCallback(cmInstance, pHandle, bufToSend.buf, bufToSend.size);
+				
+			} break;
 
 		// Single packet commands/data sets. No data header, just body.
 		default:
@@ -1243,7 +1208,6 @@ void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned cha
 	switch (pkt->hdr.pid)
 	{
 	case PID_SET_DATA:
-// 		memcpy(ack.body.buf, (p_data_hdr_t*)(pkt->body.ptr), sizeof(p_data_hdr_t));
 		ack.body.dataHdr = *((p_data_hdr_t*)(pkt->body.ptr));
 		ackSize += sizeof(p_data_hdr_t);
 		break;
@@ -1350,14 +1314,6 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 	ensured_pkt_t *ePkt = 0;
 	unsigned char searching = 1;
 
-	#if ENABLE_FILTER_DUPLICATE_PACKETS
-
-	#if ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
-
-	int32_t j;
-
-	#endif
-
 	// Filter out redundant retries (replace same type packets and pHandle with latest)
 	p_data_get_t *getData1, *getData2;
 
@@ -1402,35 +1358,16 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 				break;
 
 			default:
-
-#if !ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
-
 				// Match: first character
 				if (ePkt->pkt.body.ptr[0] == data[0])
 				{
 					searching = 0;
 				}
 
-#else
-
-				// Match: All character
-				for (j = 0; j < dataSize; j++)
-				{
-					if (ePkt->pkt.body.ptr[j] == data[j])
-					{
-						searching = 0;
-						break;
-					}
-				}
-
-#endif
-
 				break;
 			}
 		}
 	}
-
-	#endif
 
 	// Find Empty Slot - either first available or tail if all used.
 	for (i = 0; searching && i < cmInstance->maxEnsuredPackets; i++)
