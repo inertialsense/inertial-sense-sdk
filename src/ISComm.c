@@ -245,7 +245,7 @@ void is_comm_enable_gnss_forward(is_comm_instance_t* instance, uint32_t protocol
 	instance->config.fwdNoChecksMask = protocols;
 }
 
-static __inline void reset_parser(is_comm_instance_t *instance)
+static inline void reset_parser(is_comm_instance_t *instance)
 {
 	instance->hasStartByte = 0;
 	instance->buf.head = instance->buf.scan;
@@ -534,54 +534,56 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 	return _PTYPE_NONE;
 }
 
-static uint8_t crc_reflect(uint8_t data, uint8_t data_len)
+static const uint8_t u8CRC_4_TABLE[] = {
+    0x00U, 0x0BU, 0x05U, 0x0EU, 0x0AU, 0x01U, 0x0FU, 0x04U,
+    0x07U, 0x0CU, 0x02U, 0x09U, 0x0DU, 0x06U, 0x08U, 0x03U,
+    0x0EU, 0x05U, 0x0BU, 0x00U, 0x04U, 0x0FU, 0x01U, 0x0AU,
+    0x09U, 0x02U, 0x0CU, 0x07U, 0x03U, 0x08U, 0x06U, 0x0DU,
+    0x0FU, 0x04U, 0x0AU, 0x01U, 0x05U, 0x0EU, 0x00U, 0x0BU,
+    0x08U, 0x03U, 0x0DU, 0x06U, 0x02U, 0x09U, 0x07U, 0x0CU,
+    0x01U, 0x0AU, 0x04U, 0x0FU, 0x0BU, 0x00U, 0x0EU, 0x05U,
+    0x06U, 0x0DU, 0x03U, 0x08U, 0x0CU, 0x07U, 0x09U, 0x02U,
+    0x0DU, 0x06U, 0x08U, 0x03U, 0x07U, 0x0CU, 0x02U, 0x09U,
+    0x0AU, 0x01U, 0x0FU, 0x04U, 0x00U, 0x0BU, 0x05U, 0x0EU,
+    0x03U, 0x08U, 0x06U, 0x0DU, 0x09U, 0x02U, 0x0CU, 0x07U,
+    0x04U, 0x0FU, 0x01U, 0x0AU, 0x0EU, 0x05U, 0x0BU, 0x00U,
+    0x02U, 0x09U, 0x07U, 0x0CU, 0x08U, 0x03U, 0x0DU, 0x06U,
+    0x05U, 0x0EU, 0x00U, 0x0BU, 0x0FU, 0x04U, 0x0AU, 0x01U,
+    0x0CU, 0x07U, 0x09U, 0x02U, 0x06U, 0x0DU, 0x03U, 0x08U,
+    0x0BU, 0x00U, 0x0EU, 0x05U, 0x01U, 0x0AU, 0x04U, 0x0FU,
+    0x09U, 0x02U, 0x0CU, 0x07U, 0x03U, 0x08U, 0x06U, 0x0DU,
+    0x0EU, 0x05U, 0x0BU, 0x00U, 0x04U, 0x0FU, 0x01U, 0x0AU,
+    0x07U, 0x0CU, 0x02U, 0x09U, 0x0DU, 0x06U, 0x08U, 0x03U,
+    0x00U, 0x0BU, 0x05U, 0x0EU, 0x0AU, 0x01U, 0x0FU, 0x04U,
+    0x06U, 0x0DU, 0x03U, 0x08U, 0x0CU, 0x07U, 0x09U, 0x02U,
+    0x01U, 0x0AU, 0x04U, 0x0FU, 0x0BU, 0x00U, 0x0EU, 0x05U,
+    0x08U, 0x03U, 0x0DU, 0x06U, 0x02U, 0x09U, 0x07U, 0x0CU,
+    0x0FU, 0x04U, 0x0AU, 0x01U, 0x05U, 0x0EU, 0x00U, 0x0BU,
+    0x04U, 0x0FU, 0x01U, 0x0AU, 0x0EU, 0x05U, 0x0BU, 0x00U,
+    0x03U, 0x08U, 0x06U, 0x0DU, 0x09U, 0x02U, 0x0CU, 0x07U,
+    0x0AU, 0x01U, 0x0FU, 0x04U, 0x00U, 0x0BU, 0x05U, 0x0EU,
+    0x0DU, 0x06U, 0x08U, 0x03U, 0x07U, 0x0CU, 0x02U, 0x09U,
+    0x0BU, 0x00U, 0x0EU, 0x05U, 0x01U, 0x0AU, 0x04U, 0x0FU,
+    0x0CU, 0x07U, 0x09U, 0x02U, 0x06U, 0x0DU, 0x03U, 0x08U,
+    0x05U, 0x0EU, 0x00U, 0x0BU, 0x0FU, 0x04U, 0x0AU, 0x01U,
+    0x02U, 0x09U, 0x07U, 0x0CU, 0x08U, 0x03U, 0x0DU, 0x06U
+};
+
+static uint8_t computeCrc4Ccitt(const uint8_t *buf, const uint32_t numBytes)
 {
-   	uint8_t i;
-   	uint8_t ret;
+    // Initialize local variables
+    uint8_t tableRemainder;
+    uint8_t remainder = 0U; // Initial remainder
 
-    ret = data & 0x01;
-    for (i = 1; i < data_len; i++) {
-        data >>= 1;
-        ret = (ret << 1) | (data & 0x01);
+    // Compute the CRC value
+    // Divide each byte of the message by the corresponding polynomial
+    for (uint32_t ctr = 0U; ctr < numBytes; ctr++)
+    {
+        tableRemainder = buf[ctr] ^ remainder;
+        remainder = u8CRC_4_TABLE[tableRemainder];
     }
-    return ret;
-}
 
-/** Polynomial 0x09, 2.5 bytes. Fills last byte with 0s */
-static uint8_t crc4_simple(uint8_t *buf) {
-
-	const uint8_t dbuf[3] = { buf[0], buf[1], buf[2] & 0xF0 };
-	const uint8_t *d = dbuf;
-	uint8_t i;
-	uint8_t bit;
-	uint8_t c;
-	uint8_t data_len = 3;
-	uint16_t crc = 0;
-
-	// Calculate
-	while (data_len--) {
-		c = crc_reflect(*d++, 8);
-		for (i = 0; i < 8; i++) {
-			bit = crc & 0x8;
-			crc = (crc << 1) | ((c >> (7 - i)) & 0x01);
-			if (bit) {
-				crc ^= 0x9;
-			}
-		}
-		crc &= 0xf;
-	}
-
-	// Finalize
-	for (i = 0; i < 4; i++) {
-		bit = crc & 0x8;
-		crc <<= 1;
-		if (bit) {
-			crc ^= 0x9;
-		}
-	}
-	crc = crc_reflect(crc, 4);
-
-	return crc & 0xf;
+    return remainder & 0x0FU;
 }
 
 static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
@@ -600,7 +602,8 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 
 	case 3: {
 		// Check length and header CRC4
-        uint8_t calc = crc4_simple(&instance->buf.head[1]);
+		const uint8_t dbuf[3] = { instance->buf.head[1], instance->buf.head[2], instance->buf.head[3] & 0xF0 };
+        uint8_t calc = computeCrc4Ccitt(dbuf, 3);
         if((instance->buf.head[3] & 0x0F) != calc)
         {
         	// corrupt data
@@ -623,24 +626,6 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 
 		// Variable length CRC {0x0, 0x1, 0x2, 0x3} = {1, 2, 3, 4}bytes - appears at end of message
 		payloadLen += (((instance->buf.head[3] >> 4) & 0x03) + 1);
-
-		// Variable length time
-		if((instance->buf.head[4] & 0x08) == 0)
-		{
-			// Timestamp is 16 bit (not 32bit), so if there are no encryption bytes we can continue
-			if((instance->buf.head[3] & 0x40) == 0)
-			{
-				// Encryption is disabled, we are ready to go to payload bytes
-				instance->parseState = -((int32_t)payloadLen);
-				break;
-			}
-		}
-
-		if(instance->parseState < 9 || instance->parseState == 10)
-		{
-			instance->parseState++;
-			break;	// Full header not present yet
-		}
 
 		uint8_t extendedTs = instance->buf.head[4] & 0x08;
 		uint8_t encrypt = instance->buf.head[3] & 0x40;
@@ -669,11 +654,17 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 				break;
 			}
 		}
-		else	// !extendedTs
+		else
 		{
 			// Timestamp is 16 bit
 
-			if(encrypt && instance->parseState == 9)
+			if(!encrypt && instance->parseState == 7)
+			{
+				// Encryption is disabled, we are ready to go to payload bytes
+				instance->parseState = -((int32_t)payloadLen);
+				break;
+			}
+			else if(encrypt && instance->parseState == 9)
 			{
 				// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
 				encryptPtr = &instance->buf.head[8];
@@ -710,10 +701,8 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 				case 4:
 					payloadLen += 64;
 					break;
-				case 5:
-					instance->rxErrorCount++;
-					reset_parser(instance);
-					return _PTYPE_PARSE_ERROR;
+				default:
+					break;
 				}
 			}
 		}
@@ -742,10 +731,7 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 			instance->pktPtr = instance->buf.head;
 			reset_parser(instance);
 
-			serWrite(1, instance->dataPtr, instance->dataHdr.size);
-			return _PTYPE_NONE;
-
-			// TODO: Implement CRC check for SPARTN (variable length based on header)
+			return _PTYPE_SPARTN;
 		}
 		else if(instance->parseState > 0)
 		{
@@ -887,7 +873,11 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			break;
 		case SPARTN_START_BYTE:
 			ptype = processSpartnByte(instance);
-			if (ptype != _PTYPE_NONE)
+			if(ptype == _PTYPE_PARSE_ERROR)
+			{
+				//time_delay_usec(500);	// Temporary test code
+			}
+			else if (ptype != _PTYPE_NONE)
 			{
 				return ptype;
 			}

@@ -94,6 +94,10 @@ typedef struct
 	*/
 	uint8_t flags;
 
+	/** info needed to retry after a message send failure */
+	int16_t retryCount;
+	protocol_type_t ptype_retry;
+
 } com_manager_status_t;
 
 /** Buffers used in com manager */
@@ -106,6 +110,12 @@ typedef struct
 	uint32_t ensuredPacketsSize;		// cmInstance->maxEnsuredPackets * sizeof(ensured_pkt_t)
 
 } com_manager_init_t;
+
+enum eComManagerErrorType
+{
+	CM_ERROR_FORWARD_OVERRUN = -1, 
+	CM_ERROR_RX_PARSE = -2,
+};
 
 /** Maximum number of messages that may be broadcast simultaneously, per port.
 Since most messages use the RMC (real-time message controller) now, this can be fairly low */
@@ -144,7 +154,7 @@ typedef int(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle, p_data_hdr_t 
 // typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
 
 // Generic message handler function, return 1 if message handled
-typedef int(*pfnComManagerGenMsgHandler)(CMHANDLE cmHandle, int pHandle, const unsigned char* msg, int msgSize, uint8_t fwd);
+typedef int(*pfnComManagerGenMsgHandler)(CMHANDLE cmHandle, int pHandle, const unsigned char* msg, int msgSize);
 
 // pass through handler
 // typedef int(*pfnComManagerPassThrough)(CMHANDLE cmHandle, com_manager_pass_through_t passThroughType, int pHandle, const unsigned char* data, int dataLength);

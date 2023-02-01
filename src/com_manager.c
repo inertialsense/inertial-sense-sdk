@@ -73,6 +73,8 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt);
 void stepComManagerSendMessages(void);
 void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
 
+static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype);
+
 CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
 
 int comManagerInit
@@ -307,23 +309,20 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 		return;
 	}
 		
-		
 	for (pHandle = 0; pHandle < cmInstance->numHandles; pHandle++)
 	{
 		com_manager_port_t *port = &(cmInstance->ports[pHandle]);
 		is_comm_instance_t *comm = &(port->comm);
 		protocol_type_t ptype;
 
-#if 0	// Read one byte (simple method)
-		uint8_t c;
-
-		// Read from serial buffer until empty
-		while (cmInstance->readCallback(cmInstance, pHandle, &c, 1))
+		if(port->status.ptype_retry != _PTYPE_NONE)
 		{
-			if ((ptype = is_comm_parse_byte(comm, c)) != _PTYPE_NONE)
+			// Try to send out last packet again, break into next port if there is still a problem
+			if(comManagerStepRxInstanceHandler(cmInstance, port, comm, pHandle, port->status.ptype_retry) != 0)
 			{
-
-#else	// Read a set of bytes (fast method)
+				continue;
+			}
+		}
 
 		// Get available size of comm buffer
 		int n = is_comm_free(comm);
@@ -336,58 +335,11 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 
 			// Search comm buffer for valid packets
 			while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-			{
-#endif					
-				uint8_t error = 0;
-				uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
-				uint32_t dataSize = comm->dataHdr.size;
-
-				switch (ptype)
+			{	
+				int error = comManagerStepRxInstanceHandler(cmInstance, port, comm, pHandle, ptype);		
+				if(error == CM_ERROR_FORWARD_OVERRUN) 
 				{
-				case _PTYPE_PARSE_ERROR:
-					error = 1;
-					break;
-
-				case _PTYPE_INERTIAL_SENSE_DATA:
-				case _PTYPE_INERTIAL_SENSE_CMD:
-					error = (uint8_t)processBinaryRxPacket(cmInstance, pHandle, &(comm->pkt));
-					break;
-
-				case _PTYPE_UBLOX:
-					if (cmInstance->cmMsgHandlerUblox)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize, comm->config.fwdNoChecksMask & ENABLE_PROTOCOL_UBLOX);
-					}
-					break;
-
-				case _PTYPE_RTCM3:
-					if (cmInstance->cmMsgHandlerRtcm3)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize, comm->config.fwdNoChecksMask & ENABLE_PROTOCOL_RTCM3);
-					}
-					break;
-
-				case _PTYPE_ASCII_NMEA:
-					if (cmInstance->cmMsgHandlerAscii)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize, 0);
-					}
-					break;
-				case _PTYPE_SPARTN:
-					if (cmInstance->cmMsgHandlerSpartn)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerSpartn(cmInstance, pHandle, dataPtr, dataSize, comm->config.fwdNoChecksMask & ENABLE_PROTOCOL_SPARTN);
-					}
-					break;
-				default:
-					break;
-				}
-
-				if (error)
-				{	// Error parsing packet
-					port->status.readCounter += 32;
-					port->status.rxError = (uint32_t)-1;
-					port->status.communicationErrorCount++;
+					break;	// Stop parsing and continue in outer loop
 				}
 			}
 		}
@@ -397,6 +349,88 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 			port->status.flags &= (~CM_PKT_FLAGS_RX_VALID_DATA);
 		}
 	}
+}
+
+static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype)
+{
+	int error = 0;
+	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
+	uint32_t dataSize = comm->dataHdr.size;
+
+	switch (ptype)
+	{
+	case _PTYPE_PARSE_ERROR:
+		error = 1;
+		break;
+
+	case _PTYPE_INERTIAL_SENSE_DATA:
+	case _PTYPE_INERTIAL_SENSE_CMD:
+		error = processBinaryRxPacket(cmInstance, pHandle, &(comm->pkt));
+		break;
+
+	case _PTYPE_UBLOX:
+		if (cmInstance->cmMsgHandlerUblox)
+		{
+			error = cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+
+	case _PTYPE_RTCM3:
+		if (cmInstance->cmMsgHandlerRtcm3)
+		{
+			error = cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+
+	case _PTYPE_ASCII_NMEA:
+		if (cmInstance->cmMsgHandlerAscii)
+		{
+			error = cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+	case _PTYPE_SPARTN:
+		if (cmInstance->cmMsgHandlerSpartn)
+		{
+			error = cmInstance->cmMsgHandlerSpartn(cmInstance, pHandle, dataPtr, dataSize);
+		}
+		break;
+	default:
+		break;
+	}
+
+	if (error == CM_ERROR_FORWARD_OVERRUN)
+	{
+		if(port->status.retryCount == 0)
+		{
+			port->status.retryCount = 100;
+			port->status.ptype_retry = ptype;
+		}
+
+		if(port->status.retryCount-- <= 0)	// Give up after 0.1 second (assume 1ms comm task)
+		{
+			port->status.ptype_retry = _PTYPE_NONE;
+			port->status.retryCount = 0;
+			return 0;
+		}
+
+		return error;
+	}
+	else if (error)
+	{	
+		port->status.readCounter += 32;
+		port->status.rxError = (uint32_t)-1;
+		port->status.communicationErrorCount++;
+		port->status.ptype_retry = _PTYPE_NONE;
+		port->status.retryCount = 0;
+		return error;
+	}
+	else
+	{
+		port->status.ptype_retry = _PTYPE_NONE;
+		port->status.retryCount = 0;
+	}
+
+	return 0;
 }
 
 void comManagerStepTxInstance(CMHANDLE cmInstance_)
