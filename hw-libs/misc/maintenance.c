@@ -250,9 +250,6 @@ void save_persistent_messages(void)
     {   
         // Copy RMC
         g_nvmInternalFlashCfg->startupRmc[port] = g_rmci[port];
-        
-        // Copy ASCII
-        g_nvmInternalFlashCfg->startupAsciiPeriod[port] = g_asciiPeriod[port];
     }   
 	// Copy CAN
 	g_nvmInternalFlashCfg->startupCAN = g_CAN;

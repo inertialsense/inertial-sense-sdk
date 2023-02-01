@@ -1244,87 +1244,43 @@ typedef struct PACKED
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB] (see RMC_OPTIONS_...) */
 	uint32_t				options;
 
-	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
+	/** Broadcast period multiple - ASCII IMU data. 0 to disable. */
 	uint16_t				pimu;
 
-	/** Broadcast period (ms) - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
+	/** Broadcast period multiple - ASCII preintegrated IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
 	uint16_t				ppimu;
 	
-	/** Broadcast period (ms) - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
+	/** Broadcast period multiple - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
 	uint16_t				pins1;
 
-	/** Broadcast period (ms) - ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
+	/** Broadcast period multiple - ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
 	uint16_t				pins2;
 	
-	/** Broadcast period (ms) - ASCII GPS position data. 0 to disable. */
+	/** Broadcast period multiple - ASCII GPS position data. 0 to disable. */
 	uint16_t				pgpsp;
 
-	/** Broadcast period (ms) - Reserved.  Leave zero. */
-	uint16_t				reserved;
+	/** Broadcast period multiple - ASCII Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
+	uint16_t				primu;
 
-	/** Broadcast period (ms) - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
+	/** Broadcast period multiple - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
 	uint16_t				gpgga;
 
-	/** Broadcast period (ms) - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
+	/** Broadcast period multiple - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
 	uint16_t				gpgll;
 
-	/** Broadcast period (ms) - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
+	/** Broadcast period multiple - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
 	uint16_t				gpgsa;
 
-	/** Broadcast period (ms) - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
+	/** Broadcast period multiple - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
 	uint16_t				gprmc;
 	
-	/** Broadcast period (ms) - ASCII NMEA Data and Time. 0 to disable. */
+	/** Broadcast period multiple - ASCII NMEA Data and Time. 0 to disable. */
 	uint16_t				gpzda;
 
-	/** Broadcast period (ms) - ASCII NMEA Inertial Attitude Data. 0 to disable. */
+	/** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
 	uint16_t				pashr;
 	
 } ascii_msgs_t;
-
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
-typedef struct PACKED
-{
-	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=USB] (see RMC_OPTIONS_...) */
-	uint32_t				options;
-
-	/** Broadcast period (ms) - ASCII dual IMU data. 0 to disable. */
-	uint32_t				pimu;
-
-	/** Broadcast period (ms) - ASCII preintegrated dual IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
-	uint32_t				ppimu;
-	
-	/** Broadcast period (ms) - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
-	uint32_t				pins1;
-
-	/** Broadcast period (ms) - ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
-	uint32_t				pins2;
-	
-	/** Broadcast period (ms) - ASCII GPS position data. 0 to disable. */
-	uint32_t				pgpsp;
-
-	/** Broadcast period (ms) - Reserved.  Leave zero. */
-	uint32_t				reserved;
-
-	/** Broadcast period (ms) - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
-	uint32_t				gpgga;
-
-	/** Broadcast period (ms) - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
-	uint32_t				gpgll;
-
-	/** Broadcast period (ms) - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
-	uint32_t				gpgsa;
-
-	/** Broadcast period (ms) - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
-	uint32_t				gprmc;
-	
-	/** Broadcast period (ms) - ASCII NMEA Data and Time. 0 to disable. */
-	uint32_t				gpzda;
-
-	/** Broadcast period (ms) - ASCII NMEA Inertial Attitude Data. 0 to disable. */
-	uint32_t				pashr;
-	
-} ascii_msgs_u32_t;
 
 typedef struct PACKED
 {
@@ -1537,6 +1493,39 @@ typedef struct PACKED
 } rmc_t;
 
 
+#define ASCII_RMC_BITS_PIMU				0x00000001		// 2
+#define ASCII_RMC_BITS_PPIMU			0x00000002		// 3
+#define ASCII_RMC_BITS_PRIMU			0x00000004		// 4
+#define ASCII_RMC_BITS_PINS1			0x00000008		// 5
+#define ASCII_RMC_BITS_PINS2			0x00000010		// 6
+#define ASCII_RMC_BITS_PGPSP			0x00000020		// 7
+#define ASCII_RMC_BITS_GPGGA			0x00000040		// 8
+#define ASCII_RMC_BITS_GPGLL			0x00000080		// 9
+#define ASCII_RMC_BITS_GPGSA			0x00000100		// 10
+#define ASCII_RMC_BITS_GPRMC			0x00000200		// 11
+#define ASCII_RMC_BITS_GPZDA			0x00000400		// 12
+#define ASCII_RMC_BITS_PASHR			0x00000800		// 13 
+#define ASCII_RMC_BITS_PSTRB			0x00001000		// 14
+#define ASCII_RMC_BITS_INFO				0x00002000		//
+
+/** Realtime message controller internal (RMCI). */
+typedef struct PACKED
+{
+    /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
+    uint64_t                bits;
+
+    /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
+    uint32_t				options;
+    
+    /**  */
+    uint8_t                 periodMultiple[DID_COUNT_UINS];
+
+    /** ASCII NMEA data stream enable bits for the specified ports.  (see ASCII_RMC_BITS_...) */
+    uint32_t                bitsAscii;
+
+} rmci_t;
+
+
 /** (DID_IO) Input/Output */
 typedef struct PACKED
 {
@@ -1561,7 +1550,7 @@ enum eMagCalState
 	MAG_CAL_STATE_ABORT				= (int)101,
 
 	/** STATUS: Mag recalibration is in progress */
-	MAG_CAL_STATE_RECAL_RUNNING	= (int)200,
+	MAG_CAL_STATE_RECAL_RUNNING		= (int)200,
 
 	/** STATUS: Mag recalibration has completed */
 	MAG_CAL_STATE_RECAL_COMPLETE	= (int)201,
@@ -4137,7 +4126,7 @@ typedef enum
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
 {
-	/** Broadcast period (ms) - CAN time message. 0 to disable. */
+	/** Broadcast period multiple - CAN time message. 0 to disable. */
 	uint16_t				can_period_mult[NUM_CIDS];
 	
 	/** Transmit address. */
@@ -4324,6 +4313,9 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
 /** Convert DID to realtime message bits */
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits);
+
+uint32_t didToAsciiRmcBits(uint32_t dataId);
+
 
 //Time conversion constants
 #define SECONDS_PER_WEEK        604800
