@@ -22,7 +22,7 @@ extern "C" {
 #include "data_sets.h"
 #include "ISConstants.h"
 #include "bootloaderShared.h"
-#include "rtos.h"
+#include "rtos_dynamic.h"
 #include "d_serial.h"
 #include "d_time.h"
 #include "conf_board.h"

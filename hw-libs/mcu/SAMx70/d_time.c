@@ -18,9 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "d_timer.h"
 #endif
 
-#if USE_FREERTOS
-#include "rtos.h"
-#endif
+#include "rtos_dynamic.h"
 
 static union {
 	struct {

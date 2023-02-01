@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdlib.h>
 #include "globals.h"
 #include "bootloaderShared.h"
-#include "rtos.h"
+#include "rtos_dynamic.h"
 #include "d_flash.h"
 #include "ISBoards.h"
 

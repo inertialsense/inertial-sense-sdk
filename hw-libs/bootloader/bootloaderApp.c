@@ -18,8 +18,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #include <string.h>
-#include "../../src/data_sets.h"
-#include "../../hw-libs/misc/rtos.h"
+#include "data_sets.h"
+#include "rtos_dynamic.h"
 #include "bootloaderApp.h"
 
 
@@ -43,8 +43,6 @@ static void soft_reset_internal(void)
 	__disable_irq();
 	__DMB();
 
-
-
 #ifndef IMX_5
 #if defined(PLATFORM_IS_EVB_2)
 #else
@@ -52,8 +50,6 @@ static void soft_reset_internal(void)
     usart_reset((Usart*)SERIAL1);
     usart_reset((Usart*)SERIAL2);
 #endif    
-
-    set_reset_pin_enabled(1);
     RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;
 #else
     __NVIC_SystemReset();
@@ -77,33 +73,6 @@ void soft_reset_backup_register(uint32_t sysFaultStatus)
 
     soft_reset_internal();
 }
-
-void set_reset_pin_enabled(int enabled)
-{
-    // *** WARNING *** Disabling the reset pin will require a chip erase via jtag to deploy new firmware
-    // *** WARNING *** Provide a way to re-enable the reset pin via message or other mechanism to avoid this
-
-#if 0
-
-    if (enabled)
-    {
-        uint32_t mode = RSTC->RSTC_MR;
-        mode &= ~RSTC_MR_KEY_Msk;
-        mode |= (RSTC_MR_URSTEN | RSTC_MR_KEY_PASSWD);
-        RSTC->RSTC_MR = mode;
-    }
-    else
-    {
-        uint32_t mode = RSTC->RSTC_MR;
-        mode &= ~(RSTC_MR_URSTEN | RSTC_MR_KEY_Msk);
-        mode |= RSTC_MR_KEY_PASSWD;
-        RSTC->RSTC_MR = mode;
-    }
-
-#endif
-
-}
-
 
 void enable_bootloader(int pHandle)
 {	

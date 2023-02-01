@@ -1556,13 +1556,13 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\hw-libs\misc\bootloaderApp.h</Link>
     </Compile>
-    <Compile Include="..\..\hw-libs\misc\rtos.c">
+    <Compile Include="..\..\hw-libs\misc\rtos_dynamic.c">
       <SubType>compile</SubType>
-      <Link>src\inertial-sense-sdk\hw-libs\misc\rtos.c</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\misc\rtos_dynamic.c</Link>
     </Compile>
-    <Compile Include="..\..\hw-libs\misc\rtos.h">
+    <Compile Include="..\..\hw-libs\misc\rtos_dynamic.h">
       <SubType>compile</SubType>
-      <Link>src\inertial-sense-sdk\hw-libs\misc\rtos.h</Link>
+      <Link>src\inertial-sense-sdk\hw-libs\misc\rtos_dynamic.h</Link>
     </Compile>
     <None Include="src\ASF\sam\drivers\efc\efc.h">
       <SubType>compile</SubType>

@@ -5,7 +5,7 @@
 #include "conf_interrupts.h"
 #endif // ENABLE_TC_WAVEFORM_INTERRUPT
 // #include "globals.h"
-#include "misc/debug_gpio.h"
+#include "conf_debug.h"
 
 #ifdef DEBUG
 //#define TIMER_DEBUG
