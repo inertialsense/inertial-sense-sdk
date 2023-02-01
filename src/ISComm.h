@@ -531,6 +531,9 @@ typedef struct
 	/** IS binary packet */
 	packet_t pkt;
 
+	/** Retries left before moving to next packet */
+	uint8_t retries;
+
 } is_comm_instance_t;
 
 /** Pop off the packing argument, we can safely allow packing and shifting in memory at this point */
