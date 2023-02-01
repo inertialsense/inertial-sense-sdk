@@ -662,6 +662,31 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 	}
 }
 
+// Convert DID to ASCII message out control mask
+uint32_t didToAsciiRmcBits(uint32_t dataId)
+{
+	switch (dataId)
+	{
+		case DID_IMU:					return ASCII_RMC_BITS_PIMU;
+		case DID_PIMU:					return ASCII_RMC_BITS_PPIMU;
+		case DID_IMU_RAW:				return ASCII_RMC_BITS_PRIMU;
+		case DID_INS_1:					return ASCII_RMC_BITS_PINS1;
+		case DID_INS_2:					return ASCII_RMC_BITS_PINS2;
+		case DID_GPS1_POS:				
+			return 
+				ASCII_RMC_BITS_PGPSP |
+				ASCII_RMC_BITS_GPGGA |
+				ASCII_RMC_BITS_GPGLL |
+				ASCII_RMC_BITS_GPGSA |
+				ASCII_RMC_BITS_GPRMC |
+				ASCII_RMC_BITS_GPZDA |
+				ASCII_RMC_BITS_PASHR;
+		case DID_DEV_INFO:				return ASCII_RMC_BITS_INFO;
+
+		default:                        return 0;
+	}
+}
+
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond)
 {
 	double j1, j2, j3, j4, j5;

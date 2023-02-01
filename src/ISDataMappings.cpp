@@ -728,6 +728,30 @@ static void PopulateIMUDeltaThetaVelocityMagMappings(map_name_to_info_t mappings
 	ASSERT_SIZE(totalSize);
 }
 
+static void PopulateIMUMagnetometerMappings(map_name_to_info_t mappings [DID_COUNT])
+{
+
+	typedef imu_mag_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_IMU_MAG];
+	uint32_t totalSize = 0;
+	ADD_MAP(m, totalSize, "imutime", imu.time, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "pqr[0]", imu.I.pqr[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr[1]", imu.I.pqr[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "pqr[2]", imu.I.pqr[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[0]", imu.I.acc[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[1]", imu.I.acc[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "acc[2]", imu.I.acc[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "imustatus", imu.status, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "magtime", mag.time, 0, DataTypeDouble, double, 0);
+	ADD_MAP(m, totalSize, "mag[0]", mag.mag[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag[1]", mag.mag[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "mag[2]", mag.mag[2], 0, DataTypeFloat, float&, 0);
+
+	ASSERT_SIZE(totalSize);
+
+}
+
+
 static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT])
 {
 	typedef infield_cal_t MAP_TYPE;
@@ -2509,7 +2533,7 @@ cISDataMappings::cISDataMappings()
 	PopulateRtkDebugMappings(m_lookupInfo);
 	// PopulateRtkDebug2Mappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMagMappings(m_lookupInfo);
-	// PopulateIMUMagnetometerMappings(m_lookupInfo, DID_IMU_MAG);
+	PopulateIMUMagnetometerMappings(m_lookupInfo);
 
 #endif
 

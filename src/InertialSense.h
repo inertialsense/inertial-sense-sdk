@@ -109,13 +109,22 @@ public:
 	virtual ~InertialSense();
 
 	/**
+	* Set functions pointers called when various message types are received.
+	*/
+	void SetCallbacks(
+		pfnComManagerAsapMsg handlerRmc=NULLPTR,
+		pfnComManagerGenMsgHandler handlerAscii=NULLPTR,
+		pfnComManagerGenMsgHandler handlerUblox=NULLPTR, 
+		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR);
+
+	/**
 	* Closes any open connection and then opens the device
 	* @param port the port to open
 	* @param baudRate the baud rate to connect with - supported rates are 115200, 230400, 460800, 921600, 2000000, 3000000
 	* @param disableBroadcastsOnClose whether to send a stop broadcasts command to all units on Close
 	* @return true if opened, false if failure (i.e. baud rate is bad or port fails to open)
 	*/
-	bool Open(const char* port, int baudRate = IS_COM_BAUDRATE_DEFAULT, bool disableBroadcastsOnClose = false);
+	bool Open(const char* port, int baudRate=IS_COM_BAUDRATE_DEFAULT, bool disableBroadcastsOnClose=false);
 
 	/**
 	* Check if the connection is open
@@ -368,6 +377,12 @@ public:
 	void SetTimeoutFlushLoggerSeconds(time_t timeoutFlushLoggerSeconds) { m_logger.SetTimeoutFlushSeconds(timeoutFlushLoggerSeconds); }
 
 	/**
+	* Enable the device validate used to verify device response when Open() is called.
+	* @param enable device validation
+	*/
+	void EnableDeviceValidation(bool enable) { m_enableDeviceValidation = enable; }
+
+	/**
 	* Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
 	* Please ensure that all other connections to the com port are closed before calling this function.
 	*
@@ -416,6 +431,7 @@ private:
 	int m_clientConnectionsTotal = 0;
 	mul_msg_stats_t m_clientMessageStats = {};
 
+	bool m_enableDeviceValidation = true;
 	bool m_disableBroadcastsOnClose;
 	com_manager_init_t m_cmInit;
 	com_manager_port_t *m_cmPorts;

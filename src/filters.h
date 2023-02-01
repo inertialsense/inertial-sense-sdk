@@ -540,8 +540,10 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
  * \param imu			Gyro and accelerometer sample.
  * \param imuLast		Previous gyro and accelerometer sample.
  */
-void integrateImu( pimu_t *output, imu_t *imu, imu_t *imuLast );
+void integratePimu( pimu_t *output, imu_t *imu, imu_t *imuLast );
 
+// Set integral, time, and status to zero
+void zeroPimu( pimu_t *pimu );
 
 /** 
  * \brief Find alpha and beta parameters for single pole Low-Pass filter

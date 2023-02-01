@@ -93,7 +93,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 			gps_pos_t &gps = *((gps_pos_t*)data->buf);
 			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{
-				*s->clientBytesToSend = gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+				*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 			}
 		}
 	}
@@ -550,6 +550,16 @@ bool InertialSense::UpdateClient()
 	return true;
 }
 
+void InertialSense::SetCallbacks(
+	pfnComManagerAsapMsg handlerRmc,
+	pfnComManagerGenMsgHandler handlerAscii,
+	pfnComManagerGenMsgHandler handlerUblox, 
+	pfnComManagerGenMsgHandler handlerRtcm3)
+{
+	// Register message hander callback functions: RealtimeMessageController (RMC) handler, ASCII (NMEA), ublox, and RTCM3.
+	comManagerSetCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
+}
+
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
 {
 	// null com port, just use other features of the interface like ntrip
@@ -921,56 +931,59 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		return false;
 	}
 
-	// negotiate baud rate by querying device info - don't return out until it negotiates or times out
-	// if the baud rate is already correct, the request for the message should succeed very quickly
-	time_t startTime = time(0);
-
-	// try to auto-baud for up to 10 seconds, then abort if we didn't get a valid packet
-	// we wait until we get a valid serial number and manufacturer
-	while (!HasReceivedResponseFromAllDevices() && time(0) - startTime < 10)
+	if (m_enableDeviceValidation)
 	{
-		for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+		// negotiate baud rate by querying device info - don't return out until it negotiates or times out
+		// if the baud rate is already correct, the request for the message should succeed very quickly
+		time_t startTime = time(0);
+
+		// try to auto-baud for up to 10 seconds, then abort if we didn't get a valid packet
+		// we wait until we get a valid serial number and manufacturer
+		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
-			comManagerGetData((int)i, DID_SYS_CMD, 0, 0, 0);
-			comManagerGetData((int)i, DID_DEV_INFO, 0, 0, 0);
-			comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
-			comManagerGetData((int)i, DID_EVB_FLASH_CFG, 0, 0, 0);
+			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+			{
+				comManagerGetData((int)i, DID_SYS_CMD, 0, 0, 0);
+				comManagerGetData((int)i, DID_DEV_INFO, 0, 0, 0);
+				comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
+				comManagerGetData((int)i, DID_EVB_FLASH_CFG, 0, 0, 0);
+			}
+
+			SLEEP_MS(13);
+			comManagerStep();
 		}
 
-		SLEEP_MS(13);
-		comManagerStep();
-	}
+		bool removedSerials = false;
 
-	bool removedSerials = false;
-
-	// remove each failed device where communications were not received
-	for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
-	{
-		if (!HasReceivedResponseFromDevice(i))
+		// remove each failed device where communications were not received
+		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
 		{
-			RemoveDevice(i);
+			if (!HasReceivedResponseFromDevice(i))
+			{
+				RemoveDevice(i);
+				removedSerials = true;
+			}
+		}
+
+		// if no devices left, all failed, we return failure
+		if (m_comManagerState.devices.size() == 0)
+		{
+			CloseSerialPorts();
+			return false;
+		}
+
+		// remove ports if we are over max count
+		while (m_comManagerState.devices.size() > maxCount)
+		{
+			RemoveDevice(m_comManagerState.devices.size()-1);
 			removedSerials = true;
 		}
-	}
 
-	// if no devices left, all failed, we return failure
-	if (m_comManagerState.devices.size() == 0)
-	{
-		CloseSerialPorts();
-		return false;
-	}
-
-	// remove ports if we are over max count
-	while (m_comManagerState.devices.size() > maxCount)
-	{
-		RemoveDevice(m_comManagerState.devices.size()-1);
-		removedSerials = true;
-	}
-
-	// setup com manager again if serial ports dropped out with new count of serial ports
-	if (removedSerials)
-	{
-		comManagerInit((int)m_comManagerState.devices.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+		// setup com manager again if serial ports dropped out with new count of serial ports
+		if (removedSerials)
+		{
+			comManagerInit((int)m_comManagerState.devices.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+		}
 	}
 
     return m_comManagerState.devices.size() != 0;
