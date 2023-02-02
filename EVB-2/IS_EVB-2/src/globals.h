@@ -127,6 +127,7 @@ extern bool                         g_loggerEnabled;
 extern uint32_t                     g_uInsBootloaderEnableTimeMs;
 extern bool                         g_enRtosStats;
 extern ermc_t    			        g_ermc;
+extern rtos_profile_t               g_rtos_pro[EVB_RTOS_NUM_TASKS];
 
 void globals_init(void);
 void com_bridge_apply_preset(evb_flash_cfg_t* cfg);

@@ -554,10 +554,11 @@ void InertialSense::SetCallbacks(
 	pfnComManagerAsapMsg handlerRmc,
 	pfnComManagerGenMsgHandler handlerAscii,
 	pfnComManagerGenMsgHandler handlerUblox, 
-	pfnComManagerGenMsgHandler handlerRtcm3)
+	pfnComManagerGenMsgHandler handlerRtcm3,
+	pfnComManagerGenMsgHandler handlerSpartn)
 {
 	// Register message hander callback functions: RealtimeMessageController (RMC) handler, ASCII (NMEA), ublox, and RTCM3.
-	comManagerSetCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
+	comManagerSetCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)

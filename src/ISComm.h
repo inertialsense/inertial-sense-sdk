@@ -74,7 +74,7 @@ extern "C" {
 /** Protocol Type */
 typedef enum
 {
-	_PTYPE_PARSE_ERROR = -1,				/** Invalid data or checksum error */
+	_PTYPE_PARSE_ERROR = 0xFFFFFFFF,		/** Invalid data or checksum error */
 	_PTYPE_NONE = 0,						/** No complete valid data available yet */
 	_PTYPE_INERTIAL_SENSE_DATA,				/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
 	_PTYPE_INERTIAL_SENSE_CMD,				/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
@@ -85,6 +85,10 @@ typedef enum
 	_PTYPE_SPARTN,							/** Protocol Type: SPARTN binary */
 	_PTYPE_SONY,							/** Protocol Type: Sony binary */
 } protocol_type_t;
+
+#define _PTYPE_IS_V1_CMD 	_PTYPE_INERTIAL_SENSE_CMD
+#define _PTYPE_IS_V1_DATA 	_PTYPE_INERTIAL_SENSE_DATA
+#define _PTYPE_IS_V1_ACK 	_PTYPE_INERTIAL_SENSE_ACK
 
 /** uINS default baud rate */
 #define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600

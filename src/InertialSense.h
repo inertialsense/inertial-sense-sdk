@@ -115,7 +115,8 @@ public:
 		pfnComManagerAsapMsg handlerRmc=NULLPTR,
 		pfnComManagerGenMsgHandler handlerAscii=NULLPTR,
 		pfnComManagerGenMsgHandler handlerUblox=NULLPTR, 
-		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR);
+		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR,
+		pfnComManagerGenMsgHandler handlerSpartn=NULLPTR);
 
 	/**
 	* Closes any open connection and then opens the device
