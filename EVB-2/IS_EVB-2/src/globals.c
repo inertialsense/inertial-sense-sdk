@@ -44,6 +44,7 @@ bool                        g_loggerEnabled = false;
 uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
 ermc_t                      g_ermc = {0};
+rtos_profile_t              g_rtos_pro[EVB_RTOS_NUM_TASKS];
 
 
 void globals_init(void)
