@@ -74,7 +74,7 @@ extern "C" {
 /** Protocol Type */
 typedef enum
 {
-	_PTYPE_PARSE_ERROR = -1,				/** Invalid data or checksum error */
+	_PTYPE_PARSE_ERROR = 0xFFFFFFFF,		/** Invalid data or checksum error */
 	_PTYPE_NONE = 0,						/** No complete valid data available yet */
 	_PTYPE_INERTIAL_SENSE_DATA,				/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
 	_PTYPE_INERTIAL_SENSE_CMD,				/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
