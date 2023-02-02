@@ -371,27 +371,27 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
 	case _PTYPE_UBLOX:
 		if (cmInstance->cmMsgHandlerUblox)
 		{
-			error = cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize);
+			error = cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize, 0);
 		}
 		break;
 
 	case _PTYPE_RTCM3:
 		if (cmInstance->cmMsgHandlerRtcm3)
 		{
-			error = cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize);
+			error = cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize, 0);
 		}
 		break;
 
 	case _PTYPE_ASCII_NMEA:
 		if (cmInstance->cmMsgHandlerAscii)
 		{
-			error = cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);
+			error = cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize, 0);
 		}
 		break;
 	case _PTYPE_SPARTN:
 		if (cmInstance->cmMsgHandlerSpartn)
 		{
-			error = cmInstance->cmMsgHandlerSpartn(cmInstance, pHandle, dataPtr, dataSize);
+			error = cmInstance->cmMsgHandlerSpartn(cmInstance, pHandle, dataPtr, dataSize, 0);
 		}
 		break;
 	default:
@@ -951,7 +951,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		return -1;
 	}
 	// Call RealtimeMessageController (RMC) handler
-	else if (cmInstance->cmMsgHandlerRmc && (cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, req) == 0))
+	else if (cmInstance->cmMsgHandlerRmc && (cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, req, 0) == 0))
 	{
 		// Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
 		return 0;
@@ -1137,7 +1137,7 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_
 		req.size = 0;
 		req.offset = 0;
 		req.bc_period_multiple = 0;
-		cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, &req);
+		cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, &req, 0);
 	}
 }
 
