@@ -866,50 +866,70 @@ typedef struct PACKED
 /** GPS Satellite information */
 typedef struct PACKED
 {
-	/** GNSS identifier: 0 GPS, 1 SBAS, 2 Galileo, 3 BeiDou, 5 QZSS, 6 GLONASS */
-	uint8_t					gnssId;			
+	/** GNSS identifier (see eSatSvGnssId) */
+	uint8_t					gnssId;
 
 	/** Satellite identifier */
-	uint8_t					svId;			
-
-	/** (dBHz) Carrier to noise ratio (signal strength) */
-	uint8_t					cno;			
+	uint8_t					svId;
 
 	/** (deg) Elevation (range: +/-90) */
-	int8_t					elev;			
+	int8_t					elev;
 
 	/** (deg) Azimuth (range: +/-180) */
-	int16_t					azim;			
-
-	/** (m) Pseudo range residual */
-	int16_t					prRes;			
+	int16_t					azim;
 
 	/** (see eSatSvFlags) */
-	uint32_t				flags;			
+	uint8_t					flags;
+
+	/** (dBHz) Carrier to noise ratio (signal strength) */
+	uint8_t					cno[3];
+
+	/** Status per frequency (see eSatStatus) */
+	uint8_t					status[3];
+
 } gps_sat_sv_t;
 
+/** Sat SV - GNSS System ID */
+enum eSatSvGnssId
+{
+	SAT_SV_GNSS_ID_GPS		= 1,	// GPS (USA)
+	SAT_SV_GNSS_ID_SBS		= 2,	// SBAS (multiple regional systems, see flash config for selection)
+	SAT_SV_GNSS_ID_GAL		= 3,	// Galileo (European Union)	
+	SAT_SV_GNSS_ID_BEI		= 4,	// BeiDou/Compass (China)
+	SAT_SV_GNSS_ID_QZS		= 5,	// QZSS (Japan)
+	SAT_SV_GNSS_ID_GLO		= 6,	// GLONASS (Russia)	
+	SAT_SV_GNSS_ID_NAV		= 7,	// NavIC / IRNSS (India)	
+	SAT_SV_GNSS_ID_IME		= 8,	// IMES (Japan's Indoor Messaging System)
+};
 
-/** GPS Status */
+/** GPS Sat Flags */
 enum eSatSvFlags
 {
-	SAT_SV_FLAGS_QUALITYIND_MASK	= 0x00000007,
-	SAT_SV_FLAGS_SV_USED			= 0x00000008,
-	SAT_SV_FLAGS_HEALTH_MASK		= 0x00000030,
-	NAV_SAT_FLAGS_HEALTH_OFFSET		= 4,
-	SAT_SV_FLAGS_DIFFCORR			= 0x00000040,
-	SAT_SV_FLAGS_SMOOTHED			= 0x00000080,
-	SAT_SV_FLAGS_ORBITSOURCE_MASK	= 0x00000700,
-	SAT_SV_FLAGS_ORBITSOURCE_OFFSET	= 8,
-	SAT_SV_FLAGS_EPHAVAIL			= 0x00000800,
-	SAT_SV_FLAGS_ALMAVAIL			= 0x00001000,
-	SAT_SV_FLAGS_ANOAVAIL			= 0x00002000,
-	SAT_SV_FLAGS_AOPAVAIL			= 0x00004000,
-	
-	SAT_SV_FLAGS_RTK_SOL_FIX_STATUS_MASK	= 0x03000000,	// 1=float, 2=fix, 3=hold
-	SAT_SV_FLAGS_RTK_SOL_FIX_STATUS_OFFSET	= 24,
-	SAT_SV_FLAGS_RTK_SOL_FIX_STATUS_FLOAT	= 1,	
-	SAT_SV_FLAGS_RTK_SOL_FIX_STATUS_FIX		= 2,	
-	SAT_SV_FLAGS_RTK_SOL_FIX_STATUS_HOLD	= 3,	
+	SAT_SV_FLAGS_FREQ_PRESENT_L1			= 0x01,
+	SAT_SV_FLAGS_FREQ_PRESENT_L2			= 0x02,
+	SAT_SV_FLAGS_FREQ_PRESENT_L5			= 0x04,
+};
+
+/** GPS Sat Status */
+enum eSatSvStatus
+{
+	SAT_SV_STATUS_SV_USED					= 0x01,
+	SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK	= 0xC0,	// 1=float, 2=fix
+	SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET	= 6,
+	SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT	= 1,	
+	SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX	= 2,	
+
+	// SAT_SV_FLAGS_QUALITYIND_MASK		= 0x00000007,
+	// SAT_SV_FLAGS_HEALTH_MASK			= 0x00000030,
+	// NAV_SAT_FLAGS_HEALTH_OFFSET		= 4,
+	// SAT_SV_FLAGS_DIFFCORR			= 0x00000040,
+	// SAT_SV_FLAGS_SMOOTHED			= 0x00000080,
+	// SAT_SV_FLAGS_ORBITSOURCE_MASK	= 0x00000700,
+	// SAT_SV_FLAGS_ORBITSOURCE_OFFSET	= 8,
+	// SAT_SV_FLAGS_EPHAVAIL			= 0x00000800,
+	// SAT_SV_FLAGS_ALMAVAIL			= 0x00001000,
+	// SAT_SV_FLAGS_ANOAVAIL			= 0x00002000,
+	// SAT_SV_FLAGS_AOPAVAIL			= 0x00004000,	
 };
 
 /** (DID_GPS1_SAT) GPS satellite signal strength */
