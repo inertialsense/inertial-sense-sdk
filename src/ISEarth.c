@@ -647,8 +647,8 @@ void gndSpeedToVelEcef(const float gndSpeed, const float hdg, const float vertVe
     ixVector3 velNed;
     ixMatrix3 Rn2e;
 
-    velNed[0] = cos(hdg) * gndSpeed;
-    velNed[1] = sin(hdg) * gndSpeed;
+    velNed[0] = cosf(hdg) * gndSpeed;
+    velNed[1] = sinf(hdg) * gndSpeed;
     velNed[2] = -vertVel;
 
     rotMat_ned2ecef(lla, Rn2e);
