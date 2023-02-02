@@ -12,6 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if !defined(IMX_5) && !defined(GPX_1)
 #include <asf.h>
+#include "rtos.h"
 #else
 #include "ISBoards.h"
 #endif
