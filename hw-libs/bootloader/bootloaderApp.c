@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 void unlockUserFlash(void)
 {
-#ifndef IMX_5
+#if !defined(IMX_5) && !defined(GPX_1)
     // unlock 64K of config data at end in event that downgrade of firmware is happening, old firmware did not attempt to unlock before flash writes
     for (uint32_t flashUnlockStart = BOOTLOADER_FLASH_USER_DATA_START_ADDRESS; flashUnlockStart < BOOTLOADER_FLASH_USER_DATA_END_ADDRESS; flashUnlockStart += BOOTLOADER_FLASH_BLOCK_SIZE)
     {
@@ -74,13 +74,14 @@ void soft_reset_backup_register(uint32_t sysFaultStatus)
 
 void enable_bootloader(int pHandle)
 {	
+#if !defined(GPX_1)
+
     // update the bootloader header jump signature to indicate we want to go to bootloader
     bootloader_header_t header;
     memcpy(&header, (void*)BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE);
     strncpy(header.data.jumpSignature, BOOTLOADER_JUMP_SIGNATURE_STAY_IN_BOOTLOADER, sizeof(header.data.jumpSignature));
 
-
-#if !defined(IMX_5) && !defined(GPX_1)
+#if !defined(IMX_5)
     // unlock bootloader header 
 	flash_unlock(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS + BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE - 1, 0, 0);
 
@@ -110,6 +111,11 @@ void enable_bootloader(int pHandle)
 
     // reset processor
     soft_reset_backup_register(SYS_FAULT_STATUS_ENABLE_BOOTLOADER);
+
+#else   // GPX-1
+    // TODO: Add GPX-1 enable U5 MCU bootloader here.
+
+#endif 
 }
 
 
