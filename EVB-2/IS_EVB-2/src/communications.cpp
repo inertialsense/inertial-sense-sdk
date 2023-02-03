@@ -636,8 +636,6 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 			case SYS_CMD_MANF_CHIP_ERASE:			// chip erase and reboot - do NOT reset calibration!
 				if(manfUnlock)
 				{
-					BEGIN_CRITICAL_SECTION
-					
 					// erase chip
 					flash_erase_chip();
 				}
