@@ -8,7 +8,7 @@ extern "C" {
 #include <stdint.h>
 
 extern uint32_t SystemCoreClock;
-extern uint32_t g_clocksStatus;
+extern volatile uint32_t g_clocksStatus;
 
 void clocks_init(void);
 void disable_clock_switching(void);
