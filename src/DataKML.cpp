@@ -94,7 +94,7 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
         data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
 		break;
 	case DID_GPS1_POS:
-	case DID_GPS1_UBX_POS:
+	case DID_GPS1_RCVR_POS:
 	case DID_GPS2_POS:
         data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
 		break;

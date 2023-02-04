@@ -78,7 +78,7 @@ public:
 		case DID_INS_1:				
 		case DID_INS_2:				return KID_INS;
 		case DID_GPS1_POS:			return KID_GPS;
-		case DID_GPS1_UBX_POS:		return KID_GPS1;
+		case DID_GPS1_RCVR_POS:		return KID_GPS1;
 		case DID_GPS2_POS:			return KID_GPS2;
         case DID_GPS1_RTK_POS:      return KID_RTK;
 		}

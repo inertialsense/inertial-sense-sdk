@@ -9,7 +9,7 @@ DID_SYS_FAULT                   = 2
 DID_PIMU                        = 3
 DID_INS_1                       = 4
 DID_INS_2                       = 5
-DID_GPS1_UBX_POS                = 6
+DID_GPS1_RCVR_POS                = 6
 DID_CONFIG                      = 7
 DID_ASCII_BCAST_PERIOD          = 8
 DID_RMC                         = 9
@@ -112,7 +112,7 @@ did_name_lookup = {
  DID_SYS_FAULT : "sysFault",
  DID_INS_1 : "ins1",
  DID_INS_2 : "ins2",
- DID_GPS1_UBX_POS : "gps1UbxPos",
+ DID_GPS1_RCVR_POS : "gps1UbxPos",
  DID_CONFIG : "config",
  DID_ASCII_BCAST_PERIOD : "asciiBcastPeriod",
  DID_RMC : "rmc",

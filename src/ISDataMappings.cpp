@@ -124,7 +124,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_INS_3] = sizeof(ins_3_t);
 	sizeMap[DID_INS_4] = sizeof(ins_4_t);
 	sizeMap[DID_GPS1_POS] = sizeof(gps_pos_t);
-	sizeMap[DID_GPS1_UBX_POS] = sizeof(gps_pos_t);
+	sizeMap[DID_GPS1_RCVR_POS] = sizeof(gps_pos_t);
 	sizeMap[DID_GPS1_VEL] = sizeof(gps_vel_t);
 	sizeMap[DID_GPS2_POS] = sizeof(gps_pos_t);
 	sizeMap[DID_GPS2_VEL] = sizeof(gps_vel_t);
@@ -2302,7 +2302,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_PIMU",                         // 3
 	"DID_INS_1",                        // 4
 	"DID_INS_2",                        // 5
-	"DID_GPS1_UBX_POS",                 // 6
+	"DID_GPS1_RCVR_POS",                 // 6
 	"DID_SYS_CMD",                      // 7
 	"DID_ASCII_BCAST_PERIOD",           // 8
 	"DID_RMC",                          // 9
@@ -2442,7 +2442,7 @@ cISDataMappings::cISDataMappings()
 	PopulateINS3Mappings(m_lookupInfo);
 	PopulateINS4Mappings(m_lookupInfo);
 	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_POS);
-	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_UBX_POS);
+	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_RCVR_POS);
 	PopulateGpsPosMappings(m_lookupInfo, DID_GPS2_POS);
 	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_RTK_POS);
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS1_VEL);

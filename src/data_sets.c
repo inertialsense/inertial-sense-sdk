@@ -281,7 +281,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsSysParams,		// 10: DID_SYS_PARAMS
 		offsetsOnlyTimeFirst,	// 11: DID_SYS_SENSORS
 		offsetsFlashConfig,		// 12: DID_FLASH_CONFIG
-		offsetsGps,				// 13: DID_GPS1_UBX_POS
+		offsetsGps,				// 13: DID_GPS1_RCVR_POS
 		offsetsGps,				// 14: DID_GPS2_POS
 		0,						// 15: DID_GPS1_SAT
 		0,						// 16: DID_GPS2_SAT
@@ -459,7 +459,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 10: DID_SYS_PARAMS
 		0,						// 11: DID_SYS_SENSORS
 		0,						// 12: DID_FLASH_CONFIG
-		0,						// 13: DID_GPS1_UBX_POS
+		0,						// 13: DID_GPS1_RCVR_POS
 		0,						// 14: DID_GPS2_POS
 		0,						// 15: DID_GPS1_SAT
 		0,						// 16: DID_GPS2_SAT
@@ -640,7 +640,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
 		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
 		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE_RAW;
-		case DID_GPS1_UBX_POS:			return RMC_BITS_GPS1_UBX_POS;
+		case DID_GPS1_RCVR_POS:			return RMC_BITS_GPS1_UBX_POS;
 		case DID_GPS1_RTK_POS:			return RMC_BITS_GPS1_RTK_POS;
 		case DID_GPS1_RTK_POS_REL:		return RMC_BITS_GPS1_RTK_POS_REL;
 		case DID_GPS1_RTK_POS_MISC:		return RMC_BITS_GPS1_RTK_POS_MISC;

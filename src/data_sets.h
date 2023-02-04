@@ -37,14 +37,14 @@ typedef uint32_t eDataIDs;
 #define DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The integration period (dt) and output data rate are the same as the NAV rate (startupNavDtMs) and cannot be output at any other rate. If a faster output data rate is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
-#define DID_GPS1_UBX_POS                (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from ublox receiver. */
+#define DID_GPS1_RCVR_POS               (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from GNSS receiver. */
 #define DID_SYS_CMD                     (eDataIDs)7  /** (system_command_t) System commands. Both the command and invCommand fields must be set at the same time for a command to take effect. */
 #define DID_ASCII_BCAST_PERIOD          (eDataIDs)8  /** (ascii_msgs_t) Broadcast period for ASCII messages */
 #define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The RMC provides updates from various data sources (i.e. sensors) as soon as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. All RMC messages can be enabled using the standard Get Data packet format. */
 #define DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
 #define DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
 #define DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
-#define DID_GPS1_POS                    (eDataIDs)13 /** (gps_pos_t) GPS 1 position data.  This comes from DID_GPS1_UBX_POS or DID_GPS1_RTK_POS, depending on whichever is more accurate. */
+#define DID_GPS1_POS                    (eDataIDs)13 /** (gps_pos_t) GPS 1 position data.  This comes from DID_GPS1_RCVR_POS or DID_GPS1_RTK_POS, depending on whichever is more accurate. */
 #define DID_GPS2_POS                    (eDataIDs)14 /** (gps_pos_t) GPS 2 position data */
 #define DID_GPS1_SAT                    (eDataIDs)15 /** (gps_sat_t) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
 #define DID_GPS2_SAT                    (eDataIDs)16 /** (gps_sat_t) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
@@ -795,7 +795,7 @@ enum eImuStatus
 	IMU_STATUS_IMU_OK_MASK                      = (int)0x003F0000,
 };
 
-/** (DID_GPS1_POS, DID_GPS1_UBX_POS, DID_GPS2_POS) GPS position data */
+/** (DID_GPS1_POS, DID_GPS1_RCVR_POS, DID_GPS2_POS) GPS position data */
 typedef struct PACKED
 {
 	/** GPS number of weeks since January 6th, 1980 */
@@ -2313,6 +2313,8 @@ enum eIoConfig
 	IO_CONFIG_GPS_TYPE_NMEA						= (int)2,
 	/** GPS type - InertialSense GPX */
 	IO_CONFIG_GPS_TYPE_GPX						= (int)3,
+	/** GPS type - Sony CXD5610 */
+	IO_CONFIG_GPS_TYPE_CXD5610					= (int)4,
 	/** GPS type - last type */
     IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
 
