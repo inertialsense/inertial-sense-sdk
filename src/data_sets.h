@@ -895,11 +895,19 @@ enum eSatSvGnssId
 	SAT_SV_GNSS_ID_GPS		= 1,	// GPS (USA)
 	SAT_SV_GNSS_ID_SBS		= 2,	// SBAS (multiple regional systems, see flash config for selection)
 	SAT_SV_GNSS_ID_GAL		= 3,	// Galileo (European Union)	
-	SAT_SV_GNSS_ID_BEI		= 4,	// BeiDou/Compass (China)
+	SAT_SV_GNSS_ID_BEI		= 4,	// BeiDou (China)
 	SAT_SV_GNSS_ID_QZS		= 5,	// QZSS (Japan)
 	SAT_SV_GNSS_ID_GLO		= 6,	// GLONASS (Russia)	
-	SAT_SV_GNSS_ID_NAV		= 7,	// NavIC / IRNSS (India)	
+	SAT_SV_GNSS_ID_IRN		= 7,	// IRNSS (India)	
 	SAT_SV_GNSS_ID_IME		= 8,	// IMES (Japan's Indoor Messaging System)
+};
+
+/** Sat SV - GNSS frequency index */
+enum eSatSvFreqIdx
+{
+	SAT_SV_FREQ_IDX_L1		= 0,		
+	SAT_SV_FREQ_IDX_L2		= 1,	
+	SAT_SV_FREQ_IDX_L5		= 2,	
 };
 
 /** GPS Sat Flags */
