@@ -304,6 +304,9 @@ enum ePktSpecialChars
 
 	/** SPARTN start byte */
 	SPARTN_START_BYTE = 0x73,
+
+	/** Sony GNSS start byte */
+	SONY_START_BYTE = 0x7F,
 };
 
 /** Represents an ASCII message and how it is mapped to a structure in memory */
@@ -483,6 +486,7 @@ typedef enum
 	ENABLE_PROTOCOL_UBLOX = 0x00000004,
 	ENABLE_PROTOCOL_RTCM3 = 0x00000008,
 	ENABLE_PROTOCOL_SPARTN = 0x00000010,
+	ENABLE_PROTOCOL_SONY = 0x00000020,
 } eProtocolMask;
 
 typedef struct  
