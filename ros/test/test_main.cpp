@@ -7,16 +7,20 @@ cTestNode testNode;
 TEST(test_main, basic)
 {
 	bool success = false;
-	unsigned int startTimeMs = current_timeMs();
-	while(current_timeMs() - startTimeMs < 5000)
+	unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
+	while((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
 	{
-		SLEEP_MS(200);
-        TEST_COUT << "waiting...  (time: " << current_timeMs() << ")" << std::endl;
-        if (testNode.did_rx_pimu_)
-        {
+        if (testNode.did_rx_pimu_) {
             TEST_COUT << "Found message!" << std::endl;
             success = true;
             break;
+        } else {
+            // check regularly, but don't print regularly..
+            SLEEP_MS(200);
+            if (prevTimeMs / 1000 != nowTimeMs / 1000) {
+                TEST_COUT << "waiting...  (time: " << nowTimeMs << ")" << std::endl;
+                prevTimeMs = nowTimeMs;
+            }
         }
     }
 
