@@ -14,8 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(Threads)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu17 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
 
 add_message_files(
   FILES
@@ -81,3 +81,6 @@ catkin_add_gtest(test_inertial_sense_ros
   test/test_communications.cpp
 )
 target_link_libraries(test_inertial_sense_ros ${PROJECT_NAME})
+
+catkin_add_gtest(test_unit_tests test/test_basic_unit_tests.cpp)
+target_link_libraries(test_unit_tests ${PROJECT_NAME})

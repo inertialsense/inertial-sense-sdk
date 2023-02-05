@@ -1,5 +1,5 @@
 
-#include <gtest/gtest.h>
+#include "gtest_helpers.h"
 #include "inertial_sense_ros.h"
 
 InertialSense IS_;
