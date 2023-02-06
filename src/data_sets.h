@@ -2197,10 +2197,10 @@ enum eSensorConfig
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
 enum eIoConfig
 {
-	/** Strobe (input and output) trigger on rising edge (0 = falling edge) */
+	/** Strobe (input and output) trigger on rising edge (0 = falling edge) (ioConfig[0]) */
 	IO_CONFIG_STROBE_TRIGGER_HIGH               = (int)0x00000001,
 
-	// G1,G2 - STROBE, CAN, Ser2, I2C (future)
+	// G1,G2 - STROBE, CAN, Ser2, I2C (future) (ioConfig[3-1])
 	/** G1,G2 - STROBE input on G2 */
 	IO_CONFIG_G1G2_STROBE_INPUT_G2              = (int)0x00000002,
 	/** G1,G2 - CAN Bus */
@@ -2214,7 +2214,7 @@ enum eIoConfig
 	/** G1,G2 - Default */
 	IO_CONFIG_G1G2_DEFAULT                      = IO_CONFIG_G1G2_CAN_BUS,
 
-	// G9 - STROBE, QDEC0 (future)
+	// G9 - STROBE, QDEC0 (future) (ioConfig[5-4])
 	/** G9 - Strobe input */
 	IO_CONFIG_G9_STROBE_INPUT                   = (int)0x00000010,
 	/** G9 - Enable Nav update strobe output pulse on G9 (uINS pin 10) indicating preintegrated IMU and navigation updates */
@@ -2226,7 +2226,7 @@ enum eIoConfig
 	/** G9 - Default */
 	IO_CONFIG_G9_DEFAULT                        = (int)0,	
 
-	// G6,G7 - Ser1, QDEC0 (future)
+	// G6,G7 - Ser1, QDEC0 (future) (ioConfig[7-6])
 	/** G6,G7 - General Communications on Ser1. Excludes GPS communications.  Overriden when SPI is enabled (G9 held low on bootup/config). */
 	IO_CONFIG_G6G7_COM1                         = (int)0x00000040,
 	/** G6,G7 - Quadrature wheel encoder input (G6 QDEC0-A).  Overriden when SPI is enabled (G9 held low on bootup/config). */
@@ -2236,7 +2236,7 @@ enum eIoConfig
 	/** G6,G7 - Default */
 	IO_CONFIG_G6G7_DEFAULT                      = IO_CONFIG_G6G7_COM1,	
 
-	// G5,G8 - STROBE, QDEC1 (future), SPI (enabled when G9 is held low on bootup/config)
+	// G5,G8 - STROBE, QDEC1 (future), SPI (enabled when G9 is held low on bootup/config) (ioConfig[10-8])
 	/** G5,G8 - Strobe input on G5 */
 	IO_CONFIG_G5G8_STROBE_INPUT_G5              = (int)0x00000100,
 	/** G5,G8 - Strobe input on G8 */
@@ -2252,11 +2252,15 @@ enum eIoConfig
 	/** G5,G8 - Default */
 	IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
 
-	/** G15 (GPS PPS) - STROBE */
+	/** G15 (GPS PPS) - STROBE (ioConfig[11]) */
 	IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
-	// IO_CONFIG_                               = (int)0x00001000,
 
-	/** External GPS TIMEPULSE source */
+	/** GPS 1 skip initialization (ioConfig[12]) */
+	IO_CONFIG_GPS1_NO_INIT 						= (int)0x00001000,
+	/** GPS 2 skip initialization (ioConfig[28]) */
+	IO_CONFIG_GPS2_NO_INIT 						= (int)0x10000000,
+
+	/** External GPS TIMEPULSE source (ioConfig[15-13]) */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,	
 	/** 0 = internal, 1 = disabled, 2 = G2_PIN6, 3 = G5_PIN9, 4 = G8_PIN12, 5 = G9_PIN13 */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
@@ -2273,18 +2277,13 @@ enum eIoConfig
 #define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) ((ioConfig>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
 	
 	/** GPS 1 source OFFSET */
-	IO_CONFIG_GPS1_SOURCE_OFFSET				= (int)16,
+	IO_CONFIG_GPS1_SOURCE_OFFSET				= (int)16,				// ioConfig[18-16]
 	/** GPS 2 source OFFSET */
-	IO_CONFIG_GPS2_SOURCE_OFFSET				= (int)19,
+	IO_CONFIG_GPS2_SOURCE_OFFSET				= (int)19,				// ioConfig[21-19]
 	/** GPS 1 type OFFSET */
-	IO_CONFIG_GPS1_TYPE_OFFSET					= (int)22,
+	IO_CONFIG_GPS1_TYPE_OFFSET					= (int)22,				// ioConfig[24-22]
 	/** GPS 2 type OFFSET */
-	IO_CONFIG_GPS2_TYPE_OFFSET					= (int)25,
-
-	/** GPS 1 skip initialization */
-	IO_CONFIG_GPS1_NO_INIT 						= (int)0x01000000,		// bit 24 of 0-31
-	/** GPS 2 skip initialization */
-	IO_CONFIG_GPS2_NO_INIT 						= (int)0x08000000,		// bit 27 of 0-31
+	IO_CONFIG_GPS2_TYPE_OFFSET					= (int)25,				// ioConfig[27-25]
 
 	/** GPS source MASK */
 	IO_CONFIG_GPS_SOURCE_MASK					= (int)0x00000007,
@@ -2304,7 +2303,7 @@ enum eIoConfig
 	IO_CONFIG_GPS_SOURCE_LAST					= IO_CONFIG_GPS_SOURCE_SER2,	// set to last source
 
 	/** GPS type MASK */
-	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000003,
+	IO_CONFIG_GPS_TYPE_MASK						= (int)0x00000007,
 	/** GPS type - ublox M8 */
 	IO_CONFIG_GPS_TYPE_UBX_M8					= (int)0,
 	/** GPS type - ublox ZED-F9P w/ RTK */
@@ -2316,22 +2315,19 @@ enum eIoConfig
 	/** GPS type - Sony CXD5610 */
 	IO_CONFIG_GPS_TYPE_CXD5610					= (int)4,
 	/** GPS type - last type */
-    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
+    IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_CXD5610,		// Set to last type
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS1_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
 #define IO_CONFIG_GPS2_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
 
-	/** IMU 1 disable */	
-	IO_CONFIG_IMU_1_DISABLE						= (int)0x10000000,
-	/** IMU 2 disable */
-	IO_CONFIG_IMU_2_DISABLE						= (int)0x20000000,
-	/** IMU 3 disable */
-	IO_CONFIG_IMU_3_DISABLE						= (int)0x40000000,
-
-	/** Unused bits */
-	// IO_CONFIG_                               = (int)0x80000000,
+	/** IMU 1 disable (ioConfig[29]) */	
+	IO_CONFIG_IMU_1_DISABLE						= (int)0x20000000,
+	/** IMU 2 disable (ioConfig[30]) */
+	IO_CONFIG_IMU_2_DISABLE						= (int)0x40000000,
+	/** IMU 3 disable (ioConfig[31]) */
+	IO_CONFIG_IMU_3_DISABLE						= (int)0x80000000,
 };
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
