@@ -21,6 +21,8 @@ extern "C" {
 
 #include <stdint.h>
 
+// TODO: Add function to set the ticks to seconds conversion so that the clock frequency can be changed
+
 #if !defined(TIM_CLK_FREQ) || !defined(TIM_PRESC)
 #error TIM_CLK_FREQ and TIM_PRESC must be set in ISBoards.h or its dependencies
 #endif
@@ -33,7 +35,9 @@ extern "C" {
 #define TIME_MS_PER_TICK_F     	(TIME_SECS_PER_TICK_F*1000.0f)
 #define TIME_US_PER_TICK_F     	(TIME_SECS_PER_TICK_F*1000000.0f)
 
-#if !defined(BOOTLOADER) || !defined(IMX_5)	// Don't use doubles in IMX-5 bootloader
+#if defined(BOOTLOADER) && defined(IMX_5)	
+// Don't use doubles in IMX-5 bootloader
+#else
 #define TIME_SECS_PER_TICK_LF   ((double)TIM_PRESC/(double)TIM_CLK_FREQ)
 #define TIME_MS_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*(double)1000.0)
 #define TIME_US_PER_TICK_LF     (TIME_SECS_PER_TICK_LF*(double)1000000.0)
