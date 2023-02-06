@@ -12,8 +12,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "serialPort.h"
 #include <stdlib.h>
+#include <stdint.h>
 
 int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
+
+void serialPortSetOptions(serial_port_t* serialPort, uint32_t options)
+{
+	if (serialPort != 0 && ((options & SERIAL_PORT_OPTIONS_MASK) == 0))
+	{
+		serialPort->options = options;
+	}
+}
 
 void serialPortSetPort(serial_port_t* serialPort, const char* port)
 {
@@ -27,7 +36,7 @@ void serialPortSetPort(serial_port_t* serialPort, const char* port)
 
 int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
 {
-    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0 || ((serialPort->options & SERIAL_PORT_OPTIONS_MASK) != 0))
 	{
 		return 0;
 	}
@@ -36,7 +45,7 @@ int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, in
 
 int serialPortOpenRetry(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
 {
-    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0 || ((serialPort->options & SERIAL_PORT_OPTIONS_MASK) != 0))
     {
         return 0;
     }

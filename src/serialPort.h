@@ -46,6 +46,16 @@ extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 #define BAUDRATE_2000000		2000000		//  500 ns	(FTDI 2080, AVR/ARM 2016)
 #define BAUDRATE_3000000		3000000		//  333 ns	(FTDI 3150, AVR/ARM 3030)
 
+enum eSerialPortOptions
+{
+	OPT_PARITY_NONE = 0x0,	
+	OPT_PARITY_ODD = 0x1,
+	OPT_PARITY_EVEN = 0x2,	
+	OPT_PARITY_MASK = 0x3,
+
+	SERIAL_PORT_OPTIONS_MASK = OPT_PARITY_MASK,
+};
+
 typedef struct serial_port_t serial_port_t;
 
 typedef int(*pfnSerialPortOpen)(serial_port_t* serialPort, const char* port, int baudRate, int blocking);
@@ -74,6 +84,9 @@ struct serial_port_t
 
 	// length of error
 	int errorLength;
+
+	// Options for serial port like parity, stop bits, etc. (see eSerialPortOptions)
+	uint32_t options;
 
 	// open the serial port
 	pfnSerialPortOpen pfnOpen;

@@ -44,21 +44,17 @@ eImageSignature cISBootloaderSONY::check_is_compatible()
 {
     int count = 0;
 
-    uint8_t msg[2] = { 0x01, 0x00 };
-    send_msg(CXD_SET_STATUS, msg, 1U);
+    // TODO: Do we need to erase the chip first?
 
-    // Wait for the bootup message
-    uint8_t buf[7];
-    if(serialPortReadTimeout(m_port, buf, 7, 1000) == 7)
+    // Restart chip in special mode
+    uint8_t msg[2] = { 0xFF, 0x00 };
+    if(send_msg(CXD_SET_STATUS, msg, 1U, 5000U) != 0 || m_data[0] != 0x00)
     {
-        read_header(buf);
-        if(m_opcode == CXD_SET_STATUS && m_data[0] == 0)   
-        {
-            return IS_IMAGE_SIGN_SONY_CXD5610;
-        }
+        m_info_callback(this, "Could not restart CXD chip into bootloader mode", IS_LOG_LEVEL_ERROR);
+        return IS_IMAGE_SIGN_NONE;
     }
-    
-    return IS_IMAGE_SIGN_NONE;
+
+    return IS_IMAGE_SIGN_SONY_CXD5610;
 }
 
 is_operation_result cISBootloaderSONY::download_image(std::string image)
@@ -122,20 +118,28 @@ is_operation_result cISBootloaderSONY::download_image(std::string image)
     int len;
 
     do {
-        uint8_t buf[4086 + 4 + 1] = { 0 };  // Max payload size plus checksum and frame SN/count
+        uint8_t buf[2 + 2 + 4086 + 1] = { 0 };  // Frame SN (2) plus frame count (2) plus max payload size (4086) plus checksum (1)
         
         memcpy(&buf[0], &nFrames, 2);
         memcpy(&buf[2], &frameSn, 2);
         
         int len = read_bytes(fw, &buf[4], &fileSize) + 4;   // Add 4 for frame count and SN at start
 
-        send_msg(CXD_PROGRAM_CODE_INJECTION, buf, len, CXD_PROGRAM_CODE_INJECTION, 5000);
+        if(len > 0 && send_msg(CXD_PROGRAM_CODE_INJECTION, buf, len, 5000U) != 0)
+        {
+            m_info_callback(this, "Problem with CXD program injection", IS_LOG_LEVEL_ERROR);
+            return IS_OP_ERROR;
+        }
 
         frameSn++;  // Keep track of the frame we are on
     } while(len == 4086);
 
-    uint8_t buf[4] = { type, extension, 0x00, 0x00 };   // 3 byte OPR tells chip where to put firmware
-    send_msg(CXD_WRITE_PROGRAM, buf, 3, CXD_WRITE_PROGRAM, 5000);
+    uint8_t buf[4] = { type, extension, 0x00, 0x00 };   // 3 byte OPR tells chip where to put firmware, 1 byte for checksum added by send_msg
+    if(send_msg(CXD_WRITE_PROGRAM, buf, 3, 5000) != 0)
+    {
+        m_info_callback(this, "Problem with CXD write program", IS_LOG_LEVEL_ERROR);
+        return IS_OP_ERROR;
+    }
 }
 
 int cISBootloaderSONY::read_bytes(FILE* file, uint8_t line[4086], int *bytesLeft)
@@ -153,7 +157,7 @@ int cISBootloaderSONY::read_bytes(FILE* file, uint8_t line[4086], int *bytesLeft
 }
 
 
-void cISBootloaderSONY::send_msg(uint8_t opcode, uint8_t* data, uint16_t len, uint8_t await_opc, uint16_t timeout)
+int cISBootloaderSONY::send_msg(uint8_t opcode, uint8_t* data, uint16_t len, uint16_t timeoutMs)
 {
 	cxd5610_cmd_t head;
 
@@ -170,20 +174,34 @@ void cISBootloaderSONY::send_msg(uint8_t opcode, uint8_t* data, uint16_t len, ui
 		serialPortWrite(m_port, data, len);
 	}
 
-    int len = serialPortReadTimeout(m_port, &head, 5, )
+    int responseLen = sizeof(cxd5610_cmd_t) + 2;
+    uint8_t buf[7];
+
+    int readLen = serialPortReadTimeout(m_port, buf, responseLen, timeoutMs);
+
+    if (readLen == responseLen &&   // Read right amount of data
+        read_header(buf) == 0 &&    // Header is valid
+        opcode == m_opcode)         // Opcode matches
+    {
+        return 0;
+    }
+
+    return -1;
 }
 
 int cISBootloaderSONY::read_header(uint8_t* buf)
 {
-	if(buf[0] != 0x7F) return -1;
-	if(buf[4] != checksum(buf, 4)) return -1;
+    cxd5610_cmd_t* cmd = (cxd5610_cmd_t*)buf;
+
+	if(cmd->hdr.sync != 0x7F) return -1;
+	if(cmd->cksum != checksum(buf, 4)) return -1;
 
 	uint16_t oplen = *((uint16_t*)(&buf[1]));
-	if(oplen > 4086) return -1;     // 4086 is not a typo, max length including header is < 4096
+	if(cmd->hdr.oplen > 4086) return -1;     // 4086 is not a typo, max length including header is < 4096
 
-	m_oplen = oplen;
-	m_opcode = buf[3];
-	m_data = &buf[5];
+	m_oplen = cmd->hdr.oplen;
+	m_opcode = cmd->hdr.opcode;
+	memcpy(m_data, &buf[5], m_oplen);
 
 	return 0;
 }

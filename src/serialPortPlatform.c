@@ -295,7 +295,21 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         serialParams.BaudRate = baudRate;
         serialParams.ByteSize = DATABITS_8;
         serialParams.StopBits = ONESTOPBIT;
-        serialParams.Parity = NOPARITY;
+
+        switch(serialPort->options & OPT_PARITY_MASK)
+        {
+        case OPT_PARITY_EVEN:
+            serialParams.Parity = EVENPARITY;
+            break;
+        case OPT_PARITY_ODD:    
+            serialParams.Parity = ODDPARITY;
+            break;
+        case OPT_PARITY_NONE:
+        default:
+            serialParams.Parity = NOPARITY;
+            break;
+        }
+
         serialParams.fBinary = 1;
         serialParams.fInX = 0;
         serialParams.fOutX = 0;

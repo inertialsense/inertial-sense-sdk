@@ -49,6 +49,7 @@ typedef enum {
     IS_DEV_TYPE_APP,
     IS_DEV_TYPE_DFU,
     IS_DEV_TYPE_SONY,
+    IS_DEV_TYPE_STM32UART,
 } eDeviceType;
 
 typedef enum {
@@ -97,6 +98,7 @@ typedef struct
     firmware_t bl_uINS_3;
     firmware_t fw_EVB_2;
     firmware_t bl_EVB_2;
+    firmware_t folder;
 } firmwares_t;
 
 typedef is_operation_result (*pfnBootloadProgress)(void* obj, float percent);
