@@ -1,40 +1,28 @@
-
-#include <gtest/gtest.h>
+#include "gtest_helpers.h"
 #include "test_main.h"
 #include "inertial_sense_ros.h"
 
-
 cTestNode testNode;
-
-
 
 TEST(test_main, basic)
 {
-    printf("We are here!\n");
-
-    ROS_ERROR("============================== Start =================================\n");
-    ROS_INFO("============================== Start =================================\n");
-
-
 	bool success = false;
-	unsigned int startTimeMs = current_timeMs();
-	while(current_timeMs() - startTimeMs < 5000)
+	unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
+	while((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
 	{
-		SLEEP_MS(200);
-        printf("waiting...\n");
-        ROS_ERROR("time: %d\n", current_timeMs());
-
-        ROS_ERROR("============================== inside loop =================================\n");
-
-        if (testNode.did_rx_pimu_)
-        {
-            printf("Found message\n");
+        if (testNode.did_rx_pimu_) {
+            TEST_COUT << "Found message!" << std::endl;
             success = true;
             break;
+        } else {
+            // check regularly, but don't print regularly..
+            SLEEP_MS(200);
+            if (prevTimeMs / 1000 != nowTimeMs / 1000) {
+                TEST_COUT << "waiting...  (time: " << nowTimeMs << ")" << std::endl;
+                prevTimeMs = nowTimeMs;
+            }
         }
     }
-
-    ROS_ERROR("============================== End =================================\n");
 
     ASSERT_TRUE( success );
 }
