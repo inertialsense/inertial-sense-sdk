@@ -166,25 +166,25 @@ C_SRCS += \
 	$(ASF_DIR)/thirdparty/fatfs/fatfs-port-r0.09/sam/fattime_rtc.c                                 \
 	$(ASF_DIR)/thirdparty/fatfs/fatfs-r0.09/src/ff.c                                               \
 	$(ASF_DIR)/thirdparty/fatfs/fatfs-r0.09/src/option/ccsbcs.c                                    \
-	$(HW_LIBS_DIR)/misc/new.cpp                                                                \
-	$(HW_LIBS_DIR)/drivers/SAMx70/CAN.c                                                                   \
-	$(HW_LIBS_DIR)/drivers/SAMx70/d_dma.c                                                                 \
-	$(HW_LIBS_DIR)/drivers/SAMx70/d_flash.c                                                               \
-	$(HW_LIBS_DIR)/drivers/SAMx70/d_i2c.c                                                                 \
-	$(HW_LIBS_DIR)/drivers/SAMx70/d_serial.c                                                            \
-	$(HW_LIBS_DIR)/drivers/SAMx70/d_time.c                                                                \
-	$(HW_LIBS_DIR)/bootloader/bootloaderApp.c                                                            \
+	$(HW_LIBS_DIR)/misc/new.cpp                                                                    \
+	$(HW_LIBS_DIR)/drivers/SAMx70/CAN.c                                                            \
+	$(HW_LIBS_DIR)/drivers/SAMx70/d_dma.c                                                          \
+	$(HW_LIBS_DIR)/drivers/SAMx70/d_flash.c                                                        \
+	$(HW_LIBS_DIR)/drivers/SAMx70/d_i2c.c                                                          \
+	$(HW_LIBS_DIR)/drivers/SAMx70/d_serial.c                                                       \
+	$(HW_LIBS_DIR)/drivers/SAMx70/d_time.c                                                         \
+	$(HW_LIBS_DIR)/bootloader/bootloaderApp.c                                                      \
 	$(HW_LIBS_DIR)/misc/rtos.c                                                                     \
-	$(HW_LIBS_DIR)/printf/printf.c                                                          \
-	$(HW_LIBS_DIR)/freertos/croutine.c \
-	$(HW_LIBS_DIR)/freertos/event_groups.c \
-	$(HW_LIBS_DIR)/freertos/portable/MemMang/heap_4.c \
-	$(HW_LIBS_DIR)/freertos/list.c \
-	$(HW_LIBS_DIR)/freertos/portable/GCC/ARM_CM7/r0p1/port.c \
-	$(HW_LIBS_DIR)/freertos/queue.c \
-	$(HW_LIBS_DIR)/freertos/tasks.c \
-	$(HW_LIBS_DIR)/freertos/timers.c \
-	$(HW_LIBS_DIR)/freertos/stream_buffer.c \
+	$(HW_LIBS_DIR)/printf/printf.c                                                                 \
+	$(HW_LIBS_DIR)/freertos/croutine.c                                                             \
+	$(HW_LIBS_DIR)/freertos/event_groups.c                                                         \
+	$(HW_LIBS_DIR)/freertos/portable/MemMang/heap_4.c                                              \
+	$(HW_LIBS_DIR)/freertos/list.c                                                                 \
+	$(HW_LIBS_DIR)/freertos/portable/GCC/ARM_CM7/r0p1/port.c                                       \
+	$(HW_LIBS_DIR)/freertos/queue.c                                                                \
+	$(HW_LIBS_DIR)/freertos/tasks.c                                                                \
+	$(HW_LIBS_DIR)/freertos/timers.c                                                               \
+	$(HW_LIBS_DIR)/freertos/stream_buffer.c                                                        \
 	$(SRC_DIR)/communications.cpp                                                                  \
 	$(SRC_DIR)/evb_tasks.cpp                                                                       \
 	$(SRC_DIR)/globals.c                                                                           \
@@ -213,13 +213,13 @@ INCLUDES +=	\
 INCLUDES += $(SDK_DIR)/src
 
 INCLUDES += \
-	$(HW_LIBS_DIR)                	\
-	$(HW_LIBS_DIR)/boards 			\
-	$(HW_LIBS_DIR)/bootloader 		\
-	$(HW_LIBS_DIR)/communications 	\
-	$(HW_LIBS_DIR)/drivers/SAMx70 \
-	$(HW_LIBS_DIR)/drivers/common \
-	$(HW_LIBS_DIR)/printf  \
+	$(HW_LIBS_DIR)                	                                                \
+	$(HW_LIBS_DIR)/boards 			                                                \
+	$(HW_LIBS_DIR)/bootloader 		                                                \
+	$(HW_LIBS_DIR)/communications 	                                                \
+	$(HW_LIBS_DIR)/drivers/SAMx70                                                   \
+	$(HW_LIBS_DIR)/drivers/common                                                   \
+	$(HW_LIBS_DIR)/printf                                                           \
 	$(HW_LIBS_DIR)/misc  
 
 INCLUDES += \

@@ -930,6 +930,15 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 	char* ptrEnd = buf + BUF_SIZE;
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
 
+	return string(buf) + DataToStringIMU(imu, m_displayMode != DMODE_SCROLL);
+}
+
+string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
+{
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
 	double dtMs = 1000.0*(imu.time - lastTime);
@@ -939,7 +948,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", imu.time);
 #endif
 
-	if (m_displayMode == DMODE_SCROLL)
+	if (!full)
 	{	// Single line format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", pqr[%5.1f,%5.1f,%5.1f]",
 			imu.I.pqr[0] * C_RAD2DEG_F,
@@ -965,6 +974,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 
 	return buf;
 }
+
 
 string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr)
 {

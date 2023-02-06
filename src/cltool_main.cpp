@@ -376,11 +376,33 @@ void printProgress()
 
 	cISBootloaderThread::m_ctx_mutex.unlock();
 
-	if (divisor) {
+	if (divisor) 
+	{
 		total /= divisor;
 		int display = (int)(total * 100);
-		printf("Progress: %d%%\r", display);
+#if 0
+		// Print progress in one spot using \r.  In some terminals it causes scolling of new lines.   
+		printf("Progress: %d%%\r", display);	
 		fflush(stdout);
+#else
+		// Print progress in condensed format.
+		static int displayLast = 0;
+#define DISPLAY_RES		5
+		if (display == displayLast && display!=0)
+		{
+			printf("%d%% ", display);
+		}
+		fflush(stdout);
+
+		while (display < displayLast)
+		{	// Decrement
+			displayLast -= DISPLAY_RES;
+		}
+		while (display >= displayLast)
+		{	// Increment
+			displayLast += DISPLAY_RES;
+		}
+#endif
 	}
 
 	print_mutex.unlock();
@@ -393,7 +415,6 @@ is_operation_result bootloadUpdateCallback(void* obj, float percent)
 		ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
 		ctx->m_update_progress = percent;
 	}
-
 	return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
