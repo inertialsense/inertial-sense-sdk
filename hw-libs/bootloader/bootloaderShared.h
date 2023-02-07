@@ -173,14 +173,15 @@ typedef union
 	uint8_t bytes[BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE]; // any additional bytes are reserved space
 } bootloader_header_t;
 
-extern uint8_t bootloaderRequiredSignature_EVB_2_16K[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_uINS_3_16K[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_SAMx70_bootloader_16K[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_EVB_2_24K[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_uINS_3_24K[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_SAMx70_bootloader_24K[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_uINS_5[BOOTLOADER_SIGNATURE_SIZE];
-extern uint8_t bootloaderRequiredSignature_STM32L4_bootloader[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_EVB_2_16K[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_uINS_3_16K[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_SAMx70_bootloader_16K[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_EVB_2_24K[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_uINS_3_24K[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_SAMx70_bootloader_24K[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_IMX_5p0[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_STM32L4_bootloader[BOOTLOADER_SIGNATURE_SIZE];
+extern const uint8_t bootloaderRequiredSignature_emb[BOOTLOADER_SIGNATURE_SIZE];
 
 // calculate bootloader hash code over a set of data - hashCode should be BOOTLOADER_HASH_CODE_START_VALUE if just starting, otherwise previous value if continuing
 uint32_t calculateBootloaderHashCode(uint32_t hashCode, const uint32_t* start, const uint32_t* end);
