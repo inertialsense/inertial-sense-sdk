@@ -566,7 +566,7 @@ static protocol_type_t processSonyByte(is_comm_instance_t* instance)
 
 	case 4:
 	{
-        uint16_t msgLength = *((uint16_t*)(&instance->buf.head[1]));
+        uint16_t msgLength = instance->buf.head[1] | (instance->buf.head[2] << 8);
 
     	uint8_t checksum = 0x00;
 		for (size_t i = 0; i < 4; i++)
@@ -589,7 +589,7 @@ static protocol_type_t processSonyByte(is_comm_instance_t* instance)
 	default:
 		if (++instance->parseState == 0)
 		{
-			uint16_t msgLength = *((uint16_t*)(&instance->buf.head[1]));
+			uint16_t msgLength = instance->buf.head[1] | (instance->buf.head[2] << 8);
 
 			uint8_t checksum = 0x00;
 			for (size_t i = 0; i < msgLength; i++)
