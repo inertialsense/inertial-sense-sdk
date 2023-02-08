@@ -23,7 +23,6 @@
 #define sign_ISB_SAMx70_24K { 0x44, 0x0F, 0xF9, 0xA7, 0x17, 0x7D, 0x4E, 0x99, 0xDB, 0x53, 0xA2, 0x72, 0xE7, 0xC3, 0xE1, 0x36 }
 #define sign_ISB_STM32L4 	{ 0x20, 0x0F, 0xF9, 0xA7, 0x17, 0x7D, 0x4E, 0x99, 0xDB, 0x53, 0xA2, 0x72, 0xE7, 0xC3, 0xE1, 0xFA }
 
-#if !PLATFORM_IS_EMBEDDED
 const uint8_t bootloaderRequiredSignature_EVB_2_16K[BOOTLOADER_SIGNATURE_SIZE] = sign_EVB_2_16K;
 const uint8_t bootloaderRequiredSignature_uINS_3_16K[BOOTLOADER_SIGNATURE_SIZE] = sign_uINS_3_16K;
 const uint8_t bootloaderRequiredSignature_EVB_2_24K[BOOTLOADER_SIGNATURE_SIZE] = sign_EVB_2_24K;
@@ -32,8 +31,9 @@ const uint8_t bootloaderRequiredSignature_SAMx70_bootloader_24K[BOOTLOADER_SIGNA
 const uint8_t bootloaderRequiredSignature_IMX_5p0[BOOTLOADER_SIGNATURE_SIZE] = sign_IMX_5p0;
 const uint8_t bootloaderRequiredSignature_STM32L4_bootloader[BOOTLOADER_SIGNATURE_SIZE] = sign_ISB_STM32L4;
 const uint8_t bootloaderRequiredSignature_GPX_1[BOOTLOADER_SIGNATURE_SIZE] = sign_GPX_1;
-#else	// PLATFORM_IS_EMBEDDED
-__attribute__ ((section(".fw_signature"))) const uint8_t bootloaderRequiredSignature_emb[BOOTLOADER_SIGNATURE_SIZE] = 
+
+#if PLATFORM_IS_EMBEDDED
+__attribute__ ((section(".fw_signature"))) const uint8_t _fw_signature_[BOOTLOADER_SIGNATURE_SIZE] = 
 #if defined(BOOTLOADER)
 #if defined(uINS_3)		// Start bootloader type
 sign_ISB_SAMx70_24K;
