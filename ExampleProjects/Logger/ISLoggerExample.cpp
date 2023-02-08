@@ -16,7 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/InertialSense.h"
 
-static void dataCallback(InertialSense* i, p_data_t* data, int pHandle)
+static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
 {
 	static uint64_t dataCount;
 	printf("Data count: %" PRIu64 "          \r", ++dataCount);
@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 
 	// STEP 2: Instantiate InertialSense class
 	// InertialSense class wraps communications and logging in a convenient, easy to use class
-	InertialSense inertialSense(dataCallback);
+	InertialSense inertialSense(msgHandlerIsb);
 	if (!inertialSense.Open(argv[1]))
 	{
 		std::cout << "Failed to open com port at " << argv[1] << std::endl;
