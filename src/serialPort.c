@@ -318,7 +318,7 @@ int serialPortWaitForTimeout(serial_port_t* serialPort, const unsigned char* wai
 {
 	if (serialPort == 0 || serialPort->handle == 0 || waitFor == 0 || waitForLength < 1)
 	{
-		return 1;
+		return 0;
 	}
 	else if (waitForLength > 128)
 	{

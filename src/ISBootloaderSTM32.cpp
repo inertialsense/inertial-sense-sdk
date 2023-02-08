@@ -21,27 +21,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace ISBootloader;
 
-enum
+typedef enum
 {
-    STM32_USART_GET = 0x00,
-    STM32_USART_GET_VERSION = 0x01,
-    STM32_USART_GET_ID = 0x02,
-    STM32_USART_READ_MEMORY = 0x11,
-    STM32_USART_GO = 0x21,
-    STM32_USART_WRITE_MEMORY = 0x31,
-    STM32_USART_ERASE = 0x43,
-    STM32_USART_EXTENDED_ERASE = 0x44,
-    STM32_USART_SPECIAL = 0x50,
-    STM32_USART_EXTENDED_SPECIAL = 0x51,
-    STM32_USART_WRITE_PROTECT = 0x63,
-    STM32_USART_WRITE_UNPROTECT = 0x73,
-    STM32_USART_READOUT_PROTECT = 0x82,
-    STM32_USART_READOUT_UNPROTECT = 0x92,
-    STM32_USART_GET_CHECKSUM = 0xA1,
-};
+    STM32_GET = 0x00,               // Uses stm32_get_t
+    STM32_GET_VERSION = 0x01,       // Uses stm32_get_t
+    STM32_GET_ID = 0x02,            // Uses stm32_get_t
+    STM32_READ_MEMORY = 0x11,       // Uses stm32_data_t
+    STM32_GO = 0x21,                // Uses stm32_go_t
+    STM32_WRITE_MEMORY = 0x31,      // Uses stm32_data_t    
+    STM32_ERASE = 0x43,             // Uses stm32_erase_t
+    STM32_EXTENDED_ERASE = 0x44,
+    STM32_SPECIAL = 0x50,           
+    STM32_EXTENDED_SPECIAL = 0x51,
+    STM32_WRITE_PROTECT = 0x63,
+    STM32_WRITE_UNPROTECT = 0x73,
+    STM32_READOUT_PROTECT = 0x82,
+    STM32_READOUT_UNPROTECT = 0x92,
+    STM32_GET_CHECKSUM = 0xA1,
+} eSTM32RomCommands;
 
 enum
 {
+    STM32_AUTOBAUD = 0x7F,
     STM32_ACK = 0x79,
     STM32_NACK = 0x1F,
 };
@@ -60,402 +61,373 @@ is_operation_result cISBootloaderSTM32::match_test(void* param)
 
 eImageSignature cISBootloaderSTM32::check_is_compatible()
 {
-    int count = 0;
-
-    uint8_t autobaud = 0x7F;
+    // Close and reopen the port with even parity and 115200 baud
+    serialPortClose(m_port);
+    serialPortSetOptions(m_port, OPT_PARITY_EVEN);
+    serialPortOpen(m_port, m_port->port, 115200U, 1);
 
     // Flush the bootloader command buffer
-    serialPortWrite(m_port, &autobaud, 1);
-    serialPortSleep(m_port, 10);
     serialPortFlush(m_port);
 
-    // Set non-interactive mode and wait for response
-    count = serialPortWriteAndWaitForTimeout(m_port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2, 100);
-    
-    if (!count)
-    {   // Failed to handshake with bootloader
+    // Set non-interactive mode and wait for response, but don't check so we can continue if it fails
+    serialPortWriteAndWaitForTimeout(m_port, (const uint8_t*)STM32_AUTOBAUD, 1, (const uint8_t*)STM32_ACK, 1, 1000U);
+
+    // Read the device ID
+    if(get_id() != STM32_ACK) return IS_IMAGE_SIGN_NONE;
+
+    // Check the device ID
+    switch(m_pid)
+    {
+    case 0x62: 
+        m_info_callback(this, "Detected STM32L4 device", IS_LOG_LEVEL_DEBUG);
+        return IS_IMAGE_SIGN_STM_L4;   // STM32L452 (IMX-5.0)
+    case 0x82: 
+        m_info_callback(this, "Detected STM32U5 device", IS_LOG_LEVEL_DEBUG);
+        return IS_IMAGE_SIGN_STM_U5;   // STM32U575/STM32U585 (GPX-1/IMX-5.1)
+    default: 
+        m_info_callback(this, "No STM32 device detected", IS_LOG_LEVEL_DEBUG);
         return IS_IMAGE_SIGN_NONE;
     }
 
-    return IS_IMAGE_SIGN_SAMBA;
-}
-
-is_operation_result cISBootloaderSTM32::reboot()
-{
-    // RSTC_CR, RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST
-    write_word(0x400e1800, 0xa5000001);
-    return IS_OP_OK;
+    return IS_IMAGE_SIGN_NONE;
 }
 
 is_operation_result cISBootloaderSTM32::reboot_up()
 {
-    m_info_callback(this, "(SAM-BA) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
-
-    // EEFC.FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
-    if (write_word(0x400e0c04, 0x5a00010b) == IS_OP_OK)
+    // Jump to the application in FLASH memory
+    if(go(0x08000000) != STM32_ACK)
     {
-        wait_eefc_ready(true);
-        
-        reboot();
-
-        serialPortSleep(m_port, 500);
-
-        return IS_OP_OK;
+        m_info_callback(this, "Failed to jump to application in FLASH memory", IS_LOG_LEVEL_ERROR);
+        return IS_OP_ERROR;
     }
-    return IS_OP_ERROR;
-}
 
-is_operation_result cISBootloaderSTM32::download_image(std::string filename)
-{
-    serial_port_t* port = m_port;
-
-    // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
-    // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
-    uint8_t buf[SAMBA_PAGE_SIZE];
-
-    SAMBA_ERROR_CHECK(erase_flash(), "(SAM-BA) Failed to erase flash memory");
-
-    // try non-USB and then USB mode (0 and 1)
-    for(int isUSB = 0; isUSB < 2; isUSB++)
-    {
-        serialPortSleep(port, 250);
-        serialPortFlush(port);
-
-        // flush
-        serialPortWrite(port, (const uint8_t*)"#", 2);
-        serialPortReadTimeout(port, buf, sizeof(buf), 100);
-
-        FILE* file;
-#ifdef _MSC_VER
-        fopen_s(&file, filename.c_str(), "rb");
-#else
-        file = fopen(filename.c_str(), "rb");
-#endif
-
-        if (file == 0)
-        {
-            SAMBA_STATUS("(SAM-BA) Unable to load bootloader file", IS_LOG_LEVEL_ERROR);
-            // serialPortClose(port);
-            return IS_OP_ERROR;
-        }
-
-        fseek(file, 0, SEEK_END);
-        int size = ftell(file);
-        fseek(file, 0, SEEK_SET);
-        checksum = 0;
-
-        if (size != SAMBA_BOOTLOADER_SIZE_24K)
-        {
-            SAMBA_STATUS("(SAM-BA) Invalid or old (v5 or earlier) bootloader file", IS_LOG_LEVEL_ERROR);
-            // serialPortClose(port);
-            return IS_OP_ERROR;
-        }
-
-        if(isUSB == 0) SAMBA_STATUS("(SAM-BA) Writing ISB bootloader...", IS_LOG_LEVEL_INFO);
-
-        uint32_t offset = 0;
-        size_t len;
-        while ((len = fread(buf, 1, SAMBA_PAGE_SIZE, file)) == SAMBA_PAGE_SIZE)
-        {
-            if (flash_erase_write_page(offset, buf, isUSB) != IS_OP_OK)
-            {
-                if (!isUSB) { offset = 0; break; } // try USB mode
-                SAMBA_STATUS("Failed to upload page", IS_LOG_LEVEL_ERROR);
-                // serialPortClose(port);
-                return IS_OP_ERROR;
-            }
-            for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
-            {
-                checksum ^= *ptr;
-            }
-            offset += SAMBA_PAGE_SIZE;
-            
-            m_update_progress = (float)offset / (float)SAMBA_BOOTLOADER_SIZE_24K;
-            if (m_update_callback != 0)
-            {
-                m_update_callback(this, m_update_progress);
-            }
-        }
-        fclose(file);
-        if (offset != 0) break; // success!
-    }
+    // Close the port and reset the options
+    serialPortClose(m_port);
+    serialPortSetOptions(m_port, OPT_PARITY_NONE);
 
     return IS_OP_OK;
-}
-
-is_operation_result cISBootloaderSTM32::erase_flash()
-{
-    SAMBA_STATUS("(SAM-BA) Erasing flash memory...", IS_LOG_LEVEL_INFO);
-    
-    // Erase 3 sectors of 16 pares each (8K)
-    if (write_word(0x400e0c04, 0x5a000207) == IS_OP_OK)
-    {
-        SLEEP_MS(200);    // From datasheet, max time it could take
-        wait_eefc_ready(true);
-    }
-    if (write_word(0x400e0c04, 0x5a001207) == IS_OP_OK)
-    {
-        SLEEP_MS(200);    // From datasheet, max time it could take
-        wait_eefc_ready(true);
-    }
-    if (write_word(0x400e0c04, 0x5a002207) == IS_OP_OK)
-    {
-        SLEEP_MS(200);    // From datasheet, max time it could take
-        return wait_eefc_ready(true);
-    }
-
-    return IS_OP_ERROR;
 }
 
 uint32_t cISBootloaderSTM32::get_device_info()
 {
-    serial_port_t* port = m_port;
-    uint8_t buf[SAMBA_PAGE_SIZE];
+    // TODO: Read the device serial number from OTP
 
-    // Flush the bootloader command buffer
-    serialPortWrite(port, (const uint8_t*)"#", 2);
-    int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
+    return 0U;
+}
 
-    // Set non-interactive mode and wait for response
-    count = serialPortWriteAndWaitFor(port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
-    if (!count)
-    {   // Failed to handshake with bootloader
-        // serialPortClose(port);
-        return 0;
+is_operation_result cISBootloaderSTM32::download_image(std::string filename)
+{
+    ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
+
+    // Load the firmware image from the Intel HEX file
+    const size_t numSections = ihex_load_sections(filename.c_str(), image, MAX_NUM_IHEX_SECTIONS);
+    if(numSections <= 0) return IS_OP_ERROR;
+
+    uint32_t totalLen = 0U;         // Holds the total length of the firmware image
+    uint32_t bytesWritten = 0U;     // Holds the number of bytes written to the device
+    for(size_t i = 0U; i < numSections; i++)
+    {
+        totalLen += image[i].len;
     }
 
-    // Set flash mode register
-    SAMBA_ERROR_CHECK_SN(write_word(0x400e0c00, 0x04000600), "Failed to set flash mode register");
-
-    // Set flash command to STUS (start read unique signature)
-    SAMBA_ERROR_CHECK_SN(write_word(0x400e0c04, 0x5a000014), "Failed to command signature readout");
+    status_update("(STM) Erasing flash...", IS_LOG_LEVEL_INFO);
     
-    // Wait until EEFC.FSR.FRDY is cleared
-    SAMBA_ERROR_CHECK_SN(wait_eefc_ready(false), "Failed to clear flash ready bit");
-
-    // Read out the unique identifier
-    SAMBA_ERROR_CHECK_SN(read_word(0x00400000 + offsetof(manufacturing_info_t, serialNumber), &m_sn), "Failed to read UID word");
-    
-    // Set flash command to SPUS (stop read unique identifier)
-    SAMBA_ERROR_CHECK_SN(write_word(0x400e0c04, 0x5a000015), "Failed to command stop signature readout");
-    
-    return m_sn;
-}
-
-is_operation_result cISBootloaderSTM32::read_word(uint32_t address, uint32_t* word)
-{
-    uint8_t buf[16];
-    int count = SNPRINTF((char*)buf, sizeof(buf), "w%08x,#", address);
-    if ((serialPortWrite(m_port, buf, count) == count) &&
-        (serialPortReadTimeout(m_port, buf, sizeof(uint32_t), SAMBA_TIMEOUT_DEFAULT) == sizeof(uint32_t)))
+    // Perform the erase operation
+    if(mass_erase() != STM32_ACK)
     {
-        *word = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
-        return IS_OP_OK;
-    }
-    return IS_OP_ERROR;
-}
-
-is_operation_result cISBootloaderSTM32::write_word(uint32_t address, uint32_t word)
-{
-    unsigned char buf[32];
-    int count = SNPRINTF((char*)buf, sizeof(buf), "W%08x,%08x#", address, word);
-    if(serialPortWrite(m_port, buf, count) != count) return IS_OP_ERROR;
-    return IS_OP_OK;
-}
-
-is_operation_result cISBootloaderSTM32::wait_eefc_ready(bool waitReady)
-{
-    uint32_t status = 0;
-    for (int i = 0; i < 10; i++)
-    {
-        // EEFC.FSR.FRDY - Flash ready status
-        if(read_word(0x400e0c08, &status) == IS_OP_ERROR) continue; 
-        if( waitReady &&  (status & 0x01)) return IS_OP_OK;   // status is ready and we are waiting for ready
-        if(!waitReady && !(status & 0x01)) return IS_OP_OK;   // status is not ready and we are waiting for not ready
-        serialPortSleep(m_port, 20);
-    }
-    return IS_OP_ERROR;
-}
-
-is_operation_result cISBootloaderSTM32::write_uart_modem(uint8_t* buf, size_t len)
-{
-    int ret;
-    uint8_t eot = UART_XMODEM_EOT;
-    uint8_t answer;
-    xmodem_chunk_t chunk = {0};
-    chunk.block = 1;
-    chunk.start = UART_XMODEM_SOH;
-
-    // wait for ping from bootloader
-    do
-    {
-        if (serialPortRead(m_port, &answer, sizeof(uint8_t)) != sizeof(uint8_t))
-        {
-            return IS_OP_ERROR;
-        }
-    } while (answer != 'C');
-
-    serialPortFlush(m_port);
-
-    // write up to one sector
-    while (len)
-    {
-        size_t z = 0;
-        
-        z = _MIN(len, sizeof(chunk.payload));
-        memcpy(chunk.payload, buf, z);
-        memset(chunk.payload + z, 0xff, sizeof(chunk.payload) - z);
-
-        chunk.crc = SWAP16(crc16(chunk.payload, sizeof(chunk.payload)));
-        chunk.block_neg = 0xff - chunk.block;
-
-        ret = serialPortWrite(m_port, (const uint8_t*)&chunk, sizeof(xmodem_chunk_t));
-        if (ret != sizeof(xmodem_chunk_t))
-        {
-            return IS_OP_ERROR;
-        }
-
-        ret = serialPortReadTimeout(m_port, &answer, sizeof(uint8_t), SAMBA_TIMEOUT_DEFAULT);
-        if (ret != sizeof(uint8_t))
-        {
-            return IS_OP_ERROR;
-        }
-
-        switch (answer)
-        {
-        case UART_XMODEM_ACK:
-            chunk.block++;
-            len -= z;
-            buf += z;
-            break;
-        case UART_XMODEM_CAN:
-            return IS_OP_ERROR;
-        default:
-        case UART_XMODEM_NAK:
-            break;
-        }
-    }
-
-    ret = serialPortWrite(m_port, &eot, sizeof(uint8_t));
-    if (ret != sizeof(uint8_t))
-    {
+        ihex_unload_sections(image, numSections);
         return IS_OP_ERROR;
     }
-    ret = serialPortReadCharTimeout(m_port, &eot, SAMBA_TIMEOUT_DEFAULT);
-    if (ret == 0 || eot != UART_XMODEM_ACK)
-    {
-        return IS_OP_ERROR;
-    }
-    
-    return IS_OP_OK;
-}
 
-is_operation_result cISBootloaderSTM32::flash_erase_write_page(size_t offset, uint8_t data[SAMBA_PAGE_SIZE], bool isUSB)
-{
-    uint16_t page = (uint16_t)(offset / SAMBA_PAGE_SIZE);
-    uint8_t buf[32];
-    int count;
+    status_update("(STM) Programming flash...", IS_LOG_LEVEL_INFO);
 
-    count = SNPRINTF((char*)buf, sizeof(buf), "S%08x,%08x#",
-                     (unsigned int)(SAMBA_FLASH_START_ADDRESS + offset),
-                     (unsigned int)SAMBA_PAGE_SIZE);
-    serialPortWrite(m_port, buf, count);
+    uint8_t dataBuf[256];
+    stm32_data_t payload; payload.data = dataBuf;
 
-    // Copy data into latch buffer prior to write
-    if (isUSB)
+    // Write memory
+    for(size_t i = 0; i < numSections; i++)
     {
-        serialPortWrite(m_port, data, SAMBA_PAGE_SIZE);
-    }
-    else
-    {
-        // send page data
-        if (write_uart_modem(data, SAMBA_PAGE_SIZE) != IS_OP_OK)
+        uint32_t bytesLeft = image[i].len;
+        uint32_t offset = 0U;
+        uint8_t retries = 0U;
+
+        // Check the address range
+        switch(m_pid)
         {
-            return IS_OP_ERROR;
-        }
-    }
-
-    // EEFC.FCR - WP - copy latch buffers into flash
-    count = SNPRINTF((char*)buf, sizeof(buf), "W%08x,5a%04x01#", 0x400e0c04, page);
-    serialPortWrite(m_port, buf, count);
-    
-    return wait_eefc_ready(true);
-}
-
-is_operation_result cISBootloaderSTM32::verify_image(std::string filename)
-{
-    (void)filename;    // Checksum is used instead of re-reading file
-
-    uint32_t checksum2 = 0;
-    uint32_t nextAddress;
-    uint8_t buf[SAMBA_PAGE_SIZE] = {0};
-    uint8_t cmd[42] = { 0 };
-    int count;
-
-    serialPortFlush(m_port);
-
-    SAMBA_STATUS("(SAM-BA) Verifying ISB bootloader (may take some time)...", IS_LOG_LEVEL_INFO);
-
-    while (serialPortRead(m_port, buf, 1));
-
-    for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE_24K); )
-    {
-        int index = 0;
-        nextAddress = address + SAMBA_PAGE_SIZE;
-        while (address < nextAddress)
-        {
-            count = SNPRINTF((char*)cmd, sizeof(cmd), "w%08x,#", address);
-            serialPortWrite(m_port, (const uint8_t*)"#", 2);
-            serialPortWrite(m_port, cmd, count);
-            index += serialPortReadTimeout(m_port, buf + index, sizeof(uint32_t), SAMBA_TIMEOUT_DEFAULT);
-            address += sizeof(uint32_t);
-        }
-        /*count = serialPortReadTimeout(m_port, buf, SAMBA_PAGE_SIZE, SAMBA_TIMEOUT_DEFAULT);*/
-        if (index == SAMBA_PAGE_SIZE)
-        {
-            for (uint32_t* ptr = (uint32_t*)buf, *ptrEnd = (uint32_t*)(buf + sizeof(buf)); ptr < ptrEnd; ptr++)
+        case 0x62:      // STM32L452 (IMX-5.0)
+            // TODO: Add support for other areas.
+            if(image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x0807FFFF)
             {
-                checksum2 ^= *ptr;
+                m_info_callback(this, "Invalid address range for STM32L4 device", IS_LOG_LEVEL_WARN);
+                continue;
             }
+            break;
+        case 0x82:      // STM32U575/STM32U585 (GPX-1/IMX-5.1)
+            // TODO: Add support for other areas.
+            if(image[i].address < 0x08000000 || (image[i].address + image[i].len) > 0x08200000)
+            {
+                m_info_callback(this, "Invalid address range for STM32U5 device", IS_LOG_LEVEL_WARN);
+                continue;
+            }
+            break;
+        default: 
+            m_info_callback(this, "No STM32 device detected", IS_LOG_LEVEL_DEBUG);
+            ihex_unload_sections(image, numSections);
+            return IS_OP_ERROR;
         }
-        else return IS_OP_ERROR;
 
-        m_verify_progress = (float)(address - SAMBA_FLASH_START_ADDRESS) / (float)SAMBA_BOOTLOADER_SIZE_24K;
-        if (m_verify_callback != 0)
+        while (bytesLeft > 0 && bytesLeft < MAX_IHEX_SECTION_LEN)
         {
-            m_verify_callback(this, m_verify_progress);
-        }
+            // Payload length is one less than actual length because of STM32 protocol
+            payload.len = 0xFF;
+            if (bytesLeft < payload.len) payload.len = bytesLeft - 1;
+
+            // Set the address to write at
+            payload.addr = image[i].address + offset;
+
+            // Copy image into buffer for transmission
+            memcpy(payload.data, &image[i].image[offset], (size_t)payload.len + 1);
+
+            // Write the memory
+            if(write_memory(&payload) != STM32_ACK && ++retries > 3) 
+            {
+                ihex_unload_sections(image, numSections);
+                return IS_OP_ERROR;
+            }
+
+            retries = 0U;
+
+            offset += (uint32_t)payload.len + 1;
+            bytesLeft -= (uint32_t)payload.len + 1;
+            bytesWritten += (uint32_t)payload.len + 1;
+
+            m_update_progress = 0.25f + 0.75f * ((float)bytesWritten / (float)totalLen);
+            m_update_callback(this, m_update_progress);
+        } 
     }
-    if (checksum != checksum2) return IS_OP_ERROR;
+
+    // Unload the firmware image
+    ihex_unload_sections(image, numSections);
+
     return IS_OP_OK;
 }
 
-uint16_t cISBootloaderSTM32::crc_update(uint16_t crc_in, int incr)
+uint8_t cISBootloaderSTM32::send_command(uint8_t cmd)
 {
-    uint16_t crc = crc_in >> 15;
-    uint16_t out = crc_in << 1;
-
-    if (incr) out++;
-    if (crc) out ^= UART_XMODEM_CRC_POLY;
-
-    return out;
-}
-
-
-uint16_t cISBootloaderSTM32::crc16(uint8_t* data, uint16_t size)
-{
-    uint16_t crc, i;
-
-    for (crc = 0; size > 0; size--, data++)
+    if((m_port->options & OPT_PARITY_MASK) != OPT_PARITY_EVEN)
     {
-        for (i = 0x80; i; i >>= 1)
-        {
-            crc = crc_update(crc, *data & i);
-        }
+        serialPortClose(m_port);
+        serialPortSetOptions(m_port, OPT_PARITY_EVEN);
+        serialPortOpen(m_port, m_port->port, 115200U, 1);
     }
 
-    for (i = 0; i < 16; i++) crc = crc_update(crc, 0);
+    uint8_t cmdbuf[2] = { cmd, cmd ^ 0xFF };
+    uint8_t resp;
 
-    return crc;
+    // Send command and inverted command bytes
+    serialPortFlush(m_port);
+    serialPortWrite(m_port, cmdbuf, sizeof(cmdbuf));
+
+    int ackLen = serialPortReadTimeout(m_port, &resp, 1, 1000U);
+    if(ackLen != 1 || resp != STM32_ACK) return STM32_NACK;
+
+    return STM32_ACK;
+
 }
 
+uint8_t cISBootloaderSTM32::get(void)
+{
+    // Send the command and check for ACK
+    if(send_command(STM32_GET) != STM32_ACK) return STM32_NACK;
+
+    // Read the first byte of the response to get the length
+    uint8_t respBuf[32];
+    uint8_t xor = 0;
+    int respLen = serialPortReadTimeout(m_port, respBuf, 1, 1000U);
+    if(respLen != 1) return STM32_NACK;
+
+    // Compute the checksum and get the length of the response
+    xorCompute(&xor, respBuf, 1);
+    uint16_t bytesLeft = respBuf[0] + 1;
+    
+    // Read the rest of the response
+    respLen = serialPortReadTimeout(m_port, respBuf, bytesLeft, 1000U);
+    if(respLen != bytesLeft) return STM32_NACK;
+    xorCompute(&xor, respBuf, respLen);
+
+    // Read and check the checksum
+    uint8_t csum;
+    respLen = serialPortReadTimeout(m_port, &csum, 1, 100U);
+    if(respLen != 1 || csum != xor) return STM32_NACK;
+
+    // Populate the list of valid commands in the class
+    if(bytesLeft > sizeof(m_valid_commands)) bytesLeft = sizeof(m_valid_commands);
+    memset(m_valid_commands, 0U, sizeof(m_valid_commands));
+    memcpy(m_valid_commands, respBuf, bytesLeft);
+    
+    return STM32_ACK;
+}
+
+uint8_t cISBootloaderSTM32::get_version(void)
+{
+    // Send the command and check for ACK
+    if(send_command(STM32_GET_VERSION) != STM32_ACK) return STM32_NACK;
+
+    // Read the first two bytes of the response to get the length
+    uint8_t respBuf[32];
+    uint8_t xor = 0;
+    int respLen = serialPortReadTimeout(m_port, respBuf, 4, 1000U);
+    if(respLen != 4 || respBuf[3] != STM32_ACK) return STM32_NACK;
+
+    m_version = respBuf[0];
+    
+    return STM32_ACK;
+}
+
+uint8_t cISBootloaderSTM32::get_id(void)
+{
+    // Send the command and check for ACK
+    if(send_command(STM32_GET_ID) != STM32_ACK) return STM32_NACK;
+
+    // Read the first byte of the response to get the length
+    uint8_t respBuf[10];
+    uint8_t xor = 0;
+    int respLen = serialPortReadTimeout(m_port, respBuf, 1, 1000U);
+    if(respLen != 1) return STM32_NACK;
+
+    // Read the id
+    uint8_t lenVer = respBuf[0] + 2;    // 2 for checksum, 1 for length
+    if(lenVer > sizeof(respBuf)) lenVer = sizeof(respBuf);
+    respLen = serialPortReadTimeout(m_port, respBuf, lenVer, 1000U);
+    if(respLen != lenVer || respBuf[lenVer] != STM32_ACK) return STM32_NACK;
+
+    // Copy the PID into the class (respBuf[0] is always 0x04 for all STM32 devices)
+    m_pid = respBuf[1];
+    
+    return STM32_ACK;
+}
+
+/** Memory manipulation commands */
+uint8_t cISBootloaderSTM32::mass_erase(void)
+{
+    // Send the command and check for ACK
+    if(send_command(STM32_ERASE) != STM32_ACK) return STM32_NACK;
+
+    // Send the mass erase command
+    uint8_t cmd[2] = { 0xFF, 0x00 };
+    serialPortWrite(m_port, cmd, 2);
+
+    if(checkAck() != STM32_ACK) return STM32_NACK;
+
+    return STM32_ACK;
+}
+
+uint8_t cISBootloaderSTM32::read_memory(stm32_data_t *data)
+{
+    if(data == NULL || data->data == NULL) return STM32_NACK;
+
+    // Send the command and check for ACK
+    if(send_command(STM32_READ_MEMORY) != STM32_ACK) return STM32_NACK;
+
+    // Send address to jump to
+    uint8_t buf[5];
+    addrBufCopy(data->addr, buf);
+    serialPortWrite(m_port, buf, sizeof(buf));
+
+    // Wait for ACK
+    if(checkAck() != STM32_ACK) return STM32_NACK;
+
+    // Send the number of bytes to read with a checksum
+    uint8_t len[2] = { data->len - 1, 0x00 };
+    xorCompute(&len[1], &len[0], 1);
+    serialPortWrite(m_port, len, 2);
+    
+    // Wait for ACK
+    if(checkAck() != STM32_ACK) return STM32_NACK;
+
+    // Read memory into buffer
+    int respLen = serialPortReadTimeout(m_port, data->data, data->len, 1000U);
+    if(respLen != data->len) return STM32_NACK;
+    
+    // Make sure the checksum is correct
+    uint8_t chksum = 0, lastbyte;
+    xorCompute(&chksum, data->data, data->len);
+    respLen = serialPortReadTimeout(m_port, &lastbyte, 1, 1000U);
+    xorCompute(&chksum, &lastbyte, 1);
+    if(respLen != 1 || chksum != 0) return STM32_NACK;
+
+    return STM32_ACK;
+}
+
+uint8_t cISBootloaderSTM32::write_memory(stm32_data_t *data)
+{
+    // Send the command and check for ACK
+    if(send_command(STM32_WRITE_MEMORY) != STM32_ACK) return STM32_NACK;
+
+    // Send address to jump to
+    uint8_t buf[5];
+    addrBufCopy(data->addr, buf);
+    serialPortWrite(m_port, buf, sizeof(buf));
+
+    // Wait for ACK
+    if(checkAck() != STM32_ACK) return STM32_NACK;
+
+    // Send the number of bytes to write
+    uint8_t len = data->len - 1;
+    uint8_t chksum = 0;
+    serialPortWrite(m_port, &len, 1);
+    xorCompute(&chksum, &len, 1);
+
+    // Send the bytes to write
+    serialPortWrite(m_port, data->data, data->len);
+    xorCompute(&chksum, data->data, data->len);
+
+    // Write the checksum
+    serialPortWrite(m_port, &chksum, 1);
+    
+    // Wait for ACK
+    if(checkAck() != STM32_ACK) return STM32_NACK;
+
+    return STM32_ACK;
+}
+
+uint8_t cISBootloaderSTM32::go(uint32_t addr)
+{
+    // Send the command and check for ACK
+    if(send_command(STM32_GO) != STM32_ACK) return STM32_NACK;
+
+    // Send address to jump to
+    uint8_t buf[5];
+    addrBufCopy(addr, buf);
+    serialPortWrite(m_port, buf, sizeof(buf));
+
+    if(checkAck() != STM32_ACK) return STM32_NACK;
+    
+    return STM32_ACK;
+}
+
+uint8_t cISBootloaderSTM32::addrBufCopy(uint32_t addr, uint8_t *buf)
+{
+    buf[0] = (uint8_t) addr >> 24;
+    buf[1] = (uint8_t) addr >> 16;
+    buf[2] = (uint8_t) addr >> 8;
+    buf[3] = (uint8_t) addr;
+    xorCompute(&buf[4], buf, 4);
+}
+
+uint8_t cISBootloaderSTM32::checkAck(void)
+{
+    uint8_t respBuf[1];
+    int respLen = serialPortReadTimeout(m_port, respBuf, 1, 1000U);
+    if(respLen != 1 || respBuf[0] != STM32_ACK) return STM32_NACK;
+    
+    return STM32_ACK;
+}
+
+void cISBootloaderSTM32::xorCompute(uint8_t *chksum, uint8_t *data, uint16_t len)
+{
+    for(uint16_t i = 0; i < len; i++)
+    {
+        *chksum ^= data[i];
+    }
+}

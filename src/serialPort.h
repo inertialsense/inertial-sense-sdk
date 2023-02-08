@@ -20,6 +20,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 
@@ -85,8 +86,8 @@ struct serial_port_t
 	// length of error
 	int errorLength;
 
-	// Options for serial port like parity, stop bits, etc. (see eSerialPortOptions)
-	uint32_t options;
+	// Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
+    uint32_t options;
 
 	// open the serial port
 	pfnSerialPortOpen pfnOpen;
@@ -214,6 +215,9 @@ int serialPortGetByteCountAvailableToWrite(serial_port_t* serialPort);
 
 // sleep for the specified number of milliseconds if supported, returns 1 if success, 0 if failed to sleep
 int serialPortSleep(serial_port_t* serialPort, int sleepMilliseconds);
+
+// Set the port options
+void serialPortSetOptions(serial_port_t* serialPort, uint32_t options);
 
 #ifdef __cplusplus
 }
