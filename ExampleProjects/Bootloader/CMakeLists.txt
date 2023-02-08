@@ -17,7 +17,7 @@ add_executable(ISBootloaderExample
 	ISBootloaderExample.cpp
 	../../src/data_sets.c
 	
-	../../hw-libs/bootloader/bootloaderShared.c
+	../../hw-libs/firmwareSignatures.c
 	../../src/ihex.c
 	../../src/ISComm.c
 	../../src/serialPort.c

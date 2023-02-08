@@ -37,7 +37,7 @@ add_executable(ISLogReaderExample
 	../../src/ISBootloaderISB.cpp
 	../../src/ISBootloaderDFU.cpp
 	../../src/ISBootloaderSAMBA.cpp
-	../../hw-libs/bootloader/bootloaderShared.c
+	../../hw-libs/firmwareSignatures.c
 	../../src/ISClient.cpp
 	../../src/ISComm.c
 	../../src/ISDataMappings.cpp

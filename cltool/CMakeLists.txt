@@ -44,7 +44,7 @@ add_executable(cltool
 	../src/ISBootloaderDFU.cpp
 	../src/ISBootloaderSAMBA.cpp
 	../src/ISBootloaderAPP.cpp
-	../hw-libs/bootloader/bootloaderShared.c
+	../hw-libs/firmwareSignatures.c
 	../src/ISClient.cpp
 	../src/ISComm.c
 	../src/ISDataMappings.cpp

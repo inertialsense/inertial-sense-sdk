@@ -23,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderISB.h"
 #include "ISBootloaderAPP.h"
 #include "ihex.h"
-#include "../hw-libs/bootloader/bootloaderShared.h"
+#include "../hw-libs/firmwareSignatures.h"
 #include "libusb.h"
 #include "ISUtilities.h"
 
@@ -53,20 +53,15 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
 
     if(sections == 1)   // Signature must be in the first section of the image
     {
-        uint8_t *target_signature;
+        const uint8_t *target_signature;
 
         // 31 because 0x80000000 is an error code
         for(image_type = 0; image_type < 31; image_type++)
         {
             switch(1 << image_type)
             {
-            case IS_IMAGE_SIGN_UINS_3_16K: target_signature = bootloaderRequiredSignature_uINS_3_16K; break;
-            case IS_IMAGE_SIGN_UINS_3_24K: target_signature = bootloaderRequiredSignature_uINS_3_24K; break;
-            case IS_IMAGE_SIGN_EVB_2_16K: target_signature = bootloaderRequiredSignature_EVB_2_16K; break;
-            case IS_IMAGE_SIGN_EVB_2_24K: target_signature = bootloaderRequiredSignature_EVB_2_24K; break;
             case IS_IMAGE_SIGN_IMX_5p0: target_signature = bootloaderRequiredSignature_IMX_5p0; break;
-            case IS_IMAGE_SIGN_ISB_STM32L4: target_signature = bootloaderRequiredSignature_STM32L4_bootloader; break;
-            case IS_IMAGE_SIGN_ISB_SAMx70_24K: target_signature = bootloaderRequiredSignature_SAMx70_bootloader_24K; break;
+            case IS_IMAGE_SIGN_GPX_1: target_signature = bootloaderRequiredSignature_IMX_5p0; break;
             default: continue;
             }
 
