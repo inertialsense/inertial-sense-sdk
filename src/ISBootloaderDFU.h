@@ -59,14 +59,14 @@ class cISBootloaderDFU : public ISBootloader::cISBootloaderBase
 {
 public:
     cISBootloaderDFU(
-        pfnBootloadProgress upload_cb,
-        pfnBootloadProgress verify_cb,
-        pfnBootloadStatus info_cb,
+        std::string filename,
+        ISBootloader::pfnBootloadProgress upload_cb,
+        ISBootloader::pfnBootloadProgress verify_cb,
+        ISBootloader::pfnBootloadStatus info_cb,
         libusb_device_handle* handle
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+    ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
     {
         m_dfu.handle_libusb = handle;
-        m_device_type = IS_DEV_TYPE_DFU;
     }
 
     ~cISBootloaderDFU() 
@@ -82,11 +82,11 @@ public:
 
     uint32_t get_device_info();
 
-    ISBootloader::eImageSignature check_is_compatible();
+    uint8_t check_is_compatible(uint32_t imgSign);
     
-    is_operation_result download_image(std::string image);
-    is_operation_result upload_image(std::string image) { return IS_OP_OK; }
-    is_operation_result verify_image(std::string image) { return IS_OP_OK; }
+    is_operation_result download_image(void);
+    is_operation_result upload_image(void) { return IS_OP_OK; }
+    is_operation_result verify_image(void) { return IS_OP_OK; }
 
     static int get_num_devices();
     static is_operation_result list_devices(is_dfu_list* list);

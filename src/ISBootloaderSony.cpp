@@ -40,7 +40,7 @@ is_operation_result cISBootloaderSONY::match_test(void* param)
     return IS_OP_ERROR;
 }
 
-eImageSignature cISBootloaderSONY::check_is_compatible()
+uint8_t cISBootloaderSONY::check_is_compatible(uint32_t imgSign)
 {
     int count = 0;
 
@@ -57,7 +57,7 @@ eImageSignature cISBootloaderSONY::check_is_compatible()
     return IS_IMAGE_SIGN_SONY_CXD5610;
 }
 
-is_operation_result cISBootloaderSONY::download_image(std::string image)
+is_operation_result cISBootloaderSONY::download_image(void)
 {
     uint8_t isUpdater = 0;
     uint8_t type = 0xFF;

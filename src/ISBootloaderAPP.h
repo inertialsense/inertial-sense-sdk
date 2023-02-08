@@ -1,10 +1,3 @@
-/**
- * @file ISBootloaderAPP.h
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for putting APP mode devices in ISB mode
- * 
- */
-
 /*
 MIT LICENSE
 
@@ -28,14 +21,17 @@ class cISBootloaderAPP : public ISBootloader::cISBootloaderBase
 {
 public:
     cISBootloaderAPP(
+        std::string filename,
+        std::string enable_cmd,
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
         serial_port_t* port
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+    ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_APP;
+        m_port_name = std::string(m_port->port);
+        strncpy(m_app.enable_command, enable_cmd.c_str(), 5);
     }
 
     ~cISBootloaderAPP() 
@@ -43,7 +39,7 @@ public:
         
     }
 
-    ISBootloader::eImageSignature check_is_compatible();
+    uint8_t check_is_compatible(uint32_t imgSign);
 
     is_operation_result match_test(void* param);
 
@@ -53,9 +49,9 @@ public:
 
     uint32_t get_device_info();
 
-    is_operation_result download_image(std::string image) { return IS_OP_OK; }
-    is_operation_result upload_image(std::string image) { return IS_OP_OK; }
-    is_operation_result verify_image(std::string image) { return IS_OP_OK; }
+    is_operation_result download_image(void) { return IS_OP_OK; }
+    is_operation_result upload_image(void) { return IS_OP_OK; }
+    is_operation_result verify_image(void) { return IS_OP_OK; }
 
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
 

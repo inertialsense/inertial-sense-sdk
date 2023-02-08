@@ -1,10 +1,3 @@
-/**
- * @file ISBootloaderThread.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating embedded systems in parallel
- * 
- */
-
 /*
 MIT LICENSE
 
@@ -20,8 +13,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
 #include "ISBootloaderAPP.h"
-#include "ISBootloaderISB.h"
-#include "ISBootloaderSAMBA.h"
 #include "ISSerialPort.h"
 
 #include <algorithm>
@@ -34,7 +25,7 @@ using namespace std;
 using namespace ISBootloader;
 
 vector<cISBootloaderBase*> cISBootloaderThread::ctx;
-firmwares_t cISBootloaderThread::m_firmware;
+string cISBootloaderThread::m_firmware;
 pfnBootloadProgress cISBootloaderThread::m_uploadProgress; 
 pfnBootloadProgress cISBootloaderThread::m_verifyProgress;
 pfnBootloadStatus cISBootloaderThread::m_infoProgress;
@@ -346,9 +337,9 @@ bool cISBootloaderThread::true_if_cancelled(void)
 }
 
 vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_and_check_devices(
-    vector<string>&               comPorts,
+    vector<string>&                         comPorts,
     int                                     baudRate,
-    const ISBootloader::firmwares_t&        firmware,
+    const string&                           firmware,
     ISBootloader::pfnBootloadProgress       uploadProgress, 
     ISBootloader::pfnBootloadProgress       verifyProgress,
     ISBootloader::pfnBootloadStatus         infoProgress,
@@ -657,7 +648,7 @@ is_operation_result cISBootloaderThread::update(
     vector<string>&             comPorts,   // ISB and SAM-BA and APP
     bool                        force_isb_update,
     int                         baudRate,
-    const firmwares_t&          firmware,
+    const string&               firmware,
     pfnBootloadProgress         uploadProgress,
     pfnBootloadProgress         verifyProgress,
     pfnBootloadStatus           infoProgress,

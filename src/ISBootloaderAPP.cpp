@@ -1,10 +1,3 @@
-/**
- * @file ISBootloaderAPP.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for putting APP mode devices in ISB mode
- * 
- */
-
 /*
 MIT LICENSE
 
@@ -40,7 +33,7 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
     return IS_OP_ERROR;
 }
 
-eImageSignature cISBootloaderAPP::check_is_compatible()
+uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
 {
     serialPortFlush(m_port);
 

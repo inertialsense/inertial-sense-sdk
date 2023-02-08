@@ -185,8 +185,6 @@
     <ClCompile Include="..\..\src\ISBootloaderAPP.cpp" />
     <ClCompile Include="..\..\src\ISBootloaderBase.cpp" />
     <ClCompile Include="..\..\src\ISBootloaderDFU.cpp" />
-    <ClCompile Include="..\..\src\ISBootloaderISB.cpp" />
-    <ClCompile Include="..\..\src\ISBootloaderSAMBA.cpp" />
     <ClCompile Include="..\..\src\ISBootloaderThread.cpp" />
     <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\libusb\libusb\core.c" />
@@ -250,8 +248,6 @@
     <ClInclude Include="..\..\src\ISBootloaderAPP.h" />
     <ClInclude Include="..\..\src\ISBootloaderBase.h" />
     <ClInclude Include="..\..\src\ISBootloaderDFU.h" />
-    <ClInclude Include="..\..\src\ISBootloaderISB.h" />
-    <ClInclude Include="..\..\src\ISBootloaderSAMBA.h" />
     <ClInclude Include="..\..\src\ISBootloaderThread.h" />
     <ClInclude Include="..\..\src\ISLogStats.h" />
     <ClInclude Include="..\..\src\libusb\libusb\libusb.h" />

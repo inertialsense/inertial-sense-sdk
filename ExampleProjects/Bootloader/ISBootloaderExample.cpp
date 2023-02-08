@@ -89,19 +89,10 @@ int main(int argc, char* argv[])
 	}
 
 	// For now, we will use all present devices.
-	std::vector<std::string> portStrings;
+	vector<string> portStrings;
 	cISSerialPort::GetComPorts(portStrings);
 
-	// Set all files the same, the bootloader logic will identify the file and only put it onto the appropriate devices.
-	firmwares_t files;
-	files.fw_uINS_3.path = std::string(argv[2]);
-	files.bl_uINS_3.path = std::string(argv[2]);
-	files.fw_IMX_5.path = std::string(argv[2]);
-	files.bl_IMX_5.path = std::string(argv[2]);
-	files.fw_EVB_2.path = std::string(argv[2]);
-	files.bl_EVB_2.path = std::string(argv[2]);
-
-	
+	string filename = string(argv[2]);
 
 	vector<string> all_ports;                   // List of ports connected
 
@@ -113,7 +104,7 @@ int main(int argc, char* argv[])
         cISBootloaderThread::set_mode_and_check_devices(
                 all_ports,
                 atoi(argv[1]),
-                files,
+                filename,
                	bootloaderUploadProgress,
 				bootloaderVerifyProgress,
 				bootloaderStatusText,
@@ -127,7 +118,7 @@ int main(int argc, char* argv[])
 		portStrings,
 		true,
 		atoi(argv[1]),
-		files,
+		filename,
 		bootloaderUploadProgress,
 		bootloaderVerifyProgress,
 		bootloaderStatusText,

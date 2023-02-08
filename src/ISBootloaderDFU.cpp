@@ -50,6 +50,7 @@ typedef struct
 	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 } is_dfu_otp_id_t;
+
 static constexpr uint32_t OTP_SECTION_SIZE = 64;		// 64 bytes. DO NOT CHANGE.
 static constexpr uint32_t OTP_NUM_SECTIONS = 16;        // 16 attempts. DO NOT CHANGE.
 static constexpr uint64_t OTP_KEY = 0xBAADBEEFB0BABABE;	// DO NOT CHANGE
@@ -171,8 +172,10 @@ is_operation_result cISBootloaderDFU::list_devices(is_dfu_list* list)
     return IS_OP_OK;
 }
 
-eImageSignature cISBootloaderDFU::check_is_compatible()
+uint8_t cISBootloaderDFU::check_is_compatible(uint32_t imgSign)
 {
+    m_use_progress = true;
+    
     return IS_IMAGE_SIGN_DFU;
 }
 
@@ -271,7 +274,7 @@ uint32_t cISBootloaderDFU::get_device_info()
 }
 
 
-is_operation_result cISBootloaderDFU::download_image(std::string filename)
+is_operation_result cISBootloaderDFU::download_image()
 {
     int ret_libusb;
     dfu_error ret_dfu;
@@ -292,7 +295,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
     if (ret_dfu < DFU_ERROR_NONE) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
     // Load the firmware image
-    image_sections = ihex_load_sections(filename.c_str(), image, MAX_NUM_IHEX_SECTIONS);
+    image_sections = ihex_load_sections(m_filename.c_str(), image, MAX_NUM_IHEX_SECTIONS);
     if(image_sections <= 0) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
     int image_total_len = 0;

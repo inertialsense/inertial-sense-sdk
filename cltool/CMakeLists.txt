@@ -40,9 +40,7 @@ add_executable(cltool
 	../src/InertialSense.cpp
 	../src/ISBootloaderThread.cpp
 	../src/ISBootloaderBase.cpp
-    ../src/ISBootloaderISB.cpp
 	../src/ISBootloaderDFU.cpp
-	../src/ISBootloaderSAMBA.cpp
 	../src/ISBootloaderAPP.cpp
 	../hw-libs/firmwareSignatures.c
 	../src/ISClient.cpp

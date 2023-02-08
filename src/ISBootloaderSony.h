@@ -22,18 +22,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderBase.h"
 
+#ifndef MAX_PATH
+#define MAX_PATH_SONY 260
+#else
+#define MAX_PATH_SONY MAX_PATH
+#endif
+
 class cISBootloaderSONY : public ISBootloader::cISBootloaderBase
 {
 public:
-    cISBootloaderSONY( 
+    cISBootloaderSONY(
+        std::string filename,
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
         serial_port_t* port
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+    ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_SONY;
     }
     
     ~cISBootloaderSONY() 
@@ -49,15 +55,20 @@ public:
 
     uint32_t get_device_info() {return 0; }
     
-    is_operation_result download_image(std::string image);
-    is_operation_result upload_image(std::string image) { return IS_OP_OK; }
-    is_operation_result verify_image(std::string image);
+    is_operation_result download_image(void);
+    is_operation_result upload_image(void) { return IS_OP_OK; }
+    is_operation_result verify_image(void);
     
-    /**
-     * @brief Check if the referenced device is a SAM-BA device, and that the image matches
-     *
-     */
-    ISBootloader::eImageSignature check_is_compatible();
+    uint8_t check_is_compatible(uint32_t imgSign);
+
+    typedef struct 
+    {
+        char updater[MAX_PATH_SONY];
+        char app[MAX_PATH_SONY];
+        char sdk[MAX_PATH_SONY];
+        char lib[MAX_PATH_SONY];
+        char cfg[MAX_PATH_SONY];
+    } m_sony_filenames;
 
 private:
     int send_msg(uint8_t opcode, uint8_t* data, uint16_t len, uint16_t timeoutMs);

@@ -1,10 +1,3 @@
-/**
- * @file ISBootloaderBase.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating firmware and bootloaders
- * 
- */
-
 /*
 MIT LICENSE
 
@@ -19,17 +12,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderBase.h"
 #include "ISBootloaderDFU.h"
-#include "ISBootloaderSAMBA.h"
-#include "ISBootloaderISB.h"
 #include "ISBootloaderAPP.h"
-#include "ihex.h"
+#include "ISBootloaderSTM32.h"
+
 #include "../hw-libs/firmwareSignatures.h"
-#include "libusb.h"
 #include "ISUtilities.h"
+#include "ISConstants.h"
+#include "ihex.h"
+#include "libusb.h"
+#include <sys/stat.h>
+
+#if PLATFORM_IS_WINDOWS
+#include <windows.h>
+#include <tchar.h>
+#include <stdio.h>
+#endif
 
 using namespace ISBootloader;
-
-// const char* is_samx70_bootloader_needle = "bootloader-SAMx70";
 
 is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent) 
 {
@@ -45,7 +44,7 @@ is_operation_result ISBootloader::dummy_verify_callback(void* obj, float percent
     return IS_OP_OK;
 }
 
-eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename, uint8_t* major, char* minor)
+eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename)
 {
     ihex_image_section_t image;
     size_t sections = ihex_load_sections(filename.c_str(), &image, 1);
@@ -60,8 +59,8 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
         {
             switch(1 << image_type)
             {
-            case IS_IMAGE_SIGN_IMX_5p0: target_signature = bootloaderRequiredSignature_IMX_5p0; break;
-            case IS_IMAGE_SIGN_GPX_1: target_signature = bootloaderRequiredSignature_IMX_5p0; break;
+            case IS_IMAGE_SIGN_IMX5p0: target_signature = bootloaderRequiredSignature_IMX5p0; break;
+            case IS_IMAGE_SIGN_GPX1p0: target_signature = bootloaderRequiredSignature_GPX1p0; break;
             default: continue;
             }
 
@@ -73,18 +72,6 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
 
                 if(k >= BOOTLOADER_SIGNATURE_SIZE) 
                 {
-                    // In the bootloader images, the version bytes are stored directly after the signature
-                    // A third byte is added as a checksum of the two preceding bytes. 
-                    if(image.image[j + 1] + image.image[j + 2] == image.image[j + 3])
-                    {
-                        if(major) *major = image.image[j + 1];
-                        if(minor) *minor = (char)image.image[j + 2];
-                    }
-                    else
-                    {
-                        if(major) *major = 0;
-                        if(minor) *minor = 0;           
-                    }
                     return (eImageSignature)(1 << image_type);   // Found all the chars required
                 }
             }
@@ -95,57 +82,6 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
     return IS_IMAGE_SIGN_NONE;
 }
 
-eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename, uint8_t* major, char* minor)
-{
-    FILE* blfile = 0;
-
-#ifdef _MSC_VER
-
-    fopen_s(&blfile, filename.c_str(), "rb");
-
-#else
-
-    blfile = fopen(filename.c_str(), "rb");
-
-#endif
-
-    if (blfile == 0)
-        return IS_IMAGE_SIGN_NONE;
-
-    fseek(blfile, 0x5FFC, SEEK_SET);
-    unsigned char ver_info[4];
-	size_t n = fread(ver_info, 1, 4, blfile);
-    (void)n;
-    fclose(blfile);
-
-    //Check for marker for valid version info
-    if (ver_info[0] == 0xAA && ver_info[1] == 0x55)
-    {
-        if(major) *major = ver_info[2];
-        if(minor) *minor = ver_info[3];
-    }
-    else
-    {
-        if(major) *major = 0;
-        if(minor) *minor = 0;
-
-        // Look in the old location for this info (v5 and earler)
-        fseek(blfile, 0x3DFC, SEEK_SET);
-        size_t n = fread(ver_info, 1, 4, blfile);
-        (void)n;
-        fclose(blfile);
-
-        //Check for marker for valid version info
-        if (ver_info[0] == 0xAA && ver_info[1] == 0x55)
-        {
-            if(major) *major = ver_info[2];
-            if(minor) *minor = ver_info[3];
-        }
-    }
-
-    return (eImageSignature)(IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-}
-
 const char* cISBootloaderBase::get_file_ext(const char *filename) 
 {
     const char *dot = strrchr(filename, '.');   // Find last '.' in file name
@@ -153,25 +89,82 @@ const char* cISBootloaderBase::get_file_ext(const char *filename)
     return dot + 1;
 }
 
-eImageSignature cISBootloaderBase::get_image_signature(std::string filename, uint8_t* major, char* minor)
+eImageSignature cISBootloaderBase::get_image_signature(std::string filename)
 {
-    const char * extension = cISBootloaderBase::get_file_ext(filename.c_str());
 
-    if(strcmp(extension, "bin") == 0)
-    {
-        return cISBootloaderBase::get_bin_image_signature(filename, major, minor);
-    }
-    else if(strcmp(extension, "hex") == 0)
-    {
-        return cISBootloaderBase::get_hex_image_signature(filename, major, minor);
+    struct stat sb;
+    return (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
+
+    if(stat(path.c_str(), &sb) == 0)
+    {   
+        if(sb.st_mode & S_IFDIR)
+        {
+            return IS_IMAGE_SIGN_DIR;
+        }
+        else if(sb.st_mode & S_IFREG)
+        {
+            const char * extension = cISBootloaderBase::get_file_ext(filename.c_str());
+            
+            if(strncmp(extension, "hex", 5) == 0)
+            {
+                return cISBootloaderBase::get_hex_image_signature(filename, major, minor);
+            }
+        }
     }
     
+    
+    return IS_IMAGE_SIGN_NONE;
+}
+
+eImageSignature cISBootloaderBase::get_folder_image_signature(std::string filename)
+{
+    eImageSignature signature;
+
+#if PLATFORM_IS_WINDOWS
+
+    WIN32_FIND_DATA FindFileData;
+    HANDLE hFind;
+    BOOL bResult;
+
+    hFind = FindFirstFile(filename.c_str(), &FindFileData);
+    if (hFind == INVALID_HANDLE_VALUE) 
+    {
+        return;
+    } 
+    else 
+    {
+        do {
+            WIN32_FIND_DATAW* params = (WIN32_FIND_DATAW*)hFind;
+            const char* ext = get_file_ext((const char*)params->cFileName);
+
+            if(strncmp(ext, "efpk", 5) == 0)
+            {
+                
+            }
+            else if(strncmp(ext, "fpk", 5) == 0)
+            {
+                return cISBootloaderBase::get_hex_image_signature(filename, major, minor);
+            }
+            else if(strncmp(ext, "cfg", 5) == 0)
+            {
+                return cISBootloaderBase::get_hex_image_signature(filename, major, minor);
+            }
+
+        } while(FindNextFile(hFind, &FindFileData));
+        FindClose(hFind);
+    }
+
+#else
+
+
+#endif
+
     return IS_IMAGE_SIGN_NONE;
 }
 
 is_operation_result cISBootloaderBase::mode_device_app
 (
-    firmwares_t filenames,
+    std::string filename,
     serial_port_t* handle,
     pfnBootloadStatus statusfn,
     pfnBootloadProgress updateProgress,
@@ -184,239 +177,30 @@ is_operation_result cISBootloaderBase::mode_device_app
     (void)contexts;
     (void)addMutex;
 
-    cISBootloaderBase* obj;
     *new_context = NULL;
 
-    uint32_t device = IS_IMAGE_SIGN_NONE;
-    uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
-    uint32_t fw_IMX_5  = get_image_signature(filenames.fw_IMX_5.path)  & IS_IMAGE_SIGN_IMX_5p0;
-    uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
+    uint32_t imageSignature = get_image_signature(filename) & (IS_IMAGE_SIGN_IMX5p0 | IS_IMAGE_SIGN_GPX1p0);
 
-    obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
-    (obj)->m_port_name = std::string(handle->port);
-    device = (obj)->check_is_compatible();
-    if(device)
-    {   
-        if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)   
+    if (imageSignature)
+    {
+        cISBootloaderBase* obj = new cISBootloaderAPP(filename, "BLEN", updateProgress, verifyProgress, statusfn, handle);
+
+        if(obj->check_is_compatible(imageSignature))
         {
-            (obj)->m_filename = filenames.fw_EVB_2.path;
-            strncpy((obj)->m_app.enable_command, "EBLE", 5);
-            (obj)->reboot_down();
-            delete obj;
-            SLEEP_MS(3000);     // Delay 3 seconds to avoid port being re-used
-            return IS_OP_CLOSED;
+            obj->reboot_down();
         }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
-        {
-            (obj)->m_filename = filenames.fw_IMX_5.path;
-            strncpy((obj)->m_app.enable_command, "BLEN", 5);
-            (obj)->reboot_down();
-            delete obj;
-            SLEEP_MS(3000);
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
-        {
-            (obj)->m_filename = filenames.fw_uINS_3.path;
-            strncpy((obj)->m_app.enable_command, "BLEN", 5);
-            (obj)->reboot_down();
-            delete obj;
-            SLEEP_MS(3000);
-            return IS_OP_CLOSED;
-        }
+        
+        delete obj;
     }
 
-    delete obj;
     SLEEP_MS(3000);
     return IS_OP_CLOSED;    // Assume we found something besides app mode
 }
 
-is_operation_result cISBootloaderBase::get_device_isb_version(
-    firmwares_t filenames,
-    serial_port_t* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
-    std::vector<cISBootloaderBase*>& contexts,
-    std::mutex* addMutex,
-    cISBootloaderBase** new_context
-)
-{
-    cISBootloaderBase* obj;
-    *new_context = NULL;
-
-    uint8_t major;
-    char minor;
-
-    uint32_t device = IS_IMAGE_SIGN_NONE;
-    uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
-    uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path, &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_IMX_5p0;
-    uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path, &major, &minor) & IS_IMAGE_SIGN_ISB_STM32L4;
-    uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
-    uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path, &major, &minor)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-
-    obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
-    (obj)->m_port_name = std::string(handle->port);
-    device = (obj)->check_is_compatible(); 
-    if(device == IS_IMAGE_SIGN_ERROR)
-    {
-        delete obj;
-    }
-    else if(device)
-    {   // Firmware for a device must be specified to update its bootloader
-        if (((device & IS_IMAGE_SIGN_APP) & fw_EVB_2) && ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2))
-        {
-            (obj)->isb_mightUpdate = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            *new_context = obj;
-            addMutex->unlock();
-            return IS_OP_CLOSED;
-        }
-        else if (((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) && ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5))
-        {
-            (obj)->isb_mightUpdate = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            *new_context = obj;
-            addMutex->unlock();
-            return IS_OP_CLOSED;
-        }
-        else if (((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3) && ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3))
-        {
-            (obj)->isb_mightUpdate = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            *new_context = obj;
-            addMutex->unlock();
-            return IS_OP_CLOSED;
-        }
-        else
-        {
-            delete obj;
-            return IS_OP_CLOSED;
-        }
-    }
-    else
-    {
-        delete obj;
-    }
-
-    return IS_OP_OK;
-}
-
-is_operation_result cISBootloaderBase::mode_device_isb
-(
-    firmwares_t filenames,
-    bool force,
-    serial_port_t* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
-    std::vector<cISBootloaderBase*>& contexts,
-    std::mutex* addMutex,
-    cISBootloaderBase** new_context
-)
-{
-    (void)contexts;
-    (void)addMutex;
-
-    cISBootloaderBase* obj;
-    *new_context = NULL;
-
-    uint8_t major;
-    char minor;
-
-    uint32_t device = IS_IMAGE_SIGN_NONE;
-    //uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
-    uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path, &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-    //uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_IMX_5p0;
-    uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path, &major, &minor) & IS_IMAGE_SIGN_ISB_STM32L4;
-    //uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
-    uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path, &major, &minor)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-
-    obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
-    (obj)->m_port_name = std::string(handle->port);
-    device = (obj)->check_is_compatible(); 
-    if(device == IS_IMAGE_SIGN_ERROR)
-    {
-        delete obj;
-    }
-    else if(device)
-    {   // Firmware for a device must be specified to update its bootloader
-        if ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2) // & ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2))
-        {
-            (obj)->m_filename = filenames.bl_EVB_2.path;
-            is_operation_result op = (obj)->reboot_down(major, minor, force);
-            if (op == IS_OP_OK || op == IS_OP_CLOSED)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_RETRY)
-            {
-                (obj)->reboot_force();
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-        }
-        else if ((device & IS_IMAGE_SIGN_ISB) & bl_IMX_5) // && ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5))
-        {
-            (obj)->m_filename = filenames.bl_IMX_5.path;
-            is_operation_result op = (obj)->reboot_down(major, minor, force);
-            if (op == IS_OP_OK || op == IS_OP_CLOSED)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_RETRY)
-            {
-                (obj)->reboot_force();
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-        }
-        else if ((device & IS_IMAGE_SIGN_ISB) & bl_uINS_3) // && ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3))
-        {
-            (obj)->m_filename = filenames.bl_uINS_3.path;
-            is_operation_result op = (obj)->reboot_down(major, minor, force);
-            if (op == IS_OP_OK || op == IS_OP_CLOSED)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-            else if (op == IS_OP_RETRY)
-            {
-                (obj)->reboot_force();
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-        }
-        else if (bl_uINS_3 | bl_IMX_5 | bl_EVB_2)
-        {
-            (obj)->m_info_callback(obj, "(ISB) Bootloader upgrade not supported on this port. Trying APP update...", IS_LOG_LEVEL_INFO);
-            delete obj;
-            return IS_OP_CLOSED;
-        }
-        else
-        {
-            delete obj;
-            return IS_OP_CLOSED;
-        }
-    }
-    else
-    {
-        delete obj;
-    }
-
-    return IS_OP_OK;
-}
-
 is_operation_result cISBootloaderBase::update_device
 (
-    firmwares_t filenames,
-    libusb_device_handle* handle,
+    std::string filename,
+    libusb_device_handle* handle,       // LIBUSB
     pfnBootloadStatus statusfn,
     pfnBootloadProgress updateProgress,
     pfnBootloadProgress verifyProgress,
@@ -425,59 +209,55 @@ is_operation_result cISBootloaderBase::update_device
     cISBootloaderBase** new_context
 )
 {
-    cISBootloaderBase* obj;
     *new_context = NULL;
 
-    uint32_t device = IS_IMAGE_SIGN_NONE;
-    uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
+    uint32_t imageSignature = get_image_signature(filename) & (IS_IMAGE_SIGN_IMX5p0 | IS_IMAGE_SIGN_GPX1p0);
 
-    obj = new cISBootloaderDFU(updateProgress, verifyProgress, statusfn, handle);
-    device = (obj)->check_is_compatible();
-    if ((device & IS_IMAGE_SIGN_DFU) & bl_IMX_5)
+    if (imageSignature)
     {
-        (obj)->m_filename = filenames.bl_IMX_5.path;
-        
-        (obj)->get_device_info();
-        (obj)->m_use_progress = true;
-        addMutex->lock();
-        contexts.push_back(obj);
-        addMutex->unlock();
+        cISBootloaderBase* obj = new cISBootloaderDFU(filename, updateProgress, verifyProgress, statusfn, handle);
 
-        // Retry update up to 3 times, return if cancel flag gets set.
-        for(size_t i = 0; i < 3; i++)
+        if(obj->check_is_compatible(imageSignature))
         {
-            is_operation_result result = (obj)->download_image(filenames.bl_IMX_5.path);
+            // Get device info
+            obj->get_device_info();
+            
+            // Add object to list of contexts
+            addMutex->lock();
+            contexts.push_back(obj);
+            addMutex->unlock();
+
+            is_operation_result result = obj->download_image();
+
             if(result == IS_OP_CANCELLED)
             {
                 return IS_OP_CLOSED;
             }
             else if(result != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-                (obj)->m_use_progress = false;
-                (obj)->reboot();
-                continue;
+                obj->m_info_callback(obj, "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                obj->m_use_progress = false;
+                obj->reboot();
+                return IS_OP_RETRY;
             }
+
             *new_context = obj;
-            (obj)->reboot_up();    // Reboot up right away so an App update can happen
+            return IS_OP_OK;
+        }
+        else
+        {
+            delete obj;
             return IS_OP_CLOSED;
         }
-
-        (obj)->m_info_callback((obj), "(DFU) Update failed, too many retries", IS_LOG_LEVEL_ERROR);
-        return IS_OP_CLOSED;
     }
-    else
-    {
-        delete obj;
-    }
-
-    statusfn(NULL, "    | (DFU) Firmware image incompatible with DFU device", IS_LOG_LEVEL_INFO);
+    
+    statusfn(NULL, "    | (DFU) Firmware image incompatible with DFU device", IS_LOG_LEVEL_ERROR);
     return IS_OP_ERROR;
 }
 
 is_operation_result cISBootloaderBase::update_device
 (
-    firmwares_t filenames,
+    std::string filename,
     serial_port_t* handle,
     pfnBootloadStatus statusfn,
     pfnBootloadProgress updateProgress,
@@ -491,80 +271,8 @@ is_operation_result cISBootloaderBase::update_device
     cISBootloaderBase* obj;
     *new_context = NULL;
 
-    uint32_t device = IS_IMAGE_SIGN_NONE;
-    uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
-    uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_IMX_5p0;
-    uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
-    uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-
-    if(bl_EVB_2 || bl_uINS_3)
-    {
-        obj = new cISBootloaderSAMBA(updateProgress, verifyProgress, statusfn, handle);
-        obj->m_port_name = std::string(handle->port);
-        device = obj->check_is_compatible();
-        if (device)
-        {
-            if((device & IS_IMAGE_SIGN_SAMBA) & bl_EVB_2)
-            {
-                (obj)->m_filename = filenames.bl_EVB_2.path;
-                (obj)->get_device_info();
-                (obj)->m_use_progress = true;
-                addMutex->lock();
-                contexts.push_back(obj);
-                *new_context = obj;
-                addMutex->unlock();
-                if((obj)->download_image(filenames.bl_EVB_2.path) != IS_OP_OK)
-                {
-                    (obj)->m_use_progress = false;
-                    //delete obj;  // Don't delete, since we have probably called the update and verify callbacks
-                    return IS_OP_CLOSED;
-                }
-                if((obj)->verify_image(filenames.bl_EVB_2.path) != IS_OP_OK)
-                {
-                    (obj)->m_use_progress = false;
-                    //delete obj;  // Don't delete, since we have probably called the update and verify callbacks
-                    return IS_OP_CLOSED;
-                }
-                (obj)->reboot_up();    // Reboot up right away so an App update can happen
-                return IS_OP_CLOSED;
-            } 
-            else if((device & IS_IMAGE_SIGN_SAMBA) & bl_uINS_3)
-            {
-                (obj)->m_filename = filenames.bl_uINS_3.path;
-                (obj)->get_device_info();
-                (obj)->m_use_progress = true;
-                addMutex->lock();
-                contexts.push_back(obj);
-                *new_context = obj;
-                addMutex->unlock();
-                if((obj)->download_image(filenames.bl_uINS_3.path) != IS_OP_OK)
-                {
-                    (obj)->m_use_progress = false;
-                    //delete obj;  // Don't delete, since we have probably called the update and verify callbacks
-                    return IS_OP_CLOSED;
-                }
-                if((obj)->verify_image(filenames.bl_uINS_3.path) != IS_OP_OK)
-                {
-                    (obj)->m_use_progress = false;
-                    //delete obj;  // Don't delete, since we have probably called the update and verify callbacks
-                    return IS_OP_CLOSED;
-                }
-                (obj)->reboot_up();    // Reboot up right away so an App update can happen
-                return IS_OP_CLOSED;
-            } 
-            else
-            {
-                statusfn(NULL, "    | (SAM-BA) Firmware image incompatible with SAM-BA device", IS_LOG_LEVEL_ERROR);
-                delete obj;
-                return IS_OP_CANCELLED;
-            }
-        }
-        else
-        {
-            delete obj;
-        }
-    }
+    uint32_t imageSignatureApp = get_image_signature(filename) & (IS_IMAGE_SIGN_IMX5p0 | IS_IMAGE_SIGN_GPX1p0);
+    uint32_t imageSignatureSony = get_image_signature(filename) & (IS_IMAGE_SIGN_CXD5610);
 
     char* name = handle->port;
     serialPortClose(handle);
@@ -576,9 +284,9 @@ is_operation_result cISBootloaderBase::update_device
         return IS_OP_ERROR;
     }
 
-    obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, handle);
-    (obj)->m_port_name = std::string(handle->port);
-    device = (obj)->check_is_compatible(); 
+    obj = new cISBootloaderSTM32(updateProgress, verifyProgress, statusfn, handle);
+    obj->m_port_name = std::string(handle->port);
+    device = obj->check_is_compatible(); 
     if (device == IS_IMAGE_SIGN_NONE)
     {
         delete obj;
@@ -593,97 +301,38 @@ is_operation_result cISBootloaderBase::update_device
     }
     else if(device)
     {
-        // Bootloader was already updated or not specified
-        if ((device & IS_IMAGE_SIGN_ISB) & fw_EVB_2)
+        if ((device & IS_IMAGE_SIGN_ISB) & fw_IMX_5)
         {
-            (obj)->m_filename = filenames.fw_EVB_2.path;
+            obj->m_filename = filenames.fw_IMX_5.path;
 
-            if((obj)->get_device_info() != IS_OP_OK)
+            if(obj->get_device_info() != IS_OP_OK)
             {
                 delete obj;
                 return IS_OP_CLOSED;
             }
 
-            (obj)->m_use_progress = true;
+            obj->m_use_progress = true;
             addMutex->lock();
             contexts.push_back(obj);
             *new_context = obj;
             addMutex->unlock();
-            is_operation_result result = (obj)->download_image(filenames.fw_EVB_2.path);
+            is_operation_result result = obj->download_image();
             if(result == IS_OP_CANCELLED)
             {
                 return IS_OP_CLOSED;
             }
             else if(result != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-                (obj)->m_use_progress = false;
-                (obj)->reboot_force();
-                return IS_OP_CLOSED;
-            }
-            return IS_OP_OK;
-        }
-        else if ((device & IS_IMAGE_SIGN_ISB) & fw_IMX_5)
-        {
-            (obj)->m_filename = filenames.fw_IMX_5.path;
-
-            if((obj)->get_device_info() != IS_OP_OK)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-
-            (obj)->m_use_progress = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            *new_context = obj;
-            addMutex->unlock();
-            is_operation_result result = (obj)->download_image(filenames.fw_IMX_5.path);
-            if(result == IS_OP_CANCELLED)
-            {
-                return IS_OP_CLOSED;
-            }
-            else if(result != IS_OP_OK)
-            {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-                (obj)->m_use_progress = false;
-                (obj)->reboot_force();
-                return IS_OP_CLOSED;
-            }
-            return IS_OP_OK;
-        }
-        else if ((device & IS_IMAGE_SIGN_ISB) & fw_uINS_3)
-        {
-            (obj)->m_filename = filenames.fw_uINS_3.path;
-
-            if((obj)->get_device_info() != IS_OP_OK)
-            {
-                delete obj;
-                return IS_OP_CLOSED;
-            }
-
-            (obj)->m_use_progress = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            *new_context = obj;
-            addMutex->unlock();
-            is_operation_result result = (obj)->download_image(filenames.fw_uINS_3.path);
-            if(result == IS_OP_CANCELLED)
-            {
-                return IS_OP_CLOSED;
-            }
-            else if(result != IS_OP_OK)
-            {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
-                (obj)->m_use_progress = false;
-                (obj)->reboot_force();
+                obj->m_info_callback(obj, "(STM) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                obj->m_use_progress = false;
+                obj->reboot_force();
                 return IS_OP_CLOSED;
             }
             return IS_OP_OK;
         }
         else
         {
-            statusfn(NULL, "    | (ISB) Firmware image incompatible with ISB device", IS_LOG_LEVEL_ERROR);
+            statusfn(NULL, "    | (STM) Firmware image incompatible with device", IS_LOG_LEVEL_ERROR);
             delete obj;
             return IS_OP_CANCELLED;
         }

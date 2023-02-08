@@ -59,7 +59,7 @@ is_operation_result cISBootloaderSTM32::match_test(void* param)
     return IS_OP_ERROR;
 }
 
-eImageSignature cISBootloaderSTM32::check_is_compatible()
+uint8_t cISBootloaderSTM32::check_is_compatible(uint32_t imgSign)
 {
     // Close and reopen the port with even parity and 115200 baud
     serialPortClose(m_port);
@@ -115,12 +115,12 @@ uint32_t cISBootloaderSTM32::get_device_info()
     return 0U;
 }
 
-is_operation_result cISBootloaderSTM32::download_image(std::string filename)
+is_operation_result cISBootloaderSTM32::download_image(void)
 {
     ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
 
     // Load the firmware image from the Intel HEX file
-    const size_t numSections = ihex_load_sections(filename.c_str(), image, MAX_NUM_IHEX_SECTIONS);
+    const size_t numSections = ihex_load_sections(m_filename.c_str(), image, MAX_NUM_IHEX_SECTIONS);
     if(numSections <= 0) return IS_OP_ERROR;
 
     uint32_t totalLen = 0U;         // Holds the total length of the firmware image

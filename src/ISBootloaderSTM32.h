@@ -1,10 +1,3 @@
-/**
- * @file ISBootloaderSAMBA.h
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for updating ISB images using SAM-BA protocol.
- * 
- */
-
 /*
 MIT LICENSE
 
@@ -25,15 +18,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cISBootloaderSTM32 : public ISBootloader::cISBootloaderBase
 {
 public:
-    cISBootloaderSTM32( 
+    cISBootloaderSTM32(
+        std::string filename,
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
         serial_port_t* port
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+    ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_STM32UART;
     }
     
     ~cISBootloaderSTM32() 
@@ -49,11 +42,11 @@ public:
 
     uint32_t get_device_info();
     
-    is_operation_result download_image(std::string filename);
-    is_operation_result upload_image(std::string filename) { return IS_OP_OK; }
-    is_operation_result verify_image(std::string filename) { return IS_OP_OK; }
+    is_operation_result download_image(void);
+    is_operation_result upload_image(void) { return IS_OP_OK; }
+    is_operation_result verify_image(void) { return IS_OP_OK; }
     
-    ISBootloader::eImageSignature check_is_compatible();
+    uint8_t check_is_compatible(uint32_t imgSign);
 
 private:
     typedef struct

@@ -26,9 +26,7 @@ add_executable(ISBootloaderExample
 	../../src/ISBootloaderBase.cpp
 	../../src/ISBootloaderThread.cpp
 	../../src/ISBootloaderAPP.cpp
-	../../src/ISBootloaderISB.cpp
 	../../src/ISBootloaderDFU.cpp
-	../../src/ISBootloaderSAMBA.cpp
 	../../src/ISUtilities.cpp
 	../../src/ISStream.cpp
 	../../src/ISFileManager.cpp

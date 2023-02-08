@@ -794,16 +794,8 @@ is_operation_result InertialSense::BootloadFile(
 	#endif
 
 	printf("\n\r");
-	
-	ISBootloader::firmwares_t files;
-	files.fw_uINS_3.path = fileName;
-	files.bl_uINS_3.path = blFileName;
-	files.fw_IMX_5.path = fileName;
-	files.bl_IMX_5.path = blFileName;
-	files.fw_EVB_2.path = fileName;
-	files.bl_EVB_2.path = blFileName;
 
-	cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+	cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, fileName, uploadProgress, verifyProgress, infoProgress, waitAction);
 
 	cISSerialPort::GetComPorts(all_ports);
 
@@ -815,7 +807,7 @@ is_operation_result InertialSense::BootloadFile(
 		ports_user_ignore.begin(), ports_user_ignore.end(),
 		back_inserter(update_ports));
 
-	cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+	cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, fileName, uploadProgress, verifyProgress, infoProgress, waitAction);
 	
 	printf("\n\r");
 

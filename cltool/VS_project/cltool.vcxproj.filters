@@ -185,12 +185,6 @@
     <ClCompile Include="..\..\src\ISBootloaderDFU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ISBootloaderISB.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ISBootloaderSAMBA.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ISBootloaderThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -376,12 +370,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ISBootloaderDFU.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ISBootloaderISB.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ISBootloaderSAMBA.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ISBootloaderThread.h">
