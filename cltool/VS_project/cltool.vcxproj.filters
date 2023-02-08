@@ -140,7 +140,7 @@
     <ClCompile Include="..\..\src\ihex.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hw-libs\bootloader\bootloaderShared.c">
+    <ClCompile Include="..\..\hw-libs\firmwareSignature.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\libusb\libusb\core.c">
@@ -339,7 +339,7 @@
     <ClInclude Include="..\..\src\ihex.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\hw-libs\bootloader\bootloaderShared.h">
+    <ClInclude Include="..\..\hw-libs\firmwareSignature.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\libusb\libusb\libusb.h">

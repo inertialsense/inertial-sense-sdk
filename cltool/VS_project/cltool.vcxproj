@@ -164,7 +164,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\hw-libs\bootloader\bootloaderShared.c" />
+    <ClCompile Include="..\..\hw-libs\firmwareSignature.c" />
     <ClCompile Include="..\..\src\cltool.cpp" />
     <ClCompile Include="..\..\src\cltool_main.cpp" />
     <ClCompile Include="..\..\src\com_manager.c" />
@@ -230,7 +230,7 @@
     <ClCompile Include="..\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\hw-libs\bootloader\bootloaderShared.h" />
+    <ClInclude Include="..\..\hw-libs\firmwareSignature.h" />
     <ClInclude Include="..\..\src\cltool.h" />
     <ClInclude Include="..\..\src\com_manager.h" />
     <ClInclude Include="..\..\src\convert_ins.h" />

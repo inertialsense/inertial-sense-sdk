@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c" />
+    <ClCompile Include="..\..\..\hw-libs\firmwareSignature.c" />
     <ClCompile Include="..\..\..\src\data_sets.c" />
     <ClCompile Include="..\..\..\src\ihex.c" />
     <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp" />
@@ -50,7 +50,7 @@
     <ClCompile Include="..\ISBootloaderExample.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h" />
+    <ClInclude Include="..\..\..\hw-libs\firmwareSignature.h" />
     <ClInclude Include="..\..\..\src\data_sets.h" />
     <ClInclude Include="..\..\..\src\ihex.h" />
     <ClInclude Include="..\..\..\src\ISBootloaderAPP.h" />

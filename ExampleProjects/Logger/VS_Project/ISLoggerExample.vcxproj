@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c" />
+    <ClCompile Include="..\..\..\hw-libs\firmwareSignature.c" />
     <ClCompile Include="..\..\..\src\com_manager.c" />
     <ClCompile Include="..\..\..\src\convert_ins.cpp" />
     <ClCompile Include="..\..\..\src\DataChunk.cpp" />
@@ -80,7 +80,7 @@
     <ClCompile Include="..\ISLoggerExample.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h" />
+    <ClInclude Include="..\..\..\hw-libs\firmwareSignature.h" />
     <ClInclude Include="..\..\..\src\com_manager.h" />
     <ClInclude Include="..\..\..\src\convert_ins.h" />
     <ClInclude Include="..\..\..\src\DataChunk.h" />

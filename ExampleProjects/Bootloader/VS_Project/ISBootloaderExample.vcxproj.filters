@@ -28,7 +28,7 @@
     <ClCompile Include="..\ISBootloaderExample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\hw-libs\bootloader\bootloaderShared.c">
+    <ClCompile Include="..\..\..\hw-libs\firmwareSignature.c">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\ihex.c">
@@ -114,7 +114,7 @@
     <ClInclude Include="..\..\..\src\serialPortPlatform.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\hw-libs\bootloader\bootloaderShared.h">
+    <ClInclude Include="..\..\..\hw-libs\firmwareSignature.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\ihex.h">
