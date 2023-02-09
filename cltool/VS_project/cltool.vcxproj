@@ -182,10 +182,10 @@
     <ClCompile Include="..\..\src\DeviceLogSerial.cpp" />
     <ClCompile Include="..\..\src\DeviceLogSorted.cpp" />
     <ClCompile Include="..\..\src\ihex.c" />
-    <ClCompile Include="..\..\src\ISBootloaderAPP.cpp" />
+    <!-- <ClCompile Include="..\..\src\ISBootloaderAPP.cpp" />
     <ClCompile Include="..\..\src\ISBootloaderBase.cpp" />
     <ClCompile Include="..\..\src\ISBootloaderDFU.cpp" />
-    <ClCompile Include="..\..\src\ISBootloaderThread.cpp" />
+    <ClCompile Include="..\..\src\ISBootloaderThread.cpp" /> -->
     <ClCompile Include="..\..\src\ISLogStats.cpp" />
     <ClCompile Include="..\..\src\libusb\libusb\core.c" />
     <ClCompile Include="..\..\src\libusb\libusb\descriptor.c" />

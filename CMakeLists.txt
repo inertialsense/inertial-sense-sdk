@@ -33,10 +33,10 @@ add_library(InertialSense
   src/filters.cpp
   src/ihex.c
   src/InertialSense.cpp
-  src/ISBootloaderBase.cpp
-  src/ISBootloaderThread.cpp
-	src/ISBootloaderAPP.cpp
-	src/ISBootloaderDFU.cpp
+  # src/ISBootloaderBase.cpp
+  # src/ISBootloaderThread.cpp
+	# src/ISBootloaderAPP.cpp
+	# src/ISBootloaderDFU.cpp
 	hw-libs/firmwareSignatures.c
 	src/ISClient.cpp
   src/ISComm.c

@@ -175,7 +175,7 @@
     <ClCompile Include="..\..\..\src\libusb\libusb\os\windows_winusb.c">
       <Filter>Source Files\SDK\libusb</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp">
+    <!-- <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\ISBootloaderBase.cpp">
@@ -186,7 +186,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp">
       <Filter>Source Files\SDK</Filter>
-    </ClCompile>
+    </ClCompile> -->
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h">

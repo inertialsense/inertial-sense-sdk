@@ -38,10 +38,10 @@ add_executable(cltool
 	../src/DeviceLogSorted.cpp
 	../src/ihex.c
 	../src/InertialSense.cpp
-	../src/ISBootloaderThread.cpp
-	../src/ISBootloaderBase.cpp
-	../src/ISBootloaderDFU.cpp
-	../src/ISBootloaderAPP.cpp
+	# ../src/ISBootloaderThread.cpp
+	# ../src/ISBootloaderBase.cpp
+	# ../src/ISBootloaderDFU.cpp
+	# ../src/ISBootloaderAPP.cpp
 	../hw-libs/firmwareSignatures.c
 	../src/ISClient.cpp
 	../src/ISComm.c

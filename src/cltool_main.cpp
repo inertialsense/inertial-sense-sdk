@@ -39,8 +39,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#if 0
 static bool g_killThreadsNow = false;
-
+#endif
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
 {
@@ -313,6 +314,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	return true;
 }
 
+#if 0
 std::vector<ISBootloader::cISBootloaderBase*> firmwareProgressContexts;
 
 is_operation_result bootloadUpdateCallback(void* obj, float percent);
@@ -467,6 +469,7 @@ void cltool_firmwareUpdateWaiter()
 {
 	printProgress();
 }
+#endif
 
 static int cltool_createHost()
 {
@@ -518,12 +521,14 @@ static int cltool_createHost()
 	return 0;
 }
 
+#if 0
 static void sigint_cb(int sig)
 {
 	g_killThreadsNow = true;
 	cltool_bootloadUpdateInfo(NULL, "Update cancelled, killing threads and exiting...", ISBootloader::eLogLevel::IS_LOG_LEVEL_ERROR);
 	signal(SIGINT, SIG_DFL);
 }
+#endif
 
 static int inertialSenseMain()
 {	
@@ -541,8 +546,13 @@ static int inertialSenseMain()
 	// if app firmware was specified on the command line, do that now and return
 	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
 	{
+#if 0
 		signal(SIGINT, sigint_cb);
 		return cltool_updateFirmware();
+#else
+		cout << "This version of cltool does not allow firmware updates" << endl;
+#endif
+	
 	}
 	else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)
 	{

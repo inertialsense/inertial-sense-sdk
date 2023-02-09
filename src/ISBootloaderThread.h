@@ -49,7 +49,7 @@ public:
     static std::vector<confirm_bootload_t> set_mode_and_check_devices(
         std::vector<std::string>&               comPorts,
         int                                     baudRate,
-        const string&                           firmware,
+        const std::string&                      firmware,
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
@@ -60,7 +60,7 @@ public:
         std::vector<std::string>&               comPorts,
         bool                                    force_isb_update,
         int                                     baudRate,
-        const string&                           firmware,
+        const std::string&                      firmware,
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,

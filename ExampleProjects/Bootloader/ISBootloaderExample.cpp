@@ -15,13 +15,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <algorithm>
 
+#if 0	// TODO: Add this example back once fixed
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
-#include "../../src/serialPortPlatform.h"
-#include "../../src/ISBootloaderThread.h"
-#include "../../src/ISBootloaderBase.h"
-#include "../../src/ISSerialPort.h"
+// #include "../../src/serialPortPlatform.h"
+// #include "../../src/ISBootloaderThread.h"
+// #include "../../src/ISBootloaderBase.h"
+// #include "../../src/ISSerialPort.h"
 
 using namespace ISBootloader;
 using namespace std;
@@ -77,9 +78,11 @@ static void bootloaderStatusText(void* obj, const char* info, eLogLevel level)
 
 	printf("\t\t\t%s\r\n", info);
 }
+#endif
 
 int main(int argc, char* argv[])
 {
+#if 0	// TODO: Add this example back once fixed
 	if (argc < 4 || argc > 5)
 	{
 		printf("Please pass the com port, baudrate, firmware file name to bootload, and optionally bootloader file name as the only arguments\r\n");
@@ -123,7 +126,7 @@ int main(int argc, char* argv[])
 		bootloaderVerifyProgress,
 		bootloaderStatusText,
 		NULL);
-
+#endif
 
 	return 0;
 }

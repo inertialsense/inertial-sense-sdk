@@ -12,6 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "protocol_nmea.h"
 #include "InertialSense.h"
+
+#define EXCLUDE_BOOTLOADER	// TODO: Remove after bootloader is fixed
 #ifndef EXCLUDE_BOOTLOADER
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"

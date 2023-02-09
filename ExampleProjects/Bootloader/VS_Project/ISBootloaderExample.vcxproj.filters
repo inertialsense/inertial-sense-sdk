@@ -76,7 +76,7 @@
     <ClCompile Include="..\..\..\src\ISStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\ISBootloaderAPP.h" />
+    <!-- <ClCompile Include="..\..\..\src\ISBootloaderAPP.h" />
     <ClCompile Include="..\..\..\src\ISBootloaderDFU.h" />
     <ClCompile Include="..\..\..\src\ISBootloaderThread.h" />
     <ClCompile Include="..\..\..\src\ISBootloaderBase.h" />
@@ -91,7 +91,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp">
       <Filter>Source Files\SDK</Filter>
-    </ClCompile>
+    </ClCompile> -->
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\data_sets.h">

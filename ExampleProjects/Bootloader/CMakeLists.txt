@@ -23,10 +23,10 @@ add_executable(ISBootloaderExample
 	../../src/serialPort.c
 	../../src/serialPortPlatform.c
 	../../src/ISSerialPort.cpp
-	../../src/ISBootloaderBase.cpp
-	../../src/ISBootloaderThread.cpp
-	../../src/ISBootloaderAPP.cpp
-	../../src/ISBootloaderDFU.cpp
+	# ../../src/ISBootloaderBase.cpp
+	# ../../src/ISBootloaderThread.cpp
+	# ../../src/ISBootloaderAPP.cpp
+	# ../../src/ISBootloaderDFU.cpp
 	../../src/ISUtilities.cpp
 	../../src/ISStream.cpp
 	../../src/ISFileManager.cpp
