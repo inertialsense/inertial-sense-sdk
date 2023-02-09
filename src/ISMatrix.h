@@ -98,32 +98,10 @@ typedef struct
  */
 static __inline char is_zero( const f_t * f )
 {
-	const unsigned int * x = (const unsigned int*) f;
+	const uint32_t *x = (const uint32_t*) f;
 
-	if (*x == 0)
-		return 1;
-	return 0;
+	return (x && *x == 0) ? 1 : 0;
 }
-
-
-#if 0
-// Fast inverse square-root
-// See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
-static __inline float invSqrt(float number)
-{
-	volatile long i;
-	volatile float x, y;
-	volatile const float f = 1.5F;
-
-	x = number * 0.5F;
-	y = number;
-	i = * (( long * ) &y);
-	i = 0x5f375a86 - ( i >> 1 );
-	y = * (( float * ) &i);
-	y = y * ( f - ( x * y * y ) );
-	return y;
-}
-#endif
 
 
 /*
