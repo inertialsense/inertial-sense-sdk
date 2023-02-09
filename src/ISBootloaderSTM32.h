@@ -38,7 +38,6 @@ public:
     
     is_operation_result reboot() {}
     is_operation_result reboot_up();
-    is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false) { return IS_OP_OK; }
 
     uint32_t get_device_info();
     
@@ -80,21 +79,5 @@ private:
     uint8_t m_version;
     uint8_t m_pid;
 };
-
-// STM32_GET
-// STM32_GET_VERSION
-// STM32_GET_ID
-// STM32_READ_MEMORY
-// STM32_GO
-// STM32_WRITE_MEMORY
-// STM32_ERASE
-// STM32_EXTENDED_ERASE
-// STM32_SPECIAL
-// STM32_EXTENDED_SPECIAL
-// STM32_WRITE_PROTECT
-// STM32_WRITE_UNPROTECT
-// STM32_READOUT_PROTECT
-// STM32_READOUT_UNPROTECT
-// STM32_GET_CHECKSUM
 
 #endif	// __IS_BOOTLOADER_ISB_H

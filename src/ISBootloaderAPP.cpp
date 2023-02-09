@@ -113,7 +113,7 @@ is_operation_result cISBootloaderAPP::reboot()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, bool force)
+is_operation_result cISBootloaderAPP::reboot_down()
 {
     (void)force;
     (void)minor;

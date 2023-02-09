@@ -100,7 +100,7 @@ public:
 
     virtual ~cISBootloaderBase() {};
 
-    static eImageSignature get_image_signature(std::string filename, uint8_t* major = NULL, char* minor = NULL);
+    static eImageSignature get_image_signature(std::string filename);
 
     virtual is_operation_result match_test(void* param) = 0;
 
@@ -110,25 +110,18 @@ public:
      * @brief Reboots into the same mode, giving the bootloader a fresh start
      */
     virtual is_operation_result reboot() = 0;
-    virtual is_operation_result reboot_force() { return IS_OP_OK; }
     
     /**
-     * @brief Reboots into the level above, if available:
-     *  - ISB to App
-     *  - SAM-BA to ISB
-     *  - DFU to ISB
-     *  Make sure to tall the destructor after a successful call to this function
+     * @brief Reboots into the level above, if available.
+     *  Make sure to call the destructor after a successful call to this function
      */
     virtual is_operation_result reboot_up() = 0;
 
     /**
-     * @brief Reboots into the level below, if available:
-     *  - App to ISB
-     *  - ISB to DFU
-     *  - ISB to SAM-BA
+     * @brief Reboots into the next level down, if available.
      *  Make sure to call the destructor after a successful call to this function
      */
-    virtual is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false) = 0;
+    virtual is_operation_result reboot_down() { return IS_OP_OK; };
 
     /**
      * @brief Get the serial number from the device, and fill out m_ctx with other info
@@ -179,35 +172,9 @@ public:
     int m_baud;
 
     uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
-    uint8_t m_isb_major;                  // ISB Major revision on device
-    char m_isb_minor;                     // ISB Minor revision on device
-    bool isb_mightUpdate;               // true if device will be updated if bootloader continues
 
     static is_operation_result mode_device_app(
-        std::string filename,
-        serial_port_t* handle,
-        pfnBootloadStatus statusfn,
-        pfnBootloadProgress updateProgress,
-        pfnBootloadProgress verifyProgress,
-        std::vector<cISBootloaderBase*>& contexts,
-        std::mutex* addMutex,
-        cISBootloaderBase** new_context
-    );
-
-    static is_operation_result get_device_isb_version(
-        std::string filename,
-        serial_port_t* handle,
-        pfnBootloadStatus statusfn,
-        pfnBootloadProgress updateProgress,
-        pfnBootloadProgress verifyProgress,
-        std::vector<cISBootloaderBase*>& contexts,
-        std::mutex* addMutex,
-        cISBootloaderBase** new_context
-    );
-
-    static is_operation_result mode_device_isb(
-        std::string filename,
-        bool force,
+        std::vector<std::string> filenames,
         serial_port_t* handle,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateProgress,
@@ -218,7 +185,7 @@ public:
     );
 
     static is_operation_result update_device(
-        std::string filename,
+        std::vector<std::string> filenames,
         serial_port_t* handle,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateprogress,
@@ -228,8 +195,9 @@ public:
         cISBootloaderBase** new_context,
         uint32_t baud = BAUDRATE_921600
     );
+
     static is_operation_result update_device(
-        std::string filename,
+        std::vector<std::string> filenames,
         libusb_device_handle* handle,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateprogress,
@@ -252,9 +220,7 @@ protected:
     struct
     {
         uint8_t uins_version[4];
-        uint8_t evb_version[4];
-
-        char enable_command[5];         // "EBLE" (EVB) or "BLEN" (uINS) 
+        char enable_command[5];         // "BLEN" for IMX-5
     } m_app;
 
     /**

@@ -85,86 +85,26 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename)
 const char* cISBootloaderBase::get_file_ext(const char *filename) 
 {
     const char *dot = strrchr(filename, '.');   // Find last '.' in file name
-    if(!dot || dot == filename) return "";
+    if(!dot || dot == filename) return nullptr;
     return dot + 1;
 }
 
 eImageSignature cISBootloaderBase::get_image_signature(std::string filename)
 {
+    const char* extension = get_file_ext(filename.c_str());
 
-    struct stat sb;
-    return (stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode));
-
-    if(stat(path.c_str(), &sb) == 0)
-    {   
-        if(sb.st_mode & S_IFDIR)
-        {
-            return IS_IMAGE_SIGN_DIR;
-        }
-        else if(sb.st_mode & S_IFREG)
-        {
-            const char * extension = cISBootloaderBase::get_file_ext(filename.c_str());
-            
-            if(strncmp(extension, "hex", 5) == 0)
-            {
-                return cISBootloaderBase::get_hex_image_signature(filename, major, minor);
-            }
-        }
+    if(extension && strncmp(extension, "hex", 5) == 0)
+    {
+        return cISBootloaderBase::get_hex_image_signature(filename);
     }
     
-    
-    return IS_IMAGE_SIGN_NONE;
-}
-
-eImageSignature cISBootloaderBase::get_folder_image_signature(std::string filename)
-{
-    eImageSignature signature;
-
-#if PLATFORM_IS_WINDOWS
-
-    WIN32_FIND_DATA FindFileData;
-    HANDLE hFind;
-    BOOL bResult;
-
-    hFind = FindFirstFile(filename.c_str(), &FindFileData);
-    if (hFind == INVALID_HANDLE_VALUE) 
-    {
-        return;
-    } 
-    else 
-    {
-        do {
-            WIN32_FIND_DATAW* params = (WIN32_FIND_DATAW*)hFind;
-            const char* ext = get_file_ext((const char*)params->cFileName);
-
-            if(strncmp(ext, "efpk", 5) == 0)
-            {
-                
-            }
-            else if(strncmp(ext, "fpk", 5) == 0)
-            {
-                return cISBootloaderBase::get_hex_image_signature(filename, major, minor);
-            }
-            else if(strncmp(ext, "cfg", 5) == 0)
-            {
-                return cISBootloaderBase::get_hex_image_signature(filename, major, minor);
-            }
-
-        } while(FindNextFile(hFind, &FindFileData));
-        FindClose(hFind);
-    }
-
-#else
-
-
-#endif
 
     return IS_IMAGE_SIGN_NONE;
 }
 
 is_operation_result cISBootloaderBase::mode_device_app
 (
-    std::string filename,
+    std::vector<std::string> filenames,
     serial_port_t* handle,
     pfnBootloadStatus statusfn,
     pfnBootloadProgress updateProgress,
@@ -199,7 +139,7 @@ is_operation_result cISBootloaderBase::mode_device_app
 
 is_operation_result cISBootloaderBase::update_device
 (
-    std::string filename,
+    std::vector<std::string> filenames,
     libusb_device_handle* handle,       // LIBUSB
     pfnBootloadStatus statusfn,
     pfnBootloadProgress updateProgress,
@@ -257,7 +197,7 @@ is_operation_result cISBootloaderBase::update_device
 
 is_operation_result cISBootloaderBase::update_device
 (
-    std::string filename,
+    std::vector<std::string> filenames,
     serial_port_t* handle,
     pfnBootloadStatus statusfn,
     pfnBootloadProgress updateProgress,
@@ -325,7 +265,7 @@ is_operation_result cISBootloaderBase::update_device
             {
                 obj->m_info_callback(obj, "(STM) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
                 obj->m_use_progress = false;
-                obj->reboot_force();
+                obj->reboot();
                 return IS_OP_CLOSED;
             }
             return IS_OP_OK;
