@@ -1162,7 +1162,7 @@ typedef struct PACKED
 	/** Preintegrated IMU (PIMU) integration period and navigation filter update period (ms). */
 	uint32_t				navPeriodMs;
 	
-	/** Actual sample period relative to GPS PPS */
+	/** Actual sample period relative to GPS PPS (sec) */
 	double					sensorTruePeriod;
 
 	/** Reserved */
