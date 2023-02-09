@@ -10,8 +10,6 @@ enum eNmeaMsgIdUint
 	ASCII_MSG_ID_STPB = 0x53545042,		// Stop broadcasts on all ports
 	ASCII_MSG_ID_STPC = 0x53545043,		// Stop broadcasts on current port
 	ASCII_MSG_ID_BLEN = 0x424c454e,		// Enable bootloader on uINS
-	ASCII_MSG_ID_EBLE = 0x45424c45,		// Enable bootloader on EVB
-	ASCII_MSG_ID_NELB = 0x4e454c42,		// Enable SAM-BA mode
 	ASCII_MSG_ID_SRST = 0x53525354,		// Software reset
 	ASCII_MSG_ID_INFO = 0x494e464f,		// Device info
 	ASCII_MSG_ID_PERS = 0x50455253,		// Save perstent messages

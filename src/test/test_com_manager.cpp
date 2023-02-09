@@ -147,12 +147,7 @@ int msgHandlerAscii(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgS
 	{	// General ASCII messages
 		switch (messageIdUInt)
 		{
-		case ASCII_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
-// 			if (msgSize == 22 &&	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-// 				(pHandle == COM0_PORT_NUM || pHandle == USB_PORT_NUM) &&
-// 				strncmp((const char*)(msg + 6), "!!SAM-BA!!", 6) == 0)
-// 			{
-// 			}
+		default:
 			break;
 		}
 	}
