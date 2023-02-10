@@ -17,10 +17,11 @@ TEST(BasicTestSuite, test_config_params)
 {
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
-    EXPECT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << std::filesystem::current_path();
+    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << std::filesystem::current_path();
 
     YAML::Node config = YAML::Load(yaml);
-    EXPECT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
+    ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
+
     InertialSenseROS isROS(config);
 
     // check various parts of the config to ensure the config was read and parameters were parsed and configured properly.
@@ -28,10 +29,10 @@ TEST(BasicTestSuite, test_config_params)
 
     // This should also test composite configurations - ie, configuration parameters that when combined, set a single underlying parameter, ie ioConfigBits
 
-    ASSERT_EQ(isROS.port_, "/dev/ttyACM0");
-    ASSERT_EQ(isROS.baudrate_, 921600);
+    EXPECT_EQ(isROS.port_, "/dev/ttyACM0");
+    EXPECT_EQ(isROS.baudrate_, 921600);
 
-    ASSERT_EQ(isROS.rs_.gps1.enabled, true);
+    EXPECT_EQ(isROS.rs_.gps1.enabled, true);
 }
 
 int main(int argc, char** argv) {

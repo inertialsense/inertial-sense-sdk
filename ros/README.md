@@ -2,6 +2,14 @@
 
 A ROS wrapper node implementation for the Inertial Sense IMX product line.
 
+### ***************  NOTICE  ***************
+This is unwarranted and unsupported software that is principally offered as an demonstration and example of using the Inertial Sense SDK within ROS.
+
+**Disclaimer of Software Warranty.**
+
+INERTIAL SENSE LICENSES THE SOFTWARE AND ASSOCIATED SOURCE CODE UNDER THIS DIRECTORY "AS IS", AND MAKES NO EXPRESS OR IMPLIED WARRANTY OF ANY KIND. INERTIAL SENSE SPECIFICALLY DISCLAIMS ALL INDIRECT OR IMPLIED WARRANTIES TO THE FULL EXTENT ALLOWED BY APPLICABLE LAW, INCLUDING WITHOUT LIMITATION ALL IMPLIED WARRANTIES OF, NON-INFRINGEMENT, MERCHANTABILITY, TITLE OR FITNESS FOR ANY PARTICULAR PURPOSE. NO ORAL OR WRITTEN INFORMATION OR ADVICE GIVEN BY INERTIAL SENSE, ITS AGENTS OR EMPLOYEES SHALL CREATE A WARRANTY.
+### ***************  NOTICE  ***************
+
 ## Setup
 This ROS package, uses the inertial-sense-sdk as a submodule. Clone this package into the catkin workspace `src` folder, then pull the submodule.
 

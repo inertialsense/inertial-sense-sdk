@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.10.0)
 project(inertial_sense_ros)
 
 find_package(yaml-cpp REQUIRED)
@@ -63,7 +63,10 @@ include_directories(include
 add_subdirectory(.. devel)
 
 add_library(inertial_sense_ros
-  src/inertial_sense_ros.cpp
+    src/ParamHelper.cpp
+    src/RtkRover.cpp
+    src/RtkBase.cpp
+    src/inertial_sense_ros.cpp
 )
 
 target_link_libraries(inertial_sense_ros InertialSense ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES} pthread)

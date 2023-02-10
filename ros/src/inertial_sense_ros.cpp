@@ -1,4 +1,23 @@
+/***************************************************************************************
+ *
+ * @Copyright 2023, Inertial Sense Inc. <devteam@inertialsense.com>
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ***************************************************************************************/
+
 #include "inertial_sense_ros.h"
+
 #include <chrono>
 #include <stddef.h>
 #include <unistd.h>
@@ -10,8 +29,9 @@
 #include "ISMatrix.h"
 #include "ISEarth.h"
 
-#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
+#include "ParamHelper.h"
 
+#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters) : nh_(), nh_private_("~"), initialized_(false), rtk_connectivity_watchdog_timer_()
 {
@@ -61,7 +81,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps1_info.topic, 1); }
     if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps2_info.topic, 1); }
 
-    if (RTK_rover_ || RTK_rover_radio_enable_)
+    if (RTK_rover_ || RTK_rover_->positioning_enable )
     {
         rs_.rtk_pos.pubInfo = nh_.advertise<inertial_sense_ros::RTKInfo>("RTK_pos/info", 10);
         rs_.rtk_pos.pubRel = nh_.advertise<inertial_sense_ros::RTKRel>("RTK_pos/rel", 10);
@@ -177,11 +197,17 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     // General parameters
     ParamHelper ph(node);
+
     ph.nodeParam("port", port_, "/dev/ttyACM0");
     ph.nodeParam("baudrate", baudrate_, 921600);
     ph.nodeParam("frame_id", frame_id_, "body");
     ph.nodeParam("enable_log", log_enabled_, false);
-    ph.nodeParam("ioConfig", ioConfig_, 0x0244a060);     // EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+
+    // advanced Parameters
+    ph.nodeParam("ioConfigBits", ioConfigBits_, 0x0244a060);     // EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+    ph.nodeParam("rtkConfigBits", rtkConfigBits_, 0);            // rtk config bits
+    ph.nodeParam("wheelConfigBits", wheelConfigBits_, 0);        // wheel-encoder config bits
+
     ph.nodeParam("mag_declination", magDeclination_);
     ph.nodeParamVec("ref_lla", 3, refLla_);
     ph.nodeParam("publishTf", publishTf_);
@@ -243,36 +269,11 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("cb_preset", evb_.cb_preset, 2);        // 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
     ph.nodeParam("cb_options", evb_.cb_options, 0);
 
-    YAML::Node roverNode = ph.node(node, "rtk_rover");
-    ph.nodeParam("compassing_enable", GNSS_Compass_, false);
-    ph.nodeParam("positioning_enable", RTK_rover_, false);
-    YAML::Node roverInput = ph.node(roverNode, "correction_input");
-    YAML::Node roverSettings = ph.node(roverInput, roverInput["select"].as<std::string>());
-    ph.nodeParam("type", RTK_correction_type_, "NTRIP");
-    ph.nodeParam("format", RTK_correction_protocol_, "RTCM3");
-    ph.nodeParam("ip_address", RTK_server_IP_);
-    ph.nodeParam("ip_port", RTK_server_port_);
-    ph.nodeParam("mount_point", RTK_server_mount_point_);
-    ph.nodeParam("username", RTK_server_username_);
-    ph.nodeParam("password", RTK_server_password_);
+    YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
+    RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
 
-
-    // GET_MSG_PARAMS(gpsbase_raw);
-    // GET_MSG_PARAMS(rtk_pos);
-    // GET_MSG_PARAMS(rtk_cmp);
-
-    // GET_MSG_PARAMS(diagnostics);
-
-    // GET_PARAM("rtk_connection_attempt_limit", RTK_connection_attempt_limit_);
-    // GET_PARAM("rtk_connection_attempt_backoff", RTK_connection_attempt_backoff_);
-    // GET_PARAM("rtk_connectivity_watchdog_enabled", rtk_connectivity_watchdog_enabled_);
-    // GET_PARAM("rtk_connectivity_watchdog_timer_frequency", rtk_connectivity_watchdog_timer_frequency_);
-    // GET_PARAM("rtk_data_transmission_interruption_limit", rtk_data_transmission_interruption_limit_);
-    // GET_PARAM("rtk_rover_radio_enable", RTK_rover_radio_enable_);
-
-    // GET_PARAM("rtk_base_USB", RTK_base_USB_);
-    // GET_PARAM("rtk_base_serial", RTK_base_serial_);
-    // GET_PARAM("rtk_base_TCP", RTK_base_TCP_);
+    YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
+    RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     // Print entire yaml node tree
     // printf("Node Tree:\n");
@@ -583,12 +584,12 @@ void InertialSenseROS::configure_flash_parameters()
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
     {
-        reboot = true;
         ROS_INFO("navigation rate change from %dms to %dms, resetting uINS to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
+        reboot = true;
     }
-    if (current_flash_cfg.ioConfig != ioConfig_)
+    if (current_flash_cfg.ioConfig != ioConfigBits_)
     {
-        ROS_INFO("ioConfig change from %x to %x, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfig_);
+        ROS_INFO("ioConfig change from %x to %x, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
         reboot = true;
     }
 
@@ -606,7 +607,7 @@ void InertialSenseROS::configure_flash_parameters()
         !vecF32Match(current_flash_cfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
         (setRefLla && !vecF64Match(current_flash_cfg.refLla, refLla_)) ||
         current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_ ||
-        current_flash_cfg.ioConfig != ioConfig_ ||
+        current_flash_cfg.ioConfig != ioConfigBits_ ||
         current_flash_cfg.gpsTimeUserDelay != gpsTimeUserDelay_ ||
         // current_flash_cfg.magDeclination != magDeclination_ ||
         current_flash_cfg.insDynModel != insDynModel_ ||
@@ -625,7 +626,7 @@ void InertialSenseROS::configure_flash_parameters()
             }
         }
         current_flash_cfg.startupNavDtMs = ins_nav_dt_ms_;
-        current_flash_cfg.ioConfig = ioConfig_;
+        current_flash_cfg.ioConfig = ioConfigBits_;
         current_flash_cfg.gpsTimeUserDelay = gpsTimeUserDelay_;
         current_flash_cfg.magDeclination = magDeclination_;
         current_flash_cfg.insDynModel = insDynModel_;
@@ -641,19 +642,16 @@ void InertialSenseROS::configure_flash_parameters()
     }
 }
 
-void InertialSenseROS::connect_rtk_client(const std::string &rtk_correction_protocol, const std::string &rtk_server_IP, const int rtk_server_port)
+// FIXME:: THESE SHOULD BE IN RtkRoverCorrectionProvider_Ntrip
+void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& config)
 {
-    rtk_connecting_ = true;
+    config.connecting_ = true;
 
     // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
-    std::string RTK_connection = "TCP:" + RTK_correction_protocol_ + ":" + rtk_server_IP + ":" + std::to_string(rtk_server_port);
-    if (!RTK_server_mount_point_.empty() && !RTK_server_username_.empty())
-    { // NTRIP options
-        RTK_connection += ":" + RTK_server_mount_point_ + ":" + RTK_server_username_ + ":" + RTK_server_password_;
-    }
+    std::string RTK_connection = config.get_connection_string();
 
     int RTK_connection_attempt_count = 0;
-    while (RTK_connection_attempt_count < RTK_connection_attempt_limit_)
+    while (RTK_connection_attempt_count < config.connection_attempt_limit_)
     {
         ++RTK_connection_attempt_count;
 
@@ -668,27 +666,83 @@ void InertialSenseROS::connect_rtk_client(const std::string &rtk_correction_prot
         {
             ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
 
-            if (RTK_connection_attempt_count >= RTK_connection_attempt_limit_)
+            if (RTK_connection_attempt_count >= config.connection_attempt_limit_)
             {
                 ROS_ERROR_STREAM("Giving up after " << RTK_connection_attempt_count << " failed attempts");
             }
             else
             {
-                int sleep_duration = RTK_connection_attempt_count * RTK_connection_attempt_backoff_;
+                int sleep_duration = RTK_connection_attempt_count * config.connection_attempt_backoff_;
                 ROS_WARN_STREAM("Retrying connection in " << sleep_duration << " seconds");
                 ros::Duration(sleep_duration).sleep();
             }
         }
     }
 
-    rtk_connecting_ = false;
+    config.connecting_ = false;
 }
 
-void InertialSenseROS::start_rtk_server(const std::string &rtk_server_IP, const int rtk_server_port)
+void InertialSenseROS::rtk_connectivity_watchdog_timer_callback(const ros::TimerEvent &timer_event)
+{
+    if ((RTK_rover_ == nullptr) || (RTK_rover_->correction_input == nullptr) || (RTK_rover_->correction_input->type_ != "ntrip"))
+        return;
+
+    RtkRoverCorrectionProvider_Ntrip& config = *(RtkRoverCorrectionProvider_Ntrip*)(RTK_rover_->correction_input);
+    if (config.connecting_)
+    {
+        return;
+    }
+
+    int latest_byte_count = IS_.GetClientServerByteCount();
+    if (config.traffic_total_byte_count_ == latest_byte_count)
+    {
+        ++config.data_transmission_interruption_count_;
+
+        if (config.data_transmission_interruption_count_ >= config.data_transmission_interruption_limit_)
+        {
+            ROS_WARN("RTK transmission interruption, reconnecting...");
+            connect_rtk_client(config);
+        }
+    }
+    else
+    {
+        config.traffic_total_byte_count_ = latest_byte_count;
+        config.data_transmission_interruption_count_ = 0;
+    }
+}
+
+void InertialSenseROS::start_rtk_connectivity_watchdog_timer()
+{
+    if ((RTK_rover_ == nullptr) || (RTK_rover_->correction_input == nullptr) || (RTK_rover_->correction_input->type_ != "ntrip"))
+        return;
+
+    RtkRoverCorrectionProvider_Ntrip& config = *(RtkRoverCorrectionProvider_Ntrip*)(RTK_rover_->correction_input);
+    if (!config.connectivity_watchdog_enabled_) {
+        return;
+    }
+
+    if (!rtk_connectivity_watchdog_timer_.isValid()) {
+        rtk_connectivity_watchdog_timer_ = nh_.createTimer(ros::Duration(config.connectivity_watchdog_timer_frequency_), InertialSenseROS::rtk_connectivity_watchdog_timer_callback, this);
+    }
+
+    rtk_connectivity_watchdog_timer_.start();
+}
+
+void InertialSenseROS::stop_rtk_connectivity_watchdog_timer()
+{
+    rtk_connectivity_watchdog_timer_.stop();
+    if ((RTK_rover_ != nullptr) && (RTK_rover_->correction_input != nullptr) && (RTK_rover_->correction_input->type_ != "ntrip")) {
+        RtkRoverCorrectionProvider_Ntrip& config = *(RtkRoverCorrectionProvider_Ntrip*)(RTK_rover_->correction_input);
+        config.traffic_total_byte_count_ = 0;
+        config.data_transmission_interruption_count_ = 0;
+    }
+}
+
+// FIXME:: THIS SHOULD BE IN RtkBaseCorrectionProvider_Ntrip
+void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
 {
     // [type]:[ip/url]:[port]
-    std::string RTK_connection = "TCP:" + rtk_server_IP + ":" + std::to_string(rtk_server_port);
-
+    std::string RTK_connection = config.get_connection_string();
     if (IS_.CreateHost(RTK_connection))
     {
         ROS_INFO_STREAM("Successfully created " << RTK_connection << " as RTK server");
@@ -699,158 +753,111 @@ void InertialSenseROS::start_rtk_server(const std::string &rtk_server_IP, const 
         ROS_ERROR_STREAM("Failed to create base server at " << RTK_connection);
 }
 
-void InertialSenseROS::start_rtk_connectivity_watchdog_timer()
-{
-
-    if (!rtk_connectivity_watchdog_enabled_)
-    {
-        return;
-    }
-
-    if (!rtk_connectivity_watchdog_timer_.isValid())
-    {
-        rtk_connectivity_watchdog_timer_ = nh_.createTimer(ros::Duration(rtk_connectivity_watchdog_timer_frequency_), InertialSenseROS::rtk_connectivity_watchdog_timer_callback, this);
-    }
-
-    rtk_connectivity_watchdog_timer_.start();
-}
-
-void InertialSenseROS::stop_rtk_connectivity_watchdog_timer()
-{
-    rtk_traffic_total_byte_count_ = 0;
-    rtk_data_transmission_interruption_count_ = 0;
-    rtk_connectivity_watchdog_timer_.stop();
-}
-
-void InertialSenseROS::rtk_connectivity_watchdog_timer_callback(const ros::TimerEvent &timer_event)
-{
-    if (rtk_connecting_)
-    {
-        return;
-    }
-
-    int latest_byte_count = IS_.GetClientServerByteCount();
-    if (rtk_traffic_total_byte_count_ == latest_byte_count)
-    {
-        ++rtk_data_transmission_interruption_count_;
-
-        if (rtk_data_transmission_interruption_count_ >= rtk_data_transmission_interruption_limit_)
-        {
-            ROS_WARN("RTK transmission interruption, reconnecting...");
-
-            connect_rtk_client(RTK_correction_protocol_, RTK_server_IP_, RTK_server_port_);
-        }
-    }
-    else
-    {
-        rtk_traffic_total_byte_count_ = latest_byte_count;
-        rtk_data_transmission_interruption_count_ = 0;
-    }
-}
 
 void InertialSenseROS::configure_rtk()
 {
-    uint32_t RTKCfgBits = 0;
+    rtkConfigBits_ = 0;
     if (rs_.gps1.type == "F9P")
     {
         if (RTK_rover_)
         {
-            ROS_INFO("InertialSense: RTK Rover Configured.");
-            rs_.rtk_pos.enabled = true;
-            connect_rtk_client(RTK_correction_protocol_, RTK_server_IP_, RTK_server_port_);
-            RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
-            SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
-            SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
+            if (RTK_rover_->correction_input && (RTK_rover_->correction_input->type_ == "ntrip")) {
+                ROS_INFO("InertialSense: RTK Rover Configured.");
+                rs_.rtk_pos.enabled = true;
+                connect_rtk_client(*(RtkRoverCorrectionProvider_Ntrip *) RTK_rover_->correction_input);
+                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
+                SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
 
-            start_rtk_connectivity_watchdog_timer();
+                start_rtk_connectivity_watchdog_timer();
+            }
+            if (RTK_rover_->correction_input && (RTK_rover_->correction_input->type_ == "evb")) {
+                ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
+                rs_.rtk_pos.enabled = true;
+                RTK_base_->enable = false;
+                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
+                SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
+            }
         }
         if (GNSS_Compass_)
         {
             ROS_INFO("InertialSense: Dual GNSS (compassing) configured");
             rs_.rtk_cmp.enabled = true;
-            RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P;
+            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
-        if (RTK_rover_radio_enable_)
-        {
-            ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
-            rs_.rtk_pos.enabled = true;
-            RTK_base_USB_ = RTK_base_USB_= false;
-            RTK_base_serial_ = RTK_base_serial_= false;
-            RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
-            SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
-            SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
-        }
-        if (RTK_base_USB_)
-        {
-            ROS_INFO("InertialSense: Base Configured.");
-            RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB;
-        }
-        if (RTK_base_serial_)
-        {
-            ROS_INFO("InertialSense: Base Configured.");
-            RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2;
-        }
-        if (RTK_base_TCP_)
-        {
-            start_rtk_server(RTK_server_IP_, RTK_server_port_);
+
+        if (RTK_base_) {
+            if (RTK_base_->source_gps__usb_)
+            {
+                ROS_INFO("InertialSense: RTK Base Configured.");
+                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB;
+            }
+            if (RTK_base_->source_gps__serial0_)
+            {
+                ROS_INFO("InertialSense: RTK Base Configured.");
+                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2;
+            }
+            RtkBaseCorrectionProvider_Ntrip* ntrip_provider = (RtkBaseCorrectionProvider_Ntrip*)RTK_base_->getProvidersByType("ntrip");
+            if (ntrip_provider != nullptr)
+            {
+                start_rtk_server(*ntrip_provider);
+            }
         }
 
-        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&RTKCfgBits), sizeof(RTKCfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
+        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&rtkConfigBits_), sizeof(rtkConfigBits_), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
-
     else
     {
-        ROS_ERROR_COND(RTK_rover_ && (RTK_base_serial_ || RTK_base_USB_ || RTK_base_TCP_), "unable to configure onboard receiver to be both RTK rover and base - default to rover");
+
+        ROS_ERROR_COND(RTK_rover_ && RTK_base_, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
         ROS_ERROR_COND(RTK_rover_ && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
-        uint32_t RTKCfgBits = 0;
         if (GNSS_Compass_)
         {
             ROS_INFO("InertialSense: Configured as dual GNSS (compassing)");
-            RTK_rover_ = false;
-            RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
+            RTK_rover_->enable = false; // FIXME:  Is this right?  Rover is disabled when in Compassing?
+            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
-        if (RTK_rover_radio_enable_)
+        if (RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
-            RTK_base_serial_ = false;
-            RTK_base_USB_ = false;
-            RTK_base_TCP_ = false;
-            RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            RTK_base_->enable = false;
+            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
-        else if (RTK_rover_)
+        else if (RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover");
-            RTK_base_serial_ = false;
-            RTK_base_USB_ = false;
-            RTK_base_TCP_ = false;
-            RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
-            connect_rtk_client(RTK_correction_protocol_, RTK_server_IP_, RTK_server_port_);
+            RTK_base_->enable = false;
+            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            connect_rtk_client((RtkRoverCorrectionProvider_Ntrip&)*RTK_rover_->correction_input);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
 
             start_rtk_connectivity_watchdog_timer();
         }
-        else if (RTK_base_USB_ || RTK_base_serial_ || RTK_base_TCP_)
+        else if (RTK_base_)
         {
             ROS_INFO("InertialSense: Configured as RTK Base");
-            if (RTK_base_serial_)
-                RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0;
-            if (RTK_base_USB_)
-                RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB;
-            if (RTK_base_TCP_)
-                start_rtk_server(RTK_server_IP_, RTK_server_port_);
+            if (RTK_base_->source_gps__serial0_)
+                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0;
+            if (RTK_base_->source_gps__usb_)
+                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB;
+
+            RtkBaseCorrectionProvider_Ntrip* ntrip_provider = (RtkBaseCorrectionProvider_Ntrip*)RTK_base_->getProvidersByType("ntrip");
+            if (ntrip_provider != nullptr)
+                start_rtk_server(*ntrip_provider);
         }
-        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&RTKCfgBits), sizeof(RTKCfgBits), offsetof(nvm_flash_cfg_t, RTKCfgBits));
+        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&rtkConfigBits_), sizeof(rtkConfigBits_), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
-    ROS_INFO("Setting RTKCfgBits: 0x%08x", RTKCfgBits);
+    ROS_INFO("Setting rtkConfigBits: 0x%08x", rtkConfigBits_);
 }
 
 void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg)
@@ -2092,7 +2099,7 @@ void InertialSenseROS::reset_device()
     reset_command.invCommand = ~reset_command.command;
     IS_.SendData(DID_SYS_CMD, reinterpret_cast<uint8_t *>(&reset_command), sizeof(system_command_t), 0);
     ROS_WARN("Device reset required.\n\nShutting down Node.\n");
-    ros::shutdown();
+    // ros::shutdown();
 }
 
 bool InertialSenseROS::update_firmware_srv_callback(inertial_sense_ros::FirmwareUpdate::Request &req, inertial_sense_ros::FirmwareUpdate::Response &res)
@@ -2263,202 +2270,4 @@ void InertialSenseROS::transform_6x6_covariance(float Pout[36], float Pin[36], i
     }
 }
 
-YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
-{
-    YAML::Node node;
-
-    switch(v.getType())
-    {
-    case XmlRpc::XmlRpcValue::TypeString:   node = static_cast<std::string>(v);    break;
-    case XmlRpc::XmlRpcValue::TypeBoolean:  node = static_cast<bool>(v);           break;
-    case XmlRpc::XmlRpcValue::TypeDouble:   node = static_cast<double>(v);         break;
-    case XmlRpc::XmlRpcValue::TypeInt:      node = static_cast<int>(v);            break;
-    case XmlRpc::XmlRpcValue::TypeArray:    
-        for (int i=0; i<v.size(); i++)
-        {
-            node[i] = xmlRpcToYamlNode(v[i]);
-        }
-        break;
-    }
-
-    return node;
-}
-
-void ParamHelper::print_indent(int indent)
-{
-    for (int i=0; i<indent; i++)
-    {
-        std::cout << "  ";
-    }
-}
-
-YAML::Node ParamHelper::node(YAML::Node &node, std::string key, int indent)
-{
-    print_indent(indent);
-    indent_ = indent+1;
-    std::cout << key << ":\n";
-    setCurrentNode(node[key]);
-    return currentNode_;
-}
-
-void ParamHelper::setCurrentNode(YAML::Node node)
-{ 
-    if (node)
-    {
-        currentNode_.reset(node);
-    }
-    else
-    {
-        currentNode_.reset(YAML::Node());
-    }
-}
-
-bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std::string indentStr)
-{
-#define ENABLE_DEBUG_PRINT_TREE     0
-    ros::NodeHandle nh;
-
-    std::vector <std::string> nhKeyList;
-    nh.getParamNames(nhKeyList);
-    for (std::string key: nhKeyList)
-    {
-        std::string::size_type pos = key.find(nhKey);
-        if (pos != 0)
-        {   // key path doesn't match
-            continue;
-        }
-
-        // Get string following nkKey
-        std::string name = key.substr(pos+nhKey.size());
-
-        pos = name.find('/');
-        if (pos == std::string::npos)
-        {   // Param name            
-
-            XmlRpc::XmlRpcValue v;
-            if (nh.getParam(key, v))
-            {
-#if ENABLE_DEBUG_PRINT_TREE
-                std::cout << indentStr << name << ": " << v << "\n";
-#endif
-                node[name] = xmlRpcToYamlNode(v);
-                continue;
-            }
-        }
-        else
-        {   // Node key
-            std::string nodeName = name.substr(0, pos);
-
-            if (!node[nodeName])
-            {   // Create new child node
-#if ENABLE_DEBUG_PRINT_TREE
-                std::cout << indentStr << nodeName << "\n";
-#endif
-                YAML::Node childNode;
-                ParamHelper::paramServerToYamlNode(childNode, nhKey + nodeName + "/", indentStr + "  ");
-                node[nodeName] = childNode;
-            }
-        }
-    }
-
-    return true;
-}
-
-#define PH_DEFAULT_MSG      "   (default)"
-
-bool ParamHelper::msgParams(TopicHelper &th, std::string key, std::string topicDefault, bool enabledDefault, int periodDefault)
-{
-    print_indent(indent_++);
-    std::cout << key << ":\n";
-
-    YAML::Node msgNode;
-    if (currentNode_[key])
-    {
-        msgNode = currentNode_[key];
-    }
-    else
-    {
-        indent_--;
-        return false;
-    }
-    nodeParam(msgNode, "topic",  th.topic, (topicDefault.empty() ? key : topicDefault));
-    nodeParam(msgNode, "enable", th.enabled, enabledDefault);
-    nodeParam(msgNode, "period", th.period, periodDefault);
-    indent_--;
-
-    return true;
-}
-
-template <typename Type>
-bool ParamHelper::param(YAML::Node &node, const std::string key, Type &val, Type &valDefault)
-{
-    bool success = false;
-
-    if (node[key])
-    {
-        val = node[key].as<Type>();
-        success = true;
-    }
-
-    if (!success)
-    {   // Use default
-        val = valDefault;
-        node[key] = valDefault;
-    }
-
-    // Display parameter
-    print_indent(indent_);
-    std::cout << key + ": " << val;
-    if (!success)
-    {
-        std::cout << PH_DEFAULT_MSG ;
-    }
-    std::cout << "\n";
-
-    return success;
-}
-
-template <typename Derived1>
-bool ParamHelper::paramVec(YAML::Node &node, const std::string key, int size, Derived1 &val, Derived1 &valDefault)
-{
-    bool success = false;
-
-    if (node[key])
-    {
-        std::vector<double> vec;
-        vec = node[key].as<std::vector<double>>();
-        for (int i = 0; i < size; i++)
-        {
-            val[i] = vec[i];
-        }
-        success = true;
-    }
-
-    if (!success)
-    {
-        std::vector<double> vec;
-        for (int i = 0; i < size; i++)
-        {
-            val[i] = (valDefault==NULL ? 0.0 : valDefault[i]);
-            vec.push_back(double(val[i]));
-        }
-        node[key] = vec;
-    }
-
-    // Display parameter
-    print_indent(indent_);
-    std::cout << key + ": [";
-    for (int i = 0; i < size; i++)
-    {
-        std::cout << val[i] << ((i<size-1) ? ", " : "");
-    }
-    std::cout << "]";
-    if (!success)
-    {
-        std::cout << PH_DEFAULT_MSG;
-    }
-    std::cout << "\n";
-
-    return success;
-}
 

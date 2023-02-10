@@ -1,3 +1,21 @@
+/***************************************************************************************
+ *
+ * @Copyright 2023, Inertial Sense Inc. <devteam@inertialsense.com>
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ***************************************************************************************/
+
 #pragma once
 
 #include <stdio.h>
@@ -6,6 +24,11 @@
 #include <string>
 #include <cstdlib>
 #include <yaml-cpp/yaml.h>
+
+#include "TopicHelper.h"
+#include "ParamHelper.h"
+#include "RtkBase.h"
+#include "RtkRover.h"
 
 #include "InertialSense.h"
 #include "ros/ros.h"
@@ -56,97 +79,6 @@
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
                             })
 
-class TopicHelper
-{
-public:
-
-    void streamingCheck(eDataIDs did)
-    {
-        streamingCheck(did, streaming);
-    }
-    void streamingCheck(eDataIDs did, bool &stream)
-    {
-        if (!stream)
-        { 
-            stream = true; 
-            ROS_INFO("%s response received", cISDataMappings::GetDataSetName(did)); 
-        }
-    }
-
-    std::string topic;
-    bool enabled = false;
-    bool streaming = false;
-    int period = 1;             // Period multiple (data rate divisor)
-    ros::Publisher pub;
-};
-
-class TopicHelperGps: public TopicHelper
-{
-public:
-    bool streaming_pos = false;
-    bool streaming_vel = false;
-    std::string type = "F9P";
-    float antennaOffset[3] = {0, 0, 0};
-};
-
-class TopicHelperGpsRtk: public TopicHelper
-{
-public:
-    bool streamingMisc = false;
-    bool streamingRel = false;
-    ros::Publisher pubInfo;
-    ros::Publisher pubRel;
-};
-
-class TopicHelperGpsRaw: public TopicHelper
-{
-public:
-    std::string topicObs;
-    std::string topicEph;
-    std::string topicGEp;
-    ros::Publisher pubObs;
-    ros::Publisher pubEph;
-    ros::Publisher pubGEp;
-    ros::Timer obs_bundle_timer;
-    ros::Time last_obs_time;
-};
-
-class ParamHelper
-{
-public:
-    ParamHelper(YAML::Node &node){ setCurrentNode(node); }
-
-    static bool paramServerToYamlNode(YAML::Node &node, std::string nhKey="", std::string indentStr="");
-    void print_indent(int indent);
-
-    YAML::Node node(YAML::Node &node, std::string key, int indent=1);
-    void setCurrentNode(YAML::Node node);
-
-    bool msgParams(TopicHelper &th, std::string key, std::string topicDefault="", bool enabledDefault=false, int periodDefault=1);
-
-    template <typename Type>
-    bool param(YAML::Node &node, const std::string key, Type &val, Type &valDefault);
-    bool nodeParam(const std::string key, std::string &val, std::string valDefault=""){ return param(currentNode_, key, val, valDefault); }
-    bool nodeParam(const std::string key, double &val, double valDefault=0.0){ return param(currentNode_, key, val, valDefault); }
-    bool nodeParam(const std::string key, float &val, float valDefault=0.0f){ return param(currentNode_, key, val, valDefault); }
-    bool nodeParam(const std::string key, bool &val, bool valDefault=false){ return param(currentNode_, key, val, valDefault); }
-    bool nodeParam(const std::string key, int &val, int valDefault=0){ return param(currentNode_, key, val, valDefault); }
-    bool nodeParam(YAML::Node &node, const std::string key, std::string &val, std::string valDefault=""){ return param(node, key, val, valDefault); }
-    bool nodeParam(YAML::Node &node, const std::string key, double &val, double valDefault=0.0){ return param(node, key, val, valDefault); }
-    bool nodeParam(YAML::Node &node, const std::string key, float &val, float valDefault=0.0f){ return param(node, key, val, valDefault); }
-    bool nodeParam(YAML::Node &node, const std::string key, bool &val, bool valDefault=false){ return param(node, key, val, valDefault); }
-    bool nodeParam(YAML::Node &node, const std::string key, int &val, int valDefault=0){ return param(node, key, val, valDefault); }
-    template <typename Derived1>
-    bool paramVec(YAML::Node &node, const std::string key, int size, Derived1 &val, Derived1 &valDefault);
-    bool nodeParamVec(const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(currentNode_, key, size, val, valDefault); }
-    bool nodeParamVec(const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(currentNode_, key, size, val, valDefault); }
-    bool nodeParamVec(YAML::Node &node, const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
-    bool nodeParamVec(YAML::Node &node, const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
-
-    YAML::Node currentNode_;
-    int indent_ = 1;
-};
-
 
 class InertialSenseROS //: SerialListener
 {
@@ -171,8 +103,8 @@ public:
     void set_navigation_dt_ms();
     void configure_flash_parameters();
     void configure_rtk();
-    void connect_rtk_client(const std::string &rtk_correction_protocol, const std::string &rtk_server_IP, const int rtk_server_port);
-    void start_rtk_server(const std::string &rtk_server_IP, const int rtk_server_port);
+    void connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& config);
+    void start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config);
 
     void configure_data_streams(bool firstrun);
     void configure_data_streams(const ros::TimerEvent& event);
@@ -220,26 +152,10 @@ public:
     inertial_sense_ros::GNSSObsVec gps2_obs_Vec_;
     inertial_sense_ros::GNSSObsVec base_obs_Vec_;
 
-    bool rtk_connecting_ = false;
-    int RTK_connection_attempt_limit_ = 1;
-    int RTK_connection_attempt_backoff_ = 2;
-    int rtk_traffic_total_byte_count_ = 0;
-    int rtk_data_transmission_interruption_count_ = 0;
-    bool rtk_connectivity_watchdog_enabled_ = true;
-    float rtk_connectivity_watchdog_timer_frequency_ = 1;
-    int rtk_data_transmission_interruption_limit_ = 5;
-    std::string RTK_correction_type_;
-    std::string RTK_server_mount_point_;
-    std::string RTK_server_username_;
-    std::string RTK_server_password_;
-    std::string RTK_correction_protocol_;
-    std::string RTK_server_IP_ = "127.0.0.1";
-    int RTK_server_port_ = 7777;
-    bool RTK_rover_ = false;
-    bool RTK_rover_radio_enable_ = false;
-    bool RTK_base_USB_ = false;
-    bool RTK_base_serial_ = false;
-    bool RTK_base_TCP_ = false;
+
+    RtkRoverProvider* RTK_rover_;
+    RtkBaseProvider* RTK_base_;
+
     bool GNSS_Compass_ = false;
 
     ros::Timer rtk_connectivity_watchdog_timer_;
@@ -462,7 +378,16 @@ public:
     float magDeclination_;
     int insDynModel_;
     bool refLLA_known = false;
-    int ioConfig_;
+
+    uint32_t ioConfigBits_ = 0;                 // this is read directly from the config,
+    uint32_t working_ioConfigBits_ = 0;         // this is the calculated/derived value from other parameters
+
+    uint32_t rtkConfigBits_ = 0;                // this is read directly from the config
+    uint32_t working_rtkConfigBits_ = 0;        // this is the calculated/derived value from other parameters
+
+    uint32_t wheelConfigBits_ = 0;              // this is read directly from the config
+    uint32_t working_wheelConfigBits_ = 0;      // this is the calculated/derived value from other parameters
+
     float gpsTimeUserDelay_ = 0;
 
     // EVB Flash Parameters

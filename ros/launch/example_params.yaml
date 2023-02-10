@@ -213,7 +213,7 @@ rtk_rover:
     select: ntrip_example                       # Select correction input settings
 
     ntrip_example:                              # Rename as needed
-      type: NTRIP                               # configure NTRIP client provider (RTK Rover = TCP Client)
+      type: ntrip                               # configure NTRIP client provider (RTK Rover = TCP Client)
       format: RTCM3
       ip_address: '66.219.246.93'               # NTRIP service address
       ip_port: 7777                             # NTRIP service port
@@ -257,19 +257,22 @@ rtk_rover:
   # Otherwise, you should remove all those that are unused.
 
 rtk_base:
-  correction_outputs:
-    imx_serial_0: off                           # GPS from which RTK corrections are taken (either GPS1 or GPS2)
+  correction_source:
+    imx_serial_0: gps1                          # GPS from which RTK corrections are taken (either GPS1 or GPS2)
     imx_serial_1: off                           # GPS from which RTK corrections are taken (either GPS1 or GPS2)
-    imx_serial_2: off                           # GPS from which RTK corrections are taken (either GPS1 or GPS2)
+    imx_serial_2: gps2                          # GPS from which RTK corrections are taken (either GPS1 or GPS2)
     imx_usb: off                                # GPS from which RTK corrections are taken (either GPS1 or GPS2)
+
+  correction_outputs:
+    format: RTCM3
+    select: ntrip_1                             # This is one of the keys below, which defines which outputs to enable/use (this can be many).
 
     # - ros_provider
     # - xbee_radio
-    format: RTCM3
     # RTK corrections
     ntrip_1:
-      type: "NTRIP"                             # configure NTRIP output provider (TCP Server)
-      ip_address: '66.219.246.93'               # (required) NTRIP service address
+      type: ntrip                               # configure NTRIP output provider (TCP Server)
+      ip_address: '127.0.0.1'               # (required) NTRIP service address
       ip_port: 7777                             # NTRIP service port, default 7777
       # FIXME:  The following is fluff functionality that we probably shouldn't bother with, but someone might find it useful??
       mount: ''                                 # (optional) NTRIP service mount-point, the mount this output maps to
@@ -279,18 +282,18 @@ rtk_base:
       credentials: '/etc/ntrip/users.txt'       # alternatively to username/password, you can specify a credentials file (a list of 'username:password') which is used for authentication of multiple users
 
     serial_1:
-      type: "serial"                            # host/pc serial port, always 8N1 - IS-Ros will open and forward data from the EVB to this port
+      type: serial                              # host/pc serial port, always 8N1 - IS-Ros will open and forward data from the EVB to this port
       port: "/dev/ttyACM0"                      # the host's local serial port to which data is written (not the EVB/IMX port!)
       baud_rate: 115200
       
     # RTK corrections to/from ROS topics -
     ros_provider:
-      type: "ros_topic"                         # publishes RTCM3 corrections onto the specific ROS topic
+      type: ros_topic                           # publishes RTCM3 corrections onto the specific ROS topic
       topic: "/rtcm3_corrections"               # the topic to publish on - this should *probably* be an absolute topic
 
     # RTK corrections passed through the EVB - rover/inputs are always read from the EVB CB, base/outputs are always written to the EVB CB
     xbee_radio:
-      type: "evb"                               # routes the RTCM3 corrections back to the EVB, and onto the comm-bridge -- FIXME: Not sure if this works.. still trying to wrap my head around the limits of the comm-bridge.
+      type: evb                                 # routes the RTCM3 corrections back to the EVB, and onto the comm-bridge -- FIXME: Not sure if this works.. still trying to wrap my head around the limits of the comm-bridge.
       port: "xbee"                              # FIXME: Maybe we don't need a port, since the comm-bridge configuration really handles this... it either goes to the EVB or it doesn't... or does it ALWAYS go to the EVB?
 
 
