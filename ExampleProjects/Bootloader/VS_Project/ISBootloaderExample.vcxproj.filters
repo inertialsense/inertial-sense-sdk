@@ -28,9 +28,6 @@
     <ClCompile Include="..\ISBootloaderExample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\hw-libs\firmwareSignature.c">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\ihex.c">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>

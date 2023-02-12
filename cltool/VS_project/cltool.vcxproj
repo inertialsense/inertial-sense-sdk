@@ -164,7 +164,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\hw-libs\firmwareSignature.c" />
     <ClCompile Include="..\..\src\cltool.cpp" />
     <ClCompile Include="..\..\src\cltool_main.cpp" />
     <ClCompile Include="..\..\src\com_manager.c" />
