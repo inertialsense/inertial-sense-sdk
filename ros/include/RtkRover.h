@@ -84,7 +84,7 @@ public:
 class RtkRoverCorrectionProvider_EVB : public RtkRoverCorrectionProvider {
 public:
     std::string port_ = "xbee";
-    RtkRoverCorrectionProvider_EVB(YAML::Node &node) : RtkRoverCorrectionProvider(node, "xbee_radio") { configure(node); }
+    RtkRoverCorrectionProvider_EVB(YAML::Node &node) : RtkRoverCorrectionProvider(node, "evb") { configure(node); }
     virtual void configure(YAML::Node &node);
 };
 
@@ -112,6 +112,8 @@ public:
         std::transform(type.begin(), type.end(), type.begin(), ::tolower);
         if (type == "ntrip") return new RtkRoverCorrectionProvider_Ntrip(node);
         else if (type == "serial") return new RtkRoverCorrectionProvider_Serial(node);
+        else if (type == "evb") return new RtkRoverCorrectionProvider_EVB(node);
+        else if (type == "ros_topic") return new RtkRoverCorrectionProvider_ROS(node);
         else return nullptr;
     }
 };

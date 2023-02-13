@@ -40,6 +40,13 @@ void RtkRoverCorrectionProvider_Ntrip::configure(YAML::Node& node) {
     ph_.nodeParam("mount_point", mount_point_);
     ph_.nodeParam("username", username_);
     ph_.nodeParam("password", password_);
+    ph_.setCurrentNode(node["connection_attempts"]);
+    ph_.nodeParam("limit", connection_attempt_limit_, 1);
+    ph_.nodeParam("backoff", connection_attempt_backoff_, 2);
+    ph_.setCurrentNode(node["watchdog"]);
+    ph_.nodeParam("enable", connectivity_watchdog_enabled_, true);
+    ph_.nodeParam("interval", connectivity_watchdog_timer_frequency_, 1);
+    
 }
 
 std::string RtkRoverCorrectionProvider_Ntrip::get_connection_string() {
@@ -144,6 +151,7 @@ void RtkRoverCorrectionProvider_Ntrip::stop_connectivity_watchdog_timer()
  */
 void RtkRoverCorrectionProvider_Serial::configure(YAML::Node& node) {
     ph_.setCurrentNode(node);
+    ph_.nodeParam("format", protocol_, "RTCM3");
     ph_.nodeParam("port", port_);
     ph_.nodeParam("baud_rate", baud_rate_);
 }
@@ -153,6 +161,7 @@ void RtkRoverCorrectionProvider_Serial::configure(YAML::Node& node) {
  */
 void RtkRoverCorrectionProvider_ROS::configure(YAML::Node& node) {
     ph_.setCurrentNode(node);
+    ph_.nodeParam("format", protocol_, "RTCM3");
     ph_.nodeParam("topic", topic_);
 }
 
@@ -161,6 +170,7 @@ void RtkRoverCorrectionProvider_ROS::configure(YAML::Node& node) {
  */
 void RtkRoverCorrectionProvider_EVB::configure(YAML::Node& node) {
     ph_.setCurrentNode(node);
+    ph_.nodeParam("format", protocol_, "RTCM3");
     ph_.nodeParam("port", port_);
 }
 
