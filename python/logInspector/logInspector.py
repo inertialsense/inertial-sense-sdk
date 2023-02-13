@@ -437,6 +437,7 @@ class LogInspectorWindow(QMainWindow):
         LayoutList.addWidget(self.listView)
         groupBox.setLayout(LayoutList)
         self.controlLayout.addWidget(groupBox)        
+        LayoutResSaveAll = QHBoxLayout()
 
         self.createListIns()
         self.createListSensors()
@@ -445,8 +446,14 @@ class LogInspectorWindow(QMainWindow):
         self.createListGeneral()
         self.checkboxResiduals = QCheckBox("Residuals", self)
         self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
+        LayoutResSaveAll.addWidget(self.checkboxResiduals)
 
-        self.controlLayout.addWidget(self.checkboxResiduals)
+        self.saveAllPushButton = QPushButton()
+        LayoutResSaveAll.addWidget(self.saveAllPushButton)
+        self.copyImagePushButton.clicked.connect(self.copyPlotToClipboard)
+
+        self.controlLayout.addWidget(LayoutResSaveAll)
+
         self.controlDirLayout = QHBoxLayout()
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
@@ -496,6 +503,9 @@ class LogInspectorWindow(QMainWindow):
         if self.plotter:
             self.plotter.enableResidualPlot(state)
             self.updatePlot()
+
+    def saveAllPlotsToFile(self):
+        print("Save all to file")
 
     def changeDownSample(self, val):
         self.downsample = val
