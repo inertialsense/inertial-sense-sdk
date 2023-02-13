@@ -264,7 +264,7 @@ class LogInspectorWindow(QMainWindow):
                     layout[i].addWidget(getattr(self, name + "button"))
                     break
             else:
-            layout.addWidget(getattr(self, name + "button"))
+                layout.addWidget(getattr(self, name + "button"))
 
     def addListSection(self, name):
         self.addListItem("==========  " + name + "  ==========", None)
@@ -448,11 +448,12 @@ class LogInspectorWindow(QMainWindow):
         self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
         LayoutResSaveAll.addWidget(self.checkboxResiduals)
 
-        self.saveAllPushButton = QPushButton()
+        self.saveAllPushButton = QPushButton("Save All Plots")
+        self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
+        self.saveAllPushButton.setFixedWidth(50)
         LayoutResSaveAll.addWidget(self.saveAllPushButton)
-        self.copyImagePushButton.clicked.connect(self.copyPlotToClipboard)
 
-        self.controlLayout.addWidget(LayoutResSaveAll)
+        self.controlLayout.addLayout(LayoutResSaveAll)
 
         self.controlDirLayout = QHBoxLayout()
         self.controlDirLayout.addWidget(self.dirLineEdit)

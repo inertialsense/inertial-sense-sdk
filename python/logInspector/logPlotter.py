@@ -240,9 +240,9 @@ class logPlot:
                 gpslla = self.getData(d, DID_GPS2_POS, 'lla')
                 if (gpslla.size):
                     if (np.any(gpslla)):
-            ax[0].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,0], label='GPS2')
-            ax[1].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,1])
-            ax[2].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,2])
+                        ax[0].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,0], label='GPS2')
+                        ax[1].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,1])
+                        ax[2].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,2])
 
         ax[0].legend(ncol=2)
         for a in ax:
