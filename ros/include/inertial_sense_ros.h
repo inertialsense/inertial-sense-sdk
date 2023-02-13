@@ -94,11 +94,16 @@ public:
     } NMEA_message_config_t;
 
     InertialSenseROS(YAML::Node paramNode = YAML::Node(YAML::NodeType::Undefined), bool configFlashParameters = true);
+
+    void initializeIS(bool configFlashParameters = true);
+    void initializeROS();
+    void initialize(bool configFlashParameters = true);
+
     void callback(p_data_t *data);
     void update();
 
     void load_params(YAML::Node &node);
-    void connect();
+    bool connect(float timeout = 10.f);
     bool firmware_compatiblity_check();
     void set_navigation_dt_ms();
     void configure_flash_parameters();
@@ -115,11 +120,14 @@ public:
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
     bool flashConfigStreaming_ = false;
+
     // Serial Port Configuration
-    std::string port_;
-    int baudrate_;
-    bool initialized_;
-    bool log_enabled_;
+    std::vector<std::string> ports_; // a collection of ports which will be attempted, in order until a connection is made
+    std::string port_; // the actual port we connected with
+    int baudrate_;  // the baudrate to connect with
+
+    bool sdk_connected_ = false;
+    bool log_enabled_ = false;
     bool covariance_enabled_;
     int platformConfig_ = 0;
 
@@ -216,7 +224,8 @@ public:
 
         TopicHelperGps gps1;
         TopicHelperGps gps2;
-        TopicHelper navsatfix;
+        TopicHelper gps1_navsatfix;
+        TopicHelper gps2_navsatfix;
         TopicHelper gps1_info;
         TopicHelper gps2_info;
         TopicHelperGpsRaw gps1_raw;

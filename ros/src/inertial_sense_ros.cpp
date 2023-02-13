@@ -33,21 +33,49 @@
 
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
 
-InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters) : nh_(), nh_private_("~"), initialized_(false), rtk_connectivity_watchdog_timer_()
+InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(), nh_private_("~")
 {
-    ROS_INFO("======  Starting Inertial Sense ROS  ======");
-
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
     rs_.gps1.enabled = true;
 
     load_params(paramNode);
+}
 
-    connect();
+void InertialSenseROS::initialize(bool configFlashParameters)
+{
+    ROS_INFO("======  Starting Inertial Sense ROS  ======");
 
-    // Check protocol and firmware version
-    firmware_compatiblity_check();
+    initializeIS(true);
+    if (sdk_connected_) {
+        initializeROS();
 
+        if (log_enabled_) {
+            start_log();    // Start log should happen last
+        }
+
+        // configure_ascii_output(); // Currently not functional
+    }
+}
+
+void InertialSenseROS::initializeIS(bool configFlashParameters) {
+    if (connect()) {
+        // Check protocol and firmware version
+        firmware_compatiblity_check();
+
+        IS_.StopBroadcasts(true);
+        configure_data_streams(true);
+        configure_rtk();
+        IS_.SavePersistent();
+
+        if (configFlashParameters)
+        {   // Set IMX flash parameters (flash write) after everything else so processor stall doesn't interfere with communications.
+            configure_flash_parameters();
+        }
+    }
+}
+
+void InertialSenseROS::initializeROS() {
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_current_srv_         = nh_.advertiseService("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA, this);
@@ -55,7 +83,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     mag_cal_srv_                    = nh_.advertiseService("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback, this);
     multi_mag_cal_srv_              = nh_.advertiseService("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback, this);
     //firmware_update_srv_          = nh_.advertiseService("firmware_update", &InertialSenseROS::update_firmware_srv_callback, this);
-    
+
     SET_CALLBACK(DID_STROBE_IN_TIME, strobe_in_time_t, strobe_in_time_callback, 0); // we always want the strobe
 
     //////////////////////////////////////////////////////////
@@ -76,9 +104,11 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_.advertise<sensor_msgs::FluidPressure>(rs_.barometer.topic, 1); }
 
     if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_.advertise<inertial_sense_ros::GPS>(rs_.gps1.topic, 1); }
-    if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_.advertise<inertial_sense_ros::GPS>(rs_.gps2.topic, 1); }
-    if (rs_.navsatfix.enabled)              { rs_.navsatfix.pub = nh_.advertise<sensor_msgs::NavSatFix>(rs_.navsatfix.topic, 1); }
+    if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub = nh_.advertise<sensor_msgs::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
     if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps1_info.topic, 1); }
+
+    if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_.advertise<inertial_sense_ros::GPS>(rs_.gps2.topic, 1); }
+    if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_.advertise<sensor_msgs::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
     if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps2_info.topic, 1); }
 
     if (RTK_rover_ || RTK_rover_->positioning_enable )
@@ -120,60 +150,6 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     }
 
     data_stream_timer_ = nh_.createTimer(ros::Duration(1), configure_data_streams, this);
-
-    IS_.StopBroadcasts(true);
-    configure_data_streams(true);
-    configure_rtk();
-    IS_.SavePersistent();
-
-    if (configFlashParameters)
-    {   // Set IMX flash parameters (flash write) after everything else so processor stall doesn't interfere with communications.
-        configure_flash_parameters();
-    }
-
-    if (log_enabled_)
-    {
-        start_log();    // Start log should happen last
-    }
-
-    // configure_ascii_output(); // Currently not functional
-
-    initialized_ = true;
-}
-
-void print_node_tree(YAML::Node node, std::string indent="")
-{
-    for(YAML::const_iterator it=node.begin(); it != node.end(); ++it) 
-    {
-        std::string key = it->first.as<std::string>();       // <- key
-
-        if (it->second.IsMap())
-        { // Subnode
-            std::cout << indent << key << ":\n";
-            print_node_tree(node[key], indent+"  ");
-        }
-        else
-        {
-            if (it->second.size()>1)
-            {   // Array
-                std::cout << indent << key << ": [";
-                for (int i=0; i<it->second.size();)
-                {
-                    std::cout << it->second[i];
-                    i++;
-                    if (i<it->second.size())
-                    {
-                        std::cout << ", ";
-                    }
-                }
-                std::cout << "]\n";
-            }
-            else
-            {   // Single 
-                std::cout << indent << key << ": " << it->second << "\n";
-            }
-        }    
-    }
 }
 
 void InertialSenseROS::load_params(YAML::Node &node)
@@ -184,12 +160,12 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     if (useParamSvr)
     {
-        ROS_INFO( "Load from Param Server" );
+        ROS_INFO( "Loading configuration from ROS Parameter Server." );
         ParamHelper::paramServerToYamlNode(node, "/");
     }
     else
     {
-        ROS_INFO( "Load from YAML node" );
+        ROS_INFO( "Loading configuration from YAML tree." );
     }
 
     // Default values appear in the 3rd parameter
@@ -198,7 +174,16 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // General parameters
     ParamHelper ph(node);
 
-    ph.nodeParam("port", port_, "/dev/ttyACM0");
+    YAML::Node portNode = node["port"];
+    if (portNode.IsSequence()) {
+        for (auto it = portNode.begin(); it != portNode.end(); it++)
+            ports_.push_back((*it).as<std::string>());
+    } else if (portNode.IsScalar()) {
+        std::string param = "";
+        ph.nodeParam("port", param, "/dev/ttyACM0");
+        ports_.push_back(param);
+    }
+
     ph.nodeParam("baudrate", baudrate_, 921600);
     ph.nodeParam("frame_id", frame_id_, "body");
     ph.nodeParam("enable_log", log_enabled_, false);
@@ -250,7 +235,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel");
     ph.msgParams(rs_.gps1_info, "info", "gps1/info");
     ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw");
-    ph.msgParams(rs_.navsatfix, "navsatfix", "/NavSatFix");
+    ph.msgParams(rs_.gps1_navsatfix, "navsatfix", "gps1/NavSatFix");
     gps1Node["messages"] = gps1Msgs;
     node["gps1"] = gps1Node;
 
@@ -262,6 +247,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel");
     ph.msgParams(rs_.gps2_info, "info", "gps2/info");
     ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw");
+    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix");
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
 
@@ -277,9 +263,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     // Print entire yaml node tree
     // printf("Node Tree:\n");
-    // print_node_tree(node);
-
-    // printf("=====================  EXIT  =====================\n\n");
+    // std::cout << node << "\n\n=====================  EXIT  =====================\n\n";
 
     // exit(1);
 }
@@ -423,28 +407,43 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.did_ins4, DID_INS_4, ins_4_t, INS4_callback);
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
-    if (rs_.navsatfix.enabled && !NavSatFixConfigured)
+    if (!NavSatFixConfigured)
     {
-        ROS_INFO("Attempting to enable NavSatFix.");
+        if (rs_.gps1_navsatfix.enabled) {
+            ROS_INFO("Attempting to enable gps1/NavSatFix.");
+            // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
+            uint16_t gnssSatSigConst = IS_.GetFlashConfig().gnssSatSigConst;
 
-        // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
-        uint16_t gnssSatSigConst = IS_.GetFlashConfig().gnssSatSigConst;
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
+            }
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GLO) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GLONASS;
+            }
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_BDS) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_COMPASS; // includes BeiDou.
+            }
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GAL) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GALILEO;
+            }
+        }
+        if (rs_.gps2_navsatfix.enabled) {
+            ROS_INFO("Attempting to enable gps2/NavSatFix.");
+            // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
+            uint16_t gnssSatSigConst = IS_.GetFlashConfig().gnssSatSigConst;
 
-        if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS)
-        {
-            msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
-        }
-        if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GLO)
-        {
-            msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GLONASS;
-        }
-        if (gnssSatSigConst & GNSS_SAT_SIG_CONST_BDS)
-        {
-            msg_NavSatFix.status.service |= NavSatFixService::SERVICE_COMPASS; // includes BeiDou.
-        }
-        if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GAL)
-        {
-            msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GALILEO;
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
+            }
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GLO) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GLONASS;
+            }
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_BDS) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_COMPASS; // includes BeiDou.
+            }
+            if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GAL) {
+                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GALILEO;
+            }
         }
         NavSatFixConfigured = true;
         // DID_GPS1_POS and DID_GPS1_VEL are always streamed for fix status. See below
@@ -499,33 +498,62 @@ void InertialSenseROS::configure_ascii_output()
     //  IS_.SendData(DID_ASCII_BCAST_PERIOD, (uint8_t*)(&msgs), sizeof(ascii_msgs_t), 0);
 }
 
-void InertialSenseROS::connect()
+/**
+ * Connects to the Inertial Sense hardware
+ * Will attempt to connect using a list of multiple ports if specified,
+ * @param timeout specifies the maximum duration (in seconds) before a returning false and reporting an ERROR
+ * @return return true when a connection has been made, or false if not
+ */
+bool InertialSenseROS::connect(float timeout)
 {
-    /// Connect to the uINS
-    ROS_INFO("Connecting to serial port \"%s\", at %d baud", port_.c_str(), baudrate_);
-    if (!IS_.Open(port_.c_str(), baudrate_))
-    {
-        ROS_FATAL("inertialsense: Unable to open serial port \"%s\", at %d baud", port_.c_str(), baudrate_);
-        exit(0);
-    }
-    else
-    {
-        // Print if Successful
-        ROS_INFO("Connected to uINS %d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, port_.c_str(), baudrate_);
-    }
+    uint32_t end_time = ros::Time::now().toSec() + timeout;
+    auto ports_iterator = ports_.begin();
+
+    do {
+        std::string cur_port = *ports_iterator;
+        /// Connect to the uINS
+        ROS_INFO("Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+        sdk_connected_ = IS_.Open(cur_port.c_str(), baudrate_);
+        if (!sdk_connected_) {
+            ROS_ERROR("inertialsense: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+            sleep(1); // is this a good idea?
+        } else {
+            ROS_INFO("Connected to uINS %d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            port_ = cur_port;
+            break;
+        }
+        if ((ports_.size() > 1) && (ports_iterator != ports_.end()))
+            ports_iterator++;
+        else
+            ports_iterator = ports_.begin(); // just keep looping until we timeout below
+    } while (ros::Time::now().toSec() < end_time);
+
+    return sdk_connected_;
 }
 
 bool InertialSenseROS::firmware_compatiblity_check()
 {
-    if( IS_.GetDeviceInfo().protocolVer[0] != PROTOCOL_VERSION_CHAR0 || \
-        IS_.GetDeviceInfo().protocolVer[1] != PROTOCOL_VERSION_CHAR1 || \
-        IS_.GetDeviceInfo().protocolVer[2] != PROTOCOL_VERSION_CHAR2 || \
-        IS_.GetDeviceInfo().protocolVer[3] != PROTOCOL_VERSION_CHAR3 || \
-        IS_.GetDeviceInfo().firmwareVer[0] != FIRMWARE_VERSION_CHAR0 || \
-        IS_.GetDeviceInfo().firmwareVer[1] != FIRMWARE_VERSION_CHAR1 || \
-        IS_.GetDeviceInfo().firmwareVer[2] != FIRMWARE_VERSION_CHAR2)
-    {
-        ROS_FATAL(
+    char local_protocol[4] = { PROTOCOL_VERSION_CHAR0, PROTOCOL_VERSION_CHAR1, PROTOCOL_VERSION_CHAR2, PROTOCOL_VERSION_CHAR3 };
+    char diff_protocol[4] = { 0, 0, 0, 0 };
+    for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.GetDeviceInfo().protocolVer[i];
+
+    char local_firmware[3] = { FIRMWARE_VERSION_CHAR0, FIRMWARE_VERSION_CHAR1, FIRMWARE_VERSION_CHAR2 };
+    char diff_firmware[3] = { 0, 0 ,0 };
+    for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.GetDeviceInfo().firmwareVer[i];
+
+    ros::console::levels::Level protocol_fault = ros::console::levels::Debug; // none
+    if (diff_protocol[0] != 0) protocol_fault = ros::console::levels::Fatal; // major protocol changes -- BREAKING
+    else if (diff_protocol[1] != 0) protocol_fault = ros::console::levels::Error; // minor protocol changes -- New parameters/features
+    else if (diff_protocol[2] != 0) protocol_fault = ros::console::levels::Warn; // patch changes - the shouldn't be significant, but still important
+    else if (diff_protocol[3] != 0) protocol_fault = ros::console::levels::Info; // this is essentially trivial, but good to know.
+
+    ros::console::levels::Level firmware_fault = ros::console::levels::Debug; // none
+    if (diff_firmware[0] != 0) firmware_fault = ros::console::levels::Fatal;  // major protocol changes -- BREAKING
+    else if (diff_firmware[1] != 0) firmware_fault = ros::console::levels::Error;  // minor protocol changes -- New parameters/features
+    else if (diff_firmware[2] != 0) firmware_fault = ros::console::levels::Warn; // patch changes - the shouldn't be significant, but still important
+
+    ros::console::levels::Level final_fault = std::max(firmware_fault, protocol_fault);
+    ROS_LOG_COND(final_fault != ros::console::levels::Debug, final_fault, ROSCONSOLE_DEFAULT_NAME,
             "Protocol version mismatch: \n"
             "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (SDK)\n"
             "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (device)", 
@@ -543,13 +571,8 @@ bool InertialSenseROS::firmware_compatiblity_check()
             IS_.GetDeviceInfo().firmwareVer[0],
             IS_.GetDeviceInfo().firmwareVer[1],
             IS_.GetDeviceInfo().firmwareVer[2]      
-            );
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    );
+    return final_fault == ros::console::levels::Debug; // true if they match, false if they don't.
 }
 
 bool vecF32Match(float v1[], float v2[], int size=3)
@@ -744,13 +767,9 @@ void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
     // [type]:[ip/url]:[port]
     std::string RTK_connection = config.get_connection_string();
     if (IS_.CreateHost(RTK_connection))
-    {
-        ROS_INFO_STREAM("Successfully created " << RTK_connection << " as RTK server");
-        initialized_ = true;
-        return;
-    }
+        ROS_INFO_STREAM("Successfully started RTK Base NTRIP correction server at" << RTK_connection);
     else
-        ROS_ERROR_STREAM("Failed to create base server at " << RTK_connection);
+        ROS_ERROR_STREAM("Failed to start RTK Base NTRIP correction server at " << RTK_connection);
 }
 
 
@@ -1360,7 +1379,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
         GPS_week_ = msg->week;
         GPS_towOffset_ = msg->towOffset;
 
-        if (rs_.navsatfix.enabled)
+        if (rs_.gps1_navsatfix.enabled)
         {
             msg_NavSatFix.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeekMs / 1.0e3);
             msg_NavSatFix.header.frame_id = frame_id_;
@@ -1392,7 +1411,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
             msg_NavSatFix.position_covariance[4] = varH;
             msg_NavSatFix.position_covariance[8] = varV;
             msg_NavSatFix.position_covariance_type = COVARIANCE_TYPE_DIAGONAL_KNOWN;
-            rs_.navsatfix.pub.publish(msg_NavSatFix);
+            rs_.gps1_navsatfix.pub.publish(msg_NavSatFix);
         }
     }
 }

@@ -44,6 +44,7 @@ int main(int argc, char**argv)
         thing = new InertialSenseROS;
     }
 
+    thing->initialize();
     while (ros::ok())
     {
         ros::spinOnce();

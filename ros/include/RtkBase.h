@@ -30,7 +30,6 @@ protected:
 
 public:
     std::string type_;
-    std::string protocol_; // format
     RtkBaseCorrectionProvider(YAML::Node& node, const std::string& t) : ph_(node), type_(t) { };
     virtual void configure(YAML::Node& node) = 0;
 };
@@ -44,9 +43,9 @@ public:
     std::string password_;
     std::string credentials_;
     std::string authentication_;
-    std::string correction_protocol_;
+    std::string protocol_; // format
 
-    RtkBaseCorrectionProvider_Ntrip(YAML::Node& node, std::string proto) : RtkBaseCorrectionProvider(node, "ntrip"), correction_protocol_(proto) { configure(node); }
+    RtkBaseCorrectionProvider_Ntrip(YAML::Node& node, std::string proto) : RtkBaseCorrectionProvider(node, "ntrip"), protocol_(proto) { configure(node); }
     virtual void configure(YAML::Node& node);
     void validate_credentials() { ROS_WARN("NOT IMPLEMENTED"); }
     std::string get_connection_string();
@@ -86,15 +85,15 @@ public:
         GPS2,
     } base_gps_source;
 
-    bool enable = true;
+    bool enable = true;     // enabled until explicitly disabled
 
     base_gps_source source_gps__serial0_ = OFF;
     base_gps_source source_gps__serial1_ = OFF;
     base_gps_source source_gps__serial2_ = OFF;
     base_gps_source source_gps__usb_ = OFF;
 
-    std::string correction_type_;
-    std::string correction_protocol_;
+    std::string type_;
+    std::string protocol_;
 
     bool compassing_enable_ = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
     bool positioning_enable_ = false;    // Enable RTK precision positioning at GPS1
@@ -116,7 +115,7 @@ public:
     static RtkBaseCorrectionProvider* buildProvider(RtkBaseProvider& base, YAML::Node &node) {
         std::string type = node["type"].as<std::string>();
         std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-        if (type == "ntrip") return new RtkBaseCorrectionProvider_Ntrip(node, base.correction_protocol_);
+        if (type == "ntrip") return new RtkBaseCorrectionProvider_Ntrip(node, base.protocol_);
         else if (type == "serial") return new RtkBaseCorrectionProvider_Serial(node);
         else if (type == "ros_topic") return new RtkBaseCorrectionProvider_ROS(node);
         else if (type == "evb") return new RtkBaseCorrectionProvider_EVB(node);

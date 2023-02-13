@@ -26,6 +26,8 @@
 class RtkRoverCorrectionProvider {
 protected:
     ParamHelper ph_;
+    InertialSense* is_;
+    ros::NodeHandle* nh_;
 
 public:
     std::string type_;
@@ -36,8 +38,6 @@ public:
 
 class RtkRoverCorrectionProvider_Ntrip : public RtkRoverCorrectionProvider {
 public:
-    std::string correction_type_;
-    std::string correction_protocol_;
     std::string ip_ = "127.0.0.1";
     int port_ = 7777;
     std::string mount_point_;
@@ -54,10 +54,16 @@ public:
     int data_transmission_interruption_limit_ = 5;
     bool connectivity_watchdog_enabled_ = true;
     float connectivity_watchdog_timer_frequency_ = 1;
+    ros::Timer connectivity_watchdog_timer_;
 
     RtkRoverCorrectionProvider_Ntrip(YAML::Node& node) : RtkRoverCorrectionProvider(node, "ntrip") { configure(node); }
     void configure(YAML::Node& node);
     std::string get_connection_string();
+    void connect_rtk_client();
+    void start_connectivity_watchdog_timer();
+    void stop_connectivity_watchdog_timer();
+    void connectivity_watchdog_timer_callback(const ros::TimerEvent &timer_event);
+
 };
 
 class RtkRoverCorrectionProvider_Serial : public RtkRoverCorrectionProvider {
@@ -86,9 +92,11 @@ public:
 class RtkRoverProvider {
 protected:
     ParamHelper ph_;
+    InertialSense* is_;
+    ros::NodeHandle* nh_;
 
 public:
-    bool enable = false;               // Enables/Disables the entire provider
+    bool enable = true;                 // Enables/Disables the entire provider - enabled until explicitly disabled
     bool compassing_enable = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
     bool positioning_enable = false;    // Enable RTK precision positioning at GPS1
 

@@ -33,8 +33,8 @@ void RtkRoverProvider::configure(YAML::Node& n) {
  */
 void RtkRoverCorrectionProvider_Ntrip::configure(YAML::Node& node) {
     ph_.setCurrentNode(node);
-    ph_.nodeParam("type", correction_type_, "NTRIP");
-    ph_.nodeParam("format", correction_protocol_, "RTCM3");
+    ph_.nodeParam("type", type_, "NTRIP");
+    ph_.nodeParam("format", protocol_, "RTCM3");
     ph_.nodeParam("ip_address", ip_);
     ph_.nodeParam("ip_port", port_);
     ph_.nodeParam("mount_point", mount_point_);
@@ -43,12 +43,100 @@ void RtkRoverCorrectionProvider_Ntrip::configure(YAML::Node& node) {
 }
 
 std::string RtkRoverCorrectionProvider_Ntrip::get_connection_string() {
-    std::string RTK_connection = "TCP:" + correction_protocol_ + ":" + ip_ + ":" + std::to_string(port_);
+    std::string RTK_connection = "TCP:" + protocol_ + ":" + ip_ + ":" + std::to_string(port_);
     if (!mount_point_.empty() && !username_.empty())
     { // NTRIP options
         RTK_connection += ":" + mount_point_ + ":" + username_ + ":" + password_;
     }
     return RTK_connection;
+}
+
+void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
+{
+    if (is_ == nullptr) {
+        ROS_FATAL("RTK Client connection requested, but configureIS() hasn't been called in the provider.");
+        ros::shutdown();
+        connecting_ = false;
+        return;
+    }
+    connecting_ = true;
+
+    // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+    std::string RTK_connection = get_connection_string();
+
+    int RTK_connection_attempt_count = 0;
+    while (RTK_connection_attempt_count < connection_attempt_limit_)
+    {
+        ++RTK_connection_attempt_count;
+
+        bool connected = is_->OpenConnectionToServer(RTK_connection);
+
+        if (connected)
+        {
+            ROS_INFO_STREAM("Successfully connected to " << RTK_connection << " RTK server");
+            break;
+        }
+        else
+        {
+            ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
+
+            if (RTK_connection_attempt_count >= connection_attempt_limit_)
+            {
+                ROS_ERROR_STREAM("Giving up after " << RTK_connection_attempt_count << " failed attempts");
+            }
+            else
+            {
+                int sleep_duration = RTK_connection_attempt_count * connection_attempt_backoff_;
+                ROS_WARN_STREAM("Retrying connection in " << sleep_duration << " seconds");
+                ros::Duration(sleep_duration).sleep();
+            }
+        }
+    }
+
+    connecting_ = false;
+}
+
+void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback(const ros::TimerEvent &timer_event)
+{
+    if (connecting_ && (is_ != nullptr))
+        return;
+
+    int latest_byte_count = is_->GetClientServerByteCount();
+    if (traffic_total_byte_count_ == latest_byte_count)
+    {
+        ++data_transmission_interruption_count_;
+
+        if (data_transmission_interruption_count_ >= data_transmission_interruption_limit_)
+        {
+            ROS_WARN("RTK transmission interruption, reconnecting...");
+            connect_rtk_client();
+        }
+    }
+    else
+    {
+        traffic_total_byte_count_ = latest_byte_count;
+        data_transmission_interruption_count_ = 0;
+    }
+}
+
+void RtkRoverCorrectionProvider_Ntrip::start_connectivity_watchdog_timer()
+{
+    if (!connectivity_watchdog_enabled_) {
+        return;
+    }
+
+    if (!connectivity_watchdog_timer_.isValid()) {
+        connectivity_watchdog_timer_ = nh_->createTimer(ros::Duration(connectivity_watchdog_timer_frequency_), &RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback, this);
+    }
+
+    connectivity_watchdog_timer_.start();
+}
+
+void RtkRoverCorrectionProvider_Ntrip::stop_connectivity_watchdog_timer()
+{
+    connectivity_watchdog_timer_.stop();
+    traffic_total_byte_count_ = 0;
+    data_transmission_interruption_count_ = 0;
 }
 
 /*

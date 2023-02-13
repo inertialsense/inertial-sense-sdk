@@ -41,9 +41,7 @@ YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
 
 YAML::Node ParamHelper::node(YAML::Node &node, std::string key, int indent)
 {
-    print_indent(indent);
     indent_ = indent+1;
-    std::cout << key << ":\n";
     setCurrentNode(node[key]);
     return currentNode_;
 }
@@ -57,9 +55,6 @@ void ParamHelper::setCurrentNode(YAML::Node node)
 
 bool ParamHelper::msgParams(TopicHelper &th, std::string key, std::string topicDefault, bool enabledDefault, int periodDefault)
 {
-    print_indent(indent_++);
-    std::cout << key << ":\n";
-
     YAML::Node msgNode;
     if (currentNode_[key])
     {
@@ -79,18 +74,8 @@ bool ParamHelper::msgParams(TopicHelper &th, std::string key, std::string topicD
 }
 
 
-void ParamHelper::print_indent(int indent)
-{
-    for (int i=0; i<indent; i++)
-    {
-        std::cout << "  ";
-    }
-}
-
-
 bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std::string indentStr)
 {
-#define ENABLE_DEBUG_PRINT_TREE     0
     ros::NodeHandle nh;
 
     std::vector <std::string> nhKeyList;
@@ -113,9 +98,6 @@ bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std
             XmlRpc::XmlRpcValue v;
             if (nh.getParam(key, v))
             {
-#if ENABLE_DEBUG_PRINT_TREE
-                std::cout << indentStr << name << ": " << v << "\n";
-#endif
                 node[name] = xmlRpcToYamlNode(v);
                 continue;
             }
@@ -126,9 +108,6 @@ bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std
 
             if (!node[nodeName])
             {   // Create new child node
-#if ENABLE_DEBUG_PRINT_TREE
-                std::cout << indentStr << nodeName << "\n";
-#endif
                 YAML::Node childNode;
                 ParamHelper::paramServerToYamlNode(childNode, nhKey + nodeName + "/", indentStr + "  ");
                 node[nodeName] = childNode;

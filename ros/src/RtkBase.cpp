@@ -38,7 +38,7 @@ void RtkBaseProvider::configure(YAML::Node& n) {
 
     YAML::Node rtkBaseOutputs = ph_.node(n, "correction_outputs");
 
-    ph_.nodeParam("format", correction_protocol_, "RTCM3");
+    ph_.nodeParam("format", protocol_, "RTCM3");
     YAML::Node rtkBase_providers = ph_.node(rtkBaseOutputs, "select");
     if (rtkBase_providers.IsSequence()) {
         for (auto it = rtkBase_providers.begin(); it != rtkBase_providers.end(); it++) {
@@ -77,7 +77,7 @@ void RtkBaseCorrectionProvider_Ntrip::configure(YAML::Node& node) {
 }
 
 std::string RtkBaseCorrectionProvider_Ntrip::get_connection_string() {
-    std::string RTK_connection = "TCP:" + correction_protocol_ + ":" + ip_ + ":" + std::to_string(port_);
+    std::string RTK_connection = "TCP:" + protocol_ + ":" + ip_ + ":" + std::to_string(port_);
     return RTK_connection;
 }
 

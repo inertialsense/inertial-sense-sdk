@@ -61,8 +61,6 @@ public:
     bool nodeParamVec(YAML::Node &node, const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
     bool nodeParamVec(YAML::Node &node, const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
 
-    void print_indent(int indent);
-
     static bool paramServerToYamlNode(YAML::Node &node, std::string nhKey="", std::string indentStr="");
 
     template <typename Type>
@@ -81,17 +79,6 @@ public:
             val = valDefault;
             node[key] = valDefault;
         }
-
-/*
-    // Display parameter
-    print_indent(indent_);
-    std::cout << key + ": " << val;
-    if (!success)
-    {
-        std::cout << PH_DEFAULT_MSG ;
-    }
-    std::cout << "\n";
-*/
 
         return success;
     }
@@ -122,22 +109,6 @@ public:
             }
             node[key] = vec;
         }
-
-/*
-    // Display parameter
-    print_indent(indent_);
-    std::cout << key + ": [";
-    for (int i = 0; i < size; i++)
-    {
-        std::cout << val[i] << ((i<size-1) ? ", " : "");
-    }
-    std::cout << "]";
-    if (!success)
-    {
-        std::cout << PH_DEFAULT_MSG;
-    }
-    std::cout << "\n";
-*/
 
         return success;
     }
