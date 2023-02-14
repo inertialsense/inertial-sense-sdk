@@ -6,14 +6,26 @@
 
 #define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_yaml_config.yaml"
 
-#if 1
-TEST(ROSCommunicationsTests, basic)
+class gpsTestNode
 {
-    TEST_COUT << "Test Communications" << std::endl;
-    bool success = true;
-    ASSERT_TRUE( success );
-}
-#endif
+private:
+    ros::Subscriber sub_navsatfix;
+public:
+    gpsTestNode() {}
+    void init() {
+        ros::NodeHandle nh;
+        sub_navsatfix = nh.subscribe("/NavSatFix", 1, &gpsTestNode::cb_navsatfix, this);
+    }
+
+    bool navsatfix_passed = false;
+    sensor_msgs::NavSatFix msg_NavSatFix;
+    void cb_navsatfix(const sensor_msgs::NavSatFixConstPtr& fix) {
+        msg_NavSatFix = *fix;
+        navsatfix_passed = true;
+        TEST_COUT << "Rx NavSatFix\n";
+    }
+
+};
 
 /***
  * This set of tests validates InertialSenseROS publishes the configured topics as DIDs come in from the InertialSense SDK.
@@ -25,46 +37,57 @@ TEST(ROSCommunicationsTests, basic)
  * If this passes, the test passes.
  */
 
-
-bool navsatfix_passed = false;
-sensor_msgs::NavSatFix msg_NavSatFix;
-void navsatfix_callback(const sensor_msgs::NavSatFixConstPtr& fix) {
-    msg_NavSatFix = *fix;
-}
-
 TEST(ROSCommunicationsTests, test_navsatfix )
 {
-    ros::NodeHandle nh;
 
-    nh.subscribe("/NavSatFix", 100, navsatfix_callback);
-    double expires = ros::Time::now().toSec() + 5.0;
-    while(!navsatfix_passed && (ros::Time::now().toSec() < expires)) {
-        SLEEP_MS(200);
-        TEST_COUT << "waiting for NavSatFix message...  (timeout in " << (expires - ros::Time::now().toSec()) << " seconds)" << std::endl;
+    gpsTestNode testNode;
+    testNode.init();
 
-    }
+    std::string yaml = "topic: \"inertialsense\"\n"
+                       "port: [/dev/ttyACM0, /dev/ttyACM1]\n"
+                       "baudrate: 921600\n"
+                       "ioConfig: 0x026B2060\n"
+                       "\n"
+                       "ins:\n"
+                       "  navigation_dt_ms: 16                          # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate."
+                       "\n"
+                       "gps1:\n"
+                       "  type: 'F9P'\n"
+                       "  antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna\n"
+                       "  gpsTimeUserDelay: 0.0\n"
+                       "  messages:\n"
+                       "    pos_vel:\n"
+                       "      topic: \"gps1/pos_vel\"\n"
+                       "      enable: true\n"
+                       "      period: 1\n"
+                       "    navsatfix:\n"
+                       "      topic: \"/NavSatFix\"                        # /navsatfix\n"
+                       "      enable: true";
 
-    ASSERT_TRUE(navsatfix_passed);
-    EXPECT_GE(msg_NavSatFix.latitude, -90.0);
-    EXPECT_LE(msg_NavSatFix.latitude, 90.0);
-    EXPECT_GE(msg_NavSatFix.longitude, -180.0);
-    EXPECT_LE(msg_NavSatFix.longitude, 180.0);
-}
-
-/*
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-
-    ros::init(argc, argv, "ros-communication-tests");
-    ros::NodeHandle nh;
-
-    // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
-    std::ifstream yaml(PARAM_YAML_FILE);
-    // ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << std::filesystem::current_path();
     YAML::Node config = YAML::Load(yaml);
-    // ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
-    InertialSenseROS isROS(config);
+    ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
 
-    return RUN_ALL_TESTS();
+    InertialSenseROS isROS(config);
+    isROS.initialize();
+
+    double now = ros::Time::now().toSec();
+    double expires = now + 5.0, nextMsg = now + 1.0;
+    do {
+        isROS.update();
+        ros::spinOnce();
+        SLEEP_MS(100);
+
+        if (now > nextMsg) {
+            TEST_COUT << "waiting for gps1/pos_vel message...  (timeout in " << (expires - now) << " seconds)" << std::endl;
+            nextMsg = now + 1.0;
+        }
+
+        now = ros::Time::now().toSec();
+    } while(!testNode.navsatfix_passed && (now < expires));
+
+    EXPECT_TRUE(testNode.navsatfix_passed);
+    EXPECT_GE(testNode.msg_NavSatFix.latitude, -90.0);
+    EXPECT_LE(testNode.msg_NavSatFix.latitude, 90.0);
+    EXPECT_GE(testNode.msg_NavSatFix.longitude, -180.0);
+    EXPECT_LE(testNode.msg_NavSatFix.longitude, 180.0);
 }
-*/

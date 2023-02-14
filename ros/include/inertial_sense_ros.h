@@ -94,10 +94,12 @@ public:
     } NMEA_message_config_t;
 
     InertialSenseROS(YAML::Node paramNode = YAML::Node(YAML::NodeType::Undefined), bool configFlashParameters = true);
+    ~InertialSenseROS() { terminate(); }
 
     void initializeIS(bool configFlashParameters = true);
     void initializeROS();
     void initialize(bool configFlashParameters = true);
+    void terminate();
 
     void callback(p_data_t *data);
     void update();

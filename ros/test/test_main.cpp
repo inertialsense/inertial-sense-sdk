@@ -6,12 +6,47 @@ cTestNode testNode;
 
 TEST(test_main, basic)
 {
-	bool success = false;
-	unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
+    std::string yaml = "topic: \"inertialsense\"\n"
+                       "port: [/dev/ttyACM0, /dev/ttyACM1]\n"
+                       "baudrate: 921600\n"
+                       "ioConfig: 0x026B2060\n"
+                       "\n"
+                       "ins:\n"
+                       "  navigation_dt_ms: 16                          # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate."
+                       "\n"
+                       "sensors:\n"
+                       "  messages:  \n"
+                       "    imu:              # Publish IMU angular rates and linear acceleration\n"
+                       "      topic: \"imu\"\n"
+                       "      enable: true\n"
+                       "      period: 1\n"
+                       "    pimu:             # Publish preintegrated IMU delta theta and delta velocity\n"
+                       "      topic: \"pimu\"\n"
+                       "      enable: true\n"
+                       "      period: 1\n"
+                       "\n"
+                       "gps1:\n"
+                       "  type: 'F9P'\n"
+                       "  antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna\n"
+                       "  gpsTimeUserDelay: 0.0\n"
+                       "  messages:\n"
+                       "    pos_vel:\n"
+                       "      topic: \"gps1/pos_vel\"\n"
+                       "      enable: true\n"
+                       "      period: 1";
+
+    YAML::Node config = YAML::Load(yaml);
+    ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
+
+    InertialSenseROS isROS(config);
+    isROS.initialize();
+
+    bool success = false;
+    unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
 	while((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
 	{
+        isROS.update();
         if (testNode.did_rx_pimu_) {
-            TEST_COUT << "Found message!" << std::endl;
             success = true;
             break;
         } else {
@@ -25,6 +60,7 @@ TEST(test_main, basic)
     }
 
     ASSERT_TRUE( success );
+    isROS.terminate();
 }
 
 void cTestNode::init()
@@ -57,15 +93,13 @@ bool cTestNode::step()
 void cTestNode::cbWheelEncoder(const sensor_msgs::JointState &msg)
 {
     sensor_msgs::JointState encoder;
-
-    printf("Rx wheel encoder\n");
+    TEST_COUT << "Rx wheel encoder\n";
 }
 
 void cTestNode::cbPIMU(const inertial_sense_ros::PIMUPtr &pimu)
 {
     testNode.did_rx_pimu_ = true;
-
-    printf("Rx PIMU\n");
+    TEST_COUT << "Rx PIMU\n";
 }
 
 

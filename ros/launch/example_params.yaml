@@ -38,7 +38,7 @@ ref_lla: [0.0, 0.0, 0.0]
 
 # Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
 # platform: 10                                    # PLATFORM_CFG_TYPE_RUG3_G2
-platform: 11                                    # PLATFORM_CFG_TYPE_EVB2_G2
+platformConfig: 11                                # PLATFORM_CFG_TYPE_EVB2_G2
 # platform: 15                                    # PLATFORM_CFG_TYPE_IG1_G2
 
 # IMX ioConfig (see eIoConfig)

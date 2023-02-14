@@ -37,7 +37,9 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
 {
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
+    rs_.did_ins1.topic = "did_ins1";
     rs_.gps1.enabled = true;
+    rs_.gps1.topic = "/gps";
 
     load_params(paramNode);
 }
@@ -56,6 +58,11 @@ void InertialSenseROS::initialize(bool configFlashParameters)
 
         // configure_ascii_output(); // Currently not functional
     }
+}
+
+void InertialSenseROS::terminate() {
+    IS_.Close();
+    IS_.CloseServerConnection();
 }
 
 void InertialSenseROS::initializeIS(bool configFlashParameters) {
@@ -111,7 +118,7 @@ void InertialSenseROS::initializeROS() {
     if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_.advertise<sensor_msgs::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
     if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_.advertise<inertial_sense_ros::GPSInfo>(rs_.gps2_info.topic, 1); }
 
-    if (RTK_rover_ || RTK_rover_->positioning_enable )
+    if (RTK_rover_ && RTK_rover_->positioning_enable )
     {
         rs_.rtk_pos.pubInfo = nh_.advertise<inertial_sense_ros::RTKInfo>("RTK_pos/info", 10);
         rs_.rtk_pos.pubRel = nh_.advertise<inertial_sense_ros::RTKRel>("RTK_pos/rel", 10);
@@ -189,14 +196,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("enable_log", log_enabled_, false);
 
     // advanced Parameters
-    ph.nodeParam("ioConfigBits", ioConfigBits_, 0x0244a060);     // EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
-    ph.nodeParam("rtkConfigBits", rtkConfigBits_, 0);            // rtk config bits
-    ph.nodeParam("wheelConfigBits", wheelConfigBits_, 0);        // wheel-encoder config bits
+    ph.nodeParam("ioConfig", ioConfigBits_, 0x0244a060);     // EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+    ph.nodeParam("RTKCfgBits", rtkConfigBits_, 0);            // rtk config bits
+    ph.nodeParam("wheelCfgBits", wheelConfigBits_, 0);        // wheel-encoder config bits
 
     ph.nodeParam("mag_declination", magDeclination_);
     ph.nodeParamVec("ref_lla", 3, refLla_);
     ph.nodeParam("publishTf", publishTf_);
-    ph.nodeParam("platform", platformConfig_);
+    ph.nodeParam("platformConfig", platformConfig_);
 
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
@@ -256,10 +263,12 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("cb_options", evb_.cb_options, 0);
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
-    RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
+    if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
+        RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
 
     YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
-    RTK_base_ = new RtkBaseProvider(rtkBaseNode);
+    if (rtkBaseNode.IsDefined() && !rtkRoverNode.IsNull())
+        RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     // Print entire yaml node tree
     // printf("Node Tree:\n");
@@ -522,7 +531,7 @@ bool InertialSenseROS::connect(float timeout)
             port_ = cur_port;
             break;
         }
-        if ((ports_.size() > 1) && (ports_iterator != ports_.end()))
+        if ((ports_.size() > 1) || (ports_iterator != ports_.end()))
             ports_iterator++;
         else
             ports_iterator = ports_.begin(); // just keep looping until we timeout below
@@ -612,7 +621,7 @@ void InertialSenseROS::configure_flash_parameters()
     }
     if (current_flash_cfg.ioConfig != ioConfigBits_)
     {
-        ROS_INFO("ioConfig change from %x to %x, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
+        ROS_INFO("ioConfig change from %0x08X to %0x08X, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
         reboot = true;
     }
 
@@ -843,7 +852,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
-        if (RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
+        if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
             RTK_base_->enable = false;
@@ -851,7 +860,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
-        else if (RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
+        else if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover");
             RTK_base_->enable = false;
@@ -915,7 +924,8 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.ned[0] = msg->ned[0];
         msg_did_ins1.ned[1] = msg->ned[1];
         msg_did_ins1.ned[2] = msg->ned[2];
-        rs_.did_ins1.pub.publish(msg_did_ins1);
+        if (rs_.did_ins1.pub.getNumSubscribers() > 0)
+            rs_.did_ins1.pub.publish(msg_did_ins1);
     }
 }
 
@@ -941,7 +951,8 @@ void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
         msg_did_ins2.lla[0] = msg->lla[0];
         msg_did_ins2.lla[1] = msg->lla[1];
         msg_did_ins2.lla[2] = msg->lla[2];
-        rs_.did_ins2.pub.publish(msg_did_ins2);
+        if (rs_.did_ins2.pub.getNumSubscribers() > 0)
+            rs_.did_ins2.pub.publish(msg_did_ins2);
     }
 }
 
@@ -972,7 +983,8 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         msg_did_ins4.ecef[0] = msg->ecef[0];
         msg_did_ins4.ecef[1] = msg->ecef[1];
         msg_did_ins4.ecef[2] = msg->ecef[2];
-        rs_.did_ins4.pub.publish(msg_did_ins4);
+        if (rs_.did_ins4.pub.getNumSubscribers() > 0)
+            rs_.did_ins4.pub.publish(msg_did_ins4);
     }
 
 
@@ -1455,7 +1467,8 @@ void InertialSenseROS::publishGPS1()
     {
         msg_gps1.velEcef = gps1_velEcef.vector;
         msg_gps1.sAcc = gps1_vel.sAcc;
-        rs_.gps1.pub.publish(msg_gps1);
+        if (rs_.gps1.pub.getNumSubscribers() > 0)
+            rs_.gps1.pub.publish(msg_gps1);
     }
 }
 
@@ -1466,12 +1479,19 @@ void InertialSenseROS::publishGPS2()
     {
         msg_gps2.velEcef = gps2_velEcef.vector;
         msg_gps2.sAcc = gps2_vel.sAcc;
-        rs_.gps2.pub.publish(msg_gps2);
+        if (rs_.gps2.pub.getNumSubscribers() > 0)
+            rs_.gps2.pub.publish(msg_gps2);
     }
 }
 
 void InertialSenseROS::update()
 {
+    if (!IS_.IsOpen()) {
+        IS_.Close();
+        sleep(1);
+        initializeIS();
+    }
+
     IS_.Update();
 }
 
@@ -2117,8 +2137,10 @@ void InertialSenseROS::reset_device()
     reset_command.command = 99;
     reset_command.invCommand = ~reset_command.command;
     IS_.SendData(DID_SYS_CMD, reinterpret_cast<uint8_t *>(&reset_command), sizeof(system_command_t), 0);
-    ROS_WARN("Device reset required.\n\nShutting down Node.\n");
-    // ros::shutdown();
+
+    ROS_WARN("Device reset required.\n\nDisconnecting from device.\n");
+    sleep(2);
+    IS_.Close();
 }
 
 bool InertialSenseROS::update_firmware_srv_callback(inertial_sense_ros::FirmwareUpdate::Request &req, inertial_sense_ros::FirmwareUpdate::Response &res)
