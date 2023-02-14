@@ -149,10 +149,8 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()
-        self.devicesLayout = QHBoxLayout()
-        self.addButton('RMS', self.RMS, layout=self.devicesLayout)
-        self.addButton('Choose Devices', self.chooseDevs, layout=self.devicesLayout)
-        self.controlLayout.addLayout(self.devicesLayout)
+        self.addButton(' RMS ', self.RMS, layout=self.LayoutBelowPlotSelection)
+        self.addButton(' Devices ', self.chooseDevs, layout=self.LayoutBelowPlotSelection)
 
 if __name__ == '__main__':
     if sys.version[0] != '3':

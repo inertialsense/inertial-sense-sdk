@@ -264,7 +264,7 @@ class LogInspectorWindow(QMainWindow):
                     layout[i].addWidget(getattr(self, name + "button"))
                     break
         else:
-            return None
+            layout.addWidget(getattr(self, name + "button"))
 
     def addListSection(self, name):
         self.addListItem("==========  " + name + "  ==========", None)
@@ -347,9 +347,11 @@ class LogInspectorWindow(QMainWindow):
 
         # MainWindow.showMaximized()
 
-        self.createFileTree()
         self.controlLayout = QVBoxLayout()
         self.createPlotSelection()
+        self.createFileTree()
+        self.controlLayout.setStretch(0, 2)     # Plot selection
+        self.controlLayout.setStretch(3, 1)     # File tree
         self.createBottomToolbar()
 
         self.figureLayout = QVBoxLayout()
@@ -438,7 +440,6 @@ class LogInspectorWindow(QMainWindow):
         LayoutList.addWidget(self.listView)
         groupBox.setLayout(LayoutList)
         self.controlLayout.addWidget(groupBox)        
-        LayoutResSaveAll = QHBoxLayout()
 
         self.createListIns()
         self.createListSensors()
@@ -447,23 +448,43 @@ class LogInspectorWindow(QMainWindow):
         self.createListGeneral()
         self.checkboxResiduals = QCheckBox("Residuals", self)
         self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
-        LayoutResSaveAll.addWidget(self.checkboxResiduals)
+        self.LayoutBelowPlotSelection = QHBoxLayout()
+        self.LayoutBelowPlotSelection.addWidget(self.checkboxResiduals)
 
         self.saveAllPushButton = QPushButton(" Save All Plots ")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         hSpacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum) 
-        LayoutResSaveAll.addItem(hSpacer)
-        LayoutResSaveAll.addWidget(self.saveAllPushButton)
+        self.LayoutBelowPlotSelection.addItem(hSpacer)
+        self.LayoutBelowPlotSelection.addWidget(self.saveAllPushButton)
 
-        self.controlLayout.addLayout(LayoutResSaveAll)
+        self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
+
+    def createFileTree(self):
+        self.dirModel = QFileSystemModel()
+        self.dirModel.setRootPath(self.config["logs_directory"])
+        self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
+        self.dirLineEdit = QLineEdit()
+        self.dirLineEdit.setText(self.config["logs_directory"])
+        self.dirLineEdit.setFixedHeight(25)
+        self.dirLineEdit.returnPressed.connect(self.handleTreeDirChange)
+        self.fileTree = QTreeView()
+        self.fileTree.setModel(self.dirModel)
+        self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))
+        self.fileTree.setColumnHidden(1, True)
+        self.fileTree.setColumnHidden(2, True)
+        self.fileTree.setColumnHidden(3, True)
+        self.fileTree.setMinimumWidth(300)
+        self.fileTree.clicked.connect(self.handleTreeViewClick)
+        self.fileTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
+        self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
+        # self.populateRMSCheck(self.config['logs_directory'])
 
         self.controlDirLayout = QHBoxLayout()
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
         self.controlLayout.addWidget(self.fileTree)
 
-        self.controlLayout.setStretch(0, 2)
-        self.controlLayout.setStretch(3, 1)
         # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.addButton('load', self.choose_directory)
 
@@ -561,27 +582,6 @@ class LogInspectorWindow(QMainWindow):
         msg.setText("Unable to load log: " + e.__str__())
         msg.setDetailedText(traceback.format_exc())
         msg.exec()
-
-    def createFileTree(self):
-        self.dirModel = QFileSystemModel()
-        self.dirModel.setRootPath(self.config["logs_directory"])
-        self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
-        self.dirLineEdit = QLineEdit()
-        self.dirLineEdit.setText(self.config["logs_directory"])
-        self.dirLineEdit.setFixedHeight(25)
-        self.dirLineEdit.returnPressed.connect(self.handleTreeDirChange)
-        self.fileTree = QTreeView()
-        self.fileTree.setModel(self.dirModel)
-        self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))
-        self.fileTree.setColumnHidden(1, True)
-        self.fileTree.setColumnHidden(2, True)
-        self.fileTree.setColumnHidden(3, True)
-        self.fileTree.setMinimumWidth(300)
-        self.fileTree.clicked.connect(self.handleTreeViewClick)
-        self.fileTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
-        self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
-        # self.populateRMSCheck(self.config['logs_directory'])
 
     def updateFileTree(self):
         self.dirModel.setRootPath(self.config["logs_directory"])
