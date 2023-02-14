@@ -186,6 +186,7 @@ class logPlot:
         ax.set_aspect('equal', 'datalim')
         ax.legend(ncol=2)
         ax.grid(True)
+        self.saveFig(fig, 'posNEDMap')
 
     def posLLA(self, fig=None):
         if fig is None:
@@ -1806,11 +1807,14 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        fields = list(self.log.data[0, DID_RTK_DEBUG].dtype.names)
+        rtkData = self.log.data[0, DID_RTK_DEBUG]
+        if rtkData.size == 0:
+            return 
+        fields = list(rtkData.dtype.names)
         fields.remove('time')
         num_plots = 0
         for field in fields:
-            dat = self.log.data[0, DID_RTK_DEBUG][field][0]
+            dat = rtkData[field][0]
             if isinstance(dat, np.ndarray):
                 num_plots += len(dat)
             else:
@@ -1854,8 +1858,10 @@ class logPlot:
 
         ax = fig.subplots(6, 4, sharex=True)
 
-        #max_num_biases = 22 #np.array(self.getData(self.active_devs[0], DID_RTK_DEBUG_2, 'num_biases'))
-        max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
+        rtkDebug2 = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')
+        if not np.any(rtkDebug2):
+            return
+        max_num_biases = rtkDebug2[-1]
         for r in range(0,6):
             for c in range(0,4):
                 self.configureSubplot(ax[r,c])
@@ -1885,7 +1891,10 @@ class logPlot:
 
         ax = fig.subplots(6, 4, sharex=True)
 
-        max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
+        rtkDebug2 = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')
+        if not np.any(rtkDebug2):
+            return
+        max_num_biases = rtkDebug2[-1]
         for r in range(0,6):
             for c in range(0,4):
                 self.configureSubplot(ax[r,c])
@@ -1915,7 +1924,10 @@ class logPlot:
 
         ax = fig.subplots(6, 4, sharex=True)
 
-        max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
+        rtkDebug2 = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')
+        if not np.any(rtkDebug2):
+            return
+        max_num_biases = rtkDebug2[-1]
         for r in range(0,6):
             for c in range(0,4):
                 self.configureSubplot(ax[r,c])
@@ -1945,7 +1957,10 @@ class logPlot:
 
         ax = fig.subplots(6, 4, sharex=True)
 
-        max_num_biases = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')[-1]
+        rtkDebug2 = self.getData(0, DID_RTK_DEBUG_2, 'num_biases')
+        if not np.any(rtkDebug2):
+            return
+        max_num_biases = rtkDebug2[-1]
         for r in range(0,6):
             for c in range(0,4):
                 self.configureSubplot(ax[r,c])
@@ -2079,37 +2094,38 @@ class logPlot:
 
         for d in self.active_devs:
             time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
-            eff_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
-            eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
-            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
-            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
+            if np.any(time):
+                eff_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+                eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+                vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+                vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
 
-            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
-            actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
+                actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
+                actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
 
-            eff_l -= actuatorTrim_l
-            eff_r -= actuatorTrim_r
+                eff_l -= actuatorTrim_l
+                eff_r -= actuatorTrim_r
 
-            # deadbandDuty_l = 0.045
-            deadbandDuty_r = 0.0335
-            deadbandDuty_l = deadbandDuty_r # match left and right
-            deadbandVel = 0.05
+                # deadbandDuty_l = 0.045
+                deadbandDuty_r = 0.0335
+                deadbandDuty_l = deadbandDuty_r # match left and right
+                deadbandVel = 0.05
 
-            c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
-            c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
+                c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
+                c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
 
-            # string = []
-            # for element in c_l:
-            #     string.append("{:.9f}".format(element))
-            # string = "[" + ", ".join(string) + "]"
-            # # print(label, "inverse plant:" , string, " deadband:", deadbandDuty)
+                # string = []
+                # for element in c_l:
+                #     string.append("{:.9f}".format(element))
+                # string = "[" + ", ".join(string) + "]"
+                # # print(label, "inverse plant:" , string, " deadband:", deadbandDuty)
 
-            print("\nADD TO MODEL FILE:")
-            print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[4], c_l[3], c_l[2], c_l[1], c_l[0]))
-            print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_r[4], c_r[3], c_r[2], c_r[1], c_r[0]))
-            print("  actuatorDeadbandDuty_l: %.9f # (duty) Left  control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_l))
-            print("  actuatorDeadbandDuty_r: %.9f # (duty) Right control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_r))
-            print("  actuatorDeadbandVel: %.9f    # (rad/s) Commanded velocity" % (deadbandVel))
+                print("\nADD TO MODEL FILE:")
+                print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[4], c_l[3], c_l[2], c_l[1], c_l[0]))
+                print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_r[4], c_r[3], c_r[2], c_r[1], c_r[0]))
+                print("  actuatorDeadbandDuty_l: %.9f # (duty) Left  control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_l))
+                print("  actuatorDeadbandDuty_r: %.9f # (duty) Right control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_r))
+                print("  actuatorDeadbandVel: %.9f    # (rad/s) Commanded velocity" % (deadbandVel))
 
         for a in ax:
             a.grid(True)
@@ -2176,6 +2192,7 @@ class logPlot:
         ax = fig.subplots(4, 3, sharex=True)
 
         useSampleNumber = 1
+        noData = True
 
         for i in range(3):
             ax[0, i].set_title('X %s %d' % (name, i))
@@ -2199,71 +2216,76 @@ class logPlot:
 
         for d in self.active_devs:
             time = 0.001 * self.getData(d, DID_SCOMP, 'timeMs')
-            imu = self.getData(d, DID_SCOMP, name)
-            status = self.getData(d, DID_SCOMP, 'status')
+            if np.any(time):
+                noData = False
+                imu = self.getData(d, DID_SCOMP, name)
+                status = self.getData(d, DID_SCOMP, 'status')
 
-            if name=='mag':
-                refVal = self.getData(d, DID_SCOMP, 'referenceMag')
-            else:
-                refImu = self.getData(d, DID_SCOMP, 'referenceImu')
-                refImu = refImu
-                refVal = refImu[name]
-
-            print("Serial#: SN" + str(self.log.serials[d]) + " " + name + ": ")
-            for i in range(3):
-                temp = imu[:,i]['lpfTemp']
-                sensor = imu[:,i]['lpfLsb']
-
-                if name=='pqr':
-                    scalar = RAD2DEG
-                    yspan = 2.5 # deg/s
-                else:   # 'acc'
-                    scalar = 1.0
-                    yspan = 0.5 # m/s^2 
-
-                if useTemp:
-                    x = temp
+                if name=='mag':
+                    refVal = self.getData(d, DID_SCOMP, 'referenceMag')
                 else:
-                    if useSampleNumber:
-                        x = np.arange(len(sensor[:,0]))
+                    refImu = self.getData(d, DID_SCOMP, 'referenceImu')
+                    refImu = refImu
+                    refVal = refImu[name]
+
+                print("Serial#: SN" + str(self.log.serials[d]) + " " + name + ": ")
+                for i in range(3):
+                    temp = imu[:,i]['lpfTemp']
+                    sensor = imu[:,i]['lpfLsb']
+
+                    if name=='pqr':
+                        scalar = RAD2DEG
+                        yspan = 2.5 # deg/s
+                    else:   # 'acc'
+                        scalar = 1.0
+                        yspan = 0.5 # m/s^2 
+
+                    if useTemp:
+                        x = temp
                     else:
-                        x = time
+                        if useSampleNumber:
+                            x = np.arange(len(sensor[:,0]))
+                        else:
+                            x = time
 
-                # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None )
-                ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d] )
-                ax[1,i].plot(x, sensor[:,1]*scalar)
-                ax[2,i].plot(x, sensor[:,2]*scalar)
-                if name=='acc':
-                    ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
-
-                # Print mean and last value
-                xstr = "IMU" + str(i) + ", Mean: ["
-                for j in range(3):
-                    xstr += format(np.mean(sensor[:,j])*scalar, '10.6f')
-                    if j < 2:
-                        xstr += ","
-                xstr += "],  "
-                xstr += "Last: ["
-                for j in range(3):
-                    xstr += format(sensor[-1,j]*scalar, '10.6f')
-                    if j < 2:
-                        xstr += ","
-                xstr += "]"
-                print(xstr)
-
-                if 1:
-                    # Show sensor valid status bit
+                    # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None )
+                    ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d] )
+                    ax[1,i].plot(x, sensor[:,1]*scalar)
+                    ax[2,i].plot(x, sensor[:,2]*scalar)
                     if name=='acc':
-                        valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
-                    else:
-                        valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
-                    ax[0,i].plot(x, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
-                    ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
-                    ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
+                        ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
 
-                if 1:
+                    # Print mean and last value
+                    xstr = "IMU" + str(i) + ", Mean: ["
                     for j in range(3):
-                        ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
+                        xstr += format(np.mean(sensor[:,j])*scalar, '10.6f')
+                        if j < 2:
+                            xstr += ","
+                    xstr += "],  "
+                    xstr += "Last: ["
+                    for j in range(3):
+                        xstr += format(sensor[-1,j]*scalar, '10.6f')
+                        if j < 2:
+                            xstr += ","
+                    xstr += "]"
+                    print(xstr)
+
+                    if 1:
+                        # Show sensor valid status bit
+                        if name=='acc':
+                            valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
+                        else:
+                            valid = 0.0 + ((status & 0x00000100) != 0) * scalar * 0.25
+                        ax[0,i].plot(x, valid * np.max(sensor[:,0]), color='y', label="Sensor Valid")
+                        ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
+                        ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
+
+                    if 1:
+                        for j in range(3):
+                            ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
+
+        if noData:
+            return
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
