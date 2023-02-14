@@ -16,24 +16,10 @@ TEST(test_main, basic)
                        "\n"
                        "sensors:\n"
                        "  messages:  \n"
-                       "    imu:              # Publish IMU angular rates and linear acceleration\n"
-                       "      topic: \"imu\"\n"
-                       "      enable: true\n"
-                       "      period: 1\n"
                        "    pimu:             # Publish preintegrated IMU delta theta and delta velocity\n"
                        "      topic: \"pimu\"\n"
                        "      enable: true\n"
-                       "      period: 1\n"
-                       "\n"
-                       "gps1:\n"
-                       "  type: 'F9P'\n"
-                       "  antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna\n"
-                       "  gpsTimeUserDelay: 0.0\n"
-                       "  messages:\n"
-                       "    pos_vel:\n"
-                       "      topic: \"gps1/pos_vel\"\n"
-                       "      enable: true\n"
-                       "      period: 1";
+                       "      period: 1\n";
 
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
