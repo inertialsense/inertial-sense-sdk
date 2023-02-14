@@ -4,8 +4,13 @@ import sys, os, shutil
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView, QFileSystemModel,\
     QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
+<<<<<<< HEAD
     QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox, QGroupBox, QListView
 from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage, QClipboard, QStandardItemModel, QStandardItem
+=======
+    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox
+from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage, QClipboard
+>>>>>>> origin/release_2.0.0
 from PyQt5.QtWidgets import QApplication, QStyle
 import json
 import io
