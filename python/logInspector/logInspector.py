@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
     QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
     QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox, QGroupBox, QListView
 from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage, QClipboard, QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QApplication, QStyle
+from PyQt5.QtWidgets import QApplication, QStyle, QSpacerItem
 import json
 import io
 
@@ -406,7 +406,6 @@ class LogInspectorWindow(QMainWindow):
 
     def createListGeneral(self):
         self.addListSection('GENERAL')
-        self.addListItem('GPS LLA', 'llaGps')
 
     def setCurrentListRow(self, row):
         if row < self.modelList.rowCount() and row < len(self.functionList):
@@ -414,6 +413,8 @@ class LogInspectorWindow(QMainWindow):
                 self.selectedIndex = row
                 index = self.modelList.createIndex(self.selectedIndex, 0)
                 self.listView.setCurrentIndex(index)
+                return True
+        return False
 
     def onSelectListItem(self, index):
         row = index.row()
@@ -448,9 +449,10 @@ class LogInspectorWindow(QMainWindow):
         self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
         LayoutResSaveAll.addWidget(self.checkboxResiduals)
 
-        self.saveAllPushButton = QPushButton("Save All Plots")
+        self.saveAllPushButton = QPushButton(" Save All Plots ")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
-        self.saveAllPushButton.setFixedWidth(50)
+        hSpacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum) 
+        LayoutResSaveAll.addItem(hSpacer)
         LayoutResSaveAll.addWidget(self.saveAllPushButton)
 
         self.controlLayout.addLayout(LayoutResSaveAll)
@@ -506,7 +508,16 @@ class LogInspectorWindow(QMainWindow):
             self.updatePlot()
 
     def saveAllPlotsToFile(self):
-        print("Save all to file")
+        if self.log == None:
+            print("Log not opened.  Please select a log directory.")
+            return
+        print("Saving all plots file")
+        self.plotter.save = True
+        for i in range(len(self.funcNameList)):
+            if self.setCurrentListRow(i) and self.funcNameList[i] != None:
+                self.plot(self.selectedPlot(), self.plotargs)
+            QtCore.QCoreApplication.processEvents()
+        self.plotter.save = False
 
     def changeDownSample(self, val):
         self.downsample = val

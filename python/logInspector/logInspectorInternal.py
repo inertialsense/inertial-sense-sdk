@@ -76,7 +76,7 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createListIns(self):
         super(logInspectorInternal, self).createListIns()
-        self.addListItem('EKF Biases', lambda: self.plot('ekfBiases'))
+        self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
         super(logInspectorInternal, self).createListSensors()
