@@ -140,9 +140,6 @@
     <ClCompile Include="..\..\src\ihex.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\hw-libs\firmwareSignature.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\libusb\libusb\core.c">
       <Filter>Source Files</Filter>
     </ClCompile>

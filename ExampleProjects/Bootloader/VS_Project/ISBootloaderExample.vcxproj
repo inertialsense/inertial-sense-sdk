@@ -19,13 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\hw-libs\firmwareSignature.c" />
     <ClCompile Include="..\..\..\src\data_sets.c" />
     <ClCompile Include="..\..\..\src\ihex.c" />
-    <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp" />
+    <!-- <ClCompile Include="..\..\..\src\ISBootloaderAPP.cpp" />
     <ClCompile Include="..\..\..\src\ISBootloaderBase.cpp" />
     <ClCompile Include="..\..\..\src\ISBootloaderDFU.cpp" />
-    <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp" />
+    <ClCompile Include="..\..\..\src\ISBootloaderThread.cpp" /> -->
     <ClCompile Include="..\..\..\src\ISComm.c" />
     <ClCompile Include="..\..\..\src\ISSerialPort.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>

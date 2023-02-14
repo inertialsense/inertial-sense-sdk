@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\hw-libs\firmwareSignature.c" />
     <ClCompile Include="..\..\..\src\com_manager.c" />
     <ClCompile Include="..\..\..\src\convert_ins.cpp" />
     <ClCompile Include="..\..\..\src\DataChunk.cpp" />

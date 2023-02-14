@@ -676,5 +676,5 @@ void gndSpeedToVelEcef(const float gndSpeed, const float hdg, const float vertVe
 
     rotMat_ned2ecef(lla, Rn2e);
 
-    mul_Mat3x3_Trans_Vec3x1(velEcef, Rn2e, velNed);
+    mul_Mat3x3_Vec3x1(velEcef, Rn2e, velNed);
 }
