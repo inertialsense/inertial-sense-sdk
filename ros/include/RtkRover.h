@@ -108,13 +108,17 @@ public:
 class RtkRoverCorrectionProviderFactory {
 public:
     static RtkRoverCorrectionProvider* buildCorrectionProvider(YAML::Node &node) {
-        std::string type = node["type"].as<std::string>();
-        std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-        if (type == "ntrip") return new RtkRoverCorrectionProvider_Ntrip(node);
-        else if (type == "serial") return new RtkRoverCorrectionProvider_Serial(node);
-        else if (type == "evb") return new RtkRoverCorrectionProvider_EVB(node);
-        else if (type == "ros_topic") return new RtkRoverCorrectionProvider_ROS(node);
-        else return nullptr;
+        if (node.IsDefined() && !node.IsNull()) {
+            std::string type = node["type"].as<std::string>();
+            std::transform(type.begin(), type.end(), type.begin(), ::tolower);
+            if (type == "ntrip") return new RtkRoverCorrectionProvider_Ntrip(node);
+            else if (type == "serial") return new RtkRoverCorrectionProvider_Serial(node);
+            else if (type == "evb") return new RtkRoverCorrectionProvider_EVB(node);
+            else if (type == "ros_topic") return new RtkRoverCorrectionProvider_ROS(node);
+        } else {
+            ROS_ERROR("Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");
+        }
+        return nullptr;
     }
 };
 

@@ -113,13 +113,17 @@ public:
 class RtkBaseCorrectionProviderFactory {
 public:
     static RtkBaseCorrectionProvider* buildProvider(RtkBaseProvider& base, YAML::Node &node) {
-        std::string type = node["type"].as<std::string>();
-        std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-        if (type == "ntrip") return new RtkBaseCorrectionProvider_Ntrip(node, base.protocol_);
-        else if (type == "serial") return new RtkBaseCorrectionProvider_Serial(node);
-        else if (type == "ros_topic") return new RtkBaseCorrectionProvider_ROS(node);
-        else if (type == "evb") return new RtkBaseCorrectionProvider_EVB(node);
-        else return nullptr;
+        if (node.IsDefined() && !node.IsNull()) {
+            std::string type = node["type"].as<std::string>();
+            std::transform(type.begin(), type.end(), type.begin(), ::tolower);
+            if (type == "ntrip") return new RtkBaseCorrectionProvider_Ntrip(node, base.protocol_);
+            else if (type == "serial") return new RtkBaseCorrectionProvider_Serial(node);
+            else if (type == "ros_topic") return new RtkBaseCorrectionProvider_ROS(node);
+            else if (type == "evb") return new RtkBaseCorrectionProvider_EVB(node);
+        } else {
+            ROS_ERROR("Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined.");
+        }
+        return nullptr;
     }
 };
 

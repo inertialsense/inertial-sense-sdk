@@ -18,35 +18,53 @@
 
 #include "RtkRover.h"
 
-void RtkRoverProvider::configure(YAML::Node& n) {
-    ph_.setCurrentNode(n);
-    ph_.nodeParam("compassing_enable", compassing_enable, false);
-    ph_.nodeParam("positioning_enable", positioning_enable, false);
+void RtkRoverProvider::configure(YAML::Node& node) {
+    if (node.IsDefined() && !node.IsNull()) {
+        ph_.setCurrentNode(node);
+        ph_.nodeParam(node, "compassing_enable", compassing_enable, false);
+        ph_.nodeParam(node, "positioning_enable", positioning_enable, false);
 
-    YAML::Node roverInput = ph_.node(n, "correction_input");
-    YAML::Node roverSettings = ph_.node(roverInput, roverInput["select"].as<std::string>());
-    correction_input = RtkRoverCorrectionProviderFactory::buildCorrectionProvider(roverSettings);
+        if (node["correction_input"].IsDefined() && !node["correction_input"].IsNull()) {
+            std::string correction_src = node["correction_input"]["select"].as<std::string>();
+            YAML::Node inputNode = node["correction_input"][correction_src];
+            if (inputNode.IsDefined() && !inputNode.IsNull()) {
+                correction_input = RtkRoverCorrectionProviderFactory::buildCorrectionProvider(inputNode);
+                if (correction_input == nullptr) {
+                    ROS_ERROR_STREAM("Unable to configure RosRoverCorrectionProviders. Please validate the configuration:\n\n" << node << "\n\n");
+                }
+            } else {
+                ROS_ERROR_STREAM("The specified Correction Provider [" << correction_src << "] can't be located in the config. Please validate the configuration:\n\n" << node << "\n\n");
+            }
+        } else {
+            ROS_ERROR_STREAM("No \"correction_input\" configuration has been provided.  Please validate the configuration:\n\n" << node << "\n\n");
+        }
+    } else {
+        ROS_ERROR("Unable to configure RosRoverProvider. The YAML node was null or undefined.");
+    }
 }
 
 /*
  *==================  RtkRoverCorrectionProvider_Ntrip ==================*
  */
 void RtkRoverCorrectionProvider_Ntrip::configure(YAML::Node& node) {
-    ph_.setCurrentNode(node);
-    ph_.nodeParam("type", type_, "NTRIP");
-    ph_.nodeParam("format", protocol_, "RTCM3");
-    ph_.nodeParam("ip_address", ip_);
-    ph_.nodeParam("ip_port", port_);
-    ph_.nodeParam("mount_point", mount_point_);
-    ph_.nodeParam("username", username_);
-    ph_.nodeParam("password", password_);
-    ph_.setCurrentNode(node["connection_attempts"]);
-    ph_.nodeParam("limit", connection_attempt_limit_, 1);
-    ph_.nodeParam("backoff", connection_attempt_backoff_, 2);
-    ph_.setCurrentNode(node["watchdog"]);
-    ph_.nodeParam("enable", connectivity_watchdog_enabled_, true);
-    ph_.nodeParam("interval", connectivity_watchdog_timer_frequency_, 1);
-    
+    if (node.IsDefined() && !node.IsNull()) {
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("type", type_, "NTRIP");
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("ip_address", ip_);
+        ph_.nodeParam("ip_port", port_);
+        ph_.nodeParam("mount_point", mount_point_);
+        ph_.nodeParam("username", username_);
+        ph_.nodeParam("password", password_);
+        ph_.setCurrentNode(node["connection_attempts"]);
+        ph_.nodeParam("limit", connection_attempt_limit_, 1);
+        ph_.nodeParam("backoff", connection_attempt_backoff_, 2);
+        ph_.setCurrentNode(node["watchdog"]);
+        ph_.nodeParam("enable", connectivity_watchdog_enabled_, true);
+        ph_.nodeParam("interval", connectivity_watchdog_timer_frequency_, 1);
+    } else {
+        ROS_ERROR("Unable to configure RtkRoverCorrectionProvider_Ntrip. The YAML node was null or undefined.");
+    }
 }
 
 std::string RtkRoverCorrectionProvider_Ntrip::get_connection_string() {
@@ -150,27 +168,39 @@ void RtkRoverCorrectionProvider_Ntrip::stop_connectivity_watchdog_timer()
  *==================  RtkRoverCorrectionProvider_Serial ==================*
  */
 void RtkRoverCorrectionProvider_Serial::configure(YAML::Node& node) {
-    ph_.setCurrentNode(node);
-    ph_.nodeParam("format", protocol_, "RTCM3");
-    ph_.nodeParam("port", port_);
-    ph_.nodeParam("baud_rate", baud_rate_);
+    if (node.IsDefined() && !node.IsNull()) {
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("port", port_);
+        ph_.nodeParam("baud_rate", baud_rate_);
+    } else {
+        ROS_ERROR("Unable to configure RtkRoverCorrectionProvider_Serial. The YAML node was null or undefined.");
+    }
 }
 
 /*
  *==================  RtkRoverCorrectionProvider_ROS ==================*
  */
 void RtkRoverCorrectionProvider_ROS::configure(YAML::Node& node) {
-    ph_.setCurrentNode(node);
-    ph_.nodeParam("format", protocol_, "RTCM3");
-    ph_.nodeParam("topic", topic_);
+    if (node.IsDefined() && !node.IsNull()) {
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("topic", topic_);
+    } else {
+        ROS_ERROR("Unable to configure RtkRoverCorrectionProvider_ROS. The YAML node was null or undefined.");
+    }
 }
 
 /*
  *==================  RtkRoverCorrectionProvider_EVB ==================*
  */
 void RtkRoverCorrectionProvider_EVB::configure(YAML::Node& node) {
-    ph_.setCurrentNode(node);
-    ph_.nodeParam("format", protocol_, "RTCM3");
-    ph_.nodeParam("port", port_);
+    if (node.IsDefined() && !node.IsNull()) {
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("port", port_);
+    } else {
+        ROS_ERROR("Unable to configure RtkRoverCorrectionProvider_EVB. The YAML node was null or undefined.");
+    }
 }
 

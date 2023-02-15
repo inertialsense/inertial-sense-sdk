@@ -267,7 +267,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
 
     YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
-    if (rtkBaseNode.IsDefined() && !rtkRoverNode.IsNull())
+    if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
         RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     // Print entire yaml node tree

@@ -14,8 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(Threads)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu17 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
 
 add_message_files(
   FILES
