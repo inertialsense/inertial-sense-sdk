@@ -1672,23 +1672,23 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         uint32_t fixStatus = msg->status & GPS_STATUS_FIX_MASK;
         if (fixStatus == GPS_STATUS_FIX_3D)
         {
-            rtk_rel.eGpsNavFixStatus = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_3D;
+            rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_3D;
         }
         else if (fixStatus == GPS_STATUS_FIX_RTK_SINGLE)
         {
-            rtk_rel.eGpsNavFixStatus = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_SINGLE;
+            rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_SINGLE;
         }
         else if (fixStatus == GPS_STATUS_FIX_RTK_FLOAT)
         {
-            rtk_rel.eGpsNavFixStatus = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FLOAT;
+            rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FLOAT;
         }
         else if (fixStatus == GPS_STATUS_FIX_RTK_FIX)
         {
-            rtk_rel.eGpsNavFixStatus = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FIX;
+            rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FIX;
         }
         else if (msg->status & GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD)
         {
-            rtk_rel.eGpsNavFixStatus = inertial_sense_ros::RTKRel::GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD;
+            rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD;
         }
 
         rtk_rel.vector_base_to_rover.x = msg->baseToRoverVector[0];
@@ -1715,7 +1715,7 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
     diagnostic_ar_ratio_ = rtk_rel.ar_ratio;
     diagnostic_differential_age_ = rtk_rel.differential_age;
     diagnostic_heading_base_to_rover_ = rtk_rel.heading_base_to_rover;
-    diagnostic_fix_type_ = rtk_rel.eGpsNavFixStatus;
+    diagnostic_fix_type_ = rtk_rel.eGpsStatusFix;
 }
 
 void InertialSenseROS::GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg)
