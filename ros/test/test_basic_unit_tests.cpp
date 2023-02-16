@@ -3,7 +3,6 @@
 //
 
 #include <fstream>
-#include <filesystem>
 
 #include "gtest_helpers.h"
 
@@ -13,11 +12,13 @@
 
 #define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_yaml_config.yaml"
 
+char cwd_buff[64];
+
 TEST(BasicTestSuite, test_config_params)
 {
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
-    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << std::filesystem::current_path();
+    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff));
 
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
@@ -40,7 +41,7 @@ TEST(BasicTestSuite, test_rtk_rover)
 {
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
-    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << std::filesystem::current_path();
+    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff));
 
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
@@ -197,7 +198,8 @@ TEST(BasicTestSuite, test_rtk_base)
 {
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
-    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << std::filesystem::current_path();
+    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff));
+    ;
 
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
@@ -230,6 +232,99 @@ TEST(BasicTestSuite, test_rtk_base)
 
 
 }
+
+TEST(BasicTestSuite, test_topic_helper)
+{
+    std::string yaml = "ins:\n"
+                       "  navigation_dt_ms: 4\n"
+                       "  messages:\n"
+                       "    odom_ins_enu:\n"
+                       "      enable: true\n"
+                       "    odom_ins_ned:\n"
+                       "      topic: \"odom_ned\"\n"
+                       "      enable: false\n"
+                       "    odom_ins_ecef:\n"
+                       "      topic: \"odom_ins_ecef\"\n"
+                       "      period: 2\n"
+                       "sensors:\n"
+                       "  messages:  \n"
+                       "    imu:              # Publish IMU angular rates and linear acceleration\n"
+                       "    pimu:             # Publish preintegrated IMU delta theta and delta velocity\n"
+                       "    barometer:\n";
+                    // "    magnetometer:\n" -- these should test to "enable: false"
+                    // "    strobe_in:       -- these should test to "enable: false"
+
+    YAML::Node config = YAML::Load(yaml);
+    ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
+    ParamHelper ph(config);
+
+    // Check to ensure that parsing of configs using ParamHelper+TopicHelper work as expected.
+
+    YAML::Node insNode = ph.node(config, "ins");
+    YAML::Node insMsgs = ph.node(insNode, "messages", 2);
+    // These first set of tests on the 'ins' stanza test that explicit and default parameters are working.
+
+    TopicHelper enu;
+    ph.msgParams(enu, "odom_ins_enu");
+    EXPECT_EQ(enu.enabled, true);
+    EXPECT_EQ(enu.topic, "odom_ins_enu");
+    EXPECT_EQ(enu.period, 1);
+
+    TopicHelper ned;
+    ph.msgParams(ned, "odom_ins_ned");
+    EXPECT_EQ(ned.enabled, false);
+    EXPECT_EQ(ned.topic, "odom_ned");
+    EXPECT_EQ(ned.period, 1);
+
+    TopicHelper ecef;
+    ph.msgParams(ecef, "odom_ins_ecef");
+    EXPECT_EQ(ecef.enabled, true);
+    EXPECT_EQ(ecef.topic, "odom_ins_ecef");
+    EXPECT_EQ(ecef.period, 2);
+
+    YAML::Node sensorsNode = ph.node(config, "sensors");
+    YAML::Node sensorsMsgs = ph.node(sensorsNode, "messages", 2);
+    // These next set of tests on the 'sensors' stanza test that implicit (and empty/null) mappings
+    // default to appropriate "enabled" values when the
+    // Specifically, that 'sensors/messages' stanza above, each empty/null sub-stanza (imu, pimu, etc)
+    // has an implicit default topic and enabled setting.
+
+    TopicHelper imu;
+    ph.msgParams(imu, "imu");
+    EXPECT_EQ(imu.enabled, true);
+    EXPECT_EQ(imu.topic, "imu");
+    EXPECT_EQ(imu.period, 1);
+
+    TopicHelper pimu;
+    ph.msgParams(pimu, "pimu");
+    EXPECT_EQ(pimu.enabled, true);
+    EXPECT_EQ(pimu.topic, "pimu");
+    EXPECT_EQ(pimu.period, 1);
+
+    TopicHelper baro;
+    ph.msgParams(baro, "barometer");
+    EXPECT_EQ(baro.enabled, true);
+    EXPECT_EQ(baro.topic, "barometer");
+    EXPECT_EQ(baro.period, 1);
+
+    TopicHelper mag;
+    ph.msgParams(mag, "magnetometer");
+    EXPECT_EQ(mag.enabled, false); // NOTE: this is false, because 'magnetometer' doesn't appear in the YAML, and its not implictly enabled
+    EXPECT_EQ(mag.topic, "magnetometer");
+    EXPECT_EQ(mag.period, 1);
+
+    TopicHelper strobe;
+    ph.msgParams(strobe, "strobe_in", "strobe", true); // NOTE: This is NOT enabled, despite being enabled, but the stanza doesn't exist
+    EXPECT_EQ(strobe.enabled, false); // NOTE: this is FALSE, despite `enabledDefault: true`, because "strobe_in" does not exist in the YAML (implicitly disabled)
+    EXPECT_EQ(strobe.topic, "strobe");
+    EXPECT_EQ(strobe.period, 1);
+
+    ph.msgParamsImplicit(strobe, "strobe_in", "strobe", true); // NOTE: This overrides the default implicit behavior (implicitly enabled)
+    EXPECT_EQ(strobe.enabled, true); // NOTE: this is TRUE, despite not being in the YAML, because we called msgParamsImplicit(..., enabledDefault: true)
+    EXPECT_EQ(strobe.topic, "strobe");
+    EXPECT_EQ(strobe.period, 1);
+}
+
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);

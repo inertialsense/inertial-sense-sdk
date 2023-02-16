@@ -27,14 +27,14 @@ class ParamHelper
 {
 public:
     YAML::Node currentNode_;
-    int indent_ = 1;
 
     ParamHelper(YAML::Node &node){ setCurrentNode(node); }
 
     YAML::Node node(YAML::Node &node, std::string key, int indent=1);
     void setCurrentNode(YAML::Node node);
 
-    bool msgParams(TopicHelper &th, std::string key, std::string topicDefault="", bool enabledDefault=false, int periodDefault=1);
+    bool msgParams(TopicHelper &th, std::string key, std::string topicDefault="", bool enabledDefault=true, int periodDefault=1, bool implicitEnable=false);
+    bool msgParamsImplicit(TopicHelper &th, std::string key, std::string topicDefault, bool enabledDefault=true, int periodDefault=1);
 
 //    template <typename Type>
 //    bool param(YAML::Node &node, const std::string key, Type &val, Type &valDefault);
@@ -60,6 +60,11 @@ public:
     bool nodeParamVec(const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(currentNode_, key, size, val, valDefault); }
     bool nodeParamVec(YAML::Node &node, const std::string key, int size, double val[], double valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
     bool nodeParamVec(YAML::Node &node, const std::string key, int size, float val[], float valDefault[] = NULL){ return paramVec(node, key, size, val, valDefault); }
+
+    bool nodeParamEnum(const std::string key, int &val, std::vector<std::string> set, int defaultVal){ return paramEnum(currentNode_, key, val, set, defaultVal); }
+    bool nodeParamEnum(YAML::Node &node, const std::string key, int &val, std::vector<std::string> set, int defaultVal){ return paramEnum(node, key, val, set, defaultVal); }
+    bool nodeParamEnum(const std::string key, int &val, std::map<std::string, int> set, int defaultVal){ return paramEnum(currentNode_, key, val, set, defaultVal); }
+    bool nodeParamEnum(YAML::Node &node, const std::string key, int &val, std::map<std::string, int> set, int defaultVal){ return paramEnum(node, key, val, set, defaultVal); }
 
     static bool paramServerToYamlNode(YAML::Node &node, std::string nhKey="", std::string indentStr="");
 
@@ -111,6 +116,62 @@ public:
         }
 
         return success;
+    }
+
+    bool paramEnum(YAML::Node &node, const std::string key, int& val, std::vector<std::string>& set, int defaultVal) {
+        bool success = false;
+        if (node[key]) {
+            std::string str_val = node[key].as<std::string>();
+            for (int i = 0 ; i < set.size(); i++) {
+                if (str_val == set[i]) {
+                    val = i;
+                    success = true;
+                    return true;
+                }
+            }
+            // before we fall to a failure (not the 'return true' above)... check it str_val is a number, and if so, use it directly
+            if (!str_val.empty() && std::find_if(str_val.begin(),str_val.end(), [](unsigned char c) { return !std::isdigit(c); }) == str_val.end()) {
+                try {
+                    val = std::stoi(str_val);
+                    success = true;
+                } catch (const std::invalid_argument& ia) {
+                    // a parse error should fall back to the default, but return a failure
+                    val = defaultVal;
+                }
+            }
+        } else {
+            // the key wasn't found, so also a failure.
+            node[key] = defaultVal;
+            val = defaultVal;
+        }
+        return success;
+    }
+
+    bool paramEnum(YAML::Node &node, const std::string key, int& val, std::map<std::string, int>& set, int defaultVal) {
+        bool success = false;
+        if (node[key]) {
+            std::string str_val = node[key].as<std::string>();
+            for (auto it = set.begin(); it != set.end(); it++) {
+                if (it->first == str_val) {
+                    val = it->second;
+                    return true;
+                }
+            }
+            // before we fall to a failure (not the 'return true' above)... check it str_val is a number, and if so, use it directly
+            if (!str_val.empty() && std::find_if(str_val.begin(),str_val.end(), [](unsigned char c) { return !std::isdigit(c); }) == str_val.end()) {
+                try {
+                    val = std::stoi(str_val);
+                    success = true;
+                } catch (const std::invalid_argument& ia) {
+                    // a parse error should fall back to the default, but return a failure
+                    val = defaultVal;
+                }
+            }
+        } else {
+            node[key] = defaultVal;
+            val = defaultVal;
+        }
+        return false;
     }
 
 };

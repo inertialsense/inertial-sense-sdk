@@ -18,6 +18,48 @@
 
 #include "ParamHelper.h"
 
+void ParamHelper::setCurrentNode(YAML::Node node)
+{
+    node ? currentNode_.reset(node) : currentNode_.reset(YAML::Node());
+}
+
+YAML::Node ParamHelper::node(YAML::Node &node, std::string key, int indent)
+{
+    setCurrentNode(node[key]);
+    return currentNode_;
+}
+
+/**
+ * Attempts to populate a TopicHelper properties, if stanza specified by 'key' exists.  If the key exists,
+ * but no other parameter nodes beneath it, those values will default. If the key does not exist, it is automatically
+ * @param th
+ * @param key
+ * @param topicDefault
+ * @param enabledDefault
+ * @param periodDefault
+ * @return
+ */
+bool ParamHelper::msgParams(TopicHelper &th, std::string key, std::string topicDefault, bool enabledDefault, int periodDefault, bool implicitEnable)
+{
+    YAML::Node msgNode;
+    if (!currentNode_[key]) {
+        th.topic = (topicDefault.empty() ? key : topicDefault);
+        th.enabled = implicitEnable;
+        th.period = periodDefault;
+        return false;
+    }
+
+    msgNode = currentNode_[key];
+    nodeParam(msgNode, "topic",  th.topic, (topicDefault.empty() ? key : topicDefault));
+    nodeParam(msgNode, "enable", th.enabled, enabledDefault);
+    nodeParam(msgNode, "period", th.period, periodDefault);
+    return true;
+}
+
+bool ParamHelper::msgParamsImplicit(TopicHelper &th, std::string key, std::string topicDefault, bool enabledDefault, int periodDefault) {
+    msgParams(th, key, topicDefault, enabledDefault, periodDefault, enabledDefault);
+}
+
 YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
 {
     YAML::Node node;
@@ -38,41 +80,6 @@ YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
 
     return node;
 }
-
-YAML::Node ParamHelper::node(YAML::Node &node, std::string key, int indent)
-{
-    indent_ = indent+1;
-    setCurrentNode(node[key]);
-    return currentNode_;
-}
-
-void ParamHelper::setCurrentNode(YAML::Node node)
-{
-    node ? currentNode_.reset(node) : currentNode_.reset(YAML::Node());
-}
-
-#define PH_DEFAULT_MSG      "   (default)"
-
-bool ParamHelper::msgParams(TopicHelper &th, std::string key, std::string topicDefault, bool enabledDefault, int periodDefault)
-{
-    YAML::Node msgNode;
-    if (currentNode_[key])
-    {
-        msgNode = currentNode_[key];
-    }
-    else
-    {
-        indent_--;
-        return false;
-    }
-    nodeParam(msgNode, "topic",  th.topic, (topicDefault.empty() ? key : topicDefault));
-    nodeParam(msgNode, "enable", th.enabled, enabledDefault);
-    nodeParam(msgNode, "period", th.period, periodDefault);
-    indent_--;
-
-    return true;
-}
-
 
 bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std::string indentStr)
 {

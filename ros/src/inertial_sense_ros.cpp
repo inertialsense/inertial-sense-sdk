@@ -63,6 +63,9 @@ void InertialSenseROS::initialize(bool configFlashParameters)
 void InertialSenseROS::terminate() {
     IS_.Close();
     IS_.CloseServerConnection();
+    sdk_connected_ = false;
+
+    // ROS equivelant to shutdown advertisers, etc.
 }
 
 void InertialSenseROS::initializeIS(bool configFlashParameters) {
@@ -220,12 +223,25 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParamVec("rotation", 3, insRotation_);
     ph.nodeParamVec("offset", 3, insOffset_);
     ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, 4);
-    ph.nodeParam("dynamic_model", insDynModel_, INS_DYN_MODEL_AIRBORNE_4G);
+
+    std::vector<std::string> dyn_model_set{ "INS_DYN_MODEL_PORTABLE",
+                                            " << UNKNOWN >> ",
+                                            "INS_DYN_MODEL_STATIONARY",
+                                            "INS_DYN_MODEL_PEDESTRIAN",
+                                            "INS_DYN_MODEL_GROUND_VEHICLE",
+                                            "INS_DYN_MODEL_MARINE",
+                                            "INS_DYN_MODEL_AIRBORNE_1G",
+                                            "INS_DYN_MODEL_AIRBORNE_2G",
+                                            "INS_DYN_MODEL_AIRBORNE_4G",
+                                            "INS_DYN_MODEL_WRIST",
+                                            "INS_DYN_MODEL_INDOOR" };
+
+    ph.nodeParamEnum("dynamic_model", insDynModel_, dyn_model_set, INS_DYN_MODEL_AIRBORNE_4G);
     ph.nodeParam("enable_covariance", covariance_enabled_, false);
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
     ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu");
     ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned");
-    ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned");
+    ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef");
     ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned");
     ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla");
     ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true);
@@ -285,7 +301,7 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 
 #define CONFIG_STREAM(stream, did, type, cb_fun) \
     if((stream.enabled) && !(stream.streaming)){ \
-        ROS_INFO("Attempting to enable %s data stream.", cISDataMappings::GetDataSetName(did)); \
+        ROS_INFO("Attempting to enable %s (%d) data stream.", cISDataMappings::GetDataSetName(did), did); \
         SET_CALLBACK(did, type, cb_fun, stream.period); \
         if (!firstrun) \
             return; \
@@ -293,13 +309,13 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 
 #define CONFIG_STREAM_GPS(stream, did_pos, cb_fun_pos, did_vel, cb_fun_vel) \
     if((stream.enabled) && !(stream.streaming_pos)){ \
-        ROS_INFO("Attempting to enable %s data stream.", cISDataMappings::GetDataSetName(did_pos)); \
+        ROS_INFO("Attempting to enable %s (%d) data stream.", cISDataMappings::GetDataSetName(did_pos), did_pos); \
         SET_CALLBACK(did_pos, gps_pos_t, cb_fun_pos, stream.period); \
         if (!firstrun) \
             return; \
     } \
     if((stream.enabled) && !(stream.streaming_vel)){ \
-        ROS_INFO("Attempting to enable %s data stream.", cISDataMappings::GetDataSetName(did_vel)); \
+        ROS_INFO("Attempting to enable %s (%d) data stream.", cISDataMappings::GetDataSetName(did_vel), did_vel); \
         SET_CALLBACK(did_vel, gps_vel_t, cb_fun_vel, stream.period); \
         if (!firstrun) \
             return; \
@@ -531,7 +547,7 @@ bool InertialSenseROS::connect(float timeout)
             port_ = cur_port;
             break;
         }
-        if ((ports_.size() > 1) || (ports_iterator != ports_.end()))
+        if ((ports_.size() > 1) && (ports_iterator != ports_.end()))
             ports_iterator++;
         else
             ports_iterator = ports_.begin(); // just keep looping until we timeout below
@@ -621,7 +637,7 @@ void InertialSenseROS::configure_flash_parameters()
     }
     if (current_flash_cfg.ioConfig != ioConfigBits_)
     {
-        ROS_INFO("ioConfig change from %0x08X to %0x08X, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
+        ROS_INFO("ioConfig change from 0x%08X to 0x%08X, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
         reboot = true;
     }
 
@@ -802,7 +818,7 @@ void InertialSenseROS::configure_rtk()
             if (RTK_rover_->correction_input && (RTK_rover_->correction_input->type_ == "evb")) {
                 ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
                 rs_.rtk_pos.enabled = true;
-                RTK_base_->enable = false;
+                if (RTK_base_) RTK_base_->enable = false;
                 rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
                 SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
@@ -855,7 +871,7 @@ void InertialSenseROS::configure_rtk()
         if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
-            RTK_base_->enable = false;
+            if (RTK_base_) RTK_base_->enable = false;
             rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
@@ -863,7 +879,7 @@ void InertialSenseROS::configure_rtk()
         else if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover");
-            RTK_base_->enable = false;
+            if (RTK_base_) RTK_base_->enable = false;
             rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             connect_rtk_client((RtkRoverCorrectionProvider_Ntrip&)*RTK_rover_->correction_input);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
@@ -1488,6 +1504,7 @@ void InertialSenseROS::update()
 {
     if (!IS_.IsOpen()) {
         IS_.Close();
+        sdk_connected_ = false;
         sleep(1);
         initializeIS();
     }
