@@ -398,6 +398,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GPS 2 Stats', 'gps2Stats')
         self.addListItem('RTK Pos Stats', 'rtkPosStats')
         self.addListItem('RTK Cmp Stats', 'rtkCmpStats')
+        self.addListItem('GPS Position NED Map', 'gpsPosNEDMap')
         self.addListItem('GPS Position NED', 'gpsPosNED')
         self.addListItem('GPS Velocity NED', 'gpsVelNED')
 

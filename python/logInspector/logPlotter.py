@@ -177,16 +177,43 @@ class logPlot:
             if(np.shape(self.active_devs)[0]==1):
                 self.drawNEDMapArrow(ax, ned, euler[:, 2])
 
-                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS1_POS, 'lla'))
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS1')
 
-                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS2_POS, 'lla'))
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS2')
 
         ax.set_aspect('equal', 'datalim')
         ax.legend(ncol=2)
         ax.grid(True)
         self.saveFig(fig, 'posNEDMap')
+
+    def gpsPosNEDMap(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(1,1)
+        ax.set_xlabel('East (m)')
+        ax.set_ylabel('North (m)')
+        fig.suptitle('GPS NED Map - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        refLla = None
+        for d in self.active_devs:
+            lla = self.getData(d, DID_GPS1_POS, 'lla')
+            if len(lla) == 0:
+                continue
+            if refLla is None:
+                refLla = lla[0]
+
+            nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+            ax.plot(nedGps[:, 1], nedGps[:, 0], label=("GPS1 %s" % (self.log.serials[d])))
+
+            if 0:
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label=("GPS2 %s" % (self.log.serials[d])))
+
+        ax.set_aspect('equal', 'datalim')
+        ax.legend(ncol=2)
+        ax.grid(True)
+        self.saveFig(fig, 'gpsPosNEDMap')
 
     def posLLA(self, fig=None):
         if fig is None:
