@@ -4,9 +4,9 @@ import sys, os, shutil
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView, QFileSystemModel,\
     QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
-    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox
-from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage
-from PyQt5.Qt import QApplication, QClipboard, QStyle
+    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox, QGroupBox, QListView
+from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage, QClipboard, QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QApplication, QStyle, QSpacerItem
 import json
 import io
 
@@ -238,7 +238,7 @@ class LogInspectorWindow(QMainWindow):
             yaml.dump(self.config, file)
             file.close()
 
-        self.currently_selected = 'posNEDMap'
+        self.selectedIndex = 0
         self.downsample = 5
         self.plotargs = None
         self.log = None
@@ -250,27 +250,42 @@ class LogInspectorWindow(QMainWindow):
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.figure.subplots_adjust(left=0.05, right=0.99, bottom=0.05, top=0.91, wspace=0.2, hspace=0.2)
 
-    def addButton(self, name, function, multithreaded=True, layout=None):
-        setattr(self, name+"button", QPushButton(name))
-        # if multithreaded:
-            # setattr(self, name+"buttonThread", Thread(target=function))
-            # getattr(self, name+"button").pressed.connect(self.startLoadingIndicator)
-            # getattr(self, name+"button").released.connect(getattr(self, name+"buttonThread").start)
-        # else:
+    def addButton(self, name, function, layout=None):
+        setattr(self, name + "button", QPushButton(name))
         getattr(self, name + "button").clicked.connect(function)
         # getattr(self, name + "button").setMinimumWidth(220)
         if layout is None:
-            if self.buttonLayoutRightCol.count() < self.buttonLayoutMiddleCol.count():
-                self.buttonLayoutRightCol.addWidget(getattr(self, name + "button"))
-            elif self.buttonLayoutMiddleCol.count() < self.buttonLayoutLeftCol.count():
-                self.buttonLayoutMiddleCol.addWidget(getattr(self, name + "button"))
-            else:
-                self.buttonLayoutLeftCol.addWidget(getattr(self, name + "button"))
+            layout = self.buttonLayoutColIns
+
+        if type(layout) is list:
+            for i in range(len(layout)):
+                if (i == len(layout)-1 
+                    or layout[i].count() <= layout[i+1].count()):
+                    layout[i].addWidget(getattr(self, name + "button"))
+                    break
         else:
             layout.addWidget(getattr(self, name + "button"))
 
+    def addListSection(self, name):
+        self.addListItem("==========  " + name + "  ==========", None)
+
+    def addListItem(self, name, function):
+        funcName = None
+        if type(function) == str:
+            funcName = function
+            function = lambda: self.plot(funcName)
+        self.modelList.appendRow(QStandardItem(name))
+        self.funcNameList.append(funcName)
+        self.functionList.append(function)
+
+    def selectedPlot(self):
+        if self.selectedIndex < len(self.funcNameList):
+            return self.funcNameList[self.selectedIndex]
+        else:
+            return None
+
     def updatePlot(self):
-        self.plot(self.currently_selected, self.plotargs)
+        self.plot(self.selectedPlot(), self.plotargs)
         self.updateWindowTitle()
 
     def updateWindowTitle(self):
@@ -332,9 +347,11 @@ class LogInspectorWindow(QMainWindow):
 
         # MainWindow.showMaximized()
 
+        self.controlLayout = QVBoxLayout()
+        self.createPlotSelection()
         self.createFileTree()
-        self.createButtonColumn()
-        self.formatButtonColumn()
+        self.controlLayout.setStretch(0, 2)     # Plot selection
+        self.controlLayout.setStretch(3, 1)     # File tree
         self.createBottomToolbar()
 
         self.figureLayout = QVBoxLayout()
@@ -353,54 +370,125 @@ class LogInspectorWindow(QMainWindow):
         self.resize(1450, 1000)
         self.setAcceptDrops(True)
 
-    def createButtonColumn(self):
-        self.controlLayout = QVBoxLayout()
-        self.buttonLayoutLeftCol = QVBoxLayout()
-        self.buttonLayoutMiddleCol = QVBoxLayout()
-        self.buttonLayoutRightCol = QVBoxLayout()
-        self.addButton('Pos NED Map', lambda: self.plot('posNEDMap'))
-        self.addButton('Pos NED', lambda: self.plot('posNED'))
-        self.addButton('Pos LLA', lambda: self.plot('posLLA'))
-        self.addButton('GPS LLA', lambda: self.plot('llaGps'))
-        self.addButton('Vel NED', lambda: self.plot('velNED'))
-        self.addButton('Vel UVW', lambda: self.plot('velUVW'))
-        self.addButton('Attitude', lambda: self.plot('attitude'))
-        self.addButton('Heading', lambda: self.plot('heading'))
-        self.addButton('INS Status', lambda: self.plot('insStatus'))
-        self.addButton('HDW Status', lambda: self.plot('hdwStatus'))
-        self.addButton('GPS 1 Stats', lambda: self.plot('gpsStats'))
-        self.addButton('GPS 2 Stats', lambda: self.plot('gps2Stats'))
-        self.addButton('RTK Pos Stats', lambda: self.plot('rtkPosStats'))
-        self.addButton('RTK Cmp Stats', lambda: self.plot('rtkCmpStats'))
-        self.addButton('Flash Config', lambda: self.showFlashConfig())
-        self.addButton('Device Info', lambda: self.showDeviceInfo())
-        self.addButton('IMU PQR', lambda: self.plot('imuPQR'))
-        self.addButton('IMU Accel', lambda: self.plot('imuAcc'))
-        self.addButton('PSD PQR', lambda: self.plot('gyroPSD'))
-        self.addButton('PSD Accel', lambda: self.plot('accelPSD'))
-        self.addButton('Magnetometer', lambda: self.plot('magnetometer'))
-        self.addButton('Temp', lambda: self.plot('temp'))
+    def createListIns(self):
+        self.addListSection('INS/AHRS')
+        self.addListItem('Pos NED Map', 'posNEDMap')
+        self.addListItem('Pos NED', 'posNED')
+        self.addListItem('Pos LLA', 'posLLA')
+        self.addListItem('Vel NED', 'velNED')
+        self.addListItem('Vel UVW', 'velUVW')
+        self.addListItem('Attitude', 'attitude')
+        self.addListItem('Heading', 'heading')
+        self.addListItem('INS Status', 'insStatus')
+        self.addListItem('HDW Status', 'hdwStatus')
 
-    def formatButtonColumn(self):
-        self.buttonLayoutLeftCol.setAlignment(QtCore.Qt.AlignTop)
-        self.buttonLayoutMiddleCol.setAlignment(QtCore.Qt.AlignTop)
-        self.buttonLayoutRightCol.setAlignment(QtCore.Qt.AlignTop)
-        self.buttonColumnLayout = QHBoxLayout()
-        self.buttonColumnLayout.addLayout(self.buttonLayoutLeftCol)
-        self.buttonColumnLayout.addLayout(self.buttonLayoutMiddleCol)
-        self.buttonColumnLayout.addLayout(self.buttonLayoutRightCol)
-        self.controlLayout.addLayout(self.buttonColumnLayout)
+    def createListSensors(self):
+        self.addListSection('SENSORS')
+        self.addListItem('IMU PQR', 'imuPQR')
+        self.addListItem('IMU Accel', 'imuAcc')
+        self.addListItem('PSD PQR', 'gyroPSD')
+        self.addListItem('PSD Accel', 'accelPSD')
+        self.addListItem('Magnetometer', 'magnetometer')
+        self.addListItem('Temp', 'temp')
+
+    def createListGps(self):
+        self.addListSection('GPS')
+        self.addListItem('GPS LLA', 'gpsLLA')
+        self.addListItem('GPS 1 Stats', 'gpsStats')
+        self.addListItem('GPS 2 Stats', 'gps2Stats')
+        self.addListItem('RTK Pos Stats', 'rtkPosStats')
+        self.addListItem('RTK Cmp Stats', 'rtkCmpStats')
+        self.addListItem('GPS Position NED', 'gpsPosNED')
+        self.addListItem('GPS Velocity NED', 'gpsVelNED')
+
+    def createListSystem(self):
+        self.addListSection('SYSTEM')
+        self.addListItem('Flash Config', lambda: self.showFlashConfig())
+        self.addListItem('Device Info', lambda: self.showDeviceInfo())
+
+    def createListGeneral(self):
+        self.addListSection('GENERAL')
+
+    def setCurrentListRow(self, row):
+        if row < self.modelList.rowCount() and row < len(self.functionList):
+            if self.functionList[row]:
+                self.selectedIndex = row
+                index = self.modelList.createIndex(self.selectedIndex, 0)
+                self.listView.setCurrentIndex(index)
+                return True
+        return False
+
+    def onSelectListItem(self, index):
+        row = index.row()
+        if row < len(self.functionList):
+            if self.functionList[row]==None and self.selectedIndex>0:
+                self.setCurrentListRow(self.selectedIndex)
+            else:
+                self.selectedIndex = index.row()
+                if self.log != None:    # Don't attempt to plot if log wasn't selected
+                    self.functionList[row]()
+    
+    def createPlotSelection(self):
+        groupBox = QGroupBox("Select Plot")
+        self.listView = QListView()
+        self.modelList = QStandardItemModel()
+        self.functionList = []
+        self.funcNameList = []
+        self.listView.setModel(self.modelList)
+        self.listView.clicked.connect(self.onSelectListItem)
+        LayoutList = QHBoxLayout()
+        LayoutList.addWidget(self.listView)
+        groupBox.setLayout(LayoutList)
+        self.controlLayout.addWidget(groupBox)        
+
+        self.createListIns()
+        self.createListSensors()
+        self.createListGps()
+        self.createListSystem()
+        self.createListGeneral()
         self.checkboxResiduals = QCheckBox("Residuals", self)
         self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
+        self.LayoutBelowPlotSelection = QHBoxLayout()
+        self.LayoutBelowPlotSelection.addWidget(self.checkboxResiduals)
 
-        self.controlLayout.addWidget(self.checkboxResiduals)
-        self.controlDirLayout = QHBoxLayout();
+        self.saveAllPushButton = QPushButton(" Save All Plots ")
+        self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
+        hSpacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum) 
+        self.LayoutBelowPlotSelection.addItem(hSpacer)
+        self.LayoutBelowPlotSelection.addWidget(self.saveAllPushButton)
+
+        self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
+
+    def createFileTree(self):
+        self.dirModel = QFileSystemModel()
+        self.dirModel.setRootPath(self.config["logs_directory"])
+        self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
+        self.dirLineEdit = QLineEdit()
+        self.dirLineEdit.setText(self.config["logs_directory"])
+        self.dirLineEdit.setFixedHeight(25)
+        self.dirLineEdit.returnPressed.connect(self.handleTreeDirChange)
+        self.fileTree = QTreeView()
+        self.fileTree.setModel(self.dirModel)
+        self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))
+        self.fileTree.setColumnHidden(1, True)
+        self.fileTree.setColumnHidden(2, True)
+        self.fileTree.setColumnHidden(3, True)
+        self.fileTree.setMinimumWidth(300)
+        self.fileTree.clicked.connect(self.handleTreeViewClick)
+        self.fileTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
+        self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
+        # self.populateRMSCheck(self.config['logs_directory'])
+
+        self.controlDirLayout = QHBoxLayout()
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
         self.controlLayout.addWidget(self.fileTree)
-        # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        # self.addButton('load', self.choose_directory, multithreaded=False)
 
+        # self.buttonLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        # self.addButton('load', self.choose_directory)
+
+        self.setCurrentListRow(1)   # Default to NED Map
 
     def createBottomToolbar(self):
         self.toolLayout = QHBoxLayout()
@@ -439,6 +527,18 @@ class LogInspectorWindow(QMainWindow):
         if self.plotter:
             self.plotter.enableResidualPlot(state)
             self.updatePlot()
+
+    def saveAllPlotsToFile(self):
+        if self.log == None:
+            print("Log not opened.  Please select a log directory.")
+            return
+        print("Saving all plots file")
+        self.plotter.save = True
+        for i in range(len(self.funcNameList)):
+            if self.setCurrentListRow(i) and self.funcNameList[i] != None:
+                self.plot(self.selectedPlot(), self.plotargs)
+            QtCore.QCoreApplication.processEvents()
+        self.plotter.save = False
 
     def changeDownSample(self, val):
         self.downsample = val
@@ -482,27 +582,6 @@ class LogInspectorWindow(QMainWindow):
         msg.setText("Unable to load log: " + e.__str__())
         msg.setDetailedText(traceback.format_exc())
         msg.exec()
-
-    def createFileTree(self):
-        self.dirModel = QFileSystemModel()
-        self.dirModel.setRootPath(self.config["logs_directory"])
-        self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
-        self.dirLineEdit = QLineEdit()
-        self.dirLineEdit.setText(self.config["logs_directory"])
-        self.dirLineEdit.setFixedHeight(25)
-        self.dirLineEdit.returnPressed.connect(self.handleTreeDirChange)
-        self.fileTree = QTreeView()
-        self.fileTree.setModel(self.dirModel)
-        self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))
-        self.fileTree.setColumnHidden(1, True)
-        self.fileTree.setColumnHidden(2, True)
-        self.fileTree.setColumnHidden(3, True)
-        self.fileTree.setMinimumWidth(300)
-        self.fileTree.clicked.connect(self.handleTreeViewClick)
-        self.fileTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
-        self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
-        # self.populateRMSCheck(self.config['logs_directory'])
 
     def updateFileTree(self):
         self.dirModel.setRootPath(self.config["logs_directory"])
@@ -618,7 +697,7 @@ class LogInspectorWindow(QMainWindow):
 
     def plot(self, func, args=None):
         print("plotting " + func)
-        self.currently_selected = func
+        self.selectedPlotFunc = func
         self.plotargs = args
 
         self.figure.clear()

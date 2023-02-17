@@ -7,8 +7,8 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QTreeView, QFileSystemModel,\
     QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
     QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox
-from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent
-from PyQt5.Qt import QApplication, QClipboard
+from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QClipboard
+from PyQt5.QtWidgets import QApplication
 import traceback
 import yaml
 
@@ -74,39 +74,44 @@ class logInspectorInternal(LogInspectorWindow):
         super(logInspectorInternal, self).__init__(config, parent)
         self.page = 0
 
+    def createListIns(self):
+        super(logInspectorInternal, self).createListIns()
+        self.addListItem('EKF Biases', 'ekfBiases')
 
-    def createButtonColumn(self):
-        super(logInspectorInternal, self).createButtonColumn()
-        self.addButton('Allan Var. PQR', lambda: self.plot('allanVariancePQR'))
-        self.addButton('Allan Var. Accel', lambda: self.plot('allanVarianceAcc'))
-        self.addButton('Debug Int', lambda: self.plot('debugiArr'))
-        self.addButton('Debug Float', lambda: self.plot('debugfArr'))
-        self.addButton('Debug Double', lambda: self.plot('debuglfArr'))
-        self.addButton('Delta Time', lambda: self.plot('deltatime'))
-        self.addButton('Mag Decl.', lambda: self.plot('magDec'))
-        self.addButton('EKF Biases', lambda: self.plot('ekfBiases'))
-        self.addButton('Phase Residuals', lambda: self.plot('rtkResiduals', ('phase', self.page)))
-        self.addButton('Code Residuals', lambda: self.plot('rtkResiduals', ('code', self.page)))
-        self.addButton('RTK Debug', lambda: self.plot('rtkDebug'))
-        self.addButton('RTK Dbg 2', lambda: self.plot('rtkDebug2'))
-        self.addButton('RTK Dbg 2 Sat', lambda: self.plot('rtkDebug2Sat'))
-        self.addButton('RTK Dbg 2 STD', lambda: self.plot('rtkDebug2Std'))
-        self.addButton('RTK Dbg 2 Lock', lambda: self.plot('rtkDebug2Lock'))
-        self.addButton('RTK Pos Misc', lambda: self.plot('rtkPosMisc'))
-        self.addButton('RTK Cmp Misc', lambda: self.plot('rtkCmpMisc'))
-        self.addButton('Wheel Encoder', lambda: self.plot('wheelEncoder'))
-        self.addButton('Ground Vehicle', lambda: self.plot('groundVehicle'))
-        self.addButton('Whl Ctrl Time', lambda: self.plot('wheelControllerTime'))
-        self.addButton('Whl Ctrl Vel', lambda: self.plot('wheelControllerVel'))
-        self.addButton('GPS Raw Time', lambda: self.plot('gpsRawTime'))
-        self.addButton('SComp Gyr Temp', lambda: self.plot('sensorCompGyrTemp'))
-        self.addButton('SComp Acc Temp', lambda: self.plot('sensorCompAccTemp'))
-        self.addButton('SComp Mag Temp', lambda: self.plot('sensorCompMagTemp'))
-        self.addButton('SComp Gyr', lambda: self.plot('sensorCompGyr'))
-        self.addButton('SComp Acc', lambda: self.plot('sensorCompAcc'))
-        self.addButton('SComp Mag', lambda: self.plot('sensorCompMag'))
-        self.addButton('SComp Gyr Resid', lambda: self.plot('linearityGyr'))
-        self.addButton('SComp Acc Resid', lambda: self.plot('linearityAcc'))
+    def createListSensors(self):
+        super(logInspectorInternal, self).createListSensors()
+        self.addListItem('Allan Var. PQR', 'allanVariancePQR')
+        self.addListItem('Allan Var. Accel', 'allanVarianceAcc')
+        self.addListItem('Mag Decl.', 'magDec')
+        self.addListItem('Wheel Encoder', 'wheelEncoder')
+        self.addListItem('Ground Vehicle', 'groundVehicle')
+        self.addListItem('Whl Ctrl Time', 'wheelControllerTime')
+        self.addListItem('Whl Ctrl Vel', 'wheelControllerVel')
+
+    def createListGeneral(self):
+        super(logInspectorInternal, self).createListGeneral()
+        self.addListItem('Delta Time', 'deltatime')
+        self.addListItem('Debug Int', 'debugiArr')
+        self.addListItem('Debug Float', 'debugfArr')
+        self.addListItem('Debug Double', 'debuglfArr')
+        self.addListItem('SComp Gyr Temp', 'sensorCompGyrTemp')
+        self.addListItem('SComp Acc Temp', 'sensorCompAccTemp')
+        self.addListItem('SComp Mag Temp', 'sensorCompMagTemp')
+        self.addListItem('SComp Gyr', 'sensorCompGyr')
+        self.addListItem('SComp Acc', 'sensorCompAcc')
+        self.addListItem('SComp Mag', 'sensorCompMag')
+        self.addListItem('SComp Gyr Resid', 'linearityGyr')
+        self.addListItem('SComp Acc Resid', 'linearityAcc')
+        self.addListItem('Phase Residuals', lambda: self.plot('rtkResiduals', ('phase', self.page)))
+        self.addListItem('Code Residuals', lambda: self.plot('rtkResiduals', ('code', self.page)))
+        self.addListItem('RTK Debug', 'rtkDebug')
+        self.addListItem('RTK Dbg 2', 'rtkDebug2')
+        self.addListItem('RTK Dbg 2 Sat', 'rtkDebug2Sat')
+        self.addListItem('RTK Dbg 2 STD', 'rtkDebug2Std')
+        self.addListItem('RTK Dbg 2 Lock', 'rtkDebug2Lock')
+        self.addListItem('RTK Pos Misc', 'rtkPosMisc')
+        self.addListItem('RTK Cmp Misc', 'rtkCmpMisc')
+        self.addListItem('GPS Raw Time', 'gpsRawTime')
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
     def createBottomToolbar(self):
@@ -142,12 +147,10 @@ class logInspectorInternal(LogInspectorWindow):
         # self.stopLoadingIndicator()
             self.updatePlot()
 
-    def formatButtonColumn(self):
-        super(logInspectorInternal, self).formatButtonColumn()
-        self.devicesLayout = QHBoxLayout()
-        self.addButton('RMS', self.RMS, layout=self.devicesLayout)
-        self.addButton('Choose Devices', self.chooseDevs, layout=self.devicesLayout)
-        self.controlLayout.addLayout(self.devicesLayout)
+    def createPlotSelection(self):
+        super(logInspectorInternal, self).createPlotSelection()
+        self.addButton(' RMS ', self.RMS, layout=self.LayoutBelowPlotSelection)
+        self.addButton(' Devices ', self.chooseDevs, layout=self.LayoutBelowPlotSelection)
 
 if __name__ == '__main__':
     if sys.version[0] != '3':
