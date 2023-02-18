@@ -1022,7 +1022,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         Pe[0] = msg->ecef[0];
         Pe[1] = msg->ecef[1];
         Pe[2] = msg->ecef[2];
-        ecef2lla(Pe, lla, 5);
+        ecef2lla(Pe, lla);
         quat_ecef2ned(lla[0], lla[1], qe2n);
 
         if (rs_.odom_ins_ecef.enabled)
@@ -1119,7 +1119,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             // Position
             ixVector3d llaPosRadians;
                 //ecef to lla (rad,rad,m)
-            ecef2lla(msg->ecef, llaPosRadians, 5);
+            ecef2lla(msg->ecef, llaPosRadians);
             ixVector3 ned;
             ixVector3d refLlaRadians;
                 //convert refLla_ to radians
@@ -1209,7 +1209,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
                 //Calculate in NED then convert
             ixVector3d llaPosRadians;
                 //ecef to lla (rad,rad,m)
-            ecef2lla(msg->ecef, llaPosRadians, 5);
+            ecef2lla(msg->ecef, llaPosRadians);
             ixVector3 ned;
             ixVector3d refLlaRadians;
                 //convert refLla_ to radians
