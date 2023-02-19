@@ -130,6 +130,14 @@ typedef uint32_t eDataIDs;
 #define DID_IMU3_RAW                    (eDataIDs)96 /** (imu3_t) Triple IMU data calibrated from DID_IMU3_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMU3_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 
+#define DID_GPX_DEV_INFO                (eDataIDs)130 /** (dev_info_t) GPX device information */
+#define DID_GPX_FLASH_CFG               (eDataIDs)131 /** (gpx_flash_cfg_t) GPX flash configuration */
+#define DID_GPX_RTOS_INFO               (eDataIDs)132 /** (rtos_info_t) GPX RTOs info */
+#define DID_GPX_STATUS                  (eDataIDs)133 /** (gpx_status_t) GPX status */
+#define DID_GPX_DEBUG_ARRAY             (eDataIDs)134 /** (debug_array_t) GPX debug */
+#define DID_GPX_FIRST                             130 /** First of GPX DIDs */
+#define DID_GPX_LAST                              134 /** Last of GPX DIDs */
+
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
@@ -3604,6 +3612,44 @@ typedef struct
     double lla[3];
 } survey_in_t;
 
+
+//////////////////////////////////////////////////////////////////////////
+//  GPX
+//////////////////////////////////////////////////////////////////////////
+
+/**
+* (DID_GPX_FLASH_CFG) GPX flash config.
+*/
+typedef struct
+{  
+    /** Size of this struct */
+    uint32_t				size;
+
+    /** Checksum, excluding size and checksum */
+    uint32_t                checksum;
+
+    /** Manufacturer method for restoring flash defaults */
+    uint32_t                key;
+
+} gpx_flash_cfg_t;
+
+/**
+* (DID_GPX_STATUS) GPX status.
+*/
+typedef struct
+{
+	/** GPS time of week (since Sunday morning) in milliseconds */
+	uint32_t               	timeOfWeekMs;
+	
+	/** Status (eGpxStatus) */
+	uint32_t                gpxStatus;
+
+} gpx_status_t;
+
+
+//////////////////////////////////////////////////////////////////////////
+//  EVB
+//////////////////////////////////////////////////////////////////////////
 
 typedef enum
 {
