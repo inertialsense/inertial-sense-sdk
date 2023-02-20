@@ -102,6 +102,13 @@ DID_IMU3_RAW                    = 96
 DID_IMU_RAW                     = 97
 DID_EVB_LUNA_VELOCITY_CONTROL   = 114
 
+DID_GPX_DEV_INFO                = 130
+DID_GPX_FLASH_CFG               = 131
+DID_GPX_RTOS_INFO               = 132
+DID_GPX_STATUS                  = 133
+DID_GPX_DEBUG_ARRAY             = 134
+
+
 NUM_DIDS                        = 120
 # NUM_DIDS                        = 96
 
@@ -198,6 +205,7 @@ did_name_lookup = {
  DID_REFERENCE_PIMU : "referencePImu",
  DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
  DID_EVB_LUNA_VELOCITY_CONTROL : "evbVelocityControl",
+ DID_GPX_DEBUG_ARRAY : "debugArray",
 }
 
 class eGpsNavFixStatus(Enum):

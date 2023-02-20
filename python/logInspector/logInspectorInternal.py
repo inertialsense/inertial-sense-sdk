@@ -152,6 +152,10 @@ class logInspectorInternal(LogInspectorWindow):
         self.addButton(' RMS ', self.RMS, layout=self.LayoutBelowPlotSelection)
         self.addButton(' Devices ', self.chooseDevs, layout=self.LayoutBelowPlotSelection)
 
+    def createListGps(self):
+        super(logInspectorInternal, self).createListGps()
+        self.addListItem('GPX Debug', 'gpxDebugfArray')
+
 if __name__ == '__main__':
     if sys.version[0] != '3':
         raise Exception("You must use Python 3. The current version is " + sys.version)
