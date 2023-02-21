@@ -206,11 +206,11 @@ class logPlot:
                 refLla = lla[0]
 
             nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
-            ax.plot(nedGps[:, 1], nedGps[:, 0], label=("GPS1 %s" % (self.log.serials[d])))
+            ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s" % (self.log.serials[d])))
 
             if SHOW_GPS2:
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
-                ax.plot(nedGps[:, 1], nedGps[:, 0], label=("GPS2 %s" % (self.log.serials[d])))
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
         ax.legend(ncol=2)
@@ -304,7 +304,7 @@ class logPlot:
 
             if (np.shape(self.active_devs)[0]==1) or SHOW_GPS2:
                 [gpsTime, gpsNed] = self.getGpsPosNED(d, DID_GPS2_POS, refLla)
-                ax[0].plot(gpsTime, gpsNed[:, 0], label=("GPS2 %s" % (self.log.serials[d])))
+                ax[0].plot(gpsTime, gpsNed[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                 ax[1].plot(gpsTime, gpsNed[:, 1])
                 ax[2].plot(gpsTime, gpsNed[:, 2])
 
@@ -346,7 +346,7 @@ class logPlot:
 
             if SHOW_GPS2:
                 [gps2Time, gps2VelNed] = self.getGpsVelNed(d, DID_GPS2_VEL, refLla)
-                ax[0].plot(gps2Time, gps2VelNed[:, 0], label=("GPS2 %s" % (self.log.serials[d])))
+                ax[0].plot(gps2Time, gps2VelNed[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                 ax[1].plot(gps2Time, gps2VelNed[:, 1])
                 ax[2].plot(gps2Time, gps2VelNed[:, 2])
 
