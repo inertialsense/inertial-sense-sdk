@@ -387,7 +387,19 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 116:
 		0,                      // 117:
 		0,                      // 118:
-		0                       // 119:
+		0,                      // 119:
+		0,                      // 120: DID_GPX_DEV_INFO
+		0,                      // 121: DID_GPX_FLASH_CFG
+		0,                      // 122: DID_GPX_RTOS_INFO
+		0,                      // 123: DID_GPX_STATUS
+		offsetsDebugArray,      // 124: DID_GPX_DEBUG_ARRAY
+		0,                      // 125:
+		0,                      // 126:
+		0,                      // 127:
+		0,                      // 128:
+		0,                      // 129:
+		0,                      // 130:
+		0                       // 131:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_doubleOffsets) == DID_COUNT);
@@ -565,7 +577,19 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 116:
 		0,                      // 117:
 		0,                      // 118:
-		0                       // 119:
+		0,                      // 119:
+		0,                      // 120: DID_GPX_DEV_INFO
+		0,                      // 121: DID_GPX_FLASH_CFG
+		0,                      // 122: DID_GPX_RTOS_INFO
+		0,                      // 123: DID_GPX_STATUS
+		0,                      // 124: DID_GPX_DEBUG_ARRAY
+		0,                      // 125:
+		0,                      // 126:
+		0,                      // 127:
+		0,                      // 128:
+		0,                      // 129:
+		0,                      // 130:
+		0                       // 131:
 	};
 
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(s_stringOffsets) == DID_COUNT);
