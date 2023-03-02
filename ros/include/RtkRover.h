@@ -46,6 +46,8 @@ public:
 
     // todo: move these to private fields
     bool connecting_ = false;
+    bool connected_ = false;
+    double traffic_time = 0.;
 
     int connection_attempt_limit_ = 1;
     int connection_attempt_backoff_ = 2;
