@@ -29,7 +29,7 @@ is_comm_instance_t& evbTaskCommInit(void *pvParameters)
 
 	// Start USB CDC after everything is running
 #ifdef USB_PORT_NUM
-	serInit(USB_PORT_NUM, 0, NULL, 0);
+	serInit(USB_PORT_NUM, 0, NULL);
 #endif
 
     vTaskDelay(200);
