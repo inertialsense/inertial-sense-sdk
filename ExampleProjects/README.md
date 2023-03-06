@@ -14,28 +14,32 @@ The following example projects are provide with the SDK to demonstrate various c
 
 The following steps will build executables for all of the example projects.
 
-1. Create build directory
+1. Install necessary dependencies
+``` bash
+$ sudo apt update && sudo apt install libusb-1.0-0-dev
+```
+2. Create build directory
 ``` bash
 $ cd inertial-sense-sdk/ExampleProjects
 $ mkdir build
 ```
-2. Run cmake from within build directory
+3. Run cmake from within build directory
 ``` bash
 $ cd build
 $ cmake ..
 ```
-3. Compile using make
+4. Compile using make
  ``` bash
  $ make
  ```
-4. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
+5. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
 ```bash
 $ sudo usermod -a -G dialout $USER
 $ sudo usermod -a -G plugdev $USER
 $ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
 (reboot computer)
 ```
-5. Run executable
+6. Run executable
 ``` bash
 $ ./bin/[EXECUTABLE] /dev/ttyUSB0
 ```

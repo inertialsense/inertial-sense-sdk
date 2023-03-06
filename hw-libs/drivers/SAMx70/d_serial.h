@@ -86,6 +86,12 @@ int serRxFree( int serialNum );
  */
 int serTxFree( int serialNum );
 
+/*
+ * Tx buffer was limited on one of the serial ports.  Data was lost due to too much data being 
+ * passed into serWrite(). 
+ */
+uint8_t serTxBufferOverrun(void);
+
 /**
  * \brief Returns number of characters in buffer before specified character.
  */
@@ -104,7 +110,7 @@ int serGetBaudRate( int serialNum );
 /**
  * \brief Initialize serial port with specific USART/UART and DMA settings.  If not NULL, the overrun status will have bits HDW_STATUS_ERR_COM_TX_LIMITED and HDW_STATUS_ERR_COM_RX_OVERRUN set during buffer limitation.  
  */
-int serInit( int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t* overrunStatus );
+int serInit( int serialNum, uint32_t baudRate, sam_usart_opt_t *options);
 
 #ifdef __cplusplus
 }
