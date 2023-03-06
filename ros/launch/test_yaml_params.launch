@@ -1,3 +1,0 @@
-<launch>
-	<node name="inertial_sense_node" pkg="inertial_sense_ros" type="inertial_sense_node" output="screen" args="/home/walt/catkin_ws/src/inertial-sense-sdk/ros/launch/test_params.yaml"/>
-</launch>
