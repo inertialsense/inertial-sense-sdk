@@ -51,7 +51,8 @@ int createTask(
 	unsigned short usStackDepth,
 	void *pvParameters,
 	unsigned portBASE_TYPE uxPriority,
-	portTickType xTimeIncrement);
+	portTickType xTimeIncrement,
+	uint32_t overrunMs);
 
 // Monitor state of RTOS (i.e. stack high water mark, unused words).
 void rtos_monitor(int numRtosTasks);
