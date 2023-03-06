@@ -988,7 +988,7 @@ typedef struct PACKED
     
     /** (m)     Barometer bias */
     float					biasBaro;               
-    
+	
     /** (rad)   Magnetic declination */
     float					magDec;                 
     
@@ -1616,8 +1616,8 @@ typedef struct PACKED
     /** Mag recalibration progress indicator: 0-100 % */
     float					progress;
 
-    /** Magnetic declination estimate */
-    float					declination;
+	/** Magnetic declination estimate */
+	float					declination;
 } mag_cal_t;
 
 // (DID_INL2_MAG_OBS_INFO)
@@ -1647,8 +1647,8 @@ typedef struct PACKED
     /** Heading from INS */			
     float					insHdg;
 
-    /** Difference between mag heading and (INS heading plus mag declination) */
-    float					magInsHdgDelta;
+	/** Difference between mag heading and (INS heading plus mag declination) */
+	float					magInsHdgDelta;
 
     /** Normalized innovation squared (likelihood metric) */
     float					nis;
@@ -1899,12 +1899,12 @@ typedef struct PACKED
 /** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
 enum eSysConfigBits
 {
-    UNUSED1                                             = (int)0x00000001,
-    UNUSED2                                             = (int)0x00000002,
-    /*! Enable automatic mag recalibration */
-    SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
-    /*! Disable mag declination estimation */
-    SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION            = (int)0x00000008,
+	UNUSED1                                             = (int)0x00000001,
+	UNUSED2                                             = (int)0x00000002,
+	/*! Enable automatic mag recalibration */
+	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
+	/*! Disable mag declination estimation */
+	SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION            = (int)0x00000008,
 
     /*! Disable LEDs */
     SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
@@ -2606,7 +2606,7 @@ typedef struct PACKED
     /** (sec) User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.  */
     float                   gpsTimeUserDelay;
 
-    /** Earth magnetic field (magnetic north) mag_declination (heading offset from true north) in radians */
+    /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
     float                   magDeclination;
 
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
@@ -2648,9 +2648,9 @@ typedef struct PACKED
     /** Angular rate bias error sigma */
     float					StdGyrBias[3];		
     /** Barometric altitude bias error sigma */
-    float					StdBarBias;		
+	float					StdBarBias;		
     /** Mag declination error sigma */
-    float					StdMagDeclination;	
+	float					StdMagDeclination;	
 } inl2_ned_sigma_t;
 
 /** (DID_STROBE_IN_TIME) Timestamp for input strobe. */
