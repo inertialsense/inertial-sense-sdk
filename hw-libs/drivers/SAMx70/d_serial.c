@@ -477,9 +477,9 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 			//Prevent loading more data than buffer size
 			if ((uint32_t)size > dma->size)
             { 
-				// Buffer overrun
+  				// Buffer overrun
 				s_txBufferOverrun = true;
-                return 0;
+            	return 0;
             }                
 			
 			taskENTER_CRITICAL();
