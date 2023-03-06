@@ -960,7 +960,7 @@ typedef struct PACKED
     /** (m)     Barometer bias */
     float					biasBaro;               
 	
-    /** (rad)   Magnetic mag_declination */
+    /** (rad)   Magnetic declination */
     float					magDec;                 
 	
     /** (rad)   Magnetic mag_inclination */
@@ -1565,7 +1565,7 @@ typedef struct PACKED
 	/** Mag recalibration progress indicator: 0-100 % */
 	float					progress;
 
-	/** Magnetic mag_declination estimate */
+	/** Magnetic declination estimate */
 	float					declination;
 } mag_cal_t;
 
@@ -1596,7 +1596,7 @@ typedef struct PACKED
 	/** Heading from INS */			
 	float					insHdg;
 
-	/** Difference between mag heading and (INS heading plus mag mag_declination) */
+	/** Difference between mag heading and (INS heading plus mag declination) */
 	float					magInsHdgDelta;
 
 	/** Normalized innovation squared (likelihood metric) */
@@ -1852,7 +1852,7 @@ enum eSysConfigBits
 	UNUSED2                                             = (int)0x00000002,
 	/*! Enable automatic mag recalibration */
 	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
-	/*! Disable mag mag_declination estimation */
+	/*! Disable mag declination estimation */
 	SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION            = (int)0x00000008,
 
 	/*! Disable LEDs */
@@ -2555,7 +2555,7 @@ typedef struct PACKED
     /** (sec) User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.  */
     float                   gpsTimeUserDelay;
 
-    /** Earth magnetic field (magnetic north) mag_declination (heading offset from true north) in radians */
+    /** Earth magnetic field (magnetic north) declination (heading offset from true north) in radians */
     float                   magDeclination;
 
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
@@ -2598,7 +2598,7 @@ typedef struct PACKED
 	float					StdGyrBias[3];		
     /** Barometric altitude bias error sigma */
 	float					StdBarBias;		
-    /** Mag mag_declination error sigma */
+    /** Mag declination error sigma */
 	float					StdMagDeclination;	
 } inl2_ned_sigma_t;
 
