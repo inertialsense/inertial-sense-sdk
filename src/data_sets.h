@@ -963,7 +963,7 @@ typedef struct PACKED
     /** (rad)   Magnetic declination */
     float					magDec;                 
 	
-    /** (rad)   Magnetic mag_inclination */
+    /** (rad)   Magnetic inclination */
     float					magInc;                 
 } inl2_states_t;
 
@@ -2995,7 +2995,7 @@ typedef struct
 	/** Orbit eccentricity (non-dimensional)  */
 	double e;
 
-	/** Orbit mag_inclination angle at reference time (rad) */
+	/** Orbit inclination angle at reference time (rad) */
 	double i0;
 
 	/** Longitude of ascending node of orbit plane at weekly epoch (rad) */
