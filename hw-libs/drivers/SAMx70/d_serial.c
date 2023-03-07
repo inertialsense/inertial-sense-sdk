@@ -155,7 +155,7 @@ typedef struct
 //Variables for general use
 COMPILER_ALIGNED(32) static uint8_t noData_indicator[1] = {0};
 static volatile usartDMA_t g_usartDMA[MAX_NUMBER_SERIAL_PORTS];
-static uint32_t	*s_overrunStatus=NULLPTR;
+static uint8_t s_txBufferOverrun=false;
 port_monitor_helper_t g_portMonitorHelper[MAX_NUMBER_SERIAL_PORTS] = {0};
 
 
@@ -444,6 +444,17 @@ int serRxClear( int serialNum, int size)
 	return used;
 }
 
+uint8_t serTxBufferOverrun(void)
+{
+	if (s_txBufferOverrun)
+	{
+		s_txBufferOverrun = false;
+		return true;
+	}
+
+	return false;
+}
+
 // We assume worst case scenario, USART is writing data...
 // Add new data to buffer that is not being written from.
 int serWrite(int serialNum, const unsigned char *buf, int size)
@@ -466,11 +477,9 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 			//Prevent loading more data than buffer size
 			if ((uint32_t)size > dma->size)
             { 
-		        if (s_overrunStatus)
-		        {	// Buffer overrun
-					*s_overrunStatus |= HDW_STATUS_ERR_COM_TX_LIMITED;
-		        }
-                return 0;
+  				// Buffer overrun
+				s_txBufferOverrun = true;
+            	return 0;
             }                
 			
 			taskENTER_CRITICAL();
@@ -536,10 +545,7 @@ int serWrite(int serialNum, const unsigned char *buf, int size)
 	{
 		// tx overrun
 		serTxClear(serialNum);
-		if (s_overrunStatus)
-		{
-			*s_overrunStatus |= HDW_STATUS_ERR_COM_TX_LIMITED;
-		}
+		s_txBufferOverrun = true;
 #if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED) 
 		g_internal_diagnostic.txOverflowCount[serialNum]++;
 #endif
@@ -815,10 +821,7 @@ int serRead(int serialNum, unsigned char *buf, int size)
 		// rx overrun
 		serRxClear(serialNum, -1);
 		dma->lastUsedRx = 0;
-		if (s_overrunStatus)
-		{
-			*s_overrunStatus |= HDW_STATUS_ERR_COM_RX_OVERRUN;
-		}
+		s_txBufferOverrun = true;
 #if !defined(__INERTIAL_SENSE_EVB_2__) && !defined(TESTBED)
 		g_internal_diagnostic.rxOverflowCount[serialNum]++;
 #endif
@@ -1582,7 +1585,7 @@ static int serBufferInit(usartDMA_t *ser, int serialNumber)
 	return 0;
 }
 
-int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t* overrunStatus)
+int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options)
 {
 #ifdef USB_PORT_NUM
 	if(serialNum == USB_PORT_NUM)
@@ -1600,11 +1603,6 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options, uint32_t
 		return 0;
 	}
 #endif
-
-	if(overrunStatus)
-	{	// Set buffer overrun status pointer
-		s_overrunStatus = overrunStatus;
-	}
 	
 	// Validate port number
 	while( serialNum >= MAX_NUMBER_SERIAL_PORTS ) { /* Invalid port number */ }

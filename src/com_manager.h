@@ -109,7 +109,7 @@ typedef struct
 
 /** Maximum number of messages that may be broadcast simultaneously, per port.
 Since most messages use the RMC (real-time message controller) now, this can be fairly low */
-#define MAX_NUM_BCAST_MSGS 4
+#define MAX_NUM_BCAST_MSGS 12
 
 // Convenience macros for creating Com Manager buffers
 #define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)		((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
