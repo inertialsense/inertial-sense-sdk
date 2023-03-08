@@ -128,6 +128,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 InertialSense::~InertialSense()
 {
 	Close();
+	CloseServerConnection();	
 }
 
 bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder)
@@ -598,7 +599,6 @@ void InertialSense::Close()
 		serialPortClose(&m_comManagerState.devices[i].serialPort);
 	}
 	m_comManagerState.devices.clear();
-	CloseServerConnection();
 }
 
 vector<string> InertialSense::GetPorts()
