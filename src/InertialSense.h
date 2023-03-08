@@ -132,7 +132,7 @@ public:
 	bool IsOpen();
 
 	/**
-	* Close the connection, logger and free all resources
+	* Close the device connection, stop logger if running, and free resources.
 	*/
 	void Close();
 
