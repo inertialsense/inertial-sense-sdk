@@ -226,13 +226,13 @@ class logPlot:
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Latitude', 'deg')
         self.configureSubplot(ax[1], 'Longitude', 'deg')
-        self.configureSubplot(ax[2], 'Altitude', 'deg')
+        self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('INS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0].plot(time, self.getData(d, DID_INS_2, 'lla')[:,0], label=self.log.serials[d])
             ax[1].plot(time, self.getData(d, DID_INS_2, 'lla')[:,1])
-            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla')[:,2], label=self.log.serials[d])
+            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla')[:,2])
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
@@ -260,7 +260,7 @@ class logPlot:
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Latitude', 'deg')
         self.configureSubplot(ax[1], 'Longitude', 'deg')
-        self.configureSubplot(ax[2], 'Altitude', 'deg')
+        self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('GPS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
