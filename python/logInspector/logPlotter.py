@@ -1499,14 +1499,21 @@ class logPlot:
         self.configureSubplot(ax[2], 'Mag Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = self.getData(d, DID_MAGNETOMETER, 'time')
-            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
-            if np.shape(towOffset)[0] != 0:
-                time = time + towOffset[-1]
-            mag = self.getData(d, DID_MAGNETOMETER, 'mag')
-            magX = mag[:,0]
-            magY = mag[:,1]
-            magZ = mag[:,2]
+            if 1:
+                time = self.getData(d, DID_MAGNETOMETER, 'time')
+                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+                if np.shape(towOffset)[0] != 0:
+                    time = time + towOffset[-1]
+                mag = self.getData(d, DID_MAGNETOMETER, 'mag')
+                magX = mag[:,0]
+                magY = mag[:,1]
+                magZ = mag[:,2]
+            else:
+                mag = self.getData(d, DID_SENSORS_UCAL, 'mag')
+                magX = mag[:,0]['xyz'][:,0]
+                magY = mag[:,0]['xyz'][:,1]
+                magZ = mag[:,0]['xyz'][:,2]
+                time = range(np.shape(magX)[0])
             ax[0].plot(time, magX, label=self.log.serials[d])
             ax[1].plot(time, magY)
             ax[2].plot(time, magZ)
