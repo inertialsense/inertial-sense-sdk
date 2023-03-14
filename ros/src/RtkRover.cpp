@@ -69,10 +69,14 @@ void RtkRoverCorrectionProvider_Ntrip::configure(YAML::Node& node) {
 
 std::string RtkRoverCorrectionProvider_Ntrip::get_connection_string() {
     std::string RTK_connection = "TCP:" + protocol_ + ":" + ip_ + ":" + std::to_string(port_);
-    if (!mount_point_.empty() && !username_.empty())
-    { // NTRIP options
-        RTK_connection += ":" + mount_point_ + ":" + username_ + ":" + password_;
+    if (!mount_point_.empty() || !username_.empty())
+        RTK_connection.append(":" + mount_point_);
+    if (!username_.empty()) {
+        RTK_connection.append(":" + username_);
+        if (!password_.empty())
+            RTK_connection.append(":" + password_);
     }
+
     return RTK_connection;
 }
 

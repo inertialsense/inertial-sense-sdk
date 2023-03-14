@@ -699,32 +699,24 @@ void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& conf
     std::string RTK_connection = config.get_connection_string();
 
     int RTK_connection_attempt_count = 0;
-    while (RTK_connection_attempt_count < config.connection_attempt_limit_)
+    while (++RTK_connection_attempt_count < config.connection_attempt_limit_)
     {
-        ++RTK_connection_attempt_count;
+        config.connected_ = IS_.OpenConnectionToServer(RTK_connection);
 
-        bool connected = IS_.OpenConnectionToServer(RTK_connection);
-
-        if (connected)
-        {
-            ROS_INFO_STREAM("Successfully connected to " << RTK_connection << " RTK server");
+        int sleep_duration = RTK_connection_attempt_count * config.connection_attempt_backoff_;
+        if (config.connected_) {
+            ROS_INFO_STREAM("Successfully connected to RTK server [" << RTK_connection  << "]. [Attempt " << RTK_connection_attempt_count << "]");
             break;
         }
-        else
-        {
-            ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
+        // fall-through
 
-            if (RTK_connection_attempt_count >= config.connection_attempt_limit_)
-            {
-                ROS_ERROR_STREAM("Giving up after " << RTK_connection_attempt_count << " failed attempts");
-            }
-            else
-            {
-                int sleep_duration = RTK_connection_attempt_count * config.connection_attempt_backoff_;
-                ROS_WARN_STREAM("Retrying connection in " << sleep_duration << " seconds");
-                ros::Duration(sleep_duration).sleep();
-            }
+        // ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
+        if (RTK_connection_attempt_count < config.connection_attempt_limit_) {
+            ROS_WARN_STREAM("Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Will try again in " << sleep_duration << " seconds.");
+        } else {
+            ROS_ERROR_STREAM("Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Giving up.");
         }
+        ros::Duration(sleep_duration).sleep(); // we will always sleep on a failure...
     }
 
     config.connecting_ = false;
@@ -748,12 +740,21 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback(const ros::Timer
 
         if (config.data_transmission_interruption_count_ >= config.data_transmission_interruption_limit_)
         {
-            ROS_WARN("RTK transmission interruption, reconnecting...");
+            if (config.traffic_time > 0.0)
+                ROS_WARN_STREAM("Last received RTK correction data was " << (ros::Time::now().toSec() - config.traffic_time) << " seconds ago. Attempting to re-establish connection.");
             connect_rtk_client(config);
+            if (config.connected_) {
+                config.traffic_total_byte_count_ = latest_byte_count;
+                config.data_transmission_interruption_count_ = 0;
+            }
+        } else {
+            if (config.traffic_time > 0.0)
+                ROS_WARN_STREAM("Last received RTK correction data was " << (ros::Time::now().toSec() - config.traffic_time) << " seconds ago.");
         }
     }
     else
     {
+        config.traffic_time = ros::Time::now().toSec();
         config.traffic_total_byte_count_ = latest_byte_count;
         config.data_transmission_interruption_count_ = 0;
     }
