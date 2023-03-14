@@ -29,8 +29,8 @@ DEG2RAD = 3.14159 / 180.0
 
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
-SHOW_GPS2 = 0
-SHOW_GPS_W_INS = 0
+SHOW_GPS2 = 1
+SHOW_GPS_W_INS = 1
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))

@@ -212,6 +212,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
         HANDLE_MSG( DID_RTK_DEBUG, dev_log_->rtkDebug);
         // HANDLE_MSG( DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
+        HANDLE_MSG( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray );
 
         default:
             //            printf("Unhandled IS message DID: %d\n", message_type);
@@ -305,6 +306,7 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, device_id);
     forward_message( DID_RTK_DEBUG, dev_log_->rtkDebug, device_id);
     // forward_message( DID_RTK_DEBUG_2, dev_log_->rtkDebug2, device_id);
+    forward_message( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray, device_id );
 }
 
 bool LogReader::load()

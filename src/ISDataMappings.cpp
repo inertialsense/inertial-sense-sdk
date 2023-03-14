@@ -157,6 +157,10 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_EVB_RTOS_INFO] = sizeof(evb_rtos_info_t);
 	sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
+	sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
+	sizeMap[DID_GPX_RTOS_INFO] = sizeof(rtos_info_t);
+	sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);
+
 #ifdef USE_IS_INTERNAL
 
 	sizeMap[DID_SENSORS_UCAL] = sizeof(sensors_w_temp_t);
@@ -2302,7 +2306,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_PIMU",                         // 3
 	"DID_INS_1",                        // 4
 	"DID_INS_2",                        // 5
-	"DID_GPS1_RCVR_POS",                 // 6
+	"DID_GPS1_RCVR_POS",                // 6
 	"DID_SYS_CMD",                      // 7
 	"DID_ASCII_BCAST_PERIOD",           // 8
 	"DID_RMC",                          // 9
@@ -2415,7 +2419,19 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_LUNA_AUX_COMMAND",         // 116
     "",                                 // 117
     "",                                 // 118
-    ""                                  // 119
+    "",                                 // 119
+	"DID_GPX_DEV_INFO",                 // 120
+	"DID_GPX_FLASH_CFG",                // 121
+	"DID_GPX_RTOS_INFO",                // 122
+	"DID_GPX_STATUS",                   // 123
+	"DID_GPX_DEBUG_ARRAY",              // 124
+	"",                                 // 125
+	"",                                 // 126
+	"",                                 // 127
+	"",                                 // 128
+	"",                                 // 129
+	"",                                 // 130
+	""                                  // 131
 };
 
 
@@ -2468,6 +2484,12 @@ cISDataMappings::cISDataMappings()
 	PopulateReferenceIMUMappings(m_lookupInfo);
 	PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_REFERENCE_PIMU);
 	PopulateInfieldCalMappings(m_lookupInfo);
+
+	PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEV_INFO);
+	// DID_GPX_FLASH_CFG
+	// DID_GPX_RTOS_INFO
+	// DID_GPX_STATUS
+	PopulateDebugArrayMappings(m_lookupInfo, DID_GPX_DEBUG_ARRAY);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	PopulateEvbLunaFlashCfgMappings(m_lookupInfo);
