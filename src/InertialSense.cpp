@@ -128,6 +128,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 InertialSense::~InertialSense()
 {
 	Close();
+	CloseServerConnection();	
 }
 
 bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder)
@@ -598,7 +599,6 @@ void InertialSense::Close()
 		serialPortClose(&m_comManagerState.devices[i].serialPort);
 	}
 	m_comManagerState.devices.clear();
-	CloseServerConnection();
 }
 
 vector<string> InertialSense::GetPorts()
@@ -649,16 +649,27 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 	}
 }
 
-void InertialSense::SetSysCmd(const system_command_t& sysCmd, int pHandle)
+void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 {
-	if ((size_t)pHandle >= m_comManagerState.devices.size())
-	{
-		return;
+	if (pHandle == -1)
+	{	// Send to all
+		for (size_t port = 0; port < m_comManagerState.devices.size(); port++)
+		{
+			SetSysCmd(command, port);
+		}
 	}
+	else
+	{	// Specific port
+		if ((size_t)pHandle >= m_comManagerState.devices.size())
+		{
+			return;
+		}
 
-	m_comManagerState.devices[pHandle].sysCmd = sysCmd;
-	// [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.  
-	comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(sysCmd), 0);
+		m_comManagerState.devices[pHandle].sysCmd.command = command;
+		m_comManagerState.devices[pHandle].sysCmd.invCommand = ~command;
+		// [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.  
+		comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(system_command_t), 0);
+	}
 }
 
 void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)

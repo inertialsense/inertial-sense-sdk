@@ -1,3 +1,21 @@
+/***************************************************************************************
+ *
+ * @Copyright 2023, Inertial Sense Inc. <devteam@inertialsense.com>
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ***************************************************************************************/
+
 #pragma once
 
 #include <stdio.h>
@@ -6,6 +24,11 @@
 #include <string>
 #include <cstdlib>
 #include <yaml-cpp/yaml.h>
+
+#include "TopicHelper.h"
+#include "ParamHelper.h"
+#include "RtkBase.h"
+#include "RtkRover.h"
 
 #include "InertialSense.h"
 #include "ros/ros.h"
@@ -18,7 +41,7 @@
 #include "inertial_sense_ros/GPS.h"
 #include "data_sets.h"
 #include "inertial_sense_ros/GPSInfo.h"
-#include "inertial_sense_ros/PreIntIMU.h"
+#include "inertial_sense_ros/PIMU.h"
 #include "inertial_sense_ros/FirmwareUpdate.h"
 #include "inertial_sense_ros/refLLAUpdate.h"
 #include "inertial_sense_ros/RTKRel.h"
@@ -48,13 +71,14 @@
 #define FIRMWARE_VERSION_CHAR1 9
 #define FIRMWARE_VERSION_CHAR2 0
 
-#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                          \
-    IS_.BroadcastBinaryData(DID, __periodmultiple,                                     \
-                            [this](InertialSense *i, p_data_t *data, int pHandle)      \
-                            {                                                          \
-                                /* ROS_INFO("Got message %d", DID);*/                  \
+#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
+    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
+                            [this](InertialSense *i, p_data_t *data, int pHandle)           \
+                            {                                                               \
+                                /* ROS_INFO("Got message %d", DID);*/                       \
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
                             })
+
 
 class InertialSenseROS //: SerialListener
 {
@@ -70,60 +94,46 @@ public:
     } NMEA_message_config_t;
 
     InertialSenseROS(YAML::Node paramNode = YAML::Node(YAML::NodeType::Undefined), bool configFlashParameters = true);
+    ~InertialSenseROS() { terminate(); }
+
+    void initializeIS(bool configFlashParameters = true);
+    void initializeROS();
+    void initialize(bool configFlashParameters = true);
+    void terminate();
+
     void callback(p_data_t *data);
     void update();
 
-    void load_params_yaml(YAML::Node node);
-    void load_params_srv();
-    bool getParam(const std::string &key, std::string &s);
-    bool getParam(const std::string &key, double &d);
-    bool getParam(const std::string &key, float &f);    
-    bool getParam(const std::string &key, int &i);
-    bool getParam(const std::string &key, bool &b);
-    bool getParam(const std::string &key, XmlRpc::XmlRpcValue &v);
-
-    template <typename Type>
-    bool get_node_param_yaml(YAML::Node node, const std::string key, Type &val);
-    template <typename Derived1>
-    bool get_node_vector_yaml(YAML::Node node, const std::string key, int size, Derived1 &val);
-    void connect();
+    void load_params(YAML::Node &node);
+    bool connect(float timeout = 10.f);
     bool firmware_compatiblity_check();
     void set_navigation_dt_ms();
     void configure_flash_parameters();
     void configure_rtk();
-    void connect_rtk_client(const std::string &RTK_correction_protocol, const std::string &RTK_server_IP, const int RTK_server_port);
-    void start_rtk_server(const std::string &RTK_server_IP, const int RTK_server_port);
+    void connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& config);
+    void start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config);
 
     void configure_data_streams(bool firstrun);
     void configure_data_streams(const ros::TimerEvent& event);
     void configure_ascii_output();
     void start_log();
 
-    template <typename T>
-    bool getParamVector(const std::string &key, uint32_t size, T &data);
     void get_flash_config();
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
     bool flashConfigStreaming_ = false;
+
     // Serial Port Configuration
-    std::string port_ = "/dev/ttyACM0";
-    int baudrate_ = 921600;
-    bool initialized_;
+    std::vector<std::string> ports_; // a collection of ports which will be attempted, in order until a connection is made
+    std::string port_; // the actual port we connected with
+    int baudrate_;  // the baudrate to connect with
+
+    bool sdk_connected_ = false;
     bool log_enabled_ = false;
-    bool covariance_enabled_ = false;
+    bool covariance_enabled_;
+    int platformConfig_ = 0;
 
-    std::string frame_id_ = "body";
-
-    // ROS Stream handling
-    typedef struct
-    {
-        bool enabled = false;
-        ros::Publisher pub;
-        ros::Publisher pub2;
-        ros::Publisher pub3;
-        int period_multiple = 1;
-    } ros_stream_t;
-
+    std::string frame_id_;
 
     tf::TransformBroadcaster br;
     bool publishTf_ = true;
@@ -152,31 +162,11 @@ public:
     inertial_sense_ros::GNSSObsVec gps2_obs_Vec_;
     inertial_sense_ros::GNSSObsVec base_obs_Vec_;
 
-    bool rtk_connecting_ = false;
-    int RTK_connection_attempt_limit_ = 1;
-    int RTK_connection_attempt_backoff_ = 2;
-    int rtk_traffic_total_byte_count_ = 0;
-    int rtk_data_transmission_interruption_count_ = 0;
-    bool rtk_connectivity_watchdog_enabled_ = true;
-    float rtk_connectivity_watchdog_timer_frequency_ = 1;
-    int rtk_data_transmission_interruption_limit_ = 5;
-    std::string RTK_server_mount_ = "";
-    std::string RTK_server_username_ = "";
-    std::string RTK_server_password_ = "";
-    std::string RTK_correction_protocol_ = "RTCM3";
-    std::string RTK_server_IP_ = "127.0.0.1";
-    int RTK_server_port_ = 7777;
-    bool RTK_rover_ = false;
-    bool RTK_rover_radio_enable_ = false;
-    bool RTK_base_USB_ = false;
-    bool RTK_base_serial_ = false;
-    bool RTK_base_TCP_ = false;
-    bool GNSS_Compass_ = false;
 
-    std::string gps1_type_ = "F9P";
-    std::string gps1_topic_ = "gps1";
-    std::string gps2_type_ = "F9P";
-    std::string gps2_topic_ = "gps2";
+    RtkRoverProvider* RTK_rover_;
+    RtkBaseProvider* RTK_base_;
+
+    bool GNSS_Compass_ = false;
 
     ros::Timer rtk_connectivity_watchdog_timer_;
     void start_rtk_connectivity_watchdog_timer();
@@ -210,56 +200,52 @@ public:
     float diagnostic_ar_ratio_, diagnostic_differential_age_, diagnostic_heading_base_to_rover_;
     uint diagnostic_fix_type_;
 
-    ros_stream_t DID_INS_1_;
-    ros_stream_t DID_INS_2_;
-    ros_stream_t DID_INS_4_;
-    ros_stream_t INL2_states_;
-    ros_stream_t odom_ins_ned_;
-    ros_stream_t odom_ins_ecef_;
-    ros_stream_t odom_ins_enu_;
-    ros_stream_t IMU_;
-    ros_stream_t mag_;
-    ros_stream_t baro_;
-    ros_stream_t preint_IMU_;
-    ros_stream_t diagnostics_;
-    ros_stream_t GPS1_;
-    ros_stream_t GPS1_info_;
-    ros_stream_t GPS1_raw_;
-    ros_stream_t GPS2_;
-    ros_stream_t GPS2_info_;
-    ros_stream_t GPS2_raw_;
-    ros_stream_t GPS_base_raw_;
-    ros_stream_t RTK_pos_;
-    ros_stream_t RTK_cmp_;
-    ros_stream_t NavSatFix_;
-    bool NavSatFixConfigured = false;
-    int gps_raw_period_multiple = 1;
-    int gps_info_period_multiple = 1;
+    ros::NodeHandle nh_;
+    ros::NodeHandle nh_private_;
 
-    bool ins1Streaming_ = false;
-    bool ins2Streaming_ = false;
-    bool ins4Streaming_ = false;
-    bool inl2StatesStreaming_ = false;
+    struct
+    {
+    	ins_1_t ins1;
+    } did_;
+
+    struct
+    {
+        TopicHelper did_ins1;
+        TopicHelper did_ins2;
+        TopicHelper did_ins4;
+        TopicHelper odom_ins_ned;
+        TopicHelper odom_ins_ecef;
+        TopicHelper odom_ins_enu;
+        TopicHelper inl2_states;
+
+        TopicHelper imu;
+        TopicHelper pimu;
+        TopicHelper magnetometer;
+        TopicHelper barometer;
+        TopicHelper strobe_in;
+
+        TopicHelperGps gps1;
+        TopicHelperGps gps2;
+        TopicHelper gps1_navsatfix;
+        TopicHelper gps2_navsatfix;
+        TopicHelper gps1_info;
+        TopicHelper gps2_info;
+        TopicHelperGpsRaw gps1_raw;
+        TopicHelperGpsRaw gps2_raw;
+        TopicHelperGpsRaw gpsbase_raw;
+        TopicHelperGpsRtk rtk_pos;
+        TopicHelperGpsRtk rtk_cmp;
+
+        TopicHelper diagnostics;
+    } rs_;
+
+    bool NavSatFixConfigured = false;
+
     bool insCovarianceStreaming_ = false;
-    bool magStreaming_ = false;
-    bool baroStreaming_ = false;
-    bool preintImuStreaming_ = false;
     bool imuStreaming_ = false;
     bool strobeInStreaming_ = false;
     bool diagnosticsStreaming_ = false;
     // NOTE: that GPS streaming flags are applicable for all GPS devices/receivers
-    bool gps1PosStreaming_ = false;
-    bool gps1VelStreaming_ = false;
-    bool gps2PosStreaming_ = false;
-    bool gps2VelStreaming_ = false;
-    bool gps1RawStreaming_ = false;
-    bool gps2RawStreaming_ = false;
-    bool gps1InfoStreaming_ = false;
-    bool gps2InfoStreaming_ = false;
-    bool rtkPosMiscStreaming_ = false;
-    bool rtkPosRelStreaming_ = false;
-    bool rtkCmpMiscStreaming_ = false;
-    bool rtkCmpRelStreaming_ = false;
     bool data_streams_enabled_ = false;
 
     // Services
@@ -367,45 +353,64 @@ public:
     // Data to hold on to in between callbacks
     double lla_[3];
     double ecef_[3];
-    sensor_msgs::Imu imu_msg;
-    nav_msgs::Odometry ned_odom_msg;
-    nav_msgs::Odometry ecef_odom_msg;
-    nav_msgs::Odometry enu_odom_msg;
-    sensor_msgs::NavSatFix NavSatFix_msg;
-    inertial_sense_ros::GPS gps1_msg;
+    inertial_sense_ros::DID_INS1 msg_did_ins1;
+    inertial_sense_ros::DID_INS2 msg_did_ins2;
+    inertial_sense_ros::DID_INS4 msg_did_ins4;
+    nav_msgs::Odometry msg_odom_ned;
+    nav_msgs::Odometry msg_odom_ecef;
+    nav_msgs::Odometry msg_odom_enu;
+    inertial_sense_ros::INL2States msg_inl2_states;
+    sensor_msgs::Imu msg_imu;
+    inertial_sense_ros::PIMU msg_pimu;
+    inertial_sense_ros::GPS msg_gps1;
+    inertial_sense_ros::GPS msg_gps2;
+    sensor_msgs::NavSatFix msg_NavSatFix;
+    gps_pos_t gps1_pos;
+    gps_pos_t gps2_pos;
+    gps_vel_t gps1_vel;
+    gps_vel_t gps2_vel;
     geometry_msgs::Vector3Stamped gps1_velEcef;
-    float gps1_sAcc;
-    float gps2_sAcc;
-    inertial_sense_ros::GPSInfo gps_info_msg;
-    inertial_sense_ros::GPS gps2_msg;
     geometry_msgs::Vector3Stamped gps2_velEcef;
-    inertial_sense_ros::GPSInfo gps2_info_msg;
-    inertial_sense_ros::INL2States inl2_states_msg;
-    inertial_sense_ros::DID_INS1 did_ins_1_msg;
-    inertial_sense_ros::DID_INS2 did_ins_2_msg;
-    inertial_sense_ros::DID_INS4 did_ins_4_msg;
-    inertial_sense_ros::PreIntIMU preintIMU_msg;
+    inertial_sense_ros::GPSInfo msg_gps1_info;
+    inertial_sense_ros::GPSInfo msg_gps2_info;
 
-    float poseCov[36], twistCov[36];
-
-    ros::NodeHandle nh_;
-    ros::NodeHandle nh_private_;
+    float poseCov_[36], twistCov_[36];
 
     // Connection to the uINS
     InertialSense IS_;
 
     // Flash parameters
-    int navigation_dt_ms_ = 4;
+    // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
+    // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
+    int ins_nav_dt_ms_;
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
-    float gps1AntOffset_[3] = {0, 0, 0};
-    float gps2AntOffset_[3] = {0, 0, 0};
-    double refLla_[3] = {0, 0, 0};
-    float magInclination_ = 0;
-    float magDeclination_ = 0;
-    int insDynModel_ = INS_DYN_MODEL_AIRBORNE_4G;
+    double refLla_[3] = {0, 0, 0};      // Upload disabled if all zero
+    float magDeclination_;
+    int insDynModel_;
     bool refLLA_known = false;
-    int ioConfig_ = 38051936;   //(0x0244a060) EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+
+    uint32_t ioConfigBits_ = 0;                 // this is read directly from the config,
+    uint32_t working_ioConfigBits_ = 0;         // this is the calculated/derived value from other parameters
+
+    uint32_t rtkConfigBits_ = 0;                // this is read directly from the config
+    uint32_t working_rtkConfigBits_ = 0;        // this is the calculated/derived value from other parameters
+
+    uint32_t wheelConfigBits_ = 0;              // this is read directly from the config
+    uint32_t working_wheelConfigBits_ = 0;      // this is the calculated/derived value from other parameters
+
     float gpsTimeUserDelay_ = 0;
 
+    // EVB Flash Parameters
+    struct evb_flash_parameters
+    {
+        int cb_preset;
+        int cb_options;
+    } evb_ = {};
+    
 };
+
+
+
+
+

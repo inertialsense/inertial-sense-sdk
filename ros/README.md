@@ -2,6 +2,33 @@
 
 A ROS wrapper node implementation for the Inertial Sense IMX product line.
 
+---
+### ***************  NOTICE  ***************
+The source code in this directory and its subdirectories is provided "as-is", without warranty or guarantee of any kind.
+
+Inertial Sense acknowledges that the functionality provided in this ROS component, is a limited subset of functionality provided by the
+C++ SDK component, contained within this GitHub repository. Any functionality provided by the C++ SDK, which is not available through this
+ROS component, is the responsibility of the customer and/or user to implement as necessary.
+
+While we aim to make every effort to maintain and improve (and validate through tests) this ROS wrapper software component, it is done at
+our leisure, and as time permits relative to our other internal business priorities. As this component is provided as an "open-source"
+project, with all source-code publicly available, it is our hope that this component will be "community supported". In this end, we at
+Inertial Sense actively encourage code contributions from customers and other users who wish to extend the functionality, or resolve defects
+that exist within the code, through the use of GitHub's Fork and Pull-Request mechanisms.
+
+### Disclaimer of Software Warranty.
+
+INERTIAL SENSE LICENSES THE SOFTWARE AND ASSOCIATED SOURCE CODE UNDER THIS DIRECTORY "AS IS", AND MAKES NO EXPRESS OR IMPLIED WARRANTY OF
+ANY KIND. INERTIAL SENSE SPECIFICALLY DISCLAIMS ALL INDIRECT OR IMPLIED WARRANTIES TO THE FULL EXTENT ALLOWED BY APPLICABLE LAW, INCLUDING
+WITHOUT LIMITATION ALL IMPLIED WARRANTIES OF, NON-INFRINGEMENT, MERCHANTABILITY, TITLE OR FITNESS FOR ANY PARTICULAR PURPOSE. NO ORAL OR
+WRITTEN INFORMATION OR ADVICE GIVEN BY INERTIAL SENSE, ITS AGENTS OR EMPLOYEES SHALL CREATE A WARRANTY.
+
+THE USE OF THIS SOFTWARE IS AT YOUR OWN RISK, AND YOU ASSUME ALL RESPONSIBILITY FOR ANY LOSS, DAMAGE, OR OTHER HARM THAT MAY RESULT FROM
+THE USE OF THIS SOFTWARE. INERTIAL SENSE SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING
+OUT OF OR IN ANY WAY CONNECTED WITH THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---
+
 ## Setup
 This ROS package, uses the inertial-sense-sdk as a submodule. Clone this package into the catkin workspace `src` folder, then pull the submodule.
 
@@ -38,9 +65,9 @@ For instructions on changing parameter values and topic remapping from the comma
 
 ```bash
 rosparam set /inertial_sense_ros/navigation_dt_ms 16
-rosparam set /inertial_sense_ros/stream_DID_INS_2 true
-rosparam set /inertial_sense_ros/GPS_ref_lla "[40.25, -111.67, 1556.59]"
-rosparam set /inertial_sense_ros/GPS1_ant_xyz "[0.2, 0.0, 0.3]"
+rosparam set /inertial_sense_ros/msg/did_ins2/enable true
+rosparam set /inertial_sense_ros/ref_lla "[40.25, -111.67, 1556.59]"
+rosparam set /inertial_sense_ros/gps1_ant_xyz "[0.2, 0.0, 0.3]"
 rosrun inertial_sense_ros inertial_sense_node
 ```
 
@@ -70,39 +97,50 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
    -  full 12-DOF measurements from onboard estimator in ENU frame.
 - `odom_ins_ecef`(nav_msgs/Odometry)
    -  full 12-DOF measurements from onboard estimator in ECEF frame.
-- `DID_INS_1`(inertial_sense_ros/DID_INS_1)
-   -  Standard Inertial Sense [DID_INS_1](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_1) Definition
-- `DID_INS_2`(inertial_sense_ros/DID_INS_2)
-   -  Standard Inertial Sense [DID_INS_2](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_2) Definition
-- `DID_INS_4`(inertial_sense_ros/DID_INS_4)
+- `did_ins1` (inertial_sense_ros/did_ins1)
+   -  Standard Inertial Sense [DID_INS_1](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins1) Definition
+- `did_ins2` (inertial_sense_ros/did_ins2)
+   -  Standard Inertial Sense [DID_INS_2](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins2) Definition
+- `did_ins4` (inertial_sense_ros/did_ins4)
    -  Standard Inertial Sense [DID_INS_4](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_4) Definition
+- `inl2_states` (inertial_sense_ros/INL2States)
+   -  INS Extended Kalman Filter (EKF) states [DID_INL2_STATES](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_inl2_states) Definition
+
 - `imu`(sensor_msgs/Imu)
    -  Raw Imu measurements from IMU1 (NED frame)
-- `gps`(inertial_sense_ros/GPS)
-   -  unfiltered GPS measurements from onboard GPS unit
-- `gps/info`(inertial_sense_ros/GPSInfo)
-   -  satelite information and carrier noise ratio array for each sattelite
-- `NavSatFix`(sensor_msgs/NavSatFix)
-   -  Standard ROS sensor_msgs/NavSatFix data
+- `pimu` (inertial_sense_ros/pimu)
+   -  preintegrated coning and sculling integrals of IMU measurements
 - `mag` (sensor_msgs/MagneticField)
    -  Raw magnetic field measurement from magnetometer 1
 - `baro` (sensor_msgs/FluidPressure)
    -  Raw barometer measurements in kPa
-- `preint_imu` (inertial_sense_ros/DThetaVel)
-   -  preintegrated coning and sculling integrals of IMU measurements
+
+- `NavSatFix`(sensor_msgs/NavSatFix)
+   -  Standard ROS sensor_msgs/NavSatFix data
+- `gps1`(inertial_sense_ros/gps1)
+   -  GPS measurements from GPS1 receiver
+- `gps2`(inertial_sense_ros/gps2)
+   -  GPS measurements from GPS2 receiver
+- `gps1/info`(inertial_sense_ros/gps1/info)
+   -  satelite information and carrier noise ratio array for each satelite
+- `gps2/info`(inertial_sense_ros/gps2/info)
+   -  satelite information and carrier noise ratio array for each satelite
 - `RTK_pos/info` (inertial_sense_ros/RTKInfo)
-   -  information about RTK status
+   -  information about RTK positioning status
 - `RTK_pos/rel` (inertial_sense_ros/RTKRel)
-   -  Relative measurement between RTK base and rover
-- `inl2_states` (inertial_sense_ros/INL2States)
-   -  INS Extended Kalman Filter (EKF) states [DID_INL2_STATES](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_inl2_states) Definition
+   -  Relative measurement between RTK positioning base and rover
+- `RTK_cmp/info` (inertial_sense_ros/RTKInfo)
+   -  information about RTK compassing status
+- `RTK_cmp/rel` (inertial_sense_ros/RTKRel)
+   -  Relative measurement between RTK compassing moving base and rover
+
+- `strobe_in` (std_msgs/Header)
+   -  Timestamp of strobe in message header
 - `diagnostics` (diagnostic_msgs/DiagnosticArray)
    -  Diagnostic message of RTK status.
-- `strobe_time` (std_msgs/Header)
-   -  Timestamp of strobe in message header
 
 
-__*Note: RTK positioning or RTK compassing mode must be enabled to stream any raw GPS data. Raw data can only be streamed from the onboard m8 receiver. To enable the onboard receiver change `GPS1_type` to m8.__
+__*Note: RTK positioning or RTK compassing mode must be enabled to stream any raw GPS data. Raw data can only be streamed from the onboard m8 receiver. To enable the onboard receiver change `gps1_type` to m8.__
 - `<gps1_topic>/obs` (inertial_sense_ros/GNSSObservation)
     * Raw satellite observation (psuedorange and carrier phase)
 - `<gps1_topic>/eph` (inertial_sense_ros/GNSSEphemeris)
@@ -129,156 +167,155 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
 
 **Topic Configuration**
 
-- `~stream_DID_INS_1` (bool, default: false)
-   - Flag to stream DID_INS_1 message
-- `~ins1_period_multiple` (int, default: 1)
+- `~msg/did_ins1/enable` (bool, default: false)
+   - Flag to stream did_ins1 message
+- `~msg/did_ins1/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_DID_INS_2` (bool, default: false)
-   - Flag to stream DID_INS_2 message
-- `~ins2_period_multiple` (int, default: 1)
+- `~msg/did_ins2/enable` (bool, default: false)
+   - Flag to stream did_ins2 message
+- `~msg/did_ins2/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_DID_INS_4` (bool, default: false)
-   - Flag to stream DID_INS_4 message
-- `~ins4_period_multiple` (int, default: 1)
+- `~msg/did_ins4/enable` (bool, default: false)
+   - Flag to stream did_ins4 message
+- `~msg/did_ins4/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_odom_ins_ned` (bool, default: true)
+- `~msg/odom_ins_ned/enable` (bool, default: true)
    - Flag to stream navigation solution in NED
-- `~odom_ins_ned_period_multiple` (int, default: 1)
+- `~msg/odom_ins_ned/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_odom_ins_enu` (bool, default: false)
+- `~msg/odom_ins_enu/enable` (bool, default: false)
    - Flag to stream navigation solution in ENU
-- `~odom_ins_enu_period_multiple` (int, default: 1)
+- `~msg/odom_ins_enu/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_odom_ins_ecef` (bool, default: false)
+- `~msg/odom_ins_ecef/enable` (bool, default: false)
    - Flag to stream navigation solution in ECEF
-- `~odom_ins_ecef_period_multiple` (int, default: 1)
+- `~msg/odom_ins_ecef/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_covariance_data` (bool, default: false)
+- `~stream_ins_covariance` (bool, default: false)
    - Flag to stream navigation covariance data in odometry messages
-
      __*Note__ - Data set is 176 bytes. Care should be taken to ensure sufficient bandwidth
-- `~stream_INL2_states` (bool, default: false)    
+- `~msg/inl2_states/enable` (bool, default: false)    
    -  Flag to stream INS2 state data
-- `~INL2_states_period_multiple` (int, default: 1)
+- `~msg/inls2_states/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_IMU` (bool, default: false)
+- `~msg/imu/enable` (bool, default: false)
    - Flag to stream IMU measurements or not
-- `~imu_period_multiple` (int, default: 1)
+- `~msg/imu/period` (int, default: 1)   
    - Configures period multiple of data set stream rate
-- `~stream_baro` (bool, default: false)
+- `~msg/baro/enable` (bool, default: false)   
    - Flag to stream baro or not
-- `~baro_period_multiple` (int, default: 1)
+- `~msg/baro/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_mag` (bool, default: false)
+- `~msg/mag/enable` (bool, default: false)
    - Flag to stream magnetometer or not
-- `~mag_period_multiple` (int, default: 1)
+- `~msg/mag/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_preint_IMU` (bool, default: false)
+- `~msg/pimu/enable` (bool, default: false)
    - Flag to stream preintegrated IMU or not
-- `~preint_imu_period_multiple` (int, default: 1)
+- `~msg/pimu/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_GPS1`(bool, default: false)
+- `~msg/gps1/enable`(bool, default: true)
    - Flag to stream GPS1
-- `~stream_GPS2`(bool, default: false)
+- `~msg/gps2/enable`(bool, default: false)
    - Flag to stream GPS2
-- `~gps1_period_multiple` (int, default: 1)
+- `~msg/gps1/period` (int, default: 1)
    - Configures GPS1 period multiple of data set stream rate
-- `~gps2_period_multiple` (int, default: 1)
+- `~msg/gps2/period` (int, default: 1)
    - Configures GPS2 period multiple of data set stream rate
-- `~stream_GPS1_info`(bool, default: false)
+- `~msg/gps1_info/enable`(bool, default: false)
    - Flag to stream GPS1 info messages
-- `~stream_GPS2_info`(bool, default: false)
+- `~msg/gps2_info/enable`(bool, default: false)
    - Flag to stream GPS2 info messages
-- `~gps_info_period_multiple` (int, default: 1)
+- `~msg/gps1_info/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_GPS1_raw` (bool, default: false)
+- `~msg/gps1_raw/enable` (bool, default: false)
    - Flag to stream GPS1 raw messages
-- `~stream_GPS2_raw` (bool, default: false)
+- `~msg/gps2_raw/enable` (bool, default: false)
    - Flag to stream GPS2 raw messages
-- `~gps_raw_period_multiple` (int, default: 1)
+- `~msg/gps1_raw/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~stream_NavSatFix` (bool, default: false)
+- `~msg/navsatfix/enable` (bool, default: false)
    - Flag to stream NavSatFix message
-- `~NavSatFix_period_multiple` (int, default: 1)
+- `~msg/navsatfix/period` (int, default: 1)
    - Configures period multiple of data set stream rate.  Data is based on GPS2 if GPS1 is disabled.
 - `~publishTf`(bool, default: true)
    - Flag to publish Tf transformations 'ins' to 'body_link'
-- `~stream_diagnostics` (bool, default: true)
+- `~msg/diagnostics/enable` (bool, default: true)
    - Flag to stream diagnostics data
-- `~diagnostics_period_multiple` (int, default: 1)
+- `~msg/diagnostics/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~RTK_pos_period_multiple` (int, default: 1)
+- `~msg/rtk_pos/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~RTK_cmp_period_multiple` (int, default: 1)
+- `~msg/rtk_cmp/period` (int, default: 1)
    - Configures period multiple of data set stream rate
 
 ## RTK Configuration
 
-- `~RTK_rover` (bool, default: false)
+- `~rtk_compass` (bool, default: false)
    - Enables RTK rover mode (requires base corrections from an RTK base)
-- `~RTK_base_USB` (bool, default: false)
+- `~rtk_base_USB` (bool, default: false)
    - Makes the connected uINS a RTK base station and enables the publishing of corrections our of Serial2 port
-- `~RTK_base_serial` (bool, default: false)
+- `~rtk_base_serial` (bool, default: false)
    - Makes the connected uINS a RTK base station and enables the publishing of corrections out the USB port
-- `~RTK_base_TCP` (bool, default: false)
+- `~rtk_base_TCP` (bool, default: false)
    - Makes the connected uINS a RTK base station and creates a TCP server with which to publish corrections
-- `~GNSS_Compass` (bool, default: false)
+- `~gnss_compass` (bool, default: false)
    - Uses both GPS antennas in a dual-GNSS configuration
-- `~RTK_rover_radio_enable` (bool, default: false)
+- `~rtk_rover_radio_enable` (bool, default: false)
    - Enable radio on EVB2 for base corrections
-- `~RTK_correction_protocol` (string, default: RTCM3)
+- `~rtk_correction_protocol` (string, default: RTCM3)
    - Options are RTCM3 and UBLOX (for M8 receiver).  Rover and base must match.
-- `~RTK_connection_attempt_limit` (string, default: RTCM3)
+- `~rtk_connection_attempt_limit` (string, default: RTCM3)
    - Number of times to attempt NTRIP connection
-- `~RTK_connection_attempt_backoff` (string, default: RTCM3)
+- `~rtk_connection_attempt_backoff` (string, default: RTCM3)
    - Sleep duration parameter. Sleep duration = attempt limit x attempt backoff
-- `RTK_connectivity_watchdog_enabled` (bool default: false)
+- `rtk_connectivity_watchdog_enabled` (bool default: false)
    - Data reception watchdog
-- `RTK_connectivity_watchdog_timer_frequency` (float, default: 1)
+- `rtk_connectivity_watchdog_timer_frequency` (float, default: 1)
    - frequency in which to check for traffic (secs)
-- `RTK_data_transmission_interruption_limit` (float, default: 1)
+- `rtk_data_transmission_interruption_limit` (float, default: 1)
    - time afterwhich connection will be reinitiated.
 
 **TCP Configuration**
-- `~RTK_server_IP` (string, default: 127.0.0.1)
+- `~rtk_server_IP` (string, default: 127.0.0.1)
   - If operating as base, attempts to create a TCP port on this IP for base corrections, if rover, connects to this IP for corrections.
-- `~RTK_server_port` (int, default: 7777)
+- `~rtk_server_port` (int, default: 7777)
   - If operating as base, creates a TCP connection at this port for base corrections, if rover, connects to this port for corrections.
 
 **NTRIP Configuration**
 
 __*Note: These values must be clear for TCP configuration to work__
-- `~RTK_server_mount` (string, default: "")
+- `~rtk_server_mount` (string, default: "")
   - NTRIP mount point
-- `~RTK_server_username` (string, default: "")
+- `~rtk_server_username` (string, default: "")
   - NTRIP username
-- `~RTK_server_password` (string, default: "")
+- `~rtk_server_password` (string, default: "")
   - NTRIP password
 
 
 **Sensor Configuration**
-- `~INS_rpy_radians` (vector(3), default: {0, 0, 0})
+- `~ins_rotation` (vector(3), default: {0, 0, 0})
    -  The roll, pitch, yaw rotation from the INS frame to the output frame
-- `~INS_xyz` (vector(3), default: {0, 0, 0})
+- `~ins_offset` (vector(3), default: {0, 0, 0})
    -  The NED translation vector between the INS frame and the output frame (wrt output frame)
-- `~GPS1_type` (string, default: "F9P")
+- `~gps1_type` (string, default: "F9P")
    -  Which receiver type: "F9P" or "M8"
-- `~GPS1_topic` (string, default: "gps1")
-   -  ROS topic name of GPS1 stream
-- `GPS2_type` (string, default: "F9P")
+- `gps2_type` (string, default: "F9P")
    -  Which receiver type: "F9P" or "M8"
-- `~GPS2_topic` (string, default: "gps2")
+- `~msg/gps1/topic` (string, default: "gps1")
    -  ROS topic name of GPS1 stream
-- `~GPS1_ant_xyz` (vector(3), default: {0, 0, 0})
+- `~msg/gps2/topic` (string, default: "gps2")
+   -  ROS topic name of GPS1 stream
+- `~gps1_ant_xyz` (vector(3), default: {0, 0, 0})
    -  The NED translation vector between the INS frame and the GPS 1 antenna (wrt INS frame)
-- `~GPS2_ant_xyz` (vector(3), default: {0, 0, 0})
+- `~gps2_ant_xyz` (vector(3), default: {0, 0, 0})
    -  The NED translation vector between the INS frame and the GPS 2 antenna (wrt INS frame)
-- `~GPS_ref_lla` (vector(3), default: {0, 0, 0})
+- `~ref_lla` (vector(3), default: {0, 0, 0})
    -  The Reference longitude, latitude and altitude for NED calculation in degrees, degrees and meters (use the `set_refLLA` service to update this automatically)
 - `~gpsTimeUserDelay` (float, default: 0)
    -  GPS update time delay
-- `~declination` (float, default: 0.20007290992)
-   -  The declination of earth's magnetic field (radians)
+- `~mag_declination` (float, default: 0.20007290992)
+   -  The mag_declination of earth's magnetic field (radians)
 - `~dynamic_model` (int, default: 8)
    -  Dynamic model used in internal filter of uINS.
       -  0 = portable

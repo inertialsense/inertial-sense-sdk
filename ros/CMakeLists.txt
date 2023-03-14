@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.10.0)
 project(inertial_sense_ros)
 
 find_package(yaml-cpp REQUIRED)
@@ -23,7 +23,7 @@ add_message_files(
   SatInfo.msg
   GPS.msg
   GPSInfo.msg
-  PreIntIMU.msg
+  PIMU.msg
   RTKInfo.msg
   RTKRel.msg
   GlonassEphemeris.msg
@@ -63,7 +63,10 @@ include_directories(include
 add_subdirectory(.. devel)
 
 add_library(inertial_sense_ros
-  src/inertial_sense_ros.cpp
+    src/ParamHelper.cpp
+    src/RtkRover.cpp
+    src/RtkBase.cpp
+    src/inertial_sense_ros.cpp
 )
 
 target_link_libraries(inertial_sense_ros InertialSense ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES} pthread)
@@ -76,3 +79,11 @@ target_link_libraries(inertial_sense_node inertial_sense_ros ${catkin_LIBRARIES}
 # catkin_add_gtest(test_client_reconnect test/test_client_reconnect.cpp)
 # target_link_libraries(test_client_reconnect ${PROJECT_NAME})
 
+catkin_add_gtest(test_inertial_sense_ros 
+  test/test_main.cpp
+  test/test_communications.cpp
+)
+target_link_libraries(test_inertial_sense_ros ${PROJECT_NAME})
+
+catkin_add_gtest(test_unit_tests test/test_basic_unit_tests.cpp)
+target_link_libraries(test_unit_tests ${PROJECT_NAME})

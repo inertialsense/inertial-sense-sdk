@@ -1,27 +1,27 @@
 
-#include <gtest/gtest.h>
+#include "gtest_helpers.h"
 #include "inertial_sense_ros.h"
 
 InertialSense IS_;
 
-void connect_rtk_client(const std::string& RTK_correction_protocol, const std::string& RTK_server_IP, const int RTK_server_port)
+void connect_rtk_client(const std::string& rtk_correction_protocol, const std::string& rtk_server_IP, const int rtk_server_port)
 {
-  std::string RTK_server_mount = "";
-  std::string RTK_server_username = "";
-  std::string RTK_server_password = "";
+  std::string rtk_server_mount = "";
+  std::string rtk_server_username = "";
+  std::string rtk_server_password = "";
 
-  int RTK_connection_attempt_limit = 10;
-  int RTK_connection_attempt_backoff = 2;
+  int rtk_connection_attempt_limit = 10;
+  int rtk_connection_attempt_backoff = 2;
 
   // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
-  std::string RTK_connection =  "TCP:" + RTK_correction_protocol + ":" + RTK_server_IP + ":" + std::to_string(RTK_server_port);
-  if (!RTK_server_mount.empty() && !RTK_server_username.empty())
+  std::string RTK_connection =  "TCP:" + rtk_correction_protocol + ":" + rtk_server_IP + ":" + std::to_string(rtk_server_port);
+  if (!rtk_server_mount.empty() && !rtk_server_username.empty())
   { // NTRIP options
-    RTK_connection += ":" + RTK_server_mount + ":" + RTK_server_username + ":" + RTK_server_password;
+    RTK_connection += ":" + rtk_server_mount + ":" + rtk_server_username + ":" + rtk_server_password;
   }
 
   int RTK_connection_attempt_count = 0;
-  while (RTK_connection_attempt_count < RTK_connection_attempt_limit)
+  while (RTK_connection_attempt_count < rtk_connection_attempt_limit)
   {
     ++RTK_connection_attempt_count;
 
@@ -36,13 +36,13 @@ void connect_rtk_client(const std::string& RTK_correction_protocol, const std::s
     {
       ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
 
-      if (RTK_connection_attempt_count >= RTK_connection_attempt_limit)
+      if (RTK_connection_attempt_count >= rtk_connection_attempt_limit)
       {
         ROS_ERROR_STREAM("Giving up after " << RTK_connection_attempt_count << " failed attempts");
       }
       else
       {
-        int sleep_duration = RTK_connection_attempt_count * RTK_connection_attempt_backoff;
+        int sleep_duration = RTK_connection_attempt_count * rtk_connection_attempt_backoff;
         ROS_WARN_STREAM("Retrying connection in " << sleep_duration << " seconds");
         ros::Duration(sleep_duration).sleep();
       }
@@ -52,11 +52,11 @@ void connect_rtk_client(const std::string& RTK_correction_protocol, const std::s
 
 TEST(ReconnectionTestSuite, testReconnection)
 {
-    const std::string RTK_correction_protocol = "RTCM3";
-    const std::string& RTK_server_IP = "127.0.0.1";
-    const int RTK_server_port = 7777;
+    const std::string rtk_correction_protocol = "RTCM3";
+    const std::string& rtk_server_IP = "127.0.0.1";
+    const int rtk_server_port = 7777;
 
-    connect_rtk_client(RTK_correction_protocol, RTK_server_IP, RTK_server_port);
+    connect_rtk_client(rtk_correction_protocol, rtk_server_IP, rtk_server_port);
 }
 
 int main(int argc, char** argv) {

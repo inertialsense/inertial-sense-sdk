@@ -226,13 +226,13 @@ class logPlot:
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Latitude', 'deg')
         self.configureSubplot(ax[1], 'Longitude', 'deg')
-        self.configureSubplot(ax[2], 'Altitude', 'deg')
+        self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('INS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0].plot(time, self.getData(d, DID_INS_2, 'lla')[:,0], label=self.log.serials[d])
             ax[1].plot(time, self.getData(d, DID_INS_2, 'lla')[:,1])
-            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla')[:,2], label=self.log.serials[d])
+            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla')[:,2])
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
@@ -260,7 +260,7 @@ class logPlot:
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Latitude', 'deg')
         self.configureSubplot(ax[1], 'Longitude', 'deg')
-        self.configureSubplot(ax[2], 'Altitude', 'deg')
+        self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('GPS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
@@ -1499,14 +1499,21 @@ class logPlot:
         self.configureSubplot(ax[2], 'Mag Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = self.getData(d, DID_MAGNETOMETER, 'time')
-            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
-            if np.shape(towOffset)[0] != 0:
-                time = time + towOffset[-1]
-            mag = self.getData(d, DID_MAGNETOMETER, 'mag')
-            magX = mag[:,0]
-            magY = mag[:,1]
-            magZ = mag[:,2]
+            if 1:
+                time = self.getData(d, DID_MAGNETOMETER, 'time')
+                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+                if np.shape(towOffset)[0] != 0:
+                    time = time + towOffset[-1]
+                mag = self.getData(d, DID_MAGNETOMETER, 'mag')
+                magX = mag[:,0]
+                magY = mag[:,1]
+                magZ = mag[:,2]
+            else:
+                mag = self.getData(d, DID_SENSORS_UCAL, 'mag')
+                magX = mag[:,0]['xyz'][:,0]
+                magY = mag[:,0]['xyz'][:,1]
+                magZ = mag[:,0]['xyz'][:,2]
+                time = range(np.shape(magX)[0])
             ax[0].plot(time, magX, label=self.log.serials[d])
             ax[1].plot(time, magY)
             ax[2].plot(time, magZ)
@@ -1620,10 +1627,10 @@ class logPlot:
 
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'))
-            declination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magDec')
-            inclination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magInc')
-            ax[0].plot(time, declination, label=self.log.serials[d])
-            ax[1].plot(time, inclination)
+            mag_declination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magDec')
+            mag_inclination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magInc')
+            ax[0].plot(time, mag_declination, label=self.log.serials[d])
+            ax[1].plot(time, mag_inclination)
         ax[0].legend(ncol=2)
         self.saveFig(fig, 'magDec')
         for a in ax:
