@@ -24,7 +24,7 @@ extern "C" {
 #if defined(PLATFORM_IS_EVB_2) && PLATFORM_IS_EVB_2
 #define RTOS_NUM_TASKS	(EVB_RTOS_NUM_TASKS)
 #else
-#define RTOS_NUM_TASKS	(UINS_RTOS_NUM_TASKS)
+#define RTOS_NUM_TASKS	(IMX_RTOS_NUM_TASKS)
 #endif
 
 #if defined(DBGPIO_START) && defined(DBGPIO_END)
