@@ -4059,8 +4059,8 @@ typedef enum
     /** Task 5: Timer */
     TASK_TIMER,
 
-    /** Number of RTOS tasks */
-    IMX_RTOS_NUM_TASKS,                 // Keep last
+	/** Number of RTOS tasks */
+	IMX_RTOS_NUM_TASKS                 // Keep last
 } eRtosTask;
 
 /** RTOS tasks */
@@ -4178,8 +4178,8 @@ typedef struct PACKED
     /** Total memory freed using RTOS vPortFree() */
     uint32_t				freeSize;
 
-    /** Tasks */
-    rtos_task_t             task[IMX_RTOS_NUM_TASKS];
+	/** Tasks */
+	rtos_task_t             task[IMX_RTOS_NUM_TASKS];
 
 } rtos_info_t;
 
