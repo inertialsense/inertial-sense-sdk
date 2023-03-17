@@ -259,7 +259,7 @@ public:
 	/**
 	* Set device configuration
 	* @param pHandle the pHandle to set sysCmd for
-	* @param sysCmd new device configuration
+	* @param command system command value
 	*/
 	void SetSysCmd(const uint32_t command, int pHandle = -1);
 

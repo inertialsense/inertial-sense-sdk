@@ -3949,7 +3949,7 @@ typedef enum
 	TASK_TIMER,
 
 	/** Number of RTOS tasks */
-	UINS_RTOS_NUM_TASKS                 // Keep last
+	IMX_RTOS_NUM_TASKS                 // Keep last
 } eRtosTask;
 
 /** EVB RTOS tasks */
@@ -4056,7 +4056,7 @@ typedef struct PACKED
 	uint32_t				freeSize;
 
 	/** Tasks */
-	rtos_task_t             task[UINS_RTOS_NUM_TASKS];
+	rtos_task_t             task[IMX_RTOS_NUM_TASKS];
 
 } rtos_info_t;
 
