@@ -922,7 +922,7 @@ typedef struct PACKED
 	gps_sat_sv_t			sat[MAX_NUM_SAT_CHANNELS];	
 } gps_sat_t;
 
-#define GPS_VER_NUM_EXTENSIONS	2
+#define GPS_VER_NUM_EXTENSIONS	6
 /** (DID_GPS1_VERSION) GPS version strings */
 typedef struct PACKED
 {
