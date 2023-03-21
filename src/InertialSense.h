@@ -439,6 +439,15 @@ private:
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 	mul_msg_stats_t m_serverMessageStats = {};
 
+	//Sync state between IS Class and device
+	enum IMXSyncState
+	{
+		SYNCHRONIZED	= 0,
+		SYNC_UPLOAD		= 1,
+		SYNC_DOWNLOAD	= 2
+	};
+	uint8_t syncState = SYNCHRONIZED;
+
 	// returns false if logger failed to open
 	bool UpdateServer();
 	bool UpdateClient();

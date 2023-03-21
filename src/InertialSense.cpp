@@ -676,11 +676,20 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 		return;
 	}
 
-	m_comManagerState.devices[pHandle].flashCfg = flashCfg;
-	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
-	comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
-	Update();
-}
+	uint32_t newChecksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+
+	//Compare checksum of flashCfg vs known checksum in m_comManagerState.devices[pHandle].flashCfg
+	if (m_comManagerState.devices[pHandle].flashCfg.checksum != newChecksum)
+	{   
+		syncState = SYNC_UPLOAD;
+		m_comManagerState.devices[pHandle].flashCfg = flashCfg;
+		m_comManagerState.devices[pHandle].flashCfg.checksum = newChecksum;
+
+		// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
+		comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
+		Update();
+	}
+ }
 
 void InertialSense::SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pHandle)
 {
