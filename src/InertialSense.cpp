@@ -90,13 +90,53 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		if (abs(currentTime - lastTime) > 5)
 		{	// Update every 5 seconds
 			lastTime = currentTime;
-			gps_pos_t &gps = *((gps_pos_t*)data->buf);
-			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+			gps_pos_t& gps = *((gps_pos_t*)data->buf);
+			if ((gps.status & GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{
 				*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 			}
 		}
 	}
+	if (data->hdr.id == DID_SYS_PARAMS)
+	{
+		sys_params_t* rxData = (sys_params_t*)data->buf;
+			if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNC_UPLOAD)	//If sync state was previously set to upload (triggered by a flash config change):
+			{
+				if (s->devices[pHandle].flashCfg.checksum == rxData->flashCfgChecksum)		//Check to see if the flash config was applied correctly on the IMX by checking the checksums against each other
+				{
+					s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED; //If they match we change the state to synchronized
+				}
+				else
+				{
+					//If they don't match we leave it in sync_upload mode. TODO: Try again?
+				}
+			}
+			else if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNCHRONIZED)	//If a message comes by itself without being requested by a flash write (it is already synced):
+			{
+				if (s->devices[pHandle].flashCfg.checksum == rxData->flashCfgChecksum)				//If they match we do nothing
+				{
+					//Do nothing
+						
+				}
+				else if (s->devices[pHandle].syncState != rxData->flashCfgChecksum)					//If they are different we change the state...
+				{
+					s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNC_DOWNLOAD;	//to sync download to indicate that the received Flash config is different that what we currently have.
+					//TODO: What do we do now?
+				}
+			}
+			else if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNC_DOWNLOAD)
+			{
+				if (s->devices[pHandle].flashCfg.checksum == rxData->flashCfgChecksum)
+				{
+					s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED;	//The sync happened successfully
+				}
+				else
+				{
+					//TODO: What do we do now?
+				}
+			}
+	}
+
 }
 
 InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
@@ -681,7 +721,7 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 	//Compare checksum of flashCfg vs known checksum in m_comManagerState.devices[pHandle].flashCfg
 	if (m_comManagerState.devices[pHandle].flashCfg.checksum != newChecksum)
 	{   
-		syncState = SYNC_UPLOAD;
+		m_comManagerState.devices[pHandle].syncState = SYNC_UPLOAD;
 		m_comManagerState.devices[pHandle].flashCfg = flashCfg;
 		m_comManagerState.devices[pHandle].flashCfg.checksum = newChecksum;
 

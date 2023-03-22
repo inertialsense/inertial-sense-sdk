@@ -73,6 +73,7 @@ public:
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashCfg;
 		evb_flash_cfg_t evbFlashCfg;
+		uint8_t syncState;
 	};
 
 	struct com_manager_cpp_state_t
@@ -404,6 +405,14 @@ public:
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
+	//Sync state between IS Class and device
+	enum IMXSyncState
+	{
+		SYNCHRONIZED = 0,
+		SYNC_UPLOAD = 1,
+		SYNC_DOWNLOAD = 2
+	};
+
 protected:
 	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
 	void OnClientConnecting(cISTcpServer* server) OVERRIDE;
@@ -439,14 +448,7 @@ private:
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 	mul_msg_stats_t m_serverMessageStats = {};
 
-	//Sync state between IS Class and device
-	enum IMXSyncState
-	{
-		SYNCHRONIZED	= 0,
-		SYNC_UPLOAD		= 1,
-		SYNC_DOWNLOAD	= 2
-	};
-	uint8_t syncState = SYNCHRONIZED;
+
 
 	// returns false if logger failed to open
 	bool UpdateServer();
