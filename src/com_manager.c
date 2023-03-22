@@ -232,7 +232,7 @@ int initComManagerInstanceInternal
 			cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
 		}
 	}
-
+	cmInstance->sysParamsPort = -1;
 	return 0;
 }
 
@@ -719,6 +719,8 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		return -1;
 
 	case PID_SET_DATA:
+//		if(&(data->hdr).id == DID_FLASH_CONFIG) TODO: Identify port used for setting flash
+//			cmInstance->sysParamsPort = pHandle;
 	case PID_DATA:
 		dataHdr = &(data->hdr);
 
