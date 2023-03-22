@@ -108,20 +108,19 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 				}
 				else
 				{
-					//If they don't match we leave it in sync_upload mode. TODO: Try again?
+					//If they don't match we leave it in sync_upload mode. User should use DID_SYS_PARAMS callback to monitor the sync flag
 				}
 			}
 			else if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNCHRONIZED)	//If a message comes by itself without being requested by a flash write (it is already synced):
 			{
 				if (s->devices[pHandle].flashCfg.checksum == rxData->flashCfgChecksum)				//If they match we do nothing
 				{
-					//Do nothing
+					//User should use DID_SYS_PARAMS callback to monitor the sync flag
 						
 				}
 				else if (s->devices[pHandle].syncState != rxData->flashCfgChecksum)					//If they are different we change the state...
 				{
 					s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNC_DOWNLOAD;	//to sync download to indicate that the received Flash config is different that what we currently have.
-					//TODO: What do we do now?
 				}
 			}
 			else if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNC_DOWNLOAD)
@@ -132,7 +131,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 				}
 				else
 				{
-					//TODO: What do we do now?
+					//User should use DID_SYS_PARAMS callback to monitor the sync flag
 				}
 			}
 	}
