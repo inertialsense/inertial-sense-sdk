@@ -928,7 +928,7 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.week = msg->week;
         msg_did_ins1.timeOfWeek = msg->timeOfWeek;
         msg_did_ins1.insStatus = msg->insStatus;
-        msg_did_ins1.hdwStatus = msg->hdwStatus;
+        msg_did_ins1.hdwStatus = msg->hdwSta tus;
         msg_did_ins1.theta[0] = msg->theta[0];
         msg_did_ins1.theta[1] = msg->theta[1];
         msg_did_ins1.theta[2] = msg->theta[2];
