@@ -2299,7 +2299,7 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
 	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
 	PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-	PLATFORM_CFG_TYPE_EVB3                      = (int)12,
+	PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
 	PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
 	PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
 	PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
