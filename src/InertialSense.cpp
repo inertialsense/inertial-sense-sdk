@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "protocol_nmea.h"
+#include <yaml-cpp/yaml.h>
 #include "InertialSense.h"
 #ifndef EXCLUDE_BOOTLOADER
 #include "ISBootloaderThread.h"
@@ -78,64 +79,46 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		handlerGlobal(s->inertialSenseInterface, data, pHandle);
 	}
 
+	//sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
+
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
-	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
-	case DID_FLASH_CONFIG:		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;	break;
+	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;	//We always want a copy of what is actually on the IMX
+	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;	// ""
+	case DID_FLASH_CONFIG:			                
+		(*(nvm_flash_cfg_t*)data->buf).checksum == s->devices[pHandle].flashCfg.checksum ? \
+		s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED : s->devices[pHandle].syncState = InertialSense::IMXSyncState::NOT_SYNCHRONIZED; // Set as sync or unsyc based on checksum of newly received flash config.
+		
+		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;									//We always want a copy of what is actually on the IMX
+		break;
+
 	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
-		static time_t lastTime;
-		time_t currentTime = time(NULLPTR);
-		if (abs(currentTime - lastTime) > 5)
-		{	// Update every 5 seconds
-			lastTime = currentTime;
-			gps_pos_t& gps = *((gps_pos_t*)data->buf);
-			if ((gps.status & GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
-			{
-				*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+		{
+			static time_t lastTime;
+			time_t currentTime = time(NULLPTR);
+			if (abs(currentTime - lastTime) > 5)
+			{	// Update every 5 seconds
+				lastTime = currentTime;
+				gps_pos_t& gps = *((gps_pos_t*)data->buf);
+				if ((gps.status & GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+				{
+					*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+				}
 			}
 		}
+	
+	case DID_SYS_PARAMS:
+		sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
+		if (s->devices[pHandle].flashCfg.checksum == sysParamsRx->flashCfgChecksum)		//Check to see if the flash config was applied correctly on the IMX by checking the checksums against each other
+		{
+			s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED; //If they match we change the state to synchronized
+		}
+		else
+		{
+			s->devices[pHandle].syncState = InertialSense::IMXSyncState::NOT_SYNCHRONIZED; //User should probably pull the flash config to know what it is on board.
+		}
 	}
-	if (data->hdr.id == DID_SYS_PARAMS)
-	{
-		sys_params_t* rxData = (sys_params_t*)data->buf;
-			if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNC_UPLOAD)	//If sync state was previously set to upload (triggered by a flash config change):
-			{
-				if (s->devices[pHandle].flashCfg.checksum == rxData->flashCfgChecksum)		//Check to see if the flash config was applied correctly on the IMX by checking the checksums against each other
-				{
-					s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED; //If they match we change the state to synchronized
-				}
-				else
-				{
-					//If they don't match we leave it in sync_upload mode. User should use DID_SYS_PARAMS callback to monitor the sync flag
-				}
-			}
-			else if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNCHRONIZED)	//If a message comes by itself without being requested by a flash write (it is already synced):
-			{
-				if (s->devices[pHandle].flashCfg.checksum == rxData->flashCfgChecksum)				//If they match we do nothing
-				{
-					//User should use DID_SYS_PARAMS callback to monitor the sync flag
-						
-				}
-				else if (s->devices[pHandle].syncState != rxData->flashCfgChecksum)					//If they are different we change the state...
-				{
-					s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNC_DOWNLOAD;	//to sync download to indicate that the received Flash config is different that what we currently have.
-				}
-			}
-			else if (s->devices[pHandle].syncState == InertialSense::IMXSyncState::SYNC_DOWNLOAD)
-			{
-				if (s->devices[pHandle].flashCfg.checksum == rxData->flashCfgChecksum)
-				{
-					s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED;	//The sync happened successfully
-				}
-				else
-				{
-					//User should use DID_SYS_PARAMS callback to monitor the sync flag
-				}
-			}
-	}
-
 }
 
 InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
@@ -718,9 +701,14 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 	uint32_t newChecksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
 
 	//Compare checksum of flashCfg vs known checksum in m_comManagerState.devices[pHandle].flashCfg
-	if (m_comManagerState.devices[pHandle].flashCfg.checksum != newChecksum)
+	if (m_comManagerState.devices[pHandle].flashCfg.checksum == newChecksum)
+	{
+		//If checksum matches then we are already in sync
+		m_comManagerState.devices[pHandle].syncState = SYNCHRONIZED;
+	}
+	else
 	{   
-		m_comManagerState.devices[pHandle].syncState = SYNC_UPLOAD;
+		m_comManagerState.devices[pHandle].syncState = SYNCHRONIZING;
 		m_comManagerState.devices[pHandle].flashCfg = flashCfg;
 		m_comManagerState.devices[pHandle].flashCfg.checksum = newChecksum;
 
@@ -1055,4 +1043,13 @@ void InertialSense::CloseSerialPorts()
 		serialPortClose(&m_comManagerState.devices[i].serialPort);
 	}
 	m_comManagerState.devices.clear();
+}
+void SaveFlashConfigFile(std::string path)
+{
+
+}
+
+void LoadFlashConfig(std::string path)
+{
+
 }

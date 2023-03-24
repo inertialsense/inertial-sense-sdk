@@ -402,6 +402,20 @@ public:
 		void (*waitAction)() = NULLPTR
 	);
 
+	/**
+	 * @brief Load a a YAML file containing a desired flash configuration
+	 * 
+	 * @param path System path to the YAML file.
+	 */
+	void LoadFlashConfig(std::string path);
+
+	/**
+	 * @brief Save a YAML file containing the IMX flash configuration
+	 * 
+	 * @param path System path to the YAML file.
+	 */
+	void SaveFlashConfigFile(std::string path);
+
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
@@ -409,8 +423,8 @@ public:
 	enum IMXSyncState
 	{
 		SYNCHRONIZED = 0,
-		SYNC_UPLOAD = 1,
-		SYNC_DOWNLOAD = 2
+		SYNCHRONIZING = 1,
+		NOT_SYNCHRONIZED = 2
 	};
 
 protected:
