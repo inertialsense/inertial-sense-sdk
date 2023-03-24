@@ -407,14 +407,14 @@ public:
 	 * 
 	 * @param path System path to the YAML file.
 	 */
-	void LoadFlashConfig(std::string path);
+	void LoadFlashConfig(std::string path, int pHandle = 0);
 
 	/**
 	 * @brief Save a YAML file containing the IMX flash configuration
 	 * 
 	 * @param path System path to the YAML file.
 	 */
-	void SaveFlashConfigFile(std::string path);
+	void SaveFlashConfigFile(std::string path, int pHandle = 0);
 
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
