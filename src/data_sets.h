@@ -959,7 +959,7 @@ typedef struct PACKED
     gps_sat_sv_t			sat[MAX_NUM_SAT_CHANNELS];	
 } gps_sat_t;
 
-
+#define GPS_VER_NUM_EXTENSIONS	6
 /** (DID_GPS1_VERSION) GPS version strings */
 typedef struct PACKED
 {
@@ -968,9 +968,7 @@ typedef struct PACKED
     /** Hardware version */
     uint8_t                 hwVersion[10];		
     /** Extension */
-    uint8_t                 extension[30];		
-    /** ensure 32 bit aligned in memory */
-    uint8_t					reserved[2];		
+	uint8_t                 extension[GPS_VER_NUM_EXTENSIONS][30];		
 } gps_version_t;
 
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
@@ -2344,29 +2342,29 @@ enum eIoConfig
 
 enum ePlatformConfig
 {
-    // IMX Carrier Board
-    PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
-    PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
-    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
-    PLATFORM_CFG_TYPE_RUG1                      = (int)2,
-    PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
-    PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
-    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
-    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
-    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
-    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
-    PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-    PLATFORM_CFG_TYPE_EVB3                      = (int)12,
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,		// IG-2 w/ IMX-5 and GPX-1
-    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)50,		// Enable UBX output on Lambda for testbed
-    PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)51,		// "
-    PLATFORM_CFG_TYPE_TBED_2_G1_W_LAMBDA       = (int)52,		// Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_TBED_2_G2_W_LAMBDA       = (int)53,		// "
+	// IMX Carrier Board
+	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
+	PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
+	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
+	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
+	PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
+	PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
+	PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
+	PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
+	PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
+	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
+	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
+	PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
+	PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
+	PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
+	PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+	PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
+	PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)16,		// Enable UBX output on Lambda for testbed
+	PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)17,		// "
+	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)18,		// Enable UBX input from Lambda
+	PLATFORM_CFG_TYPE_TESTBED_G2_W_LAMBDA       = (int)19,		// "
+	PLATFORM_CFG_TYPE_COUNT                     = (int)20,
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
