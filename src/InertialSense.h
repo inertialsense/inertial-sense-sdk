@@ -402,18 +402,19 @@ public:
 		void (*waitAction)() = NULLPTR
 	);
 
-	/**
-	 * @brief Load a a YAML file containing a desired flash configuration
-	 * 
-	 * @param path System path to the YAML file.
-	 */
-	void LoadFlashConfig(std::string path, int pHandle = 0);
+        /**
+         * @brief LoadFlashConfig
+         * @param path - Path to YAML flash config file
+         * @param pHandle - Handle of current device
+         * @return -1 for failure to upload file, 0 for success.
+         */
+        int LoadFlashConfig(std::string path, int pHandle = 0);
 
-	/**
-	 * @brief Save a YAML file containing the IMX flash configuration
-	 * 
-	 * @param path System path to the YAML file.
-	 */
+        /**
+         * @brief SaveFlashConfigFile
+         * @param path - Path to YAML flash config file
+         * @param pHandle - Handle of current device
+         */
 	void SaveFlashConfigFile(std::string path, int pHandle = 0);
 
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }

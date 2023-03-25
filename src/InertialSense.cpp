@@ -716,7 +716,7 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 		comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
 		Update();
 	}
-    //SaveFlashConfigFile("flashCfg.yaml", pHandle);
+    SaveFlashConfigFile("flashCfg.yaml", pHandle);
     LoadFlashConfig("flashCfg.yaml", pHandle);
  }
 
@@ -1140,78 +1140,86 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
     fout.close();
 }
 
-void InertialSense::LoadFlashConfig(std::string path, int pHandle)
+int InertialSense::LoadFlashConfig(std::string path, int pHandle)
 {
-    nvm_flash_cfg_t* current_flash = &m_comManagerState.devices[pHandle].flashCfg;
-    YAML::Node inData = YAML::LoadFile(path);
-    current_flash->size                     = inData["size"].as<uint32_t>();
-    current_flash->checksum                 = inData["checksum"].as<uint32_t>();
-    current_flash->key                      = inData["key"].as<uint32_t>();
-    current_flash->startupImuDtMs           = inData["startupImuDtMs"].as<uint32_t>();
-    current_flash->startupNavDtMs           = inData["startupNavDtMs"].as<uint32_t>();
-    current_flash->ser0BaudRate             = inData["ser0BaudRate"].as<uint32_t>();
-    current_flash->ser1BaudRate             = inData["ser1BaudRate"].as<uint32_t>();
+    try
+    {
+        nvm_flash_cfg_t* current_flash = &m_comManagerState.devices[pHandle].flashCfg;
+        YAML::Node inData = YAML::LoadFile(path);
+        current_flash->size                     = inData["size"].as<uint32_t>();
+        current_flash->checksum                 = inData["checksum"].as<uint32_t>();
+        current_flash->key                      = inData["key"].as<uint32_t>();
+        current_flash->startupImuDtMs           = inData["startupImuDtMs"].as<uint32_t>();
+        current_flash->startupNavDtMs           = inData["startupNavDtMs"].as<uint32_t>();
+        current_flash->ser0BaudRate             = inData["ser0BaudRate"].as<uint32_t>();
+        current_flash->ser1BaudRate             = inData["ser1BaudRate"].as<uint32_t>();
 
-    YAML::Node insRotation                  = inData["insRotation"];
-    current_flash->insRotation[0]           = insRotation[0].as<float>();
-    current_flash->insRotation[1]           = insRotation[1].as<float>();
-    current_flash->insRotation[2]           = insRotation[2].as<float>();
+        YAML::Node insRotation                  = inData["insRotation"];
+        current_flash->insRotation[0]           = insRotation[0].as<float>();
+        current_flash->insRotation[1]           = insRotation[1].as<float>();
+        current_flash->insRotation[2]           = insRotation[2].as<float>();
 
-    YAML::Node insOffset                    = inData["insOffset"];
-    current_flash->insOffset[0]             = insOffset[0].as<float>();
-    current_flash->insOffset[1]             = insOffset[1].as<float>();
-    current_flash->insOffset[2]             = insOffset[2].as<float>();
+        YAML::Node insOffset                    = inData["insOffset"];
+        current_flash->insOffset[0]             = insOffset[0].as<float>();
+        current_flash->insOffset[1]             = insOffset[1].as<float>();
+        current_flash->insOffset[2]             = insOffset[2].as<float>();
 
-    YAML::Node gps1AntOffset                = inData["gps1AntOffset"];
-    current_flash->gps1AntOffset[0]         = gps1AntOffset[0].as<float>();
-    current_flash->gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
-    current_flash->gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
+        YAML::Node gps1AntOffset                = inData["gps1AntOffset"];
+        current_flash->gps1AntOffset[0]         = gps1AntOffset[0].as<float>();
+        current_flash->gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
+        current_flash->gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
 
-    current_flash->insDynModel              = (uint8_t)inData["insDynModel"].as<uint16_t>();
-    current_flash->debug                    = (uint8_t)inData["debug"].as<uint16_t>();
-    current_flash->gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
-    current_flash->sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();
+        current_flash->insDynModel              = (uint8_t)inData["insDynModel"].as<uint16_t>();
+        current_flash->debug                    = (uint8_t)inData["debug"].as<uint16_t>();
+        current_flash->gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
+        current_flash->sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();
 
-    YAML::Node refLla                       = inData["refLla"];
-    current_flash->refLla[0]                = refLla[0].as<double>();
-    current_flash->refLla[1]                = refLla[1].as<double>();
-    current_flash->refLla[2]                = refLla[2].as<double>();
+        YAML::Node refLla                       = inData["refLla"];
+        current_flash->refLla[0]                = refLla[0].as<double>();
+        current_flash->refLla[1]                = refLla[1].as<double>();
+        current_flash->refLla[2]                = refLla[2].as<double>();
 
-    YAML::Node lastLla                      = inData["lastLla"];
-    current_flash->lastLla[0]               = lastLla[0].as<double>();
-    current_flash->lastLla[1]               = lastLla[1].as<double>();
-    current_flash->lastLla[2]               = lastLla[2].as<double>();
+        YAML::Node lastLla                      = inData["lastLla"];
+        current_flash->lastLla[0]               = lastLla[0].as<double>();
+        current_flash->lastLla[1]               = lastLla[1].as<double>();
+        current_flash->lastLla[2]               = lastLla[2].as<double>();
 
-    current_flash->lastLlaTimeOfWeekMs      = inData["lastLlaTimeOfWeekMs"].as<uint32_t>();
-    current_flash->lastLlaWeek              = inData["lastLlaWeek"].as<uint32_t>();
-    current_flash->lastLlaUpdateDistance    = inData["lastLlaUpdateDistance"].as<float>();
-    current_flash->ioConfig                 = inData["ioConfig"].as<uint32_t>();
-    current_flash->platformConfig           = inData["platformConfig"].as<uint32_t>();
+        current_flash->lastLlaTimeOfWeekMs      = inData["lastLlaTimeOfWeekMs"].as<uint32_t>();
+        current_flash->lastLlaWeek              = inData["lastLlaWeek"].as<uint32_t>();
+        current_flash->lastLlaUpdateDistance    = inData["lastLlaUpdateDistance"].as<float>();
+        current_flash->ioConfig                 = inData["ioConfig"].as<uint32_t>();
+        current_flash->platformConfig           = inData["platformConfig"].as<uint32_t>();
 
 
-    YAML::Node gps2AntOffset                = inData["gps2AntOffset"];
-    current_flash->gps2AntOffset[0]         = gps2AntOffset[0].as<float>();
-    current_flash->gps2AntOffset[1]         = gps2AntOffset[1].as<float>();
-    current_flash->gps2AntOffset[2]         = gps2AntOffset[2].as<float>();
+        YAML::Node gps2AntOffset                = inData["gps2AntOffset"];
+        current_flash->gps2AntOffset[0]         = gps2AntOffset[0].as<float>();
+        current_flash->gps2AntOffset[1]         = gps2AntOffset[1].as<float>();
+        current_flash->gps2AntOffset[2]         = gps2AntOffset[2].as<float>();
 
-    YAML::Node zeroVelRotation              = inData["zeroVelRotation"];
-    current_flash->zeroVelRotation[0]       = zeroVelRotation[0].as<float>();
-    current_flash->zeroVelRotation[1]       = zeroVelRotation[1].as<float>();
-    current_flash->zeroVelRotation[2]       = zeroVelRotation[2].as<float>();
+        YAML::Node zeroVelRotation              = inData["zeroVelRotation"];
+        current_flash->zeroVelRotation[0]       = zeroVelRotation[0].as<float>();
+        current_flash->zeroVelRotation[1]       = zeroVelRotation[1].as<float>();
+        current_flash->zeroVelRotation[2]       = zeroVelRotation[2].as<float>();
 
-    YAML::Node zeroVelOffset                = inData["zeroVelOffset"];
-    current_flash->zeroVelOffset[0]         = zeroVelOffset[0].as<float>();
-    current_flash->zeroVelOffset[1]         = zeroVelOffset[1].as<float>();
-    current_flash->zeroVelOffset[2]         = zeroVelOffset[2].as<float>();
+        YAML::Node zeroVelOffset                = inData["zeroVelOffset"];
+        current_flash->zeroVelOffset[0]         = zeroVelOffset[0].as<float>();
+        current_flash->zeroVelOffset[1]         = zeroVelOffset[1].as<float>();
+        current_flash->zeroVelOffset[2]         = zeroVelOffset[2].as<float>();
 
-    current_flash->gpsTimeUserDelay         = inData["gpsTimeUserDelay"].as<float>();
-    current_flash->magDeclination           = inData["magDeclination"].as<float>();
-    current_flash->gpsTimeSyncPeriodMs      = inData["gpsTimeSyncPeriodMs"].as<uint32_t>();
-    current_flash->startupGPSDtMs           = inData["startupGPSDtMs"].as<uint32_t>();
-    current_flash->RTKCfgBits               = inData["RTKCfgBits"].as<uint32_t>();
-    current_flash->sensorConfig             = inData["sensorConfig"].as<uint32_t>();
-    current_flash->gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
-    current_flash->ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
-    //current_flash->wheelConfig          //  = inData["wheelConfig"]
-
+        current_flash->gpsTimeUserDelay         = inData["gpsTimeUserDelay"].as<float>();
+        current_flash->magDeclination           = inData["magDeclination"].as<float>();
+        current_flash->gpsTimeSyncPeriodMs      = inData["gpsTimeSyncPeriodMs"].as<uint32_t>();
+        current_flash->startupGPSDtMs           = inData["startupGPSDtMs"].as<uint32_t>();
+        current_flash->RTKCfgBits               = inData["RTKCfgBits"].as<uint32_t>();
+        current_flash->sensorConfig             = inData["sensorConfig"].as<uint32_t>();
+        current_flash->gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
+        current_flash->ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
+        //current_flash->wheelConfig          //  = inData["wheelConfig"]
+    }
+    catch (const YAML::Exception& ex)
+    {
+        printf("[ERROR] --- There was an error parsing the YAML file: %s", ex.what());
+        return -1;
+    }
+return 0;
 }
