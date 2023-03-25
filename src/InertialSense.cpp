@@ -716,8 +716,9 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 		comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
 		Update();
 	}
-    SaveFlashConfigFile("flashCfg.yaml", pHandle);
-    LoadFlashConfig("flashCfg.yaml", pHandle);
+	//Test code TODO: Remove these 2 lines.
+    // SaveFlashConfigFile("flashCfg.yaml", pHandle);
+    // LoadFlashConfig("flashCfg.yaml", pHandle);
  }
 
 void InertialSense::SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pHandle)
