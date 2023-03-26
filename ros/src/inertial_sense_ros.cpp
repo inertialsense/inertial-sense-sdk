@@ -33,6 +33,15 @@
 
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
 
+void odometryIdentity(nav_msgs::Odometry& msg_odom) {
+    for (int row = 0; row < 6; row++) {
+        for (int col = 0; col < 6; col++) {
+            msg_odom.pose.covariance[row * 6 + col] = (row == col ? 1 : 0);
+            msg_odom.twist.covariance[row * 6 + col] = (row == col ? 1 : 0);
+        }
+    }
+}
+
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(), nh_private_("~")
 {
     // Should always be enabled by default
@@ -340,27 +349,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     {
         ROS_INFO("Attempting to enable odom INS NED data stream.");
 
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need NED
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need NED
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
-        // Create Identity Matrix
-        //
-        for (int row = 0; row < 6; row++)
-        {
-            for (int col = 0; col < 6; col++)
-            {
-                if (row == col)
-                {
-                    msg_odom_ned.pose.covariance[row * 6 + col] = 1;
-                    msg_odom_ned.twist.covariance[row * 6 + col] = 1;
-                }
-                else
-                {
-                    msg_odom_ned.pose.covariance[row * 6 + col] = 0;
-                    msg_odom_ned.twist.covariance[row * 6 + col] = 0;
-                }
-            }
-        }
+        odometryIdentity(msg_odom_ned);
         if (!firstrun)
             return;;
     }
@@ -368,27 +360,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ECEF data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need quaternion and ecef
-        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need quaternion and ecef
+        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
-        // Create Identity Matrix
-        //
-        for (int row = 0; row < 6; row++)
-        {
-            for (int col = 0; col < 6; col++)
-            {
-                if (row == col)
-                {
-                    msg_odom_ecef.pose.covariance[row * 6 + col] = 1;
-                    msg_odom_ecef.twist.covariance[row * 6 + col] = 1;
-                }
-                else
-                {
-                    msg_odom_ecef.pose.covariance[row * 6 + col] = 0;
-                    msg_odom_ecef.twist.covariance[row * 6 + col] = 0;
-                }
-            }
-        }
+        odometryIdentity(msg_odom_ecef);
         if (!firstrun)
             return;
     }
@@ -396,27 +371,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (rs_.odom_ins_enu.enabled  && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ENU data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need ENU
-        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need ENU
+        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
-        // Create Identity Matrix
-        //
-        for (int row = 0; row < 6; row++)
-        {
-            for (int col = 0; col < 6; col++)
-            {
-                if (row == col)
-                {
-                    msg_odom_enu.pose.covariance[row * 6 + col] = 1;
-                    msg_odom_enu.twist.covariance[row * 6 + col] = 1;
-                }
-                else
-                {
-                    msg_odom_enu.pose.covariance[row * 6 + col] = 0;
-                    msg_odom_enu.twist.covariance[row * 6 + col] = 0;
-                }
-            }
-        }
+        odometryIdentity(msg_odom_enu);
         if (!firstrun)
             return;
     }
