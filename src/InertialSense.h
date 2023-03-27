@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
+#include <yaml-cpp/yaml.h>
 
 // use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
@@ -427,6 +428,9 @@ public:
 		SYNCHRONIZING = 1,
 		NOT_SYNCHRONIZED = 2
 	};
+
+        int GetSyncState(int pHandle)
+        {return m_comManagerState.devices[pHandle].syncState;}
 
 protected:
 	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
