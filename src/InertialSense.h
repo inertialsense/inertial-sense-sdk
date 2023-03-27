@@ -34,7 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
-#include <yaml-cpp/yaml.h>
+// #include <yaml-cpp/yaml.h>
 
 // use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
@@ -403,19 +403,19 @@ public:
 		void (*waitAction)() = NULLPTR
 	);
 
-        /**
-         * @brief LoadFlashConfig
-         * @param path - Path to YAML flash config file
-         * @param pHandle - Handle of current device
-         * @return -1 for failure to upload file, 0 for success.
-         */
-        int LoadFlashConfig(std::string path, int pHandle = 0);
+	/**
+	 * @brief LoadFlashConfig
+	 * @param path - Path to YAML flash config file
+	 * @param pHandle - Handle of current device
+	 * @return -1 for failure to upload file, 0 for success.
+	 */
+	int LoadFlashConfig(std::string path, int pHandle = 0);
 
-        /**
-         * @brief SaveFlashConfigFile
-         * @param path - Path to YAML flash config file
-         * @param pHandle - Handle of current device
-         */
+	/**
+	 * @brief SaveFlashConfigFile
+	 * @param path - Path to YAML flash config file
+	 * @param pHandle - Handle of current device
+	 */
 	void SaveFlashConfigFile(std::string path, int pHandle = 0);
 
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
