@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-cmd_options_t g_commandLineOptions;
+cmd_options_t g_commandLineOptions = {};
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 
@@ -169,9 +169,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.chipEraseEvb2 = true;
 		}
-		else if (startsWith(a, "-chipEraseUins"))
+		else if (startsWith(a, "-chipEraseIMX"))
 		{
-			g_commandLineOptions.chipEraseUins = true;
+			g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
 		}
 		else if (matches(a, "-c") && (i + 1) < argc)
 		{
@@ -239,7 +239,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
 		else if (startsWith(a, "-factoryReset"))
 		{
-			g_commandLineOptions.factoryResetUins = true;
+			g_commandLineOptions.sysCommand = SYS_CMD_MANF_FACTORY_RESET;
 		}		
 		else if (startsWith(a, "-fb"))
 		{
@@ -365,6 +365,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
             }
         }
+		else if (startsWith(a, "-sysCmd="))
+		{
+			g_commandLineOptions.sysCommand = (uint32_t)strtoul(&a[8], NULL, 10);
+		}		
 		else if (startsWith(a, "-s"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
@@ -479,8 +483,9 @@ void cltool_outputUsage()
 	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
 	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
 	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
-	cout << "    -factoryReset " << boldOff << "  Reset uINS flash config to factory defaults." << endlbOn;
-	cout << "    -chipEraseUins " << boldOff << " CAUTION!!! Erase everything on uINS (firmware, config, calibration, etc.)" << endlbOn;
+	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command." << endlbOn;
+	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
+	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
 	cout << "    -chipEraseEvb2 " << boldOff << " CAUTION!!! Erase everything on EVB2 (firmware, config, etc.)" << endlbOn;
 
 	cout << endlbOn;
@@ -508,7 +513,7 @@ void cltool_outputUsage()
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Read or write flash configuration from command line)" << endl;
-	cout << "    -flashCfg" << boldOff << "       List all uINS \"keys\" and \"values\"" << endlbOn;
+	cout << "    -flashCfg" << boldOff << "       List all IMX \"keys\" and \"values\"" << endlbOn;
 	cout << "   \"-flashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
 	cout << "    -evbFlashCfg" << boldOff << "    List all EVB \"keys\" and \"values\"" << endlbOn;
 	cout << "   \"-evbFlashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;

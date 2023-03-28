@@ -89,8 +89,7 @@ typedef struct
 	uint32_t timeoutFlushLoggerSeconds;
 	uint32_t outputOnceDid;	
 	
-	bool factoryResetUins;
-	bool chipEraseUins;
+	uint32_t sysCommand;
 	bool chipEraseEvb2;
 } cmd_options_t;
 
