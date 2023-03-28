@@ -1202,6 +1202,7 @@ typedef struct PACKED
 
 enum eSystemCommand 
 {
+    SYS_CMD_NONE                                    = 0,
     SYS_CMD_SAVE_PERSISTENT_MESSAGES                = 1,
     SYS_CMD_ENABLE_BOOTLOADER_AND_RESET             = 2,
     SYS_CMD_ENABLE_SENSOR_STATS                     = 3,
