@@ -932,7 +932,7 @@ typedef struct PACKED
 	gps_sat_sv_t			sat[MAX_NUM_SAT_CHANNELS];	
 } gps_sat_t;
 
-
+#define GPS_VER_NUM_EXTENSIONS	6
 /** (DID_GPS1_VERSION) GPS version strings */
 typedef struct PACKED
 {
@@ -941,9 +941,7 @@ typedef struct PACKED
     /** Hardware version */
 	uint8_t                 hwVersion[10];		
     /** Extension */
-	uint8_t                 extension[30];		
-    /** ensure 32 bit aligned in memory */
-	uint8_t					reserved[2];		
+	uint8_t                 extension[GPS_VER_NUM_EXTENSIONS][30];		
 } gps_version_t;
 
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
@@ -2309,7 +2307,7 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
 	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
 	PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-	PLATFORM_CFG_TYPE_EVB3                      = (int)12,
+	PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
 	PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
 	PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
 	PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
@@ -3959,7 +3957,7 @@ typedef enum
 	TASK_TIMER,
 
 	/** Number of RTOS tasks */
-	UINS_RTOS_NUM_TASKS                 // Keep last
+	IMX_RTOS_NUM_TASKS                 // Keep last
 } eRtosTask;
 
 /** EVB RTOS tasks */
@@ -4066,7 +4064,7 @@ typedef struct PACKED
 	uint32_t				freeSize;
 
 	/** Tasks */
-	rtos_task_t             task[UINS_RTOS_NUM_TASKS];
+	rtos_task_t             task[IMX_RTOS_NUM_TASKS];
 
 } rtos_info_t;
 

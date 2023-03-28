@@ -132,7 +132,7 @@ public:
 	bool IsOpen();
 
 	/**
-	* Close the connection, logger and free all resources
+	* Close the device connection, stop logger if running, and free resources.
 	*/
 	void Close();
 
@@ -259,9 +259,9 @@ public:
 	/**
 	* Set device configuration
 	* @param pHandle the pHandle to set sysCmd for
-	* @param sysCmd new device configuration
+	* @param command system command value
 	*/
-	void SetSysCmd(const system_command_t& sysCmd, int pHandle = 0);
+	void SetSysCmd(const uint32_t command, int pHandle = -1);
 
 	/**
 	* Get the flash config, returns the latest flash config read from the uINS flash memory

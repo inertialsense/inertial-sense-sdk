@@ -514,6 +514,7 @@ static int cltool_createHost()
 
 	// close the interface cleanly, this ensures serial port and any logging are shutdown properly
 	inertialSenseInterface.Close();
+	inertialSenseInterface.CloseServerConnection();
 	
 	return 0;
 }
@@ -595,6 +596,7 @@ static int inertialSenseMain()
 			{
 				cout << "Failed to setup logger!" << endl;
 				inertialSenseInterface.Close();
+				inertialSenseInterface.CloseServerConnection();
 				return -1;
 			}
 			try
@@ -634,6 +636,7 @@ static int inertialSenseMain()
 		// [C++ COMM INSTRUCTION] STEP 6: Close interface
 		// Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
 		inertialSenseInterface.Close();
+		inertialSenseInterface.CloseServerConnection();
 	}
 
 	return 0;

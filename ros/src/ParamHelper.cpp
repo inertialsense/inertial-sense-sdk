@@ -57,7 +57,7 @@ bool ParamHelper::msgParams(TopicHelper &th, std::string key, std::string topicD
 }
 
 bool ParamHelper::msgParamsImplicit(TopicHelper &th, std::string key, std::string topicDefault, bool enabledDefault, int periodDefault) {
-    msgParams(th, key, topicDefault, enabledDefault, periodDefault, enabledDefault);
+    return msgParams(th, key, topicDefault, enabledDefault, periodDefault, enabledDefault);
 }
 
 YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
