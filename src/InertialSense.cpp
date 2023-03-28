@@ -1053,84 +1053,111 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
 
 	YAML::Node map = YAML::Node(YAML::NodeType::Map);
 
-    map["size"] = outData->size;
-    map["checksum"] = outData->checksum;
-    map["key"] = outData->key;
-    map["startupImuDtMs"] = outData->startupImuDtMs;
-    map["startupNavDtMs"] = outData->startupNavDtMs;
-    map["ser0BaudRate"] = outData->ser0BaudRate;
-    map["ser1BaudRate"] = outData->ser1BaudRate;
+    map["size"] 					= outData->size;
+    map["checksum"] 				= outData->checksum;
+    map["key"] 						= outData->key;
+    map["startupImuDtMs"] 			= outData->startupImuDtMs;
+    map["startupNavDtMs"] 			= outData->startupNavDtMs;
+    map["ser0BaudRate"] 			= outData->ser0BaudRate;
+    map["ser1BaudRate"] 			= outData->ser1BaudRate;
 
     YAML::Node insRotation = YAML::Node(YAML::NodeType::Sequence);
         insRotation.push_back(outData->insRotation[0]);
         insRotation.push_back(outData->insRotation[1]);
         insRotation.push_back(outData->insRotation[2]);
-    map["insRotation"] = insRotation;
+    map["insRotation"] 				= insRotation;
 
     YAML::Node insOffset = YAML::Node(YAML::NodeType::Sequence);
         insOffset.push_back(outData->insOffset[0]);
         insOffset.push_back(outData->insOffset[1]);
         insOffset.push_back(outData->insOffset[2]);
-    map["insOffset"] = insOffset;
+    map["insOffset"] 				= insOffset;
 
     YAML::Node gps1AntOffset = YAML::Node(YAML::NodeType::Sequence);
         gps1AntOffset.push_back(outData->gps1AntOffset[0]);
         gps1AntOffset.push_back(outData->gps1AntOffset[1]);
         gps1AntOffset.push_back(outData->gps1AntOffset[2]);
-    map["gps1AntOffset"] = gps1AntOffset;
+    map["gps1AntOffset"] 			= gps1AntOffset;
 
-    map["insDynModel"] = (uint16_t)outData->insDynModel;
-    map["debug"] = (uint16_t)outData->debug;
-    map["gnssSatSigConst"] = outData->gnssSatSigConst;
-    map["sysCfgBits"] = outData->sysCfgBits;
+    map["insDynModel"] 				= (uint16_t)outData->insDynModel;
+    map["debug"] 					= (uint16_t)outData->debug;
+    map["gnssSatSigConst"] 			= outData->gnssSatSigConst;
+    map["sysCfgBits"] 				= outData->sysCfgBits;
 
     YAML::Node refLla = YAML::Node(YAML::NodeType::Sequence);
         refLla.push_back(outData->refLla[0]);
         refLla.push_back(outData->refLla[1]);
         refLla.push_back(outData->refLla[2]);
-    map["refLla"] = refLla;
+    map["refLla"] 					= refLla;
 
 
     YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
         lastLla.push_back(outData->lastLla[0]);
         lastLla.push_back(outData->lastLla[1]);
         lastLla.push_back(outData->lastLla[2]);
-    map["lastLla"] = lastLla;
+    map["lastLla"] 					= lastLla;
 
-    map["lastLlaTimeOfWeekMs"] = outData->lastLlaTimeOfWeekMs;
-    map["lastLlaWeek"] = outData->lastLlaWeek;
-    map["lastLlaUpdateDistance"] = outData->lastLlaUpdateDistance;
-    map["ioConfig"] = outData->ioConfig;
-    map["platformConfig"] = outData->platformConfig;
+    map["lastLlaTimeOfWeekMs"] 		= outData->lastLlaTimeOfWeekMs;
+    map["lastLlaWeek"] 				= outData->lastLlaWeek;
+    map["lastLlaUpdateDistance"] 	= outData->lastLlaUpdateDistance;
+    map["ioConfig"] 				= outData->ioConfig;
+    map["platformConfig"] 			= outData->platformConfig;
 
 
     YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
         gps2AntOffset.push_back(outData->gps2AntOffset[0]);
         gps2AntOffset.push_back(outData->gps2AntOffset[1]);
         gps2AntOffset.push_back(outData->gps2AntOffset[2]);
-    map["gps2AntOffset"] = gps2AntOffset;
+    map["gps2AntOffset"] 			= gps2AntOffset;
 
     YAML::Node zeroVelRotation = YAML::Node(YAML::NodeType::Sequence);
         zeroVelRotation.push_back(outData->zeroVelRotation[0]);
         zeroVelRotation.push_back(outData->zeroVelRotation[1]);
         zeroVelRotation.push_back(outData->zeroVelRotation[2]);
-    map["zeroVelRotation"] = zeroVelRotation;
+    map["zeroVelRotation"] 			= zeroVelRotation;
 
     YAML::Node zeroVelOffset = YAML::Node(YAML::NodeType::Sequence);
         zeroVelOffset.push_back(outData->zeroVelOffset[0]);
         zeroVelOffset.push_back(outData->zeroVelOffset[1]);
         zeroVelOffset.push_back(outData->zeroVelOffset[2]);
-    map["zeroVelOffset"] = zeroVelOffset;
+    map["zeroVelOffset"] 			= zeroVelOffset;
 
-    map["gpsTimeUserDelay"] = outData->gpsTimeUserDelay;
-    map["magDeclination"] = outData->magDeclination;
-    map["gpsTimeSyncPeriodMs"] = outData->gpsTimeSyncPeriodMs;
-    map["startupGPSDtMs"] = outData->startupGPSDtMs;
-    map["RTKCfgBits"] = outData->RTKCfgBits;
-    map["sensorConfig"] = outData->sensorConfig;
-    map["gpsMinimumElevation"] = outData->gpsMinimumElevation;
-    map["ser2BaudRate"] = outData->ser2BaudRate;
-	// map["wheelConfig"] = wheelConfig;
+    map["gpsTimeUserDelay"] 		= outData->gpsTimeUserDelay;
+    map["magDeclination"] 			= outData->magDeclination;
+    map["gpsTimeSyncPeriodMs"] 		= outData->gpsTimeSyncPeriodMs;
+    map["startupGPSDtMs"] 			= outData->startupGPSDtMs;
+    map["RTKCfgBits"] 				= outData->RTKCfgBits;
+    map["sensorConfig"] 			= outData->sensorConfig;
+    map["gpsMinimumElevation"] 		= outData->gpsMinimumElevation;
+    map["ser2BaudRate"] 			= outData->ser2BaudRate;
+	map["wheelConfigBits"] 			= outData->wheelConfig.bits;
+
+	YAML::Node wheelCfgTransE_b2w 	= YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[0]);
+        wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[1]);
+        wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[2]);
+    map["wheelCfgTransE_b2w"] 		= wheelCfgTransE_b2w;
+
+	YAML::Node wheelCfgTransE_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[0]);
+        wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[1]);
+        wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[2]);
+    map["wheelCfgTransE_b2wsig"] 	= wheelCfgTransE_b2wsig;
+
+	YAML::Node wheelCfgTransT_b2w = YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[0]);
+        wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[1]);
+        wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[2]);
+    map["wheelCfgTransT_b2w"] 	= wheelCfgTransT_b2w;
+
+	YAML::Node wheelCfgTransT_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[0]);
+        wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[1]);
+        wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[2]);
+    map["wheelCfgTransT_b2wsig"] 	= wheelCfgTransT_b2wsig;
+
+	map["wheelConfigTrackWidth"] 	= outData->wheelConfig.track_width;
+	map["wheelConfigRadius"] 		= outData->wheelConfig.radius;
 
 	std::ofstream fout(path);
 
@@ -1215,7 +1242,28 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         current_flash->sensorConfig             = inData["sensorConfig"].as<uint32_t>();
         current_flash->gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
         current_flash->ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
-        //current_flash->wheelConfig          //  = inData["wheelConfig"]
+
+        current_flash->wheelConfig.bits        	= inData["wheelConfigBits"].as<uint32_t>();
+
+		YAML::Node wheelCfgTransE_b2w			= inData["wheelCfgTransE_b2w"];
+		current_flash->wheelConfig.transform.e_b2w[0] 	= wheelCfgTransE_b2w[0].as<float>();
+		current_flash->wheelConfig.transform.e_b2w[1] 	= wheelCfgTransE_b2w[1].as<float>();
+		current_flash->wheelConfig.transform.e_b2w[2] 	= wheelCfgTransE_b2w[2].as<float>();
+
+		YAML::Node wheelCfgTransE_b2wsig			= inData["wheelCfgTransE_b2wsig"];
+		current_flash->wheelConfig.transform.e_b2w_sigma[0] 	= wheelCfgTransE_b2wsig[0].as<float>();
+		current_flash->wheelConfig.transform.e_b2w_sigma[1] 	= wheelCfgTransE_b2wsig[1].as<float>();
+		current_flash->wheelConfig.transform.e_b2w_sigma[2] 	= wheelCfgTransE_b2wsig[2].as<float>();
+
+		YAML::Node wheelCfgTransT_b2w			= inData["wheelCfgTransT_b2wsig"];
+		current_flash->wheelConfig.transform.t_b2w[0] 	= wheelCfgTransT_b2w[0].as<float>();
+		current_flash->wheelConfig.transform.t_b2w[1] 	= wheelCfgTransT_b2w[1].as<float>();
+		current_flash->wheelConfig.transform.t_b2w[2] 	= wheelCfgTransT_b2w[2].as<float>();
+
+		YAML::Node wheelCfgTransT_b2wsig			= inData["wheelCfgTransT_b2wsig"];
+		current_flash->wheelConfig.transform.t_b2w_sigma[0] 	= wheelCfgTransT_b2wsig[0].as<float>();
+		current_flash->wheelConfig.transform.t_b2w_sigma[1] 	= wheelCfgTransT_b2wsig[1].as<float>();
+		current_flash->wheelConfig.transform.t_b2w_sigma[2] 	= wheelCfgTransT_b2wsig[2].as<float>();
     }
     catch (const YAML::Exception& ex)
     {
