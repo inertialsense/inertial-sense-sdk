@@ -171,7 +171,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-chipEraseIMX"))
 		{
-			g_commandLineOptions.chipEraseIMX = true;
+			g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
 		}
 		else if (matches(a, "-c") && (i + 1) < argc)
 		{

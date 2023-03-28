@@ -254,20 +254,9 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         sysCommand = SYS_CMD_MANF_CHIP_ERASE;
         inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
     }
-    if (g_commandLineOptions.chipEraseIMX)
-    {   // Chip erase IMX
-		system_command_t cfg;
-
-		cfg.command = SYS_CMD_MANF_UNLOCK;
-		cfg.invCommand = ~cfg.command;
-		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-
-		cfg.command = SYS_CMD_MANF_CHIP_ERASE;
-		cfg.invCommand = ~cfg.command;
-		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-    }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
+		cout << "Sending system command: " << g_commandLineOptions.sysCommand << endl;
 		system_command_t cfg;
 
 		cfg.command = SYS_CMD_MANF_UNLOCK;

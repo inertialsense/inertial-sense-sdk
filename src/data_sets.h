@@ -1195,7 +1195,7 @@ typedef struct PACKED
 	/** System commands (see eSystemCommand) 1=save current persistent messages, 5=zero motion, 97=save flash, 99=software reset.  "invCommand" (following variable) must be set to bitwise inverse of this value for this command to be processed.  */
 	uint32_t                command;
 
-    /** Error checking field that must be set to bitwise inverse of command field for the command to take effect.  */
+    /** Error checking field that must be set to bitwise inverse of command field (-command - 1) for the command to take effect.  */
     uint32_t                invCommand;
 
 } system_command_t;
