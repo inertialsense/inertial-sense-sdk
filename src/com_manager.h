@@ -248,9 +248,6 @@ typedef struct
 	// Message handler - RTCM3
 	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
 
-	//sysParamsPort port on which to reply with flashCfg checksum
-	uint8_t sysParamsPort; //TODO: identify this port
-
 } com_manager_t;
 
 

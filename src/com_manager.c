@@ -231,8 +231,7 @@ int initComManagerInstanceInternal
 			cmInstance->ensuredPackets[i].counter = -2; // indicates no retries are enabled
 			cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
 		}
-	}
-	cmInstance->sysParamsPort = -1;
+    }
 	return 0;
 }
 
