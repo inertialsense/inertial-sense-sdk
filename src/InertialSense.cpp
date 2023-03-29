@@ -83,13 +83,24 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;	//We always want a copy of what is actually on the IMX
-	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;	// ""
+    case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
+    case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
+
+    /*If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, the state is set to SYNCHRONIZED.
+    If they don't match, the state iss set to NOT_SYNCHRONIZED, but the IMX flash config is copied to the local memory anyway so you know what the current flash is on the IMX.*/
+
 	case DID_FLASH_CONFIG:			                
-		(*(nvm_flash_cfg_t*)data->buf).checksum == s->devices[pHandle].flashCfg.checksum ? \
-		s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED : s->devices[pHandle].syncState = InertialSense::IMXSyncState::NOT_SYNCHRONIZED; // Set as sync or unsyc based on checksum of newly received flash config.
+        if (((*(nvm_flash_cfg_t*)data->buf).checksum == s->devices[pHandle].flashCfg.checksum))
+        {
+                s->devices[pHandle].syncState = InertialSense::IMXSyncState::SYNCHRONIZED;
+        }
+        else
+        {
+             s->devices[pHandle].syncState = InertialSense::IMXSyncState::NOT_SYNCHRONIZED; // Set as sync or unsyc based on checksum of newly received flash config. If user calls GetFlashConf the current flash config should be returned.
+             s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;							//We always want a copy of what is actually on the IMX.
+        }
 		
-		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;									//We always want a copy of what is actually on the IMX
+
 		break;
 
 	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
@@ -109,6 +120,11 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		}
 	
 	case DID_SYS_PARAMS:
+    /*When a new flash config is received by the IMX, if it is valid, the flash config is applied and a new checksum calculated.
+     * That checksum is sent back to the SDK via a DID_SYS_PARAMS message. If the checksum matches the locally saved checksum
+     * then the state is set to SYNCHRONIZED. If they differ, the state is set to NOT_SYNCHRONIZED. The user is left to make the final determination of the next actions.
+     *
+    */
 		sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
 		if (s->devices[pHandle].flashCfg.checksum == sysParamsRx->flashCfgChecksum)		//Check to see if the flash config was applied correctly on the IMX by checking the checksums against each other
 		{
@@ -708,12 +724,12 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 	}
 	else
 	{   
-		m_comManagerState.devices[pHandle].syncState = SYNCHRONIZING;
-		m_comManagerState.devices[pHandle].flashCfg = flashCfg;
-		m_comManagerState.devices[pHandle].flashCfg.checksum = newChecksum;
+        m_comManagerState.devices[pHandle].syncState = SYNCHRONIZING;
+        m_comManagerState.devices[pHandle].flashCfg = flashCfg;
+        m_comManagerState.devices[pHandle].flashCfg.checksum = newChecksum;
 
 		// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-		comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
+        comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
 		Update();
 	}
 	//Test code TODO: Remove these 2 lines.
@@ -1002,6 +1018,11 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			SLEEP_MS(13);
 			comManagerStep();
 		}
+
+        for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+        {
+            m_comManagerState.devices[i].syncState = SYNCHRONIZED;  //After each unit has receieved flash config the first time, set sync to SYNCHRONIZED.
+        }
 
 		bool removedSerials = false;
 
