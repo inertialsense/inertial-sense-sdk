@@ -12,7 +12,9 @@ import yaml
 import os
 from os.path import expanduser
 from inertialsense_math.pose import *
-from datetime import date
+from datetime import date, datetime
+import pandas as pd
+
 
 BLACK = r"\u001b[30m"
 RED = r"\u001b[31m"
@@ -29,8 +31,9 @@ DEG2RAD = 3.14159 / 180.0
 
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
-SHOW_GPS2 = 1
+SHOW_GPS2 = 0
 SHOW_GPS_W_INS = 1
+SHOW_HEADING_ARROW = 0
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -178,7 +181,7 @@ class logPlot:
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
             if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
-                if (np.shape(self.active_devs)[0]==1):
+                if (SHOW_HEADING_ARROW and np.shape(self.active_devs)[0]==1):
                     self.drawNEDMapArrow(ax, ned, euler[:, 2])
 
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
@@ -546,6 +549,34 @@ class logPlot:
                 b.grid(True)
         self.saveFig(fig, 'attINS')
 
+    def gpx1Heading(self):
+        filepath = self.log.directory + "/enu.out"
+        dateparse = lambda x: datetime.datetime.strptime(x, '%Y/%m/%d %H:%M:%S.%f')
+        df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+
+        df['datetime'] = df[['date','time']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+        df['datetime'] = pd.to_datetime(df['datetime'] , format = '%Y/%m/%d %H:%M:%S.%f')
+
+        baselineE = df['e-baseline'].values
+        baselineN = df['n-baseline'].values
+        baselineU = df['u-baseline'].values
+        baselineNED = np.array([baselineN, baselineE, -baselineU]).T
+
+        gpxTime = np.zeros_like(baselineNED[:,1])
+        for index, elem in np.ndenumerate(gpxTime):
+            i = index[0]
+            gpxTime[i] = (df['datetime'][i] - datetime.datetime(1970,1,1)).total_seconds()
+        gpxTime -= 1679184000.0
+
+        # Throw away first sample
+        n = 20
+        gpxTime = gpxTime[n:]
+        baselineNED = baselineNED[n:,:]
+
+        gpxHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
+        return gpxTime, baselineNED, gpxHeading, 
+
+
     def heading(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -561,12 +592,29 @@ class logPlot:
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
-            if magTime.any():
-                ax[0].plot(magTime, magHdg * RAD2DEG)
+            # if magTime.any():
+            #     ax[0].plot(magTime, magHdg * RAD2DEG)
             if gpsTime.any():
-                ax[1].plot(gpsTime, gpsHdg*RAD2DEG)
+                gpsHdg = self.angle_wrap(gpsHdg)
+                ax[1].plot(gpsTime, gpsHdg*RAD2DEG, label='F9P')
             ax[2].plot(insTime, euler[:,2]*RAD2DEG, label=self.log.serials[d])
         ax[2].legend(ncol=2)
+
+        if 1:
+            gpxTime, gpxBaselineNed, gpxHeading = self.gpx1Heading()
+
+            gpsHdg_unwrap = self.angle_unwrap(gpsHdg)
+            gpxHdg_unwrap = self.angle_unwrap(gpxHeading)
+            gpxHeadingTruth = np.interp(gpxTime, gpsTime, gpsHdg_unwrap, right=np.nan, left=np.nan)
+            gpsHeadingErrDeg = self.angle_wrap(gpxHdg_unwrap - gpxHeadingTruth)*RAD2DEG
+            gpxRms = np.sqrt(np.mean(np.square(gpsHeadingErrDeg)))
+            self.configureSubplot(ax[0], 'RTK Compassing Error: ' + f'{gpxRms:.3}' + ' deg RMS', 'deg')
+
+            ax[1].plot(gpxTime, gpxHeading*RAD2DEG, label='GPX')
+            ax[1].legend(ncol=2)
+            ax[0].plot(gpxTime, gpsHeadingErrDeg, label='GPX - F9P')
+            ax[0].legend(ncol=2)
+
         for a in ax:
             a.grid(True)
         self.saveFig(fig, 'heading')
@@ -890,6 +938,44 @@ class logPlot:
         self.saveFig(fig, 'rtk'+name+'Stats')
         # except:
             # print(RED + "problem plotting rtkStats: " + sys.exc_info()[0] + RESET)
+
+    def rtkBaselineVector(self, fig=None):
+        name = "Compassing"
+        relDid = DID_GPS1_RTK_CMP_REL
+
+        # try:
+        n_plots = 2
+        if fig is None:
+            fig = plt.figure()
+
+        ax = fig.subplots(n_plots, 1, sharex=True)
+        fig.suptitle('RTK ' + name + ' Stats - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        self.configureSubplot(ax[0], 'Base to Rover N', 'm')
+        self.configureSubplot(ax[1], 'Base to Rover E', 'm')
+
+        for i, d in enumerate(self.active_devs):
+            rtkRelTime = getTimeFromTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
+            gps1PosTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+            gpsLla = self.getData(d, DID_GPS1_POS, 'lla')
+            baseToRoverECEF = self.getData(d, relDid, 'baseToRoverVector')
+
+            qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
+            baselineNED = quatConjRot(qe2n, baseToRoverECEF)
+            # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
+
+            ax[0].plot(rtkRelTime, baselineNED[:,0])
+            ax[1].plot(rtkRelTime, baselineNED[:,1])
+
+            gpxTime, gpxBaselineNED, gpxHeading = self.gpx1Heading()
+
+            ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
+            ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
+
+            ax[0].legend(ncol=2)
+
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'rtk'+name+'BaseToRoverVector')
 
     def rtkPosMisc(self, fig=None):
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig)
