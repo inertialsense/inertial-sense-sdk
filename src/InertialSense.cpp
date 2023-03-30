@@ -182,7 +182,10 @@ bool InertialSense::HasReceivedResponseFromAllDevices()
 		{
 			return false;
 		}
+
+		m_comManagerState.devices[i].syncState = SYNCHRONIZED;  	// Flash config was received just above.  Set sync to SYNCHRONIZED.
 	}
+
 	return true;
 }
 
@@ -1064,11 +1067,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			SLEEP_MS(13);
 			comManagerStep();
 		}
-
-        for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-        {
-            m_comManagerState.devices[i].syncState = SYNCHRONIZED;  	// Flash config was received just above.  Set sync to SYNCHRONIZED.
-        }
 
 		bool removedSerials = false;
 

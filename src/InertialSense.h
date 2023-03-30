@@ -413,9 +413,9 @@ public:
 	// Sync state between this class and IMX device
 	enum IMXSyncState
 	{
-		SYNCHRONIZED = 0,		// Flash config on IMX and locally match
-		SYNCHRONIZING = 1,		// Uploading
-		NOT_SYNCHRONIZED = 2	// Download needed
+		NOT_SYNCHRONIZED    = 0,   // Download needed
+		SYNCHRONIZING       = 1,   // Uploading
+		SYNCHRONIZED        = 2,   // Flash config on IMX and locally match
 	};
 
 	int GetSyncState(int pHandle) { return m_comManagerState.devices[pHandle].syncState; }
