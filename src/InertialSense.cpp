@@ -794,7 +794,6 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 			UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
 		}
 	}
-
 }
 
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)
