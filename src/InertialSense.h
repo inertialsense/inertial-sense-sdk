@@ -265,32 +265,19 @@ public:
 	void SetSysCmd(const uint32_t command, int pHandle = -1);
 
 	/**
-	* Get the flash config, returns the latest flash config read from the uINS flash memory
-	* @param pHandle the pHandle to get flash config for
-	* @return the flash config
+	* Update the current flash config sync state.  This should be done whenever the DID_FLASH_CONFIG or DID_SYS_PARAMS is received.
+	* @param checksum newly received checksum
+	* @param pHandle the port pHandle of the device
 	*/
-	nvm_flash_cfg_t GetFlashConfig(int pHandle = 0) 
-	{
-		if ((size_t)pHandle >= m_comManagerState.devices.size())
-		{
-			pHandle = 0;
-		}
-		return m_comManagerState.devices[pHandle].flashCfg;
-	}
+	void UpdateFlashConfigSyncState(uint32_t checksum, int pHandle);
 
 	/**
-	* Get the EVB flash config, returns the latest flash config read from the uINS flash memory
-	* @param pHandle the pHandle to get flash config for
-	* @return the EVB flash config
+	* Get the flash config, returns the latest flash config read from the uINS flash memory
+	* @param flashCfg the flash config value
+	* @param pHandle the port pHandle to get flash config for
+	* @return bool whether the flash config is valid, currently synchronized
 	*/
-	evb_flash_cfg_t GetEvbFlashConfig(int pHandle = 0) 
-	{
-		if ((size_t)pHandle >= m_comManagerState.devices.size())
-		{
-			pHandle = 0;
-		}
-		return m_comManagerState.devices[pHandle].evbFlashCfg;
-	}
+	bool GetFlashConfig(nvm_flash_cfg_t *flashCfg, int pHandle = 0); 
 
 	/**
 	* Set the flash config and update flash config on the uINS flash memory
@@ -298,6 +285,14 @@ public:
 	* @param pHandle the pHandle to set flash config for
 	*/
 	void SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle = 0);
+
+	/**
+	* Get the EVB flash config, returns the latest flash config read from the uINS flash memory
+	* @param flashCfg the flash config value
+	* @param pHandle the port pHandle to get flash config for
+	* @return bool whether the EVB flash config is valid, currently synchronized
+	*/
+	bool GetEvbFlashConfig(evb_flash_cfg_t *evbFlashCfg, int pHandle = 0); 
 
 	/**
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory
@@ -432,7 +427,7 @@ public:
         {return m_comManagerState.devices[pHandle].syncState;}
 
 protected:
-	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
+	bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
 	void OnClientConnecting(cISTcpServer* server) OVERRIDE;
 	void OnClientConnected(cISTcpServer* server, socket_t socket) OVERRIDE;
 	void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
