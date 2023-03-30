@@ -79,14 +79,12 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		handlerGlobal(s->inertialSenseInterface, data, pHandle);
 	}
 
-	//sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
-
 	switch (data->hdr.id)
 	{
-    case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
-    case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
+	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
+	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
 
-    /*If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, the state is set to SYNCHRONIZED.
+    /* If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, the state is set to SYNCHRONIZED.
     If they don't match, the state iss set to NOT_SYNCHRONIZED, but the IMX flash config is copied to the local memory anyway so you know what the current flash is on the IMX.*/
 
 	case DID_FLASH_CONFIG:			                
@@ -105,17 +103,15 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 
 	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
-		{
-			static time_t lastTime;
-			time_t currentTime = time(NULLPTR);
-			if (abs(currentTime - lastTime) > 5)
-			{	// Update every 5 seconds
-				lastTime = currentTime;
-				gps_pos_t& gps = *((gps_pos_t*)data->buf);
-				if ((gps.status & GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
-				{
-					*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
-				}
+		static time_t lastTime;
+		time_t currentTime = time(NULLPTR);
+		if (abs(currentTime - lastTime) > 5)
+		{	// Update every 5 seconds
+			lastTime = currentTime;
+			gps_pos_t &gps = *((gps_pos_t*)data->buf);
+			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
+			{
+				*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 			}
 		}
 	
@@ -714,10 +710,11 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 		return;
 	}
 
-	uint32_t newChecksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+	// Update checksum 
+	flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
 
 	//Compare checksum of flashCfg vs known checksum in m_comManagerState.devices[pHandle].flashCfg
-	if (m_comManagerState.devices[pHandle].flashCfg.checksum == newChecksum)
+	if (m_comManagerState.devices[pHandle].flashCfg.checksum == flashCfg.checksum)
 	{
 		//If checksum matches then we are already in sync
 		m_comManagerState.devices[pHandle].syncState = SYNCHRONIZED;
@@ -726,7 +723,6 @@ void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
 	{   
         m_comManagerState.devices[pHandle].syncState = SYNCHRONIZING;
         m_comManagerState.devices[pHandle].flashCfg = flashCfg;
-        m_comManagerState.devices[pHandle].flashCfg.checksum = newChecksum;
 
 		// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
         comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
@@ -1288,5 +1284,6 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         printf("[ERROR] --- There was an error parsing the YAML file: %s", ex.what());
         return -1;
     }
-return 0;
+    
+	return 0;
 }
