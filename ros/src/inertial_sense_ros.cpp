@@ -587,7 +587,7 @@ bool vecF64Match(double v1[], double v2[], int size=3)
 void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
-    nvm_flash_cfg_t = current_flash_cfg;
+    nvm_flash_cfg_t current_flash_cfg;
     IS_.GetFlashConfig(current_flash_cfg);
     //ROS_INFO("Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
