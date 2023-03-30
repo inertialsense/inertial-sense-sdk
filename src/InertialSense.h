@@ -34,7 +34,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
-// #include <yaml-cpp/yaml.h>
 
 // use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
@@ -466,8 +465,6 @@ private:
 	is_comm_instance_t m_gpComm;
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 	mul_msg_stats_t m_serverMessageStats = {};
-
-
 
 	// returns false if logger failed to open
 	bool UpdateServer();
