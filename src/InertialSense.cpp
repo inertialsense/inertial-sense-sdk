@@ -767,29 +767,32 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 	{
 	case DID_DEV_INFO:			device.devInfo = *(dev_info_t*)data->buf;			break;
 	case DID_SYS_CMD:			device.sysCmd = *(system_command_t*)data->buf;		break;
+	case DID_EVB_FLASH_CFG:		device.evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;	
 	case DID_FLASH_CONFIG:
-		/* If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, 
-		*  the state is set to SYNCHRONIZED.  If they don't match, the state iss set to NOT_SYNCHRONIZED, but the IMX flash config 
-		*  is copied to the local memory anyway so you know what the current flash is on the IMX.
-		*/
-		UpdateFlashConfigSyncState((*(nvm_flash_cfg_t*)data->buf).checksum, pHandle);
-		
-		if (device.syncState != InertialSense::IMXSyncState::SYNCHRONIZING)
-		{	// Update only if not synchronizing (uploading)
-			device.flashCfg = *(nvm_flash_cfg_t*)data->buf;
+		{
+			/* If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, 
+			*  the state is set to SYNCHRONIZED.  If they don't match, the state is set to NOT_SYNCHRONIZED, but the IMX flash config 
+			*  is copied to the local memory anyway so you know what the current flash is on the IMX.
+			*/
+			nvm_flash_cfg_t *flashConfig = (nvm_flash_cfg_t*)data->buf;
+			UpdateFlashConfigSyncState(flashConfig->checksum, pHandle);
+			
+			if (device.syncState != InertialSense::IMXSyncState::SYNCHRONIZING)
+			{	// Update only if not synchronizing (uploading)
+				device.flashCfg = *flashConfig;
+			}
 		}
 		break;
-
-	case DID_EVB_FLASH_CFG:		device.evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
-	
 	case DID_SYS_PARAMS:
-		/* When a new flash config is received by the IMX, if it is valid, the flash config is applied and a new checksum calculated.
-		*  That checksum is sent back to the SDK via a DID_SYS_PARAMS message. If the checksum matches the locally saved checksum
-		*  then the state is set to SYNCHRONIZED. If they differ, the state is set to NOT_SYNCHRONIZED. The user is left to make the 
-		*  final determination of the next actions.
-		*/
-		sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
-		UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
+		{
+			/* When a new flash config is received by the IMX, if it is valid, the flash config is applied and a new checksum calculated.
+			*  That checksum is sent back to the SDK via a DID_SYS_PARAMS message. If the checksum matches the locally saved checksum
+			*  then the state is set to SYNCHRONIZED. If they differ, the state is set to NOT_SYNCHRONIZED. The user is left to make the 
+			*  final determination of the next actions.
+			*/
+			sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
+			UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
+		}
 	}
 
 }
