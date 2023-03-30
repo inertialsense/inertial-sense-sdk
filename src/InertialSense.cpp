@@ -1067,7 +1067,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
         for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
         {
-            m_comManagerState.devices[i].syncState = SYNCHRONIZED;  //After each unit has receieved flash config the first time, set sync to SYNCHRONIZED.
+            m_comManagerState.devices[i].syncState = SYNCHRONIZED;  	// Flash config was received just above.  Set sync to SYNCHRONIZED.
         }
 
 		bool removedSerials = false;
