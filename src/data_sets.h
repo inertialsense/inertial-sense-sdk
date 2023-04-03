@@ -1135,7 +1135,7 @@ typedef struct PACKED
 	double					sensorTruePeriod;
 
 	/** Reserved */
-	float					reserved2;
+	uint32_t				flashCfgChecksum;
 	/** Reserved */
 	float					reserved3;
 
