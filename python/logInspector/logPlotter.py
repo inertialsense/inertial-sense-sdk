@@ -545,7 +545,6 @@ class logPlot:
 
     def gpx1Heading(self):
         filepath = self.log.directory + "/enu.out"
-        dateparse = lambda x: datetime.datetime.strptime(x, '%Y/%m/%d %H:%M:%S.%f')
         df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
 
         df['datetime'] = df[['date','time']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
@@ -559,8 +558,7 @@ class logPlot:
         gpxTime = np.zeros_like(baselineNED[:,1])
         for index, elem in np.ndenumerate(gpxTime):
             i = index[0]
-            gpxTime[i] = (df['datetime'][i] - datetime.datetime(1970,1,1)).total_seconds()
-        gpxTime -= 1679184000.0
+            gpxTime[i] = (df['datetime'][i] - datetime.datetime(1980,1,6)).total_seconds() % 604800.0
 
         # Throw away first sample
         n = 20
