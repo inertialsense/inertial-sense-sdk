@@ -1,25 +1,19 @@
 #!/usr/bin/python3
 
-import sys, os, shutil
+import sys, os, signal, ctypes, shutil, json, io, traceback, yaml, subprocess, re
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView, QFileSystemModel,\
-    QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
-    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QSpacerItem, QCheckBox, QGroupBox, QListView
-from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QPixmap, QImage, QClipboard, QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QApplication, QStyle, QSpacerItem
-import json
-import io
+    QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
+    QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
+from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import numpy as np
-from threading import Thread
 
 from logReader import Log
 from logPlotter import logPlot
-import traceback
-import yaml
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -28,8 +22,6 @@ sys.path.append(os.path.normpath(file_path + '/../math/src'))
 sys.path.append(os.path.normpath(file_path + '/../supernpp'))
 
 from pylib.data_sets import *
-import subprocess
-import re
 
 START_MODE_HOT = 0
 START_MODE_COLD = 1
@@ -214,8 +206,8 @@ class FlashConfigDialog(QDialog):
 
 
 class LogInspectorWindow(QMainWindow):
-    def __init__(self, configFilePath, parent=None):
-        super(LogInspectorWindow, self).__init__(parent)
+    def __init__(self, configFilePath):
+        super(LogInspectorWindow, self).__init__()
         self.initMatPlotLib()
         self.configFilePath = configFilePath
 
@@ -340,12 +332,7 @@ class LogInspectorWindow(QMainWindow):
         self.setObjectName("LogInspector")
         self.setWindowTitle("LogInspector")
         self.resize(1280, 900)
-        self.setWindowFlags(self.windowFlags() |
-                                  QtCore.Qt.WindowSystemMenuHint |
-                                  QtCore.Qt.WindowMinMaxButtonsHint)
-        self.setWindowIcon(QIcon("assets/Magnifying_glass_icon.png"))
-
-        # MainWindow.showMaximized()
+        self.setWindowIcon(QIcon('assets/Magnifying_glass_icon.png'))
 
         self.controlLayout = QVBoxLayout()
         self.createPlotSelection()
@@ -366,7 +353,6 @@ class LogInspectorWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
-        # self.resize(1280, 900)
         self.resize(1450, 1000)
         self.setAcceptDrops(True)
 
@@ -498,8 +484,7 @@ class LogInspectorWindow(QMainWindow):
 
         self.loadingIndictator = QLabel()
         self.loadingMovie = QMovie('assets/loader.gif')
-        self.emptyLoadingPicture = QPicture()
-        self.emptyLoadingPicture.load('assets/empty_loader.png')
+        self.emptyLoadingPicture = QPixmap('assets/empty_loader.png')
         self.stopLoadingIndicator()
         self.toolLayout.addWidget(self.loadingIndictator)
 
@@ -684,7 +669,7 @@ class LogInspectorWindow(QMainWindow):
     def stopLoadingIndicator(self):
         self.loadingMovie.stop()
         self.loadingIndictator.clear()
-        self.loadingIndictator.setPicture(self.emptyLoadingPicture)
+        self.loadingIndictator.setPixmap(self.emptyLoadingPicture)
 
     def showDeviceInfo(self):
         dlg = DeviceInfoDialog(self.log, self)
@@ -714,22 +699,36 @@ class LogInspectorWindow(QMainWindow):
         self.stopLoadingIndicator()
         print("done plotting")
 
+def kill_handler(*args):
+    instance = QApplication.instance()
+    instance.quit()
+
 if __name__ == '__main__':
     if sys.version[0] != '3':
         raise Exception("You must use Python 3. The current version is " + sys.version)
 
-    app = QApplication(sys.argv)
-    MainWindow = QMainWindow()
+    if os.name == 'nt':
+        # On Windows, this is required to get the icon changed in the taskbar
+        myappid = 'InertialSense.PythonTools.LogInspector.Any'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
+    app = QApplication(sys.argv)
+    
     configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "log_inspector.yaml")
 
-    main = LogInspectorWindow(configFilePath, MainWindow)
+    main = LogInspectorWindow(configFilePath)
     main.setupUi()
-    # main.load(directory)
+
+    # Allow the process to be killed with Ctrl-C from terminal
+    timer = QtCore.QTimer()
+    timer.start(200)
+    timer.timeout.connect(lambda: None)
+    signal.signal(signal.SIGINT, kill_handler)
+
     main.show()
 
     if len(sys.argv) > 1:
         directory = sys.argv[1]
         main.load(directory)
 
-    app.exec_()
+    app.exec()

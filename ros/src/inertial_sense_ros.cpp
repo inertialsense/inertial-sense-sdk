@@ -33,6 +33,15 @@
 
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
 
+void odometryIdentity(nav_msgs::Odometry& msg_odom) {
+    for (int row = 0; row < 6; row++) {
+        for (int col = 0; col < 6; col++) {
+            msg_odom.pose.covariance[row * 6 + col] = (row == col ? 1 : 0);
+            msg_odom.twist.covariance[row * 6 + col] = (row == col ? 1 : 0);
+        }
+    }
+}
+
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(), nh_private_("~")
 {
     // Should always be enabled by default
@@ -340,27 +349,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     {
         ROS_INFO("Attempting to enable odom INS NED data stream.");
 
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need NED
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need NED
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
-        // Create Identity Matrix
-        //
-        for (int row = 0; row < 6; row++)
-        {
-            for (int col = 0; col < 6; col++)
-            {
-                if (row == col)
-                {
-                    msg_odom_ned.pose.covariance[row * 6 + col] = 1;
-                    msg_odom_ned.twist.covariance[row * 6 + col] = 1;
-                }
-                else
-                {
-                    msg_odom_ned.pose.covariance[row * 6 + col] = 0;
-                    msg_odom_ned.twist.covariance[row * 6 + col] = 0;
-                }
-            }
-        }
+        odometryIdentity(msg_odom_ned);
         if (!firstrun)
             return;;
     }
@@ -368,27 +360,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ECEF data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need quaternion and ecef
-        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need quaternion and ecef
+        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
-        // Create Identity Matrix
-        //
-        for (int row = 0; row < 6; row++)
-        {
-            for (int col = 0; col < 6; col++)
-            {
-                if (row == col)
-                {
-                    msg_odom_ecef.pose.covariance[row * 6 + col] = 1;
-                    msg_odom_ecef.twist.covariance[row * 6 + col] = 1;
-                }
-                else
-                {
-                    msg_odom_ecef.pose.covariance[row * 6 + col] = 0;
-                    msg_odom_ecef.twist.covariance[row * 6 + col] = 0;
-                }
-            }
-        }
+        odometryIdentity(msg_odom_ecef);
         if (!firstrun)
             return;
     }
@@ -396,27 +371,10 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (rs_.odom_ins_enu.enabled  && !(rs_.did_ins4.streaming && imuStreaming_))
     {
         ROS_INFO("Attempting to enable odom INS ENU data stream.");
-        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                                                   // Need ENU
-        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                                              // Need angular rate data from IMU
+        SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need ENU
+        SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
-        // Create Identity Matrix
-        //
-        for (int row = 0; row < 6; row++)
-        {
-            for (int col = 0; col < 6; col++)
-            {
-                if (row == col)
-                {
-                    msg_odom_enu.pose.covariance[row * 6 + col] = 1;
-                    msg_odom_enu.twist.covariance[row * 6 + col] = 1;
-                }
-                else
-                {
-                    msg_odom_enu.pose.covariance[row * 6 + col] = 0;
-                    msg_odom_enu.twist.covariance[row * 6 + col] = 0;
-                }
-            }
-        }
+        odometryIdentity(msg_odom_enu);
         if (!firstrun)
             return;
     }
@@ -432,12 +390,14 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.did_ins4, DID_INS_4, ins_4_t, INS4_callback);
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
+    nvm_flash_cfg_t flashCfg;
+    IS_.GetFlashConfig(flashCfg);
     if (!NavSatFixConfigured)
     {
         if (rs_.gps1_navsatfix.enabled) {
             ROS_INFO("Attempting to enable gps1/NavSatFix.");
             // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
-            uint16_t gnssSatSigConst = IS_.GetFlashConfig().gnssSatSigConst;
+            uint16_t gnssSatSigConst = flashCfg.gnssSatSigConst;
 
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS) {
                 msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
@@ -455,7 +415,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         if (rs_.gps2_navsatfix.enabled) {
             ROS_INFO("Attempting to enable gps2/NavSatFix.");
             // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
-            uint16_t gnssSatSigConst = IS_.GetFlashConfig().gnssSatSigConst;
+            uint16_t gnssSatSigConst = flashCfg.gnssSatSigConst;
 
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS) {
                 msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
@@ -627,7 +587,8 @@ bool vecF64Match(double v1[], double v2[], int size=3)
 void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
-    nvm_flash_cfg_t current_flash_cfg = IS_.GetFlashConfig();
+    nvm_flash_cfg_t current_flash_cfg;
+    IS_.GetFlashConfig(current_flash_cfg);
     //ROS_INFO("Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
@@ -2025,8 +1986,9 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
-    nvm_flash_cfg_t current_flash = IS_.GetFlashConfig();
-    while (current_flash.refLla[0] == IS_.GetFlashConfig().refLla[0] && current_flash.refLla[1] == IS_.GetFlashConfig().refLla[1] && current_flash.refLla[2] == IS_.GetFlashConfig().refLla[2])
+    nvm_flash_cfg_t current_flash;
+    IS_.GetFlashConfig(current_flash);
+    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
         i++;
@@ -2036,7 +1998,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
         }
     }
 
-    if (current_lla_[0] == IS_.GetFlashConfig().refLla[0] && current_lla_[1] == IS_.GetFlashConfig().refLla[1] && current_lla_[2] == IS_.GetFlashConfig().refLla[2])
+    if (current_lla_[0] == current_flash.refLla[0] && current_lla_[1] == current_flash.refLla[1] && current_lla_[2] == current_flash.refLla[2])
     {
         comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;
@@ -2059,8 +2021,9 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
-    nvm_flash_cfg_t current_flash = IS_.GetFlashConfig();
-    while (current_flash.refLla[0] == IS_.GetFlashConfig().refLla[0] && current_flash.refLla[1] == IS_.GetFlashConfig().refLla[1] && current_flash.refLla[2] == IS_.GetFlashConfig().refLla[2])
+    nvm_flash_cfg_t current_flash; 
+    IS_.GetFlashConfig(current_flash);
+    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
         i++;
@@ -2070,7 +2033,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
         }
     }
 
-    if (req.lla[0] == IS_.GetFlashConfig().refLla[0] && req.lla[1] == IS_.GetFlashConfig().refLla[1] && req.lla[2] == IS_.GetFlashConfig().refLla[2])
+    if (req.lla[0] == current_flash.refLla[0] && req.lla[1] == current_flash.refLla[1] && req.lla[2] == current_flash.refLla[2])
     {
         comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;

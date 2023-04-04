@@ -12,6 +12,7 @@ SET(BUILD_INERTIAL_SENSE_SDK 1)
 
 add_definitions(-DRTK_EMBEDDED)
 find_package(Threads REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 add_library(InertialSense
   src/cltool.cpp
@@ -74,7 +75,7 @@ find_library(LIBUSB_LIBRARY
 )
 
 target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb)
-target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} m)
+target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} ${YAML_CPP_LIBRARIES} m)
 target_compile_options(InertialSense PUBLIC -fPIC)
 
 add_library( InertialSense::libinertialsense ALIAS InertialSense )

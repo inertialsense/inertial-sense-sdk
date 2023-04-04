@@ -1,15 +1,9 @@
 from ctypes import sizeof
-import math
+import math, allantools, sys, yaml, os
 from typing import List, Any, Union
-
-# If allantools are not installed, run "pip install allantools" first
-import allantools
 
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
-import yaml
-import os
 from os.path import expanduser
 from inertialsense_math.pose import *
 from datetime import date, datetime
