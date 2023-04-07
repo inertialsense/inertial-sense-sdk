@@ -2588,6 +2588,9 @@ typedef struct PACKED
 	/** Wheel encoder: euler angles describing the rotation from imu to left wheel */
     wheel_config_t          wheelConfig;
 
+	/** X,Y,Z offset in meters in Sensor Frame to an offset point of velocity and position measurement, e.g. socket head in Startrack */
+	float					localPosVelObsOffset[3];
+
 } nvm_flash_cfg_t;
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
