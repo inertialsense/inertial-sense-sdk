@@ -110,6 +110,19 @@ bool read_did_argument(stream_did_t *dataset, string s)
 	return false;
 }
 
+void print_dids()
+{
+#if defined(INCLUDE_LUNA_DATA_SETS)
+	for (eDataIDs id = 0; id < DID_COUNT; id++)
+#else
+	for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
+#endif
+	{
+		printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+	}
+	cltool_outputHelp();
+}
+
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
 	// set defaults
@@ -183,15 +196,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-dids"))
 		{
-#if defined(INCLUDE_LUNA_DATA_SETS)
-			for (eDataIDs id = 0; id < DID_COUNT; id++)
-#else
-			for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
-#endif
-			{
-				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
-			}
-			cltool_outputHelp();
+			print_dids();
 			return false;
 		}
 		else if (startsWith(a, "-did") && (i + 1) < argc)
@@ -217,12 +222,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 				}
 			}			
 		}
-		else if (startsWith(a, "-edit") && (i + 1) < argc)
+		else if (startsWith(a, "-edit"))
 		{
 			stream_did_t dataset = {};
-			if (read_did_argument(&dataset, argv[++i]))	// use next argument
+			if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))	// use next argument
 			{
 				g_commandLineOptions.datasetEdit = dataset;
+			}
+			else
+			{	// Invalid argument
+				print_dids();
+				return false;
 			}
 		}
 		else if (startsWith(a, "-evbFlashCfg="))
